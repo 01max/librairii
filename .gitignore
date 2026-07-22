@@ -83,6 +83,10 @@ bower.json
 # Ignore node_modules
 node_modules/
 /src-tauri/target/
+/packaging/runtime/*
+!/packaging/runtime/.keep
+/packaging/stage/rails/*
+!/packaging/stage/rails/.keep
 
 # Ignore precompiled javascript packs
 /public/packs

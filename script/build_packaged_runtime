@@ -1,0 +1,251 @@
+#!/usr/bin/env ruby
+
+require "fileutils"
+require "open3"
+require "pathname"
+
+ROOT = Pathname(__dir__).join("..").expand_path
+PACKAGED_RUBY_VERSION = "4.0.6"
+RUNTIME_ROOT = ROOT.join("packaging/runtime/ruby")
+RAILS_ROOT = ROOT.join("packaging/stage/rails")
+VENDORED_LIBRARY_ROOT = RUNTIME_ROOT.join("lib/vendor")
+VENDORED_LIBRARY_SOURCES = {}
+
+APP_ENTRIES = %w[
+  app
+  bin
+  config
+  db
+  lib
+  public
+  Gemfile
+  Gemfile.lock
+  Rakefile
+  config.ru
+].freeze
+
+def run!(*command, environment: {}, chdir: ROOT)
+  arguments = command.map(&:to_s)
+  puts "+ #{arguments.join(" ")}"
+  system(environment, *arguments, chdir: chdir.to_s, exception: true)
+end
+
+def install_portable_ruby!
+  ruby = RUNTIME_ROOT.join("bin/ruby")
+  if ruby.executable? && ENV["LIBRAIRII_REBUILD_RUBY"] != "1"
+    version, status = Open3.capture2(ruby.to_s, "-e", "print RUBY_VERSION")
+    return if status.success? && version == PACKAGED_RUBY_VERSION
+  end
+
+  FileUtils.rm_rf(RUNTIME_ROOT)
+  FileUtils.mkdir_p(RUNTIME_ROOT.parent)
+  run!(
+    "ruby-install",
+    "--install-dir", RUNTIME_ROOT.to_s,
+    "--cleanup",
+    "ruby", PACKAGED_RUBY_VERSION,
+    "--",
+    "--enable-load-relative",
+    "--disable-install-doc"
+  )
+end
+
+def stage_rails_application!
+  if ENV["LIBRAIRII_REBUILD_RUBY"] == "1" || ENV["LIBRAIRII_REBUILD_GEMS"] == "1"
+    FileUtils.rm_rf(RAILS_ROOT.join("vendor/bundle"))
+  end
+
+  FileUtils.mkdir_p(RAILS_ROOT)
+  APP_ENTRIES.each do |entry|
+    source = ROOT.join(entry)
+    destination = RAILS_ROOT.join(entry)
+    FileUtils.rm_rf(destination)
+    FileUtils.mkdir_p(destination.parent)
+    FileUtils.cp_r(source, destination, preserve: true)
+  end
+
+  FileUtils.rm_f(RAILS_ROOT.join("config/master.key"))
+  FileUtils.mkdir_p(RAILS_ROOT.join("log"))
+  FileUtils.mkdir_p(RAILS_ROOT.join("tmp"))
+
+  environment = {
+    "PATH" => "#{RUNTIME_ROOT.join("bin")}:/usr/bin:/bin",
+    "BUNDLE_GEMFILE" => RAILS_ROOT.join("Gemfile").to_s,
+    "BUNDLE_PATH" => RAILS_ROOT.join("vendor/bundle").to_s,
+    "BUNDLE_WITHOUT" => "development:test",
+    "BUNDLE_DEPLOYMENT" => "true",
+    "BUNDLE_FROZEN" => "true"
+  }
+
+  run!(RUNTIME_ROOT.join("bin/bundle").to_s, "install", environment: environment)
+
+  asset_environment = environment.merge(
+    "RAILS_ENV" => "production",
+    "SECRET_KEY_BASE_DUMMY" => "1",
+    "LIBRAIRII_DATA_ROOT" => RAILS_ROOT.join("tmp/build-data").to_s,
+    "LIBRAIRII_LAUNCH_SECRET" => "packaging-build-secret",
+    "BOOTSNAP_CACHE_DIR" => RAILS_ROOT.join("tmp/bootsnap").to_s
+  )
+  run!(
+    RUNTIME_ROOT.join("bin/ruby").to_s,
+    RAILS_ROOT.join("bin/rails").to_s,
+    "assets:precompile",
+    environment: asset_environment,
+    chdir: RAILS_ROOT
+  )
+
+  FileUtils.rm_rf(RAILS_ROOT.join("tmp/build-data"))
+  FileUtils.rm_rf(RAILS_ROOT.join("tmp/bootsnap"))
+end
+
+def macho_dependencies(path)
+  output, status = Open3.capture2e("otool", "-L", path.to_s)
+  return [] unless status.success?
+
+  output.lines.drop(1).filter_map do |line|
+    dependency = line.strip.split(" (compatibility", 2).first
+    dependency unless dependency.nil? || dependency.empty?
+  end
+end
+
+def portable_dependency?(dependency)
+  return false unless dependency.start_with?("/")
+  return false if dependency.start_with?("/System/Library/", "/usr/lib/")
+
+  File.file?(dependency)
+end
+
+def native_binaries
+  candidates = [ RUNTIME_ROOT.join("bin/ruby") ]
+  candidates.concat(RUNTIME_ROOT.glob("**/*.{bundle,dylib,so}"))
+  candidates.concat(RAILS_ROOT.join("vendor/bundle").glob("**/*.{bundle,dylib,so}"))
+  candidates.select(&:file?)
+end
+
+def ensure_vendored_rpath!(binary)
+  relative_library_root = VENDORED_LIBRARY_ROOT.relative_path_from(binary.dirname)
+  rpath = "@loader_path/#{relative_library_root}"
+  load_commands, = Open3.capture2e("otool", "-l", binary.to_s)
+  return if load_commands.include?(rpath)
+
+  run!("install_name_tool", "-add_rpath", rpath, binary)
+end
+
+def sign_binary!(binary)
+  run!("codesign", "--force", "--sign", "-", binary)
+end
+
+def normalize_vendored_permissions!(library)
+  FileUtils.chmod(0o644, library)
+end
+
+def repair_existing_vendored_links!
+  return unless VENDORED_LIBRARY_ROOT.directory?
+
+  native_binaries.each do |binary|
+    is_vendored_library = binary.to_s.start_with?("#{VENDORED_LIBRARY_ROOT}/")
+    uses_vendored_library = macho_dependencies(binary).any? do |dependency|
+      dependency.start_with?("@rpath/") &&
+        VENDORED_LIBRARY_ROOT.join(dependency.delete_prefix("@rpath/")).file?
+    end
+    next unless is_vendored_library || uses_vendored_library
+
+    ensure_vendored_rpath!(binary) if uses_vendored_library
+    sign_binary!(binary)
+    normalize_vendored_permissions!(binary) if is_vendored_library
+  end
+end
+
+def copy_dependency!(dependency)
+  source = Pathname(dependency).realpath
+  destination = VENDORED_LIBRARY_ROOT.join(source.basename)
+
+  if (existing_source = VENDORED_LIBRARY_SOURCES[source.basename.to_s])
+    unless existing_source == source
+      raise "library basename collision for #{source.basename}"
+    end
+    return destination
+  end
+
+  VENDORED_LIBRARY_SOURCES[source.basename.to_s] = source
+  if destination.exist?
+    normalize_vendored_permissions!(destination)
+    return destination
+  end
+
+  FileUtils.mkdir_p(destination.parent)
+  FileUtils.cp(source, destination, preserve: true)
+  run!("install_name_tool", "-id", "@rpath/#{destination.basename}", destination)
+  sign_binary!(destination)
+  normalize_vendored_permissions!(destination)
+  destination
+end
+
+def vendor_dynamic_libraries!
+  queue = native_binaries
+  visited = {}
+
+  until queue.empty?
+    binary = queue.shift
+    next if visited[binary.to_s]
+
+    visited[binary.to_s] = true
+    changed = false
+    macho_dependencies(binary).each do |dependency|
+      next unless portable_dependency?(dependency)
+
+      vendored = copy_dependency!(dependency)
+      run!(
+        "install_name_tool",
+        "-change", dependency,
+        "@rpath/#{vendored.basename}",
+        binary
+      )
+      changed = true
+      queue << vendored
+    end
+    next unless changed
+
+    ensure_vendored_rpath!(binary)
+    sign_binary!(binary)
+  end
+end
+
+def verify_runtime!
+  environment = {
+    "PATH" => "/usr/bin:/bin",
+    "DYLD_LIBRARY_PATH" => VENDORED_LIBRARY_ROOT.to_s,
+    "BUNDLE_GEMFILE" => RAILS_ROOT.join("Gemfile").to_s,
+    "BUNDLE_PATH" => RAILS_ROOT.join("vendor/bundle").to_s,
+    "BUNDLE_WITHOUT" => "development:test",
+    "BUNDLE_DEPLOYMENT" => "true",
+    "BUNDLE_FROZEN" => "true"
+  }
+  run!(
+    RUNTIME_ROOT.join("bin/ruby").to_s,
+    "-ropenssl",
+    "-rpsych",
+    "-e",
+    "abort unless RUBY_VERSION == '#{PACKAGED_RUBY_VERSION}'; puts RUBY_DESCRIPTION",
+    environment: environment
+  )
+end
+
+def normalize_resource_permissions!
+  [ RUNTIME_ROOT, RAILS_ROOT ].each do |resource_root|
+    resource_root.glob("**/*", File::FNM_DOTMATCH).each do |path|
+      FileUtils.chmod(path.stat.mode | 0o200, path) if path.file?
+    end
+  end
+end
+
+abort "packaged runtime currently supports macOS only" unless RUBY_PLATFORM.include?("darwin")
+
+install_portable_ruby!
+repair_existing_vendored_links!
+stage_rails_application!
+vendor_dynamic_libraries!
+normalize_resource_permissions!
+verify_runtime!
+
+puts "Packaged Ruby and Rails runtime prepared in #{ROOT.join("packaging")}"

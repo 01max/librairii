@@ -5,7 +5,7 @@ Hotwire, and Tauri.
 
 ## Development
 
-The project uses Ruby 4.0.6 and Rails 8.1.3.
+The project uses Ruby 4.0.6, Rails 8.1.3, Tauri 2.11.5, and Tauri CLI 2.11.4.
 
 ```sh
 bin/setup
@@ -31,3 +31,17 @@ Launch the Tauri development shell with:
 ```sh
 npm run tauri:dev
 ```
+
+## Current-host package smoke
+
+Build the embedded Ruby/Rails runtime, create the signed macOS application, and
+exercise the packaged sidecar without a user-installed Ruby:
+
+```sh
+npm run package:runtime
+npm run tauri:build
+npm run package:smoke
+```
+
+The packaging mechanism and its current-platform limits are recorded in
+`docs/adr/0001-embedded-ruby-sidecar.md`.

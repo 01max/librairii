@@ -71,17 +71,28 @@ pub struct BackendProcess {
 }
 
 impl BackendProcess {
+    #[cfg(debug_assertions)]
     pub fn launch_development(runtime: RuntimeConfig) -> BackendResult<Self> {
         let command = development_rails_command(&runtime, project_root());
-        Self::spawn(command, runtime)
+        Self::spawn(command, runtime, "development")
     }
 
-    fn spawn(mut command: Command, runtime: RuntimeConfig) -> BackendResult<Self> {
+    #[cfg(not(debug_assertions))]
+    pub fn launch_packaged(runtime: RuntimeConfig, resource_root: &Path) -> BackendResult<Self> {
+        let command = packaged_sidecar_command(resource_root);
+        Self::spawn(command, runtime, "production")
+    }
+
+    fn spawn(
+        mut command: Command,
+        runtime: RuntimeConfig,
+        rails_environment: &str,
+    ) -> BackendResult<Self> {
         command
             .env("LIBRAIRII_DATA_ROOT", &runtime.data_root)
             .env("LIBRAIRII_LAUNCH_SECRET", &runtime.launch_secret)
             .env("PORT", runtime.port.to_string())
-            .env("RAILS_ENV", "development")
+            .env("RAILS_ENV", rails_environment)
             .stdin(Stdio::null())
             .stdout(Stdio::inherit())
             .stderr(Stdio::inherit());
@@ -123,6 +134,15 @@ impl BackendProcess {
         };
 
         if child.try_wait().ok().flatten().is_none() {
+            request_graceful_shutdown(&mut child);
+
+            let deadline = Instant::now() + Duration::from_secs(5);
+            while child.try_wait().ok().flatten().is_none() && Instant::now() < deadline {
+                thread::sleep(Duration::from_millis(50));
+            }
+        }
+
+        if child.try_wait().ok().flatten().is_none() {
             let _ = child.kill();
         }
         let _ = child.wait();
@@ -147,12 +167,14 @@ impl Drop for BackendProcess {
     }
 }
 
+#[cfg(debug_assertions)]
 fn project_root() -> &'static Path {
     Path::new(env!("CARGO_MANIFEST_DIR"))
         .parent()
         .expect("src-tauri must be inside the project root")
 }
 
+#[cfg(debug_assertions)]
 fn development_rails_command(runtime: &RuntimeConfig, root: &Path) -> Command {
     let executable =
         std::env::var_os("LIBRAIRII_BUNDLE_EXECUTABLE").unwrap_or_else(|| "bundle".into());
@@ -169,6 +191,27 @@ fn development_rails_command(runtime: &RuntimeConfig, root: &Path) -> Command {
         &runtime.port.to_string(),
     ]);
     command
+}
+
+#[cfg(any(not(debug_assertions), test))]
+fn packaged_sidecar_command(resource_root: &Path) -> Command {
+    let mut command = Command::new(resource_root.join("bin/librairii-backend"));
+    command.env("LIBRAIRII_RESOURCE_ROOT", resource_root);
+    command
+}
+
+#[cfg(unix)]
+fn request_graceful_shutdown(child: &mut Child) {
+    // SAFETY: the PID comes from a currently owned Child and SIGTERM does not
+    // access memory through the raw value.
+    unsafe {
+        libc::kill(child.id() as libc::pid_t, libc::SIGTERM);
+    }
+}
+
+#[cfg(not(unix))]
+fn request_graceful_shutdown(child: &mut Child) {
+    let _ = child.kill();
 }
 
 fn available_loopback_port() -> std::io::Result<u16> {
@@ -272,7 +315,8 @@ mod tests {
         let mut command = Command::new("/bin/sh");
         command.args(["-c", "sleep 30"]);
         let process =
-            BackendProcess::spawn(command, runtime(available_loopback_port().unwrap())).unwrap();
+            BackendProcess::spawn(command, runtime(available_loopback_port().unwrap()), "test")
+                .unwrap();
 
         process.stop();
 
@@ -303,6 +347,20 @@ mod tests {
                 "43210"
             ]
         );
+    }
+
+    #[test]
+    fn packaged_command_targets_the_bundled_sidecar() {
+        let resource_root = Path::new("/Applications/Librairii.app/Contents/Resources");
+        let command = packaged_sidecar_command(resource_root);
+
+        assert_eq!(
+            command.get_program(),
+            resource_root.join("bin/librairii-backend")
+        );
+        assert!(command.get_envs().any(|(key, value)| {
+            key == "LIBRAIRII_RESOURCE_ROOT" && value == Some(resource_root.as_os_str())
+        }));
     }
 
     #[test]

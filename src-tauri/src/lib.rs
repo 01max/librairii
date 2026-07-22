@@ -8,7 +8,16 @@ pub fn run() {
     let application = tauri::Builder::default()
         .setup(|app| {
             let runtime = backend::RuntimeConfig::new(app.path().app_data_dir()?)?;
+
+            #[cfg(debug_assertions)]
             let backend = backend::BackendProcess::launch_development(runtime.clone())?;
+
+            #[cfg(not(debug_assertions))]
+            let backend = backend::BackendProcess::launch_packaged(
+                runtime.clone(),
+                &app.path().resource_dir()?,
+            )?;
+
             backend.wait_until_healthy(Duration::from_secs(20))?;
 
             let backend_port = runtime.port;

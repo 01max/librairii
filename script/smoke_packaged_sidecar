@@ -1,0 +1,149 @@
+#!/usr/bin/env ruby
+
+require "json"
+require "net/http"
+require "open3"
+require "pathname"
+require "securerandom"
+require "socket"
+require "tmpdir"
+require "timeout"
+
+ROOT = Pathname(__dir__).join("..").expand_path
+APPLICATION = ROOT.join("src-tauri/target/release/bundle/macos/Librairii.app")
+
+def available_port
+  server = TCPServer.new("127.0.0.1", 0)
+  server.local_address.ip_port
+ensure
+  server&.close
+end
+
+def http_request(port, request)
+  connection = Net::HTTP.new("127.0.0.1", port, nil)
+  connection.open_timeout = 0.25
+  connection.read_timeout = 1
+  connection.start { |http| http.request(request) }
+end
+
+def wait_for_health(port, secret, timeout: 20)
+  deadline = Process.clock_gettime(Process::CLOCK_MONOTONIC) + timeout
+
+  loop do
+    request = Net::HTTP::Get.new("/health")
+    request["Authorization"] = "Bearer #{secret}"
+    response = http_request(port, request)
+    return response if response.code == "200"
+  rescue Errno::ECONNREFUSED, Errno::ECONNRESET, Net::OpenTimeout, Net::ReadTimeout
+    raise "timed out waiting for packaged health" if Process.clock_gettime(Process::CLOCK_MONOTONIC) >= deadline
+
+    sleep 0.1
+  end
+end
+
+def stop_process(pid)
+  Process.kill("TERM", pid)
+  Timeout.timeout(10) { Process.wait2(pid).last }
+rescue Errno::ESRCH, Errno::ECHILD
+  nil
+rescue Timeout::Error
+  Process.kill("KILL", pid)
+  Process.wait2(pid).last
+end
+
+def assert_listener_stopped(port)
+  TCPSocket.new("127.0.0.1", port).close
+  raise "packaged Rails listener remained open after shutdown"
+rescue Errno::ECONNREFUSED
+  true
+end
+
+abort "build the packaged app with `npm run tauri:build` first" unless APPLICATION.directory?
+
+sidecars = APPLICATION.glob("Contents/Resources/**/librairii-backend").select(&:file?)
+abort "expected one packaged sidecar, found #{sidecars.length}" unless sidecars.one?
+
+sidecar = sidecars.first
+resource_root = sidecar.dirname.parent
+embedded_ruby = resource_root.join("runtime/ruby/bin/ruby")
+abort "embedded Ruby is missing from the package" unless embedded_ruby.executable?
+
+Dir.mktmpdir("librairii-packaged-smoke") do |temporary_directory|
+  temporary_root = Pathname(temporary_directory)
+  data_root = temporary_root.join("data")
+  home = temporary_root.join("home")
+  log_path = temporary_root.join("sidecar.log")
+  data_root.mkpath
+  home.mkpath
+
+  port = available_port
+  secret = SecureRandom.hex(32)
+  environment = {
+    "PATH" => "/usr/bin:/bin",
+    "HOME" => home.to_s,
+    "LANG" => "C.UTF-8",
+    "TMPDIR" => temporary_root.to_s,
+    "LIBRAIRII_RESOURCE_ROOT" => resource_root.to_s,
+    "LIBRAIRII_DATA_ROOT" => data_root.to_s,
+    "LIBRAIRII_LAUNCH_SECRET" => secret,
+    "PORT" => port.to_s
+  }
+
+  pid = Process.spawn(
+    environment,
+    sidecar.to_s,
+    unsetenv_others: true,
+    chdir: resource_root.to_s,
+    out: log_path.to_s,
+    err: [ :child, :out ]
+  )
+
+  begin
+    health = wait_for_health(port, secret)
+    raise "unexpected health response: #{health.body}" unless JSON.parse(health.body) == { "status" => "ok" }
+
+    bootstrap = http_request(port, Net::HTTP::Get.new("/?launch_secret=#{secret}"))
+    raise "launch bootstrap returned #{bootstrap.code}" unless bootstrap.code == "303"
+
+    set_cookie = bootstrap["set-cookie"]
+    raise "launch bootstrap did not set an authentication cookie" unless set_cookie
+
+    cookie = set_cookie.split(";", 2).first
+    root_request = Net::HTTP::Get.new("/")
+    root_request["Cookie"] = cookie
+    root_response = http_request(port, root_request)
+    unless root_response.code == "200" && root_response.body.include?("Your local story collection is ready.")
+      raise "packaged collection root did not render"
+    end
+
+    status = stop_process(pid)
+    pid = nil
+    assert_listener_stopped(port)
+
+    graceful_status = status&.success? || status&.termsig == Signal.list.fetch("TERM")
+    raise "packaged Rails did not shut down successfully: #{status}" unless graceful_status
+
+    database = data_root.join("db/production.sqlite3")
+    raise "packaged SQLite database was not written" unless database.file? && database.size.positive?
+
+    query = "PRAGMA integrity_check;"
+    output, error, sqlite_status = Open3.capture3(
+      { "PATH" => "/usr/bin:/bin" },
+      "/usr/bin/sqlite3",
+      database.to_s,
+      query
+    )
+    raise "SQLite verification failed: #{error}" unless sqlite_status.success? && output.strip == "ok"
+
+    puts "Packaged sidecar smoke test passed"
+    puts "  Ruby: 4.0.6 (embedded)"
+    puts "  Health: authenticated loopback 200"
+    puts "  SQLite: database created and valid under the application-data root"
+    puts "  Shutdown: child exited and loopback listener closed"
+  rescue StandardError => error
+    warn File.read(log_path) if log_path.file?
+    raise error
+  ensure
+    stop_process(pid) if pid
+  end
+end

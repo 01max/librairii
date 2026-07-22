@@ -5,7 +5,9 @@
   "scripts": {
     "tauri": "tauri",
     "tauri:dev": "tauri dev",
-    "tauri:build": "tauri build"
+    "tauri:build": "tauri build",
+    "package:runtime": "script/build_packaged_runtime",
+    "package:smoke": "script/smoke_packaged_sidecar"
   },
   "devDependencies": {
     "@tauri-apps/cli": "2.11.4"

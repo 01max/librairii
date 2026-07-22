@@ -15,6 +15,14 @@
   "bundle": {
     "active": true,
     "targets": ["app"],
+    "resources": {
+      "../packaging/runtime/": "runtime/",
+      "../packaging/stage/rails/": "rails/",
+      "../packaging/bin/librairii-backend": "bin/librairii-backend"
+    },
+    "macOS": {
+      "signingIdentity": "-"
+    },
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",

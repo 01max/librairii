@@ -1,0 +1,32 @@
+#!/bin/sh
+set -eu
+
+sidecar_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+resource_root=${LIBRAIRII_RESOURCE_ROOT:-$(CDPATH= cd -- "$sidecar_dir/.." && pwd)}
+ruby_root="$resource_root/runtime/ruby"
+rails_root="$resource_root/rails"
+
+: "${LIBRAIRII_DATA_ROOT:?LIBRAIRII_DATA_ROOT is required}"
+: "${LIBRAIRII_LAUNCH_SECRET:?LIBRAIRII_LAUNCH_SECRET is required}"
+: "${PORT:?PORT is required}"
+
+mkdir -p "$LIBRAIRII_DATA_ROOT/staging/bootsnap" "$LIBRAIRII_DATA_ROOT/staging/bundle"
+
+export PATH="$ruby_root/bin:/usr/bin:/bin"
+export DYLD_LIBRARY_PATH="$ruby_root/lib/vendor${DYLD_LIBRARY_PATH:+:$DYLD_LIBRARY_PATH}"
+export BUNDLE_GEMFILE="$rails_root/Gemfile"
+export BUNDLE_PATH="$rails_root/vendor/bundle"
+export BUNDLE_WITHOUT="development:test"
+export BUNDLE_DEPLOYMENT="true"
+export BUNDLE_FROZEN="true"
+export BUNDLE_DISABLE_SHARED_GEMS="true"
+export BUNDLE_USER_HOME="$LIBRAIRII_DATA_ROOT/staging/bundle"
+export BOOTSNAP_CACHE_DIR="$LIBRAIRII_DATA_ROOT/staging/bootsnap"
+export RAILS_ENV="production"
+export SECRET_KEY_BASE="$LIBRAIRII_LAUNCH_SECRET"
+
+cd "$rails_root"
+exec "$ruby_root/bin/ruby" "$rails_root/bin/rails" server \
+  --environment production \
+  --binding 127.0.0.1 \
+  --port "$PORT"
