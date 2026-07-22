@@ -1,0 +1,19 @@
+<% content_for :title, "Librairii — Storage recovery" %>
+
+<main>
+  <h1>Librairii needs attention</h1>
+
+  <% if @readiness.ready? %>
+    <p>The application data folder and SQLite database are writable again.</p>
+    <p><%= link_to "Return to the collection", root_path %></p>
+  <% else %>
+    <p>No changes can be made until local storage is writable.</p>
+    <ul>
+      <% @readiness.issues.each do |issue| %>
+        <li><%= issue.message %></li>
+      <% end %>
+    </ul>
+    <p>Data folder: <code><%= Rails.configuration.x.librairii.data_root %></code></p>
+    <p>Correct the folder permissions, then reload this page.</p>
+  <% end %>
+</main>
