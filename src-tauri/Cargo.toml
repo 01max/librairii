@@ -1,0 +1,30 @@
+[package]
+name = "librairii"
+version = "0.1.0"
+description = "Local Lunii story library"
+authors = ["Maxime"]
+license = ""
+repository = ""
+edition = "2024"
+rust-version = "1.97.1"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+name = "librairii_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "=2.6.3", features = [] }
+
+[dependencies]
+getrandom = "0.3"
+tauri = { version = "=2.11.5", features = [] }
+
+[profile.dev]
+debug = 0
+incremental = false
+
+[profile.test]
+debug = 0
+incremental = false

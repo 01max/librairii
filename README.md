@@ -25,3 +25,9 @@ the desktop shell sets it to the operating system's application-data directory.
 The Rails server binds to `127.0.0.1` and requires a per-launch secret. `bin/dev`
 prints a one-time authenticated browser URL; the desktop shell supplies the same
 secret through `LIBRAIRII_LAUNCH_SECRET`.
+
+Launch the Tauri development shell with:
+
+```sh
+npm run tauri:dev
+```
