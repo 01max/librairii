@@ -20,6 +20,10 @@ module Librairii
       generators.test_framework :rspec
     end
 
+    # Tauri sets this to the platform-specific application-data directory.
+    # Browser development and tests receive isolated defaults in the initializer.
+    config.x.librairii.data_root = ENV["LIBRAIRII_DATA_ROOT"]
+
     # Configuration for the application, engines, and railties goes here.
     #
     # These settings can be overridden in specific environments using the files

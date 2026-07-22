@@ -17,3 +17,7 @@ Run the RSpec suite with:
 ```sh
 bundle exec rspec
 ```
+
+Rails keeps development data below `tmp/librairii/development` and test data
+below `tmp/librairii/test`. Set `LIBRAIRII_DATA_ROOT` to use an explicit root;
+the desktop shell sets it to the operating system's application-data directory.
