@@ -3,7 +3,7 @@ require "rails_helper"
 RSpec.describe "Library", type: :request do
   describe "GET /" do
     it "renders the local collection root" do
-      get root_path
+      get root_path, headers: launch_authorization
 
       expect(response).to have_http_status(:ok)
       expect(response.body).to include("Librairii")

@@ -29,11 +29,11 @@ RSpec.describe "Storage recovery", type: :request do
   end
 
   it "redirects collection reads to the recovery page" do
-    get root_path
+    get root_path, headers: launch_authorization
 
     expect(response).to redirect_to(recovery_path)
 
-    follow_redirect!
+    follow_redirect!(headers: launch_authorization)
 
     expect(response).to have_http_status(:service_unavailable)
     expect(response.body).to include("Librairii needs attention")
@@ -41,7 +41,7 @@ RSpec.describe "Storage recovery", type: :request do
   end
 
   it "blocks mutation requests before routing them" do
-    post "/a-future-mutation"
+    post "/a-future-mutation", headers: launch_authorization
 
     expect(response).to have_http_status(:service_unavailable)
     expect(response.body).to include("Librairii needs attention")
@@ -51,7 +51,7 @@ RSpec.describe "Storage recovery", type: :request do
     let(:readiness_result) { Librairii::Readiness::Result.new(issues: []) }
 
     it "allows the collection to load" do
-      get root_path
+      get root_path, headers: launch_authorization
 
       expect(response).to have_http_status(:ok)
       expect(response.body).to include("Your local story collection is ready.")

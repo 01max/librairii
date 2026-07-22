@@ -1,5 +1,6 @@
 require Rails.root.join("lib/librairii/readiness")
 require Rails.root.join("lib/librairii/readiness_gate")
+require Rails.root.join("lib/librairii/launch_authentication")
 
 application_data = Rails.configuration.x.librairii.application_data
 readiness = Librairii::Readiness.new(
@@ -9,4 +10,8 @@ readiness = Librairii::Readiness.new(
 
 Rails.configuration.x.librairii.readiness = readiness
 Rails.configuration.x.librairii.startup_readiness = readiness.call
-Rails.application.config.middleware.insert_before(0, Librairii::ReadinessGate)
+Rails.application.config.middleware.insert_before(0, Librairii::LaunchAuthentication)
+Rails.application.config.middleware.insert_after(
+  Librairii::LaunchAuthentication,
+  Librairii::ReadinessGate
+)

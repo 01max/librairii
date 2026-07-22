@@ -23,6 +23,7 @@ module Librairii
     # Tauri sets this to the platform-specific application-data directory.
     # Browser development and tests receive isolated defaults in the initializer.
     config.x.librairii.data_root = ENV["LIBRAIRII_DATA_ROOT"]
+    config.x.librairii.launch_secret = ENV["LIBRAIRII_LAUNCH_SECRET"]
 
     # Configuration for the application, engines, and railties goes here.
     #

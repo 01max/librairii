@@ -1,6 +1,7 @@
 module Librairii
   class ReadinessGate
     RECOVERY_PATH = "/recovery"
+    HEALTH_PATH = "/health"
     PASSTHROUGH_PREFIXES = %w[/assets/ /icon. /robots.txt].freeze
 
     def initialize(app)
@@ -14,7 +15,7 @@ module Librairii
       result = Rails.configuration.x.librairii.readiness.call
       environment["librairii.readiness"] = result
 
-      return @app.call(environment) if result.ready? || request.path == RECOVERY_PATH
+      return @app.call(environment) if result.ready? || [ RECOVERY_PATH, HEALTH_PATH ].include?(request.path)
       return redirect_to_recovery if request.get? || request.head?
 
       render_recovery(environment)
