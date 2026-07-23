@@ -3,9 +3,9 @@
   "private": true,
   "version": "0.1.0",
   "scripts": {
-    "tauri": "tauri",
-    "tauri:dev": "tauri dev",
-    "tauri:build": "tauri build",
+    "tauri": "script/tauri",
+    "tauri:dev": "script/tauri dev",
+    "tauri:build": "script/tauri build",
     "package:runtime": "script/build_packaged_runtime",
     "package:smoke": "script/smoke_packaged_sidecar"
   },

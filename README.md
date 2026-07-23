@@ -32,6 +32,9 @@ Launch the Tauri development shell with:
 npm run tauri:dev
 ```
 
+The npm Tauri commands locate Cargo through rustup when its proxy directory is
+not already present in the shell `PATH`.
+
 ## Current-host package smoke
 
 Build the embedded Ruby/Rails runtime, create the signed macOS application, and

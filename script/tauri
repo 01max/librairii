@@ -1,0 +1,21 @@
+#!/bin/sh
+set -eu
+
+script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+project_root=$(CDPATH= cd -- "$script_dir/.." && pwd)
+tauri_cli=${LIBRAIRII_TAURI_CLI:-$project_root/node_modules/.bin/tauri}
+
+if ! command -v cargo >/dev/null 2>&1 && command -v rustup >/dev/null 2>&1; then
+  cargo_path=$(rustup which cargo 2>/dev/null || true)
+  if [ -n "$cargo_path" ] && [ -x "$cargo_path" ]; then
+    PATH="$(dirname -- "$cargo_path"):$PATH"
+    export PATH
+  fi
+fi
+
+if ! command -v cargo >/dev/null 2>&1; then
+  echo "Unable to find Cargo. Install a Rust toolchain with rustup before building Tauri." >&2
+  exit 127
+fi
+
+exec "$tauri_cli" "$@"
