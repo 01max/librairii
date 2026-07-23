@@ -3,9 +3,17 @@
 A local story-library companion for Lunii.QT, built with Ruby on Rails, SQLite,
 Hotwire, and Tauri.
 
-## Development
+## Why this stack
 
-The project uses Ruby 4.0.6, Rails 8.1.3, Tauri 2.11.5, and Tauri CLI 2.11.4.
+A Rails server packaged inside a Tauri application is not the smallest or most
+performance-efficient desktop architecture. It adds startup time, memory use,
+and package size compared with a native Rust backend. That trade-off is
+intentional: Librairii is a small weekend project, and Ruby/Rails is the stack I
+am most comfortable and efficient with. Fast iteration and an enjoyable,
+maintainable codebase matter more here than theoretical runtime efficiency; any
+real performance problem should be measured before it justifies a rewrite.
+
+## Development
 
 ```sh
 bin/setup
@@ -42,10 +50,6 @@ Build the embedded Ruby/Rails runtime, create the signed macOS application, and
 exercise the packaged sidecar without a user-installed Ruby:
 
 ```sh
-npm run package:runtime
-npm run tauri:build
+bin/build
 npm run package:smoke
 ```
-
-The packaging mechanism and its current-platform limits are recorded in
-`docs/adr/0001-embedded-ruby-sidecar.md`.
