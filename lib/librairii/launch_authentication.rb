@@ -14,6 +14,7 @@ module Librairii
     def call(environment)
       request = Rack::Request.new(environment)
       return forbidden unless loopback?(environment["REMOTE_ADDR"])
+      return @app.call(environment) unless authentication_required?
 
       if bootstrap?(request)
         return bootstrap_response(request)
@@ -25,6 +26,10 @@ module Librairii
     end
 
     private
+
+    def authentication_required?
+      Rails.configuration.x.librairii.launch_authentication_required != false
+    end
 
     def launch_secret
       Rails.configuration.x.librairii.launch_secret.to_s

@@ -22,9 +22,10 @@ Rails keeps development data below `tmp/librairii/development` and test data
 below `tmp/librairii/test`. Set `LIBRAIRII_DATA_ROOT` to use an explicit root;
 the desktop shell sets it to the operating system's application-data directory.
 
-The Rails server binds to `127.0.0.1` and requires a per-launch secret. `bin/dev`
-prints a one-time authenticated browser URL; the desktop shell supplies the same
-secret through `LIBRAIRII_LAUNCH_SECRET`.
+Plain Rails development (`bundle exec rails s`) accepts unauthenticated loopback
+requests. When `LIBRAIRII_LAUNCH_SECRET` is set, the server requires it;
+`bin/dev` prints a one-time authenticated browser URL and the desktop shell
+supplies its own secret.
 
 Launch the Tauri development shell with:
 
