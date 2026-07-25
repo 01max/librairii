@@ -799,9 +799,6 @@ function App() {
 
     const stories = useMemo(() => page?.stories ?? [], [page]);
     const rows = useMemo(() => chunkStories(stories), [stories]);
-    const selectedSummary = stories.find((story) => story.id === selectedID) ?? null;
-    const selected = detail?.story ?? selectedSummary;
-    const selectedPalette = selected ? paletteFor(selected.id) : undefined;
     const activeShelf = savedShelves.find((shelf) => shelf.id === activeShelfID) ?? null;
     const allStoriesActive = activeShelfID === null &&
         isAllStoriesQuery(collectionQuery);
@@ -857,6 +854,17 @@ function App() {
         savedShelfStories,
         showSavedShelfRows,
     ]);
+    const renderedStories = useMemo(
+        () => collectionRows.flatMap((row) => row.stories),
+        [collectionRows],
+    );
+    const selectedSummary = renderedStories.find(
+        (story) => story.id === selectedID,
+    ) ?? null;
+    const selected = selectedSummary
+        ? detail?.story.id === selectedID ? detail.story : selectedSummary
+        : null;
+    const selectedPalette = selected ? paletteFor(selected.id) : undefined;
     const empty = page !== null && page.totalItems === 0 && !importing;
     const assignedTags = assignmentWorkspace?.catalog.definitions.flatMap((definition) => {
         const state = assignmentWorkspace.states.find(
@@ -927,6 +935,21 @@ function App() {
                 return;
             }
             setSavedShelfStories(Object.fromEntries(previews));
+            const visibleStories = previews.flatMap(([, stories]) => stories);
+            setSelectedIDs((current) => {
+                const visible = current.filter((storyID) => (
+                    visibleStories.some((story) => story.id === storyID)
+                ));
+                if (visible.length > 0) {
+                    return visible;
+                }
+                return visibleStories[0] ? [visibleStories[0].id] : [];
+            });
+            setSelectedID((current) => (
+                visibleStories.some((story) => story.id === current)
+                    ? current
+                    : visibleStories[0]?.id ?? null
+            ));
         });
         return () => {
             active = false;

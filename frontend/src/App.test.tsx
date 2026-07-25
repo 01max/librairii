@@ -368,6 +368,54 @@ test('renders saved shelf preview rows and opens them from view all', async () =
         .toHaveValue('moon');
 });
 
+test('pairs the detail drawer with a story visible in saved shelf previews', async () => {
+    listShelves.mockResolvedValue(new app.ShelfListResponse({
+        shelves: [new shelves.Summary({
+            id: 7,
+            name: 'Bedtime',
+            position: 0,
+            validity: 'valid',
+            count: 1,
+        })],
+    }));
+    openShelf.mockResolvedValue(new app.ShelfEvaluationResponse({
+        evaluation: {
+            shelf: {
+                id: 7,
+                name: 'Bedtime',
+                normalizedName: 'bedtime',
+                position: 0,
+                queryVersion: 2,
+                queryPayload: '{"name":"moon"}',
+                validity: 'valid',
+            },
+            query: {name: 'moon'},
+            page: {
+                stories: [stories[1]],
+                page: 1,
+                pageSize: 6,
+                totalItems: 1,
+                totalPages: 1,
+                sort: 'imported_desc',
+            },
+        },
+    }));
+
+    render(<App/>);
+
+    const bedtimeRow = (await screen.findByRole('heading', {name: 'Bedtime'}))
+        .closest('section');
+    expect(bedtimeRow).not.toBeNull();
+    const visibleStory = await within(bedtimeRow!).findByRole('button', {
+        name: /Moonlit Workshop/,
+    });
+    await waitFor(() => expect(visibleStory).toHaveAttribute('aria-pressed', 'true'));
+    expect(screen.getByRole('complementary', {name: 'Moonlit Workshop details'}))
+        .toBeInTheDocument();
+    expect(screen.queryByRole('button', {name: 'Clockwork Forest Lunii'}))
+        .not.toBeInTheDocument();
+});
+
 test('opens a dynamic saved shelf and updates it from the current query', async () => {
     const user = userEvent.setup();
     const summary = new shelves.Summary({
