@@ -120,6 +120,17 @@ func (a *Application) DeleteShelf(
 	return MutationResponse{Success: true}
 }
 
+func (a *Application) PreviewShelves(
+	ctx context.Context,
+	shelfIDs []int64,
+) ShelfSelectionPreviewResponse {
+	preview, err := a.shelves.PreviewShelves(ctx, shelfIDs)
+	if err != nil {
+		return ShelfSelectionPreviewResponse{Error: shelfAPIError(err)}
+	}
+	return ShelfSelectionPreviewResponse{Preview: &preview}
+}
+
 func (a *Application) requireShelfMutation() *ShelfResponse {
 	if a.Status().MutationsAllowed {
 		return nil
@@ -135,6 +146,7 @@ func shelfAPIError(err error) *APIError {
 	case errors.Is(err, shelves.ErrInvalidShelfName),
 		errors.Is(err, shelves.ErrDuplicateShelfName),
 		errors.Is(err, shelves.ErrInvalidShelfOrder),
+		errors.Is(err, shelves.ErrInvalidShelfSelection),
 		errors.Is(err, shelves.ErrShelfCriteriaUnavailable),
 		errors.Is(err, shelves.ErrInvalidSavedLibraryQuery),
 		errors.Is(err, shelves.ErrUnsupportedSavedQueryVersion):

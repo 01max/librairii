@@ -161,6 +161,7 @@ type ShelfPort interface {
 	) (shelves.Shelf, error)
 	ReorderShelves(context.Context, []int64) ([]shelves.Shelf, error)
 	DeleteShelf(context.Context, int64) error
+	PreviewShelves(context.Context, []int64) (shelves.SelectionPreview, error)
 }
 
 type Dependencies struct {
@@ -260,4 +261,9 @@ type ShelfResponse struct {
 type ShelfEvaluationResponse struct {
 	Evaluation *shelves.Evaluation `json:"evaluation,omitempty"`
 	Error      *APIError           `json:"error,omitempty"`
+}
+
+type ShelfSelectionPreviewResponse struct {
+	Preview *shelves.SelectionPreview `json:"preview,omitempty"`
+	Error   *APIError                 `json:"error,omitempty"`
 }

@@ -169,6 +169,89 @@ func TestEvaluatorReevaluatesActiveOfficialMetadataThroughStoryLibraryQuery(
 	assertShelfCount(t, harness.evaluator, shelf.ID, 0)
 }
 
+func TestEvaluatorPreviewsDeduplicatedMultiShelfMembership(t *testing.T) {
+	t.Parallel()
+
+	harness := newEvaluationHarness(t)
+	createEvaluationStory(
+		t,
+		harness.catalog,
+		"123e4567-e89b-42d3-a456-426614174000",
+		"Moon forest",
+		"a",
+	)
+	createEvaluationStory(
+		t,
+		harness.catalog,
+		"223e4567-e89b-42d3-a456-426614174001",
+		"Moon train",
+		"b",
+	)
+	createEvaluationStory(
+		t,
+		harness.catalog,
+		"323e4567-e89b-42d3-a456-426614174002",
+		"Forest walk",
+		"c",
+	)
+	moon, err := harness.shelves.Create(
+		context.Background(),
+		"Moon",
+		library.StoryLibraryQuery{Name: "moon"},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	forest, err := harness.shelves.Create(
+		context.Background(),
+		"Forest",
+		library.StoryLibraryQuery{Name: "forest"},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	preview, err := harness.evaluator.PreviewSelection(
+		context.Background(),
+		[]int64{forest.ID, moon.ID},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(preview.Shelves) != 2 ||
+		preview.Shelves[0] != (shelfstore.SelectedShelfPreview{
+			ID: forest.ID, Name: "Forest", Count: 2,
+		}) ||
+		preview.Shelves[1] != (shelfstore.SelectedShelfPreview{
+			ID: moon.ID, Name: "Moon", Count: 2,
+		}) ||
+		len(preview.SourceShelfNames) != 2 ||
+		preview.SourceShelfNames[0] != "Forest" ||
+		preview.SourceShelfNames[1] != "Moon" ||
+		preview.UniqueStoryCount != 3 ||
+		preview.OverlapCount != 1 {
+		t.Fatalf("PreviewSelection() = %#v", preview)
+	}
+	if _, err := harness.evaluator.PreviewSelection(
+		context.Background(),
+		[]int64{moon.ID, moon.ID},
+	); err != shelfstore.ErrInvalidShelfSelection {
+		t.Fatalf("PreviewSelection(duplicate) error = %v", err)
+	}
+	if _, err := harness.database.Exec(
+		"UPDATE shelves SET validity_state = 'needs_attention' WHERE id = ?",
+		forest.ID,
+	); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := harness.evaluator.PreviewSelection(
+		context.Background(),
+		[]int64{forest.ID},
+	); err != shelfstore.ErrShelfNeedsAttention {
+		t.Fatalf("PreviewSelection(invalid) error = %v", err)
+	}
+}
+
 func TestEvaluatorReturnsOrderedCountsAndRequiresDependencies(t *testing.T) {
 	t.Parallel()
 

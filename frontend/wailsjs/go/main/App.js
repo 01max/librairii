@@ -70,6 +70,10 @@ export function PlanTagValueDeletion(arg1) {
   return window['go']['main']['App']['PlanTagValueDeletion'](arg1);
 }
 
+export function PreviewShelves(arg1) {
+  return window['go']['main']['App']['PreviewShelves'](arg1);
+}
+
 export function QueryStories(arg1) {
   return window['go']['main']['App']['QueryStories'](arg1);
 }

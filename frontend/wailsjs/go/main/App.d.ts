@@ -38,6 +38,8 @@ export function PlanTagDefinitionDeletion(arg1:number):Promise<app.TagDefinition
 
 export function PlanTagValueDeletion(arg1:number):Promise<app.TagValueDeletionPlanResponse>;
 
+export function PreviewShelves(arg1:Array<number>):Promise<app.ShelfSelectionPreviewResponse>;
+
 export function QueryStories(arg1:library.StoryLibraryQuery):Promise<app.LibraryPageResponse>;
 
 export function RecolorTagDefinition(arg1:number,arg2:string):Promise<app.TagDefinitionResponse>;

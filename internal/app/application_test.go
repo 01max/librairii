@@ -356,6 +356,13 @@ func (o *fakeOperations) DeleteShelf(context.Context, int64) error {
 	return o.err
 }
 
+func (o *fakeOperations) PreviewShelves(
+	context.Context,
+	[]int64,
+) (shelves.SelectionPreview, error) {
+	return shelves.SelectionPreview{}, o.err
+}
+
 func TestApplicationLifecycle(t *testing.T) {
 	t.Parallel()
 

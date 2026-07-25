@@ -8,6 +8,7 @@ import (
 )
 
 var ErrMissingLibraryQuery = errors.New("story library query is required")
+var ErrInvalidShelfSelection = errors.New("shelf selection is invalid")
 
 type storyLibrarySearcher interface {
 	Search(context.Context, library.StoryLibraryQuery) (library.Page, error)
@@ -31,6 +32,19 @@ type Summary struct {
 	Validity        Validity        `json:"validity"`
 	AttentionReason AttentionReason `json:"attentionReason,omitempty"`
 	Count           int             `json:"count"`
+}
+
+type SelectedShelfPreview struct {
+	ID    int64  `json:"id"`
+	Name  string `json:"name"`
+	Count int    `json:"count"`
+}
+
+type SelectionPreview struct {
+	Shelves          []SelectedShelfPreview `json:"shelves"`
+	SourceShelfNames []string               `json:"sourceShelfNames"`
+	UniqueStoryCount int                    `json:"uniqueStoryCount"`
+	OverlapCount     int                    `json:"overlapCount"`
 }
 
 type Evaluator struct {
@@ -141,4 +155,67 @@ func (e *Evaluator) Summaries(ctx context.Context) ([]Summary, error) {
 		})
 	}
 	return summaries, nil
+}
+
+func (e *Evaluator) PreviewSelection(
+	ctx context.Context,
+	shelfIDs []int64,
+) (SelectionPreview, error) {
+	if len(shelfIDs) == 0 {
+		return SelectionPreview{}, ErrInvalidShelfSelection
+	}
+	seenShelves := make(map[int64]struct{}, len(shelfIDs))
+	union := make(map[int64]struct{})
+	preview := SelectionPreview{
+		Shelves:          make([]SelectedShelfPreview, 0, len(shelfIDs)),
+		SourceShelfNames: make([]string, 0, len(shelfIDs)),
+	}
+	totalMemberships := 0
+	for _, shelfID := range shelfIDs {
+		if shelfID <= 0 {
+			return SelectionPreview{}, ErrInvalidShelfSelection
+		}
+		if _, duplicate := seenShelves[shelfID]; duplicate {
+			return SelectionPreview{}, ErrInvalidShelfSelection
+		}
+		seenShelves[shelfID] = struct{}{}
+
+		opened, err := e.shelves.Open(ctx, shelfID)
+		if err != nil {
+			return SelectionPreview{}, err
+		}
+		query := opened.Query.StoryLibraryQuery()
+		query.Page = 1
+		query.PageSize = library.MaxPageSize
+		query.Sort = library.SortNameAscending
+		members := make(map[int64]struct{})
+		for {
+			page, err := e.library.Search(ctx, query)
+			if err != nil {
+				return SelectionPreview{}, err
+			}
+			for _, story := range page.Stories {
+				members[story.ID] = struct{}{}
+				union[story.ID] = struct{}{}
+			}
+			if query.Page >= page.TotalPages {
+				break
+			}
+			query.Page++
+		}
+		count := len(members)
+		totalMemberships += count
+		preview.Shelves = append(preview.Shelves, SelectedShelfPreview{
+			ID:    opened.Shelf.ID,
+			Name:  opened.Shelf.Name,
+			Count: count,
+		})
+		preview.SourceShelfNames = append(
+			preview.SourceShelfNames,
+			opened.Shelf.Name,
+		)
+	}
+	preview.UniqueStoryCount = len(union)
+	preview.OverlapCount = totalMemberships - preview.UniqueStoryCount
+	return preview, nil
 }

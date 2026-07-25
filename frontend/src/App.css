@@ -238,6 +238,68 @@ select:focus-visible {
     gap: 4px;
 }
 
+.saved-entry-row {
+    display: grid;
+    grid-template-columns: 14px minmax(0, 1fr);
+    align-items: center;
+    gap: 5px;
+}
+
+.shelf-selector {
+    width: 12px;
+    height: 12px;
+    margin: 0;
+    accent-color: var(--blue);
+}
+
+.combined-shelves {
+    display: grid;
+    gap: 8px;
+    margin-top: 10px;
+    padding: 11px;
+    border: 1px solid var(--line);
+    border-radius: 9px;
+    background: white;
+    box-shadow: 0 5px 14px rgba(23, 34, 61, .05);
+}
+
+.combined-shelves-title,
+.combined-shelves li {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.combined-shelves-title b,
+.combined-shelves strong {
+    color: var(--ink);
+    font-size: 9px;
+}
+
+.combined-shelves-title span,
+.combined-shelves small,
+.combined-shelves p {
+    margin: 0;
+    color: var(--muted);
+    font-size: 8px;
+    line-height: 1.45;
+}
+
+.combined-shelves ul {
+    display: grid;
+    gap: 4px;
+    margin: 0;
+    padding: 7px 0;
+    border-block: 1px solid var(--line);
+    list-style: none;
+}
+
+.combined-shelves li {
+    color: #59647a;
+    font-size: 8px;
+}
+
 .saved-tools {
     display: flex;
     justify-content: flex-end;

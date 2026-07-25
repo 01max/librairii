@@ -18,6 +18,7 @@ import {
     OfficialMetadataStatus,
     OpenShelf,
     OperationSnapshot,
+    PreviewShelves,
     QueryStories,
     RenameShelf,
     ReorderShelves,
@@ -220,6 +221,11 @@ function App() {
     const [tagCatalog, setTagCatalog] = useState<tagging.Catalog | null>(null);
     const [savedShelves, setSavedShelves] = useState<shelves.Summary[]>([]);
     const [activeShelfID, setActiveShelfID] = useState<number | null>(null);
+    const [selectedShelfIDs, setSelectedShelfIDs] = useState<number[]>([]);
+    const [shelfSelectionPreview, setShelfSelectionPreview] =
+        useState<shelves.SelectionPreview | null>(null);
+    const [shelfSelectionBusy, setShelfSelectionBusy] = useState(false);
+    const [shelfSelectionError, setShelfSelectionError] = useState<string | null>(null);
     const [shelfDialogMode, setShelfDialogMode] = useState<ShelfDialogMode | null>(null);
     const [shelfDialogName, setShelfDialogName] = useState('');
     const [shelfDialogError, setShelfDialogError] = useState<string | null>(null);
@@ -305,7 +311,13 @@ function App() {
                 setRequestError(response.error.message);
                 return;
             }
-            setSavedShelves(response.shelves ?? []);
+            const nextShelves = response.shelves ?? [];
+            setSavedShelves(nextShelves);
+            setSelectedShelfIDs((current) => current.filter((shelfID) => (
+                nextShelves.some((shelf) => (
+                    shelf.id === shelfID && shelf.validity === 'valid'
+                ))
+            )));
         } catch {
             setRequestError('Saved shelves could not be loaded.');
         }
@@ -407,6 +419,45 @@ function App() {
             return () => window.clearTimeout(timer);
         }
     }, [applicationState, loadCollection]);
+
+    useEffect(() => {
+        if (applicationState !== 'ready' || selectedShelfIDs.length === 0) {
+            return;
+        }
+        let active = true;
+        void (async () => {
+            setShelfSelectionBusy(true);
+            setShelfSelectionError(null);
+            try {
+                const response = await PreviewShelves(selectedShelfIDs);
+                if (!active) {
+                    return;
+                }
+                if (!response.preview) {
+                    setShelfSelectionPreview(null);
+                    setShelfSelectionError(
+                        response.error?.message ??
+                        'The shelf selection could not be previewed.',
+                    );
+                    return;
+                }
+                setShelfSelectionPreview(response.preview);
+            } catch {
+                if (!active) {
+                    return;
+                }
+                setShelfSelectionPreview(null);
+                setShelfSelectionError('The shelf selection could not be previewed.');
+            } finally {
+                if (active) {
+                    setShelfSelectionBusy(false);
+                }
+            }
+        })();
+        return () => {
+            active = false;
+        };
+    }, [applicationState, savedShelves, selectedShelfIDs]);
 
     useEffect(() => {
         const unsubscribe = EventsOn('operation:changed', (value: unknown) => {
@@ -685,6 +736,12 @@ function App() {
     const updateQuery = useCallback((next: CollectionQuery) => {
         setCollectionQuery(queryHistory.push(next));
     }, [queryHistory]);
+
+    function toggleShelfSelection(shelfID: number) {
+        setSelectedShelfIDs((current) => current.includes(shelfID)
+            ? current.filter((candidate) => candidate !== shelfID)
+            : [...current, shelfID]);
+    }
 
     async function openSavedShelf(shelfID: number) {
         setShelfBusy(true);
@@ -1082,35 +1139,51 @@ function App() {
                     </button>
                     {savedShelves.map((shelf, index) => (
                         <div className="saved-entry" key={shelf.id}>
-                            <button
-                                className={`saved-picker${
-                                    activeShelfID === shelf.id ? ' active' : ''
-                                }${
-                                    shelf.validity === 'needs_attention'
-                                        ? ' needs-attention'
-                                        : ''
-                                }`}
-                                type="button"
-                                aria-label={shelf.validity === 'needs_attention'
-                                    ? `${shelf.name}, needs attention`
-                                    : `${shelf.name}, ${shelf.count} ${
-                                        shelf.count === 1 ? 'story' : 'stories'
-                                    }`}
-                                disabled={shelfBusy}
-                                onClick={() => shelf.validity === 'needs_attention'
-                                    ? setRepairShelfID(shelf.id)
-                                    : void openSavedShelf(shelf.id)}
-                            >
-                                <i
-                                    style={{
-                                        '--c': coverPalettes[index % coverPalettes.length][0],
-                                    } as CSSProperties}
+                            <div className="saved-entry-row">
+                                <input
+                                    className="shelf-selector"
+                                    type="checkbox"
+                                    aria-label={`Select ${shelf.name} for combined shelf preview`}
+                                    checked={selectedShelfIDs.includes(shelf.id)}
+                                    disabled={
+                                        shelfBusy || shelf.validity === 'needs_attention'
+                                    }
+                                    onChange={() => toggleShelfSelection(shelf.id)}
                                 />
-                                {shelf.name}
-                                <span>
-                                    {shelf.validity === 'needs_attention' ? '!' : shelf.count}
-                                </span>
-                            </button>
+                                <button
+                                    className={`saved-picker${
+                                        activeShelfID === shelf.id ? ' active' : ''
+                                    }${
+                                        shelf.validity === 'needs_attention'
+                                            ? ' needs-attention'
+                                            : ''
+                                    }`}
+                                    type="button"
+                                    aria-label={shelf.validity === 'needs_attention'
+                                        ? `${shelf.name}, needs attention`
+                                        : `${shelf.name}, ${shelf.count} ${
+                                            shelf.count === 1 ? 'story' : 'stories'
+                                        }`}
+                                    disabled={shelfBusy}
+                                    onClick={() => shelf.validity === 'needs_attention'
+                                        ? setRepairShelfID(shelf.id)
+                                        : void openSavedShelf(shelf.id)}
+                                >
+                                    <i
+                                        style={{
+                                            '--c': coverPalettes[
+                                                index % coverPalettes.length
+                                            ][0],
+                                        } as CSSProperties}
+                                    />
+                                    {shelf.name}
+                                    <span>
+                                        {shelf.validity === 'needs_attention'
+                                            ? '!'
+                                            : shelf.count}
+                                    </span>
+                                </button>
+                            </div>
                             {activeShelfID === shelf.id && (
                                 <div className="saved-tools" aria-label={`${shelf.name} actions`}>
                                     <button
@@ -1161,6 +1234,48 @@ function App() {
                         </div>
                     ))}
                 </nav>
+                {selectedShelfIDs.length > 0 && (
+                    <section className="combined-shelves" aria-label="Combined shelf preview">
+                        <div className="combined-shelves-title">
+                            <b>Combined preview</b>
+                            <span>{selectedShelfIDs.length} selected</span>
+                        </div>
+                        {shelfSelectionBusy && <p>Resolving current membership…</p>}
+                        {shelfSelectionError && (
+                            <p className="dialog-error">{shelfSelectionError}</p>
+                        )}
+                        {shelfSelectionPreview && !shelfSelectionBusy && (
+                            <>
+                                <ul>
+                                    {shelfSelectionPreview.shelves.map((shelf) => (
+                                        <li key={shelf.id}>
+                                            <span>{shelf.name}</span>
+                                            <b>{shelf.count}</b>
+                                        </li>
+                                    ))}
+                                </ul>
+                                <strong>
+                                    {shelfSelectionPreview.uniqueStoryCount}{' '}
+                                    unique {shelfSelectionPreview.uniqueStoryCount === 1
+                                        ? 'story'
+                                        : 'stories'}
+                                </strong>
+                                <p>
+                                    {shelfSelectionPreview.overlapCount === 0
+                                        ? 'No overlapping memberships.'
+                                        : `${shelfSelectionPreview.overlapCount} overlapping ${
+                                            shelfSelectionPreview.overlapCount === 1
+                                                ? 'membership'
+                                                : 'memberships'
+                                        } collapsed.`}
+                                </p>
+                                <small>
+                                    Sources: {shelfSelectionPreview.sourceShelfNames.join(', ')}
+                                </small>
+                            </>
+                        )}
+                    </section>
+                )}
                 <button
                     className="manage shelf-save"
                     type="button"

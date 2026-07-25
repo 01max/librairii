@@ -581,6 +581,17 @@ func (r *ImportRuntime) DeleteShelf(
 	return service.Delete(ctx, shelfID)
 }
 
+func (r *ImportRuntime) PreviewShelves(
+	ctx context.Context,
+	shelfIDs []int64,
+) (shelves.SelectionPreview, error) {
+	_, evaluator, err := r.currentShelves()
+	if err != nil {
+		return shelves.SelectionPreview{}, err
+	}
+	return evaluator.PreviewSelection(ctx, shelfIDs)
+}
+
 func (r *ImportRuntime) Close() error {
 	r.mu.Lock()
 	manager := r.manager

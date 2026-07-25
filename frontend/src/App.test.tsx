@@ -12,6 +12,7 @@ import {
     OfficialMetadataStatus,
     OpenShelf,
     OperationSnapshot,
+    PreviewShelves,
     QueryStories,
     RenameShelf,
     ReorderShelves,
@@ -39,6 +40,7 @@ vi.mock('../wailsjs/go/main/App', () => ({
     OfficialMetadataStatus: vi.fn(),
     OpenShelf: vi.fn(),
     OperationSnapshot: vi.fn(),
+    PreviewShelves: vi.fn(),
     QueryStories: vi.fn(),
     RenameShelf: vi.fn(),
     ReorderShelves: vi.fn(),
@@ -67,6 +69,7 @@ const listShelves = vi.mocked(ListShelves);
 const officialMetadataStatus = vi.mocked(OfficialMetadataStatus);
 const openShelf = vi.mocked(OpenShelf);
 const operationSnapshot = vi.mocked(OperationSnapshot);
+const previewShelves = vi.mocked(PreviewShelves);
 const queryStories = vi.mocked(QueryStories);
 const renameShelf = vi.mocked(RenameShelf);
 const reorderShelves = vi.mocked(ReorderShelves);
@@ -127,6 +130,7 @@ beforeEach(() => {
     officialMetadataStatus.mockReset();
     openShelf.mockReset();
     operationSnapshot.mockReset();
+    previewShelves.mockReset();
     queryStories.mockReset();
     renameShelf.mockReset();
     reorderShelves.mockReset();
@@ -161,6 +165,7 @@ beforeEach(() => {
         },
     }));
     operationSnapshot.mockResolvedValue(new app.OperationResponse({}));
+    previewShelves.mockResolvedValue(new app.ShelfSelectionPreviewResponse({}));
     queryStories.mockResolvedValue(new app.LibraryPageResponse({
         page: {
             stories,
@@ -564,6 +569,65 @@ test('blocks unsafe shelf evaluation until its query is explicitly replaced', as
     ));
     expect(await screen.findByRole('button', {name: 'Old moods, 2 stories'}))
         .toHaveClass('active');
+});
+
+test('previews a multi-shelf union with per-shelf and overlap counts', async () => {
+    const user = userEvent.setup();
+    listShelves.mockResolvedValue(new app.ShelfListResponse({
+        shelves: [
+            new shelves.Summary({
+                id: 7,
+                name: 'Moon',
+                position: 0,
+                validity: 'valid',
+                count: 2,
+            }),
+            new shelves.Summary({
+                id: 8,
+                name: 'Forest',
+                position: 1,
+                validity: 'valid',
+                count: 2,
+            }),
+        ],
+    }));
+    previewShelves.mockImplementation(async (shelfIDs) => (
+        new app.ShelfSelectionPreviewResponse({
+            preview: shelfIDs.length === 1
+                ? {
+                    shelves: [{id: 7, name: 'Moon', count: 2}],
+                    sourceShelfNames: ['Moon'],
+                    uniqueStoryCount: 2,
+                    overlapCount: 0,
+                }
+                : {
+                    shelves: [
+                        {id: 7, name: 'Moon', count: 2},
+                        {id: 8, name: 'Forest', count: 2},
+                    ],
+                    sourceShelfNames: ['Moon', 'Forest'],
+                    uniqueStoryCount: 3,
+                    overlapCount: 1,
+                },
+        })
+    ));
+
+    render(<App/>);
+    await user.click(await screen.findByRole('checkbox', {
+        name: 'Select Moon for combined shelf preview',
+    }));
+    await waitFor(() => expect(previewShelves).toHaveBeenLastCalledWith([7]));
+    await user.click(screen.getByRole('checkbox', {
+        name: 'Select Forest for combined shelf preview',
+    }));
+    await waitFor(() => expect(previewShelves).toHaveBeenLastCalledWith([7, 8]));
+
+    const preview = await screen.findByRole('region', {name: 'Combined shelf preview'});
+    expect(preview).toHaveTextContent('Moon2');
+    expect(preview).toHaveTextContent('Forest2');
+    expect(preview).toHaveTextContent('3 unique stories');
+    expect(preview).toHaveTextContent('1 overlapping membership collapsed.');
+    expect(preview).toHaveTextContent('Sources: Moon, Forest');
 });
 
 test('reloads collection results from hash back and forward navigation', async () => {

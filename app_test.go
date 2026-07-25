@@ -255,6 +255,13 @@ func (facadeOperations) DeleteShelf(context.Context, int64) error {
 	return nil
 }
 
+func (facadeOperations) PreviewShelves(
+	context.Context,
+	[]int64,
+) (shelves.SelectionPreview, error) {
+	return shelves.SelectionPreview{}, nil
+}
+
 func TestAppExposesTypedLifecycleStatus(t *testing.T) {
 	t.Parallel()
 

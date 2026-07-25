@@ -140,6 +140,12 @@ func (a *App) DeleteShelf(shelfID int64) coreapp.MutationResponse {
 	return a.core.DeleteShelf(a.runtimeContext(), shelfID)
 }
 
+func (a *App) PreviewShelves(
+	shelfIDs []int64,
+) coreapp.ShelfSelectionPreviewResponse {
+	return a.core.PreviewShelves(a.runtimeContext(), shelfIDs)
+}
+
 func (a *App) TagCatalog() coreapp.TagCatalogResponse {
 	return a.core.TagCatalog(a.runtimeContext())
 }
