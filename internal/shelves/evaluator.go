@@ -112,6 +112,15 @@ func (e *Evaluator) Summaries(ctx context.Context) ([]Summary, error) {
 	}
 	summaries := make([]Summary, 0, len(shelves))
 	for _, shelf := range shelves {
+		if shelf.Validity != ValidityValid {
+			summaries = append(summaries, Summary{
+				ID:       shelf.ID,
+				Name:     shelf.Name,
+				Position: shelf.Position,
+				Validity: shelf.Validity,
+			})
+			continue
+		}
 		count, err := e.Count(ctx, shelf.ID)
 		if err != nil {
 			return nil, err

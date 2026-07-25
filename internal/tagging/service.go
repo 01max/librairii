@@ -39,6 +39,7 @@ type DefinitionDeletionPlan struct {
 	ValueCount         int        `json:"valueCount"`
 	AssignmentCount    int        `json:"assignmentCount"`
 	AffectedShelfCount int        `json:"affectedShelfCount"`
+	AffectedShelfIDs   []int64    `json:"affectedShelfIds"`
 }
 
 type Service struct {
@@ -244,6 +245,15 @@ func (s *Service) PlanDefinitionDeletion(
 	).Scan(&plan.ValueCount, &plan.AssignmentCount); err != nil {
 		return DefinitionDeletionPlan{}, fmt.Errorf("plan tag definition deletion: %w", err)
 	}
+	plan.AffectedShelfIDs, err = shelvesReferencingDefinition(
+		ctx,
+		s.database,
+		definitionID,
+	)
+	if err != nil {
+		return DefinitionDeletionPlan{}, err
+	}
+	plan.AffectedShelfCount = len(plan.AffectedShelfIDs)
 	return plan, nil
 }
 
@@ -276,10 +286,28 @@ func (s *Service) DeleteDefinition(
 	).Scan(&valueCount, &assignmentCount); err != nil {
 		return fmt.Errorf("validate tag definition deletion: %w", err)
 	}
+	affectedShelfIDs, err := shelvesReferencingDefinition(
+		ctx,
+		transaction,
+		definition.ID,
+	)
+	if err != nil {
+		return err
+	}
 	if definition != plan.Definition ||
 		valueCount != plan.ValueCount ||
-		assignmentCount != plan.AssignmentCount {
+		assignmentCount != plan.AssignmentCount ||
+		len(affectedShelfIDs) != plan.AffectedShelfCount ||
+		!sameShelfReferenceIDs(affectedShelfIDs, plan.AffectedShelfIDs) {
 		return ErrDeletePlanStale
+	}
+	if err := markShelvesNeedingAttention(
+		ctx,
+		transaction,
+		affectedShelfIDs,
+		ErrDeletePlanStale,
+	); err != nil {
+		return err
 	}
 	result, err := transaction.ExecContext(
 		ctx,

@@ -1,4 +1,4 @@
-package shelves
+package shelves_test
 
 import (
 	"context"
@@ -12,6 +12,7 @@ import (
 	"github.com/01max/librairii/internal/database"
 	"github.com/01max/librairii/internal/library"
 	"github.com/01max/librairii/internal/metadata"
+	shelfstore "github.com/01max/librairii/internal/shelves"
 	"github.com/01max/librairii/internal/tagging"
 )
 
@@ -201,14 +202,36 @@ func TestEvaluatorReturnsOrderedCountsAndRequiresDependencies(t *testing.T) {
 		t.Fatal(err)
 	}
 	if len(counts) != 2 ||
-		counts[0] != (ShelfCount{ShelfID: first.ID, Count: 1}) ||
-		counts[1] != (ShelfCount{ShelfID: second.ID, Count: 0}) {
+		counts[0] != (shelfstore.ShelfCount{ShelfID: first.ID, Count: 1}) ||
+		counts[1] != (shelfstore.ShelfCount{ShelfID: second.ID, Count: 0}) {
 		t.Fatalf("Counts() = %#v", counts)
 	}
-	if _, err := NewEvaluator(nil, harness.library); err != ErrMissingDatabase {
+	if _, err := harness.database.Exec(
+		"UPDATE shelves SET validity_state = 'needs_attention' WHERE id = ?",
+		second.ID,
+	); err != nil {
+		t.Fatal(err)
+	}
+	summaries, err := harness.evaluator.Summaries(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(summaries) != 2 ||
+		summaries[0].Count != 1 ||
+		summaries[1].Validity != shelfstore.ValidityNeedsAttention ||
+		summaries[1].Count != 0 {
+		t.Fatalf("Summaries() = %#v", summaries)
+	}
+	if _, err := shelfstore.NewEvaluator(
+		nil,
+		harness.library,
+	); err != shelfstore.ErrMissingDatabase {
 		t.Fatalf("NewEvaluator(nil service) error = %v", err)
 	}
-	if _, err := NewEvaluator(harness.shelves, nil); err != ErrMissingLibraryQuery {
+	if _, err := shelfstore.NewEvaluator(
+		harness.shelves,
+		nil,
+	); err != shelfstore.ErrMissingLibraryQuery {
 		t.Fatalf("NewEvaluator(nil query) error = %v", err)
 	}
 }
@@ -218,8 +241,8 @@ type evaluationHarness struct {
 	catalog   *catalog.Repository
 	metadata  *metadata.Repository
 	library   *library.Query
-	shelves   *Service
-	evaluator *Evaluator
+	shelves   *shelfstore.Service
+	evaluator *shelfstore.Evaluator
 }
 
 func newEvaluationHarness(t *testing.T) *evaluationHarness {
@@ -245,12 +268,12 @@ func newEvaluationHarness(t *testing.T) *evaluationHarness {
 	if err != nil {
 		t.Fatal(err)
 	}
-	shelfService, err := NewService(opened.SQL())
+	shelfService, err := shelfstore.NewService(opened.SQL())
 	if err != nil {
 		t.Fatal(err)
 	}
 	libraryQuery := library.NewQuery(opened.SQL(), provider)
-	evaluator, err := NewEvaluator(shelfService, libraryQuery)
+	evaluator, err := shelfstore.NewEvaluator(shelfService, libraryQuery)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -345,7 +368,7 @@ func activateEvaluationMetadata(
 
 func assertShelfCount(
 	t *testing.T,
-	evaluator *Evaluator,
+	evaluator *shelfstore.Evaluator,
 	shelfID int64,
 	expected int,
 ) {

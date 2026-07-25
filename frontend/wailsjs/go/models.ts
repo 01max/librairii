@@ -1435,6 +1435,7 @@ export namespace tagging {
 	    valueCount: number;
 	    assignmentCount: number;
 	    affectedShelfCount: number;
+	    affectedShelfIds: number[];
 	
 	    static createFrom(source: any = {}) {
 	        return new DefinitionDeletionPlan(source);
@@ -1446,6 +1447,7 @@ export namespace tagging {
 	        this.valueCount = source["valueCount"];
 	        this.assignmentCount = source["assignmentCount"];
 	        this.affectedShelfCount = source["affectedShelfCount"];
+	        this.affectedShelfIds = source["affectedShelfIds"];
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
@@ -1473,6 +1475,7 @@ export namespace tagging {
 	    value: Value;
 	    assignmentCount: number;
 	    affectedShelfCount: number;
+	    affectedShelfIds: number[];
 	
 	    static createFrom(source: any = {}) {
 	        return new ValueDeletionPlan(source);
@@ -1483,6 +1486,7 @@ export namespace tagging {
 	        this.value = this.convertValues(source["value"], Value);
 	        this.assignmentCount = source["assignmentCount"];
 	        this.affectedShelfCount = source["affectedShelfCount"];
+	        this.affectedShelfIds = source["affectedShelfIds"];
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
