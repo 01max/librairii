@@ -1,11 +1,8 @@
 package shelves
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
-	"strings"
 
 	"github.com/01max/librairii/internal/library"
 	"github.com/01max/librairii/internal/shelfquery"
@@ -41,7 +38,7 @@ func EncodeSavedLibraryQuery(
 	if err != nil {
 		return SerializedQuery{}, err
 	}
-	payload, err := json.Marshal(saved)
+	payload, err := shelfquery.EncodePayload(savedLibraryQueryPayload(saved))
 	if err != nil {
 		return SerializedQuery{}, fmt.Errorf(
 			"%w: encode canonical query: %v",
@@ -51,7 +48,7 @@ func EncodeSavedLibraryQuery(
 	}
 	return SerializedQuery{
 		Version: CurrentSavedLibraryQueryVersion,
-		Payload: string(payload),
+		Payload: payload,
 	}, nil
 }
 
@@ -59,22 +56,18 @@ func DecodeSavedLibraryQuery(
 	version int,
 	payload string,
 ) (SavedLibraryQuery, error) {
-	var query library.StoryLibraryQuery
-	switch version {
-	case 1:
-		if err := decodeSavedPayload(payload, &query); err != nil {
-			return SavedLibraryQuery{}, err
-		}
-	case CurrentSavedLibraryQueryVersion:
-		var saved SavedLibraryQuery
-		if err := decodeSavedPayload(payload, &saved); err != nil {
-			return SavedLibraryQuery{}, err
-		}
-		query = saved.StoryLibraryQuery()
-	default:
+	decoded, err := shelfquery.DecodePayload(version, payload)
+	if errors.Is(err, shelfquery.ErrUnsupportedVersion) {
 		return SavedLibraryQuery{}, ErrUnsupportedSavedQueryVersion
 	}
-	return canonicalSavedLibraryQuery(query)
+	if err != nil {
+		return SavedLibraryQuery{}, fmt.Errorf(
+			"%w: %v",
+			ErrInvalidSavedLibraryQuery,
+			err,
+		)
+	}
+	return canonicalSavedLibraryQuery(storyLibraryQueryFromPayload(decoded))
 }
 
 func MigrateSavedLibraryQuery(
@@ -132,21 +125,81 @@ func cloneChoiceFilters(filters []library.ChoiceFilter) []library.ChoiceFilter {
 	return cloned
 }
 
-func decodeSavedPayload(payload string, target any) error {
-	if len(payload) < 2 || len(payload) > maxSavedQueryPayloadBytes ||
-		strings.TrimSpace(payload) == "null" {
-		return ErrInvalidSavedLibraryQuery
+func savedLibraryQueryPayload(query SavedLibraryQuery) shelfquery.Payload {
+	booleanFilters := make(
+		[]shelfquery.BooleanReference,
+		0,
+		len(query.BooleanFilters),
+	)
+	for _, filter := range query.BooleanFilters {
+		booleanFilters = append(booleanFilters, shelfquery.BooleanReference{
+			DefinitionID: filter.DefinitionID,
+			State:        string(filter.State),
+		})
 	}
-	if err := shelfquery.ValidateUniqueObjectKeys(payload); err != nil {
-		return fmt.Errorf("%w: %v", ErrInvalidSavedLibraryQuery, err)
+	choiceFilters := make(
+		[]shelfquery.ChoiceReference,
+		0,
+		len(query.ChoiceFilters),
+	)
+	for _, filter := range query.ChoiceFilters {
+		choiceFilters = append(choiceFilters, shelfquery.ChoiceReference{
+			DefinitionID: filter.DefinitionID,
+			ValueIDs:     append([]int64(nil), filter.ValueIDs...),
+		})
 	}
-	decoder := json.NewDecoder(strings.NewReader(payload))
-	decoder.DisallowUnknownFields()
-	if err := decoder.Decode(target); err != nil {
-		return fmt.Errorf("%w: decode payload: %v", ErrInvalidSavedLibraryQuery, err)
+	compatibilities := make([]string, 0, len(query.Compatibilities))
+	for _, compatibility := range query.Compatibilities {
+		compatibilities = append(compatibilities, string(compatibility))
 	}
-	if err := decoder.Decode(&struct{}{}); !errors.Is(err, io.EOF) {
-		return ErrInvalidSavedLibraryQuery
+	return shelfquery.Payload{
+		Name:            query.Name,
+		Languages:       append([]string(nil), query.Languages...),
+		Compatibilities: compatibilities,
+		BooleanFilters:  booleanFilters,
+		ChoiceFilters:   choiceFilters,
 	}
-	return nil
+}
+
+func storyLibraryQueryFromPayload(payload shelfquery.Payload) library.StoryLibraryQuery {
+	compatibilities := make(
+		[]library.Compatibility,
+		0,
+		len(payload.Compatibilities),
+	)
+	for _, compatibility := range payload.Compatibilities {
+		compatibilities = append(
+			compatibilities,
+			library.Compatibility(compatibility),
+		)
+	}
+	booleanFilters := make(
+		[]library.BooleanFilter,
+		0,
+		len(payload.BooleanFilters),
+	)
+	for _, filter := range payload.BooleanFilters {
+		booleanFilters = append(booleanFilters, library.BooleanFilter{
+			DefinitionID: filter.DefinitionID,
+			State:        library.BooleanFilterState(filter.State),
+		})
+	}
+	choiceFilters := make(
+		[]library.ChoiceFilter,
+		0,
+		len(payload.ChoiceFilters),
+	)
+	for _, filter := range payload.ChoiceFilters {
+		choiceFilters = append(choiceFilters, library.ChoiceFilter{
+			DefinitionID: filter.DefinitionID,
+			ValueIDs:     append([]int64(nil), filter.ValueIDs...),
+		})
+	}
+	return library.StoryLibraryQuery{
+		Name:            payload.Name,
+		Languages:       append([]string(nil), payload.Languages...),
+		Compatibilities: compatibilities,
+		BooleanFilters:  booleanFilters,
+		ChoiceFilters:   choiceFilters,
+	}
 }

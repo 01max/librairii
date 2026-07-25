@@ -38,15 +38,67 @@ func TestDecodeReferencesSupportsCurrentAndLegacyQueries(t *testing.T) {
 			DefinitionID: 5,
 			ValueIDs:     []int64{3, 7},
 		}}) ||
-		!reflect.DeepEqual(legacy.BooleanFilters, []BooleanReference{{
-			DefinitionID: 8,
-			State:        "ignored",
-		}}) ||
+		len(legacy.BooleanFilters) != 0 ||
 		!reflect.DeepEqual(legacy.ChoiceFilters, []ChoiceReference{{
 			DefinitionID: 6,
 			ValueIDs:     []int64{4},
 		}}) {
 		t.Fatalf("current = %#v, legacy = %#v", current, legacy)
+	}
+}
+
+func TestPayloadCodecOwnsCurrentAndLegacyWireSchemas(t *testing.T) {
+	t.Parallel()
+
+	const current = `{"name":"moon","languages":["en-GB"],` +
+		`"compatibilities":["compatible"],` +
+		`"booleanFilters":[{"definitionId":2,"state":"true"}],` +
+		`"choiceFilters":[{"definitionId":5,"valueIds":[3,7]}]}`
+	decoded, err := DecodePayload(CurrentVersion, current)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if decoded.Name != "moon" ||
+		!reflect.DeepEqual(decoded.Languages, []string{"en-GB"}) ||
+		!reflect.DeepEqual(decoded.Compatibilities, []string{"compatible"}) {
+		t.Fatalf("DecodePayload(current) = %#v", decoded)
+	}
+	encoded, err := EncodePayload(decoded)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if encoded != current {
+		t.Fatalf("EncodePayload() = %q, want %q", encoded, current)
+	}
+
+	legacy, err := DecodePayload(1, `{
+		"name":"forest",
+		"languages":["fr-FR"],
+		"page":7,
+		"pageSize":12,
+		"sort":"imported_desc"
+	}`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if legacy.Name != "forest" ||
+		!reflect.DeepEqual(legacy.Languages, []string{"fr-FR"}) {
+		t.Fatalf("DecodePayload(legacy) = %#v", legacy)
+	}
+
+	references, err := DecodeReferences(CurrentVersion, `{
+		"booleanFilters":[{"definitionId":6,"state":"ignored"}],
+		"choiceFilters":[{"definitionId":6,"valueIds":[4]}]
+	}`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(references.BooleanFilters) != 0 ||
+		!reflect.DeepEqual(references.ChoiceFilters, []ChoiceReference{{
+			DefinitionID: 6,
+			ValueIDs:     []int64{4},
+		}}) {
+		t.Fatalf("DecodeReferences(ignored) = %#v", references)
 	}
 }
 
