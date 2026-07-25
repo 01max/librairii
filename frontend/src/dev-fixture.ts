@@ -255,6 +255,8 @@ export function installCollectionFixture() {
                 recoveryAvailable: false,
             },
         }),
+        PackagedAcceptanceMode: async () => false,
+        RecordPackagedAcceptance: async () => ({success: false}),
         RecoverStorage: async () => ({success: false}),
         ListShelves: async () => ({
             shelves: fixture === 'parity'

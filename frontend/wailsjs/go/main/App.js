@@ -66,6 +66,10 @@ export function OperationSnapshot(arg1) {
   return window['go']['main']['App']['OperationSnapshot'](arg1);
 }
 
+export function PackagedAcceptanceMode() {
+  return window['go']['main']['App']['PackagedAcceptanceMode']();
+}
+
 export function PlanTagDefinitionDeletion(arg1) {
   return window['go']['main']['App']['PlanTagDefinitionDeletion'](arg1);
 }
@@ -82,12 +86,16 @@ export function QueryStories(arg1) {
   return window['go']['main']['App']['QueryStories'](arg1);
 }
 
-export function RecoverStorage() {
-  return window['go']['main']['App']['RecoverStorage']();
-}
-
 export function RecolorTagDefinition(arg1, arg2) {
   return window['go']['main']['App']['RecolorTagDefinition'](arg1, arg2);
+}
+
+export function RecordPackagedAcceptance(arg1) {
+  return window['go']['main']['App']['RecordPackagedAcceptance'](arg1);
+}
+
+export function RecoverStorage() {
+  return window['go']['main']['App']['RecoverStorage']();
 }
 
 export function RefreshOfficialMetadata() {

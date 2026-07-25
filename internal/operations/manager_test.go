@@ -75,6 +75,56 @@ func TestManagerBoundsConcurrentImportsAndPersistsCompletion(t *testing.T) {
 	}
 }
 
+func TestManagerWorkerEventsRetainLifecycleContext(t *testing.T) {
+	t.Parallel()
+
+	repository, _ := newOperationRepository(t)
+	events := newEventRecorder()
+	imports := &trackingImportService{}
+	manager, err := NewManager(Dependencies{
+		Repository: repository,
+		Imports:    imports,
+		Events:     events,
+		Clock: &testClock{
+			now: time.Date(2026, time.July, 25, 10, 0, 0, 0, time.UTC),
+		},
+		StagingCleaner: fakeCleaner{},
+		Workers:        1,
+		RecoveryDelay:  5 * time.Millisecond,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	type lifecycleContextKey struct{}
+	lifecycleContext := context.WithValue(
+		context.Background(),
+		lifecycleContextKey{},
+		"wails-runtime",
+	)
+	if err := manager.Start(lifecycleContext); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		if err := manager.Close(); err != nil {
+			t.Error(err)
+		}
+	})
+
+	created, err := manager.StartImport(
+		context.Background(),
+		makeSourcePaths(t, 1),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	events.waitFor(t, created.ID, StatusRunning)
+	eventContext := events.contextFor(created.ID, StatusRunning)
+	if eventContext == nil ||
+		eventContext.Value(lifecycleContextKey{}) != "wails-runtime" {
+		t.Fatal("worker event lost the application lifecycle context")
+	}
+}
+
 func TestManagerPersistsStableMixedOutcomeCodes(t *testing.T) {
 	t.Parallel()
 
@@ -825,21 +875,42 @@ func (s *trackingImportService) maximum() int {
 }
 
 type eventRecorder struct {
-	events chan Snapshot
+	events   chan Snapshot
+	mu       sync.Mutex
+	contexts map[string]context.Context
 }
 
 func newEventRecorder() *eventRecorder {
-	return &eventRecorder{events: make(chan Snapshot, 256)}
+	return &eventRecorder{
+		events:   make(chan Snapshot, 256),
+		contexts: make(map[string]context.Context),
+	}
 }
 
-func (r *eventRecorder) Emit(_ context.Context, name string, payload any) {
+func (r *eventRecorder) Emit(ctx context.Context, name string, payload any) {
 	if name != EventChanged {
 		return
 	}
 	snapshot, ok := payload.(Snapshot)
 	if ok {
+		r.mu.Lock()
+		r.contexts[eventContextKey(snapshot.ID, snapshot.Status)] = ctx
+		r.mu.Unlock()
 		r.events <- snapshot
 	}
+}
+
+func (r *eventRecorder) contextFor(
+	operationID string,
+	status Status,
+) context.Context {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return r.contexts[eventContextKey(operationID, status)]
+}
+
+func eventContextKey(operationID string, status Status) string {
+	return operationID + ":" + string(status)
 }
 
 func (r *eventRecorder) waitTerminal(t *testing.T, operationID string) Snapshot {

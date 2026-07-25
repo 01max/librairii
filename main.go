@@ -1,9 +1,11 @@
 package main
 
 import (
+	"context"
 	"embed"
 	"log"
 	"os"
+	"time"
 
 	coreapp "github.com/01max/librairii/internal/app"
 	"github.com/01max/librairii/internal/artwork"
@@ -18,6 +20,14 @@ var assets embed.FS
 
 func main() {
 	readiness := platform.NewStorageReadiness(os.Getenv("LIBRAIRII_DATA_ROOT"))
+	acceptance, err := newPackagedAcceptanceFromEnvironment()
+	if err != nil {
+		log.Fatal(err)
+	}
+	dialogs := coreapp.DialogPort(platform.NewRuntimeDialogs())
+	if acceptance.enabled {
+		dialogs = acceptance
+	}
 	catalogClient, err := lunii.NewCatalogClient(lunii.ProductionConfig())
 	if err != nil {
 		log.Fatal(err)
@@ -40,7 +50,7 @@ func main() {
 	}
 	core, err := coreapp.New(coreapp.Dependencies{
 		Clock:       clock,
-		Dialogs:     platform.NewRuntimeDialogs(),
+		Dialogs:     dialogs,
 		Events:      events,
 		Readiness:   readiness,
 		Operations:  importRuntime,
@@ -55,6 +65,22 @@ func main() {
 		log.Fatal(err)
 	}
 	appOptions := make([]AppOption, 0, 2)
+	if acceptance.enabled {
+		appOptions = append(appOptions, WithPackagedAcceptance(
+			acceptance.record,
+			func(ctx context.Context) {
+				go func() {
+					timer := time.NewTimer(100 * time.Millisecond)
+					defer timer.Stop()
+					select {
+					case <-ctx.Done():
+					case <-timer.C:
+						runtime.Quit(ctx)
+					}
+				}()
+			},
+		))
+	}
 	if os.Getenv("LIBRAIRII_ACCEPTANCE_LOG") == "1" {
 		appOptions = append(appOptions, WithFrontendRendered(func() {
 			log.Print(frontendRenderedEvent)

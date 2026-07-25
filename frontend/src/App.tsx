@@ -65,6 +65,7 @@ import {
 } from './metadata-state';
 import {useModalFocus} from './modal-focus';
 import {describeExport} from './export-state';
+import {runPackagedAcceptance} from './packaged-acceptance';
 
 const coverPalettes = [
     ['#31559f', '#f7c85b', '#e06a53'],
@@ -784,6 +785,12 @@ function App() {
             return () => window.clearTimeout(timer);
         }
     }, [applicationState, loadCollection]);
+
+    useEffect(() => {
+        if (applicationState === 'ready') {
+            void runPackagedAcceptance();
+        }
+    }, [applicationState]);
 
     useEffect(() => {
         if (applicationState !== 'ready' || selectedShelfIDs.length === 0) {

@@ -12,8 +12,10 @@ import {
     OfficialMetadataStatus,
     OpenShelf,
     OperationSnapshot,
+    PackagedAcceptanceMode,
     PreviewShelves,
     QueryStories,
+    RecordPackagedAcceptance,
     RecoverStorage,
     RevealExportDestination,
     RenameShelf,
@@ -48,8 +50,10 @@ vi.mock('../wailsjs/go/main/App', () => ({
     OfficialMetadataStatus: vi.fn(),
     OpenShelf: vi.fn(),
     OperationSnapshot: vi.fn(),
+    PackagedAcceptanceMode: vi.fn(),
     PreviewShelves: vi.fn(),
     QueryStories: vi.fn(),
+    RecordPackagedAcceptance: vi.fn(),
     RecoverStorage: vi.fn(),
     RevealExportDestination: vi.fn(),
     RenameShelf: vi.fn(),
@@ -81,8 +85,10 @@ const listShelves = vi.mocked(ListShelves);
 const officialMetadataStatus = vi.mocked(OfficialMetadataStatus);
 const openShelf = vi.mocked(OpenShelf);
 const operationSnapshot = vi.mocked(OperationSnapshot);
+const packagedAcceptanceMode = vi.mocked(PackagedAcceptanceMode);
 const previewShelves = vi.mocked(PreviewShelves);
 const queryStories = vi.mocked(QueryStories);
+const recordPackagedAcceptance = vi.mocked(RecordPackagedAcceptance);
 const recoverStorage = vi.mocked(RecoverStorage);
 const revealExportDestination = vi.mocked(RevealExportDestination);
 const renameShelf = vi.mocked(RenameShelf);
@@ -146,8 +152,10 @@ beforeEach(() => {
     officialMetadataStatus.mockReset();
     openShelf.mockReset();
     operationSnapshot.mockReset();
+    packagedAcceptanceMode.mockReset();
     previewShelves.mockReset();
     queryStories.mockReset();
+    recordPackagedAcceptance.mockReset();
     recoverStorage.mockReset();
     revealExportDestination.mockReset();
     renameShelf.mockReset();
@@ -165,6 +173,10 @@ beforeEach(() => {
     eventsOn.mockReset();
     operationChanged = undefined;
 
+    packagedAcceptanceMode.mockResolvedValue(false);
+    recordPackagedAcceptance.mockResolvedValue(new app.MutationResponse({
+        success: true,
+    }));
     applicationStatus.mockResolvedValue(new app.StatusResponse({
         status: {
             state: 'ready',

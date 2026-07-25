@@ -26,10 +26,19 @@ acceptance_root="$(mktemp -d /private/tmp/librairii-packaged-acceptance.XXXXXX)"
 mount_point="$acceptance_root/mount"
 install_root="$acceptance_root/Applications"
 data_root="$acceptance_root/application-data"
+headless_root="$acceptance_root/headless-data"
+export_destination="$acceptance_root/export"
+acceptance_checkpoints="$acceptance_root/checkpoints.log"
+acceptance_source="$project_root/internal/inspection/testfixture/testdata/generic.7z"
 installed_application="$install_root/Librairii.app"
 mounted=0
+application_pid=""
 
 cleanup() {
+    if [ -n "$application_pid" ]; then
+        kill -TERM "$application_pid" 2>/dev/null || true
+        wait "$application_pid" 2>/dev/null || true
+    fi
     if [ "$mounted" -eq 1 ]; then
         /usr/bin/hdiutil detach "$mount_point" -quiet || true
     fi
@@ -41,7 +50,12 @@ cleanup() {
 }
 trap cleanup EXIT HUP INT TERM
 
-mkdir -p "$mount_point" "$install_root" "$data_root"
+mkdir -p \
+    "$mount_point" \
+    "$install_root" \
+    "$data_root" \
+    "$headless_root" \
+    "$export_destination"
 /usr/bin/hdiutil attach \
     "$artifact" \
     -mountpoint "$mount_point" \
@@ -52,20 +66,62 @@ mounted=1
 /usr/bin/ditto "$mount_point/Librairii.app" "$installed_application"
 /usr/bin/codesign --verify --deep --strict "$installed_application"
 
-GOCACHE="${GOCACHE:-/private/tmp/librairii-go-cache}" \
-    go run ./cmd/release-smoke -root "$data_root"
-GOCACHE="${GOCACHE:-/private/tmp/librairii-go-cache}" \
-    go run ./cmd/foundation-smoke \
-        -root "$data_root" \
-        -expect-stories 1 \
-        -expect-shelves 3
-
+application_binary="$installed_application/Contents/MacOS/Librairii"
+clean_path="/usr/bin:/bin:/usr/sbin:/sbin"
 event_log="$data_root/logs/events.jsonl"
+acceptance_launch_log="$acceptance_root/acceptance-launch.log"
+env -i \
+    PATH="$clean_path" \
+    LIBRAIRII_DATA_ROOT="$data_root" \
+    LIBRAIRII_PACKAGED_ACCEPTANCE=1 \
+    LIBRAIRII_ACCEPTANCE_SOURCE="$acceptance_source" \
+    LIBRAIRII_ACCEPTANCE_DESTINATION="$export_destination" \
+    LIBRAIRII_ACCEPTANCE_CHECKPOINTS="$acceptance_checkpoints" \
+    "$application_binary" > "$acceptance_launch_log" 2>&1 &
+application_pid=$!
+(
+    sleep 30
+    kill -TERM "$application_pid" 2>/dev/null || true
+) &
+watchdog_pid=$!
+if wait "$application_pid"; then
+    acceptance_status=0
+else
+    acceptance_status=$?
+fi
+application_pid=""
+kill -TERM "$watchdog_pid" 2>/dev/null || true
+wait "$watchdog_pid" 2>/dev/null || true
+if [ "$acceptance_status" -ne 0 ]; then
+    printf 'packaged Wails acceptance scenario exited with %s\n' \
+        "$acceptance_status" >&2
+    cat "$acceptance_launch_log" >&2
+    exit 1
+fi
+
+expected_checkpoints="$acceptance_root/expected-checkpoints.log"
+printf '%s\n' \
+    scenario_started \
+    import_queued \
+    import_succeeded \
+    collection_loaded \
+    export_prepared \
+    export_queued \
+    export_succeeded \
+    reveal_succeeded \
+    complete > "$expected_checkpoints"
+if ! cmp -s "$expected_checkpoints" "$acceptance_checkpoints"; then
+    printf 'packaged Wails bindings did not complete the acceptance scenario\n' >&2
+    diff -u "$expected_checkpoints" "$acceptance_checkpoints" >&2 || true
+    cat "$acceptance_launch_log" >&2
+    exit 1
+fi
+
 for state in \
     import:queued \
     import:running \
     import:succeeded \
-    metadata_sync:succeeded \
+    export:queued \
     export:running \
     export:succeeded
 do
@@ -74,9 +130,25 @@ do
         exit 1
     fi
 done
+if [ "$(find "$export_destination" -type f | wc -l | tr -d ' ')" -ne 1 ]; then
+    printf 'packaged export did not publish exactly one archive\n' >&2
+    exit 1
+fi
 
-application_binary="$installed_application/Contents/MacOS/Librairii"
-clean_path="/usr/bin:/bin:/usr/sbin:/sbin"
+GOCACHE="${GOCACHE:-/private/tmp/librairii-go-cache}" \
+    go run ./cmd/foundation-smoke \
+        -root "$data_root" \
+        -expect-stories 1 \
+        -expect-shelves 0
+
+GOCACHE="${GOCACHE:-/private/tmp/librairii-go-cache}" \
+    go run ./cmd/release-smoke -root "$headless_root"
+GOCACHE="${GOCACHE:-/private/tmp/librairii-go-cache}" \
+    go run ./cmd/foundation-smoke \
+        -root "$headless_root" \
+        -expect-stories 1 \
+        -expect-shelves 3
+
 launch_number=0
 launch_packaged_application() {
     launch_number=$((launch_number + 1))
@@ -116,7 +188,7 @@ GOCACHE="${GOCACHE:-/private/tmp/librairii-go-cache}" \
     go run ./cmd/foundation-smoke \
         -root "$data_root" \
         -expect-stories 1 \
-        -expect-shelves 3
+        -expect-shelves 0
 
 GOCACHE="${GOCACHE:-/private/tmp/librairii-go-cache}" \
     go test ./internal/platform \

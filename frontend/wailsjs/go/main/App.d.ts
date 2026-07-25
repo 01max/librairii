@@ -37,6 +37,8 @@ export function OpenShelf(arg1:number,arg2:library.ListRequest):Promise<app.Shel
 
 export function OperationSnapshot(arg1:string):Promise<app.OperationResponse>;
 
+export function PackagedAcceptanceMode():Promise<boolean>;
+
 export function PlanTagDefinitionDeletion(arg1:number):Promise<app.TagDefinitionDeletionPlanResponse>;
 
 export function PlanTagValueDeletion(arg1:number):Promise<app.TagValueDeletionPlanResponse>;
@@ -45,9 +47,11 @@ export function PreviewShelves(arg1:Array<number>):Promise<app.ShelfSelectionPre
 
 export function QueryStories(arg1:library.StoryLibraryQuery):Promise<app.LibraryPageResponse>;
 
-export function RecoverStorage():Promise<app.MutationResponse>;
-
 export function RecolorTagDefinition(arg1:number,arg2:string):Promise<app.TagDefinitionResponse>;
+
+export function RecordPackagedAcceptance(arg1:string):Promise<app.MutationResponse>;
+
+export function RecoverStorage():Promise<app.MutationResponse>;
 
 export function RefreshOfficialMetadata():Promise<app.OperationResponse>;
 

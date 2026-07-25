@@ -15,11 +15,13 @@ const frontendRenderedEvent = "frontend:rendered"
 // App is the narrow Wails binding facade. Domain behaviour stays in internal
 // application services and only stable DTOs cross this boundary.
 type App struct {
-	core             *coreapp.Application
-	quit             func(context.Context)
-	frontendRendered func()
-	mu               sync.RWMutex
-	ctx              context.Context
+	core                       *coreapp.Application
+	quit                       func(context.Context)
+	frontendRendered           func()
+	packagedAcceptance         func(string) error
+	packagedAcceptanceFinished func(context.Context)
+	mu                         sync.RWMutex
+	ctx                        context.Context
 }
 
 type AppOption func(*App)
@@ -33,6 +35,16 @@ func WithQuitAfterDOMReady(quit func(context.Context)) AppOption {
 func WithFrontendRendered(callback func()) AppOption {
 	return func(app *App) {
 		app.frontendRendered = callback
+	}
+}
+
+func WithPackagedAcceptance(
+	record func(string) error,
+	finished func(context.Context),
+) AppOption {
+	return func(app *App) {
+		app.packagedAcceptance = record
+		app.packagedAcceptanceFinished = finished
 	}
 }
 
@@ -77,6 +89,35 @@ func (a *App) FrontendRendered() {
 	if a.frontendRendered != nil {
 		a.frontendRendered()
 	}
+}
+
+func (a *App) PackagedAcceptanceMode() bool {
+	return a.packagedAcceptance != nil
+}
+
+func (a *App) RecordPackagedAcceptance(checkpoint string) coreapp.MutationResponse {
+	if a.packagedAcceptance == nil {
+		return coreapp.MutationResponse{
+			Error: coreapp.NewAPIError(
+				coreapp.ErrorNotReady,
+				"Packaged acceptance is not enabled.",
+			),
+		}
+	}
+	if err := a.packagedAcceptance(checkpoint); err != nil {
+		return coreapp.MutationResponse{
+			Error: coreapp.NewAPIError(
+				coreapp.ErrorInvalidInput,
+				"Packaged acceptance rejected the checkpoint.",
+			),
+		}
+	}
+	if (checkpoint == acceptanceCheckpointComplete ||
+		checkpoint == acceptanceCheckpointFailed) &&
+		a.packagedAcceptanceFinished != nil {
+		a.packagedAcceptanceFinished(a.runtimeContext())
+	}
+	return coreapp.MutationResponse{Success: true}
 }
 
 func (a *App) SelectAndExportDiagnostics() coreapp.DiagnosticExportResponse {

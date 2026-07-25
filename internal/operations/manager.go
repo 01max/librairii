@@ -214,7 +214,10 @@ func (m *Manager) Start(ctx context.Context) error {
 	if m.started {
 		return nil
 	}
-	m.ctx, m.cancel = context.WithCancel(context.Background())
+	// Worker events must retain the Wails lifecycle context stored by the
+	// composition root. A background context loses Wails' runtime values and
+	// makes EventsEmit terminate the packaged application.
+	m.ctx, m.cancel = context.WithCancel(ctx)
 	m.jobs = make(chan operationJob, m.deps.Workers*2)
 	m.started = true
 	for range m.deps.Workers {
