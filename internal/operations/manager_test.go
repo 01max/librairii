@@ -275,6 +275,26 @@ func TestManagerRunsExportWithPersistedProgressAndMixedReport(t *testing.T) {
 	}
 }
 
+func TestManagerDoesNotApplyTheImportPickerLimitToExportScopes(t *testing.T) {
+	t.Parallel()
+
+	workItems := make([]ExportWorkItem, maxImportItems+1)
+	for index := range workItems {
+		workItems[index].PlannedStatus = ItemPending
+	}
+	manager := &Manager{}
+
+	_, err := manager.StartExport(
+		context.Background(),
+		ExportSource{Type: ExportSourceSelection},
+		t.TempDir(),
+		workItems,
+	)
+	if !errors.Is(err, ErrManagerNotStarted) {
+		t.Fatalf("StartExport(large scope) error = %v", err)
+	}
+}
+
 func TestManagerCancelsMetadataRefreshAndRejectsConcurrentRequest(t *testing.T) {
 	t.Parallel()
 

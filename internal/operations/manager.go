@@ -346,7 +346,7 @@ func (m *Manager) StartExport(
 	destination string,
 	workItems []ExportWorkItem,
 ) (Snapshot, error) {
-	if len(workItems) == 0 || len(workItems) > maxImportItems {
+	if len(workItems) == 0 {
 		return Snapshot{}, ErrInvalidRequest
 	}
 	items := make([]NewItem, 0, len(workItems))
