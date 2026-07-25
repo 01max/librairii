@@ -49,6 +49,7 @@ const (
 	CodeEntryLimit            ErrorCode = "entry_limit"
 	CodeExpandedSizeLimit     ErrorCode = "expanded_size_limit"
 	CodeCompressionRatioLimit ErrorCode = "compression_ratio_limit"
+	CodeNestedArchive         ErrorCode = "nested_archive"
 	CodeMetadataLimit         ErrorCode = "metadata_limit"
 	CodeArtworkLimit          ErrorCode = "artwork_limit"
 	CodeMissingEntry          ErrorCode = "missing_entry"

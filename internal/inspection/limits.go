@@ -106,6 +106,7 @@ func validateEntryPath(name string, limits Limits) error {
 	if name == "" ||
 		!utf8.ValidString(name) ||
 		strings.ContainsRune(name, '\x00') ||
+		strings.Contains(name, `\`) ||
 		len([]byte(name)) > limits.MaxPathBytes {
 		return &ValidationError{Code: CodeUnsafePath, Entry: name}
 	}
