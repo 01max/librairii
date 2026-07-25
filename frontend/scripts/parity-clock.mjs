@@ -1,4 +1,4 @@
-const parityTimestamp = Date.parse('2026-07-25T12:00:00.000Z');
+const parityTimestamp = Date.parse('2026-07-25T09:00:00.000Z');
 
 export async function installParityClock(page) {
     await page.addInitScript((timestamp) => {
