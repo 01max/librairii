@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"time"
+
+	"github.com/01max/librairii/internal/operations"
 )
 
 type LifecycleState string
@@ -101,10 +103,25 @@ type ResourcePort interface {
 	Close() error
 }
 
+type OperationPort interface {
+	Start(context.Context) error
+	StartImport(context.Context, []string) (operations.Snapshot, error)
+	Cancel(context.Context, string) (operations.Snapshot, error)
+	Snapshot(context.Context, string) (operations.Snapshot, error)
+	Close() error
+}
+
 type Dependencies struct {
-	Clock     Clock
-	Dialogs   DialogPort
-	Events    EventPort
-	Readiness ReadinessPort
-	Resources []ResourcePort
+	Clock      Clock
+	Dialogs    DialogPort
+	Events     EventPort
+	Readiness  ReadinessPort
+	Operations OperationPort
+	Resources  []ResourcePort
+}
+
+type OperationResponse struct {
+	Operation *operations.Snapshot `json:"operation,omitempty"`
+	Cancelled bool                 `json:"cancelled,omitempty"`
+	Error     *APIError            `json:"error,omitempty"`
 }

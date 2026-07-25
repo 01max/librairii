@@ -5,3 +5,15 @@
 export function ApplicationStatus() {
   return window['go']['main']['App']['ApplicationStatus']();
 }
+
+export function CancelOperation(arg1) {
+  return window['go']['main']['App']['CancelOperation'](arg1);
+}
+
+export function OperationSnapshot(arg1) {
+  return window['go']['main']['App']['OperationSnapshot'](arg1);
+}
+
+export function SelectAndImportStories() {
+  return window['go']['main']['App']['SelectAndImportStories']();
+}

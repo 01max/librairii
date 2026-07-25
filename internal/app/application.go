@@ -2,9 +2,12 @@ package app
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"sync"
 	"time"
+
+	"github.com/01max/librairii/internal/operations"
 )
 
 const EventApplicationReady = "application:ready"
@@ -12,35 +15,46 @@ const EventApplicationReady = "application:ready"
 var ErrMissingDependency = errors.New("application dependency is required")
 
 type Application struct {
-	mu        sync.RWMutex
-	clock     Clock
-	dialogs   DialogPort
-	events    EventPort
-	readiness ReadinessPort
-	resources []ResourcePort
-	state     LifecycleState
-	startedAt time.Time
-	ready     bool
-	lastError *APIError
+	mu         sync.RWMutex
+	clock      Clock
+	dialogs    DialogPort
+	events     EventPort
+	readiness  ReadinessPort
+	operations OperationPort
+	resources  []ResourcePort
+	state      LifecycleState
+	startedAt  time.Time
+	ready      bool
+	lastError  *APIError
 }
 
 func New(deps Dependencies) (*Application, error) {
-	if deps.Clock == nil || deps.Dialogs == nil || deps.Events == nil || deps.Readiness == nil {
+	if deps.Clock == nil ||
+		deps.Dialogs == nil ||
+		deps.Events == nil ||
+		deps.Readiness == nil ||
+		deps.Operations == nil {
 		return nil, ErrMissingDependency
 	}
 
+	resources := append([]ResourcePort(nil), deps.Resources...)
+	resources = append(resources, deps.Operations)
 	return &Application{
-		clock:     deps.Clock,
-		dialogs:   deps.Dialogs,
-		events:    deps.Events,
-		readiness: deps.Readiness,
-		resources: append([]ResourcePort(nil), deps.Resources...),
-		state:     StateInitializing,
+		clock:      deps.Clock,
+		dialogs:    deps.Dialogs,
+		events:     deps.Events,
+		readiness:  deps.Readiness,
+		operations: deps.Operations,
+		resources:  resources,
+		state:      StateInitializing,
 	}, nil
 }
 
 func (a *Application) Start(ctx context.Context) error {
 	report, err := a.readiness.Check(ctx)
+	if err == nil && report.MutationsAllowed {
+		err = a.operations.Start(ctx)
+	}
 
 	a.mu.Lock()
 	defer a.mu.Unlock()
@@ -67,6 +81,66 @@ func (a *Application) Start(ctx context.Context) error {
 	a.ready = true
 	a.lastError = nil
 	return nil
+}
+
+func (a *Application) SelectAndStartImport(ctx context.Context) OperationResponse {
+	if !a.Status().MutationsAllowed {
+		return OperationResponse{
+			Error: NewAPIError(ErrorNotReady, "Imports are unavailable until storage is ready."),
+		}
+	}
+	paths, err := a.dialogs.OpenFiles(ctx, FileDialogRequest{
+		Title: "Import story archives",
+		Extensions: []string{
+			".plain.pk",
+			".v1.pk",
+			".v2.pk",
+			".pk",
+			".zip",
+			".7z",
+		},
+		Multiple: true,
+	})
+	if err != nil {
+		return OperationResponse{
+			Error: NewAPIError(ErrorInternal, "The story archive picker could not be opened."),
+		}
+	}
+	if len(paths) == 0 {
+		return OperationResponse{Cancelled: true}
+	}
+	snapshot, err := a.operations.StartImport(ctx, paths)
+	if err != nil {
+		return OperationResponse{Error: operationAPIError(err)}
+	}
+	return OperationResponse{Operation: &snapshot}
+}
+
+func (a *Application) CancelOperation(
+	ctx context.Context,
+	operationID string,
+) OperationResponse {
+	if !a.Status().MutationsAllowed {
+		return OperationResponse{
+			Error: NewAPIError(ErrorNotReady, "Operations are unavailable until storage is ready."),
+		}
+	}
+	snapshot, err := a.operations.Cancel(ctx, operationID)
+	if err != nil {
+		return OperationResponse{Error: operationAPIError(err)}
+	}
+	return OperationResponse{Operation: &snapshot}
+}
+
+func (a *Application) OperationSnapshot(
+	ctx context.Context,
+	operationID string,
+) OperationResponse {
+	snapshot, err := a.operations.Snapshot(ctx, operationID)
+	if err != nil {
+		return OperationResponse{Error: operationAPIError(err)}
+	}
+	return OperationResponse{Operation: &snapshot}
 }
 
 func (a *Application) AnnounceReady(ctx context.Context) {
@@ -111,4 +185,19 @@ func (a *Application) statusLocked() Status {
 		status.StartedAt = a.startedAt.Format(time.RFC3339Nano)
 	}
 	return status
+}
+
+func operationAPIError(err error) *APIError {
+	switch {
+	case errors.Is(err, context.Canceled):
+		return NewAPIError(ErrorCancelled, "The operation was cancelled.")
+	case errors.Is(err, operations.ErrInvalidRequest):
+		return NewAPIError(ErrorInvalidInput, "The operation request is invalid.")
+	case errors.Is(err, operations.ErrOperationNotActive):
+		return NewAPIError(ErrorConflict, "The operation is no longer active.")
+	case errors.Is(err, sql.ErrNoRows):
+		return NewAPIError(ErrorInvalidInput, "The operation does not exist.")
+	default:
+		return NewAPIError(ErrorInternal, "The operation could not be completed.")
+	}
 }

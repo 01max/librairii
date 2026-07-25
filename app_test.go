@@ -6,6 +6,7 @@ import (
 	"time"
 
 	coreapp "github.com/01max/librairii/internal/app"
+	"github.com/01max/librairii/internal/operations"
 )
 
 type facadeClock struct{}
@@ -34,14 +35,46 @@ func (facadeReadiness) Check(context.Context) (coreapp.ReadinessReport, error) {
 	return coreapp.ReadinessReport{MutationsAllowed: true}, nil
 }
 
+type facadeOperations struct{}
+
+func (facadeOperations) Start(context.Context) error {
+	return nil
+}
+
+func (facadeOperations) StartImport(
+	context.Context,
+	[]string,
+) (operations.Snapshot, error) {
+	return operations.Snapshot{}, nil
+}
+
+func (facadeOperations) Cancel(
+	context.Context,
+	string,
+) (operations.Snapshot, error) {
+	return operations.Snapshot{}, nil
+}
+
+func (facadeOperations) Snapshot(
+	context.Context,
+	string,
+) (operations.Snapshot, error) {
+	return operations.Snapshot{}, nil
+}
+
+func (facadeOperations) Close() error {
+	return nil
+}
+
 func TestAppExposesTypedLifecycleStatus(t *testing.T) {
 	t.Parallel()
 
 	core, err := coreapp.New(coreapp.Dependencies{
-		Clock:     facadeClock{},
-		Dialogs:   facadeDialogs{},
-		Events:    facadeEvents{},
-		Readiness: facadeReadiness{},
+		Clock:      facadeClock{},
+		Dialogs:    facadeDialogs{},
+		Events:     facadeEvents{},
+		Readiness:  facadeReadiness{},
+		Operations: facadeOperations{},
 	})
 	if err != nil {
 		t.Fatalf("New() error = %v", err)
@@ -63,10 +96,11 @@ func TestAppCanQuitAfterDOMReadyForPackagedSmoke(t *testing.T) {
 	t.Parallel()
 
 	core, err := coreapp.New(coreapp.Dependencies{
-		Clock:     facadeClock{},
-		Dialogs:   facadeDialogs{},
-		Events:    facadeEvents{},
-		Readiness: facadeReadiness{},
+		Clock:      facadeClock{},
+		Dialogs:    facadeDialogs{},
+		Events:     facadeEvents{},
+		Readiness:  facadeReadiness{},
+		Operations: facadeOperations{},
 	})
 	if err != nil {
 		t.Fatalf("New() error = %v", err)

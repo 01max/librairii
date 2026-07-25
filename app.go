@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"sync"
 
 	coreapp "github.com/01max/librairii/internal/app"
 )
@@ -11,6 +12,8 @@ import (
 type App struct {
 	core *coreapp.Application
 	quit func(context.Context)
+	mu   sync.RWMutex
+	ctx  context.Context
 }
 
 type AppOption func(*App)
@@ -30,6 +33,9 @@ func NewApp(core *coreapp.Application, options ...AppOption) *App {
 }
 
 func (a *App) startup(ctx context.Context) {
+	a.mu.Lock()
+	a.ctx = ctx
+	a.mu.Unlock()
 	_ = a.core.Start(ctx)
 }
 
@@ -47,4 +53,27 @@ func (a *App) shutdown(ctx context.Context) {
 // ApplicationStatus returns a stable lifecycle snapshot for the frontend.
 func (a *App) ApplicationStatus() coreapp.StatusResponse {
 	return a.core.StatusResponse()
+}
+
+// SelectAndImportStories opens the native picker and starts one durable import
+// operation without exposing selected filesystem paths to the frontend.
+func (a *App) SelectAndImportStories() coreapp.OperationResponse {
+	return a.core.SelectAndStartImport(a.runtimeContext())
+}
+
+func (a *App) CancelOperation(operationID string) coreapp.OperationResponse {
+	return a.core.CancelOperation(a.runtimeContext(), operationID)
+}
+
+func (a *App) OperationSnapshot(operationID string) coreapp.OperationResponse {
+	return a.core.OperationSnapshot(a.runtimeContext(), operationID)
+}
+
+func (a *App) runtimeContext() context.Context {
+	a.mu.RLock()
+	defer a.mu.RUnlock()
+	if a.ctx == nil {
+		return context.Background()
+	}
+	return a.ctx
 }

@@ -3,3 +3,9 @@
 import {app} from '../models';
 
 export function ApplicationStatus():Promise<app.StatusResponse>;
+
+export function CancelOperation(arg1:string):Promise<app.OperationResponse>;
+
+export function OperationSnapshot(arg1:string):Promise<app.OperationResponse>;
+
+export function SelectAndImportStories():Promise<app.OperationResponse>;
