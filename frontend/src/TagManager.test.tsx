@@ -1,4 +1,4 @@
-import {render, screen, waitFor, within} from '@testing-library/react';
+import {fireEvent, render, screen, waitFor, within} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {beforeEach, expect, test, vi} from 'vitest';
 import {
@@ -158,6 +158,22 @@ test('reorders definitions and choice values with explicit keyboard buttons', as
 
     await user.click(screen.getByRole('button', {name: 'Move Bold up'}));
     expect(reorderTagValues).toHaveBeenCalledWith(2, [21, 20]);
+});
+
+test('renames and recolors a custom definition without changing its key', async () => {
+    const user = userEvent.setup();
+    render(<TagManager onClose={vi.fn()}/>);
+    const mood = (await screen.findByText('Mood')).closest('article');
+    const label = within(mood!).getByDisplayValue('Mood');
+    const color = within(mood!).getByLabelText('Color');
+
+    await user.clear(label);
+    await user.type(label, 'Emotions');
+    fireEvent.change(color, {target: {value: '#263a8b'}});
+    await user.click(within(label.closest('form')!).getByRole('button', {name: 'Save'}));
+
+    expect(renameTagDefinition).toHaveBeenCalledWith(2, 'Emotions');
+    expect(recolorTagDefinition).toHaveBeenCalledWith(2, '#263a8b');
 });
 
 test('plans destructive changes and confirms the displayed assignment impact', async () => {
