@@ -80,6 +80,9 @@ func TestReleaseMatrixHasIndependentPlatformTasks(t *testing.T) {
 		"scripts/verify-platform-windows.ps1": {
 			"-platform windows/amd64",
 			"-nsis",
+			"InstalledBinary",
+			"uninstall.exe",
+			"uninstall-retention.txt",
 			"LIBRAIRII_PACKAGED_ACCEPTANCE",
 			"scenario_started",
 			"./cmd/foundation-smoke",

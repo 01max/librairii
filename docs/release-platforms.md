@@ -25,11 +25,15 @@ Windows arm64, and Linux arm64 are not release targets for `0.1.x`; adding one
 requires a new matrix row and the same evidence.
 
 The Windows installer is built with user install scope and expects a supported
-WebView2 runtime. Its packaged executable is verified as an amd64 PE image using
-the Windows GUI subsystem, so it does not open an extra console window. The
-Linux archive contains the Wails executable and expects the distribution to
-provide GTK 3 and WebKitGTK 4.1. It is intentionally not a generic package for
-every Linux ABI.
+WebView2 runtime. The gate installs it silently into an isolated user-owned
+directory, validates its current-user uninstall registration and both
+shortcuts, and runs acceptance from the installed copy. It then uninstalls and
+requires the install files, shortcuts, and registration to be gone while the
+SQLite library remains. Its packaged executable is verified as an amd64 PE
+image using the Windows GUI subsystem, so it does not open an extra console
+window. The Linux archive contains the Wails executable and expects the
+distribution to provide GTK 3 and WebKitGTK 4.1. It is intentionally not a
+generic package for every Linux ABI.
 
 ## Evidence contract
 
@@ -39,13 +43,17 @@ artifacts:
 1. Assert the host OS/architecture and exact pinned Wails CLI.
 2. Build fresh production frontend assets and a clean, trimmed Wails binary.
 3. Validate the native executable architecture and package artifact.
-4. Run the complete headless composition against an isolated data root.
-5. Launch the packaged executable twice and require a committed React render,
-   one start/clean-stop lifecycle pair per launch, and no external sidecar.
+4. Install installer-based distributions into an isolated user-owned location
+   and validate their registration, shortcuts, and installed payload.
+5. Launch the installed or packaged executable twice and require a committed
+   React render, one start/clean-stop lifecycle pair per launch, and no external
+   sidecar.
 6. Reopen the same SQLite database and require the smoke story and shelves.
 7. Run the native multi-file, directory, and reveal-adapter acceptance tests.
-8. Rerun the complete smoke contract and root release contracts.
-9. Create the distribution artifact and verify its SHA-256 checksum.
+8. Run the complete headless composition and root release contracts.
+9. Uninstall installer-based distributions and prove application files are
+   removed without deleting user-owned SQLite data.
+10. Verify the distribution artifact's SHA-256 checksum.
 
 The implementation is:
 

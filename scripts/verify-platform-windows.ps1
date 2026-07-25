@@ -71,11 +71,24 @@ $VerificationRoot = Join-Path `
 $DataRoot = Join-Path $VerificationRoot "application-data"
 $HeadlessRoot = Join-Path $VerificationRoot "headless-data"
 $ExportDestination = Join-Path $VerificationRoot "export"
+$InstallRoot = Join-Path $VerificationRoot "installed"
+$InstalledBinary = Join-Path $InstallRoot "Librairii.exe"
+$Uninstaller = Join-Path $InstallRoot "uninstall.exe"
+$RetentionMarker = Join-Path $DataRoot "uninstall-retention.txt"
 $AcceptanceCheckpoints = Join-Path $VerificationRoot "checkpoints.log"
 $AcceptanceSource = Join-Path `
     $ProjectRoot `
     "internal/inspection/testfixture/testdata/generic.7z"
 $EventLog = Join-Path $DataRoot "logs/events.jsonl"
+$DatabasePath = Join-Path $DataRoot "db/librairii.sqlite3"
+$DesktopShortcut = Join-Path `
+    ([Environment]::GetFolderPath("Desktop")) `
+    "Librairii.lnk"
+$StartMenuShortcut = Join-Path `
+    ([Environment]::GetFolderPath("Programs")) `
+    "Librairii.lnk"
+$UninstallRegistry = `
+    "HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\LibrairiiLibrairii"
 New-Item `
     -ItemType Directory `
     -Path $DataRoot, $HeadlessRoot, $ExportDestination |
@@ -118,13 +131,76 @@ function Invoke-PackagedApplication {
     }
 }
 
+$InstallationAttempted = $false
 try {
+    foreach ($ExistingInstallationState in @(
+        $DesktopShortcut,
+        $StartMenuShortcut,
+        $UninstallRegistry
+    )) {
+        if (Test-Path -LiteralPath $ExistingInstallationState) {
+            throw (
+                "Refusing to overwrite an existing Librairii installation: " +
+                $ExistingInstallationState
+            )
+        }
+    }
+
+    $InstallationAttempted = $true
+    $InstallProcess = Start-Process `
+        -FilePath $Installer `
+        -ArgumentList @("/S", "/D=$InstallRoot") `
+        -Wait `
+        -PassThru
+    if ($InstallProcess.ExitCode -ne 0) {
+        throw "Windows installer exited with $($InstallProcess.ExitCode)"
+    }
+    foreach ($InstalledPath in @(
+        $InstalledBinary,
+        $Uninstaller,
+        $DesktopShortcut,
+        $StartMenuShortcut,
+        $UninstallRegistry
+    )) {
+        if (-not (Test-Path -LiteralPath $InstalledPath)) {
+            throw "Windows installer did not create $InstalledPath"
+        }
+    }
+
+    $InstalledHash = (
+        Get-FileHash -LiteralPath $InstalledBinary -Algorithm SHA256
+    ).Hash
+    $LooseHash = (Get-FileHash -LiteralPath $Binary -Algorithm SHA256).Hash
+    if ($InstalledHash -ne $LooseHash) {
+        throw "Installed Windows executable differs from the qualified build"
+    }
+
+    $ShortcutShell = New-Object -ComObject WScript.Shell
+    foreach ($ShortcutPath in @($DesktopShortcut, $StartMenuShortcut)) {
+        $ShortcutTarget = $ShortcutShell.CreateShortcut($ShortcutPath).TargetPath
+        if (
+            [System.IO.Path]::GetFullPath($ShortcutTarget) -ne
+            [System.IO.Path]::GetFullPath($InstalledBinary)
+        ) {
+            throw "Windows shortcut does not target the installed executable"
+        }
+    }
+
+    $Registration = Get-ItemProperty -LiteralPath $UninstallRegistry
+    if (
+        [System.IO.Path]::GetFullPath($Registration.DisplayIcon) -ne
+        [System.IO.Path]::GetFullPath($InstalledBinary) -or
+        $Registration.QuietUninstallString -notlike "*$Uninstaller*"
+    ) {
+        throw "Windows per-user uninstall registration is incorrect"
+    }
+
     $env:LIBRAIRII_DATA_ROOT = $DataRoot
     $env:LIBRAIRII_PACKAGED_ACCEPTANCE = "1"
     $env:LIBRAIRII_ACCEPTANCE_SOURCE = $AcceptanceSource
     $env:LIBRAIRII_ACCEPTANCE_DESTINATION = $ExportDestination
     $env:LIBRAIRII_ACCEPTANCE_CHECKPOINTS = $AcceptanceCheckpoints
-    Invoke-PackagedApplication $Binary
+    Invoke-PackagedApplication $InstalledBinary
 
     $ExpectedCheckpoints = @(
         "scenario_started",
@@ -193,7 +269,7 @@ try {
     foreach ($LaunchNumber in 1..2) {
         $StartedBefore = Get-EventCount "runtime_started"
         $StoppedBefore = Get-EventCount "runtime_stopped"
-        Invoke-PackagedApplication $Binary
+        Invoke-PackagedApplication $InstalledBinary
         if (
             (Get-EventCount "runtime_started") -ne ($StartedBefore + 1) -or
             (Get-EventCount "runtime_stopped") -ne ($StoppedBefore + 1)
@@ -217,7 +293,63 @@ try {
     Invoke-Go test ./cmd/release-smoke `
         -run "^TestReleaseSmokeCoversTheCompleteHeadlessComposition$" `
         -count=1
+
+    Set-Content `
+        -LiteralPath $RetentionMarker `
+        -Value "preserve user-owned library data" `
+        -Encoding ascii
+    $UninstallProcess = Start-Process `
+        -FilePath $Uninstaller `
+        -ArgumentList "/S" `
+        -Wait `
+        -PassThru
+    if ($UninstallProcess.ExitCode -ne 0) {
+        throw "Windows uninstaller exited with $($UninstallProcess.ExitCode)"
+    }
+    foreach ($RemovedInstallationState in @(
+        $InstallRoot,
+        $DesktopShortcut,
+        $StartMenuShortcut,
+        $UninstallRegistry
+    )) {
+        if (Test-Path -LiteralPath $RemovedInstallationState) {
+            throw "Windows uninstaller retained $RemovedInstallationState"
+        }
+    }
+    foreach ($RetainedUserData in @($DatabasePath, $RetentionMarker)) {
+        if (-not (Test-Path -LiteralPath $RetainedUserData -PathType Leaf)) {
+            throw "Windows uninstaller removed user data: $RetainedUserData"
+        }
+    }
 } finally {
+    foreach ($AcceptanceVariable in @(
+        "LIBRAIRII_PACKAGED_ACCEPTANCE",
+        "LIBRAIRII_ACCEPTANCE_SOURCE",
+        "LIBRAIRII_ACCEPTANCE_DESTINATION",
+        "LIBRAIRII_ACCEPTANCE_CHECKPOINTS",
+        "LIBRAIRII_SMOKE_EXIT",
+        "LIBRAIRII_SMOKE_HOLD_MS"
+    )) {
+        Remove-Item "Env:$AcceptanceVariable" -ErrorAction SilentlyContinue
+    }
+    if ($InstallationAttempted -and (Test-Path -LiteralPath $Uninstaller)) {
+        Start-Process `
+            -FilePath $Uninstaller `
+            -ArgumentList "/S" `
+            -Wait |
+            Out-Null
+    }
+    if ($InstallationAttempted) {
+        Remove-Item `
+            -LiteralPath $DesktopShortcut, $StartMenuShortcut `
+            -Force `
+            -ErrorAction SilentlyContinue
+        Remove-Item `
+            -LiteralPath $UninstallRegistry `
+            -Recurse `
+            -Force `
+            -ErrorAction SilentlyContinue
+    }
     if (
         (Test-Path -LiteralPath $VerificationRoot) -and
         (Split-Path -Leaf $VerificationRoot) -like "librairii-windows-release-*"
@@ -240,5 +372,6 @@ if (
     throw "Windows installer checksum verification failed"
 }
 
-Write-Host "Windows platform acceptance passed: build, render, SQLite, native adapters, smoke"
+Write-Host `
+    "Windows platform acceptance passed: install, render, SQLite, native adapters, uninstall"
 Write-Host "Windows installer: $Installer"
