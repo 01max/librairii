@@ -164,15 +164,19 @@ func (f *fakeLibraryResolver) ExportQuery(
 	return stories, nil
 }
 
-func (f *fakeLibraryResolver) ExportStory(
+func (f *fakeLibraryResolver) ExportStories(
 	_ context.Context,
-	storyID int64,
-) (library.ExportStory, error) {
-	story, found := f.stories[storyID]
-	if !found {
-		return library.ExportStory{}, errors.New("story missing")
+	storyIDs []int64,
+) ([]library.ExportStory, error) {
+	stories := make([]library.ExportStory, 0, len(storyIDs))
+	for _, storyID := range storyIDs {
+		story, found := f.stories[storyID]
+		if !found {
+			return nil, errors.New("story missing")
+		}
+		stories = append(stories, story)
 	}
-	return story, nil
+	return stories, nil
 }
 
 type fakeShelfResolver map[int64]shelves.OpenedShelf

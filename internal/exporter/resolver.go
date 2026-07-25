@@ -19,7 +19,7 @@ var (
 
 type libraryResolver interface {
 	ExportQuery(context.Context, library.StoryLibraryQuery) ([]library.ExportStory, error)
-	ExportStory(context.Context, int64) (library.ExportStory, error)
+	ExportStories(context.Context, []int64) ([]library.ExportStory, error)
 }
 
 type shelfResolver interface {
@@ -61,9 +61,14 @@ func (r *Resolver) ResolveSelection(
 	if err != nil {
 		return Scope{}, err
 	}
-	return r.materialize(ctx, operations.ExportSource{
-		Type: operations.ExportSourceSelection,
-	}, ids, 0)
+	stories, err := r.library.ExportStories(ctx, ids)
+	if err != nil {
+		return Scope{}, fmt.Errorf("%w: resolve selection: %v", ErrStoryUnavailable, err)
+	}
+	return Scope{
+		Source:  operations.ExportSource{Type: operations.ExportSourceSelection},
+		Stories: stories,
+	}, nil
 }
 
 func (r *Resolver) ResolveCurrentQuery(
@@ -165,32 +170,6 @@ func (r *Resolver) ResolveShelves(
 		Stories:          stories,
 		CollapsedOverlap: totalMemberships - len(stories),
 	}, nil
-}
-
-func (r *Resolver) materialize(
-	ctx context.Context,
-	source operations.ExportSource,
-	storyIDs []int64,
-	collapsedOverlap int,
-) (Scope, error) {
-	scope := Scope{
-		Source:           source,
-		Stories:          make([]library.ExportStory, 0, len(storyIDs)),
-		CollapsedOverlap: collapsedOverlap,
-	}
-	for _, storyID := range storyIDs {
-		story, err := r.library.ExportStory(ctx, storyID)
-		if err != nil {
-			return Scope{}, fmt.Errorf(
-				"%w: story %d: %v",
-				ErrStoryUnavailable,
-				storyID,
-				err,
-			)
-		}
-		scope.Stories = append(scope.Stories, story)
-	}
-	return scope, nil
 }
 
 func uniqueIDs(ids []int64) ([]int64, error) {

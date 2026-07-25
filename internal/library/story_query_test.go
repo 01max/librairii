@@ -3,6 +3,7 @@ package library
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"strings"
 	"testing"
 	"time"
@@ -124,6 +125,24 @@ func TestExportQueryFreezesTheCompleteResultWithoutPagination(t *testing.T) {
 		stories[1].ID != second.ID ||
 		stories[2].ID != third.ID {
 		t.Fatalf("ExportQuery() = %#v", stories)
+	}
+	selected, err := query.ExportStories(
+		context.Background(),
+		[]int64{third.ID, first.ID},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(selected) != 2 ||
+		selected[0].ID != third.ID ||
+		selected[1].ID != first.ID {
+		t.Fatalf("ExportStories() = %#v", selected)
+	}
+	if _, err := query.ExportStories(
+		context.Background(),
+		[]int64{first.ID, 999_999},
+	); !errors.Is(err, sql.ErrNoRows) {
+		t.Fatalf("ExportStories(missing) error = %v", err)
 	}
 }
 

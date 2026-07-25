@@ -3,6 +3,7 @@ package library
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -228,6 +229,60 @@ func (q *Query) ExportStory(ctx context.Context, storyID int64) (ExportStory, er
 		return ExportStory{}, err
 	}
 	return stories[0], nil
+}
+
+func (q *Query) ExportStories(
+	ctx context.Context,
+	storyIDs []int64,
+) ([]ExportStory, error) {
+	if len(storyIDs) == 0 {
+		return []ExportStory{}, nil
+	}
+	seen := make(map[int64]struct{}, len(storyIDs))
+	for _, storyID := range storyIDs {
+		if storyID <= 0 {
+			return nil, ErrInvalidListRequest
+		}
+		if _, duplicate := seen[storyID]; duplicate {
+			return nil, ErrInvalidListRequest
+		}
+		seen[storyID] = struct{}{}
+	}
+	encodedIDs, err := json.Marshal(storyIDs)
+	if err != nil {
+		return nil, err
+	}
+	records, err := q.localRecordsWhere(
+		ctx,
+		`s.id IN (
+			SELECT CAST(value AS INTEGER)
+			FROM json_each(?)
+		)`,
+		[]any{string(encodedIDs)},
+	)
+	if err != nil {
+		return nil, err
+	}
+	if len(records) != len(storyIDs) {
+		return nil, sql.ErrNoRows
+	}
+	stories, err := q.exportStoriesFromRecords(ctx, records)
+	if err != nil {
+		return nil, err
+	}
+	byID := make(map[int64]ExportStory, len(stories))
+	for _, story := range stories {
+		byID[story.ID] = story
+	}
+	ordered := make([]ExportStory, 0, len(storyIDs))
+	for _, storyID := range storyIDs {
+		story, found := byID[storyID]
+		if !found {
+			return nil, sql.ErrNoRows
+		}
+		ordered = append(ordered, story)
+	}
+	return ordered, nil
 }
 
 func (q *Query) exportStoriesFromRecords(
