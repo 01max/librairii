@@ -353,7 +353,11 @@ func (r *Repository) Exists(relativePath string) (bool, error) {
 }
 
 func SafeJoin(root string, relativePath string) (string, error) {
-	if relativePath == "" || filepath.IsAbs(relativePath) {
+	if !filepath.IsAbs(root) ||
+		relativePath == "" ||
+		filepath.IsAbs(relativePath) ||
+		strings.Contains(relativePath, `\`) ||
+		strings.ContainsRune(relativePath, '\x00') {
 		return "", ErrInvalidManagedPath
 	}
 	clean := filepath.Clean(filepath.FromSlash(relativePath))
