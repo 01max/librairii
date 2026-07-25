@@ -2,6 +2,13 @@
   "response": {
     "fixture-pack-001": {
       "uuid": "123e4567-e89b-42d3-a456-426614174000",
+      "authors": {
+        "fixture-author-001": {
+          "name": "A. Example"
+        }
+      },
+      "publisher": "Fixture Press",
+      "updated_at": "2026-07-20T12:00:00Z",
       "locales_available": {
         "en_GB": true
       },
@@ -9,10 +16,9 @@
         "en_GB": {
           "title": "The Clockwork Mountain",
           "description": "A sanitized catalog fixture.",
-          "authors": [
-            "A. Example"
-          ],
-          "publisher": "Fixture Press",
+          "minimum_age": 3,
+          "maximum_age": 5,
+          "duration_seconds": 3240,
           "image": {
             "image_url": "/fixture/clockwork-mountain.png"
           }

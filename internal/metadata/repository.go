@@ -432,6 +432,62 @@ func (r *Repository) ActivateSnapshot(
 	return nil
 }
 
+func (r *Repository) FinishSyncFailure(
+	ctx context.Context,
+	syncID string,
+	snapshotID int64,
+	status SyncStatus,
+	errorCode string,
+	errorMessage string,
+	finishedAt time.Time,
+) error {
+	if (status != SyncFailed && status != SyncCancelled) ||
+		errorCode == "" ||
+		errorMessage == "" {
+		return ErrInvalidTransition
+	}
+	transaction, err := r.database.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("begin catalog sync failure: %w", err)
+	}
+	defer transaction.Rollback()
+
+	if snapshotID != 0 {
+		result, err := transaction.ExecContext(
+			ctx,
+			`UPDATE catalog_snapshots
+			 SET status = 'rejected'
+			 WHERE id = ? AND sync_id = ? AND status = 'staged'`,
+			snapshotID,
+			syncID,
+		)
+		if err := transitionResult(result, err); err != nil {
+			return err
+		}
+	}
+	result, err := transaction.ExecContext(
+		ctx,
+		`UPDATE catalog_syncs
+		 SET status = ?,
+		     error_code = ?,
+		     error_message = ?,
+		     finished_at = ?
+		 WHERE id = ? AND status = 'running'`,
+		status,
+		errorCode,
+		errorMessage,
+		formatTime(finishedAt),
+		syncID,
+	)
+	if err := transitionResult(result, err); err != nil {
+		return err
+	}
+	if err := transaction.Commit(); err != nil {
+		return fmt.Errorf("commit catalog sync failure: %w", err)
+	}
+	return nil
+}
+
 const officialMetadataSelect = `
 	SELECT
 		metadata.id,

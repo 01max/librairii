@@ -166,6 +166,59 @@ func TestRepositoryActivationSupersedesOnlySameLocale(t *testing.T) {
 	}
 }
 
+func TestRepositoryRollsBackSupersessionWhenActivationFails(t *testing.T) {
+	t.Parallel()
+
+	repository, connection := openMetadataRepository(t)
+	ctx := context.Background()
+	first := stageFixtureSnapshot(
+		t,
+		repository,
+		"123e4567-e89b-42d3-a456-426614174108",
+		"en-GB",
+		"1",
+	)
+	if err := repository.ActivateSnapshot(ctx, first.ID, 0, time.Now()); err != nil {
+		t.Fatal(err)
+	}
+	second := stageFixtureSnapshot(
+		t,
+		repository,
+		"123e4567-e89b-42d3-a456-426614174109",
+		"en-GB",
+		"2",
+	)
+	if _, err := connection.Exec(`
+		CREATE TRIGGER test_reject_snapshot_activation
+		BEFORE UPDATE OF status ON catalog_snapshots
+		FOR EACH ROW
+		WHEN (
+			NEW.sync_id = '123e4567-e89b-42d3-a456-426614174109'
+			AND NEW.status = 'active'
+		)
+		BEGIN
+			SELECT RAISE(ABORT, 'injected activation failure');
+		END
+	`); err != nil {
+		t.Fatal(err)
+	}
+	if err := repository.ActivateSnapshot(ctx, second.ID, 0, time.Now()); err == nil {
+		t.Fatal("ActivateSnapshot(injected failure) error = nil")
+	}
+	active, err := repository.ActiveSnapshot(ctx, "en-GB")
+	if err != nil {
+		t.Fatal(err)
+	}
+	second, err = repository.Snapshot(ctx, second.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if active.ID != first.ID || active.Status != SnapshotActive ||
+		second.Status != SnapshotStaged {
+		t.Fatalf("active = %#v, second = %#v", active, second)
+	}
+}
+
 func TestMetadataSchemaRejectsInvalidIdentityPathsAndSnapshotWrites(t *testing.T) {
 	t.Parallel()
 
@@ -279,6 +332,57 @@ func TestMetadataSchemaRejectsDuplicateRowsAndInvalidTransitions(t *testing.T) {
 		snapshot.SyncID,
 	); err == nil {
 		t.Fatal("terminal sync transition error = nil")
+	}
+}
+
+func TestRepositoryFinishesFailedSyncAndRejectsItsStagedSnapshot(t *testing.T) {
+	t.Parallel()
+
+	repository, _ := openMetadataRepository(t)
+	ctx := context.Background()
+	snapshot := stageFixtureSnapshot(
+		t,
+		repository,
+		"123e4567-e89b-42d3-a456-426614174107",
+		"en-GB",
+		"f",
+	)
+	finishedAt := time.Date(2026, time.July, 25, 12, 0, 0, 0, time.UTC)
+	if err := repository.FinishSyncFailure(
+		ctx,
+		snapshot.SyncID,
+		snapshot.ID,
+		SyncFailed,
+		"catalog_invalid",
+		"The downloaded official catalog was invalid.",
+		finishedAt,
+	); err != nil {
+		t.Fatal(err)
+	}
+	sync, err := repository.Sync(ctx, snapshot.SyncID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	snapshot, err = repository.Snapshot(ctx, snapshot.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if sync.Status != SyncFailed ||
+		sync.ErrorCode != "catalog_invalid" ||
+		sync.FinishedAt != formatTime(finishedAt) ||
+		snapshot.Status != SnapshotRejected {
+		t.Fatalf("sync = %#v, snapshot = %#v", sync, snapshot)
+	}
+	if err := repository.FinishSyncFailure(
+		ctx,
+		sync.ID,
+		snapshot.ID,
+		SyncFailed,
+		"again",
+		"Again.",
+		finishedAt,
+	); !errors.Is(err, ErrInvalidTransition) {
+		t.Fatalf("FinishSyncFailure(terminal) error = %v", err)
 	}
 }
 
