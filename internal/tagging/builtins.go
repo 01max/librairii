@@ -8,13 +8,33 @@ import (
 )
 
 const (
-	BrokenKey           = "broken"
-	BrokenLabel         = "Broken"
-	BrokenColor         = "#FF705C"
-	BrokenPosition      = 0
-	KindBoolean         = "boolean"
-	SourceBuiltIn       = "builtin"
-	PresentationWarning = "warning"
+	BrokenKey      = "broken"
+	BrokenLabel    = "Broken"
+	BrokenColor    = "#FF705C"
+	BrokenPosition = 0
+)
+
+type Kind string
+
+const (
+	KindBoolean Kind = "boolean"
+	KindChoice  Kind = "choice"
+)
+
+type Source string
+
+const (
+	SourceUser    Source = "user"
+	SourceBuiltIn Source = "builtin"
+	SourceDerived Source = "derived"
+)
+
+type Presentation string
+
+const (
+	PresentationDefault Presentation = "default"
+	PresentationWarning Presentation = "warning"
+	PresentationSystem  Presentation = "system"
 )
 
 var (
@@ -28,9 +48,9 @@ type Definition struct {
 	NormalizedKey string
 	Label         string
 	Color         string
-	Kind          string
-	Source        string
-	Presentation  string
+	Kind          Kind
+	Source        Source
+	Presentation  Presentation
 	Position      int
 	Protected     bool
 }
