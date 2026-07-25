@@ -1,14 +1,14 @@
 #!/bin/sh
 set -eu
 
-project_root="$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)"
+project_root="$(CDPATH='' cd -- "$(dirname -- "$0")/.." && pwd)"
 cd "$project_root"
 
 host_os="$(go env GOOS)"
 host_arch="$(go env GOARCH)"
 version="$(tr -d '[:space:]' < VERSION)"
 artifact="${1:-build/bin/Librairii-${version}-${host_os}-${host_arch}.dmg}"
-artifact="$(CDPATH= cd -- "$(dirname -- "$artifact")" && pwd)/$(basename -- "$artifact")"
+artifact="$(CDPATH='' cd -- "$(dirname -- "$artifact")" && pwd)/$(basename -- "$artifact")"
 
 if [ "$host_os" != "darwin" ]; then
     printf 'current installer verification requires macOS, got %s/%s\n' \
@@ -23,7 +23,10 @@ if [ ! -f "$artifact.sha256" ]; then
     printf 'installer checksum does not exist: %s.sha256\n' "$artifact" >&2
     exit 1
 fi
-/usr/bin/shasum -a 256 -c "$artifact.sha256"
+(
+    cd "$(dirname -- "$artifact")"
+    /usr/bin/shasum -a 256 -c "$(basename -- "$artifact").sha256"
+)
 
 verification_root="$(mktemp -d /private/tmp/librairii-installer-verify.XXXXXX)"
 mount_point="$verification_root/mount"

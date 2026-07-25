@@ -137,8 +137,12 @@ tar \
     -czf "$artifact" \
     -C build/bin \
     Librairii
-sha256sum "$artifact" > "$artifact.sha256"
-sha256sum -c "$artifact.sha256"
+(
+    cd "$(dirname -- "$artifact")"
+    artifact_name="$(basename -- "$artifact")"
+    sha256sum "$artifact_name" > "$artifact_name.sha256"
+    sha256sum -c "$artifact_name.sha256"
+)
 
 printf 'Linux platform acceptance passed: build, render, SQLite, native adapters, smoke\n'
 printf 'Linux artifact: %s\n' "$artifact"

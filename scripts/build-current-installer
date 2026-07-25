@@ -1,7 +1,7 @@
 #!/bin/sh
 set -eu
 
-project_root="$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)"
+project_root="$(CDPATH='' cd -- "$(dirname -- "$0")/.." && pwd)"
 cd "$project_root"
 
 host_os="$(go env GOOS)"
@@ -87,7 +87,12 @@ artifact="build/bin/Librairii-${version}-${host_os}-${host_arch}.dmg"
     -ov \
     -format UDZO \
     "$artifact"
-/usr/bin/shasum -a 256 "$artifact" > "$artifact.sha256"
+artifact_directory="$(dirname -- "$artifact")"
+artifact_name="$(basename -- "$artifact")"
+(
+    cd "$artifact_directory"
+    /usr/bin/shasum -a 256 "$artifact_name" > "$artifact_name.sha256"
+)
 
 printf 'current installer: %s\n' "$artifact"
 printf 'current installer checksum: %s.sha256\n' "$artifact"

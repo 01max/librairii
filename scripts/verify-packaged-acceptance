@@ -1,7 +1,7 @@
 #!/bin/sh
 set -eu
 
-project_root="$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)"
+project_root="$(CDPATH='' cd -- "$(dirname -- "$0")/.." && pwd)"
 cd "$project_root"
 
 host_os="$(go env GOOS)"
@@ -17,7 +17,10 @@ if [ ! -f "$artifact" ] || [ ! -f "$artifact.sha256" ]; then
     printf 'packaged installer or checksum is missing\n' >&2
     exit 1
 fi
-/usr/bin/shasum -a 256 -c "$artifact.sha256"
+(
+    cd "$(dirname -- "$artifact")"
+    /usr/bin/shasum -a 256 -c "$(basename -- "$artifact").sha256"
+)
 
 acceptance_root="$(mktemp -d /private/tmp/librairii-packaged-acceptance.XXXXXX)"
 mount_point="$acceptance_root/mount"
