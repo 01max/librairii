@@ -67,6 +67,10 @@ func (a *App) ApplicationStatus() coreapp.StatusResponse {
 	return a.core.StatusResponse()
 }
 
+func (a *App) RecoverStorage() coreapp.MutationResponse {
+	return a.core.RecoverStorage(a.runtimeContext())
+}
+
 // FrontendRendered acknowledges that React completed its first paint. The
 // optional callback is configured only by packaged acceptance.
 func (a *App) FrontendRendered() {

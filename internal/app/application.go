@@ -34,6 +34,7 @@ type Application struct {
 	state       LifecycleState
 	startedAt   time.Time
 	ready       bool
+	recoverable bool
 	lastError   *APIError
 }
 
@@ -163,20 +164,102 @@ func (a *Application) Start(ctx context.Context) error {
 	if err != nil {
 		a.state = StateRecovery
 		a.ready = false
+		a.recoverable = false
 		a.lastError = NewAPIError(ErrorStorageUnavailable, "Application storage is unavailable.")
 		return nil
 	}
 	if !report.MutationsAllowed {
 		a.state = StateRecovery
 		a.ready = false
-		a.lastError = NewAPIError(ErrorStorageUnavailable, "Application storage requires recovery.")
+		a.recoverable = reportHasIssue(report, "schema_mismatch")
+		message := "Application storage requires recovery."
+		if a.recoverable {
+			message = "A database with an incompatible schema must be preserved before Librairii can create a new local library."
+		}
+		a.lastError = NewAPIError(ErrorStorageUnavailable, message)
 		return nil
 	}
 
 	a.state = StateReady
 	a.ready = true
+	a.recoverable = false
 	a.lastError = nil
 	return nil
+}
+
+// RecoverStorage performs the explicit schema-conflict action offered by the
+// recovery UI. The readiness provider must preserve the incompatible database
+// before Check is allowed to initialize and open a fresh Librairii database.
+func (a *Application) RecoverStorage(ctx context.Context) MutationResponse {
+	a.mu.Lock()
+	recovery, supported := a.readiness.(SchemaRecoveryPort)
+	if a.state != StateRecovery || !a.recoverable || !supported {
+		a.mu.Unlock()
+		return MutationResponse{
+			Error: NewAPIError(
+				ErrorNotReady,
+				"Automatic schema recovery is not available for this storage problem.",
+			),
+		}
+	}
+	a.state = StateInitializing
+	a.ready = false
+	a.recoverable = false
+	a.lastError = nil
+	a.mu.Unlock()
+
+	if _, err := recovery.RecoverSchemaConflict(ctx); err != nil {
+		a.failStorageRecovery(
+			"The incompatible database could not be preserved automatically. Restart Librairii before retrying or recover the application data manually.",
+		)
+		return MutationResponse{
+			Error: NewAPIError(
+				ErrorStorageUnavailable,
+				"The incompatible database could not be preserved.",
+			),
+		}
+	}
+	report, err := a.readiness.Check(ctx)
+	if err == nil && report.MutationsAllowed {
+		err = a.operations.Start(ctx)
+	}
+	if err != nil || !report.MutationsAllowed {
+		a.failStorageRecovery(
+			"The incompatible database was preserved, but the new local library could not be opened.",
+		)
+		return MutationResponse{
+			Error: NewAPIError(
+				ErrorStorageUnavailable,
+				"The new local library could not be opened.",
+			),
+		}
+	}
+
+	a.mu.Lock()
+	a.state = StateReady
+	a.ready = true
+	a.recoverable = false
+	a.lastError = nil
+	a.mu.Unlock()
+	return MutationResponse{Success: true}
+}
+
+func (a *Application) failStorageRecovery(message string) {
+	a.mu.Lock()
+	a.state = StateRecovery
+	a.ready = false
+	a.recoverable = false
+	a.lastError = NewAPIError(ErrorStorageUnavailable, message)
+	a.mu.Unlock()
+}
+
+func reportHasIssue(report ReadinessReport, code string) bool {
+	for _, issue := range report.Issues {
+		if issue.Code == code {
+			return true
+		}
+	}
+	return false
 }
 
 func (a *Application) SelectAndStartImport(ctx context.Context) OperationResponse {
@@ -374,6 +457,7 @@ func (a *Application) Stop(_ context.Context) {
 	a.mu.Lock()
 	a.state = StateStopped
 	a.ready = false
+	a.recoverable = false
 	resources := append([]ResourcePort(nil), a.resources...)
 	a.mu.Unlock()
 
@@ -398,8 +482,9 @@ func (a *Application) StatusResponse() StatusResponse {
 
 func (a *Application) statusLocked() Status {
 	status := Status{
-		State:            a.state,
-		MutationsAllowed: a.ready,
+		State:             a.state,
+		MutationsAllowed:  a.ready,
+		RecoveryAvailable: a.recoverable,
 	}
 	if !a.startedAt.IsZero() {
 		status.StartedAt = a.startedAt.Format(time.RFC3339Nano)

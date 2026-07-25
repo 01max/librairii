@@ -20,6 +20,7 @@ import {
     OperationSnapshot,
     PreviewShelves,
     QueryStories,
+    RecoverStorage,
     RevealExportDestination,
     RenameShelf,
     ReorderShelves,
@@ -417,6 +418,9 @@ function App() {
         };
     }, [queryHistory]);
     const [applicationState, setApplicationState] = useState('initializing');
+    const [applicationError, setApplicationError] = useState('');
+    const [storageRecoveryAvailable, setStorageRecoveryAvailable] = useState(false);
+    const [storageRecovering, setStorageRecovering] = useState(false);
     const [collectionQuery, setCollectionQuery] = useState(
         initialHistoryState.query,
     );
@@ -685,11 +689,13 @@ function App() {
         void (async () => {
             try {
                 const response = await ApplicationStatus();
-                const state = response.error?.code ?? response.status.state;
+                const state = response.status.state;
                 if (!active) {
                     return;
                 }
                 setApplicationState(state);
+                setApplicationError(response.error?.message ?? '');
+                setStorageRecoveryAvailable(response.status.recoveryAvailable);
                 if (state === 'ready') {
                     const catalogResponse = await LoadTagCatalog();
                     if (active) {
@@ -754,6 +760,23 @@ function App() {
             active = false;
         };
     }, [activateShelf, queryHistory, reconcileOperation]);
+
+    const recoverStorage = async () => {
+        setStorageRecovering(true);
+        setApplicationError('');
+        try {
+            const response = await RecoverStorage();
+            if (response.error) {
+                setApplicationError(response.error.message);
+                return;
+            }
+            window.location.reload();
+        } catch {
+            setApplicationError('Storage recovery could not be started.');
+        } finally {
+            setStorageRecovering(false);
+        }
+    };
 
     useEffect(() => {
         if (applicationState === 'ready') {
@@ -2173,6 +2196,42 @@ function App() {
                                 operations…
                             </p>
                         </div>
+                    </section>
+                )}
+
+                {applicationState === 'recovery' && (
+                    <section
+                        className="collection-state error"
+                        data-state="storage-recovery"
+                        role="alert"
+                    >
+                        <div className="state-mark" aria-hidden="true">!</div>
+                        <div className="state-copy">
+                            <h3>Local library needs recovery</h3>
+                            <p>
+                                {applicationError ||
+                                    'Librairii cannot safely open its application data.'}
+                            </p>
+                            {storageRecoveryAvailable && (
+                                <p>
+                                    Continue only to preserve the incompatible
+                                    database in a unique recovery folder and create
+                                    a fresh Librairii database. Managed archives
+                                    are never deleted.
+                                </p>
+                            )}
+                        </div>
+                        {storageRecoveryAvailable && (
+                            <button
+                                type="button"
+                                disabled={storageRecovering}
+                                onClick={() => void recoverStorage()}
+                            >
+                                {storageRecovering
+                                    ? 'Preserving database…'
+                                    : 'Preserve database and create new library'}
+                            </button>
+                        )}
                     </section>
                 )}
 

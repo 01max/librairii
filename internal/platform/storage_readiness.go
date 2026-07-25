@@ -99,7 +99,7 @@ func (r *StorageReadiness) RecoverSchemaConflict(
 		filepath.Join(layout.Database, "librairii.sqlite3"),
 	)
 	if err != nil {
-		return "", err
+		return recoveryDirectory, err
 	}
 	r.layout = layout
 	return recoveryDirectory, nil

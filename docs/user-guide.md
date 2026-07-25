@@ -119,9 +119,11 @@ SQLite snapshot beside the live database named like
 `librairii.pre-migration-vNNN-….sqlite3`. A failed migration automatically
 restores that snapshot and never deletes managed archive bytes. If the expected
 database path contains an unrelated or legacy schema, mutations remain disabled
-until an explicit recovery action moves the database and any WAL/SHM sidecars
-into a unique `db/schema-conflict-recovery-*` directory. Nothing in that
-directory is overwritten.
+until the recovery screen's **Preserve database and create new library** action
+moves the database and any WAL/SHM sidecars into a unique
+`db/schema-conflict-recovery-*` directory. Nothing in that directory is
+overwritten. If preservation cannot be completed, Librairii keeps mutations
+disabled and does not silently initialize over the conflicting files.
 
 Uninstalling the application bundle does not delete the application data root.
 Delete that root separately only when you intend to permanently erase the

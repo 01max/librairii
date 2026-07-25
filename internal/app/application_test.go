@@ -93,6 +93,29 @@ type fakeReadiness struct {
 	err    error
 }
 
+type recoverableReadiness struct {
+	recovered bool
+}
+
+func (r *recoverableReadiness) Check(
+	context.Context,
+) (ReadinessReport, error) {
+	if r.recovered {
+		return ReadinessReport{MutationsAllowed: true}, nil
+	}
+	return ReadinessReport{
+		MutationsAllowed: false,
+		Issues:           []ReadinessIssue{{Code: "schema_mismatch"}},
+	}, nil
+}
+
+func (r *recoverableReadiness) RecoverSchemaConflict(
+	context.Context,
+) (string, error) {
+	r.recovered = true
+	return "db/schema-conflict-recovery-test", nil
+}
+
 type fakeDiagnostics struct {
 	destination string
 	report      diagnostics.Report
@@ -510,6 +533,52 @@ func TestApplicationEntersRecoveryWhenStorageIsUnsafe(t *testing.T) {
 	}
 	if response.Error == nil || response.Error.Code != ErrorStorageUnavailable {
 		t.Fatalf("StatusResponse() error = %#v", response.Error)
+	}
+	if !response.Status.RecoveryAvailable {
+		t.Fatal("schema mismatch did not expose the explicit recovery action")
+	}
+}
+
+func TestApplicationExplicitlyPreservesSchemaConflictBeforeOpeningFreshStorage(
+	t *testing.T,
+) {
+	t.Parallel()
+
+	readiness := &recoverableReadiness{}
+	operationPort := &fakeOperations{}
+	application, err := New(Dependencies{
+		Clock:      fixedClock{now: time.Now()},
+		Dialogs:    fakeDialogs{},
+		Events:     &fakeEvents{},
+		Operations: operationPort,
+		Library:    operationPort,
+		Removal:    operationPort,
+		Tags:       operationPort,
+		Shelves:    operationPort,
+		Readiness:  readiness,
+	})
+	if err != nil {
+		t.Fatalf("New() error = %v", err)
+	}
+	if err := application.Start(context.Background()); err != nil {
+		t.Fatalf("Start() error = %v", err)
+	}
+
+	response := application.RecoverStorage(context.Background())
+	if response.Error != nil || !response.Success {
+		t.Fatalf("RecoverStorage() = %#v", response)
+	}
+	if !readiness.recovered {
+		t.Fatal("RecoverStorage() did not preserve the schema conflict")
+	}
+	if !operationPort.started {
+		t.Fatal("RecoverStorage() did not start operations after fresh storage opened")
+	}
+	status := application.Status()
+	if status.State != StateReady ||
+		!status.MutationsAllowed ||
+		status.RecoveryAvailable {
+		t.Fatalf("status after recovery = %#v", status)
 	}
 }
 

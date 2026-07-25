@@ -410,6 +410,7 @@ export namespace app {
 	    state: string;
 	    startedAt?: string;
 	    mutationsAllowed: boolean;
+	    recoveryAvailable: boolean;
 	
 	    static createFrom(source: any = {}) {
 	        return new Status(source);
@@ -420,6 +421,7 @@ export namespace app {
 	        this.state = source["state"];
 	        this.startedAt = source["startedAt"];
 	        this.mutationsAllowed = source["mutationsAllowed"];
+	        this.recoveryAvailable = source["recoveryAvailable"];
 	    }
 	}
 	export class StatusResponse {
@@ -1931,4 +1933,3 @@ export namespace tagging {
 	}
 
 }
-

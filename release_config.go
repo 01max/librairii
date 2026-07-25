@@ -51,6 +51,7 @@ var bindingMethodAllowlist = []string{
 	"PreviewShelves",
 	"QueryStories",
 	"RecolorTagDefinition",
+	"RecoverStorage",
 	"RefreshOfficialMetadata",
 	"RemoveStory",
 	"RenameShelf",

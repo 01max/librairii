@@ -64,9 +64,10 @@ func AsAPIError(err error) *APIError {
 }
 
 type Status struct {
-	State            LifecycleState `json:"state"`
-	StartedAt        string         `json:"startedAt,omitempty"`
-	MutationsAllowed bool           `json:"mutationsAllowed"`
+	State             LifecycleState `json:"state"`
+	StartedAt         string         `json:"startedAt,omitempty"`
+	MutationsAllowed  bool           `json:"mutationsAllowed"`
+	RecoveryAvailable bool           `json:"recoveryAvailable"`
 }
 
 type StatusResponse struct {
@@ -105,6 +106,10 @@ type ReadinessReport struct {
 
 type ReadinessPort interface {
 	Check(context.Context) (ReadinessReport, error)
+}
+
+type SchemaRecoveryPort interface {
+	RecoverSchemaConflict(context.Context) (string, error)
 }
 
 type ResourcePort interface {

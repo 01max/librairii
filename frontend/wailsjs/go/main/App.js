@@ -82,6 +82,10 @@ export function QueryStories(arg1) {
   return window['go']['main']['App']['QueryStories'](arg1);
 }
 
+export function RecoverStorage() {
+  return window['go']['main']['App']['RecoverStorage']();
+}
+
 export function RecolorTagDefinition(arg1, arg2) {
   return window['go']['main']['App']['RecolorTagDefinition'](arg1, arg2);
 }

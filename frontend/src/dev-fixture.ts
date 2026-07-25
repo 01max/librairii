@@ -249,8 +249,13 @@ export function installCollectionFixture() {
             operations: fixtureSnapshot?.status === 'running' ? [fixtureSnapshot] : [],
         }),
         ApplicationStatus: async () => ({
-            status: {state: 'ready', mutationsAllowed: true},
+            status: {
+                state: 'ready',
+                mutationsAllowed: true,
+                recoveryAvailable: false,
+            },
         }),
+        RecoverStorage: async () => ({success: false}),
         ListShelves: async () => ({
             shelves: fixture === 'parity'
                 ? CANONICAL_PARITY_FIXTURE.savedShelves.map(

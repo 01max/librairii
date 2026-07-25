@@ -45,6 +45,8 @@ export function PreviewShelves(arg1:Array<number>):Promise<app.ShelfSelectionPre
 
 export function QueryStories(arg1:library.StoryLibraryQuery):Promise<app.LibraryPageResponse>;
 
+export function RecoverStorage():Promise<app.MutationResponse>;
+
 export function RecolorTagDefinition(arg1:number,arg2:string):Promise<app.TagDefinitionResponse>;
 
 export function RefreshOfficialMetadata():Promise<app.OperationResponse>;

@@ -14,6 +14,7 @@ import {
     OperationSnapshot,
     PreviewShelves,
     QueryStories,
+    RecoverStorage,
     RevealExportDestination,
     RenameShelf,
     ReorderShelves,
@@ -49,6 +50,7 @@ vi.mock('../wailsjs/go/main/App', () => ({
     OperationSnapshot: vi.fn(),
     PreviewShelves: vi.fn(),
     QueryStories: vi.fn(),
+    RecoverStorage: vi.fn(),
     RevealExportDestination: vi.fn(),
     RenameShelf: vi.fn(),
     ReorderShelves: vi.fn(),
@@ -81,6 +83,7 @@ const openShelf = vi.mocked(OpenShelf);
 const operationSnapshot = vi.mocked(OperationSnapshot);
 const previewShelves = vi.mocked(PreviewShelves);
 const queryStories = vi.mocked(QueryStories);
+const recoverStorage = vi.mocked(RecoverStorage);
 const revealExportDestination = vi.mocked(RevealExportDestination);
 const renameShelf = vi.mocked(RenameShelf);
 const reorderShelves = vi.mocked(ReorderShelves);
@@ -145,6 +148,7 @@ beforeEach(() => {
     operationSnapshot.mockReset();
     previewShelves.mockReset();
     queryStories.mockReset();
+    recoverStorage.mockReset();
     revealExportDestination.mockReset();
     renameShelf.mockReset();
     reorderShelves.mockReset();
@@ -331,6 +335,44 @@ test('uses the canonical state grammar while the local library opens', async () 
         .toBeInTheDocument();
     expect(screen.queryByText('Opening your local library'))
         .not.toBeInTheDocument();
+});
+
+test('offers explicit preservation when an incompatible database blocks startup', async () => {
+    const user = userEvent.setup();
+    applicationStatus.mockResolvedValue(new app.StatusResponse({
+        status: {
+            state: 'recovery',
+            mutationsAllowed: false,
+            recoveryAvailable: true,
+        },
+        error: {
+            code: 'storage_unavailable',
+            message: 'An incompatible database must be preserved.',
+        },
+    }));
+    recoverStorage.mockResolvedValue(new app.MutationResponse({
+        error: {
+            code: 'storage_unavailable',
+            message: 'The incompatible database could not be preserved.',
+        },
+    }));
+
+    render(<App/>);
+
+    const recovery = await screen.findByRole('alert');
+    expect(within(recovery).getByRole('heading', {
+        name: 'Local library needs recovery',
+    })).toBeInTheDocument();
+    expect(within(recovery).getByText(
+        'An incompatible database must be preserved.',
+    )).toBeInTheDocument();
+    await user.click(within(recovery).getByRole('button', {
+        name: 'Preserve database and create new library',
+    }));
+    expect(recoverStorage).toHaveBeenCalledOnce();
+    expect(await within(recovery).findByText(
+        'The incompatible database could not be preserved.',
+    )).toBeInTheDocument();
 });
 
 test('keeps interactive controls in their canonical regions', async () => {
