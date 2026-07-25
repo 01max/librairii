@@ -601,6 +601,38 @@ export namespace library {
 	        this.sort = source["sort"];
 	    }
 	}
+	export class OfficialMetadataInfo {
+	    locale: string;
+	    publisher?: string;
+	    language?: string;
+	    durationSeconds?: number;
+	    minimumAge?: number;
+	    maximumAge?: number;
+	    provenance: string;
+	    sourceRecordId?: string;
+	    sourceUpdatedAt?: string;
+	    fetchedAt: string;
+	    activatedAt: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new OfficialMetadataInfo(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.locale = source["locale"];
+	        this.publisher = source["publisher"];
+	        this.language = source["language"];
+	        this.durationSeconds = source["durationSeconds"];
+	        this.minimumAge = source["minimumAge"];
+	        this.maximumAge = source["maximumAge"];
+	        this.provenance = source["provenance"];
+	        this.sourceRecordId = source["sourceRecordId"];
+	        this.sourceUpdatedAt = source["sourceUpdatedAt"];
+	        this.fetchedAt = source["fetchedAt"];
+	        this.activatedAt = source["activatedAt"];
+	    }
+	}
 	export class StorySummary {
 	    id: number;
 	    uuid: string;
@@ -614,6 +646,7 @@ export namespace library {
 	    compatibilityReason?: string;
 	    byteSize: number;
 	    importedAt: string;
+	    official?: OfficialMetadataInfo;
 	
 	    static createFrom(source: any = {}) {
 	        return new StorySummary(source);
@@ -633,6 +666,7 @@ export namespace library {
 	        this.compatibilityReason = source["compatibilityReason"];
 	        this.byteSize = source["byteSize"];
 	        this.importedAt = source["importedAt"];
+	        this.official = this.convertValues(source["official"], OfficialMetadataInfo);
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {

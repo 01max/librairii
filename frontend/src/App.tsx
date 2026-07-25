@@ -79,6 +79,30 @@ function languageLabel(locale: string): string {
     }
 }
 
+function artworkURL(artworkID?: string): string | undefined {
+    return artworkID ? `/artwork/${encodeURIComponent(artworkID)}` : undefined;
+}
+
+function formatDuration(durationSeconds?: number): string {
+    if (durationSeconds === undefined) {
+        return '—';
+    }
+    const minutes = Math.max(0, Math.round(durationSeconds / 60));
+    return `${minutes} min`;
+}
+
+function metadataAttribution(story: library.StorySummary): string {
+    const author = story.author || 'Local story';
+    if (!story.official) {
+        return `${author} · ${story.sources.title} metadata`;
+    }
+    const timestamp = story.official.activatedAt || story.official.fetchedAt;
+    const freshness = timestamp
+        ? ` · synced ${new Date(timestamp).toLocaleDateString()}`
+        : '';
+    return `${author} · Official metadata from Lunii catalog${freshness}`;
+}
+
 const initialCollectionQuery: CollectionQuery = {
     ...DEFAULT_COLLECTION_QUERY,
     pageSize: 12,
@@ -1095,7 +1119,16 @@ function App() {
                                         }
                                     }}
                                 >
-                                    <div className="cover"><b>{story.title}</b></div>
+                                    <div className={`cover${story.artworkId ? ' has-artwork' : ''}`}>
+                                        {story.artworkId && (
+                                            <img
+                                                src={artworkURL(story.artworkId)}
+                                                alt=""
+                                                loading="lazy"
+                                            />
+                                        )}
+                                        <b>{story.title}</b>
+                                    </div>
                                     <small>
                                         {story.author || story.uuid}
                                     </small>
@@ -1135,20 +1168,32 @@ function App() {
 
             {selected && (
                 <aside className="drawer" aria-label={`${selected.title} details`}>
-                    <div className="drawer-art" style={selectedPalette}/>
+                    <div
+                        className={`drawer-art${selected.artworkId ? ' has-artwork' : ''}`}
+                        style={selectedPalette}
+                    >
+                        {selected.artworkId && (
+                            <img
+                                src={artworkURL(selected.artworkId)}
+                                alt={`${selected.title} artwork`}
+                            />
+                        )}
+                    </div>
                     <div className="drawer-info">
                         <h3>{selected.title}</h3>
-                        <p>
-                            {selected.author || 'Local story'} · {selected.sources.title} metadata
-                        </p>
+                        <p>{metadataAttribution(selected)}</p>
                         <div className="facts">
                             <div className="fact">
-                                <span>Format</span>
-                                <b>{selected.detectedFormat}</b>
+                                <span>Duration</span>
+                                <b>{formatDuration(selected.official?.durationSeconds)}</b>
                             </div>
                             <div className="fact">
-                                <span>Size</span>
-                                <b>{formatBytes(selected.byteSize)}</b>
+                                <span>Language</span>
+                                <b>
+                                    {selected.official?.language
+                                        ? languageLabel(selected.official.language)
+                                        : '—'}
+                                </b>
                             </div>
                             <div className="fact">
                                 <span>Status</span>

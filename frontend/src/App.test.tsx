@@ -382,6 +382,200 @@ test('composes official language, import status, and derived age refinements', a
         .toBeInTheDocument();
 });
 
+test('keeps matched metadata, artwork, provenance, and combined refinements usable from stale cache', async () => {
+    const user = userEvent.setup();
+    const artworkID = 'a'.repeat(64);
+    const matched = new library.StorySummary({
+        id: 10,
+        uuid: '123e4567-e89b-42d3-a456-426614174000',
+        title: 'The Clockwork Mountain',
+        description: 'Official description',
+        author: 'A. Example',
+        artworkId: artworkID,
+        sources: {
+            title: 'official',
+            description: 'official',
+            author: 'official',
+            artwork: 'official',
+        },
+        detectedFormat: 'zip',
+        compatibility: 'compatible',
+        byteSize: 1048576,
+        importedAt: '2026-07-25T09:00:00Z',
+        official: {
+            locale: 'en-GB',
+            publisher: 'Fixture Press',
+            language: 'en-GB',
+            durationSeconds: 3240,
+            minimumAge: 3,
+            maximumAge: 5,
+            provenance: 'lunii_catalog',
+            fetchedAt: '2026-07-24T16:00:00Z',
+            activatedAt: '2026-07-24T16:01:00Z',
+        },
+    });
+    const unmatched = new library.StorySummary({
+        id: 11,
+        uuid: '00112233-4455-4677-8899-aabbccddeeff',
+        title: 'Unmatched local story',
+        description: 'Embedded description',
+        sources: {
+            title: 'embedded',
+            description: 'embedded',
+            author: 'fallback',
+            artwork: 'fallback',
+        },
+        detectedFormat: 'zip',
+        compatibility: 'compatible',
+        byteSize: 2097152,
+        importedAt: '2026-07-25T08:00:00Z',
+    });
+    officialMetadataStatus.mockResolvedValue(new app.MetadataStatusResponse({
+        status: {
+            state: 'stale_cache',
+            locale: 'en-GB',
+            matchedStoryCount: 1,
+            activatedAt: '2026-07-24T16:01:00Z',
+            errorMessage: 'Official metadata could not be downloaded.',
+        },
+    }));
+    loadTagCatalog.mockResolvedValue(new app.TagCatalogResponse({
+        catalog: {
+            definitions: [{
+                id: 3,
+                key: 'age',
+                label: 'Age',
+                color: '#ff705c',
+                kind: 'choice',
+                source: 'derived',
+                protected: true,
+                values: [{
+                    id: 30,
+                    definitionId: 3,
+                    key: '3-5',
+                    label: '3–5 years',
+                    position: 0,
+                }],
+            }, {
+                id: 4,
+                key: 'mood',
+                label: 'Mood',
+                color: '#405cf5',
+                kind: 'choice',
+                source: 'user',
+                protected: false,
+                values: [{
+                    id: 40,
+                    definitionId: 4,
+                    key: 'calm',
+                    label: 'Calm',
+                    position: 0,
+                }],
+            }],
+        },
+    }));
+    queryStories.mockImplementation(async (request) => {
+        const filtered = request.name !== '' ||
+            request.languages.length > 0 ||
+            request.compatibilities.length > 0 ||
+            request.choiceFilters.length > 0;
+        const visible = filtered ? [matched] : [matched, unmatched];
+        return new app.LibraryPageResponse({
+            page: {
+                stories: visible,
+                page: 1,
+                pageSize: 12,
+                totalItems: visible.length,
+                totalPages: 1,
+                sort: 'imported_desc',
+            },
+        });
+    });
+    loadStoryDetail.mockImplementation(async (storyID) => {
+        const story = storyID === matched.id ? matched : unmatched;
+        return new app.StoryDetailResponse({
+            detail: {
+                story,
+                archive: {
+                    originalFilename: `${story.id}.zip`,
+                    detectedFormat: story.detectedFormat,
+                    sha256: 'c'.repeat(64),
+                    byteSize: story.byteSize,
+                    verification: story.compatibility,
+                },
+            },
+        });
+    });
+    loadTagAssignmentWorkspace.mockImplementation(async (storyIDs) => (
+        new app.TagAssignmentWorkspaceResponse({
+            workspace: {
+                catalog: (await loadTagCatalog()).catalog,
+                requestedStories: storyIDs.length,
+                states: [{
+                    definitionId: 3,
+                    assignedStories: storyIDs.includes(matched.id) ? 1 : 0,
+                    values: [{
+                        valueId: 30,
+                        assignedStories: storyIDs.includes(matched.id) ? 1 : 0,
+                    }],
+                }, {
+                    definitionId: 4,
+                    assignedStories: storyIDs.includes(matched.id) ? 1 : 0,
+                    values: [{
+                        valueId: 40,
+                        assignedStories: storyIDs.includes(matched.id) ? 1 : 0,
+                    }],
+                }],
+            },
+        })
+    ));
+    render(<App/>);
+
+    expect(await screen.findByRole('heading', {name: 'Using saved official metadata'}))
+        .toBeInTheDocument();
+    expect(await screen.findByRole('heading', {name: 'The Clockwork Mountain'}))
+        .toBeInTheDocument();
+    expect(screen.getByRole('button', {
+        name: `Unmatched local story ${unmatched.uuid}`,
+    }))
+        .toBeInTheDocument();
+    expect(await screen.findByRole('img', {name: 'The Clockwork Mountain artwork'}))
+        .toHaveAttribute('src', `/artwork/${artworkID}`);
+    expect(screen.getByText(/Official metadata from Lunii catalog/))
+        .toBeInTheDocument();
+    expect(screen.getByText('54 min')).toBeInTheDocument();
+    expect(screen.getByText('System-derived · Age · 3–5 years'))
+        .toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', {
+        name: `Unmatched local story ${unmatched.uuid}`,
+    }));
+    expect(await screen.findByText('Local story · embedded metadata'))
+        .toBeInTheDocument();
+    await user.click(screen.getByRole('button', {
+        name: 'The Clockwork Mountain A. Example',
+    }));
+
+    await user.type(screen.getByRole('searchbox', {name: 'Search stories'}), 'Clockwork');
+    await user.click(screen.getByRole('checkbox', {name: 'English'}));
+    await user.click(screen.getByRole('checkbox', {name: 'Compatible'}));
+    await user.click(screen.getByRole('checkbox', {name: '3–5 years'}));
+    await user.click(screen.getByRole('checkbox', {name: 'Calm'}));
+    await waitFor(() => expect(queryStories).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+            name: 'clockwork',
+            languages: ['en-GB'],
+            compatibilities: ['compatible'],
+            choiceFilters: [
+                {definitionId: 3, valueIds: [30]},
+                {definitionId: 4, valueIds: [40]},
+            ],
+        }),
+    ));
+    expect(screen.getByRole('heading', {name: 'The Clockwork Mountain'}))
+        .toBeInTheDocument();
+});
+
 test('changes sort and pages from their canonical collection controls', async () => {
     const user = userEvent.setup();
     queryStories.mockResolvedValue(new app.LibraryPageResponse({

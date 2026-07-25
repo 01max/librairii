@@ -697,6 +697,20 @@ select:focus-visible {
     box-shadow: -65px 88px 0 -16px var(--land);
 }
 
+.cover.has-artwork::before,
+.drawer-art.has-artwork::before {
+    display: none;
+}
+
+.cover img,
+.drawer-art img {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    inset: 0;
+    object-fit: cover;
+}
+
 .cover::after {
     content: "";
     height: 38%;
@@ -704,12 +718,13 @@ select:focus-visible {
     right: 0;
     bottom: 0;
     left: 0;
+    z-index: 2;
     background: linear-gradient(transparent, rgba(11, 19, 39, .54));
 }
 
 .cover b {
     position: absolute;
-    z-index: 2;
+    z-index: 3;
     right: 8px;
     bottom: 9px;
     left: 9px;
