@@ -1,11 +1,19 @@
-import {type CSSProperties, useEffect, useMemo, useState} from 'react';
+import {type CSSProperties, useCallback, useEffect, useMemo, useState} from 'react';
 import './App.css';
 import {
     ApplicationStatus,
+    CancelOperation,
     ListStories,
+    SelectAndImportStories,
     StoryDetail as LoadStoryDetail,
 } from '../wailsjs/go/main/App';
-import {library} from '../wailsjs/go/models';
+import {EventsOn} from '../wailsjs/runtime/runtime';
+import {library, operations} from '../wailsjs/go/models';
+import {
+    describeImport,
+    operationIsActive,
+    operationIsTerminal,
+} from './import-state';
 
 const coverPalettes = [
     ['#31559f', '#f7c85b', '#e06a53'],
@@ -64,34 +72,93 @@ function App() {
     const [page, setPage] = useState<library.Page | null>(null);
     const [selectedID, setSelectedID] = useState<number | null>(null);
     const [detail, setDetail] = useState<library.StoryDetail | null>(null);
+    const [operation, setOperation] = useState<operations.Snapshot | null>(null);
+    const [requestError, setRequestError] = useState<string | null>(null);
+
+    const loadCollection = useCallback(async () => {
+        const result = await ListStories({
+            page: 1,
+            pageSize: 12,
+            sort: 'imported_desc',
+        });
+        if (!result.page) {
+            setRequestError(result.error?.message ?? 'The story collection could not be loaded.');
+            return;
+        }
+        setPage(result.page);
+        setDetail(null);
+        setSelectedID((current) => {
+            if (result.page?.stories.some((story) => story.id === current)) {
+                return current;
+            }
+            return result.page?.stories[0]?.id ?? null;
+        });
+    }, []);
 
     useEffect(() => {
         let active = true;
-        void ApplicationStatus().then(async (response) => {
-            const state = response.error?.code ?? response.status.state;
-            if (!active) {
-                return;
+        void (async () => {
+            try {
+                const response = await ApplicationStatus();
+                const state = response.error?.code ?? response.status.state;
+                if (!active) {
+                    return;
+                }
+                setApplicationState(state);
+                if (state === 'ready') {
+                    await loadCollection();
+                }
+            } catch {
+                if (active) {
+                    setApplicationState('internal');
+                    setRequestError('The application could not be reached.');
+                }
             }
-            setApplicationState(state);
-            if (state !== 'ready') {
-                return;
-            }
-            const result = await ListStories({
-                page: 1,
-                pageSize: 12,
-                sort: 'imported_desc',
-            });
-            if (!active || !result.page) {
-                return;
-            }
-            setPage(result.page);
-            setDetail(null);
-            setSelectedID(result.page.stories[0]?.id ?? null);
-        });
+        })();
         return () => {
             active = false;
         };
-    }, []);
+    }, [loadCollection]);
+
+    useEffect(() => {
+        const unsubscribe = EventsOn('operation:changed', (value: unknown) => {
+            const snapshot = new operations.Snapshot(value);
+            setOperation(snapshot);
+            if (operationIsTerminal(snapshot)) {
+                void loadCollection();
+            }
+        });
+        return unsubscribe;
+    }, [loadCollection]);
+
+    async function startImport() {
+        setRequestError(null);
+        const response = await SelectAndImportStories();
+        if (response.error) {
+            setRequestError(response.error.message);
+            return;
+        }
+        if (response.operation) {
+            const snapshot = response.operation;
+            setOperation((current) => (
+                current?.id === snapshot.id && operationIsTerminal(current)
+                    ? current
+                    : snapshot
+            ));
+        }
+    }
+
+    async function cancelImport() {
+        if (!operation || !operationIsActive(operation)) {
+            return;
+        }
+        const response = await CancelOperation(operation.id);
+        if (response.error) {
+            setRequestError(response.error.message);
+        } else if (response.operation) {
+            setOperation(response.operation);
+        }
+    }
 
     useEffect(() => {
         if (selectedID === null) {
@@ -113,6 +180,9 @@ function App() {
     const selectedSummary = stories.find((story) => story.id === selectedID) ?? null;
     const selected = detail?.story ?? selectedSummary;
     const selectedPalette = selected ? paletteFor(selected.id) : undefined;
+    const importNotice = operation ? describeImport(operation) : null;
+    const importing = operationIsActive(operation);
+    const empty = page !== null && page.totalItems === 0 && !importing;
 
     return (
         <div className="app">
@@ -179,7 +249,14 @@ function App() {
                         />
                     </label>
                     <button type="button">↻ Sync</button>
-                    <button className="import" type="button">＋ Import stories</button>
+                    <button
+                        className="import"
+                        type="button"
+                        disabled={importing}
+                        onClick={() => void startImport()}
+                    >
+                        {importing ? 'Importing…' : '＋ Import stories'}
+                    </button>
                 </div>
 
                 <div className="heading">
@@ -189,6 +266,67 @@ function App() {
                     </div>
                     <div className="sort">Recently added ⌄</div>
                 </div>
+
+                {requestError && (
+                    <section className="collection-state error" data-state="failed-import">
+                        <div className="state-mark" aria-hidden="true">!</div>
+                        <div>
+                            <h3>The action could not be completed</h3>
+                            <p>{requestError}</p>
+                        </div>
+                    </section>
+                )}
+
+                {importNotice && (
+                    <section
+                        className={`collection-state ${importNotice.tone}`}
+                        data-state={importNotice.state}
+                        aria-live="polite"
+                    >
+                        <div className="state-mark" aria-hidden="true">
+                            {importNotice.tone === 'success' ? '✓' : importNotice.tone === 'working' ? '↓' : '!'}
+                        </div>
+                        <div className="state-copy">
+                            <h3>{importNotice.title}</h3>
+                            <p>{importNotice.message}</p>
+                            {operation && operation.items.length > 0 && !importing && (
+                                <ul className="operation-items">
+                                    {operation.items.map((item) => (
+                                        <li key={item.id}>
+                                            <b>{item.sourceName}</b>
+                                            <span>{item.outcomeMessage || item.status}</span>
+                                        </li>
+                                    ))}
+                                </ul>
+                            )}
+                        </div>
+                        {importing && (
+                            <button type="button" onClick={() => void cancelImport()}>
+                                Cancel import
+                            </button>
+                        )}
+                    </section>
+                )}
+
+                {empty && (
+                    <section className="empty-library" data-state="empty">
+                        <div className="empty-mark" aria-hidden="true">
+                            <i/><i/><i/>
+                        </div>
+                        <h3>Build your local story archive</h3>
+                        <p>
+                            Import story packs you already own. Librairii validates and preserves
+                            each archive in managed local storage.
+                        </p>
+                        <button
+                            className="import"
+                            type="button"
+                            onClick={() => void startImport()}
+                        >
+                            ＋ Import your first stories
+                        </button>
+                    </section>
+                )}
 
                 {rows.map((row, rowIndex) => (
                     <section className="shelf" key={rowIndex}>

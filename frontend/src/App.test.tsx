@@ -3,21 +3,34 @@ import userEvent from '@testing-library/user-event';
 import {beforeEach, expect, test, vi} from 'vitest';
 import {
     ApplicationStatus,
+    CancelOperation,
     ListStories,
+    SelectAndImportStories,
     StoryDetail as LoadStoryDetail,
 } from '../wailsjs/go/main/App';
 import {app, library} from '../wailsjs/go/models';
+import {EventsOn} from '../wailsjs/runtime/runtime';
 import App from './App';
 
 vi.mock('../wailsjs/go/main/App', () => ({
     ApplicationStatus: vi.fn(),
+    CancelOperation: vi.fn(),
     ListStories: vi.fn(),
+    SelectAndImportStories: vi.fn(),
     StoryDetail: vi.fn(),
 }));
 
+vi.mock('../wailsjs/runtime/runtime', () => ({
+    EventsOn: vi.fn(),
+}));
+
 const applicationStatus = vi.mocked(ApplicationStatus);
+const cancelOperation = vi.mocked(CancelOperation);
 const listStories = vi.mocked(ListStories);
+const selectAndImportStories = vi.mocked(SelectAndImportStories);
 const loadStoryDetail = vi.mocked(LoadStoryDetail);
+const eventsOn = vi.mocked(EventsOn);
+let operationChanged: ((value: unknown) => void) | undefined;
 
 const stories = [
     new library.StorySummary({
@@ -55,8 +68,12 @@ const stories = [
 
 beforeEach(() => {
     applicationStatus.mockReset();
+    cancelOperation.mockReset();
     listStories.mockReset();
+    selectAndImportStories.mockReset();
     loadStoryDetail.mockReset();
+    eventsOn.mockReset();
+    operationChanged = undefined;
 
     applicationStatus.mockResolvedValue(new app.StatusResponse({
         status: {
@@ -89,6 +106,16 @@ beforeEach(() => {
             },
         });
     });
+    eventsOn.mockImplementation((_name, callback) => {
+        operationChanged = callback;
+        return vi.fn();
+    });
+    selectAndImportStories.mockResolvedValue(new app.OperationResponse({
+        cancelled: true,
+    }));
+    cancelOperation.mockResolvedValue(new app.OperationResponse({
+        cancelled: true,
+    }));
 });
 
 test('renders the canonical collection shell from typed library data', async () => {
@@ -118,4 +145,73 @@ test('selects a cover and loads its detail drawer without losing the collection'
         .toBeInTheDocument();
     expect(screen.getByRole('heading', {name: 'My story shelves'})).toBeInTheDocument();
     expect(loadStoryDetail).toHaveBeenLastCalledWith(2);
+});
+
+test('shows the empty-library import action in the canonical shell', async () => {
+    listStories.mockResolvedValue(new app.LibraryPageResponse({
+        page: {
+            stories: [],
+            page: 1,
+            pageSize: 12,
+            totalItems: 0,
+            totalPages: 0,
+            sort: 'imported_desc',
+        },
+    }));
+
+    render(<App/>);
+
+    expect(await screen.findByRole('heading', {name: 'Build your local story archive'}))
+        .toBeInTheDocument();
+    expect(screen.getByText('Stories in your local archive · 0 archives')).toBeInTheDocument();
+});
+
+test('shows nonblocking import progress and terminal validation feedback', async () => {
+    const user = userEvent.setup();
+    selectAndImportStories.mockResolvedValue(new app.OperationResponse({
+        operation: {
+            id: '00112233-4455-4677-8899-aabbccddeeff',
+            kind: 'import',
+            status: 'queued',
+            completedItems: 0,
+            totalItems: 1,
+            cancelRequested: false,
+            createdAt: '2026-07-25T09:00:00Z',
+            items: [{
+                id: 1,
+                sourceName: 'broken.zip',
+                status: 'pending',
+                completedBytes: 0,
+                totalBytes: 100,
+            }],
+        },
+    }));
+    render(<App/>);
+
+    await user.click(await screen.findByRole('button', {name: '＋ Import stories'}));
+    expect(screen.getByRole('heading', {name: 'Importing 1 story'})).toBeInTheDocument();
+
+    operationChanged?.({
+        id: '00112233-4455-4677-8899-aabbccddeeff',
+        kind: 'import',
+        status: 'failed',
+        completedItems: 1,
+        totalItems: 1,
+        cancelRequested: false,
+        createdAt: '2026-07-25T09:00:00Z',
+        items: [{
+            id: 1,
+            sourceName: 'broken.zip',
+            status: 'failed',
+            outcomeCode: 'invalid_container',
+            outcomeMessage: 'The file is not a supported story archive.',
+            completedBytes: 0,
+            totalBytes: 100,
+        }],
+    });
+
+    expect(await screen.findByRole('heading', {
+        name: 'Unsupported or invalid story archive',
+    })).toBeInTheDocument();
+    expect(screen.getByText('The file is not a supported story archive.')).toBeInTheDocument();
 });

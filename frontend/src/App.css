@@ -325,6 +325,11 @@ input:focus-visible {
     background: var(--blue);
 }
 
+.top .import:disabled {
+    cursor: progress;
+    opacity: .72;
+}
+
 .heading {
     display: flex;
     align-items: end;
@@ -348,6 +353,180 @@ input:focus-visible {
     color: #727d91;
     font-size: 9px;
     font-weight: 800;
+}
+
+.collection-state {
+    display: flex;
+    align-items: flex-start;
+    gap: 13px;
+    position: relative;
+    margin: -8px 0 28px;
+    padding: 16px 18px;
+    border: 1px solid var(--line);
+    border-radius: 11px;
+    background: white;
+    box-shadow: 0 6px 18px rgba(23, 34, 61, .05);
+}
+
+.collection-state::before {
+    content: "";
+    width: 4px;
+    position: absolute;
+    top: 8px;
+    bottom: 8px;
+    left: -1px;
+    border-radius: 0 4px 4px 0;
+    background: var(--state-color, var(--blue));
+}
+
+.collection-state.working {
+    --state-color: var(--blue);
+}
+
+.collection-state.success {
+    --state-color: var(--mint);
+}
+
+.collection-state.warning {
+    --state-color: #f5bc41;
+}
+
+.collection-state.error {
+    --state-color: var(--coral);
+}
+
+.collection-state.neutral {
+    --state-color: #96a0b2;
+}
+
+.state-mark {
+    width: 31px;
+    height: 31px;
+    flex: 0 0 auto;
+    display: grid;
+    place-items: center;
+    border-radius: 9px;
+    color: white;
+    background: var(--state-color, var(--blue));
+    font-size: 11px;
+    font-weight: 900;
+}
+
+.state-copy {
+    min-width: 0;
+    flex: 1;
+}
+
+.collection-state h3,
+.empty-library h3 {
+    margin: 0 0 5px;
+    font: 600 19px/1 var(--serif);
+    letter-spacing: -.03em;
+}
+
+.collection-state p,
+.empty-library p {
+    margin: 0;
+    color: var(--muted);
+    font-size: 9px;
+    line-height: 1.5;
+}
+
+.collection-state > button,
+.empty-library .import {
+    align-self: center;
+    padding: 10px 13px;
+    border: 1px solid var(--line);
+    border-radius: 9px;
+    color: var(--ink);
+    background: white;
+    font-size: 9px;
+    font-weight: 900;
+}
+
+.operation-items {
+    display: grid;
+    gap: 6px;
+    margin: 12px 0 0;
+    padding: 10px 0 0;
+    border-top: 1px solid var(--line);
+    list-style: none;
+}
+
+.operation-items li {
+    display: flex;
+    gap: 16px;
+    justify-content: space-between;
+    font-size: 8px;
+}
+
+.operation-items b {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.operation-items span {
+    flex: 0 0 auto;
+    color: var(--muted);
+}
+
+.empty-library {
+    min-height: 246px;
+    display: grid;
+    place-items: center;
+    align-content: center;
+    padding: 32px;
+    border: 1px solid var(--line);
+    border-radius: 11px;
+    background: white;
+    text-align: center;
+    box-shadow: 0 6px 18px rgba(23, 34, 61, .05);
+}
+
+.empty-library p {
+    max-width: 430px;
+    margin-bottom: 18px;
+}
+
+.empty-library .import {
+    border-color: var(--blue);
+    color: white;
+    background: var(--blue);
+}
+
+.empty-mark {
+    width: 42px;
+    height: 42px;
+    position: relative;
+    margin-bottom: 17px;
+}
+
+.empty-mark i {
+    width: 11px;
+    position: absolute;
+    bottom: 3px;
+    border-radius: 4px 4px 0 0;
+}
+
+.empty-mark i:nth-child(1) {
+    left: 2px;
+    height: 29px;
+    background: var(--coral);
+    transform: rotate(-7deg);
+}
+
+.empty-mark i:nth-child(2) {
+    left: 16px;
+    height: 38px;
+    background: var(--yellow);
+}
+
+.empty-mark i:nth-child(3) {
+    right: 0;
+    height: 27px;
+    background: #7690ff;
+    transform: rotate(8deg);
 }
 
 .shelf {
@@ -670,6 +849,19 @@ input:focus-visible {
 
     .heading h2 {
         font-size: 30px;
+    }
+
+    .collection-state {
+        margin-bottom: 22px;
+    }
+
+    .collection-state > button {
+        align-self: flex-start;
+    }
+
+    .operation-items li {
+        display: grid;
+        gap: 2px;
     }
 
     .story-row {
