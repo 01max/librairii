@@ -42,6 +42,12 @@ func (i *ZIPInspector) Inspect(
 	}
 	defer archive.Close()
 
+	if archive.has(studioStoryEntry) {
+		if !strings.HasSuffix(strings.ToLower(candidate.OriginalFilename), ".zip") {
+			return Result{}, &ValidationError{Code: CodeUnsupportedFormat}
+		}
+		return inspectStudioZIP(ctx, archive, limits)
+	}
 	if isPlainFilename(candidate.OriginalFilename) || archive.has(plainUUIDEntry) {
 		return inspectPlain(ctx, archive, limits)
 	}
