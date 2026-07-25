@@ -62,4 +62,32 @@ func TestStorageReadinessRefusesForeignDatabase(t *testing.T) {
 	if report.MutationsAllowed || readiness.SQL() != nil {
 		t.Fatalf("Check() report = %#v, SQL = %p", report, readiness.SQL())
 	}
+
+	recoveryDirectory, err := readiness.RecoverSchemaConflict(context.Background())
+	if err != nil {
+		t.Fatalf("RecoverSchemaConflict() error = %v", err)
+	}
+	recoveredPath := filepath.Join(recoveryDirectory, "librairii.sqlite3")
+	recovered, err := os.ReadFile(recoveredPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(recovered) != "legacy" {
+		t.Fatalf("recovered database = %q, want legacy", recovered)
+	}
+
+	report, err = readiness.Check(context.Background())
+	if err != nil {
+		t.Fatalf("Check(after recovery) error = %v", err)
+	}
+	if !report.MutationsAllowed || readiness.SQL() == nil {
+		t.Fatalf(
+			"Check(after recovery) report = %#v, SQL = %p",
+			report,
+			readiness.SQL(),
+		)
+	}
+	if err := readiness.Close(); err != nil {
+		t.Fatal(err)
+	}
 }

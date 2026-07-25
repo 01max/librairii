@@ -74,6 +74,37 @@ func (r *StorageReadiness) Check(ctx context.Context) (coreapp.ReadinessReport, 
 	return applicationReport, nil
 }
 
+// RecoverSchemaConflict is an explicit recovery action. It preserves the
+// conflicting database in a unique directory before allowing a later Check to
+// initialize a fresh Librairii database at the selected path.
+func (r *StorageReadiness) RecoverSchemaConflict(
+	ctx context.Context,
+) (string, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if r.db != nil {
+		return "", database.ErrNoSchemaConflict
+	}
+
+	root, err := storage.ResolveRoot(r.override)
+	if err != nil {
+		return "", err
+	}
+	layout, err := storage.Initialize(root)
+	if err != nil {
+		return "", err
+	}
+	recoveryDirectory, err := database.RelocateSchemaConflict(
+		ctx,
+		filepath.Join(layout.Database, "librairii.sqlite3"),
+	)
+	if err != nil {
+		return "", err
+	}
+	r.layout = layout
+	return recoveryDirectory, nil
+}
+
 func (r *StorageReadiness) Layout() storage.Layout {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
