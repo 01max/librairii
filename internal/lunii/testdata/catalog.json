@@ -1,0 +1,23 @@
+{
+  "response": {
+    "fixture-pack-001": {
+      "uuid": "123e4567-e89b-42d3-a456-426614174000",
+      "locales_available": {
+        "en_GB": true
+      },
+      "localized_infos": {
+        "en_GB": {
+          "title": "The Clockwork Mountain",
+          "description": "A sanitized catalog fixture.",
+          "authors": [
+            "A. Example"
+          ],
+          "publisher": "Fixture Press",
+          "image": {
+            "image_url": "/fixture/clockwork-mountain.png"
+          }
+        }
+      }
+    }
+  }
+}
