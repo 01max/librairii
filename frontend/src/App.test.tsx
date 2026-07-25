@@ -571,6 +571,151 @@ test('blocks unsafe shelf evaluation until its query is explicitly replaced', as
         .toHaveClass('active');
 });
 
+test('requires explicit removal of unavailable criteria before shelf repair', async () => {
+    const user = userEvent.setup();
+    window.history.replaceState(
+        null,
+        '',
+        '/#/library?bool=999%3Atrue&size=12&sort=imported_desc&v=1',
+    );
+    const invalid = new shelves.Summary({
+        id: 15,
+        name: 'Deleted tag shelf',
+        position: 0,
+        validity: 'needs_attention',
+        attentionReason: 'missing_criteria',
+        count: 0,
+    });
+    const repaired = new shelves.Summary({
+        id: 15,
+        name: 'Deleted tag shelf',
+        position: 0,
+        validity: 'valid',
+        count: 2,
+    });
+    listShelves
+        .mockResolvedValueOnce(new app.ShelfListResponse({shelves: [invalid]}))
+        .mockResolvedValue(new app.ShelfListResponse({shelves: [repaired]}));
+    queryStories.mockImplementation(async (query) => (
+        query.booleanFilters.length > 0
+            ? new app.LibraryPageResponse({
+                error: {
+                    code: 'invalid_input',
+                    message: 'The collection query contains an unavailable criterion.',
+                },
+            })
+            : new app.LibraryPageResponse({
+                page: {
+                    stories,
+                    page: 1,
+                    pageSize: 12,
+                    totalItems: 2,
+                    totalPages: 1,
+                    sort: 'imported_desc',
+                },
+            })
+    ));
+    replaceShelfQuery.mockResolvedValue(new app.ShelfResponse({
+        shelf: {
+            id: 15,
+            name: 'Deleted tag shelf',
+            normalizedName: 'deleted tag shelf',
+            position: 0,
+            queryVersion: 2,
+            queryPayload: '{}',
+            validity: 'valid',
+        },
+    }));
+
+    render(<App/>);
+    expect(await screen.findByRole('button', {
+        name: 'Remove filter Unavailable saved criterion · definition 999',
+    })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', {
+        name: 'Deleted tag shelf, needs attention',
+    }));
+
+    const replace = screen.getByRole('button', {name: 'Replace with current query'});
+    expect(replace).toBeDisabled();
+    await user.click(screen.getByRole('button', {
+        name: 'Remove unavailable criteria',
+    }));
+    await waitFor(() => expect(queryStories).toHaveBeenLastCalledWith(
+        expect.objectContaining({booleanFilters: []}),
+    ));
+    expect(replace).toBeEnabled();
+    await user.click(replace);
+
+    await waitFor(() => expect(replaceShelfQuery).toHaveBeenCalledWith(
+        15,
+        expect.objectContaining({booleanFilters: []}),
+    ));
+});
+
+test('moves an active shelf into repair when refreshed validity becomes unsafe', async () => {
+    const user = userEvent.setup();
+    const valid = new shelves.Summary({
+        id: 16,
+        name: 'Mood',
+        position: 0,
+        validity: 'valid',
+        count: 1,
+    });
+    const invalid = new shelves.Summary({
+        id: 16,
+        name: 'Mood',
+        position: 0,
+        validity: 'needs_attention',
+        attentionReason: 'missing_criteria',
+        count: 0,
+    });
+    listShelves
+        .mockResolvedValueOnce(new app.ShelfListResponse({shelves: [valid]}))
+        .mockResolvedValue(new app.ShelfListResponse({shelves: [invalid]}));
+    openShelf.mockResolvedValue(new app.ShelfEvaluationResponse({
+        evaluation: {
+            shelf: {
+                id: 16,
+                name: 'Mood',
+                normalizedName: 'mood',
+                position: 0,
+                queryVersion: 2,
+                queryPayload: '{"name":"moon"}',
+                validity: 'valid',
+            },
+            query: {name: 'moon'},
+            page: {
+                stories: [stories[1]],
+                page: 1,
+                pageSize: 12,
+                totalItems: 1,
+                totalPages: 1,
+                sort: 'imported_desc',
+            },
+        },
+    }));
+
+    render(<App/>);
+    await user.click(await screen.findByRole('button', {name: 'Mood, 1 story'}));
+    expect(await screen.findByRole('heading', {name: 'Mood'})).toBeInTheDocument();
+    operationChanged?.({
+        id: '88882222-3333-4444-8555-666677778888',
+        kind: 'import',
+        status: 'succeeded',
+        completedItems: 1,
+        totalItems: 1,
+        cancelRequested: false,
+        createdAt: '2026-07-25T19:00:00Z',
+        finishedAt: '2026-07-25T19:01:00Z',
+        items: [],
+    });
+
+    expect(await screen.findByRole('heading', {name: 'Repair “Mood”'}))
+        .toBeInTheDocument();
+    expect(screen.getByRole('button', {name: 'Mood, needs attention'}))
+        .not.toHaveClass('active');
+});
+
 test('previews a multi-shelf union with per-shelf and overlap counts', async () => {
     const user = userEvent.setup();
     listShelves.mockResolvedValue(new app.ShelfListResponse({

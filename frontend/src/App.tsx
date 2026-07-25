@@ -147,6 +147,53 @@ function shelfAttentionMessage(reason?: string): string {
     return 'One or more saved tag criteria no longer exist. The original query is preserved until you explicitly replace it.';
 }
 
+function hasUnavailableCriteria(
+    query: CollectionQuery,
+    catalog: tagging.Catalog | null,
+): boolean {
+    if (!catalog) {
+        return false;
+    }
+    const definitions = new Map(
+        catalog.definitions.map((definition) => [definition.id, definition]),
+    );
+    return query.booleanFilters.some(
+        (filter) => definitions.get(filter.definitionId)?.kind !== 'boolean',
+    ) || query.choiceFilters.some((filter) => {
+        const definition = definitions.get(filter.definitionId);
+        if (definition?.kind !== 'choice') {
+            return true;
+        }
+        const values = new Set(definition.values.map((value) => value.id));
+        return filter.valueIds.some((valueID) => !values.has(valueID));
+    });
+}
+
+function withoutUnavailableCriteria(
+    query: CollectionQuery,
+    catalog: tagging.Catalog,
+): CollectionQuery {
+    const definitions = new Map(
+        catalog.definitions.map((definition) => [definition.id, definition]),
+    );
+    return {
+        ...query,
+        booleanFilters: query.booleanFilters.filter(
+            (filter) => definitions.get(filter.definitionId)?.kind === 'boolean',
+        ),
+        choiceFilters: query.choiceFilters.flatMap((filter) => {
+            const definition = definitions.get(filter.definitionId);
+            if (definition?.kind !== 'choice') {
+                return [];
+            }
+            const values = new Set(definition.values.map((value) => value.id));
+            const valueIds = filter.valueIds.filter((valueID) => values.has(valueID));
+            return valueIds.length > 0 ? [{...filter, valueIds}] : [];
+        }),
+        page: 1,
+    };
+}
+
 type CoverStyle = CSSProperties & {
     '--sky': string;
     '--sun': string;
@@ -232,9 +279,14 @@ function App() {
     const [shelfBusy, setShelfBusy] = useState(false);
     const [repairShelfID, setRepairShelfID] = useState<number | null>(null);
     const [deleteShelfID, setDeleteShelfID] = useState<number | null>(null);
+    const activeShelfIDRef = useRef<number | null>(null);
     const refreshedOperations = useRef(new Set<string>());
     const searchInput = useRef<HTMLInputElement>(null);
     const collectionRequestGeneration = useRef(0);
+    const activateShelf = useCallback((shelfID: number | null) => {
+        activeShelfIDRef.current = shelfID;
+        setActiveShelfID(shelfID);
+    }, []);
 
     const loadCollection = useCallback(async () => {
         const generation = ++collectionRequestGeneration.current;
@@ -316,10 +368,17 @@ function App() {
             setSelectedShelfIDs((current) => current.filter((shelfID) => (
                 nextShelves.some((shelf) => shelf.id === shelfID)
             )));
+            const activeID = activeShelfIDRef.current;
+            const active = nextShelves.find((shelf) => shelf.id === activeID);
+            if (active && active.validity === 'needs_attention') {
+                setRepairShelfID(active.id);
+                activateShelf(null);
+                setPage(null);
+            }
         } catch {
             setRequestError('Saved shelves could not be loaded.');
         }
-    }, []);
+    }, [activateShelf]);
 
     const reconcileOperation = useCallback((snapshot: operations.Snapshot) => {
         setOperationSnapshots((current) => {
@@ -759,7 +818,7 @@ function App() {
                 );
                 return;
             }
-            setActiveShelfID(shelfID);
+            activateShelf(shelfID);
             setPage(response.evaluation.page);
             updateQuery(collectionQueryFromShelf(
                 response.evaluation.query,
@@ -773,7 +832,7 @@ function App() {
     }
 
     function openAllStories() {
-        setActiveShelfID(null);
+        activateShelf(null);
         updateQuery({
             ...collectionQuery,
             name: '',
@@ -819,7 +878,7 @@ function App() {
             setShelfDialogName('');
             await loadSavedShelves();
             if (shelfDialogMode === 'save') {
-                setActiveShelfID(changedShelf.id);
+                activateShelf(changedShelf.id);
             } else if (shelfDialogMode === 'duplicate') {
                 await openSavedShelf(changedShelf.id);
             }
@@ -894,7 +953,7 @@ function App() {
             }
             setDeleteShelfID(null);
             if (activeShelfID === deleteShelf.id) {
-                setActiveShelfID(null);
+                activateShelf(null);
             }
             if (repairShelfID === deleteShelf.id) {
                 setRepairShelfID(null);
@@ -911,7 +970,7 @@ function App() {
     }
 
     async function repairShelfWithCurrentQuery() {
-        if (!repairShelf) {
+        if (!repairShelf || unavailableCriteria) {
             return;
         }
         setShelfBusy(true);
@@ -928,7 +987,7 @@ function App() {
                 return;
             }
             setRepairShelfID(null);
-            setActiveShelfID(repairShelf.id);
+            activateShelf(repairShelf.id);
             await loadSavedShelves();
         } catch {
             setShelfDialogError('The saved shelf could not be repaired.');
@@ -981,6 +1040,23 @@ function App() {
         });
     }
 
+    function removeChoiceFilter(definitionId: number) {
+        updateQuery({
+            ...collectionQuery,
+            choiceFilters: collectionQuery.choiceFilters.filter(
+                (filter) => filter.definitionId !== definitionId,
+            ),
+            page: 1,
+        });
+    }
+
+    function removeUnavailableCriteria() {
+        if (!tagCatalog) {
+            return;
+        }
+        updateQuery(withoutUnavailableCriteria(collectionQuery, tagCatalog));
+    }
+
     function toggleLanguage(locale: string) {
         const languages = collectionQuery.languages.includes(locale)
             ? collectionQuery.languages.filter((candidate) => candidate !== locale)
@@ -995,6 +1071,7 @@ function App() {
         updateQuery({...collectionQuery, compatibilities, page: 1});
     }
 
+    const unavailableCriteria = hasUnavailableCriteria(collectionQuery, tagCatalog);
     const activeFilters = [
         ...(collectionQuery.name
             ? [{
@@ -1019,7 +1096,7 @@ function App() {
             const definition = tagCatalog?.definitions.find(
                 (candidate) => candidate.id === filter.definitionId,
             );
-            return definition
+            return definition?.kind === 'boolean'
                 ? [{
                     key: `boolean-${filter.definitionId}`,
                     label: filter.state === 'true'
@@ -1027,21 +1104,42 @@ function App() {
                         : `Not ${definition.label}`,
                     remove: () => setBooleanFilter(filter.definitionId, 'ignored'),
                 }]
-                : [];
+                : [{
+                    key: `unavailable-boolean-${filter.definitionId}`,
+                    label: `Unavailable saved criterion · definition ${
+                        filter.definitionId
+                    }`,
+                    remove: () => setBooleanFilter(filter.definitionId, 'ignored'),
+                }];
         }),
         ...collectionQuery.choiceFilters.flatMap((filter) => {
             const definition = tagCatalog?.definitions.find(
                 (candidate) => candidate.id === filter.definitionId,
             );
+            if (definition?.kind !== 'choice') {
+                return [{
+                    key: `unavailable-choice-${filter.definitionId}`,
+                    label: `Unavailable saved criterion · definition ${
+                        filter.definitionId
+                    }`,
+                    remove: () => removeChoiceFilter(filter.definitionId),
+                }];
+            }
             return filter.valueIds.flatMap((valueID) => {
-                const value = definition?.values.find((candidate) => candidate.id === valueID);
-                return definition && value
+                const value = definition.values.find(
+                    (candidate) => candidate.id === valueID,
+                );
+                return value
                     ? [{
                         key: `choice-${definition.id}-${value.id}`,
                         label: `${definition.label} · ${value.label}`,
                         remove: () => toggleChoiceFilter(definition.id, value.id),
                     }]
-                    : [];
+                    : [{
+                        key: `unavailable-choice-${definition.id}-${valueID}`,
+                        label: `Unavailable ${definition.label} value · ${valueID}`,
+                        remove: () => toggleChoiceFilter(definition.id, valueID),
+                    }];
             });
         }),
     ];
@@ -1898,10 +1996,19 @@ function App() {
                             >
                                 Delete shelf
                             </button>
+                            {unavailableCriteria && (
+                                <button
+                                    type="button"
+                                    disabled={shelfBusy || !tagCatalog}
+                                    onClick={removeUnavailableCriteria}
+                                >
+                                    Remove unavailable criteria
+                                </button>
+                            )}
                             <button
                                 className="export"
                                 type="button"
-                                disabled={shelfBusy}
+                                disabled={shelfBusy || unavailableCriteria}
                                 onClick={() => void repairShelfWithCurrentQuery()}
                             >
                                 {shelfBusy ? 'Replacing…' : 'Replace with current query'}
