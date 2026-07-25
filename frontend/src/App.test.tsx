@@ -588,6 +588,59 @@ test('renames, reorders, duplicates, and deletes saved shelves', async () => {
         .not.toBeInTheDocument();
 });
 
+test('keeps a deleted active shelf query as custom instead of labeling all stories', async () => {
+    const user = userEvent.setup();
+    let summaries = [new shelves.Summary({
+        id: 7,
+        name: 'Bedtime',
+        position: 0,
+        validity: 'valid',
+        count: 1,
+    })];
+    listShelves.mockImplementation(async () => new app.ShelfListResponse({
+        shelves: summaries,
+    }));
+    openShelf.mockResolvedValue(new app.ShelfEvaluationResponse({
+        evaluation: {
+            shelf: {
+                id: 7,
+                name: 'Bedtime',
+                normalizedName: 'bedtime',
+                position: 0,
+                queryVersion: 2,
+                queryPayload: '{"name":"moon"}',
+                validity: 'valid',
+            },
+            query: {name: 'moon'},
+            page: {
+                stories: [stories[1]],
+                page: 1,
+                pageSize: 12,
+                totalItems: 1,
+                totalPages: 1,
+                sort: 'imported_desc',
+            },
+        },
+    }));
+    deleteShelf.mockImplementation(async () => {
+        summaries = [];
+        return new app.MutationResponse({success: true});
+    });
+
+    render(<App/>);
+    await user.click(await screen.findByRole('button', {name: 'Bedtime, 1 story'}));
+    await user.click(screen.getByRole('button', {name: 'Delete Bedtime'}));
+    await user.click(screen.getByRole('button', {name: 'Delete shelf'}));
+
+    await waitFor(() => expect(deleteShelf).toHaveBeenCalledWith(7));
+    expect(screen.getByRole('searchbox', {name: 'Search stories'}))
+        .toHaveValue('moon');
+    expect(screen.getByRole('button', {name: /All stories/}))
+        .not.toHaveClass('active');
+    expect(screen.queryByRole('button', {name: '↻ Update “Bedtime”'}))
+        .not.toBeInTheDocument();
+});
+
 test('blocks unsafe shelf evaluation until its query is explicitly replaced', async () => {
     const user = userEvent.setup();
     const invalid = new shelves.Summary({

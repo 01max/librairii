@@ -169,6 +169,14 @@ function hasUnavailableCriteria(
     });
 }
 
+function isAllStoriesQuery(query: CollectionQuery): boolean {
+    return query.name === '' &&
+        query.languages.length === 0 &&
+        query.compatibilities.length === 0 &&
+        query.booleanFilters.length === 0 &&
+        query.choiceFilters.length === 0;
+}
+
 function withoutUnavailableCriteria(
     query: CollectionQuery,
     catalog: tagging.Catalog,
@@ -749,6 +757,8 @@ function App() {
     const selected = detail?.story ?? selectedSummary;
     const selectedPalette = selected ? paletteFor(selected.id) : undefined;
     const activeShelf = savedShelves.find((shelf) => shelf.id === activeShelfID) ?? null;
+    const allStoriesActive = activeShelfID === null &&
+        isAllStoriesQuery(collectionQuery);
     const repairShelf = savedShelves.find((shelf) => shelf.id === repairShelfID) ?? null;
     const deleteShelf = savedShelves.find((shelf) => shelf.id === deleteShelfID) ?? null;
     const activeOperations = operationSnapshots.filter((snapshot) => (
@@ -983,6 +993,7 @@ function App() {
             }
             setDeleteShelfID(null);
             if (activeShelfID === deleteShelf.id) {
+                queryHistory.replace(collectionQuery, null);
                 activateShelf(null);
             }
             if (repairShelfID === deleteShelf.id) {
@@ -1258,14 +1269,14 @@ function App() {
                 <div className="caption">Saved shelves</div>
                 <nav className="saved">
                     <button
-                        className={`saved-picker${activeShelfID === null ? ' active' : ''}`}
+                        className={`saved-picker${allStoriesActive ? ' active' : ''}`}
                         type="button"
                         disabled={shelfBusy}
                         onClick={openAllStories}
                     >
                         <i style={{'--c': '#405cf5'} as CSSProperties}/>
                         All stories
-                        <span>{activeShelfID === null ? page?.totalItems ?? 0 : 'All'}</span>
+                        <span>{allStoriesActive ? page?.totalItems ?? 0 : 'All'}</span>
                     </button>
                     {savedShelves.map((shelf, index) => (
                         <div className="saved-entry" key={shelf.id}>
