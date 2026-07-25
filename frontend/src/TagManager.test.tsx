@@ -194,6 +194,12 @@ test('plans destructive changes and confirms the displayed assignment impact', a
     expect(await screen.findByText(
         '12 assignments, 2 values, and 3 saved shelves are affected.',
     )).toBeInTheDocument();
+    const cancel = screen.getByRole('button', {name: 'Cancel'});
+    await waitFor(() => expect(cancel).toHaveFocus());
+    await user.tab({shift: true});
+    expect(screen.getByRole('button', {name: 'Delete permanently'})).toHaveFocus();
+    await user.tab();
+    expect(cancel).toHaveFocus();
     await user.click(screen.getByRole('button', {name: 'Delete permanently'}));
 
     expect(deleteTagDefinition).toHaveBeenCalledWith(plan);

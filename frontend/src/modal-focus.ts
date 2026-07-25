@@ -12,8 +12,12 @@ const focusableSelector = [
 export function useModalFocus(
     container: RefObject<HTMLElement | null>,
     initial: RefObject<HTMLElement | null>,
+    active = true,
 ) {
     useEffect(() => {
+        if (!active) {
+            return;
+        }
         const opener = document.activeElement instanceof HTMLElement
             ? document.activeElement
             : null;
@@ -50,5 +54,5 @@ export function useModalFocus(
             document.removeEventListener('keydown', trapTab);
             opener?.focus();
         };
-    }, [container, initial]);
+    }, [active, container, initial]);
 }

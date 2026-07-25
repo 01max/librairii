@@ -50,6 +50,61 @@ function errorMessage(error?: {message: string}): string {
     return error?.message ?? 'The tag change could not be completed.';
 }
 
+function DeletionConfirmation({
+    deletion,
+    busy,
+    onCancel,
+    onConfirm,
+}: {
+    deletion: DeletionTarget;
+    busy: boolean;
+    onCancel: () => void;
+    onConfirm: () => void;
+}) {
+    const dialog = useRef<HTMLElement>(null);
+    const initialFocus = useRef<HTMLButtonElement>(null);
+    useModalFocus(dialog, initialFocus);
+    return (
+        <div className="dialog-backdrop confirmation-backdrop">
+            <section
+                ref={dialog}
+                className="detail-dialog"
+                role="alertdialog"
+                aria-modal="true"
+                aria-labelledby="tag-delete-title"
+            >
+                <div className="dialog-kicker">Confirm impact</div>
+                <h3 id="tag-delete-title">
+                    Delete {deletion.kind === 'definition'
+                        ? deletion.plan.definition.label
+                        : deletion.plan.value.label}?
+                </h3>
+                <div className="removal-confirmation">
+                    <b>This removes saved metadata.</b>
+                    <p>
+                        {deletion.kind === 'definition'
+                            ? `${deletion.plan.assignmentCount} assignments, ${deletion.plan.valueCount} values, and ${deletion.plan.affectedShelfCount} saved shelves are affected.`
+                            : `${deletion.plan.assignmentCount} assignments and ${deletion.plan.affectedShelfCount} saved shelves are affected.`}
+                    </p>
+                </div>
+                <div className="dialog-actions">
+                    <button ref={initialFocus} type="button" onClick={onCancel}>
+                        Cancel
+                    </button>
+                    <button
+                        className="danger"
+                        type="button"
+                        disabled={busy}
+                        onClick={onConfirm}
+                    >
+                        Delete permanently
+                    </button>
+                </div>
+            </section>
+        </div>
+    );
+}
+
 export default function TagManager({onClose, onCatalogChange}: TagManagerProps) {
     const [catalog, setCatalog] = useState<tagging.Catalog | null>(null);
     const [error, setError] = useState<string | null>(null);
@@ -57,7 +112,7 @@ export default function TagManager({onClose, onCatalogChange}: TagManagerProps) 
     const [deletion, setDeletion] = useState<DeletionTarget | null>(null);
     const initialFocus = useRef<HTMLInputElement>(null);
     const dialog = useRef<HTMLElement>(null);
-    useModalFocus(dialog, initialFocus);
+    useModalFocus(dialog, initialFocus, deletion === null);
 
     const load = useCallback(async () => {
         const response = await TagCatalog();
@@ -405,40 +460,12 @@ export default function TagManager({onClose, onCatalogChange}: TagManagerProps) 
             </section>
 
             {deletion && (
-                <div className="dialog-backdrop confirmation-backdrop">
-                    <section
-                        className="detail-dialog"
-                        role="alertdialog"
-                        aria-modal="true"
-                        aria-labelledby="tag-delete-title"
-                    >
-                        <div className="dialog-kicker">Confirm impact</div>
-                        <h3 id="tag-delete-title">
-                            Delete {deletion.kind === 'definition'
-                                ? deletion.plan.definition.label
-                                : deletion.plan.value.label}?
-                        </h3>
-                        <div className="removal-confirmation">
-                            <b>This removes saved metadata.</b>
-                            <p>
-                                {deletion.kind === 'definition'
-                                    ? `${deletion.plan.assignmentCount} assignments, ${deletion.plan.valueCount} values, and ${deletion.plan.affectedShelfCount} saved shelves are affected.`
-                                    : `${deletion.plan.assignmentCount} assignments and ${deletion.plan.affectedShelfCount} saved shelves are affected.`}
-                            </p>
-                        </div>
-                        <div className="dialog-actions">
-                            <button type="button" onClick={() => setDeletion(null)}>Cancel</button>
-                            <button
-                                className="danger"
-                                type="button"
-                                disabled={busy}
-                                onClick={() => void confirmDeletion()}
-                            >
-                                Delete permanently
-                            </button>
-                        </div>
-                    </section>
-                </div>
+                <DeletionConfirmation
+                    deletion={deletion}
+                    busy={busy}
+                    onCancel={() => setDeletion(null)}
+                    onConfirm={() => void confirmDeletion()}
+                />
             )}
         </div>
     );
