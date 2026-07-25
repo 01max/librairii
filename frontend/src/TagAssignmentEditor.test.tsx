@@ -101,6 +101,7 @@ test('shows mixed bulk state and keeps protected derived tags read-only', async 
             storyIDs={[1, 2]}
             onClose={vi.fn()}
             onWorkspaceChange={vi.fn()}
+            onAssignmentsChange={vi.fn()}
         />,
     );
 
@@ -113,11 +114,13 @@ test('shows mixed bulk state and keeps protected derived tags read-only', async 
 
 test('prominently toggles broken across the selected stories', async () => {
     const user = userEvent.setup();
+    const onAssignmentsChange = vi.fn();
     render(
         <TagAssignmentEditor
             storyIDs={[1, 2]}
             onClose={vi.fn()}
             onWorkspaceChange={vi.fn()}
+            onAssignmentsChange={onAssignmentsChange}
         />,
     );
 
@@ -126,6 +129,7 @@ test('prominently toggles broken across the selected stories', async () => {
     expect(await screen.findByRole('status')).toHaveTextContent(
         '1 of 2 selected stories updated.',
     );
+    expect(onAssignmentsChange).toHaveBeenCalledTimes(1);
 });
 
 test('uses additive choice toggles and reports idempotent operations', async () => {
@@ -135,6 +139,7 @@ test('uses additive choice toggles and reports idempotent operations', async () 
             storyIDs={[1, 2]}
             onClose={vi.fn()}
             onWorkspaceChange={vi.fn()}
+            onAssignmentsChange={vi.fn()}
         />,
     );
 
@@ -153,6 +158,7 @@ test('closes without a keyboard trap', async () => {
             storyIDs={[1]}
             onClose={onClose}
             onWorkspaceChange={vi.fn()}
+            onAssignmentsChange={vi.fn()}
         />,
     );
     await screen.findByRole('dialog');

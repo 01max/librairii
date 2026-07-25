@@ -974,6 +974,7 @@ function App() {
                     storyIDs={selectedIDs}
                     onClose={() => setTagAssignmentOpen(false)}
                     onWorkspaceChange={setAssignmentWorkspace}
+                    onAssignmentsChange={loadCollection}
                 />
             )}
         </div>

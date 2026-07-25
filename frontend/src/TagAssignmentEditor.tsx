@@ -17,6 +17,7 @@ interface TagAssignmentEditorProps {
     storyIDs: number[];
     onClose: () => void;
     onWorkspaceChange: (workspace: tagging.AssignmentWorkspace) => void;
+    onAssignmentsChange: () => Promise<void>;
 }
 
 interface MixedCheckboxProps {
@@ -62,6 +63,7 @@ export default function TagAssignmentEditor({
     storyIDs,
     onClose,
     onWorkspaceChange,
+    onAssignmentsChange,
 }: TagAssignmentEditorProps) {
     const [workspace, setWorkspace] = useState<tagging.AssignmentWorkspace | null>(null);
     const [busy, setBusy] = useState(false);
@@ -113,6 +115,7 @@ export default function TagAssignmentEditor({
                 ? 'No stories changed; this tag already matched the selection.'
                 : `${response.result.changedStories} of ${response.result.requestedStories} selected stories updated.`);
             await load();
+            await onAssignmentsChange();
         } catch {
             setError('The application could not be reached.');
         } finally {
