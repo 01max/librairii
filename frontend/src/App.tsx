@@ -321,6 +321,9 @@ function chunkStories(stories: library.StorySummary[]): library.StorySummary[][]
 }
 
 function formatBytes(byteSize: number): string {
+    if (byteSize <= 0) {
+        return '0 KB';
+    }
     if (byteSize < 1024 * 1024) {
         return `${Math.max(1, Math.round(byteSize / 1024))} KB`;
     }
@@ -2039,6 +2042,31 @@ function App() {
                                             void revealExportDestination(operationID);
                                         }}
                                     />
+                                )}
+                                {operation.kind === 'export' &&
+                                    operationActive &&
+                                    operation.items.length > 0 && (
+                                    <ul
+                                        className="operation-items"
+                                        aria-label="Export story progress"
+                                    >
+                                        {operation.items.map((item) => (
+                                            <li key={item.id}>
+                                                <b>
+                                                    {item.storyTitle ||
+                                                        item.outputName ||
+                                                        item.sourceName}
+                                                </b>
+                                                <span>
+                                                    {formatBytes(item.completedBytes)}
+                                                    {' of '}
+                                                    {formatBytes(item.totalBytes)}
+                                                    {' · '}
+                                                    {item.status}
+                                                </span>
+                                            </li>
+                                        ))}
+                                    </ul>
                                 )}
                                 {operation.kind === 'import' &&
                                     operation.items.length > 0 &&

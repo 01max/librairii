@@ -2335,6 +2335,13 @@ test('restores persisted export progress and reconciles missed events', async ()
     expect(screen.getByText(
         '1/2 finished · 1.5 MB of 2.0 MB. Progress is saved locally.',
     )).toBeInTheDocument();
+    const storyProgress = screen.getByRole('list', {
+        name: 'Export story progress',
+    });
+    expect(storyProgress).toHaveTextContent('first.zip');
+    expect(storyProgress).toHaveTextContent('1.0 MB of 1.0 MB · succeeded');
+    expect(storyProgress).toHaveTextContent('second.zip');
+    expect(storyProgress).toHaveTextContent('512 KB of 1.0 MB · running');
     await waitFor(() => expect(operationSnapshot).toHaveBeenCalledWith(
         'export-after-reload',
     ));
