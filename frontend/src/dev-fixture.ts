@@ -213,6 +213,7 @@ export function installCollectionFixture() {
             collectionQuery: {
                 hash,
                 shelfId: null,
+                scope: 'all',
             },
         }, '', `${window.location.pathname}${window.location.search}${hash}`);
     }

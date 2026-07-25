@@ -661,6 +661,68 @@ test('pairs the detail drawer with a story visible in saved shelf previews', asy
         .not.toBeInTheDocument();
 });
 
+test('switches saved previews to filtered results and restores the custom URL', async () => {
+    const user = userEvent.setup();
+    listShelves.mockResolvedValue(new app.ShelfListResponse({
+        shelves: [new shelves.Summary({
+            id: 7,
+            name: 'Bedtime',
+            position: 0,
+            validity: 'valid',
+            count: 1,
+        })],
+    }));
+    openShelf.mockResolvedValue(new app.ShelfEvaluationResponse({
+        evaluation: {
+            shelf: {
+                id: 7,
+                name: 'Bedtime',
+                normalizedName: 'bedtime',
+                position: 0,
+                queryVersion: 2,
+                queryPayload: '{}',
+                validity: 'valid',
+            },
+            query: {},
+            page: {
+                stories: [stories[1]],
+                page: 1,
+                pageSize: 6,
+                totalItems: 1,
+                totalPages: 1,
+                sort: 'imported_desc',
+            },
+        },
+    }));
+
+    const first = render(<App/>);
+    expect(await screen.findByRole('heading', {name: 'Bedtime'}))
+        .toBeInTheDocument();
+
+    await user.type(
+        screen.getByRole('searchbox', {name: 'Search stories'}),
+        'forest',
+    );
+    await waitFor(() => expect(queryStories).toHaveBeenLastCalledWith(
+        expect.objectContaining({name: 'forest'}),
+    ));
+    expect(screen.queryByRole('heading', {name: 'Bedtime'}))
+        .not.toBeInTheDocument();
+    expect(screen.getByRole('heading', {name: 'Recently added'}))
+        .toBeInTheDocument();
+    expect(screen.getByRole('button', {name: /All stories/}))
+        .not.toHaveAttribute('aria-current');
+
+    first.unmount();
+    render(<App/>);
+    expect(await screen.findByRole('searchbox', {name: 'Search stories'}))
+        .toHaveValue('forest');
+    expect(screen.queryByRole('heading', {name: 'Bedtime'}))
+        .not.toBeInTheDocument();
+    expect(await screen.findByRole('heading', {name: 'Recently added'}))
+        .toBeInTheDocument();
+});
+
 test('surfaces saved shelf API and transport preview failures', async () => {
     listShelves.mockResolvedValue(new app.ShelfListResponse({
         shelves: [new shelves.Summary({

@@ -24,6 +24,7 @@ test('restores the same query when history is reconstructed like a reload', () =
     const reloaded = new CollectionQueryHistory(window, applicationDefault);
     expect(reloaded.current()).toEqual(pushed);
     expect(reloaded.currentShelfID()).toBe(7);
+    expect(reloaded.currentScope()).toBe('shelf');
 });
 
 test('restores back and forward query states', async () => {
@@ -38,10 +39,29 @@ test('restores back and forward query states', async () => {
     const unsubscribe = history.subscribe(listener);
 
     window.history.back();
-    await waitFor(() => expect(listener).toHaveBeenLastCalledWith(dragon, 7));
+    await waitFor(() => expect(listener).toHaveBeenLastCalledWith(
+        dragon,
+        7,
+        'shelf',
+    ));
     window.history.forward();
-    await waitFor(() => expect(listener).toHaveBeenLastCalledWith(filtered, 8));
+    await waitFor(() => expect(listener).toHaveBeenLastCalledWith(
+        filtered,
+        8,
+        'shelf',
+    ));
     unsubscribe();
+});
+
+test('restores custom shelf-less queries without activating All stories', () => {
+    const history = new CollectionQueryHistory(window, applicationDefault);
+    history.push({...applicationDefault, name: 'dragon'}, null);
+
+    const reloaded = new CollectionQueryHistory(window, applicationDefault);
+    expect(reloaded.currentScope()).toBe('custom');
+
+    reloaded.replace(applicationDefault, null);
+    expect(reloaded.currentScope()).toBe('all');
 });
 
 test('ignores shelf identity that does not belong to the current query route', () => {

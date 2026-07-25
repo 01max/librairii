@@ -47,7 +47,10 @@ import {
     operationIsActive,
     operationIsTerminal,
 } from './import-state';
-import {CollectionQueryHistory} from './query-history';
+import {
+    type CollectionScope,
+    CollectionQueryHistory,
+} from './query-history';
 import {
     type CompatibilityFilter,
     type CollectionQuery,
@@ -234,14 +237,6 @@ function hasUnavailableCriteria(
     });
 }
 
-function isAllStoriesQuery(query: CollectionQuery): boolean {
-    return query.name === '' &&
-        query.languages.length === 0 &&
-        query.compatibilities.length === 0 &&
-        query.booleanFilters.length === 0 &&
-        query.choiceFilters.length === 0;
-}
-
 function withoutUnavailableCriteria(
     query: CollectionQuery,
     catalog: tagging.Catalog,
@@ -274,8 +269,6 @@ type CoverStyle = CSSProperties & {
 };
 
 type ShelfDialogMode = 'save' | 'rename' | 'duplicate';
-type CollectionScope = 'all' | 'shelf' | 'custom';
-
 type CollectionShelfRow = {
     key: string;
     name: string;
@@ -414,13 +407,15 @@ function App() {
         () => new CollectionQueryHistory(window, initialCollectionQuery),
         [],
     );
-    const initialHistoryState = useMemo(() => ({
-        query: queryHistory.current(),
-        shelfID: queryHistory.currentShelfID(),
-        scope: (
-            queryHistory.currentShelfID() === null ? 'all' : 'shelf'
-        ) as CollectionScope,
-    }), [queryHistory]);
+    const initialHistoryState = useMemo(() => {
+        const query = queryHistory.current();
+        const shelfID = queryHistory.currentShelfID();
+        return {
+            query,
+            shelfID,
+            scope: queryHistory.currentScope(),
+        };
+    }, [queryHistory]);
     const [applicationState, setApplicationState] = useState('initializing');
     const [collectionQuery, setCollectionQuery] = useState(
         initialHistoryState.query,
@@ -602,18 +597,17 @@ function App() {
     }, [collectionQuery]);
 
     useEffect(() => {
-        queryHistory.replace(queryHistory.current(), activeShelfIDRef.current);
-        return queryHistory.subscribe((query, shelfID) => {
+        queryHistory.replace(
+            queryHistory.current(),
+            activeShelfIDRef.current,
+            initialHistoryState.scope,
+        );
+        return queryHistory.subscribe((query, shelfID, scope) => {
             collectionRequestGeneration.current++;
-            activateShelf(
-                shelfID,
-                shelfID === null
-                    ? isAllStoriesQuery(query) ? 'all' : 'custom'
-                    : 'shelf',
-            );
+            activateShelf(shelfID, scope);
             setCollectionQuery(query);
         });
-    }, [activateShelf, queryHistory]);
+    }, [activateShelf, initialHistoryState.scope, queryHistory]);
 
     const refreshMetadataStatus = useCallback(async () => {
         try {
@@ -1341,6 +1335,7 @@ function App() {
         shelfID?: number | null,
     ) => {
         setCollectionQuery(queryHistory.push(next, shelfID));
+        setCollectionScope(queryHistory.currentScope());
     }, [queryHistory]);
 
     function toggleShelfSelection(shelfID: number) {

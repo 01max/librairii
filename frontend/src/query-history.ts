@@ -11,10 +11,13 @@ type CollectionWindow = Pick<Window, 'addEventListener' | 'removeEventListener'>
     location: Pick<Location, 'hash' | 'pathname' | 'search'>;
 };
 
+export type CollectionScope = 'all' | 'shelf' | 'custom';
+
 type CollectionHistoryState = {
     collectionQuery?: {
         hash: string;
         shelfId: number | null;
+        scope?: CollectionScope;
     };
 };
 
@@ -57,12 +60,39 @@ export class CollectionQueryHistory {
         return entry.shelfId;
     }
 
-    push(query: CollectionQuery, shelfId?: number | null): CollectionQuery {
-        return this.#write('pushState', query, shelfId);
+    currentScope(): CollectionScope {
+        const shelfID = this.currentShelfID();
+        if (shelfID !== null) {
+            return 'shelf';
+        }
+        const state = this.#target.history.state as CollectionHistoryState | null;
+        const entry = state?.collectionQuery;
+        if (
+            entry?.hash === this.#target.location.hash &&
+            (entry.scope === 'all' || entry.scope === 'custom')
+        ) {
+            return entry.scope;
+        }
+        return encodeCollectionQuery(this.current()) ===
+            encodeCollectionQuery(this.#fallback)
+            ? 'all'
+            : 'custom';
     }
 
-    replace(query: CollectionQuery, shelfId?: number | null): CollectionQuery {
-        return this.#write('replaceState', query, shelfId);
+    push(
+        query: CollectionQuery,
+        shelfId?: number | null,
+        scope?: CollectionScope,
+    ): CollectionQuery {
+        return this.#write('pushState', query, shelfId, scope);
+    }
+
+    replace(
+        query: CollectionQuery,
+        shelfId?: number | null,
+        scope?: CollectionScope,
+    ): CollectionQuery {
+        return this.#write('replaceState', query, shelfId, scope);
     }
 
     clearBoolean(definitionId: number): CollectionQuery {
@@ -101,9 +131,17 @@ export class CollectionQueryHistory {
     }
 
     subscribe(
-        listener: (query: CollectionQuery, shelfId: number | null) => void,
+        listener: (
+            query: CollectionQuery,
+            shelfId: number | null,
+            scope: CollectionScope,
+        ) => void,
     ): () => void {
-        const onHistory = () => listener(this.current(), this.currentShelfID());
+        const onHistory = () => listener(
+            this.current(),
+            this.currentShelfID(),
+            this.currentScope(),
+        );
         this.#target.addEventListener('popstate', onHistory);
         return () => this.#target.removeEventListener('popstate', onHistory);
     }
@@ -112,15 +150,25 @@ export class CollectionQueryHistory {
         method: 'pushState' | 'replaceState',
         query: CollectionQuery,
         shelfId?: number | null,
+        scope?: CollectionScope,
     ): CollectionQuery {
         const canonical = canonicalCollectionQuery(query);
         const hash = encodeCollectionQuery(canonical);
+        const resolvedShelfID = shelfId === undefined
+            ? this.currentShelfID()
+            : shelfId;
+        const resolvedScope = resolvedShelfID !== null
+            ? 'shelf'
+            : scope ?? (
+                hash === encodeCollectionQuery(this.#fallback) ? 'all' : 'custom'
+            );
         const location = `${this.#target.location.pathname}${this.#target.location.search}` +
             hash;
         this.#target.history[method]({
             collectionQuery: {
                 hash,
-                shelfId: shelfId === undefined ? this.currentShelfID() : shelfId,
+                shelfId: resolvedShelfID,
+                scope: resolvedScope,
             },
         }, '', location);
         return canonical;
