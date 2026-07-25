@@ -1276,6 +1276,10 @@ select:focus-visible {
     margin-top: 10px;
 }
 
+.derived-values .tag {
+    border: 1px solid var(--line);
+}
+
 .assignment-option {
     display: flex;
     align-items: center;

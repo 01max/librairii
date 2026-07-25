@@ -436,8 +436,12 @@ function App() {
                 key: `${definition.id}`,
                 color: definition.color,
                 label: state.assignedStories === assignmentWorkspace.requestedStories
-                    ? definition.label
-                    : `${definition.label} · Mixed`,
+                    ? definition.source === 'derived'
+                        ? `System-derived · ${definition.label}`
+                        : definition.label
+                    : `${definition.source === 'derived'
+                        ? 'System-derived · '
+                        : ''}${definition.label} · Mixed`,
             }];
         }
         return definition.values.flatMap((value) => {
@@ -451,8 +455,12 @@ function App() {
                 key: `${definition.id}-${value.id}`,
                 color: definition.color,
                 label: valueState.assignedStories === assignmentWorkspace.requestedStories
-                    ? `${definition.label} · ${value.label}`
-                    : `${definition.label} · ${value.label} · Mixed`,
+                    ? `${definition.source === 'derived'
+                        ? 'System-derived · '
+                        : ''}${definition.label} · ${value.label}`
+                    : `${definition.source === 'derived'
+                        ? 'System-derived · '
+                        : ''}${definition.label} · ${value.label} · Mixed`,
             }];
         });
     }) ?? [];

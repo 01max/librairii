@@ -53,7 +53,13 @@ const workspace = new tagging.AssignmentWorkspace({
             kind: 'choice',
             source: 'derived',
             protected: true,
-            values: [],
+            values: [{
+                id: 30,
+                definitionId: 3,
+                key: '3-5',
+                label: '3–5 years',
+                position: 0,
+            }],
         }],
     },
     requestedStories: 2,
@@ -68,7 +74,7 @@ const workspace = new tagging.AssignmentWorkspace({
     }, {
         definitionId: 3,
         assignedStories: 0,
-        values: [],
+        values: [{valueId: 30, assignedStories: 2}],
     }],
 });
 
@@ -109,6 +115,7 @@ test('shows mixed bulk state and keeps protected derived tags read-only', async 
     expect(broken).toHaveAttribute('aria-checked', 'mixed');
     expect(screen.getByText('Mixed')).toBeInTheDocument();
     expect(screen.getByText(/Derived tags are read-only/)).toBeInTheDocument();
+    expect(screen.getByText('Age · 3–5 years · System-derived')).toBeInTheDocument();
     expect(screen.queryByRole('checkbox', {name: 'Age'})).not.toBeInTheDocument();
 });
 

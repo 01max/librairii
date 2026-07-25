@@ -200,9 +200,31 @@ export default function TagAssignmentEditor({
                                     </p>
                                 )}
                                 {derived ? (
-                                    <p className="protected-note">
-                                        Derived tags are read-only. Use them to inspect and filter stories.
-                                    </p>
+                                    <>
+                                        <p className="protected-note">
+                                            Derived tags are read-only. Use them to inspect and filter stories.
+                                        </p>
+                                        <div className="assignment-values derived-values">
+                                            {definition.values.flatMap((value) => {
+                                                const valueState = state?.values.find(
+                                                    (candidate) => candidate.valueId === value.id,
+                                                );
+                                                if (!valueState || valueState.assignedStories === 0) {
+                                                    return [];
+                                                }
+                                                const mixedValue =
+                                                    valueState.assignedStories <
+                                                    workspace.requestedStories;
+                                                return [(
+                                                    <span className="tag" key={value.id}>
+                                                        {definition.label} · {value.label}
+                                                        {' · System-derived'}
+                                                        {mixedValue ? ' · Mixed' : ''}
+                                                    </span>
+                                                )];
+                                            })}
+                                        </div>
+                                    </>
                                 ) : definition.kind === 'boolean' ? (
                                     <MixedCheckbox
                                         checked={all}
