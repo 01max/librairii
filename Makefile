@@ -4,7 +4,7 @@ WAILS_VERSION := $(shell cat .wails-version)
 WAILS ?= $(shell go env GOPATH)/bin/wails
 GO_PACKAGES := . ./internal/... ./cmd/...
 
-.PHONY: setup fmt fmt-check vet test-go typecheck lint-frontend test-frontend test-frontend-accessibility test-frontend-performance test-frontend-release test-frontend-responsive test-frontend-visual build-frontend check build build-current-installer verify-current-installer smoke-foundation smoke-first-story
+.PHONY: setup fmt fmt-check vet test-go typecheck lint-frontend test-frontend test-frontend-accessibility test-frontend-performance test-frontend-release test-frontend-responsive test-frontend-visual build-frontend check build build-current-installer verify-current-installer smoke-foundation smoke-first-story smoke-release
 
 setup:
 	go mod download
@@ -69,3 +69,6 @@ smoke-foundation:
 
 smoke-first-story:
 	go test ./internal/app -run '^TestFirstStoryVerticalSliceThroughPickerAndApplication$$' -v
+
+smoke-release:
+	scripts/smoke-release

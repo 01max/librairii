@@ -1,0 +1,9 @@
+#!/bin/sh
+set -eu
+
+smoke_root="${LIBRAIRII_SMOKE_ROOT:-}"
+if [ -z "$smoke_root" ]; then
+    smoke_root="$(mktemp -d /private/tmp/librairii-release-smoke.XXXXXX)"
+fi
+
+go run ./cmd/release-smoke -root "$smoke_root"
