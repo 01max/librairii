@@ -160,7 +160,13 @@ func (s *RefreshService) Refresh(
 		if removeErr != nil {
 			err = errors.Join(err, removeErr)
 		}
-		return RefreshResult{}, s.fail(ctx, sync.ID, 0, RefreshPersistenceFailed, err)
+		return RefreshResult{}, s.fail(
+			ctx,
+			sync.ID,
+			0,
+			refreshCode(ctx, RefreshPersistenceFailed),
+			err,
+		)
 	}
 
 	matchedStoryCount, err := s.repository.CountMatchingStories(ctx, snapshot.ID)

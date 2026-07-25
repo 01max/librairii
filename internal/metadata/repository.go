@@ -151,7 +151,12 @@ func (r *Repository) CreateSync(
 	if err != nil {
 		return CatalogSync{}, fmt.Errorf("insert catalog sync: %w", err)
 	}
-	return r.Sync(ctx, input.ID)
+	return CatalogSync{
+		ID:        input.ID,
+		Locale:    input.Locale,
+		Status:    SyncRunning,
+		StartedAt: formatTime(input.StartedAt),
+	}, nil
 }
 
 func (r *Repository) Sync(ctx context.Context, id string) (CatalogSync, error) {
@@ -255,7 +260,17 @@ func (r *Repository) StageSnapshot(
 	if err := transaction.Commit(); err != nil {
 		return CatalogSnapshot{}, fmt.Errorf("commit catalog snapshot staging: %w", err)
 	}
-	return r.Snapshot(ctx, snapshotID)
+	return CatalogSnapshot{
+		ID:          snapshotID,
+		SyncID:      input.SyncID,
+		Locale:      input.Locale,
+		RawPath:     input.RawPath,
+		RawSHA256:   input.RawSHA256,
+		ByteSize:    input.ByteSize,
+		RecordCount: len(input.Stories),
+		Status:      SnapshotStaged,
+		FetchedAt:   formatTime(input.FetchedAt),
+	}, nil
 }
 
 func (r *Repository) Artwork(ctx context.Context, id string) (CatalogArtwork, error) {

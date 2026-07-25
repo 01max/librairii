@@ -310,6 +310,164 @@ func TestRefreshServiceFinishesActivationAfterPublicationBoundary(t *testing.T) 
 	}
 }
 
+func TestRefreshServiceRetainsSyncIdentityWhenCancelledAfterSyncCommit(t *testing.T) {
+	t.Parallel()
+
+	harness := newRefreshHarness(t)
+	harness.setIDs("123e4567-e89b-42d3-a456-426614174334")
+	ctx, cancel := context.WithCancel(context.Background())
+	repository := &syncCommitCancellationRepository{
+		Repository: harness.repository,
+		cancel:     cancel,
+	}
+	service, err := NewRefreshService(
+		&contextCatalogFetcher{},
+		repository,
+		harness.store,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	service.now = harness.service.now
+	service.newID = harness.service.newID
+
+	_, err = service.Refresh(ctx, "en-GB")
+	if !RefreshErrorHasCode(err, RefreshCancelled) {
+		t.Fatalf("Refresh(cancel after sync commit) error = %v", err)
+	}
+	sync, err := harness.repository.Sync(
+		context.Background(),
+		"123e4567-e89b-42d3-a456-426614174334",
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if sync.Status != SyncCancelled ||
+		sync.ErrorCode != string(RefreshCancelled) {
+		t.Fatalf("cancelled sync = %#v", sync)
+	}
+}
+
+func TestRefreshServiceRetainsSnapshotIdentityWhenCancelledAfterSnapshotCommit(
+	t *testing.T,
+) {
+	t.Parallel()
+
+	harness := newRefreshHarness(t)
+	harness.fetcher.payload = readCatalogFixture(t)
+	harness.setIDs("123e4567-e89b-42d3-a456-426614174335")
+	ctx, cancel := context.WithCancel(context.Background())
+	repository := &snapshotCommitCancellationRepository{
+		Repository: harness.repository,
+		cancel:     cancel,
+	}
+	service, err := NewRefreshService(harness.fetcher, repository, harness.store)
+	if err != nil {
+		t.Fatal(err)
+	}
+	service.now = harness.service.now
+	service.newID = harness.service.newID
+
+	_, err = service.Refresh(ctx, "en-GB")
+	if !RefreshErrorHasCode(err, RefreshCancelled) {
+		t.Fatalf("Refresh(cancel after snapshot commit) error = %v", err)
+	}
+	sync, err := harness.repository.Sync(
+		context.Background(),
+		"123e4567-e89b-42d3-a456-426614174335",
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if sync.Status != SyncCancelled ||
+		sync.ErrorCode != string(RefreshCancelled) {
+		t.Fatalf("cancelled sync = %#v", sync)
+	}
+	var snapshot CatalogSnapshot
+	if err := harness.connection.QueryRow(
+		`SELECT
+			id, sync_id, locale, raw_path, raw_sha256, byte_size,
+			record_count, status, fetched_at, COALESCE(activated_at, '')
+		 FROM catalog_snapshots
+		 WHERE sync_id = ?`,
+		sync.ID,
+	).Scan(
+		&snapshot.ID,
+		&snapshot.SyncID,
+		&snapshot.Locale,
+		&snapshot.RawPath,
+		&snapshot.RawSHA256,
+		&snapshot.ByteSize,
+		&snapshot.RecordCount,
+		&snapshot.Status,
+		&snapshot.FetchedAt,
+		&snapshot.ActivatedAt,
+	); err != nil {
+		t.Fatal(err)
+	}
+	if snapshot.Status != SnapshotRejected {
+		t.Fatalf("snapshot = %#v", snapshot)
+	}
+	rawPath, err := harness.store.Resolve(snapshot.RawPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(rawPath); err != nil {
+		t.Fatalf("published raw snapshot was not retained: %v", err)
+	}
+}
+
+func TestRefreshServiceClassifiesCancellationBeforeSnapshotCommit(t *testing.T) {
+	t.Parallel()
+
+	harness := newRefreshHarness(t)
+	harness.fetcher.payload = readCatalogFixture(t)
+	harness.setIDs("123e4567-e89b-42d3-a456-426614174336")
+	ctx, cancel := context.WithCancel(context.Background())
+	repository := &snapshotPreCommitCancellationRepository{
+		Repository: harness.repository,
+		cancel:     cancel,
+	}
+	service, err := NewRefreshService(harness.fetcher, repository, harness.store)
+	if err != nil {
+		t.Fatal(err)
+	}
+	service.now = harness.service.now
+	service.newID = harness.service.newID
+
+	_, err = service.Refresh(ctx, "en-GB")
+	if !RefreshErrorHasCode(err, RefreshCancelled) {
+		t.Fatalf("Refresh(cancel before snapshot commit) error = %v", err)
+	}
+	sync, err := harness.repository.Sync(
+		context.Background(),
+		"123e4567-e89b-42d3-a456-426614174336",
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if sync.Status != SyncCancelled ||
+		sync.ErrorCode != string(RefreshCancelled) {
+		t.Fatalf("cancelled sync = %#v", sync)
+	}
+	var snapshots int
+	if err := harness.connection.QueryRow(
+		"SELECT COUNT(*) FROM catalog_snapshots WHERE sync_id = ?",
+		sync.ID,
+	).Scan(&snapshots); err != nil {
+		t.Fatal(err)
+	}
+	if snapshots != 0 {
+		t.Fatalf("snapshot count = %d", snapshots)
+	}
+	if _, err := os.Stat(filepath.Join(harness.layout.Catalog, sync.ID)); !errors.Is(
+		err,
+		os.ErrNotExist,
+	) {
+		t.Fatalf("published raw snapshot was not removed: %v", err)
+	}
+}
+
 type stubCatalogFetcher struct {
 	payload []byte
 	err     error
@@ -326,6 +484,12 @@ type cancellingFetcher struct {
 func (f *cancellingFetcher) FetchCatalog(context.Context) ([]byte, error) {
 	f.cancel()
 	return nil, context.Canceled
+}
+
+type contextCatalogFetcher struct{}
+
+func (*contextCatalogFetcher) FetchCatalog(ctx context.Context) ([]byte, error) {
+	return nil, ctx.Err()
 }
 
 type activationFailureRepository struct {
@@ -376,6 +540,51 @@ func (r *activationCancellationRepository) ActivateSnapshot(
 		matchedStoryCount,
 		activatedAt,
 	)
+}
+
+type syncCommitCancellationRepository struct {
+	*Repository
+	cancel context.CancelFunc
+}
+
+func (r *syncCommitCancellationRepository) CreateSync(
+	ctx context.Context,
+	input NewCatalogSync,
+) (CatalogSync, error) {
+	sync, err := r.Repository.CreateSync(ctx, input)
+	if err == nil {
+		r.cancel()
+	}
+	return sync, err
+}
+
+type snapshotCommitCancellationRepository struct {
+	*Repository
+	cancel context.CancelFunc
+}
+
+func (r *snapshotCommitCancellationRepository) StageSnapshot(
+	ctx context.Context,
+	input NewCatalogSnapshot,
+) (CatalogSnapshot, error) {
+	snapshot, err := r.Repository.StageSnapshot(ctx, input)
+	if err == nil {
+		r.cancel()
+	}
+	return snapshot, err
+}
+
+type snapshotPreCommitCancellationRepository struct {
+	*Repository
+	cancel context.CancelFunc
+}
+
+func (r *snapshotPreCommitCancellationRepository) StageSnapshot(
+	ctx context.Context,
+	_ NewCatalogSnapshot,
+) (CatalogSnapshot, error) {
+	r.cancel()
+	return CatalogSnapshot{}, ctx.Err()
 }
 
 type refreshHarness struct {
