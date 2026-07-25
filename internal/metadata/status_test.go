@@ -30,13 +30,14 @@ func TestCatalogStatusDistinguishesNeverSyncedFreshAndStaleCache(t *testing.T) {
 	); err != nil {
 		t.Fatal(err)
 	}
+	activatedAt := time.Date(2026, time.July, 25, 16, 0, 0, 0, time.UTC)
 	snapshot := stageStatusSnapshot(
 		t,
 		repository,
 		"123e4567-e89b-42d3-a456-426614174130",
 		storyUUID,
+		activatedAt.Add(-time.Hour),
 	)
-	activatedAt := time.Date(2026, time.July, 25, 16, 0, 0, 0, time.UTC)
 	if err := repository.ActivateSnapshot(
 		ctx,
 		snapshot.ID,
@@ -104,6 +105,7 @@ func TestCountMatchingStoriesUsesCompleteLocalUUIDs(t *testing.T) {
 		repository,
 		"123e4567-e89b-42d3-a456-426614174132",
 		localUUID,
+		time.Date(2026, time.July, 25, 16, 0, 0, 0, time.UTC),
 	)
 	count, err := repository.CountMatchingStories(ctx, snapshot.ID)
 	if err != nil {
@@ -125,6 +127,7 @@ func stageStatusSnapshot(
 	repository *Repository,
 	syncID string,
 	matchedUUID string,
+	startedAt time.Time,
 ) CatalogSnapshot {
 	t.Helper()
 
@@ -132,7 +135,7 @@ func stageStatusSnapshot(
 	if _, err := repository.CreateSync(ctx, NewCatalogSync{
 		ID:        syncID,
 		Locale:    "en-GB",
-		StartedAt: time.Now(),
+		StartedAt: startedAt,
 	}); err != nil {
 		t.Fatal(err)
 	}
@@ -142,7 +145,7 @@ func stageStatusSnapshot(
 		RawPath:   "catalog/" + syncID + "/catalog.json",
 		RawSHA256: strings.Repeat("f", 64),
 		ByteSize:  128,
-		FetchedAt: time.Now(),
+		FetchedAt: startedAt,
 		Stories: []NewOfficialStoryMetadata{
 			{StoryUUID: matchedUUID},
 			{StoryUUID: "30000000-0000-4000-8000-000000000099"},
