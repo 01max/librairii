@@ -4,6 +4,7 @@ import {
     ApplicationStatus,
     CancelOperation,
     ListStories,
+    RemoveStory,
     SelectAndImportStories,
     StoryDetail as LoadStoryDetail,
 } from '../wailsjs/go/main/App';
@@ -74,6 +75,10 @@ function App() {
     const [detail, setDetail] = useState<library.StoryDetail | null>(null);
     const [operation, setOperation] = useState<operations.Snapshot | null>(null);
     const [requestError, setRequestError] = useState<string | null>(null);
+    const [detailsOpen, setDetailsOpen] = useState(false);
+    const [removing, setRemoving] = useState(false);
+    const [removalError, setRemovalError] = useState<string | null>(null);
+    const [removalNotice, setRemovalNotice] = useState<string | null>(null);
 
     const loadCollection = useCallback(async () => {
         const result = await ListStories({
@@ -158,6 +163,26 @@ function App() {
         } else if (response.operation) {
             setOperation(response.operation);
         }
+    }
+
+    async function confirmRemoval() {
+        if (!selected) {
+            return;
+        }
+        setRemoving(true);
+        setRemovalError(null);
+        const title = selected.title;
+        const response = await RemoveStory(selected.id);
+        setRemoving(false);
+        if (response.error) {
+            setRemovalError(response.error.message);
+            return;
+        }
+        setDetailsOpen(false);
+        setDetail(null);
+        setSelectedID(null);
+        setRemovalNotice(`${title} was moved to application trash.`);
+        await loadCollection();
     }
 
     useEffect(() => {
@@ -273,6 +298,16 @@ function App() {
                         <div>
                             <h3>The action could not be completed</h3>
                             <p>{requestError}</p>
+                        </div>
+                    </section>
+                )}
+
+                {removalNotice && (
+                    <section className="collection-state success" data-state="removal-success">
+                        <div className="state-mark" aria-hidden="true">✓</div>
+                        <div>
+                            <h3>Story removed from this collection</h3>
+                            <p>{removalNotice}</p>
                         </div>
                     </section>
                 )}
@@ -399,10 +434,78 @@ function App() {
                         </div>
                     </div>
                     <div className="drawer-actions">
-                        <button type="button">Open details</button>
+                        <button
+                            type="button"
+                            onClick={() => {
+                                setRemovalError(null);
+                                setDetailsOpen(true);
+                            }}
+                        >
+                            Open details
+                        </button>
                         <button className="export" type="button">Add to export →</button>
                     </div>
                 </aside>
+            )}
+
+            {detailsOpen && selected && (
+                <div className="dialog-backdrop">
+                    <section
+                        className="detail-dialog"
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="story-detail-title"
+                    >
+                        <div className="dialog-kicker">Story details</div>
+                        <h3 id="story-detail-title">{selected.title}</h3>
+                        <p className="dialog-description">
+                            {selected.description || 'No story description is available yet.'}
+                        </p>
+                        <dl className="dialog-facts">
+                            <div>
+                                <dt>Story UUID</dt>
+                                <dd>{selected.uuid}</dd>
+                            </div>
+                            <div>
+                                <dt>Archive</dt>
+                                <dd>{detail?.archive.originalFilename ?? 'Loading…'}</dd>
+                            </div>
+                            <div>
+                                <dt>Verification</dt>
+                                <dd>{compatibilityLabel(selected.compatibility)}</dd>
+                            </div>
+                            <div>
+                                <dt>Checksum</dt>
+                                <dd>{detail?.archive.sha256 ?? 'Loading…'}</dd>
+                            </div>
+                        </dl>
+                        <div className="removal-confirmation">
+                            <b>Remove from this library?</b>
+                            <p>
+                                The managed archive will move to application trash before its
+                                active record is deleted. Your original source file is unchanged.
+                            </p>
+                        </div>
+                        {removalError && <p className="dialog-error">{removalError}</p>}
+                        <div className="dialog-actions">
+                            <button
+                                type="button"
+                                disabled={removing}
+                                onClick={() => setDetailsOpen(false)}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                className="danger"
+                                type="button"
+                                disabled={removing}
+                                onClick={() => void confirmRemoval()}
+                            >
+                                {removing ? 'Moving to trash…' : 'Move to trash'}
+                            </button>
+                        </div>
+                    </section>
+                </div>
             )}
         </div>
     );

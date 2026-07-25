@@ -166,6 +166,19 @@ func TestManagedPathsCannotEscapeAndRemovalMovesToTrash(t *testing.T) {
 	if _, err := os.Stat(trashed); err != nil {
 		t.Fatalf("trashed archive missing: %v", err)
 	}
+	if err := repository.RestoreFromTrash(trashRelative, relative); err != nil {
+		t.Fatalf("RestoreFromTrash() error = %v", err)
+	}
+	restored, err := repository.Resolve(relative)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if restoredBytes, err := os.ReadFile(restored); err != nil || string(restoredBytes) != "story" {
+		t.Fatalf("restored bytes = %q, %v", restoredBytes, err)
+	}
+	if _, err := os.Stat(trashed); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("trash still contains restored archive: %v", err)
+	}
 }
 
 func TestCleanupAbandonedRemovesOnlyStagingEntries(t *testing.T) {

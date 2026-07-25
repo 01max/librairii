@@ -5,6 +5,7 @@ import {
     ApplicationStatus,
     CancelOperation,
     ListStories,
+    RemoveStory,
     SelectAndImportStories,
     StoryDetail as LoadStoryDetail,
 } from '../wailsjs/go/main/App';
@@ -16,6 +17,7 @@ vi.mock('../wailsjs/go/main/App', () => ({
     ApplicationStatus: vi.fn(),
     CancelOperation: vi.fn(),
     ListStories: vi.fn(),
+    RemoveStory: vi.fn(),
     SelectAndImportStories: vi.fn(),
     StoryDetail: vi.fn(),
 }));
@@ -27,6 +29,7 @@ vi.mock('../wailsjs/runtime/runtime', () => ({
 const applicationStatus = vi.mocked(ApplicationStatus);
 const cancelOperation = vi.mocked(CancelOperation);
 const listStories = vi.mocked(ListStories);
+const removeStory = vi.mocked(RemoveStory);
 const selectAndImportStories = vi.mocked(SelectAndImportStories);
 const loadStoryDetail = vi.mocked(LoadStoryDetail);
 const eventsOn = vi.mocked(EventsOn);
@@ -70,6 +73,7 @@ beforeEach(() => {
     applicationStatus.mockReset();
     cancelOperation.mockReset();
     listStories.mockReset();
+    removeStory.mockReset();
     selectAndImportStories.mockReset();
     loadStoryDetail.mockReset();
     eventsOn.mockReset();
@@ -115,6 +119,12 @@ beforeEach(() => {
     }));
     cancelOperation.mockResolvedValue(new app.OperationResponse({
         cancelled: true,
+    }));
+    removeStory.mockResolvedValue(new app.RemovalResponse({
+        result: {
+            storyId: 1,
+            uuid: stories[0].uuid,
+        },
     }));
 });
 
@@ -214,4 +224,56 @@ test('shows nonblocking import progress and terminal validation feedback', async
         name: 'Unsupported or invalid story archive',
     })).toBeInTheDocument();
     expect(screen.getByText('The file is not a supported story archive.')).toBeInTheDocument();
+});
+
+test('cancels story removal without changing the collection', async () => {
+    const user = userEvent.setup();
+    render(<App/>);
+
+    await user.click(await screen.findByRole('button', {name: 'Open details'}));
+    expect(screen.getByRole('dialog', {name: 'Clockwork Forest'})).toBeInTheDocument();
+    await user.click(screen.getByRole('button', {name: 'Cancel'}));
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(removeStory).not.toHaveBeenCalled();
+    expect(screen.getByRole('button', {name: 'Clockwork Forest Lunii'}))
+        .toBeInTheDocument();
+});
+
+test('confirms removal, refreshes the collection, and reports trash custody', async () => {
+    const user = userEvent.setup();
+    listStories
+        .mockResolvedValueOnce(new app.LibraryPageResponse({
+            page: {
+                stories,
+                page: 1,
+                pageSize: 12,
+                totalItems: 2,
+                totalPages: 1,
+                sort: 'imported_desc',
+            },
+        }))
+        .mockResolvedValue(new app.LibraryPageResponse({
+            page: {
+                stories: [stories[1]],
+                page: 1,
+                pageSize: 12,
+                totalItems: 1,
+                totalPages: 1,
+                sort: 'imported_desc',
+            },
+        }));
+    render(<App/>);
+
+    await user.click(await screen.findByRole('button', {name: 'Open details'}));
+    await user.click(screen.getByRole('button', {name: 'Move to trash'}));
+
+    expect(removeStory).toHaveBeenCalledWith(1);
+    expect(await screen.findByRole('heading', {
+        name: 'Story removed from this collection',
+    })).toBeInTheDocument();
+    expect(screen.getByText('Clockwork Forest was moved to application trash.'))
+        .toBeInTheDocument();
+    expect(screen.queryByRole('button', {name: 'Clockwork Forest Lunii'}))
+        .not.toBeInTheDocument();
 });

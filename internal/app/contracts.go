@@ -7,6 +7,7 @@ import (
 
 	"github.com/01max/librairii/internal/library"
 	"github.com/01max/librairii/internal/operations"
+	"github.com/01max/librairii/internal/removal"
 )
 
 type LifecycleState string
@@ -117,6 +118,10 @@ type LibraryPort interface {
 	Detail(context.Context, int64) (library.StoryDetail, error)
 }
 
+type RemovalPort interface {
+	Remove(context.Context, int64) (removal.Result, error)
+}
+
 type Dependencies struct {
 	Clock      Clock
 	Dialogs    DialogPort
@@ -124,6 +129,7 @@ type Dependencies struct {
 	Readiness  ReadinessPort
 	Operations OperationPort
 	Library    LibraryPort
+	Removal    RemovalPort
 	Resources  []ResourcePort
 }
 
@@ -141,4 +147,9 @@ type LibraryPageResponse struct {
 type StoryDetailResponse struct {
 	Detail *library.StoryDetail `json:"detail,omitempty"`
 	Error  *APIError            `json:"error,omitempty"`
+}
+
+type RemovalResponse struct {
+	Result *removal.Result `json:"result,omitempty"`
+	Error  *APIError       `json:"error,omitempty"`
 }

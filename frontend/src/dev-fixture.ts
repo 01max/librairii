@@ -146,6 +146,12 @@ export function installCollectionFixture() {
         },
         SelectAndImportStories: async () => ({cancelled: true}),
         CancelOperation: async () => ({cancelled: true}),
+        RemoveStory: async (storyID: number) => ({
+            result: {
+                storyId: storyID,
+                uuid: stories.find((story) => story.id === storyID)?.uuid ?? '',
+            },
+        }),
         OperationSnapshot: async () => ({}),
     };
     (window as typeof window & {go: unknown}).go = {main: {App: fixtureApp}};

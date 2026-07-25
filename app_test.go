@@ -8,6 +8,7 @@ import (
 	coreapp "github.com/01max/librairii/internal/app"
 	"github.com/01max/librairii/internal/library"
 	"github.com/01max/librairii/internal/operations"
+	"github.com/01max/librairii/internal/removal"
 )
 
 type facadeClock struct{}
@@ -81,6 +82,13 @@ func (facadeOperations) Detail(
 	return library.StoryDetail{}, nil
 }
 
+func (facadeOperations) Remove(
+	context.Context,
+	int64,
+) (removal.Result, error) {
+	return removal.Result{}, nil
+}
+
 func TestAppExposesTypedLifecycleStatus(t *testing.T) {
 	t.Parallel()
 
@@ -91,6 +99,7 @@ func TestAppExposesTypedLifecycleStatus(t *testing.T) {
 		Readiness:  facadeReadiness{},
 		Operations: facadeOperations{},
 		Library:    facadeOperations{},
+		Removal:    facadeOperations{},
 	})
 	if err != nil {
 		t.Fatalf("New() error = %v", err)
@@ -118,6 +127,7 @@ func TestAppCanQuitAfterDOMReadyForPackagedSmoke(t *testing.T) {
 		Readiness:  facadeReadiness{},
 		Operations: facadeOperations{},
 		Library:    facadeOperations{},
+		Removal:    facadeOperations{},
 	})
 	if err != nil {
 		t.Fatalf("New() error = %v", err)

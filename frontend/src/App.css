@@ -771,6 +771,128 @@ input:focus-visible {
     background: var(--yellow);
 }
 
+.dialog-backdrop {
+    position: fixed;
+    z-index: 40;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    padding: 24px;
+    background: rgba(21, 33, 60, .48);
+    backdrop-filter: blur(8px);
+}
+
+.detail-dialog {
+    width: min(520px, 100%);
+    padding: 27px 28px 24px;
+    border: 1px solid var(--line);
+    border-radius: 13px;
+    background: white;
+    box-shadow: 0 24px 70px rgba(23, 34, 61, .28);
+}
+
+.dialog-kicker {
+    margin-bottom: 9px;
+    color: #8a94a8;
+    font: 800 8px/1 ui-monospace, monospace;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+}
+
+.detail-dialog h3 {
+    margin: 0 0 8px;
+    font: 600 27px/1 var(--serif);
+    letter-spacing: -.04em;
+}
+
+.dialog-description {
+    margin: 0 0 20px;
+    color: var(--muted);
+    font-size: 9px;
+    line-height: 1.5;
+}
+
+.dialog-facts {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 13px 20px;
+    margin: 0 0 20px;
+}
+
+.dialog-facts div {
+    min-width: 0;
+}
+
+.dialog-facts dt {
+    margin-bottom: 5px;
+    color: #98a1b2;
+    font: 700 7px/1 ui-monospace, monospace;
+    text-transform: uppercase;
+}
+
+.dialog-facts dd {
+    overflow: hidden;
+    margin: 0;
+    font: 600 9px/1.4 ui-monospace, monospace;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.removal-confirmation {
+    padding: 14px 15px;
+    border-left: 4px solid var(--coral);
+    border-radius: 8px;
+    background: #fff3f0;
+}
+
+.removal-confirmation b {
+    display: block;
+    margin-bottom: 4px;
+    font-size: 10px;
+}
+
+.removal-confirmation p,
+.dialog-error {
+    margin: 0;
+    color: #6f5960;
+    font-size: 9px;
+    line-height: 1.5;
+}
+
+.dialog-error {
+    margin-top: 12px;
+    color: #b64435;
+    font-weight: 800;
+}
+
+.dialog-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 19px;
+}
+
+.dialog-actions button {
+    padding: 10px 13px;
+    border: 1px solid var(--line);
+    border-radius: 9px;
+    color: var(--ink);
+    background: white;
+    font-size: 9px;
+    font-weight: 900;
+}
+
+.dialog-actions .danger {
+    border-color: var(--coral);
+    color: white;
+    background: var(--coral);
+}
+
+.dialog-actions button:disabled {
+    cursor: progress;
+    opacity: .7;
+}
+
 @media (max-width: 1180px) {
     .story-row {
         grid-template-columns: repeat(5, minmax(100px, 1fr));
@@ -895,6 +1017,19 @@ input:focus-visible {
 
     .drawer-actions button:first-child {
         display: none;
+    }
+
+    .dialog-backdrop {
+        padding: 14px;
+    }
+
+    .detail-dialog {
+        padding: 23px 20px 19px;
+    }
+
+    .dialog-facts {
+        grid-template-columns: 1fr;
+        gap: 10px;
     }
 }
 

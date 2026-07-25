@@ -132,7 +132,35 @@ func (r *Repository) FindByChecksum(ctx context.Context, checksum string) (Story
 	return r.find(ctx, "a.sha256 = ?", checksum)
 }
 
-func (r *Repository) find(ctx context.Context, predicate string, value string) (Story, StoryArchive, error) {
+func (r *Repository) FindByID(ctx context.Context, storyID int64) (Story, StoryArchive, error) {
+	return r.find(ctx, "s.id = ?", storyID)
+}
+
+func (r *Repository) Delete(ctx context.Context, storyID int64) error {
+	transaction, err := r.database.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("begin story deletion: %w", err)
+	}
+	defer transaction.Rollback()
+
+	result, err := transaction.ExecContext(ctx, "DELETE FROM stories WHERE id = ?", storyID)
+	if err != nil {
+		return fmt.Errorf("delete story: %w", err)
+	}
+	deleted, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("read deleted story count: %w", err)
+	}
+	if deleted == 0 {
+		return sql.ErrNoRows
+	}
+	if err := transaction.Commit(); err != nil {
+		return fmt.Errorf("commit story deletion: %w", err)
+	}
+	return nil
+}
+
+func (r *Repository) find(ctx context.Context, predicate string, value any) (Story, StoryArchive, error) {
 	var story Story
 	var archive StoryArchive
 	err := r.database.QueryRowContext(

@@ -31,6 +31,7 @@ func main() {
 		Readiness:  readiness,
 		Operations: importRuntime,
 		Library:    importRuntime,
+		Removal:    importRuntime,
 		Resources:  []coreapp.ResourcePort{readiness},
 	})
 	if err != nil {

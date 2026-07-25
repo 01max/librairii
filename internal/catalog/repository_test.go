@@ -3,6 +3,7 @@ package catalog
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -86,6 +87,36 @@ func TestRepositoryFindMissingReturnsSQLNoRows(t *testing.T) {
 	repository := NewRepository(openTestDatabase(t))
 	if _, _, err := repository.FindByUUID(context.Background(), "123e4567-e89b-42d3-a456-426614174000"); err != sql.ErrNoRows {
 		t.Fatalf("FindByUUID() error = %v, want sql.ErrNoRows", err)
+	}
+}
+
+func TestRepositoryDeletesStoryAndArchiveTogether(t *testing.T) {
+	t.Parallel()
+
+	connection := openTestDatabase(t)
+	repository := NewRepository(connection)
+	story, _, err := repository.Create(context.Background(), validCreateStory())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := repository.Delete(context.Background(), story.ID); err != nil {
+		t.Fatalf("Delete() error = %v", err)
+	}
+	if _, _, err := repository.FindByID(context.Background(), story.ID); !errors.Is(err, sql.ErrNoRows) {
+		t.Fatalf("FindByID(deleted) error = %v", err)
+	}
+	var archives int
+	if err := connection.QueryRow(
+		"SELECT COUNT(*) FROM story_archives WHERE story_id = ?",
+		story.ID,
+	).Scan(&archives); err != nil {
+		t.Fatal(err)
+	}
+	if archives != 0 {
+		t.Fatalf("archive count = %d", archives)
+	}
+	if err := repository.Delete(context.Background(), story.ID); !errors.Is(err, sql.ErrNoRows) {
+		t.Fatalf("Delete(missing) error = %v", err)
 	}
 }
 

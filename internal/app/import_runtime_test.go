@@ -91,6 +91,23 @@ func TestImportRuntimeComposesNativeImportSlice(t *testing.T) {
 		strings.Contains(detail.Archive.OriginalFilename, filepath.Dir(source)) {
 		t.Fatalf("Detail() = %#v", detail)
 	}
+	removed, err := runtime.Remove(context.Background(), page.Stories[0].ID)
+	if err != nil {
+		t.Fatalf("Remove() error = %v", err)
+	}
+	if removed.StoryID != page.Stories[0].ID || removed.UUID != page.Stories[0].UUID {
+		t.Fatalf("Remove() = %#v", removed)
+	}
+	afterRemoval, err := runtime.List(context.Background(), library.ListRequest{})
+	if err != nil {
+		t.Fatalf("List(after removal) error = %v", err)
+	}
+	if afterRemoval.TotalItems != 0 {
+		t.Fatalf("List(after removal) = %#v", afterRemoval)
+	}
+	if trashFiles := regularFiles(t, provider.layout.Trash); len(trashFiles) != 1 {
+		t.Fatalf("trash files = %#v", trashFiles)
+	}
 }
 
 type runtimeStorageProvider struct {
@@ -156,4 +173,21 @@ func (r *runtimeEventRecorder) waitTerminal(
 			t.Fatalf("timed out waiting for operation %s", operationID)
 		}
 	}
+}
+
+func regularFiles(t *testing.T, root string) []string {
+	t.Helper()
+	var files []string
+	if err := filepath.WalkDir(root, func(path string, entry os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if entry.Type().IsRegular() {
+			files = append(files, path)
+		}
+		return nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+	return files
 }

@@ -189,6 +189,69 @@ func (r *Repository) MoveToTrash(managedRelativePath string) (string, error) {
 	return filepath.ToSlash(relative), nil
 }
 
+func (r *Repository) RestoreFromTrash(
+	trashRelativePath string,
+	managedRelativePath string,
+) error {
+	source, err := SafeJoin(r.layout.Root, trashRelativePath)
+	if err != nil {
+		return err
+	}
+	contained, err := storage.PathContained(r.layout.Trash, source)
+	if err != nil || !contained {
+		return ErrInvalidManagedPath
+	}
+	destination, err := SafeJoin(r.layout.Root, managedRelativePath)
+	if err != nil {
+		return err
+	}
+	contained, err = creationPathContained(r.layout.Archives, destination)
+	if err != nil || !contained {
+		return ErrInvalidManagedPath
+	}
+	if _, err := os.Stat(destination); err == nil {
+		return ErrDestinationExists
+	} else if !errors.Is(err, os.ErrNotExist) {
+		return fmt.Errorf("inspect archive restore destination: %w", err)
+	}
+	if err := os.MkdirAll(filepath.Dir(destination), storage.DirectoryMode); err != nil {
+		return fmt.Errorf("create archive restore directory: %w", err)
+	}
+	if err := os.Rename(source, destination); err != nil {
+		_ = removeDirectoryIfEmpty(filepath.Dir(destination))
+		return fmt.Errorf("restore archive from trash: %w", err)
+	}
+	_ = removeDirectoryIfEmpty(filepath.Dir(source))
+	return nil
+}
+
+func creationPathContained(root string, candidate string) (bool, error) {
+	relative, err := filepath.Rel(root, candidate)
+	if err != nil ||
+		relative == ".." ||
+		strings.HasPrefix(relative, ".."+string(filepath.Separator)) {
+		return false, err
+	}
+	ancestor := filepath.Dir(candidate)
+	for {
+		info, err := os.Lstat(ancestor)
+		switch {
+		case err == nil:
+			if info.Mode()&os.ModeSymlink != 0 {
+				return false, nil
+			}
+			return storage.PathContained(root, ancestor)
+		case !errors.Is(err, os.ErrNotExist):
+			return false, err
+		}
+		parent := filepath.Dir(ancestor)
+		if parent == ancestor {
+			return false, nil
+		}
+		ancestor = parent
+	}
+}
+
 func (r *Repository) Resolve(managedRelativePath string) (string, error) {
 	path, err := SafeJoin(r.layout.Root, managedRelativePath)
 	if err != nil {

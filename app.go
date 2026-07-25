@@ -78,6 +78,10 @@ func (a *App) StoryDetail(storyID int64) coreapp.StoryDetailResponse {
 	return a.core.StoryDetail(a.runtimeContext(), storyID)
 }
 
+func (a *App) RemoveStory(storyID int64) coreapp.RemovalResponse {
+	return a.core.RemoveStory(a.runtimeContext(), storyID)
+}
+
 func (a *App) runtimeContext() context.Context {
 	a.mu.RLock()
 	defer a.mu.RUnlock()

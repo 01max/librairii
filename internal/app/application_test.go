@@ -11,6 +11,7 @@ import (
 
 	"github.com/01max/librairii/internal/library"
 	"github.com/01max/librairii/internal/operations"
+	"github.com/01max/librairii/internal/removal"
 )
 
 type fixedClock struct {
@@ -88,6 +89,7 @@ type fakeOperations struct {
 	snapshot   operations.Snapshot
 	page       library.Page
 	detail     library.StoryDetail
+	removed    removal.Result
 	err        error
 }
 
@@ -137,6 +139,13 @@ func (o *fakeOperations) Detail(
 	return o.detail, o.err
 }
 
+func (o *fakeOperations) Remove(
+	context.Context,
+	int64,
+) (removal.Result, error) {
+	return o.removed, o.err
+}
+
 func TestApplicationLifecycle(t *testing.T) {
 	t.Parallel()
 
@@ -151,6 +160,7 @@ func TestApplicationLifecycle(t *testing.T) {
 		Readiness:  fakeReadiness{report: ReadinessReport{MutationsAllowed: true}},
 		Operations: operationPort,
 		Library:    operationPort,
+		Removal:    operationPort,
 		Resources:  []ResourcePort{resource},
 	})
 	if err != nil {
@@ -203,6 +213,7 @@ func TestApplicationEntersRecoveryWhenStorageIsUnsafe(t *testing.T) {
 		Events:     &fakeEvents{},
 		Operations: operationPort,
 		Library:    operationPort,
+		Removal:    operationPort,
 		Readiness: fakeReadiness{report: ReadinessReport{
 			MutationsAllowed: false,
 			Issues:           []ReadinessIssue{{Code: "schema_mismatch"}},
@@ -272,6 +283,7 @@ func TestImportFacadeKeepsNativePathsInsideGo(t *testing.T) {
 		Readiness:  fakeReadiness{report: ReadinessReport{MutationsAllowed: true}},
 		Operations: operationPort,
 		Library:    operationPort,
+		Removal:    operationPort,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -319,6 +331,7 @@ func TestImportFacadeTreatsEmptySelectionAsCancellation(t *testing.T) {
 		Readiness:  fakeReadiness{report: ReadinessReport{MutationsAllowed: true}},
 		Operations: operationPort,
 		Library:    operationPort,
+		Removal:    operationPort,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -367,6 +380,7 @@ func TestLibraryFacadeReturnsTypedCollectionAndDetail(t *testing.T) {
 		Readiness:  fakeReadiness{report: ReadinessReport{MutationsAllowed: true}},
 		Operations: operationPort,
 		Library:    operationPort,
+		Removal:    operationPort,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -381,5 +395,39 @@ func TestLibraryFacadeReturnsTypedCollectionAndDetail(t *testing.T) {
 		detail.Detail == nil ||
 		detail.Detail.Archive.OriginalFilename != "clockwork.zip" {
 		t.Fatalf("StoryDetail() = %#v", detail)
+	}
+}
+
+func TestRemovalFacadeRequiresReadyStorageAndReturnsStableResult(t *testing.T) {
+	t.Parallel()
+
+	operationPort := &fakeOperations{
+		removed: removal.Result{
+			StoryID: 7,
+			UUID:    "00112233-4455-4677-8899-aabbccddeeff",
+		},
+	}
+	application, err := New(Dependencies{
+		Clock:      fixedClock{now: time.Now()},
+		Dialogs:    fakeDialogs{},
+		Events:     &fakeEvents{},
+		Readiness:  fakeReadiness{report: ReadinessReport{MutationsAllowed: true}},
+		Operations: operationPort,
+		Library:    operationPort,
+		Removal:    operationPort,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if response := application.RemoveStory(context.Background(), 7); response.Error == nil ||
+		response.Error.Code != ErrorNotReady {
+		t.Fatalf("RemoveStory(before ready) = %#v", response)
+	}
+	if err := application.Start(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	response := application.RemoveStory(context.Background(), 7)
+	if response.Error != nil || response.Result == nil || response.Result.StoryID != 7 {
+		t.Fatalf("RemoveStory() = %#v", response)
 	}
 }

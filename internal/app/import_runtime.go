@@ -14,6 +14,7 @@ import (
 	"github.com/01max/librairii/internal/inspection"
 	"github.com/01max/librairii/internal/library"
 	"github.com/01max/librairii/internal/operations"
+	"github.com/01max/librairii/internal/removal"
 	"github.com/01max/librairii/internal/storage"
 )
 
@@ -32,6 +33,7 @@ type ImportRuntime struct {
 	workers int
 	manager *operations.Manager
 	query   *library.Query
+	removal *removal.Service
 }
 
 func NewImportRuntime(
@@ -64,10 +66,11 @@ func (r *ImportRuntime) Start(ctx context.Context) error {
 	}
 
 	archiveRepository := archive.NewRepository(layout)
+	catalogRepository := catalog.NewRepository(database)
 	importService, err := importer.NewService(
 		archiveRepository,
 		artwork.NewRepository(layout),
-		catalog.NewRepository(database),
+		catalogRepository,
 		inspection.NewStoryInspector(),
 		inspection.DefaultLimits(),
 	)
@@ -88,8 +91,14 @@ func (r *ImportRuntime) Start(ctx context.Context) error {
 	if err := manager.Start(ctx); err != nil {
 		return err
 	}
+	removalService, err := removal.NewService(catalogRepository, archiveRepository)
+	if err != nil {
+		_ = manager.Close()
+		return fmt.Errorf("construct removal service: %w", err)
+	}
 	r.manager = manager
 	r.query = library.NewQuery(database, nil)
+	r.removal = removalService
 	return nil
 }
 
@@ -148,11 +157,23 @@ func (r *ImportRuntime) Detail(
 	return query.Detail(ctx, storyID)
 }
 
+func (r *ImportRuntime) Remove(
+	ctx context.Context,
+	storyID int64,
+) (removal.Result, error) {
+	service, err := r.currentRemoval()
+	if err != nil {
+		return removal.Result{}, err
+	}
+	return service.Remove(ctx, storyID)
+}
+
 func (r *ImportRuntime) Close() error {
 	r.mu.Lock()
 	manager := r.manager
 	r.manager = nil
 	r.query = nil
+	r.removal = nil
 	r.mu.Unlock()
 	if manager == nil {
 		return nil
@@ -178,5 +199,15 @@ func (r *ImportRuntime) currentQuery() (*library.Query, error) {
 	return r.query, nil
 }
 
+func (r *ImportRuntime) currentRemoval() (*removal.Service, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	if r.removal == nil {
+		return nil, ErrImportRuntimeNotReady
+	}
+	return r.removal, nil
+}
+
 var _ OperationPort = (*ImportRuntime)(nil)
 var _ LibraryPort = (*ImportRuntime)(nil)
+var _ RemovalPort = (*ImportRuntime)(nil)

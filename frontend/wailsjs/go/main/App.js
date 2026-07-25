@@ -18,6 +18,10 @@ export function OperationSnapshot(arg1) {
   return window['go']['main']['App']['OperationSnapshot'](arg1);
 }
 
+export function RemoveStory(arg1) {
+  return window['go']['main']['App']['RemoveStory'](arg1);
+}
+
 export function SelectAndImportStories() {
   return window['go']['main']['App']['SelectAndImportStories']();
 }

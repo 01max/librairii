@@ -9,6 +9,7 @@ import (
 
 	"github.com/01max/librairii/internal/library"
 	"github.com/01max/librairii/internal/operations"
+	"github.com/01max/librairii/internal/removal"
 )
 
 const EventApplicationReady = "application:ready"
@@ -23,6 +24,7 @@ type Application struct {
 	readiness  ReadinessPort
 	operations OperationPort
 	library    LibraryPort
+	removal    RemovalPort
 	resources  []ResourcePort
 	state      LifecycleState
 	startedAt  time.Time
@@ -36,7 +38,8 @@ func New(deps Dependencies) (*Application, error) {
 		deps.Events == nil ||
 		deps.Readiness == nil ||
 		deps.Operations == nil ||
-		deps.Library == nil {
+		deps.Library == nil ||
+		deps.Removal == nil {
 		return nil, ErrMissingDependency
 	}
 
@@ -49,9 +52,26 @@ func New(deps Dependencies) (*Application, error) {
 		readiness:  deps.Readiness,
 		operations: deps.Operations,
 		library:    deps.Library,
+		removal:    deps.Removal,
 		resources:  resources,
 		state:      StateInitializing,
 	}, nil
+}
+
+func (a *Application) RemoveStory(
+	ctx context.Context,
+	storyID int64,
+) RemovalResponse {
+	if !a.Status().MutationsAllowed {
+		return RemovalResponse{
+			Error: NewAPIError(ErrorNotReady, "Removal is unavailable until storage is ready."),
+		}
+	}
+	result, err := a.removal.Remove(ctx, storyID)
+	if err != nil {
+		return RemovalResponse{Error: removalAPIError(err)}
+	}
+	return RemovalResponse{Result: &result}
 }
 
 func (a *Application) ListStories(
@@ -236,5 +256,18 @@ func libraryAPIError(err error) *APIError {
 		return NewAPIError(ErrorInvalidInput, "The story does not exist.")
 	default:
 		return NewAPIError(ErrorInternal, "The library could not be loaded.")
+	}
+}
+
+func removalAPIError(err error) *APIError {
+	switch {
+	case errors.Is(err, context.Canceled):
+		return NewAPIError(ErrorCancelled, "Story removal was cancelled.")
+	case errors.Is(err, removal.ErrInvalidStoryID):
+		return NewAPIError(ErrorInvalidInput, "The story removal request is invalid.")
+	case errors.Is(err, sql.ErrNoRows):
+		return NewAPIError(ErrorInvalidInput, "The story does not exist.")
+	default:
+		return NewAPIError(ErrorInternal, "The story could not be moved to trash.")
 	}
 }
