@@ -9,3 +9,17 @@ The functional contract lives in the OpenSpec change
 
 See `docs/architecture/0001-wails-rebuild-baseline.md` for the clean-rebuild
 boundary.
+
+## Development
+
+Install Go 1.26, Node 24, and the Wails CLI version recorded in
+`.wails-version`, then run:
+
+```sh
+make setup
+make check
+make build
+```
+
+`make check` formats and vets Go, runs Go and frontend tests, type-checks and
+lints TypeScript, and builds the production frontend.

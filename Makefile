@@ -1,0 +1,42 @@
+SHELL := /bin/sh
+
+WAILS_VERSION := $(shell cat .wails-version)
+WAILS ?= $(shell go env GOPATH)/bin/wails
+GO_PACKAGES := . ./internal/...
+
+.PHONY: setup fmt fmt-check vet test-go typecheck lint-frontend test-frontend build-frontend check build
+
+setup:
+	go mod download
+	npm --prefix frontend ci
+
+fmt:
+	go fmt $(GO_PACKAGES)
+
+fmt-check:
+	go fmt $(GO_PACKAGES)
+	git diff --exit-code -- '*.go'
+
+vet:
+	go vet $(GO_PACKAGES)
+
+test-go:
+	go test $(GO_PACKAGES)
+
+typecheck:
+	npm --prefix frontend run typecheck
+
+lint-frontend:
+	npm --prefix frontend run lint
+
+test-frontend:
+	npm --prefix frontend run test
+
+build-frontend:
+	npm --prefix frontend run build
+
+check: fmt-check vet test-go typecheck lint-frontend test-frontend build-frontend
+
+build:
+	test "$$($(WAILS) version | head -n 1)" = "$(WAILS_VERSION)"
+	$(WAILS) build -m -nocolour
