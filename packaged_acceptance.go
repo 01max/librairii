@@ -8,35 +8,42 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+	"time"
 
 	coreapp "github.com/01max/librairii/internal/app"
 	"github.com/01max/librairii/internal/exporter"
 )
 
 const (
-	acceptanceCheckpointStarted          = "scenario_started"
-	acceptanceCheckpointImportQueued     = "import_queued"
-	acceptanceCheckpointImportSucceeded  = "import_succeeded"
-	acceptanceCheckpointCollectionLoaded = "collection_loaded"
-	acceptanceCheckpointExportPrepared   = "export_prepared"
-	acceptanceCheckpointExportQueued     = "export_queued"
-	acceptanceCheckpointExportSucceeded  = "export_succeeded"
-	acceptanceCheckpointRevealSucceeded  = "reveal_succeeded"
-	acceptanceCheckpointComplete         = "complete"
-	acceptanceCheckpointFailed           = "failed"
+	acceptanceCheckpointStarted           = "scenario_started"
+	acceptanceCheckpointNativeImport      = "native_import_dialog_selected"
+	acceptanceCheckpointImportQueued      = "import_queued"
+	acceptanceCheckpointImportSucceeded   = "import_succeeded"
+	acceptanceCheckpointCollectionLoaded  = "collection_loaded"
+	acceptanceCheckpointNativeDestination = "native_destination_dialog_selected"
+	acceptanceCheckpointExportPrepared    = "export_prepared"
+	acceptanceCheckpointExportQueued      = "export_queued"
+	acceptanceCheckpointExportSucceeded   = "export_succeeded"
+	acceptanceCheckpointNativeReveal      = "native_reveal_succeeded"
+	acceptanceCheckpointRevealSucceeded   = "reveal_succeeded"
+	acceptanceCheckpointComplete          = "complete"
+	acceptanceCheckpointFailed            = "failed"
 )
 
 var acceptanceCheckpoints = map[string]struct{}{
-	acceptanceCheckpointStarted:          {},
-	acceptanceCheckpointImportQueued:     {},
-	acceptanceCheckpointImportSucceeded:  {},
-	acceptanceCheckpointCollectionLoaded: {},
-	acceptanceCheckpointExportPrepared:   {},
-	acceptanceCheckpointExportQueued:     {},
-	acceptanceCheckpointExportSucceeded:  {},
-	acceptanceCheckpointRevealSucceeded:  {},
-	acceptanceCheckpointComplete:         {},
-	acceptanceCheckpointFailed:           {},
+	acceptanceCheckpointStarted:           {},
+	acceptanceCheckpointNativeImport:      {},
+	acceptanceCheckpointImportQueued:      {},
+	acceptanceCheckpointImportSucceeded:   {},
+	acceptanceCheckpointCollectionLoaded:  {},
+	acceptanceCheckpointNativeDestination: {},
+	acceptanceCheckpointExportPrepared:    {},
+	acceptanceCheckpointExportQueued:      {},
+	acceptanceCheckpointExportSucceeded:   {},
+	acceptanceCheckpointNativeReveal:      {},
+	acceptanceCheckpointRevealSucceeded:   {},
+	acceptanceCheckpointComplete:          {},
+	acceptanceCheckpointFailed:            {},
 }
 
 type packagedAcceptance struct {
@@ -44,12 +51,30 @@ type packagedAcceptance struct {
 	source      string
 	destination string
 	checkpoints string
+	native      coreapp.DialogPort
+	automate    nativeDialogAutomation
 	mu          sync.Mutex
 }
 
-func newPackagedAcceptanceFromEnvironment() (*packagedAcceptance, error) {
+type nativeDialogKind uint8
+
+const (
+	nativeFileDialog nativeDialogKind = iota + 1
+	nativeDirectoryDialog
+)
+
+type nativeDialogAutomation func(
+	context.Context,
+	string,
+	string,
+	nativeDialogKind,
+) error
+
+func newPackagedAcceptanceFromEnvironment(
+	native coreapp.DialogPort,
+) (*packagedAcceptance, error) {
 	if os.Getenv("LIBRAIRII_PACKAGED_ACCEPTANCE") == "" {
-		return &packagedAcceptance{}, nil
+		return &packagedAcceptance{native: native}, nil
 	}
 	if os.Getenv("LIBRAIRII_PACKAGED_ACCEPTANCE") != "1" {
 		return nil, errors.New("packaged acceptance flag must be 1")
@@ -59,6 +84,11 @@ func newPackagedAcceptanceFromEnvironment() (*packagedAcceptance, error) {
 		source:      filepath.Clean(os.Getenv("LIBRAIRII_ACCEPTANCE_SOURCE")),
 		destination: filepath.Clean(os.Getenv("LIBRAIRII_ACCEPTANCE_DESTINATION")),
 		checkpoints: filepath.Clean(os.Getenv("LIBRAIRII_ACCEPTANCE_CHECKPOINTS")),
+		native:      native,
+		automate:    automateHostNativeDialog,
+	}
+	if native == nil {
+		return nil, errors.New("packaged acceptance requires native dialogs")
 	}
 	for label, path := range map[string]string{
 		"source":      acceptance.source,
@@ -85,7 +115,7 @@ func newPackagedAcceptanceFromEnvironment() (*packagedAcceptance, error) {
 }
 
 func (a *packagedAcceptance) OpenFiles(
-	_ context.Context,
+	ctx context.Context,
 	request coreapp.FileDialogRequest,
 ) ([]string, error) {
 	if !a.enabled ||
@@ -93,21 +123,57 @@ func (a *packagedAcceptance) OpenFiles(
 		!containsString(request.Extensions, filepath.Ext(a.source)) {
 		return nil, errors.New("packaged acceptance import dialog contract mismatch")
 	}
-	return []string{a.source}, nil
+	automation := a.startDialogAutomation(
+		ctx,
+		request.Title,
+		a.source,
+		nativeFileDialog,
+	)
+	paths, dialogErr := a.native.OpenFiles(ctx, request)
+	automationErr := <-automation
+	if err := errors.Join(dialogErr, automationErr); err != nil {
+		return nil, err
+	}
+	if len(paths) != 1 || !sameResolvedPath(paths[0], a.source) {
+		return nil, errors.New(
+			"packaged acceptance native import selection mismatch",
+		)
+	}
+	return paths, a.record(acceptanceCheckpointNativeImport)
 }
 
 func (a *packagedAcceptance) OpenDirectory(
-	_ context.Context,
+	ctx context.Context,
 	title string,
 ) (string, error) {
 	if !a.enabled || title != "Export story archives" {
 		return "", errors.New("packaged acceptance directory dialog contract mismatch")
 	}
-	return exporter.ResolveDestination(a.destination)
+	automation := a.startDialogAutomation(
+		ctx,
+		title,
+		a.destination,
+		nativeDirectoryDialog,
+	)
+	destination, dialogErr := a.native.OpenDirectory(ctx, title)
+	automationErr := <-automation
+	if err := errors.Join(dialogErr, automationErr); err != nil {
+		return "", err
+	}
+	expected, err := exporter.ResolveDestination(a.destination)
+	if err != nil {
+		return "", err
+	}
+	if destination != expected {
+		return "", errors.New(
+			"packaged acceptance native destination selection mismatch",
+		)
+	}
+	return destination, a.record(acceptanceCheckpointNativeDestination)
 }
 
 func (a *packagedAcceptance) RevealDirectory(
-	_ context.Context,
+	ctx context.Context,
 	destination string,
 ) error {
 	resolved, err := exporter.ResolveDestination(destination)
@@ -121,7 +187,33 @@ func (a *packagedAcceptance) RevealDirectory(
 	if resolved != expected {
 		return errors.New("packaged acceptance reveal destination mismatch")
 	}
-	return nil
+	if err := a.native.RevealDirectory(ctx, destination); err != nil {
+		return err
+	}
+	return a.record(acceptanceCheckpointNativeReveal)
+}
+
+func (a *packagedAcceptance) startDialogAutomation(
+	ctx context.Context,
+	title string,
+	path string,
+	kind nativeDialogKind,
+) <-chan error {
+	result := make(chan error, 1)
+	go func() {
+		automationContext, cancel := context.WithTimeout(ctx, 15*time.Second)
+		defer cancel()
+		result <- a.automate(automationContext, title, path, kind)
+	}()
+	return result
+}
+
+func sameResolvedPath(actual string, expected string) bool {
+	actualPath, actualErr := filepath.EvalSymlinks(actual)
+	expectedPath, expectedErr := filepath.EvalSymlinks(expected)
+	return actualErr == nil &&
+		expectedErr == nil &&
+		filepath.Clean(actualPath) == filepath.Clean(expectedPath)
 }
 
 func (a *packagedAcceptance) record(checkpoint string) error {

@@ -2,6 +2,7 @@ package platform
 
 import (
 	"context"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -27,6 +28,19 @@ type RuntimeDialogs struct {
 	openFiles     func(context.Context, runtime.OpenDialogOptions) ([]string, error)
 	openDirectory func(context.Context, runtime.OpenDialogOptions) (string, error)
 	revealer      *DestinationRevealer
+
+	acceptanceFile      string
+	acceptanceDirectory string
+}
+
+// ConfigureAcceptanceSelections gives the packaged release gate deterministic
+// initial locations while preserving the real host-native dialog boundary.
+func (d *RuntimeDialogs) ConfigureAcceptanceSelections(
+	file string,
+	directory string,
+) {
+	d.acceptanceFile = file
+	d.acceptanceDirectory = directory
 }
 
 func NewRuntimeDialogs() *RuntimeDialogs {
@@ -62,6 +76,10 @@ func (d *RuntimeDialogs) OpenFiles(
 		},
 		ResolvesAliases: true,
 	}
+	if d.acceptanceFile != "" {
+		options.DefaultDirectory = filepath.Dir(d.acceptanceFile)
+		options.DefaultFilename = filepath.Base(d.acceptanceFile)
+	}
 	if request.Multiple {
 		return d.openFiles(ctx, options)
 	}
@@ -73,11 +91,15 @@ func (d *RuntimeDialogs) OpenFiles(
 }
 
 func (d *RuntimeDialogs) OpenDirectory(ctx context.Context, title string) (string, error) {
-	path, err := d.openDirectory(ctx, runtime.OpenDialogOptions{
+	options := runtime.OpenDialogOptions{
 		Title:                title,
 		CanCreateDirectories: true,
 		ResolvesAliases:      true,
-	})
+	}
+	if d.acceptanceDirectory != "" {
+		options.DefaultDirectory = d.acceptanceDirectory
+	}
+	path, err := d.openDirectory(ctx, options)
 	if err != nil || path == "" {
 		return path, err
 	}
@@ -86,6 +108,7 @@ func (d *RuntimeDialogs) OpenDirectory(ctx context.Context, title string) (strin
 
 func extensionPattern(extensions []string) string {
 	patterns := make([]string, 0, len(extensions))
+	seen := make(map[string]struct{}, len(extensions))
 	for _, extension := range extensions {
 		extension = strings.TrimSpace(extension)
 		if extension == "" || strings.ContainsAny(extension, "*;") {
@@ -94,7 +117,17 @@ func extensionPattern(extensions []string) string {
 		if !strings.HasPrefix(extension, ".") {
 			extension = "." + extension
 		}
-		patterns = append(patterns, "*"+extension)
+		extension = filepath.Ext(extension)
+		if extension == "" {
+			continue
+		}
+		pattern := "*" + extension
+		normalized := strings.ToLower(pattern)
+		if _, exists := seen[normalized]; exists {
+			continue
+		}
+		seen[normalized] = struct{}{}
+		patterns = append(patterns, pattern)
 	}
 	return strings.Join(patterns, ";")
 }

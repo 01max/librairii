@@ -20,12 +20,17 @@ var assets embed.FS
 
 func main() {
 	readiness := platform.NewStorageReadiness(os.Getenv("LIBRAIRII_DATA_ROOT"))
-	acceptance, err := newPackagedAcceptanceFromEnvironment()
+	nativeDialogs := platform.NewRuntimeDialogs()
+	acceptance, err := newPackagedAcceptanceFromEnvironment(nativeDialogs)
 	if err != nil {
 		log.Fatal(err)
 	}
-	dialogs := coreapp.DialogPort(platform.NewRuntimeDialogs())
+	dialogs := coreapp.DialogPort(nativeDialogs)
 	if acceptance.enabled {
+		nativeDialogs.ConfigureAcceptanceSelections(
+			acceptance.source,
+			acceptance.destination,
+		)
 		dialogs = acceptance
 	}
 	catalogClient, err := lunii.NewCatalogClient(lunii.ProductionConfig())

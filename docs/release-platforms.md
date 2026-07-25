@@ -6,8 +6,12 @@ Release evidence is host-native. A cross-compiled binary, a frontend-only test,
 or a successful installer build does not by itself qualify a target. Every row
 must independently build its distribution artifact, launch the actual packaged
 executable twice, commit the embedded React render, create and reopen SQLite
-state, pass focused native dialog/reveal adapter checks, run the complete
-headless story-library smoke, and produce a verified SHA-256 checksum.
+state, pass host-native dialog and reveal acceptance, run the complete headless
+story-library smoke, and produce a verified SHA-256 checksum.
+The packaged acceptance driver opens the production platform dialogs, selects
+only the prevalidated isolated fixture paths through a host-native automation
+hook, validates the paths returned by Wails, and records separate native
+import, destination, and reveal evidence before domain work may continue.
 
 ## Priorities and artifacts
 

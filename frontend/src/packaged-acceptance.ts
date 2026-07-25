@@ -67,7 +67,8 @@ export async function runPackagedAcceptance(): Promise<void> {
         }
         await checkpoint('reveal_succeeded');
         await checkpoint('complete');
-    } catch {
+    } catch (error) {
+        console.error('packaged acceptance failed', error);
         await checkpoint('failed');
     }
 }
@@ -77,7 +78,8 @@ function requiredOperation(
     label: string,
 ): operations.Snapshot {
     if (response.error || !response.operation?.id) {
-        throw new Error(`packaged ${label} did not start`);
+        const detail = response.error?.message ?? 'operation was not returned';
+        throw new Error(`packaged ${label} did not start: ${detail}`);
     }
     return response.operation;
 }

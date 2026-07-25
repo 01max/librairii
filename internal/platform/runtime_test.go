@@ -2,7 +2,9 @@ package platform
 
 import (
 	"context"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"reflect"
 	goruntime "runtime"
 	"testing"
@@ -71,9 +73,63 @@ func TestRuntimeDialogsUseNativeMultiFilePicker(t *testing.T) {
 	}
 	if got.Title != "Import story archives" ||
 		len(got.Filters) != 1 ||
-		got.Filters[0].Pattern != "*.plain.pk;*.v1.pk;*.v2.pk;*.pk;*.zip;*.7z" ||
+		got.Filters[0].Pattern != "*.pk;*.zip;*.7z" ||
 		!got.ResolvesAliases {
 		t.Fatalf("native options = %#v", got)
+	}
+}
+
+func TestRuntimeDialogsCanSeedRealPanelsForPackagedAcceptance(t *testing.T) {
+	t.Parallel()
+
+	root := t.TempDir()
+	source := filepath.Join(root, "story.7z")
+	destination := filepath.Join(root, "export")
+	if err := os.WriteFile(source, []byte("fixture"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Mkdir(destination, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	var fileOptions runtime.OpenDialogOptions
+	var directoryOptions runtime.OpenDialogOptions
+	dialogs := &RuntimeDialogs{
+		openFiles: func(
+			_ context.Context,
+			options runtime.OpenDialogOptions,
+		) ([]string, error) {
+			fileOptions = options
+			return []string{source}, nil
+		},
+		openDirectory: func(
+			_ context.Context,
+			options runtime.OpenDialogOptions,
+		) (string, error) {
+			directoryOptions = options
+			return destination, nil
+		},
+	}
+	dialogs.ConfigureAcceptanceSelections(source, destination)
+	if _, err := dialogs.OpenFiles(
+		context.Background(),
+		coreapp.FileDialogRequest{Multiple: true},
+	); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := dialogs.OpenDirectory(
+		context.Background(),
+		"Export story archives",
+	); err != nil {
+		t.Fatal(err)
+	}
+	if fileOptions.DefaultDirectory != root ||
+		fileOptions.DefaultFilename != "story.7z" ||
+		directoryOptions.DefaultDirectory != destination {
+		t.Fatalf(
+			"file options = %#v, directory options = %#v",
+			fileOptions,
+			directoryOptions,
+		)
 	}
 }
 

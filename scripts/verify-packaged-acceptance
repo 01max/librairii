@@ -102,12 +102,15 @@ fi
 expected_checkpoints="$acceptance_root/expected-checkpoints.log"
 printf '%s\n' \
     scenario_started \
+    native_import_dialog_selected \
     import_queued \
     import_succeeded \
     collection_loaded \
+    native_destination_dialog_selected \
     export_prepared \
     export_queued \
     export_succeeded \
+    native_reveal_succeeded \
     reveal_succeeded \
     complete > "$expected_checkpoints"
 if ! cmp -s "$expected_checkpoints" "$acceptance_checkpoints"; then
@@ -200,4 +203,4 @@ GOCACHE="${GOCACHE:-/private/tmp/librairii-go-cache}" \
         -count=1
 npm --prefix frontend run test:release
 
-printf 'packaged acceptance passed: render, native adapters, progress, reveal, persistence, shutdown\n'
+printf 'packaged acceptance passed: render, host-native dialogs, progress, reveal, persistence, shutdown\n'

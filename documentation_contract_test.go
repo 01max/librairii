@@ -60,8 +60,8 @@ func TestReleaseMatrixHasIndependentPlatformTasks(t *testing.T) {
 		"scripts/verify-platform-linux",
 		"launch the actual packaged",
 		"create and reopen SQLite",
-		"native dialog/reveal adapter checks",
-		"complete\nheadless story-library smoke",
+		"host-native dialog and reveal acceptance",
+		"complete headless\nstory-library smoke",
 		".github/workflows/platform-release.yml",
 	}
 	for _, fragment := range required {
@@ -85,6 +85,9 @@ func TestReleaseMatrixHasIndependentPlatformTasks(t *testing.T) {
 			"uninstall-retention.txt",
 			"LIBRAIRII_PACKAGED_ACCEPTANCE",
 			"scenario_started",
+			"native_import_dialog_selected",
+			"native_destination_dialog_selected",
+			"native_reveal_succeeded",
 			"./cmd/foundation-smoke",
 			"./internal/platform",
 			"./cmd/release-smoke",
@@ -94,9 +97,32 @@ func TestReleaseMatrixHasIndependentPlatformTasks(t *testing.T) {
 			"-tags webkit2_41",
 			"LIBRAIRII_PACKAGED_ACCEPTANCE",
 			"scenario_started",
+			"native_import_dialog_selected",
+			"native_destination_dialog_selected",
+			"native_reveal_succeeded",
 			"./cmd/foundation-smoke",
 			"./internal/platform",
 			"./cmd/release-smoke",
+		},
+		"packaged_acceptance.go": {
+			"a.native.OpenFiles",
+			"a.native.OpenDirectory",
+			"a.native.RevealDirectory",
+			"native_import_dialog_selected",
+			"native_destination_dialog_selected",
+			"native_reveal_succeeded",
+		},
+		"packaged_acceptance_native_darwin.go": {
+			"NSOpenPanel",
+			"completeWithReturnCode:url:urls:",
+		},
+		"packaged_acceptance_native_linux.go": {
+			"GTK_IS_FILE_CHOOSER",
+			"gtk_file_chooser_select_filename",
+		},
+		"packaged_acceptance_native_windows.go": {
+			"FindWindowW",
+			"SendInput",
 		},
 	}
 	for path, fragments := range implementationFiles {

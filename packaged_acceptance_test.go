@@ -10,6 +10,38 @@ import (
 	coreapp "github.com/01max/librairii/internal/app"
 )
 
+type acceptanceNativeDialogs struct {
+	source             string
+	destination        string
+	revealed           string
+	openFilesCalls     int
+	openDirectoryCalls int
+}
+
+func (d *acceptanceNativeDialogs) OpenFiles(
+	context.Context,
+	coreapp.FileDialogRequest,
+) ([]string, error) {
+	d.openFilesCalls++
+	return []string{d.source}, nil
+}
+
+func (d *acceptanceNativeDialogs) OpenDirectory(
+	context.Context,
+	string,
+) (string, error) {
+	d.openDirectoryCalls++
+	return d.destination, nil
+}
+
+func (d *acceptanceNativeDialogs) RevealDirectory(
+	_ context.Context,
+	path string,
+) error {
+	d.revealed = path
+	return nil
+}
+
 func TestPackagedAcceptanceKeepsFixturePathsInsideGo(t *testing.T) {
 	root := t.TempDir()
 	source := filepath.Join(root, "story.7z")
@@ -26,9 +58,27 @@ func TestPackagedAcceptanceKeepsFixturePathsInsideGo(t *testing.T) {
 	t.Setenv("LIBRAIRII_ACCEPTANCE_DESTINATION", destination)
 	t.Setenv("LIBRAIRII_ACCEPTANCE_CHECKPOINTS", checkpoints)
 
-	acceptance, err := newPackagedAcceptanceFromEnvironment()
+	resolvedDestination, err := filepath.EvalSymlinks(destination)
+	if err != nil {
+		t.Fatal(err)
+	}
+	native := &acceptanceNativeDialogs{
+		source:      source,
+		destination: resolvedDestination,
+	}
+	acceptance, err := newPackagedAcceptanceFromEnvironment(native)
 	if err != nil {
 		t.Fatalf("newPackagedAcceptanceFromEnvironment() error = %v", err)
+	}
+	var automated []nativeDialogKind
+	acceptance.automate = func(
+		_ context.Context,
+		_ string,
+		_ string,
+		kind nativeDialogKind,
+	) error {
+		automated = append(automated, kind)
+		return nil
 	}
 	paths, err := acceptance.OpenFiles(
 		context.Background(),
@@ -44,9 +94,7 @@ func TestPackagedAcceptanceKeepsFixturePathsInsideGo(t *testing.T) {
 		context.Background(),
 		"Export story archives",
 	)
-	resolvedDestination, resolveErr := filepath.EvalSymlinks(destination)
 	if err != nil ||
-		resolveErr != nil ||
 		selectedDestination != resolvedDestination {
 		t.Fatalf("OpenDirectory() = %q, %v", selectedDestination, err)
 	}
@@ -56,6 +104,18 @@ func TestPackagedAcceptanceKeepsFixturePathsInsideGo(t *testing.T) {
 	); err != nil {
 		t.Fatalf("RevealDirectory() error = %v", err)
 	}
+	if native.openFilesCalls != 1 ||
+		native.openDirectoryCalls != 1 ||
+		native.revealed != destination ||
+		len(automated) != 2 ||
+		automated[0] != nativeFileDialog ||
+		automated[1] != nativeDirectoryDialog {
+		t.Fatalf(
+			"native acceptance = %#v, automated = %v",
+			native,
+			automated,
+		)
+	}
 	if err := acceptance.record(acceptanceCheckpointStarted); err != nil {
 		t.Fatalf("record() error = %v", err)
 	}
@@ -63,7 +123,14 @@ func TestPackagedAcceptanceKeepsFixturePathsInsideGo(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if string(body) != acceptanceCheckpointStarted+"\n" {
+	expectedCheckpoints := strings.Join([]string{
+		acceptanceCheckpointNativeImport,
+		acceptanceCheckpointNativeDestination,
+		acceptanceCheckpointNativeReveal,
+		acceptanceCheckpointStarted,
+		"",
+	}, "\n")
+	if string(body) != expectedCheckpoints {
 		t.Fatalf("checkpoints = %q", body)
 	}
 	if err := acceptance.record("absolute/private/path"); err == nil {

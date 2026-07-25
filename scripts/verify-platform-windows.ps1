@@ -204,12 +204,15 @@ try {
 
     $ExpectedCheckpoints = @(
         "scenario_started",
+        "native_import_dialog_selected",
         "import_queued",
         "import_succeeded",
         "collection_loaded",
+        "native_destination_dialog_selected",
         "export_prepared",
         "export_queued",
         "export_succeeded",
+        "native_reveal_succeeded",
         "reveal_succeeded",
         "complete"
     )
@@ -373,5 +376,5 @@ if (
 }
 
 Write-Host `
-    "Windows platform acceptance passed: install, render, SQLite, native adapters, uninstall"
+    "Windows platform acceptance passed: install, render, SQLite, host-native dialogs, uninstall"
 Write-Host "Windows installer: $Installer"

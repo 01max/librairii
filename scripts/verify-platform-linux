@@ -76,12 +76,15 @@ timeout 30s xvfb-run -a env \
 expected_checkpoints="$verification_root/expected-checkpoints.log"
 printf '%s\n' \
     scenario_started \
+    native_import_dialog_selected \
     import_queued \
     import_succeeded \
     collection_loaded \
+    native_destination_dialog_selected \
     export_prepared \
     export_queued \
     export_succeeded \
+    native_reveal_succeeded \
     reveal_succeeded \
     complete > "$expected_checkpoints"
 if ! cmp -s "$expected_checkpoints" "$acceptance_checkpoints"; then
@@ -196,5 +199,5 @@ tar \
     sha256sum -c "$artifact_name.sha256"
 )
 
-printf 'Linux platform acceptance passed: build, render, SQLite, native adapters, smoke\n'
+printf 'Linux platform acceptance passed: build, render, SQLite, host-native dialogs, smoke\n'
 printf 'Linux artifact: %s\n' "$artifact"
