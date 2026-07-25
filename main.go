@@ -6,6 +6,8 @@ import (
 	"os"
 
 	coreapp "github.com/01max/librairii/internal/app"
+	"github.com/01max/librairii/internal/artwork"
+	"github.com/01max/librairii/internal/lunii"
 	"github.com/01max/librairii/internal/platform"
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/options"
@@ -18,6 +20,14 @@ var assets embed.FS
 
 func main() {
 	readiness := platform.NewStorageReadiness(os.Getenv("LIBRAIRII_DATA_ROOT"))
+	catalogClient, err := lunii.NewCatalogClient(lunii.ProductionConfig())
+	if err != nil {
+		log.Fatal(err)
+	}
+	artworkHandler, err := artwork.NewAssetHandler(readiness, catalogClient)
+	if err != nil {
+		log.Fatal(err)
+	}
 	clock := platform.SystemClock{}
 	events := platform.RuntimeEvents{}
 	importRuntime, err := coreapp.NewImportRuntime(readiness, clock, events, 2)
@@ -49,7 +59,8 @@ func main() {
 		Width:  1024,
 		Height: 768,
 		AssetServer: &assetserver.Options{
-			Assets: assets,
+			Assets:  assets,
+			Handler: artworkHandler,
 		},
 		BackgroundColour: &options.RGBA{R: 27, G: 38, B: 54, A: 1},
 		OnStartup:        app.startup,

@@ -1,6 +1,8 @@
 package metadata
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -10,6 +12,7 @@ import (
 	"time"
 	"unicode/utf8"
 
+	"github.com/01max/librairii/internal/lunii"
 	"github.com/google/uuid"
 	"golang.org/x/text/language"
 )
@@ -38,21 +41,37 @@ type rawCatalogRecord struct {
 	UpdatedAt        json.RawMessage            `json:"updated_at"`
 }
 
+type NormalizedCatalog struct {
+	Stories  []NewOfficialStoryMetadata
+	Artworks []NewCatalogArtwork
+}
+
 func NormalizeCatalog(
 	payload []byte,
 	requestedLocale string,
 ) ([]NewOfficialStoryMetadata, error) {
+	catalog, err := NormalizeCatalogSnapshot(payload, requestedLocale)
+	if err != nil {
+		return nil, err
+	}
+	return catalog.Stories, nil
+}
+
+func NormalizeCatalogSnapshot(
+	payload []byte,
+	requestedLocale string,
+) (NormalizedCatalog, error) {
 	locale, err := canonicalLocale(requestedLocale)
 	if err != nil {
-		return nil, catalogError("invalid requested locale")
+		return NormalizedCatalog{}, catalogError("invalid requested locale")
 	}
 
 	var envelope rawCatalogEnvelope
 	if err := json.Unmarshal(payload, &envelope); err != nil {
-		return nil, catalogError("invalid response envelope")
+		return NormalizedCatalog{}, catalogError("invalid response envelope")
 	}
 	if len(envelope.Response) == 0 || len(envelope.Response) > maxCatalogRecords {
-		return nil, catalogError("catalog response has an invalid record count")
+		return NormalizedCatalog{}, catalogError("catalog response has an invalid record count")
 	}
 
 	sourceIDs := make([]string, 0, len(envelope.Response))
@@ -63,45 +82,46 @@ func NormalizeCatalog(
 
 	seenUUIDs := make(map[string]struct{})
 	normalized := make([]NewOfficialStoryMetadata, 0, len(sourceIDs))
+	artworks := make(map[string]NewCatalogArtwork)
 	for _, sourceID := range sourceIDs {
 		if err := validateText(sourceID, maxSourceRecordBytes, true); err != nil {
-			return nil, catalogError("invalid source record identifier")
+			return NormalizedCatalog{}, catalogError("invalid source record identifier")
 		}
 		var record rawCatalogRecord
 		var recordValues map[string]json.RawMessage
 		if err := json.Unmarshal(envelope.Response[sourceID], &record); err != nil {
-			return nil, catalogError("invalid catalog record")
+			return NormalizedCatalog{}, catalogError("invalid catalog record")
 		}
 		if err := json.Unmarshal(envelope.Response[sourceID], &recordValues); err != nil {
-			return nil, catalogError("invalid catalog record")
+			return NormalizedCatalog{}, catalogError("invalid catalog record")
 		}
 		storyUUID, err := canonicalUUID(record.UUID)
 		if err != nil {
-			return nil, catalogError("catalog record has an invalid complete UUID")
+			return NormalizedCatalog{}, catalogError("catalog record has an invalid complete UUID")
 		}
 		if len(record.LocalizedInfos) == 0 || len(record.LocalesAvailable) == 0 {
-			return nil, catalogError("catalog record has no localized metadata")
+			return NormalizedCatalog{}, catalogError("catalog record has no localized metadata")
 		}
 
 		localizedBody, found, err := localizedValue(record.LocalizedInfos, locale)
 		if err != nil {
-			return nil, err
+			return NormalizedCatalog{}, err
 		}
 		available, err := localeAvailable(record.LocalesAvailable, locale)
 		if err != nil {
-			return nil, err
+			return NormalizedCatalog{}, err
 		}
 		if !found {
 			continue
 		}
 		if !available {
-			return nil, catalogError("localized metadata is not declared available")
+			return NormalizedCatalog{}, catalogError("localized metadata is not declared available")
 		}
 		if _, exists := seenUUIDs[storyUUID]; exists {
-			return nil, catalogError("catalog contains a duplicate story UUID")
+			return NormalizedCatalog{}, catalogError("catalog contains a duplicate story UUID")
 		}
 
-		story, err := normalizeStory(
+		story, artwork, err := normalizeStory(
 			record,
 			recordValues,
 			localizedBody,
@@ -110,15 +130,34 @@ func NormalizeCatalog(
 			locale,
 		)
 		if err != nil {
-			return nil, err
+			return NormalizedCatalog{}, err
 		}
 		seenUUIDs[storyUUID] = struct{}{}
 		normalized = append(normalized, story)
+		if artwork != nil {
+			if existing, found := artworks[artwork.ID]; found &&
+				existing.SourceURL != artwork.SourceURL {
+				return NormalizedCatalog{}, catalogError("catalog artwork identity collision")
+			}
+			artworks[artwork.ID] = *artwork
+		}
 	}
 	if len(normalized) == 0 {
-		return nil, catalogError("catalog contains no records for the requested locale")
+		return NormalizedCatalog{}, catalogError("catalog contains no records for the requested locale")
 	}
-	return normalized, nil
+	artworkIDs := make([]string, 0, len(artworks))
+	for id := range artworks {
+		artworkIDs = append(artworkIDs, id)
+	}
+	sort.Strings(artworkIDs)
+	normalizedArtworks := make([]NewCatalogArtwork, 0, len(artworkIDs))
+	for _, id := range artworkIDs {
+		normalizedArtworks = append(normalizedArtworks, artworks[id])
+	}
+	return NormalizedCatalog{
+		Stories:  normalized,
+		Artworks: normalizedArtworks,
+	}, nil
 }
 
 func normalizeStory(
@@ -128,26 +167,26 @@ func normalizeStory(
 	sourceID string,
 	storyUUID string,
 	locale string,
-) (NewOfficialStoryMetadata, error) {
+) (NewOfficialStoryMetadata, *NewCatalogArtwork, error) {
 	var localized map[string]json.RawMessage
 	if err := json.Unmarshal(localizedBody, &localized); err != nil {
-		return NewOfficialStoryMetadata{}, catalogError("invalid localized metadata")
+		return NewOfficialStoryMetadata{}, nil, catalogError("invalid localized metadata")
 	}
 	title, err := requiredString(localized, "title", maxTitleBytes)
 	if err != nil {
-		return NewOfficialStoryMetadata{}, err
+		return NewOfficialStoryMetadata{}, nil, err
 	}
 	description, err := optionalString(localized, "description", maxDescriptionBytes)
 	if err != nil {
-		return NewOfficialStoryMetadata{}, err
+		return NewOfficialStoryMetadata{}, nil, err
 	}
 	author, err := attribution(record.Authors)
 	if err != nil {
-		return NewOfficialStoryMetadata{}, err
+		return NewOfficialStoryMetadata{}, nil, err
 	}
 	publisher, err := firstNonemptyAttribution(record.Publisher, record.Publishers)
 	if err != nil {
-		return NewOfficialStoryMetadata{}, err
+		return NewOfficialStoryMetadata{}, nil, err
 	}
 	duration, err := optionalIntFromMaps(
 		localized,
@@ -155,7 +194,7 @@ func normalizeStory(
 		"duration_seconds", "durationSeconds",
 	)
 	if err != nil {
-		return NewOfficialStoryMetadata{}, err
+		return NewOfficialStoryMetadata{}, nil, err
 	}
 	minimumAge, err := optionalIntFromMaps(
 		localized,
@@ -163,7 +202,7 @@ func normalizeStory(
 		"minimum_age", "minimumAge", "min_age", "age_min",
 	)
 	if err != nil {
-		return NewOfficialStoryMetadata{}, err
+		return NewOfficialStoryMetadata{}, nil, err
 	}
 	maximumAge, err := optionalIntFromMaps(
 		localized,
@@ -171,19 +210,27 @@ func normalizeStory(
 		"maximum_age", "maximumAge", "max_age", "age_max",
 	)
 	if err != nil {
-		return NewOfficialStoryMetadata{}, err
+		return NewOfficialStoryMetadata{}, nil, err
 	}
 	if duration != nil && *duration < 0 {
-		return NewOfficialStoryMetadata{}, catalogError("negative story duration")
+		return NewOfficialStoryMetadata{}, nil, catalogError("negative story duration")
 	}
 	if minimumAge != nil && *minimumAge < 0 ||
 		maximumAge != nil && *maximumAge < 0 ||
 		minimumAge != nil && maximumAge != nil && *minimumAge > *maximumAge {
-		return NewOfficialStoryMetadata{}, catalogError("invalid story age range")
+		return NewOfficialStoryMetadata{}, nil, catalogError("invalid story age range")
 	}
 	sourceUpdatedAt, err := optionalTimestamp(record.UpdatedAt)
 	if err != nil {
-		return NewOfficialStoryMetadata{}, err
+		return NewOfficialStoryMetadata{}, nil, err
+	}
+	artwork, err := normalizeArtwork(localized)
+	if err != nil {
+		return NewOfficialStoryMetadata{}, nil, err
+	}
+	artworkID := ""
+	if artwork != nil {
+		artworkID = artwork.ID
 	}
 
 	return NewOfficialStoryMetadata{
@@ -196,9 +243,34 @@ func normalizeStory(
 		DurationSeconds: duration,
 		MinimumAge:      minimumAge,
 		MaximumAge:      maximumAge,
+		ArtworkID:       artworkID,
 		Provenance:      ProvenanceLuniiCatalog,
 		SourceRecordID:  sourceID,
 		SourceUpdatedAt: sourceUpdatedAt,
+	}, artwork, nil
+}
+
+func normalizeArtwork(
+	localized map[string]json.RawMessage,
+) (*NewCatalogArtwork, error) {
+	body, exists := localized["image"]
+	if !exists || string(body) == "null" {
+		return nil, nil
+	}
+	var image struct {
+		URL string `json:"image_url"`
+	}
+	if err := json.Unmarshal(body, &image); err != nil {
+		return nil, catalogError("artwork metadata has an invalid type")
+	}
+	sourceURL, err := lunii.ResolveArtworkURL(strings.TrimSpace(image.URL))
+	if err != nil {
+		return nil, catalogError("artwork URL is outside the metadata scope")
+	}
+	digest := sha256.Sum256([]byte(sourceURL))
+	return &NewCatalogArtwork{
+		ID:        hex.EncodeToString(digest[:]),
+		SourceURL: sourceURL,
 	}, nil
 }
 

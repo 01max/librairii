@@ -9,8 +9,11 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
+
+	"github.com/01max/librairii/internal/inspection/testfixture"
 )
 
 func TestCatalogClientMatchesSanitizedGuestAndCatalogContracts(t *testing.T) {
@@ -231,6 +234,88 @@ func TestProductionClientUsesVerifiedTLSDefaults(t *testing.T) {
 	}
 }
 
+func TestCatalogClientFetchesOnlyBoundedApprovedArtwork(t *testing.T) {
+	t.Parallel()
+
+	content := testfixture.PNG()
+	var requests atomic.Int32
+	server := httptest.NewServer(http.HandlerFunc(func(response http.ResponseWriter, request *http.Request) {
+		requests.Add(1)
+		if request.URL.Path != "/artwork/fixture.png" ||
+			request.Header.Get("Accept") != "image/png, image/jpeg, image/webp" ||
+			request.Header.Get("Authorization") != "" {
+			t.Errorf("artwork request = %s %#v", request.URL.Path, request.Header)
+		}
+		response.Header().Set("Content-Type", "image/png")
+		response.Header().Set("ETag", `"fixture"`)
+		response.Header().Set("Last-Modified", "Sat, 25 Jul 2026 10:00:00 GMT")
+		_, _ = response.Write(content)
+	}))
+	defer server.Close()
+
+	client := newTestClient(t, server.URL, time.Second, 1024, 1024)
+	payload, err := client.FetchArtwork(
+		context.Background(),
+		server.URL+"/artwork/fixture.png",
+		int64(len(content)),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(payload.Content) != string(content) ||
+		payload.ContentType != "image/png" ||
+		payload.ETag != `"fixture"` ||
+		payload.LastModified == "" {
+		t.Fatalf("FetchArtwork() = %#v", payload)
+	}
+	for _, invalid := range []string{
+		"https://example.test/fixture.png",
+		server.URL + "/outside/fixture.png",
+		server.URL + "/artwork/../secret.png",
+		server.URL + "/artwork/%2e%2e/secret.png",
+		server.URL + "/artwork/fixture.png?token=secret",
+	} {
+		if _, err := client.FetchArtwork(
+			context.Background(),
+			invalid,
+			int64(len(content)),
+		); !errors.Is(err, ErrInvalidArtworkURL) {
+			t.Fatalf("FetchArtwork(%q) error = %v", invalid, err)
+		}
+	}
+	if _, err := client.FetchArtwork(
+		context.Background(),
+		server.URL+"/artwork/fixture.png",
+		int64(len(content)-1),
+	); !errors.Is(err, ErrResponseTooLarge) {
+		t.Fatalf("FetchArtwork(oversized) error = %v", err)
+	}
+	if requests.Load() != 2 {
+		t.Fatalf("artwork request count = %d", requests.Load())
+	}
+}
+
+func TestResolveArtworkURLAllowsOnlyCatalogRelativePaths(t *testing.T) {
+	t.Parallel()
+
+	got, err := ResolveArtworkURL("/fixture/cover.png")
+	if err != nil ||
+		got != productionArtworkURL+"/fixture/cover.png" {
+		t.Fatalf("ResolveArtworkURL() = %q, %v", got, err)
+	}
+	for _, invalid := range []string{
+		"",
+		"relative.png",
+		"https://example.test/cover.png",
+		"/../secret.png",
+		"/fixture/cover.png?token=secret",
+	} {
+		if _, err := ResolveArtworkURL(invalid); !errors.Is(err, ErrInvalidArtworkURL) {
+			t.Fatalf("ResolveArtworkURL(%q) error = %v", invalid, err)
+		}
+	}
+}
+
 func TestCatalogClientRejectsUnboundedOrInvalidConfiguration(t *testing.T) {
 	t.Parallel()
 
@@ -277,6 +362,7 @@ func newTestClient(
 	client, err := NewCatalogClient(Config{
 		GuestTokenURL:   baseURL + "/guest/create",
 		CatalogURL:      baseURL + "/v2/packs",
+		ArtworkBaseURL:  baseURL + "/artwork",
 		RequestTimeout:  timeout,
 		GuestTokenLimit: tokenLimit,
 		CatalogLimit:    catalogLimit,

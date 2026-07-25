@@ -43,6 +43,10 @@ func TestRepositoryStagesAndActivatesLocalizedMetadata(t *testing.T) {
 		RawSHA256: strings.Repeat("a", 64),
 		ByteSize:  1024,
 		FetchedAt: fetchedAt,
+		Artworks: []NewCatalogArtwork{{
+			ID:        strings.Repeat("9", 64),
+			SourceURL: "https://storage.googleapis.com/lunii-data-prod/fixture/little-prince.png",
+		}},
 		Stories: []NewOfficialStoryMetadata{{
 			StoryUUID:       "123e4567-e89b-42d3-a456-426614174000",
 			Title:           "The Little Prince",
@@ -53,7 +57,7 @@ func TestRepositoryStagesAndActivatesLocalizedMetadata(t *testing.T) {
 			DurationSeconds: &duration,
 			MinimumAge:      &minimumAge,
 			MaximumAge:      &maximumAge,
-			ArtworkID:       "artwork-little-prince",
+			ArtworkID:       strings.Repeat("9", 64),
 			SourceRecordID:  "pack-001",
 			SourceUpdatedAt: &sourceUpdatedAt,
 		}},
@@ -107,6 +111,122 @@ func TestRepositoryStagesAndActivatesLocalizedMetadata(t *testing.T) {
 		sync.MatchedStoryCount != 1 ||
 		sync.FinishedAt != formatTime(activatedAt) {
 		t.Fatalf("Sync(after activation) = %#v", sync)
+	}
+}
+
+func TestRepositoryRegistersAndCachesOpaqueCatalogArtwork(t *testing.T) {
+	t.Parallel()
+
+	repository, connection := openMetadataRepository(t)
+	ctx := context.Background()
+	artworkID := strings.Repeat("8", 64)
+	syncID := "123e4567-e89b-42d3-a456-426614174110"
+	if _, err := repository.CreateSync(ctx, NewCatalogSync{
+		ID:        syncID,
+		Locale:    "en-GB",
+		StartedAt: time.Now(),
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := repository.StageSnapshot(ctx, NewCatalogSnapshot{
+		SyncID:    syncID,
+		Locale:    "en-GB",
+		RawPath:   "catalog/" + syncID + "/catalog.json",
+		RawSHA256: strings.Repeat("8", 64),
+		ByteSize:  128,
+		FetchedAt: time.Now(),
+		Artworks: []NewCatalogArtwork{{
+			ID:        artworkID,
+			SourceURL: "https://storage.googleapis.com/lunii-data-prod/fixture/cover.png",
+		}},
+		Stories: []NewOfficialStoryMetadata{{
+			StoryUUID: "123e4567-e89b-42d3-a456-426614174000",
+			ArtworkID: artworkID,
+		}},
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	record, err := repository.Artwork(ctx, artworkID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if record.ID != artworkID || record.ManagedPath != "" || record.CachedAt != "" {
+		t.Fatalf("Artwork(before cache) = %#v", record)
+	}
+	cachedAt := time.Date(2026, time.July, 25, 14, 0, 0, 0, time.UTC)
+	if err := repository.CacheArtwork(
+		ctx,
+		artworkID,
+		"catalog/official/"+artworkID+"/"+strings.Repeat("a", 64)+".png",
+		"image/png",
+		strings.Repeat("a", 64),
+		128,
+		`"fixture"`,
+		"Sat, 25 Jul 2026 10:00:00 GMT",
+		cachedAt,
+	); err != nil {
+		t.Fatal(err)
+	}
+	record, err = repository.Artwork(ctx, artworkID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if record.ContentType != "image/png" ||
+		record.ByteSize != 128 ||
+		record.ETag != `"fixture"` ||
+		record.CachedAt != formatTime(cachedAt) {
+		t.Fatalf("Artwork(after cache) = %#v", record)
+	}
+	if _, err := connection.Exec(
+		"UPDATE catalog_artworks SET source_url = ? WHERE id = ?",
+		"https://example.test/replaced.png",
+		artworkID,
+	); err == nil {
+		t.Fatal("catalog artwork identity mutation error = nil")
+	}
+	if err := repository.CacheArtwork(
+		ctx,
+		strings.Repeat("7", 64),
+		"catalog/official/missing/fixture.png",
+		"image/png",
+		strings.Repeat("b", 64),
+		1,
+		"",
+		"",
+		cachedAt,
+	); !errors.Is(err, ErrInvalidTransition) {
+		t.Fatalf("CacheArtwork(unregistered) error = %v", err)
+	}
+}
+
+func TestRepositoryRejectsUnregisteredOfficialArtwork(t *testing.T) {
+	t.Parallel()
+
+	repository, _ := openMetadataRepository(t)
+	ctx := context.Background()
+	syncID := "123e4567-e89b-42d3-a456-426614174111"
+	if _, err := repository.CreateSync(ctx, NewCatalogSync{
+		ID:        syncID,
+		Locale:    "en-GB",
+		StartedAt: time.Now(),
+	}); err != nil {
+		t.Fatal(err)
+	}
+	_, err := repository.StageSnapshot(ctx, NewCatalogSnapshot{
+		SyncID:    syncID,
+		Locale:    "en-GB",
+		RawPath:   "catalog/" + syncID + "/catalog.json",
+		RawSHA256: strings.Repeat("7", 64),
+		ByteSize:  128,
+		FetchedAt: time.Now(),
+		Stories: []NewOfficialStoryMetadata{{
+			StoryUUID: "123e4567-e89b-42d3-a456-426614174000",
+			ArtworkID: strings.Repeat("7", 64),
+		}},
+	})
+	if err == nil {
+		t.Fatal("StageSnapshot(unregistered artwork) error = nil")
 	}
 }
 

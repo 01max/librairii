@@ -131,7 +131,7 @@ func (s *RefreshService) Refresh(
 		}
 	}()
 
-	stories, err := NormalizeCatalog(payload, locale)
+	normalized, err := NormalizeCatalogSnapshot(payload, locale)
 	if err != nil {
 		return RefreshResult{}, s.fail(ctx, sync.ID, 0, RefreshInvalidCatalog, err)
 	}
@@ -151,7 +151,8 @@ func (s *RefreshService) Refresh(
 		RawSHA256: staged.SHA256,
 		ByteSize:  staged.ByteSize,
 		FetchedAt: s.now().UTC(),
-		Stories:   stories,
+		Stories:   normalized.Stories,
+		Artworks:  normalized.Artworks,
 	})
 	if err != nil {
 		removeErr := s.store.Remove(rawPath)
@@ -188,7 +189,7 @@ func (s *RefreshService) Refresh(
 	return RefreshResult{
 		Sync:       sync,
 		Snapshot:   snapshot,
-		StoryCount: len(stories),
+		StoryCount: len(normalized.Stories),
 	}, nil
 }
 

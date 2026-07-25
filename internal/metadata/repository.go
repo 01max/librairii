@@ -55,6 +55,18 @@ type CatalogSnapshot struct {
 	ActivatedAt string
 }
 
+type CatalogArtwork struct {
+	ID           string
+	SourceURL    string
+	ManagedPath  string
+	ContentType  string
+	SHA256       string
+	ByteSize     int64
+	ETag         string
+	LastModified string
+	CachedAt     string
+}
+
 type OfficialStoryMetadata struct {
 	ID              int64
 	SnapshotID      int64
@@ -90,6 +102,12 @@ type NewCatalogSnapshot struct {
 	ByteSize  int64
 	FetchedAt time.Time
 	Stories   []NewOfficialStoryMetadata
+	Artworks  []NewCatalogArtwork
+}
+
+type NewCatalogArtwork struct {
+	ID        string
+	SourceURL string
 }
 
 type NewOfficialStoryMetadata struct {
@@ -203,6 +221,29 @@ func (r *Repository) StageSnapshot(
 		return CatalogSnapshot{}, fmt.Errorf("read catalog snapshot id: %w", err)
 	}
 
+	for _, artwork := range input.Artworks {
+		if _, err := transaction.ExecContext(
+			ctx,
+			`INSERT INTO catalog_artworks (id, source_url)
+			 VALUES (?, ?)
+			 ON CONFLICT(id) DO NOTHING`,
+			artwork.ID,
+			artwork.SourceURL,
+		); err != nil {
+			return CatalogSnapshot{}, fmt.Errorf("register catalog artwork %s: %w", artwork.ID, err)
+		}
+		var sourceURL string
+		if err := transaction.QueryRowContext(
+			ctx,
+			"SELECT source_url FROM catalog_artworks WHERE id = ?",
+			artwork.ID,
+		).Scan(&sourceURL); err != nil {
+			return CatalogSnapshot{}, fmt.Errorf("verify catalog artwork %s: %w", artwork.ID, err)
+		}
+		if sourceURL != artwork.SourceURL {
+			return CatalogSnapshot{}, fmt.Errorf("catalog artwork identity collision")
+		}
+	}
 	for _, story := range input.Stories {
 		if err := insertOfficialMetadata(ctx, transaction, snapshotID, input.Locale, story); err != nil {
 			return CatalogSnapshot{}, err
@@ -213,6 +254,76 @@ func (r *Repository) StageSnapshot(
 		return CatalogSnapshot{}, fmt.Errorf("commit catalog snapshot staging: %w", err)
 	}
 	return r.Snapshot(ctx, snapshotID)
+}
+
+func (r *Repository) Artwork(ctx context.Context, id string) (CatalogArtwork, error) {
+	var artwork CatalogArtwork
+	err := r.database.QueryRowContext(
+		ctx,
+		`SELECT
+			id,
+			source_url,
+			COALESCE(managed_path, ''),
+			COALESCE(content_type, ''),
+			COALESCE(sha256, ''),
+			COALESCE(byte_size, 0),
+			COALESCE(etag, ''),
+			COALESCE(last_modified, ''),
+			COALESCE(cached_at, '')
+		 FROM catalog_artworks
+		 WHERE id = ?`,
+		id,
+	).Scan(
+		&artwork.ID,
+		&artwork.SourceURL,
+		&artwork.ManagedPath,
+		&artwork.ContentType,
+		&artwork.SHA256,
+		&artwork.ByteSize,
+		&artwork.ETag,
+		&artwork.LastModified,
+		&artwork.CachedAt,
+	)
+	if err != nil {
+		return CatalogArtwork{}, err
+	}
+	return artwork, nil
+}
+
+func (r *Repository) CacheArtwork(
+	ctx context.Context,
+	id string,
+	managedPath string,
+	contentType string,
+	sha256 string,
+	byteSize int64,
+	etag string,
+	lastModified string,
+	cachedAt time.Time,
+) error {
+	result, err := r.database.ExecContext(
+		ctx,
+		`UPDATE catalog_artworks
+		 SET managed_path = ?,
+		     content_type = ?,
+		     sha256 = ?,
+		     byte_size = ?,
+		     etag = NULLIF(?, ''),
+		     last_modified = NULLIF(?, ''),
+		     cached_at = ?,
+		     updated_at = ?
+		 WHERE id = ?`,
+		managedPath,
+		contentType,
+		sha256,
+		byteSize,
+		etag,
+		lastModified,
+		formatTime(cachedAt),
+		formatTime(cachedAt),
+		id,
+	)
+	return transitionResult(result, err)
 }
 
 func insertOfficialMetadata(

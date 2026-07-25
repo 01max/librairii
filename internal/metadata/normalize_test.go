@@ -1,6 +1,8 @@
 package metadata
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"os"
@@ -11,12 +13,13 @@ import (
 func TestNormalizeCatalogSelectsLocaleAndNormalizesSupportedFields(t *testing.T) {
 	t.Parallel()
 
-	stories, err := NormalizeCatalog(readCatalogFixture(t), "en_GB")
+	catalog, err := NormalizeCatalogSnapshot(readCatalogFixture(t), "en_GB")
 	if err != nil {
 		t.Fatal(err)
 	}
+	stories := catalog.Stories
 	if len(stories) != 1 {
-		t.Fatalf("NormalizeCatalog() count = %d", len(stories))
+		t.Fatalf("NormalizeCatalogSnapshot() story count = %d", len(stories))
 	}
 	story := stories[0]
 	if story.StoryUUID != "123e4567-e89b-42d3-a456-426614174000" ||
@@ -31,8 +34,16 @@ func TestNormalizeCatalogSelectsLocaleAndNormalizesSupportedFields(t *testing.T)
 		story.DurationSeconds == nil ||
 		*story.DurationSeconds != 3240 ||
 		story.SourceUpdatedAt == nil ||
-		story.Provenance != ProvenanceLuniiCatalog {
-		t.Fatalf("NormalizeCatalog() story = %#v", story)
+		story.Provenance != ProvenanceLuniiCatalog ||
+		len(catalog.Artworks) != 1 ||
+		story.ArtworkID != catalog.Artworks[0].ID {
+		t.Fatalf("NormalizeCatalogSnapshot() = %#v", catalog)
+	}
+	sourceURL := "https://storage.googleapis.com/lunii-data-prod/fixture/clockwork-mountain.png"
+	digest := sha256.Sum256([]byte(sourceURL))
+	if catalog.Artworks[0].SourceURL != sourceURL ||
+		catalog.Artworks[0].ID != hex.EncodeToString(digest[:]) {
+		t.Fatalf("NormalizeCatalogSnapshot() artwork = %#v", catalog.Artworks[0])
 	}
 }
 
@@ -135,6 +146,42 @@ func TestNormalizeCatalogRejectsCorruptOrInconsistentPayloads(t *testing.T) {
 							"title":       "Fixture",
 							"minimum_age": 8,
 							"maximum_age": 5,
+						},
+					},
+				},
+			}},
+			locale: "en-GB",
+		},
+		{
+			name: "external artwork URL",
+			payload: map[string]any{"response": map[string]any{
+				"pack": map[string]any{
+					"uuid":              "123e4567-e89b-42d3-a456-426614174000",
+					"locales_available": validRecord["locales_available"],
+					"localized_infos": map[string]any{
+						"en_GB": map[string]any{
+							"title": "Fixture",
+							"image": map[string]any{
+								"image_url": "https://example.test/secret.png",
+							},
+						},
+					},
+				},
+			}},
+			locale: "en-GB",
+		},
+		{
+			name: "traversing artwork URL",
+			payload: map[string]any{"response": map[string]any{
+				"pack": map[string]any{
+					"uuid":              "123e4567-e89b-42d3-a456-426614174000",
+					"locales_available": validRecord["locales_available"],
+					"localized_infos": map[string]any{
+						"en_GB": map[string]any{
+							"title": "Fixture",
+							"image": map[string]any{
+								"image_url": "/../secret.png",
+							},
 						},
 					},
 				},
