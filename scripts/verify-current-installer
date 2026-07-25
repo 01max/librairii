@@ -1,0 +1,101 @@
+#!/bin/sh
+set -eu
+
+project_root="$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)"
+cd "$project_root"
+
+host_os="$(go env GOOS)"
+host_arch="$(go env GOARCH)"
+version="$(tr -d '[:space:]' < VERSION)"
+artifact="${1:-build/bin/Librairii-${version}-${host_os}-${host_arch}.dmg}"
+artifact="$(CDPATH= cd -- "$(dirname -- "$artifact")" && pwd)/$(basename -- "$artifact")"
+
+if [ "$host_os" != "darwin" ]; then
+    printf 'current installer verification requires macOS, got %s/%s\n' \
+        "$host_os" "$host_arch" >&2
+    exit 1
+fi
+if [ ! -f "$artifact" ]; then
+    printf 'installer does not exist: %s\n' "$artifact" >&2
+    exit 1
+fi
+if [ ! -f "$artifact.sha256" ]; then
+    printf 'installer checksum does not exist: %s.sha256\n' "$artifact" >&2
+    exit 1
+fi
+/usr/bin/shasum -a 256 -c "$artifact.sha256"
+
+verification_root="$(mktemp -d /private/tmp/librairii-installer-verify.XXXXXX)"
+mount_point="$verification_root/mount"
+install_root="$verification_root/Applications"
+data_root="$verification_root/application-data"
+installed_application="$install_root/Librairii.app"
+mounted=0
+
+cleanup() {
+    if [ "$mounted" -eq 1 ]; then
+        /usr/bin/hdiutil detach "$mount_point" -quiet || true
+    fi
+    case "$verification_root" in
+        /private/tmp/librairii-installer-verify.*)
+            rm -rf -- "$verification_root"
+            ;;
+    esac
+}
+trap cleanup EXIT HUP INT TERM
+
+mkdir -p "$mount_point" "$install_root" "$data_root"
+/usr/bin/hdiutil attach \
+    "$artifact" \
+    -mountpoint "$mount_point" \
+    -nobrowse \
+    -readonly \
+    -quiet
+mounted=1
+
+if [ ! -d "$mount_point/Librairii.app" ] ||
+    [ "$(readlink "$mount_point/Applications")" != "/Applications" ]; then
+    printf 'disk image does not contain the application install layout\n' >&2
+    exit 1
+fi
+/usr/bin/ditto "$mount_point/Librairii.app" "$installed_application"
+/usr/bin/codesign --verify --deep --strict "$installed_application"
+
+application_binary="$installed_application/Contents/MacOS/Librairii"
+clean_path="/usr/bin:/bin:/usr/sbin:/sbin"
+launch_application() {
+    env -i \
+        PATH="$clean_path" \
+        LIBRAIRII_DATA_ROOT="$data_root" \
+        LIBRAIRII_SMOKE_EXIT=1 \
+        "$application_binary"
+}
+
+launch_application
+go run ./cmd/foundation-smoke -root "$data_root"
+printf 'retain application data after uninstall\n' > "$data_root/uninstall-retention.txt"
+
+launch_application
+go run ./cmd/foundation-smoke -root "$data_root"
+
+case "$installed_application" in
+    "$verification_root"/Applications/Librairii.app) ;;
+    *)
+        printf 'refusing to uninstall unexpected path: %s\n' \
+            "$installed_application" >&2
+        exit 1
+        ;;
+esac
+rm -rf -- "$installed_application"
+
+if [ -e "$installed_application" ]; then
+    printf 'temporary installed application was not removed\n' >&2
+    exit 1
+fi
+if [ ! -f "$data_root/db/librairii.sqlite3" ] ||
+    [ ! -f "$data_root/uninstall-retention.txt" ]; then
+    printf 'uninstall removed application-owned user data\n' >&2
+    exit 1
+fi
+
+printf 'installer acceptance passed: install, launch, relaunch, uninstall retention\n'

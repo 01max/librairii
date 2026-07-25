@@ -4,7 +4,7 @@ WAILS_VERSION := $(shell cat .wails-version)
 WAILS ?= $(shell go env GOPATH)/bin/wails
 GO_PACKAGES := . ./internal/... ./cmd/...
 
-.PHONY: setup fmt fmt-check vet test-go typecheck lint-frontend test-frontend test-frontend-accessibility test-frontend-performance test-frontend-release test-frontend-responsive test-frontend-visual build-frontend check build smoke-foundation smoke-first-story
+.PHONY: setup fmt fmt-check vet test-go typecheck lint-frontend test-frontend test-frontend-accessibility test-frontend-performance test-frontend-release test-frontend-responsive test-frontend-visual build-frontend check build build-current-installer verify-current-installer smoke-foundation smoke-first-story
 
 setup:
 	go mod download
@@ -57,6 +57,12 @@ build:
 	test "$$($(WAILS) version | head -n 1)" = "$(WAILS_VERSION)"
 	$(WAILS) build -m -nocolour
 	find frontend/wailsjs/go -type f -exec chmod 644 {} +
+
+build-current-installer:
+	scripts/build-current-installer
+
+verify-current-installer:
+	scripts/verify-current-installer
 
 smoke-foundation:
 	scripts/smoke-foundation

@@ -185,10 +185,21 @@ func TestReleaseMetadataUsesStableProductIdentity(t *testing.T) {
 	if config.Name != applicationTitle ||
 		config.Info.CompanyName != applicationTitle ||
 		config.Info.ProductName != applicationTitle ||
-		config.Info.ProductVersion != "0.1.0" ||
 		config.Info.Copyright == "" ||
 		config.Info.Comments == "" {
 		t.Fatalf("incomplete release metadata: %#v", config)
+	}
+	versionBytes, err := os.ReadFile("VERSION")
+	if err != nil {
+		t.Fatalf("read release version: %v", err)
+	}
+	version := strings.TrimSpace(string(versionBytes))
+	if version == "" || config.Info.ProductVersion != version {
+		t.Fatalf(
+			"Wails product version %q does not match VERSION %q",
+			config.Info.ProductVersion,
+			version,
+		)
 	}
 
 	assertContainsFile := func(path string, fragments ...string) {
