@@ -38,6 +38,7 @@ const (
 
 var (
 	ErrInvalidConfiguration = errors.New("invalid Lunii catalog client configuration")
+	ErrUnexpectedRedirect   = errors.New("unexpected Lunii catalog redirect")
 	ErrUnexpectedStatus     = errors.New("unexpected Lunii catalog response status")
 	ErrResponseTooLarge     = errors.New("Lunii catalog response exceeds its size limit")
 	ErrInvalidJSON          = errors.New("invalid Lunii catalog JSON response")
@@ -94,6 +95,12 @@ func newCatalogClient(config Config, roundTripper http.RoundTripper) (*CatalogCl
 		httpClient: &http.Client{
 			Transport: roundTripper,
 			Timeout:   config.RequestTimeout,
+			CheckRedirect: func(
+				_ *http.Request,
+				_ []*http.Request,
+			) error {
+				return ErrUnexpectedRedirect
+			},
 		},
 		guestTokenURL:  config.GuestTokenURL,
 		catalogURL:     config.CatalogURL,

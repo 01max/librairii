@@ -154,6 +154,63 @@ func TestCatalogClientUsesBoundedTimeout(t *testing.T) {
 	}
 }
 
+func TestCatalogClientRejectsRedirectsBeforeCredentialsOrArtworkLeaveBoundary(
+	t *testing.T,
+) {
+	t.Parallel()
+
+	var redirectedRequests atomic.Int32
+	redirectTarget := httptest.NewServer(http.HandlerFunc(func(
+		response http.ResponseWriter,
+		request *http.Request,
+	) {
+		redirectedRequests.Add(1)
+		if request.Header.Get("X-AUTH-TOKEN") != "" {
+			t.Errorf("redirect leaked catalog token: %#v", request.Header)
+		}
+		response.WriteHeader(http.StatusTeapot)
+	}))
+	defer redirectTarget.Close()
+
+	source := httptest.NewServer(http.HandlerFunc(func(
+		response http.ResponseWriter,
+		request *http.Request,
+	) {
+		response.Header().Set("Content-Type", "application/json")
+		switch request.URL.Path {
+		case "/guest/create":
+			_, _ = response.Write(readFixture(t, "guest_token.json"))
+		case "/v2/packs", "/artwork/fixture.png":
+			http.Redirect(
+				response,
+				request,
+				redirectTarget.URL+"/outside",
+				http.StatusFound,
+			)
+		default:
+			http.NotFound(response, request)
+		}
+	}))
+	defer source.Close()
+
+	client := newTestClient(t, source.URL, time.Second, 64*1024, 1024*1024)
+	if _, err := client.FetchCatalog(
+		context.Background(),
+	); !errors.Is(err, ErrUnexpectedRedirect) {
+		t.Fatalf("FetchCatalog(redirect) error = %v", err)
+	}
+	if _, err := client.FetchArtwork(
+		context.Background(),
+		source.URL+"/artwork/fixture.png",
+		1024,
+	); !errors.Is(err, ErrUnexpectedRedirect) {
+		t.Fatalf("FetchArtwork(redirect) error = %v", err)
+	}
+	if redirectedRequests.Load() != 0 {
+		t.Fatalf("redirect target requests = %d", redirectedRequests.Load())
+	}
+}
+
 func TestCatalogClientRejectsStatusesContentTypesAndMalformedTokens(t *testing.T) {
 	t.Parallel()
 
