@@ -28,13 +28,20 @@ type facadeEvents struct{}
 
 func (facadeEvents) Emit(context.Context, string, any) {}
 
+type facadeReadiness struct{}
+
+func (facadeReadiness) Check(context.Context) (coreapp.ReadinessReport, error) {
+	return coreapp.ReadinessReport{MutationsAllowed: true}, nil
+}
+
 func TestAppExposesTypedLifecycleStatus(t *testing.T) {
 	t.Parallel()
 
 	core, err := coreapp.New(coreapp.Dependencies{
-		Clock:   facadeClock{},
-		Dialogs: facadeDialogs{},
-		Events:  facadeEvents{},
+		Clock:     facadeClock{},
+		Dialogs:   facadeDialogs{},
+		Events:    facadeEvents{},
+		Readiness: facadeReadiness{},
 	})
 	if err != nil {
 		t.Fatalf("New() error = %v", err)

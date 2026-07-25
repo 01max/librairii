@@ -55,8 +55,9 @@ func AsAPIError(err error) *APIError {
 }
 
 type Status struct {
-	State     LifecycleState `json:"state"`
-	StartedAt string         `json:"startedAt,omitempty"`
+	State            LifecycleState `json:"state"`
+	StartedAt        string         `json:"startedAt,omitempty"`
+	MutationsAllowed bool           `json:"mutationsAllowed"`
 }
 
 type StatusResponse struct {
@@ -83,8 +84,22 @@ type EventPort interface {
 	Emit(context.Context, string, any)
 }
 
+type ReadinessIssue struct {
+	Code string `json:"code"`
+}
+
+type ReadinessReport struct {
+	MutationsAllowed bool
+	Issues           []ReadinessIssue
+}
+
+type ReadinessPort interface {
+	Check(context.Context) (ReadinessReport, error)
+}
+
 type Dependencies struct {
-	Clock   Clock
-	Dialogs DialogPort
-	Events  EventPort
+	Clock     Clock
+	Dialogs   DialogPort
+	Events    EventPort
+	Readiness ReadinessPort
 }

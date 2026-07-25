@@ -40,3 +40,4 @@ check: fmt-check vet test-go typecheck lint-frontend test-frontend build-fronten
 build:
 	test "$$($(WAILS) version | head -n 1)" = "$(WAILS_VERSION)"
 	$(WAILS) build -m -nocolour
+	find frontend/wailsjs/go -type f -exec chmod 644 {} +

@@ -16,33 +16,54 @@ type Application struct {
 	clock     Clock
 	dialogs   DialogPort
 	events    EventPort
+	readiness ReadinessPort
 	state     LifecycleState
 	startedAt time.Time
+	ready     bool
+	lastError *APIError
 }
 
 func New(deps Dependencies) (*Application, error) {
-	if deps.Clock == nil || deps.Dialogs == nil || deps.Events == nil {
+	if deps.Clock == nil || deps.Dialogs == nil || deps.Events == nil || deps.Readiness == nil {
 		return nil, ErrMissingDependency
 	}
 
 	return &Application{
-		clock:   deps.Clock,
-		dialogs: deps.Dialogs,
-		events:  deps.Events,
-		state:   StateInitializing,
+		clock:     deps.Clock,
+		dialogs:   deps.Dialogs,
+		events:    deps.Events,
+		readiness: deps.Readiness,
+		state:     StateInitializing,
 	}, nil
 }
 
-func (a *Application) Start(_ context.Context) error {
+func (a *Application) Start(ctx context.Context) error {
+	report, err := a.readiness.Check(ctx)
+
 	a.mu.Lock()
 	defer a.mu.Unlock()
 
-	if a.state == StateReady {
+	if a.state == StateReady || a.state == StateRecovery {
 		return nil
 	}
 
 	a.startedAt = a.clock.Now().UTC()
+	if err != nil {
+		a.state = StateRecovery
+		a.ready = false
+		a.lastError = NewAPIError(ErrorStorageUnavailable, "Application storage is unavailable.")
+		return nil
+	}
+	if !report.MutationsAllowed {
+		a.state = StateRecovery
+		a.ready = false
+		a.lastError = NewAPIError(ErrorStorageUnavailable, "Application storage requires recovery.")
+		return nil
+	}
+
 	a.state = StateReady
+	a.ready = true
+	a.lastError = nil
 	return nil
 }
 
@@ -58,15 +79,33 @@ func (a *Application) Stop(_ context.Context) {
 	defer a.mu.Unlock()
 
 	a.state = StateStopped
+	a.ready = false
 }
 
 func (a *Application) Status() Status {
 	a.mu.RLock()
 	defer a.mu.RUnlock()
 
-	status := Status{State: a.state}
+	status := Status{
+		State:            a.state,
+		MutationsAllowed: a.ready,
+	}
 	if !a.startedAt.IsZero() {
 		status.StartedAt = a.startedAt.Format(time.RFC3339Nano)
 	}
 	return status
+}
+
+func (a *Application) StatusResponse() StatusResponse {
+	a.mu.RLock()
+	defer a.mu.RUnlock()
+
+	status := Status{
+		State:            a.state,
+		MutationsAllowed: a.ready,
+	}
+	if !a.startedAt.IsZero() {
+		status.StartedAt = a.startedAt.Format(time.RFC3339Nano)
+	}
+	return StatusResponse{Status: status, Error: a.lastError}
 }

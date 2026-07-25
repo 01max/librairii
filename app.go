@@ -30,5 +30,5 @@ func (a *App) shutdown(ctx context.Context) {
 
 // ApplicationStatus returns a stable lifecycle snapshot for the frontend.
 func (a *App) ApplicationStatus() coreapp.StatusResponse {
-	return coreapp.StatusResponse{Status: a.core.Status()}
+	return a.core.StatusResponse()
 }

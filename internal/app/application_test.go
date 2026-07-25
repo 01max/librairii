@@ -38,15 +38,25 @@ func (e *fakeEvents) Emit(_ context.Context, name string, payload any) {
 	e.events = append(e.events, emittedEvent{name: name, payload: payload})
 }
 
+type fakeReadiness struct {
+	report ReadinessReport
+	err    error
+}
+
+func (r fakeReadiness) Check(context.Context) (ReadinessReport, error) {
+	return r.report, r.err
+}
+
 func TestApplicationLifecycle(t *testing.T) {
 	t.Parallel()
 
 	now := time.Date(2026, time.July, 25, 8, 30, 0, 0, time.FixedZone("CEST", 2*60*60))
 	events := &fakeEvents{}
 	application, err := New(Dependencies{
-		Clock:   fixedClock{now: now},
-		Dialogs: fakeDialogs{},
-		Events:  events,
+		Clock:     fixedClock{now: now},
+		Dialogs:   fakeDialogs{},
+		Events:    events,
+		Readiness: fakeReadiness{report: ReadinessReport{MutationsAllowed: true}},
 	})
 	if err != nil {
 		t.Fatalf("New() error = %v", err)
@@ -64,6 +74,9 @@ func TestApplicationLifecycle(t *testing.T) {
 	if status.State != StateReady {
 		t.Fatalf("ready state = %q, want %q", status.State, StateReady)
 	}
+	if !status.MutationsAllowed {
+		t.Fatal("mutations are disabled in ready state")
+	}
 	if status.StartedAt != "2026-07-25T06:30:00Z" {
 		t.Fatalf("startedAt = %q", status.StartedAt)
 	}
@@ -76,6 +89,34 @@ func TestApplicationLifecycle(t *testing.T) {
 	application.Stop(context.Background())
 	if got := application.Status().State; got != StateStopped {
 		t.Fatalf("stopped state = %q, want %q", got, StateStopped)
+	}
+}
+
+func TestApplicationEntersRecoveryWhenStorageIsUnsafe(t *testing.T) {
+	t.Parallel()
+
+	application, err := New(Dependencies{
+		Clock:   fixedClock{now: time.Now()},
+		Dialogs: fakeDialogs{},
+		Events:  &fakeEvents{},
+		Readiness: fakeReadiness{report: ReadinessReport{
+			MutationsAllowed: false,
+			Issues:           []ReadinessIssue{{Code: "schema_mismatch"}},
+		}},
+	})
+	if err != nil {
+		t.Fatalf("New() error = %v", err)
+	}
+	if err := application.Start(context.Background()); err != nil {
+		t.Fatalf("Start() error = %v", err)
+	}
+
+	response := application.StatusResponse()
+	if response.Status.State != StateRecovery || response.Status.MutationsAllowed {
+		t.Fatalf("StatusResponse() status = %#v", response.Status)
+	}
+	if response.Error == nil || response.Error.Code != ErrorStorageUnavailable {
+		t.Fatalf("StatusResponse() error = %#v", response.Error)
 	}
 }
 

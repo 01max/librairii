@@ -19,6 +19,7 @@ export namespace app {
 	export class Status {
 	    state: string;
 	    startedAt?: string;
+	    mutationsAllowed: boolean;
 	
 	    static createFrom(source: any = {}) {
 	        return new Status(source);
@@ -28,6 +29,7 @@ export namespace app {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.state = source["state"];
 	        this.startedAt = source["startedAt"];
+	        this.mutationsAllowed = source["mutationsAllowed"];
 	    }
 	}
 	export class StatusResponse {

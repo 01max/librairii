@@ -3,6 +3,7 @@ package main
 import (
 	"embed"
 	"log"
+	"os"
 
 	coreapp "github.com/01max/librairii/internal/app"
 	"github.com/01max/librairii/internal/platform"
@@ -16,9 +17,10 @@ var assets embed.FS
 
 func main() {
 	core, err := coreapp.New(coreapp.Dependencies{
-		Clock:   platform.SystemClock{},
-		Dialogs: platform.PendingDialogs{},
-		Events:  platform.RuntimeEvents{},
+		Clock:     platform.SystemClock{},
+		Dialogs:   platform.PendingDialogs{},
+		Events:    platform.RuntimeEvents{},
+		Readiness: platform.NewStorageReadiness(os.Getenv("LIBRAIRII_DATA_ROOT")),
 	})
 	if err != nil {
 		log.Fatal(err)
