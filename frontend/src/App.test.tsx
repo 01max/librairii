@@ -9,6 +9,7 @@ import {
     QueryStories,
     RemoveStory,
     SelectAndImportStories,
+    SetBooleanTag,
     StoryDetail as LoadStoryDetail,
     TagAssignmentWorkspace as LoadTagAssignmentWorkspace,
     TagCatalog as LoadTagCatalog,
@@ -43,6 +44,7 @@ const operationSnapshot = vi.mocked(OperationSnapshot);
 const queryStories = vi.mocked(QueryStories);
 const removeStory = vi.mocked(RemoveStory);
 const selectAndImportStories = vi.mocked(SelectAndImportStories);
+const setBooleanTag = vi.mocked(SetBooleanTag);
 const loadStoryDetail = vi.mocked(LoadStoryDetail);
 const loadTagAssignmentWorkspace = vi.mocked(LoadTagAssignmentWorkspace);
 const loadTagCatalog = vi.mocked(LoadTagCatalog);
@@ -92,6 +94,7 @@ beforeEach(() => {
     queryStories.mockReset();
     removeStory.mockReset();
     selectAndImportStories.mockReset();
+    setBooleanTag.mockReset();
     loadStoryDetail.mockReset();
     loadTagAssignmentWorkspace.mockReset();
     loadTagCatalog.mockReset();
@@ -194,6 +197,14 @@ beforeEach(() => {
     }));
     cancelOperation.mockResolvedValue(new app.OperationResponse({
         cancelled: true,
+    }));
+    setBooleanTag.mockResolvedValue(new app.TagAssignmentResponse({
+        result: {
+            requestedStories: 1,
+            changedStories: 1,
+            assignmentsAdded: 1,
+            assignmentsRemoved: 0,
+        },
     }));
     removeStory.mockResolvedValue(new app.RemovalResponse({
         result: {
@@ -332,6 +343,68 @@ test('restores focus to the tag-manager opener when the modal closes', async () 
     await user.click(close);
 
     expect(opener).toHaveFocus();
+});
+
+test('freezes assignment targets when a tag change removes stories from the filter', async () => {
+    const user = userEvent.setup();
+    let assigned = false;
+    queryStories.mockImplementation(async () => new app.LibraryPageResponse({
+        page: {
+            stories: assigned ? [stories[1]] : stories,
+            page: 1,
+            pageSize: 12,
+            totalItems: assigned ? 1 : 2,
+            totalPages: 1,
+            sort: 'imported_desc',
+        },
+    }));
+    setBooleanTag.mockImplementation(async () => {
+        assigned = true;
+        return new app.TagAssignmentResponse({
+            result: {
+                requestedStories: 1,
+                changedStories: 1,
+                assignmentsAdded: 1,
+                assignmentsRemoved: 0,
+            },
+        });
+    });
+    loadTagAssignmentWorkspace.mockImplementation(async (storyIDs) => (
+        new app.TagAssignmentWorkspaceResponse({
+            workspace: {
+                catalog: {
+                    definitions: [{
+                        id: 1,
+                        key: 'broken',
+                        label: 'Broken',
+                        color: '#ff705c',
+                        kind: 'boolean',
+                        source: 'builtin',
+                        protected: true,
+                        values: [],
+                    }],
+                },
+                requestedStories: storyIDs.length,
+                states: [{
+                    definitionId: 1,
+                    assignedStories: 0,
+                    values: [],
+                }],
+            },
+        })
+    ));
+    render(<App/>);
+    await screen.findByRole('heading', {name: 'Clockwork Forest'});
+
+    await user.click(screen.getByRole('button', {name: 'Edit tags'}));
+    const broken = await screen.findByRole('checkbox', {name: 'Broken warning'});
+    await user.click(broken);
+    expect(await screen.findByRole('heading', {name: 'Moonlit Workshop'}))
+        .toBeInTheDocument();
+    await user.click(broken);
+
+    expect(setBooleanTag).toHaveBeenNthCalledWith(1, [1], 1, true);
+    expect(setBooleanTag).toHaveBeenNthCalledWith(2, [1], 1, true);
 });
 
 test('ignores superseded query responses without repeating application bootstrap', async () => {

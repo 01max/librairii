@@ -115,6 +115,7 @@ function App() {
     const [expandingCollection, setExpandingCollection] = useState(false);
     const [tagManagerOpen, setTagManagerOpen] = useState(false);
     const [tagAssignmentOpen, setTagAssignmentOpen] = useState(false);
+    const [tagAssignmentStoryIDs, setTagAssignmentStoryIDs] = useState<number[]>([]);
     const [assignmentWorkspace, setAssignmentWorkspace] =
         useState<tagging.AssignmentWorkspace | null>(null);
     const [tagCatalog, setTagCatalog] = useState<tagging.Catalog | null>(null);
@@ -394,6 +395,7 @@ function App() {
     }, [detailRevision, selectedID]);
 
     const selectedStoryKey = selectedIDs.join(',');
+    const tagAssignmentTargetKey = tagAssignmentStoryIDs.join(',');
     useEffect(() => {
         if (!selectedStoryKey) {
             return;
@@ -410,6 +412,15 @@ function App() {
             active = false;
         };
     }, [selectedStoryKey]);
+
+    const acceptEditorWorkspace = useCallback(
+        (workspace: tagging.AssignmentWorkspace) => {
+            if (tagAssignmentTargetKey === selectedStoryKey) {
+                setAssignmentWorkspace(workspace);
+            }
+        },
+        [selectedStoryKey, tagAssignmentTargetKey],
+    );
 
     const stories = useMemo(() => page?.stories ?? [], [page]);
     const rows = useMemo(() => chunkStories(stories), [stories]);
@@ -952,7 +963,13 @@ function App() {
                             {selectedIDs.length > 1
                                 ? `${selectedIDs.length} stories selected`
                                 : 'My tags'}
-                            <button type="button" onClick={() => setTagAssignmentOpen(true)}>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setTagAssignmentStoryIDs([...selectedIDs]);
+                                    setTagAssignmentOpen(true);
+                                }}
+                            >
                                 Edit tags
                             </button>
                         </div>
@@ -1057,11 +1074,14 @@ function App() {
                     onCatalogChange={reconcileTagCatalog}
                 />
             )}
-            {tagAssignmentOpen && selectedIDs.length > 0 && (
+            {tagAssignmentOpen && tagAssignmentStoryIDs.length > 0 && (
                 <TagAssignmentEditor
-                    storyIDs={selectedIDs}
-                    onClose={() => setTagAssignmentOpen(false)}
-                    onWorkspaceChange={setAssignmentWorkspace}
+                    storyIDs={tagAssignmentStoryIDs}
+                    onClose={() => {
+                        setTagAssignmentOpen(false);
+                        setTagAssignmentStoryIDs([]);
+                    }}
+                    onWorkspaceChange={acceptEditorWorkspace}
                     onAssignmentsChange={loadCollection}
                 />
             )}
