@@ -240,6 +240,7 @@ func taggingAPIError(err error) *APIError {
 	switch {
 	case errors.Is(err, tagging.ErrInvalidDefinition),
 		errors.Is(err, tagging.ErrInvalidValue),
+		errors.Is(err, tagging.ErrValuesNotAllowed),
 		errors.Is(err, tagging.ErrInvalidAssignment),
 		errors.Is(err, tagging.ErrAssignmentKind),
 		errors.Is(err, tagging.ErrDerivedAssignment),

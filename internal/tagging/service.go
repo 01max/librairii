@@ -534,7 +534,9 @@ func normalizeDefinitionLabel(value string) (string, error) {
 }
 
 func isDefinitionKeyConflict(err error) bool {
-	return strings.Contains(err.Error(), "tag_definitions.normalized_key")
+	message := err.Error()
+	return strings.Contains(message, "tag_definitions.normalized_key") ||
+		strings.Contains(message, "broken tag identity is protected")
 }
 
 func transitionOne(result sql.Result, err error) error {

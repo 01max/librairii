@@ -44,6 +44,14 @@ func TestServiceCreatesNormalizesAndValidatesUserDefinitions(t *testing.T) {
 		t.Fatalf("CreateDefinition(duplicate) error = %v", err)
 	}
 	if _, err := service.CreateDefinition(context.Background(), CreateDefinition{
+		Key:   "broken",
+		Label: "User broken",
+		Color: "#405CF5",
+		Kind:  KindBoolean,
+	}); !errors.Is(err, ErrDuplicateDefinition) {
+		t.Fatalf("CreateDefinition(protected key) error = %v", err)
+	}
+	if _, err := service.CreateDefinition(context.Background(), CreateDefinition{
 		Key:   "pale",
 		Label: "Pale",
 		Color: "#FFFFFF",

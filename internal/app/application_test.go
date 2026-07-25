@@ -394,6 +394,17 @@ func TestAsAPIErrorPreservesStableErrors(t *testing.T) {
 	}
 }
 
+func TestTaggingAPIErrorsClassifyExpectedValidationFailures(t *testing.T) {
+	t.Parallel()
+
+	if got := taggingAPIError(tagging.ErrValuesNotAllowed); got.Code != ErrorInvalidInput {
+		t.Fatalf("taggingAPIError(values not allowed) = %#v", got)
+	}
+	if got := taggingAPIError(tagging.ErrDuplicateDefinition); got.Code != ErrorConflict {
+		t.Fatalf("taggingAPIError(duplicate definition) = %#v", got)
+	}
+}
+
 func TestImportFacadeKeepsNativePathsInsideGo(t *testing.T) {
 	t.Parallel()
 
