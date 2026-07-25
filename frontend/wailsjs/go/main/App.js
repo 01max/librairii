@@ -122,6 +122,10 @@ export function RevealExportDestination(arg1) {
   return window['go']['main']['App']['RevealExportDestination'](arg1);
 }
 
+export function SelectAndExportDiagnostics() {
+  return window['go']['main']['App']['SelectAndExportDiagnostics']();
+}
+
 export function SelectAndImportStories() {
   return window['go']['main']['App']['SelectAndImportStories']();
 }

@@ -41,16 +41,17 @@ func main() {
 		log.Fatal(err)
 	}
 	core, err := coreapp.New(coreapp.Dependencies{
-		Clock:      clock,
-		Dialogs:    platform.NewRuntimeDialogs(),
-		Events:     events,
-		Readiness:  readiness,
-		Operations: importRuntime,
-		Library:    importRuntime,
-		Removal:    importRuntime,
-		Tags:       importRuntime,
-		Shelves:    importRuntime,
-		Resources:  []coreapp.ResourcePort{readiness},
+		Clock:       clock,
+		Dialogs:     platform.NewRuntimeDialogs(),
+		Events:      events,
+		Readiness:   readiness,
+		Operations:  importRuntime,
+		Library:     importRuntime,
+		Removal:     importRuntime,
+		Tags:        importRuntime,
+		Shelves:     importRuntime,
+		Diagnostics: importRuntime,
+		Resources:   []coreapp.ResourcePort{readiness},
 	})
 	if err != nil {
 		log.Fatal(err)

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"time"
 
+	"github.com/01max/librairii/internal/diagnostics"
 	"github.com/01max/librairii/internal/exporter"
 	"github.com/01max/librairii/internal/library"
 	"github.com/01max/librairii/internal/metadata"
@@ -172,17 +173,22 @@ type ShelfPort interface {
 	PreviewShelves(context.Context, []int64) (shelves.SelectionPreview, error)
 }
 
+type DiagnosticsPort interface {
+	ExportDiagnostics(context.Context, string) (diagnostics.Report, error)
+}
+
 type Dependencies struct {
-	Clock      Clock
-	Dialogs    DialogPort
-	Events     EventPort
-	Readiness  ReadinessPort
-	Operations OperationPort
-	Library    LibraryPort
-	Removal    RemovalPort
-	Tags       TaggingPort
-	Shelves    ShelfPort
-	Resources  []ResourcePort
+	Clock       Clock
+	Dialogs     DialogPort
+	Events      EventPort
+	Readiness   ReadinessPort
+	Operations  OperationPort
+	Library     LibraryPort
+	Removal     RemovalPort
+	Tags        TaggingPort
+	Shelves     ShelfPort
+	Diagnostics DiagnosticsPort
+	Resources   []ResourcePort
 }
 
 type OperationResponse struct {
@@ -195,6 +201,12 @@ type ExportPreflightResponse struct {
 	Preflight *exporter.PreflightReport `json:"preflight,omitempty"`
 	Cancelled bool                      `json:"cancelled,omitempty"`
 	Error     *APIError                 `json:"error,omitempty"`
+}
+
+type DiagnosticExportResponse struct {
+	Report    *diagnostics.Report `json:"report,omitempty"`
+	Cancelled bool                `json:"cancelled,omitempty"`
+	Error     *APIError           `json:"error,omitempty"`
 }
 
 type OperationListResponse struct {

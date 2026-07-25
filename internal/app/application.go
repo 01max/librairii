@@ -19,21 +19,22 @@ const EventApplicationReady = "application:ready"
 var ErrMissingDependency = errors.New("application dependency is required")
 
 type Application struct {
-	mu         sync.RWMutex
-	clock      Clock
-	dialogs    DialogPort
-	events     EventPort
-	readiness  ReadinessPort
-	operations OperationPort
-	library    LibraryPort
-	removal    RemovalPort
-	tags       TaggingPort
-	shelves    ShelfPort
-	resources  []ResourcePort
-	state      LifecycleState
-	startedAt  time.Time
-	ready      bool
-	lastError  *APIError
+	mu          sync.RWMutex
+	clock       Clock
+	dialogs     DialogPort
+	events      EventPort
+	readiness   ReadinessPort
+	operations  OperationPort
+	library     LibraryPort
+	removal     RemovalPort
+	tags        TaggingPort
+	shelves     ShelfPort
+	diagnostics DiagnosticsPort
+	resources   []ResourcePort
+	state       LifecycleState
+	startedAt   time.Time
+	ready       bool
+	lastError   *APIError
 }
 
 func New(deps Dependencies) (*Application, error) {
@@ -52,18 +53,48 @@ func New(deps Dependencies) (*Application, error) {
 	resources := append([]ResourcePort(nil), deps.Resources...)
 	resources = append(resources, deps.Operations)
 	return &Application{
-		clock:      deps.Clock,
-		dialogs:    deps.Dialogs,
-		events:     deps.Events,
-		readiness:  deps.Readiness,
-		operations: deps.Operations,
-		library:    deps.Library,
-		removal:    deps.Removal,
-		tags:       deps.Tags,
-		shelves:    deps.Shelves,
-		resources:  resources,
-		state:      StateInitializing,
+		clock:       deps.Clock,
+		dialogs:     deps.Dialogs,
+		events:      deps.Events,
+		readiness:   deps.Readiness,
+		operations:  deps.Operations,
+		library:     deps.Library,
+		removal:     deps.Removal,
+		tags:        deps.Tags,
+		shelves:     deps.Shelves,
+		diagnostics: deps.Diagnostics,
+		resources:   resources,
+		state:       StateInitializing,
 	}, nil
+}
+
+func (a *Application) SelectAndExportDiagnostics(
+	ctx context.Context,
+) DiagnosticExportResponse {
+	if a.diagnostics == nil {
+		return DiagnosticExportResponse{
+			Error: NewAPIError(ErrorNotReady, "Diagnostics are unavailable."),
+		}
+	}
+	destination, err := a.dialogs.OpenDirectory(ctx, "Export diagnostics")
+	if err != nil {
+		return DiagnosticExportResponse{
+			Error: NewAPIError(
+				ErrorInternal,
+				"The diagnostics destination picker could not be opened.",
+			),
+		}
+	}
+	if destination == "" {
+		return DiagnosticExportResponse{Cancelled: true}
+	}
+	report, err := a.diagnostics.ExportDiagnostics(ctx, destination)
+	if err != nil {
+		return DiagnosticExportResponse{
+			Error: NewAPIError(ErrorInternal, "Diagnostics could not be exported."),
+		}
+	}
+	return DiagnosticExportResponse{Report: &report}
 }
 
 func (a *Application) RemoveStory(

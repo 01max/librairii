@@ -58,6 +58,10 @@ func (a *App) ApplicationStatus() coreapp.StatusResponse {
 	return a.core.StatusResponse()
 }
 
+func (a *App) SelectAndExportDiagnostics() coreapp.DiagnosticExportResponse {
+	return a.core.SelectAndExportDiagnostics(a.runtimeContext())
+}
+
 // SelectAndImportStories opens the native picker and starts one durable import
 // operation without exposing selected filesystem paths to the frontend.
 func (a *App) SelectAndImportStories() coreapp.OperationResponse {

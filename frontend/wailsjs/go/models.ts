@@ -16,6 +16,40 @@ export namespace app {
 	        this.details = source["details"];
 	    }
 	}
+	export class DiagnosticExportResponse {
+	    report?: diagnostics.Report;
+	    cancelled?: boolean;
+	    error?: APIError;
+	
+	    static createFrom(source: any = {}) {
+	        return new DiagnosticExportResponse(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.report = this.convertValues(source["report"], diagnostics.Report);
+	        this.cancelled = source["cancelled"];
+	        this.error = this.convertValues(source["error"], APIError);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
 	export class ExportPreflightResponse {
 	    preflight?: exporter.PreflightReport;
 	    cancelled?: boolean;
@@ -675,6 +709,25 @@ export namespace app {
 		    }
 		    return a;
 		}
+	}
+
+}
+
+export namespace diagnostics {
+	
+	export class Report {
+	    fileName: string;
+	    byteSize: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new Report(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.fileName = source["fileName"];
+	        this.byteSize = source["byteSize"];
+	    }
 	}
 
 }

@@ -65,6 +65,8 @@ export function ReplaceShelfQuery(arg1:number,arg2:library.StoryLibraryQuery):Pr
 
 export function RevealExportDestination(arg1:string):Promise<app.MutationResponse>;
 
+export function SelectAndExportDiagnostics():Promise<app.DiagnosticExportResponse>;
+
 export function SelectAndImportStories():Promise<app.OperationResponse>;
 
 export function SelectAndPreflightExport(arg1:exporter.PreflightRequest):Promise<app.ExportPreflightResponse>;

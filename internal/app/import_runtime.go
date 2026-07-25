@@ -10,6 +10,7 @@ import (
 	"github.com/01max/librairii/internal/archive"
 	"github.com/01max/librairii/internal/artwork"
 	"github.com/01max/librairii/internal/catalog"
+	"github.com/01max/librairii/internal/diagnostics"
 	"github.com/01max/librairii/internal/exporter"
 	"github.com/01max/librairii/internal/importer"
 	"github.com/01max/librairii/internal/inspection"
@@ -34,21 +35,23 @@ type StorageProvider interface {
 }
 
 type ImportRuntime struct {
-	mu              sync.RWMutex
-	storage         StorageProvider
-	clock           Clock
-	events          EventPort
-	workers         int
-	metadataFetcher metadata.CatalogFetcher
-	manager         *operations.Manager
-	query           *library.Query
-	removal         *removal.Service
-	tags            *tagging.Service
-	shelves         *shelves.Service
-	shelfEvaluator  *shelves.Evaluator
-	exportPreflight *exporter.PreflightService
-	preparedExports map[string]exporter.PreflightReport
-	preparedOrder   []string
+	mu               sync.RWMutex
+	storage          StorageProvider
+	clock            Clock
+	events           EventPort
+	workers          int
+	metadataFetcher  metadata.CatalogFetcher
+	manager          *operations.Manager
+	query            *library.Query
+	removal          *removal.Service
+	tags             *tagging.Service
+	shelves          *shelves.Service
+	shelfEvaluator   *shelves.Evaluator
+	exportPreflight  *exporter.PreflightService
+	diagnosticLogger *diagnostics.Logger
+	diagnostics      *diagnostics.Service
+	preparedExports  map[string]exporter.PreflightReport
+	preparedOrder    []string
 }
 
 type ImportRuntimeOption func(*ImportRuntime)
@@ -102,6 +105,28 @@ func (r *ImportRuntime) Start(ctx context.Context) error {
 	if database == nil || layout.Root == "" {
 		return ErrImportRuntimeNotReady
 	}
+	diagnosticLogger, err := diagnostics.NewLogger(
+		layout.Logs,
+		diagnostics.DefaultPolicy(),
+		r.clock.Now,
+	)
+	if err != nil {
+		return fmt.Errorf("open diagnostic logger: %w", err)
+	}
+	loggerOwned := true
+	defer func() {
+		if loggerOwned {
+			_ = diagnosticLogger.Close()
+		}
+	}()
+	diagnosticService, err := diagnostics.NewService(
+		layout,
+		database,
+		diagnosticLogger,
+	)
+	if err != nil {
+		return fmt.Errorf("construct diagnostic export service: %w", err)
+	}
 	if _, err := tagging.SeedBuiltIns(ctx, database); err != nil {
 		return fmt.Errorf("seed built-in tags: %w", err)
 	}
@@ -153,7 +178,10 @@ func (r *ImportRuntime) Start(ctx context.Context) error {
 		Exports:        exportCopier,
 		ExportRecovery: exportCopier,
 		Metadata:       metadataRefresh,
-		Events:         r.events,
+		Events: diagnosticEventPort{
+			delegate: r.events,
+			logger:   diagnosticLogger,
+		},
 		Clock:          r.clock,
 		StagingCleaner: archiveRepository,
 		Workers:        r.workers,
@@ -208,6 +236,14 @@ func (r *ImportRuntime) Start(ctx context.Context) error {
 		_ = manager.Close()
 		return fmt.Errorf("construct export preflight: %w", err)
 	}
+	if err := diagnosticLogger.Record(
+		diagnostics.LevelInfo,
+		diagnostics.EventRuntimeStarted,
+		"ready",
+	); err != nil {
+		_ = manager.Close()
+		return fmt.Errorf("record runtime startup: %w", err)
+	}
 	r.manager = manager
 	r.query = libraryQuery
 	r.removal = removalService
@@ -215,7 +251,36 @@ func (r *ImportRuntime) Start(ctx context.Context) error {
 	r.shelves = shelfService
 	r.shelfEvaluator = shelfEvaluator
 	r.exportPreflight = exportPreflight
+	r.diagnosticLogger = diagnosticLogger
+	r.diagnostics = diagnosticService
+	loggerOwned = false
 	return nil
+}
+
+type diagnosticEventPort struct {
+	delegate EventPort
+	logger   *diagnostics.Logger
+}
+
+func (p diagnosticEventPort) Emit(ctx context.Context, name string, payload any) {
+	p.delegate.Emit(ctx, name, payload)
+	if name != operations.EventChanged {
+		return
+	}
+	snapshot, ok := payload.(operations.Snapshot)
+	if !ok {
+		return
+	}
+	level := diagnostics.LevelInfo
+	if snapshot.Status == operations.StatusFailed ||
+		snapshot.Status == operations.StatusInterrupted {
+		level = diagnostics.LevelWarn
+	}
+	_ = p.logger.Record(
+		level,
+		diagnostics.EventOperationChanged,
+		string(snapshot.Kind)+":"+string(snapshot.Status),
+	)
 }
 
 func (r *ImportRuntime) StartImport(
@@ -312,6 +377,19 @@ func (r *ImportRuntime) MetadataStatus(
 		return metadata.CatalogStatus{}, ErrImportRuntimeNotReady
 	}
 	return metadata.NewRepository(database).CatalogStatus(ctx, locale)
+}
+
+func (r *ImportRuntime) ExportDiagnostics(
+	ctx context.Context,
+	destination string,
+) (diagnostics.Report, error) {
+	r.mu.RLock()
+	service := r.diagnostics
+	r.mu.RUnlock()
+	if service == nil {
+		return diagnostics.Report{}, ErrImportRuntimeNotReady
+	}
+	return service.Export(ctx, destination)
 }
 
 func (r *ImportRuntime) Cancel(
@@ -680,6 +758,7 @@ func (r *ImportRuntime) PreviewShelves(
 func (r *ImportRuntime) Close() error {
 	r.mu.Lock()
 	manager := r.manager
+	diagnosticLogger := r.diagnosticLogger
 	r.manager = nil
 	r.query = nil
 	r.removal = nil
@@ -687,13 +766,26 @@ func (r *ImportRuntime) Close() error {
 	r.shelves = nil
 	r.shelfEvaluator = nil
 	r.exportPreflight = nil
+	r.diagnosticLogger = nil
+	r.diagnostics = nil
 	r.preparedExports = make(map[string]exporter.PreflightReport)
 	r.preparedOrder = nil
 	r.mu.Unlock()
-	if manager == nil {
-		return nil
+	var closeErrors []error
+	if manager != nil {
+		closeErrors = append(closeErrors, manager.Close())
 	}
-	return manager.Close()
+	if diagnosticLogger != nil {
+		if err := diagnosticLogger.Record(
+			diagnostics.LevelInfo,
+			diagnostics.EventRuntimeStopped,
+			"stopped",
+		); err != nil {
+			closeErrors = append(closeErrors, err)
+		}
+		closeErrors = append(closeErrors, diagnosticLogger.Close())
+	}
+	return errors.Join(closeErrors...)
 }
 
 func (r *ImportRuntime) storePreparedExportLocked(report exporter.PreflightReport) {

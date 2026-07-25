@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/01max/librairii/internal/diagnostics"
 	"github.com/01max/librairii/internal/exporter"
 	"github.com/01max/librairii/internal/library"
 	"github.com/01max/librairii/internal/metadata"
@@ -90,6 +91,20 @@ func (e *fakeEvents) Emit(_ context.Context, name string, payload any) {
 type fakeReadiness struct {
 	report ReadinessReport
 	err    error
+}
+
+type fakeDiagnostics struct {
+	destination string
+	report      diagnostics.Report
+	err         error
+}
+
+func (d *fakeDiagnostics) ExportDiagnostics(
+	_ context.Context,
+	destination string,
+) (diagnostics.Report, error) {
+	d.destination = destination
+	return d.report, d.err
 }
 
 func (r fakeReadiness) Check(context.Context) (ReadinessReport, error) {
@@ -725,6 +740,48 @@ func TestExportPreflightKeepsNativeDestinationInsideGo(t *testing.T) {
 		blockedReveal.Error.Code != ErrorInvalidInput ||
 		dialogs.revealed != "" {
 		t.Fatalf("RevealExportDestination(running) = %#v", blockedReveal)
+	}
+}
+
+func TestDiagnosticExportKeepsNativeDestinationInsideGo(t *testing.T) {
+	t.Parallel()
+
+	const destination = "/private/native/diagnostics"
+	dialogs := &recordingDialogs{directory: destination}
+	diagnosticPort := &fakeDiagnostics{report: diagnostics.Report{
+		FileName: "librairii-diagnostics.zip",
+		ByteSize: 512,
+	}}
+	operationPort := &fakeOperations{}
+	application, err := New(Dependencies{
+		Clock:       fixedClock{now: time.Now()},
+		Dialogs:     dialogs,
+		Events:      &fakeEvents{},
+		Readiness:   fakeReadiness{report: ReadinessReport{MutationsAllowed: true}},
+		Operations:  operationPort,
+		Library:     operationPort,
+		Removal:     operationPort,
+		Tags:        operationPort,
+		Shelves:     operationPort,
+		Diagnostics: diagnosticPort,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	response := application.SelectAndExportDiagnostics(context.Background())
+	if response.Error != nil ||
+		response.Report == nil ||
+		response.Report.FileName != diagnosticPort.report.FileName ||
+		dialogs.directoryTitle != "Export diagnostics" ||
+		diagnosticPort.destination != destination {
+		t.Fatalf("SelectAndExportDiagnostics() = %#v", response)
+	}
+	encoded, err := json.Marshal(response)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(encoded), destination) {
+		t.Fatalf("diagnostic response exposed native destination: %s", encoded)
 	}
 }
 
