@@ -120,32 +120,50 @@ function App() {
     const [tagCatalog, setTagCatalog] = useState<tagging.Catalog | null>(null);
     const refreshedOperations = useRef(new Set<string>());
     const searchInput = useRef<HTMLInputElement>(null);
+    const collectionRequestGeneration = useRef(0);
 
     const loadCollection = useCallback(async () => {
-        const result = await QueryStories(new library.StoryLibraryQuery(collectionQuery));
-        if (!result.page) {
-            setRequestError(result.error?.message ?? 'The story collection could not be loaded.');
-            return;
+        const generation = ++collectionRequestGeneration.current;
+        try {
+            const result = await QueryStories(new library.StoryLibraryQuery(collectionQuery));
+            if (generation !== collectionRequestGeneration.current) {
+                return;
+            }
+            if (!result.page) {
+                setRequestError(
+                    result.error?.message ?? 'The story collection could not be loaded.',
+                );
+                return;
+            }
+            setRequestError(null);
+            setPage(result.page);
+            setDetail(null);
+            setDetailRevision((current) => current + 1);
+            setSelectedIDs((current) => {
+                const visible = current.filter((storyID) => (
+                    result.page?.stories.some((story) => story.id === storyID)
+                ));
+                if (visible.length > 0) {
+                    return visible;
+                }
+                return result.page?.stories[0] ? [result.page.stories[0].id] : [];
+            });
+            setSelectedID((current) => {
+                if (result.page?.stories.some((story) => story.id === current)) {
+                    return current;
+                }
+                return result.page?.stories[0]?.id ?? null;
+            });
+        } catch {
+            if (generation === collectionRequestGeneration.current) {
+                setRequestError('The story collection could not be loaded.');
+            }
         }
-        setPage(result.page);
-        setDetail(null);
-        setDetailRevision((current) => current + 1);
-        setSelectedIDs((current) => {
-            const visible = current.filter((storyID) => (
-                result.page?.stories.some((story) => story.id === storyID)
-            ));
-            if (visible.length > 0) {
-                return visible;
-            }
-            return result.page?.stories[0] ? [result.page.stories[0].id] : [];
-        });
-        setSelectedID((current) => {
-            if (result.page?.stories.some((story) => story.id === current)) {
-                return current;
-            }
-            return result.page?.stories[0]?.id ?? null;
-        });
     }, [collectionQuery]);
+    const loadCollectionRef = useRef(loadCollection);
+    useEffect(() => {
+        loadCollectionRef.current = loadCollection;
+    }, [loadCollection]);
 
     useEffect(() => {
         queryHistory.replace(collectionQuery);
@@ -170,9 +188,9 @@ function App() {
             !refreshedOperations.current.has(snapshot.id)
         ) {
             refreshedOperations.current.add(snapshot.id);
-            void loadCollection();
+            void loadCollectionRef.current();
         }
-    }, [loadCollection]);
+    }, []);
 
     useEffect(() => {
         let active = true;
@@ -189,7 +207,6 @@ function App() {
                     if (active) {
                         setTagCatalog(catalogResponse.catalog ?? null);
                     }
-                    await loadCollection();
                     const operationsResponse = await ActiveOperations();
                     if (!active) {
                         return;
@@ -214,7 +231,14 @@ function App() {
         return () => {
             active = false;
         };
-    }, [loadCollection, reconcileOperation]);
+    }, [reconcileOperation]);
+
+    useEffect(() => {
+        if (applicationState === 'ready') {
+            const timer = window.setTimeout(() => void loadCollection(), 0);
+            return () => window.clearTimeout(timer);
+        }
+    }, [applicationState, loadCollection]);
 
     useEffect(() => {
         const unsubscribe = EventsOn('operation:changed', (value: unknown) => {

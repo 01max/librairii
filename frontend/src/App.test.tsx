@@ -1,4 +1,4 @@
-import {render, screen, waitFor} from '@testing-library/react';
+import {fireEvent, render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {beforeEach, expect, test, vi} from 'vitest';
 import {
@@ -305,6 +305,70 @@ test('changes sort and pages from their canonical collection controls', async ()
     await waitFor(() => expect(queryStories).toHaveBeenLastCalledWith(
         expect.objectContaining({sort: 'name_asc', page: 2}),
     ));
+});
+
+test('ignores superseded query responses without repeating application bootstrap', async () => {
+    let resolveOld: ((value: app.LibraryPageResponse) => void) | undefined;
+    let resolveNew: ((value: app.LibraryPageResponse) => void) | undefined;
+    queryStories.mockImplementation(async (request) => {
+        if (request.name === 'old') {
+            return new Promise((resolve) => {
+                resolveOld = resolve;
+            });
+        }
+        if (request.name === 'new') {
+            return new Promise((resolve) => {
+                resolveNew = resolve;
+            });
+        }
+        return new app.LibraryPageResponse({
+            page: {
+                stories,
+                page: 1,
+                pageSize: 12,
+                totalItems: 2,
+                totalPages: 1,
+                sort: 'imported_desc',
+            },
+        });
+    });
+    render(<App/>);
+    const search = await screen.findByRole('searchbox', {name: 'Search stories'});
+
+    fireEvent.change(search, {target: {value: 'old'}});
+    await waitFor(() => expect(resolveOld).toBeTypeOf('function'));
+    fireEvent.change(search, {target: {value: 'new'}});
+    await waitFor(() => expect(resolveNew).toBeTypeOf('function'));
+
+    resolveNew?.(new app.LibraryPageResponse({
+        page: {
+            stories: [stories[1]],
+            page: 1,
+            pageSize: 12,
+            totalItems: 1,
+            totalPages: 1,
+            sort: 'imported_desc',
+        },
+    }));
+    expect(await screen.findByRole('heading', {name: 'Moonlit Workshop'}))
+        .toBeInTheDocument();
+    resolveOld?.(new app.LibraryPageResponse({
+        page: {
+            stories: [stories[0]],
+            page: 1,
+            pageSize: 12,
+            totalItems: 1,
+            totalPages: 1,
+            sort: 'imported_desc',
+        },
+    }));
+
+    await waitFor(() => expect(
+        screen.getByRole('heading', {name: 'Moonlit Workshop'}),
+    ).toBeInTheDocument());
+    expect(applicationStatus).toHaveBeenCalledTimes(1);
+    expect(loadTagCatalog).toHaveBeenCalledTimes(1);
+    expect(activeOperations).toHaveBeenCalledTimes(1);
 });
 
 test('selects a cover and loads its detail drawer without losing the collection', async () => {
