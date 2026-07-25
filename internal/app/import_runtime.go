@@ -68,6 +68,9 @@ func (r *ImportRuntime) Start(ctx context.Context) error {
 	if _, err := tagging.SeedBuiltIns(ctx, database); err != nil {
 		return fmt.Errorf("seed built-in tags: %w", err)
 	}
+	if err := library.BackfillNormalizedDisplayNames(ctx, database); err != nil {
+		return fmt.Errorf("backfill story display names: %w", err)
+	}
 
 	archiveRepository := archive.NewRepository(layout)
 	catalogRepository := catalog.NewRepository(database)

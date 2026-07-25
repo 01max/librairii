@@ -4,6 +4,9 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"strings"
+
+	"github.com/01max/librairii/internal/searchtext"
 )
 
 type ArchiveFormat string
@@ -67,12 +70,17 @@ func (r *Repository) Create(ctx context.Context, input CreateStory) (Story, Stor
 	result, err := transaction.ExecContext(
 		ctx,
 		`INSERT INTO stories (
-			uuid, embedded_title, embedded_description, embedded_artwork_path
-		) VALUES (?, NULLIF(?, ''), NULLIF(?, ''), NULLIF(?, ''))`,
+			uuid,
+			embedded_title,
+			embedded_description,
+			embedded_artwork_path,
+			display_name_normalized
+		) VALUES (?, NULLIF(?, ''), NULLIF(?, ''), NULLIF(?, ''), ?)`,
 		input.UUID,
 		input.EmbeddedTitle,
 		input.EmbeddedDescription,
 		input.EmbeddedArtworkPath,
+		normalizedDisplayName(input),
 	)
 	if err != nil {
 		return Story{}, StoryArchive{}, fmt.Errorf("insert story: %w", err)
@@ -122,6 +130,14 @@ func (r *Repository) Create(ctx context.Context, input CreateStory) (Story, Stor
 			ManagedPath:      input.ManagedPath,
 			ValidationState:  "valid",
 		}, nil
+}
+
+func normalizedDisplayName(input CreateStory) string {
+	title := strings.TrimSpace(input.EmbeddedTitle)
+	if title == "" {
+		title = "Story " + input.UUID
+	}
+	return searchtext.Normalize(title)
 }
 
 func (r *Repository) FindByUUID(ctx context.Context, uuid string) (Story, StoryArchive, error) {

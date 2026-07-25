@@ -118,10 +118,18 @@ func (q *Query) List(ctx context.Context, request ListRequest) (Page, error) {
 	if err != nil {
 		return Page{}, err
 	}
-	records, err := q.localRecords(ctx, 0)
+	records, err := q.localRecordsWhere(ctx, "", nil)
 	if err != nil {
 		return Page{}, err
 	}
+	return q.pageFromRecords(ctx, records, request)
+}
+
+func (q *Query) pageFromRecords(
+	ctx context.Context,
+	records []localRecord,
+	request ListRequest,
+) (Page, error) {
 	official, err := q.official.FindByUUIDs(ctx, recordUUIDs(records))
 	if err != nil {
 		return Page{}, fmt.Errorf("load official display metadata: %w", err)
@@ -198,6 +206,17 @@ type localRecord struct {
 }
 
 func (q *Query) localRecords(ctx context.Context, storyID int64) ([]localRecord, error) {
+	if storyID == 0 {
+		return q.localRecordsWhere(ctx, "", nil)
+	}
+	return q.localRecordsWhere(ctx, "s.id = ?", []any{storyID})
+}
+
+func (q *Query) localRecordsWhere(
+	ctx context.Context,
+	predicate string,
+	arguments []any,
+) ([]localRecord, error) {
 	statement := `SELECT
 		s.id,
 		s.uuid,
@@ -212,10 +231,8 @@ func (q *Query) localRecords(ctx context.Context, storyID int64) ([]localRecord,
 		a.validation_state
 	FROM stories s
 	JOIN story_archives a ON a.story_id = s.id`
-	var arguments []any
-	if storyID != 0 {
-		statement += " WHERE s.id = ?"
-		arguments = append(arguments, storyID)
+	if predicate != "" {
+		statement += " WHERE " + predicate
 	}
 	statement += " ORDER BY s.id"
 
