@@ -192,7 +192,7 @@ GOCACHE="${GOCACHE:-/private/tmp/librairii-go-cache}" \
 
 GOCACHE="${GOCACHE:-/private/tmp/librairii-go-cache}" \
     go test ./internal/platform \
-        -run '^(TestRuntimeDialogsUseNativeMultiFilePicker|TestRuntimeDialogsSupportSingleFileAndDirectory|TestRuntimeDialogsRevealOnlyValidatedDirectory|TestDestinationRevealerUsesPlatformFileManager)$' \
+        -run '^(TestProductionRuntimeDialogsUseHostNativeAdapters|TestRuntimeDialogsUseNativeMultiFilePicker|TestRuntimeDialogsSupportSingleFileAndDirectory|TestRuntimeDialogsRevealOnlyValidatedDirectory|TestDestinationRevealerUsesPlatformFileManager)$' \
         -count=1
 GOCACHE="${GOCACHE:-/private/tmp/librairii-go-cache}" \
     go test ./cmd/release-smoke \

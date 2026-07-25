@@ -48,8 +48,12 @@ fi
 
 verification_root="$(mktemp -d "${TMPDIR:-/tmp}/librairii-linux-release.XXXXXX")"
 data_root="$verification_root/application-data"
+headless_root="$verification_root/headless-data"
+export_destination="$verification_root/export"
+acceptance_checkpoints="$verification_root/checkpoints.log"
+acceptance_source="$project_root/internal/inspection/testfixture/testdata/generic.7z"
 event_log="$data_root/logs/events.jsonl"
-mkdir -p "$data_root"
+mkdir -p "$data_root" "$headless_root" "$export_destination"
 
 cleanup() {
     case "$(basename -- "$verification_root")" in
@@ -60,11 +64,59 @@ cleanup() {
 }
 trap cleanup EXIT HUP INT TERM
 
-GOCACHE="${GOCACHE:-/tmp/librairii-go-cache}" \
-    go run ./cmd/release-smoke -root "$data_root"
+timeout 30s xvfb-run -a env \
+    LIBGL_ALWAYS_SOFTWARE=1 \
+    LIBRAIRII_DATA_ROOT="$data_root" \
+    LIBRAIRII_PACKAGED_ACCEPTANCE=1 \
+    LIBRAIRII_ACCEPTANCE_SOURCE="$acceptance_source" \
+    LIBRAIRII_ACCEPTANCE_DESTINATION="$export_destination" \
+    LIBRAIRII_ACCEPTANCE_CHECKPOINTS="$acceptance_checkpoints" \
+    "$binary"
+
+expected_checkpoints="$verification_root/expected-checkpoints.log"
+printf '%s\n' \
+    scenario_started \
+    import_queued \
+    import_succeeded \
+    collection_loaded \
+    export_prepared \
+    export_queued \
+    export_succeeded \
+    reveal_succeeded \
+    complete > "$expected_checkpoints"
+if ! cmp -s "$expected_checkpoints" "$acceptance_checkpoints"; then
+    printf 'packaged Linux bindings did not complete the acceptance scenario\n' >&2
+    diff -u "$expected_checkpoints" "$acceptance_checkpoints" >&2 || true
+    exit 1
+fi
+for state in \
+    import:queued \
+    import:running \
+    import:succeeded \
+    export:queued \
+    export:running \
+    export:succeeded
+do
+    if ! grep -q "\"state\":\"$state\"" "$event_log"; then
+        printf 'packaged Linux progress log is missing %s\n' "$state" >&2
+        exit 1
+    fi
+done
+if [ "$(find "$export_destination" -type f | wc -l | tr -d ' ')" -ne 1 ]; then
+    printf 'packaged Linux export did not publish exactly one archive\n' >&2
+    exit 1
+fi
+
 GOCACHE="${GOCACHE:-/tmp/librairii-go-cache}" \
     go run ./cmd/foundation-smoke \
         -root "$data_root" \
+        -expect-stories 1 \
+        -expect-shelves 0
+GOCACHE="${GOCACHE:-/tmp/librairii-go-cache}" \
+    go run ./cmd/release-smoke -root "$headless_root"
+GOCACHE="${GOCACHE:-/tmp/librairii-go-cache}" \
+    go run ./cmd/foundation-smoke \
+        -root "$headless_root" \
         -expect-stories 1 \
         -expect-shelves 3
 
@@ -115,12 +167,12 @@ GOCACHE="${GOCACHE:-/tmp/librairii-go-cache}" \
     go run ./cmd/foundation-smoke \
         -root "$data_root" \
         -expect-stories 1 \
-        -expect-shelves 3
+        -expect-shelves 0
 GOCACHE="${GOCACHE:-/tmp/librairii-go-cache}" \
     go test . -count=1
 GOCACHE="${GOCACHE:-/tmp/librairii-go-cache}" \
     go test ./internal/platform \
-        -run '^(TestRuntimeDialogsUseNativeMultiFilePicker|TestRuntimeDialogsSupportSingleFileAndDirectory|TestRuntimeDialogsRevealOnlyValidatedDirectory|TestDestinationRevealerUsesPlatformFileManager)$' \
+        -run '^(TestProductionRuntimeDialogsUseHostNativeAdapters|TestRuntimeDialogsUseNativeMultiFilePicker|TestRuntimeDialogsSupportSingleFileAndDirectory|TestRuntimeDialogsRevealOnlyValidatedDirectory|TestDestinationRevealerUsesPlatformFileManager)$' \
         -count=1
 GOCACHE="${GOCACHE:-/tmp/librairii-go-cache}" \
     go test ./cmd/release-smoke \

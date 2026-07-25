@@ -80,7 +80,8 @@ func TestReleaseMatrixHasIndependentPlatformTasks(t *testing.T) {
 		"scripts/verify-platform-windows.ps1": {
 			"-platform windows/amd64",
 			"-nsis",
-			"frontend:rendered",
+			"LIBRAIRII_PACKAGED_ACCEPTANCE",
+			"scenario_started",
 			"./cmd/foundation-smoke",
 			"./internal/platform",
 			"./cmd/release-smoke",
@@ -88,7 +89,8 @@ func TestReleaseMatrixHasIndependentPlatformTasks(t *testing.T) {
 		"scripts/verify-platform-linux": {
 			"-platform linux/amd64",
 			"-tags webkit2_41",
-			"frontend:rendered",
+			"LIBRAIRII_PACKAGED_ACCEPTANCE",
+			"scenario_started",
 			"./cmd/foundation-smoke",
 			"./internal/platform",
 			"./cmd/release-smoke",

@@ -2,13 +2,41 @@ package platform
 
 import (
 	"context"
+	"os/exec"
 	"reflect"
+	goruntime "runtime"
 	"testing"
 
 	coreapp "github.com/01max/librairii/internal/app"
 	"github.com/01max/librairii/internal/exporter"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
+
+func TestProductionRuntimeDialogsUseHostNativeAdapters(t *testing.T) {
+	t.Parallel()
+
+	dialogs := NewRuntimeDialogs()
+	if dialogs.openFile == nil ||
+		dialogs.openFiles == nil ||
+		dialogs.openDirectory == nil ||
+		dialogs.revealer == nil {
+		t.Fatal("NewRuntimeDialogs() omitted a production native adapter")
+	}
+	if dialogs.revealer.osName != goruntime.GOOS || dialogs.revealer.run == nil {
+		t.Fatalf(
+			"production revealer = %#v, GOOS = %q",
+			dialogs.revealer,
+			goruntime.GOOS,
+		)
+	}
+	command, _, err := revealCommand(goruntime.GOOS, t.TempDir())
+	if err != nil {
+		t.Fatalf("revealCommand(%q) error = %v", goruntime.GOOS, err)
+	}
+	if _, err := exec.LookPath(command); err != nil {
+		t.Fatalf("host-native reveal command %q is unavailable: %v", command, err)
+	}
+}
 
 func TestRuntimeDialogsUseNativeMultiFilePicker(t *testing.T) {
 	t.Parallel()

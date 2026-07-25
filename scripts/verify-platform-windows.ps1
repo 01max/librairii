@@ -63,8 +63,17 @@ $VerificationRoot = Join-Path `
     ([System.IO.Path]::GetTempPath()) `
     ("librairii-windows-release-" + [Guid]::NewGuid().ToString("N"))
 $DataRoot = Join-Path $VerificationRoot "application-data"
+$HeadlessRoot = Join-Path $VerificationRoot "headless-data"
+$ExportDestination = Join-Path $VerificationRoot "export"
+$AcceptanceCheckpoints = Join-Path $VerificationRoot "checkpoints.log"
+$AcceptanceSource = Join-Path `
+    $ProjectRoot `
+    "internal/inspection/testfixture/testdata/generic.7z"
 $EventLog = Join-Path $DataRoot "logs/events.jsonl"
-New-Item -ItemType Directory -Path $DataRoot | Out-Null
+New-Item `
+    -ItemType Directory `
+    -Path $DataRoot, $HeadlessRoot, $ExportDestination |
+    Out-Null
 
 function Invoke-Go {
     & go @args
@@ -87,32 +96,98 @@ function Get-EventCount {
     ).Count
 }
 
+function Invoke-PackagedApplication {
+    param(
+        [string]$Path,
+        [int]$TimeoutMilliseconds = 30000
+    )
+
+    $Process = Start-Process -FilePath $Path -PassThru
+    if (-not $Process.WaitForExit($TimeoutMilliseconds)) {
+        Stop-Process -Id $Process.Id -Force
+        throw "Packaged Windows application timed out"
+    }
+    if ($Process.ExitCode -ne 0) {
+        throw "Packaged Windows application exited with $($Process.ExitCode)"
+    }
+}
+
 try {
-    Invoke-Go run ./cmd/release-smoke -root $DataRoot
+    $env:LIBRAIRII_DATA_ROOT = $DataRoot
+    $env:LIBRAIRII_PACKAGED_ACCEPTANCE = "1"
+    $env:LIBRAIRII_ACCEPTANCE_SOURCE = $AcceptanceSource
+    $env:LIBRAIRII_ACCEPTANCE_DESTINATION = $ExportDestination
+    $env:LIBRAIRII_ACCEPTANCE_CHECKPOINTS = $AcceptanceCheckpoints
+    Invoke-PackagedApplication $Binary
+
+    $ExpectedCheckpoints = @(
+        "scenario_started",
+        "import_queued",
+        "import_succeeded",
+        "collection_loaded",
+        "export_prepared",
+        "export_queued",
+        "export_succeeded",
+        "reveal_succeeded",
+        "complete"
+    )
+    $ActualCheckpoints = @(Get-Content -LiteralPath $AcceptanceCheckpoints)
+    if (
+        $ActualCheckpoints.Count -ne $ExpectedCheckpoints.Count -or
+        (Compare-Object `
+            -ReferenceObject $ExpectedCheckpoints `
+            -DifferenceObject $ActualCheckpoints `
+            -SyncWindow 0)
+    ) {
+        throw "Packaged Windows bindings did not complete the acceptance scenario"
+    }
+    foreach ($State in @(
+        "import:queued",
+        "import:running",
+        "import:succeeded",
+        "export:queued",
+        "export:running",
+        "export:succeeded"
+    )) {
+        if (-not (
+            Select-String `
+                -LiteralPath $EventLog `
+                -SimpleMatch `
+                -Quiet `
+                -Pattern "`"state`":`"$State`""
+        )) {
+            throw "Packaged Windows progress log is missing $State"
+        }
+    }
+    if (@(
+        Get-ChildItem -LiteralPath $ExportDestination -File -Recurse
+    ).Count -ne 1) {
+        throw "Packaged Windows export did not publish exactly one archive"
+    }
+
     Invoke-Go run ./cmd/foundation-smoke `
         -root $DataRoot `
         -expect-stories 1 `
+        -expect-shelves 0
+
+    Remove-Item Env:LIBRAIRII_PACKAGED_ACCEPTANCE
+    Remove-Item Env:LIBRAIRII_ACCEPTANCE_SOURCE
+    Remove-Item Env:LIBRAIRII_ACCEPTANCE_DESTINATION
+    Remove-Item Env:LIBRAIRII_ACCEPTANCE_CHECKPOINTS
+
+    Invoke-Go run ./cmd/release-smoke -root $HeadlessRoot
+    Invoke-Go run ./cmd/foundation-smoke `
+        -root $HeadlessRoot `
+        -expect-stories 1 `
         -expect-shelves 3
 
-    $env:LIBRAIRII_DATA_ROOT = $DataRoot
-    $env:LIBRAIRII_ACCEPTANCE_LOG = "1"
     $env:LIBRAIRII_SMOKE_EXIT = "1"
     $env:LIBRAIRII_SMOKE_HOLD_MS = "1200"
 
     foreach ($LaunchNumber in 1..2) {
         $StartedBefore = Get-EventCount "runtime_started"
         $StoppedBefore = Get-EventCount "runtime_stopped"
-        $LaunchLog = Join-Path $VerificationRoot "launch-$LaunchNumber.log"
-
-        $Output = (& $Binary 2>&1 | Out-String)
-        $ExitCode = $LASTEXITCODE
-        Set-Content -LiteralPath $LaunchLog -Value $Output -Encoding utf8
-        if ($ExitCode -ne 0) {
-            throw "Packaged Windows application launch $LaunchNumber failed with $ExitCode"
-        }
-        if ($Output -notmatch "frontend:rendered") {
-            throw "Packaged Windows frontend did not report a completed render"
-        }
+        Invoke-PackagedApplication $Binary
         if (
             (Get-EventCount "runtime_started") -ne ($StartedBefore + 1) -or
             (Get-EventCount "runtime_stopped") -ne ($StoppedBefore + 1)
@@ -128,10 +203,10 @@ try {
     Invoke-Go run ./cmd/foundation-smoke `
         -root $DataRoot `
         -expect-stories 1 `
-        -expect-shelves 3
+        -expect-shelves 0
     Invoke-Go test . -count=1
     Invoke-Go test ./internal/platform `
-        -run "^(TestRuntimeDialogsUseNativeMultiFilePicker|TestRuntimeDialogsSupportSingleFileAndDirectory|TestRuntimeDialogsRevealOnlyValidatedDirectory|TestDestinationRevealerUsesPlatformFileManager)$" `
+        -run "^(TestProductionRuntimeDialogsUseHostNativeAdapters|TestRuntimeDialogsUseNativeMultiFilePicker|TestRuntimeDialogsSupportSingleFileAndDirectory|TestRuntimeDialogsRevealOnlyValidatedDirectory|TestDestinationRevealerUsesPlatformFileManager)$" `
         -count=1
     Invoke-Go test ./cmd/release-smoke `
         -run "^TestReleaseSmokeCoversTheCompleteHeadlessComposition$" `
