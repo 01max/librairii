@@ -1,0 +1,48 @@
+{
+  "generatedAt": "2026-07-25T18:48:55Z",
+  "goVersion": "go1.26.5",
+  "operatingSystem": "darwin",
+  "architecture": "arm64",
+  "stories": 5000,
+  "shelves": 6,
+  "samples": 20,
+  "fixtureGenerationMilliseconds": 278.739,
+  "metrics": {
+    "artworkLoad": {
+      "medianMilliseconds": 0.91,
+      "p95Milliseconds": 1.061,
+      "maximumMilliseconds": 1.112,
+      "resultCount": 24
+    },
+    "collectionQuery": {
+      "medianMilliseconds": 9.441,
+      "p95Milliseconds": 10.549,
+      "maximumMilliseconds": 11.237,
+      "resultCount": 5000
+    },
+    "combinedFilters": {
+      "medianMilliseconds": 14.05,
+      "p95Milliseconds": 14.491,
+      "maximumMilliseconds": 15.051,
+      "resultCount": 74
+    },
+    "deepPagination": {
+      "medianMilliseconds": 20.967,
+      "p95Milliseconds": 21.871,
+      "maximumMilliseconds": 21.947,
+      "resultCount": 24
+    },
+    "shelfCounts": {
+      "medianMilliseconds": 65.521,
+      "p95Milliseconds": 66.093,
+      "maximumMilliseconds": 66.19,
+      "resultCount": 9578
+    },
+    "substringSearch": {
+      "medianMilliseconds": 18.137,
+      "p95Milliseconds": 18.528,
+      "maximumMilliseconds": 18.784,
+      "resultCount": 624
+    }
+  }
+}
