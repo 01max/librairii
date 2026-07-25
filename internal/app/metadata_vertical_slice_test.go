@@ -1,6 +1,7 @@
 package app
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"net/http"
@@ -257,6 +258,80 @@ func TestMetadataVerticalSliceKeepsOfficialAndLocalOrganizationAvailableOffline(
 	if offline.TotalItems != 1 ||
 		offline.Stories[0].Title != "The Clockwork Mountain" {
 		t.Fatalf("offline last-known-good query = %#v", offline)
+	}
+}
+
+func TestImportProjectsDerivedAgeFromAnExistingActiveCatalog(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	provider := newRuntimeStorageProvider(t)
+	payload, err := os.ReadFile("../lunii/testdata/catalog.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	payload = bytes.ReplaceAll(
+		payload,
+		[]byte("123e4567-e89b-42d3-a456-426614174000"),
+		[]byte(testfixture.StoryUUID),
+	)
+	events := &runtimeEventRecorder{events: make(chan operations.Snapshot, 32)}
+	runtime, err := NewImportRuntime(
+		provider,
+		fixedClock{now: time.Date(2026, time.July, 25, 18, 0, 0, 0, time.UTC)},
+		events,
+		1,
+		WithMetadataFetcher(&runtimeCatalogFetcher{payload: payload}),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := runtime.Start(ctx); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		if err := runtime.Close(); err != nil {
+			t.Error(err)
+		}
+	})
+
+	refresh, err := runtime.StartMetadataRefresh(ctx, metadata.DefaultLocale)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if terminal := events.waitTerminal(t, refresh.ID); terminal.Status != operations.StatusSucceeded {
+		t.Fatalf("metadata refresh = %#v", terminal)
+	}
+	source, err := testfixture.WriteZIP(t.TempDir(), testfixture.GenericZIP())
+	if err != nil {
+		t.Fatal(err)
+	}
+	created, err := runtime.StartImport(ctx, []string{source})
+	if err != nil {
+		t.Fatal(err)
+	}
+	terminal := events.waitTerminal(t, created.ID)
+	if terminal.Status != operations.StatusSucceeded || terminal.Items[0].StoryID == 0 {
+		t.Fatalf("import operation = %#v", terminal)
+	}
+	tagCatalog, err := runtime.Catalog(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ageDefinition, ageValue := requiredAgeFacet(t, tagCatalog)
+	page, err := runtime.Search(ctx, library.StoryLibraryQuery{
+		ChoiceFilters: []library.ChoiceFilter{{
+			DefinitionID: ageDefinition.ID,
+			ValueIDs:     []int64{ageValue.ID},
+		}},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if page.TotalItems != 1 ||
+		page.Stories[0].UUID != testfixture.StoryUUID ||
+		page.Stories[0].Title != "The Clockwork Mountain" {
+		t.Fatalf("derived age after import = %#v", page)
 	}
 }
 

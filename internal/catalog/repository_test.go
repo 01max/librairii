@@ -12,6 +12,16 @@ import (
 	"github.com/01max/librairii/internal/database"
 )
 
+type storyCreateHookFunc func(context.Context, *sql.Tx, int64) error
+
+func (f storyCreateHookFunc) AfterStoryCreate(
+	ctx context.Context,
+	transaction *sql.Tx,
+	storyID int64,
+) error {
+	return f(ctx, transaction, storyID)
+}
+
 func TestRepositoryCreatesAndFindsStoryArchive(t *testing.T) {
 	t.Parallel()
 
@@ -33,6 +43,41 @@ func TestRepositoryCreatesAndFindsStoryArchive(t *testing.T) {
 	}
 	if foundStory.UUID != input.UUID || foundArchive.ManagedPath != input.ManagedPath {
 		t.Fatalf("FindByChecksum() story = %#v, archive = %#v", foundStory, foundArchive)
+	}
+}
+
+func TestRepositoryRollsBackStoryAndArchiveWhenCreateHookFails(t *testing.T) {
+	t.Parallel()
+
+	connection := openTestDatabase(t)
+	hookError := errors.New("projection failed")
+	repository := NewRepository(
+		connection,
+		storyCreateHookFunc(func(
+			_ context.Context,
+			_ *sql.Tx,
+			storyID int64,
+		) error {
+			if storyID <= 0 {
+				t.Fatalf("story hook id = %d", storyID)
+			}
+			return hookError
+		}),
+	)
+	if _, _, err := repository.Create(
+		context.Background(),
+		validCreateStory(),
+	); !errors.Is(err, hookError) {
+		t.Fatalf("Create() error = %v", err)
+	}
+	for _, table := range []string{"stories", "story_archives"} {
+		var count int
+		if err := connection.QueryRow("SELECT COUNT(*) FROM " + table).Scan(&count); err != nil {
+			t.Fatal(err)
+		}
+		if count != 0 {
+			t.Fatalf("%s count = %d", table, count)
+		}
 	}
 }
 

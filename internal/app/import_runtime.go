@@ -105,8 +105,15 @@ func (r *ImportRuntime) Start(ctx context.Context) error {
 	}
 
 	archiveRepository := archive.NewRepository(layout)
-	catalogRepository := catalog.NewRepository(database)
 	metadataRepository := metadata.NewRepository(database)
+	catalogProjector, err := metadata.NewCatalogProjector(
+		database,
+		metadata.DefaultCatalogProjectionConfig(),
+	)
+	if err != nil {
+		return fmt.Errorf("construct metadata catalog projector: %w", err)
+	}
+	catalogRepository := catalog.NewRepository(database, catalogProjector)
 	metadataRefresh, err := metadata.NewRefreshService(
 		r.metadataFetcher,
 		metadataRepository,

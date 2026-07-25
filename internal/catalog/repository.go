@@ -54,10 +54,15 @@ type CreateStory struct {
 
 type Repository struct {
 	database *sql.DB
+	hooks    []StoryCreateHook
 }
 
-func NewRepository(database *sql.DB) *Repository {
-	return &Repository{database: database}
+type StoryCreateHook interface {
+	AfterStoryCreate(context.Context, *sql.Tx, int64) error
+}
+
+func NewRepository(database *sql.DB, hooks ...StoryCreateHook) *Repository {
+	return &Repository{database: database, hooks: hooks}
 }
 
 func (r *Repository) Create(ctx context.Context, input CreateStory) (Story, StoryArchive, error) {
@@ -108,6 +113,17 @@ func (r *Repository) Create(ctx context.Context, input CreateStory) (Story, Stor
 	archiveID, err := result.LastInsertId()
 	if err != nil {
 		return Story{}, StoryArchive{}, fmt.Errorf("read story archive id: %w", err)
+	}
+	for _, hook := range r.hooks {
+		if hook == nil {
+			continue
+		}
+		if err := hook.AfterStoryCreate(ctx, transaction, storyID); err != nil {
+			return Story{}, StoryArchive{}, fmt.Errorf(
+				"apply story creation hook: %w",
+				err,
+			)
+		}
 	}
 
 	if err := transaction.Commit(); err != nil {

@@ -82,6 +82,63 @@ func NewCatalogProjector(
 	}, nil
 }
 
+func (p *CatalogProjector) AfterStoryCreate(
+	ctx context.Context,
+	transaction *sql.Tx,
+	storyID int64,
+) error {
+	if transaction == nil || storyID <= 0 {
+		return ErrInvalidProjectionConfig
+	}
+	definitionID, values, err := ensureAgeFacet(ctx, transaction, p.config)
+	if err != nil {
+		return err
+	}
+	var minimum sql.NullInt64
+	var maximum sql.NullInt64
+	err = transaction.QueryRowContext(
+		ctx,
+		`SELECT
+			official.minimum_age,
+			official.maximum_age
+		 FROM stories
+		 JOIN official_story_metadata AS official
+		   ON official.story_uuid = stories.uuid
+		 JOIN catalog_snapshots AS snapshot
+		   ON snapshot.id = official.snapshot_id
+		 WHERE stories.id = ?
+		   AND snapshot.status = 'active'
+		 ORDER BY snapshot.activated_at DESC, snapshot.id DESC
+		 LIMIT 1`,
+		storyID,
+	).Scan(&minimum, &maximum)
+	switch {
+	case errors.Is(err, sql.ErrNoRows):
+		return nil
+	case err != nil:
+		return fmt.Errorf("load new story age projection input: %w", err)
+	}
+	bandIndex, found := matchingAgeBand(minimum, maximum, p.config.AgeBands)
+	if !found {
+		return nil
+	}
+	if _, err := transaction.ExecContext(
+		ctx,
+		`INSERT INTO story_tag_assignments (
+			story_id,
+			definition_id,
+			value_id,
+			source
+		 ) VALUES (?, ?, ?, 'derived')`,
+		storyID,
+		definitionID,
+		values[bandIndex],
+	); err != nil {
+		return fmt.Errorf("assign new story derived age value: %w", err)
+	}
+	return nil
+}
+
 func (p *CatalogProjector) Rebuild(
 	ctx context.Context,
 	snapshotID int64,
