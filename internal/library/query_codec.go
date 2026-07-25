@@ -193,6 +193,47 @@ func canonicalStoryLibraryQuery(
 	return query, nil
 }
 
+// CanonicalStoryLibraryMembershipQuery returns only fields that can change
+// which stories belong to a result. Navigation and presentation state are
+// deliberately discarded so callers such as saved shelves and exports share
+// the collection's exact normalization and validation rules.
+func CanonicalStoryLibraryMembershipQuery(
+	query StoryLibraryQuery,
+) (StoryLibraryQuery, error) {
+	query.Languages = append([]string(nil), query.Languages...)
+	query.Compatibilities = append(
+		[]Compatibility(nil),
+		query.Compatibilities...,
+	)
+	booleanFilters := make([]BooleanFilter, 0, len(query.BooleanFilters))
+	for _, filter := range query.BooleanFilters {
+		if filter.State != BooleanIgnored {
+			booleanFilters = append(booleanFilters, filter)
+		}
+	}
+	query.BooleanFilters = booleanFilters
+	choiceFilters := make([]ChoiceFilter, 0, len(query.ChoiceFilters))
+	for _, filter := range query.ChoiceFilters {
+		choiceFilters = append(choiceFilters, ChoiceFilter{
+			DefinitionID: filter.DefinitionID,
+			ValueIDs:     append([]int64(nil), filter.ValueIDs...),
+		})
+	}
+	query.ChoiceFilters = choiceFilters
+	query.Page = 1
+	query.PageSize = DefaultPageSize
+	query.Sort = SortNameAscending
+
+	query, err := canonicalStoryLibraryQuery(query)
+	if err != nil {
+		return StoryLibraryQuery{}, err
+	}
+	query.Page = 0
+	query.PageSize = 0
+	query.Sort = ""
+	return query, nil
+}
+
 func oneQueryValue(
 	values url.Values,
 	key string,
