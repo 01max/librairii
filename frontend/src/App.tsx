@@ -460,6 +460,8 @@ function App() {
     const deleteShelfInitialFocus = useRef<HTMLButtonElement>(null);
     const exportPreflightDialog = useRef<HTMLElement>(null);
     const exportPreflightInitialFocus = useRef<HTMLButtonElement>(null);
+    const detailDialog = useRef<HTMLElement>(null);
+    const detailDialogInitialFocus = useRef<HTMLButtonElement>(null);
     useModalFocus(shelfDialog, shelfDialogInitialFocus, shelfDialogMode !== null);
     useModalFocus(repairShelfDialog, repairShelfInitialFocus, repairShelfID !== null);
     useModalFocus(deleteShelfDialog, deleteShelfInitialFocus, deleteShelfID !== null);
@@ -468,6 +470,7 @@ function App() {
         exportPreflightInitialFocus,
         exportPreflight !== null,
     );
+    useModalFocus(detailDialog, detailDialogInitialFocus, detailsOpen);
     const activateShelf = useCallback((shelfID: number | null) => {
         activeShelfIDRef.current = shelfID;
         setActiveShelfID(shelfID);
@@ -478,7 +481,8 @@ function App() {
             shelfDialogMode === null &&
             repairShelfID === null &&
             deleteShelfID === null &&
-            exportPreflight === null
+            exportPreflight === null &&
+            !detailsOpen
         ) {
             return;
         }
@@ -493,6 +497,8 @@ function App() {
             }
             if (exportPreflight !== null) {
                 setExportPreflight(null);
+            } else if (detailsOpen) {
+                setDetailsOpen(false);
             } else if (deleteShelfID !== null) {
                 setDeleteShelfID(null);
             } else if (repairShelfID !== null) {
@@ -505,6 +511,7 @@ function App() {
         return () => window.removeEventListener('keydown', closeOnEscape);
     }, [
         deleteShelfID,
+        detailsOpen,
         exportPreflight,
         exportPreparing,
         exportStarting,
@@ -1690,7 +1697,7 @@ function App() {
                 Application state: {applicationState}
             </span>
             <aside className="rail" aria-label="Primary navigation">
-                <div className="mark" aria-label="Librairii">
+                <div className="mark" role="img" aria-label="Librairii">
                     <i/><i/><i/>
                 </div>
                 <nav aria-label="Primary navigation">
@@ -2590,6 +2597,7 @@ function App() {
             {detailsOpen && selected && (
                 <div className="dialog-backdrop">
                     <section
+                        ref={detailDialog}
                         className="detail-dialog"
                         role="dialog"
                         aria-modal="true"
@@ -2629,6 +2637,7 @@ function App() {
                         {removalError && <p className="dialog-error">{removalError}</p>}
                         <div className="dialog-actions">
                             <button
+                                ref={detailDialogInitialFocus}
                                 type="button"
                                 disabled={removing}
                                 onClick={() => setDetailsOpen(false)}

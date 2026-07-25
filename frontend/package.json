@@ -10,6 +10,7 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "test": "vitest run",
+    "test:accessibility": "node ./scripts/frontend-accessibility.mjs",
     "test:performance": "node ./scripts/frontend-performance.mjs",
     "test:responsive": "node ./scripts/frontend-responsive.mjs",
     "test:visual": "node ./scripts/frontend-visual-parity.mjs",
@@ -20,6 +21,7 @@
     "react-dom": "^19.1.0"
   },
   "devDependencies": {
+    "@axe-core/playwright": "4.12.1",
     "@eslint/js": "10.0.1",
     "@testing-library/jest-dom": "7.0.0",
     "@testing-library/react": "16.3.2",

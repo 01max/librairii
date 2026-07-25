@@ -2073,6 +2073,28 @@ test('selects a cover and loads its detail drawer without losing the collection'
     expect(loadStoryDetail).toHaveBeenLastCalledWith(2);
 });
 
+test('traps detail-dialog focus, closes with Escape, and restores its opener', async () => {
+    const user = userEvent.setup();
+    render(<App/>);
+
+    const opener = await screen.findByRole('button', {name: 'Open details'});
+    await user.click(opener);
+    const dialog = await screen.findByRole('dialog', {name: 'Clockwork Forest'});
+    const cancel = within(dialog).getByRole('button', {name: 'Cancel'});
+    const remove = within(dialog).getByRole('button', {name: 'Move to trash'});
+    await waitFor(() => expect(cancel).toHaveFocus());
+
+    await user.tab({shift: true});
+    expect(remove).toHaveFocus();
+    await user.tab();
+    expect(cancel).toHaveFocus();
+
+    await user.keyboard('{Escape}');
+    expect(screen.queryByRole('dialog', {name: 'Clockwork Forest'}))
+        .not.toBeInTheDocument();
+    expect(opener).toHaveFocus();
+});
+
 test('keeps bulk selection in the collection and exposes updated tag chips', async () => {
     const user = userEvent.setup();
     loadTagAssignmentWorkspace.mockImplementation(async (storyIDs) => (

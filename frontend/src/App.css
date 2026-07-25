@@ -1901,6 +1901,24 @@ select:focus-visible {
 
 @media (prefers-reduced-motion: reduce) {
     * {
+        animation-duration: .01ms !important;
+        animation-iteration-count: 1 !important;
+        scroll-behavior: auto !important;
         transition: none !important;
+    }
+}
+
+@media (prefers-contrast: more) {
+    .filters .path,
+    .caption,
+    .saved-picker span,
+    .choice span,
+    .heading p,
+    .sort,
+    .shelf-head span,
+    .drawer-info > p,
+    .fact span,
+    .archive {
+        color: #4d586d;
     }
 }
