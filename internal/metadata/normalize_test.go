@@ -109,6 +109,32 @@ func TestNormalizeCatalogRejectsCorruptOrInconsistentPayloads(t *testing.T) {
 			locale: "en-GB",
 		},
 		{
+			name: "locale explicitly unavailable",
+			payload: map[string]any{"response": map[string]any{
+				"pack": map[string]any{
+					"uuid": "123e4567-e89b-42d3-a456-426614174000",
+					"locales_available": map[string]any{
+						"en_GB": false,
+					},
+					"localized_infos": validRecord["localized_infos"],
+				},
+			}},
+			locale: "en-GB",
+		},
+		{
+			name: "invalid locale availability declaration",
+			payload: map[string]any{"response": map[string]any{
+				"pack": map[string]any{
+					"uuid": "123e4567-e89b-42d3-a456-426614174000",
+					"locales_available": map[string]any{
+						"en_GB": "yes",
+					},
+					"localized_infos": validRecord["localized_infos"],
+				},
+			}},
+			locale: "en-GB",
+		},
+		{
 			name: "missing title",
 			payload: map[string]any{"response": map[string]any{
 				"pack": map[string]any{

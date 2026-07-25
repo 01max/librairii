@@ -326,7 +326,8 @@ func localeAvailable(
 	locale string,
 ) (bool, error) {
 	found := false
-	for key := range values {
+	available := false
+	for key, value := range values {
 		canonical, err := canonicalLocale(key)
 		if err != nil {
 			return false, catalogError("invalid available locale")
@@ -338,8 +339,14 @@ func localeAvailable(
 			return false, catalogError("ambiguous available locale")
 		}
 		found = true
+		var declaration *bool
+		if err := json.Unmarshal(value, &declaration); err != nil ||
+			declaration == nil {
+			return false, catalogError("invalid available locale declaration")
+		}
+		available = *declaration
 	}
-	return found, nil
+	return found && available, nil
 }
 
 func requiredString(
