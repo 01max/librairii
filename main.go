@@ -54,9 +54,21 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	appOptions := make([]AppOption, 0, 1)
+	appOptions := make([]AppOption, 0, 2)
+	if os.Getenv("LIBRAIRII_ACCEPTANCE_LOG") == "1" {
+		appOptions = append(appOptions, WithFrontendRendered(func() {
+			log.Print(frontendRenderedEvent)
+		}))
+	}
 	if os.Getenv("LIBRAIRII_SMOKE_EXIT") == "1" {
-		appOptions = append(appOptions, WithQuitAfterDOMReady(runtime.Quit))
+		quit, err := configuredSmokeQuit(
+			os.Getenv("LIBRAIRII_SMOKE_HOLD_MS"),
+			runtime.Quit,
+		)
+		if err != nil {
+			log.Fatal(err)
+		}
+		appOptions = append(appOptions, WithQuitAfterDOMReady(quit))
 	}
 	app := NewApp(core, appOptions...)
 

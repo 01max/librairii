@@ -462,3 +462,17 @@ func TestAppCanQuitAfterDOMReadyForPackagedSmoke(t *testing.T) {
 		t.Fatal("quit callback was not called")
 	}
 }
+
+func TestAppReportsFrontendRenderedForPackagedAcceptance(t *testing.T) {
+	t.Parallel()
+
+	called := false
+	facade := NewApp(nil, WithFrontendRendered(func() {
+		called = true
+	}))
+	facade.FrontendRendered()
+
+	if !called {
+		t.Fatal("frontend-rendered callback was not called")
+	}
+}

@@ -1,4 +1,5 @@
 import React from 'react'
+import {flushSync} from 'react-dom'
 import {createRoot} from 'react-dom/client'
 import './style.css'
 import App from './App'
@@ -19,11 +20,23 @@ async function renderApplication() {
         installCollectionFixture();
     }
 
-    root.render(
-        <React.StrictMode>
-            <App/>
-        </React.StrictMode>,
-    );
+    flushSync(() => {
+        root.render(
+            <React.StrictMode>
+                <App/>
+            </React.StrictMode>,
+        );
+    });
+    const wailsWindow = window as typeof window & {
+        go?: {
+            main?: {
+                App?: {
+                    FrontendRendered?: () => Promise<void>;
+                };
+            };
+        };
+    };
+    void wailsWindow.go?.main?.App?.FrontendRendered?.();
 }
 
 void renderApplication();

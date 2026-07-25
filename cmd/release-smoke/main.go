@@ -652,6 +652,10 @@ func runExportScope(
 			return fmt.Errorf("export item failed: %#v", item)
 		}
 	}
+	revealed := application.RevealExportDestination(ctx, terminal.ID)
+	if revealed.Error != nil || !revealed.Success {
+		return fmt.Errorf("reveal export destination: %#v", revealed)
+	}
 	entries, err := os.ReadDir(destination)
 	if err != nil {
 		return fmt.Errorf("read export destination: %w", err)

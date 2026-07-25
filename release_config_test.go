@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"io/fs"
 	"net/http"
@@ -9,11 +10,45 @@ import (
 	"strings"
 	"testing"
 	"testing/fstest"
+	"time"
 
 	"github.com/wailsapp/wails/v2/pkg/logger"
 	"github.com/wailsapp/wails/v2/pkg/options/linux"
 	"github.com/wailsapp/wails/v2/pkg/options/windows"
 )
+
+func TestConfiguredSmokeQuitIsBounded(t *testing.T) {
+	t.Parallel()
+
+	called := make(chan struct{}, 1)
+	quit, err := configuredSmokeQuit("1", func(context.Context) {
+		called <- struct{}{}
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	quit(context.Background())
+	select {
+	case <-called:
+	case <-time.After(time.Second):
+		t.Fatal("configured smoke quit did not call its delegate")
+	}
+
+	for _, value := range []string{"-1", "10001", "invalid"} {
+		if _, err := configuredSmokeQuit(
+			value,
+			func(context.Context) {},
+		); err == nil {
+			t.Fatalf("configuredSmokeQuit(%q) error = nil", value)
+		}
+	}
+	if _, err := configuredSmokeQuit("", nil); err == nil {
+		t.Fatal("configuredSmokeQuit accepted a nil callback")
+	}
+	if maximumSmokeHold != 10*time.Second {
+		t.Fatalf("maximum smoke hold = %s", maximumSmokeHold)
+	}
+}
 
 func TestProductionOptionsHardenTheDesktopBoundary(t *testing.T) {
 	t.Parallel()

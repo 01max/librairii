@@ -42,6 +42,10 @@ export function DuplicateShelf(arg1, arg2) {
   return window['go']['main']['App']['DuplicateShelf'](arg1, arg2);
 }
 
+export function FrontendRendered() {
+  return window['go']['main']['App']['FrontendRendered']();
+}
+
 export function ListShelves() {
   return window['go']['main']['App']['ListShelves']();
 }

@@ -1,12 +1,15 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"io/fs"
 	"net/http"
 	"reflect"
 	"slices"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/wailsapp/wails/v2/pkg/logger"
 	"github.com/wailsapp/wails/v2/pkg/options"
@@ -19,6 +22,7 @@ import (
 const (
 	applicationTitle      = "Librairii"
 	applicationProgramID  = "io.github.librairii.app"
+	maximumSmokeHold      = 10 * time.Second
 	contentSecurityPolicy = "default-src 'self'; base-uri 'none'; " +
 		"connect-src 'self'; font-src 'self'; form-action 'none'; " +
 		"frame-ancestors 'none'; img-src 'self' data:; object-src 'none'; " +
@@ -36,6 +40,7 @@ var bindingMethodAllowlist = []string{
 	"DeleteTagDefinition",
 	"DeleteTagValue",
 	"DuplicateShelf",
+	"FrontendRendered",
 	"ListShelves",
 	"ListStories",
 	"OfficialMetadataStatus",
@@ -129,6 +134,39 @@ func productionOptions(
 			ProgramName:      applicationProgramID,
 			WebviewGpuPolicy: linux.WebviewGpuPolicyOnDemand,
 		},
+	}, nil
+}
+
+func configuredSmokeQuit(
+	rawMilliseconds string,
+	quit func(context.Context),
+) (func(context.Context), error) {
+	if quit == nil {
+		return nil, fmt.Errorf("configure packaged smoke quit: missing callback")
+	}
+	if rawMilliseconds == "" {
+		return quit, nil
+	}
+	milliseconds, err := strconv.Atoi(rawMilliseconds)
+	if err != nil ||
+		milliseconds < 0 ||
+		time.Duration(milliseconds)*time.Millisecond > maximumSmokeHold {
+		return nil, fmt.Errorf(
+			"configure packaged smoke quit: hold must be 0-%d milliseconds",
+			maximumSmokeHold.Milliseconds(),
+		)
+	}
+	hold := time.Duration(milliseconds) * time.Millisecond
+	return func(ctx context.Context) {
+		go func() {
+			timer := time.NewTimer(hold)
+			defer timer.Stop()
+			select {
+			case <-ctx.Done():
+			case <-timer.C:
+				quit(ctx)
+			}
+		}()
 	}, nil
 }
 

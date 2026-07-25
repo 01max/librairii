@@ -25,6 +25,8 @@ export function DeleteTagValue(arg1:tagging.ValueDeletionPlan):Promise<app.Mutat
 
 export function DuplicateShelf(arg1:number,arg2:string):Promise<app.ShelfResponse>;
 
+export function FrontendRendered():Promise<void>;
+
 export function ListShelves():Promise<app.ShelfListResponse>;
 
 export function ListStories(arg1:library.ListRequest):Promise<app.LibraryPageResponse>;

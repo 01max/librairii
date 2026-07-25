@@ -10,13 +10,16 @@ import (
 	"github.com/01max/librairii/internal/tagging"
 )
 
+const frontendRenderedEvent = "frontend:rendered"
+
 // App is the narrow Wails binding facade. Domain behaviour stays in internal
 // application services and only stable DTOs cross this boundary.
 type App struct {
-	core *coreapp.Application
-	quit func(context.Context)
-	mu   sync.RWMutex
-	ctx  context.Context
+	core             *coreapp.Application
+	quit             func(context.Context)
+	frontendRendered func()
+	mu               sync.RWMutex
+	ctx              context.Context
 }
 
 type AppOption func(*App)
@@ -24,6 +27,12 @@ type AppOption func(*App)
 func WithQuitAfterDOMReady(quit func(context.Context)) AppOption {
 	return func(app *App) {
 		app.quit = quit
+	}
+}
+
+func WithFrontendRendered(callback func()) AppOption {
+	return func(app *App) {
+		app.frontendRendered = callback
 	}
 }
 
@@ -56,6 +65,14 @@ func (a *App) shutdown(ctx context.Context) {
 // ApplicationStatus returns a stable lifecycle snapshot for the frontend.
 func (a *App) ApplicationStatus() coreapp.StatusResponse {
 	return a.core.StatusResponse()
+}
+
+// FrontendRendered acknowledges that React completed its first paint. The
+// optional callback is configured only by packaged acceptance.
+func (a *App) FrontendRendered() {
+	if a.frontendRendered != nil {
+		a.frontendRendered()
+	}
 }
 
 func (a *App) SelectAndExportDiagnostics() coreapp.DiagnosticExportResponse {
