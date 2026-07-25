@@ -2,7 +2,6 @@ package storage
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -126,23 +125,4 @@ func probeDirectoryWritable(directory string) error {
 		return closeErr
 	}
 	return os.Remove(name)
-}
-
-type FileSchemaProbe struct{}
-
-func (FileSchemaProbe) Inspect(_ context.Context, databasePath string) (SchemaIdentity, error) {
-	info, err := os.Stat(databasePath)
-	if errors.Is(err, os.ErrNotExist) {
-		return SchemaIdentity{State: SchemaAbsent}, nil
-	}
-	if err != nil {
-		return SchemaIdentity{}, err
-	}
-	if !info.Mode().IsRegular() {
-		return SchemaIdentity{}, fmt.Errorf("database path is not a regular file")
-	}
-
-	// Until the SQLite-backed probe is installed, every pre-existing database
-	// is treated as foreign rather than being opened or overwritten.
-	return SchemaIdentity{State: SchemaForeign}, nil
 }

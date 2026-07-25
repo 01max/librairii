@@ -113,32 +113,6 @@ func TestPathContainedResolvesSymlinkEscapes(t *testing.T) {
 	}
 }
 
-func TestFileSchemaProbeDoesNotTrustExistingFiles(t *testing.T) {
-	t.Parallel()
-
-	probe := FileSchemaProbe{}
-	missing := filepath.Join(t.TempDir(), "missing.sqlite3")
-	identity, err := probe.Inspect(context.Background(), missing)
-	if err != nil {
-		t.Fatalf("Inspect(missing) error = %v", err)
-	}
-	if identity.State != SchemaAbsent {
-		t.Fatalf("Inspect(missing) = %#v", identity)
-	}
-
-	existing := filepath.Join(t.TempDir(), "existing.sqlite3")
-	if err := os.WriteFile(existing, []byte("legacy"), 0o600); err != nil {
-		t.Fatal(err)
-	}
-	identity, err = probe.Inspect(context.Background(), existing)
-	if err != nil {
-		t.Fatalf("Inspect(existing) error = %v", err)
-	}
-	if identity.State != SchemaForeign {
-		t.Fatalf("Inspect(existing) = %#v", identity)
-	}
-}
-
 func TestReadinessReturnsSchemaProbeFailure(t *testing.T) {
 	t.Parallel()
 

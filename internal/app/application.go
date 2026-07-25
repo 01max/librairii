@@ -92,6 +92,17 @@ func (a *Application) Status() Status {
 	a.mu.RLock()
 	defer a.mu.RUnlock()
 
+	return a.statusLocked()
+}
+
+func (a *Application) StatusResponse() StatusResponse {
+	a.mu.RLock()
+	defer a.mu.RUnlock()
+
+	return StatusResponse{Status: a.statusLocked(), Error: a.lastError}
+}
+
+func (a *Application) statusLocked() Status {
 	status := Status{
 		State:            a.state,
 		MutationsAllowed: a.ready,
@@ -100,18 +111,4 @@ func (a *Application) Status() Status {
 		status.StartedAt = a.startedAt.Format(time.RFC3339Nano)
 	}
 	return status
-}
-
-func (a *Application) StatusResponse() StatusResponse {
-	a.mu.RLock()
-	defer a.mu.RUnlock()
-
-	status := Status{
-		State:            a.state,
-		MutationsAllowed: a.ready,
-	}
-	if !a.startedAt.IsZero() {
-		status.StartedAt = a.startedAt.Format(time.RFC3339Nano)
-	}
-	return StatusResponse{Status: status, Error: a.lastError}
 }
