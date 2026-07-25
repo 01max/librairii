@@ -453,8 +453,5 @@ func normalizeValueLabel(value string) (string, error) {
 }
 
 func isValueKeyConflict(err error) bool {
-	return strings.Contains(
-		err.Error(),
-		"tag_values.definition_id, tag_values.normalized_key",
-	)
+	return isUniqueConstraint(err)
 }

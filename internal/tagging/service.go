@@ -71,6 +71,9 @@ func (s *Service) CreateDefinition(
 	if input.Kind != KindBoolean && input.Kind != KindChoice {
 		return Definition{}, fmt.Errorf("%w: unsupported kind", ErrInvalidDefinition)
 	}
+	if normalizedKey == BrokenKey {
+		return Definition{}, ErrDuplicateDefinition
+	}
 
 	transaction, err := s.database.BeginTx(ctx, nil)
 	if err != nil {
@@ -534,9 +537,7 @@ func normalizeDefinitionLabel(value string) (string, error) {
 }
 
 func isDefinitionKeyConflict(err error) bool {
-	message := err.Error()
-	return strings.Contains(message, "tag_definitions.normalized_key") ||
-		strings.Contains(message, "broken tag identity is protected")
+	return isUniqueConstraint(err)
 }
 
 func transitionOne(result sql.Result, err error) error {
