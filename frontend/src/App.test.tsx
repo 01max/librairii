@@ -630,6 +630,63 @@ test('previews a multi-shelf union with per-shelf and overlap counts', async () 
     expect(preview).toHaveTextContent('Sources: Moon, Forest');
 });
 
+test('keeps a valid empty saved shelf active with edit and import recovery actions', async () => {
+    const user = userEvent.setup();
+    listShelves.mockResolvedValue(new app.ShelfListResponse({
+        shelves: [new shelves.Summary({
+            id: 14,
+            name: 'Quiet',
+            position: 0,
+            validity: 'valid',
+            count: 0,
+        })],
+    }));
+    openShelf.mockResolvedValue(new app.ShelfEvaluationResponse({
+        evaluation: {
+            shelf: {
+                id: 14,
+                name: 'Quiet',
+                normalizedName: 'quiet',
+                position: 0,
+                queryVersion: 2,
+                queryPayload: '{"name":"quiet"}',
+                validity: 'valid',
+            },
+            query: {name: 'quiet'},
+            page: {
+                stories: [],
+                page: 1,
+                pageSize: 12,
+                totalItems: 0,
+                totalPages: 0,
+                sort: 'imported_desc',
+            },
+        },
+    }));
+    queryStories.mockResolvedValue(new app.LibraryPageResponse({
+        page: {
+            stories: [],
+            page: 1,
+            pageSize: 12,
+            totalItems: 0,
+            totalPages: 0,
+            sort: 'imported_desc',
+        },
+    }));
+
+    render(<App/>);
+    await user.click(await screen.findByRole('button', {name: 'Quiet, 0 stories'}));
+
+    expect(await screen.findByRole('heading', {name: 'Quiet is currently empty'}))
+        .toBeInTheDocument();
+    expect(screen.getByText(/saved query remains valid/)).toBeInTheDocument();
+    expect(screen.getByRole('button', {name: 'Edit shelf query'})).toBeInTheDocument();
+    expect(screen.getByRole('button', {name: '＋ Import your first stories'}))
+        .toBeInTheDocument();
+    expect(screen.getByRole('button', {name: '↻ Update “Quiet”'}))
+        .toBeInTheDocument();
+});
+
 test('reloads collection results from hash back and forward navigation', async () => {
     window.history.replaceState(
         null,
