@@ -47,6 +47,29 @@ const stories: FixtureStory[] = titles.map(([title, author], index) => ({
     importedAt: `2026-07-${String(25 - index).padStart(2, '0')}T09:00:00Z`,
 }));
 
+const performanceStories: FixtureStory[] = Array.from(
+    {length: 5_000},
+    (_, index) => {
+        const storyNumber = index + 1;
+        return {
+            id: storyNumber,
+            uuid: `00000000-0000-4000-8000-${String(storyNumber).padStart(12, '0')}`,
+            title: `Synthetic Story ${String(storyNumber).padStart(5, '0')}`,
+            author: `Fixture Author ${storyNumber % 24}`,
+            sources: {
+                title: 'official',
+                description: 'official',
+                author: 'official',
+                artwork: 'fallback',
+            },
+            detectedFormat: storyNumber % 2 === 0 ? 'v2_pk' : 'zip',
+            compatibility: storyNumber % 10 === 0 ? 'missing' : 'compatible',
+            byteSize: (storyNumber % 128 + 1) * 1024 * 1024,
+            importedAt: `2026-07-${String(storyNumber % 25 + 1).padStart(2, '0')}T09:00:00Z`,
+        };
+    },
+);
+
 const outcomeByFixture: Record<string, {
     status: string;
     outcomeCode: string;
@@ -112,9 +135,24 @@ function fixtureOperation(fixture: string) {
 
 export function installCollectionFixture() {
     const fixture = new URLSearchParams(window.location.search).get('fixture') ?? 'collection';
-    const visibleStories = fixture === 'empty' ? [] : stories;
-    const totalItems = fixture === 'empty' ? 0 : 48;
+    const fixtureStories = fixture === 'empty'
+        ? []
+        : fixture === 'performance'
+            ? performanceStories
+            : stories;
+    const totalItems = fixture === 'collection' ? 48 : fixtureStories.length;
     const fixtureSnapshot = fixtureOperation(fixture);
+    const page = (pageNumber: number, pageSize: number, sort: string) => ({
+        stories: fixtureStories.slice(
+            (pageNumber - 1) * pageSize,
+            pageNumber * pageSize,
+        ),
+        page: pageNumber,
+        pageSize,
+        totalItems,
+        totalPages: totalItems === 0 ? 0 : Math.ceil(totalItems / pageSize),
+        sort,
+    });
     const fixtureApp = {
         ActiveOperations: async () => ({
             operations: fixtureSnapshot?.status === 'running' ? [fixtureSnapshot] : [],
@@ -122,28 +160,26 @@ export function installCollectionFixture() {
         ApplicationStatus: async () => ({
             status: {state: 'ready', mutationsAllowed: true},
         }),
-        ListStories: async () => ({
-            page: {
-                stories: visibleStories,
-                page: 1,
-                pageSize: 12,
-                totalItems,
-                totalPages: totalItems === 0 ? 0 : 4,
-                sort: 'imported_desc',
+        ListShelves: async () => ({shelves: []}),
+        OfficialMetadataStatus: async () => ({
+            status: {
+                state: 'fresh',
+                locale: 'en-GB',
+                storyCount: totalItems,
+                matchedStoryCount: totalItems,
+                activatedAt: '2026-07-25T09:00:00Z',
             },
+        }),
+        ListStories: async () => ({
+            page: page(1, 12, 'imported_desc'),
         }),
         QueryStories: async (query: {page: number; pageSize: number; sort: string}) => ({
-            page: {
-                stories: visibleStories,
-                page: query.page,
-                pageSize: query.pageSize,
-                totalItems,
-                totalPages: totalItems === 0 ? 0 : Math.ceil(totalItems / query.pageSize),
-                sort: query.sort,
-            },
+            page: page(query.page, query.pageSize, query.sort),
         }),
         StoryDetail: async (storyID: number) => {
-            const story = stories.find((candidate) => candidate.id === storyID) ?? stories[0];
+            const story = fixtureStories.find(
+                (candidate) => candidate.id === storyID,
+            ) ?? fixtureStories[0] ?? stories[0];
             return {
                 detail: {
                     story,
@@ -220,7 +256,9 @@ export function installCollectionFixture() {
         RemoveStory: async (storyID: number) => ({
             result: {
                 storyId: storyID,
-                uuid: stories.find((story) => story.id === storyID)?.uuid ?? '',
+                uuid: fixtureStories.find(
+                    (story) => story.id === storyID,
+                )?.uuid ?? '',
             },
         }),
         OperationSnapshot: async () => ({}),

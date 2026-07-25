@@ -1936,7 +1936,7 @@ test('ignores superseded query responses without repeating application bootstrap
 test('does not let an older view-all expansion overwrite a newer query', async () => {
     let resolveExpansion: ((value: app.LibraryPageResponse) => void) | undefined;
     queryStories.mockImplementation(async (request) => {
-        if (request.pageSize === 100) {
+        if (request.pageSize === 50) {
             return new Promise((resolve) => {
                 resolveExpansion = resolve;
             });
@@ -1967,7 +1967,7 @@ test('does not let an older view-all expansion overwrite a newer query', async (
         page: {
             stories: [stories[0]],
             page: 1,
-            pageSize: 100,
+            pageSize: 50,
             totalItems: 1,
             totalPages: 1,
             sort: 'imported_desc',
@@ -2740,7 +2740,7 @@ test('loads every result when a story is beyond the initial collection page', as
             page: {
                 stories: [...stories, firstBatchStory],
                 page: 1,
-                pageSize: 100,
+                pageSize: 50,
                 totalItems: 4,
                 totalPages: 2,
                 sort: 'imported_desc',
@@ -2759,7 +2759,7 @@ test('loads every result when a story is beyond the initial collection page', as
             page: {
                 stories: [extraStory],
                 page: 2,
-                pageSize: 100,
+                pageSize: 50,
                 totalItems: 4,
                 totalPages: 2,
                 sort: 'imported_desc',
@@ -2771,7 +2771,7 @@ test('loads every result when a story is beyond the initial collection page', as
     })).toBeInTheDocument();
     expect(queryStories).toHaveBeenCalledWith(expect.objectContaining({
         page: 2,
-        pageSize: 100,
+        pageSize: 50,
         sort: 'imported_desc',
         name: '',
         booleanFilters: [],

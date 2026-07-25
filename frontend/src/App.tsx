@@ -73,6 +73,8 @@ const coverPalettes = [
     ['#d77c6f', '#ffd86b', '#8c4d4c'],
 ] as const;
 
+const collectionExpansionBatchSize = 50;
+
 const compatibilityOptions: Array<{
     value: CompatibilityFilter;
     label: string;
@@ -906,7 +908,7 @@ function App() {
             const first = await QueryStories(new library.StoryLibraryQuery({
                 ...collectionQuery,
                 page: 1,
-                pageSize: 100,
+                pageSize: collectionExpansionBatchSize,
             }));
             if (generation !== collectionRequestGeneration.current) {
                 return;
@@ -930,7 +932,7 @@ function App() {
                 const next = await QueryStories(new library.StoryLibraryQuery({
                     ...collectionQuery,
                     page: pageNumber,
-                    pageSize: 100,
+                    pageSize: collectionExpansionBatchSize,
                 }));
                 if (generation !== collectionRequestGeneration.current) {
                     return;

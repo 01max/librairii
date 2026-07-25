@@ -9,7 +9,8 @@ const root = createRoot(container!)
 
 async function renderApplication() {
     if (
-        import.meta.env.DEV &&
+        (import.meta.env.DEV ||
+            import.meta.env.VITE_INCLUDE_FIXTURES === '1') &&
         new URLSearchParams(window.location.search).has('fixture')
     ) {
         const {installCollectionFixture} = await import('./dev-fixture');

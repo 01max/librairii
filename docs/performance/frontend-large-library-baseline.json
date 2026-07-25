@@ -1,0 +1,25 @@
+{
+  "generatedAt": "2026-07-25T19:18:28.755Z",
+  "browser": "system Chromium via Playwright",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "stories": 5000,
+  "samples": 5,
+  "budgets": {
+    "expansionP95Milliseconds": 3000,
+    "frameGapP95Milliseconds": 50,
+    "inputDelayP95Milliseconds": 50,
+    "timerDelayP95Milliseconds": 50
+  },
+  "metrics": {
+    "expansionP95Milliseconds": 1147.3,
+    "frameGapP95Milliseconds": 24.9,
+    "inputDelayP95Milliseconds": 24.5,
+    "timerDelayP95Milliseconds": 37.9,
+    "longAnimationFrameP95Milliseconds": 0
+  },
+  "maximumStoryNodes": 5000,
+  "withinBudget": true
+}

@@ -40,6 +40,30 @@ UI interaction. They retain substantial headroom over the reference machine
 without pretending that wall-clock results are comparable across arbitrary
 hosts.
 
+## Browser interaction budget
+
+`npm --prefix frontend run test:performance` builds a production bundle with a
+compile-time-only 5,000-story fixture, serves it from a temporary directory,
+and drives the installed Chrome or Chromium through pinned Playwright. The
+normal production build excludes the fixture. Set `LIBRAIRII_CHROME_PATH` when
+the browser is not installed at a standard platform path.
+
+Five acceptance samples expand all 5,000 stories while real pointer input is
+sent to the application. The gate measures expansion completion, animation
+frame gaps, input dispatch delay, and timer delay:
+
+| Browser scenario | p95 budget |
+| --- | ---: |
+| Complete 5,000-story expansion | 3,000 ms |
+| Animation frame gap | 50 ms |
+| Pointer input delay | 50 ms |
+| Timer delay | 50 ms |
+
+The checked-in
+[`frontend-large-library-baseline.json`](frontend-large-library-baseline.json)
+records the current-host observation. The release gate compares each run to
+the explicit budgets, not to another machine's wall-clock baseline.
+
 ## Query-plan and rendering decisions
 
 - Compatibility filters use the covering
@@ -51,7 +75,7 @@ hosts.
   measured p95 remains well inside budget without changing search behavior.
 - Shelf counts use a count-only library path, avoiding page-row and metadata
   hydration. This reduced the six-shelf p95 from 66.093 ms to 21.480 ms.
-- “View all” fetches 100-story batches and publishes each batch between
+- “View all” fetches 50-story batches and publishes each batch between
   animation frames so React can paint and accept input during expansion.
 - Collection artwork remains native-lazy and now requests asynchronous image
   decoding; only the selected drawer artwork is eager.
