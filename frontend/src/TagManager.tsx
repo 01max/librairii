@@ -21,6 +21,7 @@ import {
     TagCatalog,
 } from '../wailsjs/go/main/App';
 import {tagging} from '../wailsjs/go/models';
+import {useModalFocus} from './modal-focus';
 
 interface TagManagerProps {
     onClose: () => void;
@@ -55,6 +56,8 @@ export default function TagManager({onClose, onCatalogChange}: TagManagerProps) 
     const [busy, setBusy] = useState(false);
     const [deletion, setDeletion] = useState<DeletionTarget | null>(null);
     const initialFocus = useRef<HTMLInputElement>(null);
+    const dialog = useRef<HTMLElement>(null);
+    useModalFocus(dialog, initialFocus);
 
     const load = useCallback(async () => {
         const response = await TagCatalog();
@@ -69,7 +72,6 @@ export default function TagManager({onClose, onCatalogChange}: TagManagerProps) 
 
     useEffect(() => {
         const timer = window.setTimeout(() => void load(), 0);
-        initialFocus.current?.focus();
         return () => window.clearTimeout(timer);
     }, [load]);
 
@@ -226,6 +228,7 @@ export default function TagManager({onClose, onCatalogChange}: TagManagerProps) 
     return (
         <div className="dialog-backdrop tag-manager-backdrop">
             <section
+                ref={dialog}
                 className="tag-manager"
                 role="dialog"
                 aria-modal="true"

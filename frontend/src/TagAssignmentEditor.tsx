@@ -12,6 +12,7 @@ import {
     TagAssignmentWorkspace,
 } from '../wailsjs/go/main/App';
 import {tagging} from '../wailsjs/go/models';
+import {useModalFocus} from './modal-focus';
 
 interface TagAssignmentEditorProps {
     storyIDs: number[];
@@ -69,6 +70,9 @@ export default function TagAssignmentEditor({
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [notice, setNotice] = useState<string | null>(null);
+    const dialog = useRef<HTMLElement>(null);
+    const initialFocus = useRef<HTMLButtonElement>(null);
+    useModalFocus(dialog, initialFocus);
 
     const load = useCallback(async () => {
         const response = await TagAssignmentWorkspace(storyIDs);
@@ -130,6 +134,7 @@ export default function TagAssignmentEditor({
     return (
         <div className="dialog-backdrop">
             <section
+                ref={dialog}
                 className="assignment-editor"
                 role="dialog"
                 aria-modal="true"
@@ -145,7 +150,14 @@ export default function TagAssignmentEditor({
                         </h2>
                         <p>Mixed means the tag is present on only part of this selection.</p>
                     </div>
-                    <button type="button" onClick={onClose} aria-label="Close story tags">×</button>
+                    <button
+                        ref={initialFocus}
+                        type="button"
+                        onClick={onClose}
+                        aria-label="Close story tags"
+                    >
+                        ×
+                    </button>
                 </header>
 
                 {error && <p className="dialog-error" role="alert">{error}</p>}

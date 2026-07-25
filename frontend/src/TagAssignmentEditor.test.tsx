@@ -161,7 +161,12 @@ test('closes without a keyboard trap', async () => {
             onAssignmentsChange={vi.fn()}
         />,
     );
-    await screen.findByRole('dialog');
+    const close = await screen.findByRole('button', {name: 'Close story tags'});
+    await waitFor(() => expect(close).toHaveFocus());
+    await user.tab({shift: true});
+    expect(screen.getByRole('button', {name: 'Done'})).toHaveFocus();
+    await user.tab();
+    expect(close).toHaveFocus();
 
     await user.keyboard('{Escape}');
     await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));

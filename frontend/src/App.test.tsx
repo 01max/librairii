@@ -319,6 +319,21 @@ test('changes sort and pages from their canonical collection controls', async ()
     ));
 });
 
+test('restores focus to the tag-manager opener when the modal closes', async () => {
+    const user = userEvent.setup();
+    render(<App/>);
+    const opener = await screen.findByRole('button', {name: '＋ Manage tags'});
+
+    await user.click(opener);
+    const close = await screen.findByRole('button', {name: 'Close tag manager'});
+    await waitFor(() => expect(
+        screen.getByRole('textbox', {name: 'Key'}),
+    ).toHaveFocus());
+    await user.click(close);
+
+    expect(opener).toHaveFocus();
+});
+
 test('ignores superseded query responses without repeating application bootstrap', async () => {
     let resolveOld: ((value: app.LibraryPageResponse) => void) | undefined;
     let resolveNew: ((value: app.LibraryPageResponse) => void) | undefined;
