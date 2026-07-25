@@ -5,6 +5,7 @@ import {join, resolve} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {chromium} from 'playwright';
 import {build, preview} from 'vite';
+import {installParityClock} from './parity-clock.mjs';
 
 const frontendRoot = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const outputDirectory = await mkdtemp(
@@ -114,6 +115,7 @@ try {
     for (const acceptanceCase of acceptanceCases) {
         const page = await browser.newPage({viewport: acceptanceCase.viewport});
         try {
+            await installParityClock(page);
             await page.goto(
                 `http://127.0.0.1:${address.port}/?fixture=parity`,
                 {waitUntil: 'networkidle'},

@@ -7,6 +7,7 @@ import pixelmatch from 'pixelmatch';
 import {PNG} from 'pngjs';
 import {chromium} from 'playwright';
 import {build, preview} from 'vite';
+import {installParityClock} from './parity-clock.mjs';
 
 const frontendRoot = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const repositoryRoot = resolve(frontendRoot, '..');
@@ -87,6 +88,10 @@ async function compareViewport(browserInstance, origin, viewport) {
     const canonicalPage = await browserInstance.newPage({viewport});
     const applicationPage = await browserInstance.newPage({viewport});
     try {
+        await Promise.all([
+            installParityClock(canonicalPage),
+            installParityClock(applicationPage),
+        ]);
         await Promise.all([
             canonicalPage.goto(`${origin}/canonical.html`, {
                 waitUntil: 'networkidle',

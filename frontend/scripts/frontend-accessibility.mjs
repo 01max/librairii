@@ -6,6 +6,7 @@ import {fileURLToPath} from 'node:url';
 import AxeBuilder from '@axe-core/playwright';
 import {chromium} from 'playwright';
 import {build, preview} from 'vite';
+import {installParityClock} from './parity-clock.mjs';
 
 const frontendRoot = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const outputDirectory = await mkdtemp(
@@ -52,6 +53,7 @@ try {
         const context = await browser.newContext({viewport});
         const page = await context.newPage();
         try {
+            await installParityClock(page);
             await page.emulateMedia({
                 contrast: 'more',
                 reducedMotion: 'reduce',
