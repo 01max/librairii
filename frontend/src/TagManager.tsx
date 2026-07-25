@@ -24,6 +24,7 @@ import {tagging} from '../wailsjs/go/models';
 
 interface TagManagerProps {
     onClose: () => void;
+    onCatalogChange: (catalog: tagging.Catalog) => void;
 }
 
 type DeletionTarget =
@@ -48,7 +49,7 @@ function errorMessage(error?: {message: string}): string {
     return error?.message ?? 'The tag change could not be completed.';
 }
 
-export default function TagManager({onClose}: TagManagerProps) {
+export default function TagManager({onClose, onCatalogChange}: TagManagerProps) {
     const [catalog, setCatalog] = useState<tagging.Catalog | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [busy, setBusy] = useState(false);
@@ -59,11 +60,12 @@ export default function TagManager({onClose}: TagManagerProps) {
         const response = await TagCatalog();
         if (response.catalog) {
             setCatalog(response.catalog);
+            onCatalogChange(response.catalog);
             setError(null);
         } else {
             setError(errorMessage(response.error));
         }
-    }, []);
+    }, [onCatalogChange]);
 
     useEffect(() => {
         const timer = window.setTimeout(() => void load(), 0);

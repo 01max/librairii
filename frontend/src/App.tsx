@@ -437,6 +437,42 @@ function App() {
         setCollectionQuery(queryHistory.push(next));
     }, [queryHistory]);
 
+    const reconcileTagCatalog = useCallback((catalog: tagging.Catalog) => {
+        setTagCatalog(catalog);
+        setAssignmentWorkspace((current) => current
+            ? new tagging.AssignmentWorkspace({...current, catalog})
+            : current);
+        const definitions = new Map(
+            catalog.definitions.map((definition) => [definition.id, definition]),
+        );
+        const booleanFilters = collectionQuery.booleanFilters.filter(
+            (filter) => definitions.get(filter.definitionId)?.kind === 'boolean',
+        );
+        const choiceFilters = collectionQuery.choiceFilters.flatMap((filter) => {
+            const definition = definitions.get(filter.definitionId);
+            if (definition?.kind !== 'choice') {
+                return [];
+            }
+            const validValues = new Set(definition.values.map((value) => value.id));
+            const valueIds = filter.valueIds.filter((valueID) => validValues.has(valueID));
+            return valueIds.length > 0 ? [{...filter, valueIds}] : [];
+        });
+        if (
+            booleanFilters.length !== collectionQuery.booleanFilters.length ||
+            choiceFilters.length !== collectionQuery.choiceFilters.length ||
+            choiceFilters.some((filter, index) => (
+                filter.valueIds.length !== collectionQuery.choiceFilters[index]?.valueIds.length
+            ))
+        ) {
+            setCollectionQuery(queryHistory.replace({
+                ...collectionQuery,
+                booleanFilters,
+                choiceFilters,
+                page: 1,
+            }));
+        }
+    }, [collectionQuery, queryHistory]);
+
     function setBooleanFilter(definitionId: number, state: 'ignored' | 'true' | 'false') {
         updateQuery({
             ...collectionQuery,
@@ -967,7 +1003,10 @@ function App() {
                 </div>
             )}
             {tagManagerOpen && (
-                <TagManager onClose={() => setTagManagerOpen(false)}/>
+                <TagManager
+                    onClose={() => setTagManagerOpen(false)}
+                    onCatalogChange={reconcileTagCatalog}
+                />
             )}
             {tagAssignmentOpen && selectedIDs.length > 0 && (
                 <TagAssignmentEditor

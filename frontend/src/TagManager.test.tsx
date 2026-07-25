@@ -115,7 +115,7 @@ beforeEach(() => {
 });
 
 test('presents protected and custom definitions with non-color-only state labels', async () => {
-    render(<TagManager onClose={vi.fn()}/>);
+    render(<TagManager onClose={vi.fn()} onCatalogChange={vi.fn()}/>);
 
     expect(await screen.findByText('Built-in · Boolean · Protected')).toBeInTheDocument();
     const broken = screen.getByText('Broken').closest('article');
@@ -130,7 +130,7 @@ test('submits typed definitions and renders backend validation inline', async ()
     createTagDefinition.mockResolvedValue(new app.TagDefinitionResponse({
         error: {code: 'invalid_input', message: 'Key must use lowercase words.'},
     }));
-    render(<TagManager onClose={vi.fn()}/>);
+    render(<TagManager onClose={vi.fn()} onCatalogChange={vi.fn()}/>);
     await screen.findByText('Broken');
 
     const form = screen.getByRole('heading', {name: 'New tag'}).closest('form');
@@ -151,7 +151,7 @@ test('submits typed definitions and renders backend validation inline', async ()
 
 test('reorders definitions and choice values with explicit keyboard buttons', async () => {
     const user = userEvent.setup();
-    render(<TagManager onClose={vi.fn()}/>);
+    render(<TagManager onClose={vi.fn()} onCatalogChange={vi.fn()}/>);
 
     await user.click(await screen.findByRole('button', {name: 'Move Favorite up'}));
     expect(reorderTagDefinitions).toHaveBeenCalledWith([3, 2]);
@@ -162,7 +162,7 @@ test('reorders definitions and choice values with explicit keyboard buttons', as
 
 test('renames and recolors a custom definition without changing its key', async () => {
     const user = userEvent.setup();
-    render(<TagManager onClose={vi.fn()}/>);
+    render(<TagManager onClose={vi.fn()} onCatalogChange={vi.fn()}/>);
     const mood = (await screen.findByText('Mood')).closest('article');
     const label = within(mood!).getByDisplayValue('Mood');
     const color = within(mood!).getByLabelText('Color');
@@ -187,7 +187,7 @@ test('plans destructive changes and confirms the displayed assignment impact', a
     planTagDefinitionDeletion.mockResolvedValue(
         new app.TagDefinitionDeletionPlanResponse({plan}),
     );
-    render(<TagManager onClose={vi.fn()}/>);
+    render(<TagManager onClose={vi.fn()} onCatalogChange={vi.fn()}/>);
     const mood = (await screen.findByText('Mood')).closest('article');
 
     await user.click(within(mood!).getByRole('button', {name: 'Delete Mood'}));
@@ -208,7 +208,7 @@ test('renames and deletes choice values and closes from the keyboard', async () 
         affectedShelfCount: 1,
     });
     planTagValueDeletion.mockResolvedValue(new app.TagValueDeletionPlanResponse({plan}));
-    render(<TagManager onClose={onClose}/>);
+    render(<TagManager onClose={onClose} onCatalogChange={vi.fn()}/>);
 
     const label = await screen.findByLabelText('Label for calm');
     await user.clear(label);
@@ -226,7 +226,7 @@ test('renames and deletes choice values and closes from the keyboard', async () 
 
 test('creates a choice value from the inline value form', async () => {
     const user = userEvent.setup();
-    render(<TagManager onClose={vi.fn()}/>);
+    render(<TagManager onClose={vi.fn()} onCatalogChange={vi.fn()}/>);
 
     const key = await screen.findByLabelText('Mood value key');
     await user.type(key, 'dreamy');
