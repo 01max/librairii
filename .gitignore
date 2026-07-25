@@ -11,8 +11,8 @@ tmp/
 # Local artifacts left by the superseded Rails/Tauri spike.
 .bundle/
 config/master.key
-log/
-packaging/
-src-tauri/
-storage/
+/log/
+/packaging/
+/src-tauri/
+/storage/
 vendor/bundle/
