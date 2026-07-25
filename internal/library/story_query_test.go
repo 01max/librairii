@@ -312,6 +312,68 @@ func TestStoryLibraryQueryComposesOfficialLanguageArchiveAndDerivedFacets(t *tes
 	)
 }
 
+func TestStoryLibraryQuerySortsAndPagesByResolvedOfficialName(t *testing.T) {
+	t.Parallel()
+
+	official := fixedOfficialProvider{
+		"00112233-4455-4677-8899-aabbccddeeff": {
+			UUID:  "00112233-4455-4677-8899-aabbccddeeff",
+			Title: "Zulu official",
+		},
+		"11112222-3333-4444-8555-666677778888": {
+			UUID:  "11112222-3333-4444-8555-666677778888",
+			Title: "Alpha official",
+		},
+	}
+	query, repository, database := newLibraryQuery(t, official)
+	first := createQueryableStory(
+		t,
+		repository,
+		"00112233-4455-4677-8899-aabbccddeeff",
+		"Alpha embedded",
+		"a",
+	)
+	second := createQueryableStory(
+		t,
+		repository,
+		"11112222-3333-4444-8555-666677778888",
+		"Zulu embedded",
+		"b",
+	)
+	seedOfficialQuerySnapshot(t, database, map[string]string{
+		first.UUID:  official[first.UUID].Title,
+		second.UUID: official[second.UUID].Title,
+	})
+
+	firstPage, err := query.Search(context.Background(), StoryLibraryQuery{
+		Page:     1,
+		PageSize: 1,
+		Sort:     SortNameAscending,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	secondPage, err := query.Search(context.Background(), StoryLibraryQuery{
+		Page:     2,
+		PageSize: 1,
+		Sort:     SortNameAscending,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if firstPage.TotalPages != 2 ||
+		len(firstPage.Stories) != 1 ||
+		firstPage.Stories[0].ID != second.ID ||
+		firstPage.Stories[0].Title != "Alpha official" {
+		t.Fatalf("first page = %#v", firstPage)
+	}
+	if len(secondPage.Stories) != 1 ||
+		secondPage.Stories[0].ID != first.ID ||
+		secondPage.Stories[0].Title != "Zulu official" {
+		t.Fatalf("second page = %#v", secondPage)
+	}
+}
+
 func TestBackfillNormalizedDisplayNamesRepairsExistingRows(t *testing.T) {
 	t.Parallel()
 

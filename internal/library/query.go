@@ -243,7 +243,7 @@ func (q *Query) localRecordPage(
 	if order == SortImportedNewest {
 		statement += " ORDER BY s.created_at DESC, s.id DESC"
 	} else {
-		statement += " ORDER BY s.display_name_normalized, s.uuid, s.id"
+		statement += " ORDER BY " + resolvedDisplayNameSQL + ", s.uuid, s.id"
 	}
 	statement += " LIMIT ? OFFSET ?"
 	pageArguments := append([]any(nil), arguments...)

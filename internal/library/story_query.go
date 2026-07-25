@@ -13,9 +13,23 @@ import (
 )
 
 const (
-	maxNameSearchRunes = 200
-	maxFilterGroups    = 50
-	maxValuesPerFilter = 100
+	maxNameSearchRunes     = 200
+	maxFilterGroups        = 50
+	maxValuesPerFilter     = 100
+	resolvedDisplayNameSQL = `COALESCE(
+		NULLIF((
+			SELECT official_name.title_normalized
+			FROM official_story_metadata AS official_name
+			JOIN catalog_snapshots AS official_snapshot
+			  ON official_snapshot.id = official_name.snapshot_id
+			WHERE official_name.story_uuid = s.uuid
+			  AND official_snapshot.status = 'active'
+			ORDER BY official_snapshot.activated_at DESC,
+			         official_snapshot.id DESC
+			LIMIT 1
+		), ''),
+		s.display_name_normalized
+	)`
 )
 
 var ErrInvalidStoryLibraryQuery = errors.New("story library query is invalid")
@@ -335,23 +349,7 @@ func storyLibraryPredicate(request StoryLibraryQuery) (string, []any) {
 	if request.Name != "" {
 		predicates = append(
 			predicates,
-			`instr(
-				COALESCE(
-					NULLIF((
-						SELECT official_name.title_normalized
-						FROM official_story_metadata AS official_name
-						JOIN catalog_snapshots AS official_snapshot
-						  ON official_snapshot.id = official_name.snapshot_id
-						WHERE official_name.story_uuid = s.uuid
-						  AND official_snapshot.status = 'active'
-						ORDER BY official_snapshot.activated_at DESC,
-						         official_snapshot.id DESC
-						LIMIT 1
-					), ''),
-					s.display_name_normalized
-				),
-				?
-			) > 0`,
+			"instr("+resolvedDisplayNameSQL+", ?) > 0",
 		)
 		arguments = append(arguments, request.Name)
 	}
