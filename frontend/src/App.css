@@ -239,17 +239,34 @@ select:focus-visible {
 }
 
 .saved-entry-row {
-    display: grid;
-    grid-template-columns: 14px minmax(0, 1fr);
-    align-items: center;
-    gap: 5px;
+    position: relative;
 }
 
 .shelf-selector {
+    position: absolute;
+    z-index: 2;
+    top: 50%;
+    left: 8px;
     width: 12px;
     height: 12px;
     margin: 0;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(-50%);
     accent-color: var(--blue);
+}
+
+.saved-entry-row:hover .shelf-selector,
+.shelf-selector:focus-visible,
+.shelf-selector:checked {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.saved-entry-row:hover .shelf-selector + .saved-picker > i,
+.shelf-selector:focus-visible + .saved-picker > i,
+.shelf-selector:checked + .saved-picker > i {
+    opacity: 0;
 }
 
 .combined-shelves {
