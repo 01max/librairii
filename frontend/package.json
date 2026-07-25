@@ -11,6 +11,7 @@
     "lint": "eslint .",
     "test": "vitest run",
     "test:performance": "node ./scripts/frontend-performance.mjs",
+    "test:responsive": "node ./scripts/frontend-responsive.mjs",
     "test:watch": "vitest"
   },
   "dependencies": {
