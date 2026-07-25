@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	coreapp "github.com/01max/librairii/internal/app"
+	"github.com/01max/librairii/internal/exporter"
 	"github.com/01max/librairii/internal/library"
 	"github.com/01max/librairii/internal/tagging"
 )
@@ -61,6 +62,14 @@ func (a *App) ApplicationStatus() coreapp.StatusResponse {
 // operation without exposing selected filesystem paths to the frontend.
 func (a *App) SelectAndImportStories() coreapp.OperationResponse {
 	return a.core.SelectAndStartImport(a.runtimeContext())
+}
+
+// SelectAndPreflightExport keeps the chosen absolute destination in Go while
+// returning only a display label and eligibility report to the frontend.
+func (a *App) SelectAndPreflightExport(
+	request exporter.PreflightRequest,
+) coreapp.ExportPreflightResponse {
+	return a.core.SelectAndPreflightExport(a.runtimeContext(), request)
 }
 
 func (a *App) RefreshOfficialMetadata() coreapp.OperationResponse {

@@ -18,9 +18,9 @@ const (
 )
 
 type ExportSource struct {
-	Type       ExportSourceType
-	ShelfIDs   []int64
-	ShelfNames []string
+	Type       ExportSourceType `json:"type"`
+	ShelfIDs   []int64          `json:"shelfIds,omitempty"`
+	ShelfNames []string         `json:"shelfNames,omitempty"`
 }
 
 type Status string

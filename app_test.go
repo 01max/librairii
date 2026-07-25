@@ -6,6 +6,7 @@ import (
 	"time"
 
 	coreapp "github.com/01max/librairii/internal/app"
+	"github.com/01max/librairii/internal/exporter"
 	"github.com/01max/librairii/internal/library"
 	"github.com/01max/librairii/internal/metadata"
 	"github.com/01max/librairii/internal/operations"
@@ -58,6 +59,14 @@ func (facadeOperations) StartMetadataRefresh(
 	string,
 ) (operations.Snapshot, error) {
 	return operations.Snapshot{}, nil
+}
+
+func (facadeOperations) PrepareExport(
+	context.Context,
+	exporter.PreflightRequest,
+	string,
+) (exporter.PreflightReport, error) {
+	return exporter.PreflightReport{}, nil
 }
 
 func (facadeOperations) MetadataStatus(

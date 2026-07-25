@@ -122,6 +122,10 @@ export function SelectAndImportStories() {
   return window['go']['main']['App']['SelectAndImportStories']();
 }
 
+export function SelectAndPreflightExport(arg1) {
+  return window['go']['main']['App']['SelectAndPreflightExport'](arg1);
+}
+
 export function SetBooleanTag(arg1, arg2, arg3) {
   return window['go']['main']['App']['SetBooleanTag'](arg1, arg2, arg3);
 }

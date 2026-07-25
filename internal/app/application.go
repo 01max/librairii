@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/01max/librairii/internal/exporter"
 	"github.com/01max/librairii/internal/library"
 	"github.com/01max/librairii/internal/metadata"
 	"github.com/01max/librairii/internal/operations"
@@ -178,6 +179,44 @@ func (a *Application) SelectAndStartImport(ctx context.Context) OperationRespons
 		return OperationResponse{Error: operationAPIError(err)}
 	}
 	return OperationResponse{Operation: &snapshot}
+}
+
+func (a *Application) SelectAndPreflightExport(
+	ctx context.Context,
+	request exporter.PreflightRequest,
+) ExportPreflightResponse {
+	if !a.Status().MutationsAllowed {
+		return ExportPreflightResponse{
+			Error: NewAPIError(
+				ErrorNotReady,
+				"Exports are unavailable until storage is ready.",
+			),
+		}
+	}
+	destination, err := a.dialogs.OpenDirectory(ctx, "Export story archives")
+	if err != nil {
+		return ExportPreflightResponse{
+			Error: NewAPIError(
+				ErrorInternal,
+				"The export destination picker could not be opened.",
+			),
+		}
+	}
+	if destination == "" {
+		return ExportPreflightResponse{Cancelled: true}
+	}
+	preflight, err := a.operations.PrepareExport(ctx, request, destination)
+	if err != nil {
+		if errors.Is(err, exporter.ErrInvalidScope) {
+			return ExportPreflightResponse{
+				Error: NewAPIError(ErrorInvalidInput, "The export scope is invalid."),
+			}
+		}
+		return ExportPreflightResponse{
+			Error: NewAPIError(ErrorInternal, "The export could not be prepared."),
+		}
+	}
+	return ExportPreflightResponse{Preflight: &preflight}
 }
 
 func (a *Application) RefreshOfficialMetadata(

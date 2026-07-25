@@ -16,6 +16,40 @@ export namespace app {
 	        this.details = source["details"];
 	    }
 	}
+	export class ExportPreflightResponse {
+	    preflight?: exporter.PreflightReport;
+	    cancelled?: boolean;
+	    error?: APIError;
+	
+	    static createFrom(source: any = {}) {
+	        return new ExportPreflightResponse(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.preflight = this.convertValues(source["preflight"], exporter.PreflightReport);
+	        this.cancelled = source["cancelled"];
+	        this.error = this.convertValues(source["error"], APIError);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
 	export class LibraryPageResponse {
 	    page?: library.Page;
 	    error?: APIError;
@@ -645,6 +679,193 @@ export namespace app {
 
 }
 
+export namespace exporter {
+	
+	export class PreflightIssue {
+	    code: string;
+	    message: string;
+	    blocks: boolean;
+	
+	    static createFrom(source: any = {}) {
+	        return new PreflightIssue(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.code = source["code"];
+	        this.message = source["message"];
+	        this.blocks = source["blocks"];
+	    }
+	}
+	export class PreflightItem {
+	    storyId: number;
+	    storyUuid: string;
+	    storyTitle: string;
+	    outputName: string;
+	    detectedFormat: string;
+	    byteSize: number;
+	    disposition: string;
+	    issue?: PreflightIssue;
+	
+	    static createFrom(source: any = {}) {
+	        return new PreflightItem(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.storyId = source["storyId"];
+	        this.storyUuid = source["storyUuid"];
+	        this.storyTitle = source["storyTitle"];
+	        this.outputName = source["outputName"];
+	        this.detectedFormat = source["detectedFormat"];
+	        this.byteSize = source["byteSize"];
+	        this.disposition = source["disposition"];
+	        this.issue = this.convertValues(source["issue"], PreflightIssue);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class PreflightReport {
+	    source: operations.ExportSource;
+	    destination: string;
+	    resolvedCount: number;
+	    readyCount: number;
+	    totalBytes: number;
+	    detectedFormats: string[];
+	    collapsedOverlap: number;
+	    items: PreflightItem[];
+	    issues: PreflightIssue[];
+	    partial: boolean;
+	    blocked: boolean;
+	    canExport: boolean;
+	
+	    static createFrom(source: any = {}) {
+	        return new PreflightReport(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.source = this.convertValues(source["source"], operations.ExportSource);
+	        this.destination = source["destination"];
+	        this.resolvedCount = source["resolvedCount"];
+	        this.readyCount = source["readyCount"];
+	        this.totalBytes = source["totalBytes"];
+	        this.detectedFormats = source["detectedFormats"];
+	        this.collapsedOverlap = source["collapsedOverlap"];
+	        this.items = this.convertValues(source["items"], PreflightItem);
+	        this.issues = this.convertValues(source["issues"], PreflightIssue);
+	        this.partial = source["partial"];
+	        this.blocked = source["blocked"];
+	        this.canExport = source["canExport"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class PreflightRequest {
+	    sourceType: string;
+	    storyIds?: number[];
+	    query: library.StoryLibraryQuery;
+	    shelfIds?: number[];
+	
+	    static createFrom(source: any = {}) {
+	        return new PreflightRequest(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.sourceType = source["sourceType"];
+	        this.storyIds = source["storyIds"];
+	        this.query = this.convertValues(source["query"], library.StoryLibraryQuery);
+	        this.shelfIds = source["shelfIds"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class Scope {
+	    Source: operations.ExportSource;
+	    Stories: library.ExportStory[];
+	    CollapsedOverlap: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new Scope(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.Source = this.convertValues(source["Source"], operations.ExportSource);
+	        this.Stories = this.convertValues(source["Stories"], library.ExportStory);
+	        this.CollapsedOverlap = source["CollapsedOverlap"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+
+}
+
 export namespace library {
 	
 	export class ArchiveDetails {
@@ -711,6 +932,34 @@ export namespace library {
 	        this.description = source["description"];
 	        this.author = source["author"];
 	        this.artwork = source["artwork"];
+	    }
+	}
+	export class ExportStory {
+	    ID: number;
+	    UUID: string;
+	    Title: string;
+	    OriginalFilename: string;
+	    DetectedFormat: string;
+	    SHA256: string;
+	    ByteSize: number;
+	    ManagedRelativePath: string;
+	    Verification: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new ExportStory(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.ID = source["ID"];
+	        this.UUID = source["UUID"];
+	        this.Title = source["Title"];
+	        this.OriginalFilename = source["OriginalFilename"];
+	        this.DetectedFormat = source["DetectedFormat"];
+	        this.SHA256 = source["SHA256"];
+	        this.ByteSize = source["ByteSize"];
+	        this.ManagedRelativePath = source["ManagedRelativePath"];
+	        this.Verification = source["Verification"];
 	    }
 	}
 	export class ListRequest {
@@ -969,10 +1218,31 @@ export namespace metadata {
 
 export namespace operations {
 	
+	export class ExportSource {
+	    type: string;
+	    shelfIds?: number[];
+	    shelfNames?: string[];
+	
+	    static createFrom(source: any = {}) {
+	        return new ExportSource(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.type = source["type"];
+	        this.shelfIds = source["shelfIds"];
+	        this.shelfNames = source["shelfNames"];
+	    }
+	}
 	export class ItemSnapshot {
 	    id: number;
 	    storyId?: number;
+	    storyUuid?: string;
+	    storyTitle?: string;
 	    sourceName: string;
+	    outputName?: string;
+	    archiveRelativePath?: string;
+	    archiveSha256?: string;
 	    status: string;
 	    outcomeCode?: string;
 	    outcomeMessage?: string;
@@ -987,7 +1257,12 @@ export namespace operations {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.id = source["id"];
 	        this.storyId = source["storyId"];
+	        this.storyUuid = source["storyUuid"];
+	        this.storyTitle = source["storyTitle"];
 	        this.sourceName = source["sourceName"];
+	        this.outputName = source["outputName"];
+	        this.archiveRelativePath = source["archiveRelativePath"];
+	        this.archiveSha256 = source["archiveSha256"];
 	        this.status = source["status"];
 	        this.outcomeCode = source["outcomeCode"];
 	        this.outcomeMessage = source["outcomeMessage"];
@@ -999,8 +1274,13 @@ export namespace operations {
 	    id: string;
 	    kind: string;
 	    status: string;
+	    exportSourceType?: string;
+	    sourceShelfIds?: number[];
+	    sourceShelfNames?: string[];
+	    destination?: string;
 	    completedItems: number;
 	    totalItems: number;
+	    totalBytes: number;
 	    cancelRequested: boolean;
 	    errorCode?: string;
 	    errorMessage?: string;
@@ -1018,8 +1298,13 @@ export namespace operations {
 	        this.id = source["id"];
 	        this.kind = source["kind"];
 	        this.status = source["status"];
+	        this.exportSourceType = source["exportSourceType"];
+	        this.sourceShelfIds = source["sourceShelfIds"];
+	        this.sourceShelfNames = source["sourceShelfNames"];
+	        this.destination = source["destination"];
 	        this.completedItems = source["completedItems"];
 	        this.totalItems = source["totalItems"];
+	        this.totalBytes = source["totalBytes"];
 	        this.cancelRequested = source["cancelRequested"];
 	        this.errorCode = source["errorCode"];
 	        this.errorMessage = source["errorMessage"];

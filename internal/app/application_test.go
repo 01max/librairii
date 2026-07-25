@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/01max/librairii/internal/exporter"
 	"github.com/01max/librairii/internal/library"
 	"github.com/01max/librairii/internal/metadata"
 	"github.com/01max/librairii/internal/operations"
@@ -32,9 +33,11 @@ func (fakeDialogs) OpenFiles(context.Context, FileDialogRequest) ([]string, erro
 }
 
 type recordingDialogs struct {
-	paths   []string
-	request FileDialogRequest
-	calls   int
+	paths          []string
+	request        FileDialogRequest
+	directory      string
+	directoryTitle string
+	calls          int
 }
 
 func (d *recordingDialogs) OpenFiles(
@@ -46,8 +49,12 @@ func (d *recordingDialogs) OpenFiles(
 	return append([]string(nil), d.paths...), nil
 }
 
-func (d *recordingDialogs) OpenDirectory(context.Context, string) (string, error) {
-	return "", nil
+func (d *recordingDialogs) OpenDirectory(
+	_ context.Context,
+	title string,
+) (string, error) {
+	d.directoryTitle = title
+	return d.directory, nil
 }
 
 func (fakeDialogs) OpenDirectory(context.Context, string) (string, error) {
@@ -93,6 +100,9 @@ type fakeOperations struct {
 	snapshot       operations.Snapshot
 	active         []operations.Snapshot
 	metadataStatus metadata.CatalogStatus
+	preflight      exporter.PreflightReport
+	preflightInput exporter.PreflightRequest
+	destination    string
 	page           library.Page
 	searchPage     library.Page
 	detail         library.StoryDetail
@@ -119,6 +129,16 @@ func (o *fakeOperations) StartMetadataRefresh(
 ) (operations.Snapshot, error) {
 	o.syncLocale = locale
 	return o.snapshot, o.err
+}
+
+func (o *fakeOperations) PrepareExport(
+	_ context.Context,
+	request exporter.PreflightRequest,
+	destination string,
+) (exporter.PreflightReport, error) {
+	o.preflightInput = request
+	o.destination = destination
+	return o.preflight, o.err
 }
 
 func (o *fakeOperations) MetadataStatus(
@@ -582,6 +602,59 @@ func TestImportFacadeTreatsEmptySelectionAsCancellation(t *testing.T) {
 	}
 	if operationPort.startPaths != nil {
 		t.Fatalf("operation unexpectedly started with %#v", operationPort.startPaths)
+	}
+}
+
+func TestExportPreflightKeepsNativeDestinationInsideGo(t *testing.T) {
+	t.Parallel()
+
+	const destination = "/private/native/Lunii export"
+	dialogs := &recordingDialogs{directory: destination}
+	operationPort := &fakeOperations{
+		preflight: exporter.PreflightReport{
+			Destination:      destination,
+			DestinationLabel: "Lunii export",
+			ResolvedCount:    2,
+			ReadyCount:       2,
+			CanExport:        true,
+		},
+	}
+	application, err := New(Dependencies{
+		Clock:      fixedClock{now: time.Now()},
+		Dialogs:    dialogs,
+		Events:     &fakeEvents{},
+		Readiness:  fakeReadiness{report: ReadinessReport{MutationsAllowed: true}},
+		Operations: operationPort,
+		Library:    operationPort,
+		Removal:    operationPort,
+		Tags:       operationPort,
+		Shelves:    operationPort,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := application.Start(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	request := exporter.PreflightRequest{
+		SourceType: operations.ExportSourceSelection,
+		StoryIDs:   []int64{4, 9},
+	}
+	response := application.SelectAndPreflightExport(context.Background(), request)
+	if response.Error != nil ||
+		response.Preflight == nil ||
+		response.Preflight.DestinationLabel != "Lunii export" ||
+		dialogs.directoryTitle != "Export story archives" ||
+		operationPort.destination != destination ||
+		!reflect.DeepEqual(operationPort.preflightInput, request) {
+		t.Fatalf("SelectAndPreflightExport() = %#v", response)
+	}
+	encoded, err := json.Marshal(response)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(encoded), destination) {
+		t.Fatalf("frontend response exposed native destination: %s", encoded)
 	}
 }
 

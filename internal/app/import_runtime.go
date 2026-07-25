@@ -10,6 +10,7 @@ import (
 	"github.com/01max/librairii/internal/archive"
 	"github.com/01max/librairii/internal/artwork"
 	"github.com/01max/librairii/internal/catalog"
+	"github.com/01max/librairii/internal/exporter"
 	"github.com/01max/librairii/internal/importer"
 	"github.com/01max/librairii/internal/inspection"
 	"github.com/01max/librairii/internal/library"
@@ -42,6 +43,7 @@ type ImportRuntime struct {
 	tags            *tagging.Service
 	shelves         *shelves.Service
 	shelfEvaluator  *shelves.Evaluator
+	exportPreflight *exporter.PreflightService
 }
 
 type ImportRuntimeOption func(*ImportRuntime)
@@ -184,12 +186,23 @@ func (r *ImportRuntime) Start(ctx context.Context) error {
 		_ = manager.Close()
 		return fmt.Errorf("construct saved shelf evaluator: %w", err)
 	}
+	exportResolver, err := exporter.NewResolver(libraryQuery, shelfService)
+	if err != nil {
+		_ = manager.Close()
+		return fmt.Errorf("construct export resolver: %w", err)
+	}
+	exportPreflight, err := exporter.NewPreflightService(exportResolver, layout)
+	if err != nil {
+		_ = manager.Close()
+		return fmt.Errorf("construct export preflight: %w", err)
+	}
 	r.manager = manager
 	r.query = libraryQuery
 	r.removal = removalService
 	r.tags = tagService
 	r.shelves = shelfService
 	r.shelfEvaluator = shelfEvaluator
+	r.exportPreflight = exportPreflight
 	return nil
 }
 
@@ -213,6 +226,20 @@ func (r *ImportRuntime) StartMetadataRefresh(
 		return operations.Snapshot{}, err
 	}
 	return manager.StartMetadataRefresh(ctx, locale)
+}
+
+func (r *ImportRuntime) PrepareExport(
+	ctx context.Context,
+	request exporter.PreflightRequest,
+	destination string,
+) (exporter.PreflightReport, error) {
+	r.mu.RLock()
+	preflight := r.exportPreflight
+	r.mu.RUnlock()
+	if preflight == nil {
+		return exporter.PreflightReport{}, ErrImportRuntimeNotReady
+	}
+	return preflight.Plan(ctx, request, destination)
 }
 
 func (r *ImportRuntime) MetadataStatus(
@@ -601,6 +628,7 @@ func (r *ImportRuntime) Close() error {
 	r.tags = nil
 	r.shelves = nil
 	r.shelfEvaluator = nil
+	r.exportPreflight = nil
 	r.mu.Unlock()
 	if manager == nil {
 		return nil

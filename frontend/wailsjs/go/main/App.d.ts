@@ -3,6 +3,7 @@
 import {app} from '../models';
 import {library} from '../models';
 import {tagging} from '../models';
+import {exporter} from '../models';
 
 export function ActiveOperations():Promise<app.OperationListResponse>;
 
@@ -63,6 +64,8 @@ export function ReorderTagValues(arg1:number,arg2:Array<number>):Promise<app.Mut
 export function ReplaceShelfQuery(arg1:number,arg2:library.StoryLibraryQuery):Promise<app.ShelfResponse>;
 
 export function SelectAndImportStories():Promise<app.OperationResponse>;
+
+export function SelectAndPreflightExport(arg1:exporter.PreflightRequest):Promise<app.ExportPreflightResponse>;
 
 export function SetBooleanTag(arg1:Array<number>,arg2:number,arg3:boolean):Promise<app.TagAssignmentResponse>;
 

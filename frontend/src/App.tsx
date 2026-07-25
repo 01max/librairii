@@ -26,12 +26,20 @@ import {
     RefreshOfficialMetadata,
     RemoveStory,
     SelectAndImportStories,
+    SelectAndPreflightExport,
     StoryDetail as LoadStoryDetail,
     TagAssignmentWorkspace as LoadTagAssignmentWorkspace,
     TagCatalog as LoadTagCatalog,
 } from '../wailsjs/go/main/App';
 import {EventsOn} from '../wailsjs/runtime/runtime';
-import {library, metadata, operations, shelves, tagging} from '../wailsjs/go/models';
+import {
+    exporter,
+    library,
+    metadata,
+    operations,
+    shelves,
+    tagging,
+} from '../wailsjs/go/models';
 import {
     describeImport,
     operationIsActive,
@@ -308,6 +316,9 @@ function App() {
     const [shelfBusy, setShelfBusy] = useState(false);
     const [repairShelfID, setRepairShelfID] = useState<number | null>(null);
     const [deleteShelfID, setDeleteShelfID] = useState<number | null>(null);
+    const [exportPreflight, setExportPreflight] =
+        useState<exporter.PreflightReport | null>(null);
+    const [exportPreparing, setExportPreparing] = useState(false);
     const activeShelfIDRef = useRef<number | null>(initialHistoryState.shelfID);
     const refreshedOperations = useRef(new Set<string>());
     const searchInput = useRef<HTMLInputElement>(null);
@@ -319,9 +330,16 @@ function App() {
     const repairShelfInitialFocus = useRef<HTMLButtonElement>(null);
     const deleteShelfDialog = useRef<HTMLElement>(null);
     const deleteShelfInitialFocus = useRef<HTMLButtonElement>(null);
+    const exportPreflightDialog = useRef<HTMLElement>(null);
+    const exportPreflightInitialFocus = useRef<HTMLButtonElement>(null);
     useModalFocus(shelfDialog, shelfDialogInitialFocus, shelfDialogMode !== null);
     useModalFocus(repairShelfDialog, repairShelfInitialFocus, repairShelfID !== null);
     useModalFocus(deleteShelfDialog, deleteShelfInitialFocus, deleteShelfID !== null);
+    useModalFocus(
+        exportPreflightDialog,
+        exportPreflightInitialFocus,
+        exportPreflight !== null,
+    );
     const activateShelf = useCallback((shelfID: number | null) => {
         activeShelfIDRef.current = shelfID;
         setActiveShelfID(shelfID);
@@ -331,15 +349,18 @@ function App() {
         if (
             shelfDialogMode === null &&
             repairShelfID === null &&
-            deleteShelfID === null
+            deleteShelfID === null &&
+            exportPreflight === null
         ) {
             return;
         }
         const closeOnEscape = (event: KeyboardEvent) => {
-            if (event.key !== 'Escape' || shelfBusy) {
+            if (event.key !== 'Escape' || shelfBusy || exportPreparing) {
                 return;
             }
-            if (deleteShelfID !== null) {
+            if (exportPreflight !== null) {
+                setExportPreflight(null);
+            } else if (deleteShelfID !== null) {
                 setDeleteShelfID(null);
             } else if (repairShelfID !== null) {
                 setRepairShelfID(null);
@@ -349,7 +370,14 @@ function App() {
         };
         window.addEventListener('keydown', closeOnEscape);
         return () => window.removeEventListener('keydown', closeOnEscape);
-    }, [deleteShelfID, repairShelfID, shelfBusy, shelfDialogMode]);
+    }, [
+        deleteShelfID,
+        exportPreflight,
+        exportPreparing,
+        repairShelfID,
+        shelfBusy,
+        shelfDialogMode,
+    ]);
 
     const loadCollection = useCallback(async () => {
         const generation = ++collectionRequestGeneration.current;
@@ -674,6 +702,41 @@ function App() {
         }
         if (response.operation) {
             reconcileOperation(response.operation);
+        }
+    }
+
+    async function prepareExport(
+        sourceType: 'selection' | 'current_query' | 'shelf' | 'shelves',
+    ) {
+        const shelfIDs = sourceType === 'shelf'
+            ? activeShelfID === null
+                ? selectedShelfIDs.slice(0, 1)
+                : [activeShelfID]
+            : sourceType === 'shelves'
+                ? selectedShelfIDs
+                : [];
+        setExportPreparing(true);
+        setRequestError(null);
+        try {
+            const response = await SelectAndPreflightExport(
+                new exporter.PreflightRequest({
+                    sourceType,
+                    storyIds: sourceType === 'selection' ? selectedIDs : [],
+                    query: sourceType === 'current_query'
+                        ? new library.StoryLibraryQuery(collectionQuery)
+                        : new library.StoryLibraryQuery({}),
+                    shelfIds: shelfIDs,
+                }),
+            );
+            if (response.error) {
+                setRequestError(response.error.message);
+            } else if (response.preflight) {
+                setExportPreflight(response.preflight);
+            }
+        } catch {
+            setRequestError('The export could not be prepared.');
+        } finally {
+            setExportPreparing(false);
         }
     }
 
@@ -1581,6 +1644,25 @@ function App() {
                                 <small>
                                     Sources: {shelfSelectionPreview.sourceShelfNames.join(', ')}
                                 </small>
+                                <button
+                                    className="combined-export"
+                                    type="button"
+                                    disabled={
+                                        exportPreparing ||
+                                        shelfSelectionPreview.uniqueStoryCount === 0
+                                    }
+                                    onClick={() => void prepareExport(
+                                        selectedShelfIDs.length === 1
+                                            ? 'shelf'
+                                            : 'shelves',
+                                    )}
+                                >
+                                    {exportPreparing
+                                        ? 'Preparing…'
+                                        : selectedShelfIDs.length === 1
+                                            ? 'Export selected shelf'
+                                            : 'Export selected shelves'}
+                                </button>
                             </>
                         )}
                     </section>
@@ -1686,20 +1768,40 @@ function App() {
                             {page?.totalItems ?? 0} archives
                         </p>
                     </div>
-                    <label className="sort">
-                        <span className="sr-only">Sort stories</span>
-                        <select
-                            value={collectionQuery.sort}
-                            onChange={(event) => updateQuery({
-                                ...collectionQuery,
-                                sort: event.currentTarget.value as CollectionQuery['sort'],
-                                page: 1,
-                            })}
+                    <div className="heading-actions">
+                        <button
+                            className="scope-export"
+                            type="button"
+                            disabled={exportPreparing}
+                            onClick={() => void prepareExport('current_query')}
                         >
-                            <option value="imported_desc">Recently added</option>
-                            <option value="name_asc">Name A–Z</option>
-                        </select>
-                    </label>
+                            Export current result
+                        </button>
+                        {activeShelf && (
+                            <button
+                                className="scope-export"
+                                type="button"
+                                disabled={exportPreparing}
+                                onClick={() => void prepareExport('shelf')}
+                            >
+                                Export shelf
+                            </button>
+                        )}
+                        <label className="sort">
+                            <span className="sr-only">Sort stories</span>
+                            <select
+                                value={collectionQuery.sort}
+                                onChange={(event) => updateQuery({
+                                    ...collectionQuery,
+                                    sort: event.currentTarget.value as CollectionQuery['sort'],
+                                    page: 1,
+                                })}
+                            >
+                                <option value="imported_desc">Recently added</option>
+                                <option value="name_asc">Name A–Z</option>
+                            </select>
+                        </label>
+                    </div>
                 </div>
 
                 {activeFilters.length > 0 && (
@@ -2055,9 +2157,109 @@ function App() {
                         >
                             Open details
                         </button>
-                        <button className="export" type="button">Add to export →</button>
+                        <button
+                            className="export"
+                            type="button"
+                            disabled={exportPreparing || selectedIDs.length === 0}
+                            onClick={() => void prepareExport('selection')}
+                        >
+                            {exportPreparing ? 'Preparing…' : 'Add to export →'}
+                        </button>
                     </div>
                 </aside>
+            )}
+
+            {exportPreflight && (
+                <div className="dialog-backdrop">
+                    <section
+                        ref={exportPreflightDialog}
+                        className="detail-dialog export-preflight"
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="export-preflight-title"
+                    >
+                        <div className="dialog-kicker">Export preflight</div>
+                        <h3 id="export-preflight-title">
+                            {exportPreflight.blocked
+                                ? 'Export is blocked'
+                                : exportPreflight.partial
+                                    ? 'Review partial export'
+                                    : 'Ready to export'}
+                        </h3>
+                        <p className="dialog-description">
+                            {exportPreflight.blocked
+                                ? 'Resolve the items below before copying can begin.'
+                                : `${exportPreflight.readyCount} of ${
+                                    exportPreflight.resolvedCount
+                                } resolved ${
+                                    exportPreflight.resolvedCount === 1
+                                        ? 'story is'
+                                        : 'stories are'
+                                } ready for byte-preserving export.`}
+                        </p>
+                        <dl className="dialog-facts export-preflight-facts">
+                            <div>
+                                <dt>Destination</dt>
+                                <dd>{exportPreflight.destination || 'Not available'}</dd>
+                            </div>
+                            <div>
+                                <dt>Total size</dt>
+                                <dd>{formatBytes(exportPreflight.totalBytes)}</dd>
+                            </div>
+                            <div>
+                                <dt>Formats</dt>
+                                <dd>
+                                    {(exportPreflight.detectedFormats ?? []).join(', ') || '—'}
+                                </dd>
+                            </div>
+                            <div>
+                                <dt>Overlap collapsed</dt>
+                                <dd>{exportPreflight.collapsedOverlap}</dd>
+                            </div>
+                        </dl>
+                        {(exportPreflight.issues ?? []).length > 0 && (
+                            <ul className="preflight-issues" aria-label="Export blockers">
+                                {exportPreflight.issues.map((issue) => (
+                                    <li key={issue.code}>
+                                        <b>{issue.blocks ? 'Blocked' : 'Notice'}</b>
+                                        <span>{issue.message}</span>
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
+                        {(exportPreflight.items ?? []).length > 0 && (
+                            <ul className="preflight-items" aria-label="Export story checks">
+                                {exportPreflight.items.map((item) => (
+                                    <li
+                                        className={item.disposition}
+                                        key={item.storyId}
+                                    >
+                                        <span>
+                                            <b>{item.storyTitle}</b>
+                                            <small>{item.outputName}</small>
+                                        </span>
+                                        <strong>{item.disposition}</strong>
+                                        {item.issue && <p>{item.issue.message}</p>}
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
+                        <div className="dialog-actions">
+                            <button
+                                ref={exportPreflightInitialFocus}
+                                type="button"
+                                onClick={() => setExportPreflight(null)}
+                            >
+                                Close
+                            </button>
+                            <button className="export" type="button" disabled>
+                                {exportPreflight.canExport
+                                    ? 'Start export'
+                                    : 'Export unavailable'}
+                            </button>
+                        </div>
+                    </section>
+                </div>
             )}
 
             {detailsOpen && selected && (

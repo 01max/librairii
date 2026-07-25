@@ -20,12 +20,13 @@ import {
     RefreshOfficialMetadata,
     RemoveStory,
     SelectAndImportStories,
+    SelectAndPreflightExport,
     SetBooleanTag,
     StoryDetail as LoadStoryDetail,
     TagAssignmentWorkspace as LoadTagAssignmentWorkspace,
     TagCatalog as LoadTagCatalog,
 } from '../wailsjs/go/main/App';
-import {app, library, metadata, shelves} from '../wailsjs/go/models';
+import {app, exporter, library, metadata, shelves} from '../wailsjs/go/models';
 import {EventsOn} from '../wailsjs/runtime/runtime';
 import App from './App';
 
@@ -48,6 +49,7 @@ vi.mock('../wailsjs/go/main/App', () => ({
     RefreshOfficialMetadata: vi.fn(),
     RemoveStory: vi.fn(),
     SelectAndImportStories: vi.fn(),
+    SelectAndPreflightExport: vi.fn(),
     StoryDetail: vi.fn(),
     TagAssignmentWorkspace: vi.fn(),
     TagCatalog: vi.fn(),
@@ -77,6 +79,7 @@ const replaceShelfQuery = vi.mocked(ReplaceShelfQuery);
 const refreshOfficialMetadata = vi.mocked(RefreshOfficialMetadata);
 const removeStory = vi.mocked(RemoveStory);
 const selectAndImportStories = vi.mocked(SelectAndImportStories);
+const selectAndPreflightExport = vi.mocked(SelectAndPreflightExport);
 const setBooleanTag = vi.mocked(SetBooleanTag);
 const loadStoryDetail = vi.mocked(LoadStoryDetail);
 const loadTagAssignmentWorkspace = vi.mocked(LoadTagAssignmentWorkspace);
@@ -138,6 +141,7 @@ beforeEach(() => {
     refreshOfficialMetadata.mockReset();
     removeStory.mockReset();
     selectAndImportStories.mockReset();
+    selectAndPreflightExport.mockReset();
     setBooleanTag.mockReset();
     loadStoryDetail.mockReset();
     loadTagAssignmentWorkspace.mockReset();
@@ -250,6 +254,9 @@ beforeEach(() => {
     selectAndImportStories.mockResolvedValue(new app.OperationResponse({
         cancelled: true,
     }));
+    selectAndPreflightExport.mockResolvedValue(new app.ExportPreflightResponse({
+        cancelled: true,
+    }));
     refreshOfficialMetadata.mockResolvedValue(new app.OperationResponse({
         cancelled: true,
     }));
@@ -283,6 +290,121 @@ test('renders the canonical collection shell from typed library data', async () 
         .toHaveAttribute('aria-pressed', 'true');
     expect(await screen.findByText('clockwork-forest.zip · 1.0 MB · Verified'))
         .toBeInTheDocument();
+});
+
+test('preflights explicit selections and complete current results', async () => {
+    const user = userEvent.setup();
+    selectAndPreflightExport.mockImplementation(async (request) => (
+        new app.ExportPreflightResponse({
+            preflight: new exporter.PreflightReport({
+                source: {type: request.sourceType},
+                destination: 'Lunii export',
+                resolvedCount: request.sourceType === 'selection' ? 2 : 12,
+                readyCount: request.sourceType === 'selection' ? 1 : 12,
+                totalBytes: 1048576,
+                detectedFormats: ['seven_zip', 'zip'],
+                collapsedOverlap: 0,
+                items: request.sourceType === 'selection'
+                    ? [{
+                        storyId: 1,
+                        storyUuid: stories[0].uuid,
+                        storyTitle: 'Clockwork Forest',
+                        outputName: 'clockwork-forest.zip',
+                        detectedFormat: 'zip',
+                        byteSize: 1048576,
+                        disposition: 'ready',
+                    }, {
+                        storyId: 2,
+                        storyUuid: stories[1].uuid,
+                        storyTitle: 'Moonlit Workshop',
+                        outputName: 'moonlit-workshop.7z',
+                        detectedFormat: 'seven_zip',
+                        byteSize: 2097152,
+                        disposition: 'skipped',
+                        issue: {
+                            code: 'archive_missing',
+                            message: 'Managed archive bytes are missing.',
+                            blocks: false,
+                        },
+                    }]
+                    : [],
+                issues: [],
+                partial: request.sourceType === 'selection',
+                blocked: false,
+                canExport: true,
+            }),
+        })
+    ));
+    render(<App/>);
+
+    await user.click(await screen.findByRole('button', {
+        name: 'Export current result',
+    }));
+    expect(selectAndPreflightExport).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+            sourceType: 'current_query',
+            query: expect.objectContaining({
+                page: 1,
+                pageSize: 12,
+                sort: 'imported_desc',
+            }),
+        }),
+    );
+    expect(screen.getByRole('dialog', {name: 'Ready to export'}))
+        .toBeInTheDocument();
+    expect(screen.getByText('12 of 12 resolved stories are ready for byte-preserving export.'))
+        .toBeInTheDocument();
+    expect(screen.getByText('Lunii export')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', {name: 'Close'}));
+
+    fireEvent.click(screen.getByRole('button', {name: /Moonlit Workshop/}), {
+        ctrlKey: true,
+    });
+    await user.click(screen.getByRole('button', {name: 'Add to export →'}));
+    expect(selectAndPreflightExport).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+            sourceType: 'selection',
+            storyIds: [1, 2],
+        }),
+    );
+    expect(screen.getByRole('dialog', {name: 'Review partial export'}))
+        .toBeInTheDocument();
+    expect(screen.getByRole('list', {name: 'Export story checks'}))
+        .toHaveTextContent('Managed archive bytes are missing.');
+});
+
+test('renders empty and blocked export preflight guidance', async () => {
+    const user = userEvent.setup();
+    selectAndPreflightExport.mockResolvedValue(new app.ExportPreflightResponse({
+        preflight: {
+            source: {type: 'current_query'},
+            destination: '',
+            resolvedCount: 0,
+            readyCount: 0,
+            totalBytes: 0,
+            detectedFormats: [],
+            collapsedOverlap: 0,
+            items: [],
+            issues: [{
+                code: 'empty_scope',
+                message: 'No stories match this export scope.',
+                blocks: true,
+            }],
+            partial: false,
+            blocked: true,
+            canExport: false,
+        },
+    }));
+    render(<App/>);
+
+    await user.click(await screen.findByRole('button', {
+        name: 'Export current result',
+    }));
+    expect(screen.getByRole('dialog', {name: 'Export is blocked'}))
+        .toBeInTheDocument();
+    expect(screen.getByRole('list', {name: 'Export blockers'}))
+        .toHaveTextContent('No stories match this export scope.');
+    expect(screen.getByRole('button', {name: 'Export unavailable'})).toBeDisabled();
 });
 
 test('renders saved shelf preview rows and opens them from view all', async () => {
@@ -1081,6 +1203,30 @@ test('previews a multi-shelf union with per-shelf and overlap counts', async () 
                 },
         })
     ));
+    selectAndPreflightExport.mockImplementation(async (request) => (
+        new app.ExportPreflightResponse({
+            preflight: {
+                source: {
+                    type: request.sourceType,
+                    shelfIds: request.shelfIds,
+                    shelfNames: request.shelfIds?.length === 1
+                        ? ['Forest']
+                        : ['Moon', 'Forest'],
+                },
+                destination: 'Lunii export',
+                resolvedCount: request.shelfIds?.length === 1 ? 2 : 3,
+                readyCount: request.shelfIds?.length === 1 ? 2 : 3,
+                totalBytes: 3145728,
+                detectedFormats: ['zip'],
+                collapsedOverlap: request.sourceType === 'shelves' ? 1 : 0,
+                items: [],
+                issues: [],
+                partial: false,
+                blocked: false,
+                canExport: true,
+            },
+        })
+    ));
 
     render(<App/>);
     await user.click(await screen.findByRole('checkbox', {
@@ -1098,6 +1244,18 @@ test('previews a multi-shelf union with per-shelf and overlap counts', async () 
     expect(preview).toHaveTextContent('3 unique stories');
     expect(preview).toHaveTextContent('1 overlapping membership collapsed.');
     expect(preview).toHaveTextContent('Sources: Moon, Forest');
+    await user.click(within(preview).getByRole('button', {
+        name: 'Export selected shelves',
+    }));
+    expect(selectAndPreflightExport).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+            sourceType: 'shelves',
+            shelfIds: [7, 8],
+        }),
+    );
+    expect(screen.getByText('1', {selector: '.export-preflight-facts dd'}))
+        .toBeInTheDocument();
+    await user.click(screen.getByRole('button', {name: 'Close'}));
 
     listShelves.mockResolvedValue(new app.ShelfListResponse({
         shelves: [
@@ -1159,6 +1317,13 @@ test('previews a multi-shelf union with per-shelf and overlap counts', async () 
     expect(screen.queryByText('Repair the selected shelf before continuing.'))
         .not.toBeInTheDocument();
     expect(screen.getByText('2 unique stories')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', {name: 'Export selected shelf'}));
+    expect(selectAndPreflightExport).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+            sourceType: 'shelf',
+            shelfIds: [8],
+        }),
+    );
 });
 
 test('keeps a valid empty saved shelf active with edit and import recovery actions', async () => {

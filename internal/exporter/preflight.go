@@ -63,7 +63,8 @@ type PreflightItem struct {
 
 type PreflightReport struct {
 	Source           operations.ExportSource `json:"source"`
-	Destination      string                  `json:"destination"`
+	Destination      string                  `json:"-"`
+	DestinationLabel string                  `json:"destination"`
 	ResolvedCount    int                     `json:"resolvedCount"`
 	ReadyCount       int                     `json:"readyCount"`
 	TotalBytes       int64                   `json:"totalBytes"`
@@ -74,13 +75,14 @@ type PreflightReport struct {
 	Partial          bool                    `json:"partial"`
 	Blocked          bool                    `json:"blocked"`
 	CanExport        bool                    `json:"canExport"`
+	Scope            Scope                   `json:"-"`
 }
 
 type PreflightRequest struct {
-	SourceType operations.ExportSourceType
-	StoryIDs   []int64
-	Query      library.StoryLibraryQuery
-	ShelfIDs   []int64
+	SourceType operations.ExportSourceType `json:"sourceType"`
+	StoryIDs   []int64                     `json:"storyIds,omitempty"`
+	Query      library.StoryLibraryQuery   `json:"query"`
+	ShelfIDs   []int64                     `json:"shelfIds,omitempty"`
 }
 
 type PreflightService struct {
@@ -162,6 +164,7 @@ func (s *PreflightService) inspect(
 		ResolvedCount:    len(scope.Stories),
 		CollapsedOverlap: scope.CollapsedOverlap,
 		Items:            make([]PreflightItem, 0, len(scope.Stories)),
+		Scope:            scope,
 	}
 	if len(scope.Stories) == 0 {
 		report.Issues = append(report.Issues, blockingIssue(
@@ -182,6 +185,7 @@ func (s *PreflightService) inspect(
 		return report, nil
 	}
 	report.Destination = resolvedDestination
+	report.DestinationLabel = filepath.Base(resolvedDestination)
 	if err := s.probeWritable(resolvedDestination); err != nil {
 		report.Issues = append(report.Issues, blockingIssue(
 			IssueDestinationNotWritable,

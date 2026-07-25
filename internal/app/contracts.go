@@ -5,6 +5,7 @@ import (
 	"errors"
 	"time"
 
+	"github.com/01max/librairii/internal/exporter"
 	"github.com/01max/librairii/internal/library"
 	"github.com/01max/librairii/internal/metadata"
 	"github.com/01max/librairii/internal/operations"
@@ -112,6 +113,11 @@ type OperationPort interface {
 	Start(context.Context) error
 	StartImport(context.Context, []string) (operations.Snapshot, error)
 	StartMetadataRefresh(context.Context, string) (operations.Snapshot, error)
+	PrepareExport(
+		context.Context,
+		exporter.PreflightRequest,
+		string,
+	) (exporter.PreflightReport, error)
 	MetadataStatus(context.Context, string) (metadata.CatalogStatus, error)
 	Cancel(context.Context, string) (operations.Snapshot, error)
 	Snapshot(context.Context, string) (operations.Snapshot, error)
@@ -181,6 +187,12 @@ type OperationResponse struct {
 	Operation *operations.Snapshot `json:"operation,omitempty"`
 	Cancelled bool                 `json:"cancelled,omitempty"`
 	Error     *APIError            `json:"error,omitempty"`
+}
+
+type ExportPreflightResponse struct {
+	Preflight *exporter.PreflightReport `json:"preflight,omitempty"`
+	Cancelled bool                      `json:"cancelled,omitempty"`
+	Error     *APIError                 `json:"error,omitempty"`
 }
 
 type OperationListResponse struct {
