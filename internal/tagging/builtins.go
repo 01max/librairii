@@ -43,16 +43,16 @@ var (
 )
 
 type Definition struct {
-	ID            int64
-	Key           string
-	NormalizedKey string
-	Label         string
-	Color         string
-	Kind          Kind
-	Source        Source
-	Presentation  Presentation
-	Position      int
-	Protected     bool
+	ID            int64        `json:"id"`
+	Key           string       `json:"key"`
+	NormalizedKey string       `json:"normalizedKey"`
+	Label         string       `json:"label"`
+	Color         string       `json:"color"`
+	Kind          Kind         `json:"kind"`
+	Source        Source       `json:"source"`
+	Presentation  Presentation `json:"presentation"`
+	Position      int          `json:"position"`
+	Protected     bool         `json:"protected"`
 }
 
 func SeedBuiltIns(ctx context.Context, database *sql.DB) (Definition, error) {

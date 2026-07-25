@@ -9,6 +9,7 @@ import (
 	"github.com/01max/librairii/internal/library"
 	"github.com/01max/librairii/internal/operations"
 	"github.com/01max/librairii/internal/removal"
+	"github.com/01max/librairii/internal/tagging"
 )
 
 type facadeClock struct{}
@@ -100,6 +101,54 @@ func (facadeOperations) Remove(
 	return removal.Result{}, nil
 }
 
+func (facadeOperations) Catalog(context.Context) (tagging.Catalog, error) {
+	return tagging.Catalog{}, nil
+}
+
+func (facadeOperations) CreateDefinition(context.Context, tagging.CreateDefinition) (tagging.Definition, error) {
+	return tagging.Definition{}, nil
+}
+
+func (facadeOperations) RenameDefinition(context.Context, int64, string) (tagging.Definition, error) {
+	return tagging.Definition{}, nil
+}
+
+func (facadeOperations) RecolorDefinition(context.Context, int64, string) (tagging.Definition, error) {
+	return tagging.Definition{}, nil
+}
+
+func (facadeOperations) ReorderDefinitions(context.Context, []int64) ([]tagging.Definition, error) {
+	return nil, nil
+}
+
+func (facadeOperations) PlanDefinitionDeletion(context.Context, int64) (tagging.DefinitionDeletionPlan, error) {
+	return tagging.DefinitionDeletionPlan{}, nil
+}
+
+func (facadeOperations) DeleteDefinition(context.Context, tagging.DefinitionDeletionPlan) error {
+	return nil
+}
+
+func (facadeOperations) CreateValue(context.Context, tagging.CreateValue) (tagging.Value, error) {
+	return tagging.Value{}, nil
+}
+
+func (facadeOperations) RenameValue(context.Context, int64, string) (tagging.Value, error) {
+	return tagging.Value{}, nil
+}
+
+func (facadeOperations) ReorderValues(context.Context, int64, []int64) ([]tagging.Value, error) {
+	return nil, nil
+}
+
+func (facadeOperations) PlanValueDeletion(context.Context, int64) (tagging.ValueDeletionPlan, error) {
+	return tagging.ValueDeletionPlan{}, nil
+}
+
+func (facadeOperations) DeleteValue(context.Context, tagging.ValueDeletionPlan) error {
+	return nil
+}
+
 func TestAppExposesTypedLifecycleStatus(t *testing.T) {
 	t.Parallel()
 
@@ -111,6 +160,7 @@ func TestAppExposesTypedLifecycleStatus(t *testing.T) {
 		Operations: facadeOperations{},
 		Library:    facadeOperations{},
 		Removal:    facadeOperations{},
+		Tags:       facadeOperations{},
 	})
 	if err != nil {
 		t.Fatalf("New() error = %v", err)
@@ -139,6 +189,7 @@ func TestAppCanQuitAfterDOMReadyForPackagedSmoke(t *testing.T) {
 		Operations: facadeOperations{},
 		Library:    facadeOperations{},
 		Removal:    facadeOperations{},
+		Tags:       facadeOperations{},
 	})
 	if err != nil {
 		t.Fatalf("New() error = %v", err)

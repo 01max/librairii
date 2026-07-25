@@ -35,6 +35,7 @@ type ImportRuntime struct {
 	manager *operations.Manager
 	query   *library.Query
 	removal *removal.Service
+	tags    *tagging.Service
 }
 
 func NewImportRuntime(
@@ -106,12 +107,17 @@ func (r *ImportRuntime) Start(ctx context.Context) error {
 	if err := removalService.Reconcile(ctx); err != nil {
 		return fmt.Errorf("reconcile removals: %w", err)
 	}
+	tagService, err := tagging.NewService(database)
+	if err != nil {
+		return fmt.Errorf("construct tagging service: %w", err)
+	}
 	if err := manager.Start(ctx); err != nil {
 		return err
 	}
 	r.manager = manager
 	r.query = library.NewQuery(database, nil)
 	r.removal = removalService
+	r.tags = tagService
 	return nil
 }
 
@@ -202,12 +208,146 @@ func (r *ImportRuntime) Remove(
 	return service.Remove(ctx, storyID)
 }
 
+func (r *ImportRuntime) Catalog(ctx context.Context) (tagging.Catalog, error) {
+	service, err := r.currentTags()
+	if err != nil {
+		return tagging.Catalog{}, err
+	}
+	return service.Catalog(ctx)
+}
+
+func (r *ImportRuntime) CreateDefinition(
+	ctx context.Context,
+	input tagging.CreateDefinition,
+) (tagging.Definition, error) {
+	service, err := r.currentTags()
+	if err != nil {
+		return tagging.Definition{}, err
+	}
+	return service.CreateDefinition(ctx, input)
+}
+
+func (r *ImportRuntime) RenameDefinition(
+	ctx context.Context,
+	definitionID int64,
+	label string,
+) (tagging.Definition, error) {
+	service, err := r.currentTags()
+	if err != nil {
+		return tagging.Definition{}, err
+	}
+	return service.RenameDefinition(ctx, definitionID, label)
+}
+
+func (r *ImportRuntime) RecolorDefinition(
+	ctx context.Context,
+	definitionID int64,
+	color string,
+) (tagging.Definition, error) {
+	service, err := r.currentTags()
+	if err != nil {
+		return tagging.Definition{}, err
+	}
+	return service.RecolorDefinition(ctx, definitionID, color)
+}
+
+func (r *ImportRuntime) ReorderDefinitions(
+	ctx context.Context,
+	orderedIDs []int64,
+) ([]tagging.Definition, error) {
+	service, err := r.currentTags()
+	if err != nil {
+		return nil, err
+	}
+	return service.ReorderDefinitions(ctx, orderedIDs)
+}
+
+func (r *ImportRuntime) PlanDefinitionDeletion(
+	ctx context.Context,
+	definitionID int64,
+) (tagging.DefinitionDeletionPlan, error) {
+	service, err := r.currentTags()
+	if err != nil {
+		return tagging.DefinitionDeletionPlan{}, err
+	}
+	return service.PlanDefinitionDeletion(ctx, definitionID)
+}
+
+func (r *ImportRuntime) DeleteDefinition(
+	ctx context.Context,
+	plan tagging.DefinitionDeletionPlan,
+) error {
+	service, err := r.currentTags()
+	if err != nil {
+		return err
+	}
+	return service.DeleteDefinition(ctx, plan)
+}
+
+func (r *ImportRuntime) CreateValue(
+	ctx context.Context,
+	input tagging.CreateValue,
+) (tagging.Value, error) {
+	service, err := r.currentTags()
+	if err != nil {
+		return tagging.Value{}, err
+	}
+	return service.CreateValue(ctx, input)
+}
+
+func (r *ImportRuntime) RenameValue(
+	ctx context.Context,
+	valueID int64,
+	label string,
+) (tagging.Value, error) {
+	service, err := r.currentTags()
+	if err != nil {
+		return tagging.Value{}, err
+	}
+	return service.RenameValue(ctx, valueID, label)
+}
+
+func (r *ImportRuntime) ReorderValues(
+	ctx context.Context,
+	definitionID int64,
+	orderedIDs []int64,
+) ([]tagging.Value, error) {
+	service, err := r.currentTags()
+	if err != nil {
+		return nil, err
+	}
+	return service.ReorderValues(ctx, definitionID, orderedIDs)
+}
+
+func (r *ImportRuntime) PlanValueDeletion(
+	ctx context.Context,
+	valueID int64,
+) (tagging.ValueDeletionPlan, error) {
+	service, err := r.currentTags()
+	if err != nil {
+		return tagging.ValueDeletionPlan{}, err
+	}
+	return service.PlanValueDeletion(ctx, valueID)
+}
+
+func (r *ImportRuntime) DeleteValue(
+	ctx context.Context,
+	plan tagging.ValueDeletionPlan,
+) error {
+	service, err := r.currentTags()
+	if err != nil {
+		return err
+	}
+	return service.DeleteValue(ctx, plan)
+}
+
 func (r *ImportRuntime) Close() error {
 	r.mu.Lock()
 	manager := r.manager
 	r.manager = nil
 	r.query = nil
 	r.removal = nil
+	r.tags = nil
 	r.mu.Unlock()
 	if manager == nil {
 		return nil
@@ -242,6 +382,16 @@ func (r *ImportRuntime) currentRemoval() (*removal.Service, error) {
 	return r.removal, nil
 }
 
+func (r *ImportRuntime) currentTags() (*tagging.Service, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	if r.tags == nil {
+		return nil, ErrImportRuntimeNotReady
+	}
+	return r.tags, nil
+}
+
 var _ OperationPort = (*ImportRuntime)(nil)
 var _ LibraryPort = (*ImportRuntime)(nil)
 var _ RemovalPort = (*ImportRuntime)(nil)
+var _ TaggingPort = (*ImportRuntime)(nil)

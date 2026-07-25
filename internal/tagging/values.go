@@ -27,24 +27,24 @@ var (
 )
 
 type Value struct {
-	ID            int64
-	DefinitionID  int64
-	Key           string
-	NormalizedKey string
-	Label         string
-	Position      int
+	ID            int64  `json:"id"`
+	DefinitionID  int64  `json:"definitionId"`
+	Key           string `json:"key"`
+	NormalizedKey string `json:"normalizedKey"`
+	Label         string `json:"label"`
+	Position      int    `json:"position"`
 }
 
 type CreateValue struct {
-	DefinitionID int64
-	Key          string
-	Label        string
+	DefinitionID int64  `json:"definitionId"`
+	Key          string `json:"key"`
+	Label        string `json:"label"`
 }
 
 type ValueDeletionPlan struct {
-	Value              Value
-	AssignmentCount    int
-	AffectedShelfCount int
+	Value              Value `json:"value"`
+	AssignmentCount    int   `json:"assignmentCount"`
+	AffectedShelfCount int   `json:"affectedShelfCount"`
 }
 
 func (s *Service) CreateValue(

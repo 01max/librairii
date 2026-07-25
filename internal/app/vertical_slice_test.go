@@ -44,6 +44,7 @@ func TestFirstStoryVerticalSliceThroughPickerAndApplication(t *testing.T) {
 		Operations: importRuntime,
 		Library:    importRuntime,
 		Removal:    importRuntime,
+		Tags:       importRuntime,
 	})
 	if err != nil {
 		t.Fatal(err)

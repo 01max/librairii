@@ -25,6 +25,7 @@ type Application struct {
 	operations OperationPort
 	library    LibraryPort
 	removal    RemovalPort
+	tags       TaggingPort
 	resources  []ResourcePort
 	state      LifecycleState
 	startedAt  time.Time
@@ -39,7 +40,8 @@ func New(deps Dependencies) (*Application, error) {
 		deps.Readiness == nil ||
 		deps.Operations == nil ||
 		deps.Library == nil ||
-		deps.Removal == nil {
+		deps.Removal == nil ||
+		deps.Tags == nil {
 		return nil, ErrMissingDependency
 	}
 
@@ -53,6 +55,7 @@ func New(deps Dependencies) (*Application, error) {
 		operations: deps.Operations,
 		library:    deps.Library,
 		removal:    deps.Removal,
+		tags:       deps.Tags,
 		resources:  resources,
 		state:      StateInitializing,
 	}, nil

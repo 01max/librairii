@@ -29,6 +29,7 @@ import {
     type CollectionQuery,
     DEFAULT_COLLECTION_QUERY,
 } from './query-codec';
+import TagManager from './TagManager';
 
 const coverPalettes = [
     ['#31559f', '#f7c85b', '#e06a53'],
@@ -108,6 +109,7 @@ function App() {
     const [removalError, setRemovalError] = useState<string | null>(null);
     const [removalNotice, setRemovalNotice] = useState<string | null>(null);
     const [expandingCollection, setExpandingCollection] = useState(false);
+    const [tagManagerOpen, setTagManagerOpen] = useState(false);
     const refreshedOperations = useRef(new Set<string>());
 
     const loadCollection = useCallback(async () => {
@@ -410,7 +412,13 @@ function App() {
                 <div className="facet">
                     <div className="facet-title">Import status <b>＋</b></div>
                 </div>
-                <button className="manage" type="button">＋ Manage tags</button>
+                <button
+                    className="manage"
+                    type="button"
+                    onClick={() => setTagManagerOpen(true)}
+                >
+                    ＋ Manage tags
+                </button>
             </aside>
 
             <main className="main">
@@ -592,7 +600,9 @@ function App() {
                     <div className="drawer-tags">
                         <div className="tag-title">
                             My tags
-                            <button type="button">Edit tags</button>
+                            <button type="button" onClick={() => setTagManagerOpen(true)}>
+                                Edit tags
+                            </button>
                         </div>
                         <div className="tags"/>
                         <div className="archive">
@@ -678,6 +688,9 @@ function App() {
                         </div>
                     </section>
                 </div>
+            )}
+            {tagManagerOpen && (
+                <TagManager onClose={() => setTagManagerOpen(false)}/>
             )}
         </div>
     );

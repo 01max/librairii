@@ -14,6 +14,22 @@ export function CancelOperation(arg1) {
   return window['go']['main']['App']['CancelOperation'](arg1);
 }
 
+export function CreateTagDefinition(arg1) {
+  return window['go']['main']['App']['CreateTagDefinition'](arg1);
+}
+
+export function CreateTagValue(arg1) {
+  return window['go']['main']['App']['CreateTagValue'](arg1);
+}
+
+export function DeleteTagDefinition(arg1) {
+  return window['go']['main']['App']['DeleteTagDefinition'](arg1);
+}
+
+export function DeleteTagValue(arg1) {
+  return window['go']['main']['App']['DeleteTagValue'](arg1);
+}
+
 export function ListStories(arg1) {
   return window['go']['main']['App']['ListStories'](arg1);
 }
@@ -22,12 +38,40 @@ export function OperationSnapshot(arg1) {
   return window['go']['main']['App']['OperationSnapshot'](arg1);
 }
 
+export function PlanTagDefinitionDeletion(arg1) {
+  return window['go']['main']['App']['PlanTagDefinitionDeletion'](arg1);
+}
+
+export function PlanTagValueDeletion(arg1) {
+  return window['go']['main']['App']['PlanTagValueDeletion'](arg1);
+}
+
 export function QueryStories(arg1) {
   return window['go']['main']['App']['QueryStories'](arg1);
 }
 
+export function RecolorTagDefinition(arg1, arg2) {
+  return window['go']['main']['App']['RecolorTagDefinition'](arg1, arg2);
+}
+
 export function RemoveStory(arg1) {
   return window['go']['main']['App']['RemoveStory'](arg1);
+}
+
+export function RenameTagDefinition(arg1, arg2) {
+  return window['go']['main']['App']['RenameTagDefinition'](arg1, arg2);
+}
+
+export function RenameTagValue(arg1, arg2) {
+  return window['go']['main']['App']['RenameTagValue'](arg1, arg2);
+}
+
+export function ReorderTagDefinitions(arg1) {
+  return window['go']['main']['App']['ReorderTagDefinitions'](arg1);
+}
+
+export function ReorderTagValues(arg1, arg2) {
+  return window['go']['main']['App']['ReorderTagValues'](arg1, arg2);
 }
 
 export function SelectAndImportStories() {
@@ -36,4 +80,8 @@ export function SelectAndImportStories() {
 
 export function StoryDetail(arg1) {
   return window['go']['main']['App']['StoryDetail'](arg1);
+}
+
+export function TagCatalog() {
+  return window['go']['main']['App']['TagCatalog']();
 }

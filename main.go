@@ -32,6 +32,7 @@ func main() {
 		Operations: importRuntime,
 		Library:    importRuntime,
 		Removal:    importRuntime,
+		Tags:       importRuntime,
 		Resources:  []coreapp.ResourcePort{readiness},
 	})
 	if err != nil {

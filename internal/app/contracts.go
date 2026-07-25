@@ -8,6 +8,7 @@ import (
 	"github.com/01max/librairii/internal/library"
 	"github.com/01max/librairii/internal/operations"
 	"github.com/01max/librairii/internal/removal"
+	"github.com/01max/librairii/internal/tagging"
 )
 
 type LifecycleState string
@@ -124,6 +125,21 @@ type RemovalPort interface {
 	Remove(context.Context, int64) (removal.Result, error)
 }
 
+type TaggingPort interface {
+	Catalog(context.Context) (tagging.Catalog, error)
+	CreateDefinition(context.Context, tagging.CreateDefinition) (tagging.Definition, error)
+	RenameDefinition(context.Context, int64, string) (tagging.Definition, error)
+	RecolorDefinition(context.Context, int64, string) (tagging.Definition, error)
+	ReorderDefinitions(context.Context, []int64) ([]tagging.Definition, error)
+	PlanDefinitionDeletion(context.Context, int64) (tagging.DefinitionDeletionPlan, error)
+	DeleteDefinition(context.Context, tagging.DefinitionDeletionPlan) error
+	CreateValue(context.Context, tagging.CreateValue) (tagging.Value, error)
+	RenameValue(context.Context, int64, string) (tagging.Value, error)
+	ReorderValues(context.Context, int64, []int64) ([]tagging.Value, error)
+	PlanValueDeletion(context.Context, int64) (tagging.ValueDeletionPlan, error)
+	DeleteValue(context.Context, tagging.ValueDeletionPlan) error
+}
+
 type Dependencies struct {
 	Clock      Clock
 	Dialogs    DialogPort
@@ -132,6 +148,7 @@ type Dependencies struct {
 	Operations OperationPort
 	Library    LibraryPort
 	Removal    RemovalPort
+	Tags       TaggingPort
 	Resources  []ResourcePort
 }
 
@@ -159,4 +176,34 @@ type StoryDetailResponse struct {
 type RemovalResponse struct {
 	Result *removal.Result `json:"result,omitempty"`
 	Error  *APIError       `json:"error,omitempty"`
+}
+
+type TagCatalogResponse struct {
+	Catalog *tagging.Catalog `json:"catalog,omitempty"`
+	Error   *APIError        `json:"error,omitempty"`
+}
+
+type TagDefinitionResponse struct {
+	Definition *tagging.Definition `json:"definition,omitempty"`
+	Error      *APIError           `json:"error,omitempty"`
+}
+
+type TagValueResponse struct {
+	Value *tagging.Value `json:"value,omitempty"`
+	Error *APIError      `json:"error,omitempty"`
+}
+
+type TagDefinitionDeletionPlanResponse struct {
+	Plan  *tagging.DefinitionDeletionPlan `json:"plan,omitempty"`
+	Error *APIError                       `json:"error,omitempty"`
+}
+
+type TagValueDeletionPlanResponse struct {
+	Plan  *tagging.ValueDeletionPlan `json:"plan,omitempty"`
+	Error *APIError                  `json:"error,omitempty"`
+}
+
+type MutationResponse struct {
+	Success bool      `json:"success"`
+	Error   *APIError `json:"error,omitempty"`
 }

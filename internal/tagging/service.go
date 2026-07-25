@@ -28,17 +28,17 @@ var (
 )
 
 type CreateDefinition struct {
-	Key   string
-	Label string
-	Color string
-	Kind  Kind
+	Key   string `json:"key"`
+	Label string `json:"label"`
+	Color string `json:"color"`
+	Kind  Kind   `json:"kind"`
 }
 
 type DefinitionDeletionPlan struct {
-	Definition         Definition
-	ValueCount         int
-	AssignmentCount    int
-	AffectedShelfCount int
+	Definition         Definition `json:"definition"`
+	ValueCount         int        `json:"valueCount"`
+	AssignmentCount    int        `json:"assignmentCount"`
+	AffectedShelfCount int        `json:"affectedShelfCount"`
 }
 
 type Service struct {

@@ -12,6 +12,7 @@ import (
 	"github.com/01max/librairii/internal/library"
 	"github.com/01max/librairii/internal/operations"
 	"github.com/01max/librairii/internal/removal"
+	"github.com/01max/librairii/internal/tagging"
 )
 
 type fixedClock struct {
@@ -159,6 +160,91 @@ func (o *fakeOperations) Remove(
 	return o.removed, o.err
 }
 
+func (o *fakeOperations) Catalog(context.Context) (tagging.Catalog, error) {
+	return tagging.Catalog{}, o.err
+}
+
+func (o *fakeOperations) CreateDefinition(
+	context.Context,
+	tagging.CreateDefinition,
+) (tagging.Definition, error) {
+	return tagging.Definition{}, o.err
+}
+
+func (o *fakeOperations) RenameDefinition(
+	context.Context,
+	int64,
+	string,
+) (tagging.Definition, error) {
+	return tagging.Definition{}, o.err
+}
+
+func (o *fakeOperations) RecolorDefinition(
+	context.Context,
+	int64,
+	string,
+) (tagging.Definition, error) {
+	return tagging.Definition{}, o.err
+}
+
+func (o *fakeOperations) ReorderDefinitions(
+	context.Context,
+	[]int64,
+) ([]tagging.Definition, error) {
+	return nil, o.err
+}
+
+func (o *fakeOperations) PlanDefinitionDeletion(
+	context.Context,
+	int64,
+) (tagging.DefinitionDeletionPlan, error) {
+	return tagging.DefinitionDeletionPlan{}, o.err
+}
+
+func (o *fakeOperations) DeleteDefinition(
+	context.Context,
+	tagging.DefinitionDeletionPlan,
+) error {
+	return o.err
+}
+
+func (o *fakeOperations) CreateValue(
+	context.Context,
+	tagging.CreateValue,
+) (tagging.Value, error) {
+	return tagging.Value{}, o.err
+}
+
+func (o *fakeOperations) RenameValue(
+	context.Context,
+	int64,
+	string,
+) (tagging.Value, error) {
+	return tagging.Value{}, o.err
+}
+
+func (o *fakeOperations) ReorderValues(
+	context.Context,
+	int64,
+	[]int64,
+) ([]tagging.Value, error) {
+	return nil, o.err
+}
+
+func (o *fakeOperations) PlanValueDeletion(
+	context.Context,
+	int64,
+) (tagging.ValueDeletionPlan, error) {
+	return tagging.ValueDeletionPlan{}, o.err
+}
+
+func (o *fakeOperations) DeleteValue(
+	context.Context,
+	tagging.ValueDeletionPlan,
+) error {
+	return o.err
+}
+
 func TestApplicationLifecycle(t *testing.T) {
 	t.Parallel()
 
@@ -174,6 +260,7 @@ func TestApplicationLifecycle(t *testing.T) {
 		Operations: operationPort,
 		Library:    operationPort,
 		Removal:    operationPort,
+		Tags:       operationPort,
 		Resources:  []ResourcePort{resource},
 	})
 	if err != nil {
@@ -227,6 +314,7 @@ func TestApplicationEntersRecoveryWhenStorageIsUnsafe(t *testing.T) {
 		Operations: operationPort,
 		Library:    operationPort,
 		Removal:    operationPort,
+		Tags:       operationPort,
 		Readiness: fakeReadiness{report: ReadinessReport{
 			MutationsAllowed: false,
 			Issues:           []ReadinessIssue{{Code: "schema_mismatch"}},
@@ -297,6 +385,7 @@ func TestImportFacadeKeepsNativePathsInsideGo(t *testing.T) {
 		Operations: operationPort,
 		Library:    operationPort,
 		Removal:    operationPort,
+		Tags:       operationPort,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -345,6 +434,7 @@ func TestImportFacadeTreatsEmptySelectionAsCancellation(t *testing.T) {
 		Operations: operationPort,
 		Library:    operationPort,
 		Removal:    operationPort,
+		Tags:       operationPort,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -380,6 +470,7 @@ func TestOperationFacadeReturnsActiveSnapshots(t *testing.T) {
 		Operations: operationPort,
 		Library:    operationPort,
 		Removal:    operationPort,
+		Tags:       operationPort,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -430,6 +521,7 @@ func TestLibraryFacadeReturnsTypedCollectionAndDetail(t *testing.T) {
 		Operations: operationPort,
 		Library:    operationPort,
 		Removal:    operationPort,
+		Tags:       operationPort,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -473,6 +565,7 @@ func TestRemovalFacadeRequiresReadyStorageAndReturnsStableResult(t *testing.T) {
 		Operations: operationPort,
 		Library:    operationPort,
 		Removal:    operationPort,
+		Tags:       operationPort,
 	})
 	if err != nil {
 		t.Fatal(err)
