@@ -60,6 +60,68 @@ func TestImportRuntimeBoundsUnusedPreparedExports(t *testing.T) {
 	}
 }
 
+func TestImportRuntimeRestoresBoundedPreparationOrderAfterStartFailures(t *testing.T) {
+	t.Parallel()
+
+	provider := newRuntimeStorageProvider(t)
+	runtime, err := NewImportRuntime(
+		provider,
+		fixedClock{now: time.Date(2026, time.July, 25, 10, 0, 0, 0, time.UTC)},
+		&runtimeEventRecorder{events: make(chan operations.Snapshot, 32)},
+		1,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := runtime.Start(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		if err := runtime.Close(); err != nil {
+			t.Error(err)
+		}
+	})
+
+	preparationIDs := make([]string, 0, maxPreparedExports)
+	runtime.mu.Lock()
+	for range maxPreparedExports {
+		preparationID := uuid.NewString()
+		preparationIDs = append(preparationIDs, preparationID)
+		runtime.storePreparedExportLocked(exporter.PreflightReport{
+			PreparationID: preparationID,
+			Source: operations.ExportSource{
+				Type: operations.ExportSourceSelection,
+			},
+			Destination: t.TempDir(),
+			CanExport:   true,
+		})
+	}
+	runtime.mu.Unlock()
+
+	for _, preparationID := range preparationIDs {
+		if _, err := runtime.StartPreparedExport(
+			context.Background(),
+			preparationID,
+		); !errors.Is(err, operations.ErrInvalidRequest) {
+			t.Fatalf("StartPreparedExport(%q) error = %v", preparationID, err)
+		}
+	}
+	runtime.mu.Lock()
+	defer runtime.mu.Unlock()
+	if len(runtime.preparedExports) != maxPreparedExports ||
+		len(runtime.preparedOrder) != maxPreparedExports {
+		t.Fatalf(
+			"restored preparations = %d, order = %d",
+			len(runtime.preparedExports),
+			len(runtime.preparedOrder),
+		)
+	}
+	runtime.storePreparedExportLocked(exporter.PreflightReport{
+		PreparationID: uuid.NewString(),
+		CanExport:     true,
+	})
+}
+
 func TestImportRuntimeComposesNativeImportSlice(t *testing.T) {
 	t.Parallel()
 

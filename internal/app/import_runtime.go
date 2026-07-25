@@ -291,7 +291,7 @@ func (r *ImportRuntime) StartPreparedExport(
 	if err != nil {
 		r.mu.Lock()
 		if r.manager == manager {
-			r.preparedExports[preparationID] = report
+			r.storePreparedExportLocked(report)
 		}
 		r.mu.Unlock()
 		return operations.Snapshot{}, err
