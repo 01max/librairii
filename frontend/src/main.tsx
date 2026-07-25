@@ -7,8 +7,20 @@ const container = document.getElementById('root')
 
 const root = createRoot(container!)
 
-root.render(
-    <React.StrictMode>
-        <App/>
-    </React.StrictMode>
-)
+async function renderApplication() {
+    if (
+        import.meta.env.DEV &&
+        new URLSearchParams(window.location.search).get('fixture') === 'collection'
+    ) {
+        const {installCollectionFixture} = await import('./dev-fixture');
+        installCollectionFixture();
+    }
+
+    root.render(
+        <React.StrictMode>
+            <App/>
+        </React.StrictMode>,
+    );
+}
+
+void renderApplication();
