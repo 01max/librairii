@@ -69,6 +69,13 @@ func (facadeOperations) PrepareExport(
 	return exporter.PreflightReport{}, nil
 }
 
+func (facadeOperations) StartPreparedExport(
+	context.Context,
+	string,
+) (operations.Snapshot, error) {
+	return operations.Snapshot{}, nil
+}
+
 func (facadeOperations) MetadataStatus(
 	context.Context,
 	string,

@@ -118,6 +118,7 @@ type OperationPort interface {
 		exporter.PreflightRequest,
 		string,
 	) (exporter.PreflightReport, error)
+	StartPreparedExport(context.Context, string) (operations.Snapshot, error)
 	MetadataStatus(context.Context, string) (metadata.CatalogStatus, error)
 	Cancel(context.Context, string) (operations.Snapshot, error)
 	Snapshot(context.Context, string) (operations.Snapshot, error)

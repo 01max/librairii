@@ -23,6 +23,7 @@ const (
 	persistenceRetryDelay = 10 * time.Millisecond
 	defaultRecoveryDelay  = time.Second
 	outcomeImported       = "imported"
+	exportProgressStep    = 256 * 1024
 )
 
 var (
@@ -43,6 +44,15 @@ type ImportService interface {
 	Import(context.Context, string) (importer.Outcome, error)
 }
 
+type ExportService interface {
+	Copy(
+		context.Context,
+		NewItem,
+		string,
+		func(int64),
+	) (ExportCopyResult, error)
+}
+
 type StagingCleaner interface {
 	CleanupAbandoned() error
 }
@@ -54,8 +64,17 @@ type MetadataRefreshService interface {
 type managerRepository interface {
 	CreateImport(context.Context, string, []NewItem, time.Time) (Snapshot, error)
 	CreateMetadataSync(context.Context, string, string, time.Time) (Snapshot, error)
+	CreateExport(
+		context.Context,
+		string,
+		ExportSource,
+		string,
+		[]NewItem,
+		time.Time,
+	) (Snapshot, error)
 	MarkRunning(context.Context, string, time.Time) error
 	MarkItemRunning(context.Context, int64) error
+	UpdateItemProgress(context.Context, string, int64, int64) error
 	CompleteItem(context.Context, string, ItemSnapshot) error
 	RequestCancel(context.Context, string) error
 	Finish(context.Context, string, Status, string, string, time.Time) error
@@ -68,6 +87,7 @@ type managerRepository interface {
 type Dependencies struct {
 	Repository     managerRepository
 	Imports        ImportService
+	Exports        ExportService
 	Metadata       MetadataRefreshService
 	Events         EventPort
 	Clock          Clock
@@ -82,7 +102,7 @@ type Manager struct {
 	started        bool
 	ctx            context.Context
 	cancel         context.CancelFunc
-	jobs           chan importJob
+	jobs           chan operationJob
 	runs           map[string]*operationRun
 	wg             sync.WaitGroup
 	recoveryDelay  time.Duration
@@ -105,15 +125,19 @@ type operationRun struct {
 	successes      int
 	failures       int
 	cancelled      int
+	skipped        int
+	conflicted     int
 	failureCode    string
 	failureMessage string
 }
 
-type importJob struct {
-	run    *operationRun
-	item   ItemSnapshot
-	source string
-	total  int64
+type operationJob struct {
+	run         *operationRun
+	item        ItemSnapshot
+	source      string
+	total       int64
+	export      ExportWorkItem
+	destination string
 }
 
 func NewManager(deps Dependencies) (*Manager, error) {
@@ -163,7 +187,7 @@ func (m *Manager) Start(ctx context.Context) error {
 		return nil
 	}
 	m.ctx, m.cancel = context.WithCancel(context.Background())
-	m.jobs = make(chan importJob, m.deps.Workers*2)
+	m.jobs = make(chan operationJob, m.deps.Workers*2)
 	m.started = true
 	for range m.deps.Workers {
 		m.wg.Add(1)
@@ -316,6 +340,83 @@ func (m *Manager) StartMetadataRefresh(
 	return snapshot, nil
 }
 
+func (m *Manager) StartExport(
+	ctx context.Context,
+	source ExportSource,
+	destination string,
+	workItems []ExportWorkItem,
+) (Snapshot, error) {
+	if len(workItems) == 0 || len(workItems) > maxImportItems {
+		return Snapshot{}, ErrInvalidRequest
+	}
+	items := make([]NewItem, 0, len(workItems))
+	readyItems := 0
+	for _, work := range workItems {
+		switch work.PlannedStatus {
+		case ItemPending:
+			readyItems++
+		case ItemSkipped, ItemConflicted:
+			if work.OutcomeCode == "" || work.OutcomeMessage == "" {
+				return Snapshot{}, ErrInvalidRequest
+			}
+		default:
+			return Snapshot{}, ErrInvalidRequest
+		}
+		items = append(items, work.Item)
+	}
+	if readyItems == 0 {
+		return Snapshot{}, ErrInvalidRequest
+	}
+
+	m.mu.Lock()
+	if !m.started {
+		m.mu.Unlock()
+		return Snapshot{}, ErrManagerNotStarted
+	}
+	if m.deps.Exports == nil {
+		m.mu.Unlock()
+		return Snapshot{}, ErrInvalidRequest
+	}
+	managerContext := m.ctx
+	m.mu.Unlock()
+
+	operationID := uuid.NewString()
+	snapshot, err := m.deps.Repository.CreateExport(
+		ctx,
+		operationID,
+		source,
+		destination,
+		items,
+		m.deps.Clock.Now(),
+	)
+	if err != nil {
+		return Snapshot{}, err
+	}
+	runContext, cancel := context.WithCancel(managerContext)
+	run := &operationRun{
+		id:        operationID,
+		kind:      KindExport,
+		ctx:       runContext,
+		cancel:    cancel,
+		stopped:   make(chan struct{}),
+		total:     len(workItems),
+		remaining: len(workItems),
+	}
+
+	m.mu.Lock()
+	if !m.started {
+		m.mu.Unlock()
+		cancel()
+		return Snapshot{}, ErrManagerNotStarted
+	}
+	m.runs[operationID] = run
+	m.mu.Unlock()
+
+	m.deps.Events.Emit(ctx, EventChanged, snapshot)
+	go m.enqueueExport(run, snapshot.Items, workItems, destination)
+	return snapshot, nil
+}
+
 func (m *Manager) Cancel(ctx context.Context, operationID string) (Snapshot, error) {
 	if err := m.deps.Repository.RequestCancel(ctx, operationID); err != nil {
 		return Snapshot{}, err
@@ -348,11 +449,33 @@ func (m *Manager) enqueue(
 	sourcePaths []string,
 ) {
 	for index, item := range items {
-		job := importJob{
+		job := operationJob{
 			run:    run,
 			item:   item,
 			source: sourcePaths[index],
 			total:  item.TotalBytes,
+		}
+		select {
+		case m.jobs <- job:
+		case <-m.ctx.Done():
+			return
+		}
+	}
+}
+
+func (m *Manager) enqueueExport(
+	run *operationRun,
+	items []ItemSnapshot,
+	workItems []ExportWorkItem,
+	destination string,
+) {
+	for index, item := range items {
+		job := operationJob{
+			run:         run,
+			item:        item,
+			total:       item.TotalBytes,
+			export:      workItems[index],
+			destination: destination,
 		}
 		select {
 		case m.jobs <- job:
@@ -367,14 +490,18 @@ func (m *Manager) worker() {
 	for {
 		select {
 		case job := <-m.jobs:
-			m.execute(job)
+			if job.run.kind == KindExport {
+				m.executeExport(job)
+			} else {
+				m.execute(job)
+			}
 		case <-m.ctx.Done():
 			return
 		}
 	}
 }
 
-func (m *Manager) execute(job importJob) {
+func (m *Manager) execute(job operationJob) {
 	job.run.startOnce.Do(func() {
 		job.run.startErr = m.deps.Repository.MarkRunning(
 			m.ctx,
@@ -417,6 +544,90 @@ func (m *Manager) execute(job importJob) {
 	outcome, err := m.deps.Imports.Import(job.run.ctx, job.source)
 	item := classifyImport(job, outcome, err)
 	m.complete(job.run, item)
+}
+
+func (m *Manager) executeExport(job operationJob) {
+	job.run.startOnce.Do(func() {
+		job.run.startErr = m.deps.Repository.MarkRunning(
+			m.ctx,
+			job.run.id,
+			m.deps.Clock.Now(),
+		)
+		if job.run.startErr == nil {
+			m.emitSnapshot(job.run.id)
+		}
+	})
+	if job.run.startErr != nil {
+		m.complete(job.run, exportFailedItem(
+			job,
+			"operation_start_failed",
+			"The export operation could not start.",
+		))
+		return
+	}
+	if err := job.run.ctx.Err(); err != nil {
+		m.complete(job.run, cancelledExportItem(job))
+		return
+	}
+	if job.export.PlannedStatus != ItemPending {
+		item := exportItemSnapshot(job)
+		item.Status = job.export.PlannedStatus
+		item.OutcomeCode = job.export.OutcomeCode
+		item.OutcomeMessage = job.export.OutcomeMessage
+		m.complete(job.run, item)
+		return
+	}
+	if err := m.deps.Repository.MarkItemRunning(m.ctx, job.item.ID); err != nil {
+		m.complete(job.run, exportFailedItem(
+			job,
+			"item_start_failed",
+			"The story export could not start.",
+		))
+		return
+	}
+	m.emitSnapshot(job.run.id)
+
+	var completedBytes int64
+	var persistedBytes int64
+	var progressErr error
+	var progressMu sync.Mutex
+	result, err := m.deps.Exports.Copy(
+		job.run.ctx,
+		job.export.Item,
+		job.destination,
+		func(delta int64) {
+			progressMu.Lock()
+			defer progressMu.Unlock()
+			if progressErr != nil || delta <= 0 {
+				return
+			}
+			completedBytes += delta
+			if completedBytes-persistedBytes < exportProgressStep &&
+				completedBytes < job.total {
+				return
+			}
+			progressErr = m.deps.Repository.UpdateItemProgress(
+				m.ctx,
+				job.run.id,
+				job.item.ID,
+				completedBytes,
+			)
+			if progressErr != nil {
+				job.run.cancel()
+				return
+			}
+			persistedBytes = completedBytes
+			m.emitSnapshot(job.run.id)
+		},
+	)
+	progressMu.Lock()
+	savedProgressErr := progressErr
+	progressMu.Unlock()
+	if savedProgressErr != nil {
+		m.interruptForPersistence(job.run)
+		return
+	}
+	m.complete(job.run, classifyExport(job, result, err))
 }
 
 func (m *Manager) executeMetadata(
@@ -636,6 +847,25 @@ func (r *operationRun) record(item ItemSnapshot) int {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	r.remaining--
+	if r.kind == KindExport {
+		switch item.Status {
+		case ItemSucceeded:
+			r.successes++
+		case ItemSkipped:
+			r.skipped++
+		case ItemConflicted:
+			r.conflicted++
+		case ItemCancelled:
+			r.cancelled++
+		default:
+			r.failures++
+			if r.failureCode == "" {
+				r.failureCode = item.OutcomeCode
+				r.failureMessage = item.OutcomeMessage
+			}
+		}
+		return r.remaining
+	}
 	switch item.Status {
 	case ItemSucceeded, ItemSkipped:
 		r.successes++
@@ -655,6 +885,28 @@ func (r *operationRun) finalStatus() (Status, string, string) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	switch {
+	case r.kind == KindExport &&
+		r.failures == 0 &&
+		r.cancelled == 0 &&
+		r.skipped == 0 &&
+		r.conflicted == 0:
+		return StatusSucceeded, "", ""
+	case r.kind == KindExport && r.successes > 0:
+		return StatusPartiallySucceeded,
+			"partial_export",
+			"Some stories were not exported."
+	case r.kind == KindExport && r.cancelled > 0 && r.failures == 0:
+		return StatusCancelled, "cancelled", "The export was cancelled."
+	case r.kind == KindExport:
+		code := r.failureCode
+		if code == "" {
+			code = "export_failed"
+		}
+		message := r.failureMessage
+		if message == "" {
+			message = "No stories were exported."
+		}
+		return StatusFailed, code, message
 	case r.failures == 0 && r.cancelled == 0:
 		return StatusSucceeded, "", ""
 	case r.kind == KindMetadataSync && r.failures == 0:
@@ -726,7 +978,77 @@ func cancelledMetadataItem(item ItemSnapshot) ItemSnapshot {
 	return item
 }
 
-func classifyImport(job importJob, outcome importer.Outcome, err error) ItemSnapshot {
+func classifyExport(
+	job operationJob,
+	result ExportCopyResult,
+	err error,
+) ItemSnapshot {
+	item := exportItemSnapshot(job)
+	if err == nil {
+		item.Status = ItemSucceeded
+		item.OutcomeCode = "exported"
+		item.OutcomeMessage = "Story archive exported."
+		item.CompletedBytes = result.ByteSize
+		return item
+	}
+	if errors.Is(err, context.Canceled) || result.OutcomeCode == "cancelled" {
+		return cancelledExportItem(job)
+	}
+	switch result.OutcomeCode {
+	case "filename_conflict":
+		item.Status = ItemConflicted
+		item.OutcomeCode = result.OutcomeCode
+		item.OutcomeMessage = "A file with this name already exists in the destination."
+	case "checksum_mismatch":
+		item.Status = ItemFailed
+		item.OutcomeCode = result.OutcomeCode
+		item.OutcomeMessage = "The copied archive failed checksum verification."
+	case "source_invalid":
+		item.Status = ItemFailed
+		item.OutcomeCode = result.OutcomeCode
+		item.OutcomeMessage = "The managed archive is no longer available for export."
+	default:
+		item.Status = ItemFailed
+		item.OutcomeCode = "export_failed"
+		item.OutcomeMessage = "The story archive could not be exported."
+	}
+	return item
+}
+
+func exportItemSnapshot(job operationJob) ItemSnapshot {
+	return ItemSnapshot{
+		ID:         job.item.ID,
+		StoryID:    job.export.Item.StoryID,
+		StoryUUID:  job.export.Item.StoryUUID,
+		StoryTitle: job.export.Item.StoryTitle,
+		SourceName: job.export.Item.SourceName,
+		OutputName: job.export.Item.OutputName,
+		Status:     ItemPending,
+		TotalBytes: job.total,
+	}
+}
+
+func exportFailedItem(
+	job operationJob,
+	code string,
+	message string,
+) ItemSnapshot {
+	item := exportItemSnapshot(job)
+	item.Status = ItemFailed
+	item.OutcomeCode = code
+	item.OutcomeMessage = message
+	return item
+}
+
+func cancelledExportItem(job operationJob) ItemSnapshot {
+	item := exportItemSnapshot(job)
+	item.Status = ItemCancelled
+	item.OutcomeCode = "cancelled"
+	item.OutcomeMessage = "Story export cancelled."
+	return item
+}
+
+func classifyImport(job operationJob, outcome importer.Outcome, err error) ItemSnapshot {
 	item := ItemSnapshot{
 		ID:         job.item.ID,
 		SourceName: job.item.SourceName,
@@ -775,7 +1097,7 @@ func classifyImport(job importJob, outcome importer.Outcome, err error) ItemSnap
 	return item
 }
 
-func cancelledItem(job importJob) ItemSnapshot {
+func cancelledItem(job operationJob) ItemSnapshot {
 	return ItemSnapshot{
 		ID:             job.item.ID,
 		SourceName:     job.item.SourceName,

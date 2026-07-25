@@ -27,6 +27,7 @@ import {
     RemoveStory,
     SelectAndImportStories,
     SelectAndPreflightExport,
+    StartPreparedExport,
     StoryDetail as LoadStoryDetail,
     TagAssignmentWorkspace as LoadTagAssignmentWorkspace,
     TagCatalog as LoadTagCatalog,
@@ -58,6 +59,7 @@ import {
     describeMetadataStatus,
 } from './metadata-state';
 import {useModalFocus} from './modal-focus';
+import {describeExport} from './export-state';
 
 const coverPalettes = [
     ['#31559f', '#f7c85b', '#e06a53'],
@@ -319,6 +321,8 @@ function App() {
     const [exportPreflight, setExportPreflight] =
         useState<exporter.PreflightReport | null>(null);
     const [exportPreparing, setExportPreparing] = useState(false);
+    const [exportStarting, setExportStarting] = useState(false);
+    const [exportStartError, setExportStartError] = useState<string | null>(null);
     const activeShelfIDRef = useRef<number | null>(initialHistoryState.shelfID);
     const refreshedOperations = useRef(new Set<string>());
     const searchInput = useRef<HTMLInputElement>(null);
@@ -355,7 +359,12 @@ function App() {
             return;
         }
         const closeOnEscape = (event: KeyboardEvent) => {
-            if (event.key !== 'Escape' || shelfBusy || exportPreparing) {
+            if (
+                event.key !== 'Escape' ||
+                shelfBusy ||
+                exportPreparing ||
+                exportStarting
+            ) {
                 return;
             }
             if (exportPreflight !== null) {
@@ -374,6 +383,7 @@ function App() {
         deleteShelfID,
         exportPreflight,
         exportPreparing,
+        exportStarting,
         repairShelfID,
         shelfBusy,
         shelfDialogMode,
@@ -716,6 +726,7 @@ function App() {
                 ? selectedShelfIDs
                 : [];
         setExportPreparing(true);
+        setExportStartError(null);
         setRequestError(null);
         try {
             const response = await SelectAndPreflightExport(
@@ -737,6 +748,27 @@ function App() {
             setRequestError('The export could not be prepared.');
         } finally {
             setExportPreparing(false);
+        }
+    }
+
+    async function startPreparedExport() {
+        if (!exportPreflight?.preparationId || !exportPreflight.canExport) {
+            return;
+        }
+        setExportStarting(true);
+        setExportStartError(null);
+        try {
+            const response = await StartPreparedExport(exportPreflight.preparationId);
+            if (response.error) {
+                setExportStartError(response.error.message);
+            } else if (response.operation) {
+                reconcileOperation(response.operation);
+                setExportPreflight(null);
+            }
+        } catch {
+            setExportStartError('The prepared export could not be started.');
+        } finally {
+            setExportStarting(false);
         }
     }
 
@@ -1883,7 +1915,9 @@ function App() {
                 {visibleOperations.map((operation) => {
                     const notice = operation.kind === 'metadata_sync'
                         ? describeMetadataRefresh(operation, metadataStatus)
-                        : describeImport(operation);
+                        : operation.kind === 'export'
+                            ? describeExport(operation)
+                            : describeImport(operation);
                     const operationActive = operationIsActive(operation);
                     return (
                         <section
@@ -1894,9 +1928,11 @@ function App() {
                         >
                             <div className="state-mark" aria-hidden="true">
                                 {notice.tone === 'success'
-                                    ? '✓'
-                                    : notice.tone === 'working'
-                                        ? operation.kind === 'metadata_sync' ? '↻' : '↓'
+                                        ? '✓'
+                                        : notice.tone === 'working'
+                                        ? operation.kind === 'metadata_sync'
+                                            ? '↻'
+                                            : operation.kind === 'export' ? '↗' : '↓'
                                         : '!'}
                             </div>
                             <div className="state-copy">
@@ -1922,7 +1958,9 @@ function App() {
                                 >
                                     {operation.kind === 'metadata_sync'
                                         ? 'Cancel refresh'
-                                        : 'Cancel import'}
+                                        : operation.kind === 'export'
+                                            ? 'Cancel export'
+                                            : 'Cancel import'}
                                 </button>
                             )}
                         </section>
@@ -2244,18 +2282,38 @@ function App() {
                                 ))}
                             </ul>
                         )}
+                        {exportStartError && (
+                            <p className="dialog-error" role="alert">
+                                {exportStartError}
+                            </p>
+                        )}
                         <div className="dialog-actions">
                             <button
                                 ref={exportPreflightInitialFocus}
                                 type="button"
-                                onClick={() => setExportPreflight(null)}
+                                disabled={exportStarting}
+                                onClick={() => {
+                                    setExportPreflight(null);
+                                    setExportStartError(null);
+                                }}
                             >
                                 Close
                             </button>
-                            <button className="export" type="button" disabled>
-                                {exportPreflight.canExport
-                                    ? 'Start export'
-                                    : 'Export unavailable'}
+                            <button
+                                className="export"
+                                type="button"
+                                disabled={
+                                    exportStarting ||
+                                    !exportPreflight.canExport ||
+                                    !exportPreflight.preparationId
+                                }
+                                onClick={() => void startPreparedExport()}
+                            >
+                                {exportStarting
+                                    ? 'Starting…'
+                                    : exportPreflight.canExport
+                                        ? 'Start export'
+                                        : 'Export unavailable'}
                             </button>
                         </div>
                     </section>

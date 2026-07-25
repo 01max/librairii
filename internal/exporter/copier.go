@@ -11,7 +11,7 @@ import (
 	"path/filepath"
 
 	"github.com/01max/librairii/internal/archive"
-	"github.com/01max/librairii/internal/library"
+	"github.com/01max/librairii/internal/operations"
 	"github.com/01max/librairii/internal/storage"
 )
 
@@ -21,13 +21,9 @@ var (
 	ErrExportChecksumFailed = errors.New("export checksum verification failed")
 )
 
-type CopyResult struct {
-	OutputName string
-	ByteSize   int64
-	SHA256     string
-}
+type CopyResult = operations.ExportCopyResult
 
-type ProgressFunc func(deltaBytes int64)
+type ProgressFunc = func(deltaBytes int64)
 
 type Copier struct {
 	layout storage.Layout
@@ -46,7 +42,7 @@ func NewCopier(layout storage.Layout) (*Copier, error) {
 
 func (c *Copier) Copy(
 	ctx context.Context,
-	story library.ExportStory,
+	item operations.NewItem,
 	destination string,
 	progress ProgressFunc,
 ) (CopyResult, error) {
@@ -54,16 +50,16 @@ func (c *Copier) Copy(
 	if err != nil {
 		return CopyResult{}, err
 	}
-	if !supportedOutputName(story.OriginalFilename, story.DetectedFormat) {
-		return CopyResult{}, ErrExportSourceInvalid
+	if !supportedArchiveOutputName(item.OutputName) {
+		return CopyResult{OutcomeCode: "source_invalid"}, ErrExportSourceInvalid
 	}
-	sourcePath, err := c.resolveSource(story.ManagedRelativePath)
+	sourcePath, err := c.resolveSource(item.ArchiveRelativePath)
 	if err != nil {
-		return CopyResult{}, err
+		return CopyResult{OutcomeCode: "source_invalid"}, err
 	}
-	finalPath := filepath.Join(destination, story.OriginalFilename)
+	finalPath := filepath.Join(destination, item.OutputName)
 	if _, err := os.Lstat(finalPath); err == nil {
-		return CopyResult{}, ErrExportConflict
+		return CopyResult{OutcomeCode: "filename_conflict"}, ErrExportConflict
 	} else if !errors.Is(err, os.ErrNotExist) {
 		return CopyResult{}, fmt.Errorf("inspect export destination: %w", err)
 	}
@@ -111,20 +107,21 @@ func (c *Copier) Copy(
 	}
 
 	checksum := hex.EncodeToString(hasher.Sum(nil))
-	if checksum != story.SHA256 || written != story.ByteSize {
-		return CopyResult{}, ErrExportChecksumFailed
+	if checksum != item.ArchiveSHA256 || written != item.TotalBytes {
+		return CopyResult{OutcomeCode: "checksum_mismatch"}, ErrExportChecksumFailed
 	}
 	if err := c.link(temporaryPath, finalPath); err != nil {
 		if errors.Is(err, os.ErrExist) {
-			return CopyResult{}, ErrExportConflict
+			return CopyResult{OutcomeCode: "filename_conflict"}, ErrExportConflict
 		}
 		return CopyResult{}, fmt.Errorf("publish export archive atomically: %w", err)
 	}
 	_ = os.Remove(temporaryPath)
 	return CopyResult{
-		OutputName: story.OriginalFilename,
-		ByteSize:   written,
-		SHA256:     checksum,
+		OutputName:  item.OutputName,
+		ByteSize:    written,
+		SHA256:      checksum,
+		OutcomeCode: "exported",
 	}, nil
 }
 

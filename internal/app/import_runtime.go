@@ -21,6 +21,7 @@ import (
 	"github.com/01max/librairii/internal/shelves"
 	"github.com/01max/librairii/internal/storage"
 	"github.com/01max/librairii/internal/tagging"
+	"github.com/google/uuid"
 )
 
 var ErrImportRuntimeNotReady = errors.New("import runtime storage is not ready")
@@ -44,6 +45,7 @@ type ImportRuntime struct {
 	shelves         *shelves.Service
 	shelfEvaluator  *shelves.Evaluator
 	exportPreflight *exporter.PreflightService
+	preparedExports map[string]exporter.PreflightReport
 }
 
 type ImportRuntimeOption func(*ImportRuntime)
@@ -65,10 +67,11 @@ func NewImportRuntime(
 		return nil, ErrMissingDependency
 	}
 	runtime := &ImportRuntime{
-		storage: storage,
-		clock:   clock,
-		events:  events,
-		workers: workers,
+		storage:         storage,
+		clock:           clock,
+		events:          events,
+		workers:         workers,
+		preparedExports: make(map[string]exporter.PreflightReport),
 	}
 	for _, option := range options {
 		if option != nil {
@@ -137,9 +140,14 @@ func (r *ImportRuntime) Start(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("construct import service: %w", err)
 	}
+	exportCopier, err := exporter.NewCopier(layout)
+	if err != nil {
+		return fmt.Errorf("construct export copier: %w", err)
+	}
 	manager, err := operations.NewManager(operations.Dependencies{
 		Repository:     operations.NewRepository(database),
 		Imports:        importService,
+		Exports:        exportCopier,
 		Metadata:       metadataRefresh,
 		Events:         r.events,
 		Clock:          r.clock,
@@ -239,7 +247,56 @@ func (r *ImportRuntime) PrepareExport(
 	if preflight == nil {
 		return exporter.PreflightReport{}, ErrImportRuntimeNotReady
 	}
-	return preflight.Plan(ctx, request, destination)
+	report, err := preflight.Plan(ctx, request, destination)
+	if err != nil || !report.CanExport {
+		return report, err
+	}
+	report.PreparationID = uuid.NewString()
+	r.mu.Lock()
+	if r.exportPreflight != preflight {
+		r.mu.Unlock()
+		return exporter.PreflightReport{}, ErrImportRuntimeNotReady
+	}
+	r.preparedExports[report.PreparationID] = report
+	r.mu.Unlock()
+	return report, nil
+}
+
+func (r *ImportRuntime) StartPreparedExport(
+	ctx context.Context,
+	preparationID string,
+) (operations.Snapshot, error) {
+	if _, err := uuid.Parse(preparationID); err != nil {
+		return operations.Snapshot{}, operations.ErrInvalidRequest
+	}
+	manager, err := r.current()
+	if err != nil {
+		return operations.Snapshot{}, err
+	}
+	r.mu.Lock()
+	report, found := r.preparedExports[preparationID]
+	if found {
+		delete(r.preparedExports, preparationID)
+	}
+	r.mu.Unlock()
+	if !found || !report.CanExport {
+		return operations.Snapshot{}, operations.ErrInvalidRequest
+	}
+	snapshot, err := manager.StartExport(
+		ctx,
+		report.Source,
+		report.Destination,
+		report.OperationItems(),
+	)
+	if err != nil {
+		r.mu.Lock()
+		if r.manager == manager {
+			r.preparedExports[preparationID] = report
+		}
+		r.mu.Unlock()
+		return operations.Snapshot{}, err
+	}
+	return snapshot, nil
 }
 
 func (r *ImportRuntime) MetadataStatus(
@@ -629,6 +686,7 @@ func (r *ImportRuntime) Close() error {
 	r.shelves = nil
 	r.shelfEvaluator = nil
 	r.exportPreflight = nil
+	r.preparedExports = make(map[string]exporter.PreflightReport)
 	r.mu.Unlock()
 	if manager == nil {
 		return nil

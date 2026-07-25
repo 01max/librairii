@@ -103,6 +103,7 @@ type fakeOperations struct {
 	preflight      exporter.PreflightReport
 	preflightInput exporter.PreflightRequest
 	destination    string
+	preparationID  string
 	page           library.Page
 	searchPage     library.Page
 	detail         library.StoryDetail
@@ -139,6 +140,14 @@ func (o *fakeOperations) PrepareExport(
 	o.preflightInput = request
 	o.destination = destination
 	return o.preflight, o.err
+}
+
+func (o *fakeOperations) StartPreparedExport(
+	_ context.Context,
+	preparationID string,
+) (operations.Snapshot, error) {
+	o.preparationID = preparationID
+	return o.snapshot, o.err
 }
 
 func (o *fakeOperations) MetadataStatus(
@@ -612,11 +621,17 @@ func TestExportPreflightKeepsNativeDestinationInsideGo(t *testing.T) {
 	dialogs := &recordingDialogs{directory: destination}
 	operationPort := &fakeOperations{
 		preflight: exporter.PreflightReport{
+			PreparationID:    "00000000-0000-4000-8000-000000000099",
 			Destination:      destination,
 			DestinationLabel: "Lunii export",
 			ResolvedCount:    2,
 			ReadyCount:       2,
 			CanExport:        true,
+		},
+		snapshot: operations.Snapshot{
+			ID:     "00000000-0000-4000-8000-000000000100",
+			Kind:   operations.KindExport,
+			Status: operations.StatusQueued,
 		},
 	}
 	application, err := New(Dependencies{
@@ -655,6 +670,15 @@ func TestExportPreflightKeepsNativeDestinationInsideGo(t *testing.T) {
 	}
 	if strings.Contains(string(encoded), destination) {
 		t.Fatalf("frontend response exposed native destination: %s", encoded)
+	}
+	started := application.StartPreparedExport(
+		context.Background(),
+		response.Preflight.PreparationID,
+	)
+	if started.Error != nil ||
+		started.Operation == nil ||
+		operationPort.preparationID != response.Preflight.PreparationID {
+		t.Fatalf("StartPreparedExport() = %#v", started)
 	}
 }
 

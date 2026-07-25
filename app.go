@@ -72,6 +72,10 @@ func (a *App) SelectAndPreflightExport(
 	return a.core.SelectAndPreflightExport(a.runtimeContext(), request)
 }
 
+func (a *App) StartPreparedExport(preparationID string) coreapp.OperationResponse {
+	return a.core.StartPreparedExport(a.runtimeContext(), preparationID)
+}
+
 func (a *App) RefreshOfficialMetadata() coreapp.OperationResponse {
 	return a.core.RefreshOfficialMetadata(a.runtimeContext())
 }

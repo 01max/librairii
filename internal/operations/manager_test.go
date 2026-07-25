@@ -5,11 +5,14 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"reflect"
+	"strings"
 	"sync"
 	"testing"
 	"time"
 
 	"github.com/01max/librairii/internal/archive"
+	"github.com/01max/librairii/internal/database"
 	"github.com/01max/librairii/internal/importer"
 	"github.com/01max/librairii/internal/inspection"
 	"github.com/01max/librairii/internal/metadata"
@@ -181,6 +184,75 @@ func TestManagerRunsMetadataRefreshWithProgressAndMatchedCount(t *testing.T) {
 		terminal.Items[0].OutcomeMessage !=
 			"Official metadata refreshed; 4 local stories matched." {
 		t.Fatalf("terminal metadata snapshot = %#v", terminal)
+	}
+}
+
+func TestManagerRunsExportWithPersistedProgressAndMixedReport(t *testing.T) {
+	t.Parallel()
+
+	repository, sqlDatabase := newOperationRepository(t)
+	workItems := makeExportWorkItems(t, sqlDatabase, 3)
+	workItems[2].PlannedStatus = ItemSkipped
+	workItems[2].OutcomeCode = "archive_missing"
+	workItems[2].OutcomeMessage = "Managed archive bytes are missing."
+	events := newEventRecorder()
+	exports := exportServiceFunc(func(
+		_ context.Context,
+		item NewItem,
+		_ string,
+		progress func(int64),
+	) (ExportCopyResult, error) {
+		progress(item.TotalBytes)
+		if item.OutputName == "story-2.zip" {
+			return ExportCopyResult{
+				OutcomeCode: "filename_conflict",
+			}, errors.New("destination appeared")
+		}
+		return ExportCopyResult{
+			OutputName:  item.OutputName,
+			ByteSize:    item.TotalBytes,
+			SHA256:      item.ArchiveSHA256,
+			OutcomeCode: "exported",
+		}, nil
+	})
+	manager := newTestManagerWithExports(t, repository, exports, events, 2)
+
+	created, err := manager.StartExport(
+		context.Background(),
+		ExportSource{
+			Type:       ExportSourceShelves,
+			ShelfIDs:   []int64{7, 8},
+			ShelfNames: []string{"Bedtime", "Adventures"},
+		},
+		t.TempDir(),
+		workItems,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	progress := events.waitProgress(t, created.ID)
+	if progress.Items[0].CompletedBytes == 0 &&
+		progress.Items[1].CompletedBytes == 0 {
+		t.Fatalf("running export progress = %#v", progress)
+	}
+	terminal := events.waitTerminal(t, created.ID)
+	if terminal.Status != StatusPartiallySucceeded ||
+		terminal.CompletedItems != 3 ||
+		terminal.ExportSourceType != ExportSourceShelves ||
+		!reflect.DeepEqual(terminal.SourceShelfNames, []string{"Bedtime", "Adventures"}) {
+		t.Fatalf("terminal export = %#v", terminal)
+	}
+	statuses := map[string]ItemSnapshot{}
+	for _, item := range terminal.Items {
+		statuses[item.OutputName] = item
+	}
+	if statuses["story-1.zip"].Status != ItemSucceeded ||
+		statuses["story-1.zip"].OutcomeCode != "exported" ||
+		statuses["story-2.zip"].Status != ItemConflicted ||
+		statuses["story-2.zip"].OutcomeCode != "filename_conflict" ||
+		statuses["story-3.zip"].Status != ItemSkipped ||
+		statuses["story-3.zip"].OutcomeCode != "archive_missing" {
+		t.Fatalf("terminal export items = %#v", statuses)
 	}
 }
 
@@ -559,6 +631,22 @@ func (f metadataRefreshFunc) Refresh(
 	return f(ctx, locale)
 }
 
+type exportServiceFunc func(
+	context.Context,
+	NewItem,
+	string,
+	func(int64),
+) (ExportCopyResult, error)
+
+func (f exportServiceFunc) Copy(
+	ctx context.Context,
+	item NewItem,
+	destination string,
+	progress func(int64),
+) (ExportCopyResult, error) {
+	return f(ctx, item, destination, progress)
+}
+
 func (s *trackingImportService) Import(
 	ctx context.Context,
 	source string,
@@ -636,6 +724,30 @@ func (r *eventRecorder) waitFor(
 			}
 		case <-timer.C:
 			t.Fatalf("timed out waiting for %s operation %s", status, operationID)
+		}
+	}
+}
+
+func (r *eventRecorder) waitProgress(
+	t *testing.T,
+	operationID string,
+) Snapshot {
+	t.Helper()
+	timer := time.NewTimer(5 * time.Second)
+	defer timer.Stop()
+	for {
+		select {
+		case snapshot := <-r.events:
+			if snapshot.ID != operationID || snapshot.Status != StatusRunning {
+				continue
+			}
+			for _, item := range snapshot.Items {
+				if item.CompletedBytes > 0 {
+					return snapshot
+				}
+			}
+		case <-timer.C:
+			t.Fatalf("timed out waiting for export progress %s", operationID)
 		}
 	}
 }
@@ -734,6 +846,81 @@ func newTestManagerWithMetadata(
 		}
 	})
 	return manager
+}
+
+func newTestManagerWithExports(
+	t *testing.T,
+	repository managerRepository,
+	exports ExportService,
+	events *eventRecorder,
+	workers int,
+) *Manager {
+	t.Helper()
+
+	manager, err := NewManager(Dependencies{
+		Repository:     repository,
+		Imports:        &trackingImportService{},
+		Exports:        exports,
+		Events:         events,
+		Clock:          &testClock{now: time.Date(2026, time.July, 25, 10, 0, 0, 0, time.UTC)},
+		StagingCleaner: fakeCleaner{},
+		Workers:        workers,
+		RecoveryDelay:  5 * time.Millisecond,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := manager.Start(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		if err := manager.Close(); err != nil {
+			t.Error(err)
+		}
+	})
+	return manager
+}
+
+func makeExportWorkItems(
+	t *testing.T,
+	sqlDatabase *database.Database,
+	count int,
+) []ExportWorkItem {
+	t.Helper()
+
+	items := make([]ExportWorkItem, 0, count)
+	for index := range count {
+		storyUUID := uuid.NewString()
+		result, err := sqlDatabase.SQL().Exec(
+			`INSERT INTO stories (uuid, embedded_title, display_name_normalized)
+			 VALUES (?, ?, ?)`,
+			storyUUID,
+			"Story",
+			"story",
+		)
+		if err != nil {
+			t.Fatal(err)
+		}
+		storyID, err := result.LastInsertId()
+		if err != nil {
+			t.Fatal(err)
+		}
+		name := "story-" + string(rune('1'+index)) + ".zip"
+		items = append(items, ExportWorkItem{
+			Item: NewItem{
+				StoryID:             storyID,
+				StoryUUID:           storyUUID,
+				StoryTitle:          "Story",
+				SourceName:          name,
+				OutputName:          name,
+				ArchiveRelativePath: "archives/aa/" + name,
+				ArchiveSHA256:       strings.Repeat("a", 64),
+				TotalBytes:          42,
+			},
+			PlannedStatus: ItemPending,
+		})
+	}
+	return items
 }
 
 func makeSourcePaths(t *testing.T, count int) []string {

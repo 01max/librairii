@@ -8,6 +8,8 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/01max/librairii/internal/library"
+	"github.com/01max/librairii/internal/operations"
 	"github.com/01max/librairii/internal/storage"
 )
 
@@ -34,7 +36,7 @@ func TestCopierPublishesVerifiedArchiveWithoutSidecars(t *testing.T) {
 	var progress int64
 	result, err := copier.Copy(
 		context.Background(),
-		story,
+		exportNewItem(story),
 		destination,
 		func(delta int64) {
 			progress += delta
@@ -85,7 +87,7 @@ func TestCopierNeverOverwritesExistingDestination(t *testing.T) {
 	}
 	if _, err := copier.Copy(
 		context.Background(),
-		story,
+		exportNewItem(story),
 		destination,
 		nil,
 	); !errors.Is(err, ErrExportConflict) {
@@ -123,7 +125,7 @@ func TestCopierRejectsChangedSourceWithoutPublishing(t *testing.T) {
 	destination := t.TempDir()
 	if _, err := copier.Copy(
 		context.Background(),
-		story,
+		exportNewItem(story),
 		destination,
 		nil,
 	); !errors.Is(err, ErrExportChecksumFailed) {
@@ -158,7 +160,7 @@ func TestCopierCancellationCleansTemporaryAndPreservesCompletedFiles(t *testing.
 	destination := t.TempDir()
 	if _, err := copier.Copy(
 		context.Background(),
-		first,
+		exportNewItem(first),
 		destination,
 		nil,
 	); err != nil {
@@ -167,7 +169,7 @@ func TestCopierCancellationCleansTemporaryAndPreservesCompletedFiles(t *testing.
 
 	ctx, cancel := context.WithCancel(context.Background())
 	progressCalls := 0
-	_, err = copier.Copy(ctx, second, destination, func(int64) {
+	_, err = copier.Copy(ctx, exportNewItem(second), destination, func(int64) {
 		progressCalls++
 		cancel()
 	})
@@ -218,7 +220,7 @@ func TestCopierDestinationRacePreservesRacingFile(t *testing.T) {
 	destination := t.TempDir()
 	if _, err := copier.Copy(
 		context.Background(),
-		story,
+		exportNewItem(story),
 		destination,
 		nil,
 	); !errors.Is(err, ErrExportConflict) {
@@ -237,5 +239,18 @@ func TestCopierDestinationRacePreservesRacingFile(t *testing.T) {
 	}
 	if len(entries) != 1 || entries[0].Name() != story.OriginalFilename {
 		t.Fatalf("destination entries = %#v", entries)
+	}
+}
+
+func exportNewItem(story library.ExportStory) operations.NewItem {
+	return operations.NewItem{
+		StoryID:             story.ID,
+		StoryUUID:           story.UUID,
+		StoryTitle:          story.Title,
+		SourceName:          story.OriginalFilename,
+		OutputName:          story.OriginalFilename,
+		ArchiveRelativePath: story.ManagedRelativePath,
+		ArchiveSHA256:       story.SHA256,
+		TotalBytes:          story.ByteSize,
 	}
 }

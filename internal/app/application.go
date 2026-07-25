@@ -219,6 +219,25 @@ func (a *Application) SelectAndPreflightExport(
 	return ExportPreflightResponse{Preflight: &preflight}
 }
 
+func (a *Application) StartPreparedExport(
+	ctx context.Context,
+	preparationID string,
+) OperationResponse {
+	if !a.Status().MutationsAllowed {
+		return OperationResponse{
+			Error: NewAPIError(
+				ErrorNotReady,
+				"Exports are unavailable until storage is ready.",
+			),
+		}
+	}
+	snapshot, err := a.operations.StartPreparedExport(ctx, preparationID)
+	if err != nil {
+		return OperationResponse{Error: operationAPIError(err)}
+	}
+	return OperationResponse{Operation: &snapshot}
+}
+
 func (a *Application) RefreshOfficialMetadata(
 	ctx context.Context,
 ) OperationResponse {

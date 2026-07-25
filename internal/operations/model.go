@@ -58,6 +58,20 @@ type NewItem struct {
 	TotalBytes          int64
 }
 
+type ExportWorkItem struct {
+	Item           NewItem
+	PlannedStatus  ItemStatus
+	OutcomeCode    string
+	OutcomeMessage string
+}
+
+type ExportCopyResult struct {
+	OutputName  string
+	ByteSize    int64
+	SHA256      string
+	OutcomeCode string
+}
+
 type ItemSnapshot struct {
 	ID                  int64      `json:"id"`
 	StoryID             int64      `json:"storyId,omitempty"`

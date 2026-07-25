@@ -365,6 +365,33 @@ func (r *Repository) MarkItemRunning(ctx context.Context, itemID int64) error {
 	return transitionResult(result, err)
 }
 
+func (r *Repository) UpdateItemProgress(
+	ctx context.Context,
+	operationID string,
+	itemID int64,
+	completedBytes int64,
+) error {
+	if completedBytes < 0 {
+		return ErrInvalidTransition
+	}
+	result, err := r.database.ExecContext(
+		ctx,
+		`UPDATE file_operation_items
+		 SET completed_bytes = ?
+		 WHERE id = ?
+		   AND operation_id = ?
+		   AND status = 'running'
+		   AND completed_bytes <= ?
+		   AND ? <= total_bytes`,
+		completedBytes,
+		itemID,
+		operationID,
+		completedBytes,
+		completedBytes,
+	)
+	return transitionResult(result, err)
+}
+
 func (r *Repository) CompleteItem(
 	ctx context.Context,
 	operationID string,

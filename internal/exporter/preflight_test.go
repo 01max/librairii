@@ -121,6 +121,15 @@ func TestPreflightReportsReadySkippedAndConflictedStories(t *testing.T) {
 	}) {
 		t.Fatalf("dispositions = %#v, issues = %#v", gotDispositions, gotIssues)
 	}
+	workItems := report.OperationItems()
+	if len(workItems) != 5 ||
+		workItems[0].PlannedStatus != operations.ItemPending ||
+		workItems[1].PlannedStatus != operations.ItemSkipped ||
+		workItems[4].PlannedStatus != operations.ItemConflicted ||
+		workItems[1].OutcomeCode != string(IssueArchiveMissing) ||
+		workItems[0].Item.ArchiveRelativePath != ready.ManagedRelativePath {
+		t.Fatalf("operation work items = %#v", workItems)
+	}
 	gotExisting, err := os.ReadFile(filepath.Join(destination, conflicted.OriginalFilename))
 	if err != nil {
 		t.Fatal(err)

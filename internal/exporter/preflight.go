@@ -62,6 +62,7 @@ type PreflightItem struct {
 }
 
 type PreflightReport struct {
+	PreparationID    string                  `json:"preparationId,omitempty"`
 	Source           operations.ExportSource `json:"source"`
 	Destination      string                  `json:"-"`
 	DestinationLabel string                  `json:"destination"`
@@ -76,6 +77,41 @@ type PreflightReport struct {
 	Blocked          bool                    `json:"blocked"`
 	CanExport        bool                    `json:"canExport"`
 	Scope            Scope                   `json:"-"`
+}
+
+func (r PreflightReport) OperationItems() []operations.ExportWorkItem {
+	preflightByStoryID := make(map[int64]PreflightItem, len(r.Items))
+	for _, item := range r.Items {
+		preflightByStoryID[item.StoryID] = item
+	}
+	items := make([]operations.ExportWorkItem, 0, len(r.Scope.Stories))
+	for _, story := range r.Scope.Stories {
+		preflight := preflightByStoryID[story.ID]
+		work := operations.ExportWorkItem{
+			Item: operations.NewItem{
+				StoryID:             story.ID,
+				StoryUUID:           story.UUID,
+				StoryTitle:          story.Title,
+				SourceName:          story.OriginalFilename,
+				OutputName:          story.OriginalFilename,
+				ArchiveRelativePath: story.ManagedRelativePath,
+				ArchiveSHA256:       story.SHA256,
+				TotalBytes:          story.ByteSize,
+			},
+			PlannedStatus: operations.ItemPending,
+		}
+		if preflight.Disposition == DispositionSkipped {
+			work.PlannedStatus = operations.ItemSkipped
+		} else if preflight.Disposition == DispositionConflicted {
+			work.PlannedStatus = operations.ItemConflicted
+		}
+		if preflight.Issue != nil {
+			work.OutcomeCode = string(preflight.Issue.Code)
+			work.OutcomeMessage = preflight.Issue.Message
+		}
+		items = append(items, work)
+	}
+	return items
 }
 
 type PreflightRequest struct {
@@ -368,6 +404,30 @@ func supportedOutputName(name string, format string) bool {
 		return false
 	}
 	return strings.HasSuffix(lower, extension)
+}
+
+func supportedArchiveOutputName(name string) bool {
+	if name == "" ||
+		filepath.Base(name) != name ||
+		name == "." ||
+		name == ".." ||
+		strings.ContainsRune(name, '\x00') {
+		return false
+	}
+	lower := strings.ToLower(name)
+	for _, extension := range []string{
+		".plain.pk",
+		".v1.pk",
+		".v2.pk",
+		".pk",
+		".zip",
+		".7z",
+	} {
+		if strings.HasSuffix(lower, extension) {
+			return true
+		}
+	}
+	return false
 }
 
 func sortedKeys(values map[string]struct{}) []string {

@@ -742,6 +742,7 @@ export namespace exporter {
 		}
 	}
 	export class PreflightReport {
+	    preparationId?: string;
 	    source: operations.ExportSource;
 	    destination: string;
 	    resolvedCount: number;
@@ -761,6 +762,7 @@ export namespace exporter {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.preparationId = source["preparationId"];
 	        this.source = this.convertValues(source["source"], operations.ExportSource);
 	        this.destination = source["destination"];
 	        this.resolvedCount = source["resolvedCount"];

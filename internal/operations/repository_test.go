@@ -98,6 +98,29 @@ func TestRepositoryPersistsImmutableExportScopeAndOutcomeReport(t *testing.T) {
 	if err := repository.MarkItemRunning(ctx, snapshot.Items[0].ID); err != nil {
 		t.Fatal(err)
 	}
+	if err := repository.UpdateItemProgress(
+		ctx,
+		snapshot.ID,
+		snapshot.Items[0].ID,
+		21,
+	); err != nil {
+		t.Fatal(err)
+	}
+	progress, err := repository.Snapshot(ctx, snapshot.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if progress.Items[0].CompletedBytes != 21 {
+		t.Fatalf("Snapshot(export progress) = %#v", progress.Items[0])
+	}
+	if err := repository.UpdateItemProgress(
+		ctx,
+		snapshot.ID,
+		snapshot.Items[0].ID,
+		43,
+	); !errors.Is(err, ErrInvalidTransition) {
+		t.Fatalf("UpdateItemProgress(overflow) error = %v", err)
+	}
 	if err := repository.RequestCancel(ctx, snapshot.ID); err != nil {
 		t.Fatal(err)
 	}

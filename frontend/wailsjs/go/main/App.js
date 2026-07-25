@@ -138,6 +138,10 @@ export function SetChoiceTagValues(arg1, arg2, arg3) {
   return window['go']['main']['App']['SetChoiceTagValues'](arg1, arg2, arg3);
 }
 
+export function StartPreparedExport(arg1) {
+  return window['go']['main']['App']['StartPreparedExport'](arg1);
+}
+
 export function StoryDetail(arg1) {
   return window['go']['main']['App']['StoryDetail'](arg1);
 }

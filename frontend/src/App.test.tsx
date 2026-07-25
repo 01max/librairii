@@ -21,6 +21,7 @@ import {
     RemoveStory,
     SelectAndImportStories,
     SelectAndPreflightExport,
+    StartPreparedExport,
     SetBooleanTag,
     StoryDetail as LoadStoryDetail,
     TagAssignmentWorkspace as LoadTagAssignmentWorkspace,
@@ -50,6 +51,7 @@ vi.mock('../wailsjs/go/main/App', () => ({
     RemoveStory: vi.fn(),
     SelectAndImportStories: vi.fn(),
     SelectAndPreflightExport: vi.fn(),
+    StartPreparedExport: vi.fn(),
     StoryDetail: vi.fn(),
     TagAssignmentWorkspace: vi.fn(),
     TagCatalog: vi.fn(),
@@ -80,6 +82,7 @@ const refreshOfficialMetadata = vi.mocked(RefreshOfficialMetadata);
 const removeStory = vi.mocked(RemoveStory);
 const selectAndImportStories = vi.mocked(SelectAndImportStories);
 const selectAndPreflightExport = vi.mocked(SelectAndPreflightExport);
+const startPreparedExport = vi.mocked(StartPreparedExport);
 const setBooleanTag = vi.mocked(SetBooleanTag);
 const loadStoryDetail = vi.mocked(LoadStoryDetail);
 const loadTagAssignmentWorkspace = vi.mocked(LoadTagAssignmentWorkspace);
@@ -142,6 +145,7 @@ beforeEach(() => {
     removeStory.mockReset();
     selectAndImportStories.mockReset();
     selectAndPreflightExport.mockReset();
+    startPreparedExport.mockReset();
     setBooleanTag.mockReset();
     loadStoryDetail.mockReset();
     loadTagAssignmentWorkspace.mockReset();
@@ -257,6 +261,7 @@ beforeEach(() => {
     selectAndPreflightExport.mockResolvedValue(new app.ExportPreflightResponse({
         cancelled: true,
     }));
+    startPreparedExport.mockResolvedValue(new app.OperationResponse({}));
     refreshOfficialMetadata.mockResolvedValue(new app.OperationResponse({
         cancelled: true,
     }));
@@ -297,6 +302,9 @@ test('preflights explicit selections and complete current results', async () => 
     selectAndPreflightExport.mockImplementation(async (request) => (
         new app.ExportPreflightResponse({
             preflight: new exporter.PreflightReport({
+                preparationId: request.sourceType === 'selection'
+                    ? 'selection-preflight'
+                    : 'current-preflight',
                 source: {type: request.sourceType},
                 destination: 'Lunii export',
                 resolvedCount: request.sourceType === 'selection' ? 2 : 12,
@@ -335,6 +343,36 @@ test('preflights explicit selections and complete current results', async () => 
             }),
         })
     ));
+    startPreparedExport.mockResolvedValue(new app.OperationResponse({
+        operation: {
+            id: 'export-operation',
+            kind: 'export',
+            status: 'queued',
+            exportSourceType: 'selection',
+            completedItems: 0,
+            totalItems: 2,
+            totalBytes: 3145728,
+            cancelRequested: false,
+            createdAt: '2026-07-25T20:00:00Z',
+            items: [{
+                id: 1,
+                storyId: 1,
+                sourceName: 'clockwork-forest.zip',
+                outputName: 'clockwork-forest.zip',
+                status: 'pending',
+                completedBytes: 0,
+                totalBytes: 1048576,
+            }, {
+                id: 2,
+                storyId: 2,
+                sourceName: 'moonlit-workshop.7z',
+                outputName: 'moonlit-workshop.7z',
+                status: 'pending',
+                completedBytes: 0,
+                totalBytes: 2097152,
+            }],
+        },
+    }));
     render(<App/>);
 
     await user.click(await screen.findByRole('button', {
@@ -371,6 +409,10 @@ test('preflights explicit selections and complete current results', async () => 
         .toBeInTheDocument();
     expect(screen.getByRole('list', {name: 'Export story checks'}))
         .toHaveTextContent('Managed archive bytes are missing.');
+    await user.click(screen.getByRole('button', {name: 'Start export'}));
+    expect(startPreparedExport).toHaveBeenCalledWith('selection-preflight');
+    expect(await screen.findByRole('heading', {name: 'Export queued'}))
+        .toBeInTheDocument();
 });
 
 test('renders empty and blocked export preflight guidance', async () => {
@@ -2239,6 +2281,56 @@ test('restores and reconciles an active import after the frontend reloads', asyn
     expect(activeOperations).toHaveBeenCalledTimes(1);
     expect(operationSnapshot)
         .toHaveBeenCalledWith('00112233-4455-4677-8899-aabbccddeeff');
+});
+
+test('restores persisted export progress and reconciles missed events', async () => {
+    const user = userEvent.setup();
+    const running = {
+        id: 'export-after-reload',
+        kind: 'export',
+        status: 'running',
+        exportSourceType: 'current_query',
+        completedItems: 1,
+        totalItems: 2,
+        totalBytes: 2097152,
+        cancelRequested: false,
+        createdAt: '2026-07-25T20:00:00Z',
+        items: [{
+            id: 1,
+            storyId: 1,
+            sourceName: 'first.zip',
+            outputName: 'first.zip',
+            status: 'succeeded',
+            completedBytes: 1048576,
+            totalBytes: 1048576,
+        }, {
+            id: 2,
+            storyId: 2,
+            sourceName: 'second.zip',
+            outputName: 'second.zip',
+            status: 'running',
+            completedBytes: 524288,
+            totalBytes: 1048576,
+        }],
+    };
+    activeOperations.mockResolvedValue(new app.OperationListResponse({
+        operations: [running],
+    }));
+    operationSnapshot.mockResolvedValue(new app.OperationResponse({
+        operation: running,
+    }));
+    render(<App/>);
+
+    expect(await screen.findByRole('heading', {name: 'Exporting story archives'}))
+        .toBeInTheDocument();
+    expect(screen.getByText(
+        '1/2 finished · 1.5 MB of 2.0 MB. Progress is saved locally.',
+    )).toBeInTheDocument();
+    await waitFor(() => expect(operationSnapshot).toHaveBeenCalledWith(
+        'export-after-reload',
+    ));
+    await user.click(screen.getByRole('button', {name: 'Cancel export'}));
+    expect(cancelOperation).toHaveBeenCalledWith('export-after-reload');
 });
 
 test('restores, displays, and polls every concurrent active import', async () => {

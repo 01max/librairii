@@ -73,6 +73,8 @@ export function SetChoiceTagValue(arg1:Array<number>,arg2:number,arg3:number,arg
 
 export function SetChoiceTagValues(arg1:Array<number>,arg2:number,arg3:Array<number>):Promise<app.TagAssignmentResponse>;
 
+export function StartPreparedExport(arg1:string):Promise<app.OperationResponse>;
+
 export function StoryDetail(arg1:number):Promise<app.StoryDetailResponse>;
 
 export function TagAssignmentWorkspace(arg1:Array<number>):Promise<app.TagAssignmentWorkspaceResponse>;
