@@ -282,6 +282,61 @@ test('restores and reconciles an active import after the frontend reloads', asyn
         .toHaveBeenCalledWith('00112233-4455-4677-8899-aabbccddeeff');
 });
 
+test('reloads selected story detail when an operation refreshes the collection', async () => {
+    loadStoryDetail
+        .mockResolvedValueOnce(new app.StoryDetailResponse({
+            detail: {
+                story: stories[0],
+                archive: {
+                    originalFilename: 'before-refresh.zip',
+                    detectedFormat: 'zip',
+                    sha256: 'a'.repeat(64),
+                    byteSize: stories[0].byteSize,
+                    verification: 'compatible',
+                },
+            },
+        }))
+        .mockResolvedValue(new app.StoryDetailResponse({
+            detail: {
+                story: stories[0],
+                archive: {
+                    originalFilename: 'after-refresh.zip',
+                    detectedFormat: 'zip',
+                    sha256: 'b'.repeat(64),
+                    byteSize: stories[0].byteSize,
+                    verification: 'compatible',
+                },
+            },
+        }));
+    render(<App/>);
+
+    expect(await screen.findByText('before-refresh.zip · 1.0 MB · Verified'))
+        .toBeInTheDocument();
+    operationChanged?.({
+        id: '00112233-4455-4677-8899-aabbccddeeff',
+        kind: 'import',
+        status: 'succeeded',
+        completedItems: 1,
+        totalItems: 1,
+        cancelRequested: false,
+        createdAt: '2026-07-25T09:00:00Z',
+        items: [{
+            id: 1,
+            storyId: 1,
+            sourceName: 'clockwork.zip',
+            status: 'succeeded',
+            outcomeCode: 'imported',
+            outcomeMessage: 'Story imported.',
+            completedBytes: 1024,
+            totalBytes: 1024,
+        }],
+    });
+
+    expect(await screen.findByText('after-refresh.zip · 1.0 MB · Verified'))
+        .toBeInTheDocument();
+    expect(loadStoryDetail).toHaveBeenCalledTimes(2);
+});
+
 test('cancels story removal without changing the collection', async () => {
     const user = userEvent.setup();
     render(<App/>);

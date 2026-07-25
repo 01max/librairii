@@ -82,6 +82,7 @@ function App() {
     const [page, setPage] = useState<library.Page | null>(null);
     const [selectedID, setSelectedID] = useState<number | null>(null);
     const [detail, setDetail] = useState<library.StoryDetail | null>(null);
+    const [detailRevision, setDetailRevision] = useState(0);
     const [operation, setOperation] = useState<operations.Snapshot | null>(null);
     const [requestError, setRequestError] = useState<string | null>(null);
     const [detailsOpen, setDetailsOpen] = useState(false);
@@ -103,6 +104,7 @@ function App() {
         }
         setPage(result.page);
         setDetail(null);
+        setDetailRevision((current) => current + 1);
         setSelectedID((current) => {
             if (result.page?.stories.some((story) => story.id === current)) {
                 return current;
@@ -302,7 +304,7 @@ function App() {
         return () => {
             active = false;
         };
-    }, [selectedID]);
+    }, [detailRevision, selectedID]);
 
     const stories = useMemo(() => page?.stories ?? [], [page]);
     const rows = useMemo(() => chunkStories(stories), [stories]);
