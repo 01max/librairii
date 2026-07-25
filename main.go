@@ -30,6 +30,7 @@ func main() {
 		Events:     events,
 		Readiness:  readiness,
 		Operations: importRuntime,
+		Library:    importRuntime,
 		Resources:  []coreapp.ResourcePort{readiness},
 	})
 	if err != nil {

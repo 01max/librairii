@@ -12,6 +12,7 @@ import (
 
 	"github.com/01max/librairii/internal/database"
 	"github.com/01max/librairii/internal/inspection/testfixture"
+	"github.com/01max/librairii/internal/library"
 	"github.com/01max/librairii/internal/operations"
 	"github.com/01max/librairii/internal/storage"
 )
@@ -72,6 +73,23 @@ func TestImportRuntimeComposesNativeImportSlice(t *testing.T) {
 	}
 	if string(before) != string(after) {
 		t.Fatal("import runtime modified the selected source")
+	}
+
+	page, err := runtime.List(context.Background(), library.ListRequest{})
+	if err != nil {
+		t.Fatalf("List() error = %v", err)
+	}
+	if page.TotalItems != 1 || len(page.Stories) != 1 {
+		t.Fatalf("List() = %#v", page)
+	}
+	detail, err := runtime.Detail(context.Background(), page.Stories[0].ID)
+	if err != nil {
+		t.Fatalf("Detail() error = %v", err)
+	}
+	if detail.Archive.OriginalFilename != filepath.Base(source) ||
+		detail.Archive.SHA256 == "" ||
+		strings.Contains(detail.Archive.OriginalFilename, filepath.Dir(source)) {
+		t.Fatalf("Detail() = %#v", detail)
 	}
 }
 

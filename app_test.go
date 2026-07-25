@@ -6,6 +6,7 @@ import (
 	"time"
 
 	coreapp "github.com/01max/librairii/internal/app"
+	"github.com/01max/librairii/internal/library"
 	"github.com/01max/librairii/internal/operations"
 )
 
@@ -66,6 +67,20 @@ func (facadeOperations) Close() error {
 	return nil
 }
 
+func (facadeOperations) List(
+	context.Context,
+	library.ListRequest,
+) (library.Page, error) {
+	return library.Page{}, nil
+}
+
+func (facadeOperations) Detail(
+	context.Context,
+	int64,
+) (library.StoryDetail, error) {
+	return library.StoryDetail{}, nil
+}
+
 func TestAppExposesTypedLifecycleStatus(t *testing.T) {
 	t.Parallel()
 
@@ -75,6 +90,7 @@ func TestAppExposesTypedLifecycleStatus(t *testing.T) {
 		Events:     facadeEvents{},
 		Readiness:  facadeReadiness{},
 		Operations: facadeOperations{},
+		Library:    facadeOperations{},
 	})
 	if err != nil {
 		t.Fatalf("New() error = %v", err)
@@ -101,6 +117,7 @@ func TestAppCanQuitAfterDOMReadyForPackagedSmoke(t *testing.T) {
 		Events:     facadeEvents{},
 		Readiness:  facadeReadiness{},
 		Operations: facadeOperations{},
+		Library:    facadeOperations{},
 	})
 	if err != nil {
 		t.Fatalf("New() error = %v", err)

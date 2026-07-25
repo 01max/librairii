@@ -5,6 +5,7 @@ import (
 	"errors"
 	"time"
 
+	"github.com/01max/librairii/internal/library"
 	"github.com/01max/librairii/internal/operations"
 )
 
@@ -111,12 +112,18 @@ type OperationPort interface {
 	Close() error
 }
 
+type LibraryPort interface {
+	List(context.Context, library.ListRequest) (library.Page, error)
+	Detail(context.Context, int64) (library.StoryDetail, error)
+}
+
 type Dependencies struct {
 	Clock      Clock
 	Dialogs    DialogPort
 	Events     EventPort
 	Readiness  ReadinessPort
 	Operations OperationPort
+	Library    LibraryPort
 	Resources  []ResourcePort
 }
 
@@ -124,4 +131,14 @@ type OperationResponse struct {
 	Operation *operations.Snapshot `json:"operation,omitempty"`
 	Cancelled bool                 `json:"cancelled,omitempty"`
 	Error     *APIError            `json:"error,omitempty"`
+}
+
+type LibraryPageResponse struct {
+	Page  *library.Page `json:"page,omitempty"`
+	Error *APIError     `json:"error,omitempty"`
+}
+
+type StoryDetailResponse struct {
+	Detail *library.StoryDetail `json:"detail,omitempty"`
+	Error  *APIError            `json:"error,omitempty"`
 }

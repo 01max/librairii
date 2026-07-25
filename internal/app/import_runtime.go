@@ -12,6 +12,7 @@ import (
 	"github.com/01max/librairii/internal/catalog"
 	"github.com/01max/librairii/internal/importer"
 	"github.com/01max/librairii/internal/inspection"
+	"github.com/01max/librairii/internal/library"
 	"github.com/01max/librairii/internal/operations"
 	"github.com/01max/librairii/internal/storage"
 )
@@ -30,6 +31,7 @@ type ImportRuntime struct {
 	events  EventPort
 	workers int
 	manager *operations.Manager
+	query   *library.Query
 }
 
 func NewImportRuntime(
@@ -87,6 +89,7 @@ func (r *ImportRuntime) Start(ctx context.Context) error {
 		return err
 	}
 	r.manager = manager
+	r.query = library.NewQuery(database, nil)
 	return nil
 }
 
@@ -123,10 +126,33 @@ func (r *ImportRuntime) Snapshot(
 	return manager.Snapshot(ctx, operationID)
 }
 
+func (r *ImportRuntime) List(
+	ctx context.Context,
+	request library.ListRequest,
+) (library.Page, error) {
+	query, err := r.currentQuery()
+	if err != nil {
+		return library.Page{}, err
+	}
+	return query.List(ctx, request)
+}
+
+func (r *ImportRuntime) Detail(
+	ctx context.Context,
+	storyID int64,
+) (library.StoryDetail, error) {
+	query, err := r.currentQuery()
+	if err != nil {
+		return library.StoryDetail{}, err
+	}
+	return query.Detail(ctx, storyID)
+}
+
 func (r *ImportRuntime) Close() error {
 	r.mu.Lock()
 	manager := r.manager
 	r.manager = nil
+	r.query = nil
 	r.mu.Unlock()
 	if manager == nil {
 		return nil
@@ -143,4 +169,14 @@ func (r *ImportRuntime) current() (*operations.Manager, error) {
 	return r.manager, nil
 }
 
+func (r *ImportRuntime) currentQuery() (*library.Query, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	if r.query == nil {
+		return nil, ErrImportRuntimeNotReady
+	}
+	return r.query, nil
+}
+
 var _ OperationPort = (*ImportRuntime)(nil)
+var _ LibraryPort = (*ImportRuntime)(nil)

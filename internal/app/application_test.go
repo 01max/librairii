@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/01max/librairii/internal/library"
 	"github.com/01max/librairii/internal/operations"
 )
 
@@ -85,6 +86,8 @@ type fakeOperations struct {
 	closed     bool
 	startPaths []string
 	snapshot   operations.Snapshot
+	page       library.Page
+	detail     library.StoryDetail
 	err        error
 }
 
@@ -120,6 +123,20 @@ func (o *fakeOperations) Close() error {
 	return nil
 }
 
+func (o *fakeOperations) List(
+	context.Context,
+	library.ListRequest,
+) (library.Page, error) {
+	return o.page, o.err
+}
+
+func (o *fakeOperations) Detail(
+	context.Context,
+	int64,
+) (library.StoryDetail, error) {
+	return o.detail, o.err
+}
+
 func TestApplicationLifecycle(t *testing.T) {
 	t.Parallel()
 
@@ -133,6 +150,7 @@ func TestApplicationLifecycle(t *testing.T) {
 		Events:     events,
 		Readiness:  fakeReadiness{report: ReadinessReport{MutationsAllowed: true}},
 		Operations: operationPort,
+		Library:    operationPort,
 		Resources:  []ResourcePort{resource},
 	})
 	if err != nil {
@@ -178,11 +196,13 @@ func TestApplicationLifecycle(t *testing.T) {
 func TestApplicationEntersRecoveryWhenStorageIsUnsafe(t *testing.T) {
 	t.Parallel()
 
+	operationPort := &fakeOperations{}
 	application, err := New(Dependencies{
 		Clock:      fixedClock{now: time.Now()},
 		Dialogs:    fakeDialogs{},
 		Events:     &fakeEvents{},
-		Operations: &fakeOperations{},
+		Operations: operationPort,
+		Library:    operationPort,
 		Readiness: fakeReadiness{report: ReadinessReport{
 			MutationsAllowed: false,
 			Issues:           []ReadinessIssue{{Code: "schema_mismatch"}},
@@ -251,6 +271,7 @@ func TestImportFacadeKeepsNativePathsInsideGo(t *testing.T) {
 		Events:     &fakeEvents{},
 		Readiness:  fakeReadiness{report: ReadinessReport{MutationsAllowed: true}},
 		Operations: operationPort,
+		Library:    operationPort,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -297,6 +318,7 @@ func TestImportFacadeTreatsEmptySelectionAsCancellation(t *testing.T) {
 		Events:     &fakeEvents{},
 		Readiness:  fakeReadiness{report: ReadinessReport{MutationsAllowed: true}},
 		Operations: operationPort,
+		Library:    operationPort,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -311,5 +333,53 @@ func TestImportFacadeTreatsEmptySelectionAsCancellation(t *testing.T) {
 	}
 	if operationPort.startPaths != nil {
 		t.Fatalf("operation unexpectedly started with %#v", operationPort.startPaths)
+	}
+}
+
+func TestLibraryFacadeReturnsTypedCollectionAndDetail(t *testing.T) {
+	t.Parallel()
+
+	operationPort := &fakeOperations{
+		page: library.Page{
+			Stories: []library.StorySummary{{
+				ID:    7,
+				UUID:  "00112233-4455-4677-8899-aabbccddeeff",
+				Title: "Clockwork Forest",
+			}},
+			Page:       1,
+			PageSize:   24,
+			TotalItems: 1,
+			TotalPages: 1,
+			Sort:       library.SortNameAscending,
+		},
+		detail: library.StoryDetail{
+			Story: library.StorySummary{ID: 7, Title: "Clockwork Forest"},
+			Archive: library.ArchiveDetails{
+				OriginalFilename: "clockwork.zip",
+				SHA256:           strings.Repeat("a", 64),
+			},
+		},
+	}
+	application, err := New(Dependencies{
+		Clock:      fixedClock{now: time.Now()},
+		Dialogs:    fakeDialogs{},
+		Events:     &fakeEvents{},
+		Readiness:  fakeReadiness{report: ReadinessReport{MutationsAllowed: true}},
+		Operations: operationPort,
+		Library:    operationPort,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	page := application.ListStories(context.Background(), library.ListRequest{})
+	if page.Error != nil || page.Page == nil || page.Page.TotalItems != 1 {
+		t.Fatalf("ListStories() = %#v", page)
+	}
+	detail := application.StoryDetail(context.Background(), 7)
+	if detail.Error != nil ||
+		detail.Detail == nil ||
+		detail.Detail.Archive.OriginalFilename != "clockwork.zip" {
+		t.Fatalf("StoryDetail() = %#v", detail)
 	}
 }

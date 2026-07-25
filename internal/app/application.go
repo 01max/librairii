@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/01max/librairii/internal/library"
 	"github.com/01max/librairii/internal/operations"
 )
 
@@ -21,6 +22,7 @@ type Application struct {
 	events     EventPort
 	readiness  ReadinessPort
 	operations OperationPort
+	library    LibraryPort
 	resources  []ResourcePort
 	state      LifecycleState
 	startedAt  time.Time
@@ -33,7 +35,8 @@ func New(deps Dependencies) (*Application, error) {
 		deps.Dialogs == nil ||
 		deps.Events == nil ||
 		deps.Readiness == nil ||
-		deps.Operations == nil {
+		deps.Operations == nil ||
+		deps.Library == nil {
 		return nil, ErrMissingDependency
 	}
 
@@ -45,9 +48,32 @@ func New(deps Dependencies) (*Application, error) {
 		events:     deps.Events,
 		readiness:  deps.Readiness,
 		operations: deps.Operations,
+		library:    deps.Library,
 		resources:  resources,
 		state:      StateInitializing,
 	}, nil
+}
+
+func (a *Application) ListStories(
+	ctx context.Context,
+	request library.ListRequest,
+) LibraryPageResponse {
+	page, err := a.library.List(ctx, request)
+	if err != nil {
+		return LibraryPageResponse{Error: libraryAPIError(err)}
+	}
+	return LibraryPageResponse{Page: &page}
+}
+
+func (a *Application) StoryDetail(
+	ctx context.Context,
+	storyID int64,
+) StoryDetailResponse {
+	detail, err := a.library.Detail(ctx, storyID)
+	if err != nil {
+		return StoryDetailResponse{Error: libraryAPIError(err)}
+	}
+	return StoryDetailResponse{Detail: &detail}
 }
 
 func (a *Application) Start(ctx context.Context) error {
@@ -199,5 +225,16 @@ func operationAPIError(err error) *APIError {
 		return NewAPIError(ErrorInvalidInput, "The operation does not exist.")
 	default:
 		return NewAPIError(ErrorInternal, "The operation could not be completed.")
+	}
+}
+
+func libraryAPIError(err error) *APIError {
+	switch {
+	case errors.Is(err, library.ErrInvalidListRequest):
+		return NewAPIError(ErrorInvalidInput, "The library request is invalid.")
+	case errors.Is(err, sql.ErrNoRows):
+		return NewAPIError(ErrorInvalidInput, "The story does not exist.")
+	default:
+		return NewAPIError(ErrorInternal, "The library could not be loaded.")
 	}
 }

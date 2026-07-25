@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	coreapp "github.com/01max/librairii/internal/app"
+	"github.com/01max/librairii/internal/library"
 )
 
 // App is the narrow Wails binding facade. Domain behaviour stays in internal
@@ -67,6 +68,14 @@ func (a *App) CancelOperation(operationID string) coreapp.OperationResponse {
 
 func (a *App) OperationSnapshot(operationID string) coreapp.OperationResponse {
 	return a.core.OperationSnapshot(a.runtimeContext(), operationID)
+}
+
+func (a *App) ListStories(request library.ListRequest) coreapp.LibraryPageResponse {
+	return a.core.ListStories(a.runtimeContext(), request)
+}
+
+func (a *App) StoryDetail(storyID int64) coreapp.StoryDetailResponse {
+	return a.core.StoryDetail(a.runtimeContext(), storyID)
 }
 
 func (a *App) runtimeContext() context.Context {

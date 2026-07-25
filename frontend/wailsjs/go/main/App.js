@@ -10,10 +10,18 @@ export function CancelOperation(arg1) {
   return window['go']['main']['App']['CancelOperation'](arg1);
 }
 
+export function ListStories(arg1) {
+  return window['go']['main']['App']['ListStories'](arg1);
+}
+
 export function OperationSnapshot(arg1) {
   return window['go']['main']['App']['OperationSnapshot'](arg1);
 }
 
 export function SelectAndImportStories() {
   return window['go']['main']['App']['SelectAndImportStories']();
+}
+
+export function StoryDetail(arg1) {
+  return window['go']['main']['App']['StoryDetail'](arg1);
 }
