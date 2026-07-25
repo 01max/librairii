@@ -15,9 +15,11 @@ import (
 	"github.com/01max/librairii/internal/database"
 	"github.com/01max/librairii/internal/inspection/testfixture"
 	"github.com/01max/librairii/internal/library"
+	"github.com/01max/librairii/internal/metadata"
 	"github.com/01max/librairii/internal/operations"
 	"github.com/01max/librairii/internal/removal"
 	"github.com/01max/librairii/internal/storage"
+	"github.com/01max/librairii/internal/tagging"
 )
 
 func TestImportRuntimeComposesNativeImportSlice(t *testing.T) {
@@ -195,6 +197,128 @@ func TestImportRuntimeStartReconcilesInterruptedRemoval(t *testing.T) {
 	if pending, err := intents.List(context.Background()); err != nil || len(pending) != 0 {
 		t.Fatalf("pending intents = %#v, %v", pending, err)
 	}
+}
+
+func TestImportRuntimeUsesActiveOfficialMetadataWithoutChangingManualTags(t *testing.T) {
+	t.Parallel()
+
+	provider := newRuntimeStorageProvider(t)
+	runtime, err := NewImportRuntime(
+		provider,
+		fixedClock{now: time.Now()},
+		&runtimeEventRecorder{events: make(chan operations.Snapshot, 8)},
+		1,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := runtime.Start(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		_ = runtime.Close()
+	})
+
+	stories := catalog.NewRepository(provider.SQL())
+	story, _, err := stories.Create(context.Background(), catalog.CreateStory{
+		UUID:             "123e4567-e89b-42d3-a456-426614174000",
+		EmbeddedTitle:    "Embedded title",
+		OriginalFilename: "fixture.zip",
+		DetectedFormat:   catalog.FormatZIP,
+		SHA256:           strings.Repeat("e", 64),
+		ManagedPath:      "archives/e/fixture.zip",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	definition, err := runtime.CreateDefinition(context.Background(), tagging.CreateDefinition{
+		Key:   "favorite",
+		Label: "Favorite",
+		Color: "#405CF5",
+		Kind:  tagging.KindBoolean,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := runtime.SetBulkBoolean(
+		context.Background(),
+		[]int64{story.ID},
+		definition.ID,
+		true,
+	); err != nil {
+		t.Fatal(err)
+	}
+
+	official := metadata.NewRepository(provider.SQL())
+	snapshot := stageRuntimeMetadataSnapshot(t, official)
+	if err := official.ActivateSnapshot(
+		context.Background(),
+		snapshot.ID,
+		1,
+		time.Now(),
+	); err != nil {
+		t.Fatal(err)
+	}
+	page, err := runtime.List(context.Background(), library.ListRequest{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(page.Stories) != 1 ||
+		page.Stories[0].Title != "Official title" ||
+		page.Stories[0].Sources.Title != library.SourceOfficial ||
+		page.Stories[0].Official == nil ||
+		page.Stories[0].Official.Provenance != metadata.ProvenanceLuniiCatalog {
+		t.Fatalf("List() = %#v", page)
+	}
+	var manualAssignments int
+	if err := provider.SQL().QueryRow(
+		`SELECT COUNT(*)
+		 FROM story_tag_assignments
+		 WHERE story_id = ? AND definition_id = ? AND source = 'manual'`,
+		story.ID,
+		definition.ID,
+	).Scan(&manualAssignments); err != nil {
+		t.Fatal(err)
+	}
+	if manualAssignments != 1 {
+		t.Fatalf("manual assignment count = %d", manualAssignments)
+	}
+}
+
+func stageRuntimeMetadataSnapshot(
+	t *testing.T,
+	repository *metadata.Repository,
+) metadata.CatalogSnapshot {
+	t.Helper()
+
+	ctx := context.Background()
+	syncID := "123e4567-e89b-42d3-a456-426614174410"
+	if _, err := repository.CreateSync(ctx, metadata.NewCatalogSync{
+		ID:        syncID,
+		Locale:    metadata.DefaultLocale,
+		StartedAt: time.Now(),
+	}); err != nil {
+		t.Fatal(err)
+	}
+	snapshot, err := repository.StageSnapshot(ctx, metadata.NewCatalogSnapshot{
+		SyncID:    syncID,
+		Locale:    metadata.DefaultLocale,
+		RawPath:   "catalog/" + syncID + "/catalog.json",
+		RawSHA256: strings.Repeat("f", 64),
+		ByteSize:  256,
+		FetchedAt: time.Now(),
+		Stories: []metadata.NewOfficialStoryMetadata{{
+			StoryUUID:      "123e4567-e89b-42d3-a456-426614174000",
+			Title:          "Official title",
+			Author:         "Official Author",
+			Language:       metadata.DefaultLocale,
+			SourceRecordID: "fixture-record",
+		}},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	return snapshot
 }
 
 type runtimeStorageProvider struct {

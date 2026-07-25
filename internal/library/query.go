@@ -52,18 +52,19 @@ type DisplaySources struct {
 }
 
 type StorySummary struct {
-	ID                  int64          `json:"id"`
-	UUID                string         `json:"uuid"`
-	Title               string         `json:"title"`
-	Description         string         `json:"description,omitempty"`
-	Author              string         `json:"author,omitempty"`
-	ArtworkID           string         `json:"artworkId,omitempty"`
-	Sources             DisplaySources `json:"sources"`
-	DetectedFormat      string         `json:"detectedFormat"`
-	Compatibility       Compatibility  `json:"compatibility"`
-	CompatibilityReason string         `json:"compatibilityReason,omitempty"`
-	ByteSize            int64          `json:"byteSize"`
-	ImportedAt          string         `json:"importedAt"`
+	ID                  int64                 `json:"id"`
+	UUID                string                `json:"uuid"`
+	Title               string                `json:"title"`
+	Description         string                `json:"description,omitempty"`
+	Author              string                `json:"author,omitempty"`
+	ArtworkID           string                `json:"artworkId,omitempty"`
+	Sources             DisplaySources        `json:"sources"`
+	DetectedFormat      string                `json:"detectedFormat"`
+	Compatibility       Compatibility         `json:"compatibility"`
+	CompatibilityReason string                `json:"compatibilityReason,omitempty"`
+	ByteSize            int64                 `json:"byteSize"`
+	ImportedAt          string                `json:"importedAt"`
+	Official            *OfficialMetadataInfo `json:"official,omitempty"`
 }
 
 type ArchiveDetails struct {
@@ -89,11 +90,36 @@ type Page struct {
 }
 
 type OfficialMetadata struct {
-	UUID        string
-	Title       string
-	Description string
-	Author      string
-	ArtworkID   string
+	UUID            string
+	Locale          string
+	Title           string
+	Description     string
+	Author          string
+	Publisher       string
+	Language        string
+	DurationSeconds *int
+	MinimumAge      *int
+	MaximumAge      *int
+	ArtworkID       string
+	Provenance      string
+	SourceRecordID  string
+	SourceUpdatedAt string
+	FetchedAt       string
+	ActivatedAt     string
+}
+
+type OfficialMetadataInfo struct {
+	Locale          string `json:"locale"`
+	Publisher       string `json:"publisher,omitempty"`
+	Language        string `json:"language,omitempty"`
+	DurationSeconds *int   `json:"durationSeconds,omitempty"`
+	MinimumAge      *int   `json:"minimumAge,omitempty"`
+	MaximumAge      *int   `json:"maximumAge,omitempty"`
+	Provenance      string `json:"provenance"`
+	SourceRecordID  string `json:"sourceRecordId,omitempty"`
+	SourceUpdatedAt string `json:"sourceUpdatedAt,omitempty"`
+	FetchedAt       string `json:"fetchedAt"`
+	ActivatedAt     string `json:"activatedAt"`
 }
 
 type OfficialProvider interface {
@@ -312,6 +338,22 @@ func resolveSummary(record localRecord, official OfficialMetadata) StorySummary 
 		artworkSource = SourceEmbedded
 	}
 	compatibility, reason := compatibility(record.validationState)
+	var officialInfo *OfficialMetadataInfo
+	if official.UUID != "" {
+		officialInfo = &OfficialMetadataInfo{
+			Locale:          official.Locale,
+			Publisher:       official.Publisher,
+			Language:        official.Language,
+			DurationSeconds: cloneInt(official.DurationSeconds),
+			MinimumAge:      cloneInt(official.MinimumAge),
+			MaximumAge:      cloneInt(official.MaximumAge),
+			Provenance:      official.Provenance,
+			SourceRecordID:  official.SourceRecordID,
+			SourceUpdatedAt: official.SourceUpdatedAt,
+			FetchedAt:       official.FetchedAt,
+			ActivatedAt:     official.ActivatedAt,
+		}
+	}
 	return StorySummary{
 		ID:          record.id,
 		UUID:        record.uuid,
@@ -330,7 +372,16 @@ func resolveSummary(record localRecord, official OfficialMetadata) StorySummary 
 		CompatibilityReason: reason,
 		ByteSize:            record.byteSize,
 		ImportedAt:          record.createdAt,
+		Official:            officialInfo,
 	}
+}
+
+func cloneInt(value *int) *int {
+	if value == nil {
+		return nil
+	}
+	cloned := *value
+	return &cloned
 }
 
 func resolveText(

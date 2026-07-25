@@ -19,10 +19,16 @@ func TestListResolvesOfficialEmbeddedAndFallbackDisplay(t *testing.T) {
 	query, repository, _ := newLibraryQuery(t, fixedOfficialProvider{
 		"00112233-4455-4677-8899-aabbccddeeff": {
 			UUID:        "00112233-4455-4677-8899-aabbccddeeff",
+			Locale:      "en-GB",
 			Title:       "Official Clockwork Forest",
 			Description: "Official description",
 			Author:      "Lunii",
+			Publisher:   "Fixture Press",
+			Language:    "en-GB",
 			ArtworkID:   "official:clockwork",
+			Provenance:  "lunii_catalog",
+			FetchedAt:   "2026-07-25T10:00:00Z",
+			ActivatedAt: "2026-07-25T10:00:01Z",
 		},
 	})
 	createStory(t, repository, catalog.CreateStory{
@@ -81,7 +87,12 @@ func TestListResolvesOfficialEmbeddedAndFallbackDisplay(t *testing.T) {
 			Description: SourceOfficial,
 			Author:      SourceOfficial,
 			Artwork:     SourceOfficial,
-		}) {
+		}) ||
+		official.Official == nil ||
+		official.Official.Locale != "en-GB" ||
+		official.Official.Publisher != "Fixture Press" ||
+		official.Official.Provenance != "lunii_catalog" ||
+		official.Official.FetchedAt != "2026-07-25T10:00:00Z" {
 		t.Fatalf("official summary = %#v", official)
 	}
 	embedded := byUUID["11112222-3333-4444-8555-666677778888"]
@@ -97,6 +108,48 @@ func TestListResolvesOfficialEmbeddedAndFallbackDisplay(t *testing.T) {
 		fallback.ArtworkID != "" ||
 		fallback.Sources.Title != SourceFallback {
 		t.Fatalf("fallback summary = %#v", fallback)
+	}
+}
+
+func TestListResolvesPrecedenceIndependentlyForEveryDisplayField(t *testing.T) {
+	t.Parallel()
+
+	query, repository, _ := newLibraryQuery(t, fixedOfficialProvider{
+		"00112233-4455-4677-8899-aabbccddeeff": {
+			UUID:        "00112233-4455-4677-8899-aabbccddeeff",
+			Locale:      "en-GB",
+			Author:      "Official Author",
+			Provenance:  "lunii_catalog",
+			FetchedAt:   "2026-07-25T10:00:00Z",
+			ActivatedAt: "2026-07-25T10:00:01Z",
+		},
+	})
+	createStory(t, repository, catalog.CreateStory{
+		UUID:                "00112233-4455-4677-8899-aabbccddeeff",
+		EmbeddedTitle:       "Embedded title",
+		EmbeddedDescription: "Embedded description",
+		EmbeddedArtworkPath: "catalog/embedded/clockwork.png",
+		OriginalFilename:    "clockwork.zip",
+		DetectedFormat:      catalog.FormatZIP,
+		SHA256:              strings.Repeat("f", 64),
+		ManagedPath:         "archives/f/clockwork.zip",
+	})
+
+	page, err := query.List(context.Background(), ListRequest{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	story := page.Stories[0]
+	if story.Title != "Embedded title" ||
+		story.Description != "Embedded description" ||
+		story.Author != "Official Author" ||
+		story.ArtworkID != "embedded:1" ||
+		story.Sources.Title != SourceEmbedded ||
+		story.Sources.Description != SourceEmbedded ||
+		story.Sources.Author != SourceOfficial ||
+		story.Sources.Artwork != SourceEmbedded ||
+		story.Official == nil {
+		t.Fatalf("resolved story = %#v", story)
 	}
 }
 

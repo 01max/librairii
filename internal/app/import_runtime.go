@@ -13,6 +13,7 @@ import (
 	"github.com/01max/librairii/internal/importer"
 	"github.com/01max/librairii/internal/inspection"
 	"github.com/01max/librairii/internal/library"
+	"github.com/01max/librairii/internal/metadata"
 	"github.com/01max/librairii/internal/operations"
 	"github.com/01max/librairii/internal/removal"
 	"github.com/01max/librairii/internal/storage"
@@ -114,8 +115,16 @@ func (r *ImportRuntime) Start(ctx context.Context) error {
 	if err := manager.Start(ctx); err != nil {
 		return err
 	}
+	officialProvider, err := metadata.NewLibraryProvider(
+		metadata.NewRepository(database),
+		metadata.DefaultLocale,
+	)
+	if err != nil {
+		_ = manager.Close()
+		return fmt.Errorf("construct official metadata provider: %w", err)
+	}
 	r.manager = manager
-	r.query = library.NewQuery(database, nil)
+	r.query = library.NewQuery(database, officialProvider)
 	r.removal = removalService
 	r.tags = tagService
 	return nil

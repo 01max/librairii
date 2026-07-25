@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 )
 
@@ -358,6 +359,57 @@ func (r *Repository) ActiveMetadataByUUID(
 		locale,
 		storyUUID,
 	))
+}
+
+func (r *Repository) ActiveMetadataByUUIDs(
+	ctx context.Context,
+	locale string,
+	storyUUIDs []string,
+) (map[string]OfficialStoryMetadata, error) {
+	if len(storyUUIDs) == 0 {
+		return map[string]OfficialStoryMetadata{}, nil
+	}
+	unique := make([]string, 0, len(storyUUIDs))
+	seen := make(map[string]struct{}, len(storyUUIDs))
+	for _, storyUUID := range storyUUIDs {
+		if _, exists := seen[storyUUID]; exists {
+			continue
+		}
+		seen[storyUUID] = struct{}{}
+		unique = append(unique, storyUUID)
+	}
+	placeholders := strings.TrimSuffix(strings.Repeat("?,", len(unique)), ",")
+	arguments := make([]any, 0, len(unique)+1)
+	arguments = append(arguments, locale)
+	for _, storyUUID := range unique {
+		arguments = append(arguments, storyUUID)
+	}
+	rows, err := r.database.QueryContext(
+		ctx,
+		officialMetadataSelect+`
+		 WHERE snapshot.locale = ?
+		   AND snapshot.status = 'active'
+		   AND metadata.story_uuid IN (`+placeholders+`)
+		 ORDER BY metadata.story_uuid`,
+		arguments...,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("query active official metadata: %w", err)
+	}
+	defer rows.Close()
+
+	result := make(map[string]OfficialStoryMetadata, len(unique))
+	for rows.Next() {
+		story, err := scanOfficialMetadata(rows)
+		if err != nil {
+			return nil, err
+		}
+		result[story.StoryUUID] = story
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate active official metadata: %w", err)
+	}
+	return result, nil
 }
 
 func (r *Repository) ActivateSnapshot(
