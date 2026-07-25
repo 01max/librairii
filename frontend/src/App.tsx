@@ -83,7 +83,7 @@ function App() {
     const [selectedID, setSelectedID] = useState<number | null>(null);
     const [detail, setDetail] = useState<library.StoryDetail | null>(null);
     const [detailRevision, setDetailRevision] = useState(0);
-    const [operation, setOperation] = useState<operations.Snapshot | null>(null);
+    const [operationSnapshots, setOperationSnapshots] = useState<operations.Snapshot[]>([]);
     const [requestError, setRequestError] = useState<string | null>(null);
     const [detailsOpen, setDetailsOpen] = useState(false);
     const [removing, setRemoving] = useState(false);
@@ -114,11 +114,18 @@ function App() {
     }, []);
 
     const reconcileOperation = useCallback((snapshot: operations.Snapshot) => {
-        setOperation((current) => (
-            current?.id === snapshot.id && operationIsTerminal(current)
-                ? current
-                : snapshot
-        ));
+        setOperationSnapshots((current) => {
+            const index = current.findIndex((candidate) => candidate.id === snapshot.id);
+            if (index === -1) {
+                return [snapshot, ...current];
+            }
+            if (operationIsTerminal(current[index])) {
+                return current;
+            }
+            const next = [...current];
+            next[index] = snapshot;
+            return next;
+        });
         if (
             operationIsTerminal(snapshot) &&
             !refreshedOperations.current.has(snapshot.id)
@@ -146,8 +153,12 @@ function App() {
                     }
                     if (operationsResponse.error) {
                         setRequestError(operationsResponse.error.message);
-                    } else if (operationsResponse.operations.length > 0) {
-                        reconcileOperation(operationsResponse.operations[0]);
+                    } else {
+                        for (
+                            const snapshot of [...operationsResponse.operations].reverse()
+                        ) {
+                            reconcileOperation(snapshot);
+                        }
                     }
                 }
             } catch {
@@ -169,20 +180,24 @@ function App() {
         return unsubscribe;
     }, [reconcileOperation]);
 
-    const activeOperationID = operationIsActive(operation) ? operation?.id : null;
+    const activeOperationKey = operationSnapshots
+        .filter((snapshot) => operationIsActive(snapshot))
+        .map((snapshot) => snapshot.id)
+        .join('\n');
     useEffect(() => {
-        if (!activeOperationID) {
+        if (!activeOperationKey) {
             return;
         }
         let active = true;
-        let requestInFlight = false;
-        const reconcile = async () => {
-            if (requestInFlight) {
+        const requestsInFlight = new Set<string>();
+        const operationIDs = activeOperationKey.split('\n');
+        const reconcile = async (operationID: string) => {
+            if (requestsInFlight.has(operationID)) {
                 return;
             }
-            requestInFlight = true;
+            requestsInFlight.add(operationID);
             try {
-                const response = await OperationSnapshot(activeOperationID);
+                const response = await OperationSnapshot(operationID);
                 if (!active) {
                     return;
                 }
@@ -196,16 +211,21 @@ function App() {
                     setRequestError('Import progress could not be refreshed.');
                 }
             } finally {
-                requestInFlight = false;
+                requestsInFlight.delete(operationID);
             }
         };
-        void reconcile();
-        const timer = window.setInterval(() => void reconcile(), 1_000);
+        const reconcileAll = () => {
+            for (const operationID of operationIDs) {
+                void reconcile(operationID);
+            }
+        };
+        reconcileAll();
+        const timer = window.setInterval(reconcileAll, 1_000);
         return () => {
             active = false;
             window.clearInterval(timer);
         };
-    }, [activeOperationID, reconcileOperation]);
+    }, [activeOperationKey, reconcileOperation]);
 
     async function startImport() {
         setRequestError(null);
@@ -219,8 +239,8 @@ function App() {
         }
     }
 
-    async function cancelImport() {
-        if (!operation || !operationIsActive(operation)) {
+    async function cancelImport(operation: operations.Snapshot) {
+        if (!operationIsActive(operation)) {
             return;
         }
         const response = await CancelOperation(operation.id);
@@ -311,8 +331,13 @@ function App() {
     const selectedSummary = stories.find((story) => story.id === selectedID) ?? null;
     const selected = detail?.story ?? selectedSummary;
     const selectedPalette = selected ? paletteFor(selected.id) : undefined;
-    const importNotice = operation ? describeImport(operation) : null;
-    const importing = operationIsActive(operation);
+    const activeOperations = operationSnapshots.filter((snapshot) => (
+        operationIsActive(snapshot)
+    ));
+    const visibleOperations = activeOperations.length > 0
+        ? activeOperations
+        : operationSnapshots.slice(0, 1);
+    const importing = activeOperations.length > 0;
     const empty = page !== null && page.totalItems === 0 && !importing;
 
     return (
@@ -418,36 +443,48 @@ function App() {
                     </section>
                 )}
 
-                {importNotice && (
-                    <section
-                        className={`collection-state ${importNotice.tone}`}
-                        data-state={importNotice.state}
-                        aria-live="polite"
-                    >
-                        <div className="state-mark" aria-hidden="true">
-                            {importNotice.tone === 'success' ? '✓' : importNotice.tone === 'working' ? '↓' : '!'}
-                        </div>
-                        <div className="state-copy">
-                            <h3>{importNotice.title}</h3>
-                            <p>{importNotice.message}</p>
-                            {operation && operation.items.length > 0 && !importing && (
-                                <ul className="operation-items">
-                                    {operation.items.map((item) => (
-                                        <li key={item.id}>
-                                            <b>{item.sourceName}</b>
-                                            <span>{item.outcomeMessage || item.status}</span>
-                                        </li>
-                                    ))}
-                                </ul>
+                {visibleOperations.map((operation) => {
+                    const importNotice = describeImport(operation);
+                    const operationActive = operationIsActive(operation);
+                    return (
+                        <section
+                            className={`collection-state ${importNotice.tone}`}
+                            data-state={importNotice.state}
+                            aria-live="polite"
+                            key={operation.id}
+                        >
+                            <div className="state-mark" aria-hidden="true">
+                                {importNotice.tone === 'success'
+                                    ? '✓'
+                                    : importNotice.tone === 'working'
+                                        ? '↓'
+                                        : '!'}
+                            </div>
+                            <div className="state-copy">
+                                <h3>{importNotice.title}</h3>
+                                <p>{importNotice.message}</p>
+                                {operation.items.length > 0 && !operationActive && (
+                                    <ul className="operation-items">
+                                        {operation.items.map((item) => (
+                                            <li key={item.id}>
+                                                <b>{item.sourceName}</b>
+                                                <span>{item.outcomeMessage || item.status}</span>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                )}
+                            </div>
+                            {operationActive && (
+                                <button
+                                    type="button"
+                                    onClick={() => void cancelImport(operation)}
+                                >
+                                    Cancel import
+                                </button>
                             )}
-                        </div>
-                        {importing && (
-                            <button type="button" onClick={() => void cancelImport()}>
-                                Cancel import
-                            </button>
-                        )}
-                    </section>
-                )}
+                        </section>
+                    );
+                })}
 
                 {empty && (
                     <section className="empty-library" data-state="empty">

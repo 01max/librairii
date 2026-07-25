@@ -282,6 +282,51 @@ test('restores and reconciles an active import after the frontend reloads', asyn
         .toHaveBeenCalledWith('00112233-4455-4677-8899-aabbccddeeff');
 });
 
+test('restores, displays, and polls every concurrent active import', async () => {
+    const first = {
+        id: '00112233-4455-4677-8899-aabbccddeeff',
+        kind: 'import',
+        status: 'running',
+        completedItems: 0,
+        totalItems: 1,
+        cancelRequested: false,
+        createdAt: '2026-07-25T09:00:00Z',
+        items: [{
+            id: 1,
+            sourceName: 'clockwork.zip',
+            status: 'running',
+            completedBytes: 512,
+            totalBytes: 1024,
+        }],
+    };
+    const second = {
+        ...first,
+        id: '11112233-4455-4677-8899-aabbccddeeff',
+        createdAt: '2026-07-25T09:01:00Z',
+        items: [{
+            ...first.items[0],
+            id: 2,
+            sourceName: 'forest.zip',
+        }],
+    };
+    activeOperations.mockResolvedValue(new app.OperationListResponse({
+        operations: [second, first],
+    }));
+    operationSnapshot.mockImplementation(async (operationID) => (
+        new app.OperationResponse({
+            operation: operationID === first.id ? first : second,
+        })
+    ));
+
+    render(<App/>);
+
+    expect(await screen.findAllByRole('heading', {name: 'Importing 1 story'}))
+        .toHaveLength(2);
+    expect(operationSnapshot).toHaveBeenCalledWith(first.id);
+    expect(operationSnapshot).toHaveBeenCalledWith(second.id);
+    expect(screen.getAllByRole('button', {name: 'Cancel import'})).toHaveLength(2);
+});
+
 test('reloads selected story detail when an operation refreshes the collection', async () => {
     loadStoryDetail
         .mockResolvedValueOnce(new app.StoryDetailResponse({
