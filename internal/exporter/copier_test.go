@@ -35,6 +35,21 @@ func TestCopierPublishesVerifiedArchiveWithoutSidecars(t *testing.T) {
 		t.Fatal(err)
 	}
 	destination := t.TempDir()
+	resolvedDestination, err := ResolveDestination(destination)
+	if err != nil {
+		t.Fatal(err)
+	}
+	directorySynced := false
+	copier.syncDirectory = func(path string) error {
+		if path != resolvedDestination {
+			t.Fatalf("sync directory = %q, want %q", path, resolvedDestination)
+		}
+		if _, err := os.Stat(filepath.Join(path, story.OriginalFilename)); err != nil {
+			t.Fatalf("sync ran before publication: %v", err)
+		}
+		directorySynced = true
+		return nil
+	}
 	var progress int64
 	result, err := copier.Copy(
 		context.Background(),
@@ -50,7 +65,8 @@ func TestCopierPublishesVerifiedArchiveWithoutSidecars(t *testing.T) {
 	if result.OutputName != story.OriginalFilename ||
 		result.ByteSize != story.ByteSize ||
 		result.SHA256 != story.SHA256 ||
-		progress != story.ByteSize {
+		progress != story.ByteSize ||
+		!directorySynced {
 		t.Fatalf("Copy() = %#v, progress = %d", result, progress)
 	}
 	exported, err := os.ReadFile(filepath.Join(destination, story.OriginalFilename))

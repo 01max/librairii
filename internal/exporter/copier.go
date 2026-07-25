@@ -26,9 +26,10 @@ type CopyResult = operations.ExportCopyResult
 type ProgressFunc = func(deltaBytes int64)
 
 type Copier struct {
-	layout     storage.Layout
-	link       func(string, string) error
-	openSource func(string) (io.ReadCloser, error)
+	layout        storage.Layout
+	link          func(string, string) error
+	openSource    func(string) (io.ReadCloser, error)
+	syncDirectory func(string) error
 }
 
 func NewCopier(layout storage.Layout) (*Copier, error) {
@@ -44,6 +45,7 @@ func NewCopier(layout storage.Layout) (*Copier, error) {
 		openSource: func(path string) (io.ReadCloser, error) {
 			return os.Open(path)
 		},
+		syncDirectory: syncExportDirectory,
 	}, nil
 }
 
@@ -123,6 +125,9 @@ func (c *Copier) Copy(
 		}
 		return CopyResult{}, fmt.Errorf("publish export archive atomically: %w", err)
 	}
+	if err := c.syncDirectory(destination); err != nil {
+		return CopyResult{}, fmt.Errorf("sync export destination directory: %w", err)
+	}
 	_ = os.Remove(temporaryPath)
 	return CopyResult{
 		OutputName:  item.OutputName,
@@ -130,6 +135,15 @@ func (c *Copier) Copy(
 		SHA256:      checksum,
 		OutcomeCode: "exported",
 	}, nil
+}
+
+func syncExportDirectory(path string) error {
+	directory, err := os.Open(path)
+	if err != nil {
+		return err
+	}
+	defer directory.Close()
+	return directory.Sync()
 }
 
 func (c *Copier) resolveSource(relativePath string) (string, error) {
