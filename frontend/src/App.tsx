@@ -2082,8 +2082,25 @@ function App() {
                     </section>
                 )}
 
+                {applicationState === 'initializing' && (
+                    <section
+                        className="collection-state working"
+                        data-state="loading-library"
+                        aria-live="polite"
+                    >
+                        <div className="state-mark" aria-hidden="true">↻</div>
+                        <div className="state-copy">
+                            <h3>Opening your local library</h3>
+                            <p>
+                                Checking managed storage, SQLite, and interrupted
+                                operations…
+                            </p>
+                        </div>
+                    </section>
+                )}
+
                 {requestError && (
-                    <section className="collection-state error" data-state="failed-import">
+                    <section className="collection-state error" data-state="failed-action">
                         <div className="state-mark" aria-hidden="true">!</div>
                         <div>
                             <h3>The action could not be completed</h3>
@@ -2460,6 +2477,11 @@ function App() {
                         role="dialog"
                         aria-modal="true"
                         aria-labelledby="export-preflight-title"
+                        data-state={exportPreflight.blocked
+                            ? 'export-preflight-blocked'
+                            : exportPreflight.partial
+                                ? 'export-preflight-partial'
+                                : 'export-preflight-ready'}
                     >
                         <div className="dialog-kicker">Export preflight</div>
                         <h3 id="export-preflight-title">
@@ -2572,6 +2594,7 @@ function App() {
                         role="dialog"
                         aria-modal="true"
                         aria-labelledby="story-detail-title"
+                        data-state="removal-confirmation"
                     >
                         <div className="dialog-kicker">Story details</div>
                         <h3 id="story-detail-title">{selected.title}</h3>
@@ -2697,6 +2720,7 @@ function App() {
                         role="dialog"
                         aria-modal="true"
                         aria-labelledby="repair-shelf-title"
+                        data-state="shelf-repair"
                     >
                         <div className="dialog-kicker">Saved shelves</div>
                         <h3 id="repair-shelf-title">Repair “{repairShelf.name}”</h3>
@@ -2760,6 +2784,7 @@ function App() {
                         role="dialog"
                         aria-modal="true"
                         aria-labelledby="delete-shelf-title"
+                        data-state="shelf-delete-confirmation"
                     >
                         <div className="dialog-kicker">Saved shelves</div>
                         <h3 id="delete-shelf-title">Delete “{deleteShelf.name}”?</h3>

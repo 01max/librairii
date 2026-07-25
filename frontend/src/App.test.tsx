@@ -305,6 +305,30 @@ test('renders the canonical collection shell from typed library data', async () 
         .toBeInTheDocument();
 });
 
+test('uses the canonical state grammar while the local library opens', async () => {
+    let resolveStatus!: (response: app.StatusResponse) => void;
+    applicationStatus.mockImplementation(() => new Promise((resolve) => {
+        resolveStatus = resolve;
+    }));
+    render(<App/>);
+
+    const loading = screen.getByText('Opening your local library')
+        .closest('[data-state="loading-library"]');
+    expect(loading).not.toBeNull();
+    expect(loading).toHaveClass('collection-state', 'working');
+
+    resolveStatus(new app.StatusResponse({
+        status: {
+            state: 'ready',
+            mutationsAllowed: true,
+        },
+    }));
+    expect(await screen.findByRole('heading', {name: 'Clockwork Forest'}))
+        .toBeInTheDocument();
+    expect(screen.queryByText('Opening your local library'))
+        .not.toBeInTheDocument();
+});
+
 test('keeps interactive controls in their canonical regions', async () => {
     const user = userEvent.setup();
     officialMetadataStatus.mockResolvedValue(new app.MetadataStatusResponse({
