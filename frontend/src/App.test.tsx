@@ -305,6 +305,53 @@ test('renders the canonical collection shell from typed library data', async () 
         .toBeInTheDocument();
 });
 
+test('keeps interactive controls in their canonical regions', async () => {
+    const user = userEvent.setup();
+    officialMetadataStatus.mockResolvedValue(new app.MetadataStatusResponse({
+        status: {
+            state: 'fresh',
+            locale: 'en-GB',
+            matchedStoryCount: 2,
+            activatedAt: '2026-07-25T16:00:00Z',
+        },
+    }));
+    render(<App/>);
+
+    const rail = screen.getByRole('navigation', {name: 'Primary navigation'});
+    const sidebar = screen.getByRole('complementary', {
+        name: 'Saved shelves and refinements',
+    });
+    const main = screen.getByRole('main');
+    const drawer = await screen.findByRole('complementary', {
+        name: 'Clockwork Forest details',
+    });
+
+    expect(within(rail).getByRole('button', {name: 'Export current result'}))
+        .toBeInTheDocument();
+    expect(within(sidebar).getByRole('button', {name: '＋ Manage tags'}))
+        .toBeInTheDocument();
+    expect(within(main).getByRole('searchbox', {name: 'Search stories'}))
+        .toBeInTheDocument();
+    expect(within(main).getByRole('button', {name: '↻ Sync'}))
+        .toBeInTheDocument();
+    expect(within(main).getByRole('button', {name: '＋ Import stories'}))
+        .toBeInTheDocument();
+    expect(within(drawer).getByRole('button', {name: 'Edit tags'}))
+        .toBeInTheDocument();
+    expect(within(drawer).getByRole('button', {name: 'Open details'}))
+        .toBeInTheDocument();
+    expect(within(drawer).getByRole('button', {name: 'Add to export →'}))
+        .toBeInTheDocument();
+
+    const language = within(sidebar).getByRole('button', {name: 'Language ＋'});
+    expect(within(sidebar).queryByRole('checkbox', {name: 'English'}))
+        .not.toBeInTheDocument();
+    await user.click(language);
+    expect(language).toHaveAttribute('aria-expanded', 'true');
+    expect(within(sidebar).getByRole('checkbox', {name: 'English'}))
+        .toBeInTheDocument();
+});
+
 test('preflights explicit selections and complete current results', async () => {
     const user = userEvent.setup();
     selectAndPreflightExport.mockImplementation(async (request) => (
