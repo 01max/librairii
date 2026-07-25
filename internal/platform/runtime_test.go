@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	coreapp "github.com/01max/librairii/internal/app"
+	"github.com/01max/librairii/internal/exporter"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
@@ -51,6 +52,7 @@ func TestRuntimeDialogsUseNativeMultiFilePicker(t *testing.T) {
 func TestRuntimeDialogsSupportSingleFileAndDirectory(t *testing.T) {
 	t.Parallel()
 
+	destination := t.TempDir()
 	dialogs := &RuntimeDialogs{
 		openFile: func(
 			context.Context,
@@ -72,7 +74,7 @@ func TestRuntimeDialogsSupportSingleFileAndDirectory(t *testing.T) {
 			if !options.CanCreateDirectories || !options.ResolvesAliases {
 				t.Fatalf("directory options = %#v", options)
 			}
-			return "/native/export", nil
+			return destination, nil
 		},
 	}
 	paths, err := dialogs.OpenFiles(context.Background(), coreapp.FileDialogRequest{
@@ -82,7 +84,11 @@ func TestRuntimeDialogsSupportSingleFileAndDirectory(t *testing.T) {
 		t.Fatalf("OpenFiles(single) = %#v, %v", paths, err)
 	}
 	directory, err := dialogs.OpenDirectory(context.Background(), "Export stories")
-	if err != nil || directory != "/native/export" {
+	expected, resolveErr := exporter.ResolveDestination(destination)
+	if resolveErr != nil {
+		t.Fatal(resolveErr)
+	}
+	if err != nil || directory != expected {
 		t.Fatalf("OpenDirectory() = %q, %v", directory, err)
 	}
 }

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	coreapp "github.com/01max/librairii/internal/app"
+	"github.com/01max/librairii/internal/exporter"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
@@ -60,11 +61,15 @@ func (d *RuntimeDialogs) OpenFiles(
 }
 
 func (d *RuntimeDialogs) OpenDirectory(ctx context.Context, title string) (string, error) {
-	return d.openDirectory(ctx, runtime.OpenDialogOptions{
+	path, err := d.openDirectory(ctx, runtime.OpenDialogOptions{
 		Title:                title,
 		CanCreateDirectories: true,
 		ResolvesAliases:      true,
 	})
+	if err != nil || path == "" {
+		return path, err
+	}
+	return exporter.ResolveDestination(path)
 }
 
 func extensionPattern(extensions []string) string {
