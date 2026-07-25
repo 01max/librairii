@@ -74,6 +74,9 @@ func TestReleaseMatrixHasIndependentPlatformTasks(t *testing.T) {
 		".github/workflows/platform-release.yml": {
 			"runs-on: windows-2025",
 			"runs-on: ubuntu-24.04",
+			"dbus-x11",
+			"pcmanfm",
+			"procps",
 			"scripts/verify-platform-windows.ps1",
 			"scripts/verify-platform-linux",
 		},
@@ -100,6 +103,9 @@ func TestReleaseMatrixHasIndependentPlatformTasks(t *testing.T) {
 			"native_import_dialog_selected",
 			"native_destination_dialog_selected",
 			"native_reveal_succeeded",
+			"dbus-run-session",
+			"xdg-mime",
+			"run-linux-native-acceptance",
 			"./cmd/foundation-smoke",
 			"./internal/platform",
 			"./cmd/release-smoke",
@@ -123,6 +129,23 @@ func TestReleaseMatrixHasIndependentPlatformTasks(t *testing.T) {
 		"packaged_acceptance_native_windows.go": {
 			"FindWindowW",
 			"SendInput",
+		},
+		"scripts/run-linux-native-acceptance": {
+			"/proc/$file_manager_pid/comm",
+			"/usr/bin/pcmanfm",
+			"pcmanfm",
+			"expected_destination",
+		},
+		"scripts/librairii-linux-file-manager-evidence": {
+			"LIBRAIRII_NATIVE_REVEAL_EVIDENCE",
+			"/usr/bin/pcmanfm",
+			"setsid --fork",
+			"pgrep -x pcmanfm",
+			"resolved_expected",
+		},
+		"build/linux/librairii-acceptance-file-manager.desktop": {
+			"Exec=librairii-linux-file-manager-evidence %f",
+			"MimeType=inode/directory;",
 		},
 	}
 	for path, fragments := range implementationFiles {

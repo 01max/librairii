@@ -53,7 +53,32 @@ export_destination="$verification_root/export"
 acceptance_checkpoints="$verification_root/checkpoints.log"
 acceptance_source="$project_root/internal/inspection/testfixture/testdata/generic.7z"
 event_log="$data_root/logs/events.jsonl"
-mkdir -p "$data_root" "$headless_root" "$export_destination"
+native_reveal_evidence="$verification_root/native-reveal.log"
+xdg_data_home="$verification_root/xdg-data"
+xdg_config_home="$verification_root/xdg-config"
+desktop_entry="librairii-acceptance-file-manager.desktop"
+mkdir -p \
+    "$data_root" \
+    "$headless_root" \
+    "$export_destination" \
+    "$xdg_data_home/applications" \
+    "$xdg_config_home"
+cp \
+    "$project_root/build/linux/$desktop_entry" \
+    "$xdg_data_home/applications/$desktop_entry"
+XDG_DATA_HOME="$xdg_data_home" \
+    update-desktop-database "$xdg_data_home/applications"
+XDG_DATA_HOME="$xdg_data_home" \
+    XDG_CONFIG_HOME="$xdg_config_home" \
+    xdg-mime default "$desktop_entry" inode/directory
+if [ "$(
+    XDG_DATA_HOME="$xdg_data_home" \
+        XDG_CONFIG_HOME="$xdg_config_home" \
+        xdg-mime query default inode/directory
+)" != "$desktop_entry" ]; then
+    printf 'Linux directory MIME handler was not configured\n' >&2
+    exit 1
+fi
 
 cleanup() {
     case "$(basename -- "$verification_root")" in
@@ -64,13 +89,18 @@ cleanup() {
 }
 trap cleanup EXIT HUP INT TERM
 
-timeout 30s xvfb-run -a env \
+timeout 30s dbus-run-session -- xvfb-run -a env \
+    PATH="$project_root/scripts:$PATH" \
     LIBGL_ALWAYS_SOFTWARE=1 \
+    XDG_DATA_HOME="$xdg_data_home" \
+    XDG_CONFIG_HOME="$xdg_config_home" \
     LIBRAIRII_DATA_ROOT="$data_root" \
     LIBRAIRII_PACKAGED_ACCEPTANCE=1 \
     LIBRAIRII_ACCEPTANCE_SOURCE="$acceptance_source" \
     LIBRAIRII_ACCEPTANCE_DESTINATION="$export_destination" \
     LIBRAIRII_ACCEPTANCE_CHECKPOINTS="$acceptance_checkpoints" \
+    LIBRAIRII_NATIVE_REVEAL_EVIDENCE="$native_reveal_evidence" \
+    "$project_root/scripts/run-linux-native-acceptance" \
     "$binary"
 
 expected_checkpoints="$verification_root/expected-checkpoints.log"

@@ -1,0 +1,53 @@
+#!/bin/sh
+set -eu
+
+binary="${1:?}"
+evidence="${LIBRAIRII_NATIVE_REVEAL_EVIDENCE:?}"
+destination="${LIBRAIRII_ACCEPTANCE_DESTINATION:?}"
+
+"$binary"
+
+attempt=0
+while [ "$attempt" -lt 50 ] && [ ! -s "$evidence" ]; do
+    attempt=$((attempt + 1))
+    sleep 0.1
+done
+if [ ! -s "$evidence" ]; then
+    printf 'Linux file manager did not record reveal evidence\n' >&2
+    exit 1
+fi
+
+file_manager_pid="$(sed -n '1p' "$evidence")"
+revealed_destination="$(sed -n '2p' "$evidence")"
+expected_destination="$(realpath -- "$destination")"
+case "$file_manager_pid" in
+    ''|*[!0-9]*)
+        printf 'Linux file-manager evidence has an invalid PID\n' >&2
+        exit 1
+        ;;
+esac
+if [ "$revealed_destination" != "$expected_destination" ]; then
+    printf 'Linux file manager revealed %s, expected %s\n' \
+        "$revealed_destination" \
+        "$expected_destination" >&2
+    exit 1
+fi
+if [ ! -r "/proc/$file_manager_pid/comm" ] ||
+    [ "$(tr -d '\n' < "/proc/$file_manager_pid/comm")" != "pcmanfm" ]; then
+    printf 'Linux reveal handler did not launch PCManFM\n' >&2
+    exit 1
+fi
+file_manager_binary="$(
+    tr '\0' '\n' < "/proc/$file_manager_pid/cmdline" | sed -n '1p'
+)"
+if [ "$file_manager_binary" != "/usr/bin/pcmanfm" ]; then
+    printf 'Linux reveal handler did not launch the expected PCManFM binary\n' >&2
+    exit 1
+fi
+if ! tr '\0' '\n' < "/proc/$file_manager_pid/cmdline" |
+    grep -Fqx -- "$expected_destination"; then
+    printf 'PCManFM did not receive the expected export destination\n' >&2
+    exit 1
+fi
+
+kill -TERM "$file_manager_pid" 2>/dev/null || true

@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=Librairii Acceptance File Manager
+NoDisplay=true
+Exec=librairii-linux-file-manager-evidence %f
+MimeType=inode/directory;
+Categories=System;FileTools;FileManager;

@@ -1,0 +1,36 @@
+#!/bin/sh
+set -eu
+
+evidence="${LIBRAIRII_NATIVE_REVEAL_EVIDENCE:?}"
+expected="${LIBRAIRII_ACCEPTANCE_DESTINATION:?}"
+destination="${1:?}"
+
+resolved_destination="$(realpath -- "$destination")"
+resolved_expected="$(realpath -- "$expected")"
+if [ "$resolved_destination" != "$resolved_expected" ]; then
+    printf 'file manager received %s, expected %s\n' \
+        "$resolved_destination" \
+        "$resolved_expected" >&2
+    exit 1
+fi
+
+setsid --fork /usr/bin/pcmanfm --no-desktop "$resolved_destination" \
+    >/dev/null 2>&1
+attempt=0
+while [ "$attempt" -lt 50 ]; do
+    for file_manager_pid in $(pgrep -x pcmanfm 2>/dev/null); do
+        if tr '\0' '\n' < "/proc/$file_manager_pid/cmdline" |
+            grep -Fqx -- "$resolved_destination"; then
+            printf '%s\n%s\n' \
+                "$file_manager_pid" \
+                "$resolved_destination" > "$evidence"
+            exit 0
+        fi
+    done
+    attempt=$((attempt + 1))
+    sleep 0.1
+done
+
+printf 'PCManFM did not become ready for reveal verification\n' >&2
+pkill -TERM -x pcmanfm 2>/dev/null || true
+exit 1

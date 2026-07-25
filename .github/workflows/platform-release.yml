@@ -89,6 +89,10 @@ jobs:
             libgtk-3-dev \
             libwebkit2gtk-4.1-dev \
             xauth \
+            dbus-x11 \
+            desktop-file-utils \
+            pcmanfm \
+            procps \
             xdg-utils \
             xvfb
           wails_version="$(cat .wails-version)"

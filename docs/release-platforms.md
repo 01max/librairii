@@ -39,6 +39,11 @@ window. The Linux archive contains the Wails executable and expects the
 distribution to provide GTK 3 and WebKitGTK 4.1. It is intentionally not a
 generic package for every Linux ABI.
 
+The Linux gate runs the packaged scenario in one isolated D-Bus/Xvfb desktop
+session. It registers a verification-only `inode/directory` handler that
+delegates to PCManFM, then requires the live PCManFM process and its command
+line to contain the exact validated export directory before the gate passes.
+
 ## Evidence contract
 
 Each platform task is one command with no dependency on another platform's
