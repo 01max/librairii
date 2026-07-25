@@ -17,6 +17,7 @@ type Application struct {
 	dialogs   DialogPort
 	events    EventPort
 	readiness ReadinessPort
+	resources []ResourcePort
 	state     LifecycleState
 	startedAt time.Time
 	ready     bool
@@ -33,6 +34,7 @@ func New(deps Dependencies) (*Application, error) {
 		dialogs:   deps.Dialogs,
 		events:    deps.Events,
 		readiness: deps.Readiness,
+		resources: append([]ResourcePort(nil), deps.Resources...),
 		state:     StateInitializing,
 	}, nil
 }
@@ -76,10 +78,14 @@ func (a *Application) AnnounceReady(ctx context.Context) {
 
 func (a *Application) Stop(_ context.Context) {
 	a.mu.Lock()
-	defer a.mu.Unlock()
-
 	a.state = StateStopped
 	a.ready = false
+	resources := append([]ResourcePort(nil), a.resources...)
+	a.mu.Unlock()
+
+	for index := len(resources) - 1; index >= 0; index-- {
+		_ = resources[index].Close()
+	}
 }
 
 func (a *Application) Status() Status {

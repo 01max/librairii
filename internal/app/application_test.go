@@ -47,16 +47,27 @@ func (r fakeReadiness) Check(context.Context) (ReadinessReport, error) {
 	return r.report, r.err
 }
 
+type fakeResource struct {
+	closed bool
+}
+
+func (r *fakeResource) Close() error {
+	r.closed = true
+	return nil
+}
+
 func TestApplicationLifecycle(t *testing.T) {
 	t.Parallel()
 
 	now := time.Date(2026, time.July, 25, 8, 30, 0, 0, time.FixedZone("CEST", 2*60*60))
 	events := &fakeEvents{}
+	resource := &fakeResource{}
 	application, err := New(Dependencies{
 		Clock:     fixedClock{now: now},
 		Dialogs:   fakeDialogs{},
 		Events:    events,
 		Readiness: fakeReadiness{report: ReadinessReport{MutationsAllowed: true}},
+		Resources: []ResourcePort{resource},
 	})
 	if err != nil {
 		t.Fatalf("New() error = %v", err)
@@ -89,6 +100,9 @@ func TestApplicationLifecycle(t *testing.T) {
 	application.Stop(context.Background())
 	if got := application.Status().State; got != StateStopped {
 		t.Fatalf("stopped state = %q, want %q", got, StateStopped)
+	}
+	if !resource.closed {
+		t.Fatal("resource was not closed during shutdown")
 	}
 }
 

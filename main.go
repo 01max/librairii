@@ -16,11 +16,13 @@ import (
 var assets embed.FS
 
 func main() {
+	readiness := platform.NewStorageReadiness(os.Getenv("LIBRAIRII_DATA_ROOT"))
 	core, err := coreapp.New(coreapp.Dependencies{
 		Clock:     platform.SystemClock{},
 		Dialogs:   platform.PendingDialogs{},
 		Events:    platform.RuntimeEvents{},
-		Readiness: platform.NewStorageReadiness(os.Getenv("LIBRAIRII_DATA_ROOT")),
+		Readiness: readiness,
+		Resources: []coreapp.ResourcePort{readiness},
 	})
 	if err != nil {
 		log.Fatal(err)

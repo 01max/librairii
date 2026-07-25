@@ -97,9 +97,14 @@ type ReadinessPort interface {
 	Check(context.Context) (ReadinessReport, error)
 }
 
+type ResourcePort interface {
+	Close() error
+}
+
 type Dependencies struct {
 	Clock     Clock
 	Dialogs   DialogPort
 	Events    EventPort
 	Readiness ReadinessPort
+	Resources []ResourcePort
 }
