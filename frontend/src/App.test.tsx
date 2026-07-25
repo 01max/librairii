@@ -628,6 +628,52 @@ test('previews a multi-shelf union with per-shelf and overlap counts', async () 
     expect(preview).toHaveTextContent('3 unique stories');
     expect(preview).toHaveTextContent('1 overlapping membership collapsed.');
     expect(preview).toHaveTextContent('Sources: Moon, Forest');
+
+    listShelves.mockResolvedValue(new app.ShelfListResponse({
+        shelves: [
+            new shelves.Summary({
+                id: 7,
+                name: 'Moon',
+                position: 0,
+                validity: 'needs_attention',
+                attentionReason: 'missing_criteria',
+                count: 0,
+            }),
+            new shelves.Summary({
+                id: 8,
+                name: 'Forest',
+                position: 1,
+                validity: 'valid',
+                count: 2,
+            }),
+        ],
+    }));
+    previewShelves.mockResolvedValue(new app.ShelfSelectionPreviewResponse({
+        error: {
+            code: 'conflict',
+            message: 'Repair the selected shelf before continuing.',
+        },
+    }));
+    operationChanged?.({
+        id: '99992222-3333-4444-8555-666677778888',
+        kind: 'import',
+        status: 'succeeded',
+        completedItems: 1,
+        totalItems: 1,
+        cancelRequested: false,
+        createdAt: '2026-07-25T18:00:00Z',
+        finishedAt: '2026-07-25T18:01:00Z',
+        items: [],
+    });
+
+    const invalidSelection = await screen.findByRole('checkbox', {
+        name: 'Select Moon for combined shelf preview',
+    });
+    await waitFor(() => expect(invalidSelection).toBeDisabled());
+    expect(invalidSelection).toBeChecked();
+    await waitFor(() => expect(previewShelves).toHaveBeenLastCalledWith([7, 8]));
+    expect(await screen.findByText('Repair the selected shelf before continuing.'))
+        .toBeInTheDocument();
 });
 
 test('keeps a valid empty saved shelf active with edit and import recovery actions', async () => {

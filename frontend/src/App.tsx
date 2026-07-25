@@ -314,9 +314,7 @@ function App() {
             const nextShelves = response.shelves ?? [];
             setSavedShelves(nextShelves);
             setSelectedShelfIDs((current) => current.filter((shelfID) => (
-                nextShelves.some((shelf) => (
-                    shelf.id === shelfID && shelf.validity === 'valid'
-                ))
+                nextShelves.some((shelf) => shelf.id === shelfID)
             )));
         } catch {
             setRequestError('Saved shelves could not be loaded.');
@@ -901,6 +899,9 @@ function App() {
             if (repairShelfID === deleteShelf.id) {
                 setRepairShelfID(null);
             }
+            setSelectedShelfIDs((current) => current.filter(
+                (shelfID) => shelfID !== deleteShelf.id,
+            ));
             await loadSavedShelves();
         } catch {
             setShelfDialogError('The saved shelf could not be deleted.');
