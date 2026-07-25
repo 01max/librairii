@@ -23,3 +23,10 @@ make build
 
 `make check` formats and vets Go, runs Go and frontend tests, type-checks and
 lints TypeScript, and builds the production frontend.
+
+Run the current-macOS clean-environment launch, SQLite reopen, and shutdown
+smoke with:
+
+```sh
+make smoke-foundation
+```

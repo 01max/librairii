@@ -2,9 +2,9 @@ SHELL := /bin/sh
 
 WAILS_VERSION := $(shell cat .wails-version)
 WAILS ?= $(shell go env GOPATH)/bin/wails
-GO_PACKAGES := . ./internal/...
+GO_PACKAGES := . ./internal/... ./cmd/...
 
-.PHONY: setup fmt fmt-check vet test-go typecheck lint-frontend test-frontend build-frontend check build
+.PHONY: setup fmt fmt-check vet test-go typecheck lint-frontend test-frontend build-frontend check build smoke-foundation
 
 setup:
 	go mod download
@@ -41,3 +41,6 @@ build:
 	test "$$($(WAILS) version | head -n 1)" = "$(WAILS_VERSION)"
 	$(WAILS) build -m -nocolour
 	find frontend/wailsjs/go -type f -exec chmod 644 {} +
+
+smoke-foundation:
+	scripts/smoke-foundation

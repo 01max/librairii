@@ -10,6 +10,7 @@ import (
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/options"
 	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
+	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
 //go:embed all:frontend/dist
@@ -27,7 +28,11 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	app := NewApp(core)
+	appOptions := make([]AppOption, 0, 1)
+	if os.Getenv("LIBRAIRII_SMOKE_EXIT") == "1" {
+		appOptions = append(appOptions, WithQuitAfterDOMReady(runtime.Quit))
+	}
+	app := NewApp(core, appOptions...)
 
 	err = wails.Run(&options.App{
 		Title:  "Librairii",

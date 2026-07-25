@@ -4,6 +4,7 @@
 node_modules/
 frontend/dist/
 frontend/coverage/
+frontend/package.json.md5
 build/bin/
 coverage/
 tmp/

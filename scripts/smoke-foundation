@@ -1,0 +1,34 @@
+#!/bin/sh
+set -eu
+
+wails_cli="${WAILS:-$(go env GOPATH)/bin/wails}"
+smoke_root="${LIBRAIRII_SMOKE_ROOT:-}"
+if [ -z "$smoke_root" ]; then
+    smoke_root="$(mktemp -d /private/tmp/librairii-foundation-smoke.XXXXXX)"
+fi
+
+LIBRAIRII_DATA_ROOT="$smoke_root" \
+LIBRAIRII_SMOKE_EXIT=1 \
+"$wails_cli" dev -m -noreload -nogorebuild -nocolour
+
+go run ./cmd/foundation-smoke -root "$smoke_root"
+
+make build
+
+clean_path="/opt/homebrew/bin:/usr/bin:/bin"
+app_binary="$PWD/build/bin/Librairii.app/Contents/MacOS/Librairii"
+
+env -i \
+    PATH="$clean_path" \
+    LIBRAIRII_DATA_ROOT="$smoke_root" \
+    LIBRAIRII_SMOKE_EXIT=1 \
+    "$app_binary"
+
+env -i \
+    PATH="$clean_path" \
+    LIBRAIRII_DATA_ROOT="$smoke_root" \
+    LIBRAIRII_SMOKE_EXIT=1 \
+    "$app_binary"
+
+go run ./cmd/foundation-smoke -root "$smoke_root"
+printf 'foundation smoke root: %s\n' "$smoke_root"
