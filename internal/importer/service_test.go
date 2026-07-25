@@ -6,6 +6,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"sync"
 	"testing"
 
 	"github.com/01max/librairii/internal/archive"
@@ -89,6 +90,67 @@ func TestImportIsIdempotentByExactChecksum(t *testing.T) {
 		second.ExistingStoryID != first.StoryID ||
 		second.Checksum != first.Checksum {
 		t.Fatalf("Import(second) = %#v", second)
+	}
+	if count := countRows(t, sqlDatabase, "stories"); count != 1 {
+		t.Fatalf("story count = %d", count)
+	}
+	if count := countManagedArchives(t, layout.Archives); count != 1 {
+		t.Fatalf("managed archive count = %d", count)
+	}
+	assertDirectoryEmpty(t, layout.Staging)
+}
+
+func TestConcurrentExactImportsShareOneWriterLane(t *testing.T) {
+	t.Parallel()
+
+	service, _, _, layout, sqlDatabase := newTestService(t)
+	fixtureBytes, err := testfixture.ZIPBytes(testfixture.GenericZIP())
+	if err != nil {
+		t.Fatal(err)
+	}
+	directory := t.TempDir()
+	paths := []string{
+		filepath.Join(directory, "first.zip"),
+		filepath.Join(directory, "second.zip"),
+	}
+	for _, path := range paths {
+		if err := os.WriteFile(path, fixtureBytes, 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	outcomes := make(chan Outcome, len(paths))
+	failures := make(chan error, len(paths))
+	start := make(chan struct{})
+	var workers sync.WaitGroup
+	for _, path := range paths {
+		path := path
+		workers.Add(1)
+		go func() {
+			defer workers.Done()
+			<-start
+			outcome, err := service.Import(context.Background(), path)
+			if err != nil {
+				failures <- err
+				return
+			}
+			outcomes <- outcome
+		}()
+	}
+	close(start)
+	workers.Wait()
+	close(outcomes)
+	close(failures)
+	for err := range failures {
+		t.Fatalf("Import() error = %v", err)
+	}
+
+	counts := map[OutcomeCode]int{}
+	for outcome := range outcomes {
+		counts[outcome.Code]++
+	}
+	if counts[OutcomeImported] != 1 || counts[OutcomeDuplicateChecksum] != 1 {
+		t.Fatalf("concurrent outcomes = %#v", counts)
 	}
 	if count := countRows(t, sqlDatabase, "stories"); count != 1 {
 		t.Fatalf("story count = %d", count)

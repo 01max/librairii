@@ -143,6 +143,24 @@ func (r *Repository) Cleanup(staged StagedFile) error {
 	return nil
 }
 
+func (r *Repository) CleanupAbandoned() error {
+	entries, err := os.ReadDir(r.layout.Staging)
+	if err != nil {
+		return fmt.Errorf("read staging directory: %w", err)
+	}
+	for _, entry := range entries {
+		path := filepath.Join(r.layout.Staging, entry.Name())
+		contained, err := storage.PathContained(r.layout.Staging, path)
+		if err != nil || !contained {
+			return ErrInvalidManagedPath
+		}
+		if err := os.RemoveAll(path); err != nil {
+			return fmt.Errorf("remove abandoned staging entry: %w", err)
+		}
+	}
+	return nil
+}
+
 func (r *Repository) MoveToTrash(managedRelativePath string) (string, error) {
 	source, err := SafeJoin(r.layout.Root, managedRelativePath)
 	if err != nil {

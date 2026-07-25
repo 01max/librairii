@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"sync"
 
 	"github.com/01max/librairii/internal/archive"
 	"github.com/01max/librairii/internal/catalog"
@@ -79,6 +80,7 @@ type Service struct {
 	catalog   storyCatalog
 	inspector inspection.Inspector
 	limits    inspection.Limits
+	writer    sync.Mutex
 }
 
 func NewService(
@@ -142,6 +144,26 @@ func (s *Service) Import(ctx context.Context, sourcePath string) (outcome Outcom
 	}
 	if err := ctx.Err(); err != nil {
 		return Outcome{}, importError(ctx, ErrorCancelled, err)
+	}
+
+	s.writer.Lock()
+	defer s.writer.Unlock()
+	if err := ctx.Err(); err != nil {
+		return Outcome{}, importError(ctx, ErrorCancelled, err)
+	}
+	existingStory, existingArchive, err = s.catalog.FindByChecksum(ctx, staged.SHA256)
+	switch {
+	case err == nil:
+		return Outcome{
+			Code:            OutcomeDuplicateChecksum,
+			UUID:            existingStory.UUID,
+			StoryID:         existingStory.ID,
+			ArchiveID:       existingArchive.ID,
+			ExistingStoryID: existingStory.ID,
+			Checksum:        existingArchive.SHA256,
+		}, nil
+	case !errors.Is(err, sql.ErrNoRows):
+		return Outcome{}, importError(ctx, ErrorLookup, err)
 	}
 
 	existingStory, existingArchive, err = s.catalog.FindByUUID(ctx, inspected.UUID)

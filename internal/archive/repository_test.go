@@ -168,6 +168,33 @@ func TestManagedPathsCannotEscapeAndRemovalMovesToTrash(t *testing.T) {
 	}
 }
 
+func TestCleanupAbandonedRemovesOnlyStagingEntries(t *testing.T) {
+	t.Parallel()
+
+	repository, layout := newTestRepository(t)
+	abandoned := filepath.Join(layout.Staging, "import-abandoned")
+	if err := os.MkdirAll(abandoned, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(abandoned, "archive"), []byte("partial"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	managed := filepath.Join(layout.Archives, "managed")
+	if err := os.WriteFile(managed, []byte("managed"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := repository.CleanupAbandoned(); err != nil {
+		t.Fatalf("CleanupAbandoned() error = %v", err)
+	}
+	if entries, err := os.ReadDir(layout.Staging); err != nil || len(entries) != 0 {
+		t.Fatalf("staging entries = %#v, %v", entries, err)
+	}
+	if _, err := os.Stat(managed); err != nil {
+		t.Fatalf("managed archive changed: %v", err)
+	}
+}
+
 func newTestRepository(t *testing.T) (*Repository, storage.Layout) {
 	t.Helper()
 

@@ -1,0 +1,196 @@
+package operations
+
+import (
+	"context"
+	"errors"
+	"path/filepath"
+	"testing"
+	"time"
+
+	"github.com/01max/librairii/internal/database"
+	"github.com/google/uuid"
+)
+
+func TestRepositoryPersistsOperationProgress(t *testing.T) {
+	t.Parallel()
+
+	repository, _ := newOperationRepository(t)
+	ctx := context.Background()
+	createdAt := time.Date(2026, time.July, 25, 10, 0, 0, 0, time.UTC)
+	operationID := uuid.NewString()
+	snapshot, err := repository.CreateImport(ctx, operationID, []NewItem{
+		{SourceName: "first.zip", TotalBytes: 10},
+		{SourceName: "second.7z", TotalBytes: 20},
+	}, createdAt)
+	if err != nil {
+		t.Fatalf("CreateImport() error = %v", err)
+	}
+	if snapshot.Status != StatusQueued ||
+		snapshot.TotalItems != 2 ||
+		len(snapshot.Items) != 2 ||
+		snapshot.Items[0].Status != ItemPending {
+		t.Fatalf("CreateImport() = %#v", snapshot)
+	}
+
+	startedAt := createdAt.Add(time.Second)
+	if err := repository.MarkRunning(ctx, operationID, startedAt); err != nil {
+		t.Fatal(err)
+	}
+	if err := repository.MarkItemRunning(ctx, snapshot.Items[0].ID); err != nil {
+		t.Fatal(err)
+	}
+	if err := repository.CompleteItem(ctx, operationID, ItemSnapshot{
+		ID:             snapshot.Items[0].ID,
+		SourceName:     "first.zip",
+		Status:         ItemSucceeded,
+		OutcomeCode:    "imported",
+		OutcomeMessage: "Story imported.",
+		CompletedBytes: 10,
+		TotalBytes:     10,
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if err := repository.RequestCancel(ctx, operationID); err != nil {
+		t.Fatal(err)
+	}
+	if err := repository.CompleteItem(ctx, operationID, ItemSnapshot{
+		ID:             snapshot.Items[1].ID,
+		SourceName:     "second.7z",
+		Status:         ItemCancelled,
+		OutcomeCode:    "cancelled",
+		OutcomeMessage: "Import cancelled.",
+		TotalBytes:     20,
+	}); err != nil {
+		t.Fatal(err)
+	}
+	finishedAt := startedAt.Add(time.Second)
+	if err := repository.Finish(
+		ctx,
+		operationID,
+		StatusPartiallySucceeded,
+		"partial_failure",
+		"Some files could not be imported.",
+		finishedAt,
+	); err != nil {
+		t.Fatal(err)
+	}
+
+	snapshot, err = repository.Snapshot(ctx, operationID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if snapshot.Status != StatusPartiallySucceeded ||
+		snapshot.CompletedItems != 2 ||
+		!snapshot.CancelRequested ||
+		snapshot.StartedAt != formatTime(startedAt) ||
+		snapshot.FinishedAt != formatTime(finishedAt) ||
+		snapshot.Items[0].OutcomeCode != "imported" ||
+		snapshot.Items[1].Status != ItemCancelled {
+		t.Fatalf("Snapshot() = %#v", snapshot)
+	}
+	if err := repository.RequestCancel(ctx, operationID); !errors.Is(err, ErrOperationNotActive) {
+		t.Fatalf("RequestCancel(terminal) error = %v", err)
+	}
+}
+
+func TestRepositoryRejectsInvalidTransitions(t *testing.T) {
+	t.Parallel()
+
+	repository, _ := newOperationRepository(t)
+	ctx := context.Background()
+	snapshot, err := repository.CreateImport(
+		ctx,
+		uuid.NewString(),
+		[]NewItem{{SourceName: "story.zip"}},
+		time.Now(),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := repository.MarkItemRunning(ctx, snapshot.Items[0].ID); err != nil {
+		t.Fatal(err)
+	}
+	item := ItemSnapshot{
+		ID:         snapshot.Items[0].ID,
+		SourceName: "story.zip",
+		Status:     ItemFailed,
+		TotalBytes: 0,
+	}
+	if err := repository.CompleteItem(ctx, snapshot.ID, item); err != nil {
+		t.Fatal(err)
+	}
+	if err := repository.CompleteItem(ctx, snapshot.ID, item); !errors.Is(err, ErrInvalidTransition) {
+		t.Fatalf("CompleteItem(second) error = %v", err)
+	}
+	if err := repository.Finish(
+		ctx,
+		snapshot.ID,
+		StatusRunning,
+		"",
+		"",
+		time.Now(),
+	); !errors.Is(err, ErrInvalidTransition) {
+		t.Fatalf("Finish(nonterminal) error = %v", err)
+	}
+}
+
+func TestRepositoryInterruptsNonresumableOperations(t *testing.T) {
+	t.Parallel()
+
+	repository, _ := newOperationRepository(t)
+	ctx := context.Background()
+	operationID := uuid.NewString()
+	snapshot, err := repository.CreateImport(
+		ctx,
+		operationID,
+		[]NewItem{
+			{SourceName: "running.zip", TotalBytes: 10},
+			{SourceName: "pending.zip", TotalBytes: 20},
+		},
+		time.Now(),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := repository.MarkRunning(ctx, operationID, time.Now()); err != nil {
+		t.Fatal(err)
+	}
+	if err := repository.MarkItemRunning(ctx, snapshot.Items[0].ID); err != nil {
+		t.Fatal(err)
+	}
+
+	interrupted, err := repository.InterruptActive(ctx, time.Now())
+	if err != nil {
+		t.Fatalf("InterruptActive() error = %v", err)
+	}
+	if len(interrupted) != 1 ||
+		interrupted[0].Status != StatusInterrupted ||
+		interrupted[0].CompletedItems != 2 ||
+		interrupted[0].ErrorCode != "interrupted" {
+		t.Fatalf("InterruptActive() = %#v", interrupted)
+	}
+	for _, item := range interrupted[0].Items {
+		if item.Status != ItemCancelled || item.OutcomeCode != "interrupted" {
+			t.Fatalf("interrupted item = %#v", item)
+		}
+	}
+	if again, err := repository.InterruptActive(ctx, time.Now()); err != nil || len(again) != 0 {
+		t.Fatalf("InterruptActive(second) = %#v, %v", again, err)
+	}
+}
+
+func newOperationRepository(t *testing.T) (*Repository, *database.Database) {
+	t.Helper()
+
+	sqlDatabase, err := database.Open(
+		context.Background(),
+		filepath.Join(t.TempDir(), "operations.sqlite3"),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		_ = sqlDatabase.Close()
+	})
+	return NewRepository(sqlDatabase.SQL()), sqlDatabase
+}
