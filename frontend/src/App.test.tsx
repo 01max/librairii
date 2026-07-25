@@ -5,8 +5,10 @@ import {
     ActiveOperations,
     ApplicationStatus,
     CancelOperation,
+    OfficialMetadataStatus,
     OperationSnapshot,
     QueryStories,
+    RefreshOfficialMetadata,
     RemoveStory,
     SelectAndImportStories,
     SetBooleanTag,
@@ -14,7 +16,7 @@ import {
     TagAssignmentWorkspace as LoadTagAssignmentWorkspace,
     TagCatalog as LoadTagCatalog,
 } from '../wailsjs/go/main/App';
-import {app, library} from '../wailsjs/go/models';
+import {app, library, metadata} from '../wailsjs/go/models';
 import {EventsOn} from '../wailsjs/runtime/runtime';
 import App from './App';
 
@@ -22,8 +24,10 @@ vi.mock('../wailsjs/go/main/App', () => ({
     ActiveOperations: vi.fn(),
     ApplicationStatus: vi.fn(),
     CancelOperation: vi.fn(),
+    OfficialMetadataStatus: vi.fn(),
     OperationSnapshot: vi.fn(),
     QueryStories: vi.fn(),
+    RefreshOfficialMetadata: vi.fn(),
     RemoveStory: vi.fn(),
     SelectAndImportStories: vi.fn(),
     StoryDetail: vi.fn(),
@@ -40,8 +44,10 @@ vi.mock('../wailsjs/runtime/runtime', () => ({
 const activeOperations = vi.mocked(ActiveOperations);
 const applicationStatus = vi.mocked(ApplicationStatus);
 const cancelOperation = vi.mocked(CancelOperation);
+const officialMetadataStatus = vi.mocked(OfficialMetadataStatus);
 const operationSnapshot = vi.mocked(OperationSnapshot);
 const queryStories = vi.mocked(QueryStories);
+const refreshOfficialMetadata = vi.mocked(RefreshOfficialMetadata);
 const removeStory = vi.mocked(RemoveStory);
 const selectAndImportStories = vi.mocked(SelectAndImportStories);
 const setBooleanTag = vi.mocked(SetBooleanTag);
@@ -90,8 +96,10 @@ beforeEach(() => {
     activeOperations.mockReset();
     applicationStatus.mockReset();
     cancelOperation.mockReset();
+    officialMetadataStatus.mockReset();
     operationSnapshot.mockReset();
     queryStories.mockReset();
+    refreshOfficialMetadata.mockReset();
     removeStory.mockReset();
     selectAndImportStories.mockReset();
     setBooleanTag.mockReset();
@@ -109,6 +117,13 @@ beforeEach(() => {
     }));
     activeOperations.mockResolvedValue(new app.OperationListResponse({
         operations: [],
+    }));
+    officialMetadataStatus.mockResolvedValue(new app.MetadataStatusResponse({
+        status: {
+            state: 'never_synced',
+            locale: 'en-GB',
+            matchedStoryCount: 0,
+        },
     }));
     operationSnapshot.mockResolvedValue(new app.OperationResponse({}));
     queryStories.mockResolvedValue(new app.LibraryPageResponse({
@@ -193,6 +208,9 @@ beforeEach(() => {
         return vi.fn();
     });
     selectAndImportStories.mockResolvedValue(new app.OperationResponse({
+        cancelled: true,
+    }));
+    refreshOfficialMetadata.mockResolvedValue(new app.OperationResponse({
         cancelled: true,
     }));
     cancelOperation.mockResolvedValue(new app.OperationResponse({
@@ -597,6 +615,100 @@ test('shows the empty-library import action in the canonical shell', async () =>
     expect(await screen.findByRole('heading', {name: 'Build your local story archive'}))
         .toBeInTheDocument();
     expect(screen.getByText('Stories in your local archive · 0 archives')).toBeInTheDocument();
+});
+
+test('shows never-synced metadata and runs a cancellable refresh with matched freshness', async () => {
+    const user = userEvent.setup();
+    refreshOfficialMetadata.mockResolvedValue(new app.OperationResponse({
+        operation: {
+            id: '00112233-4455-4677-8899-aabbccddeef0',
+            kind: 'metadata_sync',
+            status: 'queued',
+            completedItems: 0,
+            totalItems: 1,
+            cancelRequested: false,
+            createdAt: '2026-07-25T16:00:00Z',
+            items: [{
+                id: 50,
+                sourceName: 'en-GB',
+                status: 'pending',
+                completedBytes: 0,
+                totalBytes: 1,
+            }],
+        },
+    }));
+    render(<App/>);
+
+    expect(await screen.findByRole('heading', {
+        name: 'Official metadata has not been synced',
+    })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', {name: '↻ Sync'}));
+    expect(refreshOfficialMetadata).toHaveBeenCalledTimes(1);
+    expect(await screen.findByRole('heading', {
+        name: 'Refreshing official metadata',
+    })).toBeInTheDocument();
+    expect(screen.getByText('0 of 1 refresh phases complete. Your local collection remains available.'))
+        .toBeInTheDocument();
+    expect(screen.getByRole('button', {name: 'Refreshing…'})).toBeDisabled();
+    await user.click(screen.getByRole('button', {name: 'Cancel refresh'}));
+    expect(cancelOperation).toHaveBeenCalledWith('00112233-4455-4677-8899-aabbccddeef0');
+
+    officialMetadataStatus.mockResolvedValue(new app.MetadataStatusResponse({
+        status: new metadata.CatalogStatus({
+            state: 'fresh',
+            locale: 'en-GB',
+            matchedStoryCount: 1,
+            activatedAt: '2026-07-25T16:01:00Z',
+        }),
+    }));
+    operationChanged?.({
+        id: '00112233-4455-4677-8899-aabbccddeef0',
+        kind: 'metadata_sync',
+        status: 'succeeded',
+        completedItems: 1,
+        totalItems: 1,
+        cancelRequested: false,
+        createdAt: '2026-07-25T16:00:00Z',
+        startedAt: '2026-07-25T16:00:01Z',
+        finishedAt: '2026-07-25T16:01:00Z',
+        items: [{
+            id: 50,
+            sourceName: 'en-GB',
+            status: 'succeeded',
+            outcomeCode: 'metadata_refreshed',
+            outcomeMessage: 'Official metadata refreshed; 1 local story matched.',
+            completedBytes: 1,
+            totalBytes: 1,
+        }],
+    });
+    expect(await screen.findByRole('heading', {
+        name: 'Official metadata refreshed',
+    })).toBeInTheDocument();
+    await waitFor(() => expect(
+        screen.getByText(/1 local story matched\./),
+    ).toBeInTheDocument());
+});
+
+test('shows a stale-cache state without blocking the collection', async () => {
+    officialMetadataStatus.mockResolvedValue(new app.MetadataStatusResponse({
+        status: new metadata.CatalogStatus({
+            state: 'stale_cache',
+            locale: 'en-GB',
+            matchedStoryCount: 2,
+            activatedAt: '2026-07-24T16:00:00Z',
+            errorCode: 'catalog_fetch_failed',
+            errorMessage: 'Official metadata could not be downloaded.',
+        }),
+    }));
+    render(<App/>);
+
+    expect(await screen.findByRole('heading', {
+        name: 'Using saved official metadata',
+    })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', {name: 'Clockwork Forest'}))
+        .toBeInTheDocument();
+    expect(screen.getByText(/Official metadata could not be downloaded\./))
+        .toBeInTheDocument();
 });
 
 test('shows nonblocking import progress and terminal validation feedback', async () => {

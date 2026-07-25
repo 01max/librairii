@@ -11,6 +11,7 @@ import (
 
 	"github.com/01max/librairii/internal/importer"
 	"github.com/01max/librairii/internal/inspection"
+	"github.com/01max/librairii/internal/metadata"
 	"github.com/google/uuid"
 )
 
@@ -27,6 +28,7 @@ const (
 var (
 	ErrManagerNotStarted = errors.New("operation manager is not started")
 	ErrInvalidRequest    = errors.New("operation request is invalid")
+	ErrOperationActive   = errors.New("an operation of this kind is already active")
 )
 
 type Clock interface {
@@ -45,8 +47,13 @@ type StagingCleaner interface {
 	CleanupAbandoned() error
 }
 
+type MetadataRefreshService interface {
+	Refresh(context.Context, string) (metadata.RefreshResult, error)
+}
+
 type managerRepository interface {
 	CreateImport(context.Context, string, []NewItem, time.Time) (Snapshot, error)
+	CreateMetadataSync(context.Context, string, string, time.Time) (Snapshot, error)
 	MarkRunning(context.Context, string, time.Time) error
 	MarkItemRunning(context.Context, int64) error
 	CompleteItem(context.Context, string, ItemSnapshot) error
@@ -61,6 +68,7 @@ type managerRepository interface {
 type Dependencies struct {
 	Repository     managerRepository
 	Imports        ImportService
+	Metadata       MetadataRefreshService
 	Events         EventPort
 	Clock          Clock
 	StagingCleaner StagingCleaner
@@ -69,19 +77,21 @@ type Dependencies struct {
 }
 
 type Manager struct {
-	mu            sync.Mutex
-	deps          Dependencies
-	started       bool
-	ctx           context.Context
-	cancel        context.CancelFunc
-	jobs          chan importJob
-	runs          map[string]*operationRun
-	wg            sync.WaitGroup
-	recoveryDelay time.Duration
+	mu             sync.Mutex
+	deps           Dependencies
+	started        bool
+	ctx            context.Context
+	cancel         context.CancelFunc
+	jobs           chan importJob
+	runs           map[string]*operationRun
+	wg             sync.WaitGroup
+	recoveryDelay  time.Duration
+	metadataActive bool
 }
 
 type operationRun struct {
 	id        string
+	kind      Kind
 	ctx       context.Context
 	cancel    context.CancelFunc
 	startOnce sync.Once
@@ -89,12 +99,14 @@ type operationRun struct {
 	stopped   chan struct{}
 	startErr  error
 
-	mu        sync.Mutex
-	total     int
-	remaining int
-	successes int
-	failures  int
-	cancelled int
+	mu             sync.Mutex
+	total          int
+	remaining      int
+	successes      int
+	failures       int
+	cancelled      int
+	failureCode    string
+	failureMessage string
 }
 
 type importJob struct {
@@ -218,6 +230,7 @@ func (m *Manager) StartImport(
 	runContext, cancel := context.WithCancel(managerContext)
 	run := &operationRun{
 		id:        operationID,
+		kind:      KindImport,
 		ctx:       runContext,
 		cancel:    cancel,
 		stopped:   make(chan struct{}),
@@ -236,6 +249,70 @@ func (m *Manager) StartImport(
 
 	m.deps.Events.Emit(ctx, EventChanged, snapshot)
 	go m.enqueue(run, snapshot.Items, sourcePaths)
+	return snapshot, nil
+}
+
+func (m *Manager) StartMetadataRefresh(
+	ctx context.Context,
+	locale string,
+) (Snapshot, error) {
+	if locale == "" {
+		return Snapshot{}, ErrInvalidRequest
+	}
+	m.mu.Lock()
+	if !m.started {
+		m.mu.Unlock()
+		return Snapshot{}, ErrManagerNotStarted
+	}
+	if m.deps.Metadata == nil {
+		m.mu.Unlock()
+		return Snapshot{}, ErrInvalidRequest
+	}
+	if m.metadataActive {
+		m.mu.Unlock()
+		return Snapshot{}, ErrOperationActive
+	}
+	m.metadataActive = true
+	managerContext := m.ctx
+	m.mu.Unlock()
+
+	operationID := uuid.NewString()
+	snapshot, err := m.deps.Repository.CreateMetadataSync(
+		ctx,
+		operationID,
+		locale,
+		m.deps.Clock.Now(),
+	)
+	if err != nil {
+		m.mu.Lock()
+		m.metadataActive = false
+		m.mu.Unlock()
+		return Snapshot{}, err
+	}
+	runContext, cancel := context.WithCancel(managerContext)
+	run := &operationRun{
+		id:        operationID,
+		kind:      KindMetadataSync,
+		ctx:       runContext,
+		cancel:    cancel,
+		stopped:   make(chan struct{}),
+		total:     1,
+		remaining: 1,
+	}
+
+	m.mu.Lock()
+	if !m.started {
+		m.metadataActive = false
+		m.mu.Unlock()
+		cancel()
+		return Snapshot{}, ErrManagerNotStarted
+	}
+	m.runs[operationID] = run
+	m.wg.Add(1)
+	m.mu.Unlock()
+
+	m.deps.Events.Emit(ctx, EventChanged, snapshot)
+	go m.executeMetadata(run, snapshot.Items[0], locale)
 	return snapshot, nil
 }
 
@@ -309,7 +386,7 @@ func (m *Manager) execute(job importJob) {
 		}
 	})
 	if job.run.startErr != nil {
-		m.complete(job, ItemSnapshot{
+		m.complete(job.run, ItemSnapshot{
 			ID:             job.item.ID,
 			SourceName:     job.item.SourceName,
 			Status:         ItemFailed,
@@ -321,11 +398,11 @@ func (m *Manager) execute(job importJob) {
 	}
 
 	if err := job.run.ctx.Err(); err != nil {
-		m.complete(job, cancelledItem(job))
+		m.complete(job.run, cancelledItem(job))
 		return
 	}
 	if err := m.deps.Repository.MarkItemRunning(m.ctx, job.item.ID); err != nil {
-		m.complete(job, ItemSnapshot{
+		m.complete(job.run, ItemSnapshot{
 			ID:             job.item.ID,
 			SourceName:     job.item.SourceName,
 			Status:         ItemFailed,
@@ -339,40 +416,88 @@ func (m *Manager) execute(job importJob) {
 
 	outcome, err := m.deps.Imports.Import(job.run.ctx, job.source)
 	item := classifyImport(job, outcome, err)
-	m.complete(job, item)
+	m.complete(job.run, item)
 }
 
-func (m *Manager) complete(job importJob, item ItemSnapshot) {
+func (m *Manager) executeMetadata(
+	run *operationRun,
+	item ItemSnapshot,
+	locale string,
+) {
+	defer m.wg.Done()
+	run.startOnce.Do(func() {
+		run.startErr = m.deps.Repository.MarkRunning(
+			m.ctx,
+			run.id,
+			m.deps.Clock.Now(),
+		)
+		if run.startErr == nil {
+			m.emitSnapshot(run.id)
+		}
+	})
+	if run.startErr != nil {
+		m.complete(run, ItemSnapshot{
+			ID:             item.ID,
+			SourceName:     item.SourceName,
+			Status:         ItemFailed,
+			OutcomeCode:    "operation_start_failed",
+			OutcomeMessage: "The metadata refresh could not start.",
+			TotalBytes:     item.TotalBytes,
+		})
+		return
+	}
+	if err := run.ctx.Err(); err != nil {
+		m.complete(run, cancelledMetadataItem(item))
+		return
+	}
+	if err := m.deps.Repository.MarkItemRunning(m.ctx, item.ID); err != nil {
+		m.complete(run, ItemSnapshot{
+			ID:             item.ID,
+			SourceName:     item.SourceName,
+			Status:         ItemFailed,
+			OutcomeCode:    "item_start_failed",
+			OutcomeMessage: "The metadata refresh could not start.",
+			TotalBytes:     item.TotalBytes,
+		})
+		return
+	}
+	m.emitSnapshot(run.id)
+
+	result, err := m.deps.Metadata.Refresh(run.ctx, locale)
+	m.complete(run, classifyMetadataRefresh(item, result, err))
+}
+
+func (m *Manager) complete(run *operationRun, item ItemSnapshot) {
 	select {
-	case <-job.run.stopped:
+	case <-run.stopped:
 		return
 	default:
 	}
 	if err := retryPersistence(m.ctx, func() error {
-		return m.deps.Repository.CompleteItem(m.ctx, job.run.id, item)
+		return m.deps.Repository.CompleteItem(m.ctx, run.id, item)
 	}); err != nil {
-		m.interruptForPersistence(job.run)
+		m.interruptForPersistence(run)
 		return
 	}
-	remaining := job.run.record(item.Status)
+	remaining := run.record(item)
 	if remaining == 0 {
-		status, code, message := job.run.finalStatus()
+		status, code, message := run.finalStatus()
 		if err := retryPersistence(m.ctx, func() error {
 			return m.deps.Repository.Finish(
 				m.ctx,
-				job.run.id,
+				run.id,
 				status,
 				code,
 				message,
 				m.deps.Clock.Now(),
 			)
 		}); err != nil {
-			m.interruptForPersistence(job.run)
+			m.interruptForPersistence(run)
 			return
 		}
-		m.finishRun(job.run)
+		m.finishRun(run)
 	}
-	m.emitSnapshot(job.run.id)
+	m.emitSnapshot(run.id)
 }
 
 func (m *Manager) interruptForPersistence(run *operationRun) {
@@ -453,7 +578,7 @@ func (m *Manager) persistenceFailureSnapshot(
 	if err != nil {
 		snapshot = Snapshot{
 			ID:         run.id,
-			Kind:       KindImport,
+			Kind:       run.kind,
 			TotalItems: run.total,
 		}
 	}
@@ -480,6 +605,9 @@ func (m *Manager) finishRun(run *operationRun) {
 
 func (m *Manager) removeRun(operationID string) {
 	m.mu.Lock()
+	if run := m.runs[operationID]; run != nil && run.kind == KindMetadataSync {
+		m.metadataActive = false
+	}
 	delete(m.runs, operationID)
 	m.mu.Unlock()
 }
@@ -504,17 +632,21 @@ func retryPersistence(ctx context.Context, action func() error) error {
 	return lastErr
 }
 
-func (r *operationRun) record(status ItemStatus) int {
+func (r *operationRun) record(item ItemSnapshot) int {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	r.remaining--
-	switch status {
+	switch item.Status {
 	case ItemSucceeded, ItemSkipped:
 		r.successes++
 	case ItemCancelled:
 		r.cancelled++
 	default:
 		r.failures++
+		if r.failureCode == "" {
+			r.failureCode = item.OutcomeCode
+			r.failureMessage = item.OutcomeMessage
+		}
 	}
 	return r.remaining
 }
@@ -525,6 +657,18 @@ func (r *operationRun) finalStatus() (Status, string, string) {
 	switch {
 	case r.failures == 0 && r.cancelled == 0:
 		return StatusSucceeded, "", ""
+	case r.kind == KindMetadataSync && r.failures == 0:
+		return StatusCancelled, "catalog_cancelled", "Official metadata refresh was cancelled."
+	case r.kind == KindMetadataSync:
+		code := r.failureCode
+		if code == "" {
+			code = "catalog_refresh_failed"
+		}
+		message := r.failureMessage
+		if message == "" {
+			message = "Official metadata could not be refreshed."
+		}
+		return StatusFailed, code, message
 	case r.successes > 0:
 		return StatusPartiallySucceeded,
 			"partial_failure",
@@ -534,6 +678,52 @@ func (r *operationRun) finalStatus() (Status, string, string) {
 	default:
 		return StatusFailed, "import_failed", "No selected files were imported."
 	}
+}
+
+func classifyMetadataRefresh(
+	item ItemSnapshot,
+	result metadata.RefreshResult,
+	err error,
+) ItemSnapshot {
+	item.CompletedBytes = item.TotalBytes
+	if err == nil {
+		item.Status = ItemSucceeded
+		item.OutcomeCode = "metadata_refreshed"
+		item.OutcomeMessage = fmt.Sprintf(
+			"Official metadata refreshed; %d local stories matched.",
+			result.Sync.MatchedStoryCount,
+		)
+		return item
+	}
+	if errors.Is(err, context.Canceled) ||
+		metadata.RefreshErrorHasCode(err, metadata.RefreshCancelled) {
+		return cancelledMetadataItem(item)
+	}
+	item.Status = ItemFailed
+	item.OutcomeCode = "catalog_refresh_failed"
+	item.OutcomeMessage = "Official metadata could not be refreshed."
+	var refreshError *metadata.RefreshError
+	if errors.As(err, &refreshError) {
+		item.OutcomeCode = string(refreshError.Code)
+		switch refreshError.Code {
+		case metadata.RefreshFetchFailed:
+			item.OutcomeMessage = "Official metadata could not be downloaded."
+		case metadata.RefreshInvalidCatalog:
+			item.OutcomeMessage = "The downloaded official catalog was invalid."
+		case metadata.RefreshStagingFailed:
+			item.OutcomeMessage = "Official metadata could not be staged safely."
+		case metadata.RefreshPersistenceFailed:
+			item.OutcomeMessage = "Official metadata could not be saved."
+		}
+	}
+	return item
+}
+
+func cancelledMetadataItem(item ItemSnapshot) ItemSnapshot {
+	item.Status = ItemCancelled
+	item.OutcomeCode = string(metadata.RefreshCancelled)
+	item.OutcomeMessage = "Official metadata refresh was cancelled."
+	return item
 }
 
 func classifyImport(job importJob, outcome importer.Outcome, err error) ItemSnapshot {

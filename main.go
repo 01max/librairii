@@ -30,7 +30,13 @@ func main() {
 	}
 	clock := platform.SystemClock{}
 	events := platform.RuntimeEvents{}
-	importRuntime, err := coreapp.NewImportRuntime(readiness, clock, events, 2)
+	importRuntime, err := coreapp.NewImportRuntime(
+		readiness,
+		clock,
+		events,
+		2,
+		coreapp.WithMetadataFetcher(catalogClient),
+	)
 	if err != nil {
 		log.Fatal(err)
 	}

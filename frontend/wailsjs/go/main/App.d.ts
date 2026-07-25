@@ -22,6 +22,8 @@ export function ListStories(arg1:library.ListRequest):Promise<app.LibraryPageRes
 
 export function OperationSnapshot(arg1:string):Promise<app.OperationResponse>;
 
+export function OfficialMetadataStatus():Promise<app.MetadataStatusResponse>;
+
 export function PlanTagDefinitionDeletion(arg1:number):Promise<app.TagDefinitionDeletionPlanResponse>;
 
 export function PlanTagValueDeletion(arg1:number):Promise<app.TagValueDeletionPlanResponse>;
@@ -31,6 +33,8 @@ export function QueryStories(arg1:library.StoryLibraryQuery):Promise<app.Library
 export function RecolorTagDefinition(arg1:number,arg2:string):Promise<app.TagDefinitionResponse>;
 
 export function RemoveStory(arg1:number):Promise<app.RemovalResponse>;
+
+export function RefreshOfficialMetadata():Promise<app.OperationResponse>;
 
 export function RenameTagDefinition(arg1:number,arg2:string):Promise<app.TagDefinitionResponse>;
 

@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/01max/librairii/internal/library"
+	"github.com/01max/librairii/internal/metadata"
 	"github.com/01max/librairii/internal/operations"
 	"github.com/01max/librairii/internal/removal"
 )
@@ -176,6 +177,36 @@ func (a *Application) SelectAndStartImport(ctx context.Context) OperationRespons
 	return OperationResponse{Operation: &snapshot}
 }
 
+func (a *Application) RefreshOfficialMetadata(
+	ctx context.Context,
+) OperationResponse {
+	if !a.Status().MutationsAllowed {
+		return OperationResponse{
+			Error: NewAPIError(
+				ErrorNotReady,
+				"Official metadata refresh is unavailable until storage is ready.",
+			),
+		}
+	}
+	snapshot, err := a.operations.StartMetadataRefresh(ctx, metadata.DefaultLocale)
+	if err != nil {
+		return OperationResponse{Error: operationAPIError(err)}
+	}
+	return OperationResponse{Operation: &snapshot}
+}
+
+func (a *Application) OfficialMetadataStatus(
+	ctx context.Context,
+) MetadataStatusResponse {
+	status, err := a.operations.MetadataStatus(ctx, metadata.DefaultLocale)
+	if err != nil {
+		return MetadataStatusResponse{
+			Error: NewAPIError(ErrorInternal, "Official metadata status could not be loaded."),
+		}
+	}
+	return MetadataStatusResponse{Status: status}
+}
+
 func (a *Application) CancelOperation(
 	ctx context.Context,
 	operationID string,
@@ -263,6 +294,8 @@ func operationAPIError(err error) *APIError {
 		return NewAPIError(ErrorInvalidInput, "The operation request is invalid.")
 	case errors.Is(err, operations.ErrOperationNotActive):
 		return NewAPIError(ErrorConflict, "The operation is no longer active.")
+	case errors.Is(err, operations.ErrOperationActive):
+		return NewAPIError(ErrorConflict, "Official metadata is already being refreshed.")
 	case errors.Is(err, sql.ErrNoRows):
 		return NewAPIError(ErrorInvalidInput, "The operation does not exist.")
 	default:

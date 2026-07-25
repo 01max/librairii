@@ -93,6 +93,68 @@ func TestRepositoryPersistsOperationProgress(t *testing.T) {
 	}
 }
 
+func TestRepositoryAllowsOnlyOneActiveMetadataSync(t *testing.T) {
+	t.Parallel()
+
+	repository, _ := newOperationRepository(t)
+	ctx := context.Background()
+	first, err := repository.CreateMetadataSync(
+		ctx,
+		"00000000-0000-4000-8000-000000000010",
+		"en-GB",
+		time.Now(),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if first.Kind != KindMetadataSync ||
+		first.TotalItems != 1 ||
+		len(first.Items) != 1 ||
+		first.Items[0].SourceName != "en-GB" {
+		t.Fatalf("CreateMetadataSync() = %#v", first)
+	}
+	if _, err := repository.CreateMetadataSync(
+		ctx,
+		"00000000-0000-4000-8000-000000000011",
+		"en-GB",
+		time.Now(),
+	); err == nil {
+		t.Fatal("CreateMetadataSync(concurrent) error = nil")
+	}
+	if err := repository.MarkItemRunning(ctx, first.Items[0].ID); err != nil {
+		t.Fatal(err)
+	}
+	if err := repository.CompleteItem(ctx, first.ID, ItemSnapshot{
+		ID:             first.Items[0].ID,
+		SourceName:     "en-GB",
+		Status:         ItemSucceeded,
+		OutcomeCode:    "metadata_refreshed",
+		OutcomeMessage: "Official metadata refreshed.",
+		CompletedBytes: 1,
+		TotalBytes:     1,
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if err := repository.Finish(
+		ctx,
+		first.ID,
+		StatusSucceeded,
+		"",
+		"",
+		time.Now(),
+	); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := repository.CreateMetadataSync(
+		ctx,
+		"00000000-0000-4000-8000-000000000012",
+		"en-GB",
+		time.Now(),
+	); err != nil {
+		t.Fatalf("CreateMetadataSync(after completion) error = %v", err)
+	}
+}
+
 func TestRepositoryRejectsInvalidTransitions(t *testing.T) {
 	t.Parallel()
 

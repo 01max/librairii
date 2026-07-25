@@ -12,6 +12,7 @@ import (
 	"github.com/01max/librairii/internal/archive"
 	"github.com/01max/librairii/internal/importer"
 	"github.com/01max/librairii/internal/inspection"
+	"github.com/01max/librairii/internal/metadata"
 	"github.com/01max/librairii/internal/storage"
 	"github.com/google/uuid"
 )
@@ -140,6 +141,111 @@ func TestManagerCancellationReachesRunningAndQueuedItems(t *testing.T) {
 		if item.Status != ItemCancelled || item.OutcomeCode != "cancelled" {
 			t.Fatalf("cancelled item = %#v", item)
 		}
+	}
+}
+
+func TestManagerRunsMetadataRefreshWithProgressAndMatchedCount(t *testing.T) {
+	t.Parallel()
+
+	repository, _ := newOperationRepository(t)
+	events := newEventRecorder()
+	refresh := metadataRefreshFunc(func(
+		context.Context,
+		string,
+	) (metadata.RefreshResult, error) {
+		return metadata.RefreshResult{
+			Sync: metadata.CatalogSync{MatchedStoryCount: 4},
+		}, nil
+	})
+	manager := newTestManagerWithMetadata(t, repository, refresh, events)
+
+	created, err := manager.StartMetadataRefresh(context.Background(), "en-GB")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if created.Kind != KindMetadataSync ||
+		created.Status != StatusQueued ||
+		created.CompletedItems != 0 ||
+		created.TotalItems != 1 {
+		t.Fatalf("StartMetadataRefresh() = %#v", created)
+	}
+	running := events.waitFor(t, created.ID, StatusRunning)
+	if running.CompletedItems != 0 || running.Items[0].Status == ItemSucceeded {
+		t.Fatalf("running metadata snapshot = %#v", running)
+	}
+	terminal := events.waitTerminal(t, created.ID)
+	if terminal.Status != StatusSucceeded ||
+		terminal.CompletedItems != 1 ||
+		terminal.Items[0].Status != ItemSucceeded ||
+		terminal.Items[0].OutcomeCode != "metadata_refreshed" ||
+		terminal.Items[0].OutcomeMessage !=
+			"Official metadata refreshed; 4 local stories matched." {
+		t.Fatalf("terminal metadata snapshot = %#v", terminal)
+	}
+}
+
+func TestManagerCancelsMetadataRefreshAndRejectsConcurrentRequest(t *testing.T) {
+	t.Parallel()
+
+	repository, _ := newOperationRepository(t)
+	events := newEventRecorder()
+	started := make(chan struct{})
+	refresh := metadataRefreshFunc(func(
+		ctx context.Context,
+		_ string,
+	) (metadata.RefreshResult, error) {
+		close(started)
+		<-ctx.Done()
+		return metadata.RefreshResult{}, ctx.Err()
+	})
+	manager := newTestManagerWithMetadata(t, repository, refresh, events)
+	created, err := manager.StartMetadataRefresh(context.Background(), "en-GB")
+	if err != nil {
+		t.Fatal(err)
+	}
+	<-started
+	if _, err := manager.StartMetadataRefresh(
+		context.Background(),
+		"en-GB",
+	); !errors.Is(err, ErrOperationActive) {
+		t.Fatalf("StartMetadataRefresh(concurrent) error = %v", err)
+	}
+	if _, err := manager.Cancel(context.Background(), created.ID); err != nil {
+		t.Fatal(err)
+	}
+	terminal := events.waitTerminal(t, created.ID)
+	if terminal.Status != StatusCancelled ||
+		terminal.Items[0].Status != ItemCancelled ||
+		terminal.Items[0].OutcomeCode != string(metadata.RefreshCancelled) {
+		t.Fatalf("cancelled metadata snapshot = %#v", terminal)
+	}
+}
+
+func TestManagerPersistsMetadataRefreshFailureCode(t *testing.T) {
+	t.Parallel()
+
+	repository, _ := newOperationRepository(t)
+	events := newEventRecorder()
+	refresh := metadataRefreshFunc(func(
+		context.Context,
+		string,
+	) (metadata.RefreshResult, error) {
+		return metadata.RefreshResult{}, &metadata.RefreshError{
+			Code:  metadata.RefreshInvalidCatalog,
+			Cause: errors.New("fixture is corrupt"),
+		}
+	})
+	manager := newTestManagerWithMetadata(t, repository, refresh, events)
+	created, err := manager.StartMetadataRefresh(context.Background(), "en-GB")
+	if err != nil {
+		t.Fatal(err)
+	}
+	terminal := events.waitTerminal(t, created.ID)
+	if terminal.Status != StatusFailed ||
+		terminal.ErrorCode != string(metadata.RefreshInvalidCatalog) ||
+		terminal.Items[0].OutcomeCode != string(metadata.RefreshInvalidCatalog) ||
+		terminal.ErrorMessage != "The downloaded official catalog was invalid." {
+		t.Fatalf("failed metadata snapshot = %#v", terminal)
 	}
 }
 
@@ -441,6 +547,18 @@ type trackingImportService struct {
 	handler       func(context.Context, string) (importer.Outcome, error)
 }
 
+type metadataRefreshFunc func(
+	context.Context,
+	string,
+) (metadata.RefreshResult, error)
+
+func (f metadataRefreshFunc) Refresh(
+	ctx context.Context,
+	locale string,
+) (metadata.RefreshResult, error) {
+	return f(ctx, locale)
+}
+
 func (s *trackingImportService) Import(
 	ctx context.Context,
 	source string,
@@ -570,6 +688,38 @@ func newTestManagerWithRepository(
 		Clock:          &testClock{now: time.Date(2026, time.July, 25, 10, 0, 0, 0, time.UTC)},
 		StagingCleaner: cleaner,
 		Workers:        workers,
+		RecoveryDelay:  5 * time.Millisecond,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := manager.Start(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		if err := manager.Close(); err != nil {
+			t.Error(err)
+		}
+	})
+	return manager
+}
+
+func newTestManagerWithMetadata(
+	t *testing.T,
+	repository managerRepository,
+	refresh MetadataRefreshService,
+	events *eventRecorder,
+) *Manager {
+	t.Helper()
+
+	manager, err := NewManager(Dependencies{
+		Repository:     repository,
+		Imports:        &trackingImportService{},
+		Metadata:       refresh,
+		Events:         events,
+		Clock:          &testClock{now: time.Date(2026, time.July, 25, 10, 0, 0, 0, time.UTC)},
+		StagingCleaner: fakeCleaner{},
+		Workers:        1,
 		RecoveryDelay:  5 * time.Millisecond,
 	})
 	if err != nil {

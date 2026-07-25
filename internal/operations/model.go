@@ -3,7 +3,8 @@ package operations
 type Kind string
 
 const (
-	KindImport Kind = "import"
+	KindImport       Kind = "import"
+	KindMetadataSync Kind = "metadata_sync"
 )
 
 type Status string

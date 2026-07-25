@@ -11,8 +11,10 @@ import {
     ActiveOperations,
     ApplicationStatus,
     CancelOperation,
+    OfficialMetadataStatus,
     OperationSnapshot,
     QueryStories,
+    RefreshOfficialMetadata,
     RemoveStory,
     SelectAndImportStories,
     StoryDetail as LoadStoryDetail,
@@ -20,7 +22,7 @@ import {
     TagCatalog as LoadTagCatalog,
 } from '../wailsjs/go/main/App';
 import {EventsOn} from '../wailsjs/runtime/runtime';
-import {library, operations, tagging} from '../wailsjs/go/models';
+import {library, metadata, operations, tagging} from '../wailsjs/go/models';
 import {
     describeImport,
     operationIsActive,
@@ -33,6 +35,10 @@ import {
 } from './query-codec';
 import TagManager from './TagManager';
 import TagAssignmentEditor from './TagAssignmentEditor';
+import {
+    describeMetadataRefresh,
+    describeMetadataStatus,
+} from './metadata-state';
 
 const coverPalettes = [
     ['#31559f', '#f7c85b', '#e06a53'],
@@ -107,6 +113,8 @@ function App() {
     const [detail, setDetail] = useState<library.StoryDetail | null>(null);
     const [detailRevision, setDetailRevision] = useState(0);
     const [operationSnapshots, setOperationSnapshots] = useState<operations.Snapshot[]>([]);
+    const [metadataStatus, setMetadataStatus] =
+        useState<metadata.CatalogStatus | null>(null);
     const [requestError, setRequestError] = useState<string | null>(null);
     const [detailsOpen, setDetailsOpen] = useState(false);
     const [removing, setRemoving] = useState(false);
@@ -178,6 +186,19 @@ function App() {
         });
     }, [collectionQuery, queryHistory]);
 
+    const refreshMetadataStatus = useCallback(async () => {
+        try {
+            const response = await OfficialMetadataStatus();
+            if (response.error) {
+                setRequestError(response.error.message);
+                return;
+            }
+            setMetadataStatus(response.status);
+        } catch {
+            setRequestError('Official metadata status could not be refreshed.');
+        }
+    }, []);
+
     const reconcileOperation = useCallback((snapshot: operations.Snapshot) => {
         setOperationSnapshots((current) => {
             const index = current.findIndex((candidate) => candidate.id === snapshot.id);
@@ -197,8 +218,16 @@ function App() {
         ) {
             refreshedOperations.current.add(snapshot.id);
             void loadCollectionRef.current();
+            if (snapshot.kind === 'metadata_sync') {
+                void refreshMetadataStatus();
+                void LoadTagCatalog().then((response) => {
+                    if (response.catalog) {
+                        setTagCatalog(response.catalog);
+                    }
+                });
+            }
         }
-    }, []);
+    }, [refreshMetadataStatus]);
 
     useEffect(() => {
         let active = true;
@@ -214,6 +243,15 @@ function App() {
                     const catalogResponse = await LoadTagCatalog();
                     if (active) {
                         setTagCatalog(catalogResponse.catalog ?? null);
+                    }
+                    const metadataResponse = await OfficialMetadataStatus();
+                    if (!active) {
+                        return;
+                    }
+                    if (metadataResponse.error) {
+                        setRequestError(metadataResponse.error.message);
+                    } else {
+                        setMetadataStatus(metadataResponse.status);
                     }
                     const operationsResponse = await ActiveOperations();
                     if (!active) {
@@ -283,7 +321,7 @@ function App() {
                 }
             } catch {
                 if (active) {
-                    setRequestError('Import progress could not be refreshed.');
+                    setRequestError('Operation progress could not be refreshed.');
                 }
             } finally {
                 requestsInFlight.delete(operationID);
@@ -314,7 +352,19 @@ function App() {
         }
     }
 
-    async function cancelImport(operation: operations.Snapshot) {
+    async function startMetadataRefresh() {
+        setRequestError(null);
+        const response = await RefreshOfficialMetadata();
+        if (response.error) {
+            setRequestError(response.error.message);
+            return;
+        }
+        if (response.operation) {
+            reconcileOperation(response.operation);
+        }
+    }
+
+    async function cancelOperation(operation: operations.Snapshot) {
         if (!operationIsActive(operation)) {
             return;
         }
@@ -447,7 +497,13 @@ function App() {
     const visibleOperations = activeOperations.length > 0
         ? activeOperations
         : operationSnapshots.slice(0, 1);
-    const importing = activeOperations.length > 0;
+    const importing = activeOperations.some((snapshot) => snapshot.kind === 'import');
+    const metadataRefreshing = activeOperations.some(
+        (snapshot) => snapshot.kind === 'metadata_sync',
+    );
+    const hasMetadataOperation = operationSnapshots.some(
+        (snapshot) => snapshot.kind === 'metadata_sync',
+    );
     const empty = page !== null && page.totalItems === 0 && !importing;
     const assignedTags = assignmentWorkspace?.catalog.definitions.flatMap((definition) => {
         const state = assignmentWorkspace.states.find(
@@ -719,7 +775,13 @@ function App() {
                             })}
                         />
                     </label>
-                    <button type="button">↻ Sync</button>
+                    <button
+                        type="button"
+                        disabled={metadataRefreshing}
+                        onClick={() => void startMetadataRefresh()}
+                    >
+                        {metadataRefreshing ? 'Refreshing…' : '↻ Sync'}
+                    </button>
                     <button
                         className="import"
                         type="button"
@@ -806,27 +868,50 @@ function App() {
                     </section>
                 )}
 
+                {metadataStatus && !hasMetadataOperation && (() => {
+                    const notice = describeMetadataStatus(metadataStatus);
+                    return (
+                        <section
+                            className={`collection-state ${notice.tone}`}
+                            data-state={notice.state}
+                            aria-live="polite"
+                        >
+                            <div className="state-mark" aria-hidden="true">
+                                {notice.tone === 'success' ? '✓' : '↻'}
+                            </div>
+                            <div className="state-copy">
+                                <h3>{notice.title}</h3>
+                                <p>{notice.message}</p>
+                            </div>
+                        </section>
+                    );
+                })()}
+
                 {visibleOperations.map((operation) => {
-                    const importNotice = describeImport(operation);
+                    const notice = operation.kind === 'metadata_sync'
+                        ? describeMetadataRefresh(operation, metadataStatus)
+                        : describeImport(operation);
                     const operationActive = operationIsActive(operation);
                     return (
                         <section
-                            className={`collection-state ${importNotice.tone}`}
-                            data-state={importNotice.state}
+                            className={`collection-state ${notice.tone}`}
+                            data-state={notice.state}
                             aria-live="polite"
                             key={operation.id}
                         >
                             <div className="state-mark" aria-hidden="true">
-                                {importNotice.tone === 'success'
+                                {notice.tone === 'success'
                                     ? '✓'
-                                    : importNotice.tone === 'working'
-                                        ? '↓'
+                                    : notice.tone === 'working'
+                                        ? operation.kind === 'metadata_sync' ? '↻' : '↓'
                                         : '!'}
                             </div>
                             <div className="state-copy">
-                                <h3>{importNotice.title}</h3>
-                                <p>{importNotice.message}</p>
-                                {operation.items.length > 0 && !operationActive && (
+                                <h3>{notice.title}</h3>
+                                <p>{notice.message}</p>
+                                {operation.kind === 'import' &&
+                                    operation.items.length > 0 &&
+                                    !operationActive && (
                                     <ul className="operation-items">
                                         {operation.items.map((item) => (
                                             <li key={item.id}>
@@ -840,9 +925,11 @@ function App() {
                             {operationActive && (
                                 <button
                                     type="button"
-                                    onClick={() => void cancelImport(operation)}
+                                    onClick={() => void cancelOperation(operation)}
                                 >
-                                    Cancel import
+                                    {operation.kind === 'metadata_sync'
+                                        ? 'Cancel refresh'
+                                        : 'Cancel import'}
                                 </button>
                             )}
                         </section>

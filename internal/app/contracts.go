@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/01max/librairii/internal/library"
+	"github.com/01max/librairii/internal/metadata"
 	"github.com/01max/librairii/internal/operations"
 	"github.com/01max/librairii/internal/removal"
 	"github.com/01max/librairii/internal/tagging"
@@ -109,6 +110,8 @@ type ResourcePort interface {
 type OperationPort interface {
 	Start(context.Context) error
 	StartImport(context.Context, []string) (operations.Snapshot, error)
+	StartMetadataRefresh(context.Context, string) (operations.Snapshot, error)
+	MetadataStatus(context.Context, string) (metadata.CatalogStatus, error)
 	Cancel(context.Context, string) (operations.Snapshot, error)
 	Snapshot(context.Context, string) (operations.Snapshot, error)
 	Active(context.Context) ([]operations.Snapshot, error)
@@ -165,6 +168,11 @@ type OperationResponse struct {
 type OperationListResponse struct {
 	Operations []operations.Snapshot `json:"operations"`
 	Error      *APIError             `json:"error,omitempty"`
+}
+
+type MetadataStatusResponse struct {
+	Status metadata.CatalogStatus `json:"status"`
+	Error  *APIError              `json:"error,omitempty"`
 }
 
 type LibraryPageResponse struct {

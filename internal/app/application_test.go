@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/01max/librairii/internal/library"
+	"github.com/01max/librairii/internal/metadata"
 	"github.com/01max/librairii/internal/operations"
 	"github.com/01max/librairii/internal/removal"
 	"github.com/01max/librairii/internal/tagging"
@@ -84,16 +85,18 @@ func (r *fakeResource) Close() error {
 }
 
 type fakeOperations struct {
-	started    bool
-	closed     bool
-	startPaths []string
-	snapshot   operations.Snapshot
-	active     []operations.Snapshot
-	page       library.Page
-	searchPage library.Page
-	detail     library.StoryDetail
-	removed    removal.Result
-	err        error
+	started        bool
+	closed         bool
+	startPaths     []string
+	syncLocale     string
+	snapshot       operations.Snapshot
+	active         []operations.Snapshot
+	metadataStatus metadata.CatalogStatus
+	page           library.Page
+	searchPage     library.Page
+	detail         library.StoryDetail
+	removed        removal.Result
+	err            error
 }
 
 func (o *fakeOperations) Start(context.Context) error {
@@ -107,6 +110,21 @@ func (o *fakeOperations) StartImport(
 ) (operations.Snapshot, error) {
 	o.startPaths = append([]string(nil), paths...)
 	return o.snapshot, o.err
+}
+
+func (o *fakeOperations) StartMetadataRefresh(
+	_ context.Context,
+	locale string,
+) (operations.Snapshot, error) {
+	o.syncLocale = locale
+	return o.snapshot, o.err
+}
+
+func (o *fakeOperations) MetadataStatus(
+	context.Context,
+	string,
+) (metadata.CatalogStatus, error) {
+	return o.metadataStatus, o.err
 }
 
 func (o *fakeOperations) Cancel(
@@ -527,6 +545,53 @@ func TestOperationFacadeReturnsActiveSnapshots(t *testing.T) {
 		len(response.Operations) != 1 ||
 		response.Operations[0].Status != operations.StatusRunning {
 		t.Fatalf("ActiveOperations() = %#v", response)
+	}
+}
+
+func TestMetadataFacadeStartsRefreshAndReturnsFreshness(t *testing.T) {
+	t.Parallel()
+
+	operationPort := &fakeOperations{
+		snapshot: operations.Snapshot{
+			ID:     "00112233-4455-4677-8899-aabbccddeeff",
+			Kind:   operations.KindMetadataSync,
+			Status: operations.StatusQueued,
+		},
+		metadataStatus: metadata.CatalogStatus{
+			State:             metadata.CatalogFresh,
+			Locale:            metadata.DefaultLocale,
+			MatchedStoryCount: 4,
+			ActivatedAt:       "2026-07-25T16:00:00Z",
+		},
+	}
+	application, err := New(Dependencies{
+		Clock:      fixedClock{now: time.Now()},
+		Dialogs:    fakeDialogs{},
+		Events:     &fakeEvents{},
+		Readiness:  fakeReadiness{report: ReadinessReport{MutationsAllowed: true}},
+		Operations: operationPort,
+		Library:    operationPort,
+		Removal:    operationPort,
+		Tags:       operationPort,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := application.Start(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	refresh := application.RefreshOfficialMetadata(context.Background())
+	if refresh.Error != nil ||
+		refresh.Operation == nil ||
+		refresh.Operation.Kind != operations.KindMetadataSync ||
+		operationPort.syncLocale != metadata.DefaultLocale {
+		t.Fatalf("RefreshOfficialMetadata() = %#v", refresh)
+	}
+	status := application.OfficialMetadataStatus(context.Background())
+	if status.Error != nil ||
+		status.Status.State != metadata.CatalogFresh ||
+		status.Status.MatchedStoryCount != 4 {
+		t.Fatalf("OfficialMetadataStatus() = %#v", status)
 	}
 }
 

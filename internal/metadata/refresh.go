@@ -45,6 +45,7 @@ type CatalogFetcher interface {
 type refreshRepository interface {
 	CreateSync(context.Context, NewCatalogSync) (CatalogSync, error)
 	StageSnapshot(context.Context, NewCatalogSnapshot) (CatalogSnapshot, error)
+	CountMatchingStories(context.Context, int64) (int, error)
 	ActivateSnapshot(context.Context, int64, int, time.Time) error
 	FinishSyncFailure(
 		context.Context,
@@ -163,7 +164,22 @@ func (s *RefreshService) Refresh(
 	}
 
 	activatedAt := s.now().UTC()
-	if err := s.repository.ActivateSnapshot(ctx, snapshot.ID, 0, activatedAt); err != nil {
+	matchedStoryCount, err := s.repository.CountMatchingStories(ctx, snapshot.ID)
+	if err != nil {
+		return RefreshResult{}, s.fail(
+			ctx,
+			sync.ID,
+			snapshot.ID,
+			RefreshPersistenceFailed,
+			err,
+		)
+	}
+	if err := s.repository.ActivateSnapshot(
+		ctx,
+		snapshot.ID,
+		matchedStoryCount,
+		activatedAt,
+	); err != nil {
 		return RefreshResult{}, s.fail(
 			ctx,
 			sync.ID,

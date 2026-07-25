@@ -285,6 +285,103 @@ func TestImportRuntimeUsesActiveOfficialMetadataWithoutChangingManualTags(t *tes
 	}
 }
 
+func TestImportRuntimeRefreshesMetadataThroughDurableOperation(t *testing.T) {
+	t.Parallel()
+
+	provider := newRuntimeStorageProvider(t)
+	payload, err := os.ReadFile("../lunii/testdata/catalog.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	fetcher := &runtimeCatalogFetcher{payload: payload}
+	events := &runtimeEventRecorder{events: make(chan operations.Snapshot, 32)}
+	runtime, err := NewImportRuntime(
+		provider,
+		fixedClock{now: time.Date(2026, time.July, 25, 17, 0, 0, 0, time.UTC)},
+		events,
+		1,
+		WithMetadataFetcher(fetcher),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := runtime.Start(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		_ = runtime.Close()
+	})
+	status, err := runtime.MetadataStatus(context.Background(), metadata.DefaultLocale)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if status.State != metadata.CatalogNeverSynced {
+		t.Fatalf("MetadataStatus(before refresh) = %#v", status)
+	}
+	if _, err := provider.SQL().Exec(
+		"INSERT INTO stories (uuid) VALUES (?)",
+		"123e4567-e89b-42d3-a456-426614174000",
+	); err != nil {
+		t.Fatal(err)
+	}
+
+	created, err := runtime.StartMetadataRefresh(
+		context.Background(),
+		metadata.DefaultLocale,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	terminal := events.waitTerminal(t, created.ID)
+	if terminal.Kind != operations.KindMetadataSync ||
+		terminal.Status != operations.StatusSucceeded ||
+		terminal.Items[0].OutcomeCode != "metadata_refreshed" {
+		t.Fatalf("metadata refresh operation = %#v", terminal)
+	}
+	status, err = runtime.MetadataStatus(context.Background(), metadata.DefaultLocale)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if status.State != metadata.CatalogFresh ||
+		status.MatchedStoryCount != 1 ||
+		status.ActivatedAt == "" {
+		t.Fatalf("MetadataStatus(after refresh) = %#v", status)
+	}
+
+	fetcher.payload = nil
+	fetcher.err = errors.New("offline")
+	failed, err := runtime.StartMetadataRefresh(
+		context.Background(),
+		metadata.DefaultLocale,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	terminal = events.waitTerminal(t, failed.ID)
+	if terminal.Status != operations.StatusFailed ||
+		terminal.ErrorCode != string(metadata.RefreshFetchFailed) {
+		t.Fatalf("failed metadata refresh operation = %#v", terminal)
+	}
+	status, err = runtime.MetadataStatus(context.Background(), metadata.DefaultLocale)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if status.State != metadata.CatalogStaleCache ||
+		status.MatchedStoryCount != 1 ||
+		status.ErrorCode != string(metadata.RefreshFetchFailed) {
+		t.Fatalf("MetadataStatus(stale cache) = %#v", status)
+	}
+}
+
+type runtimeCatalogFetcher struct {
+	payload []byte
+	err     error
+}
+
+func (f *runtimeCatalogFetcher) FetchCatalog(context.Context) ([]byte, error) {
+	return f.payload, f.err
+}
+
 func stageRuntimeMetadataSnapshot(
 	t *testing.T,
 	repository *metadata.Repository,

@@ -63,6 +63,14 @@ func (a *App) SelectAndImportStories() coreapp.OperationResponse {
 	return a.core.SelectAndStartImport(a.runtimeContext())
 }
 
+func (a *App) RefreshOfficialMetadata() coreapp.OperationResponse {
+	return a.core.RefreshOfficialMetadata(a.runtimeContext())
+}
+
+func (a *App) OfficialMetadataStatus() coreapp.MetadataStatusResponse {
+	return a.core.OfficialMetadataStatus(a.runtimeContext())
+}
+
 func (a *App) CancelOperation(operationID string) coreapp.OperationResponse {
 	return a.core.CancelOperation(a.runtimeContext(), operationID)
 }

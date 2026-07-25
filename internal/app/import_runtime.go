@@ -13,6 +13,7 @@ import (
 	"github.com/01max/librairii/internal/importer"
 	"github.com/01max/librairii/internal/inspection"
 	"github.com/01max/librairii/internal/library"
+	"github.com/01max/librairii/internal/lunii"
 	"github.com/01max/librairii/internal/metadata"
 	"github.com/01max/librairii/internal/operations"
 	"github.com/01max/librairii/internal/removal"
@@ -28,15 +29,24 @@ type StorageProvider interface {
 }
 
 type ImportRuntime struct {
-	mu      sync.RWMutex
-	storage StorageProvider
-	clock   Clock
-	events  EventPort
-	workers int
-	manager *operations.Manager
-	query   *library.Query
-	removal *removal.Service
-	tags    *tagging.Service
+	mu              sync.RWMutex
+	storage         StorageProvider
+	clock           Clock
+	events          EventPort
+	workers         int
+	metadataFetcher metadata.CatalogFetcher
+	manager         *operations.Manager
+	query           *library.Query
+	removal         *removal.Service
+	tags            *tagging.Service
+}
+
+type ImportRuntimeOption func(*ImportRuntime)
+
+func WithMetadataFetcher(fetcher metadata.CatalogFetcher) ImportRuntimeOption {
+	return func(runtime *ImportRuntime) {
+		runtime.metadataFetcher = fetcher
+	}
 }
 
 func NewImportRuntime(
@@ -44,16 +54,30 @@ func NewImportRuntime(
 	clock Clock,
 	events EventPort,
 	workers int,
+	options ...ImportRuntimeOption,
 ) (*ImportRuntime, error) {
 	if storage == nil || clock == nil || events == nil || workers < 1 {
 		return nil, ErrMissingDependency
 	}
-	return &ImportRuntime{
+	runtime := &ImportRuntime{
 		storage: storage,
 		clock:   clock,
 		events:  events,
 		workers: workers,
-	}, nil
+	}
+	for _, option := range options {
+		if option != nil {
+			option(runtime)
+		}
+	}
+	if runtime.metadataFetcher == nil {
+		defaultFetcher, err := lunii.NewCatalogClient(lunii.ProductionConfig())
+		if err != nil {
+			return nil, fmt.Errorf("construct metadata catalog client: %w", err)
+		}
+		runtime.metadataFetcher = defaultFetcher
+	}
+	return runtime, nil
 }
 
 func (r *ImportRuntime) Start(ctx context.Context) error {
@@ -79,6 +103,15 @@ func (r *ImportRuntime) Start(ctx context.Context) error {
 
 	archiveRepository := archive.NewRepository(layout)
 	catalogRepository := catalog.NewRepository(database)
+	metadataRepository := metadata.NewRepository(database)
+	metadataRefresh, err := metadata.NewRefreshService(
+		r.metadataFetcher,
+		metadataRepository,
+		metadata.NewRawSnapshotStore(layout),
+	)
+	if err != nil {
+		return fmt.Errorf("construct metadata refresh service: %w", err)
+	}
 	importService, err := importer.NewService(
 		archiveRepository,
 		artwork.NewRepository(layout),
@@ -92,6 +125,7 @@ func (r *ImportRuntime) Start(ctx context.Context) error {
 	manager, err := operations.NewManager(operations.Dependencies{
 		Repository:     operations.NewRepository(database),
 		Imports:        importService,
+		Metadata:       metadataRefresh,
 		Events:         r.events,
 		Clock:          r.clock,
 		StagingCleaner: archiveRepository,
@@ -119,7 +153,7 @@ func (r *ImportRuntime) Start(ctx context.Context) error {
 		return err
 	}
 	officialProvider, err := metadata.NewLibraryProvider(
-		metadata.NewRepository(database),
+		metadataRepository,
 		metadata.DefaultLocale,
 	)
 	if err != nil {
@@ -142,6 +176,31 @@ func (r *ImportRuntime) StartImport(
 		return operations.Snapshot{}, err
 	}
 	return manager.StartImport(ctx, paths)
+}
+
+func (r *ImportRuntime) StartMetadataRefresh(
+	ctx context.Context,
+	locale string,
+) (operations.Snapshot, error) {
+	manager, err := r.current()
+	if err != nil {
+		return operations.Snapshot{}, err
+	}
+	return manager.StartMetadataRefresh(ctx, locale)
+}
+
+func (r *ImportRuntime) MetadataStatus(
+	ctx context.Context,
+	locale string,
+) (metadata.CatalogStatus, error) {
+	if _, err := r.current(); err != nil {
+		return metadata.CatalogStatus{}, err
+	}
+	database := r.storage.SQL()
+	if database == nil {
+		return metadata.CatalogStatus{}, ErrImportRuntimeNotReady
+	}
+	return metadata.NewRepository(database).CatalogStatus(ctx, locale)
 }
 
 func (r *ImportRuntime) Cancel(

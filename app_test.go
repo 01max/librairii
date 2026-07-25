@@ -7,6 +7,7 @@ import (
 
 	coreapp "github.com/01max/librairii/internal/app"
 	"github.com/01max/librairii/internal/library"
+	"github.com/01max/librairii/internal/metadata"
 	"github.com/01max/librairii/internal/operations"
 	"github.com/01max/librairii/internal/removal"
 	"github.com/01max/librairii/internal/tagging"
@@ -49,6 +50,20 @@ func (facadeOperations) StartImport(
 	[]string,
 ) (operations.Snapshot, error) {
 	return operations.Snapshot{}, nil
+}
+
+func (facadeOperations) StartMetadataRefresh(
+	context.Context,
+	string,
+) (operations.Snapshot, error) {
+	return operations.Snapshot{}, nil
+}
+
+func (facadeOperations) MetadataStatus(
+	context.Context,
+	string,
+) (metadata.CatalogStatus, error) {
+	return metadata.CatalogStatus{}, nil
 }
 
 func (facadeOperations) Cancel(

@@ -27,8 +27,36 @@ func (r *Repository) CreateImport(
 	items []NewItem,
 	now time.Time,
 ) (Snapshot, error) {
+	return r.create(ctx, id, KindImport, items, now)
+}
+
+func (r *Repository) CreateMetadataSync(
+	ctx context.Context,
+	id string,
+	locale string,
+	now time.Time,
+) (Snapshot, error) {
+	if locale == "" {
+		return Snapshot{}, fmt.Errorf("%w: empty metadata locale", ErrInvalidTransition)
+	}
+	return r.create(ctx, id, KindMetadataSync, []NewItem{{
+		SourceName: locale,
+		TotalBytes: 1,
+	}}, now)
+}
+
+func (r *Repository) create(
+	ctx context.Context,
+	id string,
+	kind Kind,
+	items []NewItem,
+	now time.Time,
+) (Snapshot, error) {
 	if id == "" || len(items) == 0 {
 		return Snapshot{}, fmt.Errorf("%w: empty operation", ErrInvalidTransition)
+	}
+	if kind != KindImport && kind != KindMetadataSync {
+		return Snapshot{}, fmt.Errorf("%w: unsupported operation kind", ErrInvalidTransition)
 	}
 	transaction, err := r.database.BeginTx(ctx, nil)
 	if err != nil {
@@ -40,12 +68,13 @@ func (r *Repository) CreateImport(
 		ctx,
 		`INSERT INTO file_operations (
 			id, kind, status, total_items, created_at
-		) VALUES (?, 'import', 'queued', ?, ?)`,
+		) VALUES (?, ?, 'queued', ?, ?)`,
 		id,
+		kind,
 		len(items),
 		formatTime(now),
 	); err != nil {
-		return Snapshot{}, fmt.Errorf("insert import operation: %w", err)
+		return Snapshot{}, fmt.Errorf("insert %s operation: %w", kind, err)
 	}
 	for _, item := range items {
 		if item.SourceName == "" || item.TotalBytes < 0 {

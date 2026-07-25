@@ -325,15 +325,15 @@ select:focus-visible {
     font-weight: 800;
 }
 
+.top button:disabled {
+    cursor: progress;
+    opacity: .72;
+}
+
 .top .import {
     border-color: var(--blue);
     color: white;
     background: var(--blue);
-}
-
-.top .import:disabled {
-    cursor: progress;
-    opacity: .72;
 }
 
 .heading {
