@@ -229,11 +229,11 @@ func TestCopierDestinationRacePreservesRacingFile(t *testing.T) {
 		t.Fatal(err)
 	}
 	racingBytes := []byte("created after preflight")
-	copier.link = func(temporaryPath string, finalPath string) error {
+	copier.publish = func(temporaryPath string, finalPath string) error {
 		if err := os.WriteFile(finalPath, racingBytes, 0o600); err != nil {
 			return err
 		}
-		return os.Link(temporaryPath, finalPath)
+		return publishNoReplace(temporaryPath, finalPath)
 	}
 	destination := t.TempDir()
 	if _, err := copier.Copy(

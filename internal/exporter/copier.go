@@ -27,7 +27,7 @@ type ProgressFunc = func(deltaBytes int64)
 
 type Copier struct {
 	layout        storage.Layout
-	link          func(string, string) error
+	publish       func(string, string) error
 	openSource    func(string) (io.ReadCloser, error)
 	syncDirectory func(string) error
 }
@@ -40,8 +40,8 @@ func NewCopier(layout storage.Layout) (*Copier, error) {
 		return nil, ErrExportSourceInvalid
 	}
 	return &Copier{
-		layout: layout,
-		link:   os.Link,
+		layout:  layout,
+		publish: publishNoReplace,
 		openSource: func(path string) (io.ReadCloser, error) {
 			return os.Open(path)
 		},
@@ -119,7 +119,7 @@ func (c *Copier) Copy(
 	if checksum != item.ArchiveSHA256 || written != item.TotalBytes {
 		return CopyResult{OutcomeCode: "checksum_mismatch"}, ErrExportChecksumFailed
 	}
-	if err := c.link(temporaryPath, finalPath); err != nil {
+	if err := c.publish(temporaryPath, finalPath); err != nil {
 		if errors.Is(err, os.ErrExist) {
 			return CopyResult{OutcomeCode: "filename_conflict"}, ErrExportConflict
 		}
