@@ -89,6 +89,15 @@ func (r *StorageReadiness) SQL() *sql.DB {
 	return r.db.SQL()
 }
 
+func (r *StorageReadiness) Writer() *sql.DB {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	if r.db == nil {
+		return nil
+	}
+	return r.db.Writer()
+}
+
 func (r *StorageReadiness) Close() error {
 	r.mu.Lock()
 	connection := r.db

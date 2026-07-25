@@ -551,6 +551,10 @@ func (p *runtimeStorageProvider) SQL() *sql.DB {
 	return p.db.SQL()
 }
 
+func (p *runtimeStorageProvider) Writer() *sql.DB {
+	return p.db.Writer()
+}
+
 type runtimeEventRecorder struct {
 	events chan operations.Snapshot
 }

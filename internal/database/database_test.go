@@ -37,6 +37,9 @@ func TestOpenCreatesMigratesAndReopensDatabase(t *testing.T) {
 	if got := database.SQL().Stats().MaxOpenConnections; got != maxOpenConnections {
 		t.Fatalf("MaxOpenConnections = %d, want %d", got, maxOpenConnections)
 	}
+	if got := database.Writer().Stats().MaxOpenConnections; got != 1 {
+		t.Fatalf("Writer MaxOpenConnections = %d, want 1", got)
+	}
 
 	var migrations int
 	if err := database.SQL().QueryRow("SELECT COUNT(*) FROM schema_migrations").Scan(&migrations); err != nil {

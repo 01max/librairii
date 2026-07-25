@@ -8,7 +8,9 @@ import (
 	"time"
 )
 
-func TestWALSnapshotsAndBusyTimeoutSerializeContendingWriters(t *testing.T) {
+func TestApplicationWriterLaneSerializesWritesWhileWALReadsRemainLive(
+	t *testing.T,
+) {
 	t.Parallel()
 
 	ctx := context.Background()
@@ -21,8 +23,9 @@ func TestWALSnapshotsAndBusyTimeoutSerializeContendingWriters(t *testing.T) {
 			t.Error(err)
 		}
 	})
-	connection := opened.SQL()
-	if _, err := connection.ExecContext(
+	readPool := opened.SQL()
+	writer := opened.Writer()
+	if _, err := writer.ExecContext(
 		ctx,
 		`CREATE TABLE concurrency_probe (
 			id INTEGER PRIMARY KEY,
@@ -31,14 +34,14 @@ func TestWALSnapshotsAndBusyTimeoutSerializeContendingWriters(t *testing.T) {
 	); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := connection.ExecContext(
+	if _, err := writer.ExecContext(
 		ctx,
 		"INSERT INTO concurrency_probe (value) VALUES ('before')",
 	); err != nil {
 		t.Fatal(err)
 	}
 
-	snapshot, err := connection.BeginTx(
+	snapshot, err := readPool.BeginTx(
 		ctx,
 		&sql.TxOptions{ReadOnly: true},
 	)
@@ -49,7 +52,7 @@ func TestWALSnapshotsAndBusyTimeoutSerializeContendingWriters(t *testing.T) {
 	if got := probeCount(t, snapshot); got != 1 {
 		t.Fatalf("snapshot count before writer = %d, want 1", got)
 	}
-	if _, err := connection.ExecContext(
+	if _, err := writer.ExecContext(
 		ctx,
 		"INSERT INTO concurrency_probe (value) VALUES ('during snapshot')",
 	); err != nil {
@@ -58,14 +61,14 @@ func TestWALSnapshotsAndBusyTimeoutSerializeContendingWriters(t *testing.T) {
 	if got := probeCount(t, snapshot); got != 1 {
 		t.Fatalf("snapshot count after writer = %d, want stable 1", got)
 	}
-	if got := probeCount(t, connection); got != 2 {
+	if got := probeCount(t, readPool); got != 2 {
 		t.Fatalf("current count after writer = %d, want 2", got)
 	}
 	if err := snapshot.Rollback(); err != nil {
 		t.Fatal(err)
 	}
 
-	locker, err := connection.Conn(ctx)
+	locker, err := writer.Conn(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -88,7 +91,7 @@ func TestWALSnapshotsAndBusyTimeoutSerializeContendingWriters(t *testing.T) {
 
 	waitingWriter := make(chan error, 1)
 	go func() {
-		_, writeErr := connection.ExecContext(
+		_, writeErr := writer.ExecContext(
 			ctx,
 			"INSERT INTO concurrency_probe (value) VALUES ('waiting writer')",
 		)
@@ -103,6 +106,9 @@ func TestWALSnapshotsAndBusyTimeoutSerializeContendingWriters(t *testing.T) {
 		t.Fatal(err)
 	}
 	lockActive = false
+	if err := locker.Close(); err != nil {
+		t.Fatal(err)
+	}
 	select {
 	case err := <-waitingWriter:
 		if err != nil {
@@ -111,11 +117,14 @@ func TestWALSnapshotsAndBusyTimeoutSerializeContendingWriters(t *testing.T) {
 	case <-time.After(time.Second):
 		t.Fatal("contending writer did not resume after the short transaction")
 	}
-	if got := probeCount(t, connection); got != 4 {
+	if got := probeCount(t, readPool); got != 4 {
 		t.Fatalf("final count = %d, want 4", got)
 	}
-	if got := connection.Stats().MaxOpenConnections; got != maxOpenConnections {
+	if got := readPool.Stats().MaxOpenConnections; got != maxOpenConnections {
 		t.Fatalf("MaxOpenConnections = %d, want %d", got, maxOpenConnections)
+	}
+	if got := writer.Stats().MaxOpenConnections; got != 1 {
+		t.Fatalf("writer lane MaxOpenConnections = %d, want 1", got)
 	}
 }
 

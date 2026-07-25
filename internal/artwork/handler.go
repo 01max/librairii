@@ -21,6 +21,7 @@ const assetPathPrefix = "/artwork/"
 type StorageProvider interface {
 	Layout() storage.Layout
 	SQL() *sql.DB
+	Writer() *sql.DB
 }
 
 type RemoteFetcher interface {
@@ -62,14 +63,21 @@ func (h *AssetHandler) ServeHTTP(response http.ResponseWriter, request *http.Req
 		http.NotFound(response, request)
 		return
 	}
-	database := h.storage.SQL()
+	readDatabase := h.storage.SQL()
+	writeDatabase := h.storage.Writer()
 	layout := h.storage.Layout()
-	if database == nil || layout.Root == "" {
+	if readDatabase == nil || writeDatabase == nil || layout.Root == "" {
 		http.Error(response, "artwork storage unavailable", http.StatusServiceUnavailable)
 		return
 	}
 
-	asset, err := h.load(request.Context(), database, layout, opaqueID)
+	asset, err := h.load(
+		request.Context(),
+		readDatabase,
+		writeDatabase,
+		layout,
+		opaqueID,
+	)
 	if err != nil {
 		if errors.Is(err, ErrArtworkNotFound) || errors.Is(err, sql.ErrNoRows) {
 			http.NotFound(response, request)
@@ -91,19 +99,20 @@ func (h *AssetHandler) ServeHTTP(response http.ResponseWriter, request *http.Req
 
 func (h *AssetHandler) load(
 	ctx context.Context,
-	database *sql.DB,
+	readDatabase *sql.DB,
+	writeDatabase *sql.DB,
 	layout storage.Layout,
 	opaqueID string,
 ) (Asset, error) {
 	files := NewRepository(layout)
 	if strings.HasPrefix(opaqueID, "embedded:") {
-		return files.LoadEmbedded(ctx, database, opaqueID, h.maximumBytes)
+		return files.LoadEmbedded(ctx, readDatabase, opaqueID, h.maximumBytes)
 	}
 	if !validOpaqueID(opaqueID) {
 		return Asset{}, ErrArtworkNotFound
 	}
-	catalog := metadata.NewRepository(database)
-	record, err := catalog.Artwork(ctx, opaqueID)
+	readCatalog := metadata.NewRepository(readDatabase)
+	record, err := readCatalog.Artwork(ctx, opaqueID)
 	if err != nil {
 		return Asset{}, err
 	}
@@ -113,7 +122,7 @@ func (h *AssetHandler) load(
 
 	h.cacheMiss.Lock()
 	defer h.cacheMiss.Unlock()
-	record, err = catalog.Artwork(ctx, opaqueID)
+	record, err = readCatalog.Artwork(ctx, opaqueID)
 	if err != nil {
 		return Asset{}, err
 	}
@@ -133,7 +142,7 @@ func (h *AssetHandler) load(
 	if err != nil {
 		return Asset{}, err
 	}
-	if err := catalog.CacheArtwork(
+	if err := metadata.NewRepository(writeDatabase).CacheArtwork(
 		ctx,
 		opaqueID,
 		managedPath,

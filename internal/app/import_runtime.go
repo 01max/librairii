@@ -32,6 +32,7 @@ const maxPreparedExports = 8
 type StorageProvider interface {
 	Layout() storage.Layout
 	SQL() *sql.DB
+	Writer() *sql.DB
 }
 
 type ImportRuntime struct {
@@ -100,9 +101,10 @@ func (r *ImportRuntime) Start(ctx context.Context) error {
 	if r.manager != nil {
 		return nil
 	}
-	database := r.storage.SQL()
+	readDatabase := r.storage.SQL()
+	writeDatabase := r.storage.Writer()
 	layout := r.storage.Layout()
-	if database == nil || layout.Root == "" {
+	if readDatabase == nil || writeDatabase == nil || layout.Root == "" {
 		return ErrImportRuntimeNotReady
 	}
 	diagnosticLogger, err := diagnostics.NewLogger(
@@ -121,38 +123,39 @@ func (r *ImportRuntime) Start(ctx context.Context) error {
 	}()
 	diagnosticService, err := diagnostics.NewService(
 		layout,
-		database,
+		readDatabase,
 		diagnosticLogger,
 	)
 	if err != nil {
 		return fmt.Errorf("construct diagnostic export service: %w", err)
 	}
-	if _, err := tagging.SeedBuiltIns(ctx, database); err != nil {
+	if _, err := tagging.SeedBuiltIns(ctx, writeDatabase); err != nil {
 		return fmt.Errorf("seed built-in tags: %w", err)
 	}
-	if err := metadata.SeedDefaultDerivedFacets(ctx, database); err != nil {
+	if err := metadata.SeedDefaultDerivedFacets(ctx, writeDatabase); err != nil {
 		return fmt.Errorf("seed derived tags: %w", err)
 	}
-	if err := library.BackfillNormalizedDisplayNames(ctx, database); err != nil {
+	if err := library.BackfillNormalizedDisplayNames(ctx, writeDatabase); err != nil {
 		return fmt.Errorf("backfill story display names: %w", err)
 	}
-	if err := metadata.BackfillNormalizedTitles(ctx, database); err != nil {
+	if err := metadata.BackfillNormalizedTitles(ctx, writeDatabase); err != nil {
 		return fmt.Errorf("backfill official display names: %w", err)
 	}
 
 	archiveRepository := archive.NewRepository(layout)
-	metadataRepository := metadata.NewRepository(database)
+	metadataWriteRepository := metadata.NewRepository(writeDatabase)
+	metadataReadRepository := metadata.NewRepository(readDatabase)
 	catalogProjector, err := metadata.NewCatalogProjector(
-		database,
+		writeDatabase,
 		metadata.DefaultCatalogProjectionConfig(),
 	)
 	if err != nil {
 		return fmt.Errorf("construct metadata catalog projector: %w", err)
 	}
-	catalogRepository := catalog.NewRepository(database, catalogProjector)
+	catalogRepository := catalog.NewRepository(writeDatabase, catalogProjector)
 	metadataRefresh, err := metadata.NewRefreshService(
 		r.metadataFetcher,
-		metadataRepository,
+		metadataWriteRepository,
 		metadata.NewRawSnapshotStore(layout),
 	)
 	if err != nil {
@@ -173,7 +176,7 @@ func (r *ImportRuntime) Start(ctx context.Context) error {
 		return fmt.Errorf("construct export copier: %w", err)
 	}
 	manager, err := operations.NewManager(operations.Dependencies{
-		Repository:     operations.NewRepository(database),
+		Repository:     operations.NewRepository(writeDatabase),
 		Imports:        importService,
 		Exports:        exportCopier,
 		ExportRecovery: exportCopier,
@@ -192,7 +195,7 @@ func (r *ImportRuntime) Start(ctx context.Context) error {
 	removalService, err := removal.NewService(
 		catalogRepository,
 		archiveRepository,
-		removal.NewRepository(database),
+		removal.NewRepository(writeDatabase),
 	)
 	if err != nil {
 		return fmt.Errorf("construct removal service: %w", err)
@@ -200,7 +203,7 @@ func (r *ImportRuntime) Start(ctx context.Context) error {
 	if err := removalService.Reconcile(ctx); err != nil {
 		return fmt.Errorf("reconcile removals: %w", err)
 	}
-	tagService, err := tagging.NewService(database)
+	tagService, err := tagging.NewService(writeDatabase)
 	if err != nil {
 		return fmt.Errorf("construct tagging service: %w", err)
 	}
@@ -208,15 +211,15 @@ func (r *ImportRuntime) Start(ctx context.Context) error {
 		return err
 	}
 	officialProvider, err := metadata.NewLibraryProvider(
-		metadataRepository,
+		metadataReadRepository,
 		metadata.DefaultLocale,
 	)
 	if err != nil {
 		_ = manager.Close()
 		return fmt.Errorf("construct official metadata provider: %w", err)
 	}
-	libraryQuery := library.NewQuery(database, officialProvider)
-	shelfService, err := shelves.NewService(database)
+	libraryQuery := library.NewQuery(readDatabase, officialProvider)
+	shelfService, err := shelves.NewService(writeDatabase)
 	if err != nil {
 		_ = manager.Close()
 		return fmt.Errorf("construct saved shelf service: %w", err)

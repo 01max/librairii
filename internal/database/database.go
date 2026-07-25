@@ -33,8 +33,9 @@ var (
 )
 
 type Database struct {
-	sql  *sql.DB
-	path string
+	sql    *sql.DB
+	writer *sql.DB
+	path   string
 }
 
 func Open(ctx context.Context, path string) (*Database, error) {
@@ -65,11 +66,33 @@ func Open(ctx context.Context, path string) (*Database, error) {
 		return closeOnError(err)
 	}
 
-	return &Database{sql: connection, path: filepath.Clean(path)}, nil
+	writer, err := sql.Open("sqlite", writableDSN(path))
+	if err != nil {
+		return closeOnError(fmt.Errorf("open SQLite writer lane: %w", err))
+	}
+	writer.SetMaxOpenConns(1)
+	writer.SetMaxIdleConns(1)
+	if err := writer.PingContext(ctx); err != nil {
+		_ = writer.Close()
+		return closeOnError(fmt.Errorf("ping SQLite writer lane: %w", err))
+	}
+
+	return &Database{
+		sql:    connection,
+		writer: writer,
+		path:   filepath.Clean(path),
+	}, nil
 }
 
+// SQL returns the WAL-backed read pool used by application queries. Product
+// mutations are composed with Writer so they share one serialized connection.
 func (d *Database) SQL() *sql.DB {
 	return d.sql
+}
+
+// Writer returns the single-connection application writer lane.
+func (d *Database) Writer() *sql.DB {
+	return d.writer
 }
 
 func (d *Database) Path() string {
@@ -77,10 +100,17 @@ func (d *Database) Path() string {
 }
 
 func (d *Database) Close() error {
-	if d == nil || d.sql == nil {
+	if d == nil {
 		return nil
 	}
-	return d.sql.Close()
+	var closeErrors []error
+	if d.writer != nil {
+		closeErrors = append(closeErrors, d.writer.Close())
+	}
+	if d.sql != nil {
+		closeErrors = append(closeErrors, d.sql.Close())
+	}
+	return errors.Join(closeErrors...)
 }
 
 func writableDSN(path string) string {

@@ -36,6 +36,10 @@ func (p testStorageProvider) SQL() *sql.DB {
 	return p.database
 }
 
+func (p testStorageProvider) Writer() *sql.DB {
+	return p.database
+}
+
 type artworkFetcherFunc func(
 	context.Context,
 	string,
