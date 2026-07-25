@@ -1,19 +1,7 @@
-type FixtureStory = {
-    id: number;
-    uuid: string;
-    title: string;
-    author: string;
-    sources: {
-        title: string;
-        description: string;
-        author: string;
-        artwork: string;
-    };
-    detectedFormat: string;
-    compatibility: string;
-    byteSize: number;
-    importedAt: string;
-};
+import {
+    CANONICAL_PARITY_FIXTURE,
+    type FixtureStory,
+} from './parity-fixture';
 
 const titles = [
     ['The Little Prince', 'Antoine de Saint-Exupéry'],
@@ -139,8 +127,12 @@ export function installCollectionFixture() {
         ? []
         : fixture === 'performance'
             ? performanceStories
+            : fixture === 'parity'
+                ? [...CANONICAL_PARITY_FIXTURE.stories]
             : stories;
-    const totalItems = fixture === 'collection' ? 48 : fixtureStories.length;
+    const totalItems = fixture === 'collection' || fixture === 'parity'
+        ? 48
+        : fixtureStories.length;
     const fixtureSnapshot = fixtureOperation(fixture);
     const page = (pageNumber: number, pageSize: number, sort: string) => ({
         stories: fixtureStories.slice(
@@ -160,7 +152,19 @@ export function installCollectionFixture() {
         ApplicationStatus: async () => ({
             status: {state: 'ready', mutationsAllowed: true},
         }),
-        ListShelves: async () => ({shelves: []}),
+        ListShelves: async () => ({
+            shelves: fixture === 'parity'
+                ? CANONICAL_PARITY_FIXTURE.savedShelves.map(
+                    (shelf, position) => ({
+                        id: shelf.id,
+                        name: shelf.name,
+                        position,
+                        validity: 'valid',
+                        count: shelf.count,
+                    }),
+                )
+                : [],
+        }),
         OfficialMetadataStatus: async () => ({
             status: {
                 state: 'fresh',
@@ -176,19 +180,64 @@ export function installCollectionFixture() {
         QueryStories: async (query: {page: number; pageSize: number; sort: string}) => ({
             page: page(query.page, query.pageSize, query.sort),
         }),
+        OpenShelf: async (
+            shelfID: number,
+            request: {page: number; pageSize: number; sort: string},
+        ) => {
+            const preview = CANONICAL_PARITY_FIXTURE.mainShelves.find(
+                (shelf) => shelf.sourceShelfID === shelfID,
+            );
+            const source = preview?.stories ?? [];
+            return {
+                evaluation: {
+                    shelf: {
+                        id: shelfID,
+                        name: preview?.name ?? 'Favorites',
+                        position: shelfID - 1,
+                        queryVersion: 1,
+                        queryPayload: '{}',
+                        validity: 'valid',
+                    },
+                    query: {
+                        version: 1,
+                        name: '',
+                        languages: [],
+                        compatibilities: [],
+                        booleanFilters: [],
+                        choiceFilters: [],
+                    },
+                    page: {
+                        stories: source.slice(0, request.pageSize),
+                        page: request.page,
+                        pageSize: request.pageSize,
+                        totalItems: preview?.count ?? 0,
+                        totalPages: preview
+                            ? Math.ceil(preview.count / request.pageSize)
+                            : 0,
+                        sort: request.sort,
+                    },
+                },
+            };
+        },
         StoryDetail: async (storyID: number) => {
             const story = fixtureStories.find(
                 (candidate) => candidate.id === storyID,
             ) ?? fixtureStories[0] ?? stories[0];
+            const parityArchive = fixture === 'parity' && storyID === 1
+                ? CANONICAL_PARITY_FIXTURE.selectedDetail.archive
+                : null;
             return {
                 detail: {
                     story,
                     archive: {
-                        originalFilename: `${story.title.toLowerCase().replaceAll(' ', '-')}.v2.pk`,
-                        detectedFormat: story.detectedFormat,
-                        sha256: 'a'.repeat(64),
-                        byteSize: story.byteSize,
-                        verification: story.compatibility,
+                        originalFilename: parityArchive?.originalFilename ??
+                            `${story.title.toLowerCase().replaceAll(' ', '-')}.v2.pk`,
+                        detectedFormat: parityArchive?.detectedFormat ??
+                            story.detectedFormat,
+                        sha256: parityArchive?.sha256 ?? 'a'.repeat(64),
+                        byteSize: parityArchive?.byteSize ?? story.byteSize,
+                        verification: parityArchive?.verification ??
+                            story.compatibility,
                     },
                 },
             };

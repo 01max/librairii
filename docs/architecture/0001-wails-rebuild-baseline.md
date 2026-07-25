@@ -18,6 +18,11 @@ The only UI source of truth is:
 - the `.app` subtree is normative
 - the `.back` gallery link is excluded from the product
 
+`prototype_contract_test.go` verifies the checksum and both subtree markers on
+every Go test run. The frontend `?fixture=parity` bridge is deterministic and
+records every sample shelf, cover title, count, selection, fact, tag, and
+archive detail from that exact file.
+
 The Rails screens and Tauri shell are implementation history, not product or
 visual references.
 
