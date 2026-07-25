@@ -137,15 +137,6 @@ func (c *Copier) Copy(
 	}, nil
 }
 
-func syncExportDirectory(path string) error {
-	directory, err := os.Open(path)
-	if err != nil {
-		return err
-	}
-	defer directory.Close()
-	return directory.Sync()
-}
-
 func (c *Copier) resolveSource(relativePath string) (string, error) {
 	sourcePath, err := archive.SafeJoin(c.layout.Root, relativePath)
 	if err != nil {
