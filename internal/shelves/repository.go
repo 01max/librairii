@@ -17,13 +17,13 @@ const (
 var ErrMissingDatabase = errors.New("shelf database is required")
 
 type Shelf struct {
-	ID             int64
-	Name           string
-	NormalizedName string
-	Position       int
-	QueryVersion   int
-	QueryPayload   string
-	Validity       Validity
+	ID             int64    `json:"id"`
+	Name           string   `json:"name"`
+	NormalizedName string   `json:"normalizedName"`
+	Position       int      `json:"position"`
+	QueryVersion   int      `json:"queryVersion"`
+	QueryPayload   string   `json:"queryPayload"`
+	Validity       Validity `json:"validity"`
 }
 
 type NewShelf struct {
@@ -50,11 +50,19 @@ func (r *Repository) Insert(
 	ctx context.Context,
 	input NewShelf,
 ) (Shelf, error) {
+	return insertShelf(ctx, r.database, input)
+}
+
+func insertShelf(
+	ctx context.Context,
+	executor shelfExecutor,
+	input NewShelf,
+) (Shelf, error) {
 	validity := input.Validity
 	if validity == "" {
 		validity = ValidityValid
 	}
-	result, err := r.database.ExecContext(
+	result, err := executor.ExecContext(
 		ctx,
 		`INSERT INTO shelves (
 			name,
@@ -90,7 +98,24 @@ func (r *Repository) Insert(
 }
 
 func (r *Repository) List(ctx context.Context) ([]Shelf, error) {
-	rows, err := r.database.QueryContext(
+	return listShelves(ctx, r.database)
+}
+
+func (r *Repository) Shelf(ctx context.Context, shelfID int64) (Shelf, error) {
+	return readShelf(ctx, r.database, shelfID)
+}
+
+type shelfExecutor interface {
+	ExecContext(context.Context, string, ...any) (sql.Result, error)
+}
+
+type shelfQueryer interface {
+	QueryContext(context.Context, string, ...any) (*sql.Rows, error)
+	QueryRowContext(context.Context, string, ...any) *sql.Row
+}
+
+func listShelves(ctx context.Context, queryer shelfQueryer) ([]Shelf, error) {
+	rows, err := queryer.QueryContext(
 		ctx,
 		`SELECT
 			id,
@@ -128,4 +153,38 @@ func (r *Repository) List(ctx context.Context) ([]Shelf, error) {
 		return nil, fmt.Errorf("iterate shelves: %w", err)
 	}
 	return shelves, nil
+}
+
+func readShelf(
+	ctx context.Context,
+	queryer shelfQueryer,
+	shelfID int64,
+) (Shelf, error) {
+	var shelf Shelf
+	err := queryer.QueryRowContext(
+		ctx,
+		`SELECT
+			id,
+			name,
+			normalized_name,
+			position,
+			query_version,
+			query_payload,
+			validity_state
+		 FROM shelves
+		 WHERE id = ?`,
+		shelfID,
+	).Scan(
+		&shelf.ID,
+		&shelf.Name,
+		&shelf.NormalizedName,
+		&shelf.Position,
+		&shelf.QueryVersion,
+		&shelf.QueryPayload,
+		&shelf.Validity,
+	)
+	if err != nil {
+		return Shelf{}, err
+	}
+	return shelf, nil
 }
