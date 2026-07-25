@@ -1400,7 +1400,11 @@ function App() {
                                     aria-label={`Select ${shelf.name} for combined shelf preview`}
                                     checked={selectedShelfIDs.includes(shelf.id)}
                                     disabled={
-                                        shelfBusy || shelf.validity === 'needs_attention'
+                                        shelfBusy ||
+                                        (
+                                            shelf.validity === 'needs_attention' &&
+                                            !selectedShelfIDs.includes(shelf.id)
+                                        )
                                     }
                                     onChange={() => toggleShelfSelection(shelf.id)}
                                 />

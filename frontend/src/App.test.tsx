@@ -1046,11 +1046,26 @@ test('previews a multi-shelf union with per-shelf and overlap counts', async () 
     const invalidSelection = await screen.findByRole('checkbox', {
         name: 'Select Moon for combined shelf preview',
     });
-    await waitFor(() => expect(invalidSelection).toBeDisabled());
+    await waitFor(() => expect(invalidSelection).toBeEnabled());
     expect(invalidSelection).toBeChecked();
     await waitFor(() => expect(previewShelves).toHaveBeenLastCalledWith([7, 8]));
     expect(await screen.findByText('Repair the selected shelf before continuing.'))
         .toBeInTheDocument();
+
+    previewShelves.mockResolvedValue(new app.ShelfSelectionPreviewResponse({
+        preview: {
+            shelves: [{id: 8, name: 'Forest', count: 2}],
+            sourceShelfNames: ['Forest'],
+            uniqueStoryCount: 2,
+            overlapCount: 0,
+        },
+    }));
+    await user.click(invalidSelection);
+    await waitFor(() => expect(previewShelves).toHaveBeenLastCalledWith([8]));
+    expect(invalidSelection).not.toBeChecked();
+    expect(screen.queryByText('Repair the selected shelf before continuing.'))
+        .not.toBeInTheDocument();
+    expect(screen.getByText('2 unique stories')).toBeInTheDocument();
 });
 
 test('keeps a valid empty saved shelf active with edit and import recovery actions', async () => {
