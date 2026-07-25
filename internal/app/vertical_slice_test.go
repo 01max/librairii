@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/01max/librairii/internal/exporter"
 	"github.com/01max/librairii/internal/inspection/testfixture"
 	"github.com/01max/librairii/internal/library"
 	"github.com/01max/librairii/internal/operations"
@@ -85,6 +86,58 @@ func TestFirstStoryVerticalSliceThroughPickerAndApplication(t *testing.T) {
 		detailResponse.Detail.Archive.OriginalFilename != filepath.Base(source) ||
 		detailResponse.Detail.Archive.SHA256 == "" {
 		t.Fatalf("StoryDetail() = %#v", detailResponse)
+	}
+
+	destination := t.TempDir()
+	dialogs.directory = destination
+	preflight := application.SelectAndPreflightExport(
+		context.Background(),
+		exporter.PreflightRequest{
+			SourceType: operations.ExportSourceSelection,
+			StoryIDs:   []int64{story.ID},
+		},
+	)
+	if preflight.Error != nil ||
+		preflight.Preflight == nil ||
+		!preflight.Preflight.CanExport ||
+		preflight.Preflight.PreparationID == "" {
+		t.Fatalf("SelectAndPreflightExport() = %#v", preflight)
+	}
+	exported := application.StartPreparedExport(
+		context.Background(),
+		preflight.Preflight.PreparationID,
+	)
+	if exported.Error != nil || exported.Operation == nil {
+		t.Fatalf("StartPreparedExport() = %#v", exported)
+	}
+	exportTerminal := events.waitTerminal(t, exported.Operation.ID)
+	if exportTerminal.Status != operations.StatusSucceeded ||
+		len(exportTerminal.Items) != 1 ||
+		exportTerminal.Items[0].OutcomeCode != "exported" ||
+		exportTerminal.DestinationLabel != filepath.Base(destination) {
+		t.Fatalf("terminal export = %#v", exportTerminal)
+	}
+	exportedBytes, err := os.ReadFile(
+		filepath.Join(destination, filepath.Base(source)),
+	)
+	if err != nil || string(exportedBytes) != string(sourceBefore) {
+		t.Fatalf("exported bytes changed: %v", err)
+	}
+	if entries, err := os.ReadDir(destination); err != nil ||
+		len(entries) != 1 ||
+		entries[0].Name() != filepath.Base(source) {
+		t.Fatalf("export destination entries = %#v, %v", entries, err)
+	}
+	revealed := application.RevealExportDestination(
+		context.Background(),
+		exportTerminal.ID,
+	)
+	resolvedDestination, err := exporter.ResolveDestination(destination)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !revealed.Success || dialogs.revealed != resolvedDestination {
+		t.Fatalf("RevealExportDestination() = %#v, %q", revealed, dialogs.revealed)
 	}
 
 	removed := application.RemoveStory(context.Background(), story.ID)

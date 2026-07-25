@@ -45,6 +45,68 @@ func (facadeReadiness) Check(context.Context) (coreapp.ReadinessReport, error) {
 	return coreapp.ReadinessReport{MutationsAllowed: true}, nil
 }
 
+type exportFacadeDialogs struct {
+	destination string
+	revealed    string
+}
+
+func (d *exportFacadeDialogs) OpenFiles(
+	context.Context,
+	coreapp.FileDialogRequest,
+) ([]string, error) {
+	return nil, nil
+}
+
+func (d *exportFacadeDialogs) OpenDirectory(context.Context, string) (string, error) {
+	return d.destination, nil
+}
+
+func (d *exportFacadeDialogs) RevealDirectory(
+	_ context.Context,
+	destination string,
+) error {
+	d.revealed = destination
+	return nil
+}
+
+type exportFacadeOperations struct {
+	facadeOperations
+	request       exporter.PreflightRequest
+	destination   string
+	preparationID string
+	snapshot      operations.Snapshot
+}
+
+func (o *exportFacadeOperations) PrepareExport(
+	_ context.Context,
+	request exporter.PreflightRequest,
+	destination string,
+) (exporter.PreflightReport, error) {
+	o.request = request
+	o.destination = destination
+	return exporter.PreflightReport{
+		PreparationID:    "00000000-0000-4000-8000-000000000120",
+		Destination:      destination,
+		DestinationLabel: "Lunii export",
+		CanExport:        true,
+	}, nil
+}
+
+func (o *exportFacadeOperations) StartPreparedExport(
+	_ context.Context,
+	preparationID string,
+) (operations.Snapshot, error) {
+	o.preparationID = preparationID
+	return o.snapshot, nil
+}
+
+func (o *exportFacadeOperations) Snapshot(
+	context.Context,
+	string,
+) (operations.Snapshot, error) {
+	return o.snapshot, nil
+}
+
 type facadeOperations struct{}
 
 func (facadeOperations) Start(context.Context) error {
@@ -309,6 +371,65 @@ func TestAppExposesTypedLifecycleStatus(t *testing.T) {
 	}
 	if response.Status.State != coreapp.StateReady {
 		t.Fatalf("ApplicationStatus() state = %q", response.Status.State)
+	}
+}
+
+func TestAppExposesExportPreparationStartAndRevealBindings(t *testing.T) {
+	t.Parallel()
+
+	destination := t.TempDir()
+	dialogs := &exportFacadeDialogs{destination: destination}
+	operationID := "00000000-0000-4000-8000-000000000121"
+	operationPort := &exportFacadeOperations{
+		snapshot: operations.Snapshot{
+			ID:     operationID,
+			Kind:   operations.KindExport,
+			Status: operations.StatusQueued,
+		},
+	}
+	core, err := coreapp.New(coreapp.Dependencies{
+		Clock:      facadeClock{},
+		Dialogs:    dialogs,
+		Events:     facadeEvents{},
+		Readiness:  facadeReadiness{},
+		Operations: operationPort,
+		Library:    facadeOperations{},
+		Removal:    facadeOperations{},
+		Tags:       facadeOperations{},
+		Shelves:    facadeOperations{},
+	})
+	if err != nil {
+		t.Fatalf("New() error = %v", err)
+	}
+	facade := NewApp(core)
+	facade.startup(context.Background())
+	request := exporter.PreflightRequest{
+		SourceType: operations.ExportSourceSelection,
+		StoryIDs:   []int64{41, 42},
+	}
+
+	prepared := facade.SelectAndPreflightExport(request)
+	if prepared.Error != nil ||
+		prepared.Preflight == nil ||
+		operationPort.request.SourceType != request.SourceType ||
+		len(operationPort.request.StoryIDs) != 2 ||
+		operationPort.destination != destination {
+		t.Fatalf("SelectAndPreflightExport() = %#v", prepared)
+	}
+	started := facade.StartPreparedExport(prepared.Preflight.PreparationID)
+	if started.Error != nil ||
+		started.Operation == nil ||
+		operationPort.preparationID != prepared.Preflight.PreparationID {
+		t.Fatalf("StartPreparedExport() = %#v", started)
+	}
+
+	operationPort.snapshot.Status = operations.StatusSucceeded
+	operationPort.snapshot.Destination = destination
+	revealed := facade.RevealExportDestination(operationID)
+	if revealed.Error != nil ||
+		!revealed.Success ||
+		dialogs.revealed != destination {
+		t.Fatalf("RevealExportDestination() = %#v", revealed)
 	}
 }
 

@@ -1,8 +1,10 @@
 package exporter
 
 import (
+	"bytes"
 	"context"
 	"errors"
+	"io"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -242,6 +244,57 @@ func TestCopierDestinationRacePreservesRacingFile(t *testing.T) {
 	}
 }
 
+func TestCopierMidCopyFailureCleansTemporaryAndPreservesCompletedFiles(t *testing.T) {
+	t.Parallel()
+
+	layout, err := storage.Initialize(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	first := writeManagedExportStory(t, layout, 1, "first.zip", []byte("first"))
+	second := writeManagedExportStory(t, layout, 2, "second.zip", []byte("second"))
+	copier, err := NewCopier(layout)
+	if err != nil {
+		t.Fatal(err)
+	}
+	destination := t.TempDir()
+	if _, err := copier.Copy(
+		context.Background(),
+		exportNewItem(first),
+		destination,
+		nil,
+	); err != nil {
+		t.Fatal(err)
+	}
+
+	readErr := errors.New("injected read failure")
+	copier.openSource = func(string) (io.ReadCloser, error) {
+		return &failingReadCloser{
+			reader: bytes.NewReader([]byte("partial")),
+			err:    readErr,
+		}, nil
+	}
+	if _, err := copier.Copy(
+		context.Background(),
+		exportNewItem(second),
+		destination,
+		nil,
+	); !errors.Is(err, readErr) {
+		t.Fatalf("Copy(mid-copy failure) error = %v", err)
+	}
+	got, err := os.ReadFile(filepath.Join(destination, first.OriginalFilename))
+	if err != nil || string(got) != "first" {
+		t.Fatalf("completed export = %q, %v", got, err)
+	}
+	entries, err := os.ReadDir(destination)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(entries) != 1 || entries[0].Name() != first.OriginalFilename {
+		t.Fatalf("destination entries = %#v", entries)
+	}
+}
+
 func exportNewItem(story library.ExportStory) operations.NewItem {
 	return operations.NewItem{
 		StoryID:             story.ID,
@@ -253,4 +306,20 @@ func exportNewItem(story library.ExportStory) operations.NewItem {
 		ArchiveSHA256:       story.SHA256,
 		TotalBytes:          story.ByteSize,
 	}
+}
+
+type failingReadCloser struct {
+	reader *bytes.Reader
+	err    error
+}
+
+func (r *failingReadCloser) Read(buffer []byte) (int, error) {
+	if r.reader.Len() > 0 {
+		return r.reader.Read(buffer)
+	}
+	return 0, r.err
+}
+
+func (r *failingReadCloser) Close() error {
+	return nil
 }

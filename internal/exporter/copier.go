@@ -26,8 +26,9 @@ type CopyResult = operations.ExportCopyResult
 type ProgressFunc = func(deltaBytes int64)
 
 type Copier struct {
-	layout storage.Layout
-	link   func(string, string) error
+	layout     storage.Layout
+	link       func(string, string) error
+	openSource func(string) (io.ReadCloser, error)
 }
 
 func NewCopier(layout storage.Layout) (*Copier, error) {
@@ -37,7 +38,13 @@ func NewCopier(layout storage.Layout) (*Copier, error) {
 		!filepath.IsAbs(layout.Archives) {
 		return nil, ErrExportSourceInvalid
 	}
-	return &Copier{layout: layout, link: os.Link}, nil
+	return &Copier{
+		layout: layout,
+		link:   os.Link,
+		openSource: func(path string) (io.ReadCloser, error) {
+			return os.Open(path)
+		},
+	}, nil
 }
 
 func (c *Copier) Copy(
@@ -64,7 +71,7 @@ func (c *Copier) Copy(
 		return CopyResult{}, fmt.Errorf("inspect export destination: %w", err)
 	}
 
-	source, err := os.Open(sourcePath)
+	source, err := c.openSource(sourcePath)
 	if err != nil {
 		return CopyResult{}, fmt.Errorf("%w: open source: %v", ErrExportSourceInvalid, err)
 	}

@@ -8,6 +8,7 @@ import (
 	"reflect"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -25,10 +26,20 @@ func TestManagerBoundsConcurrentImportsAndPersistsCompletion(t *testing.T) {
 
 	repository, _ := newOperationRepository(t)
 	events := newEventRecorder()
+	started := make(chan struct{}, 2)
+	release := make(chan struct{})
+	var startedCount atomic.Int64
 	imports := &trackingImportService{
-		handler: func(context.Context, string) (importer.Outcome, error) {
-			time.Sleep(10 * time.Millisecond)
-			return importer.Outcome{Code: importer.OutcomeImported}, nil
+		handler: func(ctx context.Context, _ string) (importer.Outcome, error) {
+			if startedCount.Add(1) <= 2 {
+				started <- struct{}{}
+			}
+			select {
+			case <-release:
+				return importer.Outcome{Code: importer.OutcomeImported}, nil
+			case <-ctx.Done():
+				return importer.Outcome{}, ctx.Err()
+			}
 		},
 	}
 	manager := newTestManager(t, repository, imports, events, fakeCleaner{}, 2)
@@ -41,6 +52,14 @@ func TestManagerBoundsConcurrentImportsAndPersistsCompletion(t *testing.T) {
 	if created.Status != StatusQueued || created.TotalItems != len(paths) {
 		t.Fatalf("StartImport() = %#v", created)
 	}
+	for range 2 {
+		select {
+		case <-started:
+		case <-time.After(5 * time.Second):
+			t.Fatal("two import workers did not run concurrently")
+		}
+	}
+	close(release)
 	terminal := events.waitTerminal(t, created.ID)
 	if terminal.Status != StatusSucceeded ||
 		terminal.CompletedItems != len(paths) {
