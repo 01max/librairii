@@ -15,10 +15,12 @@ import (
 )
 
 const (
-	EventChanged    = "operation:changed"
-	maxWorkerCount  = 8
-	maxImportItems  = 1_000
-	outcomeImported = "imported"
+	EventChanged          = "operation:changed"
+	maxWorkerCount        = 8
+	maxImportItems        = 1_000
+	persistenceAttempts   = 3
+	persistenceRetryDelay = 10 * time.Millisecond
+	outcomeImported       = "imported"
 )
 
 var (
@@ -49,6 +51,7 @@ type managerRepository interface {
 	CompleteItem(context.Context, string, ItemSnapshot) error
 	RequestCancel(context.Context, string) error
 	Finish(context.Context, string, Status, string, string, time.Time) error
+	Interrupt(context.Context, string, string, string, time.Time) (Snapshot, error)
 	Snapshot(context.Context, string) (Snapshot, error)
 	InterruptActive(context.Context, time.Time) ([]Snapshot, error)
 }
@@ -78,9 +81,11 @@ type operationRun struct {
 	ctx       context.Context
 	cancel    context.CancelFunc
 	startOnce sync.Once
+	stopOnce  sync.Once
 	startErr  error
 
 	mu        sync.Mutex
+	total     int
 	remaining int
 	successes int
 	failures  int
@@ -205,6 +210,7 @@ func (m *Manager) StartImport(
 		id:        operationID,
 		ctx:       runContext,
 		cancel:    cancel,
+		total:     len(sourcePaths),
 		remaining: len(sourcePaths),
 	}
 
@@ -322,26 +328,118 @@ func (m *Manager) execute(job importJob) {
 }
 
 func (m *Manager) complete(job importJob, item ItemSnapshot) {
-	if err := m.deps.Repository.CompleteItem(m.ctx, job.run.id, item); err != nil {
+	if err := retryPersistence(m.ctx, func() error {
+		return m.deps.Repository.CompleteItem(m.ctx, job.run.id, item)
+	}); err != nil {
+		m.interruptForPersistence(job.run)
 		return
 	}
 	remaining := job.run.record(item.Status)
 	if remaining == 0 {
 		status, code, message := job.run.finalStatus()
-		_ = m.deps.Repository.Finish(
-			m.ctx,
-			job.run.id,
-			status,
-			code,
-			message,
-			m.deps.Clock.Now(),
-		)
-		job.run.cancel()
-		m.mu.Lock()
-		delete(m.runs, job.run.id)
-		m.mu.Unlock()
+		if err := retryPersistence(m.ctx, func() error {
+			return m.deps.Repository.Finish(
+				m.ctx,
+				job.run.id,
+				status,
+				code,
+				message,
+				m.deps.Clock.Now(),
+			)
+		}); err != nil {
+			m.interruptForPersistence(job.run)
+			return
+		}
+		m.finishRun(job.run)
 	}
 	m.emitSnapshot(job.run.id)
+}
+
+func (m *Manager) interruptForPersistence(run *operationRun) {
+	run.stopOnce.Do(func() {
+		run.cancel()
+		const (
+			errorCode    = "persistence_failed"
+			errorMessage = "Operation progress could not be saved."
+		)
+		var snapshot Snapshot
+		err := retryPersistence(m.ctx, func() error {
+			var interruptErr error
+			snapshot, interruptErr = m.deps.Repository.Interrupt(
+				m.ctx,
+				run.id,
+				errorCode,
+				errorMessage,
+				m.deps.Clock.Now(),
+			)
+			return interruptErr
+		})
+		if err != nil {
+			snapshot = m.persistenceFailureSnapshot(run, errorCode, errorMessage)
+		}
+		m.removeRun(run.id)
+		m.deps.Events.Emit(m.ctx, EventChanged, snapshot)
+	})
+}
+
+func (m *Manager) persistenceFailureSnapshot(
+	run *operationRun,
+	errorCode string,
+	errorMessage string,
+) Snapshot {
+	snapshot, err := m.deps.Repository.Snapshot(m.ctx, run.id)
+	if err != nil {
+		snapshot = Snapshot{
+			ID:         run.id,
+			Kind:       KindImport,
+			TotalItems: run.total,
+		}
+	}
+	snapshot.Status = StatusInterrupted
+	snapshot.CompletedItems = snapshot.TotalItems
+	snapshot.ErrorCode = errorCode
+	snapshot.ErrorMessage = errorMessage
+	snapshot.FinishedAt = formatTime(m.deps.Clock.Now())
+	for index := range snapshot.Items {
+		switch snapshot.Items[index].Status {
+		case ItemPending, ItemRunning:
+			snapshot.Items[index].Status = ItemCancelled
+			snapshot.Items[index].OutcomeCode = errorCode
+			snapshot.Items[index].OutcomeMessage = errorMessage
+		}
+	}
+	return snapshot
+}
+
+func (m *Manager) finishRun(run *operationRun) {
+	run.cancel()
+	m.removeRun(run.id)
+}
+
+func (m *Manager) removeRun(operationID string) {
+	m.mu.Lock()
+	delete(m.runs, operationID)
+	m.mu.Unlock()
+}
+
+func retryPersistence(ctx context.Context, action func() error) error {
+	var lastErr error
+	for attempt := 0; attempt < persistenceAttempts; attempt++ {
+		if lastErr = action(); lastErr == nil {
+			return nil
+		}
+		if attempt == persistenceAttempts-1 {
+			break
+		}
+		timer := time.NewTimer(persistenceRetryDelay)
+		select {
+		case <-ctx.Done():
+			timer.Stop()
+			return errors.Join(lastErr, ctx.Err())
+		case <-timer.C:
+		}
+	}
+	return lastErr
 }
 
 func (r *operationRun) record(status ItemStatus) int {

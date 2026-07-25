@@ -179,6 +179,40 @@ func TestRepositoryInterruptsNonresumableOperations(t *testing.T) {
 	}
 }
 
+func TestRepositoryInterruptsOneOperationWithStableFailure(t *testing.T) {
+	t.Parallel()
+
+	repository, _ := newOperationRepository(t)
+	ctx := context.Background()
+	snapshot, err := repository.CreateImport(
+		ctx,
+		uuid.NewString(),
+		[]NewItem{{SourceName: "story.zip"}},
+		time.Now(),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	interrupted, err := repository.Interrupt(
+		ctx,
+		snapshot.ID,
+		"persistence_failed",
+		"Operation progress could not be saved.",
+		time.Now(),
+	)
+	if err != nil {
+		t.Fatalf("Interrupt() error = %v", err)
+	}
+	if interrupted.Status != StatusInterrupted ||
+		interrupted.CompletedItems != interrupted.TotalItems ||
+		interrupted.ErrorCode != "persistence_failed" ||
+		interrupted.Items[0].Status != ItemCancelled ||
+		interrupted.Items[0].OutcomeCode != "persistence_failed" {
+		t.Fatalf("Interrupt() = %#v", interrupted)
+	}
+}
+
 func newOperationRepository(t *testing.T) (*Repository, *database.Database) {
 	t.Helper()
 

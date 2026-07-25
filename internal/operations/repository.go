@@ -198,6 +198,59 @@ func (r *Repository) Finish(
 	return transitionResult(result, err)
 }
 
+func (r *Repository) Interrupt(
+	ctx context.Context,
+	id string,
+	errorCode string,
+	errorMessage string,
+	now time.Time,
+) (Snapshot, error) {
+	if id == "" || errorCode == "" || errorMessage == "" {
+		return Snapshot{}, ErrInvalidTransition
+	}
+	transaction, err := r.database.BeginTx(ctx, nil)
+	if err != nil {
+		return Snapshot{}, fmt.Errorf("begin operation interruption: %w", err)
+	}
+	defer transaction.Rollback()
+
+	if _, err := transaction.ExecContext(
+		ctx,
+		`UPDATE file_operation_items
+		 SET status = 'cancelled',
+		     outcome_code = ?,
+		     outcome_message = ?
+		 WHERE operation_id = ?
+		   AND status IN ('pending', 'running')`,
+		errorCode,
+		errorMessage,
+		id,
+	); err != nil {
+		return Snapshot{}, fmt.Errorf("interrupt operation items: %w", err)
+	}
+	result, err := transaction.ExecContext(
+		ctx,
+		`UPDATE file_operations
+		 SET status = 'interrupted',
+		     completed_items = total_items,
+		     error_code = ?,
+		     error_message = ?,
+		     finished_at = ?
+		 WHERE id = ? AND status IN ('queued', 'running')`,
+		errorCode,
+		errorMessage,
+		formatTime(now),
+		id,
+	)
+	if err := transitionResult(result, err); err != nil {
+		return Snapshot{}, err
+	}
+	if err := transaction.Commit(); err != nil {
+		return Snapshot{}, fmt.Errorf("commit operation interruption: %w", err)
+	}
+	return r.Snapshot(ctx, id)
+}
+
 func (r *Repository) Snapshot(ctx context.Context, id string) (Snapshot, error) {
 	var snapshot Snapshot
 	var cancelRequested int
@@ -306,47 +359,15 @@ func (r *Repository) InterruptActive(
 		return nil, err
 	}
 
-	for _, id := range ids {
-		transaction, err := r.database.BeginTx(ctx, nil)
-		if err != nil {
-			return nil, err
-		}
-		if _, err := transaction.ExecContext(
-			ctx,
-			`UPDATE file_operation_items
-			 SET status = 'cancelled',
-			     outcome_code = 'interrupted',
-			     outcome_message = 'The application stopped before this item completed.'
-			 WHERE operation_id = ?
-			   AND status IN ('pending', 'running')`,
-			id,
-		); err != nil {
-			_ = transaction.Rollback()
-			return nil, err
-		}
-		if _, err := transaction.ExecContext(
-			ctx,
-			`UPDATE file_operations
-			 SET status = 'interrupted',
-			     completed_items = total_items,
-			     error_code = 'interrupted',
-			     error_message = 'The application stopped before this operation completed.',
-			     finished_at = ?
-			 WHERE id = ? AND status IN ('queued', 'running')`,
-			formatTime(now),
-			id,
-		); err != nil {
-			_ = transaction.Rollback()
-			return nil, err
-		}
-		if err := transaction.Commit(); err != nil {
-			return nil, err
-		}
-	}
-
 	snapshots := make([]Snapshot, 0, len(ids))
 	for _, id := range ids {
-		snapshot, err := r.Snapshot(ctx, id)
+		snapshot, err := r.Interrupt(
+			ctx,
+			id,
+			"interrupted",
+			"The application stopped before this operation completed.",
+			now,
+		)
 		if err != nil {
 			return nil, err
 		}

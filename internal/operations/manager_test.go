@@ -2,6 +2,7 @@ package operations
 
 import (
 	"context"
+	"errors"
 	"os"
 	"path/filepath"
 	"sync"
@@ -208,6 +209,177 @@ func TestManagerStartupReconcilesOperationsAndStaging(t *testing.T) {
 	}
 }
 
+func TestManagerRetriesTransientItemCompletionFailure(t *testing.T) {
+	t.Parallel()
+
+	repository, _ := newOperationRepository(t)
+	flaky := &flakyOperationRepository{
+		managerRepository: repository,
+		completeFailures:  1,
+	}
+	events := newEventRecorder()
+	manager := newTestManagerWithRepository(
+		t,
+		flaky,
+		&trackingImportService{},
+		events,
+		fakeCleaner{},
+		1,
+	)
+
+	created, err := manager.StartImport(context.Background(), makeSourcePaths(t, 1))
+	if err != nil {
+		t.Fatal(err)
+	}
+	terminal := events.waitTerminal(t, created.ID)
+	if terminal.Status != StatusSucceeded {
+		t.Fatalf("terminal snapshot = %#v", terminal)
+	}
+	if flaky.completeCalls != 2 {
+		t.Fatalf("CompleteItem() calls = %d, want 2", flaky.completeCalls)
+	}
+}
+
+func TestManagerInterruptsOperationWhenFinishCannotPersist(t *testing.T) {
+	t.Parallel()
+
+	repository, _ := newOperationRepository(t)
+	flaky := &flakyOperationRepository{
+		managerRepository: repository,
+		finishFailures:    persistenceAttempts,
+	}
+	events := newEventRecorder()
+	manager := newTestManagerWithRepository(
+		t,
+		flaky,
+		&trackingImportService{},
+		events,
+		fakeCleaner{},
+		1,
+	)
+
+	created, err := manager.StartImport(context.Background(), makeSourcePaths(t, 1))
+	if err != nil {
+		t.Fatal(err)
+	}
+	terminal := events.waitTerminal(t, created.ID)
+	if terminal.Status != StatusInterrupted ||
+		terminal.ErrorCode != "persistence_failed" {
+		t.Fatalf("terminal snapshot = %#v", terminal)
+	}
+	if flaky.finishCalls != persistenceAttempts || flaky.interruptCalls != 1 {
+		t.Fatalf(
+			"Finish() calls = %d, Interrupt() calls = %d",
+			flaky.finishCalls,
+			flaky.interruptCalls,
+		)
+	}
+
+	persisted, err := repository.Snapshot(context.Background(), created.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if persisted.Status != StatusInterrupted ||
+		persisted.CompletedItems != persisted.TotalItems {
+		t.Fatalf("persisted snapshot = %#v", persisted)
+	}
+}
+
+func TestManagerInterruptsOperationWhenItemCompletionCannotPersist(t *testing.T) {
+	t.Parallel()
+
+	repository, _ := newOperationRepository(t)
+	flaky := &flakyOperationRepository{
+		managerRepository: repository,
+		completeFailures:  persistenceAttempts,
+	}
+	events := newEventRecorder()
+	manager := newTestManagerWithRepository(
+		t,
+		flaky,
+		&trackingImportService{},
+		events,
+		fakeCleaner{},
+		1,
+	)
+
+	created, err := manager.StartImport(context.Background(), makeSourcePaths(t, 1))
+	if err != nil {
+		t.Fatal(err)
+	}
+	terminal := events.waitTerminal(t, created.ID)
+	if terminal.Status != StatusInterrupted ||
+		terminal.ErrorCode != "persistence_failed" {
+		t.Fatalf("terminal snapshot = %#v", terminal)
+	}
+	if flaky.completeCalls != persistenceAttempts || flaky.interruptCalls != 1 {
+		t.Fatalf(
+			"CompleteItem() calls = %d, Interrupt() calls = %d",
+			flaky.completeCalls,
+			flaky.interruptCalls,
+		)
+	}
+}
+
+type flakyOperationRepository struct {
+	managerRepository
+
+	mu               sync.Mutex
+	completeFailures int
+	finishFailures   int
+	completeCalls    int
+	finishCalls      int
+	interruptCalls   int
+}
+
+func (r *flakyOperationRepository) CompleteItem(
+	ctx context.Context,
+	operationID string,
+	item ItemSnapshot,
+) error {
+	r.mu.Lock()
+	r.completeCalls++
+	if r.completeFailures > 0 {
+		r.completeFailures--
+		r.mu.Unlock()
+		return errors.New("injected item completion failure")
+	}
+	r.mu.Unlock()
+	return r.managerRepository.CompleteItem(ctx, operationID, item)
+}
+
+func (r *flakyOperationRepository) Finish(
+	ctx context.Context,
+	id string,
+	status Status,
+	errorCode string,
+	errorMessage string,
+	now time.Time,
+) error {
+	r.mu.Lock()
+	r.finishCalls++
+	if r.finishFailures > 0 {
+		r.finishFailures--
+		r.mu.Unlock()
+		return errors.New("injected operation finish failure")
+	}
+	r.mu.Unlock()
+	return r.managerRepository.Finish(ctx, id, status, errorCode, errorMessage, now)
+}
+
+func (r *flakyOperationRepository) Interrupt(
+	ctx context.Context,
+	id string,
+	errorCode string,
+	errorMessage string,
+	now time.Time,
+) (Snapshot, error) {
+	r.mu.Lock()
+	r.interruptCalls++
+	r.mu.Unlock()
+	return r.managerRepository.Interrupt(ctx, id, errorCode, errorMessage, now)
+}
+
 type trackingImportService struct {
 	mu            sync.Mutex
 	active        int
@@ -319,6 +491,17 @@ func (c fakeCleaner) CleanupAbandoned() error {
 func newTestManager(
 	t *testing.T,
 	repository *Repository,
+	imports ImportService,
+	events *eventRecorder,
+	cleaner StagingCleaner,
+	workers int,
+) *Manager {
+	return newTestManagerWithRepository(t, repository, imports, events, cleaner, workers)
+}
+
+func newTestManagerWithRepository(
+	t *testing.T,
+	repository managerRepository,
 	imports ImportService,
 	events *eventRecorder,
 	cleaner StagingCleaner,
