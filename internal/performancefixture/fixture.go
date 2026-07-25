@@ -27,12 +27,15 @@ const (
 	BrokenDefinitionID         = int64(1)
 	MoodDefinitionID           = int64(2)
 	CalmValueID                = int64(1)
+	SyntheticArtworkVariants   = 24
+	SyntheticArtworkWidth      = 320
+	SyntheticArtworkHeight     = 400
 )
 
 type Fixture struct {
-	StoryCount          int
-	ShelfIDs            []int64
-	EmbeddedArtworkPath string
+	StoryCount           int
+	ShelfIDs             []int64
+	EmbeddedArtworkPaths []string
 }
 
 func Generate(
@@ -47,7 +50,7 @@ func Generate(
 		storyCount < 1 {
 		return Fixture{}, errors.New("performance fixture configuration is invalid")
 	}
-	artworkPath, err := writeSyntheticArtwork(layout)
+	artworkPaths, err := writeSyntheticArtwork(layout)
 	if err != nil {
 		return Fixture{}, err
 	}
@@ -164,7 +167,7 @@ func Generate(
 			storyUUID,
 			title,
 			description,
-			artworkPath,
+			artworkPaths[(index-1)%len(artworkPaths)],
 			searchtext.Normalize(title),
 			createdAt,
 			createdAt,
@@ -272,9 +275,9 @@ func Generate(
 		return Fixture{}, fmt.Errorf("analyze performance fixture: %w", err)
 	}
 	return Fixture{
-		StoryCount:          storyCount,
-		ShelfIDs:            shelfIDs,
-		EmbeddedArtworkPath: artworkPath,
+		StoryCount:           storyCount,
+		ShelfIDs:             shelfIDs,
+		EmbeddedArtworkPaths: artworkPaths,
 	}, nil
 }
 
@@ -460,33 +463,46 @@ func syntheticTitle(index int) string {
 	)
 }
 
-func writeSyntheticArtwork(layout storage.Layout) (string, error) {
-	var output bytes.Buffer
-	picture := image.NewNRGBA(image.Rect(0, 0, 8, 8))
-	for y := range 8 {
-		for x := range 8 {
-			picture.SetNRGBA(x, y, color.NRGBA{
-				R: uint8(30 + x*20),
-				G: uint8(50 + y*18),
-				B: uint8(90 + (x+y)*8),
-				A: 255,
-			})
-		}
-	}
-	if err := png.Encode(&output, picture); err != nil {
-		return "", err
-	}
+func writeSyntheticArtwork(layout storage.Layout) ([]string, error) {
 	directory := filepath.Join(layout.Catalog, "embedded")
 	if err := os.MkdirAll(directory, storage.DirectoryMode); err != nil {
-		return "", err
+		return nil, err
 	}
-	path := filepath.Join(directory, "performance-fixture.png")
-	if err := os.WriteFile(path, output.Bytes(), 0o600); err != nil {
-		return "", err
+	paths := make([]string, 0, SyntheticArtworkVariants)
+	for variant := range SyntheticArtworkVariants {
+		var output bytes.Buffer
+		picture := image.NewNRGBA(image.Rect(
+			0,
+			0,
+			SyntheticArtworkWidth,
+			SyntheticArtworkHeight,
+		))
+		for y := range SyntheticArtworkHeight {
+			for x := range SyntheticArtworkWidth {
+				band := (x/12 + y/15 + variant*3) % 17
+				picture.SetNRGBA(x, y, color.NRGBA{
+					R: uint8((band*31 + x/3 + variant*19) % 256),
+					G: uint8((band*17 + y/2 + variant*29) % 256),
+					B: uint8((x/5 + y/7 + variant*43) % 256),
+					A: 255,
+				})
+			}
+		}
+		if err := png.Encode(&output, picture); err != nil {
+			return nil, err
+		}
+		path := filepath.Join(
+			directory,
+			fmt.Sprintf("performance-cover-%02d.png", variant+1),
+		)
+		if err := os.WriteFile(path, output.Bytes(), 0o600); err != nil {
+			return nil, err
+		}
+		relative, err := filepath.Rel(layout.Root, path)
+		if err != nil {
+			return nil, err
+		}
+		paths = append(paths, filepath.ToSlash(relative))
 	}
-	relative, err := filepath.Rel(layout.Root, path)
-	if err != nil {
-		return "", err
-	}
-	return filepath.ToSlash(relative), nil
+	return paths, nil
 }

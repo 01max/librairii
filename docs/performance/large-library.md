@@ -4,13 +4,17 @@
 temporary Librairii data root and records representative collection timings.
 The generator creates deterministic synthetic titles, descriptions, UUIDs,
 metadata, tag assignments, saved shelves, archive records, and an original
-8×8 PNG. It does not copy copyrighted story or catalog content and it does not
-create usable story-archive payloads.
+set of 24 deterministic 320×400 procedural PNG covers. It does not copy
+copyrighted story or catalog content and it does not create usable
+story-archive payloads.
 
 The scenarios cover the first collection page, literal substring search,
 combined name/language/compatibility/boolean/choice filters, all saved-shelf
-counts, deep offset pagination, and loading the 24 embedded covers returned on
-the first page. Each metric is warmed once before the recorded samples.
+counts, deep offset pagination, and loading the 24 distinct embedded covers
+returned on the first page. Artwork timing exercises the application asset
+handler, reads each distinct local file, and fully decodes every PNG at its
+representative dimensions. Each metric is warmed once before the recorded
+samples.
 
 The checked-in baseline in
 [`large-library-baseline.json`](large-library-baseline.json) was recorded on
@@ -29,7 +33,7 @@ interaction budget:
 | Combined filters | 150 ms |
 | Six saved-shelf counts | 250 ms |
 | Deep pagination | 120 ms |
-| 24 artwork loads | 50 ms |
+| 24 distinct asset-handler loads and PNG decodes | 50 ms |
 
 These budgets cover the synchronous Go/SQLite and local-file work beneath one
 UI interaction. They retain substantial headroom over the reference machine

@@ -1,11 +1,16 @@
 package main
 
 import (
+	"bytes"
 	"context"
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
+	"image/png"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -15,6 +20,7 @@ import (
 	"github.com/01max/librairii/internal/artwork"
 	"github.com/01max/librairii/internal/database"
 	"github.com/01max/librairii/internal/library"
+	"github.com/01max/librairii/internal/lunii"
 	"github.com/01max/librairii/internal/metadata"
 	"github.com/01max/librairii/internal/performancefixture"
 	"github.com/01max/librairii/internal/shelves"
@@ -87,7 +93,7 @@ func run(ctx context.Context, storyCount int, samples int) error {
 	fixtureStarted := time.Now()
 	fixture, err := performancefixture.Generate(
 		ctx,
-		opened.SQL(),
+		opened.Writer(),
 		layout,
 		storyCount,
 	)
@@ -112,7 +118,13 @@ func run(ctx context.Context, storyCount int, samples int) error {
 	if err != nil {
 		return err
 	}
-	artworks := artwork.NewRepository(layout)
+	artworkHandler, err := artwork.NewAssetHandler(
+		performanceStorage{layout: layout, database: opened},
+		unreachableArtworkFetcher{},
+	)
+	if err != nil {
+		return err
+	}
 	queryPlans, err := performancefixture.QueryPlans(ctx, opened.SQL())
 	if err != nil {
 		return err
@@ -192,13 +204,33 @@ func run(ctx context.Context, storyCount int, samples int) error {
 		func() (int, error) {
 			loaded := 0
 			for _, story := range firstPage.Stories {
-				if _, err := artworks.LoadEmbedded(
-					ctx,
-					opened.SQL(),
-					story.ArtworkID,
-					artwork.DefaultMaximumBytes,
-				); err != nil {
+				request := httptest.NewRequest(
+					http.MethodGet,
+					"http://librairii.local/artwork/"+story.ArtworkID,
+					nil,
+				).WithContext(ctx)
+				response := httptest.NewRecorder()
+				artworkHandler.ServeHTTP(response, request)
+				if response.Code != http.StatusOK {
+					return loaded, fmt.Errorf(
+						"artwork %q response status %d",
+						story.ArtworkID,
+						response.Code,
+					)
+				}
+				picture, err := png.Decode(bytes.NewReader(response.Body.Bytes()))
+				if err != nil {
 					return loaded, err
+				}
+				bounds := picture.Bounds()
+				if bounds.Dx() != performancefixture.SyntheticArtworkWidth ||
+					bounds.Dy() != performancefixture.SyntheticArtworkHeight {
+					return loaded, fmt.Errorf(
+						"artwork %q dimensions %dx%d",
+						story.ArtworkID,
+						bounds.Dx(),
+						bounds.Dy(),
+					)
 				}
 				loaded++
 			}
@@ -234,6 +266,35 @@ func run(ctx context.Context, storyCount int, samples int) error {
 		return errors.New("one or more large-library interaction budgets were missed")
 	}
 	return nil
+}
+
+type performanceStorage struct {
+	layout   storage.Layout
+	database *database.Database
+}
+
+func (s performanceStorage) Layout() storage.Layout {
+	return s.layout
+}
+
+func (s performanceStorage) SQL() *sql.DB {
+	return s.database.SQL()
+}
+
+func (s performanceStorage) Writer() *sql.DB {
+	return s.database.Writer()
+}
+
+type unreachableArtworkFetcher struct{}
+
+func (unreachableArtworkFetcher) FetchArtwork(
+	context.Context,
+	string,
+	int64,
+) (lunii.ArtworkPayload, error) {
+	return lunii.ArtworkPayload{}, errors.New(
+		"performance fixture artwork must remain local",
+	)
 }
 
 func measure(

@@ -2,6 +2,8 @@ package performancefixture
 
 import (
 	"context"
+	"image/png"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -29,7 +31,7 @@ func TestGenerateBuildsCopyrightFreeFiveThousandStoryFixture(t *testing.T) {
 	})
 	fixture, err := Generate(
 		context.Background(),
-		opened.SQL(),
+		opened.Writer(),
 		layout,
 		MinimumLargeLibraryStories,
 	)
@@ -38,7 +40,7 @@ func TestGenerateBuildsCopyrightFreeFiveThousandStoryFixture(t *testing.T) {
 	}
 	if fixture.StoryCount != MinimumLargeLibraryStories ||
 		len(fixture.ShelfIDs) != 6 ||
-		fixture.EmbeddedArtworkPath == "" {
+		len(fixture.EmbeddedArtworkPaths) != SyntheticArtworkVariants {
 		t.Fatalf("Generate() = %#v", fixture)
 	}
 	var storyCount int
@@ -80,11 +82,42 @@ func TestGenerateBuildsCopyrightFreeFiveThousandStoryFixture(t *testing.T) {
 			nonSyntheticCount,
 		)
 	}
-	if !strings.HasPrefix(
-		fixture.EmbeddedArtworkPath,
-		"catalog/embedded/",
-	) {
-		t.Fatalf("embedded artwork path = %q", fixture.EmbeddedArtworkPath)
+	for _, relative := range fixture.EmbeddedArtworkPaths {
+		if !strings.HasPrefix(relative, "catalog/embedded/") {
+			t.Fatalf("embedded artwork path = %q", relative)
+		}
+		file, err := os.Open(filepath.Join(layout.Root, filepath.FromSlash(relative)))
+		if err != nil {
+			t.Fatal(err)
+		}
+		config, decodeErr := png.DecodeConfig(file)
+		closeErr := file.Close()
+		if decodeErr != nil {
+			t.Fatal(decodeErr)
+		}
+		if closeErr != nil {
+			t.Fatal(closeErr)
+		}
+		if config.Width != SyntheticArtworkWidth ||
+			config.Height != SyntheticArtworkHeight {
+			t.Fatalf("artwork dimensions = %dx%d", config.Width, config.Height)
+		}
+	}
+	var firstPageArtworkCount int
+	if err := opened.SQL().QueryRow(
+		`SELECT COUNT(DISTINCT embedded_artwork_path)
+		 FROM stories
+		 WHERE id BETWEEN 1 AND ?`,
+		SyntheticArtworkVariants,
+	).Scan(&firstPageArtworkCount); err != nil {
+		t.Fatal(err)
+	}
+	if firstPageArtworkCount != SyntheticArtworkVariants {
+		t.Fatalf(
+			"first-page distinct artwork paths = %d, want %d",
+			firstPageArtworkCount,
+			SyntheticArtworkVariants,
+		)
 	}
 	plans, err := QueryPlans(context.Background(), opened.SQL())
 	if err != nil {
