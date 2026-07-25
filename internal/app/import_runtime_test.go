@@ -13,6 +13,7 @@ import (
 	"github.com/01max/librairii/internal/archive"
 	"github.com/01max/librairii/internal/catalog"
 	"github.com/01max/librairii/internal/database"
+	"github.com/01max/librairii/internal/exporter"
 	"github.com/01max/librairii/internal/inspection/testfixture"
 	"github.com/01max/librairii/internal/library"
 	"github.com/01max/librairii/internal/metadata"
@@ -20,7 +21,44 @@ import (
 	"github.com/01max/librairii/internal/removal"
 	"github.com/01max/librairii/internal/storage"
 	"github.com/01max/librairii/internal/tagging"
+	"github.com/google/uuid"
 )
+
+func TestImportRuntimeBoundsUnusedPreparedExports(t *testing.T) {
+	t.Parallel()
+
+	runtime := &ImportRuntime{
+		preparedExports: make(map[string]exporter.PreflightReport),
+	}
+	preparationIDs := make([]string, 0, maxPreparedExports+1)
+	for range maxPreparedExports + 1 {
+		preparationID := uuid.NewString()
+		preparationIDs = append(preparationIDs, preparationID)
+		runtime.storePreparedExportLocked(exporter.PreflightReport{
+			PreparationID: preparationID,
+			CanExport:     true,
+		})
+	}
+
+	if len(runtime.preparedExports) != maxPreparedExports ||
+		len(runtime.preparedOrder) != maxPreparedExports {
+		t.Fatalf(
+			"prepared exports = %d, order = %d",
+			len(runtime.preparedExports),
+			len(runtime.preparedOrder),
+		)
+	}
+	if _, found := runtime.preparedExports[preparationIDs[0]]; found {
+		t.Fatal("oldest unused preparation was not evicted")
+	}
+	newest := preparationIDs[len(preparationIDs)-1]
+	if report, found := runtime.takePreparedExportLocked(newest); !found ||
+		report.PreparationID != newest ||
+		len(runtime.preparedExports) != maxPreparedExports-1 ||
+		len(runtime.preparedOrder) != maxPreparedExports-1 {
+		t.Fatalf("takePreparedExportLocked(%q) = %#v, %t", newest, report, found)
+	}
+}
 
 func TestImportRuntimeComposesNativeImportSlice(t *testing.T) {
 	t.Parallel()

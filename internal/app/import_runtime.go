@@ -26,6 +26,8 @@ import (
 
 var ErrImportRuntimeNotReady = errors.New("import runtime storage is not ready")
 
+const maxPreparedExports = 8
+
 type StorageProvider interface {
 	Layout() storage.Layout
 	SQL() *sql.DB
@@ -46,6 +48,7 @@ type ImportRuntime struct {
 	shelfEvaluator  *shelves.Evaluator
 	exportPreflight *exporter.PreflightService
 	preparedExports map[string]exporter.PreflightReport
+	preparedOrder   []string
 }
 
 type ImportRuntimeOption func(*ImportRuntime)
@@ -257,7 +260,7 @@ func (r *ImportRuntime) PrepareExport(
 		r.mu.Unlock()
 		return exporter.PreflightReport{}, ErrImportRuntimeNotReady
 	}
-	r.preparedExports[report.PreparationID] = report
+	r.storePreparedExportLocked(report)
 	r.mu.Unlock()
 	return report, nil
 }
@@ -274,10 +277,7 @@ func (r *ImportRuntime) StartPreparedExport(
 		return operations.Snapshot{}, err
 	}
 	r.mu.Lock()
-	report, found := r.preparedExports[preparationID]
-	if found {
-		delete(r.preparedExports, preparationID)
-	}
+	report, found := r.takePreparedExportLocked(preparationID)
 	r.mu.Unlock()
 	if !found || !report.CanExport {
 		return operations.Snapshot{}, operations.ErrInvalidRequest
@@ -687,11 +687,41 @@ func (r *ImportRuntime) Close() error {
 	r.shelfEvaluator = nil
 	r.exportPreflight = nil
 	r.preparedExports = make(map[string]exporter.PreflightReport)
+	r.preparedOrder = nil
 	r.mu.Unlock()
 	if manager == nil {
 		return nil
 	}
 	return manager.Close()
+}
+
+func (r *ImportRuntime) storePreparedExportLocked(report exporter.PreflightReport) {
+	for len(r.preparedExports) >= maxPreparedExports {
+		oldest := r.preparedOrder[0]
+		r.preparedOrder = r.preparedOrder[1:]
+		delete(r.preparedExports, oldest)
+	}
+	r.preparedExports[report.PreparationID] = report
+	r.preparedOrder = append(r.preparedOrder, report.PreparationID)
+}
+
+func (r *ImportRuntime) takePreparedExportLocked(
+	preparationID string,
+) (exporter.PreflightReport, bool) {
+	report, found := r.preparedExports[preparationID]
+	if !found {
+		return exporter.PreflightReport{}, false
+	}
+	delete(r.preparedExports, preparationID)
+	for index, candidate := range r.preparedOrder {
+		if candidate != preparationID {
+			continue
+		}
+		copy(r.preparedOrder[index:], r.preparedOrder[index+1:])
+		r.preparedOrder = r.preparedOrder[:len(r.preparedOrder)-1]
+		break
+	}
+	return report, true
 }
 
 func (r *ImportRuntime) current() (*operations.Manager, error) {
