@@ -266,8 +266,20 @@ test('composes canonical search, tri-state and choice refinements with clear-all
             choiceFilters: [{definitionId: 2, valueIds: [20, 21]}],
         }),
     ));
-    expect(screen.getByText('Mood · Calm')).toBeInTheDocument();
-    expect(screen.getByText('Mood · Bold')).toBeInTheDocument();
+    expect(screen.getByRole('button', {name: 'Remove filter Mood · Calm'}))
+        .toBeInTheDocument();
+    expect(screen.getByRole('button', {name: 'Remove filter Mood · Bold'}))
+        .toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', {
+        name: 'Remove filter Mood · Calm',
+    }));
+    await waitFor(() => expect(queryStories).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+            choiceFilters: [{definitionId: 2, valueIds: [21]}],
+        }),
+    ));
+    expect(search).toHaveFocus();
 
     await user.click(screen.getByRole('button', {name: 'Clear all'}));
     await waitFor(() => expect(queryStories).toHaveBeenLastCalledWith(

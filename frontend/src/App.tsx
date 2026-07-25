@@ -535,7 +535,11 @@ function App() {
 
     const activeFilters = [
         ...(collectionQuery.name
-            ? [{key: 'name', label: `Name contains “${collectionQuery.name}”`}]
+            ? [{
+                key: 'name',
+                label: `Name contains “${collectionQuery.name}”`,
+                remove: () => updateQuery({...collectionQuery, name: '', page: 1}),
+            }]
             : []),
         ...collectionQuery.booleanFilters.flatMap((filter) => {
             const definition = tagCatalog?.definitions.find(
@@ -547,6 +551,7 @@ function App() {
                     label: filter.state === 'true'
                         ? definition.label
                         : `Not ${definition.label}`,
+                    remove: () => setBooleanFilter(filter.definitionId, 'ignored'),
                 }]
                 : [];
         }),
@@ -560,6 +565,7 @@ function App() {
                     ? [{
                         key: `choice-${definition.id}-${value.id}`,
                         label: `${definition.label} · ${value.label}`,
+                        remove: () => toggleChoiceFilter(definition.id, value.id),
                     }]
                     : [];
             });
@@ -716,7 +722,18 @@ function App() {
                     <section className="active-query" aria-label="Active filters">
                         <span>{page?.totalItems ?? 0} matching stories</span>
                         {activeFilters.map((filter) => (
-                            <span className="query-chip" key={filter.key}>{filter.label}</span>
+                            <button
+                                className="query-chip"
+                                type="button"
+                                key={filter.key}
+                                aria-label={`Remove filter ${filter.label}`}
+                                onClick={() => {
+                                    filter.remove();
+                                    searchInput.current?.focus();
+                                }}
+                            >
+                                {filter.label} ×
+                            </button>
                         ))}
                         <button
                             type="button"
