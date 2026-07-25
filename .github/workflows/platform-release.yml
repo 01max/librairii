@@ -90,7 +90,8 @@ jobs:
             libwebkit2gtk-4.1-dev \
             xauth \
             xvfb
-          go install github.com/wailsapp/wails/v2/cmd/wails@$(cat .wails-version)
+          wails_version="$(cat .wails-version)"
+          go install "github.com/wailsapp/wails/v2/cmd/wails@$wails_version"
 
       - name: Install dependencies
         run: |
