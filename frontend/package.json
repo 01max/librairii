@@ -12,6 +12,7 @@
     "test": "vitest run",
     "test:accessibility": "node ./scripts/frontend-accessibility.mjs",
     "test:performance": "node ./scripts/frontend-performance.mjs",
+    "test:release": "npm run test && npm run test:responsive && npm run test:visual && npm run test:accessibility",
     "test:responsive": "node ./scripts/frontend-responsive.mjs",
     "test:visual": "node ./scripts/frontend-visual-parity.mjs",
     "test:watch": "vitest"

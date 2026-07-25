@@ -4,7 +4,7 @@ WAILS_VERSION := $(shell cat .wails-version)
 WAILS ?= $(shell go env GOPATH)/bin/wails
 GO_PACKAGES := . ./internal/... ./cmd/...
 
-.PHONY: setup fmt fmt-check vet test-go typecheck lint-frontend test-frontend test-frontend-accessibility test-frontend-performance test-frontend-responsive test-frontend-visual build-frontend check build smoke-foundation smoke-first-story
+.PHONY: setup fmt fmt-check vet test-go typecheck lint-frontend test-frontend test-frontend-accessibility test-frontend-performance test-frontend-release test-frontend-responsive test-frontend-visual build-frontend check build smoke-foundation smoke-first-story
 
 setup:
 	go mod download
@@ -38,6 +38,10 @@ test-frontend-accessibility:
 test-frontend-performance:
 	npm --prefix frontend run test:performance
 
+test-frontend-release:
+	go test . -run '^TestCanonicalPrototypeContract$$'
+	npm --prefix frontend run test:release
+
 test-frontend-responsive:
 	npm --prefix frontend run test:responsive
 
@@ -47,7 +51,7 @@ test-frontend-visual:
 build-frontend:
 	npm --prefix frontend run build
 
-check: fmt-check vet test-go typecheck lint-frontend test-frontend test-frontend-accessibility test-frontend-performance test-frontend-responsive test-frontend-visual build-frontend
+check: fmt-check vet test-go typecheck lint-frontend test-frontend-release test-frontend-performance build-frontend
 
 build:
 	test "$$($(WAILS) version | head -n 1)" = "$(WAILS_VERSION)"
