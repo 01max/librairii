@@ -81,6 +81,7 @@ type managerRepository interface {
 	Interrupt(context.Context, string, string, string, time.Time) (Snapshot, error)
 	Snapshot(context.Context, string) (Snapshot, error)
 	ActiveSnapshots(context.Context) ([]Snapshot, error)
+	LatestTerminalExport(context.Context) (Snapshot, bool, error)
 	InterruptActive(context.Context, time.Time) ([]Snapshot, error)
 }
 
@@ -444,7 +445,18 @@ func (m *Manager) Snapshot(ctx context.Context, operationID string) (Snapshot, e
 }
 
 func (m *Manager) Active(ctx context.Context) ([]Snapshot, error) {
-	return m.deps.Repository.ActiveSnapshots(ctx)
+	snapshots, err := m.deps.Repository.ActiveSnapshots(ctx)
+	if err != nil {
+		return nil, err
+	}
+	report, found, err := m.deps.Repository.LatestTerminalExport(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if found {
+		snapshots = append(snapshots, report)
+	}
+	return snapshots, nil
 }
 
 func (m *Manager) enqueue(

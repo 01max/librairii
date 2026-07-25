@@ -704,6 +704,38 @@ func (r *Repository) ActiveSnapshots(ctx context.Context) ([]Snapshot, error) {
 	return snapshots, nil
 }
 
+func (r *Repository) LatestTerminalExport(
+	ctx context.Context,
+) (Snapshot, bool, error) {
+	var id string
+	err := r.database.QueryRowContext(
+		ctx,
+		`SELECT id
+		 FROM file_operations
+		 WHERE kind = 'export'
+		   AND status IN (
+		       'succeeded',
+		       'partially_succeeded',
+		       'failed',
+		       'cancelled',
+		       'interrupted'
+		   )
+		 ORDER BY COALESCE(finished_at, created_at) DESC, id DESC
+		 LIMIT 1`,
+	).Scan(&id)
+	if errors.Is(err, sql.ErrNoRows) {
+		return Snapshot{}, false, nil
+	}
+	if err != nil {
+		return Snapshot{}, false, err
+	}
+	snapshot, err := r.Snapshot(ctx, id)
+	if err != nil {
+		return Snapshot{}, false, err
+	}
+	return snapshot, true, nil
+}
+
 func (r *Repository) InterruptActive(
 	ctx context.Context,
 	now time.Time,

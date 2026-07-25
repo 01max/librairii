@@ -993,9 +993,18 @@ function App() {
     const activeOperations = operationSnapshots.filter((snapshot) => (
         operationIsActive(snapshot)
     ));
-    const visibleOperations = activeOperations.length > 0
+    const latestTerminalExport = operationSnapshots.find((snapshot) => (
+        snapshot.kind === 'export' && operationIsTerminal(snapshot)
+    ));
+    const primaryVisibleOperations = activeOperations.length > 0
         ? activeOperations
         : operationSnapshots.slice(0, 1);
+    const visibleOperations = latestTerminalExport &&
+        !primaryVisibleOperations.some(
+            (snapshot) => snapshot.id === latestTerminalExport.id,
+        )
+        ? [...primaryVisibleOperations, latestTerminalExport]
+        : primaryVisibleOperations;
     const importing = activeOperations.some((snapshot) => snapshot.kind === 'import');
     const metadataRefreshing = activeOperations.some(
         (snapshot) => snapshot.kind === 'metadata_sync',

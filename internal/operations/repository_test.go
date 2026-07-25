@@ -158,6 +158,13 @@ func TestRepositoryPersistsImmutableExportScopeAndOutcomeReport(t *testing.T) {
 		report.Items[0].OutcomeMessage != "The destination file already exists." {
 		t.Fatalf("Snapshot(export report) = %#v", report)
 	}
+	latest, found, err := repository.LatestTerminalExport(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !found || latest.ID != report.ID || latest.Status != StatusPartiallySucceeded {
+		t.Fatalf("LatestTerminalExport() = %#v, %t", latest, found)
+	}
 	if _, err := sqlDatabase.SQL().ExecContext(
 		ctx,
 		"DELETE FROM stories WHERE id = ?",

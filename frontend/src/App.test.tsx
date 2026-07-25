@@ -2342,10 +2342,7 @@ test('restores persisted export progress and reconciles missed events', async ()
 
 test('groups final export outcomes and reveals the retained destination', async () => {
     const user = userEvent.setup();
-    render(<App/>);
-    await screen.findByRole('heading', {name: 'My story shelves'});
-
-    operationChanged?.({
+    const finishedExport = {
         id: 'finished-export',
         kind: 'export',
         status: 'partially_succeeded',
@@ -2411,7 +2408,11 @@ test('groups final export outcomes and reveals the retained destination', async 
                 totalBytes: 1048576,
             },
         ],
-    });
+    };
+    activeOperations.mockResolvedValue(new app.OperationListResponse({
+        operations: [finishedExport],
+    }));
+    render(<App/>);
 
     const report = await screen.findByRole('region', {name: 'Export report'});
     expect(report).toHaveTextContent('Source shelves · Moon, Forest');
@@ -2429,6 +2430,29 @@ test('groups final export outcomes and reveals the retained destination', async 
     expect(report).toHaveTextContent(
         'The copied archive failed checksum verification.',
     );
+    operationChanged?.({
+        id: 'newer-import',
+        kind: 'import',
+        status: 'succeeded',
+        completedItems: 1,
+        totalItems: 1,
+        cancelRequested: false,
+        createdAt: '2026-07-25T20:02:00Z',
+        finishedAt: '2026-07-25T20:03:00Z',
+        items: [{
+            id: 6,
+            sourceName: 'newer.zip',
+            status: 'succeeded',
+            outcomeCode: 'imported',
+            outcomeMessage: 'Story imported.',
+            completedBytes: 1,
+            totalBytes: 1,
+        }],
+    });
+    expect(await screen.findByRole('heading', {name: '1 story imported'}))
+        .toBeInTheDocument();
+    expect(screen.getByRole('region', {name: 'Export report'}))
+        .toBeInTheDocument();
     await user.click(within(report).getByRole('button', {
         name: 'Reveal destination',
     }));
