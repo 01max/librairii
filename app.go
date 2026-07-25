@@ -2,26 +2,33 @@ package main
 
 import (
 	"context"
-	"fmt"
+
+	coreapp "github.com/01max/librairii/internal/app"
 )
 
-// App struct
+// App is the narrow Wails binding facade. Domain behaviour stays in internal
+// application services and only stable DTOs cross this boundary.
 type App struct {
-	ctx context.Context
+	core *coreapp.Application
 }
 
-// NewApp creates a new App application struct
-func NewApp() *App {
-	return &App{}
+func NewApp(core *coreapp.Application) *App {
+	return &App{core: core}
 }
 
-// startup is called when the app starts. The context is saved
-// so we can call the runtime methods
 func (a *App) startup(ctx context.Context) {
-	a.ctx = ctx
+	_ = a.core.Start(ctx)
 }
 
-// Greet returns a greeting for the given name
-func (a *App) Greet(name string) string {
-	return fmt.Sprintf("Hello %s, It's show time!", name)
+func (a *App) domReady(ctx context.Context) {
+	a.core.AnnounceReady(ctx)
+}
+
+func (a *App) shutdown(ctx context.Context) {
+	a.core.Stop(ctx)
+}
+
+// ApplicationStatus returns a stable lifecycle snapshot for the frontend.
+func (a *App) ApplicationStatus() coreapp.StatusResponse {
+	return coreapp.StatusResponse{Status: a.core.Status()}
 }
