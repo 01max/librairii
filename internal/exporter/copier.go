@@ -31,6 +31,7 @@ type ProgressFunc func(deltaBytes int64)
 
 type Copier struct {
 	layout storage.Layout
+	link   func(string, string) error
 }
 
 func NewCopier(layout storage.Layout) (*Copier, error) {
@@ -40,7 +41,7 @@ func NewCopier(layout storage.Layout) (*Copier, error) {
 		!filepath.IsAbs(layout.Archives) {
 		return nil, ErrExportSourceInvalid
 	}
-	return &Copier{layout: layout}, nil
+	return &Copier{layout: layout, link: os.Link}, nil
 }
 
 func (c *Copier) Copy(
@@ -113,7 +114,7 @@ func (c *Copier) Copy(
 	if checksum != story.SHA256 || written != story.ByteSize {
 		return CopyResult{}, ErrExportChecksumFailed
 	}
-	if err := os.Link(temporaryPath, finalPath); err != nil {
+	if err := c.link(temporaryPath, finalPath); err != nil {
 		if errors.Is(err, os.ErrExist) {
 			return CopyResult{}, ErrExportConflict
 		}
