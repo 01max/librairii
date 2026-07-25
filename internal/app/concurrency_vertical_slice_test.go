@@ -8,10 +8,12 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
 	"github.com/01max/librairii/internal/exporter"
+	"github.com/01max/librairii/internal/importer"
 	"github.com/01max/librairii/internal/inspection/testfixture"
 	"github.com/01max/librairii/internal/library"
 	"github.com/01max/librairii/internal/metadata"
@@ -32,6 +34,7 @@ func TestRuntimeKeepsBrowsingResponsiveDuringImportRefreshAndExport(
 	events := &runtimeEventRecorder{
 		events: make(chan operations.Snapshot, 256),
 	}
+	gate := newRuntimeActivityGate()
 	runtime, err := NewImportRuntime(
 		provider,
 		fixedClock{now: time.Date(
@@ -46,7 +49,22 @@ func TestRuntimeKeepsBrowsingResponsiveDuringImportRefreshAndExport(
 		)},
 		events,
 		2,
-		WithMetadataFetcher(&runtimeCatalogFetcher{payload: payload}),
+		WithMetadataFetcher(&gatedCatalogFetcher{
+			delegate: &runtimeCatalogFetcher{payload: payload},
+			gate:     gate,
+		}),
+		func(runtime *ImportRuntime) {
+			runtime.decorateImport = func(
+				delegate operations.ImportService,
+			) operations.ImportService {
+				return &gatedImportService{delegate: delegate, gate: gate}
+			}
+			runtime.decorateExport = func(
+				delegate operations.ExportService,
+			) operations.ExportService {
+				return &gatedExportService{delegate: delegate, gate: gate}
+			}
+		},
 	)
 	if err != nil {
 		t.Fatal(err)
@@ -95,79 +113,100 @@ func TestRuntimeKeepsBrowsingResponsiveDuringImportRefreshAndExport(
 		t.Fatal(err)
 	}
 
-	type startResult struct {
-		snapshot operations.Snapshot
-		err      error
+	gate.Enable()
+	concurrentImport, err := runtime.StartImport(ctx, []string{concurrentPath})
+	if err != nil {
+		t.Fatal(err)
 	}
-	start := make(chan struct{})
-	importResult := make(chan startResult, 1)
-	refreshResult := make(chan startResult, 1)
-	exportResult := make(chan startResult, 1)
-	browseErrors := make(chan error, 1)
-	var activity sync.WaitGroup
-	activity.Add(4)
-	go func() {
-		defer activity.Done()
-		<-start
-		snapshot, startErr := runtime.StartImport(ctx, []string{concurrentPath})
-		importResult <- startResult{snapshot: snapshot, err: startErr}
-	}()
-	go func() {
-		defer activity.Done()
-		<-start
-		snapshot, startErr := runtime.StartMetadataRefresh(
-			ctx,
-			metadata.DefaultLocale,
-		)
-		refreshResult <- startResult{snapshot: snapshot, err: startErr}
-	}()
-	go func() {
-		defer activity.Done()
-		<-start
-		snapshot, startErr := runtime.StartPreparedExport(
-			ctx,
-			preflight.PreparationID,
-		)
-		exportResult <- startResult{snapshot: snapshot, err: startErr}
-	}()
-	go func() {
-		defer activity.Done()
-		<-start
-		for range 100 {
-			page, searchErr := runtime.Search(ctx, library.StoryLibraryQuery{
-				Page:     1,
-				PageSize: 20,
-			})
-			if searchErr != nil {
-				browseErrors <- searchErr
-				return
-			}
-			if page.TotalItems < 1 {
-				browseErrors <- errors.New("browse snapshot lost committed stories")
-				return
-			}
-		}
-		browseErrors <- nil
-	}()
-	close(start)
-	activity.Wait()
+	concurrentRefresh, err := runtime.StartMetadataRefresh(
+		ctx,
+		metadata.DefaultLocale,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	concurrentExport, err := runtime.StartPreparedExport(
+		ctx,
+		preflight.PreparationID,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	results := []operations.Snapshot{
+		concurrentImport,
+		concurrentRefresh,
+		concurrentExport,
+	}
 
-	results := []startResult{
-		<-importResult,
-		<-refreshResult,
-		<-exportResult,
-	}
-	if err := <-browseErrors; err != nil {
-		t.Fatalf("concurrent browsing error = %v", err)
-	}
-	for _, result := range results {
-		if result.err != nil {
-			t.Fatalf("start concurrent operation error = %v", result.err)
+	startedKinds := map[operations.Kind]bool{}
+	for range 2 {
+		select {
+		case kind := <-gate.entered:
+			startedKinds[kind] = true
+		case <-time.After(time.Second):
+			t.Fatal("timed out waiting for bounded workers to enter adapters")
 		}
-		terminal := waitRuntimeTerminal(t, runtime, result.snapshot.ID)
+	}
+	select {
+	case kind := <-gate.entered:
+		t.Fatalf("third operation %q exceeded the two-worker ceiling", kind)
+	case <-time.After(75 * time.Millisecond):
+	}
+	if got := gate.Maximum(); got != 2 {
+		t.Fatalf("maximum active operation workers = %d, want 2", got)
+	}
+	if got := provider.db.Writer().Stats().InUse; got != 0 {
+		t.Fatalf("writer connections held during external work = %d, want 0", got)
+	}
+	running := 0
+	pending := 0
+	for _, result := range results {
+		snapshot, snapshotErr := runtime.Snapshot(ctx, result.ID)
+		if snapshotErr != nil {
+			t.Fatal(snapshotErr)
+		}
+		switch snapshot.Status {
+		case operations.StatusRunning:
+			running++
+		case operations.StatusQueued:
+			pending++
+		default:
+			t.Fatalf("operation escaped activity barrier = %#v", snapshot)
+		}
+	}
+	if running != 2 || pending != 1 {
+		t.Fatalf("bounded operation states = %d running, %d pending", running, pending)
+	}
+
+	browseContext, cancelBrowse := context.WithTimeout(ctx, 750*time.Millisecond)
+	defer cancelBrowse()
+	for range 100 {
+		page, searchErr := runtime.Search(
+			browseContext,
+			library.StoryLibraryQuery{Page: 1, PageSize: 20},
+		)
+		if searchErr != nil {
+			t.Fatalf("browsing while operations are in flight: %v", searchErr)
+		}
+		if page.TotalItems < 1 {
+			t.Fatal(errors.New("browse snapshot lost committed stories"))
+		}
+	}
+
+	gate.Release()
+	for _, result := range results {
+		terminal := waitRuntimeTerminal(t, runtime, result.ID)
 		if terminal.Status != operations.StatusSucceeded {
 			t.Fatalf("concurrent operation = %#v", terminal)
 		}
+	}
+	if len(startedKinds) != 2 {
+		t.Fatalf("initial active operation kinds = %#v", startedKinds)
+	}
+	select {
+	case <-gate.entered:
+	case <-time.After(time.Second):
+		t.Fatal("queued third operation never entered a worker")
 	}
 
 	active, err := runtime.Active(ctx)
@@ -193,6 +232,116 @@ func TestRuntimeKeepsBrowsingResponsiveDuringImportRefreshAndExport(
 	if _, err := os.Stat(exportedPath); err != nil {
 		t.Fatalf("exported archive error = %v", err)
 	}
+}
+
+type runtimeActivityGate struct {
+	enabled atomic.Bool
+	active  atomic.Int64
+	maximum atomic.Int64
+	entered chan operations.Kind
+	release chan struct{}
+	once    sync.Once
+}
+
+func newRuntimeActivityGate() *runtimeActivityGate {
+	return &runtimeActivityGate{
+		entered: make(chan operations.Kind, 3),
+		release: make(chan struct{}),
+	}
+}
+
+func (g *runtimeActivityGate) Enable() {
+	g.enabled.Store(true)
+}
+
+func (g *runtimeActivityGate) Enter(
+	ctx context.Context,
+	kind operations.Kind,
+) (bool, error) {
+	if !g.enabled.Load() {
+		return false, nil
+	}
+	active := g.active.Add(1)
+	for {
+		maximum := g.maximum.Load()
+		if active <= maximum || g.maximum.CompareAndSwap(maximum, active) {
+			break
+		}
+	}
+	g.entered <- kind
+	select {
+	case <-g.release:
+		return true, nil
+	case <-ctx.Done():
+		g.active.Add(-1)
+		return false, ctx.Err()
+	}
+}
+
+func (g *runtimeActivityGate) Leave(entered bool) {
+	if entered {
+		g.active.Add(-1)
+	}
+}
+
+func (g *runtimeActivityGate) Maximum() int64 {
+	return g.maximum.Load()
+}
+
+func (g *runtimeActivityGate) Release() {
+	g.once.Do(func() { close(g.release) })
+}
+
+type gatedImportService struct {
+	delegate operations.ImportService
+	gate     *runtimeActivityGate
+}
+
+func (s *gatedImportService) Import(
+	ctx context.Context,
+	sourcePath string,
+) (importer.Outcome, error) {
+	entered, err := s.gate.Enter(ctx, operations.KindImport)
+	if err != nil {
+		return importer.Outcome{}, err
+	}
+	defer s.gate.Leave(entered)
+	return s.delegate.Import(ctx, sourcePath)
+}
+
+type gatedExportService struct {
+	delegate operations.ExportService
+	gate     *runtimeActivityGate
+}
+
+func (s *gatedExportService) Copy(
+	ctx context.Context,
+	item operations.NewItem,
+	destination string,
+	progress func(int64),
+) (operations.ExportCopyResult, error) {
+	entered, err := s.gate.Enter(ctx, operations.KindExport)
+	if err != nil {
+		return operations.ExportCopyResult{}, err
+	}
+	defer s.gate.Leave(entered)
+	return s.delegate.Copy(ctx, item, destination, progress)
+}
+
+type gatedCatalogFetcher struct {
+	delegate metadata.CatalogFetcher
+	gate     *runtimeActivityGate
+}
+
+func (f *gatedCatalogFetcher) FetchCatalog(
+	ctx context.Context,
+) ([]byte, error) {
+	entered, err := f.gate.Enter(ctx, operations.KindMetadataSync)
+	if err != nil {
+		return nil, err
+	}
+	defer f.gate.Leave(entered)
+	return f.delegate.FetchCatalog(ctx)
 }
 
 func concurrentPlainPKFixture(t *testing.T) testfixture.Archive {

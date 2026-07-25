@@ -53,6 +53,8 @@ type ImportRuntime struct {
 	diagnostics      *diagnostics.Service
 	preparedExports  map[string]exporter.PreflightReport
 	preparedOrder    []string
+	decorateImport   func(operations.ImportService) operations.ImportService
+	decorateExport   func(operations.ExportService) operations.ExportService
 }
 
 type ImportRuntimeOption func(*ImportRuntime)
@@ -171,14 +173,28 @@ func (r *ImportRuntime) Start(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("construct import service: %w", err)
 	}
+	var importExecutor operations.ImportService = importService
+	if r.decorateImport != nil {
+		importExecutor = r.decorateImport(importExecutor)
+		if importExecutor == nil {
+			return fmt.Errorf("decorate import service: %w", ErrMissingDependency)
+		}
+	}
 	exportCopier, err := exporter.NewCopier(layout)
 	if err != nil {
 		return fmt.Errorf("construct export copier: %w", err)
 	}
+	var exportExecutor operations.ExportService = exportCopier
+	if r.decorateExport != nil {
+		exportExecutor = r.decorateExport(exportExecutor)
+		if exportExecutor == nil {
+			return fmt.Errorf("decorate export service: %w", ErrMissingDependency)
+		}
+	}
 	manager, err := operations.NewManager(operations.Dependencies{
 		Repository:     operations.NewRepository(writeDatabase),
-		Imports:        importService,
-		Exports:        exportCopier,
+		Imports:        importExecutor,
+		Exports:        exportExecutor,
 		ExportRecovery: exportCopier,
 		Metadata:       metadataRefresh,
 		Events: diagnosticEventPort{

@@ -140,6 +140,7 @@ type operationJob struct {
 	run         *operationRun
 	item        ItemSnapshot
 	source      string
+	locale      string
 	total       int64
 	export      ExportWorkItem
 	destination string
@@ -359,11 +360,10 @@ func (m *Manager) StartMetadataRefresh(
 		return Snapshot{}, ErrManagerNotStarted
 	}
 	m.runs[operationID] = run
-	m.wg.Add(1)
 	m.mu.Unlock()
 
 	m.deps.Events.Emit(ctx, EventChanged, snapshot)
-	go m.executeMetadata(run, snapshot.Items[0], locale)
+	go m.enqueueMetadata(run, snapshot.Items[0], locale)
 	return snapshot, nil
 }
 
@@ -527,14 +527,32 @@ func (m *Manager) enqueueExport(
 	}
 }
 
+func (m *Manager) enqueueMetadata(
+	run *operationRun,
+	item ItemSnapshot,
+	locale string,
+) {
+	select {
+	case m.jobs <- operationJob{
+		run:    run,
+		item:   item,
+		locale: locale,
+	}:
+	case <-m.ctx.Done():
+	}
+}
+
 func (m *Manager) worker() {
 	defer m.wg.Done()
 	for {
 		select {
 		case job := <-m.jobs:
-			if job.run.kind == KindExport {
+			switch job.run.kind {
+			case KindExport:
 				m.executeExport(job)
-			} else {
+			case KindMetadataSync:
+				m.executeMetadata(job.run, job.item, job.locale)
+			default:
 				m.execute(job)
 			}
 		case <-m.ctx.Done():
@@ -677,7 +695,6 @@ func (m *Manager) executeMetadata(
 	item ItemSnapshot,
 	locale string,
 ) {
-	defer m.wg.Done()
 	run.startOnce.Do(func() {
 		run.startErr = m.deps.Repository.MarkRunning(
 			m.ctx,
