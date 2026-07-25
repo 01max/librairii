@@ -342,6 +342,12 @@ test('renders saved shelf preview rows and opens them from view all', async () =
     expect(adventuresRow).not.toBeNull();
     expect(within(bedtimeRow!).getByText('1 story · Saved shelf'))
         .toBeInTheDocument();
+    expect(within(bedtimeRow!).getByRole('button', {
+        name: 'View all stories in Bedtime',
+    })).toBeInTheDocument();
+    expect(within(adventuresRow!).getByRole('button', {
+        name: 'View all stories in Adventures',
+    })).toBeInTheDocument();
     await waitFor(() => expect(within(adventuresRow!).getByText('Clockwork Forest'))
         .toBeInTheDocument());
     await waitFor(() => expect(openShelf).toHaveBeenCalledWith(
@@ -349,7 +355,9 @@ test('renders saved shelf preview rows and opens them from view all', async () =
         expect.objectContaining({page: 1, pageSize: 6, sort: 'imported_desc'}),
     ));
 
-    await user.click(within(bedtimeRow!).getByRole('button', {name: 'View all →'}));
+    await user.click(within(bedtimeRow!).getByRole('button', {
+        name: 'View all stories in Bedtime',
+    }));
     await waitFor(() => expect(openShelf).toHaveBeenCalledWith(
         7,
         expect.objectContaining({page: 1, pageSize: 12, sort: 'imported_desc'}),

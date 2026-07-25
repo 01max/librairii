@@ -1831,6 +1831,9 @@ function App() {
                             </span>
                             <button
                                 type="button"
+                                aria-label={row.shelfID === undefined
+                                    ? undefined
+                                    : `View all stories in ${row.name}`}
                                 disabled={row.shelfID === undefined
                                     ? expandingCollection ||
                                         stories.length >= (page?.totalItems ?? 0)
