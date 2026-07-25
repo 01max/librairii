@@ -18,7 +18,7 @@ var (
 )
 
 type libraryResolver interface {
-	Search(context.Context, library.StoryLibraryQuery) (library.Page, error)
+	ExportQuery(context.Context, library.StoryLibraryQuery) ([]library.ExportStory, error)
 	ExportStory(context.Context, int64) (library.ExportStory, error)
 }
 
@@ -70,13 +70,14 @@ func (r *Resolver) ResolveCurrentQuery(
 	ctx context.Context,
 	query library.StoryLibraryQuery,
 ) (Scope, error) {
-	ids, err := r.queryStoryIDs(ctx, query)
+	stories, err := r.library.ExportQuery(ctx, query)
 	if err != nil {
-		return Scope{}, err
+		return Scope{}, fmt.Errorf("%w: resolve current query: %v", ErrStoryUnavailable, err)
 	}
-	return r.materialize(ctx, operations.ExportSource{
-		Type: operations.ExportSourceCurrentQuery,
-	}, ids, 0)
+	return Scope{
+		Source:  operations.ExportSource{Type: operations.ExportSourceCurrentQuery},
+		Stories: stories,
+	}, nil
 }
 
 func (r *Resolver) ResolveShelf(
@@ -90,15 +91,23 @@ func (r *Resolver) ResolveShelf(
 	if err != nil {
 		return Scope{}, fmt.Errorf("open export shelf %d: %w", shelfID, err)
 	}
-	ids, err := r.queryStoryIDs(ctx, opened.Query.StoryLibraryQuery())
+	stories, err := r.library.ExportQuery(ctx, opened.Query.StoryLibraryQuery())
 	if err != nil {
-		return Scope{}, fmt.Errorf("resolve export shelf %d: %w", shelfID, err)
+		return Scope{}, fmt.Errorf(
+			"%w: resolve export shelf %d: %v",
+			ErrStoryUnavailable,
+			shelfID,
+			err,
+		)
 	}
-	return r.materialize(ctx, operations.ExportSource{
-		Type:       operations.ExportSourceShelf,
-		ShelfIDs:   []int64{opened.Shelf.ID},
-		ShelfNames: []string{opened.Shelf.Name},
-	}, ids, 0)
+	return Scope{
+		Source: operations.ExportSource{
+			Type:       operations.ExportSourceShelf,
+			ShelfIDs:   []int64{opened.Shelf.ID},
+			ShelfNames: []string{opened.Shelf.Name},
+		},
+		Stories: stories,
+	}, nil
 }
 
 func (r *Resolver) ResolveShelves(
@@ -109,14 +118,6 @@ func (r *Resolver) ResolveShelves(
 		return Scope{}, ErrInvalidScope
 	}
 	seenShelves := make(map[int64]struct{}, len(shelfIDs))
-	union := make(map[int64]struct{})
-	var orderedStoryIDs []int64
-	source := operations.ExportSource{
-		Type:       operations.ExportSourceShelves,
-		ShelfIDs:   make([]int64, 0, len(shelfIDs)),
-		ShelfNames: make([]string, 0, len(shelfIDs)),
-	}
-	totalMemberships := 0
 	for _, shelfID := range shelfIDs {
 		if shelfID <= 0 {
 			return Scope{}, ErrInvalidScope
@@ -125,65 +126,45 @@ func (r *Resolver) ResolveShelves(
 			return Scope{}, ErrInvalidScope
 		}
 		seenShelves[shelfID] = struct{}{}
+	}
+	union := make(map[int64]struct{})
+	var stories []library.ExportStory
+	source := operations.ExportSource{
+		Type:       operations.ExportSourceShelves,
+		ShelfIDs:   make([]int64, 0, len(shelfIDs)),
+		ShelfNames: make([]string, 0, len(shelfIDs)),
+	}
+	totalMemberships := 0
+	for _, shelfID := range shelfIDs {
 		opened, err := r.shelves.Open(ctx, shelfID)
 		if err != nil {
 			return Scope{}, fmt.Errorf("open export shelf %d: %w", shelfID, err)
 		}
-		memberIDs, err := r.queryStoryIDs(ctx, opened.Query.StoryLibraryQuery())
+		members, err := r.library.ExportQuery(ctx, opened.Query.StoryLibraryQuery())
 		if err != nil {
 			return Scope{}, fmt.Errorf(
-				"resolve export shelf %d: %w",
+				"%w: resolve export shelf %d: %v",
+				ErrStoryUnavailable,
 				shelfID,
 				err,
 			)
 		}
-		totalMemberships += len(memberIDs)
-		for _, storyID := range memberIDs {
-			if _, duplicate := union[storyID]; duplicate {
+		totalMemberships += len(members)
+		for _, story := range members {
+			if _, duplicate := union[story.ID]; duplicate {
 				continue
 			}
-			union[storyID] = struct{}{}
-			orderedStoryIDs = append(orderedStoryIDs, storyID)
+			union[story.ID] = struct{}{}
+			stories = append(stories, story)
 		}
 		source.ShelfIDs = append(source.ShelfIDs, opened.Shelf.ID)
 		source.ShelfNames = append(source.ShelfNames, opened.Shelf.Name)
 	}
-	return r.materialize(
-		ctx,
-		source,
-		orderedStoryIDs,
-		totalMemberships-len(orderedStoryIDs),
-	)
-}
-
-func (r *Resolver) queryStoryIDs(
-	ctx context.Context,
-	query library.StoryLibraryQuery,
-) ([]int64, error) {
-	query.Page = 1
-	query.PageSize = library.MaxPageSize
-	if query.Sort == "" {
-		query.Sort = library.SortNameAscending
-	}
-	var ordered []int64
-	seen := make(map[int64]struct{})
-	for {
-		page, err := r.library.Search(ctx, query)
-		if err != nil {
-			return nil, err
-		}
-		for _, story := range page.Stories {
-			if _, duplicate := seen[story.ID]; duplicate {
-				continue
-			}
-			seen[story.ID] = struct{}{}
-			ordered = append(ordered, story.ID)
-		}
-		if query.Page >= page.TotalPages {
-			return ordered, nil
-		}
-		query.Page++
-	}
+	return Scope{
+		Source:           source,
+		Stories:          stories,
+		CollapsedOverlap: totalMemberships - len(stories),
+	}, nil
 }
 
 func (r *Resolver) materialize(

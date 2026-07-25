@@ -85,6 +85,48 @@ func TestStoryLibraryQueryNormalizesLiteralNameSearch(t *testing.T) {
 	}
 }
 
+func TestExportQueryFreezesTheCompleteResultWithoutPagination(t *testing.T) {
+	t.Parallel()
+
+	query, repository, _ := newLibraryQuery(t, nil)
+	first := createQueryableStory(
+		t,
+		repository,
+		"00112233-4455-4677-8899-aabbccddeeff",
+		"Alpha",
+		"a",
+	)
+	second := createQueryableStory(
+		t,
+		repository,
+		"11112222-3333-4444-8555-666677778888",
+		"Beta",
+		"b",
+	)
+	third := createQueryableStory(
+		t,
+		repository,
+		"22223333-4444-4555-8666-777788889999",
+		"Gamma",
+		"c",
+	)
+
+	stories, err := query.ExportQuery(context.Background(), StoryLibraryQuery{
+		Page:     2,
+		PageSize: 1,
+		Sort:     SortNameAscending,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(stories) != 3 ||
+		stories[0].ID != first.ID ||
+		stories[1].ID != second.ID ||
+		stories[2].ID != third.ID {
+		t.Fatalf("ExportQuery() = %#v", stories)
+	}
+}
+
 func TestStoryLibraryQueryComposesBooleanAndChoiceGroups(t *testing.T) {
 	t.Parallel()
 

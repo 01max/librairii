@@ -223,24 +223,38 @@ func (q *Query) ExportStory(ctx context.Context, storyID int64) (ExportStory, er
 	if len(records) == 0 {
 		return ExportStory{}, sql.ErrNoRows
 	}
-	record := records[0]
-	official, err := q.official.FindByUUIDs(ctx, []string{record.uuid})
+	stories, err := q.exportStoriesFromRecords(ctx, records)
 	if err != nil {
-		return ExportStory{}, fmt.Errorf("load official export metadata: %w", err)
+		return ExportStory{}, err
 	}
-	summary := resolveSummary(record, official[record.uuid])
-	verification, _ := compatibility(record.validationState)
-	return ExportStory{
-		ID:                  record.id,
-		UUID:                record.uuid,
-		Title:               summary.Title,
-		OriginalFilename:    record.originalFilename,
-		DetectedFormat:      record.detectedFormat,
-		SHA256:              record.sha256,
-		ByteSize:            record.byteSize,
-		ManagedRelativePath: record.managedPath,
-		Verification:        verification,
-	}, nil
+	return stories[0], nil
+}
+
+func (q *Query) exportStoriesFromRecords(
+	ctx context.Context,
+	records []localRecord,
+) ([]ExportStory, error) {
+	official, err := q.official.FindByUUIDs(ctx, recordUUIDs(records))
+	if err != nil {
+		return nil, fmt.Errorf("load official export metadata: %w", err)
+	}
+	stories := make([]ExportStory, 0, len(records))
+	for _, record := range records {
+		summary := resolveSummary(record, official[record.uuid])
+		verification, _ := compatibility(record.validationState)
+		stories = append(stories, ExportStory{
+			ID:                  record.id,
+			UUID:                record.uuid,
+			Title:               summary.Title,
+			OriginalFilename:    record.originalFilename,
+			DetectedFormat:      record.detectedFormat,
+			SHA256:              record.sha256,
+			ByteSize:            record.byteSize,
+			ManagedRelativePath: record.managedPath,
+			Verification:        verification,
+		})
+	}
+	return stories, nil
 }
 
 type localRecord struct {
@@ -300,6 +314,25 @@ func (q *Query) localRecordPage(
 	pageArguments := append([]any(nil), arguments...)
 	pageArguments = append(pageArguments, limit, offset)
 	return q.queryLocalRecords(ctx, statement, pageArguments)
+}
+
+func (q *Query) localRecordsOrdered(
+	ctx context.Context,
+	predicate string,
+	arguments []any,
+	order Sort,
+) ([]localRecord, error) {
+	statement := localRecordSelect
+	if predicate != "" {
+		statement += " WHERE " + predicate
+	}
+	if order == SortImportedNewest {
+		statement += " ORDER BY s.created_at DESC, s.id DESC"
+	} else {
+		statement += " ORDER BY " + resolvedDisplayNameSQL + ", s.uuid, s.id"
+		arguments = append(arguments, q.officialLocale)
+	}
+	return q.queryLocalRecords(ctx, statement, arguments)
 }
 
 func (q *Query) countLocalRecords(

@@ -71,11 +71,9 @@ func TestResolverSnapshotsEverySupportedScope(t *testing.T) {
 		nil,
 		0,
 	)
-	if len(libraryQuery.searches) < 2 ||
-		libraryQuery.searches[0].Page != 1 ||
-		libraryQuery.searches[0].PageSize != library.MaxPageSize ||
-		libraryQuery.searches[1].Page != 2 {
-		t.Fatalf("current query searches = %#v", libraryQuery.searches)
+	if len(libraryQuery.exports) != 1 ||
+		libraryQuery.exports[0].Name != "current" {
+		t.Fatalf("current query exports = %#v", libraryQuery.exports)
 	}
 
 	single, err := resolver.ResolveShelf(ctx, 7)
@@ -142,30 +140,28 @@ func TestResolverRejectsInvalidOrUnavailableScope(t *testing.T) {
 }
 
 type fakeLibraryResolver struct {
-	pages    map[string]map[int][]int64
-	stories  map[int64]library.ExportStory
-	searches []library.StoryLibraryQuery
+	pages   map[string]map[int][]int64
+	stories map[int64]library.ExportStory
+	exports []library.StoryLibraryQuery
 }
 
-func (f *fakeLibraryResolver) Search(
+func (f *fakeLibraryResolver) ExportQuery(
 	_ context.Context,
 	query library.StoryLibraryQuery,
-) (library.Page, error) {
-	f.searches = append(f.searches, query)
+) ([]library.ExportStory, error) {
+	f.exports = append(f.exports, query)
 	pages := f.pages[query.Name]
-	ids := pages[query.Page]
-	stories := make([]library.StorySummary, 0, len(ids))
-	for _, id := range ids {
-		stories = append(stories, library.StorySummary{ID: id})
+	stories := make([]library.ExportStory, 0, len(f.stories))
+	for page := 1; page <= len(pages); page++ {
+		for _, id := range pages[page] {
+			story, found := f.stories[id]
+			if !found {
+				return nil, errors.New("story missing")
+			}
+			stories = append(stories, story)
+		}
 	}
-	return library.Page{
-		Stories:    stories,
-		Page:       query.Page,
-		PageSize:   query.PageSize,
-		TotalItems: len(ids),
-		TotalPages: len(pages),
-		Sort:       query.Sort,
-	}, nil
+	return stories, nil
 }
 
 func (f *fakeLibraryResolver) ExportStory(

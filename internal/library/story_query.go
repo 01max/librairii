@@ -78,6 +78,32 @@ func (q *Query) Search(
 	return q.searchNormalized(ctx, request)
 }
 
+// ExportQuery resolves every matching archive in one SQLite statement so
+// concurrent writers cannot shift pagination offsets while a scope is frozen.
+func (q *Query) ExportQuery(
+	ctx context.Context,
+	request StoryLibraryQuery,
+) ([]ExportStory, error) {
+	request, err := normalizeStoryLibraryQuery(request)
+	if err != nil {
+		return nil, err
+	}
+	if err := q.validateFilterDefinitions(ctx, request); err != nil {
+		return nil, err
+	}
+	where, arguments := storyLibraryPredicate(request, q.officialLocale)
+	records, err := q.localRecordsOrdered(
+		ctx,
+		where,
+		arguments,
+		request.Sort,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return q.exportStoriesFromRecords(ctx, records)
+}
+
 func (q *Query) searchNormalized(
 	ctx context.Context,
 	request StoryLibraryQuery,
