@@ -16,6 +16,7 @@ import (
 	"github.com/01max/librairii/internal/operations"
 	"github.com/01max/librairii/internal/removal"
 	"github.com/01max/librairii/internal/storage"
+	"github.com/01max/librairii/internal/tagging"
 )
 
 var ErrImportRuntimeNotReady = errors.New("import runtime storage is not ready")
@@ -63,6 +64,9 @@ func (r *ImportRuntime) Start(ctx context.Context) error {
 	layout := r.storage.Layout()
 	if database == nil || layout.Root == "" {
 		return ErrImportRuntimeNotReady
+	}
+	if _, err := tagging.SeedBuiltIns(ctx, database); err != nil {
+		return fmt.Errorf("seed built-in tags: %w", err)
 	}
 
 	archiveRepository := archive.NewRepository(layout)

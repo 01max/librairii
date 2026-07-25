@@ -48,6 +48,21 @@ func TestImportRuntimeComposesNativeImportSlice(t *testing.T) {
 			t.Error(err)
 		}
 	})
+	var brokenDefinitions int
+	if err := provider.SQL().QueryRow(`
+		SELECT COUNT(*)
+		FROM tag_definitions
+		WHERE normalized_key = 'broken'
+		  AND kind = 'boolean'
+		  AND source = 'builtin'
+		  AND presentation = 'warning'
+		  AND is_protected = 1
+	`).Scan(&brokenDefinitions); err != nil {
+		t.Fatal(err)
+	}
+	if brokenDefinitions != 1 {
+		t.Fatalf("broken definition count = %d", brokenDefinitions)
+	}
 
 	source, err := testfixture.WriteZIP(t.TempDir(), testfixture.GenericZIP())
 	if err != nil {

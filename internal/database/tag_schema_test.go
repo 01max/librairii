@@ -52,7 +52,7 @@ func TestTagSchemaConstrainsChoiceValuesAndNullableAssignments(t *testing.T) {
 	connection := openTagSchemaDatabase(t)
 	storyID := insertTagStory(t, connection)
 	booleanID := insertTagDefinition(
-		t, connection, "Broken", "broken", "Broken", "#C63C3C",
+		t, connection, "broken", "broken", "Broken", "#FF705C",
 		"boolean", "builtin", "warning", 0, 1,
 	)
 	choiceID := insertTagDefinition(
