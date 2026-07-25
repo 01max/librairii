@@ -1,4 +1,4 @@
-import {fireEvent, render, screen, waitFor} from '@testing-library/react';
+import {fireEvent, render, screen, waitFor, within} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {beforeEach, expect, test, vi} from 'vitest';
 import {
@@ -283,6 +283,81 @@ test('renders the canonical collection shell from typed library data', async () 
         .toHaveAttribute('aria-pressed', 'true');
     expect(await screen.findByText('clockwork-forest.zip · 1.0 MB · Verified'))
         .toBeInTheDocument();
+});
+
+test('renders saved shelf preview rows and opens them from view all', async () => {
+    const user = userEvent.setup();
+    const summaries = [
+        new shelves.Summary({
+            id: 7,
+            name: 'Bedtime',
+            position: 0,
+            validity: 'valid',
+            count: 1,
+        }),
+        new shelves.Summary({
+            id: 8,
+            name: 'Adventures',
+            position: 1,
+            validity: 'valid',
+            count: 1,
+        }),
+    ];
+    listShelves.mockResolvedValue(new app.ShelfListResponse({shelves: summaries}));
+    openShelf.mockImplementation(async (shelfID) => {
+        const bedtime = shelfID === 7;
+        return new app.ShelfEvaluationResponse({
+            evaluation: {
+                shelf: {
+                    id: shelfID,
+                    name: bedtime ? 'Bedtime' : 'Adventures',
+                    normalizedName: bedtime ? 'bedtime' : 'adventures',
+                    position: bedtime ? 0 : 1,
+                    queryVersion: 2,
+                    queryPayload: bedtime
+                        ? '{"name":"moon"}'
+                        : '{"name":"forest"}',
+                    validity: 'valid',
+                },
+                query: {name: bedtime ? 'moon' : 'forest'},
+                page: {
+                    stories: [bedtime ? stories[1] : stories[0]],
+                    page: 1,
+                    pageSize: 6,
+                    totalItems: 1,
+                    totalPages: 1,
+                    sort: 'imported_desc',
+                },
+            },
+        });
+    });
+
+    render(<App/>);
+
+    const bedtimeRow = (await screen.findByRole('heading', {name: 'Bedtime'}))
+        .closest('section');
+    const adventuresRow = screen.getByRole('heading', {name: 'Adventures'})
+        .closest('section');
+    expect(bedtimeRow).not.toBeNull();
+    expect(adventuresRow).not.toBeNull();
+    expect(within(bedtimeRow!).getByText('1 story · Saved shelf'))
+        .toBeInTheDocument();
+    await waitFor(() => expect(within(adventuresRow!).getByText('Clockwork Forest'))
+        .toBeInTheDocument());
+    await waitFor(() => expect(openShelf).toHaveBeenCalledWith(
+        7,
+        expect.objectContaining({page: 1, pageSize: 6, sort: 'imported_desc'}),
+    ));
+
+    await user.click(within(bedtimeRow!).getByRole('button', {name: 'View all →'}));
+    await waitFor(() => expect(openShelf).toHaveBeenCalledWith(
+        7,
+        expect.objectContaining({page: 1, pageSize: 12, sort: 'imported_desc'}),
+    ));
+    expect(screen.getByRole('button', {name: 'Bedtime, 1 story'}))
+        .toHaveAttribute('aria-current', 'page');
+    expect(screen.getByRole('searchbox', {name: 'Search stories'}))
+        .toHaveValue('moon');
 });
 
 test('opens a dynamic saved shelf and updates it from the current query', async () => {

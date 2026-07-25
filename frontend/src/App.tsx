@@ -211,6 +211,15 @@ type CoverStyle = CSSProperties & {
 
 type ShelfDialogMode = 'save' | 'rename' | 'duplicate';
 
+type CollectionShelfRow = {
+    key: string;
+    name: string;
+    storyCount: number;
+    source: string;
+    stories: library.StorySummary[];
+    shelfID?: number;
+};
+
 function paletteFor(storyID: number): CoverStyle {
     const palette = coverPalettes[Math.abs(storyID) % coverPalettes.length];
     return {
@@ -280,6 +289,8 @@ function App() {
         useState<tagging.AssignmentWorkspace | null>(null);
     const [tagCatalog, setTagCatalog] = useState<tagging.Catalog | null>(null);
     const [savedShelves, setSavedShelves] = useState<shelves.Summary[]>([]);
+    const [savedShelfStories, setSavedShelfStories] =
+        useState<Record<number, library.StorySummary[]>>({});
     const [activeShelfID, setActiveShelfID] = useState<number | null>(
         initialHistoryState.shelfID,
     );
@@ -298,6 +309,7 @@ function App() {
     const refreshedOperations = useRef(new Set<string>());
     const searchInput = useRef<HTMLInputElement>(null);
     const collectionRequestGeneration = useRef(0);
+    const shelfPreviewGeneration = useRef(0);
     const shelfDialog = useRef<HTMLFormElement>(null);
     const shelfDialogInitialFocus = useRef<HTMLInputElement>(null);
     const repairShelfDialog = useRef<HTMLElement>(null);
@@ -793,6 +805,10 @@ function App() {
     const activeShelf = savedShelves.find((shelf) => shelf.id === activeShelfID) ?? null;
     const allStoriesActive = activeShelfID === null &&
         isAllStoriesQuery(collectionQuery);
+    const previewableShelves = useMemo(() => savedShelves.filter(
+        (shelf) => shelf.validity === 'valid',
+    ), [savedShelves]);
+    const showSavedShelfRows = allStoriesActive && previewableShelves.length > 0;
     const repairShelf = savedShelves.find((shelf) => shelf.id === repairShelfID) ?? null;
     const deleteShelf = savedShelves.find((shelf) => shelf.id === deleteShelfID) ?? null;
     const activeOperations = operationSnapshots.filter((snapshot) => (
@@ -818,6 +834,29 @@ function App() {
         ...(metadataStatus?.locale ? [metadataStatus.locale] : []),
         ...collectionQuery.languages,
     ])].sort();
+    const collectionRows = useMemo<CollectionShelfRow[]>(() => (
+        showSavedShelfRows
+            ? previewableShelves.map((shelf) => ({
+                key: `saved-shelf-${shelf.id}`,
+                name: shelf.name,
+                storyCount: shelf.count,
+                source: 'Saved shelf',
+                stories: savedShelfStories[shelf.id] ?? [],
+                shelfID: shelf.id,
+            }))
+            : rows.map((row, rowIndex) => ({
+                key: `collection-${rowIndex}`,
+                name: rowIndex === 0 ? 'Recently added' : 'More stories',
+                storyCount: row.length,
+                source: 'Local archive',
+                stories: row,
+            }))
+    ), [
+        previewableShelves,
+        rows,
+        savedShelfStories,
+        showSavedShelfRows,
+    ]);
     const empty = page !== null && page.totalItems === 0 && !importing;
     const assignedTags = assignmentWorkspace?.catalog.definitions.flatMap((definition) => {
         const state = assignmentWorkspace.states.find(
@@ -859,6 +898,45 @@ function App() {
             }];
         });
     }) ?? [];
+
+    useEffect(() => {
+        const generation = ++shelfPreviewGeneration.current;
+        if (applicationState !== 'ready' || !showSavedShelfRows) {
+            return;
+        }
+        let active = true;
+        void Promise.all(previewableShelves.map(async (shelf) => {
+            try {
+                const response = await OpenShelf(
+                    shelf.id,
+                    new library.ListRequest({
+                        page: 1,
+                        pageSize: 6,
+                        sort: collectionQuery.sort,
+                    }),
+                );
+                return [
+                    shelf.id,
+                    response.evaluation?.page.stories ?? [],
+                ] as const;
+            } catch {
+                return [shelf.id, []] as const;
+            }
+        })).then((previews) => {
+            if (!active || generation !== shelfPreviewGeneration.current) {
+                return;
+            }
+            setSavedShelfStories(Object.fromEntries(previews));
+        });
+        return () => {
+            active = false;
+        };
+    }, [
+        applicationState,
+        collectionQuery.sort,
+        previewableShelves,
+        showSavedShelfRows,
+    ]);
 
     const updateQuery = useCallback((
         next: CollectionQuery,
@@ -1738,17 +1816,28 @@ function App() {
                     </section>
                 )}
 
-                {rows.map((row, rowIndex) => (
-                    <section className="shelf" key={rowIndex}>
+                {collectionRows.map((row) => (
+                    <section className="shelf" key={row.key}>
                         <div className="shelf-head">
-                            <h3>{rowIndex === 0 ? 'Recently added' : 'More stories'}</h3>
-                            <span>{row.length} {row.length === 1 ? 'story' : 'stories'} · Local archive</span>
+                            <h3>{row.name}</h3>
+                            <span>
+                                {row.storyCount} {
+                                    row.storyCount === 1 ? 'story' : 'stories'
+                                } · {row.source}
+                            </span>
                             <button
                                 type="button"
-                                disabled={expandingCollection || stories.length >= (page?.totalItems ?? 0)}
-                                onClick={() => void loadAllStories()}
+                                disabled={row.shelfID === undefined
+                                    ? expandingCollection ||
+                                        stories.length >= (page?.totalItems ?? 0)
+                                    : shelfBusy}
+                                onClick={() => row.shelfID === undefined
+                                    ? void loadAllStories()
+                                    : void openSavedShelf(row.shelfID)}
                             >
-                                {stories.length >= (page?.totalItems ?? 0)
+                                {row.shelfID !== undefined
+                                    ? 'View all →'
+                                    : stories.length >= (page?.totalItems ?? 0)
                                     ? 'All shown'
                                     : expandingCollection
                                         ? 'Loading…'
@@ -1756,7 +1845,7 @@ function App() {
                             </button>
                         </div>
                         <div className="story-row">
-                            {row.map((story) => (
+                            {row.stories.map((story) => (
                                 <button
                                     className={`story${selectedIDs.includes(story.id) ? ' selected' : ''}`}
                                     style={paletteFor(story.id)}
@@ -1798,7 +1887,7 @@ function App() {
                         </div>
                     </section>
                 ))}
-                {(page?.totalPages ?? 0) > 1 && (
+                {!showSavedShelfRows && (page?.totalPages ?? 0) > 1 && (
                     <nav className="pagination" aria-label="Collection pages">
                         <button
                             type="button"
