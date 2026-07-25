@@ -560,6 +560,11 @@ input:focus-visible {
     font-weight: 800;
 }
 
+.shelf-head button:disabled {
+    cursor: default;
+    opacity: .62;
+}
+
 .story-row {
     display: grid;
     grid-template-columns: repeat(6, minmax(105px, 1fr));

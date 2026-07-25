@@ -79,6 +79,7 @@ function App() {
     const [removing, setRemoving] = useState(false);
     const [removalError, setRemovalError] = useState<string | null>(null);
     const [removalNotice, setRemovalNotice] = useState<string | null>(null);
+    const [expandingCollection, setExpandingCollection] = useState(false);
 
     const loadCollection = useCallback(async () => {
         const result = await ListStories({
@@ -183,6 +184,46 @@ function App() {
         setSelectedID(null);
         setRemovalNotice(`${title} was moved to application trash.`);
         await loadCollection();
+    }
+
+    async function loadAllStories() {
+        setExpandingCollection(true);
+        setRequestError(null);
+        try {
+            const first = await ListStories({
+                page: 1,
+                pageSize: 100,
+                sort: 'imported_desc',
+            });
+            if (!first.page) {
+                setRequestError(first.error?.message ?? 'The full collection could not be loaded.');
+                return;
+            }
+            const byID = new Map(first.page.stories.map((story) => [story.id, story]));
+            for (let pageNumber = 2; pageNumber <= first.page.totalPages; pageNumber += 1) {
+                const next = await ListStories({
+                    page: pageNumber,
+                    pageSize: 100,
+                    sort: 'imported_desc',
+                });
+                if (!next.page) {
+                    setRequestError(next.error?.message ?? 'The full collection could not be loaded.');
+                    return;
+                }
+                for (const story of next.page.stories) {
+                    byID.set(story.id, story);
+                }
+            }
+            setPage(new library.Page({
+                ...first.page,
+                stories: [...byID.values()],
+                page: 1,
+                pageSize: byID.size,
+                totalPages: 1,
+            }));
+        } finally {
+            setExpandingCollection(false);
+        }
     }
 
     useEffect(() => {
@@ -368,7 +409,17 @@ function App() {
                         <div className="shelf-head">
                             <h3>{rowIndex === 0 ? 'Recently added' : 'More stories'}</h3>
                             <span>{row.length} {row.length === 1 ? 'story' : 'stories'} · Local archive</span>
-                            <button type="button">View all →</button>
+                            <button
+                                type="button"
+                                disabled={expandingCollection || stories.length >= (page?.totalItems ?? 0)}
+                                onClick={() => void loadAllStories()}
+                            >
+                                {stories.length >= (page?.totalItems ?? 0)
+                                    ? 'All shown'
+                                    : expandingCollection
+                                        ? 'Loading…'
+                                        : 'View all →'}
+                            </button>
                         </div>
                         <div className="story-row">
                             {row.map((story) => (

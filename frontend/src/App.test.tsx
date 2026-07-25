@@ -361,3 +361,57 @@ test('completes the import, list, select, detail, and remove workflow', async ()
     expect(screen.getByText('Clockwork Forest was moved to application trash.'))
         .toBeInTheDocument();
 });
+
+test('loads every result when a story is beyond the initial collection page', async () => {
+    const user = userEvent.setup();
+    const extraStory = new library.StorySummary({
+        ...stories[1],
+        id: 13,
+        uuid: '22223333-4444-4555-8666-777788889999',
+        title: 'The Thirteenth Story',
+    });
+    const initial = new app.LibraryPageResponse({
+        page: {
+            stories,
+            page: 1,
+            pageSize: 12,
+            totalItems: 3,
+            totalPages: 1,
+            sort: 'imported_desc',
+        },
+    });
+    listStories
+        .mockResolvedValueOnce(initial)
+        .mockResolvedValueOnce(new app.LibraryPageResponse({
+            page: {
+                stories,
+                page: 1,
+                pageSize: 100,
+                totalItems: 3,
+                totalPages: 2,
+                sort: 'imported_desc',
+            },
+        }))
+        .mockResolvedValueOnce(new app.LibraryPageResponse({
+            page: {
+                stories: [extraStory],
+                page: 2,
+                pageSize: 100,
+                totalItems: 3,
+                totalPages: 2,
+                sort: 'imported_desc',
+            },
+        }));
+    render(<App/>);
+
+    await user.click(await screen.findByRole('button', {name: 'View all →'}));
+
+    expect(await screen.findByRole('button', {
+        name: 'The Thirteenth Story 22223333-4444-4555-8666-777788889999',
+    })).toBeInTheDocument();
+    expect(listStories).toHaveBeenCalledWith({
+        page: 2,
+        pageSize: 100,
+        sort: 'imported_desc',
+    });
+});
