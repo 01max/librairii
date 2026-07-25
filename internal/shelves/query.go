@@ -8,11 +8,12 @@ import (
 	"strings"
 
 	"github.com/01max/librairii/internal/library"
+	"github.com/01max/librairii/internal/shelfquery"
 )
 
 const (
-	CurrentSavedLibraryQueryVersion = 2
-	maxSavedQueryPayloadBytes       = 262_144
+	CurrentSavedLibraryQueryVersion = shelfquery.CurrentVersion
+	maxSavedQueryPayloadBytes       = shelfquery.MaxPayloadBytes
 )
 
 var (

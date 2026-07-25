@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"slices"
 
-	"github.com/01max/librairii/internal/shelves"
+	"github.com/01max/librairii/internal/shelfquery"
 )
 
 var ErrSavedShelfQueryInvalid = errors.New("saved shelf query cannot be inspected")
@@ -25,9 +25,9 @@ func shelvesReferencingDefinition(
 	queryer shelfReferenceQueryer,
 	definitionID int64,
 ) ([]int64, error) {
-	return matchingShelfIDs(ctx, queryer, func(query shelves.SavedLibraryQuery) bool {
+	return matchingShelfIDs(ctx, queryer, func(query shelfquery.References) bool {
 		for _, filter := range query.BooleanFilters {
-			if filter.DefinitionID == definitionID {
+			if filter.DefinitionID == definitionID && filter.State != "ignored" {
 				return true
 			}
 		}
@@ -45,7 +45,7 @@ func shelvesReferencingValue(
 	queryer shelfReferenceQueryer,
 	valueID int64,
 ) ([]int64, error) {
-	return matchingShelfIDs(ctx, queryer, func(query shelves.SavedLibraryQuery) bool {
+	return matchingShelfIDs(ctx, queryer, func(query shelfquery.References) bool {
 		for _, filter := range query.ChoiceFilters {
 			if slices.Contains(filter.ValueIDs, valueID) {
 				return true
@@ -58,7 +58,7 @@ func shelvesReferencingValue(
 func matchingShelfIDs(
 	ctx context.Context,
 	queryer shelfReferenceQueryer,
-	matches func(shelves.SavedLibraryQuery) bool,
+	matches func(shelfquery.References) bool,
 ) ([]int64, error) {
 	rows, err := queryer.QueryContext(
 		ctx,
@@ -80,7 +80,7 @@ func matchingShelfIDs(
 		if err := rows.Scan(&shelfID, &version, &payload); err != nil {
 			return nil, fmt.Errorf("scan saved shelf reference: %w", err)
 		}
-		query, err := shelves.DecodeSavedLibraryQuery(version, payload)
+		query, err := shelfquery.DecodeReferences(version, payload)
 		if err != nil {
 			return nil, fmt.Errorf(
 				"%w: shelf %d: %v",
