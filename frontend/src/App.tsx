@@ -1140,6 +1140,7 @@ function App() {
             return [{
                 key: `${definition.id}`,
                 color: definition.color,
+                derived: definition.source === 'derived',
                 label: state.assignedStories === assignmentWorkspace.requestedStories
                     ? definition.label
                     : `${definition.label} · Mixed`,
@@ -1155,6 +1156,7 @@ function App() {
             return [{
                 key: `${definition.id}-${value.id}`,
                 color: definition.color,
+                derived: definition.source === 'derived',
                 label: valueState.assignedStories === assignmentWorkspace.requestedStories
                     ? `${definition.label} · ${value.label}`
                     : `${definition.label} · ${value.label} · Mixed`,
@@ -2435,7 +2437,13 @@ function App() {
                         </div>
                         <div className="tags">
                             {assignedTags.map((tag) => (
-                                <span className="tag" key={tag.key}>
+                                <span
+                                    className="tag"
+                                    key={tag.key}
+                                    aria-label={tag.derived
+                                        ? `System-derived tag: ${tag.label}`
+                                        : undefined}
+                                >
                                     <i
                                         style={{'--c': tag.color} as CSSProperties}
                                         aria-hidden="true"

@@ -1807,8 +1807,8 @@ test('keeps matched metadata, artwork, provenance, and combined refinements usab
     expect(screen.getByText(/A\. Example · metadata synced/))
         .toBeInTheDocument();
     expect(screen.getByText('54 min')).toBeInTheDocument();
-    expect(screen.getByText('Age · 3–5 years'))
-        .toBeInTheDocument();
+    expect(screen.getByLabelText('System-derived tag: Age · 3–5 years'))
+        .toHaveTextContent('Age · 3–5 years');
 
     await user.click(screen.getByRole('button', {
         name: `Unmatched local story ${unmatched.uuid}`,
