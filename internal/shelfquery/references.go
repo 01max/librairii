@@ -79,6 +79,9 @@ func decode(payload string, target any) error {
 		strings.TrimSpace(payload) == "null" {
 		return ErrInvalidPayload
 	}
+	if err := ValidateUniqueObjectKeys(payload); err != nil {
+		return err
+	}
 	decoder := json.NewDecoder(strings.NewReader(payload))
 	decoder.DisallowUnknownFields()
 	if err := decoder.Decode(target); err != nil {

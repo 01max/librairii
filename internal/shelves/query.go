@@ -137,6 +137,9 @@ func decodeSavedPayload(payload string, target any) error {
 		strings.TrimSpace(payload) == "null" {
 		return ErrInvalidSavedLibraryQuery
 	}
+	if err := shelfquery.ValidateUniqueObjectKeys(payload); err != nil {
+		return fmt.Errorf("%w: %v", ErrInvalidSavedLibraryQuery, err)
+	}
 	decoder := json.NewDecoder(strings.NewReader(payload))
 	decoder.DisallowUnknownFields()
 	if err := decoder.Decode(target); err != nil {

@@ -90,6 +90,20 @@ func TestDecodeReferencesRejectsUnsafePayloads(t *testing.T) {
 			payload: `{} {}`,
 			want:    ErrInvalidPayload,
 		},
+		{
+			name:    "duplicate top-level field",
+			version: CurrentVersion,
+			payload: `{"choiceFilters":[{"definitionId":2,"valueIds":[20]}],` +
+				`"choiceFilters":[]}`,
+			want: ErrInvalidPayload,
+		},
+		{
+			name:    "duplicate nested field",
+			version: CurrentVersion,
+			payload: `{"choiceFilters":[{"definitionId":2,"valueIds":[20],` +
+				`"valueIds":[]}]}`,
+			want: ErrInvalidPayload,
+		},
 	} {
 		test := test
 		t.Run(test.name, func(t *testing.T) {

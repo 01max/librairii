@@ -150,6 +150,17 @@ func TestSavedLibraryQueryRejectsUnsupportedCorruptAndBroadeningPayloads(
 		{name: "unknown current field", version: 2, payload: `{"page":2}`},
 		{name: "unknown legacy field", version: 1, payload: `{"selection":[1]}`},
 		{
+			name:    "duplicate top-level field",
+			version: 2,
+			payload: `{"name":"moon","name":""}`,
+		},
+		{
+			name:    "duplicate nested field",
+			version: 2,
+			payload: `{"choiceFilters":[{"definitionId":1,"definitionId":2,` +
+				`"valueIds":[3]}]}`,
+		},
+		{
 			name:    "invalid filter",
 			version: 2,
 			payload: `{"booleanFilters":[{"definitionId":1,"state":"sometimes"}]}`,
