@@ -471,6 +471,54 @@ test('ignores superseded query responses without repeating application bootstrap
     expect(activeOperations).toHaveBeenCalledTimes(1);
 });
 
+test('does not let an older view-all expansion overwrite a newer query', async () => {
+    let resolveExpansion: ((value: app.LibraryPageResponse) => void) | undefined;
+    queryStories.mockImplementation(async (request) => {
+        if (request.pageSize === 100) {
+            return new Promise((resolve) => {
+                resolveExpansion = resolve;
+            });
+        }
+        const visible = request.name === 'moon' ? [stories[1]] : stories;
+        return new app.LibraryPageResponse({
+            page: {
+                stories: visible,
+                page: 1,
+                pageSize: 12,
+                totalItems: request.name === 'moon' ? 1 : 48,
+                totalPages: request.name === 'moon' ? 1 : 4,
+                sort: 'imported_desc',
+            },
+        });
+    });
+    render(<App/>);
+    await screen.findByRole('heading', {name: 'Clockwork Forest'});
+
+    fireEvent.click(screen.getByRole('button', {name: 'View all →'}));
+    await waitFor(() => expect(resolveExpansion).toBeTypeOf('function'));
+    fireEvent.change(screen.getByRole('searchbox', {name: 'Search stories'}), {
+        target: {value: 'moon'},
+    });
+    expect(await screen.findByRole('heading', {name: 'Moonlit Workshop'}))
+        .toBeInTheDocument();
+    resolveExpansion?.(new app.LibraryPageResponse({
+        page: {
+            stories: [stories[0]],
+            page: 1,
+            pageSize: 100,
+            totalItems: 1,
+            totalPages: 1,
+            sort: 'imported_desc',
+        },
+    }));
+
+    await waitFor(() => expect(
+        screen.getByRole('heading', {name: 'Moonlit Workshop'}),
+    ).toBeInTheDocument());
+    expect(screen.queryByRole('heading', {name: 'Clockwork Forest'}))
+        .not.toBeInTheDocument();
+});
+
 test('selects a cover and loads its detail drawer without losing the collection', async () => {
     const user = userEvent.setup();
     render(<App/>);

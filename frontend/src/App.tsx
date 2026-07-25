@@ -167,8 +167,15 @@ function App() {
     }, [loadCollection]);
 
     useEffect(() => {
+        collectionRequestGeneration.current++;
+    }, [collectionQuery]);
+
+    useEffect(() => {
         queryHistory.replace(collectionQuery);
-        return queryHistory.subscribe(setCollectionQuery);
+        return queryHistory.subscribe((query) => {
+            collectionRequestGeneration.current++;
+            setCollectionQuery(query);
+        });
     }, [collectionQuery, queryHistory]);
 
     const reconcileOperation = useCallback((snapshot: operations.Snapshot) => {
@@ -340,6 +347,7 @@ function App() {
     }
 
     async function loadAllStories() {
+        const generation = ++collectionRequestGeneration.current;
         setExpandingCollection(true);
         setRequestError(null);
         try {
@@ -348,6 +356,9 @@ function App() {
                 page: 1,
                 pageSize: 100,
             }));
+            if (generation !== collectionRequestGeneration.current) {
+                return;
+            }
             if (!first.page) {
                 setRequestError(first.error?.message ?? 'The full collection could not be loaded.');
                 return;
@@ -359,6 +370,9 @@ function App() {
                     page: pageNumber,
                     pageSize: 100,
                 }));
+                if (generation !== collectionRequestGeneration.current) {
+                    return;
+                }
                 if (!next.page) {
                     setRequestError(next.error?.message ?? 'The full collection could not be loaded.');
                     return;
