@@ -17,6 +17,7 @@ import (
 	"github.com/01max/librairii/internal/metadata"
 	"github.com/01max/librairii/internal/operations"
 	"github.com/01max/librairii/internal/removal"
+	"github.com/01max/librairii/internal/shelves"
 	"github.com/01max/librairii/internal/storage"
 	"github.com/01max/librairii/internal/tagging"
 )
@@ -39,6 +40,8 @@ type ImportRuntime struct {
 	query           *library.Query
 	removal         *removal.Service
 	tags            *tagging.Service
+	shelves         *shelves.Service
+	shelfEvaluator  *shelves.Evaluator
 }
 
 type ImportRuntimeOption func(*ImportRuntime)
@@ -170,10 +173,23 @@ func (r *ImportRuntime) Start(ctx context.Context) error {
 		_ = manager.Close()
 		return fmt.Errorf("construct official metadata provider: %w", err)
 	}
+	libraryQuery := library.NewQuery(database, officialProvider)
+	shelfService, err := shelves.NewService(database)
+	if err != nil {
+		_ = manager.Close()
+		return fmt.Errorf("construct saved shelf service: %w", err)
+	}
+	shelfEvaluator, err := shelves.NewEvaluator(shelfService, libraryQuery)
+	if err != nil {
+		_ = manager.Close()
+		return fmt.Errorf("construct saved shelf evaluator: %w", err)
+	}
 	r.manager = manager
-	r.query = library.NewQuery(database, officialProvider)
+	r.query = libraryQuery
 	r.removal = removalService
 	r.tags = tagService
+	r.shelves = shelfService
+	r.shelfEvaluator = shelfEvaluator
 	return nil
 }
 
@@ -473,6 +489,98 @@ func (r *ImportRuntime) SetBulkChoiceValue(
 	return service.SetBulkChoiceValue(ctx, storyIDs, definitionID, valueID, assigned)
 }
 
+func (r *ImportRuntime) ListShelves(
+	ctx context.Context,
+) ([]shelves.Summary, error) {
+	_, evaluator, err := r.currentShelves()
+	if err != nil {
+		return nil, err
+	}
+	return evaluator.Summaries(ctx)
+}
+
+func (r *ImportRuntime) CreateShelf(
+	ctx context.Context,
+	name string,
+	query library.StoryLibraryQuery,
+) (shelves.Shelf, error) {
+	service, _, err := r.currentShelves()
+	if err != nil {
+		return shelves.Shelf{}, err
+	}
+	return service.Create(ctx, name, query)
+}
+
+func (r *ImportRuntime) OpenShelf(
+	ctx context.Context,
+	shelfID int64,
+	request library.ListRequest,
+) (shelves.Evaluation, error) {
+	_, evaluator, err := r.currentShelves()
+	if err != nil {
+		return shelves.Evaluation{}, err
+	}
+	return evaluator.Evaluate(ctx, shelfID, request)
+}
+
+func (r *ImportRuntime) RenameShelf(
+	ctx context.Context,
+	shelfID int64,
+	name string,
+) (shelves.Shelf, error) {
+	service, _, err := r.currentShelves()
+	if err != nil {
+		return shelves.Shelf{}, err
+	}
+	return service.Rename(ctx, shelfID, name)
+}
+
+func (r *ImportRuntime) DuplicateShelf(
+	ctx context.Context,
+	shelfID int64,
+	name string,
+) (shelves.Shelf, error) {
+	service, _, err := r.currentShelves()
+	if err != nil {
+		return shelves.Shelf{}, err
+	}
+	return service.Duplicate(ctx, shelfID, name)
+}
+
+func (r *ImportRuntime) ReplaceShelfQuery(
+	ctx context.Context,
+	shelfID int64,
+	query library.StoryLibraryQuery,
+) (shelves.Shelf, error) {
+	service, _, err := r.currentShelves()
+	if err != nil {
+		return shelves.Shelf{}, err
+	}
+	return service.ReplaceQuery(ctx, shelfID, query)
+}
+
+func (r *ImportRuntime) ReorderShelves(
+	ctx context.Context,
+	orderedIDs []int64,
+) ([]shelves.Shelf, error) {
+	service, _, err := r.currentShelves()
+	if err != nil {
+		return nil, err
+	}
+	return service.Reorder(ctx, orderedIDs)
+}
+
+func (r *ImportRuntime) DeleteShelf(
+	ctx context.Context,
+	shelfID int64,
+) error {
+	service, _, err := r.currentShelves()
+	if err != nil {
+		return err
+	}
+	return service.Delete(ctx, shelfID)
+}
+
 func (r *ImportRuntime) Close() error {
 	r.mu.Lock()
 	manager := r.manager
@@ -480,6 +588,8 @@ func (r *ImportRuntime) Close() error {
 	r.query = nil
 	r.removal = nil
 	r.tags = nil
+	r.shelves = nil
+	r.shelfEvaluator = nil
 	r.mu.Unlock()
 	if manager == nil {
 		return nil
@@ -523,7 +633,21 @@ func (r *ImportRuntime) currentTags() (*tagging.Service, error) {
 	return r.tags, nil
 }
 
+func (r *ImportRuntime) currentShelves() (
+	*shelves.Service,
+	*shelves.Evaluator,
+	error,
+) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	if r.shelves == nil || r.shelfEvaluator == nil {
+		return nil, nil, ErrImportRuntimeNotReady
+	}
+	return r.shelves, r.shelfEvaluator, nil
+}
+
 var _ OperationPort = (*ImportRuntime)(nil)
 var _ LibraryPort = (*ImportRuntime)(nil)
 var _ RemovalPort = (*ImportRuntime)(nil)
 var _ TaggingPort = (*ImportRuntime)(nil)
+var _ ShelfPort = (*ImportRuntime)(nil)

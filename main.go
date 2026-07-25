@@ -49,6 +49,7 @@ func main() {
 		Library:    importRuntime,
 		Removal:    importRuntime,
 		Tags:       importRuntime,
+		Shelves:    importRuntime,
 		Resources:  []coreapp.ResourcePort{readiness},
 	})
 	if err != nil {

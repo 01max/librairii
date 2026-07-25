@@ -99,6 +99,47 @@ func (a *App) RemoveStory(storyID int64) coreapp.RemovalResponse {
 	return a.core.RemoveStory(a.runtimeContext(), storyID)
 }
 
+func (a *App) ListShelves() coreapp.ShelfListResponse {
+	return a.core.ListShelves(a.runtimeContext())
+}
+
+func (a *App) CreateShelf(
+	name string,
+	query library.StoryLibraryQuery,
+) coreapp.ShelfResponse {
+	return a.core.CreateShelf(a.runtimeContext(), name, query)
+}
+
+func (a *App) OpenShelf(
+	shelfID int64,
+	request library.ListRequest,
+) coreapp.ShelfEvaluationResponse {
+	return a.core.OpenShelf(a.runtimeContext(), shelfID, request)
+}
+
+func (a *App) RenameShelf(shelfID int64, name string) coreapp.ShelfResponse {
+	return a.core.RenameShelf(a.runtimeContext(), shelfID, name)
+}
+
+func (a *App) DuplicateShelf(shelfID int64, name string) coreapp.ShelfResponse {
+	return a.core.DuplicateShelf(a.runtimeContext(), shelfID, name)
+}
+
+func (a *App) ReplaceShelfQuery(
+	shelfID int64,
+	query library.StoryLibraryQuery,
+) coreapp.ShelfResponse {
+	return a.core.ReplaceShelfQuery(a.runtimeContext(), shelfID, query)
+}
+
+func (a *App) ReorderShelves(orderedIDs []int64) coreapp.ShelfListResponse {
+	return a.core.ReorderShelves(a.runtimeContext(), orderedIDs)
+}
+
+func (a *App) DeleteShelf(shelfID int64) coreapp.MutationResponse {
+	return a.core.DeleteShelf(a.runtimeContext(), shelfID)
+}
+
 func (a *App) TagCatalog() coreapp.TagCatalogResponse {
 	return a.core.TagCatalog(a.runtimeContext())
 }

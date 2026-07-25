@@ -13,6 +13,7 @@ import (
 	"github.com/01max/librairii/internal/metadata"
 	"github.com/01max/librairii/internal/operations"
 	"github.com/01max/librairii/internal/removal"
+	"github.com/01max/librairii/internal/shelves"
 	"github.com/01max/librairii/internal/tagging"
 )
 
@@ -298,6 +299,63 @@ func (o *fakeOperations) SetBulkChoiceValue(
 	return tagging.AssignmentResult{}, o.err
 }
 
+func (o *fakeOperations) ListShelves(
+	context.Context,
+) ([]shelves.Summary, error) {
+	return nil, o.err
+}
+
+func (o *fakeOperations) CreateShelf(
+	context.Context,
+	string,
+	library.StoryLibraryQuery,
+) (shelves.Shelf, error) {
+	return shelves.Shelf{}, o.err
+}
+
+func (o *fakeOperations) OpenShelf(
+	context.Context,
+	int64,
+	library.ListRequest,
+) (shelves.Evaluation, error) {
+	return shelves.Evaluation{}, o.err
+}
+
+func (o *fakeOperations) RenameShelf(
+	context.Context,
+	int64,
+	string,
+) (shelves.Shelf, error) {
+	return shelves.Shelf{}, o.err
+}
+
+func (o *fakeOperations) DuplicateShelf(
+	context.Context,
+	int64,
+	string,
+) (shelves.Shelf, error) {
+	return shelves.Shelf{}, o.err
+}
+
+func (o *fakeOperations) ReplaceShelfQuery(
+	context.Context,
+	int64,
+	library.StoryLibraryQuery,
+) (shelves.Shelf, error) {
+	return shelves.Shelf{}, o.err
+}
+
+func (o *fakeOperations) ReorderShelves(
+	context.Context,
+	[]int64,
+) ([]shelves.Shelf, error) {
+	return nil, o.err
+}
+
+func (o *fakeOperations) DeleteShelf(context.Context, int64) error {
+	return o.err
+}
+
 func TestApplicationLifecycle(t *testing.T) {
 	t.Parallel()
 
@@ -314,6 +372,7 @@ func TestApplicationLifecycle(t *testing.T) {
 		Library:    operationPort,
 		Removal:    operationPort,
 		Tags:       operationPort,
+		Shelves:    operationPort,
 		Resources:  []ResourcePort{resource},
 	})
 	if err != nil {
@@ -368,6 +427,7 @@ func TestApplicationEntersRecoveryWhenStorageIsUnsafe(t *testing.T) {
 		Library:    operationPort,
 		Removal:    operationPort,
 		Tags:       operationPort,
+		Shelves:    operationPort,
 		Readiness: fakeReadiness{report: ReadinessReport{
 			MutationsAllowed: false,
 			Issues:           []ReadinessIssue{{Code: "schema_mismatch"}},
@@ -450,6 +510,7 @@ func TestImportFacadeKeepsNativePathsInsideGo(t *testing.T) {
 		Library:    operationPort,
 		Removal:    operationPort,
 		Tags:       operationPort,
+		Shelves:    operationPort,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -499,6 +560,7 @@ func TestImportFacadeTreatsEmptySelectionAsCancellation(t *testing.T) {
 		Library:    operationPort,
 		Removal:    operationPort,
 		Tags:       operationPort,
+		Shelves:    operationPort,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -535,6 +597,7 @@ func TestOperationFacadeReturnsActiveSnapshots(t *testing.T) {
 		Library:    operationPort,
 		Removal:    operationPort,
 		Tags:       operationPort,
+		Shelves:    operationPort,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -573,6 +636,7 @@ func TestMetadataFacadeStartsRefreshAndReturnsFreshness(t *testing.T) {
 		Library:    operationPort,
 		Removal:    operationPort,
 		Tags:       operationPort,
+		Shelves:    operationPort,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -633,6 +697,7 @@ func TestLibraryFacadeReturnsTypedCollectionAndDetail(t *testing.T) {
 		Library:    operationPort,
 		Removal:    operationPort,
 		Tags:       operationPort,
+		Shelves:    operationPort,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -677,6 +742,7 @@ func TestRemovalFacadeRequiresReadyStorageAndReturnsStableResult(t *testing.T) {
 		Library:    operationPort,
 		Removal:    operationPort,
 		Tags:       operationPort,
+		Shelves:    operationPort,
 	})
 	if err != nil {
 		t.Fatal(err)

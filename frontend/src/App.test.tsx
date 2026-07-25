@@ -5,9 +5,17 @@ import {
     ActiveOperations,
     ApplicationStatus,
     CancelOperation,
+    CreateShelf,
+    DeleteShelf,
+    DuplicateShelf,
+    ListShelves,
     OfficialMetadataStatus,
+    OpenShelf,
     OperationSnapshot,
     QueryStories,
+    RenameShelf,
+    ReorderShelves,
+    ReplaceShelfQuery,
     RefreshOfficialMetadata,
     RemoveStory,
     SelectAndImportStories,
@@ -16,7 +24,7 @@ import {
     TagAssignmentWorkspace as LoadTagAssignmentWorkspace,
     TagCatalog as LoadTagCatalog,
 } from '../wailsjs/go/main/App';
-import {app, library, metadata} from '../wailsjs/go/models';
+import {app, library, metadata, shelves} from '../wailsjs/go/models';
 import {EventsOn} from '../wailsjs/runtime/runtime';
 import App from './App';
 
@@ -24,9 +32,17 @@ vi.mock('../wailsjs/go/main/App', () => ({
     ActiveOperations: vi.fn(),
     ApplicationStatus: vi.fn(),
     CancelOperation: vi.fn(),
+    CreateShelf: vi.fn(),
+    DeleteShelf: vi.fn(),
+    DuplicateShelf: vi.fn(),
+    ListShelves: vi.fn(),
     OfficialMetadataStatus: vi.fn(),
+    OpenShelf: vi.fn(),
     OperationSnapshot: vi.fn(),
     QueryStories: vi.fn(),
+    RenameShelf: vi.fn(),
+    ReorderShelves: vi.fn(),
+    ReplaceShelfQuery: vi.fn(),
     RefreshOfficialMetadata: vi.fn(),
     RemoveStory: vi.fn(),
     SelectAndImportStories: vi.fn(),
@@ -44,9 +60,17 @@ vi.mock('../wailsjs/runtime/runtime', () => ({
 const activeOperations = vi.mocked(ActiveOperations);
 const applicationStatus = vi.mocked(ApplicationStatus);
 const cancelOperation = vi.mocked(CancelOperation);
+const createShelf = vi.mocked(CreateShelf);
+const deleteShelf = vi.mocked(DeleteShelf);
+const duplicateShelf = vi.mocked(DuplicateShelf);
+const listShelves = vi.mocked(ListShelves);
 const officialMetadataStatus = vi.mocked(OfficialMetadataStatus);
+const openShelf = vi.mocked(OpenShelf);
 const operationSnapshot = vi.mocked(OperationSnapshot);
 const queryStories = vi.mocked(QueryStories);
+const renameShelf = vi.mocked(RenameShelf);
+const reorderShelves = vi.mocked(ReorderShelves);
+const replaceShelfQuery = vi.mocked(ReplaceShelfQuery);
 const refreshOfficialMetadata = vi.mocked(RefreshOfficialMetadata);
 const removeStory = vi.mocked(RemoveStory);
 const selectAndImportStories = vi.mocked(SelectAndImportStories);
@@ -96,9 +120,17 @@ beforeEach(() => {
     activeOperations.mockReset();
     applicationStatus.mockReset();
     cancelOperation.mockReset();
+    createShelf.mockReset();
+    deleteShelf.mockReset();
+    duplicateShelf.mockReset();
+    listShelves.mockReset();
     officialMetadataStatus.mockReset();
+    openShelf.mockReset();
     operationSnapshot.mockReset();
     queryStories.mockReset();
+    renameShelf.mockReset();
+    reorderShelves.mockReset();
+    replaceShelfQuery.mockReset();
     refreshOfficialMetadata.mockReset();
     removeStory.mockReset();
     selectAndImportStories.mockReset();
@@ -117,6 +149,9 @@ beforeEach(() => {
     }));
     activeOperations.mockResolvedValue(new app.OperationListResponse({
         operations: [],
+    }));
+    listShelves.mockResolvedValue(new app.ShelfListResponse({
+        shelves: [],
     }));
     officialMetadataStatus.mockResolvedValue(new app.MetadataStatusResponse({
         status: {
@@ -243,6 +278,235 @@ test('renders the canonical collection shell from typed library data', async () 
         .toHaveAttribute('aria-pressed', 'true');
     expect(await screen.findByText('clockwork-forest.zip · 1.0 MB · Verified'))
         .toBeInTheDocument();
+});
+
+test('opens a dynamic saved shelf and updates it from the current query', async () => {
+    const user = userEvent.setup();
+    const summary = new shelves.Summary({
+        id: 7,
+        name: 'Bedtime',
+        position: 0,
+        validity: 'valid',
+        count: 1,
+    });
+    listShelves.mockResolvedValue(new app.ShelfListResponse({
+        shelves: [summary],
+    }));
+    openShelf.mockResolvedValue(new app.ShelfEvaluationResponse({
+        evaluation: {
+            shelf: {
+                id: 7,
+                name: 'Bedtime',
+                normalizedName: 'bedtime',
+                position: 0,
+                queryVersion: 2,
+                queryPayload: '{"name":"moon"}',
+                validity: 'valid',
+            },
+            query: {name: 'moon'},
+            page: {
+                stories: [stories[1]],
+                page: 1,
+                pageSize: 12,
+                totalItems: 1,
+                totalPages: 1,
+                sort: 'imported_desc',
+            },
+        },
+    }));
+    replaceShelfQuery.mockResolvedValue(new app.ShelfResponse({
+        shelf: {
+            id: 7,
+            name: 'Bedtime',
+            normalizedName: 'bedtime',
+            position: 0,
+            queryVersion: 2,
+            queryPayload: '{"name":"moon"}',
+            validity: 'valid',
+        },
+    }));
+
+    render(<App/>);
+
+    await user.click(await screen.findByRole('button', {name: 'Bedtime, 1 story'}));
+    await waitFor(() => expect(openShelf).toHaveBeenCalledWith(
+        7,
+        expect.objectContaining({page: 1, pageSize: 12, sort: 'imported_desc'}),
+    ));
+    expect(screen.getByRole('searchbox', {name: 'Search stories'}))
+        .toHaveValue('moon');
+    expect(await screen.findByRole('heading', {name: 'Bedtime'})).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', {name: '↻ Update “Bedtime”'}));
+    await waitFor(() => expect(replaceShelfQuery).toHaveBeenCalledWith(
+        7,
+        expect.objectContaining({name: 'moon', page: 1}),
+    ));
+});
+
+test('saves the current query as a named active shelf with its live count', async () => {
+    const user = userEvent.setup();
+    const saved = new shelves.Summary({
+        id: 8,
+        name: 'Moon shelf',
+        position: 0,
+        validity: 'valid',
+        count: 2,
+    });
+    listShelves
+        .mockResolvedValueOnce(new app.ShelfListResponse({shelves: []}))
+        .mockResolvedValue(new app.ShelfListResponse({shelves: [saved]}));
+    createShelf.mockResolvedValue(new app.ShelfResponse({
+        shelf: {
+            id: 8,
+            name: 'Moon shelf',
+            normalizedName: 'moon shelf',
+            position: 0,
+            queryVersion: 2,
+            queryPayload: '{"name":"moon"}',
+            validity: 'valid',
+        },
+    }));
+    render(<App/>);
+
+    const search = await screen.findByRole('searchbox', {name: 'Search stories'});
+    await user.type(search, 'moon');
+    await user.click(screen.getByRole('button', {name: '＋ Save current query'}));
+    expect(screen.getByRole('heading', {name: 'Save the current query'}))
+        .toBeInTheDocument();
+    await user.type(screen.getByRole('textbox', {name: 'Shelf name'}), 'Moon shelf');
+    await user.click(screen.getByRole('button', {name: 'Save shelf'}));
+
+    await waitFor(() => expect(createShelf).toHaveBeenCalledWith(
+        'Moon shelf',
+        expect.objectContaining({name: 'moon', page: 1}),
+    ));
+    expect(await screen.findByRole('heading', {name: 'Moon shelf'})).toBeInTheDocument();
+    expect(screen.getByRole('button', {name: 'Moon shelf, 2 stories'}))
+        .toHaveClass('active');
+});
+
+test('renames, reorders, duplicates, and deletes saved shelves', async () => {
+    const user = userEvent.setup();
+    let summaries = [
+        new shelves.Summary({
+            id: 7,
+            name: 'Bedtime',
+            position: 0,
+            validity: 'valid',
+            count: 1,
+        }),
+        new shelves.Summary({
+            id: 8,
+            name: 'Adventures',
+            position: 1,
+            validity: 'valid',
+            count: 2,
+        }),
+    ];
+    listShelves.mockImplementation(async () => new app.ShelfListResponse({
+        shelves: summaries,
+    }));
+    openShelf.mockImplementation(async (shelfID) => {
+        const shelf = summaries.find((candidate) => candidate.id === shelfID);
+        return new app.ShelfEvaluationResponse({
+            evaluation: {
+                shelf: {
+                    id: shelfID,
+                    name: shelf?.name ?? 'Shelf',
+                    normalizedName: shelf?.name.toLowerCase() ?? 'shelf',
+                    position: shelf?.position ?? 0,
+                    queryVersion: 2,
+                    queryPayload: '{}',
+                    validity: 'valid',
+                },
+                query: {},
+                page: {
+                    stories,
+                    page: 1,
+                    pageSize: 12,
+                    totalItems: stories.length,
+                    totalPages: 1,
+                    sort: 'imported_desc',
+                },
+            },
+        });
+    });
+    renameShelf.mockImplementation(async (shelfID, name) => {
+        summaries = summaries.map((shelf) => shelf.id === shelfID
+            ? new shelves.Summary({...shelf, name})
+            : shelf);
+        return new app.ShelfResponse({
+            shelf: {
+                id: shelfID,
+                name,
+                normalizedName: name.toLowerCase(),
+                position: 0,
+                queryVersion: 2,
+                queryPayload: '{}',
+                validity: 'valid',
+            },
+        });
+    });
+    reorderShelves.mockImplementation(async (orderedIDs) => {
+        summaries = orderedIDs.map((id, position) => new shelves.Summary({
+            ...summaries.find((shelf) => shelf.id === id),
+            position,
+        }));
+        return new app.ShelfListResponse({shelves: summaries});
+    });
+    duplicateShelf.mockImplementation(async (_shelfID, name) => {
+        const duplicate = new shelves.Summary({
+            id: 9,
+            name,
+            position: summaries.length,
+            validity: 'valid',
+            count: 1,
+        });
+        summaries = [...summaries, duplicate];
+        return new app.ShelfResponse({
+            shelf: {
+                id: duplicate.id,
+                name,
+                normalizedName: name.toLowerCase(),
+                position: duplicate.position,
+                queryVersion: 2,
+                queryPayload: '{}',
+                validity: 'valid',
+            },
+        });
+    });
+    deleteShelf.mockImplementation(async (shelfID) => {
+        summaries = summaries.filter((shelf) => shelf.id !== shelfID);
+        return new app.MutationResponse({success: true});
+    });
+
+    render(<App/>);
+    await user.click(await screen.findByRole('button', {name: 'Bedtime, 1 story'}));
+
+    await user.click(screen.getByRole('button', {name: 'Rename Bedtime'}));
+    const name = screen.getByRole('textbox', {name: 'Shelf name'});
+    await user.clear(name);
+    await user.type(name, 'Evening');
+    await user.click(screen.getByRole('button', {name: 'Rename shelf'}));
+    await waitFor(() => expect(renameShelf).toHaveBeenCalledWith(7, 'Evening'));
+
+    await user.click(await screen.findByRole('button', {name: 'Move Evening down'}));
+    await waitFor(() => expect(reorderShelves).toHaveBeenCalledWith([8, 7]));
+
+    await user.click(screen.getByRole('button', {name: 'Duplicate Evening'}));
+    await user.type(screen.getByRole('textbox', {name: 'Shelf name'}), 'Evening copy');
+    await user.click(screen.getByRole('button', {name: 'Duplicate shelf'}));
+    await waitFor(() => expect(duplicateShelf).toHaveBeenCalledWith(7, 'Evening copy'));
+    expect(await screen.findByRole('heading', {name: 'Evening copy'})).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', {name: 'Delete Evening copy'}));
+    expect(screen.getByRole('heading', {name: 'Delete “Evening copy”?'}))
+        .toBeInTheDocument();
+    await user.click(screen.getByRole('button', {name: 'Delete shelf'}));
+    await waitFor(() => expect(deleteShelf).toHaveBeenCalledWith(9));
+    expect(screen.queryByRole('button', {name: 'Evening copy, 1 story'}))
+        .not.toBeInTheDocument();
 });
 
 test('reloads collection results from hash back and forward navigation', async () => {

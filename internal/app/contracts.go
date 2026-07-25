@@ -9,6 +9,7 @@ import (
 	"github.com/01max/librairii/internal/metadata"
 	"github.com/01max/librairii/internal/operations"
 	"github.com/01max/librairii/internal/removal"
+	"github.com/01max/librairii/internal/shelves"
 	"github.com/01max/librairii/internal/tagging"
 )
 
@@ -147,6 +148,21 @@ type TaggingPort interface {
 	SetBulkChoiceValue(context.Context, []int64, int64, int64, bool) (tagging.AssignmentResult, error)
 }
 
+type ShelfPort interface {
+	ListShelves(context.Context) ([]shelves.Summary, error)
+	CreateShelf(context.Context, string, library.StoryLibraryQuery) (shelves.Shelf, error)
+	OpenShelf(context.Context, int64, library.ListRequest) (shelves.Evaluation, error)
+	RenameShelf(context.Context, int64, string) (shelves.Shelf, error)
+	DuplicateShelf(context.Context, int64, string) (shelves.Shelf, error)
+	ReplaceShelfQuery(
+		context.Context,
+		int64,
+		library.StoryLibraryQuery,
+	) (shelves.Shelf, error)
+	ReorderShelves(context.Context, []int64) ([]shelves.Shelf, error)
+	DeleteShelf(context.Context, int64) error
+}
+
 type Dependencies struct {
 	Clock      Clock
 	Dialogs    DialogPort
@@ -156,6 +172,7 @@ type Dependencies struct {
 	Library    LibraryPort
 	Removal    RemovalPort
 	Tags       TaggingPort
+	Shelves    ShelfPort
 	Resources  []ResourcePort
 }
 
@@ -228,4 +245,19 @@ type TagAssignmentWorkspaceResponse struct {
 type TagAssignmentResponse struct {
 	Result *tagging.AssignmentResult `json:"result,omitempty"`
 	Error  *APIError                 `json:"error,omitempty"`
+}
+
+type ShelfListResponse struct {
+	Shelves []shelves.Summary `json:"shelves"`
+	Error   *APIError         `json:"error,omitempty"`
+}
+
+type ShelfResponse struct {
+	Shelf *shelves.Shelf `json:"shelf,omitempty"`
+	Error *APIError      `json:"error,omitempty"`
+}
+
+type ShelfEvaluationResponse struct {
+	Evaluation *shelves.Evaluation `json:"evaluation,omitempty"`
+	Error      *APIError           `json:"error,omitempty"`
 }

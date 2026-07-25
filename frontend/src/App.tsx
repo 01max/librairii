@@ -11,9 +11,17 @@ import {
     ActiveOperations,
     ApplicationStatus,
     CancelOperation,
+    CreateShelf,
+    DeleteShelf,
+    DuplicateShelf,
+    ListShelves,
     OfficialMetadataStatus,
+    OpenShelf,
     OperationSnapshot,
     QueryStories,
+    RenameShelf,
+    ReorderShelves,
+    ReplaceShelfQuery,
     RefreshOfficialMetadata,
     RemoveStory,
     SelectAndImportStories,
@@ -22,7 +30,7 @@ import {
     TagCatalog as LoadTagCatalog,
 } from '../wailsjs/go/main/App';
 import {EventsOn} from '../wailsjs/runtime/runtime';
-import {library, metadata, operations, tagging} from '../wailsjs/go/models';
+import {library, metadata, operations, shelves, tagging} from '../wailsjs/go/models';
 import {
     describeImport,
     operationIsActive,
@@ -109,11 +117,35 @@ const initialCollectionQuery: CollectionQuery = {
     sort: 'imported_desc',
 };
 
+function collectionQueryFromShelf(
+    saved: shelves.SavedLibraryQuery,
+    current: CollectionQuery,
+): CollectionQuery {
+    return {
+        name: saved.name ?? '',
+        languages: [...(saved.languages ?? [])],
+        compatibilities: [...(saved.compatibilities ?? [])] as CompatibilityFilter[],
+        booleanFilters: (saved.booleanFilters ?? []).map((filter) => ({
+            definitionId: filter.definitionId,
+            state: filter.state as CollectionQuery['booleanFilters'][number]['state'],
+        })),
+        choiceFilters: (saved.choiceFilters ?? []).map((filter) => ({
+            definitionId: filter.definitionId,
+            valueIds: [...filter.valueIds],
+        })),
+        page: 1,
+        pageSize: current.pageSize,
+        sort: current.sort,
+    };
+}
+
 type CoverStyle = CSSProperties & {
     '--sky': string;
     '--sun': string;
     '--land': string;
 };
+
+type ShelfDialogMode = 'save' | 'rename' | 'duplicate';
 
 function paletteFor(storyID: number): CoverStyle {
     const palette = coverPalettes[Math.abs(storyID) % coverPalettes.length];
@@ -179,6 +211,13 @@ function App() {
     const [assignmentWorkspace, setAssignmentWorkspace] =
         useState<tagging.AssignmentWorkspace | null>(null);
     const [tagCatalog, setTagCatalog] = useState<tagging.Catalog | null>(null);
+    const [savedShelves, setSavedShelves] = useState<shelves.Summary[]>([]);
+    const [activeShelfID, setActiveShelfID] = useState<number | null>(null);
+    const [shelfDialogMode, setShelfDialogMode] = useState<ShelfDialogMode | null>(null);
+    const [shelfDialogName, setShelfDialogName] = useState('');
+    const [shelfDialogError, setShelfDialogError] = useState<string | null>(null);
+    const [shelfBusy, setShelfBusy] = useState(false);
+    const [deleteShelfOpen, setDeleteShelfOpen] = useState(false);
     const refreshedOperations = useRef(new Set<string>());
     const searchInput = useRef<HTMLInputElement>(null);
     const collectionRequestGeneration = useRef(0);
@@ -251,6 +290,19 @@ function App() {
         }
     }, []);
 
+    const loadSavedShelves = useCallback(async () => {
+        try {
+            const response = await ListShelves();
+            if (response.error) {
+                setRequestError(response.error.message);
+                return;
+            }
+            setSavedShelves(response.shelves ?? []);
+        } catch {
+            setRequestError('Saved shelves could not be loaded.');
+        }
+    }, []);
+
     const reconcileOperation = useCallback((snapshot: operations.Snapshot) => {
         setOperationSnapshots((current) => {
             const index = current.findIndex((candidate) => candidate.id === snapshot.id);
@@ -270,6 +322,7 @@ function App() {
         ) {
             refreshedOperations.current.add(snapshot.id);
             void loadCollectionRef.current();
+            void loadSavedShelves();
             if (snapshot.kind === 'metadata_sync') {
                 void refreshMetadataStatus();
                 void LoadTagCatalog().then((response) => {
@@ -279,7 +332,7 @@ function App() {
                 });
             }
         }
-    }, [refreshMetadataStatus]);
+    }, [loadSavedShelves, refreshMetadataStatus]);
 
     useEffect(() => {
         let active = true;
@@ -295,6 +348,15 @@ function App() {
                     const catalogResponse = await LoadTagCatalog();
                     if (active) {
                         setTagCatalog(catalogResponse.catalog ?? null);
+                    }
+                    const shelvesResponse = await ListShelves();
+                    if (!active) {
+                        return;
+                    }
+                    if (shelvesResponse.error) {
+                        setRequestError(shelvesResponse.error.message);
+                    } else {
+                        setSavedShelves(shelvesResponse.shelves ?? []);
                     }
                     const metadataResponse = await OfficialMetadataStatus();
                     if (!active) {
@@ -446,6 +508,7 @@ function App() {
         setSelectedID(null);
         setRemovalNotice(`${title} was moved to application trash.`);
         await loadCollection();
+        await loadSavedShelves();
     }
 
     async function loadAllStories() {
@@ -543,6 +606,7 @@ function App() {
     const selectedSummary = stories.find((story) => story.id === selectedID) ?? null;
     const selected = detail?.story ?? selectedSummary;
     const selectedPalette = selected ? paletteFor(selected.id) : undefined;
+    const activeShelf = savedShelves.find((shelf) => shelf.id === activeShelfID) ?? null;
     const activeOperations = operationSnapshots.filter((snapshot) => (
         operationIsActive(snapshot)
     ));
@@ -611,6 +675,167 @@ function App() {
     const updateQuery = useCallback((next: CollectionQuery) => {
         setCollectionQuery(queryHistory.push(next));
     }, [queryHistory]);
+
+    async function openSavedShelf(shelfID: number) {
+        setShelfBusy(true);
+        setRequestError(null);
+        try {
+            const response = await OpenShelf(
+                shelfID,
+                new library.ListRequest({
+                    page: 1,
+                    pageSize: collectionQuery.pageSize,
+                    sort: collectionQuery.sort,
+                }),
+            );
+            if (!response.evaluation) {
+                setRequestError(
+                    response.error?.message ?? 'The saved shelf could not be opened.',
+                );
+                return;
+            }
+            setActiveShelfID(shelfID);
+            setPage(response.evaluation.page);
+            updateQuery(collectionQueryFromShelf(
+                response.evaluation.query,
+                collectionQuery,
+            ));
+        } catch {
+            setRequestError('The saved shelf could not be opened.');
+        } finally {
+            setShelfBusy(false);
+        }
+    }
+
+    function openAllStories() {
+        setActiveShelfID(null);
+        updateQuery({
+            ...collectionQuery,
+            name: '',
+            languages: [],
+            compatibilities: [],
+            booleanFilters: [],
+            choiceFilters: [],
+            page: 1,
+        });
+    }
+
+    function showShelfDialog(mode: ShelfDialogMode) {
+        setShelfDialogMode(mode);
+        setShelfDialogError(null);
+        setShelfDialogName(mode === 'rename' ? activeShelf?.name ?? '' : '');
+    }
+
+    async function submitShelfDialog() {
+        if (!shelfDialogMode) {
+            return;
+        }
+        setShelfBusy(true);
+        setShelfDialogError(null);
+        try {
+            const response = shelfDialogMode === 'save'
+                ? await CreateShelf(
+                    shelfDialogName,
+                    new library.StoryLibraryQuery(collectionQuery),
+                )
+                : shelfDialogMode === 'rename' && activeShelf
+                    ? await RenameShelf(activeShelf.id, shelfDialogName)
+                    : shelfDialogMode === 'duplicate' && activeShelf
+                        ? await DuplicateShelf(activeShelf.id, shelfDialogName)
+                        : null;
+            if (!response?.shelf) {
+                setShelfDialogError(
+                    response?.error?.message ?? 'The saved shelf could not be changed.',
+                );
+                return;
+            }
+            const changedShelf = response.shelf;
+            setShelfDialogMode(null);
+            setShelfDialogName('');
+            await loadSavedShelves();
+            if (shelfDialogMode === 'save') {
+                setActiveShelfID(changedShelf.id);
+            } else if (shelfDialogMode === 'duplicate') {
+                await openSavedShelf(changedShelf.id);
+            }
+        } catch {
+            setShelfDialogError('The saved shelf could not be changed.');
+        } finally {
+            setShelfBusy(false);
+        }
+    }
+
+    async function updateActiveShelf() {
+        if (!activeShelf) {
+            return;
+        }
+        setShelfBusy(true);
+        setRequestError(null);
+        try {
+            const response = await ReplaceShelfQuery(
+                activeShelf.id,
+                new library.StoryLibraryQuery(collectionQuery),
+            );
+            if (!response.shelf) {
+                setRequestError(
+                    response.error?.message ?? 'The saved shelf could not be updated.',
+                );
+                return;
+            }
+            await loadSavedShelves();
+        } catch {
+            setRequestError('The saved shelf could not be updated.');
+        } finally {
+            setShelfBusy(false);
+        }
+    }
+
+    async function moveShelf(shelfID: number, direction: -1 | 1) {
+        const index = savedShelves.findIndex((shelf) => shelf.id === shelfID);
+        const target = index + direction;
+        if (index < 0 || target < 0 || target >= savedShelves.length) {
+            return;
+        }
+        const ordered = [...savedShelves];
+        [ordered[index], ordered[target]] = [ordered[target], ordered[index]];
+        setShelfBusy(true);
+        try {
+            const response = await ReorderShelves(ordered.map((shelf) => shelf.id));
+            if (response.error) {
+                setRequestError(response.error.message);
+            } else {
+                setSavedShelves(response.shelves ?? []);
+            }
+        } catch {
+            setRequestError('Saved shelves could not be reordered.');
+        } finally {
+            setShelfBusy(false);
+        }
+    }
+
+    async function confirmShelfDeletion() {
+        if (!activeShelf) {
+            return;
+        }
+        setShelfBusy(true);
+        setShelfDialogError(null);
+        try {
+            const response = await DeleteShelf(activeShelf.id);
+            if (!response.success) {
+                setShelfDialogError(
+                    response.error?.message ?? 'The saved shelf could not be deleted.',
+                );
+                return;
+            }
+            setDeleteShelfOpen(false);
+            setActiveShelfID(null);
+            await loadSavedShelves();
+        } catch {
+            setShelfDialogError('The saved shelf could not be deleted.');
+        } finally {
+            setShelfBusy(false);
+        }
+    }
 
     const reconcileTagCatalog = useCallback((catalog: tagging.Catalog) => {
         setTagCatalog(catalog);
@@ -831,12 +1056,105 @@ function App() {
                 <div className="path">Local story archive</div>
                 <div className="caption">Saved shelves</div>
                 <nav className="saved">
-                    <button className="active" type="button">
+                    <button
+                        className={`saved-picker${activeShelfID === null ? ' active' : ''}`}
+                        type="button"
+                        disabled={shelfBusy}
+                        onClick={openAllStories}
+                    >
                         <i style={{'--c': '#405cf5'} as CSSProperties}/>
                         All stories
-                        <span>{page?.totalItems ?? 0}</span>
+                        <span>{activeShelfID === null ? page?.totalItems ?? 0 : 'All'}</span>
                     </button>
+                    {savedShelves.map((shelf, index) => (
+                        <div className="saved-entry" key={shelf.id}>
+                            <button
+                                className={`saved-picker${
+                                    activeShelfID === shelf.id ? ' active' : ''
+                                }`}
+                                type="button"
+                                aria-label={`${shelf.name}, ${shelf.count} ${
+                                    shelf.count === 1 ? 'story' : 'stories'
+                                }`}
+                                disabled={shelfBusy}
+                                onClick={() => void openSavedShelf(shelf.id)}
+                            >
+                                <i
+                                    style={{
+                                        '--c': coverPalettes[index % coverPalettes.length][0],
+                                    } as CSSProperties}
+                                />
+                                {shelf.name}
+                                <span>{shelf.count}</span>
+                            </button>
+                            {activeShelfID === shelf.id && (
+                                <div className="saved-tools" aria-label={`${shelf.name} actions`}>
+                                    <button
+                                        type="button"
+                                        disabled={shelfBusy || index === 0}
+                                        aria-label={`Move ${shelf.name} up`}
+                                        onClick={() => void moveShelf(shelf.id, -1)}
+                                    >
+                                        ↑
+                                    </button>
+                                    <button
+                                        type="button"
+                                        disabled={shelfBusy || index === savedShelves.length - 1}
+                                        aria-label={`Move ${shelf.name} down`}
+                                        onClick={() => void moveShelf(shelf.id, 1)}
+                                    >
+                                        ↓
+                                    </button>
+                                    <button
+                                        type="button"
+                                        disabled={shelfBusy}
+                                        aria-label={`Rename ${shelf.name}`}
+                                        onClick={() => showShelfDialog('rename')}
+                                    >
+                                        ✎
+                                    </button>
+                                    <button
+                                        type="button"
+                                        disabled={shelfBusy}
+                                        aria-label={`Duplicate ${shelf.name}`}
+                                        onClick={() => showShelfDialog('duplicate')}
+                                    >
+                                        ⧉
+                                    </button>
+                                    <button
+                                        type="button"
+                                        disabled={shelfBusy}
+                                        aria-label={`Delete ${shelf.name}`}
+                                        onClick={() => {
+                                            setShelfDialogError(null);
+                                            setDeleteShelfOpen(true);
+                                        }}
+                                    >
+                                        ×
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    ))}
                 </nav>
+                <button
+                    className="manage shelf-save"
+                    type="button"
+                    disabled={shelfBusy}
+                    onClick={() => showShelfDialog('save')}
+                >
+                    ＋ Save current query
+                </button>
+                {activeShelf && (
+                    <button
+                        className="manage shelf-update"
+                        type="button"
+                        disabled={shelfBusy}
+                        onClick={() => void updateActiveShelf()}
+                    >
+                        ↻ Update “{activeShelf.name}”
+                    </button>
+                )}
                 <div className="caption">Refine this shelf</div>
                 {derivedDefinitions.map(renderTagFacet)}
                 <div className="facet">
@@ -913,8 +1231,12 @@ function App() {
 
                 <div className="heading">
                     <div>
-                        <h2>My story shelves</h2>
-                        <p>Stories in your local archive · {page?.totalItems ?? 0} archives</p>
+                        <h2>{activeShelf?.name ?? 'My story shelves'}</h2>
+                        <p>
+                            {activeShelf ? 'Dynamic saved shelf' : 'Stories in your local archive'}
+                            {' · '}
+                            {page?.totalItems ?? 0} archives
+                        </p>
                     </div>
                     <label className="sort">
                         <span className="sr-only">Sort stories</span>
@@ -1062,11 +1384,32 @@ function App() {
                         <div className="empty-mark" aria-hidden="true">
                             <i/><i/><i/>
                         </div>
-                        <h3>Build your local story archive</h3>
+                        <h3>
+                            {activeShelf
+                                ? `${activeShelf.name} is currently empty`
+                                : 'Build your local story archive'}
+                        </h3>
                         <p>
-                            Import story packs you already own. Librairii validates and preserves
-                            each archive in managed local storage.
+                            {activeShelf
+                                ? 'This saved query remains valid and will fill automatically when stories start matching it.'
+                                : 'Import story packs you already own. Librairii validates and preserves each archive in managed local storage.'}
                         </p>
+                        {activeShelf && (
+                            <button
+                                type="button"
+                                onClick={() => updateQuery({
+                                    ...collectionQuery,
+                                    name: '',
+                                    languages: [],
+                                    compatibilities: [],
+                                    booleanFilters: [],
+                                    choiceFilters: [],
+                                    page: 1,
+                                })}
+                            >
+                                Edit shelf query
+                            </button>
+                        )}
                         <button
                             className="import"
                             type="button"
@@ -1311,6 +1654,107 @@ function App() {
                     </section>
                 </div>
             )}
+            {shelfDialogMode && (
+                <div className="dialog-backdrop">
+                    <form
+                        className="detail-dialog shelf-dialog"
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="shelf-dialog-title"
+                        onSubmit={(event) => {
+                            event.preventDefault();
+                            void submitShelfDialog();
+                        }}
+                    >
+                        <div className="dialog-kicker">Saved shelves</div>
+                        <h3 id="shelf-dialog-title">
+                            {shelfDialogMode === 'save'
+                                ? 'Save the current query'
+                                : shelfDialogMode === 'rename'
+                                    ? 'Rename this shelf'
+                                    : 'Duplicate this shelf'}
+                        </h3>
+                        <p>
+                            {shelfDialogMode === 'save'
+                                ? 'The name search and active filters will stay dynamic as your local library changes.'
+                                : 'Choose a unique name for this saved shelf.'}
+                        </p>
+                        <label className="dialog-field">
+                            <span>Shelf name</span>
+                            <input
+                                autoFocus
+                                maxLength={80}
+                                value={shelfDialogName}
+                                onChange={(event) => setShelfDialogName(
+                                    event.currentTarget.value,
+                                )}
+                            />
+                        </label>
+                        {shelfDialogError && (
+                            <p className="dialog-error">{shelfDialogError}</p>
+                        )}
+                        <div className="dialog-actions">
+                            <button
+                                type="button"
+                                disabled={shelfBusy}
+                                onClick={() => setShelfDialogMode(null)}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                className="export"
+                                type="submit"
+                                disabled={shelfBusy || shelfDialogName.trim() === ''}
+                            >
+                                {shelfBusy
+                                    ? 'Saving…'
+                                    : shelfDialogMode === 'rename'
+                                        ? 'Rename shelf'
+                                        : shelfDialogMode === 'duplicate'
+                                            ? 'Duplicate shelf'
+                                            : 'Save shelf'}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            )}
+            {deleteShelfOpen && activeShelf && (
+                <div className="dialog-backdrop">
+                    <section
+                        className="detail-dialog shelf-dialog"
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="delete-shelf-title"
+                    >
+                        <div className="dialog-kicker">Saved shelves</div>
+                        <h3 id="delete-shelf-title">Delete “{activeShelf.name}”?</h3>
+                        <p>
+                            Only this saved query will be removed. Matching stories and their
+                            managed archives will stay in your library.
+                        </p>
+                        {shelfDialogError && (
+                            <p className="dialog-error">{shelfDialogError}</p>
+                        )}
+                        <div className="dialog-actions">
+                            <button
+                                type="button"
+                                disabled={shelfBusy}
+                                onClick={() => setDeleteShelfOpen(false)}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                className="danger"
+                                type="button"
+                                disabled={shelfBusy}
+                                onClick={() => void confirmShelfDeletion()}
+                            >
+                                {shelfBusy ? 'Deleting…' : 'Delete shelf'}
+                            </button>
+                        </div>
+                    </section>
+                </div>
+            )}
             {tagManagerOpen && (
                 <TagManager
                     onClose={() => setTagManagerOpen(false)}
@@ -1325,7 +1769,10 @@ function App() {
                         setTagAssignmentStoryIDs([]);
                     }}
                     onWorkspaceChange={acceptEditorWorkspace}
-                    onAssignmentsChange={loadCollection}
+                    onAssignmentsChange={async () => {
+                        await loadCollection();
+                        await loadSavedShelves();
+                    }}
                 />
             )}
         </div>

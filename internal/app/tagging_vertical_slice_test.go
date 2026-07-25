@@ -56,6 +56,7 @@ func TestTaggingAndSharedQueryVerticalSlice(t *testing.T) {
 		Library:    importRuntime,
 		Removal:    importRuntime,
 		Tags:       importRuntime,
+		Shelves:    importRuntime,
 	})
 	if err != nil {
 		t.Fatal(err)

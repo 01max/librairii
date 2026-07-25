@@ -14,12 +14,20 @@ export function CancelOperation(arg1) {
   return window['go']['main']['App']['CancelOperation'](arg1);
 }
 
+export function CreateShelf(arg1, arg2) {
+  return window['go']['main']['App']['CreateShelf'](arg1, arg2);
+}
+
 export function CreateTagDefinition(arg1) {
   return window['go']['main']['App']['CreateTagDefinition'](arg1);
 }
 
 export function CreateTagValue(arg1) {
   return window['go']['main']['App']['CreateTagValue'](arg1);
+}
+
+export function DeleteShelf(arg1) {
+  return window['go']['main']['App']['DeleteShelf'](arg1);
 }
 
 export function DeleteTagDefinition(arg1) {
@@ -30,12 +38,24 @@ export function DeleteTagValue(arg1) {
   return window['go']['main']['App']['DeleteTagValue'](arg1);
 }
 
+export function DuplicateShelf(arg1, arg2) {
+  return window['go']['main']['App']['DuplicateShelf'](arg1, arg2);
+}
+
+export function ListShelves() {
+  return window['go']['main']['App']['ListShelves']();
+}
+
 export function ListStories(arg1) {
   return window['go']['main']['App']['ListStories'](arg1);
 }
 
 export function OfficialMetadataStatus() {
   return window['go']['main']['App']['OfficialMetadataStatus']();
+}
+
+export function OpenShelf(arg1, arg2) {
+  return window['go']['main']['App']['OpenShelf'](arg1, arg2);
 }
 
 export function OperationSnapshot(arg1) {
@@ -66,6 +86,10 @@ export function RemoveStory(arg1) {
   return window['go']['main']['App']['RemoveStory'](arg1);
 }
 
+export function RenameShelf(arg1, arg2) {
+  return window['go']['main']['App']['RenameShelf'](arg1, arg2);
+}
+
 export function RenameTagDefinition(arg1, arg2) {
   return window['go']['main']['App']['RenameTagDefinition'](arg1, arg2);
 }
@@ -74,12 +98,20 @@ export function RenameTagValue(arg1, arg2) {
   return window['go']['main']['App']['RenameTagValue'](arg1, arg2);
 }
 
+export function ReorderShelves(arg1) {
+  return window['go']['main']['App']['ReorderShelves'](arg1);
+}
+
 export function ReorderTagDefinitions(arg1) {
   return window['go']['main']['App']['ReorderTagDefinitions'](arg1);
 }
 
 export function ReorderTagValues(arg1, arg2) {
   return window['go']['main']['App']['ReorderTagValues'](arg1, arg2);
+}
+
+export function ReplaceShelfQuery(arg1, arg2) {
+  return window['go']['main']['App']['ReplaceShelfQuery'](arg1, arg2);
 }
 
 export function SelectAndImportStories() {

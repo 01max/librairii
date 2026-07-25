@@ -181,7 +181,7 @@ select:focus-visible {
     gap: 7px;
 }
 
-.saved button {
+.saved-picker {
     width: 100%;
     display: flex;
     align-items: center;
@@ -196,7 +196,7 @@ select:focus-visible {
     font-weight: 700;
 }
 
-.saved button.active {
+.saved-picker.active {
     border-color: var(--line);
     color: var(--ink);
     background: white;
@@ -214,6 +214,50 @@ select:focus-visible {
     margin-left: auto;
     color: #9aa3b5;
     font-size: 8px;
+}
+
+.saved-entry {
+    display: grid;
+    gap: 4px;
+}
+
+.saved-tools {
+    display: flex;
+    justify-content: flex-end;
+    gap: 3px;
+    padding: 0 4px 2px;
+}
+
+.saved-tools button {
+    width: 24px;
+    height: 22px;
+    display: grid;
+    place-items: center;
+    padding: 0;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    color: #657087;
+    background: white;
+    font-size: 9px;
+    font-weight: 900;
+}
+
+.saved-tools button:disabled,
+.saved-picker:disabled {
+    cursor: default;
+    opacity: .55;
+}
+
+.shelf-save {
+    margin-top: 9px;
+}
+
+.shelf-update {
+    margin-top: 6px;
+    border-style: solid;
+    border-color: #bdc6ff;
+    color: #3048cd;
+    background: #f0f2ff;
 }
 
 .facet {
@@ -916,6 +960,34 @@ select:focus-visible {
     letter-spacing: -.04em;
 }
 
+.shelf-dialog {
+    width: min(430px, 100%);
+}
+
+.shelf-dialog > p {
+    margin: 0 0 18px;
+    color: var(--muted);
+    font-size: 9px;
+    line-height: 1.55;
+}
+
+.dialog-field {
+    display: grid;
+    gap: 6px;
+    color: #68738a;
+    font-size: 8px;
+    font-weight: 800;
+}
+
+.dialog-field input {
+    width: 100%;
+    padding: 11px 12px;
+    border: 1px solid var(--line);
+    border-radius: 9px;
+    color: var(--ink);
+    background: #f8f9fc;
+}
+
 .dialog-description {
     margin: 0 0 20px;
     color: var(--muted);
@@ -997,6 +1069,11 @@ select:focus-visible {
     border-color: var(--coral);
     color: white;
     background: var(--coral);
+}
+
+.dialog-actions .export {
+    border-color: var(--yellow);
+    background: var(--yellow);
 }
 
 .dialog-actions button:disabled {

@@ -210,6 +210,102 @@ export namespace app {
 		    return a;
 		}
 	}
+	export class ShelfEvaluationResponse {
+	    evaluation?: shelves.Evaluation;
+	    error?: APIError;
+	
+	    static createFrom(source: any = {}) {
+	        return new ShelfEvaluationResponse(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.evaluation = this.convertValues(source["evaluation"], shelves.Evaluation);
+	        this.error = this.convertValues(source["error"], APIError);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class ShelfListResponse {
+	    shelves: shelves.Summary[];
+	    error?: APIError;
+	
+	    static createFrom(source: any = {}) {
+	        return new ShelfListResponse(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.shelves = this.convertValues(source["shelves"], shelves.Summary);
+	        this.error = this.convertValues(source["error"], APIError);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class ShelfResponse {
+	    shelf?: shelves.Shelf;
+	    error?: APIError;
+	
+	    static createFrom(source: any = {}) {
+	        return new ShelfResponse(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.shelf = this.convertValues(source["shelf"], shelves.Shelf);
+	        this.error = this.convertValues(source["error"], APIError);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
 	export class Status {
 	    state: string;
 	    startedAt?: string;
@@ -936,6 +1032,129 @@ export namespace removal {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.storyId = source["storyId"];
 	        this.uuid = source["uuid"];
+	    }
+	}
+
+}
+
+export namespace shelves {
+	
+	export class SavedLibraryQuery {
+	    name?: string;
+	    languages?: string[];
+	    compatibilities?: string[];
+	    booleanFilters?: library.BooleanFilter[];
+	    choiceFilters?: library.ChoiceFilter[];
+	
+	    static createFrom(source: any = {}) {
+	        return new SavedLibraryQuery(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.name = source["name"];
+	        this.languages = source["languages"];
+	        this.compatibilities = source["compatibilities"];
+	        this.booleanFilters = this.convertValues(source["booleanFilters"], library.BooleanFilter);
+	        this.choiceFilters = this.convertValues(source["choiceFilters"], library.ChoiceFilter);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class Shelf {
+	    id: number;
+	    name: string;
+	    normalizedName: string;
+	    position: number;
+	    queryVersion: number;
+	    queryPayload: string;
+	    validity: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Shelf(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.name = source["name"];
+	        this.normalizedName = source["normalizedName"];
+	        this.position = source["position"];
+	        this.queryVersion = source["queryVersion"];
+	        this.queryPayload = source["queryPayload"];
+	        this.validity = source["validity"];
+	    }
+	}
+	export class Evaluation {
+	    shelf: Shelf;
+	    query: SavedLibraryQuery;
+	    page: library.Page;
+	
+	    static createFrom(source: any = {}) {
+	        return new Evaluation(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.shelf = this.convertValues(source["shelf"], Shelf);
+	        this.query = this.convertValues(source["query"], SavedLibraryQuery);
+	        this.page = this.convertValues(source["page"], library.Page);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	
+	
+	export class Summary {
+	    id: number;
+	    name: string;
+	    position: number;
+	    validity: string;
+	    count: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new Summary(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.name = source["name"];
+	        this.position = source["position"];
+	        this.validity = source["validity"];
+	        this.count = source["count"];
 	    }
 	}
 
