@@ -699,6 +699,17 @@ test('switches saved previews to filtered results and restores the custom URL', 
     expect(await screen.findByRole('heading', {name: 'Bedtime'}))
         .toBeInTheDocument();
 
+    await user.selectOptions(
+        screen.getByRole('combobox', {name: 'Sort stories'}),
+        'name_asc',
+    );
+    await waitFor(() => expect(openShelf).toHaveBeenLastCalledWith(
+        7,
+        expect.objectContaining({sort: 'name_asc'}),
+    ));
+    expect(screen.getByRole('heading', {name: 'Bedtime'}))
+        .toBeInTheDocument();
+
     await user.type(
         screen.getByRole('searchbox', {name: 'Search stories'}),
         'forest',
@@ -713,6 +724,16 @@ test('switches saved previews to filtered results and restores the custom URL', 
     expect(screen.getByRole('button', {name: /All stories/}))
         .not.toHaveAttribute('aria-current');
 
+    await user.click(screen.getByRole('button', {name: 'Clear all'}));
+    expect(await screen.findByRole('heading', {name: 'Bedtime'}))
+        .toBeInTheDocument();
+    expect(screen.getByRole('combobox', {name: 'Sort stories'}))
+        .toHaveValue('name_asc');
+
+    await user.type(
+        screen.getByRole('searchbox', {name: 'Search stories'}),
+        'forest',
+    );
     first.unmount();
     render(<App/>);
     expect(await screen.findByRole('searchbox', {name: 'Search stories'}))

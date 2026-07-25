@@ -13,6 +13,14 @@ type CollectionWindow = Pick<Window, 'addEventListener' | 'removeEventListener'>
 
 export type CollectionScope = 'all' | 'shelf' | 'custom';
 
+function hasMembershipCriteria(query: CollectionQuery): boolean {
+    return query.name !== '' ||
+        query.languages.length > 0 ||
+        query.compatibilities.length > 0 ||
+        query.booleanFilters.length > 0 ||
+        query.choiceFilters.length > 0;
+}
+
 type CollectionHistoryState = {
     collectionQuery?: {
         hash: string;
@@ -73,10 +81,7 @@ export class CollectionQueryHistory {
         ) {
             return entry.scope;
         }
-        return encodeCollectionQuery(this.current()) ===
-            encodeCollectionQuery(this.#fallback)
-            ? 'all'
-            : 'custom';
+        return hasMembershipCriteria(this.current()) ? 'custom' : 'all';
     }
 
     push(
@@ -160,7 +165,7 @@ export class CollectionQueryHistory {
         const resolvedScope = resolvedShelfID !== null
             ? 'shelf'
             : scope ?? (
-                hash === encodeCollectionQuery(this.#fallback) ? 'all' : 'custom'
+                hasMembershipCriteria(canonical) ? 'custom' : 'all'
             );
         const location = `${this.#target.location.pathname}${this.#target.location.search}` +
             hash;

@@ -64,6 +64,28 @@ test('restores custom shelf-less queries without activating All stories', () => 
     expect(reloaded.currentScope()).toBe('all');
 });
 
+test('keeps sort and pagination changes in the All stories scope', () => {
+    const history = new CollectionQueryHistory(window, applicationDefault);
+    history.replace({
+        ...applicationDefault,
+        page: 2,
+        sort: 'name_asc',
+    }, null);
+
+    expect(history.currentScope()).toBe('all');
+
+    history.push({
+        ...applicationDefault,
+        name: 'dragon',
+        sort: 'name_asc',
+    }, null);
+    expect(history.currentScope()).toBe('custom');
+
+    const cleared = history.clearAll();
+    expect(cleared.sort).toBe('name_asc');
+    expect(history.currentScope()).toBe('all');
+});
+
 test('ignores shelf identity that does not belong to the current query route', () => {
     const history = new CollectionQueryHistory(window, applicationDefault);
     history.push({...applicationDefault, name: 'dragon'}, 7);
