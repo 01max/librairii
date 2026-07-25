@@ -378,11 +378,7 @@ func blockingIssue(code PreflightIssueCode, message string) PreflightIssue {
 }
 
 func supportedOutputName(name string, format string) bool {
-	if name == "" ||
-		filepath.Base(name) != name ||
-		name == "." ||
-		name == ".." ||
-		strings.ContainsRune(name, '\x00') {
+	if !archive.ValidFilename(name) {
 		return false
 	}
 	lower := strings.ToLower(name)
@@ -407,11 +403,7 @@ func supportedOutputName(name string, format string) bool {
 }
 
 func supportedArchiveOutputName(name string) bool {
-	if name == "" ||
-		filepath.Base(name) != name ||
-		name == "." ||
-		name == ".." ||
-		strings.ContainsRune(name, '\x00') {
+	if !archive.ValidFilename(name) {
 		return false
 	}
 	lower := strings.ToLower(name)

@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/01max/librairii/internal/archive"
 	"github.com/google/uuid"
 )
 
@@ -241,7 +242,7 @@ func validateNewItems(kind Kind, items []NewItem) (int64, error) {
 		storyIDs[item.StoryID] = struct{}{}
 		if _, err := uuid.Parse(item.StoryUUID); err != nil ||
 			strings.TrimSpace(item.StoryTitle) == "" ||
-			!validOutputName(item.OutputName) ||
+			!archive.ValidFilename(item.OutputName) ||
 			!validRelativePath(item.ArchiveRelativePath) ||
 			!validSHA256(item.ArchiveSHA256) {
 			return 0, fmt.Errorf(
@@ -305,12 +306,6 @@ func validateExportSource(source ExportSource) error {
 		seen[shelfID] = struct{}{}
 	}
 	return nil
-}
-
-func validOutputName(value string) bool {
-	return value != "" &&
-		value == strings.TrimSpace(value) &&
-		!strings.ContainsAny(value, `/\`)
 }
 
 func validRelativePath(value string) bool {

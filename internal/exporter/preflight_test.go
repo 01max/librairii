@@ -228,6 +228,55 @@ func TestPreflightCollapsesDuplicateOutputNames(t *testing.T) {
 	}
 }
 
+func TestPreflightSkipsFilenameRejectedByOperationPersistence(t *testing.T) {
+	t.Parallel()
+
+	layout, err := storage.Initialize(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	story := writeManagedExportStory(
+		t,
+		layout,
+		1,
+		" clockwork-forest.zip",
+		[]byte("archive"),
+	)
+	resolver, err := NewResolver(
+		&fakeLibraryResolver{
+			stories: map[int64]library.ExportStory{story.ID: story},
+		},
+		fakeShelfResolver{},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	service, err := NewPreflightService(resolver, layout)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	report, err := service.Plan(
+		context.Background(),
+		PreflightRequest{
+			SourceType: operations.ExportSourceSelection,
+			StoryIDs:   []int64{story.ID},
+		},
+		t.TempDir(),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if report.CanExport ||
+		!report.Blocked ||
+		len(report.Items) != 1 ||
+		report.Items[0].Disposition != DispositionSkipped ||
+		report.Items[0].Issue == nil ||
+		report.Items[0].Issue.Code != IssueUnsupportedExtension {
+		t.Fatalf("preflight = %#v", report)
+	}
+}
+
 type failingShelfResolver struct {
 	err error
 }
