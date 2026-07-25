@@ -148,9 +148,8 @@ function storyByline(story: library.StorySummary): string {
     return story.author || story.uuid;
 }
 
-function savedShelfColor(shelf: shelves.Summary, index: number): string {
-    return (shelf as shelves.Summary & {color?: string}).color ??
-        savedShelfColors[index % savedShelfColors.length];
+function savedShelfColor(index: number): string {
+    return savedShelfColors[index % savedShelfColors.length];
 }
 
 const initialCollectionQuery: CollectionQuery = {
@@ -179,6 +178,31 @@ function collectionQueryFromShelf(
         pageSize: current.pageSize,
         sort: current.sort,
     };
+}
+
+function savedShelfSource(
+    query: shelves.SavedLibraryQuery,
+    catalogs: Array<tagging.Catalog | null | undefined>,
+): string {
+    const definitions = new Map(catalogs.flatMap(
+        (catalog) => catalog?.definitions.map(
+            (definition) => [definition.id, definition.label] as const,
+        ) ?? [],
+    ));
+    const definitionIDs = [
+        ...(query.booleanFilters ?? []).map((filter) => filter.definitionId),
+        ...(query.choiceFilters ?? []).map((filter) => filter.definitionId),
+    ];
+    const labels = [...new Set(definitionIDs.flatMap(
+        (definitionID) => definitions.get(definitionID) ?? [],
+    ))];
+    if (labels.length === 1) {
+        return `${labels[0]} tag`;
+    }
+    if (definitionIDs.length > 0) {
+        return 'Tag filters';
+    }
+    return 'Saved shelf';
 }
 
 function shelfAttentionMessage(reason?: string): string {
@@ -423,6 +447,7 @@ function App() {
     const [assignmentWorkspace, setAssignmentWorkspace] =
         useState<tagging.AssignmentWorkspace | null>(null);
     const [tagCatalog, setTagCatalog] = useState<tagging.Catalog | null>(null);
+    const [facetCounts, setFacetCounts] = useState<Record<number, number>>({});
     const [savedShelves, setSavedShelves] = useState<shelves.Summary[]>([]);
     const [savedShelfStories, setSavedShelfStories] =
         useState<Record<number, library.StorySummary[]>>({});
@@ -1096,6 +1121,48 @@ function App() {
     const editableDefinitions = tagCatalog?.definitions.filter(
         (definition) => definition.source !== 'derived',
     ) ?? [];
+    useEffect(() => {
+        const values = tagCatalog?.definitions.flatMap((definition) => (
+            definition.source === 'derived' && definition.kind === 'choice'
+                ? definition.values.map((value) => ({
+                    definitionID: definition.id,
+                    valueID: value.id,
+                }))
+                : []
+        )) ?? [];
+        if (applicationState !== 'ready' || values.length === 0) {
+            return;
+        }
+        let active = true;
+        void Promise.all(values.map(async ({definitionID, valueID}) => {
+            const response = await QueryStories(new library.StoryLibraryQuery({
+                ...initialCollectionQuery,
+                choiceFilters: [{
+                    definitionId: definitionID,
+                    valueIds: [valueID],
+                }],
+                page: 1,
+                pageSize: 1,
+            }));
+            return [valueID, response.page?.totalItems] as const;
+        })).then((counts) => {
+            if (!active) {
+                return;
+            }
+            setFacetCounts(Object.fromEntries(counts.flatMap(
+                ([valueID, count]) => count === undefined
+                    ? []
+                    : [[valueID, count]],
+            )));
+        }).catch(() => {
+            if (active) {
+                setFacetCounts({});
+            }
+        });
+        return () => {
+            active = false;
+        };
+    }, [applicationState, tagCatalog]);
     const languageOptions = [...new Set([
         ...(metadataStatus?.locale ? [metadataStatus.locale] : []),
         ...collectionQuery.languages,
@@ -1209,11 +1276,10 @@ function App() {
                     details: {
                         name: response.evaluation.shelf.name,
                         count: response.evaluation.page.totalItems,
-                        source: (
-                            response.evaluation as shelves.Evaluation & {
-                                previewSource?: string;
-                            }
-                        ).previewSource ?? 'Saved shelf',
+                        source: savedShelfSource(
+                            response.evaluation.query,
+                            [tagCatalog, assignmentWorkspace?.catalog],
+                        ),
                     },
                     error: '',
                 };
@@ -1263,9 +1329,11 @@ function App() {
         };
     }, [
         applicationState,
+        assignmentWorkspace?.catalog,
         collectionQuery.sort,
         previewableShelves,
         showSavedShelfRows,
+        tagCatalog,
     ]);
 
     const updateQuery = useCallback((
@@ -1690,8 +1758,8 @@ function App() {
                     })()}
                     <i style={{'--c': definition.color} as CSSProperties}/>
                     {value.label}
-                    {(value as tagging.Value & {count?: number}).count !== undefined && (
-                        <span>{(value as tagging.Value & {count: number}).count}</span>
+                    {facetCounts[value.id] !== undefined && (
+                        <span aria-hidden="true">{facetCounts[value.id]}</span>
                     )}
                 </label>
             ))}
@@ -1780,7 +1848,7 @@ function App() {
                                 >
                                     <i
                                         style={{
-                                            '--c': savedShelfColor(shelf, index),
+                                            '--c': savedShelfColor(index),
                                         } as CSSProperties}
                                     />
                                     {shelf.name}

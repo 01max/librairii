@@ -123,6 +123,9 @@ try {
             );
             await page.getByRole('heading', {name: 'Weekend adventures'})
                 .waitFor();
+            await page.getByText('Mood tag').first().waitFor();
+            await page.locator('.choice span').filter({hasText: /^18$/})
+                .first().waitFor({state: 'attached'});
             const actual = await readResponsiveState(page);
             assertResponsiveState(
                 acceptanceCase.name,
@@ -170,6 +173,7 @@ async function assertRealAgeFacetAction(page) {
         const calls = globalThis.__librairiiFixtureQueries;
         const latest = calls.at(-1);
         return calls.length > previousCalls &&
+            latest.pageSize === 12 &&
             !latest.choiceFilters?.some(
                 (filter) => filter.definitionId === 10,
             );

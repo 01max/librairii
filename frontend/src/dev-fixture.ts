@@ -25,7 +25,6 @@ const parityAgeDefinition = {
             key: '3-5',
             normalizedKey: '3-5',
             label: '3–5 years',
-            count: 12,
             position: 0,
         },
         {
@@ -34,7 +33,6 @@ const parityAgeDefinition = {
             key: '6-8',
             normalizedKey: '6-8',
             label: '6–8 years',
-            count: 18,
             position: 1,
         },
     ],
@@ -229,15 +227,20 @@ export function installCollectionFixture() {
         ? 48
         : fixtureStories.length;
     const fixtureSnapshot = fixtureOperation(fixture);
-    const page = (pageNumber: number, pageSize: number, sort: string) => ({
+    const page = (
+        pageNumber: number,
+        pageSize: number,
+        sort: string,
+        matchingItems = totalItems,
+    ) => ({
         stories: fixtureStories.slice(
             (pageNumber - 1) * pageSize,
             pageNumber * pageSize,
         ),
         page: pageNumber,
         pageSize,
-        totalItems,
-        totalPages: totalItems === 0 ? 0 : Math.ceil(totalItems / pageSize),
+        totalItems: matchingItems,
+        totalPages: matchingItems === 0 ? 0 : Math.ceil(matchingItems / pageSize),
         sort,
     });
     const fixtureApp = {
@@ -256,7 +259,6 @@ export function installCollectionFixture() {
                         position,
                         validity: shelf.id === 3 ? 'sidebar_only' : 'valid',
                         count: shelf.count,
-                        color: shelf.color,
                     }),
                 )
                 : [],
@@ -282,8 +284,21 @@ export function installCollectionFixture() {
             window.dispatchEvent(new CustomEvent('librairii:fixture-query', {
                 detail: query,
             }));
+            const ageValueIDs = query.choiceFilters?.find(
+                (filter) => filter.definitionId === 10,
+            )?.valueIds ?? [];
+            const matchingItems = ageValueIDs.includes(101)
+                ? 12
+                : ageValueIDs.includes(102)
+                    ? 18
+                    : totalItems;
             return {
-                page: page(query.page, query.pageSize, query.sort),
+                page: page(
+                    query.page,
+                    query.pageSize,
+                    query.sort,
+                    matchingItems,
+                ),
             };
         },
         OpenShelf: async (
@@ -310,7 +325,10 @@ export function installCollectionFixture() {
                         languages: [],
                         compatibilities: [],
                         booleanFilters: [],
-                        choiceFilters: [],
+                        choiceFilters: [{
+                            definitionId: 11,
+                            valueIds: [111],
+                        }],
                     },
                     page: {
                         stories: source.slice(0, request.pageSize),
@@ -322,7 +340,6 @@ export function installCollectionFixture() {
                             : 0,
                         sort: request.sort,
                     },
-                    previewSource: preview?.source,
                 },
             };
         },

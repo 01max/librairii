@@ -102,6 +102,9 @@ async function compareViewport(browserInstance, origin, viewport) {
         ]);
         await applicationPage.getByRole('heading', {name: 'Weekend adventures'})
             .waitFor();
+        await applicationPage.getByText('Mood tag').first().waitFor();
+        await applicationPage.locator('.choice span').filter({hasText: /^18$/})
+            .first().waitFor({state: 'attached'});
         await Promise.all([
             prepareScreenshot(canonicalPage, true),
             prepareScreenshot(applicationPage, false),

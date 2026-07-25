@@ -64,6 +64,9 @@ try {
             );
             await page.getByRole('heading', {name: 'Weekend adventures'})
                 .waitFor();
+            await page.getByText('Mood tag').first().waitFor();
+            await page.locator('.choice span').filter({hasText: /^18$/})
+                .first().waitFor({state: 'attached'});
             const axe = await new AxeBuilder({page})
                 .withTags([
                     'wcag2a',
