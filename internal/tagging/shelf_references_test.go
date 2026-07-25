@@ -188,6 +188,33 @@ func TestValueDeletionInvalidatesWholeQueryWithoutDroppingMissingCriterion(
 			preserved.QueryPayload,
 		)
 	}
+
+	dreamyPlan, err := tags.PlanValueDeletion(ctx, dreamy.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if dreamyPlan.AffectedShelfCount != 2 ||
+		!slices.Equal(
+			dreamyPlan.AffectedShelfIDs,
+			[]int64{mixedShelf.ID, dreamyShelf.ID},
+		) {
+		t.Fatalf("PlanValueDeletion(after prior invalidation) = %#v", dreamyPlan)
+	}
+	if err := tags.DeleteValue(ctx, dreamyPlan); err != nil {
+		t.Fatalf("DeleteValue(after prior invalidation) error = %v", err)
+	}
+	assertTagReferenceShelfValidity(
+		t,
+		repository,
+		mixedShelf.ID,
+		shelves.ValidityNeedsAttention,
+	)
+	assertTagReferenceShelfValidity(
+		t,
+		repository,
+		dreamyShelf.ID,
+		shelves.ValidityNeedsAttention,
+	)
 }
 
 func createTagReferenceShelf(

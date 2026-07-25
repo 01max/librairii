@@ -18,6 +18,7 @@ type shelfReferenceQueryer interface {
 
 type shelfReferenceExecutor interface {
 	ExecContext(context.Context, string, ...any) (sql.Result, error)
+	QueryRowContext(context.Context, string, ...any) *sql.Row
 }
 
 func shelvesReferencingDefinition(
@@ -62,9 +63,8 @@ func matchingShelfIDs(
 ) ([]int64, error) {
 	rows, err := queryer.QueryContext(
 		ctx,
-		`SELECT id, query_version, query_payload
+		`SELECT id, query_version, query_payload, validity_state
 		 FROM shelves
-		 WHERE validity_state = 'valid'
 		 ORDER BY id`,
 	)
 	if err != nil {
@@ -77,11 +77,15 @@ func matchingShelfIDs(
 		var shelfID int64
 		var version int
 		var payload string
-		if err := rows.Scan(&shelfID, &version, &payload); err != nil {
+		var validity string
+		if err := rows.Scan(&shelfID, &version, &payload, &validity); err != nil {
 			return nil, fmt.Errorf("scan saved shelf reference: %w", err)
 		}
 		query, err := shelfquery.DecodeReferences(version, payload)
 		if err != nil {
+			if validity == "needs_attention" {
+				continue
+			}
 			return nil, fmt.Errorf(
 				"%w: shelf %d: %v",
 				ErrSavedShelfQueryInvalid,
@@ -122,7 +126,21 @@ func markShelvesNeedingAttention(
 			return fmt.Errorf("read saved shelf %d update count: %w", shelfID, err)
 		}
 		if updated != 1 {
-			return staleError
+			var validity string
+			err := executor.QueryRowContext(
+				ctx,
+				"SELECT validity_state FROM shelves WHERE id = ?",
+				shelfID,
+			).Scan(&validity)
+			if errors.Is(err, sql.ErrNoRows) {
+				return staleError
+			}
+			if err != nil {
+				return fmt.Errorf("read saved shelf %d validity: %w", shelfID, err)
+			}
+			if validity != "needs_attention" {
+				return staleError
+			}
 		}
 	}
 	return nil
