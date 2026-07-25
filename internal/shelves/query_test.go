@@ -155,9 +155,20 @@ func TestSavedLibraryQueryRejectsUnsupportedCorruptAndBroadeningPayloads(
 			payload: `{"name":"moon","name":""}`,
 		},
 		{
+			name:    "case-folded duplicate top-level field",
+			version: 2,
+			payload: `{"name":"moon","Name":""}`,
+		},
+		{
 			name:    "duplicate nested field",
 			version: 2,
 			payload: `{"choiceFilters":[{"definitionId":1,"definitionId":2,` +
+				`"valueIds":[3]}]}`,
+		},
+		{
+			name:    "case-folded duplicate nested field",
+			version: 2,
+			payload: `{"choiceFilters":[{"definitionId":1,"DefinitionId":2,` +
 				`"valueIds":[3]}]}`,
 		},
 		{

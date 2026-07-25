@@ -40,10 +40,11 @@ func validateJSONValueKeys(decoder *json.Decoder) error {
 			if !ok {
 				return ErrInvalidPayload
 			}
-			if _, duplicate := keys[key]; duplicate {
+			foldedKey := strings.ToLower(key)
+			if _, duplicate := keys[foldedKey]; duplicate {
 				return fmt.Errorf("%w: duplicate object key %q", ErrInvalidPayload, key)
 			}
-			keys[key] = struct{}{}
+			keys[foldedKey] = struct{}{}
 			if err := validateJSONValueKeys(decoder); err != nil {
 				return err
 			}

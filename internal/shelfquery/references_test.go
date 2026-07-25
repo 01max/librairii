@@ -98,10 +98,23 @@ func TestDecodeReferencesRejectsUnsafePayloads(t *testing.T) {
 			want: ErrInvalidPayload,
 		},
 		{
+			name:    "case-folded duplicate top-level field",
+			version: CurrentVersion,
+			payload: `{"name":"moon","Name":""}`,
+			want:    ErrInvalidPayload,
+		},
+		{
 			name:    "duplicate nested field",
 			version: CurrentVersion,
 			payload: `{"choiceFilters":[{"definitionId":2,"valueIds":[20],` +
 				`"valueIds":[]}]}`,
+			want: ErrInvalidPayload,
+		},
+		{
+			name:    "case-folded duplicate nested field",
+			version: CurrentVersion,
+			payload: `{"choiceFilters":[{"definitionId":2,"DefinitionId":3,` +
+				`"valueIds":[20]}]}`,
 			want: ErrInvalidPayload,
 		},
 	} {
