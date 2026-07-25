@@ -53,6 +53,10 @@ type ExportService interface {
 	) (ExportCopyResult, error)
 }
 
+type ExportRecovery interface {
+	CleanupAbandoned(string) error
+}
+
 type StagingCleaner interface {
 	CleanupAbandoned() error
 }
@@ -82,13 +86,13 @@ type managerRepository interface {
 	Snapshot(context.Context, string) (Snapshot, error)
 	ActiveSnapshots(context.Context) ([]Snapshot, error)
 	LatestTerminalExport(context.Context) (Snapshot, bool, error)
-	InterruptActive(context.Context, time.Time) ([]Snapshot, error)
 }
 
 type Dependencies struct {
 	Repository     managerRepository
 	Imports        ImportService
 	Exports        ExportService
+	ExportRecovery ExportRecovery
 	Metadata       MetadataRefreshService
 	Events         EventPort
 	Clock          Clock
@@ -171,15 +175,37 @@ func (m *Manager) Start(ctx context.Context) error {
 	}
 	m.mu.Unlock()
 
-	reconciled, err := m.deps.Repository.InterruptActive(ctx, m.deps.Clock.Now())
+	active, err := m.deps.Repository.ActiveSnapshots(ctx)
 	if err != nil {
-		return fmt.Errorf("reconcile interrupted operations: %w", err)
+		return fmt.Errorf("list interrupted operations: %w", err)
 	}
 	if err := m.deps.StagingCleaner.CleanupAbandoned(); err != nil {
 		return fmt.Errorf("clean abandoned staging: %w", err)
 	}
-	for _, snapshot := range reconciled {
-		m.deps.Events.Emit(ctx, EventChanged, snapshot)
+	for _, snapshot := range active {
+		code, message := interruptionOutcome(snapshot.Kind)
+		if snapshot.Kind == KindExport {
+			if m.deps.ExportRecovery == nil {
+				return fmt.Errorf("export recovery dependency is nil")
+			}
+			if err := m.deps.ExportRecovery.CleanupAbandoned(
+				snapshot.Destination,
+			); err != nil {
+				code = "interrupted_cleanup_failed"
+				message = "Export stopped when the application closed. Completed files were preserved, but an abandoned temporary file could not be removed. Check the destination folder before retrying."
+			}
+		}
+		reconciled, err := m.deps.Repository.Interrupt(
+			ctx,
+			snapshot.ID,
+			code,
+			message,
+			m.deps.Clock.Now(),
+		)
+		if err != nil {
+			return fmt.Errorf("reconcile interrupted operation %s: %w", snapshot.ID, err)
+		}
+		m.deps.Events.Emit(ctx, EventChanged, reconciled)
 	}
 
 	m.mu.Lock()

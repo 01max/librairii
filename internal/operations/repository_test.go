@@ -428,7 +428,11 @@ func TestRepositoryInterruptsNonresumableOperations(t *testing.T) {
 	if len(interrupted) != 1 ||
 		interrupted[0].Status != StatusInterrupted ||
 		interrupted[0].CompletedItems != 2 ||
-		interrupted[0].ErrorCode != "interrupted" {
+		interrupted[0].ErrorCode != "interrupted" ||
+		!strings.Contains(
+			interrupted[0].ErrorMessage,
+			"Select the archive again to retry.",
+		) {
 		t.Fatalf("InterruptActive() = %#v", interrupted)
 	}
 	for _, item := range interrupted[0].Items {

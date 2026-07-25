@@ -151,6 +151,7 @@ func (r *ImportRuntime) Start(ctx context.Context) error {
 		Repository:     operations.NewRepository(database),
 		Imports:        importService,
 		Exports:        exportCopier,
+		ExportRecovery: exportCopier,
 		Metadata:       metadataRefresh,
 		Events:         r.events,
 		Clock:          r.clock,

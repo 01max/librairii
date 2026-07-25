@@ -367,9 +367,10 @@ func TestManagerPersistsMetadataRefreshFailureCode(t *testing.T) {
 func TestManagerStartupReconcilesOperationsAndStaging(t *testing.T) {
 	t.Parallel()
 
-	repository, _ := newOperationRepository(t)
-	created, err := repository.CreateImport(
-		context.Background(),
+	repository, sqlDatabase := newOperationRepository(t)
+	ctx := context.Background()
+	createdImport, err := repository.CreateImport(
+		ctx,
 		uuid.NewString(),
 		[]NewItem{{SourceName: "abandoned.zip"}},
 		time.Now(),
@@ -377,11 +378,36 @@ func TestManagerStartupReconcilesOperationsAndStaging(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := repository.MarkRunning(context.Background(), created.ID, time.Now()); err != nil {
+	createdMetadata, err := repository.CreateMetadataSync(
+		ctx,
+		uuid.NewString(),
+		"en-GB",
+		time.Now(),
+	)
+	if err != nil {
 		t.Fatal(err)
 	}
-	if err := repository.MarkItemRunning(context.Background(), created.Items[0].ID); err != nil {
+	exportWork := makeExportWorkItems(t, sqlDatabase, 1)
+	exportDestination := t.TempDir()
+	createdExport, err := repository.CreateExport(
+		ctx,
+		uuid.NewString(),
+		ExportSource{Type: ExportSourceSelection},
+		exportDestination,
+		[]NewItem{exportWork[0].Item},
+		time.Now(),
+	)
+	if err != nil {
 		t.Fatal(err)
+	}
+	created := []Snapshot{createdImport, createdMetadata, createdExport}
+	for _, snapshot := range created {
+		if err := repository.MarkRunning(ctx, snapshot.ID, time.Now()); err != nil {
+			t.Fatal(err)
+		}
+		if err := repository.MarkItemRunning(ctx, snapshot.Items[0].ID); err != nil {
+			t.Fatal(err)
+		}
 	}
 
 	layout, err := storage.Initialize(filepath.Join(t.TempDir(), "librairii"))
@@ -392,13 +418,23 @@ func TestManagerStartupReconcilesOperationsAndStaging(t *testing.T) {
 	if err := os.MkdirAll(abandoned, 0o700); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(abandoned, "archive"), []byte("partial"), 0o600); err != nil {
+	if err := os.WriteFile(
+		filepath.Join(abandoned, "archive"),
+		[]byte("partial"),
+		0o600,
+	); err != nil {
 		t.Fatal(err)
 	}
+	var recoveredDestinations []string
+	recovery := exportRecoveryFunc(func(destination string) error {
+		recoveredDestinations = append(recoveredDestinations, destination)
+		return nil
+	})
 	events := newEventRecorder()
 	manager, err := NewManager(Dependencies{
 		Repository:     repository,
 		Imports:        &trackingImportService{},
+		ExportRecovery: recovery,
 		Events:         events,
 		Clock:          &testClock{now: time.Now()},
 		StagingCleaner: archive.NewRepository(layout),
@@ -407,23 +443,94 @@ func TestManagerStartupReconcilesOperationsAndStaging(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := manager.Start(context.Background()); err != nil {
+	if err := manager.Start(ctx); err != nil {
 		t.Fatalf("Start() error = %v", err)
 	}
 	t.Cleanup(func() {
 		_ = manager.Close()
 	})
 
-	reconciled, err := manager.Snapshot(context.Background(), created.ID)
+	wantMessage := map[Kind]string{
+		KindImport:       "Select the archive again to retry.",
+		KindMetadataSync: "Start a new refresh to retry.",
+		KindExport:       "Completed files were preserved; start a new export to retry.",
+	}
+	emitted := make(map[string]Snapshot, len(created))
+	for range created {
+		snapshot := <-events.events
+		emitted[snapshot.ID] = snapshot
+	}
+	for _, active := range created {
+		reconciled, err := manager.Snapshot(ctx, active.ID)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if reconciled.Status != StatusInterrupted ||
+			reconciled.ErrorCode != "interrupted" ||
+			!strings.Contains(reconciled.ErrorMessage, wantMessage[active.Kind]) ||
+			reconciled.Items[0].OutcomeCode != "interrupted" {
+			t.Fatalf("reconciled %s snapshot = %#v", active.Kind, reconciled)
+		}
+		if got := emitted[active.ID]; got.Status != StatusInterrupted {
+			t.Fatalf("reconciliation event = %#v", got)
+		}
+	}
+	if !reflect.DeepEqual(recoveredDestinations, []string{exportDestination}) {
+		t.Fatalf("recovered destinations = %#v", recoveredDestinations)
+	}
+	if entries, err := os.ReadDir(layout.Staging); err != nil || len(entries) != 0 {
+		t.Fatalf("staging entries = %#v, %v", entries, err)
+	}
+}
+
+func TestManagerStartupReportsExportCleanupFailureAndContinues(t *testing.T) {
+	t.Parallel()
+
+	repository, sqlDatabase := newOperationRepository(t)
+	ctx := context.Background()
+	exportWork := makeExportWorkItems(t, sqlDatabase, 1)
+	created, err := repository.CreateExport(
+		ctx,
+		uuid.NewString(),
+		ExportSource{Type: ExportSourceSelection},
+		t.TempDir(),
+		[]NewItem{exportWork[0].Item},
+		time.Now(),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	events := newEventRecorder()
+	manager, err := NewManager(Dependencies{
+		Repository: repository,
+		Imports:    &trackingImportService{},
+		ExportRecovery: exportRecoveryFunc(func(string) error {
+			return errors.New("destination is unavailable")
+		}),
+		Events:         events,
+		Clock:          &testClock{now: time.Now()},
+		StagingCleaner: fakeCleaner{},
+		Workers:        1,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := manager.Start(ctx); err != nil {
+		t.Fatalf("Start() error = %v", err)
+	}
+	t.Cleanup(func() {
+		_ = manager.Close()
+	})
+
+	reconciled, err := manager.Snapshot(ctx, created.ID)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if reconciled.Status != StatusInterrupted ||
-		reconciled.Items[0].OutcomeCode != "interrupted" {
+		reconciled.ErrorCode != "interrupted_cleanup_failed" ||
+		!strings.Contains(reconciled.ErrorMessage, "Check the destination folder") ||
+		reconciled.Items[0].OutcomeCode != "interrupted_cleanup_failed" {
 		t.Fatalf("reconciled snapshot = %#v", reconciled)
-	}
-	if entries, err := os.ReadDir(layout.Staging); err != nil || len(entries) != 0 {
-		t.Fatalf("staging entries = %#v, %v", entries, err)
 	}
 	if emitted := events.waitFor(t, created.ID, StatusInterrupted); emitted.Status != StatusInterrupted {
 		t.Fatalf("reconciliation event = %#v", emitted)
@@ -813,6 +920,12 @@ type fakeCleaner struct {
 
 func (c fakeCleaner) CleanupAbandoned() error {
 	return c.err
+}
+
+type exportRecoveryFunc func(string) error
+
+func (f exportRecoveryFunc) CleanupAbandoned(destination string) error {
+	return f(destination)
 }
 
 func newTestManager(

@@ -765,11 +765,16 @@ func (r *Repository) InterruptActive(
 
 	snapshots := make([]Snapshot, 0, len(ids))
 	for _, id := range ids {
+		active, err := r.Snapshot(ctx, id)
+		if err != nil {
+			return nil, err
+		}
+		code, message := interruptionOutcome(active.Kind)
 		snapshot, err := r.Interrupt(
 			ctx,
 			id,
-			"interrupted",
-			"The application stopped before this operation completed.",
+			code,
+			message,
 			now,
 		)
 		if err != nil {
@@ -778,6 +783,23 @@ func (r *Repository) InterruptActive(
 		snapshots = append(snapshots, snapshot)
 	}
 	return snapshots, nil
+}
+
+func interruptionOutcome(kind Kind) (string, string) {
+	switch kind {
+	case KindImport:
+		return "interrupted",
+			"Import stopped when the application closed. Select the archive again to retry."
+	case KindMetadataSync:
+		return "interrupted",
+			"Metadata refresh stopped when the application closed. Start a new refresh to retry."
+	case KindExport:
+		return "interrupted",
+			"Export stopped when the application closed. Completed files were preserved; start a new export to retry."
+	default:
+		return "interrupted",
+			"The operation stopped when the application closed. Start it again to retry."
+	}
 }
 
 func transitionResult(result sql.Result, err error) error {

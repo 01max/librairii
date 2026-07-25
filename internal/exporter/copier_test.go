@@ -216,6 +216,84 @@ func TestCopierCancellationCleansTemporaryAndPreservesCompletedFiles(t *testing.
 	}
 }
 
+func TestCopierCleanupAbandonedRemovesOnlyOwnedRegularTemporaries(t *testing.T) {
+	t.Parallel()
+
+	layout, err := storage.Initialize(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	copier, err := NewCopier(layout)
+	if err != nil {
+		t.Fatal(err)
+	}
+	destination := t.TempDir()
+	resolvedDestination, err := ResolveDestination(destination)
+	if err != nil {
+		t.Fatal(err)
+	}
+	abandoned := filepath.Join(
+		destination,
+		temporaryNamePrefix+"abandoned.tmp",
+	)
+	if err := os.WriteFile(abandoned, []byte("partial"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	keptPaths := []string{
+		filepath.Join(destination, "keep.tmp"),
+		filepath.Join(destination, temporaryNamePrefix+"completed.zip"),
+	}
+	for _, path := range keptPaths {
+		if err := os.WriteFile(path, []byte("keep"), 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	keptDirectory := filepath.Join(
+		destination,
+		temporaryNamePrefix+"directory.tmp",
+	)
+	if err := os.Mkdir(keptDirectory, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	keptSymlink := filepath.Join(
+		destination,
+		temporaryNamePrefix+"symlink.tmp",
+	)
+	if err := os.Symlink(keptPaths[0], keptSymlink); err != nil {
+		t.Fatal(err)
+	}
+
+	syncCalls := 0
+	copier.syncDirectory = func(path string) error {
+		if path != resolvedDestination {
+			t.Fatalf("sync directory = %q, want %q", path, resolvedDestination)
+		}
+		syncCalls++
+		return nil
+	}
+	if err := copier.CleanupAbandoned(destination); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Lstat(abandoned); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("abandoned temporary still exists: %v", err)
+	}
+	for _, path := range append(keptPaths, keptDirectory, keptSymlink) {
+		if _, err := os.Lstat(path); err != nil {
+			t.Fatalf("preserved entry %q error = %v", path, err)
+		}
+	}
+	if syncCalls != 1 {
+		t.Fatalf("directory sync calls = %d, want 1", syncCalls)
+	}
+
+	if err := copier.CleanupAbandoned(destination); err != nil {
+		t.Fatal(err)
+	}
+	if syncCalls != 1 {
+		t.Fatalf("directory sync calls after no-op = %d, want 1", syncCalls)
+	}
+}
+
 func TestCopierDestinationRacePreservesRacingFile(t *testing.T) {
 	t.Parallel()
 

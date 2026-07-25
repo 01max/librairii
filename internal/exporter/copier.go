@@ -9,6 +9,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/01max/librairii/internal/archive"
 	"github.com/01max/librairii/internal/operations"
@@ -20,6 +21,8 @@ var (
 	ErrExportSourceInvalid  = errors.New("managed export source is invalid")
 	ErrExportChecksumFailed = errors.New("export checksum verification failed")
 )
+
+const temporaryNamePrefix = ".librairii-export-"
 
 type CopyResult = operations.ExportCopyResult
 
@@ -78,7 +81,7 @@ func (c *Copier) Copy(
 		return CopyResult{}, fmt.Errorf("%w: open source: %v", ErrExportSourceInvalid, err)
 	}
 	defer source.Close()
-	temporary, err := os.CreateTemp(destination, ".librairii-export-*.tmp")
+	temporary, err := os.CreateTemp(destination, temporaryNamePrefix+"*.tmp")
 	if err != nil {
 		return CopyResult{}, fmt.Errorf("create destination temporary file: %w", err)
 	}
@@ -135,6 +138,46 @@ func (c *Copier) Copy(
 		SHA256:      checksum,
 		OutcomeCode: "exported",
 	}, nil
+}
+
+func (c *Copier) CleanupAbandoned(destination string) error {
+	destination, err := ResolveDestination(destination)
+	if err != nil {
+		return err
+	}
+	entries, err := os.ReadDir(destination)
+	if err != nil {
+		return fmt.Errorf("read export destination: %w", err)
+	}
+	removed := false
+	for _, entry := range entries {
+		name := entry.Name()
+		if !strings.HasPrefix(name, temporaryNamePrefix) ||
+			!strings.HasSuffix(name, ".tmp") {
+			continue
+		}
+		path := filepath.Join(destination, name)
+		info, err := os.Lstat(path)
+		if errors.Is(err, os.ErrNotExist) {
+			continue
+		}
+		if err != nil {
+			return fmt.Errorf("inspect abandoned export temporary: %w", err)
+		}
+		if !info.Mode().IsRegular() || info.Mode()&os.ModeSymlink != 0 {
+			continue
+		}
+		if err := os.Remove(path); err != nil && !errors.Is(err, os.ErrNotExist) {
+			return fmt.Errorf("remove abandoned export temporary: %w", err)
+		}
+		removed = true
+	}
+	if removed {
+		if err := c.syncDirectory(destination); err != nil {
+			return fmt.Errorf("sync cleaned export destination: %w", err)
+		}
+	}
+	return nil
 }
 
 func (c *Copier) resolveSource(relativePath string) (string, error) {
