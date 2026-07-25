@@ -250,6 +250,7 @@ type CoverStyle = CSSProperties & {
 };
 
 type ShelfDialogMode = 'save' | 'rename' | 'duplicate';
+type CollectionScope = 'all' | 'shelf' | 'custom';
 
 type CollectionShelfRow = {
     key: string;
@@ -392,6 +393,9 @@ function App() {
     const initialHistoryState = useMemo(() => ({
         query: queryHistory.current(),
         shelfID: queryHistory.currentShelfID(),
+        scope: (
+            queryHistory.currentShelfID() === null ? 'all' : 'shelf'
+        ) as CollectionScope,
     }), [queryHistory]);
     const [applicationState, setApplicationState] = useState('initializing');
     const [collectionQuery, setCollectionQuery] = useState(
@@ -408,8 +412,6 @@ function App() {
     const [requestError, setRequestError] = useState<string | null>(null);
     const [languageFacetOpen, setLanguageFacetOpen] = useState(false);
     const [importFacetOpen, setImportFacetOpen] = useState(false);
-    const [dismissedSuggestedValues, setDismissedSuggestedValues] =
-        useState<number[]>([]);
     const [detailsOpen, setDetailsOpen] = useState(false);
     const [removing, setRemoving] = useState(false);
     const [removalError, setRemovalError] = useState<string | null>(null);
@@ -430,6 +432,9 @@ function App() {
         useState<Record<number, string>>({});
     const [activeShelfID, setActiveShelfID] = useState<number | null>(
         initialHistoryState.shelfID,
+    );
+    const [collectionScope, setCollectionScope] = useState<CollectionScope>(
+        initialHistoryState.scope,
     );
     const [selectedShelfIDs, setSelectedShelfIDs] = useState<number[]>([]);
     const [shelfSelectionPreview, setShelfSelectionPreview] =
@@ -471,9 +476,13 @@ function App() {
         exportPreflight !== null,
     );
     useModalFocus(detailDialog, detailDialogInitialFocus, detailsOpen);
-    const activateShelf = useCallback((shelfID: number | null) => {
+    const activateShelf = useCallback((
+        shelfID: number | null,
+        scope: CollectionScope,
+    ) => {
         activeShelfIDRef.current = shelfID;
         setActiveShelfID(shelfID);
+        setCollectionScope(scope);
     }, []);
 
     useEffect(() => {
@@ -571,7 +580,12 @@ function App() {
         queryHistory.replace(queryHistory.current(), activeShelfIDRef.current);
         return queryHistory.subscribe((query, shelfID) => {
             collectionRequestGeneration.current++;
-            activateShelf(shelfID);
+            activateShelf(
+                shelfID,
+                shelfID === null
+                    ? isAllStoriesQuery(query) ? 'all' : 'custom'
+                    : 'shelf',
+            );
             setCollectionQuery(query);
         });
     }, [activateShelf, queryHistory]);
@@ -608,7 +622,7 @@ function App() {
                     setRepairShelfID(active.id);
                     setPage(null);
                 }
-                activateShelf(null);
+                activateShelf(null, 'custom');
                 queryHistory.replace(queryHistory.current(), null);
             }
         } catch {
@@ -683,7 +697,7 @@ function App() {
                                 setRepairShelfID(active.id);
                                 setPage(null);
                             }
-                            activateShelf(null);
+                            activateShelf(null, 'custom');
                             queryHistory.replace(queryHistory.current(), null);
                         }
                     }
@@ -1047,7 +1061,7 @@ function App() {
     const rows = useMemo(() => chunkStories(stories), [stories]);
     const activeShelf = savedShelves.find((shelf) => shelf.id === activeShelfID) ?? null;
     const allStoriesActive = activeShelfID === null &&
-        isAllStoriesQuery(collectionQuery);
+        collectionScope === 'all';
     const previewableShelves = useMemo(() => savedShelves.filter(
         (shelf) => shelf.validity === 'valid',
     ), [savedShelves]);
@@ -1285,7 +1299,7 @@ function App() {
                 );
                 return;
             }
-            activateShelf(shelfID);
+            activateShelf(shelfID, 'shelf');
             setPage(response.evaluation.page);
             updateQuery(collectionQueryFromShelf(
                 response.evaluation.query,
@@ -1299,7 +1313,7 @@ function App() {
     }
 
     function openAllStories() {
-        activateShelf(null);
+        activateShelf(null, 'all');
         updateQuery({
             ...collectionQuery,
             name: '',
@@ -1346,7 +1360,7 @@ function App() {
             await loadSavedShelves();
             if (shelfDialogMode === 'save') {
                 queryHistory.replace(collectionQuery, changedShelf.id);
-                activateShelf(changedShelf.id);
+                activateShelf(changedShelf.id, 'shelf');
             } else if (shelfDialogMode === 'duplicate') {
                 await openSavedShelf(changedShelf.id);
             }
@@ -1422,7 +1436,7 @@ function App() {
             setDeleteShelfID(null);
             if (activeShelfID === deleteShelf.id) {
                 queryHistory.replace(collectionQuery, null);
-                activateShelf(null);
+                activateShelf(null, 'custom');
             }
             if (repairShelfID === deleteShelf.id) {
                 setRepairShelfID(null);
@@ -1457,7 +1471,7 @@ function App() {
             }
             setRepairShelfID(null);
             queryHistory.replace(collectionQuery, repairShelf.id);
-            activateShelf(repairShelf.id);
+            activateShelf(repairShelf.id, 'shelf');
             await loadSavedShelves();
         } catch {
             setShelfDialogError('The saved shelf could not be repaired.');
@@ -1663,23 +1677,14 @@ function App() {
                                 filter.valueIds.includes(value.id)
                             ),
                         );
-                        const suggested = (
-                            value as tagging.Value & {initiallyChecked?: boolean}
-                        ).initiallyChecked === true &&
-                            !dismissedSuggestedValues.includes(value.id);
                         return (
                             <input
                                 type="checkbox"
-                                checked={checkedByQuery || suggested}
-                                onChange={() => {
-                                    if (suggested && !checkedByQuery) {
-                                        setDismissedSuggestedValues((current) => (
-                                            [...current, value.id]
-                                        ));
-                                        return;
-                                    }
-                                    toggleChoiceFilter(definition.id, value.id);
-                                }}
+                                checked={checkedByQuery}
+                                onChange={() => toggleChoiceFilter(
+                                    definition.id,
+                                    value.id,
+                                )}
                             />
                         );
                     })()}

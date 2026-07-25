@@ -116,6 +116,7 @@ try {
         const page = await browser.newPage({viewport: acceptanceCase.viewport});
         try {
             await installParityClock(page);
+            await installFixtureQueryRecorder(page);
             await page.goto(
                 `http://127.0.0.1:${address.port}/?fixture=parity`,
                 {waitUntil: 'networkidle'},
@@ -128,6 +129,9 @@ try {
                 actual,
                 acceptanceCase.expected,
             );
+            if (acceptanceCase.name === 'above 1180px') {
+                await assertRealAgeFacetAction(page);
+            }
             results.push({
                 name: acceptanceCase.name,
                 viewport: acceptanceCase.viewport,
@@ -142,6 +146,37 @@ try {
     await browser?.close();
     previewServer?.httpServer.close();
     await rm(outputDirectory, {recursive: true, force: true});
+}
+
+async function installFixtureQueryRecorder(page) {
+    await page.addInitScript(() => {
+        globalThis.__librairiiFixtureQueries = [];
+        globalThis.addEventListener('librairii:fixture-query', (event) => {
+            globalThis.__librairiiFixtureQueries.push(event.detail);
+        });
+    });
+}
+
+async function assertRealAgeFacetAction(page) {
+    const ageFacet = page.getByRole('checkbox', {name: '3–5 years'});
+    if (!await ageFacet.isChecked()) {
+        throw new Error('canonical Age facet is not seeded through the query');
+    }
+    const callsBeforeClick = await page.evaluate(
+        () => globalThis.__librairiiFixtureQueries.length,
+    );
+    await ageFacet.uncheck();
+    await page.waitForFunction((previousCalls) => {
+        const calls = globalThis.__librairiiFixtureQueries;
+        const latest = calls.at(-1);
+        return calls.length > previousCalls &&
+            !latest.choiceFilters?.some(
+                (filter) => filter.definitionId === 10,
+            );
+    }, callsBeforeClick);
+    if (new URL(page.url()).hash.includes('choice=')) {
+        throw new Error('canonical Age facet did not update collection history');
+    }
 }
 
 async function readResponsiveState(page) {

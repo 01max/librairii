@@ -2,6 +2,10 @@ import {
     CANONICAL_PARITY_FIXTURE,
     type FixtureStory,
 } from './parity-fixture';
+import {
+    DEFAULT_COLLECTION_QUERY,
+    encodeCollectionQuery,
+} from './query-codec';
 
 const parityAgeDefinition = {
     id: 10,
@@ -22,7 +26,6 @@ const parityAgeDefinition = {
             normalizedKey: '3-5',
             label: '3–5 years',
             count: 12,
-            initiallyChecked: true,
             position: 0,
         },
         {
@@ -200,6 +203,21 @@ function fixtureOperation(fixture: string) {
 
 export function installCollectionFixture() {
     const fixture = new URLSearchParams(window.location.search).get('fixture') ?? 'collection';
+    if (fixture === 'parity') {
+        const query = {
+            ...DEFAULT_COLLECTION_QUERY,
+            pageSize: 12,
+            sort: 'imported_desc' as const,
+            choiceFilters: [{definitionId: 10, valueIds: [101]}],
+        };
+        const hash = encodeCollectionQuery(query);
+        window.history.replaceState({
+            collectionQuery: {
+                hash,
+                shelfId: null,
+            },
+        }, '', `${window.location.pathname}${window.location.search}${hash}`);
+    }
     const fixtureStories = fixture === 'empty'
         ? []
         : fixture === 'performance'
@@ -255,9 +273,19 @@ export function installCollectionFixture() {
         ListStories: async () => ({
             page: page(1, 12, 'imported_desc'),
         }),
-        QueryStories: async (query: {page: number; pageSize: number; sort: string}) => ({
-            page: page(query.page, query.pageSize, query.sort),
-        }),
+        QueryStories: async (query: {
+            page: number;
+            pageSize: number;
+            sort: string;
+            choiceFilters?: Array<{definitionId: number; valueIds: number[]}>;
+        }) => {
+            window.dispatchEvent(new CustomEvent('librairii:fixture-query', {
+                detail: query,
+            }));
+            return {
+                page: page(query.page, query.pageSize, query.sort),
+            };
+        },
         OpenShelf: async (
             shelfID: number,
             request: {page: number; pageSize: number; sort: string},
