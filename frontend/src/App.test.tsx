@@ -416,6 +416,43 @@ test('pairs the detail drawer with a story visible in saved shelf previews', asy
         .not.toBeInTheDocument();
 });
 
+test('surfaces saved shelf API and transport preview failures', async () => {
+    listShelves.mockResolvedValue(new app.ShelfListResponse({
+        shelves: [new shelves.Summary({
+            id: 7,
+            name: 'Bedtime',
+            position: 0,
+            validity: 'valid',
+            count: 2,
+        })],
+    }));
+    openShelf.mockResolvedValue(new app.ShelfEvaluationResponse({
+        error: {
+            code: 'internal',
+            message: 'Bedtime preview is temporarily unavailable.',
+        },
+    }));
+
+    const view = render(<App/>);
+
+    const bedtimeRow = (await screen.findByRole('heading', {name: 'Bedtime'}))
+        .closest('section');
+    expect(bedtimeRow).not.toBeNull();
+    expect(within(bedtimeRow!).getByText('2 stories · Saved shelf'))
+        .toBeInTheDocument();
+    expect(await within(bedtimeRow!).findByRole('alert'))
+        .toHaveTextContent('Bedtime preview is temporarily unavailable.');
+
+    view.unmount();
+    openShelf.mockRejectedValue(new Error('bridge unavailable'));
+    render(<App/>);
+    const rejectedRow = (await screen.findByRole('heading', {name: 'Bedtime'}))
+        .closest('section');
+    expect(rejectedRow).not.toBeNull();
+    expect(await within(rejectedRow!).findByRole('alert'))
+        .toHaveTextContent('Bedtime could not be previewed.');
+});
+
 test('opens a dynamic saved shelf and updates it from the current query', async () => {
     const user = userEvent.setup();
     const summary = new shelves.Summary({

@@ -218,6 +218,7 @@ type CollectionShelfRow = {
     source: string;
     stories: library.StorySummary[];
     shelfID?: number;
+    error?: string;
 };
 
 function paletteFor(storyID: number): CoverStyle {
@@ -291,6 +292,8 @@ function App() {
     const [savedShelves, setSavedShelves] = useState<shelves.Summary[]>([]);
     const [savedShelfStories, setSavedShelfStories] =
         useState<Record<number, library.StorySummary[]>>({});
+    const [savedShelfPreviewErrors, setSavedShelfPreviewErrors] =
+        useState<Record<number, string>>({});
     const [activeShelfID, setActiveShelfID] = useState<number | null>(
         initialHistoryState.shelfID,
     );
@@ -840,6 +843,7 @@ function App() {
                 source: 'Saved shelf',
                 stories: savedShelfStories[shelf.id] ?? [],
                 shelfID: shelf.id,
+                error: savedShelfPreviewErrors[shelf.id],
             }))
             : rows.map((row, rowIndex) => ({
                 key: `collection-${rowIndex}`,
@@ -851,6 +855,7 @@ function App() {
     ), [
         previewableShelves,
         rows,
+        savedShelfPreviewErrors,
         savedShelfStories,
         showSavedShelfRows,
     ]);
@@ -923,19 +928,39 @@ function App() {
                         sort: collectionQuery.sort,
                     }),
                 );
-                return [
-                    shelf.id,
-                    response.evaluation?.page.stories ?? [],
-                ] as const;
+                if (!response.evaluation) {
+                    return {
+                        shelfID: shelf.id,
+                        stories: [] as library.StorySummary[],
+                        error: response.error?.message ??
+                            `${shelf.name} could not be previewed.`,
+                    };
+                }
+                return {
+                    shelfID: shelf.id,
+                    stories: response.evaluation.page.stories,
+                    error: '',
+                };
             } catch {
-                return [shelf.id, []] as const;
+                return {
+                    shelfID: shelf.id,
+                    stories: [] as library.StorySummary[],
+                    error: `${shelf.name} could not be previewed.`,
+                };
             }
         })).then((previews) => {
             if (!active || generation !== shelfPreviewGeneration.current) {
                 return;
             }
-            setSavedShelfStories(Object.fromEntries(previews));
-            const visibleStories = previews.flatMap(([, stories]) => stories);
+            setSavedShelfStories(Object.fromEntries(previews.map((preview) => (
+                [preview.shelfID, preview.stories]
+            ))));
+            setSavedShelfPreviewErrors(Object.fromEntries(previews.flatMap(
+                (preview) => preview.error
+                    ? [[preview.shelfID, preview.error]]
+                    : [],
+            )));
+            const visibleStories = previews.flatMap((preview) => preview.stories);
             setSelectedIDs((current) => {
                 const visible = current.filter((storyID) => (
                     visibleStories.some((story) => story.id === storyID)
@@ -1874,6 +1899,9 @@ function App() {
                                         : 'View all →'}
                             </button>
                         </div>
+                        {row.error && (
+                            <p className="dialog-error" role="alert">{row.error}</p>
+                        )}
                         <div className="story-row">
                             {row.stories.map((story) => (
                                 <button
