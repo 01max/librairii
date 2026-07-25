@@ -78,6 +78,10 @@ func (a *App) ListStories(request library.ListRequest) coreapp.LibraryPageRespon
 	return a.core.ListStories(a.runtimeContext(), request)
 }
 
+func (a *App) QueryStories(request library.StoryLibraryQuery) coreapp.LibraryPageResponse {
+	return a.core.QueryStories(a.runtimeContext(), request)
+}
+
 func (a *App) StoryDetail(storyID int64) coreapp.StoryDetailResponse {
 	return a.core.StoryDetail(a.runtimeContext(), storyID)
 }

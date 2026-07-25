@@ -116,6 +116,7 @@ type OperationPort interface {
 
 type LibraryPort interface {
 	List(context.Context, library.ListRequest) (library.Page, error)
+	Search(context.Context, library.StoryLibraryQuery) (library.Page, error)
 	Detail(context.Context, int64) (library.StoryDetail, error)
 }
 

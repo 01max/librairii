@@ -13,6 +13,8 @@ export function ListStories(arg1:library.ListRequest):Promise<app.LibraryPageRes
 
 export function OperationSnapshot(arg1:string):Promise<app.OperationResponse>;
 
+export function QueryStories(arg1:library.StoryLibraryQuery):Promise<app.LibraryPageResponse>;
+
 export function RemoveStory(arg1:number):Promise<app.RemovalResponse>;
 
 export function SelectAndImportStories():Promise<app.OperationResponse>;

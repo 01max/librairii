@@ -11,8 +11,8 @@ import {
     ActiveOperations,
     ApplicationStatus,
     CancelOperation,
-    ListStories,
     OperationSnapshot,
+    QueryStories,
     RemoveStory,
     SelectAndImportStories,
     StoryDetail as LoadStoryDetail,
@@ -24,6 +24,11 @@ import {
     operationIsActive,
     operationIsTerminal,
 } from './import-state';
+import {CollectionQueryHistory} from './query-history';
+import {
+    type CollectionQuery,
+    DEFAULT_COLLECTION_QUERY,
+} from './query-codec';
 
 const coverPalettes = [
     ['#31559f', '#f7c85b', '#e06a53'],
@@ -35,6 +40,12 @@ const coverPalettes = [
     ['#4aa9c9', '#ffe079', '#326779'],
     ['#d77c6f', '#ffd86b', '#8c4d4c'],
 ] as const;
+
+const initialCollectionQuery: CollectionQuery = {
+    ...DEFAULT_COLLECTION_QUERY,
+    pageSize: 12,
+    sort: 'imported_desc',
+};
 
 type CoverStyle = CSSProperties & {
     '--sky': string;
@@ -78,7 +89,14 @@ function compatibilityLabel(value: string): string {
 }
 
 function App() {
+    const queryHistory = useMemo(
+        () => new CollectionQueryHistory(window, initialCollectionQuery),
+        [],
+    );
     const [applicationState, setApplicationState] = useState('initializing');
+    const [collectionQuery, setCollectionQuery] = useState(
+        () => queryHistory.current(),
+    );
     const [page, setPage] = useState<library.Page | null>(null);
     const [selectedID, setSelectedID] = useState<number | null>(null);
     const [detail, setDetail] = useState<library.StoryDetail | null>(null);
@@ -93,11 +111,7 @@ function App() {
     const refreshedOperations = useRef(new Set<string>());
 
     const loadCollection = useCallback(async () => {
-        const result = await ListStories({
-            page: 1,
-            pageSize: 12,
-            sort: 'imported_desc',
-        });
+        const result = await QueryStories(new library.StoryLibraryQuery(collectionQuery));
         if (!result.page) {
             setRequestError(result.error?.message ?? 'The story collection could not be loaded.');
             return;
@@ -111,7 +125,12 @@ function App() {
             }
             return result.page?.stories[0]?.id ?? null;
         });
-    }, []);
+    }, [collectionQuery]);
+
+    useEffect(() => {
+        queryHistory.replace(collectionQuery);
+        return queryHistory.subscribe(setCollectionQuery);
+    }, [collectionQuery, queryHistory]);
 
     const reconcileOperation = useCallback((snapshot: operations.Snapshot) => {
         setOperationSnapshots((current) => {
@@ -275,22 +294,22 @@ function App() {
         setExpandingCollection(true);
         setRequestError(null);
         try {
-            const first = await ListStories({
+            const first = await QueryStories(new library.StoryLibraryQuery({
+                ...collectionQuery,
                 page: 1,
                 pageSize: 100,
-                sort: 'imported_desc',
-            });
+            }));
             if (!first.page) {
                 setRequestError(first.error?.message ?? 'The full collection could not be loaded.');
                 return;
             }
             const byID = new Map(first.page.stories.map((story) => [story.id, story]));
             for (let pageNumber = 2; pageNumber <= first.page.totalPages; pageNumber += 1) {
-                const next = await ListStories({
+                const next = await QueryStories(new library.StoryLibraryQuery({
+                    ...collectionQuery,
                     page: pageNumber,
                     pageSize: 100,
-                    sort: 'imported_desc',
-                });
+                }));
                 if (!next.page) {
                     setRequestError(next.error?.message ?? 'The full collection could not be loaded.');
                     return;

@@ -79,6 +79,13 @@ func (facadeOperations) List(
 	return library.Page{}, nil
 }
 
+func (facadeOperations) Search(
+	context.Context,
+	library.StoryLibraryQuery,
+) (library.Page, error) {
+	return library.Page{}, nil
+}
+
 func (facadeOperations) Detail(
 	context.Context,
 	int64,

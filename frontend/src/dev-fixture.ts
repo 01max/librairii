@@ -132,6 +132,16 @@ export function installCollectionFixture() {
                 sort: 'imported_desc',
             },
         }),
+        QueryStories: async (query: {page: number; pageSize: number; sort: string}) => ({
+            page: {
+                stories: visibleStories,
+                page: query.page,
+                pageSize: query.pageSize,
+                totalItems,
+                totalPages: totalItems === 0 ? 0 : Math.ceil(totalItems / query.pageSize),
+                sort: query.sort,
+            },
+        }),
         StoryDetail: async (storyID: number) => {
             const story = stories.find((candidate) => candidate.id === storyID) ?? stories[0];
             return {

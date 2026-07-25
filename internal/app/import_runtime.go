@@ -169,6 +169,17 @@ func (r *ImportRuntime) List(
 	return query.List(ctx, request)
 }
 
+func (r *ImportRuntime) Search(
+	ctx context.Context,
+	request library.StoryLibraryQuery,
+) (library.Page, error) {
+	query, err := r.currentQuery()
+	if err != nil {
+		return library.Page{}, err
+	}
+	return query.Search(ctx, request)
+}
+
 func (r *ImportRuntime) Detail(
 	ctx context.Context,
 	storyID int64,

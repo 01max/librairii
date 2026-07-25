@@ -22,6 +22,10 @@ export function OperationSnapshot(arg1) {
   return window['go']['main']['App']['OperationSnapshot'](arg1);
 }
 
+export function QueryStories(arg1) {
+  return window['go']['main']['App']['QueryStories'](arg1);
+}
+
 export function RemoveStory(arg1) {
   return window['go']['main']['App']['RemoveStory'](arg1);
 }

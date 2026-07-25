@@ -1,12 +1,12 @@
-import {render, screen} from '@testing-library/react';
+import {render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {beforeEach, expect, test, vi} from 'vitest';
 import {
     ActiveOperations,
     ApplicationStatus,
     CancelOperation,
-    ListStories,
     OperationSnapshot,
+    QueryStories,
     RemoveStory,
     SelectAndImportStories,
     StoryDetail as LoadStoryDetail,
@@ -19,8 +19,8 @@ vi.mock('../wailsjs/go/main/App', () => ({
     ActiveOperations: vi.fn(),
     ApplicationStatus: vi.fn(),
     CancelOperation: vi.fn(),
-    ListStories: vi.fn(),
     OperationSnapshot: vi.fn(),
+    QueryStories: vi.fn(),
     RemoveStory: vi.fn(),
     SelectAndImportStories: vi.fn(),
     StoryDetail: vi.fn(),
@@ -33,8 +33,8 @@ vi.mock('../wailsjs/runtime/runtime', () => ({
 const activeOperations = vi.mocked(ActiveOperations);
 const applicationStatus = vi.mocked(ApplicationStatus);
 const cancelOperation = vi.mocked(CancelOperation);
-const listStories = vi.mocked(ListStories);
 const operationSnapshot = vi.mocked(OperationSnapshot);
+const queryStories = vi.mocked(QueryStories);
 const removeStory = vi.mocked(RemoveStory);
 const selectAndImportStories = vi.mocked(SelectAndImportStories);
 const loadStoryDetail = vi.mocked(LoadStoryDetail);
@@ -76,11 +76,12 @@ const stories = [
 ];
 
 beforeEach(() => {
+    window.history.replaceState(null, '', '/');
     activeOperations.mockReset();
     applicationStatus.mockReset();
     cancelOperation.mockReset();
-    listStories.mockReset();
     operationSnapshot.mockReset();
+    queryStories.mockReset();
     removeStory.mockReset();
     selectAndImportStories.mockReset();
     loadStoryDetail.mockReset();
@@ -97,7 +98,7 @@ beforeEach(() => {
         operations: [],
     }));
     operationSnapshot.mockResolvedValue(new app.OperationResponse({}));
-    listStories.mockResolvedValue(new app.LibraryPageResponse({
+    queryStories.mockResolvedValue(new app.LibraryPageResponse({
         page: {
             stories,
             page: 1,
@@ -153,6 +154,37 @@ test('renders the canonical collection shell from typed library data', async () 
         .toBeInTheDocument();
 });
 
+test('reloads collection results from hash back and forward navigation', async () => {
+    window.history.replaceState(
+        null,
+        '',
+        '/#/library?name=forest&size=12&sort=imported_desc&v=1',
+    );
+    render(<App/>);
+
+    await waitFor(() => expect(queryStories).toHaveBeenCalledWith(
+        expect.objectContaining({name: 'forest'}),
+    ));
+    window.history.pushState(
+        null,
+        '',
+        '/#/library?name=moon&size=12&sort=imported_desc&v=1',
+    );
+    window.dispatchEvent(new PopStateEvent('popstate'));
+    await waitFor(() => expect(queryStories).toHaveBeenLastCalledWith(
+        expect.objectContaining({name: 'moon'}),
+    ));
+
+    window.history.back();
+    await waitFor(() => expect(queryStories).toHaveBeenLastCalledWith(
+        expect.objectContaining({name: 'forest'}),
+    ));
+    window.history.forward();
+    await waitFor(() => expect(queryStories).toHaveBeenLastCalledWith(
+        expect.objectContaining({name: 'moon'}),
+    ));
+});
+
 test('selects a cover and loads its detail drawer without losing the collection', async () => {
     const user = userEvent.setup();
     render(<App/>);
@@ -170,7 +202,7 @@ test('selects a cover and loads its detail drawer without losing the collection'
 });
 
 test('shows the empty-library import action in the canonical shell', async () => {
-    listStories.mockResolvedValue(new app.LibraryPageResponse({
+    queryStories.mockResolvedValue(new app.LibraryPageResponse({
         page: {
             stories: [],
             page: 1,
@@ -398,7 +430,7 @@ test('cancels story removal without changing the collection', async () => {
 
 test('confirms removal, refreshes the collection, and reports trash custody', async () => {
     const user = userEvent.setup();
-    listStories
+    queryStories
         .mockResolvedValueOnce(new app.LibraryPageResponse({
             page: {
                 stories,
@@ -456,7 +488,7 @@ test('completes the import, list, select, detail, and remove workflow', async ()
             sort: 'imported_desc',
         },
     });
-    listStories
+    queryStories
         .mockResolvedValueOnce(emptyPage)
         .mockResolvedValueOnce(importedPage)
         .mockResolvedValue(emptyPage);
@@ -536,7 +568,7 @@ test('loads every result when a story is beyond the initial collection page', as
             sort: 'imported_desc',
         },
     });
-    listStories
+    queryStories
         .mockResolvedValueOnce(initial)
         .mockResolvedValueOnce(new app.LibraryPageResponse({
             page: {
@@ -565,9 +597,12 @@ test('loads every result when a story is beyond the initial collection page', as
     expect(await screen.findByRole('button', {
         name: 'The Thirteenth Story 22223333-4444-4555-8666-777788889999',
     })).toBeInTheDocument();
-    expect(listStories).toHaveBeenCalledWith({
+    expect(queryStories).toHaveBeenCalledWith(expect.objectContaining({
         page: 2,
         pageSize: 100,
         sort: 'imported_desc',
-    });
+        name: '',
+        booleanFilters: [],
+        choiceFilters: [],
+    }));
 });

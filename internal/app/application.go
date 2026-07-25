@@ -85,6 +85,17 @@ func (a *Application) ListStories(
 	return LibraryPageResponse{Page: &page}
 }
 
+func (a *Application) QueryStories(
+	ctx context.Context,
+	request library.StoryLibraryQuery,
+) LibraryPageResponse {
+	page, err := a.library.Search(ctx, request)
+	if err != nil {
+		return LibraryPageResponse{Error: libraryAPIError(err)}
+	}
+	return LibraryPageResponse{Page: &page}
+}
+
 func (a *Application) StoryDetail(
 	ctx context.Context,
 	storyID int64,
@@ -258,7 +269,8 @@ func operationAPIError(err error) *APIError {
 
 func libraryAPIError(err error) *APIError {
 	switch {
-	case errors.Is(err, library.ErrInvalidListRequest):
+	case errors.Is(err, library.ErrInvalidListRequest),
+		errors.Is(err, library.ErrInvalidStoryLibraryQuery):
 		return NewAPIError(ErrorInvalidInput, "The library request is invalid.")
 	case errors.Is(err, sql.ErrNoRows):
 		return NewAPIError(ErrorInvalidInput, "The story does not exist.")

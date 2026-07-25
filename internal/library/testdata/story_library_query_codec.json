@@ -1,0 +1,60 @@
+[
+  {
+    "name": "defaults",
+    "hash": "#/library?v=1",
+    "query": {
+      "name": "",
+      "booleanFilters": [],
+      "choiceFilters": [],
+      "page": 1,
+      "pageSize": 24,
+      "sort": "name_asc"
+    }
+  },
+  {
+    "name": "mixed filters and nondefault paging",
+    "hash": "#/library?bool=7%3Afalse&choice=9%3A11%2C12&name=dragon&page=2&size=12&sort=imported_desc&v=1",
+    "query": {
+      "name": "dragon",
+      "booleanFilters": [
+        {"definitionId": 7, "state": "false"}
+      ],
+      "choiceFilters": [
+        {"definitionId": 9, "valueIds": [11, 12]}
+      ],
+      "page": 2,
+      "pageSize": 12,
+      "sort": "imported_desc"
+    }
+  },
+  {
+    "name": "unicode and literal wildcard semantics",
+    "hash": "#/library?name=ete+%25_&v=1",
+    "query": {
+      "name": "ete %_",
+      "booleanFilters": [],
+      "choiceFilters": [],
+      "page": 1,
+      "pageSize": 24,
+      "sort": "name_asc"
+    }
+  },
+  {
+    "name": "canonical filter ordering",
+    "hash": "#/library?bool=2%3Atrue&bool=8%3Afalse&choice=4%3A5%2C6&choice=10%3A20&v=1",
+    "query": {
+      "name": "",
+      "booleanFilters": [
+        {"definitionId": 2, "state": "true"},
+        {"definitionId": 8, "state": "false"}
+      ],
+      "choiceFilters": [
+        {"definitionId": 4, "valueIds": [5, 6]},
+        {"definitionId": 10, "valueIds": [20]}
+      ],
+      "page": 1,
+      "pageSize": 24,
+      "sort": "name_asc"
+    }
+  }
+]

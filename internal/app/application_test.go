@@ -89,6 +89,7 @@ type fakeOperations struct {
 	snapshot   operations.Snapshot
 	active     []operations.Snapshot
 	page       library.Page
+	searchPage library.Page
 	detail     library.StoryDetail
 	removed    removal.Result
 	err        error
@@ -135,6 +136,13 @@ func (o *fakeOperations) List(
 	library.ListRequest,
 ) (library.Page, error) {
 	return o.page, o.err
+}
+
+func (o *fakeOperations) Search(
+	context.Context,
+	library.StoryLibraryQuery,
+) (library.Page, error) {
+	return o.searchPage, o.err
 }
 
 func (o *fakeOperations) Detail(
@@ -401,6 +409,11 @@ func TestLibraryFacadeReturnsTypedCollectionAndDetail(t *testing.T) {
 			TotalPages: 1,
 			Sort:       library.SortNameAscending,
 		},
+		searchPage: library.Page{
+			Stories: []library.StorySummary{{ID: 8, Title: "Filtered Forest"}},
+			Page:    1, PageSize: 24, TotalItems: 1, TotalPages: 1,
+			Sort: library.SortNameAscending,
+		},
 		detail: library.StoryDetail{
 			Story: library.StorySummary{ID: 7, Title: "Clockwork Forest"},
 			Archive: library.ArchiveDetails{
@@ -425,6 +438,15 @@ func TestLibraryFacadeReturnsTypedCollectionAndDetail(t *testing.T) {
 	page := application.ListStories(context.Background(), library.ListRequest{})
 	if page.Error != nil || page.Page == nil || page.Page.TotalItems != 1 {
 		t.Fatalf("ListStories() = %#v", page)
+	}
+	filtered := application.QueryStories(
+		context.Background(),
+		library.StoryLibraryQuery{Name: "forest"},
+	)
+	if filtered.Error != nil ||
+		filtered.Page == nil ||
+		filtered.Page.Stories[0].Title != "Filtered Forest" {
+		t.Fatalf("QueryStories() = %#v", filtered)
 	}
 	detail := application.StoryDetail(context.Background(), 7)
 	if detail.Error != nil ||
