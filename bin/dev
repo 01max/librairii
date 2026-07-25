@@ -1,9 +1,0 @@
-#!/usr/bin/env ruby
-
-require "securerandom"
-
-ENV["LIBRAIRII_LAUNCH_SECRET"] ||= SecureRandom.hex(32)
-port = ENV.fetch("PORT", "3000")
-
-puts "Open http://127.0.0.1:#{port}/?launch_secret=#{ENV.fetch("LIBRAIRII_LAUNCH_SECRET")}"
-exec "./bin/rails", "server", *ARGV
