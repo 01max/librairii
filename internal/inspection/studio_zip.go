@@ -28,10 +28,11 @@ type stageNode struct {
 	Audio string `json:"audio"`
 }
 
-func inspectStudioZIP(
+func inspectStudio(
 	ctx context.Context,
-	archive *validatedZIP,
+	archive archiveView,
 	limits Limits,
+	format catalog.ArchiveFormat,
 ) (Result, error) {
 	storyBytes, err := archive.read(
 		ctx,
@@ -91,7 +92,7 @@ func inspectStudioZIP(
 
 	return Result{
 		UUID:   storyUUID.String(),
-		Format: catalog.FormatStudioZIP,
+		Format: format,
 		Metadata: Metadata{
 			Title:       strings.TrimSpace(story.Title),
 			Description: strings.TrimSpace(story.Description),
@@ -105,7 +106,7 @@ func inspectStudioZIP(
 }
 
 func validateStudioAssetReferences(
-	archive *validatedZIP,
+	archive archiveView,
 	nodes []stageNode,
 	limits Limits,
 ) error {

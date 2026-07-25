@@ -46,15 +46,19 @@ func (i *ZIPInspector) Inspect(
 		if !strings.HasSuffix(strings.ToLower(candidate.OriginalFilename), ".zip") {
 			return Result{}, &ValidationError{Code: CodeUnsupportedFormat}
 		}
-		return inspectStudioZIP(ctx, archive, limits)
+		return inspectStudio(ctx, archive, limits, catalog.FormatStudioZIP)
 	}
 	if isPlainFilename(candidate.OriginalFilename) || archive.has(plainUUIDEntry) {
 		return inspectPlain(ctx, archive, limits)
 	}
-	return inspectLuniiZIP(ctx, archive, candidate.OriginalFilename, limits)
+	format, err := luniiZIPFormat(candidate.OriginalFilename)
+	if err != nil {
+		return Result{}, err
+	}
+	return inspectLuniiPack(ctx, archive, format, limits)
 }
 
-func inspectPlain(ctx context.Context, archive *validatedZIP, limits Limits) (Result, error) {
+func inspectPlain(ctx context.Context, archive archiveView, limits Limits) (Result, error) {
 	for _, name := range []string{"uuid.bin", "ni", "li.plain", "ri.plain", "si.plain"} {
 		if !archive.has(name) {
 			return Result{}, &ValidationError{Code: CodeMissingEntry, Entry: name}
@@ -85,17 +89,14 @@ func inspectPlain(ctx context.Context, archive *validatedZIP, limits Limits) (Re
 	return result, nil
 }
 
-func inspectLuniiZIP(
+func inspectLuniiPack(
 	ctx context.Context,
-	archive *validatedZIP,
-	filename string,
+	archive archiveView,
+	format catalog.ArchiveFormat,
 	limits Limits,
 ) (Result, error) {
 	roots := make(map[string]string)
-	for name, file := range archive.entries {
-		if file.FileInfo().IsDir() {
-			continue
-		}
+	for _, name := range archive.entryNames() {
 		root, _, found := strings.Cut(name, "/")
 		if !found {
 			continue
@@ -129,10 +130,6 @@ func inspectLuniiZIP(
 		return Result{}, &ValidationError{Code: CodeMissingEntry, Entry: path.Join(root, "sf") + "/"}
 	}
 
-	format, err := luniiZIPFormat(filename)
-	if err != nil {
-		return Result{}, err
-	}
 	result := Result{UUID: storyUUID, Format: format}
 	if err := readEmbeddedMetadata(ctx, archive, limits, &result); err != nil {
 		return Result{}, err
@@ -142,7 +139,7 @@ func inspectLuniiZIP(
 
 func readEmbeddedMetadata(
 	ctx context.Context,
-	archive *validatedZIP,
+	archive archiveView,
 	limits Limits,
 	result *Result,
 ) error {

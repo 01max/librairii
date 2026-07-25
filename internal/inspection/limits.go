@@ -68,6 +68,22 @@ func NewBudget(limits Limits) (*Budget, error) {
 }
 
 func (b *Budget) Account(entry EntryInfo) error {
+	if err := b.accountExpanded(entry); err != nil {
+		return err
+	}
+	b.compressedBytes += entry.CompressedBytes
+	return b.validateCompression(b.compressedBytes, entry.Name)
+}
+
+func (b *Budget) AccountExpanded(entry EntryInfo) error {
+	return b.accountExpanded(entry)
+}
+
+func (b *Budget) ValidateCompression(compressedBytes int64) error {
+	return b.validateCompression(compressedBytes, "")
+}
+
+func (b *Budget) accountExpanded(entry EntryInfo) error {
 	if err := validateEntryPath(entry.Name, b.limits); err != nil {
 		return err
 	}
@@ -90,14 +106,23 @@ func (b *Budget) Account(entry EntryInfo) error {
 		return &ValidationError{Code: CodeExpandedSizeLimit, Entry: entry.Name}
 	}
 	b.expandedBytes += entry.UncompressedBytes
-	b.compressedBytes += entry.CompressedBytes
+	return nil
+}
 
-	compressedForRatio := b.compressedBytes
+func (b *Budget) validateCompression(compressedBytes int64, entry string) error {
+	if compressedBytes < 0 {
+		return &ValidationError{
+			Code:  CodeInvalidContainer,
+			Entry: entry,
+			Cause: fmt.Errorf("negative compressed size"),
+		}
+	}
+	compressedForRatio := compressedBytes
 	if compressedForRatio == 0 && b.expandedBytes > 0 {
 		compressedForRatio = 1
 	}
 	if float64(b.expandedBytes)/float64(compressedForRatio) > b.limits.MaxCompressionRatio {
-		return &ValidationError{Code: CodeCompressionRatioLimit, Entry: entry.Name}
+		return &ValidationError{Code: CodeCompressionRatioLimit, Entry: entry}
 	}
 	return nil
 }

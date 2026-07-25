@@ -118,6 +118,26 @@ func TestBudgetEnforcesArchiveSafetyLimits(t *testing.T) {
 	}
 }
 
+func TestBudgetSupportsAggregateCompressionAccounting(t *testing.T) {
+	t.Parallel()
+
+	limits := DefaultLimits()
+	limits.MaxCompressionRatio = 2
+	budget, err := NewBudget(limits)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := budget.AccountExpanded(EntryInfo{
+		Name:              "story",
+		UncompressedBytes: 5,
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if err := budget.ValidateCompression(2); !ErrorHasCode(err, CodeCompressionRatioLimit) {
+		t.Fatalf("ValidateCompression() error = %v", err)
+	}
+}
+
 func TestReadLimitedUsesTypedBoundaryErrors(t *testing.T) {
 	t.Parallel()
 

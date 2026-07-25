@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/01max/librairii/internal/catalog"
+	sevenzip "github.com/bodgit/sevenzip"
 )
 
 func TestSyntheticFixtureFamilies(t *testing.T) {
@@ -60,6 +61,30 @@ func TestSyntheticFixtureFamilies(t *testing.T) {
 		sevenZip.ExpectedUUID != StoryUUID ||
 		len(sevenZip.Entries) == 0 {
 		t.Fatalf("GenericSevenZIP() = %#v", sevenZip)
+	}
+	sevenZipBytes, err := SevenZIPBytes(SevenZIPGeneric)
+	if err != nil {
+		t.Fatalf("SevenZIPBytes() error = %v", err)
+	}
+	sevenZipReader, err := sevenzip.NewReader(
+		bytes.NewReader(sevenZipBytes),
+		int64(len(sevenZipBytes)),
+	)
+	if err != nil {
+		t.Fatalf("sevenzip.NewReader() error = %v", err)
+	}
+	if len(sevenZipReader.File) != len(sevenZip.Entries) {
+		t.Fatalf(
+			"7z contains %d entries, want %d",
+			len(sevenZipReader.File),
+			len(sevenZip.Entries),
+		)
+	}
+
+	studioSevenZip := StudioSevenZIP()
+	if studioSevenZip.ExpectedFormat != catalog.FormatSevenZIP ||
+		studioSevenZip.ExpectedUUID != StoryUUID {
+		t.Fatalf("StudioSevenZIP() = %#v", studioSevenZip)
 	}
 }
 

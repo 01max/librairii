@@ -82,6 +82,13 @@ func GenericSevenZIP() Archive {
 	return archive
 }
 
+func StudioSevenZIP() Archive {
+	archive := StudioZIP()
+	archive.Filename = "clockwork-forest-studio.7z"
+	archive.ExpectedFormat = catalog.FormatSevenZIP
+	return archive
+}
+
 func StudioZIP() Archive {
 	story := mustJSON(map[string]any{
 		"uuid":        StoryUUID,

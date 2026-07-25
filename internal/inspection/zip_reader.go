@@ -9,6 +9,7 @@ import (
 	"math"
 	"os"
 	"path"
+	"sort"
 	"strings"
 )
 
@@ -82,6 +83,17 @@ func (a *validatedZIP) Close() error {
 func (a *validatedZIP) has(name string) bool {
 	file, exists := a.entries[name]
 	return exists && !file.FileInfo().IsDir()
+}
+
+func (a *validatedZIP) entryNames() []string {
+	names := make([]string, 0, len(a.entries))
+	for name, file := range a.entries {
+		if !file.FileInfo().IsDir() {
+			names = append(names, name)
+		}
+	}
+	sort.Strings(names)
+	return names
 }
 
 func (a *validatedZIP) hasFileBelow(prefix string) bool {
