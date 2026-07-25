@@ -1243,8 +1243,6 @@ export namespace operations {
 	    storyTitle?: string;
 	    sourceName: string;
 	    outputName?: string;
-	    archiveRelativePath?: string;
-	    archiveSha256?: string;
 	    status: string;
 	    outcomeCode?: string;
 	    outcomeMessage?: string;
@@ -1263,8 +1261,6 @@ export namespace operations {
 	        this.storyTitle = source["storyTitle"];
 	        this.sourceName = source["sourceName"];
 	        this.outputName = source["outputName"];
-	        this.archiveRelativePath = source["archiveRelativePath"];
-	        this.archiveSha256 = source["archiveSha256"];
 	        this.status = source["status"];
 	        this.outcomeCode = source["outcomeCode"];
 	        this.outcomeMessage = source["outcomeMessage"];

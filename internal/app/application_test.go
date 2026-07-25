@@ -32,11 +32,16 @@ func (fakeDialogs) OpenFiles(context.Context, FileDialogRequest) ([]string, erro
 	return nil, nil
 }
 
+func (fakeDialogs) RevealDirectory(context.Context, string) error {
+	return nil
+}
+
 type recordingDialogs struct {
 	paths          []string
 	request        FileDialogRequest
 	directory      string
 	directoryTitle string
+	revealed       string
 	calls          int
 }
 
@@ -55,6 +60,14 @@ func (d *recordingDialogs) OpenDirectory(
 ) (string, error) {
 	d.directoryTitle = title
 	return d.directory, nil
+}
+
+func (d *recordingDialogs) RevealDirectory(
+	_ context.Context,
+	destination string,
+) error {
+	d.revealed = destination
+	return nil
 }
 
 func (fakeDialogs) OpenDirectory(context.Context, string) (string, error) {
@@ -679,6 +692,39 @@ func TestExportPreflightKeepsNativeDestinationInsideGo(t *testing.T) {
 		started.Operation == nil ||
 		operationPort.preparationID != response.Preflight.PreparationID {
 		t.Fatalf("StartPreparedExport() = %#v", started)
+	}
+	operationPort.snapshot.Status = operations.StatusSucceeded
+	operationPort.snapshot.Destination = destination
+	revealed := application.RevealExportDestination(
+		context.Background(),
+		operationPort.snapshot.ID,
+	)
+	if !revealed.Success ||
+		revealed.Error != nil ||
+		dialogs.revealed != destination {
+		t.Fatalf("RevealExportDestination() = %#v", revealed)
+	}
+	operationResponse := application.OperationSnapshot(
+		context.Background(),
+		operationPort.snapshot.ID,
+	)
+	encoded, err = json.Marshal(operationResponse)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(encoded), destination) {
+		t.Fatalf("operation response exposed native destination: %s", encoded)
+	}
+	dialogs.revealed = ""
+	operationPort.snapshot.Status = operations.StatusRunning
+	blockedReveal := application.RevealExportDestination(
+		context.Background(),
+		operationPort.snapshot.ID,
+	)
+	if blockedReveal.Error == nil ||
+		blockedReveal.Error.Code != ErrorInvalidInput ||
+		dialogs.revealed != "" {
+		t.Fatalf("RevealExportDestination(running) = %#v", blockedReveal)
 	}
 }
 

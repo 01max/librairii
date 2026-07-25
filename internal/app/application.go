@@ -238,6 +238,35 @@ func (a *Application) StartPreparedExport(
 	return OperationResponse{Operation: &snapshot}
 }
 
+func (a *Application) RevealExportDestination(
+	ctx context.Context,
+	operationID string,
+) MutationResponse {
+	snapshot, err := a.operations.Snapshot(ctx, operationID)
+	if err != nil {
+		return MutationResponse{Error: operationAPIError(err)}
+	}
+	if snapshot.Kind != operations.KindExport ||
+		!snapshot.Terminal() ||
+		snapshot.Destination == "" {
+		return MutationResponse{
+			Error: NewAPIError(
+				ErrorInvalidInput,
+				"The export destination is not available yet.",
+			),
+		}
+	}
+	if err := a.dialogs.RevealDirectory(ctx, snapshot.Destination); err != nil {
+		return MutationResponse{
+			Error: NewAPIError(
+				ErrorInternal,
+				"The export destination could not be revealed.",
+			),
+		}
+	}
+	return MutationResponse{Success: true}
+}
+
 func (a *Application) RefreshOfficialMetadata(
 	ctx context.Context,
 ) OperationResponse {

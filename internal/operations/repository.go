@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"math"
 	"path"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -602,6 +603,9 @@ func (r *Repository) Snapshot(ctx context.Context, id string) (Snapshot, error) 
 		return Snapshot{}, err
 	}
 	snapshot.CancelRequested = cancelRequested == 1
+	if snapshot.Destination != "" {
+		snapshot.DestinationLabel = filepath.Base(snapshot.Destination)
+	}
 	snapshot.StartedAt = startedAt.String
 	snapshot.FinishedAt = finishedAt.String
 	if sourceShelfIDs != "" {

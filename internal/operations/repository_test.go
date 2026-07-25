@@ -65,6 +65,7 @@ func TestRepositoryPersistsImmutableExportScopeAndOutcomeReport(t *testing.T) {
 			snapshot.SourceShelfNames,
 			[]string{"Bedtime", "Adventures"},
 		) ||
+		snapshot.DestinationLabel != "Lunii export" ||
 		snapshot.TotalItems != 1 ||
 		snapshot.TotalBytes != 42 ||
 		len(snapshot.Items) != 1 ||

@@ -26,6 +26,7 @@ type RuntimeDialogs struct {
 	openFile      func(context.Context, runtime.OpenDialogOptions) (string, error)
 	openFiles     func(context.Context, runtime.OpenDialogOptions) ([]string, error)
 	openDirectory func(context.Context, runtime.OpenDialogOptions) (string, error)
+	revealer      *DestinationRevealer
 }
 
 func NewRuntimeDialogs() *RuntimeDialogs {
@@ -33,7 +34,18 @@ func NewRuntimeDialogs() *RuntimeDialogs {
 		openFile:      runtime.OpenFileDialog,
 		openFiles:     runtime.OpenMultipleFilesDialog,
 		openDirectory: runtime.OpenDirectoryDialog,
+		revealer:      NewDestinationRevealer(),
 	}
+}
+
+func (d *RuntimeDialogs) RevealDirectory(
+	ctx context.Context,
+	destination string,
+) error {
+	if d.revealer == nil {
+		return ErrUnsupportedDesktop
+	}
+	return d.revealer.Reveal(ctx, destination)
 }
 
 func (d *RuntimeDialogs) OpenFiles(

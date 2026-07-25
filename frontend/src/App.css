@@ -719,6 +719,92 @@ select:focus-visible {
     color: var(--muted);
 }
 
+.export-report {
+    display: grid;
+    gap: 11px;
+    margin-top: 13px;
+    padding-top: 12px;
+    border-top: 1px solid var(--line);
+}
+
+.export-report-context {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px 15px;
+    color: #778196;
+    font: 700 8px/1.4 ui-monospace, monospace;
+}
+
+.export-report-groups {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+}
+
+.export-report-group {
+    min-width: 0;
+    padding: 9px 10px;
+    border: 1px solid var(--line);
+    border-left: 4px solid var(--mint);
+    border-radius: 8px;
+    background: #f8f9fc;
+}
+
+.export-report-group.skipped {
+    border-left-color: #f5bc41;
+}
+
+.export-report-group.conflicted,
+.export-report-group.failed {
+    border-left-color: var(--coral);
+}
+
+.export-report-group.cancelled {
+    border-left-color: #96a0b2;
+}
+
+.export-report-group h4 {
+    margin: 0 0 7px;
+    font-size: 8px;
+    text-transform: uppercase;
+}
+
+.export-report-group ul {
+    display: grid;
+    gap: 6px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.export-report-group li {
+    display: grid;
+    gap: 2px;
+    font-size: 8px;
+}
+
+.export-report-group li b {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.export-report-group li span {
+    color: var(--muted);
+    line-height: 1.35;
+}
+
+.export-report > button {
+    justify-self: start;
+    padding: 9px 11px;
+    border: 1px solid var(--yellow);
+    border-radius: 8px;
+    color: var(--ink);
+    background: var(--yellow);
+    font-size: 8px;
+    font-weight: 900;
+}
+
 .empty-library {
     min-height: 246px;
     display: grid;
@@ -1742,6 +1828,10 @@ select:focus-visible {
     .operation-items li {
         display: grid;
         gap: 2px;
+    }
+
+    .export-report-groups {
+        grid-template-columns: 1fr;
     }
 
     .story-row {

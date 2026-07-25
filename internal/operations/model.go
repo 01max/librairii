@@ -79,8 +79,8 @@ type ItemSnapshot struct {
 	StoryTitle          string     `json:"storyTitle,omitempty"`
 	SourceName          string     `json:"sourceName"`
 	OutputName          string     `json:"outputName,omitempty"`
-	ArchiveRelativePath string     `json:"archiveRelativePath,omitempty"`
-	ArchiveSHA256       string     `json:"archiveSha256,omitempty"`
+	ArchiveRelativePath string     `json:"-"`
+	ArchiveSHA256       string     `json:"-"`
 	Status              ItemStatus `json:"status"`
 	OutcomeCode         string     `json:"outcomeCode,omitempty"`
 	OutcomeMessage      string     `json:"outcomeMessage,omitempty"`
@@ -95,7 +95,8 @@ type Snapshot struct {
 	ExportSourceType ExportSourceType `json:"exportSourceType,omitempty"`
 	SourceShelfIDs   []int64          `json:"sourceShelfIds,omitempty"`
 	SourceShelfNames []string         `json:"sourceShelfNames,omitempty"`
-	Destination      string           `json:"destination,omitempty"`
+	Destination      string           `json:"-"`
+	DestinationLabel string           `json:"destination,omitempty"`
 	CompletedItems   int              `json:"completedItems"`
 	TotalItems       int              `json:"totalItems"`
 	TotalBytes       int64            `json:"totalBytes"`

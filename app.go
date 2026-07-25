@@ -76,6 +76,10 @@ func (a *App) StartPreparedExport(preparationID string) coreapp.OperationRespons
 	return a.core.StartPreparedExport(a.runtimeContext(), preparationID)
 }
 
+func (a *App) RevealExportDestination(operationID string) coreapp.MutationResponse {
+	return a.core.RevealExportDestination(a.runtimeContext(), operationID)
+}
+
 func (a *App) RefreshOfficialMetadata() coreapp.OperationResponse {
 	return a.core.RefreshOfficialMetadata(a.runtimeContext())
 }

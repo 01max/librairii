@@ -118,6 +118,10 @@ export function ReplaceShelfQuery(arg1, arg2) {
   return window['go']['main']['App']['ReplaceShelfQuery'](arg1, arg2);
 }
 
+export function RevealExportDestination(arg1) {
+  return window['go']['main']['App']['RevealExportDestination'](arg1);
+}
+
 export function SelectAndImportStories() {
   return window['go']['main']['App']['SelectAndImportStories']();
 }

@@ -92,3 +92,32 @@ func TestRuntimeDialogsSupportSingleFileAndDirectory(t *testing.T) {
 		t.Fatalf("OpenDirectory() = %q, %v", directory, err)
 	}
 }
+
+func TestRuntimeDialogsRevealOnlyValidatedDirectory(t *testing.T) {
+	t.Parallel()
+
+	destination := t.TempDir()
+	var revealed string
+	dialogs := &RuntimeDialogs{
+		revealer: &DestinationRevealer{
+			osName: "darwin",
+			run: func(_ context.Context, _ string, args ...string) error {
+				revealed = args[0]
+				return nil
+			},
+		},
+	}
+	if err := dialogs.RevealDirectory(
+		context.Background(),
+		destination,
+	); err != nil {
+		t.Fatal(err)
+	}
+	expected, err := exporter.ResolveDestination(destination)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if revealed != expected {
+		t.Fatalf("revealed destination = %q, want %q", revealed, expected)
+	}
+}

@@ -63,6 +63,8 @@ export function ReorderTagValues(arg1:number,arg2:Array<number>):Promise<app.Mut
 
 export function ReplaceShelfQuery(arg1:number,arg2:library.StoryLibraryQuery):Promise<app.ShelfResponse>;
 
+export function RevealExportDestination(arg1:string):Promise<app.MutationResponse>;
+
 export function SelectAndImportStories():Promise<app.OperationResponse>;
 
 export function SelectAndPreflightExport(arg1:exporter.PreflightRequest):Promise<app.ExportPreflightResponse>;

@@ -31,6 +31,10 @@ func (facadeDialogs) OpenDirectory(context.Context, string) (string, error) {
 	return "", nil
 }
 
+func (facadeDialogs) RevealDirectory(context.Context, string) error {
+	return nil
+}
+
 type facadeEvents struct{}
 
 func (facadeEvents) Emit(context.Context, string, any) {}

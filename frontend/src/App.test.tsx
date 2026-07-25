@@ -14,6 +14,7 @@ import {
     OperationSnapshot,
     PreviewShelves,
     QueryStories,
+    RevealExportDestination,
     RenameShelf,
     ReorderShelves,
     ReplaceShelfQuery,
@@ -44,6 +45,7 @@ vi.mock('../wailsjs/go/main/App', () => ({
     OperationSnapshot: vi.fn(),
     PreviewShelves: vi.fn(),
     QueryStories: vi.fn(),
+    RevealExportDestination: vi.fn(),
     RenameShelf: vi.fn(),
     ReorderShelves: vi.fn(),
     ReplaceShelfQuery: vi.fn(),
@@ -75,6 +77,7 @@ const openShelf = vi.mocked(OpenShelf);
 const operationSnapshot = vi.mocked(OperationSnapshot);
 const previewShelves = vi.mocked(PreviewShelves);
 const queryStories = vi.mocked(QueryStories);
+const revealExportDestination = vi.mocked(RevealExportDestination);
 const renameShelf = vi.mocked(RenameShelf);
 const reorderShelves = vi.mocked(ReorderShelves);
 const replaceShelfQuery = vi.mocked(ReplaceShelfQuery);
@@ -138,6 +141,7 @@ beforeEach(() => {
     operationSnapshot.mockReset();
     previewShelves.mockReset();
     queryStories.mockReset();
+    revealExportDestination.mockReset();
     renameShelf.mockReset();
     reorderShelves.mockReset();
     replaceShelfQuery.mockReset();
@@ -173,6 +177,9 @@ beforeEach(() => {
         },
     }));
     operationSnapshot.mockResolvedValue(new app.OperationResponse({}));
+    revealExportDestination.mockResolvedValue(new app.MutationResponse({
+        success: true,
+    }));
     previewShelves.mockResolvedValue(new app.ShelfSelectionPreviewResponse({}));
     queryStories.mockResolvedValue(new app.LibraryPageResponse({
         page: {
@@ -2331,6 +2338,101 @@ test('restores persisted export progress and reconciles missed events', async ()
     ));
     await user.click(screen.getByRole('button', {name: 'Cancel export'}));
     expect(cancelOperation).toHaveBeenCalledWith('export-after-reload');
+});
+
+test('groups final export outcomes and reveals the retained destination', async () => {
+    const user = userEvent.setup();
+    render(<App/>);
+    await screen.findByRole('heading', {name: 'My story shelves'});
+
+    operationChanged?.({
+        id: 'finished-export',
+        kind: 'export',
+        status: 'partially_succeeded',
+        exportSourceType: 'shelves',
+        sourceShelfIds: [7, 8],
+        sourceShelfNames: ['Moon', 'Forest'],
+        destination: 'Lunii export',
+        completedItems: 5,
+        totalItems: 5,
+        totalBytes: 5242880,
+        cancelRequested: false,
+        createdAt: '2026-07-25T20:00:00Z',
+        finishedAt: '2026-07-25T20:01:00Z',
+        items: [
+            {
+                id: 1,
+                storyTitle: 'Exported story',
+                sourceName: 'exported.zip',
+                outputName: 'exported.zip',
+                status: 'succeeded',
+                outcomeMessage: 'Story archive exported.',
+                completedBytes: 1048576,
+                totalBytes: 1048576,
+            },
+            {
+                id: 2,
+                storyTitle: 'Skipped story',
+                sourceName: 'skipped.zip',
+                outputName: 'skipped.zip',
+                status: 'skipped',
+                outcomeMessage: 'Managed archive bytes are missing.',
+                completedBytes: 0,
+                totalBytes: 1048576,
+            },
+            {
+                id: 3,
+                storyTitle: 'Conflicted story',
+                sourceName: 'conflicted.zip',
+                outputName: 'conflicted.zip',
+                status: 'conflicted',
+                outcomeMessage: 'A file with this name already exists.',
+                completedBytes: 0,
+                totalBytes: 1048576,
+            },
+            {
+                id: 4,
+                storyTitle: 'Failed story',
+                sourceName: 'failed.zip',
+                outputName: 'failed.zip',
+                status: 'failed',
+                outcomeMessage: 'The copied archive failed checksum verification.',
+                completedBytes: 0,
+                totalBytes: 1048576,
+            },
+            {
+                id: 5,
+                storyTitle: 'Cancelled story',
+                sourceName: 'cancelled.zip',
+                outputName: 'cancelled.zip',
+                status: 'cancelled',
+                outcomeMessage: 'Story export cancelled.',
+                completedBytes: 0,
+                totalBytes: 1048576,
+            },
+        ],
+    });
+
+    const report = await screen.findByRole('region', {name: 'Export report'});
+    expect(report).toHaveTextContent('Source shelves · Moon, Forest');
+    expect(report).toHaveTextContent('Destination · Lunii export');
+    for (const label of [
+        'Exported · 1',
+        'Skipped · 1',
+        'Conflicted · 1',
+        'Failed · 1',
+        'Cancelled · 1',
+    ]) {
+        expect(within(report).getByRole('heading', {name: label}))
+            .toBeInTheDocument();
+    }
+    expect(report).toHaveTextContent(
+        'The copied archive failed checksum verification.',
+    );
+    await user.click(within(report).getByRole('button', {
+        name: 'Reveal destination',
+    }));
+    expect(revealExportDestination).toHaveBeenCalledWith('finished-export');
 });
 
 test('restores, displays, and polls every concurrent active import', async () => {

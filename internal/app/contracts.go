@@ -86,6 +86,7 @@ type FileDialogRequest struct {
 type DialogPort interface {
 	OpenFiles(context.Context, FileDialogRequest) ([]string, error)
 	OpenDirectory(context.Context, string) (string, error)
+	RevealDirectory(context.Context, string) error
 }
 
 type EventPort interface {
