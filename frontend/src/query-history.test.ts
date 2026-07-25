@@ -19,28 +19,41 @@ test('restores the same query when history is reconstructed like a reload', () =
         ...applicationDefault,
         name: 'Dragon',
         page: 2,
-    });
+    }, 7);
 
     const reloaded = new CollectionQueryHistory(window, applicationDefault);
     expect(reloaded.current()).toEqual(pushed);
+    expect(reloaded.currentShelfID()).toBe(7);
 });
 
 test('restores back and forward query states', async () => {
     const history = new CollectionQueryHistory(window, applicationDefault);
-    history.replace(applicationDefault);
-    const dragon = history.push({...applicationDefault, name: 'dragon'});
+    history.replace(applicationDefault, null);
+    const dragon = history.push({...applicationDefault, name: 'dragon'}, 7);
     const filtered = history.push({
         ...dragon,
         booleanFilters: [{definitionId: 7, state: 'true'}],
-    });
+    }, 8);
     const listener = vi.fn();
     const unsubscribe = history.subscribe(listener);
 
     window.history.back();
-    await waitFor(() => expect(listener).toHaveBeenLastCalledWith(dragon));
+    await waitFor(() => expect(listener).toHaveBeenLastCalledWith(dragon, 7));
     window.history.forward();
-    await waitFor(() => expect(listener).toHaveBeenLastCalledWith(filtered));
+    await waitFor(() => expect(listener).toHaveBeenLastCalledWith(filtered, 8));
     unsubscribe();
+});
+
+test('ignores shelf identity that does not belong to the current query route', () => {
+    const history = new CollectionQueryHistory(window, applicationDefault);
+    history.push({...applicationDefault, name: 'dragon'}, 7);
+    window.history.replaceState(
+        window.history.state,
+        '',
+        '/#/library?name=moon&size=12&sort=imported_desc&v=1',
+    );
+
+    expect(history.currentShelfID()).toBeNull();
 });
 
 test('clears one criterion or all membership filters while retaining sort', () => {

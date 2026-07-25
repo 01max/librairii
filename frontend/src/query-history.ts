@@ -7,8 +7,15 @@ import {
 } from './query-codec';
 
 type CollectionWindow = Pick<Window, 'addEventListener' | 'removeEventListener'> & {
-    history: Pick<History, 'pushState' | 'replaceState'>;
+    history: Pick<History, 'pushState' | 'replaceState' | 'state'>;
     location: Pick<Location, 'hash' | 'pathname' | 'search'>;
+};
+
+type CollectionHistoryState = {
+    collectionQuery?: {
+        hash: string;
+        shelfId: number | null;
+    };
 };
 
 export class CollectionQueryHistory {
@@ -34,12 +41,28 @@ export class CollectionQueryHistory {
         }
     }
 
-    push(query: CollectionQuery): CollectionQuery {
-        return this.#write('pushState', query);
+    currentShelfID(): number | null {
+        const state = this.#target.history.state as CollectionHistoryState | null;
+        const entry = state?.collectionQuery;
+        if (
+            !entry ||
+            entry.hash !== this.#target.location.hash ||
+            (
+                entry.shelfId !== null &&
+                (!Number.isSafeInteger(entry.shelfId) || entry.shelfId <= 0)
+            )
+        ) {
+            return null;
+        }
+        return entry.shelfId;
     }
 
-    replace(query: CollectionQuery): CollectionQuery {
-        return this.#write('replaceState', query);
+    push(query: CollectionQuery, shelfId?: number | null): CollectionQuery {
+        return this.#write('pushState', query, shelfId);
+    }
+
+    replace(query: CollectionQuery, shelfId?: number | null): CollectionQuery {
+        return this.#write('replaceState', query, shelfId);
     }
 
     clearBoolean(definitionId: number): CollectionQuery {
@@ -77,8 +100,10 @@ export class CollectionQueryHistory {
         });
     }
 
-    subscribe(listener: (query: CollectionQuery) => void): () => void {
-        const onHistory = () => listener(this.current());
+    subscribe(
+        listener: (query: CollectionQuery, shelfId: number | null) => void,
+    ): () => void {
+        const onHistory = () => listener(this.current(), this.currentShelfID());
         this.#target.addEventListener('popstate', onHistory);
         return () => this.#target.removeEventListener('popstate', onHistory);
     }
@@ -86,11 +111,18 @@ export class CollectionQueryHistory {
     #write(
         method: 'pushState' | 'replaceState',
         query: CollectionQuery,
+        shelfId?: number | null,
     ): CollectionQuery {
         const canonical = canonicalCollectionQuery(query);
+        const hash = encodeCollectionQuery(canonical);
         const location = `${this.#target.location.pathname}${this.#target.location.search}` +
-            encodeCollectionQuery(canonical);
-        this.#target.history[method](null, '', location);
+            hash;
+        this.#target.history[method]({
+            collectionQuery: {
+                hash,
+                shelfId: shelfId === undefined ? this.currentShelfID() : shelfId,
+            },
+        }, '', location);
         return canonical;
     }
 }

@@ -349,6 +349,80 @@ test('opens a dynamic saved shelf and updates it from the current query', async 
     ));
 });
 
+test('restores active shelf identity across back, forward, and reload', async () => {
+    const user = userEvent.setup();
+    const summaries = [
+        new shelves.Summary({
+            id: 7,
+            name: 'Bedtime',
+            position: 0,
+            validity: 'valid',
+            count: 1,
+        }),
+        new shelves.Summary({
+            id: 8,
+            name: 'Adventures',
+            position: 1,
+            validity: 'valid',
+            count: 1,
+        }),
+    ];
+    listShelves.mockResolvedValue(new app.ShelfListResponse({shelves: summaries}));
+    openShelf.mockImplementation(async (shelfID) => {
+        const bedtime = shelfID === 7;
+        const name = bedtime ? 'moon' : 'forest';
+        const shelfName = bedtime ? 'Bedtime' : 'Adventures';
+        return new app.ShelfEvaluationResponse({
+            evaluation: {
+                shelf: {
+                    id: shelfID,
+                    name: shelfName,
+                    normalizedName: shelfName.toLowerCase(),
+                    position: bedtime ? 0 : 1,
+                    queryVersion: 2,
+                    queryPayload: `{"name":"${name}"}`,
+                    validity: 'valid',
+                },
+                query: {name},
+                page: {
+                    stories: [bedtime ? stories[1] : stories[0]],
+                    page: 1,
+                    pageSize: 12,
+                    totalItems: 1,
+                    totalPages: 1,
+                    sort: 'imported_desc',
+                },
+            },
+        });
+    });
+
+    const view = render(<App/>);
+    await user.click(await screen.findByRole('button', {name: 'Bedtime, 1 story'}));
+    expect(await screen.findByRole('heading', {name: 'Bedtime'})).toBeInTheDocument();
+    await user.click(screen.getByRole('button', {name: 'Adventures, 1 story'}));
+    expect(await screen.findByRole('heading', {name: 'Adventures'})).toBeInTheDocument();
+
+    window.history.back();
+    await waitFor(() => {
+        expect(screen.getByRole('heading', {name: 'Bedtime'})).toBeInTheDocument();
+        expect(screen.getByRole('searchbox', {name: 'Search stories'}))
+            .toHaveValue('moon');
+    });
+    window.history.forward();
+    await waitFor(() => {
+        expect(screen.getByRole('heading', {name: 'Adventures'})).toBeInTheDocument();
+        expect(screen.getByRole('searchbox', {name: 'Search stories'}))
+            .toHaveValue('forest');
+    });
+
+    view.unmount();
+    render(<App/>);
+    expect(await screen.findByRole('heading', {name: 'Adventures'}))
+        .toBeInTheDocument();
+    expect(screen.getByRole('searchbox', {name: 'Search stories'}))
+        .toHaveValue('forest');
+});
+
 test('saves the current query as a named active shelf with its live count', async () => {
     const user = userEvent.setup();
     const saved = new shelves.Summary({

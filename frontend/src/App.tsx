@@ -242,9 +242,13 @@ function App() {
         () => new CollectionQueryHistory(window, initialCollectionQuery),
         [],
     );
+    const initialHistoryState = useMemo(() => ({
+        query: queryHistory.current(),
+        shelfID: queryHistory.currentShelfID(),
+    }), [queryHistory]);
     const [applicationState, setApplicationState] = useState('initializing');
     const [collectionQuery, setCollectionQuery] = useState(
-        () => queryHistory.current(),
+        initialHistoryState.query,
     );
     const [page, setPage] = useState<library.Page | null>(null);
     const [selectedID, setSelectedID] = useState<number | null>(null);
@@ -267,7 +271,9 @@ function App() {
         useState<tagging.AssignmentWorkspace | null>(null);
     const [tagCatalog, setTagCatalog] = useState<tagging.Catalog | null>(null);
     const [savedShelves, setSavedShelves] = useState<shelves.Summary[]>([]);
-    const [activeShelfID, setActiveShelfID] = useState<number | null>(null);
+    const [activeShelfID, setActiveShelfID] = useState<number | null>(
+        initialHistoryState.shelfID,
+    );
     const [selectedShelfIDs, setSelectedShelfIDs] = useState<number[]>([]);
     const [shelfSelectionPreview, setShelfSelectionPreview] =
         useState<shelves.SelectionPreview | null>(null);
@@ -279,7 +285,7 @@ function App() {
     const [shelfBusy, setShelfBusy] = useState(false);
     const [repairShelfID, setRepairShelfID] = useState<number | null>(null);
     const [deleteShelfID, setDeleteShelfID] = useState<number | null>(null);
-    const activeShelfIDRef = useRef<number | null>(null);
+    const activeShelfIDRef = useRef<number | null>(initialHistoryState.shelfID);
     const refreshedOperations = useRef(new Set<string>());
     const searchInput = useRef<HTMLInputElement>(null);
     const collectionRequestGeneration = useRef(0);
@@ -336,12 +342,13 @@ function App() {
     }, [collectionQuery]);
 
     useEffect(() => {
-        queryHistory.replace(collectionQuery);
-        return queryHistory.subscribe((query) => {
+        queryHistory.replace(queryHistory.current(), activeShelfIDRef.current);
+        return queryHistory.subscribe((query, shelfID) => {
             collectionRequestGeneration.current++;
+            activateShelf(shelfID);
             setCollectionQuery(query);
         });
-    }, [collectionQuery, queryHistory]);
+    }, [activateShelf, queryHistory]);
 
     const refreshMetadataStatus = useCallback(async () => {
         try {
@@ -370,15 +377,18 @@ function App() {
             )));
             const activeID = activeShelfIDRef.current;
             const active = nextShelves.find((shelf) => shelf.id === activeID);
-            if (active && active.validity === 'needs_attention') {
-                setRepairShelfID(active.id);
+            if (activeID !== null && (!active || active.validity === 'needs_attention')) {
+                if (active?.validity === 'needs_attention') {
+                    setRepairShelfID(active.id);
+                    setPage(null);
+                }
                 activateShelf(null);
-                setPage(null);
+                queryHistory.replace(queryHistory.current(), null);
             }
         } catch {
             setRequestError('Saved shelves could not be loaded.');
         }
-    }, [activateShelf]);
+    }, [activateShelf, queryHistory]);
 
     const reconcileOperation = useCallback((snapshot: operations.Snapshot) => {
         setOperationSnapshots((current) => {
@@ -433,7 +443,23 @@ function App() {
                     if (shelvesResponse.error) {
                         setRequestError(shelvesResponse.error.message);
                     } else {
-                        setSavedShelves(shelvesResponse.shelves ?? []);
+                        const nextShelves = shelvesResponse.shelves ?? [];
+                        setSavedShelves(nextShelves);
+                        const activeID = activeShelfIDRef.current;
+                        const active = nextShelves.find(
+                            (shelf) => shelf.id === activeID,
+                        );
+                        if (
+                            activeID !== null &&
+                            (!active || active.validity === 'needs_attention')
+                        ) {
+                            if (active?.validity === 'needs_attention') {
+                                setRepairShelfID(active.id);
+                                setPage(null);
+                            }
+                            activateShelf(null);
+                            queryHistory.replace(queryHistory.current(), null);
+                        }
                     }
                     const metadataResponse = await OfficialMetadataStatus();
                     if (!active) {
@@ -468,7 +494,7 @@ function App() {
         return () => {
             active = false;
         };
-    }, [reconcileOperation]);
+    }, [activateShelf, queryHistory, reconcileOperation]);
 
     useEffect(() => {
         if (applicationState === 'ready') {
@@ -790,8 +816,11 @@ function App() {
         });
     }) ?? [];
 
-    const updateQuery = useCallback((next: CollectionQuery) => {
-        setCollectionQuery(queryHistory.push(next));
+    const updateQuery = useCallback((
+        next: CollectionQuery,
+        shelfID?: number | null,
+    ) => {
+        setCollectionQuery(queryHistory.push(next, shelfID));
     }, [queryHistory]);
 
     function toggleShelfSelection(shelfID: number) {
@@ -823,7 +852,7 @@ function App() {
             updateQuery(collectionQueryFromShelf(
                 response.evaluation.query,
                 collectionQuery,
-            ));
+            ), shelfID);
         } catch {
             setRequestError('The saved shelf could not be opened.');
         } finally {
@@ -841,7 +870,7 @@ function App() {
             booleanFilters: [],
             choiceFilters: [],
             page: 1,
-        });
+        }, null);
     }
 
     function showShelfDialog(mode: ShelfDialogMode) {
@@ -878,6 +907,7 @@ function App() {
             setShelfDialogName('');
             await loadSavedShelves();
             if (shelfDialogMode === 'save') {
+                queryHistory.replace(collectionQuery, changedShelf.id);
                 activateShelf(changedShelf.id);
             } else if (shelfDialogMode === 'duplicate') {
                 await openSavedShelf(changedShelf.id);
@@ -987,6 +1017,7 @@ function App() {
                 return;
             }
             setRepairShelfID(null);
+            queryHistory.replace(collectionQuery, repairShelf.id);
             activateShelf(repairShelf.id);
             await loadSavedShelves();
         } catch {
