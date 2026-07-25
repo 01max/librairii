@@ -163,6 +163,72 @@ func (a *Application) DeleteTagValue(
 	return MutationResponse{Success: true}
 }
 
+func (a *Application) TagAssignmentWorkspace(
+	ctx context.Context,
+	storyIDs []int64,
+) TagAssignmentWorkspaceResponse {
+	workspace, err := a.tags.AssignmentWorkspace(ctx, storyIDs)
+	if err != nil {
+		return TagAssignmentWorkspaceResponse{Error: taggingAPIError(err)}
+	}
+	return TagAssignmentWorkspaceResponse{Workspace: &workspace}
+}
+
+func (a *Application) SetBooleanTag(
+	ctx context.Context,
+	storyIDs []int64,
+	definitionID int64,
+	assigned bool,
+) TagAssignmentResponse {
+	if response := a.tagMutationReadiness(); response != nil {
+		return TagAssignmentResponse{Error: response}
+	}
+	result, err := a.tags.SetBulkBoolean(ctx, storyIDs, definitionID, assigned)
+	if err != nil {
+		return TagAssignmentResponse{Error: taggingAPIError(err)}
+	}
+	return TagAssignmentResponse{Result: &result}
+}
+
+func (a *Application) SetChoiceTagValues(
+	ctx context.Context,
+	storyIDs []int64,
+	definitionID int64,
+	valueIDs []int64,
+) TagAssignmentResponse {
+	if response := a.tagMutationReadiness(); response != nil {
+		return TagAssignmentResponse{Error: response}
+	}
+	result, err := a.tags.SetBulkChoiceValues(ctx, storyIDs, definitionID, valueIDs)
+	if err != nil {
+		return TagAssignmentResponse{Error: taggingAPIError(err)}
+	}
+	return TagAssignmentResponse{Result: &result}
+}
+
+func (a *Application) SetChoiceTagValue(
+	ctx context.Context,
+	storyIDs []int64,
+	definitionID int64,
+	valueID int64,
+	assigned bool,
+) TagAssignmentResponse {
+	if response := a.tagMutationReadiness(); response != nil {
+		return TagAssignmentResponse{Error: response}
+	}
+	result, err := a.tags.SetBulkChoiceValue(
+		ctx,
+		storyIDs,
+		definitionID,
+		valueID,
+		assigned,
+	)
+	if err != nil {
+		return TagAssignmentResponse{Error: taggingAPIError(err)}
+	}
+	return TagAssignmentResponse{Result: &result}
+}
+
 func (a *Application) tagMutationReadiness() *APIError {
 	if a.Status().MutationsAllowed {
 		return nil
@@ -174,6 +240,10 @@ func taggingAPIError(err error) *APIError {
 	switch {
 	case errors.Is(err, tagging.ErrInvalidDefinition),
 		errors.Is(err, tagging.ErrInvalidValue),
+		errors.Is(err, tagging.ErrInvalidAssignment),
+		errors.Is(err, tagging.ErrAssignmentKind),
+		errors.Is(err, tagging.ErrDerivedAssignment),
+		errors.Is(err, tagging.ErrStoryNotFound),
 		errors.Is(err, tagging.ErrInvalidOrder),
 		errors.Is(err, tagging.ErrInvalidValueOrder):
 		return NewAPIError(ErrorInvalidInput, err.Error())

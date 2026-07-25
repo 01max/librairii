@@ -138,6 +138,10 @@ type TaggingPort interface {
 	ReorderValues(context.Context, int64, []int64) ([]tagging.Value, error)
 	PlanValueDeletion(context.Context, int64) (tagging.ValueDeletionPlan, error)
 	DeleteValue(context.Context, tagging.ValueDeletionPlan) error
+	AssignmentWorkspace(context.Context, []int64) (tagging.AssignmentWorkspace, error)
+	SetBulkBoolean(context.Context, []int64, int64, bool) (tagging.AssignmentResult, error)
+	SetBulkChoiceValues(context.Context, []int64, int64, []int64) (tagging.AssignmentResult, error)
+	SetBulkChoiceValue(context.Context, []int64, int64, int64, bool) (tagging.AssignmentResult, error)
 }
 
 type Dependencies struct {
@@ -206,4 +210,14 @@ type TagValueDeletionPlanResponse struct {
 type MutationResponse struct {
 	Success bool      `json:"success"`
 	Error   *APIError `json:"error,omitempty"`
+}
+
+type TagAssignmentWorkspaceResponse struct {
+	Workspace *tagging.AssignmentWorkspace `json:"workspace,omitempty"`
+	Error     *APIError                    `json:"error,omitempty"`
+}
+
+type TagAssignmentResponse struct {
+	Result *tagging.AssignmentResult `json:"result,omitempty"`
+	Error  *APIError                 `json:"error,omitempty"`
 }

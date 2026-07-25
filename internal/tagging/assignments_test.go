@@ -243,3 +243,126 @@ func TestServiceValidatesEntireBulkAssignmentBeforeMutation(t *testing.T) {
 		t.Fatalf("SetStoryChoiceValues(wrong value) error = %v", err)
 	}
 }
+
+func TestAssignmentWorkspaceReportsSingleAndMixedSelectionStates(t *testing.T) {
+	t.Parallel()
+
+	connection := openTaggingDatabase(t)
+	broken, err := SeedBuiltIns(context.Background(), connection)
+	if err != nil {
+		t.Fatal(err)
+	}
+	service, err := NewService(connection)
+	if err != nil {
+		t.Fatal(err)
+	}
+	mood := createUserDefinition(t, service, "mood", KindChoice)
+	calm := createChoiceValue(t, service, mood.ID, "calm")
+	bold := createChoiceValue(t, service, mood.ID, "bold")
+	firstStoryID := insertServiceStory(t, connection)
+	secondStoryID := insertServiceStoryWithUUID(
+		t,
+		connection,
+		"223e4567-e89b-42d3-a456-426614174001",
+	)
+	if _, err := service.SetBulkBoolean(
+		context.Background(),
+		[]int64{firstStoryID, secondStoryID},
+		broken.ID,
+		true,
+	); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := service.SetStoryChoiceValues(
+		context.Background(),
+		firstStoryID,
+		mood.ID,
+		[]int64{calm.ID, bold.ID},
+	); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := service.SetStoryChoiceValues(
+		context.Background(),
+		secondStoryID,
+		mood.ID,
+		[]int64{bold.ID},
+	); err != nil {
+		t.Fatal(err)
+	}
+
+	workspace, err := service.AssignmentWorkspace(
+		context.Background(),
+		[]int64{secondStoryID, firstStoryID},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if workspace.RequestedStories != 2 || len(workspace.States) != 2 {
+		t.Fatalf("AssignmentWorkspace() = %#v", workspace)
+	}
+	if workspace.States[0].DefinitionID != broken.ID ||
+		workspace.States[0].AssignedStories != 2 {
+		t.Fatalf("broken state = %#v", workspace.States[0])
+	}
+	moodState := workspace.States[1]
+	if moodState.DefinitionID != mood.ID ||
+		len(moodState.Values) != 2 ||
+		moodState.Values[0].ValueID != calm.ID ||
+		moodState.Values[0].AssignedStories != 1 ||
+		moodState.Values[1].ValueID != bold.ID ||
+		moodState.Values[1].AssignedStories != 2 {
+		t.Fatalf("mood state = %#v", moodState)
+	}
+}
+
+func TestServiceTogglesOneChoiceValueAcrossStoriesWithoutReplacingOthers(t *testing.T) {
+	t.Parallel()
+
+	connection := openTaggingDatabase(t)
+	service, err := NewService(connection)
+	if err != nil {
+		t.Fatal(err)
+	}
+	mood := createUserDefinition(t, service, "mood", KindChoice)
+	calm := createChoiceValue(t, service, mood.ID, "calm")
+	bold := createChoiceValue(t, service, mood.ID, "bold")
+	firstStoryID := insertServiceStory(t, connection)
+	secondStoryID := insertServiceStoryWithUUID(
+		t,
+		connection,
+		"223e4567-e89b-42d3-a456-426614174001",
+	)
+	if _, err := service.SetStoryChoiceValues(
+		context.Background(),
+		firstStoryID,
+		mood.ID,
+		[]int64{calm.ID},
+	); err != nil {
+		t.Fatal(err)
+	}
+	result, err := service.SetBulkChoiceValue(
+		context.Background(),
+		[]int64{firstStoryID, secondStoryID},
+		mood.ID,
+		bold.ID,
+		true,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.ChangedStories != 2 || result.AssignmentsAdded != 2 {
+		t.Fatalf("SetBulkChoiceValue() = %#v", result)
+	}
+	workspace, err := service.AssignmentWorkspace(
+		context.Background(),
+		[]int64{firstStoryID},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	moodState := workspace.States[0]
+	if moodState.Values[0].AssignedStories != 1 ||
+		moodState.Values[1].AssignedStories != 1 {
+		t.Fatalf("other choice was replaced: %#v", moodState)
+	}
+}

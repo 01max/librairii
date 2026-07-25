@@ -16,9 +16,10 @@ import {
     RemoveStory,
     SelectAndImportStories,
     StoryDetail as LoadStoryDetail,
+    TagAssignmentWorkspace as LoadTagAssignmentWorkspace,
 } from '../wailsjs/go/main/App';
 import {EventsOn} from '../wailsjs/runtime/runtime';
-import {library, operations} from '../wailsjs/go/models';
+import {library, operations, tagging} from '../wailsjs/go/models';
 import {
     describeImport,
     operationIsActive,
@@ -30,6 +31,7 @@ import {
     DEFAULT_COLLECTION_QUERY,
 } from './query-codec';
 import TagManager from './TagManager';
+import TagAssignmentEditor from './TagAssignmentEditor';
 
 const coverPalettes = [
     ['#31559f', '#f7c85b', '#e06a53'],
@@ -100,6 +102,7 @@ function App() {
     );
     const [page, setPage] = useState<library.Page | null>(null);
     const [selectedID, setSelectedID] = useState<number | null>(null);
+    const [selectedIDs, setSelectedIDs] = useState<number[]>([]);
     const [detail, setDetail] = useState<library.StoryDetail | null>(null);
     const [detailRevision, setDetailRevision] = useState(0);
     const [operationSnapshots, setOperationSnapshots] = useState<operations.Snapshot[]>([]);
@@ -110,6 +113,9 @@ function App() {
     const [removalNotice, setRemovalNotice] = useState<string | null>(null);
     const [expandingCollection, setExpandingCollection] = useState(false);
     const [tagManagerOpen, setTagManagerOpen] = useState(false);
+    const [tagAssignmentOpen, setTagAssignmentOpen] = useState(false);
+    const [assignmentWorkspace, setAssignmentWorkspace] =
+        useState<tagging.AssignmentWorkspace | null>(null);
     const refreshedOperations = useRef(new Set<string>());
 
     const loadCollection = useCallback(async () => {
@@ -121,6 +127,15 @@ function App() {
         setPage(result.page);
         setDetail(null);
         setDetailRevision((current) => current + 1);
+        setSelectedIDs((current) => {
+            const visible = current.filter((storyID) => (
+                result.page?.stories.some((story) => story.id === storyID)
+            ));
+            if (visible.length > 0) {
+                return visible;
+            }
+            return result.page?.stories[0] ? [result.page.stories[0].id] : [];
+        });
         setSelectedID((current) => {
             if (result.page?.stories.some((story) => story.id === current)) {
                 return current;
@@ -347,6 +362,24 @@ function App() {
         };
     }, [detailRevision, selectedID]);
 
+    const selectedStoryKey = selectedIDs.join(',');
+    useEffect(() => {
+        if (!selectedStoryKey) {
+            return;
+        }
+        let active = true;
+        void LoadTagAssignmentWorkspace(
+            selectedStoryKey.split(',').map(Number),
+        ).then((response) => {
+            if (active) {
+                setAssignmentWorkspace(response.workspace ?? null);
+            }
+        });
+        return () => {
+            active = false;
+        };
+    }, [selectedStoryKey]);
+
     const stories = useMemo(() => page?.stories ?? [], [page]);
     const rows = useMemo(() => chunkStories(stories), [stories]);
     const selectedSummary = stories.find((story) => story.id === selectedID) ?? null;
@@ -360,6 +393,38 @@ function App() {
         : operationSnapshots.slice(0, 1);
     const importing = activeOperations.length > 0;
     const empty = page !== null && page.totalItems === 0 && !importing;
+    const assignedTags = assignmentWorkspace?.catalog.definitions.flatMap((definition) => {
+        const state = assignmentWorkspace.states.find(
+            (candidate) => candidate.definitionId === definition.id,
+        );
+        if (!state) {
+            return [];
+        }
+        if (definition.kind === 'boolean' && state.assignedStories > 0) {
+            return [{
+                key: `${definition.id}`,
+                color: definition.color,
+                label: state.assignedStories === assignmentWorkspace.requestedStories
+                    ? definition.label
+                    : `${definition.label} · Mixed`,
+            }];
+        }
+        return definition.values.flatMap((value) => {
+            const valueState = state.values.find(
+                (candidate) => candidate.valueId === value.id,
+            );
+            if (!valueState || valueState.assignedStories === 0) {
+                return [];
+            }
+            return [{
+                key: `${definition.id}-${value.id}`,
+                color: definition.color,
+                label: valueState.assignedStories === assignmentWorkspace.requestedStories
+                    ? `${definition.label} · ${value.label}`
+                    : `${definition.label} · ${value.label} · Mixed`,
+            }];
+        });
+    }) ?? [];
 
     return (
         <div className="app">
@@ -553,14 +618,26 @@ function App() {
                         <div className="story-row">
                             {row.map((story) => (
                                 <button
-                                    className={`story${story.id === selectedID ? ' selected' : ''}`}
+                                    className={`story${selectedIDs.includes(story.id) ? ' selected' : ''}`}
                                     style={paletteFor(story.id)}
                                     type="button"
                                     key={story.id}
-                                    aria-pressed={story.id === selectedID}
-                                    onClick={() => {
+                                    aria-pressed={selectedIDs.includes(story.id)}
+                                    aria-keyshortcuts="Control+Enter Meta+Enter"
+                                    onClick={(event) => {
                                         setDetail(null);
-                                        setSelectedID(story.id);
+                                        if (event.ctrlKey || event.metaKey || event.shiftKey) {
+                                            const next = selectedIDs.includes(story.id)
+                                                ? selectedIDs.length === 1
+                                                    ? selectedIDs
+                                                    : selectedIDs.filter((storyID) => storyID !== story.id)
+                                                : [...selectedIDs, story.id];
+                                            setSelectedIDs(next);
+                                            setSelectedID(next.includes(story.id) ? story.id : next[0]);
+                                        } else {
+                                            setSelectedIDs([story.id]);
+                                            setSelectedID(story.id);
+                                        }
                                     }}
                                 >
                                     <div className="cover"><b>{story.title}</b></div>
@@ -599,12 +676,24 @@ function App() {
                     </div>
                     <div className="drawer-tags">
                         <div className="tag-title">
-                            My tags
-                            <button type="button" onClick={() => setTagManagerOpen(true)}>
+                            {selectedIDs.length > 1
+                                ? `${selectedIDs.length} stories selected`
+                                : 'My tags'}
+                            <button type="button" onClick={() => setTagAssignmentOpen(true)}>
                                 Edit tags
                             </button>
                         </div>
-                        <div className="tags"/>
+                        <div className="tags">
+                            {assignedTags.map((tag) => (
+                                <span className="tag" key={tag.key}>
+                                    <i
+                                        style={{'--c': tag.color} as CSSProperties}
+                                        aria-hidden="true"
+                                    />
+                                    {tag.label}
+                                </span>
+                            ))}
+                        </div>
                         <div className="archive">
                             {detail?.archive.originalFilename ?? 'Loading archive details…'}
                             {' · '}
@@ -691,6 +780,13 @@ function App() {
             )}
             {tagManagerOpen && (
                 <TagManager onClose={() => setTagManagerOpen(false)}/>
+            )}
+            {tagAssignmentOpen && selectedIDs.length > 0 && (
+                <TagAssignmentEditor
+                    storyIDs={selectedIDs}
+                    onClose={() => setTagAssignmentOpen(false)}
+                    onWorkspaceChange={setAssignmentWorkspace}
+                />
             )}
         </div>
     );

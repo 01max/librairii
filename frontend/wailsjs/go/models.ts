@@ -258,6 +258,70 @@ export namespace app {
 		    return a;
 		}
 	}
+	export class TagAssignmentResponse {
+	    result?: tagging.AssignmentResult;
+	    error?: APIError;
+	
+	    static createFrom(source: any = {}) {
+	        return new TagAssignmentResponse(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.result = this.convertValues(source["result"], tagging.AssignmentResult);
+	        this.error = this.convertValues(source["error"], APIError);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class TagAssignmentWorkspaceResponse {
+	    workspace?: tagging.AssignmentWorkspace;
+	    error?: APIError;
+	
+	    static createFrom(source: any = {}) {
+	        return new TagAssignmentWorkspaceResponse(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.workspace = this.convertValues(source["workspace"], tagging.AssignmentWorkspace);
+	        this.error = this.convertValues(source["error"], APIError);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
 	export class TagCatalogResponse {
 	    catalog?: tagging.Catalog;
 	    error?: APIError;
@@ -776,6 +840,72 @@ export namespace removal {
 
 export namespace tagging {
 	
+	export class AssignmentResult {
+	    requestedStories: number;
+	    changedStories: number;
+	    assignmentsAdded: number;
+	    assignmentsRemoved: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new AssignmentResult(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.requestedStories = source["requestedStories"];
+	        this.changedStories = source["changedStories"];
+	        this.assignmentsAdded = source["assignmentsAdded"];
+	        this.assignmentsRemoved = source["assignmentsRemoved"];
+	    }
+	}
+	export class ValueAssignmentState {
+	    valueId: number;
+	    assignedStories: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new ValueAssignmentState(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.valueId = source["valueId"];
+	        this.assignedStories = source["assignedStories"];
+	    }
+	}
+	export class DefinitionAssignmentState {
+	    definitionId: number;
+	    assignedStories: number;
+	    values: ValueAssignmentState[];
+	
+	    static createFrom(source: any = {}) {
+	        return new DefinitionAssignmentState(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.definitionId = source["definitionId"];
+	        this.assignedStories = source["assignedStories"];
+	        this.values = this.convertValues(source["values"], ValueAssignmentState);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
 	export class Value {
 	    id: number;
 	    definitionId: number;
@@ -878,6 +1008,41 @@ export namespace tagging {
 		    return a;
 		}
 	}
+	export class AssignmentWorkspace {
+	    catalog: Catalog;
+	    requestedStories: number;
+	    states: DefinitionAssignmentState[];
+	
+	    static createFrom(source: any = {}) {
+	        return new AssignmentWorkspace(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.catalog = this.convertValues(source["catalog"], Catalog);
+	        this.requestedStories = source["requestedStories"];
+	        this.states = this.convertValues(source["states"], DefinitionAssignmentState);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	
 	export class CreateDefinition {
 	    key: string;
 	    label: string;
@@ -942,6 +1107,7 @@ export namespace tagging {
 	        this.protected = source["protected"];
 	    }
 	}
+	
 	export class DefinitionDeletionPlan {
 	    definition: Definition;
 	    valueCount: number;
@@ -978,6 +1144,7 @@ export namespace tagging {
 		    return a;
 		}
 	}
+	
 	
 	
 	export class ValueDeletionPlan {

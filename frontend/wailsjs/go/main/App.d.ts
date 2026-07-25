@@ -42,6 +42,14 @@ export function ReorderTagValues(arg1:number,arg2:Array<number>):Promise<app.Mut
 
 export function SelectAndImportStories():Promise<app.OperationResponse>;
 
+export function SetBooleanTag(arg1:Array<number>,arg2:number,arg3:boolean):Promise<app.TagAssignmentResponse>;
+
+export function SetChoiceTagValue(arg1:Array<number>,arg2:number,arg3:number,arg4:boolean):Promise<app.TagAssignmentResponse>;
+
+export function SetChoiceTagValues(arg1:Array<number>,arg2:number,arg3:Array<number>):Promise<app.TagAssignmentResponse>;
+
 export function StoryDetail(arg1:number):Promise<app.StoryDetailResponse>;
+
+export function TagAssignmentWorkspace(arg1:Array<number>):Promise<app.TagAssignmentWorkspaceResponse>;
 
 export function TagCatalog():Promise<app.TagCatalogResponse>;

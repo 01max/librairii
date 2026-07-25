@@ -10,6 +10,7 @@ import {
     RemoveStory,
     SelectAndImportStories,
     StoryDetail as LoadStoryDetail,
+    TagAssignmentWorkspace as LoadTagAssignmentWorkspace,
 } from '../wailsjs/go/main/App';
 import {app, library} from '../wailsjs/go/models';
 import {EventsOn} from '../wailsjs/runtime/runtime';
@@ -24,6 +25,9 @@ vi.mock('../wailsjs/go/main/App', () => ({
     RemoveStory: vi.fn(),
     SelectAndImportStories: vi.fn(),
     StoryDetail: vi.fn(),
+    TagAssignmentWorkspace: vi.fn(),
+    SetBooleanTag: vi.fn(),
+    SetChoiceTagValue: vi.fn(),
 }));
 
 vi.mock('../wailsjs/runtime/runtime', () => ({
@@ -38,6 +42,7 @@ const queryStories = vi.mocked(QueryStories);
 const removeStory = vi.mocked(RemoveStory);
 const selectAndImportStories = vi.mocked(SelectAndImportStories);
 const loadStoryDetail = vi.mocked(LoadStoryDetail);
+const loadTagAssignmentWorkspace = vi.mocked(LoadTagAssignmentWorkspace);
 const eventsOn = vi.mocked(EventsOn);
 let operationChanged: ((value: unknown) => void) | undefined;
 
@@ -85,6 +90,7 @@ beforeEach(() => {
     removeStory.mockReset();
     selectAndImportStories.mockReset();
     loadStoryDetail.mockReset();
+    loadTagAssignmentWorkspace.mockReset();
     eventsOn.mockReset();
     operationChanged = undefined;
 
@@ -123,6 +129,15 @@ beforeEach(() => {
             },
         });
     });
+    loadTagAssignmentWorkspace.mockImplementation(async (storyIDs) => (
+        new app.TagAssignmentWorkspaceResponse({
+            workspace: {
+                catalog: {definitions: []},
+                requestedStories: storyIDs.length,
+                states: [],
+            },
+        })
+    ));
     eventsOn.mockImplementation((_name, callback) => {
         operationChanged = callback;
         return vi.fn();
@@ -199,6 +214,51 @@ test('selects a cover and loads its detail drawer without losing the collection'
         .toBeInTheDocument();
     expect(screen.getByRole('heading', {name: 'My story shelves'})).toBeInTheDocument();
     expect(loadStoryDetail).toHaveBeenLastCalledWith(2);
+});
+
+test('keeps bulk selection in the collection and exposes updated tag chips', async () => {
+    const user = userEvent.setup();
+    loadTagAssignmentWorkspace.mockImplementation(async (storyIDs) => (
+        new app.TagAssignmentWorkspaceResponse({
+            workspace: {
+                catalog: {
+                    definitions: [{
+                        id: 1,
+                        key: 'broken',
+                        label: 'Broken',
+                        color: '#ff705c',
+                        kind: 'boolean',
+                        source: 'builtin',
+                        protected: true,
+                        values: [],
+                    }],
+                },
+                requestedStories: storyIDs.length,
+                states: [{
+                    definitionId: 1,
+                    assignedStories: storyIDs.length,
+                    values: [],
+                }],
+            },
+        })
+    ));
+    render(<App/>);
+
+    const first = await screen.findByRole('button', {name: 'Clockwork Forest Lunii'});
+    const second = screen.getByRole('button', {
+        name: 'Moonlit Workshop 11112222-3333-4444-8555-666677778888',
+    });
+    expect(await screen.findByText('Broken')).toBeInTheDocument();
+
+    await user.keyboard('{Control>}');
+    await user.click(second);
+    await user.keyboard('{/Control}');
+
+    expect(first).toHaveAttribute('aria-pressed', 'true');
+    expect(second).toHaveAttribute('aria-pressed', 'true');
+    await user.click(screen.getByRole('button', {name: 'Edit tags'}));
+    expect(await screen.findByRole('heading', {name: 'Edit tags for 2 stories'}))
+        .toBeInTheDocument();
 });
 
 test('shows the empty-library import action in the canonical shell', async () => {

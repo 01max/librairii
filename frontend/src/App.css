@@ -756,6 +756,26 @@ select:focus-visible {
     gap: 6px;
 }
 
+.tag {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 7px 8px;
+    border-radius: 7px;
+    color: #515c72;
+    background: #f1f3f7;
+    font-size: 8px;
+    font-weight: 800;
+}
+
+.tag i {
+    width: 6px;
+    height: 6px;
+    flex: 0 0 auto;
+    border-radius: 50%;
+    background: var(--c);
+}
+
 .archive {
     margin-top: 13px;
     color: #778196;
@@ -1118,6 +1138,114 @@ select:focus-visible {
 
 .confirmation-backdrop {
     z-index: 50;
+}
+
+.assignment-editor {
+    width: min(620px, 100%);
+    max-height: calc(100vh - 48px);
+    overflow: auto;
+    padding: 28px;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: #f8f9fc;
+    box-shadow: 0 24px 70px rgba(23, 34, 61, .28);
+}
+
+.assignment-list {
+    display: grid;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.assignment-definition {
+    padding: 15px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: white;
+}
+
+.assignment-definition.warning {
+    border-left: 5px solid var(--coral);
+    background: #fffafa;
+}
+
+.assignment-definition-head {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+}
+
+.assignment-definition-head i {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--tag-color);
+}
+
+.assignment-definition-head b,
+.assignment-definition-head span {
+    display: block;
+}
+
+.assignment-definition-head b {
+    font-size: 11px;
+}
+
+.assignment-definition-head span {
+    margin-top: 3px;
+    color: var(--muted);
+    font: 700 7px/1 ui-monospace, monospace;
+    text-transform: uppercase;
+}
+
+.broken-help {
+    margin: 9px 0;
+    color: #75565a;
+    font-size: 9px;
+}
+
+.assignment-values {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 10px;
+}
+
+.assignment-option {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    margin-top: 10px;
+    color: #566178;
+    font-size: 9px;
+    font-weight: 800;
+}
+
+.assignment-option input {
+    width: 16px;
+    height: 16px;
+    margin: 0;
+    accent-color: var(--blue);
+}
+
+.assignment-option span {
+    padding: 3px 5px;
+    border-radius: 5px;
+    color: #67551c;
+    background: #fff5bf;
+    font-size: 7px;
+    text-transform: uppercase;
+}
+
+.assignment-notice {
+    margin: 12px 0 0;
+    padding: 10px 12px;
+    border-left: 4px solid var(--mint);
+    border-radius: 7px;
+    color: #356d60;
+    background: #effaf7;
+    font-size: 9px;
+    font-weight: 800;
 }
 
 @media (max-width: 760px) {

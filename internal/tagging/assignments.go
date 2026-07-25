@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"sort"
+	"strings"
 )
 
 const maxBulkAssignmentStories = 1_000
@@ -22,6 +23,118 @@ type AssignmentResult struct {
 	ChangedStories     int `json:"changedStories"`
 	AssignmentsAdded   int `json:"assignmentsAdded"`
 	AssignmentsRemoved int `json:"assignmentsRemoved"`
+}
+
+type ValueAssignmentState struct {
+	ValueID         int64 `json:"valueId"`
+	AssignedStories int   `json:"assignedStories"`
+}
+
+type DefinitionAssignmentState struct {
+	DefinitionID    int64                  `json:"definitionId"`
+	AssignedStories int                    `json:"assignedStories"`
+	Values          []ValueAssignmentState `json:"values"`
+}
+
+type AssignmentWorkspace struct {
+	Catalog          Catalog                     `json:"catalog"`
+	RequestedStories int                         `json:"requestedStories"`
+	States           []DefinitionAssignmentState `json:"states"`
+}
+
+func (s *Service) AssignmentWorkspace(
+	ctx context.Context,
+	storyIDs []int64,
+) (AssignmentWorkspace, error) {
+	storyIDs, err := normalizeStoryIDs(storyIDs)
+	if err != nil {
+		return AssignmentWorkspace{}, err
+	}
+	if err := requireStories(ctx, s.database, storyIDs); err != nil {
+		return AssignmentWorkspace{}, err
+	}
+	catalog, err := s.Catalog(ctx)
+	if err != nil {
+		return AssignmentWorkspace{}, err
+	}
+	workspace := AssignmentWorkspace{
+		Catalog:          catalog,
+		RequestedStories: len(storyIDs),
+		States:           make([]DefinitionAssignmentState, 0, len(catalog.Definitions)),
+	}
+	for _, definition := range catalog.Definitions {
+		state, err := s.assignmentState(ctx, storyIDs, definition)
+		if err != nil {
+			return AssignmentWorkspace{}, err
+		}
+		workspace.States = append(workspace.States, state)
+	}
+	return workspace, nil
+}
+
+func (s *Service) assignmentState(
+	ctx context.Context,
+	storyIDs []int64,
+	definition DefinitionWithValues,
+) (DefinitionAssignmentState, error) {
+	placeholders := strings.TrimSuffix(strings.Repeat("?,", len(storyIDs)), ",")
+	arguments := make([]any, 0, len(storyIDs)+1)
+	arguments = append(arguments, definition.ID)
+	for _, storyID := range storyIDs {
+		arguments = append(arguments, storyID)
+	}
+	state := DefinitionAssignmentState{
+		DefinitionID: definition.ID,
+		Values:       []ValueAssignmentState{},
+	}
+	if definition.Kind == KindBoolean {
+		err := s.database.QueryRowContext(
+			ctx,
+			`SELECT COUNT(DISTINCT story_id)
+			 FROM story_tag_assignments
+			 WHERE definition_id = ?
+			   AND value_id IS NULL
+			   AND story_id IN (`+placeholders+`)`,
+			arguments...,
+		).Scan(&state.AssignedStories)
+		if err != nil {
+			return DefinitionAssignmentState{}, fmt.Errorf("count boolean assignments: %w", err)
+		}
+		return state, nil
+	}
+	rows, err := s.database.QueryContext(
+		ctx,
+		`SELECT value_id, COUNT(DISTINCT story_id)
+		 FROM story_tag_assignments
+		 WHERE definition_id = ?
+		   AND value_id IS NOT NULL
+		   AND story_id IN (`+placeholders+`)
+		 GROUP BY value_id`,
+		arguments...,
+	)
+	if err != nil {
+		return DefinitionAssignmentState{}, fmt.Errorf("count choice assignments: %w", err)
+	}
+	defer rows.Close()
+	counts := make(map[int64]int)
+	for rows.Next() {
+		var valueID int64
+		var count int
+		if err := rows.Scan(&valueID, &count); err != nil {
+			return DefinitionAssignmentState{}, err
+		}
+		counts[valueID] = count
+	}
+	if err := rows.Err(); err != nil {
+		return DefinitionAssignmentState{}, err
+	}
+	for _, value := range definition.Values {
+		state.Values = append(state.Values, ValueAssignmentState{
+			ValueID:         value.ID,
+			AssignedStories: counts[value.ID],
+		})
+	}
+	return state, nil
 }
 
 func (s *Service) SetStoryBoolean(
@@ -113,6 +226,87 @@ func (s *Service) SetStoryChoiceValues(
 	valueIDs []int64,
 ) (AssignmentResult, error) {
 	return s.SetBulkChoiceValues(ctx, []int64{storyID}, definitionID, valueIDs)
+}
+
+func (s *Service) SetBulkChoiceValue(
+	ctx context.Context,
+	storyIDs []int64,
+	definitionID int64,
+	valueID int64,
+	assigned bool,
+) (AssignmentResult, error) {
+	storyIDs, err := normalizeStoryIDs(storyIDs)
+	if err != nil {
+		return AssignmentResult{}, err
+	}
+	if valueID <= 0 {
+		return AssignmentResult{}, ErrInvalidAssignment
+	}
+	transaction, err := s.database.BeginTx(ctx, nil)
+	if err != nil {
+		return AssignmentResult{}, fmt.Errorf("begin choice tag toggle: %w", err)
+	}
+	defer transaction.Rollback()
+	definition, err := readDefinition(ctx, transaction, definitionID)
+	if err != nil {
+		return AssignmentResult{}, err
+	}
+	if err := requireManualDefinition(definition, KindChoice); err != nil {
+		return AssignmentResult{}, err
+	}
+	if err := requireStories(ctx, transaction, storyIDs); err != nil {
+		return AssignmentResult{}, err
+	}
+	if err := requireDefinitionValues(ctx, transaction, definition.ID, []int64{valueID}); err != nil {
+		return AssignmentResult{}, err
+	}
+	result := AssignmentResult{RequestedStories: len(storyIDs)}
+	for _, storyID := range storyIDs {
+		var statementResult sql.Result
+		if assigned {
+			statementResult, err = transaction.ExecContext(
+				ctx,
+				`INSERT INTO story_tag_assignments (
+					story_id, definition_id, value_id, source
+				) VALUES (?, ?, ?, 'manual')
+				ON CONFLICT DO NOTHING`,
+				storyID,
+				definition.ID,
+				valueID,
+			)
+		} else {
+			statementResult, err = transaction.ExecContext(
+				ctx,
+				`DELETE FROM story_tag_assignments
+				 WHERE story_id = ?
+				   AND definition_id = ?
+				   AND value_id = ?
+				   AND source = 'manual'`,
+				storyID,
+				definition.ID,
+				valueID,
+			)
+		}
+		if err != nil {
+			return AssignmentResult{}, fmt.Errorf("toggle choice tag assignment: %w", err)
+		}
+		changed, err := statementResult.RowsAffected()
+		if err != nil {
+			return AssignmentResult{}, fmt.Errorf("count choice tag assignment changes: %w", err)
+		}
+		if changed == 1 {
+			result.ChangedStories++
+			if assigned {
+				result.AssignmentsAdded++
+			} else {
+				result.AssignmentsRemoved++
+			}
+		}
+	}
+	if err := transaction.Commit(); err != nil {
+		return AssignmentResult{}, fmt.Errorf("commit choice tag toggle: %w", err)
+	}
+	return result, nil
 }
 
 func (s *Service) SetBulkChoiceValues(

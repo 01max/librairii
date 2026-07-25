@@ -341,6 +341,57 @@ func (r *ImportRuntime) DeleteValue(
 	return service.DeleteValue(ctx, plan)
 }
 
+func (r *ImportRuntime) AssignmentWorkspace(
+	ctx context.Context,
+	storyIDs []int64,
+) (tagging.AssignmentWorkspace, error) {
+	service, err := r.currentTags()
+	if err != nil {
+		return tagging.AssignmentWorkspace{}, err
+	}
+	return service.AssignmentWorkspace(ctx, storyIDs)
+}
+
+func (r *ImportRuntime) SetBulkBoolean(
+	ctx context.Context,
+	storyIDs []int64,
+	definitionID int64,
+	assigned bool,
+) (tagging.AssignmentResult, error) {
+	service, err := r.currentTags()
+	if err != nil {
+		return tagging.AssignmentResult{}, err
+	}
+	return service.SetBulkBoolean(ctx, storyIDs, definitionID, assigned)
+}
+
+func (r *ImportRuntime) SetBulkChoiceValues(
+	ctx context.Context,
+	storyIDs []int64,
+	definitionID int64,
+	valueIDs []int64,
+) (tagging.AssignmentResult, error) {
+	service, err := r.currentTags()
+	if err != nil {
+		return tagging.AssignmentResult{}, err
+	}
+	return service.SetBulkChoiceValues(ctx, storyIDs, definitionID, valueIDs)
+}
+
+func (r *ImportRuntime) SetBulkChoiceValue(
+	ctx context.Context,
+	storyIDs []int64,
+	definitionID int64,
+	valueID int64,
+	assigned bool,
+) (tagging.AssignmentResult, error) {
+	service, err := r.currentTags()
+	if err != nil {
+		return tagging.AssignmentResult{}, err
+	}
+	return service.SetBulkChoiceValue(ctx, storyIDs, definitionID, valueID, assigned)
+}
+
 func (r *ImportRuntime) Close() error {
 	r.mu.Lock()
 	manager := r.manager

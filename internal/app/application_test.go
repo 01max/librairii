@@ -245,6 +245,41 @@ func (o *fakeOperations) DeleteValue(
 	return o.err
 }
 
+func (o *fakeOperations) AssignmentWorkspace(
+	context.Context,
+	[]int64,
+) (tagging.AssignmentWorkspace, error) {
+	return tagging.AssignmentWorkspace{}, o.err
+}
+
+func (o *fakeOperations) SetBulkBoolean(
+	context.Context,
+	[]int64,
+	int64,
+	bool,
+) (tagging.AssignmentResult, error) {
+	return tagging.AssignmentResult{}, o.err
+}
+
+func (o *fakeOperations) SetBulkChoiceValues(
+	context.Context,
+	[]int64,
+	int64,
+	[]int64,
+) (tagging.AssignmentResult, error) {
+	return tagging.AssignmentResult{}, o.err
+}
+
+func (o *fakeOperations) SetBulkChoiceValue(
+	context.Context,
+	[]int64,
+	int64,
+	int64,
+	bool,
+) (tagging.AssignmentResult, error) {
+	return tagging.AssignmentResult{}, o.err
+}
+
 func TestApplicationLifecycle(t *testing.T) {
 	t.Parallel()
 

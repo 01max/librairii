@@ -78,8 +78,24 @@ export function SelectAndImportStories() {
   return window['go']['main']['App']['SelectAndImportStories']();
 }
 
+export function SetBooleanTag(arg1, arg2, arg3) {
+  return window['go']['main']['App']['SetBooleanTag'](arg1, arg2, arg3);
+}
+
+export function SetChoiceTagValue(arg1, arg2, arg3, arg4) {
+  return window['go']['main']['App']['SetChoiceTagValue'](arg1, arg2, arg3, arg4);
+}
+
+export function SetChoiceTagValues(arg1, arg2, arg3) {
+  return window['go']['main']['App']['SetChoiceTagValues'](arg1, arg2, arg3);
+}
+
 export function StoryDetail(arg1) {
   return window['go']['main']['App']['StoryDetail'](arg1);
+}
+
+export function TagAssignmentWorkspace(arg1) {
+  return window['go']['main']['App']['TagAssignmentWorkspace'](arg1);
 }
 
 export function TagCatalog() {

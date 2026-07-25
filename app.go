@@ -159,6 +159,48 @@ func (a *App) DeleteTagValue(plan tagging.ValueDeletionPlan) coreapp.MutationRes
 	return a.core.DeleteTagValue(a.runtimeContext(), plan)
 }
 
+func (a *App) TagAssignmentWorkspace(
+	storyIDs []int64,
+) coreapp.TagAssignmentWorkspaceResponse {
+	return a.core.TagAssignmentWorkspace(a.runtimeContext(), storyIDs)
+}
+
+func (a *App) SetBooleanTag(
+	storyIDs []int64,
+	definitionID int64,
+	assigned bool,
+) coreapp.TagAssignmentResponse {
+	return a.core.SetBooleanTag(a.runtimeContext(), storyIDs, definitionID, assigned)
+}
+
+func (a *App) SetChoiceTagValues(
+	storyIDs []int64,
+	definitionID int64,
+	valueIDs []int64,
+) coreapp.TagAssignmentResponse {
+	return a.core.SetChoiceTagValues(
+		a.runtimeContext(),
+		storyIDs,
+		definitionID,
+		valueIDs,
+	)
+}
+
+func (a *App) SetChoiceTagValue(
+	storyIDs []int64,
+	definitionID int64,
+	valueID int64,
+	assigned bool,
+) coreapp.TagAssignmentResponse {
+	return a.core.SetChoiceTagValue(
+		a.runtimeContext(),
+		storyIDs,
+		definitionID,
+		valueID,
+		assigned,
+	)
+}
+
 func (a *App) runtimeContext() context.Context {
 	a.mu.RLock()
 	defer a.mu.RUnlock()

@@ -149,6 +149,41 @@ func (facadeOperations) DeleteValue(context.Context, tagging.ValueDeletionPlan) 
 	return nil
 }
 
+func (facadeOperations) AssignmentWorkspace(
+	context.Context,
+	[]int64,
+) (tagging.AssignmentWorkspace, error) {
+	return tagging.AssignmentWorkspace{}, nil
+}
+
+func (facadeOperations) SetBulkBoolean(
+	context.Context,
+	[]int64,
+	int64,
+	bool,
+) (tagging.AssignmentResult, error) {
+	return tagging.AssignmentResult{}, nil
+}
+
+func (facadeOperations) SetBulkChoiceValues(
+	context.Context,
+	[]int64,
+	int64,
+	[]int64,
+) (tagging.AssignmentResult, error) {
+	return tagging.AssignmentResult{}, nil
+}
+
+func (facadeOperations) SetBulkChoiceValue(
+	context.Context,
+	[]int64,
+	int64,
+	int64,
+	bool,
+) (tagging.AssignmentResult, error) {
+	return tagging.AssignmentResult{}, nil
+}
+
 func TestAppExposesTypedLifecycleStatus(t *testing.T) {
 	t.Parallel()
 
