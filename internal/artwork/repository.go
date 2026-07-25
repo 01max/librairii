@@ -73,7 +73,14 @@ func (r *Repository) Publish(storyUUID string, mediaType string, content []byte)
 		return "", fmt.Errorf("close staged artwork: %w", err)
 	}
 
-	if err := os.MkdirAll(filepath.Dir(destination), storage.DirectoryMode); err != nil {
+	embeddedRoot := filepath.Join(r.layout.Catalog, "embedded")
+	if err := os.MkdirAll(embeddedRoot, storage.DirectoryMode); err != nil {
+		return "", fmt.Errorf("create embedded artwork root: %w", err)
+	}
+	if contained, err := storage.PathContained(r.layout.Catalog, embeddedRoot); err != nil || !contained {
+		return "", ErrInvalidArtwork
+	}
+	if err := archive.PrepareDestination(embeddedRoot, destination); err != nil {
 		return "", fmt.Errorf("create embedded artwork directory: %w", err)
 	}
 	if err := os.Rename(stagedPath, destination); err != nil {

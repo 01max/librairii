@@ -118,7 +118,7 @@ func (r *Repository) Publish(staged StagedFile) (string, error) {
 	}
 
 	destinationDirectory := filepath.Dir(destination)
-	if err := os.MkdirAll(destinationDirectory, storage.DirectoryMode); err != nil {
+	if err := PrepareDestination(r.layout.Archives, destination); err != nil {
 		return "", fmt.Errorf("create managed archive directory: %w", err)
 	}
 	if err := os.Rename(staged.Path, destination); err != nil {
@@ -205,16 +205,12 @@ func (r *Repository) RestoreFromTrash(
 	if err != nil {
 		return err
 	}
-	contained, err = creationPathContained(r.layout.Archives, destination)
-	if err != nil || !contained {
-		return ErrInvalidManagedPath
-	}
 	if _, err := os.Stat(destination); err == nil {
 		return ErrDestinationExists
 	} else if !errors.Is(err, os.ErrNotExist) {
 		return fmt.Errorf("inspect archive restore destination: %w", err)
 	}
-	if err := os.MkdirAll(filepath.Dir(destination), storage.DirectoryMode); err != nil {
+	if err := PrepareDestination(r.layout.Archives, destination); err != nil {
 		return fmt.Errorf("create archive restore directory: %w", err)
 	}
 	if err := os.Rename(source, destination); err != nil {
@@ -222,6 +218,21 @@ func (r *Repository) RestoreFromTrash(
 		return fmt.Errorf("restore archive from trash: %w", err)
 	}
 	_ = removeDirectoryIfEmpty(filepath.Dir(source))
+	return nil
+}
+
+func PrepareDestination(root string, candidate string) error {
+	contained, err := creationPathContained(root, candidate)
+	if err != nil || !contained {
+		return ErrInvalidManagedPath
+	}
+	if err := os.MkdirAll(filepath.Dir(candidate), storage.DirectoryMode); err != nil {
+		return err
+	}
+	contained, err = storage.PathContained(root, filepath.Dir(candidate))
+	if err != nil || !contained {
+		return ErrInvalidManagedPath
+	}
 	return nil
 }
 

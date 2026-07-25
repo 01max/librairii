@@ -88,6 +88,35 @@ func TestRepositoryRejectsInvalidArtworkAndRemovesManagedBytes(t *testing.T) {
 	}
 }
 
+func TestRepositoryRejectsSymlinkedArtworkAncestor(t *testing.T) {
+	t.Parallel()
+
+	repository, layout := newTestRepository(t)
+	outside := t.TempDir()
+	redirect := filepath.Join(layout.Catalog, "embedded", testfixture.StoryUUID)
+	if err := os.MkdirAll(filepath.Dir(redirect), storage.DirectoryMode); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(outside, redirect); err != nil {
+		t.Skipf("symlinks unavailable: %v", err)
+	}
+
+	if _, err := repository.Publish(
+		testfixture.StoryUUID,
+		"image/png",
+		testfixture.PNG(),
+	); err == nil {
+		t.Fatal("Publish(symlink ancestor) error = nil")
+	}
+	entries, err := os.ReadDir(outside)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(entries) != 0 {
+		t.Fatalf("artwork escaped through symlink: %#v", entries)
+	}
+}
+
 func newTestRepository(t *testing.T) (*Repository, storage.Layout) {
 	t.Helper()
 

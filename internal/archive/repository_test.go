@@ -133,6 +133,35 @@ func TestPublishRejectsChangedStagingBytes(t *testing.T) {
 	}
 }
 
+func TestPublishRejectsSymlinkedDestinationAncestor(t *testing.T) {
+	t.Parallel()
+
+	repository, layout := newTestRepository(t)
+	source := filepath.Join(t.TempDir(), "story.pk")
+	if err := os.WriteFile(source, []byte("story"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	staged, err := repository.Stage(context.Background(), source)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		_ = repository.Cleanup(staged)
+	})
+	outside := t.TempDir()
+	redirect := filepath.Join(layout.Archives, staged.SHA256)
+	if err := os.Symlink(outside, redirect); err != nil {
+		t.Skipf("symlinks unavailable: %v", err)
+	}
+
+	if _, err := repository.Publish(staged); !errors.Is(err, ErrInvalidManagedPath) {
+		t.Fatalf("Publish(symlink ancestor) error = %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(outside, staged.OriginalFilename)); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("archive escaped through symlink: %v", err)
+	}
+}
+
 func TestManagedPathsCannotEscapeAndRemovalMovesToTrash(t *testing.T) {
 	t.Parallel()
 
