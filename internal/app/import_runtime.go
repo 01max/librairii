@@ -88,13 +88,19 @@ func (r *ImportRuntime) Start(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("construct operation manager: %w", err)
 	}
+	removalService, err := removal.NewService(
+		catalogRepository,
+		archiveRepository,
+		removal.NewRepository(database),
+	)
+	if err != nil {
+		return fmt.Errorf("construct removal service: %w", err)
+	}
+	if err := removalService.Reconcile(ctx); err != nil {
+		return fmt.Errorf("reconcile removals: %w", err)
+	}
 	if err := manager.Start(ctx); err != nil {
 		return err
-	}
-	removalService, err := removal.NewService(catalogRepository, archiveRepository)
-	if err != nil {
-		_ = manager.Close()
-		return fmt.Errorf("construct removal service: %w", err)
 	}
 	r.manager = manager
 	r.query = library.NewQuery(database, nil)

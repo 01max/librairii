@@ -189,6 +189,64 @@ func (r *Repository) MoveToTrash(managedRelativePath string) (string, error) {
 	return filepath.ToSlash(relative), nil
 }
 
+func (r *Repository) PlanRemovalTrash(
+	intentID string,
+	managedRelativePath string,
+) (string, error) {
+	if filepath.Base(intentID) != intentID ||
+		intentID == "." ||
+		intentID == ".." ||
+		len(intentID) != 36 {
+		return "", ErrInvalidManagedPath
+	}
+	managed, err := SafeJoin(r.layout.Root, managedRelativePath)
+	if err != nil {
+		return "", err
+	}
+	contained, err := storage.PathContained(r.layout.Archives, managed)
+	if err != nil || !contained {
+		return "", ErrInvalidManagedPath
+	}
+	return filepath.ToSlash(filepath.Join(
+		"trash",
+		"removals",
+		intentID,
+		filepath.Base(managed),
+	)), nil
+}
+
+func (r *Repository) MoveToTrashAt(
+	managedRelativePath string,
+	trashRelativePath string,
+) error {
+	source, err := SafeJoin(r.layout.Root, managedRelativePath)
+	if err != nil {
+		return err
+	}
+	contained, err := storage.PathContained(r.layout.Archives, source)
+	if err != nil || !contained {
+		return ErrInvalidManagedPath
+	}
+	destination, err := SafeJoin(r.layout.Root, trashRelativePath)
+	if err != nil {
+		return err
+	}
+	if _, err := os.Stat(destination); err == nil {
+		return ErrDestinationExists
+	} else if !errors.Is(err, os.ErrNotExist) {
+		return fmt.Errorf("inspect removal trash destination: %w", err)
+	}
+	if err := PrepareDestination(r.layout.Trash, destination); err != nil {
+		return fmt.Errorf("create removal trash directory: %w", err)
+	}
+	if err := os.Rename(source, destination); err != nil {
+		_ = removeDirectoryIfEmpty(filepath.Dir(destination))
+		return fmt.Errorf("move archive to removal trash: %w", err)
+	}
+	_ = removeDirectoryIfEmpty(filepath.Dir(source))
+	return nil
+}
+
 func (r *Repository) RestoreFromTrash(
 	trashRelativePath string,
 	managedRelativePath string,
@@ -273,6 +331,25 @@ func (r *Repository) Resolve(managedRelativePath string) (string, error) {
 		return "", ErrInvalidManagedPath
 	}
 	return path, nil
+}
+
+func (r *Repository) Exists(relativePath string) (bool, error) {
+	path, err := SafeJoin(r.layout.Root, relativePath)
+	if err != nil {
+		return false, err
+	}
+	info, err := os.Lstat(path)
+	if errors.Is(err, os.ErrNotExist) {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	contained, err := storage.PathContained(r.layout.Root, path)
+	if err != nil || !contained || info.Mode()&os.ModeSymlink != 0 {
+		return false, ErrInvalidManagedPath
+	}
+	return info.Mode().IsRegular(), nil
 }
 
 func SafeJoin(root string, relativePath string) (string, error) {

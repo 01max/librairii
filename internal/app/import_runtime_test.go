@@ -10,10 +10,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/01max/librairii/internal/archive"
+	"github.com/01max/librairii/internal/catalog"
 	"github.com/01max/librairii/internal/database"
 	"github.com/01max/librairii/internal/inspection/testfixture"
 	"github.com/01max/librairii/internal/library"
 	"github.com/01max/librairii/internal/operations"
+	"github.com/01max/librairii/internal/removal"
 	"github.com/01max/librairii/internal/storage"
 )
 
@@ -107,6 +110,75 @@ func TestImportRuntimeComposesNativeImportSlice(t *testing.T) {
 	}
 	if trashFiles := regularFiles(t, provider.layout.Trash); len(trashFiles) != 1 {
 		t.Fatalf("trash files = %#v", trashFiles)
+	}
+}
+
+func TestImportRuntimeStartReconcilesInterruptedRemoval(t *testing.T) {
+	t.Parallel()
+
+	provider := newRuntimeStorageProvider(t)
+	archives := archive.NewRepository(provider.layout)
+	source := filepath.Join(t.TempDir(), "interrupted.zip")
+	if err := os.WriteFile(source, []byte("interrupted removal bytes"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	staged, err := archives.Stage(context.Background(), source)
+	if err != nil {
+		t.Fatal(err)
+	}
+	managedPath, err := archives.Publish(staged)
+	if err != nil {
+		t.Fatal(err)
+	}
+	stories := catalog.NewRepository(provider.SQL())
+	story, _, err := stories.Create(context.Background(), catalog.CreateStory{
+		UUID:             "00112233-4455-4677-8899-aabbccddeeff",
+		OriginalFilename: "interrupted.zip",
+		DetectedFormat:   catalog.FormatZIP,
+		SHA256:           staged.SHA256,
+		ByteSize:         staged.ByteSize,
+		ManagedPath:      managedPath,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	intent := removal.Intent{
+		ID:          "11112222-3333-4444-8555-666677778888",
+		StoryID:     story.ID,
+		ManagedPath: managedPath,
+	}
+	intent.TrashPath, err = archives.PlanRemovalTrash(intent.ID, managedPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	intents := removal.NewRepository(provider.SQL())
+	if err := intents.Create(context.Background(), intent); err != nil {
+		t.Fatal(err)
+	}
+	if err := archives.MoveToTrashAt(managedPath, intent.TrashPath); err != nil {
+		t.Fatal(err)
+	}
+
+	runtime, err := NewImportRuntime(
+		provider,
+		fixedClock{now: time.Now()},
+		&runtimeEventRecorder{events: make(chan operations.Snapshot, 8)},
+		1,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := runtime.Start(context.Background()); err != nil {
+		t.Fatalf("Start() error = %v", err)
+	}
+	t.Cleanup(func() {
+		_ = runtime.Close()
+	})
+	if exists, err := archives.Exists(managedPath); err != nil || !exists {
+		t.Fatalf("managed archive exists = %v, %v", exists, err)
+	}
+	if pending, err := intents.List(context.Background()); err != nil || len(pending) != 0 {
+		t.Fatalf("pending intents = %#v, %v", pending, err)
 	}
 }
 
