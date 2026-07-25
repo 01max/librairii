@@ -205,7 +205,7 @@ func (s *PreflightService) inspect(
 	if len(scope.Stories) == 0 {
 		report.Issues = append(report.Issues, blockingIssue(
 			IssueEmptyScope,
-			"No stories match this export scope.",
+			"No stories match this export scope. Select stories, adjust the search or filters, or choose a shelf with matching stories, then try again.",
 		))
 		report.Blocked = true
 		return report, nil

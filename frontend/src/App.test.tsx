@@ -436,7 +436,7 @@ test('renders empty and blocked export preflight guidance', async () => {
             items: [],
             issues: [{
                 code: 'empty_scope',
-                message: 'No stories match this export scope.',
+                message: 'No stories match this export scope. Select stories, adjust the search or filters, or choose a shelf with matching stories, then try again.',
                 blocks: true,
             }],
             partial: false,
@@ -452,7 +452,9 @@ test('renders empty and blocked export preflight guidance', async () => {
     expect(screen.getByRole('dialog', {name: 'Export is blocked'}))
         .toBeInTheDocument();
     expect(screen.getByRole('list', {name: 'Export blockers'}))
-        .toHaveTextContent('No stories match this export scope.');
+        .toHaveTextContent(
+            'Select stories, adjust the search or filters, or choose a shelf with matching stories, then try again.',
+        );
     expect(screen.getByRole('button', {name: 'Export unavailable'})).toBeDisabled();
 });
 
