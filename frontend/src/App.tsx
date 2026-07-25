@@ -553,7 +553,7 @@ function App() {
     const metadataRefreshing = activeOperations.some(
         (snapshot) => snapshot.kind === 'metadata_sync',
     );
-    const hasMetadataOperation = operationSnapshots.some(
+    const hasVisibleMetadataOperation = visibleOperations.some(
         (snapshot) => snapshot.kind === 'metadata_sync',
     );
     const derivedDefinitions = tagCatalog?.definitions.filter(
@@ -989,7 +989,7 @@ function App() {
                     </section>
                 )}
 
-                {metadataStatus && !hasMetadataOperation && (() => {
+                {metadataStatus && !hasVisibleMetadataOperation && (() => {
                     const notice = describeMetadataStatus(metadataStatus);
                     return (
                         <section

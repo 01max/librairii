@@ -966,6 +966,49 @@ test('shows a stale-cache state without blocking the collection', async () => {
         .toBeInTheDocument();
 });
 
+test('restores metadata freshness after a later import becomes the visible operation', async () => {
+    officialMetadataStatus.mockResolvedValue(new app.MetadataStatusResponse({
+        status: new metadata.CatalogStatus({
+            state: 'fresh',
+            locale: 'en-GB',
+            matchedStoryCount: 1,
+            activatedAt: '2026-07-25T16:01:00Z',
+        }),
+    }));
+    render(<App/>);
+
+    operationChanged?.({
+        id: '00112233-4455-4677-8899-aabbccddeef0',
+        kind: 'metadata_sync',
+        status: 'succeeded',
+        completedItems: 1,
+        totalItems: 1,
+        cancelRequested: false,
+        createdAt: '2026-07-25T16:00:00Z',
+        finishedAt: '2026-07-25T16:01:00Z',
+        items: [],
+    });
+    expect(await screen.findByRole('heading', {
+        name: 'Official metadata refreshed',
+    })).toBeInTheDocument();
+
+    operationChanged?.({
+        id: '00112233-4455-4677-8899-aabbccddeeff',
+        kind: 'import',
+        status: 'succeeded',
+        completedItems: 1,
+        totalItems: 1,
+        cancelRequested: false,
+        createdAt: '2026-07-25T17:00:00Z',
+        finishedAt: '2026-07-25T17:01:00Z',
+        items: [],
+    });
+
+    expect(await screen.findByRole('heading', {
+        name: 'Official metadata is available',
+    })).toBeInTheDocument();
+});
+
 test('shows nonblocking import progress and terminal validation feedback', async () => {
     const user = userEvent.setup();
     selectAndImportStories.mockResolvedValue(new app.OperationResponse({
