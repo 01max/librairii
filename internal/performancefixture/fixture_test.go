@@ -86,4 +86,30 @@ func TestGenerateBuildsCopyrightFreeFiveThousandStoryFixture(t *testing.T) {
 	) {
 		t.Fatalf("embedded artwork path = %q", fixture.EmbeddedArtworkPath)
 	}
+	plans, err := QueryPlans(context.Background(), opened.SQL())
+	if err != nil {
+		t.Fatal(err)
+	}
+	combinedPlan := strings.Join(plans["combinedFilters"], "\n")
+	for _, index := range []string{
+		"idx_story_archives_validation_story",
+		"idx_official_metadata_language_story",
+		"idx_story_tag_assignments_filter",
+	} {
+		if !strings.Contains(combinedPlan, index) {
+			t.Fatalf("combined plan omitted %s:\n%s", index, combinedPlan)
+		}
+	}
+	if got := strings.Join(plans["substringSearch"], "\n"); !strings.Contains(
+		got,
+		"idx_stories_display_name_normalized",
+	) {
+		t.Fatalf("substring plan omitted normalized-name index:\n%s", got)
+	}
+	if got := strings.Join(plans["artworkLoad"], "\n"); !strings.Contains(
+		got,
+		"INTEGER PRIMARY KEY",
+	) {
+		t.Fatalf("artwork plan omitted primary-key lookup:\n%s", got)
+	}
 }

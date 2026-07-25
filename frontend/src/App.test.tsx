@@ -2706,6 +2706,12 @@ test('completes the import, list, select, detail, and remove workflow', async ()
 
 test('loads every result when a story is beyond the initial collection page', async () => {
     const user = userEvent.setup();
+    const firstBatchStory = new library.StorySummary({
+        ...stories[1],
+        id: 12,
+        uuid: '12223333-4444-4555-8666-777788889999',
+        title: 'The Twelfth Story',
+    });
     const extraStory = new library.StorySummary({
         ...stories[1],
         id: 13,
@@ -2722,31 +2728,43 @@ test('loads every result when a story is beyond the initial collection page', as
             sort: 'imported_desc',
         },
     });
+    let resolveSecondBatch: (
+        response: app.LibraryPageResponse,
+    ) => void = () => undefined;
+    const secondBatch = new Promise<app.LibraryPageResponse>((resolve) => {
+        resolveSecondBatch = resolve;
+    });
     queryStories
         .mockResolvedValueOnce(initial)
         .mockResolvedValueOnce(new app.LibraryPageResponse({
             page: {
-                stories,
+                stories: [...stories, firstBatchStory],
                 page: 1,
                 pageSize: 100,
-                totalItems: 3,
+                totalItems: 4,
                 totalPages: 2,
                 sort: 'imported_desc',
             },
         }))
-        .mockResolvedValueOnce(new app.LibraryPageResponse({
+        .mockReturnValueOnce(secondBatch);
+    render(<App/>);
+
+    await user.click(await screen.findByRole('button', {name: 'View all →'}));
+
+    expect(await screen.findByRole('button', {
+        name: 'The Twelfth Story 12223333-4444-4555-8666-777788889999',
+    })).toBeInTheDocument();
+    expect(screen.getByRole('button', {name: 'Loading…'})).toBeDisabled();
+    resolveSecondBatch(new app.LibraryPageResponse({
             page: {
                 stories: [extraStory],
                 page: 2,
                 pageSize: 100,
-                totalItems: 3,
+                totalItems: 4,
                 totalPages: 2,
                 sort: 'imported_desc',
             },
         }));
-    render(<App/>);
-
-    await user.click(await screen.findByRole('button', {name: 'View all →'}));
 
     expect(await screen.findByRole('button', {
         name: 'The Thirteenth Story 22223333-4444-4555-8666-777788889999',

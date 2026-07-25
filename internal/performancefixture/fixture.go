@@ -268,6 +268,9 @@ func Generate(
 	if err := transaction.Commit(); err != nil {
 		return Fixture{}, fmt.Errorf("commit performance fixture: %w", err)
 	}
+	if _, err := database.ExecContext(ctx, "ANALYZE"); err != nil {
+		return Fixture{}, fmt.Errorf("analyze performance fixture: %w", err)
+	}
 	return Fixture{
 		StoryCount:          storyCount,
 		ShelfIDs:            shelfIDs,

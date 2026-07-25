@@ -14,6 +14,10 @@ type storyLibrarySearcher interface {
 	Search(context.Context, library.StoryLibraryQuery) (library.Page, error)
 }
 
+type storyLibraryCounter interface {
+	Count(context.Context, library.StoryLibraryQuery) (int, error)
+}
+
 type Evaluation struct {
 	Shelf Shelf             `json:"shelf"`
 	Query SavedLibraryQuery `json:"query"`
@@ -90,17 +94,28 @@ func (e *Evaluator) Evaluate(
 }
 
 func (e *Evaluator) Count(ctx context.Context, shelfID int64) (ShelfCount, error) {
-	evaluation, err := e.Evaluate(ctx, shelfID, library.ListRequest{
-		Page:     1,
-		PageSize: 1,
-		Sort:     library.SortNameAscending,
-	})
+	opened, err := e.shelves.Open(ctx, shelfID)
+	if err != nil {
+		return ShelfCount{}, err
+	}
+	if counter, ok := e.library.(storyLibraryCounter); ok {
+		count, err := counter.Count(ctx, opened.Query.StoryLibraryQuery())
+		if err != nil {
+			return ShelfCount{}, err
+		}
+		return ShelfCount{ShelfID: shelfID, Count: count}, nil
+	}
+	query := opened.Query.StoryLibraryQuery()
+	query.Page = 1
+	query.PageSize = 1
+	query.Sort = library.SortNameAscending
+	page, err := e.library.Search(ctx, query)
 	if err != nil {
 		return ShelfCount{}, err
 	}
 	return ShelfCount{
 		ShelfID: shelfID,
-		Count:   evaluation.Page.TotalItems,
+		Count:   page.TotalItems,
 	}, nil
 }
 

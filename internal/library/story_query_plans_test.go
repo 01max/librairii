@@ -52,6 +52,15 @@ func TestStoryLibraryQueryPaginatesSortsAndCountsInSQLite(t *testing.T) {
 		page.Stories[1].Title != "Story Delta" {
 		t.Fatalf("Search(name page) = %#v", page)
 	}
+	count, err := query.Count(context.Background(), StoryLibraryQuery{
+		Name: "story",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if count != page.TotalItems {
+		t.Fatalf("Count(name) = %d, want %d", count, page.TotalItems)
+	}
 
 	newest, err := query.Search(context.Background(), StoryLibraryQuery{
 		Page:     1,

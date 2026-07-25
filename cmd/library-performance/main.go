@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"os"
@@ -24,19 +25,22 @@ type metric struct {
 	MedianMilliseconds  float64 `json:"medianMilliseconds"`
 	P95Milliseconds     float64 `json:"p95Milliseconds"`
 	MaximumMilliseconds float64 `json:"maximumMilliseconds"`
+	BudgetMilliseconds  float64 `json:"budgetMilliseconds"`
+	WithinBudget        bool    `json:"withinBudget"`
 	ResultCount         int     `json:"resultCount"`
 }
 
 type report struct {
-	GeneratedAt                   string            `json:"generatedAt"`
-	GoVersion                     string            `json:"goVersion"`
-	OperatingSystem               string            `json:"operatingSystem"`
-	Architecture                  string            `json:"architecture"`
-	Stories                       int               `json:"stories"`
-	Shelves                       int               `json:"shelves"`
-	Samples                       int               `json:"samples"`
-	FixtureGenerationMilliseconds float64           `json:"fixtureGenerationMilliseconds"`
-	Metrics                       map[string]metric `json:"metrics"`
+	GeneratedAt                   string                  `json:"generatedAt"`
+	GoVersion                     string                  `json:"goVersion"`
+	OperatingSystem               string                  `json:"operatingSystem"`
+	Architecture                  string                  `json:"architecture"`
+	Stories                       int                     `json:"stories"`
+	Shelves                       int                     `json:"shelves"`
+	Samples                       int                     `json:"samples"`
+	FixtureGenerationMilliseconds float64                 `json:"fixtureGenerationMilliseconds"`
+	Metrics                       map[string]metric       `json:"metrics"`
+	QueryPlans                    performancefixture.Plan `json:"queryPlans"`
 }
 
 func main() {
@@ -109,48 +113,72 @@ func run(ctx context.Context, storyCount int, samples int) error {
 		return err
 	}
 	artworks := artwork.NewRepository(layout)
+	queryPlans, err := performancefixture.QueryPlans(ctx, opened.SQL())
+	if err != nil {
+		return err
+	}
 
 	metrics := make(map[string]metric)
-	metrics["collectionQuery"] = measure(samples, func() (int, error) {
-		page, err := query.Search(ctx, library.StoryLibraryQuery{
-			Page:     1,
-			PageSize: library.DefaultPageSize,
-		})
-		return page.TotalItems, err
-	})
-	metrics["substringSearch"] = measure(samples, func() (int, error) {
-		page, err := query.Search(ctx, library.StoryLibraryQuery{
-			Name:     "moon",
-			Page:     1,
-			PageSize: library.DefaultPageSize,
-		})
-		return page.TotalItems, err
-	})
-	metrics["combinedFilters"] = measure(samples, func() (int, error) {
-		request := performancefixture.CombinedQuery()
-		request.Page = 1
-		request.PageSize = library.DefaultPageSize
-		page, err := query.Search(ctx, request)
-		return page.TotalItems, err
-	})
-	metrics["shelfCounts"] = measure(samples, func() (int, error) {
-		counts, err := evaluator.Counts(ctx)
-		if err != nil {
-			return 0, err
-		}
-		total := 0
-		for _, count := range counts {
-			total += count.Count
-		}
-		return total, nil
-	})
-	metrics["deepPagination"] = measure(samples, func() (int, error) {
-		page, err := query.Search(ctx, library.StoryLibraryQuery{
-			Page:     200,
-			PageSize: library.DefaultPageSize,
-		})
-		return len(page.Stories), err
-	})
+	metrics["collectionQuery"] = measure(
+		samples,
+		mustBudget("collectionQuery"),
+		func() (int, error) {
+			page, err := query.Search(ctx, library.StoryLibraryQuery{
+				Page:     1,
+				PageSize: library.DefaultPageSize,
+			})
+			return page.TotalItems, err
+		},
+	)
+	metrics["substringSearch"] = measure(
+		samples,
+		mustBudget("substringSearch"),
+		func() (int, error) {
+			page, err := query.Search(ctx, library.StoryLibraryQuery{
+				Name:     "moon",
+				Page:     1,
+				PageSize: library.DefaultPageSize,
+			})
+			return page.TotalItems, err
+		},
+	)
+	metrics["combinedFilters"] = measure(
+		samples,
+		mustBudget("combinedFilters"),
+		func() (int, error) {
+			request := performancefixture.CombinedQuery()
+			request.Page = 1
+			request.PageSize = library.DefaultPageSize
+			page, err := query.Search(ctx, request)
+			return page.TotalItems, err
+		},
+	)
+	metrics["shelfCounts"] = measure(
+		samples,
+		mustBudget("shelfCounts"),
+		func() (int, error) {
+			counts, err := evaluator.Counts(ctx)
+			if err != nil {
+				return 0, err
+			}
+			total := 0
+			for _, count := range counts {
+				total += count.Count
+			}
+			return total, nil
+		},
+	)
+	metrics["deepPagination"] = measure(
+		samples,
+		mustBudget("deepPagination"),
+		func() (int, error) {
+			page, err := query.Search(ctx, library.StoryLibraryQuery{
+				Page:     200,
+				PageSize: library.DefaultPageSize,
+			})
+			return len(page.Stories), err
+		},
+	)
 	firstPage, err := query.Search(ctx, library.StoryLibraryQuery{
 		Page:     1,
 		PageSize: library.DefaultPageSize,
@@ -158,25 +186,31 @@ func run(ctx context.Context, storyCount int, samples int) error {
 	if err != nil {
 		return err
 	}
-	metrics["artworkLoad"] = measure(samples, func() (int, error) {
-		loaded := 0
-		for _, story := range firstPage.Stories {
-			if _, err := artworks.LoadEmbedded(
-				ctx,
-				opened.SQL(),
-				story.ArtworkID,
-				artwork.DefaultMaximumBytes,
-			); err != nil {
-				return loaded, err
+	metrics["artworkLoad"] = measure(
+		samples,
+		mustBudget("artworkLoad"),
+		func() (int, error) {
+			loaded := 0
+			for _, story := range firstPage.Stories {
+				if _, err := artworks.LoadEmbedded(
+					ctx,
+					opened.SQL(),
+					story.ArtworkID,
+					artwork.DefaultMaximumBytes,
+				); err != nil {
+					return loaded, err
+				}
+				loaded++
 			}
-			loaded++
-		}
-		return loaded, nil
-	})
+			return loaded, nil
+		},
+	)
+	budgetsMet := true
 	for name, result := range metrics {
 		if result.ResultCount < 0 {
 			return fmt.Errorf("%s measurement failed", name)
 		}
+		budgetsMet = budgetsMet && result.WithinBudget
 	}
 	encoded, err := json.MarshalIndent(report{
 		GeneratedAt:                   time.Now().UTC().Format(time.RFC3339),
@@ -188,15 +222,25 @@ func run(ctx context.Context, storyCount int, samples int) error {
 		Samples:                       samples,
 		FixtureGenerationMilliseconds: milliseconds(fixtureDuration),
 		Metrics:                       metrics,
+		QueryPlans:                    queryPlans,
 	}, "", "  ")
 	if err != nil {
 		return err
 	}
-	_, err = fmt.Fprintln(os.Stdout, string(encoded))
-	return err
+	if _, err = fmt.Fprintln(os.Stdout, string(encoded)); err != nil {
+		return err
+	}
+	if !budgetsMet {
+		return errors.New("one or more large-library interaction budgets were missed")
+	}
+	return nil
 }
 
-func measure(samples int, operation func() (int, error)) metric {
+func measure(
+	samples int,
+	budget time.Duration,
+	operation func() (int, error),
+) metric {
 	if _, err := operation(); err != nil {
 		return metric{ResultCount: -1}
 	}
@@ -220,8 +264,18 @@ func measure(samples int, operation func() (int, error)) metric {
 		MedianMilliseconds:  milliseconds(durations[len(durations)/2]),
 		P95Milliseconds:     milliseconds(durations[p95Index]),
 		MaximumMilliseconds: milliseconds(durations[len(durations)-1]),
+		BudgetMilliseconds:  milliseconds(budget),
+		WithinBudget:        durations[p95Index] <= budget,
 		ResultCount:         resultCount,
 	}
+}
+
+func mustBudget(name string) time.Duration {
+	budget, found := performancefixture.InteractionBudget(name)
+	if !found {
+		panic("missing performance budget: " + name)
+	}
+	return budget
 }
 
 func milliseconds(duration time.Duration) float64 {

@@ -78,6 +78,21 @@ func (q *Query) Search(
 	return q.searchNormalized(ctx, request)
 }
 
+func (q *Query) Count(
+	ctx context.Context,
+	request StoryLibraryQuery,
+) (int, error) {
+	request, err := normalizeStoryLibraryQuery(request)
+	if err != nil {
+		return 0, err
+	}
+	if err := q.validateFilterDefinitions(ctx, request); err != nil {
+		return 0, err
+	}
+	where, arguments := storyLibraryPredicate(request, q.officialLocale)
+	return q.countLocalRecords(ctx, where, arguments)
+}
+
 // ExportQuery resolves every matching archive in one SQLite statement so
 // concurrent writers cannot shift pagination offsets while a scope is frozen.
 func (q *Query) ExportQuery(

@@ -320,6 +320,12 @@ function chunkStories(stories: library.StorySummary[]): library.StorySummary[][]
     return rows;
 }
 
+function yieldForRendering(): Promise<void> {
+    return new Promise((resolve) => {
+        window.requestAnimationFrame(() => resolve());
+    });
+}
+
 function formatBytes(byteSize: number): string {
     if (byteSize <= 0) {
         return '0 KB';
@@ -910,6 +916,16 @@ function App() {
                 return;
             }
             const byID = new Map(first.page.stories.map((story) => [story.id, story]));
+            const publishBatch = () => {
+                setPage(new library.Page({
+                    ...first.page,
+                    stories: [...byID.values()],
+                    page: 1,
+                    pageSize: byID.size,
+                    totalPages: 1,
+                }));
+            };
+            publishBatch();
             for (let pageNumber = 2; pageNumber <= first.page.totalPages; pageNumber += 1) {
                 const next = await QueryStories(new library.StoryLibraryQuery({
                     ...collectionQuery,
@@ -926,14 +942,9 @@ function App() {
                 for (const story of next.page.stories) {
                     byID.set(story.id, story);
                 }
+                publishBatch();
+                await yieldForRendering();
             }
-            setPage(new library.Page({
-                ...first.page,
-                stories: [...byID.values()],
-                page: 1,
-                pageSize: byID.size,
-                totalPages: 1,
-            }));
         } finally {
             setExpandingCollection(false);
         }
@@ -2203,6 +2214,7 @@ function App() {
                                                 src={artworkURL(story.artworkId)}
                                                 alt=""
                                                 loading="lazy"
+                                                decoding="async"
                                             />
                                         )}
                                         <b>{story.title}</b>
@@ -2254,6 +2266,7 @@ function App() {
                             <img
                                 src={artworkURL(selected.artworkId)}
                                 alt={`${selected.title} artwork`}
+                                decoding="async"
                             />
                         )}
                     </div>

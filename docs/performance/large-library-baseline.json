@@ -1,48 +1,116 @@
 {
-  "generatedAt": "2026-07-25T18:48:55Z",
+  "generatedAt": "2026-07-25T18:53:32Z",
   "goVersion": "go1.26.5",
   "operatingSystem": "darwin",
   "architecture": "arm64",
   "stories": 5000,
   "shelves": 6,
   "samples": 20,
-  "fixtureGenerationMilliseconds": 278.739,
+  "fixtureGenerationMilliseconds": 291.961,
   "metrics": {
     "artworkLoad": {
-      "medianMilliseconds": 0.91,
-      "p95Milliseconds": 1.061,
-      "maximumMilliseconds": 1.112,
+      "medianMilliseconds": 0.958,
+      "p95Milliseconds": 1.104,
+      "maximumMilliseconds": 1.259,
+      "budgetMilliseconds": 50,
+      "withinBudget": true,
       "resultCount": 24
     },
     "collectionQuery": {
-      "medianMilliseconds": 9.441,
-      "p95Milliseconds": 10.549,
-      "maximumMilliseconds": 11.237,
+      "medianMilliseconds": 8.589,
+      "p95Milliseconds": 8.944,
+      "maximumMilliseconds": 9.075,
+      "budgetMilliseconds": 100,
+      "withinBudget": true,
       "resultCount": 5000
     },
     "combinedFilters": {
-      "medianMilliseconds": 14.05,
-      "p95Milliseconds": 14.491,
-      "maximumMilliseconds": 15.051,
+      "medianMilliseconds": 13.418,
+      "p95Milliseconds": 13.825,
+      "maximumMilliseconds": 13.856,
+      "budgetMilliseconds": 150,
+      "withinBudget": true,
       "resultCount": 74
     },
     "deepPagination": {
-      "medianMilliseconds": 20.967,
-      "p95Milliseconds": 21.871,
-      "maximumMilliseconds": 21.947,
+      "medianMilliseconds": 18.466,
+      "p95Milliseconds": 18.853,
+      "maximumMilliseconds": 19.747,
+      "budgetMilliseconds": 120,
+      "withinBudget": true,
       "resultCount": 24
     },
     "shelfCounts": {
-      "medianMilliseconds": 65.521,
-      "p95Milliseconds": 66.093,
-      "maximumMilliseconds": 66.19,
+      "medianMilliseconds": 21.092,
+      "p95Milliseconds": 21.48,
+      "maximumMilliseconds": 21.499,
+      "budgetMilliseconds": 250,
+      "withinBudget": true,
       "resultCount": 9578
     },
     "substringSearch": {
-      "medianMilliseconds": 18.137,
-      "p95Milliseconds": 18.528,
-      "maximumMilliseconds": 18.784,
+      "medianMilliseconds": 14.339,
+      "p95Milliseconds": 14.561,
+      "maximumMilliseconds": 14.801,
+      "budgetMilliseconds": 120,
+      "withinBudget": true,
       "resultCount": 624
     }
+  },
+  "queryPlans": {
+    "artworkLoad": [
+      "SEARCH stories USING INTEGER PRIMARY KEY (rowid=?)"
+    ],
+    "collectionQuery": [
+      "SCAN s USING INDEX idx_stories_uuid",
+      "SEARCH a USING COVERING INDEX sqlite_autoindex_story_archives_1 (story_id=?)",
+      "CORRELATED SCALAR SUBQUERY 1",
+      "SEARCH official_snapshot USING INDEX idx_catalog_snapshots_active_locale (locale=?)",
+      "SEARCH official_name USING INDEX idx_official_metadata_snapshot_uuid (snapshot_id=? AND story_uuid=?)",
+      "USE TEMP B-TREE FOR ORDER BY"
+    ],
+    "combinedFilters": [
+      "SEARCH a USING COVERING INDEX idx_story_archives_validation_story (validation_state=?)",
+      "SEARCH s USING INTEGER PRIMARY KEY (rowid=?)",
+      "CORRELATED SCALAR SUBQUERY 1",
+      "SEARCH official_snapshot USING INDEX idx_catalog_snapshots_active_locale (locale=?)",
+      "SEARCH official_name USING INDEX idx_official_metadata_snapshot_uuid (snapshot_id=? AND story_uuid=?)",
+      "CORRELATED SCALAR SUBQUERY 2",
+      "SCAN language_snapshot USING COVERING INDEX idx_catalog_snapshots_active_locale",
+      "SEARCH official_language USING COVERING INDEX idx_official_metadata_language_story (language=? AND story_uuid=? AND snapshot_id=?)",
+      "CORRELATED SCALAR SUBQUERY 3",
+      "SEARCH boolean_assignment USING COVERING INDEX idx_story_tag_assignments_filter (definition_id=? AND value_id=? AND story_id=?)",
+      "BLOOM FILTER ON choice_assignment (definition_id=? AND value_id=? AND story_id=?)",
+      "SEARCH choice_assignment EXISTS USING INDEX idx_story_tag_assignments_filter (definition_id=? AND value_id=? AND story_id=?)",
+      "CORRELATED SCALAR SUBQUERY 5",
+      "SEARCH official_snapshot USING INDEX idx_catalog_snapshots_active_locale (locale=?)",
+      "SEARCH official_name USING INDEX idx_official_metadata_snapshot_uuid (snapshot_id=? AND story_uuid=?)",
+      "USE TEMP B-TREE FOR ORDER BY"
+    ],
+    "deepPagination": [
+      "SCAN s USING INDEX idx_stories_uuid",
+      "SEARCH a USING COVERING INDEX sqlite_autoindex_story_archives_1 (story_id=?)",
+      "CORRELATED SCALAR SUBQUERY 1",
+      "SEARCH official_snapshot USING INDEX idx_catalog_snapshots_active_locale (locale=?)",
+      "SEARCH official_name USING INDEX idx_official_metadata_snapshot_uuid (snapshot_id=? AND story_uuid=?)",
+      "USE TEMP B-TREE FOR ORDER BY"
+    ],
+    "shelfCounts": [
+      "SEARCH a USING COVERING INDEX idx_story_archives_validation_story (validation_state=?)",
+      "SEARCH s USING INTEGER PRIMARY KEY (rowid=?)",
+      "BLOOM FILTER ON choice_assignment (story_id=? AND definition_id=? AND value_id=?)",
+      "SEARCH choice_assignment EXISTS USING INDEX idx_story_tag_choice_assignment (story_id=? AND definition_id=? AND value_id=?)"
+    ],
+    "substringSearch": [
+      "SCAN s USING INDEX idx_stories_display_name_normalized",
+      "CORRELATED SCALAR SUBQUERY 1",
+      "SEARCH official_snapshot USING INDEX idx_catalog_snapshots_active_locale (locale=?)",
+      "SEARCH official_name USING INDEX idx_official_metadata_snapshot_uuid (snapshot_id=? AND story_uuid=?)",
+      "SEARCH a USING COVERING INDEX sqlite_autoindex_story_archives_1 (story_id=?)",
+      "CORRELATED SCALAR SUBQUERY 2",
+      "SEARCH official_snapshot USING INDEX idx_catalog_snapshots_active_locale (locale=?)",
+      "SEARCH official_name USING INDEX idx_official_metadata_snapshot_uuid (snapshot_id=? AND story_uuid=?)",
+      "USE TEMP B-TREE FOR ORDER BY"
+    ]
   }
 }
