@@ -1,57 +1,57 @@
 {
-  "generatedAt": "2026-07-25T19:09:05Z",
+  "generatedAt": "2026-07-25T19:22:17Z",
   "goVersion": "go1.26.5",
   "operatingSystem": "darwin",
   "architecture": "arm64",
   "stories": 5000,
   "shelves": 6,
   "samples": 20,
-  "fixtureGenerationMilliseconds": 317.726,
+  "fixtureGenerationMilliseconds": 358.483,
   "metrics": {
     "artworkLoad": {
-      "medianMilliseconds": 13.831,
-      "p95Milliseconds": 14.409,
-      "maximumMilliseconds": 14.507,
+      "medianMilliseconds": 14.435,
+      "p95Milliseconds": 15.558,
+      "maximumMilliseconds": 15.663,
       "budgetMilliseconds": 50,
       "withinBudget": true,
       "resultCount": 24
     },
     "collectionQuery": {
-      "medianMilliseconds": 8.336,
-      "p95Milliseconds": 8.564,
-      "maximumMilliseconds": 8.575,
+      "medianMilliseconds": 8.964,
+      "p95Milliseconds": 9.43,
+      "maximumMilliseconds": 9.453,
       "budgetMilliseconds": 100,
       "withinBudget": true,
       "resultCount": 5000
     },
     "combinedFilters": {
-      "medianMilliseconds": 11.999,
-      "p95Milliseconds": 12.274,
-      "maximumMilliseconds": 12.464,
+      "medianMilliseconds": 12.576,
+      "p95Milliseconds": 13.328,
+      "maximumMilliseconds": 13.409,
       "budgetMilliseconds": 150,
       "withinBudget": true,
       "resultCount": 74
     },
     "deepPagination": {
-      "medianMilliseconds": 17.149,
-      "p95Milliseconds": 17.758,
-      "maximumMilliseconds": 17.826,
+      "medianMilliseconds": 18.072,
+      "p95Milliseconds": 18.662,
+      "maximumMilliseconds": 18.904,
       "budgetMilliseconds": 120,
       "withinBudget": true,
       "resultCount": 24
     },
     "shelfCounts": {
-      "medianMilliseconds": 19.975,
-      "p95Milliseconds": 20.347,
-      "maximumMilliseconds": 21.344,
+      "medianMilliseconds": 20.726,
+      "p95Milliseconds": 21.47,
+      "maximumMilliseconds": 21.491,
       "budgetMilliseconds": 250,
       "withinBudget": true,
       "resultCount": 9578
     },
     "substringSearch": {
-      "medianMilliseconds": 13.427,
-      "p95Milliseconds": 14.351,
-      "maximumMilliseconds": 14.424,
+      "medianMilliseconds": 14.14,
+      "p95Milliseconds": 14.707,
+      "maximumMilliseconds": 15.209,
       "budgetMilliseconds": 120,
       "withinBudget": true,
       "resultCount": 624

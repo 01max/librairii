@@ -9,6 +9,8 @@ import (
 	"testing"
 
 	"github.com/01max/librairii/internal/database"
+	"github.com/01max/librairii/internal/library"
+	"github.com/01max/librairii/internal/metadata"
 	"github.com/01max/librairii/internal/storage"
 )
 
@@ -103,20 +105,32 @@ func TestGenerateBuildsCopyrightFreeFiveThousandStoryFixture(t *testing.T) {
 			t.Fatalf("artwork dimensions = %dx%d", config.Width, config.Height)
 		}
 	}
-	var firstPageArtworkCount int
-	if err := opened.SQL().QueryRow(
-		`SELECT COUNT(DISTINCT embedded_artwork_path)
-		 FROM stories
-		 WHERE id BETWEEN 1 AND ?`,
-		SyntheticArtworkVariants,
-	).Scan(&firstPageArtworkCount); err != nil {
+	official, err := metadata.NewLibraryProvider(
+		metadata.NewRepository(opened.SQL()),
+		metadata.DefaultLocale,
+	)
+	if err != nil {
 		t.Fatal(err)
 	}
-	if firstPageArtworkCount != SyntheticArtworkVariants {
+	firstPage, err := library.NewQuery(opened.SQL(), official).Search(
+		context.Background(),
+		library.StoryLibraryQuery{
+			Page:     1,
+			PageSize: library.DefaultPageSize,
+		},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	firstPageArtwork := make(map[string]struct{}, len(firstPage.Stories))
+	for _, story := range firstPage.Stories {
+		firstPageArtwork[story.ArtworkID] = struct{}{}
+	}
+	if len(firstPageArtwork) != len(firstPage.Stories) {
 		t.Fatalf(
-			"first-page distinct artwork paths = %d, want %d",
-			firstPageArtworkCount,
-			SyntheticArtworkVariants,
+			"measured first-page distinct artwork IDs = %d, want %d",
+			len(firstPageArtwork),
+			len(firstPage.Stories),
 		)
 	}
 	plans, err := QueryPlans(context.Background(), opened.SQL())

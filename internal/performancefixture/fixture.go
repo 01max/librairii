@@ -30,6 +30,7 @@ const (
 	SyntheticArtworkVariants   = 24
 	SyntheticArtworkWidth      = 320
 	SyntheticArtworkHeight     = 400
+	syntheticTitleCycle        = 64
 )
 
 type Fixture struct {
@@ -167,7 +168,7 @@ func Generate(
 			storyUUID,
 			title,
 			description,
-			artworkPaths[(index-1)%len(artworkPaths)],
+			artworkPaths[(index/syntheticTitleCycle)%len(artworkPaths)],
 			searchtext.Normalize(title),
 			createdAt,
 			createdAt,

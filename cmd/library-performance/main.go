@@ -198,6 +198,17 @@ func run(ctx context.Context, storyCount int, samples int) error {
 	if err != nil {
 		return err
 	}
+	distinctArtwork := make(map[string]struct{}, len(firstPage.Stories))
+	for _, story := range firstPage.Stories {
+		distinctArtwork[story.ArtworkID] = struct{}{}
+	}
+	if len(distinctArtwork) != len(firstPage.Stories) {
+		return fmt.Errorf(
+			"artwork measurement requires %d distinct first-page assets; got %d",
+			len(firstPage.Stories),
+			len(distinctArtwork),
+		)
+	}
 	metrics["artworkLoad"] = measure(
 		samples,
 		mustBudget("artworkLoad"),
