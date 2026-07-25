@@ -7,6 +7,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"testing/fstest"
 
@@ -347,6 +348,53 @@ func TestRelocateSchemaMarkerConflictPreservesLegacySQLite(t *testing.T) {
 		identity != IdentityAbsent {
 		t.Fatalf("Inspect(relocated path) = %q, %v", identity, err)
 	}
+}
+
+func TestRelocationFailureReportsIncompleteRollbackAndRecoveryDirectory(t *testing.T) {
+	t.Parallel()
+
+	root := t.TempDir()
+	recoveryDirectory := filepath.Join(root, "schema-conflict-recovery-test")
+	if err := os.Mkdir(recoveryDirectory, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	livePath := filepath.Join(root, "librairii.sqlite3")
+	if err := os.Mkdir(livePath, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(
+		filepath.Join(livePath, "blocks-rollback"),
+		[]byte("occupied"),
+		0o600,
+	); err != nil {
+		t.Fatal(err)
+	}
+	recoveredPath := filepath.Join(recoveryDirectory, filepath.Base(livePath))
+	if err := os.WriteFile(recoveredPath, []byte("legacy"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	cause := errors.New("later sidecar move failed")
+	preservedDirectory, err := relocationFailure(
+		recoveryDirectory,
+		[][2]string{{livePath, recoveredPath}},
+		cause,
+	)
+	if !errors.Is(err, cause) {
+		t.Fatalf("relocationFailure() error = %v, want original cause", err)
+	}
+	if preservedDirectory != recoveryDirectory {
+		t.Fatalf(
+			"relocationFailure() directory = %q, want %q",
+			preservedDirectory,
+			recoveryDirectory,
+		)
+	}
+	if !strings.Contains(err.Error(), "rollback schema conflict relocation") {
+		t.Fatalf("relocationFailure() error omits rollback failure: %v", err)
+	}
+	assertFileBytes(t, recoveredPath, []byte("legacy"))
+	assertFileBytes(t, filepath.Join(livePath, "blocks-rollback"), []byte("occupied"))
 }
 
 func TestOpenRejectsUnsupportedMigrationHistoryWithoutChangingDatabase(t *testing.T) {

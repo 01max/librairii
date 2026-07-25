@@ -154,15 +154,19 @@ func RelocateSchemaConflict(ctx context.Context, path string) (string, error) {
 		if _, err := os.Stat(source); errors.Is(err, os.ErrNotExist) {
 			continue
 		} else if err != nil {
-			rollbackRelocation(moved)
-			_ = os.Remove(directory)
-			return "", fmt.Errorf("inspect schema conflict file: %w", err)
+			return relocationFailure(
+				directory,
+				moved,
+				fmt.Errorf("inspect schema conflict file: %w", err),
+			)
 		}
 		destination := filepath.Join(directory, filepath.Base(source))
 		if err := os.Rename(source, destination); err != nil {
-			rollbackRelocation(moved)
-			_ = os.Remove(directory)
-			return "", fmt.Errorf("relocate schema conflict file: %w", err)
+			return relocationFailure(
+				directory,
+				moved,
+				fmt.Errorf("relocate schema conflict file: %w", err),
+			)
 		}
 		moved = append(moved, [2]string{source, destination})
 	}
@@ -413,10 +417,44 @@ func databaseFiles(path string) []string {
 	return []string{path, path + "-wal", path + "-shm"}
 }
 
-func rollbackRelocation(moved [][2]string) {
-	for index := len(moved) - 1; index >= 0; index-- {
-		_ = os.Rename(moved[index][1], moved[index][0])
+func relocationFailure(
+	directory string,
+	moved [][2]string,
+	cause error,
+) (string, error) {
+	if rollbackErr := rollbackRelocation(moved); rollbackErr != nil {
+		return directory, errors.Join(
+			cause,
+			fmt.Errorf(
+				"rollback schema conflict relocation; preserved recovery directory %q: %w",
+				directory,
+				rollbackErr,
+			),
+		)
 	}
+	if err := os.Remove(directory); err != nil && !errors.Is(err, os.ErrNotExist) {
+		return directory, errors.Join(
+			cause,
+			fmt.Errorf("remove empty schema conflict recovery directory: %w", err),
+		)
+	}
+	return "", cause
+}
+
+func rollbackRelocation(moved [][2]string) error {
+	var errs []error
+	for index := len(moved) - 1; index >= 0; index-- {
+		source := moved[index][0]
+		destination := moved[index][1]
+		if err := os.Rename(destination, source); err != nil {
+			errs = append(errs, fmt.Errorf(
+				"restore %q from recovery: %w",
+				filepath.Base(source),
+				err,
+			))
+		}
+	}
+	return errors.Join(errs...)
 }
 
 func migrate(ctx context.Context, connection *sql.DB, migrations fs.FS) error {
