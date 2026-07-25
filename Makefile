@@ -4,7 +4,7 @@ WAILS_VERSION := $(shell cat .wails-version)
 WAILS ?= $(shell go env GOPATH)/bin/wails
 GO_PACKAGES := . ./internal/... ./cmd/...
 
-.PHONY: setup fmt fmt-check vet test-go typecheck lint-frontend test-frontend build-frontend check build smoke-foundation
+.PHONY: setup fmt fmt-check vet test-go typecheck lint-frontend test-frontend build-frontend check build smoke-foundation smoke-first-story
 
 setup:
 	go mod download
@@ -44,3 +44,6 @@ build:
 
 smoke-foundation:
 	scripts/smoke-foundation
+
+smoke-first-story:
+	go test ./internal/app -run '^TestFirstStoryVerticalSliceThroughPickerAndApplication$$' -v

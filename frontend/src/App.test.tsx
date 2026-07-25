@@ -277,3 +277,87 @@ test('confirms removal, refreshes the collection, and reports trash custody', as
     expect(screen.queryByRole('button', {name: 'Clockwork Forest Lunii'}))
         .not.toBeInTheDocument();
 });
+
+test('completes the import, list, select, detail, and remove workflow', async () => {
+    const user = userEvent.setup();
+    const emptyPage = new app.LibraryPageResponse({
+        page: {
+            stories: [],
+            page: 1,
+            pageSize: 12,
+            totalItems: 0,
+            totalPages: 0,
+            sort: 'imported_desc',
+        },
+    });
+    const importedPage = new app.LibraryPageResponse({
+        page: {
+            stories: [stories[0]],
+            page: 1,
+            pageSize: 12,
+            totalItems: 1,
+            totalPages: 1,
+            sort: 'imported_desc',
+        },
+    });
+    listStories
+        .mockResolvedValueOnce(emptyPage)
+        .mockResolvedValueOnce(importedPage)
+        .mockResolvedValue(emptyPage);
+    selectAndImportStories.mockResolvedValue(new app.OperationResponse({
+        operation: {
+            id: '00112233-4455-4677-8899-aabbccddeeff',
+            kind: 'import',
+            status: 'queued',
+            completedItems: 0,
+            totalItems: 1,
+            cancelRequested: false,
+            createdAt: '2026-07-25T09:00:00Z',
+            items: [{
+                id: 1,
+                sourceName: 'clockwork.zip',
+                status: 'pending',
+                completedBytes: 0,
+                totalBytes: 1048576,
+            }],
+        },
+    }));
+    render(<App/>);
+
+    await user.click(await screen.findByRole('button', {
+        name: '＋ Import your first stories',
+    }));
+    operationChanged?.({
+        id: '00112233-4455-4677-8899-aabbccddeeff',
+        kind: 'import',
+        status: 'succeeded',
+        completedItems: 1,
+        totalItems: 1,
+        cancelRequested: false,
+        createdAt: '2026-07-25T09:00:00Z',
+        items: [{
+            id: 1,
+            storyId: 1,
+            sourceName: 'clockwork.zip',
+            status: 'succeeded',
+            outcomeCode: 'imported',
+            outcomeMessage: 'Story imported.',
+            completedBytes: 1048576,
+            totalBytes: 1048576,
+        }],
+    });
+
+    const cover = await screen.findByRole('button', {name: 'Clockwork Forest Lunii'});
+    expect(cover).toHaveAttribute('aria-pressed', 'true');
+    expect(await screen.findByText('clockwork-forest.zip · 1.0 MB · Verified'))
+        .toBeInTheDocument();
+    await user.click(screen.getByRole('button', {name: 'Open details'}));
+    expect(screen.getByRole('dialog', {name: 'Clockwork Forest'})).toBeInTheDocument();
+    await user.click(screen.getByRole('button', {name: 'Move to trash'}));
+
+    expect(removeStory).toHaveBeenCalledWith(1);
+    expect(await screen.findByRole('heading', {name: 'Build your local story archive'}))
+        .toBeInTheDocument();
+    expect(screen.getByText('Clockwork Forest was moved to application trash.'))
+        .toBeInTheDocument();
+});

@@ -30,3 +30,13 @@ smoke with:
 ```sh
 make smoke-foundation
 ```
+
+The first complete local story workflow has a synthetic, copyright-free
+demonstration and automated smoke test:
+
+```sh
+make smoke-first-story
+```
+
+See [docs/demos/first-story-vertical-slice.md](docs/demos/first-story-vertical-slice.md)
+for the packaged-app walkthrough.
