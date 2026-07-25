@@ -19,9 +19,11 @@ export type FixtureStory = {
     };
     official?: {
         locale: string;
+        language: string;
         title: string;
         author: string;
         publisher: string;
+        provenance: string;
         durationSeconds: number;
         fetchedAt: string;
         activatedAt: string;
@@ -66,9 +68,11 @@ const stories: FixtureStory[] = sampleStories.map(
         },
         official: {
             locale: 'en-GB',
+            language: 'en-GB',
             title,
             author: index === 0 ? 'Antoine de Saint-Exupéry' : publisher,
             publisher,
+            provenance: 'canonical-parity-fixture',
             durationSeconds: durationMinutes * 60,
             fetchedAt: '2026-07-25T09:00:00Z',
             activatedAt: '2026-07-25T09:00:00Z',
@@ -134,4 +138,3 @@ export const CANONICAL_PARITY_FIXTURE = {
         },
     },
 } as const;
-

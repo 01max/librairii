@@ -297,7 +297,8 @@ test('renders the canonical collection shell from typed library data', async () 
     expect(await screen.findByRole('heading', {name: 'Clockwork Forest'})).toBeInTheDocument();
     expect(screen.getByRole('heading', {name: 'My story shelves'})).toBeInTheDocument();
     expect(screen.getByRole('navigation', {name: 'Primary navigation'})).toBeInTheDocument();
-    expect(screen.getByText('Stories in your local archive · 2 archives')).toBeInTheDocument();
+    expect(screen.getByText('Stories grouped by your tags · 2 archives'))
+        .toBeInTheDocument();
     expect(screen.getByRole('button', {name: 'Clockwork Forest Lunii'}))
         .toHaveAttribute('aria-pressed', 'true');
     expect(await screen.findByText('clockwork-forest.zip · 1.0 MB · Verified'))
@@ -1549,7 +1550,9 @@ test('composes official language, import status, and derived age refinements', a
     render(<App/>);
 
     await user.click(await screen.findByRole('checkbox', {name: '3–5 years'}));
+    await user.click(screen.getByRole('button', {name: 'Language ＋'}));
     await user.click(screen.getByRole('checkbox', {name: 'English'}));
+    await user.click(screen.getByRole('button', {name: 'Import status ＋'}));
     await user.click(screen.getByRole('checkbox', {name: 'Archive missing'}));
 
     await waitFor(() => expect(queryStories).toHaveBeenLastCalledWith(
@@ -1730,10 +1733,10 @@ test('keeps matched metadata, artwork, provenance, and combined refinements usab
         .toBeInTheDocument();
     expect(await screen.findByRole('img', {name: 'The Clockwork Mountain artwork'}))
         .toHaveAttribute('src', `/artwork/${artworkID}`);
-    expect(screen.getByText(/Official metadata from Lunii catalog/))
+    expect(screen.getByText(/A\. Example · metadata synced/))
         .toBeInTheDocument();
     expect(screen.getByText('54 min')).toBeInTheDocument();
-    expect(screen.getByText('System-derived · Age · 3–5 years'))
+    expect(screen.getByText('Age · 3–5 years'))
         .toBeInTheDocument();
 
     await user.click(screen.getByRole('button', {
@@ -1742,11 +1745,13 @@ test('keeps matched metadata, artwork, provenance, and combined refinements usab
     expect(await screen.findByText('Local story · embedded metadata'))
         .toBeInTheDocument();
     await user.click(screen.getByRole('button', {
-        name: 'The Clockwork Mountain A. Example',
+        name: 'The Clockwork Mountain 54 min · Fixture Press',
     }));
 
     await user.type(screen.getByRole('searchbox', {name: 'Search stories'}), 'Clockwork');
+    await user.click(screen.getByRole('button', {name: 'Language ＋'}));
     await user.click(screen.getByRole('checkbox', {name: 'English'}));
+    await user.click(screen.getByRole('button', {name: 'Import status ＋'}));
     await user.click(screen.getByRole('checkbox', {name: 'Compatible'}));
     await user.click(screen.getByRole('checkbox', {name: '3–5 years'}));
     await user.click(screen.getByRole('checkbox', {name: 'Calm'}));
@@ -2058,7 +2063,8 @@ test('shows the empty-library import action in the canonical shell', async () =>
 
     expect(await screen.findByRole('heading', {name: 'Build your local story archive'}))
         .toBeInTheDocument();
-    expect(screen.getByText('Stories in your local archive · 0 archives')).toBeInTheDocument();
+    expect(screen.getByText('Stories grouped by your tags · 0 archives'))
+        .toBeInTheDocument();
 });
 
 test('shows never-synced metadata and runs a cancellable refresh with matched freshness', async () => {

@@ -71,7 +71,13 @@ const coverPalettes = [
     ['#de9954', '#fff0ab', '#887b42'],
     ['#4aa9c9', '#ffe079', '#326779'],
     ['#d77c6f', '#ffd86b', '#8c4d4c'],
+    ['#4b799a', '#ffbd69', '#294e6c'],
+    ['#8071b4', '#f2b962', '#493873'],
+    ['#bf8e4d', '#ffe791', '#7d5f33'],
+    ['#579c85', '#f5c75a', '#315f53'],
 ] as const;
+
+const savedShelfColors = ['#ff705c', '#55b79a', '#f5bc41'] as const;
 
 const collectionExpansionBatchSize = 50;
 
@@ -120,10 +126,31 @@ function metadataAttribution(story: library.StorySummary): string {
         return `${author} · ${story.sources.title} metadata`;
     }
     const timestamp = story.official.activatedAt || story.official.fetchedAt;
-    const freshness = timestamp
-        ? ` · synced ${new Date(timestamp).toLocaleDateString()}`
-        : '';
-    return `${author} · Official metadata from Lunii catalog${freshness}`;
+    if (!timestamp) {
+        return author;
+    }
+    const syncedAt = new Date(timestamp);
+    const today = new Date();
+    const sameDay = syncedAt.getFullYear() === today.getFullYear() &&
+        syncedAt.getMonth() === today.getMonth() &&
+        syncedAt.getDate() === today.getDate();
+    return `${author} · metadata synced ${
+        sameDay ? 'today' : syncedAt.toLocaleDateString()
+    }`;
+}
+
+function storyByline(story: library.StorySummary): string {
+    if (story.official?.durationSeconds !== undefined) {
+        return `${formatDuration(story.official.durationSeconds)} · ${
+            story.official.publisher || story.author || story.uuid
+        }`;
+    }
+    return story.author || story.uuid;
+}
+
+function savedShelfColor(shelf: shelves.Summary, index: number): string {
+    return (shelf as shelves.Summary & {color?: string}).color ??
+        savedShelfColors[index % savedShelfColors.length];
 }
 
 const initialCollectionQuery: CollectionQuery = {
@@ -234,6 +261,12 @@ type CollectionShelfRow = {
     error?: string;
 };
 
+type SavedShelfPreviewDetails = {
+    name: string;
+    count: number;
+    source: string;
+};
+
 const exportReportGroups: Array<{
     status: string;
     label: string;
@@ -306,7 +339,9 @@ function ExportReport({
 }
 
 function paletteFor(storyID: number): CoverStyle {
-    const palette = coverPalettes[Math.abs(storyID) % coverPalettes.length];
+    const palette = coverPalettes[
+        Math.abs(storyID - 1) % coverPalettes.length
+    ];
     return {
         '--sky': palette[0],
         '--sun': palette[1],
@@ -371,6 +406,10 @@ function App() {
     const [metadataStatus, setMetadataStatus] =
         useState<metadata.CatalogStatus | null>(null);
     const [requestError, setRequestError] = useState<string | null>(null);
+    const [languageFacetOpen, setLanguageFacetOpen] = useState(false);
+    const [importFacetOpen, setImportFacetOpen] = useState(false);
+    const [dismissedSuggestedValues, setDismissedSuggestedValues] =
+        useState<number[]>([]);
     const [detailsOpen, setDetailsOpen] = useState(false);
     const [removing, setRemoving] = useState(false);
     const [removalError, setRemovalError] = useState<string | null>(null);
@@ -385,6 +424,8 @@ function App() {
     const [savedShelves, setSavedShelves] = useState<shelves.Summary[]>([]);
     const [savedShelfStories, setSavedShelfStories] =
         useState<Record<number, library.StorySummary[]>>({});
+    const [savedShelfPreviewDetails, setSavedShelfPreviewDetails] =
+        useState<Record<number, SavedShelfPreviewDetails>>({});
     const [savedShelfPreviewErrors, setSavedShelfPreviewErrors] =
         useState<Record<number, string>>({});
     const [activeShelfID, setActiveShelfID] = useState<number | null>(
@@ -1042,9 +1083,9 @@ function App() {
         showSavedShelfRows
             ? previewableShelves.map((shelf) => ({
                 key: `saved-shelf-${shelf.id}`,
-                name: shelf.name,
-                storyCount: shelf.count,
-                source: 'Saved shelf',
+                name: savedShelfPreviewDetails[shelf.id]?.name ?? shelf.name,
+                storyCount: savedShelfPreviewDetails[shelf.id]?.count ?? shelf.count,
+                source: savedShelfPreviewDetails[shelf.id]?.source ?? 'Saved shelf',
                 stories: savedShelfStories[shelf.id] ?? [],
                 shelfID: shelf.id,
                 error: savedShelfPreviewErrors[shelf.id],
@@ -1059,6 +1100,7 @@ function App() {
     ), [
         previewableShelves,
         rows,
+        savedShelfPreviewDetails,
         savedShelfPreviewErrors,
         savedShelfStories,
         showSavedShelfRows,
@@ -1074,6 +1116,11 @@ function App() {
         ? detail?.story.id === selectedID ? detail.story : selectedSummary
         : null;
     const selectedPalette = selected ? paletteFor(selected.id) : undefined;
+    const selectedShelfCount = selected
+        ? savedShelves.find((shelf) => (
+            savedShelfStories[shelf.id]?.some((story) => story.id === selected.id)
+        ))?.count
+        : undefined;
     const empty = page !== null && page.totalItems === 0 && !importing;
     const assignedTags = assignmentWorkspace?.catalog.definitions.flatMap((definition) => {
         const state = assignmentWorkspace.states.find(
@@ -1087,12 +1134,8 @@ function App() {
                 key: `${definition.id}`,
                 color: definition.color,
                 label: state.assignedStories === assignmentWorkspace.requestedStories
-                    ? definition.source === 'derived'
-                        ? `System-derived · ${definition.label}`
-                        : definition.label
-                    : `${definition.source === 'derived'
-                        ? 'System-derived · '
-                        : ''}${definition.label} · Mixed`,
+                    ? definition.label
+                    : `${definition.label} · Mixed`,
             }];
         }
         return definition.values.flatMap((value) => {
@@ -1106,12 +1149,8 @@ function App() {
                 key: `${definition.id}-${value.id}`,
                 color: definition.color,
                 label: valueState.assignedStories === assignmentWorkspace.requestedStories
-                    ? `${definition.source === 'derived'
-                        ? 'System-derived · '
-                        : ''}${definition.label} · ${value.label}`
-                    : `${definition.source === 'derived'
-                        ? 'System-derived · '
-                        : ''}${definition.label} · ${value.label} · Mixed`,
+                    ? `${definition.label} · ${value.label}`
+                    : `${definition.label} · ${value.label} · Mixed`,
             }];
         });
     }) ?? [];
@@ -1136,6 +1175,7 @@ function App() {
                     return {
                         shelfID: shelf.id,
                         stories: [] as library.StorySummary[],
+                        details: undefined,
                         error: response.error?.message ??
                             `${shelf.name} could not be previewed.`,
                     };
@@ -1143,12 +1183,22 @@ function App() {
                 return {
                     shelfID: shelf.id,
                     stories: response.evaluation.page.stories,
+                    details: {
+                        name: response.evaluation.shelf.name,
+                        count: response.evaluation.page.totalItems,
+                        source: (
+                            response.evaluation as shelves.Evaluation & {
+                                previewSource?: string;
+                            }
+                        ).previewSource ?? 'Saved shelf',
+                    },
                     error: '',
                 };
             } catch {
                 return {
                     shelfID: shelf.id,
                     stories: [] as library.StorySummary[],
+                    details: undefined,
                     error: `${shelf.name} could not be previewed.`,
                 };
             }
@@ -1159,6 +1209,11 @@ function App() {
             setSavedShelfStories(Object.fromEntries(previews.map((preview) => (
                 [preview.shelfID, preview.stories]
             ))));
+            setSavedShelfPreviewDetails(Object.fromEntries(previews.flatMap(
+                (preview) => preview.details
+                    ? [[preview.shelfID, preview.details]]
+                    : [],
+            )));
             setSavedShelfPreviewErrors(Object.fromEntries(previews.flatMap(
                 (preview) => preview.error
                     ? [[preview.shelfID, preview.error]]
@@ -1592,18 +1647,38 @@ function App() {
                 </>
             ) : definition.values.map((value) => (
                 <label className="choice" key={value.id}>
-                    <input
-                        type="checkbox"
-                        checked={collectionQuery.choiceFilters.some(
+                    {(() => {
+                        const checkedByQuery = collectionQuery.choiceFilters.some(
                             (filter) => (
                                 filter.definitionId === definition.id &&
                                 filter.valueIds.includes(value.id)
                             ),
-                        )}
-                        onChange={() => toggleChoiceFilter(definition.id, value.id)}
-                    />
+                        );
+                        const suggested = (
+                            value as tagging.Value & {initiallyChecked?: boolean}
+                        ).initiallyChecked === true &&
+                            !dismissedSuggestedValues.includes(value.id);
+                        return (
+                            <input
+                                type="checkbox"
+                                checked={checkedByQuery || suggested}
+                                onChange={() => {
+                                    if (suggested && !checkedByQuery) {
+                                        setDismissedSuggestedValues((current) => (
+                                            [...current, value.id]
+                                        ));
+                                        return;
+                                    }
+                                    toggleChoiceFilter(definition.id, value.id);
+                                }}
+                            />
+                        );
+                    })()}
                     <i style={{'--c': definition.color} as CSSProperties}/>
                     {value.label}
+                    {(value as tagging.Value & {count?: number}).count !== undefined && (
+                        <span>{(value as tagging.Value & {count: number}).count}</span>
+                    )}
                 </label>
             ))}
         </div>
@@ -1622,14 +1697,21 @@ function App() {
                     <button className="active" type="button" aria-label="Story collection">▦</button>
                     <button type="button" aria-label="Saved shelves">◇</button>
                     <button type="button" aria-label="Imports">↓</button>
-                    <button type="button" aria-label="Exports">↗</button>
+                    <button
+                        type="button"
+                        aria-label="Export current result"
+                        disabled={exportPreparing}
+                        onClick={() => void prepareExport('current_query')}
+                    >
+                        ↗
+                    </button>
                 </nav>
                 <div className="avatar" aria-label="Local profile">ML</div>
             </aside>
 
             <aside className="filters" aria-label="Saved shelves and refinements">
                 <h1>Librairii</h1>
-                <div className="path">Local story archive</div>
+                <div className="path">~/Stories/Librairii</div>
                 <div className="caption">Saved shelves</div>
                 <nav className="saved">
                     <button
@@ -1684,9 +1766,7 @@ function App() {
                                 >
                                     <i
                                         style={{
-                                            '--c': coverPalettes[
-                                                index % coverPalettes.length
-                                            ][0],
+                                            '--c': savedShelfColor(shelf, index),
                                         } as CSSProperties}
                                     />
                                     {shelf.name}
@@ -1808,14 +1888,16 @@ function App() {
                         )}
                     </section>
                 )}
-                <button
-                    className="manage shelf-save"
-                    type="button"
-                    disabled={shelfBusy}
-                    onClick={() => showShelfDialog('save')}
-                >
-                    ＋ Save current query
-                </button>
+                {activeFilters.length > 0 && !showSavedShelfRows && (
+                    <button
+                        className="manage shelf-save"
+                        type="button"
+                        disabled={shelfBusy}
+                        onClick={() => showShelfDialog('save')}
+                    >
+                        ＋ Save current query
+                    </button>
+                )}
                 {activeShelf && (
                     <button
                         className="manage shelf-update"
@@ -1829,32 +1911,46 @@ function App() {
                 <div className="caption">Refine this shelf</div>
                 {derivedDefinitions.map(renderTagFacet)}
                 <div className="facet">
-                    <div className="facet-title">Language <b>−</b></div>
-                    {languageOptions.map((locale) => (
-                        <label className="choice" key={locale}>
-                            <input
-                                type="checkbox"
-                                checked={collectionQuery.languages.includes(locale)}
-                                onChange={() => toggleLanguage(locale)}
-                            />
-                            <i style={{'--c': '#6779e8'} as CSSProperties}/>
-                            {languageLabel(locale)}
-                        </label>
-                    ))}
+                    <button
+                        className="facet-title"
+                        type="button"
+                        aria-expanded={languageFacetOpen}
+                        onClick={() => setLanguageFacetOpen((open) => !open)}
+                    >
+                        Language <b>{languageFacetOpen ? '−' : '＋'}</b>
+                    </button>
+                    {languageFacetOpen && languageOptions.map((locale) => (
+                            <label className="choice" key={locale}>
+                                <input
+                                    type="checkbox"
+                                    checked={collectionQuery.languages.includes(locale)}
+                                    onChange={() => toggleLanguage(locale)}
+                                />
+                                <i style={{'--c': '#6779e8'} as CSSProperties}/>
+                                {languageLabel(locale)}
+                            </label>
+                        ))}
                 </div>
                 <div className="facet">
-                    <div className="facet-title">Import status <b>−</b></div>
-                    {compatibilityOptions.map((option) => (
-                        <label className="choice" key={option.value}>
-                            <input
-                                type="checkbox"
-                                checked={collectionQuery.compatibilities.includes(option.value)}
-                                onChange={() => toggleCompatibility(option.value)}
-                            />
-                            <i style={{'--c': '#f5bc41'} as CSSProperties}/>
-                            {option.label}
-                        </label>
-                    ))}
+                    <button
+                        className="facet-title"
+                        type="button"
+                        aria-expanded={importFacetOpen}
+                        onClick={() => setImportFacetOpen((open) => !open)}
+                    >
+                        Import status <b>{importFacetOpen ? '−' : '＋'}</b>
+                    </button>
+                    {importFacetOpen && compatibilityOptions.map((option) => (
+                            <label className="choice" key={option.value}>
+                                <input
+                                    type="checkbox"
+                                    checked={collectionQuery.compatibilities.includes(option.value)}
+                                    onChange={() => toggleCompatibility(option.value)}
+                                />
+                                <i style={{'--c': '#f5bc41'} as CSSProperties}/>
+                                {option.label}
+                            </label>
+                        ))}
                 </div>
                 {editableDefinitions.map(renderTagFacet)}
                 <button
@@ -1904,20 +2000,24 @@ function App() {
                     <div>
                         <h2>{activeShelf?.name ?? 'My story shelves'}</h2>
                         <p>
-                            {activeShelf ? 'Dynamic saved shelf' : 'Stories in your local archive'}
+                            {activeShelf
+                                ? 'Dynamic saved shelf'
+                                : 'Stories grouped by your tags'}
                             {' · '}
                             {page?.totalItems ?? 0} archives
                         </p>
                     </div>
                     <div className="heading-actions">
-                        <button
-                            className="scope-export"
-                            type="button"
-                            disabled={exportPreparing}
-                            onClick={() => void prepareExport('current_query')}
-                        >
-                            Export current result
-                        </button>
+                        {activeFilters.length > 0 && !showSavedShelfRows && (
+                            <button
+                                className="scope-export"
+                                type="button"
+                                disabled={exportPreparing}
+                                onClick={() => void prepareExport('current_query')}
+                            >
+                                Export current result
+                            </button>
+                        )}
                         {activeShelf && (
                             <button
                                 className="scope-export"
@@ -1945,7 +2045,7 @@ function App() {
                     </div>
                 </div>
 
-                {activeFilters.length > 0 && (
+                {activeFilters.length > 0 && !showSavedShelfRows && (
                     <section className="active-query" aria-label="Active filters">
                         <span>{page?.totalItems ?? 0} matching stories</span>
                         {activeFilters.map((filter) => (
@@ -2222,7 +2322,7 @@ function App() {
                                         <b>{story.title}</b>
                                     </div>
                                     <small>
-                                        {story.author || story.uuid}
+                                        {storyByline(story)}
                                     </small>
                                 </button>
                             ))}
@@ -2277,6 +2377,10 @@ function App() {
                         <p>{metadataAttribution(selected)}</p>
                         <div className="facts">
                             <div className="fact">
+                                <span>Stories</span>
+                                <b>{selectedShelfCount ?? '—'}</b>
+                            </div>
+                            <div className="fact">
                                 <span>Duration</span>
                                 <b>{formatDuration(selected.official?.durationSeconds)}</b>
                             </div>
@@ -2287,10 +2391,6 @@ function App() {
                                         ? languageLabel(selected.official.language)
                                         : '—'}
                                 </b>
-                            </div>
-                            <div className="fact">
-                                <span>Status</span>
-                                <b>{compatibilityLabel(selected.compatibility)}</b>
                             </div>
                         </div>
                     </div>

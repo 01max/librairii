@@ -378,9 +378,15 @@ select:focus-visible {
 }
 
 .facet-title {
+    width: 100%;
     display: flex;
     justify-content: space-between;
+    padding: 0;
+    border: 0;
     margin-bottom: 10px;
+    color: inherit;
+    background: transparent;
+    text-align: left;
     font-size: 10px;
     font-weight: 800;
 }
@@ -533,12 +539,24 @@ select:focus-visible {
 }
 
 .sort {
+    position: relative;
+    padding-right: 12px;
     color: #727d91;
     font-size: 9px;
     font-weight: 800;
 }
 
+.sort::after {
+    content: "⌄";
+    position: absolute;
+    top: 50%;
+    right: 0;
+    transform: translateY(-55%);
+    pointer-events: none;
+}
+
 .sort select {
+    appearance: none;
     border: 0;
     color: inherit;
     background: transparent;

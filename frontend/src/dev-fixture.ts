@@ -3,6 +3,83 @@ import {
     type FixtureStory,
 } from './parity-fixture';
 
+const parityAgeDefinition = {
+    id: 10,
+    key: 'age',
+    normalizedKey: 'age',
+    label: 'Age',
+    color: '#ff705c',
+    kind: 'choice',
+    source: 'derived',
+    presentation: 'filter',
+    position: 0,
+    protected: true,
+    values: [
+        {
+            id: 101,
+            definitionId: 10,
+            key: '3-5',
+            normalizedKey: '3-5',
+            label: '3–5 years',
+            count: 12,
+            initiallyChecked: true,
+            position: 0,
+        },
+        {
+            id: 102,
+            definitionId: 10,
+            key: '6-8',
+            normalizedKey: '6-8',
+            label: '6–8 years',
+            count: 18,
+            position: 1,
+        },
+    ],
+};
+
+const parityAssignmentDefinitions = [
+    {
+        ...parityAgeDefinition,
+        values: [{
+            ...parityAgeDefinition.values[0],
+            label: '3–5',
+        }],
+    },
+    {
+        id: 11,
+        key: 'mood',
+        normalizedKey: 'mood',
+        label: 'Mood',
+        color: '#6779e8',
+        kind: 'choice',
+        source: 'user',
+        presentation: 'filter',
+        position: 1,
+        protected: false,
+        values: [{
+            id: 111,
+            definitionId: 11,
+            key: 'bedtime',
+            normalizedKey: 'bedtime',
+            label: 'Bedtime',
+            position: 0,
+        }],
+    },
+    {
+        id: 12,
+        key: 'favorite',
+        normalizedKey: 'favorite',
+        label: 'Favorite',
+        color: '#55b79a',
+        kind: 'boolean',
+        source: 'user',
+        presentation: 'filter',
+        position: 2,
+        protected: false,
+        values: [],
+    },
+] as const;
+
 const titles = [
     ['The Little Prince', 'Antoine de Saint-Exupéry'],
     ['The Secret Forest', 'Gallimard'],
@@ -159,13 +236,14 @@ export function installCollectionFixture() {
                         id: shelf.id,
                         name: shelf.name,
                         position,
-                        validity: 'valid',
+                        validity: shelf.id === 3 ? 'sidebar_only' : 'valid',
                         count: shelf.count,
+                        color: shelf.color,
                     }),
                 )
                 : [],
         }),
-        OfficialMetadataStatus: async () => ({
+        OfficialMetadataStatus: async () => fixture === 'parity' ? {} : ({
             status: {
                 state: 'fresh',
                 locale: 'en-GB',
@@ -216,6 +294,7 @@ export function installCollectionFixture() {
                             : 0,
                         sort: request.sort,
                     },
+                    previewSource: preview?.source,
                 },
             };
         },
@@ -244,7 +323,7 @@ export function installCollectionFixture() {
         },
         TagCatalog: async () => ({
             catalog: {
-                definitions: [{
+                definitions: fixture === 'parity' ? [parityAgeDefinition] : [{
                     id: 1,
                     key: 'broken',
                     normalizedKey: 'broken',
@@ -262,7 +341,9 @@ export function installCollectionFixture() {
         TagAssignmentWorkspace: async (storyIDs: number[]) => ({
             workspace: {
                 catalog: {
-                    definitions: [{
+                    definitions: fixture === 'parity'
+                        ? parityAssignmentDefinitions
+                        : [{
                         id: 1,
                         key: 'broken',
                         normalizedKey: 'broken',
@@ -277,7 +358,29 @@ export function installCollectionFixture() {
                     }],
                 },
                 requestedStories: storyIDs.length,
-                states: [{
+                states: fixture === 'parity' ? [
+                    {
+                        definitionId: 10,
+                        assignedStories: storyIDs.length,
+                        values: [{
+                            valueId: 101,
+                            assignedStories: storyIDs.length,
+                        }],
+                    },
+                    {
+                        definitionId: 11,
+                        assignedStories: storyIDs.length,
+                        values: [{
+                            valueId: 111,
+                            assignedStories: storyIDs.length,
+                        }],
+                    },
+                    {
+                        definitionId: 12,
+                        assignedStories: storyIDs.length,
+                        values: [],
+                    },
+                ] : [{
                     definitionId: 1,
                     assignedStories: 0,
                     values: [],
