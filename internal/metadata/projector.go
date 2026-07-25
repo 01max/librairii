@@ -105,6 +105,35 @@ func (p *CatalogProjector) Rebuild(
 	return result, nil
 }
 
+func (p *CatalogProjector) EnsureFacets(ctx context.Context) (int64, error) {
+	transaction, err := p.database.BeginTx(ctx, nil)
+	if err != nil {
+		return 0, fmt.Errorf("begin derived facet seed: %w", err)
+	}
+	defer transaction.Rollback()
+
+	definitionID, _, err := ensureAgeFacet(ctx, transaction, p.config)
+	if err != nil {
+		return 0, err
+	}
+	if err := transaction.Commit(); err != nil {
+		return 0, fmt.Errorf("commit derived facet seed: %w", err)
+	}
+	return definitionID, nil
+}
+
+func SeedDefaultDerivedFacets(ctx context.Context, database *sql.DB) error {
+	projector, err := NewCatalogProjector(
+		database,
+		DefaultCatalogProjectionConfig(),
+	)
+	if err != nil {
+		return err
+	}
+	_, err = projector.EnsureFacets(ctx)
+	return err
+}
+
 func projectCatalogSnapshot(
 	ctx context.Context,
 	transaction *sql.Tx,

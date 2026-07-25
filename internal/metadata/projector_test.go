@@ -111,6 +111,45 @@ func TestCatalogProjectorCreatesReadOnlyAgeFacetAndAssignsPreciseBands(t *testin
 	}
 }
 
+func TestCatalogProjectorReservesConfiguredFacetBeforeFirstRefresh(t *testing.T) {
+	t.Parallel()
+
+	_, connection := openMetadataRepository(t)
+	projector, err := NewCatalogProjector(
+		connection,
+		DefaultCatalogProjectionConfig(),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	firstID, err := projector.EnsureFacets(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	secondID, err := projector.EnsureFacets(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if firstID <= 0 || firstID != secondID {
+		t.Fatalf("EnsureFacets() ids = %d, %d", firstID, secondID)
+	}
+	service, err := tagging.NewService(connection)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := service.CreateDefinition(
+		context.Background(),
+		tagging.CreateDefinition{
+			Key:   "Age",
+			Label: "Personal age",
+			Color: "#405CF5",
+			Kind:  tagging.KindChoice,
+		},
+	); !errors.Is(err, tagging.ErrDuplicateDefinition) {
+		t.Fatalf("CreateDefinition(age) error = %v", err)
+	}
+}
+
 func TestCatalogProjectorIsIdempotentAndRejectsFacetDrift(t *testing.T) {
 	t.Parallel()
 

@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/01max/librairii/internal/database"
+	"github.com/01max/librairii/internal/tagging"
 )
 
 func TestRepositoryStagesAndActivatesLocalizedMetadata(t *testing.T) {
@@ -339,6 +340,191 @@ func TestRepositoryRollsBackSupersessionWhenActivationFails(t *testing.T) {
 	}
 }
 
+func TestRepositoryActivationRebuildsOnlyDerivedAgeAssignments(t *testing.T) {
+	t.Parallel()
+
+	repository, connection := openMetadataRepository(t)
+	ctx := context.Background()
+	storyUUID := "20000000-0000-4000-8000-000000000001"
+	storyResult, err := connection.Exec(
+		"INSERT INTO stories (uuid) VALUES (?)",
+		storyUUID,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	storyID, err := storyResult.LastInsertId()
+	if err != nil {
+		t.Fatal(err)
+	}
+	broken, err := tagging.SeedBuiltIns(ctx, connection)
+	if err != nil {
+		t.Fatal(err)
+	}
+	tagService, err := tagging.NewService(connection)
+	if err != nil {
+		t.Fatal(err)
+	}
+	favorite, err := tagService.CreateDefinition(ctx, tagging.CreateDefinition{
+		Key:   "favorite",
+		Label: "Favorite",
+		Color: "#405CF5",
+		Kind:  tagging.KindBoolean,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := tagService.SetStoryBoolean(ctx, storyID, broken.ID, true); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := tagService.SetStoryBoolean(ctx, storyID, favorite.ID, true); err != nil {
+		t.Fatal(err)
+	}
+
+	first := stageAgeSnapshot(
+		t,
+		repository,
+		"123e4567-e89b-42d3-a456-426614174121",
+		storyUUID,
+		3,
+		5,
+	)
+	if err := repository.ActivateSnapshot(ctx, first.ID, 1, time.Now()); err != nil {
+		t.Fatal(err)
+	}
+	if got := assignedDerivedAgeKey(t, connection, storyID); got != "3-5" {
+		t.Fatalf("first derived age = %q", got)
+	}
+
+	second := stageAgeSnapshot(
+		t,
+		repository,
+		"123e4567-e89b-42d3-a456-426614174122",
+		storyUUID,
+		6,
+		8,
+	)
+	if err := repository.ActivateSnapshot(ctx, second.ID, 1, time.Now()); err != nil {
+		t.Fatal(err)
+	}
+	if got := assignedDerivedAgeKey(t, connection, storyID); got != "6-8" {
+		t.Fatalf("second derived age = %q", got)
+	}
+
+	var manualAssignments int
+	if err := connection.QueryRow(
+		`SELECT COUNT(*)
+		 FROM story_tag_assignments
+		 WHERE story_id = ? AND source = 'manual'`,
+		storyID,
+	).Scan(&manualAssignments); err != nil {
+		t.Fatal(err)
+	}
+	definitions, err := tagService.ListDefinitions(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var gotBroken tagging.Definition
+	var gotFavorite tagging.Definition
+	for _, definition := range definitions {
+		switch definition.ID {
+		case broken.ID:
+			gotBroken = definition
+		case favorite.ID:
+			gotFavorite = definition
+		}
+	}
+	if manualAssignments != 2 ||
+		gotBroken != broken ||
+		gotFavorite != favorite {
+		t.Fatalf(
+			"manual assignments = %d, broken = %#v, favorite = %#v",
+			manualAssignments,
+			gotBroken,
+			gotFavorite,
+		)
+	}
+	first, err = repository.Snapshot(ctx, first.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	second, err = repository.Snapshot(ctx, second.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if first.Status != SnapshotSuperseded || second.Status != SnapshotActive {
+		t.Fatalf("snapshots after rebuild = %#v, %#v", first, second)
+	}
+}
+
+func TestRepositoryRollsBackActivationWhenDerivedProjectionFails(t *testing.T) {
+	t.Parallel()
+
+	repository, connection := openMetadataRepository(t)
+	ctx := context.Background()
+	storyUUID := "20000000-0000-4000-8000-000000000002"
+	storyResult, err := connection.Exec(
+		"INSERT INTO stories (uuid) VALUES (?)",
+		storyUUID,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	storyID, err := storyResult.LastInsertId()
+	if err != nil {
+		t.Fatal(err)
+	}
+	first := stageAgeSnapshot(
+		t,
+		repository,
+		"123e4567-e89b-42d3-a456-426614174123",
+		storyUUID,
+		3,
+		5,
+	)
+	if err := repository.ActivateSnapshot(ctx, first.ID, 1, time.Now()); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := connection.Exec(
+		`UPDATE tag_definitions
+		 SET label = 'Drifted'
+		 WHERE normalized_key = ?`,
+		AgeDefinitionKey,
+	); err != nil {
+		t.Fatal(err)
+	}
+	second := stageAgeSnapshot(
+		t,
+		repository,
+		"123e4567-e89b-42d3-a456-426614174124",
+		storyUUID,
+		6,
+		8,
+	)
+	if err := repository.ActivateSnapshot(
+		ctx,
+		second.ID,
+		1,
+		time.Now(),
+	); !errors.Is(err, ErrDerivedFacetDrift) {
+		t.Fatalf("ActivateSnapshot(drifted projector) error = %v", err)
+	}
+	active, err := repository.ActiveSnapshot(ctx, "en-GB")
+	if err != nil {
+		t.Fatal(err)
+	}
+	second, err = repository.Snapshot(ctx, second.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if active.ID != first.ID ||
+		active.Status != SnapshotActive ||
+		second.Status != SnapshotStaged ||
+		assignedDerivedAgeKey(t, connection, storyID) != "3-5" {
+		t.Fatalf("activation rollback = active %#v, second %#v", active, second)
+	}
+}
+
 func TestMetadataSchemaRejectsInvalidIdentityPathsAndSnapshotWrites(t *testing.T) {
 	t.Parallel()
 
@@ -504,6 +690,69 @@ func TestRepositoryFinishesFailedSyncAndRejectsItsStagedSnapshot(t *testing.T) {
 	); !errors.Is(err, ErrInvalidTransition) {
 		t.Fatalf("FinishSyncFailure(terminal) error = %v", err)
 	}
+}
+
+func stageAgeSnapshot(
+	t *testing.T,
+	repository *Repository,
+	syncID string,
+	storyUUID string,
+	minimumAge int,
+	maximumAge int,
+) CatalogSnapshot {
+	t.Helper()
+
+	ctx := context.Background()
+	if _, err := repository.CreateSync(ctx, NewCatalogSync{
+		ID:        syncID,
+		Locale:    "en-GB",
+		StartedAt: time.Now(),
+	}); err != nil {
+		t.Fatal(err)
+	}
+	snapshot, err := repository.StageSnapshot(ctx, NewCatalogSnapshot{
+		SyncID:    syncID,
+		Locale:    "en-GB",
+		RawPath:   "catalog/" + syncID + "/catalog.json",
+		RawSHA256: strings.Repeat("e", 64),
+		ByteSize:  128,
+		FetchedAt: time.Now(),
+		Stories: []NewOfficialStoryMetadata{{
+			StoryUUID:  storyUUID,
+			MinimumAge: &minimumAge,
+			MaximumAge: &maximumAge,
+		}},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	return snapshot
+}
+
+func assignedDerivedAgeKey(
+	t *testing.T,
+	connection *sql.DB,
+	storyID int64,
+) string {
+	t.Helper()
+
+	var key string
+	if err := connection.QueryRow(
+		`SELECT tag_values.normalized_key
+		 FROM story_tag_assignments
+		 JOIN tag_definitions
+		   ON tag_definitions.id = story_tag_assignments.definition_id
+		 JOIN tag_values
+		   ON tag_values.id = story_tag_assignments.value_id
+		 WHERE story_tag_assignments.story_id = ?
+		   AND story_tag_assignments.source = 'derived'
+		   AND tag_definitions.normalized_key = ?`,
+		storyID,
+		AgeDefinitionKey,
+	).Scan(&key); err != nil {
+		t.Fatal(err)
+	}
+	return key
 }
 
 func stageFixtureSnapshot(

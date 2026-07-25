@@ -87,8 +87,10 @@ func TestTaggingAndSharedQueryVerticalSlice(t *testing.T) {
 	catalog := application.TagCatalog(context.Background())
 	if catalog.Error != nil ||
 		catalog.Catalog == nil ||
-		len(catalog.Catalog.Definitions) != 1 ||
-		catalog.Catalog.Definitions[0].Key != tagging.BrokenKey {
+		len(catalog.Catalog.Definitions) != 2 ||
+		catalog.Catalog.Definitions[0].Key != tagging.BrokenKey ||
+		catalog.Catalog.Definitions[1].Key != "age" ||
+		catalog.Catalog.Definitions[1].Source != tagging.SourceDerived {
 		t.Fatalf("TagCatalog() = %#v", catalog)
 	}
 	broken := catalog.Catalog.Definitions[0]

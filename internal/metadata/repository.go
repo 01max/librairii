@@ -552,6 +552,19 @@ func (r *Repository) ActivateSnapshot(
 		return ErrInvalidTransition
 	}
 
+	projectionConfig, err := validateProjectionConfig(DefaultCatalogProjectionConfig())
+	if err != nil {
+		return err
+	}
+	if _, err := projectCatalogSnapshot(
+		ctx,
+		transaction,
+		snapshotID,
+		projectionConfig,
+	); err != nil {
+		return fmt.Errorf("rebuild derived catalog assignments: %w", err)
+	}
+
 	if _, err := transaction.ExecContext(
 		ctx,
 		`UPDATE catalog_snapshots
