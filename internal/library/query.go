@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"sort"
 	"strings"
 )
 
@@ -118,48 +117,26 @@ func (q *Query) List(ctx context.Context, request ListRequest) (Page, error) {
 	if err != nil {
 		return Page{}, err
 	}
-	records, err := q.localRecordsWhere(ctx, "", nil)
-	if err != nil {
-		return Page{}, err
-	}
-	return q.pageFromRecords(ctx, records, request)
+	return q.searchNormalized(ctx, StoryLibraryQuery{
+		Page:     request.Page,
+		PageSize: request.PageSize,
+		Sort:     request.Sort,
+	})
 }
 
-func (q *Query) pageFromRecords(
+func (q *Query) summariesFromRecords(
 	ctx context.Context,
 	records []localRecord,
-	request ListRequest,
-) (Page, error) {
+) ([]StorySummary, error) {
 	official, err := q.official.FindByUUIDs(ctx, recordUUIDs(records))
 	if err != nil {
-		return Page{}, fmt.Errorf("load official display metadata: %w", err)
+		return nil, fmt.Errorf("load official display metadata: %w", err)
 	}
 	stories := make([]StorySummary, 0, len(records))
 	for _, record := range records {
 		stories = append(stories, resolveSummary(record, official[record.uuid]))
 	}
-	sortStories(stories, request.Sort)
-
-	totalItems := len(stories)
-	totalPages := 0
-	if totalItems > 0 {
-		totalPages = (totalItems + request.PageSize - 1) / request.PageSize
-	}
-	start := (request.Page - 1) * request.PageSize
-	if start >= totalItems {
-		stories = []StorySummary{}
-	} else {
-		end := min(start+request.PageSize, totalItems)
-		stories = stories[start:end]
-	}
-	return Page{
-		Stories:    stories,
-		Page:       request.Page,
-		PageSize:   request.PageSize,
-		TotalItems: totalItems,
-		TotalPages: totalPages,
-		Sort:       request.Sort,
-	}, nil
+	return stories, nil
 }
 
 func (q *Query) Detail(ctx context.Context, storyID int64) (StoryDetail, error) {
@@ -217,7 +194,56 @@ func (q *Query) localRecordsWhere(
 	predicate string,
 	arguments []any,
 ) ([]localRecord, error) {
-	statement := `SELECT
+	statement := localRecordSelect
+	if predicate != "" {
+		statement += " WHERE " + predicate
+	}
+	statement += " ORDER BY s.id"
+	return q.queryLocalRecords(ctx, statement, arguments)
+}
+
+func (q *Query) localRecordPage(
+	ctx context.Context,
+	predicate string,
+	arguments []any,
+	order Sort,
+	limit int,
+	offset int,
+) ([]localRecord, error) {
+	statement := localRecordSelect
+	if predicate != "" {
+		statement += " WHERE " + predicate
+	}
+	if order == SortImportedNewest {
+		statement += " ORDER BY s.created_at DESC, s.id DESC"
+	} else {
+		statement += " ORDER BY s.display_name_normalized, s.uuid, s.id"
+	}
+	statement += " LIMIT ? OFFSET ?"
+	pageArguments := append([]any(nil), arguments...)
+	pageArguments = append(pageArguments, limit, offset)
+	return q.queryLocalRecords(ctx, statement, pageArguments)
+}
+
+func (q *Query) countLocalRecords(
+	ctx context.Context,
+	predicate string,
+	arguments []any,
+) (int, error) {
+	statement := `SELECT COUNT(*)
+		FROM stories s
+		JOIN story_archives a ON a.story_id = s.id`
+	if predicate != "" {
+		statement += " WHERE " + predicate
+	}
+	var count int
+	if err := q.database.QueryRowContext(ctx, statement, arguments...).Scan(&count); err != nil {
+		return 0, err
+	}
+	return count, nil
+}
+
+const localRecordSelect = `SELECT
 		s.id,
 		s.uuid,
 		COALESCE(s.embedded_title, ''),
@@ -231,11 +257,12 @@ func (q *Query) localRecordsWhere(
 		a.validation_state
 	FROM stories s
 	JOIN story_archives a ON a.story_id = s.id`
-	if predicate != "" {
-		statement += " WHERE " + predicate
-	}
-	statement += " ORDER BY s.id"
 
+func (q *Query) queryLocalRecords(
+	ctx context.Context,
+	statement string,
+	arguments []any,
+) ([]localRecord, error) {
 	rows, err := q.database.QueryContext(ctx, statement, arguments...)
 	if err != nil {
 		return nil, err
@@ -329,25 +356,6 @@ func compatibility(validationState string) (Compatibility, string) {
 	default:
 		return CompatibilityInvalid, "Managed archive verification failed."
 	}
-}
-
-func sortStories(stories []StorySummary, order Sort) {
-	sort.SliceStable(stories, func(i, j int) bool {
-		left := stories[i]
-		right := stories[j]
-		if order == SortImportedNewest {
-			if left.ImportedAt != right.ImportedAt {
-				return left.ImportedAt > right.ImportedAt
-			}
-			return left.ID > right.ID
-		}
-		leftTitle := strings.ToLower(left.Title)
-		rightTitle := strings.ToLower(right.Title)
-		if leftTitle != rightTitle {
-			return leftTitle < rightTitle
-		}
-		return left.UUID < right.UUID
-	})
 }
 
 func normalizeListRequest(request ListRequest) (ListRequest, error) {

@@ -56,16 +56,49 @@ func (q *Query) Search(
 	if err := q.validateFilterDefinitions(ctx, request); err != nil {
 		return Page{}, err
 	}
+	return q.searchNormalized(ctx, request)
+}
+
+func (q *Query) searchNormalized(
+	ctx context.Context,
+	request StoryLibraryQuery,
+) (Page, error) {
 	where, arguments := storyLibraryPredicate(request)
-	records, err := q.localRecordsWhere(ctx, where, arguments)
+	totalItems, err := q.countLocalRecords(ctx, where, arguments)
 	if err != nil {
 		return Page{}, err
 	}
-	return q.pageFromRecords(ctx, records, ListRequest{
-		Page:     request.Page,
-		PageSize: request.PageSize,
-		Sort:     request.Sort,
-	})
+	totalPages := 0
+	if totalItems > 0 {
+		totalPages = (totalItems + request.PageSize - 1) / request.PageSize
+	}
+	offset := (request.Page - 1) * request.PageSize
+	var records []localRecord
+	if offset < totalItems {
+		records, err = q.localRecordPage(
+			ctx,
+			where,
+			arguments,
+			request.Sort,
+			request.PageSize,
+			offset,
+		)
+		if err != nil {
+			return Page{}, err
+		}
+	}
+	stories, err := q.summariesFromRecords(ctx, records)
+	if err != nil {
+		return Page{}, err
+	}
+	return Page{
+		Stories:    stories,
+		Page:       request.Page,
+		PageSize:   request.PageSize,
+		TotalItems: totalItems,
+		TotalPages: totalPages,
+		Sort:       request.Sort,
+	}, nil
 }
 
 func BackfillNormalizedDisplayNames(ctx context.Context, database *sql.DB) error {
