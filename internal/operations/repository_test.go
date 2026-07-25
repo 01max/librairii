@@ -4,12 +4,181 @@ import (
 	"context"
 	"errors"
 	"path/filepath"
+	"reflect"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/01max/librairii/internal/database"
 	"github.com/google/uuid"
 )
+
+func TestRepositoryPersistsImmutableExportScopeAndOutcomeReport(t *testing.T) {
+	t.Parallel()
+
+	repository, sqlDatabase := newOperationRepository(t)
+	ctx := context.Background()
+	const storyUUID = "00112233-4455-4677-8899-aabbccddeeff"
+	result, err := sqlDatabase.SQL().ExecContext(
+		ctx,
+		`INSERT INTO stories (uuid, embedded_title, display_name_normalized)
+		 VALUES (?, 'Moonlit Workshop', 'moonlit workshop')`,
+		storyUUID,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	storyID, err := result.LastInsertId()
+	if err != nil {
+		t.Fatal(err)
+	}
+	checksum := strings.Repeat("a", 64)
+	createdAt := time.Date(2026, time.July, 25, 12, 0, 0, 0, time.UTC)
+	snapshot, err := repository.CreateExport(
+		ctx,
+		"00000000-0000-4000-8000-000000000020",
+		ExportSource{
+			Type:       ExportSourceShelves,
+			ShelfIDs:   []int64{7, 8},
+			ShelfNames: []string{"Bedtime", "Adventures"},
+		},
+		filepath.Join(t.TempDir(), "Lunii export"),
+		[]NewItem{{
+			StoryID:             storyID,
+			StoryUUID:           storyUUID,
+			StoryTitle:          "Moonlit Workshop",
+			SourceName:          "moon.v2.pk",
+			OutputName:          "Moonlit Workshop.v2.pk",
+			ArchiveRelativePath: "archives/aa/moon.v2.pk",
+			ArchiveSHA256:       checksum,
+			TotalBytes:          42,
+		}},
+		createdAt,
+	)
+	if err != nil {
+		t.Fatalf("CreateExport() error = %v", err)
+	}
+	if snapshot.Kind != KindExport ||
+		snapshot.ExportSourceType != ExportSourceShelves ||
+		!reflect.DeepEqual(snapshot.SourceShelfIDs, []int64{7, 8}) ||
+		!reflect.DeepEqual(
+			snapshot.SourceShelfNames,
+			[]string{"Bedtime", "Adventures"},
+		) ||
+		snapshot.TotalItems != 1 ||
+		snapshot.TotalBytes != 42 ||
+		len(snapshot.Items) != 1 ||
+		snapshot.Items[0].StoryID != storyID ||
+		snapshot.Items[0].StoryUUID != storyUUID ||
+		snapshot.Items[0].StoryTitle != "Moonlit Workshop" ||
+		snapshot.Items[0].OutputName != "Moonlit Workshop.v2.pk" ||
+		snapshot.Items[0].ArchiveRelativePath != "archives/aa/moon.v2.pk" ||
+		snapshot.Items[0].ArchiveSHA256 != checksum {
+		t.Fatalf("CreateExport() = %#v", snapshot)
+	}
+
+	if _, err := sqlDatabase.SQL().ExecContext(
+		ctx,
+		"UPDATE file_operations SET export_destination = '/changed' WHERE id = ?",
+		snapshot.ID,
+	); err == nil {
+		t.Fatal("mutable export destination update error = nil")
+	}
+	if _, err := sqlDatabase.SQL().ExecContext(
+		ctx,
+		"UPDATE file_operation_items SET output_name = 'changed.pk' WHERE id = ?",
+		snapshot.Items[0].ID,
+	); err == nil {
+		t.Fatal("mutable export item update error = nil")
+	}
+
+	if err := repository.MarkRunning(ctx, snapshot.ID, createdAt.Add(time.Second)); err != nil {
+		t.Fatal(err)
+	}
+	if err := repository.MarkItemRunning(ctx, snapshot.Items[0].ID); err != nil {
+		t.Fatal(err)
+	}
+	if err := repository.RequestCancel(ctx, snapshot.ID); err != nil {
+		t.Fatal(err)
+	}
+	if err := repository.CompleteItem(ctx, snapshot.ID, ItemSnapshot{
+		ID:             snapshot.Items[0].ID,
+		StoryID:        storyID,
+		Status:         ItemConflicted,
+		OutcomeCode:    "destination_exists",
+		OutcomeMessage: "The destination file already exists.",
+		TotalBytes:     42,
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if err := repository.Finish(
+		ctx,
+		snapshot.ID,
+		StatusPartiallySucceeded,
+		"export_conflicts",
+		"One destination file already exists.",
+		createdAt.Add(2*time.Second),
+	); err != nil {
+		t.Fatal(err)
+	}
+
+	report, err := repository.Snapshot(ctx, snapshot.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !report.CancelRequested ||
+		report.Status != StatusPartiallySucceeded ||
+		report.ErrorCode != "export_conflicts" ||
+		report.Items[0].Status != ItemConflicted ||
+		report.Items[0].OutcomeCode != "destination_exists" ||
+		report.Items[0].OutcomeMessage != "The destination file already exists." {
+		t.Fatalf("Snapshot(export report) = %#v", report)
+	}
+	if _, err := sqlDatabase.SQL().ExecContext(
+		ctx,
+		"DELETE FROM stories WHERE id = ?",
+		storyID,
+	); err != nil {
+		t.Fatalf("Delete story after export report error = %v", err)
+	}
+	report, err = repository.Snapshot(ctx, snapshot.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if report.Items[0].StoryID != storyID ||
+		report.Items[0].StoryUUID != storyUUID {
+		t.Fatalf("immutable resolved story after deletion = %#v", report.Items[0])
+	}
+}
+
+func TestRepositoryRejectsInvalidExportScope(t *testing.T) {
+	t.Parallel()
+
+	repository, _ := newOperationRepository(t)
+	_, err := repository.CreateExport(
+		context.Background(),
+		uuid.NewString(),
+		ExportSource{
+			Type:       ExportSourceCurrentQuery,
+			ShelfIDs:   []int64{7},
+			ShelfNames: []string{"Unexpected"},
+		},
+		"/tmp/export",
+		[]NewItem{{
+			StoryID:             1,
+			StoryUUID:           "00112233-4455-4677-8899-aabbccddeeff",
+			StoryTitle:          "Story",
+			SourceName:          "story.zip",
+			OutputName:          "Story.zip",
+			ArchiveRelativePath: "archives/aa/story.zip",
+			ArchiveSHA256:       strings.Repeat("a", 64),
+		}},
+		time.Now(),
+	)
+	if !errors.Is(err, ErrInvalidTransition) {
+		t.Fatalf("CreateExport(invalid) error = %v", err)
+	}
+}
 
 func TestRepositoryPersistsOperationProgress(t *testing.T) {
 	t.Parallel()

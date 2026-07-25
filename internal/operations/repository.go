@@ -3,9 +3,16 @@ package operations
 import (
 	"context"
 	"database/sql"
+	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
+	"path"
+	"strings"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 var (
@@ -15,6 +22,13 @@ var (
 
 type Repository struct {
 	database *sql.DB
+}
+
+type newOperation struct {
+	Kind         Kind
+	ExportSource ExportSource
+	Destination  string
+	Items        []NewItem
 }
 
 func NewRepository(database *sql.DB) *Repository {
@@ -27,7 +41,10 @@ func (r *Repository) CreateImport(
 	items []NewItem,
 	now time.Time,
 ) (Snapshot, error) {
-	return r.create(ctx, id, KindImport, items, now)
+	return r.create(ctx, id, newOperation{
+		Kind:  KindImport,
+		Items: items,
+	}, now)
 }
 
 func (r *Repository) CreateMetadataSync(
@@ -39,24 +56,77 @@ func (r *Repository) CreateMetadataSync(
 	if locale == "" {
 		return Snapshot{}, fmt.Errorf("%w: empty metadata locale", ErrInvalidTransition)
 	}
-	return r.create(ctx, id, KindMetadataSync, []NewItem{{
-		SourceName: locale,
-		TotalBytes: 1,
-	}}, now)
+	return r.create(ctx, id, newOperation{
+		Kind: KindMetadataSync,
+		Items: []NewItem{{
+			SourceName: locale,
+			TotalBytes: 1,
+		}},
+	}, now)
+}
+
+func (r *Repository) CreateExport(
+	ctx context.Context,
+	id string,
+	source ExportSource,
+	destination string,
+	items []NewItem,
+	now time.Time,
+) (Snapshot, error) {
+	return r.create(ctx, id, newOperation{
+		Kind:         KindExport,
+		ExportSource: source,
+		Destination:  destination,
+		Items:        items,
+	}, now)
 }
 
 func (r *Repository) create(
 	ctx context.Context,
 	id string,
-	kind Kind,
-	items []NewItem,
+	operation newOperation,
 	now time.Time,
 ) (Snapshot, error) {
-	if id == "" || len(items) == 0 {
+	if id == "" || len(operation.Items) == 0 {
 		return Snapshot{}, fmt.Errorf("%w: empty operation", ErrInvalidTransition)
 	}
-	if kind != KindImport && kind != KindMetadataSync {
+	if operation.Kind != KindImport &&
+		operation.Kind != KindMetadataSync &&
+		operation.Kind != KindExport {
 		return Snapshot{}, fmt.Errorf("%w: unsupported operation kind", ErrInvalidTransition)
+	}
+	totalBytes, err := validateNewItems(operation.Kind, operation.Items)
+	if err != nil {
+		return Snapshot{}, err
+	}
+	var sourceType any
+	var sourceShelfIDs any
+	var sourceShelfNames any
+	var destination any
+	if operation.Kind == KindExport {
+		if err := validateExportSource(operation.ExportSource); err != nil {
+			return Snapshot{}, err
+		}
+		if strings.TrimSpace(operation.Destination) == "" {
+			return Snapshot{}, fmt.Errorf(
+				"%w: empty export destination",
+				ErrInvalidTransition,
+			)
+		}
+		ids, err := json.Marshal(nonNilInt64s(operation.ExportSource.ShelfIDs))
+		if err != nil {
+			return Snapshot{}, fmt.Errorf("encode export shelf IDs: %w", err)
+		}
+		names, err := json.Marshal(nonNilStrings(operation.ExportSource.ShelfNames))
+		if err != nil {
+			return Snapshot{}, fmt.Errorf("encode export shelf names: %w", err)
+		}
+		sourceType = operation.ExportSource.Type
+		sourceShelfIDs = string(ids)
+		sourceShelfNames = string(names)
+		destination = operation.Destination
+	} else {
+		totalBytes = 0
 	}
 	transaction, err := r.database.BeginTx(ctx, nil)
 	if err != nil {
@@ -67,35 +137,209 @@ func (r *Repository) create(
 	if _, err := transaction.ExecContext(
 		ctx,
 		`INSERT INTO file_operations (
-			id, kind, status, total_items, created_at
-		) VALUES (?, ?, 'queued', ?, ?)`,
+			id,
+			kind,
+			status,
+			export_source_type,
+			export_source_shelf_ids,
+			export_source_shelf_names,
+			export_destination,
+			total_items,
+			total_bytes,
+			created_at
+		) VALUES (?, ?, 'queued', ?, ?, ?, ?, ?, ?, ?)`,
 		id,
-		kind,
-		len(items),
+		operation.Kind,
+		sourceType,
+		sourceShelfIDs,
+		sourceShelfNames,
+		destination,
+		len(operation.Items),
+		totalBytes,
 		formatTime(now),
 	); err != nil {
-		return Snapshot{}, fmt.Errorf("insert %s operation: %w", kind, err)
+		return Snapshot{}, fmt.Errorf(
+			"insert %s operation: %w",
+			operation.Kind,
+			err,
+		)
 	}
-	for _, item := range items {
-		if item.SourceName == "" || item.TotalBytes < 0 {
-			return Snapshot{}, fmt.Errorf("%w: invalid operation item", ErrInvalidTransition)
+	for _, item := range operation.Items {
+		var storyID any
+		if item.StoryID != 0 {
+			storyID = item.StoryID
 		}
 		if _, err := transaction.ExecContext(
 			ctx,
 			`INSERT INTO file_operation_items (
-				operation_id, source_name, status, total_bytes
-			) VALUES (?, ?, 'pending', ?)`,
+				operation_id,
+				story_id,
+				resolved_story_id,
+				story_uuid,
+				story_title,
+				source_name,
+				output_name,
+				archive_relative_path,
+				archive_sha256,
+				status,
+				total_bytes
+			) VALUES (?, ?, ?, NULLIF(?, ''), NULLIF(?, ''), ?, NULLIF(?, ''),
+				NULLIF(?, ''), NULLIF(?, ''), 'pending', ?)`,
 			id,
+			storyID,
+			storyID,
+			item.StoryUUID,
+			item.StoryTitle,
 			item.SourceName,
+			item.OutputName,
+			item.ArchiveRelativePath,
+			item.ArchiveSHA256,
 			item.TotalBytes,
 		); err != nil {
-			return Snapshot{}, fmt.Errorf("insert import operation item: %w", err)
+			return Snapshot{}, fmt.Errorf("insert operation item: %w", err)
 		}
 	}
 	if err := transaction.Commit(); err != nil {
 		return Snapshot{}, fmt.Errorf("commit operation creation: %w", err)
 	}
 	return r.Snapshot(ctx, id)
+}
+
+func validateNewItems(kind Kind, items []NewItem) (int64, error) {
+	var totalBytes int64
+	storyIDs := make(map[int64]struct{}, len(items))
+	for _, item := range items {
+		if strings.TrimSpace(item.SourceName) == "" || item.TotalBytes < 0 {
+			return 0, fmt.Errorf(
+				"%w: invalid operation item",
+				ErrInvalidTransition,
+			)
+		}
+		if item.TotalBytes > math.MaxInt64-totalBytes {
+			return 0, fmt.Errorf(
+				"%w: operation byte total overflow",
+				ErrInvalidTransition,
+			)
+		}
+		totalBytes += item.TotalBytes
+		if kind != KindExport {
+			continue
+		}
+		if item.StoryID <= 0 {
+			return 0, fmt.Errorf(
+				"%w: export story is missing",
+				ErrInvalidTransition,
+			)
+		}
+		if _, duplicate := storyIDs[item.StoryID]; duplicate {
+			return 0, fmt.Errorf(
+				"%w: duplicate export story",
+				ErrInvalidTransition,
+			)
+		}
+		storyIDs[item.StoryID] = struct{}{}
+		if _, err := uuid.Parse(item.StoryUUID); err != nil ||
+			strings.TrimSpace(item.StoryTitle) == "" ||
+			!validOutputName(item.OutputName) ||
+			!validRelativePath(item.ArchiveRelativePath) ||
+			!validSHA256(item.ArchiveSHA256) {
+			return 0, fmt.Errorf(
+				"%w: invalid export operation item",
+				ErrInvalidTransition,
+			)
+		}
+	}
+	return totalBytes, nil
+}
+
+func validateExportSource(source ExportSource) error {
+	if len(source.ShelfIDs) != len(source.ShelfNames) {
+		return fmt.Errorf(
+			"%w: export shelf identity mismatch",
+			ErrInvalidTransition,
+		)
+	}
+	switch source.Type {
+	case ExportSourceSelection, ExportSourceCurrentQuery:
+		if len(source.ShelfIDs) != 0 {
+			return fmt.Errorf(
+				"%w: unexpected export shelves",
+				ErrInvalidTransition,
+			)
+		}
+	case ExportSourceShelf:
+		if len(source.ShelfIDs) != 1 {
+			return fmt.Errorf(
+				"%w: single-shelf export identity is invalid",
+				ErrInvalidTransition,
+			)
+		}
+	case ExportSourceShelves:
+		if len(source.ShelfIDs) < 2 {
+			return fmt.Errorf(
+				"%w: multi-shelf export identity is invalid",
+				ErrInvalidTransition,
+			)
+		}
+	default:
+		return fmt.Errorf(
+			"%w: export source type is invalid",
+			ErrInvalidTransition,
+		)
+	}
+	seen := make(map[int64]struct{}, len(source.ShelfIDs))
+	for index, shelfID := range source.ShelfIDs {
+		if shelfID <= 0 || strings.TrimSpace(source.ShelfNames[index]) == "" {
+			return fmt.Errorf(
+				"%w: export shelf identity is invalid",
+				ErrInvalidTransition,
+			)
+		}
+		if _, duplicate := seen[shelfID]; duplicate {
+			return fmt.Errorf(
+				"%w: duplicate export shelf",
+				ErrInvalidTransition,
+			)
+		}
+		seen[shelfID] = struct{}{}
+	}
+	return nil
+}
+
+func validOutputName(value string) bool {
+	return value != "" &&
+		value == strings.TrimSpace(value) &&
+		!strings.ContainsAny(value, `/\`)
+}
+
+func validRelativePath(value string) bool {
+	return value != "" &&
+		value == path.Clean(value) &&
+		value != "." &&
+		!strings.HasPrefix(value, "../") &&
+		!strings.HasPrefix(value, "/")
+}
+
+func validSHA256(value string) bool {
+	if len(value) != 64 || value != strings.ToLower(value) {
+		return false
+	}
+	_, err := hex.DecodeString(value)
+	return err == nil
+}
+
+func nonNilInt64s(values []int64) []int64 {
+	if values == nil {
+		return []int64{}
+	}
+	return values
+}
+
+func nonNilStrings(values []string) []string {
+	if values == nil {
+		return []string{}
+	}
+	return values
 }
 
 func (r *Repository) MarkRunning(ctx context.Context, id string, now time.Time) error {
@@ -285,14 +529,21 @@ func (r *Repository) Snapshot(ctx context.Context, id string) (Snapshot, error) 
 	var cancelRequested int
 	var startedAt sql.NullString
 	var finishedAt sql.NullString
+	var sourceShelfIDs string
+	var sourceShelfNames string
 	err := r.database.QueryRowContext(
 		ctx,
 		`SELECT
 			id,
 			kind,
 			status,
+			COALESCE(export_source_type, ''),
+			COALESCE(export_source_shelf_ids, ''),
+			COALESCE(export_source_shelf_names, ''),
+			COALESCE(export_destination, ''),
 			completed_items,
 			total_items,
+			total_bytes,
 			cancel_requested,
 			COALESCE(error_code, ''),
 			COALESCE(error_message, ''),
@@ -306,8 +557,13 @@ func (r *Repository) Snapshot(ctx context.Context, id string) (Snapshot, error) 
 		&snapshot.ID,
 		&snapshot.Kind,
 		&snapshot.Status,
+		&snapshot.ExportSourceType,
+		&sourceShelfIDs,
+		&sourceShelfNames,
+		&snapshot.Destination,
 		&snapshot.CompletedItems,
 		&snapshot.TotalItems,
+		&snapshot.TotalBytes,
 		&cancelRequested,
 		&snapshot.ErrorCode,
 		&snapshot.ErrorMessage,
@@ -321,13 +577,34 @@ func (r *Repository) Snapshot(ctx context.Context, id string) (Snapshot, error) 
 	snapshot.CancelRequested = cancelRequested == 1
 	snapshot.StartedAt = startedAt.String
 	snapshot.FinishedAt = finishedAt.String
+	if sourceShelfIDs != "" {
+		if err := json.Unmarshal(
+			[]byte(sourceShelfIDs),
+			&snapshot.SourceShelfIDs,
+		); err != nil {
+			return Snapshot{}, fmt.Errorf("decode export shelf IDs: %w", err)
+		}
+	}
+	if sourceShelfNames != "" {
+		if err := json.Unmarshal(
+			[]byte(sourceShelfNames),
+			&snapshot.SourceShelfNames,
+		); err != nil {
+			return Snapshot{}, fmt.Errorf("decode export shelf names: %w", err)
+		}
+	}
 
 	rows, err := r.database.QueryContext(
 		ctx,
 		`SELECT
 			id,
-			COALESCE(story_id, 0),
+			COALESCE(resolved_story_id, story_id, 0),
+			COALESCE(story_uuid, ''),
+			COALESCE(story_title, ''),
 			source_name,
+			COALESCE(output_name, ''),
+			COALESCE(archive_relative_path, ''),
+			COALESCE(archive_sha256, ''),
 			status,
 			COALESCE(outcome_code, ''),
 			COALESCE(outcome_message, ''),
@@ -347,7 +624,12 @@ func (r *Repository) Snapshot(ctx context.Context, id string) (Snapshot, error) 
 		if err := rows.Scan(
 			&item.ID,
 			&item.StoryID,
+			&item.StoryUUID,
+			&item.StoryTitle,
 			&item.SourceName,
+			&item.OutputName,
+			&item.ArchiveRelativePath,
+			&item.ArchiveSHA256,
 			&item.Status,
 			&item.OutcomeCode,
 			&item.OutcomeMessage,
