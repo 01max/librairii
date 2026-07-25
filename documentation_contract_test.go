@@ -108,4 +108,14 @@ func TestReleaseMatrixHasIndependentPlatformTasks(t *testing.T) {
 			}
 		}
 	}
+	windowsScript, err := os.ReadFile("scripts/verify-platform-windows.ps1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(windowsScript), "-windowsconsole") {
+		t.Error("Windows release verifier builds a console-subsystem executable")
+	}
+	if !strings.Contains(string(windowsScript), "0x0002") {
+		t.Error("Windows release verifier does not enforce the GUI PE subsystem")
+	}
 }

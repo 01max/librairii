@@ -28,7 +28,6 @@ if ($LASTEXITCODE -ne 0 -or $ActualWailsVersion -ne $WailsVersion) {
     -m `
     -nocolour `
     -platform windows/amd64 `
-    -windowsconsole `
     -webview2 error `
     -nsis `
     -installscope user `
@@ -52,11 +51,18 @@ if ($BinaryBytes.Length -lt 512) {
 $PEOffset = [BitConverter]::ToInt32($BinaryBytes, 0x3c)
 if (
     $PEOffset -lt 0 -or
-    $PEOffset + 6 -gt $BinaryBytes.Length -or
+    $PEOffset + 94 -gt $BinaryBytes.Length -or
     [BitConverter]::ToUInt32($BinaryBytes, $PEOffset) -ne 0x00004550 -or
     [BitConverter]::ToUInt16($BinaryBytes, $PEOffset + 4) -ne 0x8664
 ) {
     throw "Packaged Windows executable is not an amd64 PE image"
+}
+$OptionalHeaderOffset = $PEOffset + 24
+if (
+    [BitConverter]::ToUInt16($BinaryBytes, $OptionalHeaderOffset) -ne 0x020b -or
+    [BitConverter]::ToUInt16($BinaryBytes, $OptionalHeaderOffset + 68) -ne 0x0002
+) {
+    throw "Packaged Windows executable is not a GUI-subsystem PE image"
 }
 
 $VerificationRoot = Join-Path `

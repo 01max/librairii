@@ -25,9 +25,11 @@ Windows arm64, and Linux arm64 are not release targets for `0.1.x`; adding one
 requires a new matrix row and the same evidence.
 
 The Windows installer is built with user install scope and expects a supported
-WebView2 runtime. The Linux archive contains the Wails executable and expects
-the distribution to provide GTK 3 and WebKitGTK 4.1. It is intentionally not a
-generic package for every Linux ABI.
+WebView2 runtime. Its packaged executable is verified as an amd64 PE image using
+the Windows GUI subsystem, so it does not open an extra console window. The
+Linux archive contains the Wails executable and expects the distribution to
+provide GTK 3 and WebKitGTK 4.1. It is intentionally not a generic package for
+every Linux ABI.
 
 ## Evidence contract
 
