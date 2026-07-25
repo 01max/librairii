@@ -157,6 +157,64 @@ export function installCollectionFixture() {
                 },
             };
         },
+        TagCatalog: async () => ({
+            catalog: {
+                definitions: [{
+                    id: 1,
+                    key: 'broken',
+                    normalizedKey: 'broken',
+                    label: 'Broken',
+                    color: '#ff705c',
+                    kind: 'boolean',
+                    source: 'builtin',
+                    presentation: 'warning',
+                    position: 0,
+                    protected: true,
+                    values: [],
+                }],
+            },
+        }),
+        TagAssignmentWorkspace: async (storyIDs: number[]) => ({
+            workspace: {
+                catalog: {
+                    definitions: [{
+                        id: 1,
+                        key: 'broken',
+                        normalizedKey: 'broken',
+                        label: 'Broken',
+                        color: '#ff705c',
+                        kind: 'boolean',
+                        source: 'builtin',
+                        presentation: 'warning',
+                        position: 0,
+                        protected: true,
+                        values: [],
+                    }],
+                },
+                requestedStories: storyIDs.length,
+                states: [{
+                    definitionId: 1,
+                    assignedStories: 0,
+                    values: [],
+                }],
+            },
+        }),
+        SetBooleanTag: async (storyIDs: number[]) => ({
+            result: {
+                requestedStories: storyIDs.length,
+                changedStories: storyIDs.length,
+                assignmentsAdded: storyIDs.length,
+                assignmentsRemoved: 0,
+            },
+        }),
+        SetChoiceTagValue: async (storyIDs: number[]) => ({
+            result: {
+                requestedStories: storyIDs.length,
+                changedStories: storyIDs.length,
+                assignmentsAdded: storyIDs.length,
+                assignmentsRemoved: 0,
+            },
+        }),
         SelectAndImportStories: async () => ({cancelled: true}),
         CancelOperation: async () => ({cancelled: true}),
         RemoveStory: async (storyID: number) => ({

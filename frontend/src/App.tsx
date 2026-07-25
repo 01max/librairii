@@ -17,6 +17,7 @@ import {
     SelectAndImportStories,
     StoryDetail as LoadStoryDetail,
     TagAssignmentWorkspace as LoadTagAssignmentWorkspace,
+    TagCatalog as LoadTagCatalog,
 } from '../wailsjs/go/main/App';
 import {EventsOn} from '../wailsjs/runtime/runtime';
 import {library, operations, tagging} from '../wailsjs/go/models';
@@ -116,7 +117,9 @@ function App() {
     const [tagAssignmentOpen, setTagAssignmentOpen] = useState(false);
     const [assignmentWorkspace, setAssignmentWorkspace] =
         useState<tagging.AssignmentWorkspace | null>(null);
+    const [tagCatalog, setTagCatalog] = useState<tagging.Catalog | null>(null);
     const refreshedOperations = useRef(new Set<string>());
+    const searchInput = useRef<HTMLInputElement>(null);
 
     const loadCollection = useCallback(async () => {
         const result = await QueryStories(new library.StoryLibraryQuery(collectionQuery));
@@ -182,6 +185,10 @@ function App() {
                 }
                 setApplicationState(state);
                 if (state === 'ready') {
+                    const catalogResponse = await LoadTagCatalog();
+                    if (active) {
+                        setTagCatalog(catalogResponse.catalog ?? null);
+                    }
                     await loadCollection();
                     const operationsResponse = await ActiveOperations();
                     if (!active) {
@@ -426,6 +433,79 @@ function App() {
         });
     }) ?? [];
 
+    const updateQuery = useCallback((next: CollectionQuery) => {
+        setCollectionQuery(queryHistory.push(next));
+    }, [queryHistory]);
+
+    function setBooleanFilter(definitionId: number, state: 'ignored' | 'true' | 'false') {
+        updateQuery({
+            ...collectionQuery,
+            booleanFilters: state === 'ignored'
+                ? collectionQuery.booleanFilters.filter(
+                    (filter) => filter.definitionId !== definitionId,
+                )
+                : [
+                    ...collectionQuery.booleanFilters.filter(
+                        (filter) => filter.definitionId !== definitionId,
+                    ),
+                    {definitionId, state},
+                ],
+            page: 1,
+        });
+    }
+
+    function toggleChoiceFilter(definitionId: number, valueId: number) {
+        const current = collectionQuery.choiceFilters.find(
+            (filter) => filter.definitionId === definitionId,
+        )?.valueIds ?? [];
+        const values = current.includes(valueId)
+            ? current.filter((candidate) => candidate !== valueId)
+            : [...current, valueId];
+        updateQuery({
+            ...collectionQuery,
+            choiceFilters: [
+                ...collectionQuery.choiceFilters.filter(
+                    (filter) => filter.definitionId !== definitionId,
+                ),
+                ...(values.length > 0 ? [{definitionId, valueIds: values}] : []),
+            ],
+            page: 1,
+        });
+    }
+
+    const activeFilters = [
+        ...(collectionQuery.name
+            ? [{key: 'name', label: `Name contains “${collectionQuery.name}”`}]
+            : []),
+        ...collectionQuery.booleanFilters.flatMap((filter) => {
+            const definition = tagCatalog?.definitions.find(
+                (candidate) => candidate.id === filter.definitionId,
+            );
+            return definition
+                ? [{
+                    key: `boolean-${filter.definitionId}`,
+                    label: filter.state === 'true'
+                        ? definition.label
+                        : `Not ${definition.label}`,
+                }]
+                : [];
+        }),
+        ...collectionQuery.choiceFilters.flatMap((filter) => {
+            const definition = tagCatalog?.definitions.find(
+                (candidate) => candidate.id === filter.definitionId,
+            );
+            return filter.valueIds.flatMap((valueID) => {
+                const value = definition?.values.find((candidate) => candidate.id === valueID);
+                return definition && value
+                    ? [{
+                        key: `choice-${definition.id}-${value.id}`,
+                        label: `${definition.label} · ${value.label}`,
+                    }]
+                    : [];
+            });
+        }),
+    ];
+
     return (
         <div className="app">
             <span className="sr-only" data-testid="application-state">
@@ -456,27 +536,64 @@ function App() {
                     </button>
                 </nav>
                 <div className="caption">Refine this shelf</div>
-                <div className="facet">
-                    <div className="facet-title">Age <b>−</b></div>
-                    <label className="choice">
-                        <input type="checkbox" disabled/>
-                        <i style={{'--c': '#ff705c'} as CSSProperties}/>
-                        3–5 years
-                        <span>0</span>
-                    </label>
-                    <label className="choice">
-                        <input type="checkbox" disabled/>
-                        <i style={{'--c': '#ff705c'} as CSSProperties}/>
-                        6–8 years
-                        <span>0</span>
-                    </label>
-                </div>
-                <div className="facet">
-                    <div className="facet-title">Language <b>＋</b></div>
-                </div>
-                <div className="facet">
-                    <div className="facet-title">Import status <b>＋</b></div>
-                </div>
+                {tagCatalog?.definitions.map((definition) => (
+                    <div className="facet" key={definition.id}>
+                        <div className="facet-title">{definition.label} <b>−</b></div>
+                        {definition.kind === 'boolean' ? (
+                            <>
+                                <label className="choice">
+                                    <input
+                                        type="checkbox"
+                                        checked={collectionQuery.booleanFilters.some(
+                                            (filter) => (
+                                                filter.definitionId === definition.id &&
+                                                filter.state === 'true'
+                                            ),
+                                        )}
+                                        onChange={(event) => setBooleanFilter(
+                                            definition.id,
+                                            event.currentTarget.checked ? 'true' : 'ignored',
+                                        )}
+                                    />
+                                    <i style={{'--c': definition.color} as CSSProperties}/>
+                                    {definition.label}
+                                </label>
+                                <label className="choice">
+                                    <input
+                                        type="checkbox"
+                                        checked={collectionQuery.booleanFilters.some(
+                                            (filter) => (
+                                                filter.definitionId === definition.id &&
+                                                filter.state === 'false'
+                                            ),
+                                        )}
+                                        onChange={(event) => setBooleanFilter(
+                                            definition.id,
+                                            event.currentTarget.checked ? 'false' : 'ignored',
+                                        )}
+                                    />
+                                    <i style={{'--c': definition.color} as CSSProperties}/>
+                                    Not {definition.label}
+                                </label>
+                            </>
+                        ) : definition.values.map((value) => (
+                            <label className="choice" key={value.id}>
+                                <input
+                                    type="checkbox"
+                                    checked={collectionQuery.choiceFilters.some(
+                                        (filter) => (
+                                            filter.definitionId === definition.id &&
+                                            filter.valueIds.includes(value.id)
+                                        ),
+                                    )}
+                                    onChange={() => toggleChoiceFilter(definition.id, value.id)}
+                                />
+                                <i style={{'--c': definition.color} as CSSProperties}/>
+                                {value.label}
+                            </label>
+                        ))}
+                    </div>
+                ))}
                 <button
                     className="manage"
                     type="button"
@@ -491,9 +608,16 @@ function App() {
                     <label className="search">
                         <span aria-hidden="true">⌕</span>
                         <input
+                            ref={searchInput}
                             type="search"
                             aria-label="Search stories"
                             placeholder={`Search ${page?.totalItems ?? 0} stories, authors, publishers…`}
+                            value={collectionQuery.name}
+                            onChange={(event) => updateQuery({
+                                ...collectionQuery,
+                                name: event.currentTarget.value,
+                                page: 1,
+                            })}
                         />
                     </label>
                     <button type="button">↻ Sync</button>
@@ -512,8 +636,45 @@ function App() {
                         <h2>My story shelves</h2>
                         <p>Stories in your local archive · {page?.totalItems ?? 0} archives</p>
                     </div>
-                    <div className="sort">Recently added ⌄</div>
+                    <label className="sort">
+                        <span className="sr-only">Sort stories</span>
+                        <select
+                            value={collectionQuery.sort}
+                            onChange={(event) => updateQuery({
+                                ...collectionQuery,
+                                sort: event.currentTarget.value as CollectionQuery['sort'],
+                                page: 1,
+                            })}
+                        >
+                            <option value="imported_desc">Recently added</option>
+                            <option value="name_asc">Name A–Z</option>
+                        </select>
+                    </label>
                 </div>
+
+                {activeFilters.length > 0 && (
+                    <section className="active-query" aria-label="Active filters">
+                        <span>{page?.totalItems ?? 0} matching stories</span>
+                        {activeFilters.map((filter) => (
+                            <span className="query-chip" key={filter.key}>{filter.label}</span>
+                        ))}
+                        <button
+                            type="button"
+                            onClick={() => {
+                                updateQuery({
+                                    ...collectionQuery,
+                                    name: '',
+                                    booleanFilters: [],
+                                    choiceFilters: [],
+                                    page: 1,
+                                });
+                                searchInput.current?.focus();
+                            }}
+                        >
+                            Clear all
+                        </button>
+                    </section>
+                )}
 
                 {requestError && (
                     <section className="collection-state error" data-state="failed-import">
@@ -649,6 +810,33 @@ function App() {
                         </div>
                     </section>
                 ))}
+                {(page?.totalPages ?? 0) > 1 && (
+                    <nav className="pagination" aria-label="Collection pages">
+                        <button
+                            type="button"
+                            disabled={collectionQuery.page <= 1}
+                            onClick={() => updateQuery({
+                                ...collectionQuery,
+                                page: collectionQuery.page - 1,
+                            })}
+                        >
+                            ← Previous
+                        </button>
+                        <span>
+                            Page {page?.page ?? collectionQuery.page} of {page?.totalPages}
+                        </span>
+                        <button
+                            type="button"
+                            disabled={collectionQuery.page >= (page?.totalPages ?? 1)}
+                            onClick={() => updateQuery({
+                                ...collectionQuery,
+                                page: collectionQuery.page + 1,
+                            })}
+                        >
+                            Next →
+                        </button>
+                    </nav>
+                )}
             </main>
 
             {selected && (

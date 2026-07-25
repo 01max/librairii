@@ -11,6 +11,7 @@ import {
     SelectAndImportStories,
     StoryDetail as LoadStoryDetail,
     TagAssignmentWorkspace as LoadTagAssignmentWorkspace,
+    TagCatalog as LoadTagCatalog,
 } from '../wailsjs/go/main/App';
 import {app, library} from '../wailsjs/go/models';
 import {EventsOn} from '../wailsjs/runtime/runtime';
@@ -26,6 +27,7 @@ vi.mock('../wailsjs/go/main/App', () => ({
     SelectAndImportStories: vi.fn(),
     StoryDetail: vi.fn(),
     TagAssignmentWorkspace: vi.fn(),
+    TagCatalog: vi.fn(),
     SetBooleanTag: vi.fn(),
     SetChoiceTagValue: vi.fn(),
 }));
@@ -43,6 +45,7 @@ const removeStory = vi.mocked(RemoveStory);
 const selectAndImportStories = vi.mocked(SelectAndImportStories);
 const loadStoryDetail = vi.mocked(LoadStoryDetail);
 const loadTagAssignmentWorkspace = vi.mocked(LoadTagAssignmentWorkspace);
+const loadTagCatalog = vi.mocked(LoadTagCatalog);
 const eventsOn = vi.mocked(EventsOn);
 let operationChanged: ((value: unknown) => void) | undefined;
 
@@ -91,6 +94,7 @@ beforeEach(() => {
     selectAndImportStories.mockReset();
     loadStoryDetail.mockReset();
     loadTagAssignmentWorkspace.mockReset();
+    loadTagCatalog.mockReset();
     eventsOn.mockReset();
     operationChanged = undefined;
 
@@ -138,6 +142,49 @@ beforeEach(() => {
             },
         })
     ));
+    loadTagCatalog.mockResolvedValue(new app.TagCatalogResponse({
+        catalog: {
+            definitions: [{
+                id: 1,
+                key: 'broken',
+                normalizedKey: 'broken',
+                label: 'Broken',
+                color: '#ff705c',
+                kind: 'boolean',
+                source: 'builtin',
+                presentation: 'warning',
+                position: 0,
+                protected: true,
+                values: [],
+            }, {
+                id: 2,
+                key: 'mood',
+                normalizedKey: 'mood',
+                label: 'Mood',
+                color: '#405cf5',
+                kind: 'choice',
+                source: 'user',
+                presentation: 'default',
+                position: 0,
+                protected: false,
+                values: [{
+                    id: 20,
+                    definitionId: 2,
+                    key: 'calm',
+                    normalizedKey: 'calm',
+                    label: 'Calm',
+                    position: 0,
+                }, {
+                    id: 21,
+                    definitionId: 2,
+                    key: 'bold',
+                    normalizedKey: 'bold',
+                    label: 'Bold',
+                    position: 1,
+                }],
+            }],
+        },
+    }));
     eventsOn.mockImplementation((_name, callback) => {
         operationChanged = callback;
         return vi.fn();
@@ -200,6 +247,66 @@ test('reloads collection results from hash back and forward navigation', async (
     ));
 });
 
+test('composes canonical search, tri-state and choice refinements with clear-all focus', async () => {
+    const user = userEvent.setup();
+    render(<App/>);
+    const search = await screen.findByRole('searchbox', {name: 'Search stories'});
+
+    await user.type(search, 'Forêt');
+    await waitFor(() => expect(queryStories).toHaveBeenLastCalledWith(
+        expect.objectContaining({name: 'foret', page: 1}),
+    ));
+    await user.click(screen.getByRole('checkbox', {name: 'Broken'}));
+    await user.click(screen.getByRole('checkbox', {name: 'Calm'}));
+    await user.click(screen.getByRole('checkbox', {name: 'Bold'}));
+
+    await waitFor(() => expect(queryStories).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+            booleanFilters: [{definitionId: 1, state: 'true'}],
+            choiceFilters: [{definitionId: 2, valueIds: [20, 21]}],
+        }),
+    ));
+    expect(screen.getByText('Mood · Calm')).toBeInTheDocument();
+    expect(screen.getByText('Mood · Bold')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', {name: 'Clear all'}));
+    await waitFor(() => expect(queryStories).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+            name: '',
+            booleanFilters: [],
+            choiceFilters: [],
+        }),
+    ));
+    expect(search).toHaveFocus();
+});
+
+test('changes sort and pages from their canonical collection controls', async () => {
+    const user = userEvent.setup();
+    queryStories.mockResolvedValue(new app.LibraryPageResponse({
+        page: {
+            stories,
+            page: 1,
+            pageSize: 12,
+            totalItems: 48,
+            totalPages: 4,
+            sort: 'imported_desc',
+        },
+    }));
+    render(<App/>);
+
+    await user.selectOptions(
+        await screen.findByRole('combobox', {name: 'Sort stories'}),
+        'name_asc',
+    );
+    await waitFor(() => expect(queryStories).toHaveBeenLastCalledWith(
+        expect.objectContaining({sort: 'name_asc', page: 1}),
+    ));
+    await user.click(screen.getByRole('button', {name: 'Next →'}));
+    await waitFor(() => expect(queryStories).toHaveBeenLastCalledWith(
+        expect.objectContaining({sort: 'name_asc', page: 2}),
+    ));
+});
+
 test('selects a cover and loads its detail drawer without losing the collection', async () => {
     const user = userEvent.setup();
     render(<App/>);
@@ -248,7 +355,7 @@ test('keeps bulk selection in the collection and exposes updated tag chips', asy
     const second = screen.getByRole('button', {
         name: 'Moonlit Workshop 11112222-3333-4444-8555-666677778888',
     });
-    expect(await screen.findByText('Broken')).toBeInTheDocument();
+    expect((await screen.findAllByText('Broken')).length).toBeGreaterThan(1);
 
     await user.keyboard('{Control>}');
     await user.click(second);
