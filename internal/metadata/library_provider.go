@@ -95,4 +95,8 @@ func (p *LibraryProvider) FindByUUIDs(
 	return result, nil
 }
 
+func (p *LibraryProvider) DisplayLocale() string {
+	return p.locale
+}
+
 var _ library.OfficialProvider = (*LibraryProvider)(nil)

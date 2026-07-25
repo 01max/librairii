@@ -24,6 +24,7 @@ const (
 			  ON official_snapshot.id = official_name.snapshot_id
 			WHERE official_name.story_uuid = s.uuid
 			  AND official_snapshot.status = 'active'
+			  AND official_snapshot.locale = ?
 			ORDER BY official_snapshot.activated_at DESC,
 			         official_snapshot.id DESC
 			LIMIT 1
@@ -81,7 +82,7 @@ func (q *Query) searchNormalized(
 	ctx context.Context,
 	request StoryLibraryQuery,
 ) (Page, error) {
-	where, arguments := storyLibraryPredicate(request)
+	where, arguments := storyLibraryPredicate(request, q.officialLocale)
 	totalItems, err := q.countLocalRecords(ctx, where, arguments)
 	if err != nil {
 		return Page{}, err
@@ -343,7 +344,10 @@ func (q *Query) validateFilterDefinitions(
 	return nil
 }
 
-func storyLibraryPredicate(request StoryLibraryQuery) (string, []any) {
+func storyLibraryPredicate(
+	request StoryLibraryQuery,
+	officialLocale string,
+) (string, []any) {
 	var predicates []string
 	var arguments []any
 	if request.Name != "" {
@@ -351,7 +355,7 @@ func storyLibraryPredicate(request StoryLibraryQuery) (string, []any) {
 			predicates,
 			"instr("+resolvedDisplayNameSQL+", ?) > 0",
 		)
-		arguments = append(arguments, request.Name)
+		arguments = append(arguments, officialLocale, request.Name)
 	}
 	if len(request.Languages) > 0 {
 		placeholders := strings.TrimSuffix(

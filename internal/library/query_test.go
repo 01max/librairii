@@ -280,6 +280,10 @@ func (p fixedOfficialProvider) FindByUUIDs(
 	return result, nil
 }
 
+func (fixedOfficialProvider) DisplayLocale() string {
+	return "en-GB"
+}
+
 func newLibraryQuery(
 	t *testing.T,
 	official OfficialProvider,

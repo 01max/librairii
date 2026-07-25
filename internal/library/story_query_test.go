@@ -202,7 +202,17 @@ func TestStoryLibraryQueryComposesBooleanAndChoiceGroups(t *testing.T) {
 func TestStoryLibraryQueryComposesOfficialLanguageArchiveAndDerivedFacets(t *testing.T) {
 	t.Parallel()
 
-	query, repository, database := newLibraryQuery(t, nil)
+	official := fixedOfficialProvider{
+		"00112233-4455-4677-8899-aabbccddeeff": {
+			UUID:  "00112233-4455-4677-8899-aabbccddeeff",
+			Title: "L'École des dragons",
+		},
+		"11112222-3333-4444-8555-666677778888": {
+			UUID:  "11112222-3333-4444-8555-666677778888",
+			Title: "Night train",
+		},
+	}
+	query, repository, database := newLibraryQuery(t, official)
 	first := createQueryableStory(
 		t,
 		repository,
@@ -225,8 +235,8 @@ func TestStoryLibraryQueryComposesOfficialLanguageArchiveAndDerivedFacets(t *tes
 		"c",
 	)
 	seedOfficialQuerySnapshot(t, database, map[string]string{
-		first.UUID:  "L'École des dragons",
-		second.UUID: "Night train",
+		first.UUID:  official[first.UUID].Title,
+		second.UUID: official[second.UUID].Title,
 	})
 	if _, err := database.Exec(
 		"UPDATE story_archives SET validation_state = 'missing' WHERE story_id = ?",
@@ -344,6 +354,16 @@ func TestStoryLibraryQuerySortsAndPagesByResolvedOfficialName(t *testing.T) {
 		first.UUID:  official[first.UUID].Title,
 		second.UUID: official[second.UUID].Title,
 	})
+	seedOfficialQuerySnapshotForLocale(
+		t,
+		database,
+		"123e4567-e89b-42d3-a456-426614174001",
+		"fr-FR",
+		map[string]string{
+			first.UUID:  "Alpha français",
+			second.UUID: "Zulu français",
+		},
+	)
 
 	firstPage, err := query.Search(context.Background(), StoryLibraryQuery{
 		Page:     1,
@@ -371,6 +391,19 @@ func TestStoryLibraryQuerySortsAndPagesByResolvedOfficialName(t *testing.T) {
 		secondPage.Stories[0].ID != first.ID ||
 		secondPage.Stories[0].Title != "Zulu official" {
 		t.Fatalf("second page = %#v", secondPage)
+	}
+	searchPage, err := query.Search(context.Background(), StoryLibraryQuery{
+		Name: "alpha",
+		Sort: SortNameAscending,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if searchPage.TotalItems != 1 ||
+		len(searchPage.Stories) != 1 ||
+		searchPage.Stories[0].ID != second.ID ||
+		searchPage.Stories[0].Title != "Alpha official" {
+		t.Fatalf("English display-locale search = %#v", searchPage)
 	}
 }
 
@@ -437,13 +470,31 @@ func seedOfficialQuerySnapshot(
 ) {
 	t.Helper()
 
-	const syncID = "123e4567-e89b-42d3-a456-426614174000"
+	seedOfficialQuerySnapshotForLocale(
+		t,
+		database,
+		"123e4567-e89b-42d3-a456-426614174000",
+		"en-GB",
+		stories,
+	)
+}
+
+func seedOfficialQuerySnapshotForLocale(
+	t *testing.T,
+	database *sql.DB,
+	syncID string,
+	locale string,
+	stories map[string]string,
+) {
+	t.Helper()
+
 	now := time.Date(2026, time.July, 25, 16, 0, 0, 0, time.UTC).
 		Format(time.RFC3339Nano)
 	if _, err := database.Exec(
 		`INSERT INTO catalog_syncs (id, locale, started_at)
-		 VALUES (?, 'en-GB', ?)`,
+		 VALUES (?, ?, ?)`,
 		syncID,
+		locale,
 		now,
 	); err != nil {
 		t.Fatal(err)
@@ -452,8 +503,10 @@ func seedOfficialQuerySnapshot(
 		`INSERT INTO catalog_snapshots (
 			sync_id, locale, raw_path, raw_sha256, byte_size,
 			record_count, fetched_at
-		 ) VALUES (?, 'en-GB', 'catalog/query.json', ?, 2, ?, ?)`,
+		 ) VALUES (?, ?, ?, ?, 2, ?, ?)`,
 		syncID,
+		locale,
+		"catalog/"+syncID+"/catalog.json",
 		strings.Repeat("d", 64),
 		len(stories),
 		now,
@@ -470,11 +523,13 @@ func seedOfficialQuerySnapshot(
 			`INSERT INTO official_story_metadata (
 				snapshot_id, story_uuid, locale, title, title_normalized,
 				language, provenance
-			 ) VALUES (?, ?, 'en-GB', ?, ?, 'en-GB', 'lunii_catalog')`,
+			 ) VALUES (?, ?, ?, ?, ?, ?, 'lunii_catalog')`,
 			snapshotID,
 			storyUUID,
+			locale,
 			title,
 			searchtext.Normalize(title),
+			locale,
 		); err != nil {
 			t.Fatal(err)
 		}

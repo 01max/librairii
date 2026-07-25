@@ -192,7 +192,7 @@ func TestStoryLibraryQueryPlanUsesAssignmentIndexes(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	predicate, arguments := storyLibraryPredicate(request)
+	predicate, arguments := storyLibraryPredicate(request, "en-GB")
 	rows, err := database.QueryContext(
 		context.Background(),
 		`EXPLAIN QUERY PLAN

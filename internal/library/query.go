@@ -124,18 +124,24 @@ type OfficialMetadataInfo struct {
 
 type OfficialProvider interface {
 	FindByUUIDs(context.Context, []string) (map[string]OfficialMetadata, error)
+	DisplayLocale() string
 }
 
 type Query struct {
-	database *sql.DB
-	official OfficialProvider
+	database       *sql.DB
+	official       OfficialProvider
+	officialLocale string
 }
 
 func NewQuery(database *sql.DB, official OfficialProvider) *Query {
 	if official == nil {
 		official = emptyOfficialProvider{}
 	}
-	return &Query{database: database, official: official}
+	return &Query{
+		database:       database,
+		official:       official,
+		officialLocale: official.DisplayLocale(),
+	}
 }
 
 func (q *Query) List(ctx context.Context, request ListRequest) (Page, error) {
@@ -244,6 +250,7 @@ func (q *Query) localRecordPage(
 		statement += " ORDER BY s.created_at DESC, s.id DESC"
 	} else {
 		statement += " ORDER BY " + resolvedDisplayNameSQL + ", s.uuid, s.id"
+		arguments = append(arguments, q.officialLocale)
 	}
 	statement += " LIMIT ? OFFSET ?"
 	pageArguments := append([]any(nil), arguments...)
@@ -443,4 +450,8 @@ func (emptyOfficialProvider) FindByUUIDs(
 	[]string,
 ) (map[string]OfficialMetadata, error) {
 	return map[string]OfficialMetadata{}, nil
+}
+
+func (emptyOfficialProvider) DisplayLocale() string {
+	return ""
 }
