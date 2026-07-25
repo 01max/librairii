@@ -10,8 +10,6 @@ import (
 	"github.com/01max/librairii/internal/lunii"
 	"github.com/01max/librairii/internal/platform"
 	"github.com/wailsapp/wails/v2"
-	"github.com/wailsapp/wails/v2/pkg/options"
-	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
@@ -62,22 +60,11 @@ func main() {
 	}
 	app := NewApp(core, appOptions...)
 
-	err = wails.Run(&options.App{
-		Title:  "Librairii",
-		Width:  1024,
-		Height: 768,
-		AssetServer: &assetserver.Options{
-			Assets:  assets,
-			Handler: artworkHandler,
-		},
-		BackgroundColour: &options.RGBA{R: 27, G: 38, B: 54, A: 1},
-		OnStartup:        app.startup,
-		OnDomReady:       app.domReady,
-		OnShutdown:       app.shutdown,
-		Bind: []interface{}{
-			app,
-		},
-	})
+	appOptionsConfig, err := productionOptions(app, artworkHandler, assets)
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = wails.Run(appOptionsConfig)
 
 	if err != nil {
 		log.Print(err)

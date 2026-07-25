@@ -6,6 +6,13 @@
   "frontend:build": "npm run build",
   "frontend:dev:watcher": "npm run dev",
   "frontend:dev:serverUrl": "auto",
+  "info": {
+    "companyName": "Librairii",
+    "productName": "Librairii",
+    "productVersion": "0.1.0",
+    "copyright": "Copyright © 2026 Librairii contributors",
+    "comments": "Local-first management for Lunii.QT-compatible story archives"
+  },
   "author": {
     "name": "01max",
     "email": "m.louguet@gmail.com"
