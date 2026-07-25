@@ -362,7 +362,11 @@ func (m *Manager) StartExport(
 		default:
 			return Snapshot{}, ErrInvalidRequest
 		}
-		items = append(items, work.Item)
+		item := work.Item
+		if work.PlannedStatus != ItemPending {
+			item.TotalBytes = 0
+		}
+		items = append(items, item)
 	}
 	if readyItems == 0 {
 		return Snapshot{}, ErrInvalidRequest

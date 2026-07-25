@@ -249,6 +249,10 @@ func TestManagerRunsExportWithPersistedProgressAndMixedReport(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	if created.TotalBytes != workItems[0].Item.TotalBytes+workItems[1].Item.TotalBytes ||
+		created.Items[2].TotalBytes != 0 {
+		t.Fatalf("queued export totals = %#v", created)
+	}
 	progress := events.waitProgress(t, created.ID)
 	if progress.Items[0].CompletedBytes == 0 &&
 		progress.Items[1].CompletedBytes == 0 {
