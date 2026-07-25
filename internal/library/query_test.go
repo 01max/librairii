@@ -257,6 +257,17 @@ func TestDetailIncludesArchiveVerificationWithoutManagedPath(t *testing.T) {
 	if strings.Contains(fmt.Sprintf("%#v", detail), "archives/private") {
 		t.Fatalf("Detail() exposed managed path: %#v", detail)
 	}
+	exportStory, err := query.ExportStory(context.Background(), story.ID)
+	if err != nil {
+		t.Fatalf("ExportStory() error = %v", err)
+	}
+	if exportStory.ID != story.ID ||
+		exportStory.Title != "Clockwork" ||
+		exportStory.ManagedRelativePath != "archives/private/clockwork.v2.pk" ||
+		exportStory.SHA256 != strings.Repeat("d", 64) ||
+		exportStory.Verification != CompatibilityMissing {
+		t.Fatalf("ExportStory() = %#v", exportStory)
+	}
 	if _, err := query.Detail(context.Background(), 0); !errors.Is(err, ErrInvalidListRequest) {
 		t.Fatalf("Detail(0) error = %v", err)
 	}

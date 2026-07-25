@@ -80,6 +80,18 @@ type StoryDetail struct {
 	Archive ArchiveDetails `json:"archive"`
 }
 
+type ExportStory struct {
+	ID                  int64
+	UUID                string
+	Title               string
+	OriginalFilename    string
+	DetectedFormat      string
+	SHA256              string
+	ByteSize            int64
+	ManagedRelativePath string
+	Verification        Compatibility
+}
+
 type Page struct {
 	Stories    []StorySummary `json:"stories"`
 	Page       int            `json:"page"`
@@ -200,6 +212,37 @@ func (q *Query) Detail(ctx context.Context, storyID int64) (StoryDetail, error) 
 	}, nil
 }
 
+func (q *Query) ExportStory(ctx context.Context, storyID int64) (ExportStory, error) {
+	if storyID <= 0 {
+		return ExportStory{}, ErrInvalidListRequest
+	}
+	records, err := q.localRecords(ctx, storyID)
+	if err != nil {
+		return ExportStory{}, err
+	}
+	if len(records) == 0 {
+		return ExportStory{}, sql.ErrNoRows
+	}
+	record := records[0]
+	official, err := q.official.FindByUUIDs(ctx, []string{record.uuid})
+	if err != nil {
+		return ExportStory{}, fmt.Errorf("load official export metadata: %w", err)
+	}
+	summary := resolveSummary(record, official[record.uuid])
+	verification, _ := compatibility(record.validationState)
+	return ExportStory{
+		ID:                  record.id,
+		UUID:                record.uuid,
+		Title:               summary.Title,
+		OriginalFilename:    record.originalFilename,
+		DetectedFormat:      record.detectedFormat,
+		SHA256:              record.sha256,
+		ByteSize:            record.byteSize,
+		ManagedRelativePath: record.managedPath,
+		Verification:        verification,
+	}, nil
+}
+
 type localRecord struct {
 	id                  int64
 	uuid                string
@@ -211,6 +254,7 @@ type localRecord struct {
 	detectedFormat      string
 	sha256              string
 	byteSize            int64
+	managedPath         string
 	validationState     string
 }
 
@@ -287,6 +331,7 @@ const localRecordSelect = `SELECT
 		a.detected_format,
 		a.sha256,
 		a.byte_size,
+		a.managed_path,
 		a.validation_state
 	FROM stories s
 	JOIN story_archives a ON a.story_id = s.id`
@@ -315,6 +360,7 @@ func (q *Query) queryLocalRecords(
 			&record.detectedFormat,
 			&record.sha256,
 			&record.byteSize,
+			&record.managedPath,
 			&record.validationState,
 		); err != nil {
 			return nil, err
