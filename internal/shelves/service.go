@@ -19,16 +19,30 @@ const (
 )
 
 var (
-	ErrInvalidShelfName    = errors.New("shelf name is invalid")
-	ErrDuplicateShelfName  = errors.New("shelf name already exists")
-	ErrShelfNotFound       = errors.New("shelf does not exist")
-	ErrInvalidShelfOrder   = errors.New("shelf order is invalid")
-	ErrShelfNeedsAttention = errors.New("shelf needs attention")
+	ErrInvalidShelfName         = errors.New("shelf name is invalid")
+	ErrDuplicateShelfName       = errors.New("shelf name already exists")
+	ErrShelfNotFound            = errors.New("shelf does not exist")
+	ErrInvalidShelfOrder        = errors.New("shelf order is invalid")
+	ErrShelfNeedsAttention      = errors.New("shelf needs attention")
+	ErrShelfCriteriaUnavailable = errors.New("shelf criteria are unavailable")
+)
+
+type AttentionReason string
+
+const (
+	AttentionMissingCriteria   AttentionReason = "missing_criteria"
+	AttentionUnmigratableQuery AttentionReason = "unmigratable_query"
 )
 
 type OpenedShelf struct {
 	Shelf Shelf             `json:"shelf"`
 	Query SavedLibraryQuery `json:"query"`
+}
+
+type Inspection struct {
+	Shelf           Shelf
+	Query           SavedLibraryQuery
+	AttentionReason AttentionReason
 }
 
 type Service struct {
@@ -60,6 +74,13 @@ func (s *Service) Create(
 		return Shelf{}, fmt.Errorf("begin shelf creation: %w", err)
 	}
 	defer transaction.Rollback()
+	savedQuery, err := DecodeSavedLibraryQuery(serialized.Version, serialized.Payload)
+	if err != nil {
+		return Shelf{}, err
+	}
+	if err := validateSavedCriteria(ctx, transaction, savedQuery); err != nil {
+		return Shelf{}, err
+	}
 
 	position, err := nextShelfPosition(ctx, transaction)
 	if err != nil {
@@ -85,28 +106,64 @@ func (s *Service) Create(
 }
 
 func (s *Service) Open(ctx context.Context, shelfID int64) (OpenedShelf, error) {
+	inspection, err := s.Inspect(ctx, shelfID)
+	if err != nil {
+		return OpenedShelf{}, err
+	}
+	if inspection.Shelf.Validity != ValidityValid {
+		return OpenedShelf{}, ErrShelfNeedsAttention
+	}
+	return OpenedShelf{
+		Shelf: inspection.Shelf,
+		Query: inspection.Query,
+	}, nil
+}
+
+func (s *Service) Inspect(ctx context.Context, shelfID int64) (Inspection, error) {
 	transaction, err := s.database.BeginTx(ctx, nil)
 	if err != nil {
-		return OpenedShelf{}, fmt.Errorf("begin shelf open: %w", err)
+		return Inspection{}, fmt.Errorf("begin shelf inspection: %w", err)
 	}
 	defer transaction.Rollback()
 
 	shelf, err := readShelf(ctx, transaction, shelfID)
 	if errors.Is(err, sql.ErrNoRows) {
-		return OpenedShelf{}, ErrShelfNotFound
+		return Inspection{}, ErrShelfNotFound
 	}
 	if err != nil {
-		return OpenedShelf{}, fmt.Errorf("read shelf: %w", err)
-	}
-	if shelf.Validity != ValidityValid {
-		return OpenedShelf{}, ErrShelfNeedsAttention
+		return Inspection{}, fmt.Errorf("read shelf for inspection: %w", err)
 	}
 	migrated, err := MigrateSavedLibraryQuery(
 		shelf.QueryVersion,
 		shelf.QueryPayload,
 	)
 	if err != nil {
-		return OpenedShelf{}, err
+		return finishAttentionInspection(
+			ctx,
+			transaction,
+			shelf,
+			AttentionUnmigratableQuery,
+		)
+	}
+	query, err := DecodeSavedLibraryQuery(migrated.Version, migrated.Payload)
+	if err != nil {
+		return finishAttentionInspection(
+			ctx,
+			transaction,
+			shelf,
+			AttentionUnmigratableQuery,
+		)
+	}
+	if err := validateSavedCriteria(ctx, transaction, query); err != nil {
+		if errors.Is(err, ErrShelfCriteriaUnavailable) {
+			return finishAttentionInspection(
+				ctx,
+				transaction,
+				shelf,
+				AttentionMissingCriteria,
+			)
+		}
+		return Inspection{}, err
 	}
 	if shelf.QueryVersion != migrated.Version ||
 		shelf.QueryPayload != migrated.Payload {
@@ -121,22 +178,22 @@ func (s *Service) Open(ctx context.Context, shelfID int64) (OpenedShelf, error) 
 			migrated.Payload,
 			shelf.ID,
 		); err != nil {
-			return OpenedShelf{}, fmt.Errorf("migrate saved shelf query: %w", err)
+			return Inspection{}, fmt.Errorf("migrate saved shelf query: %w", err)
 		}
 		shelf.QueryVersion = migrated.Version
 		shelf.QueryPayload = migrated.Payload
 	}
-	query, err := DecodeSavedLibraryQuery(
-		shelf.QueryVersion,
-		shelf.QueryPayload,
-	)
-	if err != nil {
-		return OpenedShelf{}, err
-	}
 	if err := transaction.Commit(); err != nil {
-		return OpenedShelf{}, fmt.Errorf("commit shelf open: %w", err)
+		return Inspection{}, fmt.Errorf("commit shelf inspection: %w", err)
 	}
-	return OpenedShelf{Shelf: shelf, Query: query}, nil
+	if shelf.Validity != ValidityValid {
+		return Inspection{
+			Shelf:           shelf,
+			Query:           query,
+			AttentionReason: AttentionMissingCriteria,
+		}, nil
+	}
+	return Inspection{Shelf: shelf, Query: query}, nil
 }
 
 func (s *Service) Rename(
@@ -189,6 +246,13 @@ func (s *Service) Duplicate(
 	name, normalizedName, err := normalizeShelfName(name)
 	if err != nil {
 		return Shelf{}, err
+	}
+	inspection, err := s.Inspect(ctx, shelfID)
+	if err != nil {
+		return Shelf{}, err
+	}
+	if inspection.Shelf.Validity != ValidityValid {
+		return Shelf{}, ErrShelfNeedsAttention
 	}
 	transaction, err := s.database.BeginTx(ctx, nil)
 	if err != nil {
@@ -251,6 +315,13 @@ func (s *Service) ReplaceQuery(
 		return Shelf{}, fmt.Errorf("begin shelf query replacement: %w", err)
 	}
 	defer transaction.Rollback()
+	savedQuery, err := DecodeSavedLibraryQuery(serialized.Version, serialized.Payload)
+	if err != nil {
+		return Shelf{}, err
+	}
+	if err := validateSavedCriteria(ctx, transaction, savedQuery); err != nil {
+		return Shelf{}, err
+	}
 
 	result, err := transaction.ExecContext(
 		ctx,
@@ -342,6 +413,32 @@ func (s *Service) Delete(ctx context.Context, shelfID int64) error {
 
 func (s *Service) List(ctx context.Context) ([]Shelf, error) {
 	return listShelves(ctx, s.database)
+}
+
+func finishAttentionInspection(
+	ctx context.Context,
+	transaction *sql.Tx,
+	shelf Shelf,
+	reason AttentionReason,
+) (Inspection, error) {
+	if shelf.Validity == ValidityValid {
+		result, err := transaction.ExecContext(
+			ctx,
+			`UPDATE shelves
+			 SET validity_state = 'needs_attention',
+			     updated_at = CURRENT_TIMESTAMP
+			 WHERE id = ? AND validity_state = 'valid'`,
+			shelf.ID,
+		)
+		if err := requireShelfMutation(result, err); err != nil {
+			return Inspection{}, fmt.Errorf("mark shelf as needing attention: %w", err)
+		}
+		shelf.Validity = ValidityNeedsAttention
+	}
+	if err := transaction.Commit(); err != nil {
+		return Inspection{}, fmt.Errorf("commit shelf attention state: %w", err)
+	}
+	return Inspection{Shelf: shelf, AttentionReason: reason}, nil
 }
 
 func normalizeShelfName(value string) (string, string, error) {

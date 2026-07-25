@@ -79,6 +79,7 @@ func TestServiceRunsShelfCRUDWithoutChangingStories(t *testing.T) {
 		renamed.NormalizedName != "histoires d'ete" {
 		t.Fatalf("Rename() = %#v", renamed)
 	}
+	insertShelfTestBooleanDefinition(t, connection, 4, "favorite")
 	replaced, err := service.ReplaceQuery(
 		context.Background(),
 		bedtime.ID,
@@ -164,6 +165,7 @@ func TestServiceMigratesSupportedShelfQueryWhenOpened(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	insertShelfTestBooleanDefinition(t, connection, 5, "legacy-filter")
 
 	opened, err := service.Open(context.Background(), legacy.ID)
 	if err != nil {
@@ -182,6 +184,100 @@ func TestServiceMigratesSupportedShelfQueryWhenOpened(t *testing.T) {
 	if persisted.QueryVersion != CurrentSavedLibraryQueryVersion ||
 		persisted.QueryPayload != expected {
 		t.Fatalf("persisted migration = %#v", persisted)
+	}
+}
+
+func TestServiceMarksUnsafeQueriesAndRequiresExplicitRepair(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	repository, connection := openShelfRepository(t)
+	service, err := NewService(connection)
+	if err != nil {
+		t.Fatal(err)
+	}
+	missing, err := repository.Insert(ctx, NewShelf{
+		Name:           "Missing criterion",
+		NormalizedName: "missing criterion",
+		Position:       0,
+		QueryVersion:   CurrentSavedLibraryQueryVersion,
+		QueryPayload: `{
+			"choiceFilters":[{"definitionId":77,"valueIds":[88]}]
+		}`,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	unmigratable, err := repository.Insert(ctx, NewShelf{
+		Name:           "Old query",
+		NormalizedName: "old query",
+		Position:       1,
+		QueryVersion:   CurrentSavedLibraryQueryVersion + 10,
+		QueryPayload:   `{}`,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	missingInspection, err := service.Inspect(ctx, missing.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if missingInspection.Shelf.Validity != ValidityNeedsAttention ||
+		missingInspection.AttentionReason != AttentionMissingCriteria {
+		t.Fatalf("Inspect(missing) = %#v", missingInspection)
+	}
+	oldInspection, err := service.Inspect(ctx, unmigratable.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if oldInspection.Shelf.Validity != ValidityNeedsAttention ||
+		oldInspection.AttentionReason != AttentionUnmigratableQuery {
+		t.Fatalf("Inspect(unmigratable) = %#v", oldInspection)
+	}
+	for _, shelfID := range []int64{missing.ID, unmigratable.ID} {
+		if _, err := service.Open(ctx, shelfID); !errors.Is(
+			err,
+			ErrShelfNeedsAttention,
+		) {
+			t.Fatalf("Open(%d) error = %v", shelfID, err)
+		}
+	}
+	if _, err := service.Create(ctx, "Unsafe", library.StoryLibraryQuery{
+		BooleanFilters: []library.BooleanFilter{{
+			DefinitionID: 77,
+			State:        library.BooleanFalse,
+		}},
+	}); !errors.Is(err, ErrShelfCriteriaUnavailable) {
+		t.Fatalf("Create(missing criterion) error = %v", err)
+	}
+	if _, err := service.ReplaceQuery(ctx, missing.ID, library.StoryLibraryQuery{
+		BooleanFilters: []library.BooleanFilter{{
+			DefinitionID: 77,
+			State:        library.BooleanFalse,
+		}},
+	}); !errors.Is(err, ErrShelfCriteriaUnavailable) {
+		t.Fatalf("ReplaceQuery(missing criterion) error = %v", err)
+	}
+
+	repaired, err := service.ReplaceQuery(
+		ctx,
+		missing.ID,
+		library.StoryLibraryQuery{Name: "moon"},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if repaired.Validity != ValidityValid ||
+		repaired.QueryPayload != `{"name":"moon"}` {
+		t.Fatalf("ReplaceQuery(repair) = %#v", repaired)
+	}
+	opened, err := service.Open(ctx, missing.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if opened.Query.Name != "moon" {
+		t.Fatalf("Open(repaired) = %#v", opened)
 	}
 }
 
@@ -348,4 +444,38 @@ func openShelfDatabase(t *testing.T) *sql.DB {
 
 	_, connection := openShelfRepository(t)
 	return connection
+}
+
+func insertShelfTestBooleanDefinition(
+	t *testing.T,
+	connection *sql.DB,
+	definitionID int64,
+	key string,
+) {
+	t.Helper()
+
+	if _, err := connection.Exec(
+		`INSERT INTO tag_definitions (
+			id,
+			key,
+			normalized_key,
+			label,
+			color,
+			kind,
+			source,
+			presentation,
+			position,
+			is_protected
+		)
+		SELECT ?, ?, ?, ?, '#405CF5', 'boolean', 'user', 'default',
+		       COALESCE(MAX(position), -1) + 1, 0
+		FROM tag_definitions
+		WHERE source = 'user'`,
+		definitionID,
+		key,
+		key,
+		key,
+	); err != nil {
+		t.Fatal(err)
+	}
 }

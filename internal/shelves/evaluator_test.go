@@ -207,7 +207,8 @@ func TestEvaluatorReturnsOrderedCountsAndRequiresDependencies(t *testing.T) {
 		t.Fatalf("Counts() = %#v", counts)
 	}
 	if _, err := harness.database.Exec(
-		"UPDATE shelves SET validity_state = 'needs_attention' WHERE id = ?",
+		"UPDATE shelves SET query_version = ? WHERE id = ?",
+		shelfstore.CurrentSavedLibraryQueryVersion+10,
 		second.ID,
 	); err != nil {
 		t.Fatal(err)
@@ -219,6 +220,7 @@ func TestEvaluatorReturnsOrderedCountsAndRequiresDependencies(t *testing.T) {
 	if len(summaries) != 2 ||
 		summaries[0].Count != 1 ||
 		summaries[1].Validity != shelfstore.ValidityNeedsAttention ||
+		summaries[1].AttentionReason != shelfstore.AttentionUnmigratableQuery ||
 		summaries[1].Count != 0 {
 		t.Fatalf("Summaries() = %#v", summaries)
 	}

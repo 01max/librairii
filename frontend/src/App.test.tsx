@@ -509,6 +509,63 @@ test('renames, reorders, duplicates, and deletes saved shelves', async () => {
         .not.toBeInTheDocument();
 });
 
+test('blocks unsafe shelf evaluation until its query is explicitly replaced', async () => {
+    const user = userEvent.setup();
+    const invalid = new shelves.Summary({
+        id: 12,
+        name: 'Old moods',
+        position: 0,
+        validity: 'needs_attention',
+        attentionReason: 'missing_criteria',
+        count: 0,
+    });
+    const repaired = new shelves.Summary({
+        id: 12,
+        name: 'Old moods',
+        position: 0,
+        validity: 'valid',
+        count: 2,
+    });
+    listShelves
+        .mockResolvedValueOnce(new app.ShelfListResponse({shelves: [invalid]}))
+        .mockResolvedValue(new app.ShelfListResponse({shelves: [repaired]}));
+    replaceShelfQuery.mockResolvedValue(new app.ShelfResponse({
+        shelf: {
+            id: 12,
+            name: 'Old moods',
+            normalizedName: 'old moods',
+            position: 0,
+            queryVersion: 2,
+            queryPayload: '{}',
+            validity: 'valid',
+        },
+    }));
+
+    render(<App/>);
+    await user.click(await screen.findByRole('button', {
+        name: 'Old moods, needs attention',
+    }));
+
+    expect(openShelf).not.toHaveBeenCalled();
+    expect(screen.getByRole('heading', {name: 'Repair “Old moods”'}))
+        .toBeInTheDocument();
+    expect(screen.getByText('Evaluation and export are blocked.')).toBeInTheDocument();
+    expect(screen.getByText(/original query is preserved/)).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', {name: 'Replace with current query'}));
+    await waitFor(() => expect(replaceShelfQuery).toHaveBeenCalledWith(
+        12,
+        expect.objectContaining({
+            name: '',
+            booleanFilters: [],
+            choiceFilters: [],
+            page: 1,
+        }),
+    ));
+    expect(await screen.findByRole('button', {name: 'Old moods, 2 stories'}))
+        .toHaveClass('active');
+});
+
 test('reloads collection results from hash back and forward navigation', async () => {
     window.history.replaceState(
         null,

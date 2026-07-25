@@ -135,6 +135,7 @@ func shelfAPIError(err error) *APIError {
 	case errors.Is(err, shelves.ErrInvalidShelfName),
 		errors.Is(err, shelves.ErrDuplicateShelfName),
 		errors.Is(err, shelves.ErrInvalidShelfOrder),
+		errors.Is(err, shelves.ErrShelfCriteriaUnavailable),
 		errors.Is(err, shelves.ErrInvalidSavedLibraryQuery),
 		errors.Is(err, shelves.ErrUnsupportedSavedQueryVersion):
 		return NewAPIError(ErrorInvalidInput, "The saved shelf could not be validated.")

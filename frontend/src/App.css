@@ -203,6 +203,23 @@ select:focus-visible {
     box-shadow: 0 5px 14px rgba(23, 34, 61, .06);
 }
 
+.saved-picker.needs-attention {
+    border-color: #f1c8c0;
+    color: #8c473e;
+    background: #fff7f5;
+}
+
+.saved-picker.needs-attention span {
+    width: 16px;
+    height: 16px;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    color: white;
+    background: #d86453;
+    font-size: 9px;
+}
+
 .saved i {
     width: 8px;
     height: 8px;

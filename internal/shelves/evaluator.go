@@ -25,11 +25,12 @@ type ShelfCount struct {
 }
 
 type Summary struct {
-	ID       int64    `json:"id"`
-	Name     string   `json:"name"`
-	Position int      `json:"position"`
-	Validity Validity `json:"validity"`
-	Count    int      `json:"count"`
+	ID              int64           `json:"id"`
+	Name            string          `json:"name"`
+	Position        int             `json:"position"`
+	Validity        Validity        `json:"validity"`
+	AttentionReason AttentionReason `json:"attentionReason,omitempty"`
+	Count           int             `json:"count"`
 }
 
 type Evaluator struct {
@@ -112,12 +113,18 @@ func (e *Evaluator) Summaries(ctx context.Context) ([]Summary, error) {
 	}
 	summaries := make([]Summary, 0, len(shelves))
 	for _, shelf := range shelves {
+		inspection, err := e.shelves.Inspect(ctx, shelf.ID)
+		if err != nil {
+			return nil, err
+		}
+		shelf = inspection.Shelf
 		if shelf.Validity != ValidityValid {
 			summaries = append(summaries, Summary{
-				ID:       shelf.ID,
-				Name:     shelf.Name,
-				Position: shelf.Position,
-				Validity: shelf.Validity,
+				ID:              shelf.ID,
+				Name:            shelf.Name,
+				Position:        shelf.Position,
+				Validity:        shelf.Validity,
+				AttentionReason: inspection.AttentionReason,
 			})
 			continue
 		}

@@ -1142,6 +1142,7 @@ export namespace shelves {
 	    name: string;
 	    position: number;
 	    validity: string;
+	    attentionReason?: string;
 	    count: number;
 	
 	    static createFrom(source: any = {}) {
@@ -1154,6 +1155,7 @@ export namespace shelves {
 	        this.name = source["name"];
 	        this.position = source["position"];
 	        this.validity = source["validity"];
+	        this.attentionReason = source["attentionReason"];
 	        this.count = source["count"];
 	    }
 	}

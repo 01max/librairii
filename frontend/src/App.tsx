@@ -139,6 +139,13 @@ function collectionQueryFromShelf(
     };
 }
 
+function shelfAttentionMessage(reason?: string): string {
+    if (reason === 'unmigratable_query') {
+        return 'This saved query uses an unsupported or damaged format and cannot be evaluated safely.';
+    }
+    return 'One or more saved tag criteria no longer exist. The original query is preserved until you explicitly replace it.';
+}
+
 type CoverStyle = CSSProperties & {
     '--sky': string;
     '--sun': string;
@@ -217,7 +224,8 @@ function App() {
     const [shelfDialogName, setShelfDialogName] = useState('');
     const [shelfDialogError, setShelfDialogError] = useState<string | null>(null);
     const [shelfBusy, setShelfBusy] = useState(false);
-    const [deleteShelfOpen, setDeleteShelfOpen] = useState(false);
+    const [repairShelfID, setRepairShelfID] = useState<number | null>(null);
+    const [deleteShelfID, setDeleteShelfID] = useState<number | null>(null);
     const refreshedOperations = useRef(new Set<string>());
     const searchInput = useRef<HTMLInputElement>(null);
     const collectionRequestGeneration = useRef(0);
@@ -607,6 +615,8 @@ function App() {
     const selected = detail?.story ?? selectedSummary;
     const selectedPalette = selected ? paletteFor(selected.id) : undefined;
     const activeShelf = savedShelves.find((shelf) => shelf.id === activeShelfID) ?? null;
+    const repairShelf = savedShelves.find((shelf) => shelf.id === repairShelfID) ?? null;
+    const deleteShelf = savedShelves.find((shelf) => shelf.id === deleteShelfID) ?? null;
     const activeOperations = operationSnapshots.filter((snapshot) => (
         operationIsActive(snapshot)
     ));
@@ -814,24 +824,56 @@ function App() {
     }
 
     async function confirmShelfDeletion() {
-        if (!activeShelf) {
+        if (!deleteShelf) {
             return;
         }
         setShelfBusy(true);
         setShelfDialogError(null);
         try {
-            const response = await DeleteShelf(activeShelf.id);
+            const response = await DeleteShelf(deleteShelf.id);
             if (!response.success) {
                 setShelfDialogError(
                     response.error?.message ?? 'The saved shelf could not be deleted.',
                 );
                 return;
             }
-            setDeleteShelfOpen(false);
-            setActiveShelfID(null);
+            setDeleteShelfID(null);
+            if (activeShelfID === deleteShelf.id) {
+                setActiveShelfID(null);
+            }
+            if (repairShelfID === deleteShelf.id) {
+                setRepairShelfID(null);
+            }
             await loadSavedShelves();
         } catch {
             setShelfDialogError('The saved shelf could not be deleted.');
+        } finally {
+            setShelfBusy(false);
+        }
+    }
+
+    async function repairShelfWithCurrentQuery() {
+        if (!repairShelf) {
+            return;
+        }
+        setShelfBusy(true);
+        setShelfDialogError(null);
+        try {
+            const response = await ReplaceShelfQuery(
+                repairShelf.id,
+                new library.StoryLibraryQuery(collectionQuery),
+            );
+            if (!response.shelf) {
+                setShelfDialogError(
+                    response.error?.message ?? 'The saved shelf could not be repaired.',
+                );
+                return;
+            }
+            setRepairShelfID(null);
+            setActiveShelfID(repairShelf.id);
+            await loadSavedShelves();
+        } catch {
+            setShelfDialogError('The saved shelf could not be repaired.');
         } finally {
             setShelfBusy(false);
         }
@@ -1043,13 +1085,21 @@ function App() {
                             <button
                                 className={`saved-picker${
                                     activeShelfID === shelf.id ? ' active' : ''
+                                }${
+                                    shelf.validity === 'needs_attention'
+                                        ? ' needs-attention'
+                                        : ''
                                 }`}
                                 type="button"
-                                aria-label={`${shelf.name}, ${shelf.count} ${
-                                    shelf.count === 1 ? 'story' : 'stories'
-                                }`}
+                                aria-label={shelf.validity === 'needs_attention'
+                                    ? `${shelf.name}, needs attention`
+                                    : `${shelf.name}, ${shelf.count} ${
+                                        shelf.count === 1 ? 'story' : 'stories'
+                                    }`}
                                 disabled={shelfBusy}
-                                onClick={() => void openSavedShelf(shelf.id)}
+                                onClick={() => shelf.validity === 'needs_attention'
+                                    ? setRepairShelfID(shelf.id)
+                                    : void openSavedShelf(shelf.id)}
                             >
                                 <i
                                     style={{
@@ -1057,7 +1107,9 @@ function App() {
                                     } as CSSProperties}
                                 />
                                 {shelf.name}
-                                <span>{shelf.count}</span>
+                                <span>
+                                    {shelf.validity === 'needs_attention' ? '!' : shelf.count}
+                                </span>
                             </button>
                             {activeShelfID === shelf.id && (
                                 <div className="saved-tools" aria-label={`${shelf.name} actions`}>
@@ -1099,7 +1151,7 @@ function App() {
                                         aria-label={`Delete ${shelf.name}`}
                                         onClick={() => {
                                             setShelfDialogError(null);
-                                            setDeleteShelfOpen(true);
+                                            setDeleteShelfID(shelf.id);
                                         }}
                                     >
                                         ×
@@ -1690,7 +1742,59 @@ function App() {
                     </form>
                 </div>
             )}
-            {deleteShelfOpen && activeShelf && (
+            {repairShelf && (
+                <div className="dialog-backdrop">
+                    <section
+                        className="detail-dialog shelf-dialog"
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="repair-shelf-title"
+                    >
+                        <div className="dialog-kicker">Saved shelves</div>
+                        <h3 id="repair-shelf-title">Repair “{repairShelf.name}”</h3>
+                        <p>{shelfAttentionMessage(repairShelf.attentionReason)}</p>
+                        <div className="removal-confirmation">
+                            <b>Evaluation and export are blocked.</b>
+                            <p>
+                                Replacing the criteria is explicit and permanent. Stories and
+                                managed archives are never changed.
+                            </p>
+                        </div>
+                        {shelfDialogError && (
+                            <p className="dialog-error">{shelfDialogError}</p>
+                        )}
+                        <div className="dialog-actions">
+                            <button
+                                type="button"
+                                disabled={shelfBusy}
+                                onClick={() => setRepairShelfID(null)}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                className="danger"
+                                type="button"
+                                disabled={shelfBusy}
+                                onClick={() => {
+                                    setRepairShelfID(null);
+                                    setDeleteShelfID(repairShelf.id);
+                                }}
+                            >
+                                Delete shelf
+                            </button>
+                            <button
+                                className="export"
+                                type="button"
+                                disabled={shelfBusy}
+                                onClick={() => void repairShelfWithCurrentQuery()}
+                            >
+                                {shelfBusy ? 'Replacing…' : 'Replace with current query'}
+                            </button>
+                        </div>
+                    </section>
+                </div>
+            )}
+            {deleteShelf && (
                 <div className="dialog-backdrop">
                     <section
                         className="detail-dialog shelf-dialog"
@@ -1699,7 +1803,7 @@ function App() {
                         aria-labelledby="delete-shelf-title"
                     >
                         <div className="dialog-kicker">Saved shelves</div>
-                        <h3 id="delete-shelf-title">Delete “{activeShelf.name}”?</h3>
+                        <h3 id="delete-shelf-title">Delete “{deleteShelf.name}”?</h3>
                         <p>
                             Only this saved query will be removed. Matching stories and their
                             managed archives will stay in your library.
@@ -1711,7 +1815,7 @@ function App() {
                             <button
                                 type="button"
                                 disabled={shelfBusy}
-                                onClick={() => setDeleteShelfOpen(false)}
+                                onClick={() => setDeleteShelfID(null)}
                             >
                                 Cancel
                             </button>
