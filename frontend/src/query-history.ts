@@ -21,6 +21,25 @@ function hasMembershipCriteria(query: CollectionQuery): boolean {
         query.choiceFilters.length > 0;
 }
 
+function sameMembershipCriteria(
+    left: CollectionQuery,
+    right: CollectionQuery,
+): boolean {
+    return JSON.stringify([
+        left.name,
+        left.languages,
+        left.compatibilities,
+        left.booleanFilters,
+        left.choiceFilters,
+    ]) === JSON.stringify([
+        right.name,
+        right.languages,
+        right.compatibilities,
+        right.booleanFilters,
+        right.choiceFilters,
+    ]);
+}
+
 type CollectionHistoryState = {
     collectionQuery?: {
         hash: string;
@@ -159,13 +178,18 @@ export class CollectionQueryHistory {
     ): CollectionQuery {
         const canonical = canonicalCollectionQuery(query);
         const hash = encodeCollectionQuery(canonical);
+        const current = this.current();
+        const currentScope = this.currentScope();
         const resolvedShelfID = shelfId === undefined
             ? this.currentShelfID()
             : shelfId;
         const resolvedScope = resolvedShelfID !== null
             ? 'shelf'
             : scope ?? (
-                hasMembershipCriteria(canonical) ? 'custom' : 'all'
+                currentScope !== 'shelf' &&
+                    sameMembershipCriteria(current, canonical)
+                    ? currentScope
+                    : hasMembershipCriteria(canonical) ? 'custom' : 'all'
             );
         const location = `${this.#target.location.pathname}${this.#target.location.search}` +
             hash;

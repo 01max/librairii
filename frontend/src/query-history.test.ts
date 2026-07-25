@@ -86,6 +86,21 @@ test('keeps sort and pagination changes in the All stories scope', () => {
     expect(history.currentScope()).toBe('all');
 });
 
+test('preserves an explicit All scope when only sorting a filtered fixture', () => {
+    const history = new CollectionQueryHistory(window, applicationDefault);
+    const filtered = {
+        ...applicationDefault,
+        choiceFilters: [{definitionId: 10, valueIds: [101]}],
+    };
+    history.replace(filtered, null, 'all');
+
+    history.push({...filtered, sort: 'name_asc'});
+    expect(history.currentScope()).toBe('all');
+
+    history.push({...filtered, sort: 'name_asc', name: 'forest'});
+    expect(history.currentScope()).toBe('custom');
+});
+
 test('ignores shelf identity that does not belong to the current query route', () => {
     const history = new CollectionQueryHistory(window, applicationDefault);
     history.push({...applicationDefault, name: 'dragon'}, 7);

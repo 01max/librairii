@@ -31,6 +31,10 @@ import {
 import {app, exporter, library, metadata, shelves} from '../wailsjs/go/models';
 import {EventsOn} from '../wailsjs/runtime/runtime';
 import App from './App';
+import {
+    DEFAULT_COLLECTION_QUERY,
+    encodeCollectionQuery,
+} from './query-codec';
 
 vi.mock('../wailsjs/go/main/App', () => ({
     ActiveOperations: vi.fn(),
@@ -694,6 +698,20 @@ test('switches saved previews to filtered results and restores the custom URL', 
             },
         },
     }));
+    const allStoriesQuery = {
+        ...DEFAULT_COLLECTION_QUERY,
+        pageSize: 12,
+        sort: 'imported_desc' as const,
+        choiceFilters: [{definitionId: 2, valueIds: [20]}],
+    };
+    const allStoriesHash = encodeCollectionQuery(allStoriesQuery);
+    window.history.replaceState({
+        collectionQuery: {
+            hash: allStoriesHash,
+            shelfId: null,
+            scope: 'all',
+        },
+    }, '', `/${allStoriesHash}`);
 
     const first = render(<App/>);
     expect(await screen.findByRole('heading', {name: 'Bedtime'}))
