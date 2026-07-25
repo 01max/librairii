@@ -34,12 +34,12 @@ export function ListStories(arg1) {
   return window['go']['main']['App']['ListStories'](arg1);
 }
 
-export function OperationSnapshot(arg1) {
-  return window['go']['main']['App']['OperationSnapshot'](arg1);
-}
-
 export function OfficialMetadataStatus() {
   return window['go']['main']['App']['OfficialMetadataStatus']();
+}
+
+export function OperationSnapshot(arg1) {
+  return window['go']['main']['App']['OperationSnapshot'](arg1);
 }
 
 export function PlanTagDefinitionDeletion(arg1) {
@@ -58,12 +58,12 @@ export function RecolorTagDefinition(arg1, arg2) {
   return window['go']['main']['App']['RecolorTagDefinition'](arg1, arg2);
 }
 
-export function RemoveStory(arg1) {
-  return window['go']['main']['App']['RemoveStory'](arg1);
-}
-
 export function RefreshOfficialMetadata() {
   return window['go']['main']['App']['RefreshOfficialMetadata']();
+}
+
+export function RemoveStory(arg1) {
+  return window['go']['main']['App']['RemoveStory'](arg1);
 }
 
 export function RenameTagDefinition(arg1, arg2) {

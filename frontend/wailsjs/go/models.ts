@@ -48,17 +48,17 @@ export namespace app {
 		    return a;
 		}
 	}
-	export class MutationResponse {
-	    success: boolean;
+	export class MetadataStatusResponse {
+	    status: metadata.CatalogStatus;
 	    error?: APIError;
 	
 	    static createFrom(source: any = {}) {
-	        return new MutationResponse(source);
+	        return new MetadataStatusResponse(source);
 	    }
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.success = source["success"];
+	        this.status = this.convertValues(source["status"], metadata.CatalogStatus);
 	        this.error = this.convertValues(source["error"], APIError);
 	    }
 	
@@ -80,17 +80,17 @@ export namespace app {
 		    return a;
 		}
 	}
-	export class MetadataStatusResponse {
-	    status: metadata.CatalogStatus;
+	export class MutationResponse {
+	    success: boolean;
 	    error?: APIError;
 	
 	    static createFrom(source: any = {}) {
-	        return new MetadataStatusResponse(source);
+	        return new MutationResponse(source);
 	    }
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.status = this.convertValues(source["status"], metadata.CatalogStatus);
+	        this.success = source["success"];
 	        this.error = this.convertValues(source["error"], APIError);
 	    }
 	
@@ -1286,3 +1286,4 @@ export namespace tagging {
 	}
 
 }
+
