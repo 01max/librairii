@@ -20,6 +20,7 @@ const (
 	maxImportItems        = 1_000
 	persistenceAttempts   = 3
 	persistenceRetryDelay = 10 * time.Millisecond
+	defaultRecoveryDelay  = time.Second
 	outcomeImported       = "imported"
 )
 
@@ -64,17 +65,19 @@ type Dependencies struct {
 	Clock          Clock
 	StagingCleaner StagingCleaner
 	Workers        int
+	RecoveryDelay  time.Duration
 }
 
 type Manager struct {
-	mu      sync.Mutex
-	deps    Dependencies
-	started bool
-	ctx     context.Context
-	cancel  context.CancelFunc
-	jobs    chan importJob
-	runs    map[string]*operationRun
-	wg      sync.WaitGroup
+	mu            sync.Mutex
+	deps          Dependencies
+	started       bool
+	ctx           context.Context
+	cancel        context.CancelFunc
+	jobs          chan importJob
+	runs          map[string]*operationRun
+	wg            sync.WaitGroup
+	recoveryDelay time.Duration
 }
 
 type operationRun struct {
@@ -83,6 +86,7 @@ type operationRun struct {
 	cancel    context.CancelFunc
 	startOnce sync.Once
 	stopOnce  sync.Once
+	stopped   chan struct{}
 	startErr  error
 
 	mu        sync.Mutex
@@ -111,9 +115,14 @@ func NewManager(deps Dependencies) (*Manager, error) {
 	if deps.Workers < 1 || deps.Workers > maxWorkerCount {
 		return nil, fmt.Errorf("%w: worker count", ErrInvalidRequest)
 	}
+	recoveryDelay := deps.RecoveryDelay
+	if recoveryDelay <= 0 {
+		recoveryDelay = defaultRecoveryDelay
+	}
 	return &Manager{
-		deps: deps,
-		runs: make(map[string]*operationRun),
+		deps:          deps,
+		runs:          make(map[string]*operationRun),
+		recoveryDelay: recoveryDelay,
 	}, nil
 }
 
@@ -211,6 +220,7 @@ func (m *Manager) StartImport(
 		id:        operationID,
 		ctx:       runContext,
 		cancel:    cancel,
+		stopped:   make(chan struct{}),
 		total:     len(sourcePaths),
 		remaining: len(sourcePaths),
 	}
@@ -333,6 +343,11 @@ func (m *Manager) execute(job importJob) {
 }
 
 func (m *Manager) complete(job importJob, item ItemSnapshot) {
+	select {
+	case <-job.run.stopped:
+		return
+	default:
+	}
 	if err := retryPersistence(m.ctx, func() error {
 		return m.deps.Repository.CompleteItem(m.ctx, job.run.id, item)
 	}); err != nil {
@@ -362,6 +377,7 @@ func (m *Manager) complete(job importJob, item ItemSnapshot) {
 
 func (m *Manager) interruptForPersistence(run *operationRun) {
 	run.stopOnce.Do(func() {
+		close(run.stopped)
 		run.cancel()
 		const (
 			errorCode    = "persistence_failed"
@@ -381,10 +397,51 @@ func (m *Manager) interruptForPersistence(run *operationRun) {
 		})
 		if err != nil {
 			snapshot = m.persistenceFailureSnapshot(run, errorCode, errorMessage)
+			m.deps.Events.Emit(m.ctx, EventChanged, snapshot)
+			m.wg.Add(1)
+			go m.recoverInterruption(run, errorCode, errorMessage)
+			return
 		}
 		m.removeRun(run.id)
 		m.deps.Events.Emit(m.ctx, EventChanged, snapshot)
 	})
+}
+
+func (m *Manager) recoverInterruption(
+	run *operationRun,
+	errorCode string,
+	errorMessage string,
+) {
+	defer m.wg.Done()
+	timer := time.NewTimer(m.recoveryDelay)
+	defer timer.Stop()
+	for {
+		select {
+		case <-m.ctx.Done():
+			return
+		case <-timer.C:
+		}
+
+		snapshot, err := m.deps.Repository.Interrupt(
+			m.ctx,
+			run.id,
+			errorCode,
+			errorMessage,
+			m.deps.Clock.Now(),
+		)
+		if err == nil {
+			m.removeRun(run.id)
+			m.deps.Events.Emit(m.ctx, EventChanged, snapshot)
+			return
+		}
+		snapshot, snapshotErr := m.deps.Repository.Snapshot(m.ctx, run.id)
+		if snapshotErr == nil && snapshot.Terminal() {
+			m.removeRun(run.id)
+			m.deps.Events.Emit(m.ctx, EventChanged, snapshot)
+			return
+		}
+		timer.Reset(m.recoveryDelay)
+	}
 }
 
 func (m *Manager) persistenceFailureSnapshot(

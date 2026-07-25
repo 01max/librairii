@@ -321,15 +321,64 @@ func TestManagerInterruptsOperationWhenItemCompletionCannotPersist(t *testing.T)
 	}
 }
 
+func TestManagerKeepsReconcilingUntilInterruptionIsDurable(t *testing.T) {
+	t.Parallel()
+
+	repository, _ := newOperationRepository(t)
+	flaky := &flakyOperationRepository{
+		managerRepository: repository,
+		completeFailures:  persistenceAttempts,
+		interruptFailures: persistenceAttempts,
+	}
+	events := newEventRecorder()
+	manager := newTestManagerWithRepository(
+		t,
+		flaky,
+		&trackingImportService{},
+		events,
+		fakeCleaner{},
+		1,
+	)
+
+	created, err := manager.StartImport(context.Background(), makeSourcePaths(t, 1))
+	if err != nil {
+		t.Fatal(err)
+	}
+	synthetic := events.waitTerminal(t, created.ID)
+	if synthetic.Status != StatusInterrupted ||
+		synthetic.ErrorCode != "persistence_failed" {
+		t.Fatalf("synthetic snapshot = %#v", synthetic)
+	}
+	durable := events.waitFor(t, created.ID, StatusInterrupted)
+	if durable.CompletedItems != durable.TotalItems {
+		t.Fatalf("durable snapshot = %#v", durable)
+	}
+	if flaky.interruptCalls != persistenceAttempts+1 {
+		t.Fatalf(
+			"Interrupt() calls = %d, want %d",
+			flaky.interruptCalls,
+			persistenceAttempts+1,
+		)
+	}
+	persisted, err := repository.Snapshot(context.Background(), created.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if persisted.Status != StatusInterrupted {
+		t.Fatalf("persisted snapshot = %#v", persisted)
+	}
+}
+
 type flakyOperationRepository struct {
 	managerRepository
 
-	mu               sync.Mutex
-	completeFailures int
-	finishFailures   int
-	completeCalls    int
-	finishCalls      int
-	interruptCalls   int
+	mu                sync.Mutex
+	completeFailures  int
+	finishFailures    int
+	interruptFailures int
+	completeCalls     int
+	finishCalls       int
+	interruptCalls    int
 }
 
 func (r *flakyOperationRepository) CompleteItem(
@@ -376,6 +425,11 @@ func (r *flakyOperationRepository) Interrupt(
 ) (Snapshot, error) {
 	r.mu.Lock()
 	r.interruptCalls++
+	if r.interruptFailures > 0 {
+		r.interruptFailures--
+		r.mu.Unlock()
+		return Snapshot{}, errors.New("injected operation interruption failure")
+	}
 	r.mu.Unlock()
 	return r.managerRepository.Interrupt(ctx, id, errorCode, errorMessage, now)
 }
@@ -516,6 +570,7 @@ func newTestManagerWithRepository(
 		Clock:          &testClock{now: time.Date(2026, time.July, 25, 10, 0, 0, 0, time.UTC)},
 		StagingCleaner: cleaner,
 		Workers:        workers,
+		RecoveryDelay:  5 * time.Millisecond,
 	})
 	if err != nil {
 		t.Fatal(err)
