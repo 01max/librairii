@@ -341,6 +341,10 @@ test('opens a dynamic saved shelf and updates it from the current query', async 
     expect(screen.getByRole('searchbox', {name: 'Search stories'}))
         .toHaveValue('moon');
     expect(await screen.findByRole('heading', {name: 'Bedtime'})).toBeInTheDocument();
+    expect(screen.getByRole('button', {name: 'Bedtime, 1 story'}))
+        .toHaveAttribute('aria-current', 'page');
+    expect(screen.getByRole('button', {name: /All stories/}))
+        .not.toHaveAttribute('aria-current');
 
     await user.click(screen.getByRole('button', {name: '↻ Update “Bedtime”'}));
     await waitFor(() => expect(replaceShelfQuery).toHaveBeenCalledWith(
@@ -450,9 +454,18 @@ test('saves the current query as a named active shelf with its live count', asyn
 
     const search = await screen.findByRole('searchbox', {name: 'Search stories'});
     await user.type(search, 'moon');
-    await user.click(screen.getByRole('button', {name: '＋ Save current query'}));
+    const saveOpener = screen.getByRole('button', {name: '＋ Save current query'});
+    await user.click(saveOpener);
     expect(screen.getByRole('heading', {name: 'Save the current query'}))
         .toBeInTheDocument();
+    const shelfName = screen.getByRole('textbox', {name: 'Shelf name'});
+    await waitFor(() => expect(shelfName).toHaveFocus());
+    await user.keyboard('{Escape}');
+    expect(screen.queryByRole('heading', {name: 'Save the current query'}))
+        .not.toBeInTheDocument();
+    expect(saveOpener).toHaveFocus();
+
+    await user.click(saveOpener);
     await user.type(screen.getByRole('textbox', {name: 'Shelf name'}), 'Moon shelf');
     await user.click(screen.getByRole('button', {name: 'Save shelf'}));
 
@@ -579,9 +592,18 @@ test('renames, reorders, duplicates, and deletes saved shelves', async () => {
     await waitFor(() => expect(duplicateShelf).toHaveBeenCalledWith(7, 'Evening copy'));
     expect(await screen.findByRole('heading', {name: 'Evening copy'})).toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', {name: 'Delete Evening copy'}));
+    const deleteOpener = screen.getByRole('button', {name: 'Delete Evening copy'});
+    await user.click(deleteOpener);
     expect(screen.getByRole('heading', {name: 'Delete “Evening copy”?'}))
         .toBeInTheDocument();
+    await waitFor(() => expect(screen.getByRole('button', {name: 'Cancel'}))
+        .toHaveFocus());
+    await user.keyboard('{Escape}');
+    expect(screen.queryByRole('heading', {name: 'Delete “Evening copy”?'}))
+        .not.toBeInTheDocument();
+    expect(deleteOpener).toHaveFocus();
+
+    await user.click(deleteOpener);
     await user.click(screen.getByRole('button', {name: 'Delete shelf'}));
     await waitFor(() => expect(deleteShelf).toHaveBeenCalledWith(9));
     expect(screen.queryByRole('button', {name: 'Evening copy, 1 story'}))
@@ -674,16 +696,24 @@ test('blocks unsafe shelf evaluation until its query is explicitly replaced', as
     }));
 
     render(<App/>);
-    await user.click(await screen.findByRole('button', {
+    const repairOpener = await screen.findByRole('button', {
         name: 'Old moods, needs attention',
-    }));
+    });
+    await user.click(repairOpener);
 
     expect(openShelf).not.toHaveBeenCalled();
     expect(screen.getByRole('heading', {name: 'Repair “Old moods”'}))
         .toBeInTheDocument();
     expect(screen.getByText('Evaluation and export are blocked.')).toBeInTheDocument();
     expect(screen.getByText(/original query is preserved/)).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByRole('button', {name: 'Cancel'}))
+        .toHaveFocus());
+    await user.keyboard('{Escape}');
+    expect(screen.queryByRole('heading', {name: 'Repair “Old moods”'}))
+        .not.toBeInTheDocument();
+    expect(repairOpener).toHaveFocus();
 
+    await user.click(repairOpener);
     await user.click(screen.getByRole('button', {name: 'Replace with current query'}));
     await waitFor(() => expect(replaceShelfQuery).toHaveBeenCalledWith(
         12,

@@ -49,6 +49,7 @@ import {
     describeMetadataRefresh,
     describeMetadataStatus,
 } from './metadata-state';
+import {useModalFocus} from './modal-focus';
 
 const coverPalettes = [
     ['#31559f', '#f7c85b', '#e06a53'],
@@ -297,10 +298,43 @@ function App() {
     const refreshedOperations = useRef(new Set<string>());
     const searchInput = useRef<HTMLInputElement>(null);
     const collectionRequestGeneration = useRef(0);
+    const shelfDialog = useRef<HTMLFormElement>(null);
+    const shelfDialogInitialFocus = useRef<HTMLInputElement>(null);
+    const repairShelfDialog = useRef<HTMLElement>(null);
+    const repairShelfInitialFocus = useRef<HTMLButtonElement>(null);
+    const deleteShelfDialog = useRef<HTMLElement>(null);
+    const deleteShelfInitialFocus = useRef<HTMLButtonElement>(null);
+    useModalFocus(shelfDialog, shelfDialogInitialFocus, shelfDialogMode !== null);
+    useModalFocus(repairShelfDialog, repairShelfInitialFocus, repairShelfID !== null);
+    useModalFocus(deleteShelfDialog, deleteShelfInitialFocus, deleteShelfID !== null);
     const activateShelf = useCallback((shelfID: number | null) => {
         activeShelfIDRef.current = shelfID;
         setActiveShelfID(shelfID);
     }, []);
+
+    useEffect(() => {
+        if (
+            shelfDialogMode === null &&
+            repairShelfID === null &&
+            deleteShelfID === null
+        ) {
+            return;
+        }
+        const closeOnEscape = (event: KeyboardEvent) => {
+            if (event.key !== 'Escape' || shelfBusy) {
+                return;
+            }
+            if (deleteShelfID !== null) {
+                setDeleteShelfID(null);
+            } else if (repairShelfID !== null) {
+                setRepairShelfID(null);
+            } else {
+                setShelfDialogMode(null);
+            }
+        };
+        window.addEventListener('keydown', closeOnEscape);
+        return () => window.removeEventListener('keydown', closeOnEscape);
+    }, [deleteShelfID, repairShelfID, shelfBusy, shelfDialogMode]);
 
     const loadCollection = useCallback(async () => {
         const generation = ++collectionRequestGeneration.current;
@@ -1271,6 +1305,7 @@ function App() {
                     <button
                         className={`saved-picker${allStoriesActive ? ' active' : ''}`}
                         type="button"
+                        aria-current={allStoriesActive ? 'page' : undefined}
                         disabled={shelfBusy}
                         onClick={openAllStories}
                     >
@@ -1300,6 +1335,9 @@ function App() {
                                             : ''
                                     }`}
                                     type="button"
+                                    aria-current={
+                                        activeShelfID === shelf.id ? 'page' : undefined
+                                    }
                                     aria-label={shelf.validity === 'needs_attention'
                                         ? `${shelf.name}, needs attention`
                                         : `${shelf.name}, ${shelf.count} ${
@@ -1937,6 +1975,7 @@ function App() {
             {shelfDialogMode && (
                 <div className="dialog-backdrop">
                     <form
+                        ref={shelfDialog}
                         className="detail-dialog shelf-dialog"
                         role="dialog"
                         aria-modal="true"
@@ -1962,7 +2001,7 @@ function App() {
                         <label className="dialog-field">
                             <span>Shelf name</span>
                             <input
-                                autoFocus
+                                ref={shelfDialogInitialFocus}
                                 maxLength={80}
                                 value={shelfDialogName}
                                 onChange={(event) => setShelfDialogName(
@@ -2001,6 +2040,7 @@ function App() {
             {repairShelf && (
                 <div className="dialog-backdrop">
                     <section
+                        ref={repairShelfDialog}
                         className="detail-dialog shelf-dialog"
                         role="dialog"
                         aria-modal="true"
@@ -2021,6 +2061,7 @@ function App() {
                         )}
                         <div className="dialog-actions">
                             <button
+                                ref={repairShelfInitialFocus}
                                 type="button"
                                 disabled={shelfBusy}
                                 onClick={() => setRepairShelfID(null)}
@@ -2062,6 +2103,7 @@ function App() {
             {deleteShelf && (
                 <div className="dialog-backdrop">
                     <section
+                        ref={deleteShelfDialog}
                         className="detail-dialog shelf-dialog"
                         role="dialog"
                         aria-modal="true"
@@ -2078,6 +2120,7 @@ function App() {
                         )}
                         <div className="dialog-actions">
                             <button
+                                ref={deleteShelfInitialFocus}
                                 type="button"
                                 disabled={shelfBusy}
                                 onClick={() => setDeleteShelfID(null)}
