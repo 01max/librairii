@@ -60,3 +60,7 @@ make verify-packaged-acceptance
 The packaged acceptance gate launches the installed application twice against
 an isolated data root and covers the release UI, SQLite persistence, native
 adapters, the complete local story workflow, and clean shutdown.
+
+Windows and Linux priorities, artifacts, host requirements, and independent
+verification commands are recorded in the
+[release platform matrix](docs/release-platforms.md).

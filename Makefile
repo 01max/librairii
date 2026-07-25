@@ -4,7 +4,7 @@ WAILS_VERSION := $(shell cat .wails-version)
 WAILS ?= $(shell go env GOPATH)/bin/wails
 GO_PACKAGES := . ./internal/... ./cmd/...
 
-.PHONY: setup fmt fmt-check vet test-go typecheck lint-frontend test-frontend test-frontend-accessibility test-frontend-performance test-frontend-release test-frontend-responsive test-frontend-visual build-frontend check build build-current-installer verify-current-installer verify-packaged-acceptance smoke-foundation smoke-first-story smoke-release
+.PHONY: setup fmt fmt-check vet test-go typecheck lint-frontend test-frontend test-frontend-accessibility test-frontend-performance test-frontend-release test-frontend-responsive test-frontend-visual build-frontend check build build-current-installer verify-current-installer verify-packaged-acceptance verify-platform-linux verify-platform-windows smoke-foundation smoke-first-story smoke-release
 
 setup:
 	go mod download
@@ -66,6 +66,12 @@ verify-current-installer:
 
 verify-packaged-acceptance: build-current-installer
 	scripts/verify-packaged-acceptance
+
+verify-platform-linux:
+	scripts/verify-platform-linux
+
+verify-platform-windows:
+	pwsh -NoLogo -NoProfile -File scripts/verify-platform-windows.ps1
 
 smoke-foundation:
 	scripts/smoke-foundation

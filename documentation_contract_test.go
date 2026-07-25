@@ -42,3 +42,68 @@ func TestUserGuideCoversReleaseBehavior(t *testing.T) {
 		}
 	}
 }
+
+func TestReleaseMatrixHasIndependentPlatformTasks(t *testing.T) {
+	t.Parallel()
+
+	body, err := os.ReadFile("docs/release-platforms.md")
+	if err != nil {
+		t.Fatal(err)
+	}
+	matrix := string(body)
+	required := []string{
+		"Windows x64",
+		"make verify-platform-windows",
+		"scripts/verify-platform-windows.ps1",
+		"Linux x64 with WebKitGTK 4.1",
+		"make verify-platform-linux",
+		"scripts/verify-platform-linux",
+		"launch the actual packaged",
+		"create and reopen SQLite",
+		"native dialog/reveal adapter checks",
+		"complete\nheadless story-library smoke",
+		".github/workflows/platform-release.yml",
+	}
+	for _, fragment := range required {
+		if !strings.Contains(matrix, fragment) {
+			t.Errorf("release matrix does not contain %q", fragment)
+		}
+	}
+
+	implementationFiles := map[string][]string{
+		".github/workflows/platform-release.yml": {
+			"runs-on: windows-2025",
+			"runs-on: ubuntu-24.04",
+			"scripts/verify-platform-windows.ps1",
+			"scripts/verify-platform-linux",
+		},
+		"scripts/verify-platform-windows.ps1": {
+			"-platform windows/amd64",
+			"-nsis",
+			"frontend:rendered",
+			"./cmd/foundation-smoke",
+			"./internal/platform",
+			"./cmd/release-smoke",
+		},
+		"scripts/verify-platform-linux": {
+			"-platform linux/amd64",
+			"-tags webkit2_41",
+			"frontend:rendered",
+			"./cmd/foundation-smoke",
+			"./internal/platform",
+			"./cmd/release-smoke",
+		},
+	}
+	for path, fragments := range implementationFiles {
+		contents, err := os.ReadFile(path)
+		if err != nil {
+			t.Errorf("read %s: %v", path, err)
+			continue
+		}
+		for _, fragment := range fragments {
+			if !strings.Contains(string(contents), fragment) {
+				t.Errorf("%s does not contain %q", path, fragment)
+			}
+		}
+	}
+}

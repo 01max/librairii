@@ -1,0 +1,144 @@
+#!/bin/sh
+set -eu
+
+project_root="$(CDPATH='' cd -- "$(dirname -- "$0")/.." && pwd)"
+cd "$project_root"
+
+host_os="$(go env GOOS)"
+host_arch="$(go env GOARCH)"
+if [ "$host_os" != "linux" ] || [ "$host_arch" != "amd64" ]; then
+    printf 'Linux release verification requires linux/amd64, got %s/%s\n' \
+        "$host_os" "$host_arch" >&2
+    exit 1
+fi
+
+version="$(tr -d '[:space:]' < VERSION)"
+wails_cli="${WAILS:-$(go env GOPATH)/bin/wails}"
+wails_version="$(tr -d '[:space:]' < .wails-version)"
+if [ "$("$wails_cli" version | head -n 1)" != "$wails_version" ]; then
+    printf 'Wails CLI must match %s\n' "$wails_version" >&2
+    exit 1
+fi
+
+"$wails_cli" build \
+    -clean \
+    -trimpath \
+    -m \
+    -nocolour \
+    -nopackage \
+    -platform linux/amd64 \
+    -tags webkit2_41 \
+    -o Librairii
+find frontend/wailsjs/go -type f -exec chmod 644 {} +
+
+binary="$project_root/build/bin/Librairii"
+if [ ! -x "$binary" ]; then
+    printf 'packaged Linux executable is missing: %s\n' "$binary" >&2
+    exit 1
+fi
+if ! file "$binary" | grep -q 'ELF 64-bit.*x86-64'; then
+    printf 'packaged Linux executable is not an amd64 ELF binary\n' >&2
+    exit 1
+fi
+if ldd "$binary" | grep -q 'not found'; then
+    printf 'packaged Linux executable has unresolved dynamic dependencies\n' >&2
+    ldd "$binary" >&2
+    exit 1
+fi
+
+verification_root="$(mktemp -d "${TMPDIR:-/tmp}/librairii-linux-release.XXXXXX")"
+data_root="$verification_root/application-data"
+event_log="$data_root/logs/events.jsonl"
+mkdir -p "$data_root"
+
+cleanup() {
+    case "$(basename -- "$verification_root")" in
+        librairii-linux-release.*)
+            rm -rf -- "$verification_root"
+            ;;
+    esac
+}
+trap cleanup EXIT HUP INT TERM
+
+GOCACHE="${GOCACHE:-/tmp/librairii-go-cache}" \
+    go run ./cmd/release-smoke -root "$data_root"
+GOCACHE="${GOCACHE:-/tmp/librairii-go-cache}" \
+    go run ./cmd/foundation-smoke \
+        -root "$data_root" \
+        -expect-stories 1 \
+        -expect-shelves 3
+
+launch_number=0
+event_count() {
+    event_name="$1"
+    awk -v event="\"event\":\"$event_name\"" \
+        'index($0, event) { count++ } END { print count + 0 }' \
+        "$event_log"
+}
+launch_packaged_application() {
+    launch_number=$((launch_number + 1))
+    launch_log="$verification_root/launch-$launch_number.log"
+    started_before="$(event_count runtime_started)"
+    stopped_before="$(event_count runtime_stopped)"
+
+    xvfb-run -a env \
+        LIBGL_ALWAYS_SOFTWARE=1 \
+        LIBRAIRII_DATA_ROOT="$data_root" \
+        LIBRAIRII_ACCEPTANCE_LOG=1 \
+        LIBRAIRII_SMOKE_EXIT=1 \
+        LIBRAIRII_SMOKE_HOLD_MS=1200 \
+        "$binary" > "$launch_log" 2>&1
+
+    if ! grep -q 'frontend:rendered' "$launch_log"; then
+        printf 'packaged Linux frontend did not report a completed render\n' >&2
+        cat "$launch_log" >&2
+        exit 1
+    fi
+    started_after="$(event_count runtime_started)"
+    stopped_after="$(event_count runtime_stopped)"
+    if [ "$started_after" -ne $((started_before + 1)) ] ||
+        [ "$stopped_after" -ne $((stopped_before + 1)) ]; then
+        printf 'packaged Linux lifecycle did not start and stop cleanly\n' >&2
+        exit 1
+    fi
+    if ! tail -n 1 "$event_log" |
+        grep -q '"event":"runtime_stopped","state":"stopped"'; then
+        printf 'packaged Linux lifecycle did not end in a clean shutdown\n' >&2
+        exit 1
+    fi
+}
+
+launch_packaged_application
+launch_packaged_application
+
+GOCACHE="${GOCACHE:-/tmp/librairii-go-cache}" \
+    go run ./cmd/foundation-smoke \
+        -root "$data_root" \
+        -expect-stories 1 \
+        -expect-shelves 3
+GOCACHE="${GOCACHE:-/tmp/librairii-go-cache}" \
+    go test . -count=1
+GOCACHE="${GOCACHE:-/tmp/librairii-go-cache}" \
+    go test ./internal/platform \
+        -run '^(TestRuntimeDialogsUseNativeMultiFilePicker|TestRuntimeDialogsSupportSingleFileAndDirectory|TestRuntimeDialogsRevealOnlyValidatedDirectory|TestDestinationRevealerUsesPlatformFileManager)$' \
+        -count=1
+GOCACHE="${GOCACHE:-/tmp/librairii-go-cache}" \
+    go test ./cmd/release-smoke \
+        -run '^TestReleaseSmokeCoversTheCompleteHeadlessComposition$' \
+        -count=1
+
+artifact="build/bin/Librairii-${version}-linux-amd64.tar.gz"
+tar \
+    --sort=name \
+    --mtime='@0' \
+    --owner=0 \
+    --group=0 \
+    --numeric-owner \
+    -czf "$artifact" \
+    -C build/bin \
+    Librairii
+sha256sum "$artifact" > "$artifact.sha256"
+sha256sum -c "$artifact.sha256"
+
+printf 'Linux platform acceptance passed: build, render, SQLite, native adapters, smoke\n'
+printf 'Linux artifact: %s\n' "$artifact"
