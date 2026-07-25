@@ -100,6 +100,9 @@ func (r *ImportRuntime) Start(ctx context.Context) error {
 	if err := library.BackfillNormalizedDisplayNames(ctx, database); err != nil {
 		return fmt.Errorf("backfill story display names: %w", err)
 	}
+	if err := metadata.BackfillNormalizedTitles(ctx, database); err != nil {
+		return fmt.Errorf("backfill official display names: %w", err)
+	}
 
 	archiveRepository := archive.NewRepository(layout)
 	catalogRepository := catalog.NewRepository(database)

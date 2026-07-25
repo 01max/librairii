@@ -2,10 +2,13 @@ package library
 
 import (
 	"context"
+	"database/sql"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/01max/librairii/internal/catalog"
+	"github.com/01max/librairii/internal/searchtext"
 	"github.com/01max/librairii/internal/tagging"
 )
 
@@ -196,6 +199,119 @@ func TestStoryLibraryQueryComposesBooleanAndChoiceGroups(t *testing.T) {
 	)
 }
 
+func TestStoryLibraryQueryComposesOfficialLanguageArchiveAndDerivedFacets(t *testing.T) {
+	t.Parallel()
+
+	query, repository, database := newLibraryQuery(t, nil)
+	first := createQueryableStory(
+		t,
+		repository,
+		"00112233-4455-4677-8899-aabbccddeeff",
+		"Embedded first",
+		"a",
+	)
+	second := createQueryableStory(
+		t,
+		repository,
+		"11112222-3333-4444-8555-666677778888",
+		"Embedded second",
+		"b",
+	)
+	third := createQueryableStory(
+		t,
+		repository,
+		"22223333-4444-4555-8666-777788889999",
+		"Unmatched",
+		"c",
+	)
+	seedOfficialQuerySnapshot(t, database, map[string]string{
+		first.UUID:  "L'École des dragons",
+		second.UUID: "Night train",
+	})
+	if _, err := database.Exec(
+		"UPDATE story_archives SET validation_state = 'missing' WHERE story_id = ?",
+		second.ID,
+	); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := database.Exec(
+		"UPDATE story_archives SET validation_state = 'invalid' WHERE story_id = ?",
+		third.ID,
+	); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := database.Exec(
+		`INSERT INTO tag_definitions (
+			key, normalized_key, label, color, kind, source,
+			presentation, position, is_protected
+		 ) VALUES ('age', 'age', 'Age', '#FF705C', 'choice', 'derived', 'system', 0, 1)`,
+	); err != nil {
+		t.Fatal(err)
+	}
+	result, err := database.Exec(
+		`INSERT INTO tag_values (
+			definition_id, key, normalized_key, label, position
+		 ) SELECT id, '3-5', '3-5', '3–5 years', 0
+		   FROM tag_definitions WHERE normalized_key = 'age'`,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ageValueID, err := result.LastInsertId()
+	if err != nil {
+		t.Fatal(err)
+	}
+	var ageDefinitionID int64
+	if err := database.QueryRow(
+		"SELECT id FROM tag_definitions WHERE normalized_key = 'age'",
+	).Scan(&ageDefinitionID); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := database.Exec(
+		`INSERT INTO story_tag_assignments (
+			story_id, definition_id, value_id, source
+		 ) VALUES (?, ?, ?, 'derived')`,
+		first.ID,
+		ageDefinitionID,
+		ageValueID,
+	); err != nil {
+		t.Fatal(err)
+	}
+
+	assertQueryStoryIDs(
+		t,
+		query,
+		StoryLibraryQuery{Name: "ecole"},
+		first.ID,
+	)
+	assertQueryStoryIDs(
+		t,
+		query,
+		StoryLibraryQuery{
+			Languages:       []string{"en_gb", "en-GB"},
+			Compatibilities: []Compatibility{CompatibilityCompatible},
+			ChoiceFilters: []ChoiceFilter{{
+				DefinitionID: ageDefinitionID,
+				ValueIDs:     []int64{ageValueID},
+			}},
+		},
+		first.ID,
+	)
+	assertQueryStoryIDs(
+		t,
+		query,
+		StoryLibraryQuery{
+			Languages: []string{"en-GB"},
+			Compatibilities: []Compatibility{
+				CompatibilityCompatible,
+				CompatibilityMissing,
+			},
+		},
+		first.ID,
+		second.ID,
+	)
+}
+
 func TestBackfillNormalizedDisplayNamesRepairsExistingRows(t *testing.T) {
 	t.Parallel()
 
@@ -250,6 +366,78 @@ func createQueryableStory(
 		t.Fatal(err)
 	}
 	return story
+}
+
+func seedOfficialQuerySnapshot(
+	t *testing.T,
+	database *sql.DB,
+	stories map[string]string,
+) {
+	t.Helper()
+
+	const syncID = "123e4567-e89b-42d3-a456-426614174000"
+	now := time.Date(2026, time.July, 25, 16, 0, 0, 0, time.UTC).
+		Format(time.RFC3339Nano)
+	if _, err := database.Exec(
+		`INSERT INTO catalog_syncs (id, locale, started_at)
+		 VALUES (?, 'en-GB', ?)`,
+		syncID,
+		now,
+	); err != nil {
+		t.Fatal(err)
+	}
+	result, err := database.Exec(
+		`INSERT INTO catalog_snapshots (
+			sync_id, locale, raw_path, raw_sha256, byte_size,
+			record_count, fetched_at
+		 ) VALUES (?, 'en-GB', 'catalog/query.json', ?, 2, ?, ?)`,
+		syncID,
+		strings.Repeat("d", 64),
+		len(stories),
+		now,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	snapshotID, err := result.LastInsertId()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for storyUUID, title := range stories {
+		if _, err := database.Exec(
+			`INSERT INTO official_story_metadata (
+				snapshot_id, story_uuid, locale, title, title_normalized,
+				language, provenance
+			 ) VALUES (?, ?, 'en-GB', ?, ?, 'en-GB', 'lunii_catalog')`,
+			snapshotID,
+			storyUUID,
+			title,
+			searchtext.Normalize(title),
+		); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, err := database.Exec(
+		`UPDATE catalog_snapshots
+		 SET status = 'active', activated_at = ?
+		 WHERE id = ?`,
+		now,
+		snapshotID,
+	); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := database.Exec(
+		`UPDATE catalog_syncs
+		 SET status = 'succeeded',
+		     matched_story_count = ?,
+		     finished_at = ?
+		 WHERE id = ?`,
+		len(stories),
+		now,
+		syncID,
+	); err != nil {
+		t.Fatal(err)
+	}
 }
 
 func createQueryDefinition(

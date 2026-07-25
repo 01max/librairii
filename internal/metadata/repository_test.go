@@ -17,7 +17,7 @@ import (
 func TestRepositoryStagesAndActivatesLocalizedMetadata(t *testing.T) {
 	t.Parallel()
 
-	repository, _ := openMetadataRepository(t)
+	repository, connection := openMetadataRepository(t)
 	ctx := context.Background()
 	startedAt := time.Date(2026, time.July, 25, 8, 0, 0, 0, time.UTC)
 	sync, err := repository.CreateSync(ctx, NewCatalogSync{
@@ -70,6 +70,16 @@ func TestRepositoryStagesAndActivatesLocalizedMetadata(t *testing.T) {
 		snapshot.RecordCount != 1 ||
 		snapshot.FetchedAt != formatTime(fetchedAt) {
 		t.Fatalf("StageSnapshot() = %#v", snapshot)
+	}
+	var normalizedTitle string
+	if err := connection.QueryRow(
+		"SELECT title_normalized FROM official_story_metadata WHERE snapshot_id = ?",
+		snapshot.ID,
+	).Scan(&normalizedTitle); err != nil {
+		t.Fatal(err)
+	}
+	if normalizedTitle != "the little prince" {
+		t.Fatalf("title_normalized = %q", normalizedTitle)
 	}
 	if _, err := repository.ActiveSnapshot(ctx, sync.Locale); !errors.Is(err, sql.ErrNoRows) {
 		t.Fatalf("ActiveSnapshot(before activation) error = %v", err)

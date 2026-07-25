@@ -30,6 +30,7 @@ import {
 } from './import-state';
 import {CollectionQueryHistory} from './query-history';
 import {
+    type CompatibilityFilter,
     type CollectionQuery,
     DEFAULT_COLLECTION_QUERY,
 } from './query-codec';
@@ -50,6 +51,33 @@ const coverPalettes = [
     ['#4aa9c9', '#ffe079', '#326779'],
     ['#d77c6f', '#ffd86b', '#8c4d4c'],
 ] as const;
+
+const compatibilityOptions: Array<{
+    value: CompatibilityFilter;
+    label: string;
+}> = [
+    {value: 'compatible', label: 'Compatible'},
+    {value: 'missing', label: 'Archive missing'},
+    {value: 'invalid', label: 'Verification failed'},
+];
+
+function languageLabel(locale: string): string {
+    const language = locale.split('-')[0]?.toLowerCase();
+    switch (language) {
+        case 'en':
+            return 'English';
+        case 'fr':
+            return 'French';
+        case 'de':
+            return 'German';
+        case 'es':
+            return 'Spanish';
+        case 'it':
+            return 'Italian';
+        default:
+            return locale;
+    }
+}
 
 const initialCollectionQuery: CollectionQuery = {
     ...DEFAULT_COLLECTION_QUERY,
@@ -504,6 +532,16 @@ function App() {
     const hasMetadataOperation = operationSnapshots.some(
         (snapshot) => snapshot.kind === 'metadata_sync',
     );
+    const derivedDefinitions = tagCatalog?.definitions.filter(
+        (definition) => definition.source === 'derived',
+    ) ?? [];
+    const editableDefinitions = tagCatalog?.definitions.filter(
+        (definition) => definition.source !== 'derived',
+    ) ?? [];
+    const languageOptions = [...new Set([
+        ...(metadataStatus?.locale ? [metadataStatus.locale] : []),
+        ...collectionQuery.languages,
+    ])].sort();
     const empty = page !== null && page.totalItems === 0 && !importing;
     const assignedTags = assignmentWorkspace?.catalog.definitions.flatMap((definition) => {
         const state = assignmentWorkspace.states.find(
@@ -622,6 +660,20 @@ function App() {
         });
     }
 
+    function toggleLanguage(locale: string) {
+        const languages = collectionQuery.languages.includes(locale)
+            ? collectionQuery.languages.filter((candidate) => candidate !== locale)
+            : [...collectionQuery.languages, locale];
+        updateQuery({...collectionQuery, languages, page: 1});
+    }
+
+    function toggleCompatibility(value: CompatibilityFilter) {
+        const compatibilities = collectionQuery.compatibilities.includes(value)
+            ? collectionQuery.compatibilities.filter((candidate) => candidate !== value)
+            : [...collectionQuery.compatibilities, value];
+        updateQuery({...collectionQuery, compatibilities, page: 1});
+    }
+
     const activeFilters = [
         ...(collectionQuery.name
             ? [{
@@ -630,6 +682,18 @@ function App() {
                 remove: () => updateQuery({...collectionQuery, name: '', page: 1}),
             }]
             : []),
+        ...collectionQuery.languages.map((locale) => ({
+            key: `language-${locale}`,
+            label: `Language · ${languageLabel(locale)}`,
+            remove: () => toggleLanguage(locale),
+        })),
+        ...collectionQuery.compatibilities.map((value) => ({
+            key: `compatibility-${value}`,
+            label: `Import status · ${
+                compatibilityOptions.find((option) => option.value === value)?.label ?? value
+            }`,
+            remove: () => toggleCompatibility(value),
+        })),
         ...collectionQuery.booleanFilters.flatMap((filter) => {
             const definition = tagCatalog?.definitions.find(
                 (candidate) => candidate.id === filter.definitionId,
@@ -661,6 +725,65 @@ function App() {
         }),
     ];
 
+    const renderTagFacet = (definition: tagging.DefinitionWithValues) => (
+        <div className="facet" key={definition.id}>
+            <div className="facet-title">{definition.label} <b>−</b></div>
+            {definition.kind === 'boolean' ? (
+                <>
+                    <label className="choice">
+                        <input
+                            type="checkbox"
+                            checked={collectionQuery.booleanFilters.some(
+                                (filter) => (
+                                    filter.definitionId === definition.id &&
+                                    filter.state === 'true'
+                                ),
+                            )}
+                            onChange={(event) => setBooleanFilter(
+                                definition.id,
+                                event.currentTarget.checked ? 'true' : 'ignored',
+                            )}
+                        />
+                        <i style={{'--c': definition.color} as CSSProperties}/>
+                        {definition.label}
+                    </label>
+                    <label className="choice">
+                        <input
+                            type="checkbox"
+                            checked={collectionQuery.booleanFilters.some(
+                                (filter) => (
+                                    filter.definitionId === definition.id &&
+                                    filter.state === 'false'
+                                ),
+                            )}
+                            onChange={(event) => setBooleanFilter(
+                                definition.id,
+                                event.currentTarget.checked ? 'false' : 'ignored',
+                            )}
+                        />
+                        <i style={{'--c': definition.color} as CSSProperties}/>
+                        Not {definition.label}
+                    </label>
+                </>
+            ) : definition.values.map((value) => (
+                <label className="choice" key={value.id}>
+                    <input
+                        type="checkbox"
+                        checked={collectionQuery.choiceFilters.some(
+                            (filter) => (
+                                filter.definitionId === definition.id &&
+                                filter.valueIds.includes(value.id)
+                            ),
+                        )}
+                        onChange={() => toggleChoiceFilter(definition.id, value.id)}
+                    />
+                    <i style={{'--c': definition.color} as CSSProperties}/>
+                    {value.label}
+                </label>
+            ))}
+        </div>
+    );
+
     return (
         <div className="app">
             <span className="sr-only" data-testid="application-state">
@@ -691,64 +814,36 @@ function App() {
                     </button>
                 </nav>
                 <div className="caption">Refine this shelf</div>
-                {tagCatalog?.definitions.map((definition) => (
-                    <div className="facet" key={definition.id}>
-                        <div className="facet-title">{definition.label} <b>−</b></div>
-                        {definition.kind === 'boolean' ? (
-                            <>
-                                <label className="choice">
-                                    <input
-                                        type="checkbox"
-                                        checked={collectionQuery.booleanFilters.some(
-                                            (filter) => (
-                                                filter.definitionId === definition.id &&
-                                                filter.state === 'true'
-                                            ),
-                                        )}
-                                        onChange={(event) => setBooleanFilter(
-                                            definition.id,
-                                            event.currentTarget.checked ? 'true' : 'ignored',
-                                        )}
-                                    />
-                                    <i style={{'--c': definition.color} as CSSProperties}/>
-                                    {definition.label}
-                                </label>
-                                <label className="choice">
-                                    <input
-                                        type="checkbox"
-                                        checked={collectionQuery.booleanFilters.some(
-                                            (filter) => (
-                                                filter.definitionId === definition.id &&
-                                                filter.state === 'false'
-                                            ),
-                                        )}
-                                        onChange={(event) => setBooleanFilter(
-                                            definition.id,
-                                            event.currentTarget.checked ? 'false' : 'ignored',
-                                        )}
-                                    />
-                                    <i style={{'--c': definition.color} as CSSProperties}/>
-                                    Not {definition.label}
-                                </label>
-                            </>
-                        ) : definition.values.map((value) => (
-                            <label className="choice" key={value.id}>
-                                <input
-                                    type="checkbox"
-                                    checked={collectionQuery.choiceFilters.some(
-                                        (filter) => (
-                                            filter.definitionId === definition.id &&
-                                            filter.valueIds.includes(value.id)
-                                        ),
-                                    )}
-                                    onChange={() => toggleChoiceFilter(definition.id, value.id)}
-                                />
-                                <i style={{'--c': definition.color} as CSSProperties}/>
-                                {value.label}
-                            </label>
-                        ))}
-                    </div>
-                ))}
+                {derivedDefinitions.map(renderTagFacet)}
+                <div className="facet">
+                    <div className="facet-title">Language <b>−</b></div>
+                    {languageOptions.map((locale) => (
+                        <label className="choice" key={locale}>
+                            <input
+                                type="checkbox"
+                                checked={collectionQuery.languages.includes(locale)}
+                                onChange={() => toggleLanguage(locale)}
+                            />
+                            <i style={{'--c': '#6779e8'} as CSSProperties}/>
+                            {languageLabel(locale)}
+                        </label>
+                    ))}
+                </div>
+                <div className="facet">
+                    <div className="facet-title">Import status <b>−</b></div>
+                    {compatibilityOptions.map((option) => (
+                        <label className="choice" key={option.value}>
+                            <input
+                                type="checkbox"
+                                checked={collectionQuery.compatibilities.includes(option.value)}
+                                onChange={() => toggleCompatibility(option.value)}
+                            />
+                            <i style={{'--c': '#f5bc41'} as CSSProperties}/>
+                            {option.label}
+                        </label>
+                    ))}
+                </div>
+                {editableDefinitions.map(renderTagFacet)}
                 <button
                     className="manage"
                     type="button"
@@ -836,6 +931,8 @@ function App() {
                                 updateQuery({
                                     ...collectionQuery,
                                     name: '',
+                                    languages: [],
+                                    compatibilities: [],
                                     booleanFilters: [],
                                     choiceFilters: [],
                                     page: 1,

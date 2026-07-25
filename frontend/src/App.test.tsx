@@ -314,11 +314,72 @@ test('composes canonical search, tri-state and choice refinements with clear-all
     await waitFor(() => expect(queryStories).toHaveBeenLastCalledWith(
         expect.objectContaining({
             name: '',
+            languages: [],
+            compatibilities: [],
             booleanFilters: [],
             choiceFilters: [],
         }),
     ));
     expect(search).toHaveFocus();
+});
+
+test('composes official language, import status, and derived age refinements', async () => {
+    const user = userEvent.setup();
+    officialMetadataStatus.mockResolvedValue(new app.MetadataStatusResponse({
+        status: {
+            state: 'fresh',
+            locale: 'en-GB',
+            matchedStoryCount: 2,
+            activatedAt: '2026-07-25T16:00:00Z',
+        },
+    }));
+    loadTagCatalog.mockResolvedValue(new app.TagCatalogResponse({
+        catalog: {
+            definitions: [{
+                id: 3,
+                key: 'age',
+                normalizedKey: 'age',
+                label: 'Age',
+                color: '#ff705c',
+                kind: 'choice',
+                source: 'derived',
+                presentation: 'system',
+                position: 0,
+                protected: true,
+                values: [{
+                    id: 30,
+                    definitionId: 3,
+                    key: '3-5',
+                    normalizedKey: '3-5',
+                    label: '3–5 years',
+                    position: 0,
+                }],
+            }],
+        },
+    }));
+    render(<App/>);
+
+    await user.click(await screen.findByRole('checkbox', {name: '3–5 years'}));
+    await user.click(screen.getByRole('checkbox', {name: 'English'}));
+    await user.click(screen.getByRole('checkbox', {name: 'Archive missing'}));
+
+    await waitFor(() => expect(queryStories).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+            languages: ['en-GB'],
+            compatibilities: ['missing'],
+            choiceFilters: [{definitionId: 3, valueIds: [30]}],
+            page: 1,
+        }),
+    ));
+    expect(window.location.hash).toContain('language=en-GB');
+    expect(window.location.hash).toContain('compatibility=missing');
+    expect(screen.getByRole('button', {name: 'Remove filter Language · English'}))
+        .toBeInTheDocument();
+    expect(screen.getByRole('button', {
+        name: 'Remove filter Import status · Archive missing',
+    })).toBeInTheDocument();
+    expect(screen.getByRole('button', {name: 'Remove filter Age · 3–5 years'}))
+        .toBeInTheDocument();
 });
 
 test('changes sort and pages from their canonical collection controls', async () => {

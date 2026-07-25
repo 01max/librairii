@@ -35,6 +35,12 @@ func EncodeStoryLibraryQuery(query StoryLibraryQuery) (string, error) {
 	if query.Sort != SortNameAscending {
 		values.Set("sort", string(query.Sort))
 	}
+	for _, locale := range query.Languages {
+		values.Add("language", locale)
+	}
+	for _, compatibility := range query.Compatibilities {
+		values.Add("compatibility", string(compatibility))
+	}
 	for _, filter := range query.BooleanFilters {
 		if filter.State == BooleanIgnored {
 			continue
@@ -71,7 +77,15 @@ func DecodeStoryLibraryQuery(hash string) (StoryLibraryQuery, error) {
 	}
 	for key := range values {
 		switch key {
-		case "v", "name", "page", "size", "sort", "bool", "choice":
+		case "v",
+			"name",
+			"page",
+			"size",
+			"sort",
+			"language",
+			"compatibility",
+			"bool",
+			"choice":
 		default:
 			return StoryLibraryQuery{}, ErrInvalidStoryLibraryHash
 		}
@@ -104,6 +118,10 @@ func DecodeStoryLibraryQuery(hash string) (StoryLibraryQuery, error) {
 		return StoryLibraryQuery{}, valueErr
 	} else {
 		query.Sort = Sort(sortValue)
+	}
+	query.Languages = append(query.Languages, values["language"]...)
+	for _, value := range values["compatibility"] {
+		query.Compatibilities = append(query.Compatibilities, Compatibility(value))
 	}
 	for _, encoded := range values["bool"] {
 		definition, state, ok := strings.Cut(encoded, ":")
@@ -151,6 +169,12 @@ func canonicalStoryLibraryQuery(
 	}
 	if query.ChoiceFilters == nil {
 		query.ChoiceFilters = []ChoiceFilter{}
+	}
+	if query.Languages == nil {
+		query.Languages = []string{}
+	}
+	if query.Compatibilities == nil {
+		query.Compatibilities = []Compatibility{}
 	}
 	sort.Slice(query.BooleanFilters, func(i, j int) bool {
 		return query.BooleanFilters[i].DefinitionID <

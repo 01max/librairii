@@ -5,9 +5,11 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/01max/librairii/internal/searchtext"
+	"golang.org/x/text/language"
 )
 
 const (
@@ -37,12 +39,14 @@ type ChoiceFilter struct {
 }
 
 type StoryLibraryQuery struct {
-	Name           string          `json:"name"`
-	BooleanFilters []BooleanFilter `json:"booleanFilters"`
-	ChoiceFilters  []ChoiceFilter  `json:"choiceFilters"`
-	Page           int             `json:"page"`
-	PageSize       int             `json:"pageSize"`
-	Sort           Sort            `json:"sort"`
+	Name            string          `json:"name"`
+	Languages       []string        `json:"languages"`
+	Compatibilities []Compatibility `json:"compatibilities"`
+	BooleanFilters  []BooleanFilter `json:"booleanFilters"`
+	ChoiceFilters   []ChoiceFilter  `json:"choiceFilters"`
+	Page            int             `json:"page"`
+	PageSize        int             `json:"pageSize"`
+	Sort            Sort            `json:"sort"`
 }
 
 func (q *Query) Search(
@@ -177,10 +181,58 @@ func normalizeStoryLibraryQuery(
 	request.PageSize = listRequest.PageSize
 	request.Sort = listRequest.Sort
 	request.Name = searchtext.Normalize(request.Name)
+	groupCount := len(request.BooleanFilters) + len(request.ChoiceFilters)
+	if len(request.Languages) > 0 {
+		groupCount++
+	}
+	if len(request.Compatibilities) > 0 {
+		groupCount++
+	}
 	if len([]rune(request.Name)) > maxNameSearchRunes ||
-		len(request.BooleanFilters)+len(request.ChoiceFilters) > maxFilterGroups {
+		groupCount > maxFilterGroups ||
+		len(request.Languages) > maxValuesPerFilter ||
+		len(request.Compatibilities) > 3 {
 		return StoryLibraryQuery{}, ErrInvalidStoryLibraryQuery
 	}
+
+	seenLanguages := make(map[string]struct{}, len(request.Languages))
+	normalizedLanguages := make([]string, 0, len(request.Languages))
+	for _, value := range request.Languages {
+		locale, err := canonicalLanguage(value)
+		if err != nil {
+			return StoryLibraryQuery{}, ErrInvalidStoryLibraryQuery
+		}
+		if _, duplicate := seenLanguages[locale]; duplicate {
+			continue
+		}
+		seenLanguages[locale] = struct{}{}
+		normalizedLanguages = append(normalizedLanguages, locale)
+	}
+	sort.Strings(normalizedLanguages)
+	request.Languages = normalizedLanguages
+
+	seenCompatibilities := make(map[Compatibility]struct{}, len(request.Compatibilities))
+	normalizedCompatibilities := make(
+		[]Compatibility,
+		0,
+		len(request.Compatibilities),
+	)
+	for _, value := range request.Compatibilities {
+		switch value {
+		case CompatibilityCompatible, CompatibilityMissing, CompatibilityInvalid:
+		default:
+			return StoryLibraryQuery{}, ErrInvalidStoryLibraryQuery
+		}
+		if _, duplicate := seenCompatibilities[value]; duplicate {
+			continue
+		}
+		seenCompatibilities[value] = struct{}{}
+		normalizedCompatibilities = append(normalizedCompatibilities, value)
+	}
+	sort.Slice(normalizedCompatibilities, func(i, j int) bool {
+		return normalizedCompatibilities[i] < normalizedCompatibilities[j]
+	})
+	request.Compatibilities = normalizedCompatibilities
 
 	definitions := make(map[int64]struct{})
 	for index := range request.BooleanFilters {
@@ -283,9 +335,56 @@ func storyLibraryPredicate(request StoryLibraryQuery) (string, []any) {
 	if request.Name != "" {
 		predicates = append(
 			predicates,
-			"instr(s.display_name_normalized, ?) > 0",
+			`instr(
+				COALESCE(
+					NULLIF((
+						SELECT official_name.title_normalized
+						FROM official_story_metadata AS official_name
+						JOIN catalog_snapshots AS official_snapshot
+						  ON official_snapshot.id = official_name.snapshot_id
+						WHERE official_name.story_uuid = s.uuid
+						  AND official_snapshot.status = 'active'
+						ORDER BY official_snapshot.activated_at DESC,
+						         official_snapshot.id DESC
+						LIMIT 1
+					), ''),
+					s.display_name_normalized
+				),
+				?
+			) > 0`,
 		)
 		arguments = append(arguments, request.Name)
+	}
+	if len(request.Languages) > 0 {
+		placeholders := strings.TrimSuffix(
+			strings.Repeat("?,", len(request.Languages)),
+			",",
+		)
+		predicates = append(predicates, `EXISTS (
+			SELECT 1
+			FROM official_story_metadata AS official_language
+			JOIN catalog_snapshots AS language_snapshot
+			  ON language_snapshot.id = official_language.snapshot_id
+			WHERE official_language.story_uuid = s.uuid
+			  AND language_snapshot.status = 'active'
+			  AND official_language.language IN (`+placeholders+`)
+		)`)
+		for _, locale := range request.Languages {
+			arguments = append(arguments, locale)
+		}
+	}
+	if len(request.Compatibilities) > 0 {
+		placeholders := strings.TrimSuffix(
+			strings.Repeat("?,", len(request.Compatibilities)),
+			",",
+		)
+		predicates = append(
+			predicates,
+			"a.validation_state IN ("+placeholders+")",
+		)
+		for _, value := range request.Compatibilities {
+			arguments = append(arguments, compatibilityValidationState(value))
+		}
 	}
 	for _, filter := range request.BooleanFilters {
 		if filter.State == BooleanIgnored {
@@ -322,4 +421,27 @@ func storyLibraryPredicate(request StoryLibraryQuery) (string, []any) {
 		}
 	}
 	return strings.Join(predicates, " AND "), arguments
+}
+
+func canonicalLanguage(value string) (string, error) {
+	value = strings.ReplaceAll(strings.TrimSpace(value), "_", "-")
+	if value == "" || len(value) > 35 {
+		return "", ErrInvalidStoryLibraryQuery
+	}
+	tag, err := language.Parse(value)
+	if err != nil || tag == language.Und {
+		return "", ErrInvalidStoryLibraryQuery
+	}
+	return tag.String(), nil
+}
+
+func compatibilityValidationState(value Compatibility) string {
+	switch value {
+	case CompatibilityCompatible:
+		return "valid"
+	case CompatibilityMissing:
+		return "missing"
+	default:
+		return "invalid"
+	}
 }

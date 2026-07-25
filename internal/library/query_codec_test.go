@@ -46,6 +46,12 @@ func TestStoryLibraryQueryCodecCanonicalizesAndRejectsInvalidHashes(t *testing.T
 	t.Parallel()
 
 	encoded, err := EncodeStoryLibraryQuery(StoryLibraryQuery{
+		Languages: []string{"fr-FR", "en_gb", "en-GB"},
+		Compatibilities: []Compatibility{
+			CompatibilityInvalid,
+			CompatibilityCompatible,
+			CompatibilityInvalid,
+		},
 		BooleanFilters: []BooleanFilter{
 			{DefinitionID: 8, State: BooleanFalse},
 			{DefinitionID: 2, State: BooleanTrue},
@@ -60,7 +66,7 @@ func TestStoryLibraryQueryCodecCanonicalizesAndRejectsInvalidHashes(t *testing.T
 		t.Fatal(err)
 	}
 	if encoded !=
-		"#/library?bool=2%3Atrue&bool=8%3Afalse&choice=4%3A5%2C6&v=1" {
+		"#/library?bool=2%3Atrue&bool=8%3Afalse&choice=4%3A5%2C6&compatibility=compatible&compatibility=invalid&language=en-GB&language=fr-FR&v=1" {
 		t.Fatalf("EncodeStoryLibraryQuery(canonical) = %q", encoded)
 	}
 
@@ -72,6 +78,8 @@ func TestStoryLibraryQueryCodecCanonicalizesAndRejectsInvalidHashes(t *testing.T
 		"#/library?v=1&page=zero",
 		"#/library?v=1&bool=broken",
 		"#/library?v=1&choice=1%3A",
+		"#/library?v=1&language=not+a+locale",
+		"#/library?v=1&compatibility=unknown",
 		"#/library?v=1&v=1",
 	} {
 		if _, err := DecodeStoryLibraryQuery(hash); !errors.Is(

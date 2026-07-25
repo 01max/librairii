@@ -727,6 +727,8 @@ export namespace library {
 	}
 	export class StoryLibraryQuery {
 	    name: string;
+	    languages: string[];
+	    compatibilities: string[];
 	    booleanFilters: BooleanFilter[];
 	    choiceFilters: ChoiceFilter[];
 	    page: number;
@@ -740,6 +742,8 @@ export namespace library {
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.name = source["name"];
+	        this.languages = source["languages"];
+	        this.compatibilities = source["compatibilities"];
 	        this.booleanFilters = this.convertValues(source["booleanFilters"], BooleanFilter);
 	        this.choiceFilters = this.convertValues(source["choiceFilters"], ChoiceFilter);
 	        this.page = source["page"];

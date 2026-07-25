@@ -4,6 +4,8 @@
     "hash": "#/library?v=1",
     "query": {
       "name": "",
+      "languages": [],
+      "compatibilities": [],
       "booleanFilters": [],
       "choiceFilters": [],
       "page": 1,
@@ -16,6 +18,8 @@
     "hash": "#/library?bool=7%3Afalse&choice=9%3A11%2C12&name=dragon&page=2&size=12&sort=imported_desc&v=1",
     "query": {
       "name": "dragon",
+      "languages": [],
+      "compatibilities": [],
       "booleanFilters": [
         {"definitionId": 7, "state": "false"}
       ],
@@ -32,6 +36,8 @@
     "hash": "#/library?name=ete+%25_&v=1",
     "query": {
       "name": "ete %_",
+      "languages": [],
+      "compatibilities": [],
       "booleanFilters": [],
       "choiceFilters": [],
       "page": 1,
@@ -44,6 +50,8 @@
     "hash": "#/library?bool=2%3Atrue&bool=8%3Afalse&choice=4%3A5%2C6&choice=10%3A20&v=1",
     "query": {
       "name": "",
+      "languages": [],
+      "compatibilities": [],
       "booleanFilters": [
         {"definitionId": 2, "state": "true"},
         {"definitionId": 8, "state": "false"}
@@ -52,6 +60,20 @@
         {"definitionId": 4, "valueIds": [5, 6]},
         {"definitionId": 10, "valueIds": [20]}
       ],
+      "page": 1,
+      "pageSize": 24,
+      "sort": "name_asc"
+    }
+  },
+  {
+    "name": "official language and import status",
+    "hash": "#/library?compatibility=compatible&compatibility=missing&language=en-GB&language=fr-FR&v=1",
+    "query": {
+      "name": "",
+      "languages": ["en-GB", "fr-FR"],
+      "compatibilities": ["compatible", "missing"],
+      "booleanFilters": [],
+      "choiceFilters": [],
       "page": 1,
       "pageSize": 24,
       "sort": "name_asc"

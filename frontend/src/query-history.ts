@@ -69,6 +69,8 @@ export class CollectionQueryHistory {
         return this.push({
             ...current,
             name: '',
+            languages: [],
+            compatibilities: [],
             booleanFilters: [],
             choiceFilters: [],
             page: 1,

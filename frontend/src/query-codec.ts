@@ -2,6 +2,7 @@ export const STORY_LIBRARY_QUERY_VERSION = 1;
 export const STORY_LIBRARY_HASH_PATH = '#/library';
 
 export type BooleanFilterState = 'ignored' | 'true' | 'false';
+export type CompatibilityFilter = 'compatible' | 'missing' | 'invalid';
 
 export type CollectionBooleanFilter = {
     definitionId: number;
@@ -15,6 +16,8 @@ export type CollectionChoiceFilter = {
 
 export type CollectionQuery = {
     name: string;
+    languages: string[];
+    compatibilities: CompatibilityFilter[];
     booleanFilters: CollectionBooleanFilter[];
     choiceFilters: CollectionChoiceFilter[];
     page: number;
@@ -24,6 +27,8 @@ export type CollectionQuery = {
 
 export const DEFAULT_COLLECTION_QUERY: CollectionQuery = {
     name: '',
+    languages: [],
+    compatibilities: [],
     booleanFilters: [],
     choiceFilters: [],
     page: 1,
@@ -52,6 +57,12 @@ export function encodeCollectionQuery(input: CollectionQuery): string {
     if (query.sort !== DEFAULT_COLLECTION_QUERY.sort) {
         entries.push(['sort', query.sort]);
     }
+    for (const locale of query.languages) {
+        entries.push(['language', locale]);
+    }
+    for (const compatibility of query.compatibilities) {
+        entries.push(['compatibility', compatibility]);
+    }
     for (const filter of query.booleanFilters) {
         if (filter.state !== 'ignored') {
             entries.push(['bool', `${filter.definitionId}:${filter.state}`]);
@@ -76,7 +87,17 @@ export function decodeCollectionQuery(hash: string): CollectionQuery {
         throw new InvalidCollectionQuery('Invalid collection hash path.');
     }
     const parameters = new URLSearchParams(hash.slice(queryIndex + 1));
-    const allowed = new Set(['v', 'name', 'page', 'size', 'sort', 'bool', 'choice']);
+    const allowed = new Set([
+        'v',
+        'name',
+        'page',
+        'size',
+        'sort',
+        'language',
+        'compatibility',
+        'bool',
+        'choice',
+    ]);
     for (const key of parameters.keys()) {
         if (!allowed.has(key)) {
             throw new InvalidCollectionQuery(`Unknown collection query field: ${key}`);
@@ -114,6 +135,8 @@ export function decodeCollectionQuery(hash: string): CollectionQuery {
     });
     return canonicalCollectionQuery({
         name: oneValue(parameters, 'name', false),
+        languages: parameters.getAll('language'),
+        compatibilities: parameters.getAll('compatibility') as CompatibilityFilter[],
         booleanFilters,
         choiceFilters,
         page,
@@ -124,6 +147,12 @@ export function decodeCollectionQuery(hash: string): CollectionQuery {
 
 export function canonicalCollectionQuery(input: CollectionQuery): CollectionQuery {
     const name = normalizeSearchText(input.name);
+    const languages = [...new Set(input.languages.map(canonicalLanguage))].sort();
+    const compatibilities = [...new Set(input.compatibilities)].sort();
+    const groupCount = input.booleanFilters.length +
+        input.choiceFilters.length +
+        Number(languages.length > 0) +
+        Number(compatibilities.length > 0);
     if (
         [...name].length > maxNameRunes ||
         !Number.isInteger(input.page) ||
@@ -132,7 +161,10 @@ export function canonicalCollectionQuery(input: CollectionQuery): CollectionQuer
         input.pageSize < 1 ||
         input.pageSize > 100 ||
         !['name_asc', 'imported_desc'].includes(input.sort) ||
-        input.booleanFilters.length + input.choiceFilters.length > maxFilterGroups
+        groupCount > maxFilterGroups ||
+        languages.length > maxValuesPerFilter ||
+        compatibilities.length > 3 ||
+        compatibilities.some((value) => !isCompatibility(value))
     ) {
         throw new InvalidCollectionQuery('Collection query is outside its bounds.');
     }
@@ -163,12 +195,26 @@ export function canonicalCollectionQuery(input: CollectionQuery): CollectionQuer
     choiceFilters.sort((left, right) => left.definitionId - right.definitionId);
     return {
         name,
+        languages,
+        compatibilities,
         booleanFilters,
         choiceFilters,
         page: input.page,
         pageSize: input.pageSize,
         sort: input.sort,
     };
+}
+
+function canonicalLanguage(value: string): string {
+    const normalized = value.trim().replaceAll('_', '-');
+    if (normalized === '' || normalized.length > 35) {
+        throw new InvalidCollectionQuery('Invalid official language filter.');
+    }
+    try {
+        return Intl.getCanonicalLocales(normalized)[0];
+    } catch {
+        throw new InvalidCollectionQuery('Invalid official language filter.');
+    }
 }
 
 function normalizeSearchText(value: string): string {
@@ -216,4 +262,8 @@ function safePositiveInteger(value: number): number {
 
 function isBooleanState(value: string): value is BooleanFilterState {
     return ['ignored', 'true', 'false'].includes(value);
+}
+
+function isCompatibility(value: string): value is CompatibilityFilter {
+    return ['compatible', 'missing', 'invalid'].includes(value);
 }

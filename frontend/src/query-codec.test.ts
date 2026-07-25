@@ -17,6 +17,8 @@ test('matches the shared Go collection-query codec fixtures', () => {
 test('canonicalizes filter and value ordering', () => {
     expect(encodeCollectionQuery({
         name: '',
+        languages: ['fr-FR', 'en_gb', 'en-GB'],
+        compatibilities: ['invalid', 'compatible', 'invalid'],
         booleanFilters: [
             {definitionId: 8, state: 'false'},
             {definitionId: 2, state: 'true'},
@@ -29,5 +31,9 @@ test('canonicalizes filter and value ordering', () => {
         page: 1,
         pageSize: 24,
         sort: 'name_asc',
-    })).toBe('#/library?bool=2%3Atrue&bool=8%3Afalse&choice=4%3A5%2C6&v=1');
+    })).toBe(
+        '#/library?bool=2%3Atrue&bool=8%3Afalse&choice=4%3A5%2C6' +
+        '&compatibility=compatible&compatibility=invalid' +
+        '&language=en-GB&language=fr-FR&v=1',
+    );
 });

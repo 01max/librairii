@@ -113,6 +113,8 @@ func TestStoryLibraryQueryRejectsInvalidBoundedInputsAndSQLText(t *testing.T) {
 		{PageSize: MaxPageSize + 1},
 		{Sort: "unknown"},
 		{Name: strings.Repeat("x", maxNameSearchRunes+1)},
+		{Languages: []string{"not a locale"}},
+		{Compatibilities: []Compatibility{"unknown"}},
 		{BooleanFilters: []BooleanFilter{{
 			DefinitionID: broken.ID,
 			State:        "sometimes",

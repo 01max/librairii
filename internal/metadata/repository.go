@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"strings"
 	"time"
+
+	"github.com/01max/librairii/internal/searchtext"
 )
 
 type SyncStatus string
@@ -344,6 +346,7 @@ func insertOfficialMetadata(
 			story_uuid,
 			locale,
 			title,
+			title_normalized,
 			description,
 			author,
 			publisher,
@@ -356,8 +359,8 @@ func insertOfficialMetadata(
 			source_record_id,
 			source_updated_at
 		 ) VALUES (
-			?, ?, ?,
-			NULLIF(?, ''), NULLIF(?, ''), NULLIF(?, ''),
+			?, ?, ?, NULLIF(?, ''),
+			?, NULLIF(?, ''), NULLIF(?, ''),
 			NULLIF(?, ''), NULLIF(?, ''), ?, ?, ?,
 			NULLIF(?, ''), ?, NULLIF(?, ''), ?
 		 )`,
@@ -365,6 +368,7 @@ func insertOfficialMetadata(
 		input.StoryUUID,
 		locale,
 		input.Title,
+		searchtext.Normalize(input.Title),
 		input.Description,
 		input.Author,
 		input.Publisher,
