@@ -163,39 +163,52 @@ func (s *RefreshService) Refresh(
 		return RefreshResult{}, s.fail(ctx, sync.ID, 0, RefreshPersistenceFailed, err)
 	}
 
-	activatedAt := s.now().UTC()
 	matchedStoryCount, err := s.repository.CountMatchingStories(ctx, snapshot.ID)
 	if err != nil {
 		return RefreshResult{}, s.fail(
 			ctx,
 			sync.ID,
 			snapshot.ID,
-			RefreshPersistenceFailed,
+			refreshCode(ctx, RefreshPersistenceFailed),
 			err,
 		)
 	}
+	if err := ctx.Err(); err != nil {
+		return RefreshResult{}, s.fail(
+			ctx,
+			sync.ID,
+			snapshot.ID,
+			RefreshCancelled,
+			err,
+		)
+	}
+
+	// Activation is the publication boundary: once it starts, finish reporting
+	// the committed snapshot even if the caller subsequently cancels.
+	publicationContext := context.WithoutCancel(ctx)
+	activatedAt := s.now().UTC()
 	if err := s.repository.ActivateSnapshot(
-		ctx,
+		publicationContext,
 		snapshot.ID,
 		matchedStoryCount,
 		activatedAt,
 	); err != nil {
 		return RefreshResult{}, s.fail(
-			ctx,
+			publicationContext,
 			sync.ID,
 			snapshot.ID,
 			RefreshPersistenceFailed,
 			err,
 		)
 	}
-	sync, err = s.repository.Sync(ctx, sync.ID)
+	sync, err = s.repository.Sync(publicationContext, sync.ID)
 	if err != nil {
 		return RefreshResult{}, &RefreshError{
 			Code:  RefreshPersistenceFailed,
 			Cause: err,
 		}
 	}
-	snapshot, err = s.repository.Snapshot(ctx, snapshot.ID)
+	snapshot, err = s.repository.Snapshot(publicationContext, snapshot.ID)
 	if err != nil {
 		return RefreshResult{}, &RefreshError{
 			Code:  RefreshPersistenceFailed,

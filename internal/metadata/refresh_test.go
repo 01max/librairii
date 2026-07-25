@@ -234,6 +234,82 @@ func TestRefreshServicePersistsCancellationWithUncancelledCleanupContext(t *test
 	}
 }
 
+func TestRefreshServiceCancelsBeforeActivationAndRejectsTheStagedSnapshot(t *testing.T) {
+	t.Parallel()
+
+	harness := newRefreshHarness(t)
+	harness.fetcher.payload = readCatalogFixture(t)
+	harness.setIDs("123e4567-e89b-42d3-a456-426614174332")
+	ctx, cancel := context.WithCancel(context.Background())
+	repository := &countCancellationRepository{
+		Repository: harness.repository,
+		cancel:     cancel,
+	}
+	service, err := NewRefreshService(harness.fetcher, repository, harness.store)
+	if err != nil {
+		t.Fatal(err)
+	}
+	service.now = harness.service.now
+	service.newID = harness.service.newID
+
+	_, err = service.Refresh(ctx, "en-GB")
+	if !RefreshErrorHasCode(err, RefreshCancelled) {
+		t.Fatalf("Refresh(cancel before activation) error = %v", err)
+	}
+	sync, err := harness.repository.Sync(
+		context.Background(),
+		"123e4567-e89b-42d3-a456-426614174332",
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if sync.Status != SyncCancelled ||
+		sync.ErrorCode != string(RefreshCancelled) {
+		t.Fatalf("cancelled sync = %#v", sync)
+	}
+	var rejected int
+	if err := harness.connection.QueryRow(
+		`SELECT COUNT(*)
+		 FROM catalog_snapshots
+		 WHERE sync_id = ? AND status = 'rejected'`,
+		sync.ID,
+	).Scan(&rejected); err != nil {
+		t.Fatal(err)
+	}
+	if rejected != 1 {
+		t.Fatalf("rejected snapshots = %d", rejected)
+	}
+}
+
+func TestRefreshServiceFinishesActivationAfterPublicationBoundary(t *testing.T) {
+	t.Parallel()
+
+	harness := newRefreshHarness(t)
+	harness.fetcher.payload = readCatalogFixture(t)
+	harness.setIDs("123e4567-e89b-42d3-a456-426614174333")
+	ctx, cancel := context.WithCancel(context.Background())
+	repository := &activationCancellationRepository{
+		Repository: harness.repository,
+		cancel:     cancel,
+	}
+	service, err := NewRefreshService(harness.fetcher, repository, harness.store)
+	if err != nil {
+		t.Fatal(err)
+	}
+	service.now = harness.service.now
+	service.newID = harness.service.newID
+
+	result, err := service.Refresh(ctx, "en-GB")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if ctx.Err() != context.Canceled ||
+		result.Sync.Status != SyncSucceeded ||
+		result.Snapshot.Status != SnapshotActive {
+		t.Fatalf("Refresh(cancel during activation) = %#v, context = %v", result, ctx.Err())
+	}
+}
+
 type stubCatalogFetcher struct {
 	payload []byte
 	err     error
@@ -264,6 +340,42 @@ func (r *activationFailureRepository) ActivateSnapshot(
 	time.Time,
 ) error {
 	return r.err
+}
+
+type countCancellationRepository struct {
+	*Repository
+	cancel context.CancelFunc
+}
+
+func (r *countCancellationRepository) CountMatchingStories(
+	ctx context.Context,
+	_ int64,
+) (int, error) {
+	r.cancel()
+	return 0, ctx.Err()
+}
+
+type activationCancellationRepository struct {
+	*Repository
+	cancel context.CancelFunc
+}
+
+func (r *activationCancellationRepository) ActivateSnapshot(
+	ctx context.Context,
+	snapshotID int64,
+	matchedStoryCount int,
+	activatedAt time.Time,
+) error {
+	r.cancel()
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	return r.Repository.ActivateSnapshot(
+		ctx,
+		snapshotID,
+		matchedStoryCount,
+		activatedAt,
+	)
 }
 
 type refreshHarness struct {
