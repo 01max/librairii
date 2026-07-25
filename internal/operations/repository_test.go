@@ -213,6 +213,63 @@ func TestRepositoryInterruptsOneOperationWithStableFailure(t *testing.T) {
 	}
 }
 
+func TestRepositoryListsOnlyActiveOperationsNewestFirst(t *testing.T) {
+	t.Parallel()
+
+	repository, _ := newOperationRepository(t)
+	ctx := context.Background()
+	finished, err := repository.CreateImport(
+		ctx,
+		"00000000-0000-4000-8000-000000000001",
+		[]NewItem{{SourceName: "finished.zip"}},
+		time.Date(2026, time.July, 25, 8, 0, 0, 0, time.UTC),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	older, err := repository.CreateImport(
+		ctx,
+		"00000000-0000-4000-8000-000000000002",
+		[]NewItem{{SourceName: "older.zip"}},
+		time.Date(2026, time.July, 25, 9, 0, 0, 0, time.UTC),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	newer, err := repository.CreateImport(
+		ctx,
+		"00000000-0000-4000-8000-000000000003",
+		[]NewItem{{SourceName: "newer.zip"}},
+		time.Date(2026, time.July, 25, 10, 0, 0, 0, time.UTC),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := repository.MarkItemRunning(ctx, finished.Items[0].ID); err != nil {
+		t.Fatal(err)
+	}
+	if err := repository.CompleteItem(ctx, finished.ID, ItemSnapshot{
+		ID:         finished.Items[0].ID,
+		SourceName: finished.Items[0].SourceName,
+		Status:     ItemSucceeded,
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if err := repository.Finish(ctx, finished.ID, StatusSucceeded, "", "", time.Now()); err != nil {
+		t.Fatal(err)
+	}
+
+	active, err := repository.ActiveSnapshots(ctx)
+	if err != nil {
+		t.Fatalf("ActiveSnapshots() error = %v", err)
+	}
+	if len(active) != 2 ||
+		active[0].ID != newer.ID ||
+		active[1].ID != older.ID {
+		t.Fatalf("ActiveSnapshots() = %#v", active)
+	}
+}
+
 func newOperationRepository(t *testing.T) (*Repository, *database.Database) {
 	t.Helper()
 

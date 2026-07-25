@@ -332,6 +332,41 @@ func (r *Repository) Snapshot(ctx context.Context, id string) (Snapshot, error) 
 	return snapshot, rows.Err()
 }
 
+func (r *Repository) ActiveSnapshots(ctx context.Context) ([]Snapshot, error) {
+	rows, err := r.database.QueryContext(
+		ctx,
+		`SELECT id
+		 FROM file_operations
+		 WHERE status IN ('queued', 'running')
+		 ORDER BY created_at DESC, id DESC`,
+	)
+	if err != nil {
+		return nil, err
+	}
+	var ids []string
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			_ = rows.Close()
+			return nil, err
+		}
+		ids = append(ids, id)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+
+	snapshots := make([]Snapshot, 0, len(ids))
+	for _, id := range ids {
+		snapshot, err := r.Snapshot(ctx, id)
+		if err != nil {
+			return nil, err
+		}
+		snapshots = append(snapshots, snapshot)
+	}
+	return snapshots, nil
+}
+
 func (r *Repository) InterruptActive(
 	ctx context.Context,
 	now time.Time,

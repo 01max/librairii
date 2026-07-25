@@ -141,6 +141,16 @@ func (r *ImportRuntime) Snapshot(
 	return manager.Snapshot(ctx, operationID)
 }
 
+func (r *ImportRuntime) Active(
+	ctx context.Context,
+) ([]operations.Snapshot, error) {
+	manager, err := r.current()
+	if err != nil {
+		return nil, err
+	}
+	return manager.Active(ctx)
+}
+
 func (r *ImportRuntime) List(
 	ctx context.Context,
 	request library.ListRequest,

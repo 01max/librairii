@@ -2,9 +2,11 @@ import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {beforeEach, expect, test, vi} from 'vitest';
 import {
+    ActiveOperations,
     ApplicationStatus,
     CancelOperation,
     ListStories,
+    OperationSnapshot,
     RemoveStory,
     SelectAndImportStories,
     StoryDetail as LoadStoryDetail,
@@ -14,9 +16,11 @@ import {EventsOn} from '../wailsjs/runtime/runtime';
 import App from './App';
 
 vi.mock('../wailsjs/go/main/App', () => ({
+    ActiveOperations: vi.fn(),
     ApplicationStatus: vi.fn(),
     CancelOperation: vi.fn(),
     ListStories: vi.fn(),
+    OperationSnapshot: vi.fn(),
     RemoveStory: vi.fn(),
     SelectAndImportStories: vi.fn(),
     StoryDetail: vi.fn(),
@@ -26,9 +30,11 @@ vi.mock('../wailsjs/runtime/runtime', () => ({
     EventsOn: vi.fn(),
 }));
 
+const activeOperations = vi.mocked(ActiveOperations);
 const applicationStatus = vi.mocked(ApplicationStatus);
 const cancelOperation = vi.mocked(CancelOperation);
 const listStories = vi.mocked(ListStories);
+const operationSnapshot = vi.mocked(OperationSnapshot);
 const removeStory = vi.mocked(RemoveStory);
 const selectAndImportStories = vi.mocked(SelectAndImportStories);
 const loadStoryDetail = vi.mocked(LoadStoryDetail);
@@ -70,9 +76,11 @@ const stories = [
 ];
 
 beforeEach(() => {
+    activeOperations.mockReset();
     applicationStatus.mockReset();
     cancelOperation.mockReset();
     listStories.mockReset();
+    operationSnapshot.mockReset();
     removeStory.mockReset();
     selectAndImportStories.mockReset();
     loadStoryDetail.mockReset();
@@ -85,6 +93,10 @@ beforeEach(() => {
             mutationsAllowed: true,
         },
     }));
+    activeOperations.mockResolvedValue(new app.OperationListResponse({
+        operations: [],
+    }));
+    operationSnapshot.mockResolvedValue(new app.OperationResponse({}));
     listStories.mockResolvedValue(new app.LibraryPageResponse({
         page: {
             stories,
@@ -224,6 +236,50 @@ test('shows nonblocking import progress and terminal validation feedback', async
         name: 'Unsupported or invalid story archive',
     })).toBeInTheDocument();
     expect(screen.getByText('The file is not a supported story archive.')).toBeInTheDocument();
+});
+
+test('restores and reconciles an active import after the frontend reloads', async () => {
+    const running = {
+        id: '00112233-4455-4677-8899-aabbccddeeff',
+        kind: 'import',
+        status: 'running',
+        completedItems: 0,
+        totalItems: 1,
+        cancelRequested: false,
+        createdAt: '2026-07-25T09:00:00Z',
+        items: [{
+            id: 1,
+            sourceName: 'clockwork.zip',
+            status: 'running',
+            completedBytes: 512,
+            totalBytes: 1024,
+        }],
+    };
+    activeOperations.mockResolvedValue(new app.OperationListResponse({
+        operations: [running],
+    }));
+    operationSnapshot.mockResolvedValue(new app.OperationResponse({
+        operation: {
+            ...running,
+            status: 'succeeded',
+            completedItems: 1,
+            items: [{
+                ...running.items[0],
+                status: 'succeeded',
+                outcomeCode: 'imported',
+                outcomeMessage: 'Story imported.',
+                completedBytes: 1024,
+            }],
+        },
+    }));
+
+    render(<App/>);
+
+    expect(await screen.findByRole('heading', {name: '1 story imported'}))
+        .toBeInTheDocument();
+    expect(activeOperations).toHaveBeenCalledTimes(1);
+    expect(operationSnapshot)
+        .toHaveBeenCalledWith('00112233-4455-4677-8899-aabbccddeeff');
 });
 
 test('cancels story removal without changing the collection', async () => {

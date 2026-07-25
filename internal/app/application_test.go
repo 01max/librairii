@@ -87,6 +87,7 @@ type fakeOperations struct {
 	closed     bool
 	startPaths []string
 	snapshot   operations.Snapshot
+	active     []operations.Snapshot
 	page       library.Page
 	detail     library.StoryDetail
 	removed    removal.Result
@@ -118,6 +119,10 @@ func (o *fakeOperations) Snapshot(
 	string,
 ) (operations.Snapshot, error) {
 	return o.snapshot, o.err
+}
+
+func (o *fakeOperations) Active(context.Context) ([]operations.Snapshot, error) {
+	return append([]operations.Snapshot(nil), o.active...), o.err
 }
 
 func (o *fakeOperations) Close() error {
@@ -346,6 +351,37 @@ func TestImportFacadeTreatsEmptySelectionAsCancellation(t *testing.T) {
 	}
 	if operationPort.startPaths != nil {
 		t.Fatalf("operation unexpectedly started with %#v", operationPort.startPaths)
+	}
+}
+
+func TestOperationFacadeReturnsActiveSnapshots(t *testing.T) {
+	t.Parallel()
+
+	operationPort := &fakeOperations{
+		active: []operations.Snapshot{{
+			ID:     "00112233-4455-4677-8899-aabbccddeeff",
+			Kind:   operations.KindImport,
+			Status: operations.StatusRunning,
+		}},
+	}
+	application, err := New(Dependencies{
+		Clock:      fixedClock{now: time.Now()},
+		Dialogs:    fakeDialogs{},
+		Events:     &fakeEvents{},
+		Readiness:  fakeReadiness{report: ReadinessReport{MutationsAllowed: true}},
+		Operations: operationPort,
+		Library:    operationPort,
+		Removal:    operationPort,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	response := application.ActiveOperations(context.Background())
+	if response.Error != nil ||
+		len(response.Operations) != 1 ||
+		response.Operations[0].Status != operations.StatusRunning {
+		t.Fatalf("ActiveOperations() = %#v", response)
 	}
 }
 

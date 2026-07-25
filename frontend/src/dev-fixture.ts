@@ -116,6 +116,9 @@ export function installCollectionFixture() {
     const totalItems = fixture === 'empty' ? 0 : 48;
     const fixtureSnapshot = fixtureOperation(fixture);
     const fixtureApp = {
+        ActiveOperations: async () => ({
+            operations: fixtureSnapshot?.status === 'running' ? [fixtureSnapshot] : [],
+        }),
         ApplicationStatus: async () => ({
             status: {state: 'ready', mutationsAllowed: true},
         }),

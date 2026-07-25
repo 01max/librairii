@@ -64,6 +64,10 @@ func (facadeOperations) Snapshot(
 	return operations.Snapshot{}, nil
 }
 
+func (facadeOperations) Active(context.Context) ([]operations.Snapshot, error) {
+	return nil, nil
+}
+
 func (facadeOperations) Close() error {
 	return nil
 }

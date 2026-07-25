@@ -3,6 +3,8 @@
 import {app} from '../models';
 import {library} from '../models';
 
+export function ActiveOperations():Promise<app.OperationListResponse>;
+
 export function ApplicationStatus():Promise<app.StatusResponse>;
 
 export function CancelOperation(arg1:string):Promise<app.OperationResponse>;

@@ -70,6 +70,10 @@ func (a *App) OperationSnapshot(operationID string) coreapp.OperationResponse {
 	return a.core.OperationSnapshot(a.runtimeContext(), operationID)
 }
 
+func (a *App) ActiveOperations() coreapp.OperationListResponse {
+	return a.core.ActiveOperations(a.runtimeContext())
+}
+
 func (a *App) ListStories(request library.ListRequest) coreapp.LibraryPageResponse {
 	return a.core.ListStories(a.runtimeContext(), request)
 }

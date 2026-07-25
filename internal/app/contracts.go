@@ -110,6 +110,7 @@ type OperationPort interface {
 	StartImport(context.Context, []string) (operations.Snapshot, error)
 	Cancel(context.Context, string) (operations.Snapshot, error)
 	Snapshot(context.Context, string) (operations.Snapshot, error)
+	Active(context.Context) ([]operations.Snapshot, error)
 	Close() error
 }
 
@@ -137,6 +138,11 @@ type OperationResponse struct {
 	Operation *operations.Snapshot `json:"operation,omitempty"`
 	Cancelled bool                 `json:"cancelled,omitempty"`
 	Error     *APIError            `json:"error,omitempty"`
+}
+
+type OperationListResponse struct {
+	Operations []operations.Snapshot `json:"operations"`
+	Error      *APIError             `json:"error,omitempty"`
 }
 
 type LibraryPageResponse struct {

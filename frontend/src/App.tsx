@@ -1,9 +1,18 @@
-import {type CSSProperties, useCallback, useEffect, useMemo, useState} from 'react';
+import {
+    type CSSProperties,
+    useCallback,
+    useEffect,
+    useMemo,
+    useRef,
+    useState,
+} from 'react';
 import './App.css';
 import {
+    ActiveOperations,
     ApplicationStatus,
     CancelOperation,
     ListStories,
+    OperationSnapshot,
     RemoveStory,
     SelectAndImportStories,
     StoryDetail as LoadStoryDetail,
@@ -80,6 +89,7 @@ function App() {
     const [removalError, setRemovalError] = useState<string | null>(null);
     const [removalNotice, setRemovalNotice] = useState<string | null>(null);
     const [expandingCollection, setExpandingCollection] = useState(false);
+    const refreshedOperations = useRef(new Set<string>());
 
     const loadCollection = useCallback(async () => {
         const result = await ListStories({
@@ -101,6 +111,21 @@ function App() {
         });
     }, []);
 
+    const reconcileOperation = useCallback((snapshot: operations.Snapshot) => {
+        setOperation((current) => (
+            current?.id === snapshot.id && operationIsTerminal(current)
+                ? current
+                : snapshot
+        ));
+        if (
+            operationIsTerminal(snapshot) &&
+            !refreshedOperations.current.has(snapshot.id)
+        ) {
+            refreshedOperations.current.add(snapshot.id);
+            void loadCollection();
+        }
+    }, [loadCollection]);
+
     useEffect(() => {
         let active = true;
         void (async () => {
@@ -113,6 +138,15 @@ function App() {
                 setApplicationState(state);
                 if (state === 'ready') {
                     await loadCollection();
+                    const operationsResponse = await ActiveOperations();
+                    if (!active) {
+                        return;
+                    }
+                    if (operationsResponse.error) {
+                        setRequestError(operationsResponse.error.message);
+                    } else if (operationsResponse.operations.length > 0) {
+                        reconcileOperation(operationsResponse.operations[0]);
+                    }
                 }
             } catch {
                 if (active) {
@@ -124,18 +158,52 @@ function App() {
         return () => {
             active = false;
         };
-    }, [loadCollection]);
+    }, [loadCollection, reconcileOperation]);
 
     useEffect(() => {
         const unsubscribe = EventsOn('operation:changed', (value: unknown) => {
-            const snapshot = new operations.Snapshot(value);
-            setOperation(snapshot);
-            if (operationIsTerminal(snapshot)) {
-                void loadCollection();
-            }
+            reconcileOperation(new operations.Snapshot(value));
         });
         return unsubscribe;
-    }, [loadCollection]);
+    }, [reconcileOperation]);
+
+    const activeOperationID = operationIsActive(operation) ? operation?.id : null;
+    useEffect(() => {
+        if (!activeOperationID) {
+            return;
+        }
+        let active = true;
+        let requestInFlight = false;
+        const reconcile = async () => {
+            if (requestInFlight) {
+                return;
+            }
+            requestInFlight = true;
+            try {
+                const response = await OperationSnapshot(activeOperationID);
+                if (!active) {
+                    return;
+                }
+                if (response.error) {
+                    setRequestError(response.error.message);
+                } else if (response.operation) {
+                    reconcileOperation(response.operation);
+                }
+            } catch {
+                if (active) {
+                    setRequestError('Import progress could not be refreshed.');
+                }
+            } finally {
+                requestInFlight = false;
+            }
+        };
+        void reconcile();
+        const timer = window.setInterval(() => void reconcile(), 1_000);
+        return () => {
+            active = false;
+            window.clearInterval(timer);
+        };
+    }, [activeOperationID, reconcileOperation]);
 
     async function startImport() {
         setRequestError(null);
@@ -145,12 +213,7 @@ function App() {
             return;
         }
         if (response.operation) {
-            const snapshot = response.operation;
-            setOperation((current) => (
-                current?.id === snapshot.id && operationIsTerminal(current)
-                    ? current
-                    : snapshot
-            ));
+            reconcileOperation(response.operation);
         }
     }
 
@@ -162,7 +225,7 @@ function App() {
         if (response.error) {
             setRequestError(response.error.message);
         } else if (response.operation) {
-            setOperation(response.operation);
+            reconcileOperation(response.operation);
         }
     }
 

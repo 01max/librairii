@@ -189,6 +189,14 @@ func (a *Application) OperationSnapshot(
 	return OperationResponse{Operation: &snapshot}
 }
 
+func (a *Application) ActiveOperations(ctx context.Context) OperationListResponse {
+	snapshots, err := a.operations.Active(ctx)
+	if err != nil {
+		return OperationListResponse{Error: operationAPIError(err)}
+	}
+	return OperationListResponse{Operations: snapshots}
+}
+
 func (a *Application) AnnounceReady(ctx context.Context) {
 	status := a.Status()
 	if status.State == StateReady {
