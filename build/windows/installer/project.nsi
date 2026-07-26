@@ -34,6 +34,77 @@ Unicode true
 ####
 !include "wails_tools.nsh"
 
+!macro librairii.checkArchitecture
+    !ifndef LIBRAIRII_WIN10_REQUIRED
+        !define LIBRAIRII_WIN10_REQUIRED "This product is only supported on Windows 10 (Server 2016) and later."
+    !endif
+
+    !ifndef LIBRAIRII_ARCHITECTURE_NOT_SUPPORTED
+        !define LIBRAIRII_ARCHITECTURE_NOT_SUPPORTED "This product can't be installed on the current Windows architecture. Supports: ${ARCH}"
+    !endif
+
+    ${If} ${AtLeastWin10}
+        !ifdef SUPPORTS_AMD64
+            ${If} ${IsNativeAMD64}
+                Goto librairii_architecture_ok
+            ${EndIf}
+            ${If} ${IsNativeARM64}
+                ${If} ${AtLeastWin11}
+                    Goto librairii_architecture_ok
+                ${EndIf}
+            ${EndIf}
+        !endif
+
+        !ifdef SUPPORTS_ARM64
+            ${If} ${IsNativeARM64}
+                Goto librairii_architecture_ok
+            ${EndIf}
+        !endif
+
+        IfSilent librairii_silent_arch librairii_visible_arch
+        librairii_silent_arch:
+            SetErrorLevel 65
+            Abort
+        librairii_visible_arch:
+            MessageBox MB_OK "${LIBRAIRII_ARCHITECTURE_NOT_SUPPORTED}"
+            Quit
+    ${Else}
+        IfSilent librairii_silent_windows librairii_visible_windows
+        librairii_silent_windows:
+            SetErrorLevel 64
+            Abort
+        librairii_visible_windows:
+            MessageBox MB_OK "${LIBRAIRII_WIN10_REQUIRED}"
+            Quit
+    ${EndIf}
+
+    librairii_architecture_ok:
+!macroend
+
+!macro librairii.files
+    !ifdef SUPPORTS_ARM64
+        ${If} ${IsNativeARM64}
+            File "/oname=${PRODUCT_EXECUTABLE}" "${ARG_WAILS_ARM64_BINARY}"
+            Goto librairii_files_done
+        ${EndIf}
+    !endif
+
+    !ifdef SUPPORTS_AMD64
+        ${If} ${IsNativeAMD64}
+            File "/oname=${PRODUCT_EXECUTABLE}" "${ARG_WAILS_AMD64_BINARY}"
+            Goto librairii_files_done
+        ${EndIf}
+        ${If} ${IsNativeARM64}
+            ${If} ${AtLeastWin11}
+                File "/oname=${PRODUCT_EXECUTABLE}" "${ARG_WAILS_AMD64_BINARY}"
+                Goto librairii_files_done
+            ${EndIf}
+        ${EndIf}
+    !endif
+
+    librairii_files_done:
+!macroend
+
 # The version information for this two must consist of 4 parts
 VIProductVersion "${INFO_PRODUCTVERSION}.0"
 VIFileVersion    "${INFO_PRODUCTVERSION}.0"
@@ -84,7 +155,7 @@ OutFile "..\..\bin\${INFO_PROJECTNAME}-${ARCH}-installer.exe" # Name of the inst
 ShowInstDetails show # This will always show the installation details.
 
 Function .onInit
-   !insertmacro wails.checkArchitecture
+   !insertmacro librairii.checkArchitecture
 FunctionEnd
 
 Section
@@ -94,7 +165,7 @@ Section
 
     SetOutPath $INSTDIR
 
-    !insertmacro wails.files
+    !insertmacro librairii.files
 
     CreateShortcut "$SMPROGRAMS\${INFO_PRODUCTNAME}.lnk" "$INSTDIR\${PRODUCT_EXECUTABLE}"
     CreateShortCut "$DESKTOP\${INFO_PRODUCTNAME}.lnk" "$INSTDIR\${PRODUCT_EXECUTABLE}"

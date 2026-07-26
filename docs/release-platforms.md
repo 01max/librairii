@@ -42,9 +42,14 @@ gone while the SQLite library remains. Its packaged executable is verified as
 an amd64 PE image using the Windows GUI subsystem, so it does not open an extra
 console window. The Windows 11 arm64 host runs that exact amd64 executable
 through Windows x64 emulation; the workflow does not produce or qualify a
-Windows arm64 artifact. The Linux archive contains the Wails executable and
-expects the distribution to provide GTK 3 and WebKitGTK 4.1. It is
-intentionally not a generic package for every Linux ABI.
+Windows arm64 artifact. The checked-in NSIS project replaces Wails 2.13's
+native-only architecture and payload macros because those macros reject an
+amd64-only installer on every arm64 host. The replacement still rejects
+Windows 10 on Arm, which cannot emulate x64 applications, and admits the amd64
+payload on arm64 only when NSIS confirms Windows 11 or later. The Linux archive
+contains the Wails executable and expects the distribution to provide GTK 3
+and WebKitGTK 4.1. It is intentionally not a generic package for every Linux
+ABI.
 
 The Linux gate runs the packaged scenario in one isolated D-Bus/Xvfb desktop
 session. It registers a verification-only `inode/directory` handler that

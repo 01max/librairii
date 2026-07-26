@@ -366,3 +366,38 @@ func TestWindowsReleaseProvisionsWebView2BeforePackagedAcceptance(t *testing.T) 
 		}
 	}
 }
+
+func TestWindowsInstallerSupportsAMD64EmulationOnWindows11ARM64(t *testing.T) {
+	t.Parallel()
+
+	body, err := os.ReadFile("build/windows/installer/project.nsi")
+	if err != nil {
+		t.Fatal(err)
+	}
+	installer := string(body)
+	for _, expected := range []string{
+		"!macro librairii.checkArchitecture",
+		"!macro librairii.files",
+		"${If} ${IsNativeAMD64}",
+		"${If} ${IsNativeARM64}",
+		"${If} ${AtLeastWin11}",
+		`File "/oname=${PRODUCT_EXECUTABLE}" "${ARG_WAILS_AMD64_BINARY}"`,
+		"!insertmacro librairii.checkArchitecture",
+		"!insertmacro librairii.files",
+	} {
+		if !strings.Contains(installer, expected) {
+			t.Errorf("Windows installer emulation override is missing %q", expected)
+		}
+	}
+	for _, nativeOnlyMacro := range []string{
+		"!insertmacro wails.checkArchitecture",
+		"!insertmacro wails.files",
+	} {
+		if strings.Contains(installer, nativeOnlyMacro) {
+			t.Errorf(
+				"Windows installer still invokes Wails native-only macro %q",
+				nativeOnlyMacro,
+			)
+		}
+	}
+}
