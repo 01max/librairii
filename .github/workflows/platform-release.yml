@@ -15,8 +15,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  windows-amd64:
-    name: Windows amd64 release evidence
+  windows-amd64-candidate:
+    name: Windows amd64 candidate artifact evidence
     runs-on: windows-11-arm
     timeout-minutes: 45
 
@@ -50,18 +50,14 @@ jobs:
           go mod download
           npm --prefix frontend ci
 
-      - name: Ensure WebView2 Runtime
+      - name: Verify Windows candidate artifact
         shell: pwsh
-        run: ./scripts/ensure-webview2-runtime.ps1
+        run: ./scripts/verify-platform-windows.ps1 -ArtifactOnly
 
-      - name: Verify Windows release
-        shell: pwsh
-        run: ./scripts/verify-platform-windows.ps1
-
-      - name: Upload qualified Windows installer
+      - name: Upload unqualified Windows candidate installer
         uses: actions/upload-artifact@v4
         with:
-          name: Librairii-windows-amd64
+          name: Librairii-windows-amd64-candidate
           path: |
             build/bin/Librairii-amd64-installer.exe
             build/bin/Librairii-amd64-installer.exe.sha256

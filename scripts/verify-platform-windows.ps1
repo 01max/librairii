@@ -1,3 +1,7 @@
+param(
+    [switch]$ArtifactOnly
+)
+
 $ErrorActionPreference = "Stop"
 Set-StrictMode -Version Latest
 
@@ -49,7 +53,6 @@ if ($LASTEXITCODE -ne 0) {
     -m `
     -nocolour `
     -platform windows/amd64 `
-    -tags native_webview2loader `
     -webview2 error `
     -nsis `
     -installscope user `
@@ -220,7 +223,7 @@ try {
     ).Hash
     $LooseHash = (Get-FileHash -LiteralPath $Binary -Algorithm SHA256).Hash
     if ($InstalledHash -ne $LooseHash) {
-        throw "Installed Windows executable differs from the qualified build"
+        throw "Installed Windows executable differs from the candidate build"
     }
 
     $ShortcutShell = New-Object -ComObject WScript.Shell
@@ -243,102 +246,116 @@ try {
         throw "Windows per-user uninstall registration is incorrect"
     }
 
-    $env:LIBRAIRII_DATA_ROOT = $DataRoot
-    $env:LIBRAIRII_PACKAGED_ACCEPTANCE = "1"
-    $env:LIBRAIRII_ACCEPTANCE_SOURCE = $AcceptanceSource
-    $env:LIBRAIRII_ACCEPTANCE_DESTINATION = $ExportDestination
-    $env:LIBRAIRII_ACCEPTANCE_CHECKPOINTS = $AcceptanceCheckpoints
-    $env:LIBRAIRII_ACCEPTANCE_LOG = "1"
-    Invoke-PackagedApplication $InstalledBinary
+    $env:GOOS = "windows"
+    $env:GOARCH = "amd64"
 
-    $ExpectedCheckpoints = @(
-        "scenario_started",
-        "native_import_dialog_selected",
-        "import_queued",
-        "import_succeeded",
-        "collection_loaded",
-        "native_destination_dialog_selected",
-        "export_prepared",
-        "export_queued",
-        "export_succeeded",
-        "native_reveal_succeeded",
-        "reveal_succeeded",
-        "complete"
-    )
-    $ActualCheckpoints = @(Get-Content -LiteralPath $AcceptanceCheckpoints)
-    if (
-        $ActualCheckpoints.Count -ne $ExpectedCheckpoints.Count -or
-        (Compare-Object `
-            -ReferenceObject $ExpectedCheckpoints `
-            -DifferenceObject $ActualCheckpoints `
-            -SyncWindow 0)
-    ) {
-        throw "Packaged Windows bindings did not complete the acceptance scenario"
-    }
-    foreach ($State in @(
-        "import:queued",
-        "import:running",
-        "import:succeeded",
-        "export:queued",
-        "export:running",
-        "export:succeeded"
-    )) {
-        if (-not (
-            Select-String `
-                -LiteralPath $EventLog `
-                -SimpleMatch `
-                -Quiet `
-                -Pattern "`"state`":`"$State`""
-        )) {
-            throw "Packaged Windows progress log is missing $State"
-        }
-    }
-    if (@(
-        Get-ChildItem -LiteralPath $ExportDestination -File -Recurse
-    ).Count -ne 1) {
-        throw "Packaged Windows export did not publish exactly one archive"
-    }
+    if ($ArtifactOnly) {
+        Invoke-Go run ./cmd/release-smoke -root $DataRoot
+        Invoke-Go run ./cmd/foundation-smoke `
+            -root $DataRoot `
+            -expect-stories 1 `
+            -expect-shelves 3
+    } else {
+        & (Join-Path $PSScriptRoot "ensure-webview2-runtime.ps1")
 
-    Invoke-Go run ./cmd/foundation-smoke `
-        -root $DataRoot `
-        -expect-stories 1 `
-        -expect-shelves 0
-
-    Remove-Item Env:LIBRAIRII_PACKAGED_ACCEPTANCE
-    Remove-Item Env:LIBRAIRII_ACCEPTANCE_SOURCE
-    Remove-Item Env:LIBRAIRII_ACCEPTANCE_DESTINATION
-    Remove-Item Env:LIBRAIRII_ACCEPTANCE_CHECKPOINTS
-    Remove-Item Env:LIBRAIRII_ACCEPTANCE_LOG
-
-    Invoke-Go run ./cmd/release-smoke -root $HeadlessRoot
-    Invoke-Go run ./cmd/foundation-smoke `
-        -root $HeadlessRoot `
-        -expect-stories 1 `
-        -expect-shelves 3
-
-    $env:LIBRAIRII_SMOKE_EXIT = "1"
-    $env:LIBRAIRII_SMOKE_HOLD_MS = "1200"
-
-    foreach ($LaunchNumber in 1..2) {
-        $StartedBefore = Get-EventCount "runtime_started"
-        $StoppedBefore = Get-EventCount "runtime_stopped"
+        $env:LIBRAIRII_DATA_ROOT = $DataRoot
+        $env:LIBRAIRII_PACKAGED_ACCEPTANCE = "1"
+        $env:LIBRAIRII_ACCEPTANCE_SOURCE = $AcceptanceSource
+        $env:LIBRAIRII_ACCEPTANCE_DESTINATION = $ExportDestination
+        $env:LIBRAIRII_ACCEPTANCE_CHECKPOINTS = $AcceptanceCheckpoints
+        $env:LIBRAIRII_ACCEPTANCE_LOG = "1"
         Invoke-PackagedApplication $InstalledBinary
+
+        $ExpectedCheckpoints = @(
+            "scenario_started",
+            "native_import_dialog_selected",
+            "import_queued",
+            "import_succeeded",
+            "collection_loaded",
+            "native_destination_dialog_selected",
+            "export_prepared",
+            "export_queued",
+            "export_succeeded",
+            "native_reveal_succeeded",
+            "reveal_succeeded",
+            "complete"
+        )
+        $ActualCheckpoints = @(Get-Content -LiteralPath $AcceptanceCheckpoints)
         if (
-            (Get-EventCount "runtime_started") -ne ($StartedBefore + 1) -or
-            (Get-EventCount "runtime_stopped") -ne ($StoppedBefore + 1)
+            $ActualCheckpoints.Count -ne $ExpectedCheckpoints.Count -or
+            (Compare-Object `
+                -ReferenceObject $ExpectedCheckpoints `
+                -DifferenceObject $ActualCheckpoints `
+                -SyncWindow 0)
         ) {
-            throw "Packaged Windows lifecycle did not start and stop cleanly"
+            throw "Packaged Windows bindings did not complete the acceptance scenario"
         }
-        $LastEvent = Get-Content -LiteralPath $EventLog | Select-Object -Last 1
-        if ($LastEvent -notmatch '"event":"runtime_stopped","state":"stopped"') {
-            throw "Packaged Windows lifecycle did not end in a clean shutdown"
+        foreach ($State in @(
+            "import:queued",
+            "import:running",
+            "import:succeeded",
+            "export:queued",
+            "export:running",
+            "export:succeeded"
+        )) {
+            if (-not (
+                Select-String `
+                    -LiteralPath $EventLog `
+                    -SimpleMatch `
+                    -Quiet `
+                    -Pattern "`"state`":`"$State`""
+            )) {
+                throw "Packaged Windows progress log is missing $State"
+            }
         }
+        if (@(
+            Get-ChildItem -LiteralPath $ExportDestination -File -Recurse
+        ).Count -ne 1) {
+            throw "Packaged Windows export did not publish exactly one archive"
+        }
+
+        Invoke-Go run ./cmd/foundation-smoke `
+            -root $DataRoot `
+            -expect-stories 1 `
+            -expect-shelves 0
+
+        Remove-Item Env:LIBRAIRII_PACKAGED_ACCEPTANCE
+        Remove-Item Env:LIBRAIRII_ACCEPTANCE_SOURCE
+        Remove-Item Env:LIBRAIRII_ACCEPTANCE_DESTINATION
+        Remove-Item Env:LIBRAIRII_ACCEPTANCE_CHECKPOINTS
+        Remove-Item Env:LIBRAIRII_ACCEPTANCE_LOG
+
+        Invoke-Go run ./cmd/release-smoke -root $HeadlessRoot
+        Invoke-Go run ./cmd/foundation-smoke `
+            -root $HeadlessRoot `
+            -expect-stories 1 `
+            -expect-shelves 3
+
+        $env:LIBRAIRII_SMOKE_EXIT = "1"
+        $env:LIBRAIRII_SMOKE_HOLD_MS = "1200"
+
+        foreach ($LaunchNumber in 1..2) {
+            $StartedBefore = Get-EventCount "runtime_started"
+            $StoppedBefore = Get-EventCount "runtime_stopped"
+            Invoke-PackagedApplication $InstalledBinary
+            if (
+                (Get-EventCount "runtime_started") -ne ($StartedBefore + 1) -or
+                (Get-EventCount "runtime_stopped") -ne ($StoppedBefore + 1)
+            ) {
+                throw "Packaged Windows lifecycle did not start and stop cleanly"
+            }
+            $LastEvent = Get-Content -LiteralPath $EventLog | Select-Object -Last 1
+            if ($LastEvent -notmatch '"event":"runtime_stopped","state":"stopped"') {
+                throw "Packaged Windows lifecycle did not end in a clean shutdown"
+            }
+        }
+
+        Invoke-Go run ./cmd/foundation-smoke `
+            -root $DataRoot `
+            -expect-stories 1 `
+            -expect-shelves 0
     }
 
-    Invoke-Go run ./cmd/foundation-smoke `
-        -root $DataRoot `
-        -expect-stories 1 `
-        -expect-shelves 0
     Invoke-Go test . -count=1
     Invoke-Go test ./internal/platform `
         -run "^(TestProductionRuntimeDialogsUseHostNativeAdapters|TestRuntimeDialogsUseNativeMultiFilePicker|TestRuntimeDialogsSupportSingleFileAndDirectory|TestRuntimeDialogsRevealOnlyValidatedDirectory|TestDestinationRevealerUsesPlatformFileManager)$" `
@@ -382,7 +399,9 @@ try {
         "LIBRAIRII_ACCEPTANCE_CHECKPOINTS",
         "LIBRAIRII_ACCEPTANCE_LOG",
         "LIBRAIRII_SMOKE_EXIT",
-        "LIBRAIRII_SMOKE_HOLD_MS"
+        "LIBRAIRII_SMOKE_HOLD_MS",
+        "GOOS",
+        "GOARCH"
     )) {
         Remove-Item "Env:$AcceptanceVariable" -ErrorAction SilentlyContinue
     }
@@ -426,6 +445,13 @@ if (
     throw "Windows installer checksum verification failed"
 }
 
-Write-Host `
-    "Windows platform acceptance passed: install, render, SQLite, host-native dialogs, uninstall"
+if ($ArtifactOnly) {
+    Write-Host `
+        "Windows candidate artifact passed: build, install, SQLite smoke, uninstall"
+    Write-Warning `
+        "Packaged GUI qualification was not run; use this command without -ArtifactOnly on an interactive Windows host"
+} else {
+    Write-Host `
+        "Windows platform acceptance passed: install, render, SQLite, host-native dialogs, uninstall"
+}
 Write-Host "Windows installer: $Installer"

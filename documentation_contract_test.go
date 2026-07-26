@@ -57,14 +57,17 @@ func TestReleaseMatrixHasIndependentPlatformTasks(t *testing.T) {
 	required := []string{
 		"Windows x64",
 		"make verify-platform-windows",
+		"make verify-platform-windows-hosted",
 		"scripts/verify-platform-windows.ps1",
+		"Unqualified:",
+		"Librairii-windows-amd64-candidate",
 		"Linux x64 with WebKitGTK 4.1",
 		"make verify-platform-linux",
 		"scripts/verify-platform-linux",
 		"launch the actual packaged",
 		"create and reopen SQLite",
-		"host-native dialog and reveal acceptance",
-		"complete headless\nstory-library smoke",
+		"host-native dialog",
+		"complete headless story-library smoke",
 		".github/workflows/platform-release.yml",
 	}
 	for _, fragment := range required {
@@ -81,6 +84,9 @@ func TestReleaseMatrixHasIndependentPlatformTasks(t *testing.T) {
 			"pcmanfm",
 			"procps",
 			"scripts/verify-platform-windows.ps1",
+			"-ArtifactOnly",
+			"Upload unqualified Windows candidate installer",
+			"Librairii-windows-amd64-candidate",
 			"scripts/verify-platform-linux",
 		},
 		"scripts/verify-platform-windows.ps1": {
@@ -198,6 +204,7 @@ func TestBuildEntrypointsGenerateFrontendBeforeGoConsumesEmbed(t *testing.T) {
 		"build-current-installer: build-frontend",
 		"verify-platform-linux: build-frontend",
 		"verify-platform-windows: build-frontend",
+		"verify-platform-windows-hosted: build-frontend",
 	} {
 		if !strings.Contains(string(makefile), target) {
 			t.Errorf("Makefile does not declare %q", target)
@@ -306,7 +313,7 @@ func TestFrontendPerformanceGatesProductCoupledMetricsOnly(t *testing.T) {
 	}
 }
 
-func TestWindowsReleaseProvisionsWebView2BeforePackagedAcceptance(t *testing.T) {
+func TestWindowsHostedWorkflowCannotClaimPackagedQualification(t *testing.T) {
 	t.Parallel()
 
 	workflowBody, err := os.ReadFile(".github/workflows/platform-release.yml")
@@ -315,24 +322,23 @@ func TestWindowsReleaseProvisionsWebView2BeforePackagedAcceptance(t *testing.T) 
 	}
 	workflow := string(workflowBody)
 	if !strings.Contains(workflow, "runs-on: windows-11-arm") {
-		t.Fatal("Windows packaged acceptance does not use the desktop runner")
+		t.Fatal("Windows candidate artifact does not use the Windows runner")
 	}
-	preflight := strings.Index(
+	hostedVerification := strings.Index(
 		workflow,
+		"run: ./scripts/verify-platform-windows.ps1 -ArtifactOnly",
+	)
+	if hostedVerification < 0 {
+		t.Fatal("Windows workflow does not use artifact-only verification")
+	}
+	for _, forbidden := range []string{
+		"Upload qualified Windows installer",
+		"name: Librairii-windows-amd64\n",
 		"run: ./scripts/ensure-webview2-runtime.ps1",
-	)
-	acceptance := strings.Index(
-		workflow,
-		"run: ./scripts/verify-platform-windows.ps1",
-	)
-	if preflight < 0 {
-		t.Fatal("Windows release workflow does not run the WebView2 preflight")
-	}
-	if acceptance < 0 {
-		t.Fatal("Windows release workflow does not run packaged acceptance")
-	}
-	if preflight > acceptance {
-		t.Fatal("Windows release workflow provisions WebView2 after acceptance")
+	} {
+		if strings.Contains(workflow, forbidden) {
+			t.Errorf("Windows hosted workflow claims qualification with %q", forbidden)
+		}
 	}
 
 	verifierBody, err := os.ReadFile("scripts/verify-platform-windows.ps1")
@@ -342,13 +348,20 @@ func TestWindowsReleaseProvisionsWebView2BeforePackagedAcceptance(t *testing.T) 
 	verifier := string(verifierBody)
 	for _, expected := range []string{
 		`$HostArch -notin @("amd64", "arm64")`,
+		"[switch]$ArtifactOnly",
 		"-platform windows/amd64",
-		"-tags native_webview2loader",
+		`$env:GOARCH = "amd64"`,
+		`Join-Path $PSScriptRoot "ensure-webview2-runtime.ps1"`,
+		"Invoke-PackagedApplication $InstalledBinary",
+		"Packaged GUI qualification was not run",
 		"0x8664",
 	} {
 		if !strings.Contains(verifier, expected) {
 			t.Errorf("Windows amd64 verifier is missing %q", expected)
 		}
+	}
+	if strings.Contains(verifier, "native_webview2loader") {
+		t.Error("Windows verifier still ships the failed legacy WebView2 loader")
 	}
 
 	preflightBody, err := os.ReadFile("scripts/ensure-webview2-runtime.ps1")
