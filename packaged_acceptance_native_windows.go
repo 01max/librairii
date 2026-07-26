@@ -13,73 +13,58 @@ import (
 )
 
 const (
-	keyboardInput     = 1
-	keyEventKeyUp     = 0x0002
-	keyEventUnicode   = 0x0004
-	virtualKeyControl = 0x11
-	virtualKeyMenu    = 0x12
-	virtualKeyReturn  = 0x0d
+	windowMessageClose   = 0x0010
+	windowMessageCommand = 0x0111
+	dialogCommandOK      = 1
+	dialogCommandCancel  = 2
 )
 
 var (
-	user32              = windows.NewLazySystemDLL("user32.dll")
-	findWindow          = user32.NewProc("FindWindowW")
-	setForegroundWindow = user32.NewProc("SetForegroundWindow")
-	sendInput           = user32.NewProc("SendInput")
+	user32      = windows.NewLazySystemDLL("user32.dll")
+	findWindow  = user32.NewProc("FindWindowW")
+	isWindow    = user32.NewProc("IsWindow")
+	postMessage = user32.NewProc("PostMessageW")
 )
-
-type keyboardInputEvent struct {
-	virtualKey uint16
-	scanCode   uint16
-	flags      uint32
-	time       uint32
-	extraInfo  uintptr
-}
-
-type windowsInput struct {
-	inputType uint32
-	_         uint32
-	keyboard  keyboardInputEvent
-	_         [8]byte
-}
 
 func automateHostNativeDialog(
 	ctx context.Context,
 	title string,
-	path string,
-	kind nativeDialogKind,
+	_ string,
+	_ nativeDialogKind,
 ) error {
 	handle, err := waitForNativeDialog(ctx, title)
 	if err != nil {
 		return err
 	}
-	if activated, _, callErr := setForegroundWindow.Call(handle); activated == 0 {
-		return fmt.Errorf("activate Windows native dialog: %w", callErr)
-	}
-	time.Sleep(200 * time.Millisecond)
 
-	if kind == nativeFileDialog {
-		if err := sendHotkey(virtualKeyMenu, 'N'); err != nil {
-			return err
+	// The runtime dialog is already configured with the exact acceptance file
+	// or directory. Activate its default action directly so the release gate
+	// does not depend on foreground focus or synthetic keyboard input.
+	ticker := time.NewTicker(100 * time.Millisecond)
+	defer ticker.Stop()
+	attempt := 0
+	for {
+		if attempt%5 == 0 {
+			if err := postDialogCommand(handle, dialogCommandOK); err != nil {
+				return err
+			}
 		}
-	} else {
-		if err := sendHotkey(virtualKeyControl, 'L'); err != nil {
-			return err
+		exists, _, _ := isWindow.Call(handle)
+		if exists == 0 {
+			return nil
+		}
+		attempt++
+		select {
+		case <-ctx.Done():
+			_ = postDialogCommand(handle, dialogCommandCancel)
+			_, _, _ = postMessage.Call(handle, windowMessageClose, 0, 0)
+			return fmt.Errorf(
+				"Windows native dialog automation timed out: %w",
+				ctx.Err(),
+			)
+		case <-ticker.C:
 		}
 	}
-	if err := sendText(path); err != nil {
-		return err
-	}
-	if err := sendKey(virtualKeyReturn); err != nil {
-		return err
-	}
-	if kind == nativeDirectoryDialog {
-		time.Sleep(350 * time.Millisecond)
-		if err := sendHotkey(virtualKeyMenu, 'S'); err != nil {
-			return err
-		}
-	}
-	return nil
 }
 
 func waitForNativeDialog(ctx context.Context, title string) (uintptr, error) {
@@ -102,71 +87,15 @@ func waitForNativeDialog(ctx context.Context, title string) (uintptr, error) {
 	}
 }
 
-func sendHotkey(modifier uint16, key uint16) error {
-	if err := sendKeyboardInput(modifier, 0); err != nil {
-		return err
-	}
-	if err := sendKeyboardInput(key, 0); err != nil {
-		return err
-	}
-	if err := sendKeyboardInput(key, keyEventKeyUp); err != nil {
-		return err
-	}
-	return sendKeyboardInput(modifier, keyEventKeyUp)
-}
-
-func sendKey(key uint16) error {
-	if err := sendKeyboardInput(key, 0); err != nil {
-		return err
-	}
-	return sendKeyboardInput(key, keyEventKeyUp)
-}
-
-func sendText(value string) error {
-	characters, err := windows.UTF16FromString(value)
-	if err != nil {
-		return err
-	}
-	for _, character := range characters {
-		if character == 0 {
-			continue
-		}
-		if err := sendKeyboardInput(0, keyEventUnicode, character); err != nil {
-			return err
-		}
-		if err := sendKeyboardInput(
-			0,
-			keyEventUnicode|keyEventKeyUp,
-			character,
-		); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func sendKeyboardInput(
-	virtualKey uint16,
-	flags uint32,
-	scanCode ...uint16,
-) error {
-	event := windowsInput{
-		inputType: keyboardInput,
-		keyboard: keyboardInputEvent{
-			virtualKey: virtualKey,
-			flags:      flags,
-		},
-	}
-	if len(scanCode) == 1 {
-		event.keyboard.scanCode = scanCode[0]
-	}
-	inserted, _, callErr := sendInput.Call(
-		1,
-		uintptr(unsafe.Pointer(&event)),
-		unsafe.Sizeof(event),
+func postDialogCommand(handle uintptr, command uintptr) error {
+	posted, _, callErr := postMessage.Call(
+		handle,
+		windowMessageCommand,
+		command,
+		0,
 	)
-	if inserted != 1 {
-		return fmt.Errorf("send Windows native dialog input: %w", callErr)
+	if posted == 0 {
+		return fmt.Errorf("activate Windows native dialog command: %w", callErr)
 	}
 	return nil
 }

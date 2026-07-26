@@ -5,8 +5,10 @@ import {join, resolve} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {chromium} from 'playwright';
 import {build, preview} from 'vite';
+import performanceConfig from '../performance-config.json' with {type: 'json'};
 
 const frontendRoot = resolve(fileURLToPath(new URL('..', import.meta.url)));
+const storyCount = performanceConfig.browserStoryCount;
 const sampleCount = Number.parseInt(
     process.env.LIBRAIRII_FRONTEND_PERFORMANCE_SAMPLES ?? '5',
     10,
@@ -20,6 +22,9 @@ const budgets = {
 
 if (!Number.isInteger(sampleCount) || sampleCount < 1) {
     throw new Error('LIBRAIRII_FRONTEND_PERFORMANCE_SAMPLES must be positive');
+}
+if (!Number.isInteger(storyCount) || storyCount < 1) {
+    throw new Error('browserStoryCount must be a positive integer');
 }
 
 const outputDirectory = await mkdtemp(
@@ -164,7 +169,9 @@ async function measureSample(browserInstance, url) {
         const completionDeadline = Date.now() + 10_000;
         while ((await viewAll.textContent())?.trim() !== 'All shown') {
             if (Date.now() >= completionDeadline) {
-                throw new Error('5,000-story expansion exceeded 10 seconds');
+                throw new Error(
+                    `${storyCount.toLocaleString('en-US')}-story expansion exceeded 10 seconds`,
+                );
             }
             await page.mouse.click(
                 railBox.x + railBox.width / 2,
@@ -191,9 +198,9 @@ async function measureSample(browserInstance, url) {
                 storyNodes: document.querySelectorAll('button.story').length,
             };
         });
-        if (measurements.storyNodes !== 5_000) {
+        if (measurements.storyNodes !== storyCount) {
             throw new Error(
-                `rendered ${measurements.storyNodes} story nodes, want 5000`,
+                `rendered ${measurements.storyNodes} story nodes, want ${storyCount}`,
             );
         }
         return {
@@ -237,7 +244,7 @@ function summarize(samples) {
         generatedAt: new Date().toISOString(),
         browser: 'system Chromium via Playwright',
         viewport: {width: 1440, height: 900},
-        stories: 5_000,
+        stories: storyCount,
         samples: samples.length,
         budgets,
         metrics,

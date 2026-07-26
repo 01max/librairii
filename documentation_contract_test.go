@@ -1,9 +1,12 @@
 package main
 
 import (
+	"encoding/json"
 	"os"
 	"strings"
 	"testing"
+
+	"github.com/01max/librairii/internal/performancefixture"
 )
 
 func TestUserGuideCoversReleaseBehavior(t *testing.T) {
@@ -93,6 +96,9 @@ func TestReleaseMatrixHasIndependentPlatformTasks(t *testing.T) {
 			"native_import_dialog_selected",
 			"native_destination_dialog_selected",
 			"native_reveal_succeeded",
+			"Write-PackagedApplicationDiagnostics",
+			"Packaged acceptance checkpoints:",
+			"Recent packaged lifecycle events:",
 			"./cmd/foundation-smoke",
 			"./internal/platform",
 			"./cmd/release-smoke",
@@ -133,7 +139,9 @@ func TestReleaseMatrixHasIndependentPlatformTasks(t *testing.T) {
 		},
 		"packaged_acceptance_native_windows.go": {
 			"FindWindowW",
-			"SendInput",
+			"PostMessageW",
+			"windowMessageCommand",
+			"dialogCommandOK",
 		},
 		"scripts/run-linux-native-acceptance": {
 			"/proc/$file_manager_pid/comm",
@@ -237,5 +245,32 @@ func TestBuildEntrypointsGenerateFrontendBeforeGoConsumesEmbed(t *testing.T) {
 		if frontendIndex > goConsumerIndex {
 			t.Errorf("%s builds the frontend after Wails consumes the embed", entrypoint.path)
 		}
+	}
+}
+
+func TestPerformanceFixturesSeparateBrowserAndBackendScale(t *testing.T) {
+	t.Parallel()
+
+	body, err := os.ReadFile("frontend/performance-config.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var config struct {
+		BrowserStoryCount int `json:"browserStoryCount"`
+	}
+	if err := json.Unmarshal(body, &config); err != nil {
+		t.Fatal(err)
+	}
+	if config.BrowserStoryCount != 1_000 {
+		t.Fatalf(
+			"browser performance story count = %d, want 1000",
+			config.BrowserStoryCount,
+		)
+	}
+	if performancefixture.MinimumLargeLibraryStories < 5_000 {
+		t.Fatalf(
+			"backend performance story count = %d, want at least 5000",
+			performancefixture.MinimumLargeLibraryStories,
+		)
 	}
 }

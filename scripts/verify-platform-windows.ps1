@@ -130,6 +130,28 @@ function Get-EventCount {
     ).Count
 }
 
+function Write-PackagedApplicationDiagnostics {
+    param([string]$Reason)
+
+    Write-Warning $Reason
+    if (Test-Path -LiteralPath $AcceptanceCheckpoints -PathType Leaf) {
+        Write-Host "Packaged acceptance checkpoints:"
+        Get-Content -LiteralPath $AcceptanceCheckpoints |
+            Select-Object -Last 30 |
+            ForEach-Object { Write-Host "  $_" }
+    } else {
+        Write-Host "Packaged acceptance checkpoints: none recorded"
+    }
+    if (Test-Path -LiteralPath $EventLog -PathType Leaf) {
+        Write-Host "Recent packaged lifecycle events:"
+        Get-Content -LiteralPath $EventLog |
+            Select-Object -Last 30 |
+            ForEach-Object { Write-Host "  $_" }
+    } else {
+        Write-Host "Recent packaged lifecycle events: none recorded"
+    }
+}
+
 function Invoke-PackagedApplication {
     param(
         [string]$Path,
@@ -139,9 +161,13 @@ function Invoke-PackagedApplication {
     $Process = Start-Process -FilePath $Path -PassThru
     if (-not $Process.WaitForExit($TimeoutMilliseconds)) {
         Stop-Process -Id $Process.Id -Force
+        Write-PackagedApplicationDiagnostics `
+            "Packaged Windows application timed out after $TimeoutMilliseconds ms"
         throw "Packaged Windows application timed out"
     }
     if ($Process.ExitCode -ne 0) {
+        Write-PackagedApplicationDiagnostics `
+            "Packaged Windows application exited with $($Process.ExitCode)"
         throw "Packaged Windows application exited with $($Process.ExitCode)"
     }
 }
@@ -215,6 +241,7 @@ try {
     $env:LIBRAIRII_ACCEPTANCE_SOURCE = $AcceptanceSource
     $env:LIBRAIRII_ACCEPTANCE_DESTINATION = $ExportDestination
     $env:LIBRAIRII_ACCEPTANCE_CHECKPOINTS = $AcceptanceCheckpoints
+    $env:LIBRAIRII_ACCEPTANCE_LOG = "1"
     Invoke-PackagedApplication $InstalledBinary
 
     $ExpectedCheckpoints = @(
@@ -274,6 +301,7 @@ try {
     Remove-Item Env:LIBRAIRII_ACCEPTANCE_SOURCE
     Remove-Item Env:LIBRAIRII_ACCEPTANCE_DESTINATION
     Remove-Item Env:LIBRAIRII_ACCEPTANCE_CHECKPOINTS
+    Remove-Item Env:LIBRAIRII_ACCEPTANCE_LOG
 
     Invoke-Go run ./cmd/release-smoke -root $HeadlessRoot
     Invoke-Go run ./cmd/foundation-smoke `
@@ -345,6 +373,7 @@ try {
         "LIBRAIRII_ACCEPTANCE_SOURCE",
         "LIBRAIRII_ACCEPTANCE_DESTINATION",
         "LIBRAIRII_ACCEPTANCE_CHECKPOINTS",
+        "LIBRAIRII_ACCEPTANCE_LOG",
         "LIBRAIRII_SMOKE_EXIT",
         "LIBRAIRII_SMOKE_HOLD_MS"
     )) {

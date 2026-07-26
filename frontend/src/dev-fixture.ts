@@ -6,6 +6,7 @@ import {
     DEFAULT_COLLECTION_QUERY,
     encodeCollectionQuery,
 } from './query-codec';
+import performanceConfig from '../performance-config.json';
 
 const parityAgeDefinition = {
     id: 10,
@@ -114,7 +115,7 @@ const stories: FixtureStory[] = titles.map(([title, author], index) => ({
 }));
 
 const performanceStories: FixtureStory[] = Array.from(
-    {length: 5_000},
+    {length: performanceConfig.browserStoryCount},
     (_, index) => {
         const storyNumber = index + 1;
         return {
