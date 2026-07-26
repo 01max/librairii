@@ -6,8 +6,14 @@ Set-Location $ProjectRoot
 
 $HostOS = (& go env GOOS).Trim()
 $HostArch = (& go env GOARCH).Trim()
-if ($HostOS -ne "windows" -or $HostArch -ne "amd64") {
-    throw "Windows release verification requires windows/amd64, got $HostOS/$HostArch"
+if (
+    $HostOS -ne "windows" -or
+    $HostArch -notin @("amd64", "arm64")
+) {
+    throw (
+        "Windows amd64 release verification requires a Windows amd64 or " +
+        "arm64 host, got $HostOS/$HostArch"
+    )
 }
 
 $Version = (Get-Content VERSION -Raw).Trim()

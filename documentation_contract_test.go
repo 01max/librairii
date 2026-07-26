@@ -75,7 +75,7 @@ func TestReleaseMatrixHasIndependentPlatformTasks(t *testing.T) {
 
 	implementationFiles := map[string][]string{
 		".github/workflows/platform-release.yml": {
-			"runs-on: windows-2025",
+			"runs-on: windows-11-arm",
 			"runs-on: ubuntu-24.04",
 			"dbus-x11",
 			"pcmanfm",
@@ -314,6 +314,9 @@ func TestWindowsReleaseProvisionsWebView2BeforePackagedAcceptance(t *testing.T) 
 		t.Fatal(err)
 	}
 	workflow := string(workflowBody)
+	if !strings.Contains(workflow, "runs-on: windows-11-arm") {
+		t.Fatal("Windows packaged acceptance does not use the desktop runner")
+	}
 	preflight := strings.Index(
 		workflow,
 		"run: ./scripts/ensure-webview2-runtime.ps1",
@@ -332,18 +335,33 @@ func TestWindowsReleaseProvisionsWebView2BeforePackagedAcceptance(t *testing.T) 
 		t.Fatal("Windows release workflow provisions WebView2 after acceptance")
 	}
 
-	scriptBody, err := os.ReadFile("scripts/ensure-webview2-runtime.ps1")
+	verifierBody, err := os.ReadFile("scripts/verify-platform-windows.ps1")
 	if err != nil {
 		t.Fatal(err)
 	}
-	script := string(scriptBody)
+	verifier := string(verifierBody)
+	for _, expected := range []string{
+		`$HostArch -notin @("amd64", "arm64")`,
+		"-platform windows/amd64",
+		"0x8664",
+	} {
+		if !strings.Contains(verifier, expected) {
+			t.Errorf("Windows amd64 verifier is missing %q", expected)
+		}
+	}
+
+	preflightBody, err := os.ReadFile("scripts/ensure-webview2-runtime.ps1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	preflightScript := string(preflightBody)
 	for _, expected := range []string{
 		"{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}",
 		"https://go.microsoft.com/fwlink/p/?LinkId=2124703",
 		"Get-AuthenticodeSignature",
 		`@("/silent", "/install")`,
 	} {
-		if !strings.Contains(script, expected) {
+		if !strings.Contains(preflightScript, expected) {
 			t.Errorf("WebView2 preflight is missing %q", expected)
 		}
 	}

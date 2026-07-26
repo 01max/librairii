@@ -1,8 +1,9 @@
 # Release platform matrix
 
-Status date: 2026-07-25
+Status date: 2026-07-26
 
-Release evidence is host-native. A cross-compiled binary, a frontend-only test,
+Release evidence runs on the target operating system and invokes its
+host-native platform services. A cross-compiled binary, a frontend-only test,
 or a successful installer build does not by itself qualify a target. Every row
 must independently build its distribution artifact, launch the actual packaged
 executable twice, commit the embedded React render, create and reopen SQLite
@@ -18,7 +19,7 @@ import, destination, and reveal evidence before domain work may continue.
 | Priority | Distribution target | Verification host | Artifact | Command | Status |
 | --- | --- | --- | --- | --- | --- |
 | 0 | macOS 15, arm64 | macOS 15.7.7 arm64 | versioned DMG | `make verify-packaged-acceptance` | Passed on the current host |
-| 1 | Windows x64 | GitHub-hosted Windows Server 2025 x64 with provisioned WebView2 | per-user NSIS installer | `make verify-platform-windows` | Defined as a host-native CI gate |
+| 1 | Windows x64 | GitHub-hosted Windows 11 Desktop arm64 running the x64 artifact through Windows emulation | per-user NSIS installer | `make verify-platform-windows` | Defined as a packaged CI gate |
 | 2 | Linux x64 with WebKitGTK 4.1 | GitHub-hosted Ubuntu 24.04 x64 under Xvfb | versioned portable `tar.gz` | `make verify-platform-linux` | Defined as a host-native CI gate |
 
 Windows is first after macOS because it adds the most distinct packaging and
@@ -39,9 +40,11 @@ both shortcuts, and runs acceptance from the installed copy. It then
 uninstalls and requires the install files, shortcuts, and registration to be
 gone while the SQLite library remains. Its packaged executable is verified as
 an amd64 PE image using the Windows GUI subsystem, so it does not open an extra
-console window. The Linux archive contains the Wails executable and expects
-the distribution to provide GTK 3 and WebKitGTK 4.1. It is intentionally not a
-generic package for every Linux ABI.
+console window. The Windows 11 arm64 host runs that exact amd64 executable
+through Windows x64 emulation; the workflow does not produce or qualify a
+Windows arm64 artifact. The Linux archive contains the Wails executable and
+expects the distribution to provide GTK 3 and WebKitGTK 4.1. It is
+intentionally not a generic package for every Linux ABI.
 
 The Linux gate runs the packaged scenario in one isolated D-Bus/Xvfb desktop
 session. It registers a verification-only `inode/directory` handler that
