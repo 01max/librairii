@@ -343,6 +343,7 @@ func TestWindowsReleaseProvisionsWebView2BeforePackagedAcceptance(t *testing.T) 
 	for _, expected := range []string{
 		`$HostArch -notin @("amd64", "arm64")`,
 		"-platform windows/amd64",
+		"-tags native_webview2loader",
 		"0x8664",
 	} {
 		if !strings.Contains(verifier, expected) {

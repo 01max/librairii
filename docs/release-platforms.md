@@ -46,10 +46,14 @@ Windows arm64 artifact. The checked-in NSIS project replaces Wails 2.13's
 native-only architecture and payload macros because those macros reject an
 amd64-only installer on every arm64 host. The replacement still rejects
 Windows 10 on Arm, which cannot emulate x64 applications, and admits the amd64
-payload on arm64 only when NSIS confirms Windows 11 or later. The Linux archive
-contains the Wails executable and expects the distribution to provide GTK 3
-and WebKitGTK 4.1. It is intentionally not a generic package for every Linux
-ABI.
+payload on arm64 only when NSIS confirms Windows 11 or later. The Windows
+artifact uses Wails' `native_webview2loader` build tag because the default Go
+WebView2 loader hangs before application startup on the qualified hosted
+Windows image even when the Evergreen runtime is present. This is Wails 2.13's
+documented compatibility fallback and remains isolated to the Windows build.
+The Linux archive contains the Wails executable and expects the distribution
+to provide GTK 3 and WebKitGTK 4.1. It is intentionally not a generic package
+for every Linux ABI.
 
 The Linux gate runs the packaged scenario in one isolated D-Bus/Xvfb desktop
 session. It registers a verification-only `inode/directory` handler that

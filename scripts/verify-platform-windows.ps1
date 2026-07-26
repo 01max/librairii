@@ -49,6 +49,7 @@ if ($LASTEXITCODE -ne 0) {
     -m `
     -nocolour `
     -platform windows/amd64 `
+    -tags native_webview2loader `
     -webview2 error `
     -nsis `
     -installscope user `
