@@ -90,19 +90,32 @@ cleanup() {
 }
 trap cleanup EXIT HUP INT TERM
 
-timeout 30s dbus-run-session -- xvfb-run -a env \
+set +e
+timeout 60s dbus-run-session -- xvfb-run -a env \
     PATH="$project_root/scripts:$PATH" \
     LIBGL_ALWAYS_SOFTWARE=1 \
     XDG_DATA_HOME="$xdg_data_home" \
     XDG_CONFIG_HOME="$xdg_config_home" \
     LIBRAIRII_DATA_ROOT="$data_root" \
     LIBRAIRII_PACKAGED_ACCEPTANCE=1 \
+    LIBRAIRII_ACCEPTANCE_LOG=1 \
     LIBRAIRII_ACCEPTANCE_SOURCE="$acceptance_source" \
     LIBRAIRII_ACCEPTANCE_DESTINATION="$export_destination" \
     LIBRAIRII_ACCEPTANCE_CHECKPOINTS="$acceptance_checkpoints" \
     LIBRAIRII_NATIVE_REVEAL_EVIDENCE="$native_reveal_evidence" \
     "$project_root/scripts/run-linux-native-acceptance" \
     "$binary"
+acceptance_status="$?"
+set -e
+if [ "$acceptance_status" -ne 0 ]; then
+    printf 'packaged Linux acceptance exited with status %s\n' \
+        "$acceptance_status" >&2
+    printf 'recorded checkpoints:\n' >&2
+    sed -n '1,80p' "$acceptance_checkpoints" >&2 || true
+    printf 'recent lifecycle events:\n' >&2
+    tail -n 40 "$event_log" >&2 || true
+    exit "$acceptance_status"
+fi
 
 expected_checkpoints="$verification_root/expected-checkpoints.log"
 printf '%s\n' \

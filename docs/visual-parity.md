@@ -2,7 +2,10 @@
 
 The normative visual source is
 `openspec/ui-prototypes/05-archive-shelves.html` inside its `.app` element.
-The `.back` gallery link is removed before comparison.
+The `.back` gallery link is removed before comparison. Because OpenSpec
+working files are not published with the application repository, CI renders
+the checksum-locked mirror at
+`testdata/ui-prototypes/05-archive-shelves.html`.
 
 `npm --prefix frontend run test:visual` builds the production frontend with
 the deterministic `?fixture=parity` data, renders both the canonical HTML and
@@ -25,8 +28,8 @@ includes this release gate.
 An approved visual change must update all of these in one reviewed change:
 
 1. the normative prototype `.app` subtree;
-2. its SHA-256 in `prototype_contract_test.go`, `parity-fixture.ts`, and the
-   accepted architecture baseline;
+2. the tracked test mirror and its SHA-256 in `prototype_contract_test.go`,
+   `parity-fixture.ts`, and the accepted architecture baseline;
 3. the applicable OpenSpec design, requirements, and task artifacts;
 4. the deterministic parity fixture and any intentionally changed comparison
    tolerance or responsive acceptance values.

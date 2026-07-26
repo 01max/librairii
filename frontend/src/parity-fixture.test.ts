@@ -8,6 +8,7 @@ describe('canonical parity fixture', () => {
     test('records the immutable prototype boundary', () => {
         expect(CANONICAL_PROTOTYPE).toEqual({
             path: 'openspec/ui-prototypes/05-archive-shelves.html',
+            snapshotPath: 'testdata/ui-prototypes/05-archive-shelves.html',
             sha256: '19119b85ed820e1893020347ad5015bbed173ef8c8e6e1164405d83f1b5f00f9',
             normativeSelector: '.app',
             excludedSelector: '.back',
@@ -52,4 +53,3 @@ describe('canonical parity fixture', () => {
         ]);
     });
 });
-

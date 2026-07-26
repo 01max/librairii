@@ -7,7 +7,9 @@ loopback web server, or external database.
 
 The functional contract lives in the OpenSpec change
 `rebuild-local-story-library-wails`. The exact visual contract is
-`openspec/ui-prototypes/05-archive-shelves.html`.
+`openspec/ui-prototypes/05-archive-shelves.html`. Clean checkouts verify
+the checksum-locked mirror at
+`testdata/ui-prototypes/05-archive-shelves.html`.
 
 Start with the [user and recovery guide](docs/user-guide.md) for supported
 formats, search and shelf behavior, export limitations, application data,

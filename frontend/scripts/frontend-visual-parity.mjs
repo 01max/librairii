@@ -13,7 +13,7 @@ const frontendRoot = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const repositoryRoot = resolve(frontendRoot, '..');
 const canonicalPrototype = resolve(
     repositoryRoot,
-    'openspec/ui-prototypes/05-archive-shelves.html',
+    'testdata/ui-prototypes/05-archive-shelves.html',
 );
 const outputDirectory = await mkdtemp(
     join(tmpdir(), 'librairii-frontend-visual-parity-'),
@@ -66,6 +66,7 @@ try {
     }
     const report = {
         canonicalPrototype: 'openspec/ui-prototypes/05-archive-shelves.html',
+        canonicalSnapshot: 'testdata/ui-prototypes/05-archive-shelves.html',
         applicationFixture: '?fixture=parity',
         pixelThreshold,
         maximumMismatchRatio,

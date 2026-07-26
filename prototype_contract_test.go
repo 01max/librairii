@@ -9,11 +9,12 @@ import (
 )
 
 const canonicalPrototypeSHA256 = "19119b85ed820e1893020347ad5015bbed173ef8c8e6e1164405d83f1b5f00f9"
+const canonicalPrototypeSnapshot = "testdata/ui-prototypes/05-archive-shelves.html"
 
 func TestCanonicalPrototypeContract(t *testing.T) {
 	t.Parallel()
 
-	body, err := os.ReadFile("openspec/ui-prototypes/05-archive-shelves.html")
+	body, err := os.ReadFile(canonicalPrototypeSnapshot)
 	if err != nil {
 		t.Fatal(err)
 	}

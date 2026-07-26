@@ -83,6 +83,8 @@ func TestReleaseMatrixHasIndependentPlatformTasks(t *testing.T) {
 		"scripts/verify-platform-windows.ps1": {
 			"-platform windows/amd64",
 			"-nsis",
+			"makensis.exe",
+			"ProgramFiles(x86)",
 			"InstalledBinary",
 			"uninstall.exe",
 			"uninstall-retention.txt",
@@ -125,6 +127,9 @@ func TestReleaseMatrixHasIndependentPlatformTasks(t *testing.T) {
 		"packaged_acceptance_native_linux.go": {
 			"GTK_IS_FILE_CHOOSER",
 			"gtk_file_chooser_select_filename",
+			"gtk_file_chooser_set_current_folder",
+			"selectionReady",
+			"gtk_widget_get_mapped",
 		},
 		"packaged_acceptance_native_windows.go": {
 			"FindWindowW",

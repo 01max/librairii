@@ -14,14 +14,15 @@ Functional scope comes only from:
 The only UI source of truth is:
 
 - `openspec/ui-prototypes/05-archive-shelves.html`
+- tracked CI mirror: `testdata/ui-prototypes/05-archive-shelves.html`
 - SHA-256: `19119b85ed820e1893020347ad5015bbed173ef8c8e6e1164405d83f1b5f00f9`
 - the `.app` subtree is normative
 - the `.back` gallery link is excluded from the product
 
-`prototype_contract_test.go` verifies the checksum and both subtree markers on
-every Go test run. The frontend `?fixture=parity` bridge is deterministic and
-records every sample shelf, cover title, count, selection, fact, tag, and
-archive detail from that exact file.
+`prototype_contract_test.go` verifies the tracked mirror's checksum and both
+subtree markers on every Go test run. The frontend `?fixture=parity` bridge is
+deterministic and records every sample shelf, cover title, count, selection,
+fact, tag, and archive detail from that exact file.
 
 The Rails screens and Tauri shell are implementation history, not product or
 visual references.

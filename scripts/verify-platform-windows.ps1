@@ -22,6 +22,16 @@ if ($LASTEXITCODE -ne 0 -or $ActualWailsVersion -ne $WailsVersion) {
     throw "Wails CLI must match $WailsVersion"
 }
 
+$NSISDirectory = Join-Path ${env:ProgramFiles(x86)} "NSIS"
+$Makensis = Join-Path $NSISDirectory "makensis.exe"
+if (-not (Test-Path -LiteralPath $Makensis -PathType Leaf)) {
+    throw "NSIS compiler is missing: $Makensis"
+}
+$env:Path = "$NSISDirectory;$env:Path"
+if (-not (Get-Command makensis.exe -CommandType Application -ErrorAction SilentlyContinue)) {
+    throw "NSIS compiler is not available on PATH"
+}
+
 & npm --prefix frontend run build
 if ($LASTEXITCODE -ne 0) {
     throw "Frontend build failed"
