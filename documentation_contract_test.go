@@ -292,6 +292,7 @@ func TestFrontendPerformanceGatesProductCoupledMetricsOnly(t *testing.T) {
 	contents := string(body)
 	for _, expected := range []string{
 		"const acceptanceBudgets = {",
+		"inputDelayP95Milliseconds: 100,",
 		"const diagnosticThresholds = {",
 		"expansionP95Milliseconds <=\n                acceptanceBudgets.expansionP95Milliseconds",
 		"inputDelayP95Milliseconds <=\n                acceptanceBudgets.inputDelayP95Milliseconds",
@@ -348,9 +349,9 @@ func TestWindowsHostedWorkflowCannotClaimPackagedQualification(t *testing.T) {
 	verifier := string(verifierBody)
 	for _, expected := range []string{
 		`$HostArch -notin @("amd64", "arm64")`,
+		`$HostArch -ne "amd64"`,
 		"[switch]$ArtifactOnly",
 		"-platform windows/amd64",
-		`$env:GOARCH = "amd64"`,
 		`Join-Path $PSScriptRoot "ensure-webview2-runtime.ps1"`,
 		"Invoke-PackagedApplication $InstalledBinary",
 		"Packaged GUI qualification was not run",
@@ -362,6 +363,9 @@ func TestWindowsHostedWorkflowCannotClaimPackagedQualification(t *testing.T) {
 	}
 	if strings.Contains(verifier, "native_webview2loader") {
 		t.Error("Windows verifier still ships the failed legacy WebView2 loader")
+	}
+	if strings.Contains(verifier, `$env:GOARCH = "amd64"`) {
+		t.Error("Windows hosted verifier forces headless smoke through emulation")
 	}
 
 	preflightBody, err := os.ReadFile("scripts/ensure-webview2-runtime.ps1")

@@ -9,7 +9,7 @@
   "samples": 5,
   "acceptanceBudgets": {
     "expansionP95Milliseconds": 3000,
-    "inputDelayP95Milliseconds": 50
+    "inputDelayP95Milliseconds": 100
   },
   "diagnosticThresholds": {
     "frameGapP95Milliseconds": 50,

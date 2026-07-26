@@ -1,6 +1,6 @@
 # Release platform matrix
 
-Status date: 2026-07-26
+Status date: 2026-07-27
 
 Release qualification runs on the target operating system in an interactive
 desktop session and invokes its host-native platform services. A
@@ -21,7 +21,7 @@ import, destination, and reveal evidence before domain work may continue.
 | Priority | Distribution target | Verification host | Artifact | Command | Status |
 | --- | --- | --- | --- | --- | --- |
 | 0 | macOS 15, arm64 | macOS 15.7.7 arm64 | versioned DMG | `make verify-packaged-acceptance` | Passed on the current host |
-| 1 | Windows x64 | Interactive Windows 11 x64, or Windows 11 arm64 with x64 emulation | per-user NSIS installer | `make verify-platform-windows` | Unqualified: command defined; awaiting an interactive-host pass |
+| 1 | Windows x64 | Interactive Windows 11 x64 | per-user NSIS installer | `make verify-platform-windows` | Unqualified: command defined; awaiting an interactive-host pass |
 | 2 | Linux x64 with WebKitGTK 4.1 | GitHub-hosted Ubuntu 24.04 x64 under Xvfb | versioned portable `tar.gz` | `make verify-platform-linux` | Defined as a host-native CI gate |
 
 Windows is first after macOS because it adds the most distinct packaging and
@@ -49,13 +49,17 @@ Actions invokes its underlying script with `-ArtifactOnly`. It builds the
 production installer with Wails' standard Go WebView2 loader, checks its PE
 architecture and GUI subsystem, installs it, validates payload hashes,
 shortcuts and registration, runs the complete headless Go/SQLite and
-platform-adapter smoke as Windows amd64, uninstalls it, proves user data
-retention, and verifies the installer checksum. The uploaded artifact is named
+platform-adapter smoke in the runner's native arm64 process, uninstalls it,
+proves user data retention, and verifies the installer checksum. The amd64
+executable itself is not launched by this mode. The uploaded artifact is named
 as a candidate and is not release-qualified. Both the standard Wails 2.13 Go
 loader and its documented `native_webview2loader` fallback failed before
-application `OnStartup` on GitHub-hosted Windows; the fallback is therefore not
-shipped. Full render, native-dialog, reveal, relaunch, and clean-shutdown
-evidence remains mandatory on an interactive Windows host.
+application `OnStartup` on GitHub-hosted Windows; an additional amd64 headless
+smoke entered storage recovery under ARM emulation. The fallback is therefore
+not shipped, and ARM emulation is not accepted as Windows x64 qualification
+evidence. Full render, native-dialog, reveal, relaunch, persistence, and
+clean-shutdown evidence remains mandatory on an interactive native x64 Windows
+host.
 
 The checked-in NSIS project replaces Wails 2.13's native-only architecture and
 payload macros because those macros reject an amd64-only installer on every
@@ -106,5 +110,5 @@ The same Windows script accepts `-ArtifactOnly` for hosted candidate evidence;
 `make verify-platform-windows-hosted` is the named entry point. GitHub Actions
 labels and uploads that installer only as
 `Librairii-windows-amd64-candidate`. No Windows job or artifact is called
-qualified until the default script mode passes on an interactive Windows host.
-Failed or cancelled jobs publish no artifact.
+qualified until the default script mode passes on an interactive native x64
+Windows host. Failed or cancelled jobs publish no artifact.

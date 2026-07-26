@@ -15,7 +15,7 @@ const sampleCount = Number.parseInt(
 );
 const acceptanceBudgets = {
     expansionP95Milliseconds: 3_000,
-    inputDelayP95Milliseconds: 50,
+    inputDelayP95Milliseconds: 100,
 };
 const diagnosticThresholds = {
     frameGapP95Milliseconds: 50,

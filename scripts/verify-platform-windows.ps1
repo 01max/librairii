@@ -10,13 +10,22 @@ Set-Location $ProjectRoot
 
 $HostOS = (& go env GOOS).Trim()
 $HostArch = (& go env GOARCH).Trim()
-if (
-    $HostOS -ne "windows" -or
-    $HostArch -notin @("amd64", "arm64")
-) {
+if ($HostOS -ne "windows") {
     throw (
-        "Windows amd64 release verification requires a Windows amd64 or " +
-        "arm64 host, got $HostOS/$HostArch"
+        "Windows amd64 release verification requires Windows, got " +
+        "$HostOS/$HostArch"
+    )
+}
+if ($ArtifactOnly -and $HostArch -notin @("amd64", "arm64")) {
+    throw (
+        "Windows amd64 candidate verification requires an amd64 or arm64 " +
+        "host, got $HostOS/$HostArch"
+    )
+}
+if (-not $ArtifactOnly -and $HostArch -ne "amd64") {
+    throw (
+        "Windows amd64 packaged qualification requires a native amd64 host, " +
+        "got $HostOS/$HostArch"
     )
 }
 
@@ -246,9 +255,6 @@ try {
         throw "Windows per-user uninstall registration is incorrect"
     }
 
-    $env:GOOS = "windows"
-    $env:GOARCH = "amd64"
-
     if ($ArtifactOnly) {
         Invoke-Go run ./cmd/release-smoke -root $DataRoot
         Invoke-Go run ./cmd/foundation-smoke `
@@ -399,9 +405,7 @@ try {
         "LIBRAIRII_ACCEPTANCE_CHECKPOINTS",
         "LIBRAIRII_ACCEPTANCE_LOG",
         "LIBRAIRII_SMOKE_EXIT",
-        "LIBRAIRII_SMOKE_HOLD_MS",
-        "GOOS",
-        "GOARCH"
+        "LIBRAIRII_SMOKE_HOLD_MS"
     )) {
         Remove-Item "Env:$AcceptanceVariable" -ErrorAction SilentlyContinue
     }
