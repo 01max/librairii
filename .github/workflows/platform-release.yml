@@ -50,6 +50,10 @@ jobs:
           go mod download
           npm --prefix frontend ci
 
+      - name: Ensure WebView2 Runtime
+        shell: pwsh
+        run: ./scripts/ensure-webview2-runtime.ps1
+
       - name: Verify Windows release
         shell: pwsh
         run: ./scripts/verify-platform-windows.ps1

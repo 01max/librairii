@@ -13,10 +13,12 @@ const sampleCount = Number.parseInt(
     process.env.LIBRAIRII_FRONTEND_PERFORMANCE_SAMPLES ?? '5',
     10,
 );
-const budgets = {
+const acceptanceBudgets = {
     expansionP95Milliseconds: 3_000,
-    frameGapP95Milliseconds: 50,
     inputDelayP95Milliseconds: 50,
+};
+const diagnosticThresholds = {
+    frameGapP95Milliseconds: 50,
     timerDelayP95Milliseconds: 50,
 };
 
@@ -246,16 +248,17 @@ function summarize(samples) {
         viewport: {width: 1440, height: 900},
         stories: storyCount,
         samples: samples.length,
-        budgets,
+        acceptanceBudgets,
+        diagnosticThresholds,
         metrics,
         maximumStoryNodes: Math.max(
             ...samples.map((sample) => sample.storyNodes),
         ),
         withinBudget:
-            expansionP95Milliseconds <= budgets.expansionP95Milliseconds &&
-            frameGapP95Milliseconds <= budgets.frameGapP95Milliseconds &&
-            inputDelayP95Milliseconds <= budgets.inputDelayP95Milliseconds &&
-            timerDelayP95Milliseconds <= budgets.timerDelayP95Milliseconds,
+            expansionP95Milliseconds <=
+                acceptanceBudgets.expansionP95Milliseconds &&
+            inputDelayP95Milliseconds <=
+                acceptanceBudgets.inputDelayP95Milliseconds,
     };
 }
 

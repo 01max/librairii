@@ -274,3 +274,77 @@ func TestPerformanceFixturesSeparateBrowserAndBackendScale(t *testing.T) {
 		)
 	}
 }
+
+func TestFrontendPerformanceGatesProductCoupledMetricsOnly(t *testing.T) {
+	t.Parallel()
+
+	body, err := os.ReadFile("frontend/scripts/frontend-performance.mjs")
+	if err != nil {
+		t.Fatal(err)
+	}
+	contents := string(body)
+	for _, expected := range []string{
+		"const acceptanceBudgets = {",
+		"const diagnosticThresholds = {",
+		"expansionP95Milliseconds <=\n                acceptanceBudgets.expansionP95Milliseconds",
+		"inputDelayP95Milliseconds <=\n                acceptanceBudgets.inputDelayP95Milliseconds",
+	} {
+		if !strings.Contains(contents, expected) {
+			t.Errorf("frontend performance gate is missing %q", expected)
+		}
+	}
+	for _, schedulerPredicate := range []string{
+		"frameGapP95Milliseconds <=",
+		"timerDelayP95Milliseconds <=",
+	} {
+		if strings.Contains(contents, schedulerPredicate) {
+			t.Errorf(
+				"frontend performance gate treats host scheduler metric as acceptance: %q",
+				schedulerPredicate,
+			)
+		}
+	}
+}
+
+func TestWindowsReleaseProvisionsWebView2BeforePackagedAcceptance(t *testing.T) {
+	t.Parallel()
+
+	workflowBody, err := os.ReadFile(".github/workflows/platform-release.yml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	workflow := string(workflowBody)
+	preflight := strings.Index(
+		workflow,
+		"run: ./scripts/ensure-webview2-runtime.ps1",
+	)
+	acceptance := strings.Index(
+		workflow,
+		"run: ./scripts/verify-platform-windows.ps1",
+	)
+	if preflight < 0 {
+		t.Fatal("Windows release workflow does not run the WebView2 preflight")
+	}
+	if acceptance < 0 {
+		t.Fatal("Windows release workflow does not run packaged acceptance")
+	}
+	if preflight > acceptance {
+		t.Fatal("Windows release workflow provisions WebView2 after acceptance")
+	}
+
+	scriptBody, err := os.ReadFile("scripts/ensure-webview2-runtime.ps1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	script := string(scriptBody)
+	for _, expected := range []string{
+		"{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}",
+		"https://go.microsoft.com/fwlink/p/?LinkId=2124703",
+		"Get-AuthenticodeSignature",
+		`@("/silent", "/install")`,
+	} {
+		if !strings.Contains(script, expected) {
+			t.Errorf("WebView2 preflight is missing %q", expected)
+		}
+	}
+}

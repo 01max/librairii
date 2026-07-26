@@ -50,20 +50,24 @@ Playwright. The normal production build excludes the fixture. Set
 platform path.
 
 Five acceptance samples expand all 1,000 stories while real pointer input is
-sent to the application. The gate measures expansion completion, animation
-frame gaps, input dispatch delay, and timer delay:
+sent to the application. Expansion completion and pointer dispatch are
+product-coupled acceptance gates. Animation-frame and timer scheduling remain
+reported diagnostics because shared CI hosts can pause the entire browser
+independently of application work:
 
-| Browser scenario | p95 budget |
-| --- | ---: |
-| Complete 1,000-story expansion | 3,000 ms |
-| Animation frame gap | 50 ms |
-| Pointer input delay | 50 ms |
-| Timer delay | 50 ms |
+| Browser scenario | Classification | p95 budget or threshold |
+| --- | --- | ---: |
+| Complete 1,000-story expansion | Acceptance gate | 3,000 ms |
+| Pointer input delay | Acceptance gate | 50 ms |
+| Animation frame gap | Scheduler diagnostic | 50 ms |
+| Timer delay | Scheduler diagnostic | 50 ms |
 
 The checked-in
 [`frontend-large-library-baseline.json`](frontend-large-library-baseline.json)
 records the current-host observation. The release gate compares each run to
-the explicit budgets, not to another machine's wall-clock baseline.
+the explicit acceptance budgets, not to another machine's wall-clock baseline.
+Scheduler diagnostics retain explicit thresholds so regressions remain visible
+without making shared-host pauses indistinguishable from application failures.
 
 The browser scenario is intentionally separate from the 5,000-story
 Go/SQLite fixture above. Five thousand records remain the storage, query,

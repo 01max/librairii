@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-26T04:52:23.561Z",
+  "generatedAt": "2026-07-26T05:32:08.851Z",
   "browser": "system Chromium via Playwright",
   "viewport": {
     "width": 1440,
@@ -7,17 +7,19 @@
   },
   "stories": 1000,
   "samples": 5,
-  "budgets": {
+  "acceptanceBudgets": {
     "expansionP95Milliseconds": 3000,
+    "inputDelayP95Milliseconds": 50
+  },
+  "diagnosticThresholds": {
     "frameGapP95Milliseconds": 50,
-    "inputDelayP95Milliseconds": 50,
     "timerDelayP95Milliseconds": 50
   },
   "metrics": {
     "expansionP95Milliseconds": 233.9,
-    "frameGapP95Milliseconds": 9.9,
-    "inputDelayP95Milliseconds": 5.4,
-    "timerDelayP95Milliseconds": 32.1,
+    "frameGapP95Milliseconds": 10.1,
+    "inputDelayP95Milliseconds": 5,
+    "timerDelayP95Milliseconds": 34.7,
     "longAnimationFrameP95Milliseconds": 0
   },
   "maximumStoryNodes": 1000,
