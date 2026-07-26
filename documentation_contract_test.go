@@ -171,3 +171,66 @@ func TestReleaseMatrixHasIndependentPlatformTasks(t *testing.T) {
 		t.Error("Windows release verifier does not enforce the GUI PE subsystem")
 	}
 }
+
+func TestBuildEntrypointsGenerateFrontendBeforeGoConsumesEmbed(t *testing.T) {
+	t.Parallel()
+
+	makefile, err := os.ReadFile("Makefile")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, target := range []string{
+		"check: build-frontend",
+		"build: build-frontend",
+		"build-current-installer: build-frontend",
+		"verify-platform-linux: build-frontend",
+		"verify-platform-windows: build-frontend",
+	} {
+		if !strings.Contains(string(makefile), target) {
+			t.Errorf("Makefile does not declare %q", target)
+		}
+	}
+
+	entrypoints := []struct {
+		path       string
+		frontend   string
+		goConsumer string
+	}{
+		{
+			path:       "scripts/build-current-installer",
+			frontend:   "npm --prefix frontend run build",
+			goConsumer: `"$wails_cli" build`,
+		},
+		{
+			path:       "scripts/verify-platform-linux",
+			frontend:   "npm --prefix frontend run build",
+			goConsumer: `"$wails_cli" build`,
+		},
+		{
+			path:       "scripts/verify-platform-windows.ps1",
+			frontend:   "& npm --prefix frontend run build",
+			goConsumer: "& $WailsCLI build",
+		},
+	}
+	for _, entrypoint := range entrypoints {
+		body, readErr := os.ReadFile(entrypoint.path)
+		if readErr != nil {
+			t.Errorf("read %s: %v", entrypoint.path, readErr)
+			continue
+		}
+		contents := string(body)
+		frontendIndex := strings.Index(contents, entrypoint.frontend)
+		goConsumerIndex := strings.Index(contents, entrypoint.goConsumer)
+		if frontendIndex < 0 {
+			t.Errorf("%s does not build the frontend", entrypoint.path)
+			continue
+		}
+		if goConsumerIndex < 0 {
+			t.Errorf("%s does not contain the Wails build", entrypoint.path)
+			continue
+		}
+		if frontendIndex > goConsumerIndex {
+			t.Errorf("%s builds the frontend after Wails consumes the embed", entrypoint.path)
+		}
+	}
+}

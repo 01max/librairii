@@ -22,6 +22,11 @@ if ($LASTEXITCODE -ne 0 -or $ActualWailsVersion -ne $WailsVersion) {
     throw "Wails CLI must match $WailsVersion"
 }
 
+& npm --prefix frontend run build
+if ($LASTEXITCODE -ne 0) {
+    throw "Frontend build failed"
+}
+
 & $WailsCLI build `
     -clean `
     -trimpath `
