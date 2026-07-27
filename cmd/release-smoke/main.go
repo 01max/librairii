@@ -313,6 +313,14 @@ type smokeComposition struct {
 	readiness   *platform.StorageReadiness
 }
 
+type smokeReadiness interface {
+	Check(context.Context) (coreapp.ReadinessReport, error)
+}
+
+type smokeRuntimeStarter interface {
+	Start(context.Context) error
+}
+
 func newSmokeComposition(
 	root string,
 	fetcher metadata.CatalogFetcher,
@@ -355,12 +363,40 @@ func newSmokeComposition(
 }
 
 func (c *smokeComposition) start(ctx context.Context) error {
+	if err := prepareSmokeStartup(ctx, c.readiness, c.runtime); err != nil {
+		return err
+	}
 	if err := c.application.Start(ctx); err != nil {
 		return fmt.Errorf("start release smoke application: %w", err)
 	}
-	status := c.application.Status()
-	if status.State != coreapp.StateReady || !status.MutationsAllowed {
-		return fmt.Errorf("release smoke application is not ready: %#v", status)
+	response := c.application.StatusResponse()
+	if response.Status.State != coreapp.StateReady ||
+		!response.Status.MutationsAllowed {
+		return fmt.Errorf(
+			"release smoke application is not ready: %#v",
+			response,
+		)
+	}
+	return nil
+}
+
+func prepareSmokeStartup(
+	ctx context.Context,
+	readiness smokeReadiness,
+	runtime smokeRuntimeStarter,
+) error {
+	report, err := readiness.Check(ctx)
+	if err != nil {
+		return fmt.Errorf("check release smoke storage readiness: %w", err)
+	}
+	if !report.MutationsAllowed {
+		return fmt.Errorf(
+			"release smoke storage requires recovery: %#v",
+			report,
+		)
+	}
+	if err := runtime.Start(ctx); err != nil {
+		return fmt.Errorf("start release smoke runtime: %w", err)
 	}
 	return nil
 }
