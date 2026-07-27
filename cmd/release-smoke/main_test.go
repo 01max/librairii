@@ -49,7 +49,7 @@ func TestReleaseSmokeCoversTheCompleteHeadlessComposition(t *testing.T) {
 func TestPrepareSmokeStartupPreservesReadinessCause(t *testing.T) {
 	t.Parallel()
 
-	cause := errors.New("open Windows SQLite file URI")
+	cause := errors.New("open SQLite file URI")
 	err := prepareSmokeStartup(
 		context.Background(),
 		smokeReadinessFunc(
@@ -73,7 +73,7 @@ func TestPrepareSmokeStartupPreservesReadinessCause(t *testing.T) {
 func TestPrepareSmokeStartupPreservesRuntimeCause(t *testing.T) {
 	t.Parallel()
 
-	cause := errors.New("seed Windows SQLite data")
+	cause := errors.New("seed SQLite data")
 	err := prepareSmokeStartup(
 		context.Background(),
 		smokeReadinessFunc(

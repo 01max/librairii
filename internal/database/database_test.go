@@ -15,42 +15,18 @@ import (
 	_ "modernc.org/sqlite"
 )
 
-func TestSQLiteFileDSNCanonicalizesPlatformPaths(t *testing.T) {
+func TestSQLiteFileDSNCanonicalizesPath(t *testing.T) {
 	t.Parallel()
 
 	query := url.Values{}
 	query.Add("_pragma", "foreign_keys(1)")
 	query.Set("mode", "ro")
 
-	tests := []struct {
-		name string
-		goos string
-		path string
-		want string
-	}{
-		{
-			name: "Windows drive path",
-			goos: "windows",
-			path: `C:\Users\Maxime\App Data\Librairii\db\librairii.sqlite3`,
-			want: "file:///C:/Users/Maxime/App%20Data/Librairii/db/librairii.sqlite3" +
-				"?_pragma=foreign_keys%281%29&mode=ro",
-		},
-		{
-			name: "Unix absolute path",
-			goos: "linux",
-			path: "/tmp/Librairii Data/db/librairii.sqlite3",
-			want: "file:///tmp/Librairii%20Data/db/librairii.sqlite3" +
-				"?_pragma=foreign_keys%281%29&mode=ro",
-		},
-	}
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			t.Parallel()
-
-			if got := sqliteFileDSN(test.goos, test.path, query); got != test.want {
-				t.Fatalf("sqliteFileDSN() = %q, want %q", got, test.want)
-			}
-		})
+	path := "/tmp/Librairii Data/db/librairii.sqlite3"
+	want := "file:///tmp/Librairii%20Data/db/librairii.sqlite3" +
+		"?_pragma=foreign_keys%281%29&mode=ro"
+	if got := sqliteFileDSN(path, query); got != want {
+		t.Fatalf("sqliteFileDSN() = %q, want %q", got, want)
 	}
 }
 

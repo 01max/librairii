@@ -16,7 +16,6 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
 	"github.com/wailsapp/wails/v2/pkg/options/linux"
 	"github.com/wailsapp/wails/v2/pkg/options/mac"
-	"github.com/wailsapp/wails/v2/pkg/options/windows"
 )
 
 const (
@@ -115,15 +114,6 @@ func productionOptions(
 		},
 		DragAndDrop: &options.DragAndDrop{
 			DisableWebViewDrop: true,
-		},
-		Windows: &windows.Options{
-			DisablePinchZoom:                    true,
-			IsZoomControlEnabled:                false,
-			Theme:                               windows.SystemDefault,
-			WebviewDisableRendererCodeIntegrity: false,
-			DLLSearchPaths: windows.DLLSearchApplicationDir |
-				windows.DLLSearchSystem32 |
-				windows.DLLSearchUserDirs,
 		},
 		Mac: &mac.Options{
 			DisableZoom: true,

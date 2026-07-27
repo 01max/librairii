@@ -55,12 +55,8 @@ func TestReleaseMatrixHasIndependentPlatformTasks(t *testing.T) {
 	}
 	matrix := string(body)
 	required := []string{
-		"Windows x64",
-		"make verify-platform-windows",
-		"make verify-platform-windows-hosted",
-		"scripts/verify-platform-windows.ps1",
-		"Unqualified:",
-		"Librairii-windows-amd64-candidate",
+		"macOS 15, arm64",
+		"make verify-packaged-acceptance",
 		"Linux x64 with WebKitGTK 4.1",
 		"make verify-platform-linux",
 		"scripts/verify-platform-linux",
@@ -78,36 +74,11 @@ func TestReleaseMatrixHasIndependentPlatformTasks(t *testing.T) {
 
 	implementationFiles := map[string][]string{
 		".github/workflows/platform-release.yml": {
-			"runs-on: windows-11-arm",
 			"runs-on: ubuntu-24.04",
 			"dbus-x11",
 			"pcmanfm",
 			"procps",
-			"scripts/verify-platform-windows.ps1",
-			"-ArtifactOnly",
-			"Upload unqualified Windows candidate installer",
-			"Librairii-windows-amd64-candidate",
 			"scripts/verify-platform-linux",
-		},
-		"scripts/verify-platform-windows.ps1": {
-			"-platform windows/amd64",
-			"-nsis",
-			"makensis.exe",
-			"ProgramFiles(x86)",
-			"InstalledBinary",
-			"uninstall.exe",
-			"uninstall-retention.txt",
-			"LIBRAIRII_PACKAGED_ACCEPTANCE",
-			"scenario_started",
-			"native_import_dialog_selected",
-			"native_destination_dialog_selected",
-			"native_reveal_succeeded",
-			"Write-PackagedApplicationDiagnostics",
-			"Packaged acceptance checkpoints:",
-			"Recent packaged lifecycle events:",
-			"./cmd/foundation-smoke",
-			"./internal/platform",
-			"./cmd/release-smoke",
 		},
 		"scripts/verify-platform-linux": {
 			"-platform linux/amd64",
@@ -143,12 +114,6 @@ func TestReleaseMatrixHasIndependentPlatformTasks(t *testing.T) {
 			"selectionReady",
 			"gtk_widget_get_mapped",
 		},
-		"packaged_acceptance_native_windows.go": {
-			"FindWindowW",
-			"PostMessageW",
-			"windowMessageCommand",
-			"dialogCommandOK",
-		},
 		"scripts/run-linux-native-acceptance": {
 			"/proc/$file_manager_pid/comm",
 			"/usr/bin/pcmanfm",
@@ -179,16 +144,6 @@ func TestReleaseMatrixHasIndependentPlatformTasks(t *testing.T) {
 			}
 		}
 	}
-	windowsScript, err := os.ReadFile("scripts/verify-platform-windows.ps1")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if strings.Contains(string(windowsScript), "-windowsconsole") {
-		t.Error("Windows release verifier builds a console-subsystem executable")
-	}
-	if !strings.Contains(string(windowsScript), "0x0002") {
-		t.Error("Windows release verifier does not enforce the GUI PE subsystem")
-	}
 }
 
 func TestBuildEntrypointsGenerateFrontendBeforeGoConsumesEmbed(t *testing.T) {
@@ -203,8 +158,6 @@ func TestBuildEntrypointsGenerateFrontendBeforeGoConsumesEmbed(t *testing.T) {
 		"build: build-frontend",
 		"build-current-installer: build-frontend",
 		"verify-platform-linux: build-frontend",
-		"verify-platform-windows: build-frontend",
-		"verify-platform-windows-hosted: build-frontend",
 	} {
 		if !strings.Contains(string(makefile), target) {
 			t.Errorf("Makefile does not declare %q", target)
@@ -225,11 +178,6 @@ func TestBuildEntrypointsGenerateFrontendBeforeGoConsumesEmbed(t *testing.T) {
 			path:       "scripts/verify-platform-linux",
 			frontend:   "npm --prefix frontend run build",
 			goConsumer: `"$wails_cli" build`,
-		},
-		{
-			path:       "scripts/verify-platform-windows.ps1",
-			frontend:   "& npm --prefix frontend run build",
-			goConsumer: "& $WailsCLI build",
 		},
 	}
 	for _, entrypoint := range entrypoints {
@@ -309,112 +257,6 @@ func TestFrontendPerformanceGatesProductCoupledMetricsOnly(t *testing.T) {
 			t.Errorf(
 				"frontend performance gate treats host scheduler metric as acceptance: %q",
 				schedulerPredicate,
-			)
-		}
-	}
-}
-
-func TestWindowsHostedWorkflowCannotClaimPackagedQualification(t *testing.T) {
-	t.Parallel()
-
-	workflowBody, err := os.ReadFile(".github/workflows/platform-release.yml")
-	if err != nil {
-		t.Fatal(err)
-	}
-	workflow := string(workflowBody)
-	if !strings.Contains(workflow, "runs-on: windows-11-arm") {
-		t.Fatal("Windows candidate artifact does not use the Windows runner")
-	}
-	hostedVerification := strings.Index(
-		workflow,
-		"run: ./scripts/verify-platform-windows.ps1 -ArtifactOnly",
-	)
-	if hostedVerification < 0 {
-		t.Fatal("Windows workflow does not use artifact-only verification")
-	}
-	for _, forbidden := range []string{
-		"Upload qualified Windows installer",
-		"name: Librairii-windows-amd64\n",
-		"run: ./scripts/ensure-webview2-runtime.ps1",
-	} {
-		if strings.Contains(workflow, forbidden) {
-			t.Errorf("Windows hosted workflow claims qualification with %q", forbidden)
-		}
-	}
-
-	verifierBody, err := os.ReadFile("scripts/verify-platform-windows.ps1")
-	if err != nil {
-		t.Fatal(err)
-	}
-	verifier := string(verifierBody)
-	for _, expected := range []string{
-		`$HostArch -notin @("amd64", "arm64")`,
-		`$HostArch -ne "amd64"`,
-		"[switch]$ArtifactOnly",
-		"-platform windows/amd64",
-		`Join-Path $PSScriptRoot "ensure-webview2-runtime.ps1"`,
-		"Invoke-PackagedApplication $InstalledBinary",
-		"Packaged GUI qualification was not run",
-		"0x8664",
-	} {
-		if !strings.Contains(verifier, expected) {
-			t.Errorf("Windows amd64 verifier is missing %q", expected)
-		}
-	}
-	if strings.Contains(verifier, "native_webview2loader") {
-		t.Error("Windows verifier still ships the failed legacy WebView2 loader")
-	}
-	if strings.Contains(verifier, `$env:GOARCH = "amd64"`) {
-		t.Error("Windows hosted verifier forces headless smoke through emulation")
-	}
-
-	preflightBody, err := os.ReadFile("scripts/ensure-webview2-runtime.ps1")
-	if err != nil {
-		t.Fatal(err)
-	}
-	preflightScript := string(preflightBody)
-	for _, expected := range []string{
-		"{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}",
-		"https://go.microsoft.com/fwlink/p/?LinkId=2124703",
-		"Get-AuthenticodeSignature",
-		`@("/silent", "/install")`,
-	} {
-		if !strings.Contains(preflightScript, expected) {
-			t.Errorf("WebView2 preflight is missing %q", expected)
-		}
-	}
-}
-
-func TestWindowsInstallerSupportsAMD64EmulationOnWindows11ARM64(t *testing.T) {
-	t.Parallel()
-
-	body, err := os.ReadFile("build/windows/installer/project.nsi")
-	if err != nil {
-		t.Fatal(err)
-	}
-	installer := string(body)
-	for _, expected := range []string{
-		"!macro librairii.checkArchitecture",
-		"!macro librairii.files",
-		"${If} ${IsNativeAMD64}",
-		"${If} ${IsNativeARM64}",
-		"${If} ${AtLeastWin11}",
-		`File "/oname=${PRODUCT_EXECUTABLE}" "${ARG_WAILS_AMD64_BINARY}"`,
-		"!insertmacro librairii.checkArchitecture",
-		"!insertmacro librairii.files",
-	} {
-		if !strings.Contains(installer, expected) {
-			t.Errorf("Windows installer emulation override is missing %q", expected)
-		}
-	}
-	for _, nativeOnlyMacro := range []string{
-		"!insertmacro wails.checkArchitecture",
-		"!insertmacro wails.files",
-	} {
-		if strings.Contains(installer, nativeOnlyMacro) {
-			t.Errorf(
-				"Windows installer still invokes Wails native-only macro %q",
-				nativeOnlyMacro,
 			)
 		}
 	}

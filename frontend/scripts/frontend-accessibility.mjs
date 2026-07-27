@@ -158,16 +158,11 @@ function resolveChromeExecutable() {
                 '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
                 '/Applications/Chromium.app/Contents/MacOS/Chromium',
             ]
-            : process.platform === 'win32'
-                ? [
-                    'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
-                    'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
-                ]
-                : [
-                    '/usr/bin/google-chrome',
-                    '/usr/bin/chromium',
-                    '/usr/bin/chromium-browser',
-                ];
+            : [
+                '/usr/bin/google-chrome',
+                '/usr/bin/chromium',
+                '/usr/bin/chromium-browser',
+            ];
     const executable = candidates.find((candidate) => existsSync(candidate));
     if (!executable) {
         throw new Error(

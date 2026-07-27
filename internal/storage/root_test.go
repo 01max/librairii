@@ -4,7 +4,6 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
-	"runtime"
 	"testing"
 )
 
@@ -42,7 +41,7 @@ func TestInitializeCreatesIsolatedLayout(t *testing.T) {
 		if !info.IsDir() {
 			t.Fatalf("%q is not a directory", directory)
 		}
-		if runtime.GOOS != "windows" && info.Mode().Perm()&0o077 != 0 {
+		if info.Mode().Perm()&0o077 != 0 {
 			t.Fatalf("%q permissions = %o, want private", directory, info.Mode().Perm())
 		}
 	}
@@ -52,16 +51,14 @@ func TestPlatformDataRoots(t *testing.T) {
 	t.Parallel()
 
 	env := map[string]string{
-		"LOCALAPPDATA":  filepath.Join(string(filepath.Separator), "users", "reader", "local"),
 		"XDG_DATA_HOME": filepath.Join(string(filepath.Separator), "users", "reader", "data"),
 	}
 	getenv := func(name string) string { return env[name] }
 	home := filepath.Join(string(filepath.Separator), "users", "reader")
 
 	tests := map[string]string{
-		"darwin":  filepath.Join(home, "Library", "Application Support", "Librairii"),
-		"windows": filepath.Join(env["LOCALAPPDATA"], "Librairii"),
-		"linux":   filepath.Join(env["XDG_DATA_HOME"], "librairii"),
+		"darwin": filepath.Join(home, "Library", "Application Support", "Librairii"),
+		"linux":  filepath.Join(env["XDG_DATA_HOME"], "librairii"),
 	}
 
 	for goos, expected := range tests {

@@ -14,7 +14,6 @@ import (
 
 	"github.com/wailsapp/wails/v2/pkg/logger"
 	"github.com/wailsapp/wails/v2/pkg/options/linux"
-	"github.com/wailsapp/wails/v2/pkg/options/windows"
 )
 
 func TestConfiguredSmokeQuitIsBounded(t *testing.T) {
@@ -95,21 +94,6 @@ func TestProductionOptionsHardenTheDesktopBoundary(t *testing.T) {
 	}
 	if len(configuration.Bind) != 1 || configuration.Bind[0] != app {
 		t.Fatalf("unexpected Wails bindings: %#v", configuration.Bind)
-	}
-	if configuration.Windows == nil ||
-		!configuration.Windows.DisablePinchZoom ||
-		configuration.Windows.IsZoomControlEnabled ||
-		configuration.Windows.WebviewDisableRendererCodeIntegrity {
-		t.Fatal("Windows webview options are not hardened")
-	}
-	wantDLLSearch := windows.DLLSearchApplicationDir |
-		windows.DLLSearchSystem32 |
-		windows.DLLSearchUserDirs
-	if configuration.Windows.DLLSearchPaths != wantDLLSearch {
-		t.Fatalf(
-			"unexpected Windows DLL search policy: %x",
-			configuration.Windows.DLLSearchPaths,
-		)
 	}
 	if configuration.Mac == nil || !configuration.Mac.DisableZoom {
 		t.Fatal("macOS webview zoom must be disabled")
@@ -253,11 +237,6 @@ func TestReleaseMetadataUsesStableProductIdentity(t *testing.T) {
 	assertContainsFile(
 		"build/darwin/Info.dev.plist",
 		applicationProgramID+".dev",
-	)
-	assertContainsFile(
-		"build/windows/wails.exe.manifest",
-		applicationProgramID,
-		`requestedExecutionLevel level="asInvoker"`,
 	)
 }
 

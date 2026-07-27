@@ -55,7 +55,7 @@ func TestBudgetEnforcesArchiveSafetyLimits(t *testing.T) {
 			code:   CodeUnsafePath,
 		},
 		{
-			name:   "windows absolute path",
+			name:   "drive-letter absolute path",
 			limits: DefaultLimits,
 			entry:  EntryInfo{Name: `C:\story.json`},
 			code:   CodeUnsafePath,

@@ -87,12 +87,6 @@ func platformDataRoot(goos string, home string, getenv func(string) string) (str
 			return "", ErrDataRootNotAbsolute
 		}
 		return filepath.Join(home, "Library", "Application Support", "Librairii"), nil
-	case "windows":
-		localAppData := getenv("LOCALAPPDATA")
-		if localAppData == "" {
-			return "", fmt.Errorf("%w: LOCALAPPDATA is empty", ErrDataRootNotAbsolute)
-		}
-		return filepath.Join(localAppData, "Librairii"), nil
 	case "linux":
 		if dataHome := getenv("XDG_DATA_HOME"); dataHome != "" {
 			if !filepath.IsAbs(dataHome) {

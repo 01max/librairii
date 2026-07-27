@@ -15,54 +15,6 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  windows-amd64-candidate:
-    name: Windows amd64 candidate artifact evidence
-    runs-on: windows-11-arm
-    timeout-minutes: 45
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-go@v5
-        with:
-          go-version: "1.26.5"
-          cache: true
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "24.10.0"
-          cache: npm
-          cache-dependency-path: frontend/package-lock.json
-
-      - name: Install pinned Wails CLI
-        shell: pwsh
-        run: |
-          $version = (Get-Content .wails-version -Raw).Trim()
-          go install "github.com/wailsapp/wails/v2/cmd/wails@$version"
-
-      - name: Install NSIS
-        shell: pwsh
-        run: choco install nsis --no-progress -y
-
-      - name: Install dependencies
-        shell: pwsh
-        run: |
-          go mod download
-          npm --prefix frontend ci
-
-      - name: Verify Windows candidate artifact
-        shell: pwsh
-        run: ./scripts/verify-platform-windows.ps1 -ArtifactOnly
-
-      - name: Upload unqualified Windows candidate installer
-        uses: actions/upload-artifact@v4
-        with:
-          name: Librairii-windows-amd64-candidate
-          path: |
-            build/bin/Librairii-amd64-installer.exe
-            build/bin/Librairii-amd64-installer.exe.sha256
-          if-no-files-found: error
-
   linux-amd64:
     name: Linux amd64 release evidence
     runs-on: ubuntu-24.04

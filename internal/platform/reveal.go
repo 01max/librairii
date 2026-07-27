@@ -50,8 +50,6 @@ func revealCommand(osName string, destination string) (string, []string, error) 
 	switch osName {
 	case "darwin":
 		return "open", []string{destination}, nil
-	case "windows":
-		return "explorer.exe", []string{destination}, nil
 	case "linux":
 		return "xdg-open", []string{destination}, nil
 	default:

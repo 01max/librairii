@@ -86,7 +86,6 @@ The default application data root is:
 | Platform | Location |
 | --- | --- |
 | macOS | `~/Library/Application Support/Librairii` |
-| Windows | `%LOCALAPPDATA%\Librairii` |
 | Linux | `$XDG_DATA_HOME/librairii`, or `~/.local/share/librairii` when `XDG_DATA_HOME` is unset |
 
 Development and test commands may select a different absolute root with
