@@ -54,12 +54,13 @@ proves user data retention, and verifies the installer checksum. The amd64
 executable itself is not launched by this mode. The uploaded artifact is named
 as a candidate and is not release-qualified. Both the standard Wails 2.13 Go
 loader and its documented `native_webview2loader` fallback failed before
-application `OnStartup` on GitHub-hosted Windows; an additional amd64 headless
-smoke entered storage recovery under ARM emulation. The fallback is therefore
-not shipped, and ARM emulation is not accepted as Windows x64 qualification
-evidence. Full render, native-dialog, reveal, relaunch, persistence, and
-clean-shutdown evidence remains mandatory on an interactive native x64 Windows
-host.
+application `OnStartup` on GitHub-hosted Windows. The headless smoke also
+verifies canonical Windows drive-letter SQLite URIs before migration. The
+fallback is therefore not shipped, and ARM emulation is not accepted as
+Windows x64 qualification evidence because the hosted WebView GUI acceptance
+cannot start. Full render, native-dialog, reveal, relaunch, persistence, and
+clean-shutdown evidence remains mandatory on an interactive native x64
+Windows host.
 
 The checked-in NSIS project replaces Wails 2.13's native-only architecture and
 payload macros because those macros reject an amd64-only installer on every

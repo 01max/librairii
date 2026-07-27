@@ -11,6 +11,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"runtime"
 	"sort"
 	"strconv"
 	"strings"
@@ -211,14 +212,39 @@ func writableDSN(path string) string {
 	query.Add("_pragma", "foreign_keys(1)")
 	query.Add("_pragma", "journal_mode(WAL)")
 	query.Add("_pragma", fmt.Sprintf("busy_timeout(%d)", busyTimeoutMilliseconds))
-	return (&url.URL{Scheme: "file", Path: filepath.Clean(path), RawQuery: query.Encode()}).String()
+	return sqliteFileDSN(runtime.GOOS, path, query)
 }
 
 func readOnlyDSN(path string) string {
 	query := url.Values{}
 	query.Set("mode", "ro")
 	query.Add("_pragma", "query_only(1)")
-	return (&url.URL{Scheme: "file", Path: filepath.Clean(path), RawQuery: query.Encode()}).String()
+	return sqliteFileDSN(runtime.GOOS, path, query)
+}
+
+func sqliteFileDSN(goos string, path string, query url.Values) string {
+	cleanPath := filepath.Clean(path)
+	uriPath := filepath.ToSlash(cleanPath)
+	if goos == "windows" {
+		uriPath = strings.ReplaceAll(cleanPath, `\`, "/")
+		if isWindowsDrivePath(uriPath) {
+			uriPath = "/" + uriPath
+		}
+	}
+	return (&url.URL{
+		Scheme:   "file",
+		Path:     uriPath,
+		RawQuery: query.Encode(),
+	}).String()
+}
+
+func isWindowsDrivePath(path string) bool {
+	if len(path) < 3 || path[1] != ':' || path[2] != '/' {
+		return false
+	}
+	drive := path[0]
+	return (drive >= 'A' && drive <= 'Z') ||
+		(drive >= 'a' && drive <= 'z')
 }
 
 func pendingMigrations(
