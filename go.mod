@@ -7,7 +7,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/wailsapp/wails/v2 v2.13.0
 	golang.org/x/sys v0.46.0
-	golang.org/x/text v0.40.0
+	golang.org/x/text v0.41.0
 	modernc.org/sqlite v1.54.0
 )
 
