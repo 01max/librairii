@@ -1760,6 +1760,10 @@ select:focus-visible {
         grid-template-columns: repeat(5, minmax(100px, 1fr));
     }
 
+    .story-row.preview .story:last-child {
+        display: none;
+    }
+
     .drawer {
         grid-template-columns: 120px 1fr auto;
     }
@@ -1784,6 +1788,10 @@ select:focus-visible {
 
     .story-row {
         grid-template-columns: repeat(4, minmax(95px, 1fr));
+    }
+
+    .story-row.preview .story:nth-last-child(-n + 2) {
+        display: none;
     }
 
 }
@@ -1848,6 +1856,10 @@ select:focus-visible {
     .story-row {
         grid-template-columns: repeat(3, minmax(85px, 1fr));
         gap: 10px;
+    }
+
+    .story-row.preview .story:nth-child(4) {
+        display: none;
     }
 
     .drawer {

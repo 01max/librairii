@@ -2449,7 +2449,7 @@ function App() {
                         {row.error && (
                             <p className="dialog-error" role="alert">{row.error}</p>
                         )}
-                        <div className="story-row">
+                        <div className={`story-row${row.shelfID === undefined ? '' : ' preview'}`}>
                             {row.stories.map((story) => (
                                 <button
                                     className={`story${selectedIDs.includes(story.id) ? ' selected' : ''}`}

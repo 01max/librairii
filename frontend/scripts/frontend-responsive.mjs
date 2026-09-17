@@ -19,6 +19,7 @@ const acceptanceCases = [
             appDisplay: 'grid',
             visiblePerRow: [6, 6],
             singleStoryVisible: true,
+            collectionRowVisible: 6,
             filtersDisplay: 'block',
             railWidth: 72,
             railDirection: 'column',
@@ -33,8 +34,9 @@ const acceptanceCases = [
         viewport: {width: 1180, height: 900},
         expected: {
             appDisplay: 'grid',
-            visiblePerRow: [6, 6],
+            visiblePerRow: [5, 5],
             singleStoryVisible: true,
+            collectionRowVisible: 6,
             filtersDisplay: 'block',
             railWidth: 72,
             railDirection: 'column',
@@ -49,8 +51,9 @@ const acceptanceCases = [
         viewport: {width: 850, height: 900},
         expected: {
             appDisplay: 'grid',
-            visiblePerRow: [6, 6],
+            visiblePerRow: [4, 4],
             singleStoryVisible: true,
+            collectionRowVisible: 6,
             filtersDisplay: 'none',
             railWidth: 64,
             railDirection: 'column',
@@ -65,8 +68,9 @@ const acceptanceCases = [
         viewport: {width: 560, height: 900},
         expected: {
             appDisplay: 'block',
-            visiblePerRow: [6, 6],
+            visiblePerRow: [3, 3],
             singleStoryVisible: true,
+            collectionRowVisible: 6,
             filtersDisplay: 'none',
             railWidth: 560,
             railHeight: 58,
@@ -219,9 +223,23 @@ async function readResponsiveState(page) {
         main.append(singleRow);
         const singleStoryVisible = getComputedStyle(singleStory).display !== 'none';
         singleRow.remove();
+        const collectionRow = document.createElement('div');
+        collectionRow.className = 'story-row';
+        for (const story of document.querySelectorAll('.story-row .story')) {
+            collectionRow.append(story.cloneNode(true));
+            if (collectionRow.children.length === 6) {
+                break;
+            }
+        }
+        main.append(collectionRow);
+        const collectionRowVisible = [...collectionRow.children].filter(
+            (story) => getComputedStyle(story).display !== 'none',
+        ).length;
+        collectionRow.remove();
         return {
             appDisplay: getComputedStyle(app).display,
             singleStoryVisible,
+            collectionRowVisible,
             visiblePerRow: [...document.querySelectorAll('.story-row')].map(
                 (row) => [...row.querySelectorAll('.story')].filter(
                     (story) => getComputedStyle(story).display !== 'none',
