@@ -448,6 +448,7 @@ function App() {
         useState<tagging.AssignmentWorkspace | null>(null);
     const [tagCatalog, setTagCatalog] = useState<tagging.Catalog | null>(null);
     const [facetCounts, setFacetCounts] = useState<Record<number, number>>({});
+    const [collectionRevision, setCollectionRevision] = useState(0);
     const [savedShelves, setSavedShelves] = useState<shelves.Summary[]>([]);
     const [savedShelfStories, setSavedShelfStories] =
         useState<Record<number, library.StorySummary[]>>({});
@@ -654,6 +655,11 @@ function App() {
         }
     }, [activateShelf, queryHistory]);
 
+    const invalidateCollection = useCallback(async () => {
+        setCollectionRevision((current) => current + 1);
+        await Promise.all([loadCollectionRef.current(), loadSavedShelves()]);
+    }, [loadSavedShelves]);
+
     const reconcileOperation = useCallback((snapshot: operations.Snapshot) => {
         setOperationSnapshots((current) => {
             const index = current.findIndex((candidate) => candidate.id === snapshot.id);
@@ -672,8 +678,7 @@ function App() {
             !refreshedOperations.current.has(snapshot.id)
         ) {
             refreshedOperations.current.add(snapshot.id);
-            void loadCollectionRef.current();
-            void loadSavedShelves();
+            void invalidateCollection();
             if (snapshot.kind === 'metadata_sync') {
                 void refreshMetadataStatus();
                 void LoadTagCatalog().then((response) => {
@@ -683,7 +688,7 @@ function App() {
                 });
             }
         }
-    }, [loadSavedShelves, refreshMetadataStatus]);
+    }, [invalidateCollection, refreshMetadataStatus]);
 
     useEffect(() => {
         let active = true;
@@ -1007,8 +1012,7 @@ function App() {
         setDetail(null);
         setSelectedID(null);
         setRemovalNotice(`${title} was moved to application trash.`);
-        await loadCollection();
-        await loadSavedShelves();
+        await invalidateCollection();
     }
 
     async function loadAllStories() {
@@ -1186,7 +1190,7 @@ function App() {
         return () => {
             active = false;
         };
-    }, [applicationState, tagCatalog]);
+    }, [applicationState, collectionRevision, tagCatalog]);
     const languageOptions = [...new Set([
         ...(metadataStatus?.locale ? [metadataStatus.locale] : []),
         ...collectionQuery.languages,
@@ -1578,8 +1582,8 @@ function App() {
         setAssignmentWorkspace((current) => current
             ? new tagging.AssignmentWorkspace({...current, catalog})
             : current);
-        void loadSavedShelves();
-    }, [loadSavedShelves]);
+        void invalidateCollection();
+    }, [invalidateCollection]);
 
     function setBooleanFilter(definitionId: number, state: 'ignored' | 'true' | 'false') {
         updateQuery({
@@ -2982,8 +2986,7 @@ function App() {
                     }}
                     onWorkspaceChange={acceptEditorWorkspace}
                     onAssignmentsChange={async () => {
-                        await loadCollection();
-                        await loadSavedShelves();
+                        await invalidateCollection();
                     }}
                 />
             )}

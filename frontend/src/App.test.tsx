@@ -1800,6 +1800,60 @@ test('composes official language, import status, and derived age refinements', a
         .toBeInTheDocument();
 });
 
+test('refreshes derived facet counts when an import changes the collection', async () => {
+    let ageCount = 1;
+    loadTagCatalog.mockResolvedValue(new app.TagCatalogResponse({
+        catalog: {
+            definitions: [{
+                id: 3,
+                key: 'age',
+                normalizedKey: 'age',
+                label: 'Age',
+                color: '#ff705c',
+                kind: 'choice',
+                source: 'derived',
+                presentation: 'system',
+                position: 0,
+                protected: true,
+                values: [{
+                    id: 30,
+                    definitionId: 3,
+                    key: '3-5',
+                    normalizedKey: '3-5',
+                    label: '3–5 years',
+                    position: 0,
+                }],
+            }],
+        },
+    }));
+    queryStories.mockImplementation(async (request) => new app.LibraryPageResponse({
+        page: {
+            stories,
+            page: 1,
+            pageSize: request.pageSize,
+            totalItems: request.choiceFilters?.length ? ageCount : stories.length,
+            totalPages: 1,
+            sort: 'imported_desc',
+        },
+    }));
+    render(<App/>);
+    const age = await screen.findByRole('checkbox', {name: '3–5 years'});
+    await waitFor(() => expect(age.closest('label')).toHaveTextContent('1'));
+
+    ageCount = 2;
+    operationChanged?.({
+        id: '00112233-4455-4677-8899-aabbccddeeff',
+        kind: 'import',
+        status: 'succeeded',
+        completedItems: 1,
+        totalItems: 1,
+        cancelRequested: false,
+        createdAt: '2026-07-25T09:00:00Z',
+        items: [],
+    });
+    await waitFor(() => expect(age.closest('label')).toHaveTextContent('2'));
+});
+
 test('keeps matched metadata, artwork, provenance, and combined refinements usable from stale cache', async () => {
     const user = userEvent.setup();
     const artworkID = 'a'.repeat(64);
