@@ -1,7 +1,9 @@
 import {expect, test} from 'vitest';
 import fixtures from '../../internal/library/testdata/story_library_query_codec.json';
+import searchFixtures from '../../internal/searchtext/testdata/normalization.json';
 import {
     type CollectionQuery,
+    canonicalCollectionQuery,
     decodeCollectionQuery,
     encodeCollectionQuery,
 } from './query-codec';
@@ -11,6 +13,21 @@ test('matches the shared Go collection-query codec fixtures', () => {
         const query = fixture.query as CollectionQuery;
         expect(encodeCollectionQuery(query), fixture.name).toBe(fixture.hash);
         expect(decodeCollectionQuery(fixture.hash), fixture.name).toEqual(query);
+    }
+});
+
+test('matches shared Unicode search normalization fixtures', () => {
+    for (const fixture of searchFixtures) {
+        expect(canonicalCollectionQuery({
+            name: fixture.input,
+            languages: [],
+            compatibilities: [],
+            booleanFilters: [],
+            choiceFilters: [],
+            page: 1,
+            pageSize: 24,
+            sort: 'name_asc',
+        }).name, fixture.input).toBe(fixture.normalized);
     }
 });
 

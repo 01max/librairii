@@ -1,3 +1,5 @@
+import casefold from './search-casefold.json';
+
 export const STORY_LIBRARY_QUERY_VERSION = 1;
 export const STORY_LIBRARY_HASH_PATH = '#/library';
 
@@ -218,12 +220,13 @@ function canonicalLanguage(value: string): string {
 }
 
 function normalizeSearchText(value: string): string {
-    return value
-        .trim()
-        .toLocaleLowerCase()
+    return [...value]
+        .map((character) => (casefold as Record<string, string>)[character] ?? character)
+        .join('')
         .normalize('NFKD')
-        .replace(/\p{M}/gu, '')
-        .replace(/\s+/gu, ' ');
+        .replace(/\p{Mn}/gu, '')
+        .replace(/\p{White_Space}+/gu, ' ')
+        .replace(/^ | $/gu, '');
 }
 
 function oneValue(

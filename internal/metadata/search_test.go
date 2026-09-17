@@ -61,6 +61,21 @@ func TestBackfillNormalizedTitlesRepairsActiveSnapshotsWithoutWeakeningContentGu
 		t.Fatalf("title_normalized = %q", normalized)
 	}
 	if _, err := database.Exec(
+		"UPDATE official_story_metadata SET title_normalized = 'stale' WHERE snapshot_id = ?",
+		snapshot.ID,
+	); err != nil {
+		t.Fatal(err)
+	}
+	if err := BackfillNormalizedTitles(ctx, database); err != nil {
+		t.Fatal(err)
+	}
+	if err := database.QueryRow(
+		"SELECT title_normalized FROM official_story_metadata WHERE snapshot_id = ?",
+		snapshot.ID,
+	).Scan(&normalized); err != nil || normalized != "l'ecole magique" {
+		t.Fatalf("repaired title_normalized = %q, %v", normalized, err)
+	}
+	if _, err := database.Exec(
 		"UPDATE official_story_metadata SET title = 'Changed' WHERE snapshot_id = ?",
 		snapshot.ID,
 	); err == nil {

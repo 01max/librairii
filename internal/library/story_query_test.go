@@ -86,6 +86,38 @@ func TestStoryLibraryQueryNormalizesLiteralNameSearch(t *testing.T) {
 	}
 }
 
+func TestStoryLibraryQueryUsesUnicodeCaseFolding(t *testing.T) {
+	t.Parallel()
+	query, repository, database := newLibraryQuery(t, nil)
+	createQueryableStory(t, repository,
+		"00112233-4455-4677-8899-aabbccddeeff", "ΟΣ", "a")
+	createQueryableStory(t, repository,
+		"11112222-3333-4444-8555-666677778888", "Straße", "b")
+	for _, testCase := range []struct{ search, title string }{
+		{search: "ος", title: "ΟΣ"},
+		{search: "οσ", title: "ΟΣ"},
+		{search: "STRASSE", title: "Straße"},
+	} {
+		page, err := query.Search(context.Background(), StoryLibraryQuery{Name: testCase.search})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if page.TotalItems != 1 || page.Stories[0].Title != testCase.title {
+			t.Fatalf("Search(%q) = %#v", testCase.search, page)
+		}
+	}
+	if _, err := database.Exec("UPDATE stories SET display_name_normalized = 'straße' WHERE embedded_title = 'Straße'"); err != nil {
+		t.Fatal(err)
+	}
+	if err := BackfillNormalizedDisplayNames(context.Background(), database); err != nil {
+		t.Fatal(err)
+	}
+	page, err := query.Search(context.Background(), StoryLibraryQuery{Name: "STRASSE"})
+	if err != nil || page.TotalItems != 1 {
+		t.Fatalf("Search(after backfill) = %#v, %v", page, err)
+	}
+}
+
 func TestExportQueryFreezesTheCompleteResultWithoutPagination(t *testing.T) {
 	t.Parallel()
 
