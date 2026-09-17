@@ -329,35 +329,20 @@ func newSmokeComposition(
 ) (*smokeComposition, error) {
 	readiness := platform.NewStorageReadiness(root)
 	clock := platform.SystemClock{}
-	runtime, err := coreapp.NewImportRuntime(
-		readiness,
-		clock,
-		events,
-		2,
-		coreapp.WithMetadataFetcher(fetcher),
-	)
-	if err != nil {
-		return nil, fmt.Errorf("construct release smoke runtime: %w", err)
-	}
-	application, err := coreapp.New(coreapp.Dependencies{
-		Clock:       clock,
-		Dialogs:     dialogs,
-		Events:      events,
-		Readiness:   readiness,
-		Operations:  runtime,
-		Library:     runtime,
-		Removal:     runtime,
-		Tags:        runtime,
-		Shelves:     runtime,
-		Diagnostics: runtime,
-		Resources:   []coreapp.ResourcePort{readiness},
+	composition, err := coreapp.NewComposition(coreapp.CompositionOptions{
+		Storage:         readiness,
+		Clock:           clock,
+		Dialogs:         dialogs,
+		Events:          events,
+		MetadataFetcher: fetcher,
+		Workers:         2,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("construct release smoke application: %w", err)
 	}
 	return &smokeComposition{
-		application: application,
-		runtime:     runtime,
+		application: composition.Application,
+		runtime:     composition.Runtime,
 		readiness:   readiness,
 	}, nil
 }

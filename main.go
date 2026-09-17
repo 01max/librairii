@@ -43,28 +43,13 @@ func main() {
 	}
 	clock := platform.SystemClock{}
 	events := platform.RuntimeEvents{}
-	importRuntime, err := coreapp.NewImportRuntime(
-		readiness,
-		clock,
-		events,
-		2,
-		coreapp.WithMetadataFetcher(catalogClient),
-	)
-	if err != nil {
-		log.Fatal(err)
-	}
-	core, err := coreapp.New(coreapp.Dependencies{
-		Clock:       clock,
-		Dialogs:     dialogs,
-		Events:      events,
-		Readiness:   readiness,
-		Operations:  importRuntime,
-		Library:     importRuntime,
-		Removal:     importRuntime,
-		Tags:        importRuntime,
-		Shelves:     importRuntime,
-		Diagnostics: importRuntime,
-		Resources:   []coreapp.ResourcePort{readiness},
+	composition, err := coreapp.NewComposition(coreapp.CompositionOptions{
+		Storage:         readiness,
+		Clock:           clock,
+		Dialogs:         dialogs,
+		Events:          events,
+		MetadataFetcher: catalogClient,
+		Workers:         2,
 	})
 	if err != nil {
 		log.Fatal(err)
@@ -101,7 +86,7 @@ func main() {
 		}
 		appOptions = append(appOptions, WithQuitAfterDOMReady(quit))
 	}
-	app := NewApp(core, appOptions...)
+	app := NewApp(composition.Application, appOptions...)
 
 	appOptionsConfig, err := productionOptions(app, artworkHandler, assets)
 	if err != nil {
