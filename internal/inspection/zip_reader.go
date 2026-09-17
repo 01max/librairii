@@ -132,6 +132,47 @@ func (a *validatedZIP) read(
 	return bytes, nil
 }
 
+// verifyPayloads reads every ZIP member to its end so the ZIP reader checks
+// decompression and CRC before the archive can enter managed storage.
+func (a *validatedZIP) verifyPayloads(ctx context.Context, maxExpandedBytes int64) error {
+	remaining := maxExpandedBytes
+	for _, name := range a.entryNames() {
+		file := a.entries[name]
+		reader, err := file.Open()
+		if err != nil {
+			return &ValidationError{Code: CodeInvalidContainer, Entry: name, Cause: err}
+		}
+		readLimit := remaining
+		if readLimit < math.MaxInt64 {
+			readLimit++
+		}
+		count, readErr := io.Copy(io.Discard, io.LimitReader(
+			contextReader{ctx: ctx, reader: reader}, readLimit,
+		))
+		closeErr := reader.Close()
+		if ctxErr := ctx.Err(); ctxErr != nil {
+			return ctxErr
+		}
+		if readErr != nil {
+			return &ValidationError{Code: CodeInvalidContainer, Entry: name, Cause: readErr}
+		}
+		if count > remaining {
+			return &ValidationError{Code: CodeExpandedSizeLimit, Entry: name}
+		}
+		if closeErr != nil {
+			return &ValidationError{Code: CodeInvalidContainer, Entry: name, Cause: closeErr}
+		}
+		if count != int64(file.UncompressedSize64) {
+			return &ValidationError{
+				Code: CodeInvalidContainer, Entry: name,
+				Cause: fmt.Errorf("entry size %d differs from declared %d", count, file.UncompressedSize64),
+			}
+		}
+		remaining -= count
+	}
+	return nil
+}
+
 func isNestedArchive(name string) bool {
 	lowerName := strings.ToLower(name)
 	return strings.HasSuffix(lowerName, ".zip") ||
