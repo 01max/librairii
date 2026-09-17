@@ -18,6 +18,7 @@ const acceptanceCases = [
         expected: {
             appDisplay: 'grid',
             visiblePerRow: [6, 6],
+            singleStoryVisible: true,
             filtersDisplay: 'block',
             railWidth: 72,
             railDirection: 'column',
@@ -32,7 +33,8 @@ const acceptanceCases = [
         viewport: {width: 1180, height: 900},
         expected: {
             appDisplay: 'grid',
-            visiblePerRow: [5, 5],
+            visiblePerRow: [6, 6],
+            singleStoryVisible: true,
             filtersDisplay: 'block',
             railWidth: 72,
             railDirection: 'column',
@@ -47,7 +49,8 @@ const acceptanceCases = [
         viewport: {width: 850, height: 900},
         expected: {
             appDisplay: 'grid',
-            visiblePerRow: [4, 4],
+            visiblePerRow: [6, 6],
+            singleStoryVisible: true,
             filtersDisplay: 'none',
             railWidth: 64,
             railDirection: 'column',
@@ -62,7 +65,8 @@ const acceptanceCases = [
         viewport: {width: 560, height: 900},
         expected: {
             appDisplay: 'block',
-            visiblePerRow: [3, 3],
+            visiblePerRow: [6, 6],
+            singleStoryVisible: true,
             filtersDisplay: 'none',
             railWidth: 560,
             railHeight: 58,
@@ -205,8 +209,19 @@ async function readResponsiveState(page) {
         ) {
             throw new Error('canonical responsive fixture is incomplete');
         }
+        const singleRow = document.createElement('div');
+        singleRow.className = 'story-row';
+        const singleStory = document.querySelector('.story-row .story')?.cloneNode(true);
+        if (!singleStory) {
+            throw new Error('canonical responsive fixture has no story');
+        }
+        singleRow.append(singleStory);
+        main.append(singleRow);
+        const singleStoryVisible = getComputedStyle(singleStory).display !== 'none';
+        singleRow.remove();
         return {
             appDisplay: getComputedStyle(app).display,
+            singleStoryVisible,
             visiblePerRow: [...document.querySelectorAll('.story-row')].map(
                 (row) => [...row.querySelectorAll('.story')].filter(
                     (story) => getComputedStyle(story).display !== 'none',
