@@ -116,7 +116,6 @@ func productionOptions(
 			DisableWebViewDrop: true,
 		},
 		Mac: &mac.Options{
-			DisableZoom: true,
 			About: &mac.AboutInfo{
 				Title: applicationTitle,
 				Message: "A local-first story archive library for " +

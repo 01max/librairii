@@ -136,8 +136,9 @@ before atomically activating it. A failed, cancelled, corrupt, timed-out, or
 offline refresh leaves the last-known-good snapshot active.
 
 Only complete archive UUIDs are matched. For display fields, active official
-metadata in the configured locale takes precedence, then permitted embedded
-metadata, then a deterministic UUID fallback. The detail UI exposes source and
+metadata prefers the configured locale, then an available translation of the
+same language, then another available official translation. Permitted embedded
+metadata and a deterministic UUID fallback follow. The detail UI exposes source and
 freshness information such as locale, publisher, source record, source update,
 fetch, and activation timestamps when the catalog provides them. Missing or
 ambiguous age data is left unassigned; unambiguous ages produce read-only

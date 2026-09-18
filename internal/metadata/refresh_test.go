@@ -3,6 +3,7 @@ package metadata
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"os"
 	"path/filepath"
@@ -56,6 +57,44 @@ func TestRefreshServiceStagesValidatesAndActivatesCatalog(t *testing.T) {
 		t.Fatalf("official metadata = %#v", rows)
 	}
 	assertNoRefreshStaging(t, harness.layout)
+}
+
+func TestRefreshServiceMakesFallbackTranslationAvailableToLibrary(t *testing.T) {
+	t.Parallel()
+
+	harness := newRefreshHarness(t)
+	payload, err := json.Marshal(map[string]any{"response": map[string]any{
+		"pack": map[string]any{
+			"uuid":              "ef1c88e3-f1d3-4413-b75f-96baf2a20c6e",
+			"locales_available": map[string]any{"fr_FR": true},
+			"localized_infos": map[string]any{"fr_FR": map[string]any{
+				"title": "Histoire synthétique", "age_min": 3, "age_max": -1,
+			}},
+		},
+	}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	harness.fetcher.payload = payload
+	harness.setIDs("123e4567-e89b-42d3-a456-426614174303")
+	if _, err := harness.service.Refresh(context.Background(), "en-GB"); err != nil {
+		t.Fatal(err)
+	}
+	provider, err := NewLibraryProvider(harness.repository, "en-GB")
+	if err != nil {
+		t.Fatal(err)
+	}
+	const storyUUID = "ef1c88e3-f1d3-4413-b75f-96baf2a20c6e"
+	found, err := provider.FindByUUIDs(context.Background(), []string{storyUUID})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(found) != 1 ||
+		found[storyUUID].Title != "Histoire synthétique" ||
+		found[storyUUID].Locale != "en-GB" ||
+		found[storyUUID].Language != "fr-FR" {
+		t.Fatalf("library metadata = %#v", found)
+	}
 }
 
 func TestRefreshServiceKeepsLastKnownGoodAfterCorruptCatalog(t *testing.T) {

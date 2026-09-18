@@ -95,8 +95,8 @@ func TestProductionOptionsHardenTheDesktopBoundary(t *testing.T) {
 	if len(configuration.Bind) != 1 || configuration.Bind[0] != app {
 		t.Fatalf("unexpected Wails bindings: %#v", configuration.Bind)
 	}
-	if configuration.Mac == nil || !configuration.Mac.DisableZoom {
-		t.Fatal("macOS webview zoom must be disabled")
+	if configuration.Mac == nil || configuration.Mac.DisableZoom {
+		t.Fatal("macOS window zoom/fullscreen control must be enabled")
 	}
 	if configuration.Linux == nil ||
 		configuration.Linux.ProgramName != applicationProgramID ||
