@@ -5,7 +5,7 @@ go 1.25.0
 require (
 	github.com/bodgit/sevenzip v1.6.5
 	github.com/google/uuid v1.6.0
-	github.com/wailsapp/wails/v2 v2.13.0
+	github.com/wailsapp/wails/v2 v2.16.0
 	golang.org/x/sys v0.46.0
 	golang.org/x/text v0.40.0
 	modernc.org/sqlite v1.54.0
@@ -48,8 +48,8 @@ require (
 	github.com/wailsapp/go-webview2 v1.0.22 // indirect
 	github.com/wailsapp/mimetype v1.4.1 // indirect
 	go4.org v0.0.0-20260112195520-a5071408f32f // indirect
-	golang.org/x/crypto v0.51.0 // indirect
-	golang.org/x/net v0.54.0 // indirect
+	golang.org/x/crypto v0.53.0 // indirect
+	golang.org/x/net v0.56.0 // indirect
 	modernc.org/libc v1.74.1 // indirect
 	modernc.org/mathutil v1.7.1 // indirect
 	modernc.org/memory v1.11.0 // indirect
