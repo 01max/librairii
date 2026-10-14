@@ -31,6 +31,21 @@ archive stay authoritative and the conflicting source is not published.
 Encrypted, malformed, unsafe, incomplete, or unsupported archives are rejected.
 Librairii does not decrypt, repair, or convert story packs.
 
+## Story details
+
+Select a story and choose **Open details** to see its cover and description.
+Descriptions display readable text and paragraph breaks, including when the
+archive or catalog contains HTML. If artwork is unavailable, a colorful title
+cover appears instead.
+
+Choose **Show technical details** to inspect the story UUID, archive filename,
+verification status, and full checksum. **Hide technical details** folds them
+away again.
+
+To remove a story, choose **Remove from library…**, then confirm with **Move to
+trash**. **Keep story** returns to the story without removing it. The managed
+copy moves to application trash; your original source file stays in place.
+
 ## Export passthrough and Lunii.QT
 
 An export can snapshot any of these scopes:

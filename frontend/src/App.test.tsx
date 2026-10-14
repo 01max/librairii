@@ -2282,6 +2282,104 @@ test('selects a cover and loads its detail drawer without losing the collection'
     expect(loadStoryDetail).toHaveBeenLastCalledWith(2);
 });
 
+test('shows the story artwork and readable description in the details dialog', async () => {
+    const user = userEvent.setup();
+    loadStoryDetail.mockResolvedValue(new app.StoryDetailResponse({
+        detail: {
+            story: {
+                ...stories[0],
+                artworkId: 'rainbow-cover',
+                description: 'Un dragon !<br/><br/>Aide <b>Lou</b> &amp; ses amis.<span class="SF_splitter"></span>',
+            },
+            archive: {
+                originalFilename: 'clockwork-forest.zip',
+                sha256: 'a'.repeat(64),
+                verification: 'compatible',
+            },
+        },
+    }));
+    render(<App/>);
+    await user.click(await screen.findByRole('button', {name: 'Open details'}));
+    const dialog = await screen.findByRole('dialog', {name: 'Clockwork Forest'});
+
+    expect(within(dialog).getByRole('img', {name: 'Clockwork Forest artwork'}))
+        .toHaveAttribute('src', '/artwork/rainbow-cover');
+    expect(within(dialog).getByText('Un dragon ! Aide Lou & ses amis.'))
+        .toBeInTheDocument();
+    expect(dialog).not.toHaveTextContent('<br');
+    expect(dialog).not.toHaveTextContent('SF_splitter');
+    fireEvent.error(within(dialog).getByRole('img', {name: 'Clockwork Forest artwork'}));
+    expect(within(dialog).queryByRole('img')).not.toBeInTheDocument();
+    expect(within(dialog).getByRole('heading', {name: 'Clockwork Forest'}))
+        .toBeInTheDocument();
+});
+
+test('keeps technical story details behind a show and hide toggle', async () => {
+    const user = userEvent.setup();
+    render(<App/>);
+    await user.click(await screen.findByRole('button', {name: 'Open details'}));
+    const dialog = screen.getByRole('dialog', {name: 'Clockwork Forest'});
+    expect(within(dialog).queryByText(stories[0].uuid)).not.toBeInTheDocument();
+    expect(within(dialog).queryByText('Story UUID')).not.toBeInTheDocument();
+    expect(within(dialog).queryByText('a'.repeat(64))).not.toBeInTheDocument();
+
+    await user.click(within(dialog).getByRole('button', {name: 'Show technical details'}));
+    expect(within(dialog).getByText(stories[0].uuid)).toBeInTheDocument();
+    expect(within(dialog).getByText('clockwork-forest.zip')).toBeInTheDocument();
+    expect(within(dialog).getByText('Verified')).toBeInTheDocument();
+    expect(within(dialog).getByText('a'.repeat(64))).toBeInTheDocument();
+    await user.click(within(dialog).getByRole('button', {name: 'Hide technical details'}));
+    expect(within(dialog).queryByText(stories[0].uuid)).not.toBeInTheDocument();
+});
+
+test('asks for confirmation only after choosing to remove a story', async () => {
+    const user = userEvent.setup();
+    render(<App/>);
+    await user.click(await screen.findByRole('button', {name: 'Open details'}));
+    const dialog = screen.getByRole('dialog', {name: 'Clockwork Forest'});
+    expect(within(dialog).queryByText('Remove from this library?')).not.toBeInTheDocument();
+    expect(within(dialog).queryByRole('button', {name: 'Move to trash'})).not.toBeInTheDocument();
+
+    await user.click(within(dialog).getByRole('button', {name: 'Remove from library…'}));
+    expect(within(dialog).getByText('Remove from this library?')).toBeInTheDocument();
+    expect(removeStory).not.toHaveBeenCalled();
+    const cancel = within(dialog).getByRole('button', {name: 'Keep story'});
+    await waitFor(() => expect(cancel).toHaveFocus());
+    await user.click(cancel);
+    expect(within(dialog).queryByRole('button', {name: 'Move to trash'})).not.toBeInTheDocument();
+    expect(removeStory).not.toHaveBeenCalled();
+    expect(within(dialog).getByRole('button', {name: 'Remove from library…'})).toHaveFocus();
+
+    await user.click(within(dialog).getByRole('button', {name: 'Remove from library…'}));
+    await user.keyboard('{Escape}');
+    expect(dialog).toBeInTheDocument();
+    expect(within(dialog).queryByRole('button', {name: 'Move to trash'})).not.toBeInTheDocument();
+    expect(removeStory).not.toHaveBeenCalled();
+});
+
+test('keeps removal pending in the dialog and allows retry after a failure', async () => {
+    const user = userEvent.setup();
+    let rejectRemoval: ((reason?: unknown) => void) | undefined;
+    removeStory.mockImplementationOnce(() => new Promise((_, reject) => {
+        rejectRemoval = reject;
+    }));
+    render(<App/>);
+    await user.click(await screen.findByRole('button', {name: 'Open details'}));
+    const dialog = screen.getByRole('dialog', {name: 'Clockwork Forest'});
+    await user.click(within(dialog).getByRole('button', {name: 'Remove from library…'}));
+    await user.click(within(dialog).getByRole('button', {name: 'Move to trash'}));
+    expect(within(dialog).getByRole('button', {name: 'Moving to trash…'})).toBeDisabled();
+    expect(within(dialog).getByRole('button', {name: 'Keep story'})).toBeDisabled();
+    await user.keyboard('{Escape}');
+    expect(dialog).toBeInTheDocument();
+    rejectRemoval?.(new Error('Disconnected'));
+    expect(await within(dialog).findByText(
+        'The story could not be moved to trash. Please try again.',
+    )).toBeInTheDocument();
+    expect(within(dialog).getByRole('button', {name: 'Move to trash'})).toBeEnabled();
+    expect(screen.getByRole('button', {name: 'Clockwork Forest Lunii'})).toBeInTheDocument();
+});
+
 test('traps detail-dialog focus, closes with Escape, and restores its opener', async () => {
     const user = userEvent.setup();
     render(<App/>);
@@ -2289,14 +2387,16 @@ test('traps detail-dialog focus, closes with Escape, and restores its opener', a
     const opener = await screen.findByRole('button', {name: 'Open details'});
     await user.click(opener);
     const dialog = await screen.findByRole('dialog', {name: 'Clockwork Forest'});
-    const cancel = within(dialog).getByRole('button', {name: 'Cancel'});
-    const remove = within(dialog).getByRole('button', {name: 'Move to trash'});
+    const cancel = within(dialog).getByRole('button', {name: 'Close'});
+    const remove = within(dialog).getByRole('button', {name: 'Remove from library…'});
     await waitFor(() => expect(cancel).toHaveFocus());
 
     await user.tab({shift: true});
     expect(remove).toHaveFocus();
     await user.tab();
     expect(cancel).toHaveFocus();
+    await user.tab();
+    expect(within(dialog).getByRole('button', {name: 'Show technical details'})).toHaveFocus();
 
     await user.keyboard('{Escape}');
     expect(screen.queryByRole('dialog', {name: 'Clockwork Forest'}))
@@ -2882,7 +2982,7 @@ test('cancels story removal without changing the collection', async () => {
 
     await user.click(await screen.findByRole('button', {name: 'Open details'}));
     expect(screen.getByRole('dialog', {name: 'Clockwork Forest'})).toBeInTheDocument();
-    await user.click(screen.getByRole('button', {name: 'Cancel'}));
+    await user.click(screen.getByRole('button', {name: 'Close'}));
 
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(removeStory).not.toHaveBeenCalled();
@@ -2916,6 +3016,7 @@ test('confirms removal, refreshes the collection, and reports trash custody', as
     render(<App/>);
 
     await user.click(await screen.findByRole('button', {name: 'Open details'}));
+    await user.click(screen.getByRole('button', {name: 'Remove from library…'}));
     await user.click(screen.getByRole('button', {name: 'Move to trash'}));
 
     expect(removeStory).toHaveBeenCalledWith(1);
@@ -3003,6 +3104,7 @@ test('completes the import, list, select, detail, and remove workflow', async ()
         .toBeInTheDocument();
     await user.click(screen.getByRole('button', {name: 'Open details'}));
     expect(screen.getByRole('dialog', {name: 'Clockwork Forest'})).toBeInTheDocument();
+    await user.click(screen.getByRole('button', {name: 'Remove from library…'}));
     await user.click(screen.getByRole('button', {name: 'Move to trash'}));
 
     expect(removeStory).toHaveBeenCalledWith(1);
