@@ -121,15 +121,40 @@ select:focus-visible {
 }
 
 .rail button {
-    width: 42px;
-    height: 42px;
+    width: 60px;
+    min-height: 60px;
+    display: grid;
+    justify-items: center;
+    align-content: center;
+    gap: 6px;
     justify-self: center;
     padding: 0;
     border: 0;
     border-radius: 12px;
-    color: #99a6c1;
+    color: #c6d0e5;
     background: transparent;
     font-weight: 800;
+    font-size: 11px;
+}
+
+.rail button svg {
+    width: 22px;
+    height: 22px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.6;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.rail button:disabled {
+    opacity: .5;
+    cursor: default;
+}
+
+.rail button:hover:not(:disabled):not(.active) {
+    color: white;
+    background: #253555;
 }
 
 .rail button.active {
@@ -496,6 +521,68 @@ select:focus-visible {
     border-color: var(--blue);
     color: white;
     background: var(--blue);
+}
+
+.lunii-sync {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    margin-bottom: 26px;
+    padding: 18px 22px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: white;
+}
+
+.lunii-sync.first-sync {
+    padding: 26px;
+    border-color: #a9b6ff;
+    background: #e8edff;
+}
+
+.lunii-sync h3 {
+    margin: 0 0 8px;
+    font-size: 16px;
+    line-height: 1.3;
+}
+
+.lunii-sync.first-sync h3 {
+    font: 600 25px/1.15 var(--serif);
+}
+
+.lunii-sync p {
+    max-width: 60ch;
+    margin: 0;
+    color: #526079;
+    font-size: 12px;
+    line-height: 1.55;
+}
+
+.lunii-sync .last-sync {
+    margin-top: 8px;
+    font-size: 11px;
+}
+
+.lunii-sync .sync-warning {
+    margin-top: 10px;
+    color: #8b3b2e;
+}
+
+.lunii-sync > button {
+    flex-shrink: 0;
+    padding: 12px 18px;
+    border: 0;
+    border-radius: 9px;
+    color: white;
+    background: var(--blue);
+    font-size: 13px;
+    font-weight: 800;
+}
+
+.lunii-sync > button:disabled {
+    cursor: progress;
+    opacity: .7;
 }
 
 .heading {
@@ -944,6 +1031,44 @@ select:focus-visible {
     color: inherit;
     background: none;
     text-align: left;
+    width: 100%;
+    display: block;
+    line-height: 0;
+}
+
+.story-card {
+    min-width: 0;
+    align-self: start;
+}
+
+.story-title {
+    margin: 10px 2px 0;
+    color: #526079;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1.4;
+    overflow-wrap: anywhere;
+}
+
+.story .cover {
+    border: 0;
+}
+
+.story .cover.has-artwork {
+    aspect-ratio: auto;
+    background: transparent;
+}
+
+.story .cover.has-artwork::after {
+    display: none;
+}
+
+.story .cover.has-artwork img {
+    display: block;
+    position: static;
+    width: 100%;
+    height: auto;
+    aspect-ratio: auto .83;
 }
 
 .cover {
@@ -963,7 +1088,8 @@ select:focus-visible {
 
 .story.selected .cover {
     border-color: var(--blue);
-    box-shadow: 0 0 0 3px #dfe4ff, 0 11px 20px rgba(23, 34, 61, .18);
+    box-shadow: 0 0 0 3px var(--blue), 0 0 0 6px #dfe4ff,
+        0 11px 20px rgba(23, 34, 61, .18);
 }
 
 .cover::before {
@@ -1915,7 +2041,7 @@ select:focus-visible {
         grid-template-columns: repeat(5, minmax(100px, 1fr));
     }
 
-    .story-row.preview .story:last-child {
+    .story-row.preview .story-card:last-child {
         display: none;
     }
 
@@ -1945,7 +2071,7 @@ select:focus-visible {
         grid-template-columns: repeat(4, minmax(95px, 1fr));
     }
 
-    .story-row.preview .story:nth-last-child(-n + 2) {
+    .story-row.preview .story-card:nth-last-child(-n + 2) {
         display: none;
     }
 
@@ -1972,19 +2098,39 @@ select:focus-visible {
     .rail nav {
         display: flex;
         width: auto;
+        gap: 4px;
     }
 
-    .rail nav button:nth-child(n + 3),
     .avatar {
         display: none;
+    }
+
+    .rail button {
+        width: 54px;
+        min-height: 44px;
+        gap: 3px;
+        border-radius: 8px;
+        font-size: 10px;
+    }
+
+    .rail button svg {
+        width: 18px;
+        height: 18px;
     }
 
     .main {
         padding: 22px 14px 215px;
     }
 
-    .top button:first-of-type {
-        display: none;
+    .lunii-sync {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 16px;
+        padding: 18px;
+    }
+
+    .lunii-sync.first-sync {
+        padding: 20px;
     }
 
     .heading h2 {
@@ -2013,7 +2159,7 @@ select:focus-visible {
         gap: 10px;
     }
 
-    .story-row.preview .story:nth-child(4) {
+    .story-row.preview .story-card:nth-child(4) {
         display: none;
     }
 

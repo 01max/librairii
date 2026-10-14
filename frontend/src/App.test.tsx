@@ -319,7 +319,7 @@ test('renders the canonical collection shell from typed library data', async () 
     expect(screen.getByRole('navigation', {name: 'Primary navigation'})).toBeInTheDocument();
     expect(screen.getByText('Stories grouped by your tags · 2 archives'))
         .toBeInTheDocument();
-    expect(screen.getByRole('button', {name: 'Clockwork Forest Lunii'}))
+    expect(screen.getByRole('button', {name: 'Clockwork Forest'}))
         .toHaveAttribute('aria-pressed', 'true');
     expect(await screen.findByText('clockwork-forest.zip · 1.0 MB · Verified'))
         .toBeInTheDocument();
@@ -387,6 +387,88 @@ test('offers explicit preservation when an incompatible database blocks startup'
     )).toBeInTheDocument();
 });
 
+test('offers a prominent first Lunii sync with an explanation and no prior sync time', async () => {
+    render(<App/>);
+    const sync = await screen.findByRole('region', {name: 'Official Lunii sync'});
+    expect(within(sync).getByRole('button', {name: 'Sync with Lunii'})).toBeEnabled();
+    expect(sync).toHaveTextContent('official Lunii API');
+    expect(sync).toHaveTextContent('descriptions and cover images');
+    expect(sync).toHaveTextContent('Last successful sync: Never');
+    expect(sync).toHaveAttribute('data-state', 'first-lunii-sync');
+});
+
+test('keeps the last successful Lunii sync visible during later operations', async () => {
+    officialMetadataStatus.mockResolvedValue(new app.MetadataStatusResponse({
+        status: {state: 'fresh', activatedAt: '2026-07-25T16:00:00Z', matchedStoryCount: 2},
+    }));
+    render(<App/>);
+    const sync = await screen.findByRole('region', {name: 'Official Lunii sync'});
+    expect(within(sync).getByText('Last successful sync:', {exact: false})).toBeInTheDocument();
+    expect(sync.querySelector('time')).toHaveAttribute('dateTime', '2026-07-25T16:00:00Z');
+    operationChanged?.({
+        id: 'import-activity', kind: 'import', status: 'running',
+        completedItems: 0, totalItems: 1, items: [],
+    });
+    expect(sync.querySelector('time')).toHaveAttribute('dateTime', '2026-07-25T16:00:00Z');
+});
+
+test('prevents duplicate Lunii sync requests while starting and offers retry after failure', async () => {
+    const user = userEvent.setup();
+    let rejectSync: ((reason?: unknown) => void) | undefined;
+    refreshOfficialMetadata.mockImplementationOnce(() => new Promise((_, reject) => {
+        rejectSync = reject;
+    }));
+    render(<App/>);
+    const sync = await screen.findByRole('region', {name: 'Official Lunii sync'});
+    await user.click(within(sync).getByRole('button', {name: 'Sync with Lunii'}));
+    const starting = within(sync).getByRole('button', {name: 'Syncing with Lunii…'});
+    expect(starting).toBeDisabled();
+    await user.click(starting);
+    expect(refreshOfficialMetadata).toHaveBeenCalledTimes(1);
+    rejectSync?.(new Error('Disconnected'));
+    expect(await screen.findByText('Could not start the Lunii sync. Please try again.'))
+        .toBeInTheDocument();
+    expect(within(sync).getByRole('button', {name: 'Sync with Lunii'})).toBeEnabled();
+    expect(sync).toHaveTextContent('Last successful sync: Never');
+});
+
+test('keeps artwork links free of overlaid titles and author captions', async () => {
+    queryStories.mockResolvedValue(new app.LibraryPageResponse({
+        page: {stories: [{...stories[0], artworkId: 'forest-cover'}],
+            page: 1, pageSize: 12, totalItems: 1, totalPages: 1, sort: 'imported_desc'},
+    }));
+    render(<App/>);
+    const cover = await screen.findByRole('button', {name: 'Clockwork Forest'});
+    expect(cover.querySelector('img')).toHaveAttribute('src', '/artwork/forest-cover');
+    expect(cover).not.toHaveTextContent('Clockwork Forest');
+    expect(cover).not.toHaveTextContent('Lunii');
+    expect(cover.parentElement?.querySelector('.story-title')).toHaveTextContent('Clockwork Forest');
+    expect(cover.parentElement?.querySelector('small')).toBeNull();
+    fireEvent.error(cover.querySelector('img')!);
+    expect(cover.querySelector('img')).toBeNull();
+    expect(cover).toBeEnabled();
+    expect(cover.parentElement?.querySelector('.story-title')).toHaveTextContent('Clockwork Forest');
+});
+
+test('makes the rail shortcuts visible and functional', async () => {
+    const user = userEvent.setup();
+    render(<App/>);
+    await screen.findByRole('heading', {name: 'Clockwork Forest'});
+    const rail = screen.getByRole('navigation', {name: 'Primary navigation'});
+    expect(within(rail).getAllByRole('button').map((button) => button.textContent))
+        .toEqual(['Library', 'Tags', 'Import', 'Export']);
+    await user.type(screen.getByRole('searchbox'), 'moon');
+    await user.click(within(rail).getByRole('button', {name: 'Library'}));
+    expect(screen.getByRole('searchbox')).toHaveValue('');
+    await user.click(within(rail).getByRole('button', {name: 'Tags'}));
+    expect(await screen.findByRole('dialog', {name: 'Manage tags'})).toBeInTheDocument();
+    await user.keyboard('{Escape}');
+    await user.click(within(rail).getByRole('button', {name: 'Import'}));
+    expect(selectAndImportStories).toHaveBeenCalledTimes(1);
+    await user.click(within(rail).getByRole('button', {name: 'Export current result'}));
+    expect(selectAndPreflightExport).toHaveBeenCalledWith(expect.objectContaining({sourceType: 'current_query'}));
+});
+
 test('keeps interactive controls in their canonical regions', async () => {
     const user = userEvent.setup();
     officialMetadataStatus.mockResolvedValue(new app.MetadataStatusResponse({
@@ -414,7 +496,7 @@ test('keeps interactive controls in their canonical regions', async () => {
         .toBeInTheDocument();
     expect(within(main).getByRole('searchbox', {name: 'Search stories'}))
         .toBeInTheDocument();
-    expect(within(main).getByRole('button', {name: '↻ Sync'}))
+    expect(within(main).getByRole('button', {name: 'Sync with Lunii'}))
         .toBeInTheDocument();
     expect(within(main).getByRole('button', {name: '＋ Import stories'}))
         .toBeInTheDocument();
@@ -715,7 +797,7 @@ test('pairs the detail drawer with a story visible in saved shelf previews', asy
     await waitFor(() => expect(visibleStory).toHaveAttribute('aria-pressed', 'true'));
     expect(screen.getByRole('complementary', {name: 'Moonlit Workshop details'}))
         .toBeInTheDocument();
-    expect(screen.queryByRole('button', {name: 'Clockwork Forest Lunii'}))
+    expect(screen.queryByRole('button', {name: 'Clockwork Forest'}))
         .not.toBeInTheDocument();
 });
 
@@ -2003,12 +2085,12 @@ test('keeps matched metadata, artwork, provenance, and combined refinements usab
     ));
     render(<App/>);
 
-    expect(await screen.findByRole('heading', {name: 'Using saved official metadata'}))
+    expect(await screen.findByRole('heading', {name: 'Using saved Lunii story details'}))
         .toBeInTheDocument();
     expect(await screen.findByRole('heading', {name: 'The Clockwork Mountain'}))
         .toBeInTheDocument();
     expect(screen.getByRole('button', {
-        name: `Unmatched local story ${unmatched.uuid}`,
+        name: `Unmatched local story`,
     }))
         .toBeInTheDocument();
     expect(await screen.findByRole('img', {name: 'The Clockwork Mountain artwork'}))
@@ -2020,12 +2102,12 @@ test('keeps matched metadata, artwork, provenance, and combined refinements usab
         .toHaveTextContent('Age · 3–5 years');
 
     await user.click(screen.getByRole('button', {
-        name: `Unmatched local story ${unmatched.uuid}`,
+        name: `Unmatched local story`,
     }));
     expect(await screen.findByText('Local story · embedded metadata'))
         .toBeInTheDocument();
     await user.click(screen.getByRole('button', {
-        name: 'The Clockwork Mountain 54 min · Fixture Press',
+        name: 'The Clockwork Mountain',
     }));
 
     await user.type(screen.getByRole('searchbox', {name: 'Search stories'}), 'Clockwork');
@@ -2271,7 +2353,7 @@ test('selects a cover and loads its detail drawer without losing the collection'
     render(<App/>);
 
     const moonlit = await screen.findByRole('button', {
-        name: 'Moonlit Workshop 11112222-3333-4444-8555-666677778888',
+        name: 'Moonlit Workshop',
     });
     await user.click(moonlit);
 
@@ -2377,7 +2459,7 @@ test('keeps removal pending in the dialog and allows retry after a failure', asy
         'The story could not be moved to trash. Please try again.',
     )).toBeInTheDocument();
     expect(within(dialog).getByRole('button', {name: 'Move to trash'})).toBeEnabled();
-    expect(screen.getByRole('button', {name: 'Clockwork Forest Lunii'})).toBeInTheDocument();
+    expect(screen.getByRole('button', {name: 'Clockwork Forest'})).toBeInTheDocument();
 });
 
 test('traps detail-dialog focus, closes with Escape, and restores its opener', async () => {
@@ -2432,9 +2514,9 @@ test('keeps bulk selection in the collection and exposes updated tag chips', asy
     ));
     render(<App/>);
 
-    const first = await screen.findByRole('button', {name: 'Clockwork Forest Lunii'});
+    const first = await screen.findByRole('button', {name: 'Clockwork Forest'});
     const second = screen.getByRole('button', {
-        name: 'Moonlit Workshop 11112222-3333-4444-8555-666677778888',
+        name: 'Moonlit Workshop',
     });
     expect((await screen.findAllByText('Broken')).length).toBeGreaterThan(1);
 
@@ -2492,16 +2574,16 @@ test('shows never-synced metadata and runs a cancellable refresh with matched fr
     render(<App/>);
 
     expect(await screen.findByRole('heading', {
-        name: 'Official metadata has not been synced',
+        name: 'Add covers and richer story details',
     })).toBeInTheDocument();
-    await user.click(screen.getByRole('button', {name: '↻ Sync'}));
+    await user.click(screen.getByRole('button', {name: 'Sync with Lunii'}));
     expect(refreshOfficialMetadata).toHaveBeenCalledTimes(1);
     expect(await screen.findByRole('heading', {
         name: 'Refreshing official metadata',
     })).toBeInTheDocument();
     expect(screen.getByText('0 of 1 refresh phases complete. Your local collection remains available.'))
         .toBeInTheDocument();
-    expect(screen.getByRole('button', {name: 'Refreshing…'})).toBeDisabled();
+    expect(screen.getByRole('button', {name: 'Syncing with Lunii…'})).toBeDisabled();
     await user.click(screen.getByRole('button', {name: 'Cancel refresh'}));
     expect(cancelOperation).toHaveBeenCalledWith('00112233-4455-4677-8899-aabbccddeef0');
 
@@ -2539,6 +2621,9 @@ test('shows never-synced metadata and runs a cancellable refresh with matched fr
     await waitFor(() => expect(
         screen.getByText(/1 local story matched\./),
     ).toBeInTheDocument());
+    const sync = screen.getByRole('region', {name: 'Official Lunii sync'});
+    expect(sync).toHaveAttribute('data-state', 'lunii-sync-status');
+    expect(sync.querySelector('time')).toHaveAttribute('dateTime', '2026-07-25T16:01:00Z');
 });
 
 test('shows a stale-cache state without blocking the collection', async () => {
@@ -2555,7 +2640,7 @@ test('shows a stale-cache state without blocking the collection', async () => {
     render(<App/>);
 
     expect(await screen.findByRole('heading', {
-        name: 'Using saved official metadata',
+        name: 'Using saved Lunii story details',
     })).toBeInTheDocument();
     expect(await screen.findByRole('heading', {name: 'Clockwork Forest'}))
         .toBeInTheDocument();
@@ -2602,7 +2687,7 @@ test('restores metadata freshness after a later import becomes the visible opera
     });
 
     expect(await screen.findByRole('heading', {
-        name: 'Official metadata is available',
+        name: 'Lunii covers and story details',
     })).toBeInTheDocument();
 });
 
@@ -2986,7 +3071,7 @@ test('cancels story removal without changing the collection', async () => {
 
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(removeStory).not.toHaveBeenCalled();
-    expect(screen.getByRole('button', {name: 'Clockwork Forest Lunii'}))
+    expect(screen.getByRole('button', {name: 'Clockwork Forest'}))
         .toBeInTheDocument();
 });
 
@@ -3025,7 +3110,7 @@ test('confirms removal, refreshes the collection, and reports trash custody', as
     })).toBeInTheDocument();
     expect(screen.getByText('Clockwork Forest was moved to application trash.'))
         .toBeInTheDocument();
-    expect(screen.queryByRole('button', {name: 'Clockwork Forest Lunii'}))
+    expect(screen.queryByRole('button', {name: 'Clockwork Forest'}))
         .not.toBeInTheDocument();
 });
 
@@ -3098,7 +3183,7 @@ test('completes the import, list, select, detail, and remove workflow', async ()
         }],
     });
 
-    const cover = await screen.findByRole('button', {name: 'Clockwork Forest Lunii'});
+    const cover = await screen.findByRole('button', {name: 'Clockwork Forest'});
     expect(cover).toHaveAttribute('aria-pressed', 'true');
     expect(await screen.findByText('clockwork-forest.zip · 1.0 MB · Verified'))
         .toBeInTheDocument();
@@ -3162,7 +3247,7 @@ test('loads every result when a story is beyond the initial collection page', as
     await user.click(await screen.findByRole('button', {name: 'View all →'}));
 
     expect(await screen.findByRole('button', {
-        name: 'The Twelfth Story 12223333-4444-4555-8666-777788889999',
+        name: 'The Twelfth Story',
     })).toBeInTheDocument();
     expect(screen.getByRole('button', {name: 'Loading…'})).toBeDisabled();
     resolveSecondBatch(new app.LibraryPageResponse({
@@ -3177,7 +3262,7 @@ test('loads every result when a story is beyond the initial collection page', as
         }));
 
     expect(await screen.findByRole('button', {
-        name: 'The Thirteenth Story 22223333-4444-4555-8666-777788889999',
+        name: 'The Thirteenth Story',
     })).toBeInTheDocument();
     expect(queryStories).toHaveBeenCalledWith(expect.objectContaining({
         page: 2,

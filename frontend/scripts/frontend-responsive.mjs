@@ -78,7 +78,7 @@ const acceptanceCases = [
             drawerLeft: 0,
             drawerColumnCount: 3,
             drawerTagsDisplay: 'none',
-            syncDisplay: 'none',
+            syncDisplay: 'block',
             mainPadding: '22px 14px 215px',
             drawerArtworkHeight: 85,
             drawerFactsDisplay: 'none',
@@ -142,6 +142,7 @@ try {
             );
             if (acceptanceCase.name === 'above 1180px') {
                 await assertRealAgeFacetAction(page);
+                await assertFamilyBrowsingArtwork(page);
             }
             results.push({
                 name: acceptanceCase.name,
@@ -166,6 +167,92 @@ async function installFixtureQueryRecorder(page) {
             globalThis.__librairiiFixtureQueries.push(event.detail);
         });
     });
+}
+
+async function assertFamilyBrowsingArtwork(page) {
+    // Exercise the real cover component with portrait, square and landscape
+    // artwork. The prototype's decorative covers cannot catch image letterboxing.
+    await page.route('**/artwork/ratio-*', (route) => {
+        const storyID = Number(route.request().url().split('-').at(-1));
+        const [width, height] = [[300, 400], [300, 300], [420, 300]][
+            (storyID - 1) % 3
+        ];
+        return route.fulfill({
+            contentType: 'image/svg+xml',
+            body: `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}"><rect width="100%" height="100%" fill="#31559f"/></svg>`,
+        });
+    });
+    await page.addInitScript(() => {
+        let bridge;
+        const enrich = (stories) => stories.map((story) => ({
+            ...story, artworkId: `ratio-${story.id}`,
+        }));
+        Object.defineProperty(window, 'go', {
+            configurable: true,
+            get: () => bridge,
+            set: (value) => {
+                bridge = value;
+                const app = value.main.App;
+                const queryStories = app.QueryStories;
+                const openShelf = app.OpenShelf;
+                app.QueryStories = async (...args) => {
+                    const response = await queryStories(...args);
+                    response.page.stories = enrich(response.page.stories);
+                    return response;
+                };
+                app.OpenShelf = async (...args) => {
+                    const response = await openShelf(...args);
+                    response.evaluation.page.stories = enrich(response.evaluation.page.stories);
+                    return response;
+                };
+            },
+        });
+    });
+    await page.reload({waitUntil: 'networkidle'});
+    await page.locator('.story img').first().waitFor();
+    for (const width of [1181, 560, 320]) {
+        await page.setViewportSize({width, height: 900});
+        for (const button of await page.locator('.story').all()) {
+            if (!await button.isVisible()) {
+                continue;
+            }
+            await button.scrollIntoViewIfNeeded();
+            await button.locator('img').evaluate((img) => img.decode());
+            const valid = await button.evaluate((element) => {
+                const image = element.querySelector('img');
+                const bounds = element.getBoundingClientRect();
+                const imageBounds = image.getBoundingClientRect();
+                return Math.abs(bounds.height - imageBounds.height) < 1 &&
+                    Math.abs(bounds.width / bounds.height -
+                        image.naturalWidth / image.naturalHeight) < .01 &&
+                    !element.querySelector('b, small') &&
+                    element.parentElement.querySelector('.story-title')?.textContent ===
+                        element.getAttribute('aria-label');
+            });
+            if (!valid) {
+                throw new Error(`${width}px: image button ratio or caption is incorrect`);
+            }
+        }
+    }
+    const url = new URL(page.url());
+    url.search = '?fixture=first-sync';
+    url.hash = '';
+    await page.goto(url.toString(), {waitUntil: 'networkidle'});
+    const sync = page.getByRole('region', {name: 'Official Lunii sync'});
+    if (
+        await sync.getAttribute('data-state') !== 'first-lunii-sync' ||
+        !(await sync.innerText()).includes('Last successful sync: Never') ||
+        !await sync.getByRole('button', {name: 'Sync with Lunii'}).isVisible()
+    ) {
+        throw new Error('narrow first-sync prompt is missing or unclear');
+    }
+    for (const action of await page.getByRole('navigation', {
+        name: 'Primary navigation',
+    }).getByRole('button').all()) {
+        if (!await action.isVisible()) {
+            throw new Error('a labeled rail action is hidden at 320px');
+        }
+    }
 }
 
 async function assertRealAgeFacetAction(page) {
@@ -205,7 +292,7 @@ async function readResponsiveState(page) {
         const firstDrawerAction = document.querySelector(
             '.drawer-actions button:first-child',
         );
-        const sync = document.querySelector('.top button:first-of-type');
+        const sync = document.querySelector('.lunii-sync > button');
         if (
             !app || !filters || !rail || !main || !drawer || !drawerTags ||
             !drawerArtwork || !drawerFacts || !drawerSubtitle ||
@@ -215,7 +302,7 @@ async function readResponsiveState(page) {
         }
         const singleRow = document.createElement('div');
         singleRow.className = 'story-row';
-        const singleStory = document.querySelector('.story-row .story')?.cloneNode(true);
+        const singleStory = document.querySelector('.story-row .story-card')?.cloneNode(true);
         if (!singleStory) {
             throw new Error('canonical responsive fixture has no story');
         }
@@ -225,7 +312,7 @@ async function readResponsiveState(page) {
         singleRow.remove();
         const collectionRow = document.createElement('div');
         collectionRow.className = 'story-row';
-        for (const story of document.querySelectorAll('.story-row .story')) {
+        for (const story of document.querySelectorAll('.story-row .story-card')) {
             collectionRow.append(story.cloneNode(true));
             if (collectionRow.children.length === 6) {
                 break;
@@ -241,7 +328,7 @@ async function readResponsiveState(page) {
             singleStoryVisible,
             collectionRowVisible,
             visiblePerRow: [...document.querySelectorAll('.story-row')].map(
-                (row) => [...row.querySelectorAll('.story')].filter(
+                (row) => [...row.querySelectorAll('.story-card')].filter(
                     (story) => getComputedStyle(story).display !== 'none',
                 ).length,
             ),

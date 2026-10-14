@@ -59,11 +59,11 @@ import {
 } from './query-codec';
 import TagManager from './TagManager';
 import StoryDetailsDialog from './StoryDetailsDialog';
+import LibraryNavigation from './LibraryNavigation';
+import LuniiSync from './LuniiSync';
+import StoryCover from './StoryCover';
 import TagAssignmentEditor from './TagAssignmentEditor';
-import {
-    describeMetadataRefresh,
-    describeMetadataStatus,
-} from './metadata-state';
+import {describeMetadataRefresh} from './metadata-state';
 import {useModalFocus} from './modal-focus';
 import {describeExport} from './export-state';
 import {runPackagedAcceptance} from './packaged-acceptance';
@@ -143,15 +143,6 @@ function metadataAttribution(story: library.StorySummary): string {
     return `${author} · metadata synced ${
         sameDay ? 'today' : syncedAt.toLocaleDateString()
     }`;
-}
-
-function storyByline(story: library.StorySummary): string {
-    if (story.official?.durationSeconds !== undefined) {
-        return `${formatDuration(story.official.durationSeconds)} · ${
-            story.official.publisher || story.author || story.uuid
-        }`;
-    }
-    return story.author || story.uuid;
 }
 
 function savedShelfColor(index: number): string {
@@ -432,6 +423,7 @@ function App() {
     const [detail, setDetail] = useState<library.StoryDetail | null>(null);
     const [detailRevision, setDetailRevision] = useState(0);
     const [operationSnapshots, setOperationSnapshots] = useState<operations.Snapshot[]>([]);
+    const [metadataStarting, setMetadataStarting] = useState(false);
     const [metadataStatus, setMetadataStatus] =
         useState<metadata.CatalogStatus | null>(null);
     const [requestError, setRequestError] = useState<string | null>(null);
@@ -897,14 +889,22 @@ function App() {
     }
 
     async function startMetadataRefresh() {
-        setRequestError(null);
-        const response = await RefreshOfficialMetadata();
-        if (response.error) {
-            setRequestError(response.error.message);
+        if (metadataStarting || metadataRefreshing) {
             return;
         }
-        if (response.operation) {
-            reconcileOperation(response.operation);
+        setMetadataStarting(true);
+        setRequestError(null);
+        try {
+            const response = await RefreshOfficialMetadata();
+            if (response.error) {
+                setRequestError(response.error.message);
+            } else if (response.operation) {
+                reconcileOperation(response.operation);
+            }
+        } catch {
+            setRequestError('Could not start the Lunii sync. Please try again.');
+        } finally {
+            setMetadataStarting(false);
         }
     }
 
@@ -1137,9 +1137,6 @@ function App() {
         : primaryVisibleOperations;
     const importing = activeOperations.some((snapshot) => snapshot.kind === 'import');
     const metadataRefreshing = activeOperations.some(
-        (snapshot) => snapshot.kind === 'metadata_sync',
-    );
-    const hasVisibleMetadataOperation = visibleOperations.some(
         (snapshot) => snapshot.kind === 'metadata_sync',
     );
     const derivedDefinitions = tagCatalog?.definitions.filter(
@@ -1803,19 +1800,16 @@ function App() {
                 <div className="mark" role="img" aria-label="Librairii">
                     <i/><i/><i/>
                 </div>
-                <nav aria-label="Primary navigation">
-                    <button className="active" type="button" aria-label="Story collection">▦</button>
-                    <button type="button" aria-label="Saved shelves">◇</button>
-                    <button type="button" aria-label="Imports">↓</button>
-                    <button
-                        type="button"
-                        aria-label="Export current result"
-                        disabled={exportPreparing}
-                        onClick={() => void prepareExport('current_query')}
-                    >
-                        ↗
-                    </button>
-                </nav>
+                <LibraryNavigation
+                    libraryActive={allStoriesActive}
+                    disabled={applicationState !== 'ready' || shelfBusy}
+                    importing={importing}
+                    exporting={exportPreparing}
+                    onLibrary={openAllStories}
+                    onTags={() => setTagManagerOpen(true)}
+                    onImport={() => void startImport()}
+                    onExport={() => void prepareExport('current_query')}
+                />
                 <div className="avatar" aria-label="Local profile">ML</div>
             </aside>
 
@@ -2090,13 +2084,6 @@ function App() {
                         />
                     </label>
                     <button
-                        type="button"
-                        disabled={metadataRefreshing}
-                        onClick={() => void startMetadataRefresh()}
-                    >
-                        {metadataRefreshing ? 'Refreshing…' : '↻ Sync'}
-                    </button>
-                    <button
                         className="import"
                         type="button"
                         disabled={importing}
@@ -2192,6 +2179,14 @@ function App() {
                     </section>
                 )}
 
+                {applicationState === 'ready' && (
+                    <LuniiSync
+                        status={metadataStatus}
+                        busy={metadataStarting || metadataRefreshing}
+                        onSync={() => void startMetadataRefresh()}
+                    />
+                )}
+
                 {applicationState === 'initializing' && (
                     <section
                         className="collection-state working"
@@ -2264,25 +2259,6 @@ function App() {
                         </div>
                     </section>
                 )}
-
-                {metadataStatus && !hasVisibleMetadataOperation && (() => {
-                    const notice = describeMetadataStatus(metadataStatus);
-                    return (
-                        <section
-                            className={`collection-state ${notice.tone}`}
-                            data-state={notice.state}
-                            aria-live="polite"
-                        >
-                            <div className="state-mark" aria-hidden="true">
-                                {notice.tone === 'success' ? '✓' : '↻'}
-                            </div>
-                            <div className="state-copy">
-                                <h3>{notice.title}</h3>
-                                <p>{notice.message}</p>
-                            </div>
-                        </section>
-                    );
-                })()}
 
                 {visibleOperations.map((operation) => {
                     const notice = operation.kind === 'metadata_sync'
@@ -2450,44 +2426,34 @@ function App() {
                         )}
                         <div className={`story-row${row.shelfID === undefined ? '' : ' preview'}`}>
                             {row.stories.map((story) => (
-                                <button
-                                    className={`story${selectedIDs.includes(story.id) ? ' selected' : ''}`}
-                                    style={paletteFor(story.id)}
-                                    type="button"
-                                    key={story.id}
-                                    aria-pressed={selectedIDs.includes(story.id)}
-                                    aria-keyshortcuts="Control+Enter Meta+Enter"
-                                    onClick={(event) => {
-                                        setDetail(null);
-                                        if (event.ctrlKey || event.metaKey || event.shiftKey) {
-                                            const next = selectedIDs.includes(story.id)
-                                                ? selectedIDs.length === 1
-                                                    ? selectedIDs
-                                                    : selectedIDs.filter((storyID) => storyID !== story.id)
-                                                : [...selectedIDs, story.id];
-                                            setSelectedIDs(next);
-                                            setSelectedID(next.includes(story.id) ? story.id : next[0]);
-                                        } else {
-                                            setSelectedIDs([story.id]);
-                                            setSelectedID(story.id);
-                                        }
-                                    }}
-                                >
-                                    <div className={`cover${story.artworkId ? ' has-artwork' : ''}`}>
-                                        {story.artworkId && (
-                                            <img
-                                                src={artworkURL(story.artworkId)}
-                                                alt=""
-                                                loading="lazy"
-                                                decoding="async"
-                                            />
-                                        )}
-                                        <b>{story.title}</b>
-                                    </div>
-                                    <small>
-                                        {storyByline(story)}
-                                    </small>
-                                </button>
+                                <div className="story-card" key={story.id}>
+                                    <button
+                                        className={`story${selectedIDs.includes(story.id) ? ' selected' : ''}`}
+                                        style={paletteFor(story.id)}
+                                        type="button"
+                                        aria-label={story.title}
+                                        aria-pressed={selectedIDs.includes(story.id)}
+                                        aria-keyshortcuts="Control+Enter Meta+Enter"
+                                        onClick={(event) => {
+                                            setDetail(null);
+                                            if (event.ctrlKey || event.metaKey || event.shiftKey) {
+                                                const next = selectedIDs.includes(story.id)
+                                                    ? selectedIDs.length === 1
+                                                        ? selectedIDs
+                                                        : selectedIDs.filter((storyID) => storyID !== story.id)
+                                                    : [...selectedIDs, story.id];
+                                                setSelectedIDs(next);
+                                                setSelectedID(next.includes(story.id) ? story.id : next[0]);
+                                            } else {
+                                                setSelectedIDs([story.id]);
+                                                setSelectedID(story.id);
+                                            }
+                                        }}
+                                    >
+                                        <StoryCover story={story}/>
+                                    </button>
+                                    <p className="story-title">{story.title}</p>
+                                </div>
                             ))}
                         </div>
                     </section>

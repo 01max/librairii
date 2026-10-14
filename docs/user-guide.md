@@ -46,6 +46,22 @@ To remove a story, choose **Remove from library…**, then confirm with **Move t
 trash**. **Keep story** returns to the story without removing it. The managed
 copy moves to application trash; your original source file stays in place.
 
+## Lunii covers and story details
+
+**Sync with Lunii** contacts the official Lunii API to fetch contextual details
+and cover images for matching stories. Before the first successful sync, a
+prominent prompt appears above the shelves. The sync panel always shows the
+last successful sync in your local date and time, including while an import or
+another operation is running. A failed sync keeps the previous successful time
+and the saved catalog available.
+
+Shelf covers keep their image proportions, with the story title below the
+image. Author and publisher information is available in the selected story's
+details. The left rail provides labeled **Library**, **Tags**, **Import**, and
+**Export** shortcuts: Library returns to all stories, Tags opens the tag
+manager, Import opens the archive picker, and Export prepares the stories in
+the current view.
+
 ## Export passthrough and Lunii.QT
 
 An export can snapshot any of these scopes:

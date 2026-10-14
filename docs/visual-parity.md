@@ -7,6 +7,14 @@ working files are not published with the application repository, CI renders
 the checksum-locked mirror at
 `testdata/ui-prototypes/05-archive-shelves.html`.
 
+The 2026-10-14 browsing revision follows the requested family browsing changes:
+the rail has four labeled working actions; a central Lunii sync panel explains
+the official API, descriptions and covers, and keeps the last successful sync
+visible; story buttons contain only artwork, with titles below and no author
+captions. Real artwork uses its intrinsic aspect ratio. The prominent first-sync
+state is available through `?fixture=first-sync`; the parity fixture uses a
+previously synced catalog. The prototype and checksum include this revision.
+
 `npm --prefix frontend run test:visual` builds the production frontend with
 the deterministic `?fixture=parity` data, renders both the canonical HTML and
 the application in the same system Chromium process, and compares viewport

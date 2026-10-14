@@ -272,13 +272,13 @@ export function installCollectionFixture() {
                 )
                 : [],
         }),
-        OfficialMetadataStatus: async () => fixture === 'parity' ? {} : ({
+        OfficialMetadataStatus: async () => ({
             status: {
-                state: 'fresh',
+                state: fixture === 'first-sync' ? 'never_synced' : 'fresh',
                 locale: 'en-GB',
                 storyCount: totalItems,
                 matchedStoryCount: totalItems,
-                activatedAt: '2026-07-25T09:00:00Z',
+                activatedAt: fixture === 'first-sync' ? undefined : '2026-07-25T09:00:00Z',
             },
         }),
         ListStories: async () => ({

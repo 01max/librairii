@@ -15,7 +15,7 @@ The only UI source of truth is:
 
 - `openspec/ui-prototypes/05-archive-shelves.html`
 - tracked CI mirror: `testdata/ui-prototypes/05-archive-shelves.html`
-- SHA-256: `19119b85ed820e1893020347ad5015bbed173ef8c8e6e1164405d83f1b5f00f9`
+- SHA-256: `6f69ac0e20f685767c628a01207f5c86fa934345b3b0c56501cd7aadffdc9029`
 - the `.app` subtree is normative
 - the `.back` gallery link is excluded from the product
 
@@ -26,6 +26,14 @@ fact, tag, and archive detail from that exact file.
 
 The Rails screens and Tauri shell are implementation history, not product or
 visual references.
+
+The 2026-10-14 user-requested browsing revision updates the visual contract for
+labeled, working Library/Tags/Import/Export actions, the central official Lunii
+sync prompt and last-successful-sync timestamp, and image-only story buttons
+with external title captions. Image buttons follow intrinsic artwork ratios.
+The original sidebar and drawer layout remain the baseline. Story details now
+show artwork and readable descriptions, with technical data behind a toggle
+and removal behind a separate confirmation.
 
 ## Tracked removal allowlist
 
