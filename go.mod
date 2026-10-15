@@ -6,8 +6,8 @@ require (
 	github.com/bodgit/sevenzip v1.6.5
 	github.com/google/uuid v1.6.0
 	github.com/wailsapp/wails/v2 v2.13.0
-	golang.org/x/sys v0.48.0
-	golang.org/x/text v0.40.0
+	golang.org/x/sys v0.49.0
+	golang.org/x/text v0.42.0
 	modernc.org/sqlite v1.60.1
 )
 
