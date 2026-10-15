@@ -125,6 +125,28 @@ test('presents protected and custom definitions with non-color-only state labels
     expect(screen.getByText('Custom · Choice')).toBeInTheDocument();
 });
 
+test('allows protected tag colors without renaming their definitions', async () => {
+    const user = userEvent.setup();
+    render(<TagManager onClose={vi.fn()} onCatalogChange={vi.fn()}/>);
+    const color = await screen.findByLabelText('Color for Broken');
+    fireEvent.change(color, {target: {value: '#405cf5'}});
+    await user.click(screen.getByRole('button', {name: 'Save Broken color'}));
+    expect(recolorTagDefinition).toHaveBeenCalledWith(1, '#405cf5');
+    expect(renameTagDefinition).not.toHaveBeenCalled();
+    expect(deleteTagDefinition).not.toHaveBeenCalled();
+});
+
+test('dismisses the tag manager from its backdrop but keeps inside clicks open', async () => {
+    const user = userEvent.setup();
+    const close = vi.fn();
+    render(<TagManager onClose={close} onCatalogChange={vi.fn()}/>);
+    const dialog = await screen.findByRole('dialog', {name: 'Manage tags'});
+    await user.click(within(dialog).getByRole('heading', {name: 'Manage tags'}));
+    expect(close).not.toHaveBeenCalled();
+    await user.click(dialog.closest('.dialog-backdrop')!);
+    expect(close).toHaveBeenCalledOnce();
+});
+
 test('submits typed definitions and renders backend validation inline', async () => {
     const user = userEvent.setup();
     createTagDefinition.mockResolvedValue(new app.TagDefinitionResponse({

@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <!-- Matches the book mark and navy rail in frontend/src/App.css. -->
+  <rect x="96" y="96" width="832" height="832" rx="184" fill="#15213c"/>
+  <g transform="translate(208 208) scale(19)">
+    <path d="M1 31V11a3 3 0 0 1 3-3h3a3 3 0 0 1 3 3v20Z"
+          fill="#ff705c" transform="rotate(-7 5.5 19.5)"/>
+    <path d="M12 31V4a3 3 0 0 1 3-3h3a3 3 0 0 1 3 3v27Z" fill="#ffe477"/>
+    <path d="M23 31V13a3 3 0 0 1 3-3h3a3 3 0 0 1 3 3v18Z"
+          fill="#7690ff" transform="rotate(8 27.5 20.5)"/>
+  </g>
+</svg>

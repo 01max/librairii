@@ -1,3 +1,4 @@
+import ModalBackdrop from './ModalBackdrop';
 import {
     type CSSProperties,
     useCallback,
@@ -58,11 +59,12 @@ import {
     DEFAULT_COLLECTION_QUERY,
 } from './query-codec';
 import TagManager from './TagManager';
+import StoryDetailsDialog from './StoryDetailsDialog';
+import LibraryNavigation from './LibraryNavigation';
+import LuniiSync from './LuniiSync';
+import StoryCover from './StoryCover';
 import TagAssignmentEditor from './TagAssignmentEditor';
-import {
-    describeMetadataRefresh,
-    describeMetadataStatus,
-} from './metadata-state';
+import {describeMetadataRefresh} from './metadata-state';
 import {useModalFocus} from './modal-focus';
 import {describeExport} from './export-state';
 import {runPackagedAcceptance} from './packaged-acceptance';
@@ -144,15 +146,6 @@ function metadataAttribution(story: library.StorySummary): string {
     }`;
 }
 
-function storyByline(story: library.StorySummary): string {
-    if (story.official?.durationSeconds !== undefined) {
-        return `${formatDuration(story.official.durationSeconds)} · ${
-            story.official.publisher || story.author || story.uuid
-        }`;
-    }
-    return story.author || story.uuid;
-}
-
 function savedShelfColor(index: number): string {
     return savedShelfColors[index % savedShelfColors.length];
 }
@@ -168,6 +161,7 @@ function collectionQueryFromShelf(
     current: CollectionQuery,
 ): CollectionQuery {
     return {
+        includeBroken: saved.includeBroken ?? false,
         name: saved.name ?? '',
         languages: [...(saved.languages ?? [])],
         compatibilities: [...(saved.compatibilities ?? [])] as CompatibilityFilter[],
@@ -425,17 +419,23 @@ function App() {
     const [collectionQuery, setCollectionQuery] = useState(
         initialHistoryState.query,
     );
+    const includeBrokenRef = useRef(!!collectionQuery.includeBroken);
+    useEffect(() => {
+        includeBrokenRef.current = !!collectionQuery.includeBroken;
+    }, [collectionQuery.includeBroken]);
     const [page, setPage] = useState<library.Page | null>(null);
     const [selectedID, setSelectedID] = useState<number | null>(null);
     const [selectedIDs, setSelectedIDs] = useState<number[]>([]);
     const [detail, setDetail] = useState<library.StoryDetail | null>(null);
     const [detailRevision, setDetailRevision] = useState(0);
     const [operationSnapshots, setOperationSnapshots] = useState<operations.Snapshot[]>([]);
+    const [metadataStarting, setMetadataStarting] = useState(false);
     const [metadataStatus, setMetadataStatus] =
         useState<metadata.CatalogStatus | null>(null);
     const [requestError, setRequestError] = useState<string | null>(null);
     const [languageFacetOpen, setLanguageFacetOpen] = useState(false);
     const [importFacetOpen, setImportFacetOpen] = useState(false);
+    const [collapsedTagFacets, setCollapsedTagFacets] = useState<Set<number>>(new Set());
     const [detailsOpen, setDetailsOpen] = useState(false);
     const [removing, setRemoving] = useState(false);
     const [removalError, setRemovalError] = useState<string | null>(null);
@@ -481,8 +481,10 @@ function App() {
     const activeShelfIDRef = useRef<number | null>(initialHistoryState.shelfID);
     const refreshedOperations = useRef(new Set<string>());
     const searchInput = useRef<HTMLInputElement>(null);
+    const openDetailsButton = useRef<HTMLButtonElement>(null);
     const collectionRequestGeneration = useRef(0);
     const shelfPreviewGeneration = useRef(0);
+    const shelfListRequestGeneration = useRef(0);
     const shelfDialog = useRef<HTMLFormElement>(null);
     const shelfDialogInitialFocus = useRef<HTMLInputElement>(null);
     const repairShelfDialog = useRef<HTMLElement>(null);
@@ -491,8 +493,6 @@ function App() {
     const deleteShelfInitialFocus = useRef<HTMLButtonElement>(null);
     const exportPreflightDialog = useRef<HTMLElement>(null);
     const exportPreflightInitialFocus = useRef<HTMLButtonElement>(null);
-    const detailDialog = useRef<HTMLElement>(null);
-    const detailDialogInitialFocus = useRef<HTMLButtonElement>(null);
     useModalFocus(shelfDialog, shelfDialogInitialFocus, shelfDialogMode !== null);
     useModalFocus(repairShelfDialog, repairShelfInitialFocus, repairShelfID !== null);
     useModalFocus(deleteShelfDialog, deleteShelfInitialFocus, deleteShelfID !== null);
@@ -501,7 +501,6 @@ function App() {
         exportPreflightInitialFocus,
         exportPreflight !== null,
     );
-    useModalFocus(detailDialog, detailDialogInitialFocus, detailsOpen);
     const activateShelf = useCallback((
         shelfID: number | null,
         scope: CollectionScope,
@@ -516,8 +515,7 @@ function App() {
             shelfDialogMode === null &&
             repairShelfID === null &&
             deleteShelfID === null &&
-            exportPreflight === null &&
-            !detailsOpen
+            exportPreflight === null
         ) {
             return;
         }
@@ -532,8 +530,6 @@ function App() {
             }
             if (exportPreflight !== null) {
                 setExportPreflight(null);
-            } else if (detailsOpen) {
-                setDetailsOpen(false);
             } else if (deleteShelfID !== null) {
                 setDeleteShelfID(null);
             } else if (repairShelfID !== null) {
@@ -546,7 +542,6 @@ function App() {
         return () => window.removeEventListener('keydown', closeOnEscape);
     }, [
         deleteShelfID,
-        detailsOpen,
         exportPreflight,
         exportPreparing,
         exportStarting,
@@ -630,7 +625,9 @@ function App() {
 
     const loadSavedShelves = useCallback(async () => {
         try {
-            const response = await ListShelves();
+            const generation = ++shelfListRequestGeneration.current;
+            const response = await ListShelves(includeBrokenRef.current);
+            if (generation !== shelfListRequestGeneration.current) return;
             if (response.error) {
                 setRequestError(response.error.message);
                 return;
@@ -654,6 +651,15 @@ function App() {
             setRequestError('Saved shelves could not be loaded.');
         }
     }, [activateShelf, queryHistory]);
+
+    const previousVisibility = useRef(!!collectionQuery.includeBroken);
+    useEffect(() => {
+        const visibility = !!collectionQuery.includeBroken;
+        if (visibility !== previousVisibility.current) {
+            previousVisibility.current = visibility;
+            if (applicationState === 'ready') void loadSavedShelves();
+        }
+    }, [collectionQuery.includeBroken, applicationState, loadSavedShelves]);
 
     const invalidateCollection = useCallback(async () => {
         setCollectionRevision((current) => current + 1);
@@ -707,7 +713,7 @@ function App() {
                     if (active) {
                         setTagCatalog(catalogResponse.catalog ?? null);
                     }
-                    const shelvesResponse = await ListShelves();
+                    const shelvesResponse = await ListShelves(includeBrokenRef.current);
                     if (!active) {
                         return;
                     }
@@ -806,7 +812,7 @@ function App() {
             setShelfSelectionBusy(true);
             setShelfSelectionError(null);
             try {
-                const response = await PreviewShelves(selectedShelfIDs);
+                const response = await PreviewShelves(selectedShelfIDs, !!collectionQuery.includeBroken);
                 if (!active) {
                     return;
                 }
@@ -834,7 +840,7 @@ function App() {
         return () => {
             active = false;
         };
-    }, [applicationState, savedShelves, selectedShelfIDs]);
+    }, [applicationState, savedShelves, selectedShelfIDs, collectionQuery.includeBroken]);
 
     useEffect(() => {
         const unsubscribe = EventsOn('operation:changed', (value: unknown) => {
@@ -903,14 +909,22 @@ function App() {
     }
 
     async function startMetadataRefresh() {
-        setRequestError(null);
-        const response = await RefreshOfficialMetadata();
-        if (response.error) {
-            setRequestError(response.error.message);
+        if (metadataStarting || metadataRefreshing) {
             return;
         }
-        if (response.operation) {
-            reconcileOperation(response.operation);
+        setMetadataStarting(true);
+        setRequestError(null);
+        try {
+            const response = await RefreshOfficialMetadata();
+            if (response.error) {
+                setRequestError(response.error.message);
+            } else if (response.operation) {
+                reconcileOperation(response.operation);
+            }
+        } catch {
+            setRequestError('Could not start the Lunii sync. Please try again.');
+        } finally {
+            setMetadataStarting(false);
         }
     }
 
@@ -931,6 +945,7 @@ function App() {
             const response = await SelectAndPreflightExport(
                 new exporter.PreflightRequest({
                     sourceType,
+                    includeBroken: !!collectionQuery.includeBroken,
                     storyIds: sourceType === 'selection' ? selectedIDs : [],
                     query: sourceType === 'current_query'
                         ? new library.StoryLibraryQuery(collectionQuery)
@@ -996,23 +1011,28 @@ function App() {
     }
 
     async function confirmRemoval() {
-        if (!selected) {
+        if (!selected || removing) {
             return;
         }
         setRemoving(true);
         setRemovalError(null);
         const title = selected.title;
-        const response = await RemoveStory(selected.id);
-        setRemoving(false);
-        if (response.error) {
-            setRemovalError(response.error.message);
-            return;
+        try {
+            const response = await RemoveStory(selected.id);
+            if (response.error) {
+                setRemovalError(response.error.message);
+                return;
+            }
+            setDetailsOpen(false);
+            setDetail(null);
+            setSelectedID(null);
+            setRemovalNotice(`${title} was moved to application trash.`);
+            await invalidateCollection();
+        } catch {
+            setRemovalError('The story could not be moved to trash. Please try again.');
+        } finally {
+            setRemoving(false);
         }
-        setDetailsOpen(false);
-        setDetail(null);
-        setSelectedID(null);
-        setRemovalNotice(`${title} was moved to application trash.`);
-        await invalidateCollection();
     }
 
     async function loadAllStories() {
@@ -1140,14 +1160,11 @@ function App() {
     const metadataRefreshing = activeOperations.some(
         (snapshot) => snapshot.kind === 'metadata_sync',
     );
-    const hasVisibleMetadataOperation = visibleOperations.some(
-        (snapshot) => snapshot.kind === 'metadata_sync',
-    );
     const derivedDefinitions = tagCatalog?.definitions.filter(
         (definition) => definition.source === 'derived',
     ) ?? [];
     const editableDefinitions = tagCatalog?.definitions.filter(
-        (definition) => definition.source !== 'derived',
+        (definition) => definition.source !== 'derived' && definition.key !== 'broken',
     ) ?? [];
     useEffect(() => {
         const values = tagCatalog?.definitions.flatMap((definition) => (
@@ -1196,8 +1213,15 @@ function App() {
         ...collectionQuery.languages,
     ])].sort();
     const collectionRows = useMemo<CollectionShelfRow[]>(() => (
-        showSavedShelfRows
-            ? previewableShelves.map((shelf) => ({
+        [
+            ...rows.map((row, rowIndex) => ({
+                key: `collection-${rowIndex}`,
+                name: rowIndex === 0 ? 'Recently added' : 'More stories',
+                storyCount: row.length,
+                source: 'Local archive',
+                stories: row,
+            })),
+            ...(showSavedShelfRows ? previewableShelves.map((shelf) => ({
                 key: `saved-shelf-${shelf.id}`,
                 name: savedShelfPreviewDetails[shelf.id]?.name ?? shelf.name,
                 storyCount: savedShelfPreviewDetails[shelf.id]?.count ?? shelf.count,
@@ -1205,14 +1229,8 @@ function App() {
                 stories: savedShelfStories[shelf.id] ?? [],
                 shelfID: shelf.id,
                 error: savedShelfPreviewErrors[shelf.id],
-            }))
-            : rows.map((row, rowIndex) => ({
-                key: `collection-${rowIndex}`,
-                name: rowIndex === 0 ? 'Recently added' : 'More stories',
-                storyCount: row.length,
-                source: 'Local archive',
-                stories: row,
-            }))
+            })) : []),
+        ]
     ), [
         previewableShelves,
         rows,
@@ -1284,6 +1302,7 @@ function App() {
                 const response = await OpenShelf(
                     shelf.id,
                     new library.ListRequest({
+                        includeBroken: !!collectionQuery.includeBroken,
                         page: 1,
                         pageSize: 6,
                         sort: collectionQuery.sort,
@@ -1336,21 +1355,6 @@ function App() {
                     ? [[preview.shelfID, preview.error]]
                     : [],
             )));
-            const visibleStories = previews.flatMap((preview) => preview.stories);
-            setSelectedIDs((current) => {
-                const visible = current.filter((storyID) => (
-                    visibleStories.some((story) => story.id === storyID)
-                ));
-                if (visible.length > 0) {
-                    return visible;
-                }
-                return visibleStories[0] ? [visibleStories[0].id] : [];
-            });
-            setSelectedID((current) => (
-                visibleStories.some((story) => story.id === current)
-                    ? current
-                    : visibleStories[0]?.id ?? null
-            ));
         });
         return () => {
             active = false;
@@ -1359,6 +1363,7 @@ function App() {
         applicationState,
         assignmentWorkspace?.catalog,
         collectionQuery.sort,
+        collectionQuery.includeBroken,
         previewableShelves,
         showSavedShelfRows,
         tagCatalog,
@@ -1385,6 +1390,7 @@ function App() {
             const response = await OpenShelf(
                 shelfID,
                 new library.ListRequest({
+                    includeBroken: !!collectionQuery.includeBroken,
                     page: 1,
                     pageSize: collectionQuery.pageSize,
                     sort: collectionQuery.sort,
@@ -1507,7 +1513,11 @@ function App() {
             if (response.error) {
                 setRequestError(response.error.message);
             } else {
-                setSavedShelves(response.shelves ?? []);
+                // Reordering does not change membership; preserve current visibility counts.
+                const counts = new Map(savedShelves.map((shelf) => [shelf.id, shelf.count]));
+                setSavedShelves((response.shelves ?? []).map((shelf) => new shelves.Summary({
+                    ...shelf, count: counts.get(shelf.id) ?? shelf.count,
+                })));
             }
         } catch {
             setRequestError('Saved shelves could not be reordered.');
@@ -1727,71 +1737,86 @@ function App() {
 
     const renderTagFacet = (definition: tagging.DefinitionWithValues) => (
         <div className="facet" key={definition.id}>
-            <div className="facet-title">{definition.label} <b>−</b></div>
-            {definition.kind === 'boolean' ? (
-                <>
-                    <label className="choice">
-                        <input
-                            type="checkbox"
-                            checked={collectionQuery.booleanFilters.some(
-                                (filter) => (
-                                    filter.definitionId === definition.id &&
-                                    filter.state === 'true'
-                                ),
-                            )}
-                            onChange={(event) => setBooleanFilter(
-                                definition.id,
-                                event.currentTarget.checked ? 'true' : 'ignored',
-                            )}
-                        />
-                        <i style={{'--c': definition.color} as CSSProperties}/>
-                        {definition.label}
-                    </label>
-                    <label className="choice">
-                        <input
-                            type="checkbox"
-                            checked={collectionQuery.booleanFilters.some(
-                                (filter) => (
-                                    filter.definitionId === definition.id &&
-                                    filter.state === 'false'
-                                ),
-                            )}
-                            onChange={(event) => setBooleanFilter(
-                                definition.id,
-                                event.currentTarget.checked ? 'false' : 'ignored',
-                            )}
-                        />
-                        <i style={{'--c': definition.color} as CSSProperties}/>
-                        Not {definition.label}
-                    </label>
-                </>
-            ) : definition.values.map((value) => (
-                <label className="choice" key={value.id}>
-                    {(() => {
-                        const checkedByQuery = collectionQuery.choiceFilters.some(
-                            (filter) => (
-                                filter.definitionId === definition.id &&
-                                filter.valueIds.includes(value.id)
-                            ),
-                        );
-                        return (
+            <button
+                className="facet-title"
+                type="button"
+                aria-expanded={!collapsedTagFacets.has(definition.id)}
+                aria-controls={`tag-facet-${definition.id}`}
+                onClick={() => setCollapsedTagFacets((current) => {
+                    const next = new Set(current);
+                    if (next.has(definition.id)) next.delete(definition.id);
+                    else next.add(definition.id);
+                    return next;
+                })}
+            >
+                {definition.label} <b aria-hidden="true">{collapsedTagFacets.has(definition.id) ? '+' : '−'}</b>
+            </button>
+            <div id={`tag-facet-${definition.id}`} hidden={collapsedTagFacets.has(definition.id)}>
+                {definition.kind === 'boolean' ? (
+                    <>
+                        <label className="choice">
                             <input
                                 type="checkbox"
-                                checked={checkedByQuery}
-                                onChange={() => toggleChoiceFilter(
+                                checked={collectionQuery.booleanFilters.some(
+                                    (filter) => (
+                                        filter.definitionId === definition.id &&
+                                        filter.state === 'true'
+                                    ),
+                                )}
+                                onChange={(event) => setBooleanFilter(
                                     definition.id,
-                                    value.id,
+                                    event.currentTarget.checked ? 'true' : 'ignored',
                                 )}
                             />
-                        );
-                    })()}
-                    <i style={{'--c': definition.color} as CSSProperties}/>
-                    {value.label}
-                    {facetCounts[value.id] !== undefined && (
-                        <span aria-hidden="true">{facetCounts[value.id]}</span>
-                    )}
-                </label>
-            ))}
+                            <i style={{'--c': definition.color} as CSSProperties}/>
+                            {definition.label}
+                        </label>
+                        <label className="choice">
+                            <input
+                                type="checkbox"
+                                checked={collectionQuery.booleanFilters.some(
+                                    (filter) => (
+                                        filter.definitionId === definition.id &&
+                                        filter.state === 'false'
+                                    ),
+                                )}
+                                onChange={(event) => setBooleanFilter(
+                                    definition.id,
+                                    event.currentTarget.checked ? 'false' : 'ignored',
+                                )}
+                            />
+                            <i style={{'--c': definition.color} as CSSProperties}/>
+                            Not {definition.label}
+                        </label>
+                    </>
+                ) : definition.values.map((value) => (
+                    <label className="choice" key={value.id}>
+                        {(() => {
+                            const checkedByQuery = collectionQuery.choiceFilters.some(
+                                (filter) => (
+                                    filter.definitionId === definition.id &&
+                                    filter.valueIds.includes(value.id)
+                                ),
+                            );
+                            return (
+                                <input
+                                    type="checkbox"
+                                    checked={checkedByQuery}
+                                    onChange={() => toggleChoiceFilter(
+                                        definition.id,
+                                        value.id,
+                                    )}
+                                />
+                            );
+                        })()}
+                        <i style={{'--c': definition.color} as CSSProperties}/>
+                        {value.label}
+                        {facetCounts[value.id] !== undefined && (
+                            <span aria-hidden="true">{facetCounts[value.id]}</span>
+                        )}
+                    </label>
+                ))}
+            </div>
         </div>
     );
 
@@ -1804,20 +1829,16 @@ function App() {
                 <div className="mark" role="img" aria-label="Librairii">
                     <i/><i/><i/>
                 </div>
-                <nav aria-label="Primary navigation">
-                    <button className="active" type="button" aria-label="Story collection">▦</button>
-                    <button type="button" aria-label="Saved shelves">◇</button>
-                    <button type="button" aria-label="Imports">↓</button>
-                    <button
-                        type="button"
-                        aria-label="Export current result"
-                        disabled={exportPreparing}
-                        onClick={() => void prepareExport('current_query')}
-                    >
-                        ↗
-                    </button>
-                </nav>
-                <div className="avatar" aria-label="Local profile">ML</div>
+                <LibraryNavigation
+                    libraryActive={allStoriesActive}
+                    disabled={applicationState !== 'ready' || shelfBusy}
+                    importing={importing}
+                    exporting={exportPreparing}
+                    onLibrary={openAllStories}
+                    onTags={() => setTagManagerOpen(true)}
+                    onImport={() => void startImport()}
+                    onExport={() => void prepareExport('current_query')}
+                />
             </aside>
 
             <aside className="filters" aria-label="Saved shelves and refinements">
@@ -1938,6 +1959,21 @@ function App() {
                         </div>
                     ))}
                 </nav>
+                <label className="include-broken">
+                    <input
+                        type="checkbox"
+                        checked={!!collectionQuery.includeBroken}
+                        onChange={(event) => {
+                            const next = {...collectionQuery, includeBroken: event.currentTarget.checked, page: 1};
+                            if (allStoriesActive) {
+                                setCollectionQuery(queryHistory.push(next, null, 'all'));
+                            } else {
+                                updateQuery(next);
+                            }
+                        }}
+                    />
+                    Include broken stories
+                </label>
                 {selectedShelfIDs.length > 0 && (
                     <section className="combined-shelves" aria-label="Combined shelf preview">
                         <div className="combined-shelves-title">
@@ -2090,21 +2126,6 @@ function App() {
                             })}
                         />
                     </label>
-                    <button
-                        type="button"
-                        disabled={metadataRefreshing}
-                        onClick={() => void startMetadataRefresh()}
-                    >
-                        {metadataRefreshing ? 'Refreshing…' : '↻ Sync'}
-                    </button>
-                    <button
-                        className="import"
-                        type="button"
-                        disabled={importing}
-                        onClick={() => void startImport()}
-                    >
-                        {importing ? 'Importing…' : '＋ Import stories'}
-                    </button>
                 </div>
 
                 <div className="heading">
@@ -2193,6 +2214,14 @@ function App() {
                     </section>
                 )}
 
+                {applicationState === 'ready' && (
+                    <LuniiSync
+                        status={metadataStatus}
+                        busy={metadataStarting || metadataRefreshing}
+                        onSync={() => void startMetadataRefresh()}
+                    />
+                )}
+
                 {applicationState === 'initializing' && (
                     <section
                         className="collection-state working"
@@ -2265,25 +2294,6 @@ function App() {
                         </div>
                     </section>
                 )}
-
-                {metadataStatus && !hasVisibleMetadataOperation && (() => {
-                    const notice = describeMetadataStatus(metadataStatus);
-                    return (
-                        <section
-                            className={`collection-state ${notice.tone}`}
-                            data-state={notice.state}
-                            aria-live="polite"
-                        >
-                            <div className="state-mark" aria-hidden="true">
-                                {notice.tone === 'success' ? '✓' : '↻'}
-                            </div>
-                            <div className="state-copy">
-                                <h3>{notice.title}</h3>
-                                <p>{notice.message}</p>
-                            </div>
-                        </section>
-                    );
-                })()}
 
                 {visibleOperations.map((operation) => {
                     const notice = operation.kind === 'metadata_sync'
@@ -2451,49 +2461,50 @@ function App() {
                         )}
                         <div className={`story-row${row.shelfID === undefined ? '' : ' preview'}`}>
                             {row.stories.map((story) => (
-                                <button
-                                    className={`story${selectedIDs.includes(story.id) ? ' selected' : ''}`}
-                                    style={paletteFor(story.id)}
-                                    type="button"
-                                    key={story.id}
-                                    aria-pressed={selectedIDs.includes(story.id)}
-                                    aria-keyshortcuts="Control+Enter Meta+Enter"
-                                    onClick={(event) => {
-                                        setDetail(null);
-                                        if (event.ctrlKey || event.metaKey || event.shiftKey) {
-                                            const next = selectedIDs.includes(story.id)
-                                                ? selectedIDs.length === 1
-                                                    ? selectedIDs
-                                                    : selectedIDs.filter((storyID) => storyID !== story.id)
-                                                : [...selectedIDs, story.id];
-                                            setSelectedIDs(next);
-                                            setSelectedID(next.includes(story.id) ? story.id : next[0]);
-                                        } else {
-                                            setSelectedIDs([story.id]);
-                                            setSelectedID(story.id);
-                                        }
-                                    }}
-                                >
-                                    <div className={`cover${story.artworkId ? ' has-artwork' : ''}`}>
-                                        {story.artworkId && (
-                                            <img
-                                                src={artworkURL(story.artworkId)}
-                                                alt=""
-                                                loading="lazy"
-                                                decoding="async"
-                                            />
+                                <div className={`story-card${story.broken ? ' is-broken' : ''}`} key={story.id}>
+                                    <button
+                                        className={`story${selectedIDs.includes(story.id) ? ' selected' : ''}`}
+                                        style={paletteFor(story.id)}
+                                        type="button"
+                                        aria-label={story.title}
+                                        aria-describedby={story.broken ? `broken-${row.key}-${story.id}` : undefined}
+                                        aria-pressed={selectedIDs.includes(story.id)}
+                                        aria-keyshortcuts="Control+Enter Meta+Enter"
+                                        onClick={(event) => {
+                                            if (event.ctrlKey || event.metaKey || event.shiftKey) {
+                                                const next = selectedIDs.includes(story.id)
+                                                    ? selectedIDs.length === 1
+                                                        ? selectedIDs
+                                                        : selectedIDs.filter((storyID) => storyID !== story.id)
+                                                    : [...selectedIDs, story.id];
+                                                setSelectedIDs(next);
+                                                setSelectedID(next.includes(story.id) ? story.id : next[0]);
+                                            } else {
+                                                setSelectedIDs([story.id]);
+                                                setSelectedID(story.id);
+                                            }
+                                        }}
+                                    >
+                                        <StoryCover story={story}/>
+                                        {story.broken && (
+                                            <span
+                                                className="broken-badge"
+                                                id={`broken-${row.key}-${story.id}`}
+                                                style={{'--broken-color': tagCatalog?.definitions.find(
+                                                    (definition) => definition.key === 'broken',
+                                                )?.color ?? '#FF705C'} as CSSProperties}
+                                            >
+                                                <i aria-hidden="true"/>Broken
+                                            </span>
                                         )}
-                                        <b>{story.title}</b>
-                                    </div>
-                                    <small>
-                                        {storyByline(story)}
-                                    </small>
-                                </button>
+                                    </button>
+                                    <p className="story-title">{story.title}</p>
+                                </div>
                             ))}
                         </div>
                     </section>
                 ))}
-                {!showSavedShelfRows && (page?.totalPages ?? 0) > 1 && (
+                {(page?.totalPages ?? 0) > 1 && (
                     <nav className="pagination" aria-label="Collection pages">
                         <button
                             type="button"
@@ -2563,15 +2574,6 @@ function App() {
                             {selectedIDs.length > 1
                                 ? `${selectedIDs.length} stories selected`
                                 : 'My tags'}
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    setTagAssignmentStoryIDs([...selectedIDs]);
-                                    setTagAssignmentOpen(true);
-                                }}
-                            >
-                                Edit tags
-                            </button>
                         </div>
                         <div className="tags">
                             {assignedTags.map((tag) => (
@@ -2590,18 +2592,10 @@ function App() {
                                 </span>
                             ))}
                         </div>
-                        <div className="archive">
-                            {detail?.archive.originalFilename ?? 'Loading archive details…'}
-                            {' · '}
-                            {formatBytes(detail?.archive.byteSize ?? selected.byteSize)}
-                            {' · '}
-                            {compatibilityLabel(
-                                detail?.archive.verification ?? selected.compatibility,
-                            )}
-                        </div>
                     </div>
                     <div className="drawer-actions">
                         <button
+                            ref={openDetailsButton}
                             type="button"
                             onClick={() => {
                                 setRemovalError(null);
@@ -2623,7 +2617,7 @@ function App() {
             )}
 
             {exportPreflight && (
-                <div className="dialog-backdrop">
+                <ModalBackdrop onDismiss={() => setExportPreflight(null)} disabled={exportStarting}>
                     <section
                         ref={exportPreflightDialog}
                         className="detail-dialog export-preflight"
@@ -2737,73 +2731,33 @@ function App() {
                             </button>
                         </div>
                     </section>
-                </div>
+                </ModalBackdrop>
             )}
 
-            {detailsOpen && selected && (
-                <div className="dialog-backdrop">
-                    <section
-                        ref={detailDialog}
-                        className="detail-dialog"
-                        role="dialog"
-                        aria-modal="true"
-                        aria-labelledby="story-detail-title"
-                        data-state="removal-confirmation"
-                    >
-                        <div className="dialog-kicker">Story details</div>
-                        <h3 id="story-detail-title">{selected.title}</h3>
-                        <p className="dialog-description">
-                            {selected.description || 'No story description is available yet.'}
-                        </p>
-                        <dl className="dialog-facts">
-                            <div>
-                                <dt>Story UUID</dt>
-                                <dd>{selected.uuid}</dd>
-                            </div>
-                            <div>
-                                <dt>Archive</dt>
-                                <dd>{detail?.archive.originalFilename ?? 'Loading…'}</dd>
-                            </div>
-                            <div>
-                                <dt>Verification</dt>
-                                <dd>{compatibilityLabel(selected.compatibility)}</dd>
-                            </div>
-                            <div>
-                                <dt>Checksum</dt>
-                                <dd>{detail?.archive.sha256 ?? 'Loading…'}</dd>
-                            </div>
-                        </dl>
-                        <div className="removal-confirmation">
-                            <b>Remove from this library?</b>
-                            <p>
-                                The managed archive will move to application trash before its
-                                active record is deleted. Your original source file is unchanged.
-                            </p>
-                        </div>
-                        {removalError && <p className="dialog-error">{removalError}</p>}
-                        <div className="dialog-actions">
-                            <button
-                                ref={detailDialogInitialFocus}
-                                type="button"
-                                disabled={removing}
-                                onClick={() => setDetailsOpen(false)}
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                className="danger"
-                                type="button"
-                                disabled={removing}
-                                onClick={() => void confirmRemoval()}
-                            >
-                                {removing ? 'Moving to trash…' : 'Move to trash'}
-                            </button>
-                        </div>
-                    </section>
-                </div>
+            {detailsOpen && selected && !tagAssignmentOpen && (
+                <StoryDetailsDialog
+                    key={selected.id}
+                    story={selected}
+                    archive={detail?.story.id === selected.id ? detail.archive : undefined}
+                    artworkURL={artworkURL(selected.artworkId)}
+                    coverStyle={selectedPalette}
+                    verification={compatibilityLabel(selected.compatibility)}
+                    removing={removing}
+                    error={removalError}
+                    tagSelectionCount={selectedIDs.length}
+                    onEditTags={() => {
+                        setTagAssignmentStoryIDs([...selectedIDs]);
+                        setTagAssignmentOpen(true);
+                    }}
+                    onClose={() => {
+                        setDetailsOpen(false);
+                        openDetailsButton.current?.focus({preventScroll: true});
+                    }}
+                    onRemove={() => void confirmRemoval()}
+                />
             )}
             {shelfDialogMode && (
-                <div className="dialog-backdrop">
+                <ModalBackdrop onDismiss={() => setShelfDialogMode(null)} disabled={shelfBusy}>
                     <form
                         ref={shelfDialog}
                         className="detail-dialog shelf-dialog"
@@ -2865,10 +2819,10 @@ function App() {
                             </button>
                         </div>
                     </form>
-                </div>
+                </ModalBackdrop>
             )}
             {repairShelf && (
-                <div className="dialog-backdrop">
+                <ModalBackdrop onDismiss={() => setRepairShelfID(null)} disabled={shelfBusy}>
                     <section
                         ref={repairShelfDialog}
                         className="detail-dialog shelf-dialog"
@@ -2929,10 +2883,10 @@ function App() {
                             </button>
                         </div>
                     </section>
-                </div>
+                </ModalBackdrop>
             )}
             {deleteShelf && (
-                <div className="dialog-backdrop">
+                <ModalBackdrop onDismiss={() => setDeleteShelfID(null)} disabled={shelfBusy}>
                     <section
                         ref={deleteShelfDialog}
                         className="detail-dialog shelf-dialog"
@@ -2969,7 +2923,7 @@ function App() {
                             </button>
                         </div>
                     </section>
-                </div>
+                </ModalBackdrop>
             )}
             {tagManagerOpen && (
                 <TagManager
@@ -2981,6 +2935,10 @@ function App() {
                 <TagAssignmentEditor
                     storyIDs={tagAssignmentStoryIDs}
                     onClose={() => {
+                        if (selectedID === null || !tagAssignmentStoryIDs.includes(selectedID)) {
+                            setDetailsOpen(false);
+                            openDetailsButton.current?.focus({preventScroll: true});
+                        }
                         setTagAssignmentOpen(false);
                         setTagAssignmentStoryIDs([]);
                     }}
