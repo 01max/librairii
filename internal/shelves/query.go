@@ -19,6 +19,7 @@ var (
 )
 
 type SavedLibraryQuery struct {
+	IncludeBroken   bool                    `json:"includeBroken,omitempty"`
 	Name            string                  `json:"name,omitempty"`
 	Languages       []string                `json:"languages,omitempty"`
 	Compatibilities []library.Compatibility `json:"compatibilities,omitempty"`
@@ -83,6 +84,7 @@ func MigrateSavedLibraryQuery(
 
 func (q SavedLibraryQuery) StoryLibraryQuery() library.StoryLibraryQuery {
 	return library.StoryLibraryQuery{
+		IncludeBroken:   q.IncludeBroken,
 		Name:            q.Name,
 		Languages:       append([]string(nil), q.Languages...),
 		Compatibilities: append([]library.Compatibility(nil), q.Compatibilities...),
@@ -103,6 +105,7 @@ func canonicalSavedLibraryQuery(
 		)
 	}
 	return SavedLibraryQuery{
+		IncludeBroken:   query.IncludeBroken,
 		Name:            query.Name,
 		Languages:       append([]string(nil), query.Languages...),
 		Compatibilities: append([]library.Compatibility(nil), query.Compatibilities...),
@@ -153,6 +156,7 @@ func savedLibraryQueryPayload(query SavedLibraryQuery) shelfquery.Payload {
 		compatibilities = append(compatibilities, string(compatibility))
 	}
 	return shelfquery.Payload{
+		IncludeBroken:   query.IncludeBroken,
 		Name:            query.Name,
 		Languages:       append([]string(nil), query.Languages...),
 		Compatibilities: compatibilities,
@@ -196,6 +200,7 @@ func storyLibraryQueryFromPayload(payload shelfquery.Payload) library.StoryLibra
 		})
 	}
 	return library.StoryLibraryQuery{
+		IncludeBroken:   payload.IncludeBroken,
 		Name:            payload.Name,
 		Languages:       append([]string(nil), payload.Languages...),
 		Compatibilities: compatibilities,
