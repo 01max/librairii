@@ -319,10 +319,9 @@ test('renders the canonical collection shell from typed library data', async () 
     expect(screen.getByRole('navigation', {name: 'Primary navigation'})).toBeInTheDocument();
     expect(screen.getByText('Stories grouped by your tags · 2 archives'))
         .toBeInTheDocument();
-    expect(screen.getByRole('button', {name: 'Clockwork Forest Lunii'}))
+    expect(screen.getByRole('button', {name: 'Clockwork Forest'}))
         .toHaveAttribute('aria-pressed', 'true');
-    expect(await screen.findByText('clockwork-forest.zip · 1.0 MB · Verified'))
-        .toBeInTheDocument();
+    expect(screen.getByRole('button', {name: 'Open details'})).toBeEnabled();
 });
 
 test('uses the canonical state grammar while the local library opens', async () => {
@@ -387,6 +386,88 @@ test('offers explicit preservation when an incompatible database blocks startup'
     )).toBeInTheDocument();
 });
 
+test('offers a prominent first Lunii sync with an explanation and no prior sync time', async () => {
+    render(<App/>);
+    const sync = await screen.findByRole('region', {name: 'Official Lunii sync'});
+    expect(within(sync).getByRole('button', {name: 'Sync with Lunii'})).toBeEnabled();
+    expect(sync).toHaveTextContent('official Lunii API');
+    expect(sync).toHaveTextContent('descriptions and cover images');
+    expect(sync).toHaveTextContent('Last successful sync: Never');
+    expect(sync).toHaveAttribute('data-state', 'first-lunii-sync');
+});
+
+test('keeps the last successful Lunii sync visible during later operations', async () => {
+    officialMetadataStatus.mockResolvedValue(new app.MetadataStatusResponse({
+        status: {state: 'fresh', activatedAt: '2026-07-25T16:00:00Z', matchedStoryCount: 2},
+    }));
+    render(<App/>);
+    const sync = await screen.findByRole('region', {name: 'Official Lunii sync'});
+    expect(within(sync).getByText('Last successful sync:', {exact: false})).toBeInTheDocument();
+    expect(sync.querySelector('time')).toHaveAttribute('dateTime', '2026-07-25T16:00:00Z');
+    operationChanged?.({
+        id: 'import-activity', kind: 'import', status: 'running',
+        completedItems: 0, totalItems: 1, items: [],
+    });
+    expect(sync.querySelector('time')).toHaveAttribute('dateTime', '2026-07-25T16:00:00Z');
+});
+
+test('prevents duplicate Lunii sync requests while starting and offers retry after failure', async () => {
+    const user = userEvent.setup();
+    let rejectSync: ((reason?: unknown) => void) | undefined;
+    refreshOfficialMetadata.mockImplementationOnce(() => new Promise((_, reject) => {
+        rejectSync = reject;
+    }));
+    render(<App/>);
+    const sync = await screen.findByRole('region', {name: 'Official Lunii sync'});
+    await user.click(within(sync).getByRole('button', {name: 'Sync with Lunii'}));
+    const starting = within(sync).getByRole('button', {name: 'Syncing with Lunii…'});
+    expect(starting).toBeDisabled();
+    await user.click(starting);
+    expect(refreshOfficialMetadata).toHaveBeenCalledTimes(1);
+    rejectSync?.(new Error('Disconnected'));
+    expect(await screen.findByText('Could not start the Lunii sync. Please try again.'))
+        .toBeInTheDocument();
+    expect(within(sync).getByRole('button', {name: 'Sync with Lunii'})).toBeEnabled();
+    expect(sync).toHaveTextContent('Last successful sync: Never');
+});
+
+test('keeps artwork links free of overlaid titles and author captions', async () => {
+    queryStories.mockResolvedValue(new app.LibraryPageResponse({
+        page: {stories: [{...stories[0], artworkId: 'forest-cover'}],
+            page: 1, pageSize: 12, totalItems: 1, totalPages: 1, sort: 'imported_desc'},
+    }));
+    render(<App/>);
+    const cover = await screen.findByRole('button', {name: 'Clockwork Forest'});
+    expect(cover.querySelector('img')).toHaveAttribute('src', '/artwork/forest-cover');
+    expect(cover).not.toHaveTextContent('Clockwork Forest');
+    expect(cover).not.toHaveTextContent('Lunii');
+    expect(cover.parentElement?.querySelector('.story-title')).toHaveTextContent('Clockwork Forest');
+    expect(cover.parentElement?.querySelector('small')).toBeNull();
+    fireEvent.error(cover.querySelector('img')!);
+    expect(cover.querySelector('img')).toBeNull();
+    expect(cover).toBeEnabled();
+    expect(cover.parentElement?.querySelector('.story-title')).toHaveTextContent('Clockwork Forest');
+});
+
+test('makes the rail shortcuts visible and functional', async () => {
+    const user = userEvent.setup();
+    render(<App/>);
+    await screen.findByRole('heading', {name: 'Clockwork Forest'});
+    const rail = screen.getByRole('navigation', {name: 'Primary navigation'});
+    expect(within(rail).getAllByRole('button').map((button) => button.textContent))
+        .toEqual(['Library', 'Tags', 'Import', 'Export']);
+    await user.type(screen.getByRole('searchbox'), 'moon');
+    await user.click(within(rail).getByRole('button', {name: 'Library'}));
+    expect(screen.getByRole('searchbox')).toHaveValue('');
+    await user.click(within(rail).getByRole('button', {name: 'Tags'}));
+    expect(await screen.findByRole('dialog', {name: 'Manage tags'})).toBeInTheDocument();
+    await user.keyboard('{Escape}');
+    await user.click(within(rail).getByRole('button', {name: 'Import'}));
+    expect(selectAndImportStories).toHaveBeenCalledTimes(1);
+    await user.click(within(rail).getByRole('button', {name: 'Export current result'}));
+    expect(selectAndPreflightExport).toHaveBeenCalledWith(expect.objectContaining({sourceType: 'current_query'}));
+});
+
 test('keeps interactive controls in their canonical regions', async () => {
     const user = userEvent.setup();
     officialMetadataStatus.mockResolvedValue(new app.MetadataStatusResponse({
@@ -414,12 +495,12 @@ test('keeps interactive controls in their canonical regions', async () => {
         .toBeInTheDocument();
     expect(within(main).getByRole('searchbox', {name: 'Search stories'}))
         .toBeInTheDocument();
-    expect(within(main).getByRole('button', {name: '↻ Sync'}))
+    expect(within(main).getByRole('button', {name: 'Sync with Lunii'}))
         .toBeInTheDocument();
-    expect(within(main).getByRole('button', {name: '＋ Import stories'}))
-        .toBeInTheDocument();
-    expect(within(drawer).getByRole('button', {name: 'Edit tags'}))
-        .toBeInTheDocument();
+    expect(within(main).queryByRole('button', {name: '＋ Import stories'}))
+        .not.toBeInTheDocument();
+    expect(within(drawer).queryByRole('button', {name: 'Edit tags'}))
+        .not.toBeInTheDocument();
     expect(within(drawer).getByRole('button', {name: 'Open details'}))
         .toBeInTheDocument();
     expect(within(drawer).getByRole('button', {name: 'Add to export →'}))
@@ -671,7 +752,8 @@ test('renders saved shelf preview rows and opens them from view all', async () =
         .toHaveValue('moon');
 });
 
-test('pairs the detail drawer with a story visible in saved shelf previews', async () => {
+test('keeps stories outside saved shelf searches available in All stories', async () => {
+    const user = userEvent.setup();
     listShelves.mockResolvedValue(new app.ShelfListResponse({
         shelves: [new shelves.Summary({
             id: 7,
@@ -704,7 +786,7 @@ test('pairs the detail drawer with a story visible in saved shelf previews', asy
         },
     }));
 
-    render(<App/>);
+    const view = render(<App/>);
 
     const bedtimeRow = (await screen.findByRole('heading', {name: 'Bedtime'}))
         .closest('section');
@@ -712,11 +794,22 @@ test('pairs the detail drawer with a story visible in saved shelf previews', asy
     const visibleStory = await within(bedtimeRow!).findByRole('button', {
         name: /Moonlit Workshop/,
     });
-    await waitFor(() => expect(visibleStory).toHaveAttribute('aria-pressed', 'true'));
-    expect(screen.getByRole('complementary', {name: 'Moonlit Workshop details'}))
-        .toBeInTheDocument();
-    expect(screen.queryByRole('button', {name: 'Clockwork Forest Lunii'}))
-        .not.toBeInTheDocument();
+    expect(visibleStory).toBeInTheDocument();
+    const allStoriesRow = screen.getByRole('heading', {name: 'Recently added'}).closest('section')!;
+    expect(within(allStoriesRow).getByRole('button', {name: 'Clockwork Forest'})).toBeInTheDocument();
+    expect(within(allStoriesRow).getByRole('button', {name: 'Moonlit Workshop'})).toBeInTheDocument();
+    await user.click(screen.getByRole('button', {name: 'Bedtime, 1 story'}));
+    expect(screen.getByRole('searchbox', {name: 'Search stories'})).toHaveValue('moon');
+    await user.click(screen.getByRole('button', {name: /All stories/}));
+    expect(screen.getByRole('searchbox', {name: 'Search stories'})).toHaveValue('');
+    await waitFor(() => expect(queryStories).toHaveBeenLastCalledWith(expect.objectContaining({
+        name: '', languages: [], compatibilities: [], booleanFilters: [], choiceFilters: [],
+    })));
+    view.unmount();
+    render(<App/>);
+    expect(await screen.findByRole('searchbox', {name: 'Search stories'})).toHaveValue('');
+    const reloaded = (await screen.findByRole('heading', {name: 'Recently added'})).closest('section')!;
+    expect(await within(reloaded).findByRole('button', {name: 'Clockwork Forest'})).toBeInTheDocument();
 });
 
 test('switches saved previews to filtered results and restores the custom URL', async () => {
@@ -1510,11 +1603,11 @@ test('previews a multi-shelf union with per-shelf and overlap counts', async () 
     await user.click(await screen.findByRole('checkbox', {
         name: 'Select Moon for combined shelf preview',
     }));
-    await waitFor(() => expect(previewShelves).toHaveBeenLastCalledWith([7]));
+    await waitFor(() => expect(previewShelves).toHaveBeenLastCalledWith([7], false));
     await user.click(screen.getByRole('checkbox', {
         name: 'Select Forest for combined shelf preview',
     }));
-    await waitFor(() => expect(previewShelves).toHaveBeenLastCalledWith([7, 8]));
+    await waitFor(() => expect(previewShelves).toHaveBeenLastCalledWith([7, 8], false));
 
     const preview = await screen.findByRole('region', {name: 'Combined shelf preview'});
     expect(preview).toHaveTextContent('Moon2');
@@ -1577,7 +1670,7 @@ test('previews a multi-shelf union with per-shelf and overlap counts', async () 
     });
     await waitFor(() => expect(invalidSelection).toBeEnabled());
     expect(invalidSelection).toBeChecked();
-    await waitFor(() => expect(previewShelves).toHaveBeenLastCalledWith([7, 8]));
+    await waitFor(() => expect(previewShelves).toHaveBeenLastCalledWith([7, 8], false));
     expect(await screen.findByText('Repair the selected shelf before continuing.'))
         .toBeInTheDocument();
 
@@ -1590,7 +1683,7 @@ test('previews a multi-shelf union with per-shelf and overlap counts', async () 
         },
     }));
     await user.click(invalidSelection);
-    await waitFor(() => expect(previewShelves).toHaveBeenLastCalledWith([8]));
+    await waitFor(() => expect(previewShelves).toHaveBeenLastCalledWith([8], false));
     expect(invalidSelection).not.toBeChecked();
     expect(screen.queryByText('Repair the selected shelf before continuing.'))
         .not.toBeInTheDocument();
@@ -1701,13 +1794,14 @@ test('composes canonical search, tri-state and choice refinements with clear-all
     await waitFor(() => expect(queryStories).toHaveBeenLastCalledWith(
         expect.objectContaining({name: 'foret', page: 1}),
     ));
-    await user.click(screen.getByRole('checkbox', {name: 'Broken'}));
+    await user.click(screen.getByRole('checkbox', {name: 'Include broken stories'}));
     await user.click(screen.getByRole('checkbox', {name: 'Calm'}));
     await user.click(screen.getByRole('checkbox', {name: 'Bold'}));
 
     await waitFor(() => expect(queryStories).toHaveBeenLastCalledWith(
         expect.objectContaining({
-            booleanFilters: [{definitionId: 1, state: 'true'}],
+            includeBroken: true,
+            booleanFilters: [],
             choiceFilters: [{definitionId: 2, valueIds: [20, 21]}],
         }),
     ));
@@ -1756,7 +1850,7 @@ test('composes official language, import status, and derived age refinements', a
                 key: 'age',
                 normalizedKey: 'age',
                 label: 'Age',
-                color: '#ff705c',
+                color: '#267d5d',
                 kind: 'choice',
                 source: 'derived',
                 presentation: 'system',
@@ -1809,7 +1903,7 @@ test('refreshes derived facet counts when an import changes the collection', asy
                 key: 'age',
                 normalizedKey: 'age',
                 label: 'Age',
-                color: '#ff705c',
+                color: '#267d5d',
                 kind: 'choice',
                 source: 'derived',
                 presentation: 'system',
@@ -1917,7 +2011,7 @@ test('keeps matched metadata, artwork, provenance, and combined refinements usab
                 id: 3,
                 key: 'age',
                 label: 'Age',
-                color: '#ff705c',
+                color: '#267d5d',
                 kind: 'choice',
                 source: 'derived',
                 protected: true,
@@ -2003,12 +2097,12 @@ test('keeps matched metadata, artwork, provenance, and combined refinements usab
     ));
     render(<App/>);
 
-    expect(await screen.findByRole('heading', {name: 'Using saved official metadata'}))
+    expect(await screen.findByRole('heading', {name: 'Using saved Lunii story details'}))
         .toBeInTheDocument();
     expect(await screen.findByRole('heading', {name: 'The Clockwork Mountain'}))
         .toBeInTheDocument();
     expect(screen.getByRole('button', {
-        name: `Unmatched local story ${unmatched.uuid}`,
+        name: `Unmatched local story`,
     }))
         .toBeInTheDocument();
     expect(await screen.findByRole('img', {name: 'The Clockwork Mountain artwork'}))
@@ -2020,12 +2114,12 @@ test('keeps matched metadata, artwork, provenance, and combined refinements usab
         .toHaveTextContent('Age · 3–5 years');
 
     await user.click(screen.getByRole('button', {
-        name: `Unmatched local story ${unmatched.uuid}`,
+        name: `Unmatched local story`,
     }));
     expect(await screen.findByText('Local story · embedded metadata'))
         .toBeInTheDocument();
     await user.click(screen.getByRole('button', {
-        name: 'The Clockwork Mountain 54 min · Fixture Press',
+        name: 'The Clockwork Mountain',
     }));
 
     await user.type(screen.getByRole('searchbox', {name: 'Search stories'}), 'Clockwork');
@@ -2143,6 +2237,7 @@ test('freezes assignment targets when a tag change removes stories from the filt
     render(<App/>);
     await screen.findByRole('heading', {name: 'Clockwork Forest'});
 
+    await user.click(screen.getByRole('button', {name: 'Open details'}));
     await user.click(screen.getByRole('button', {name: 'Edit tags'}));
     const broken = await screen.findByRole('checkbox', {name: 'Broken warning'});
     await user.click(broken);
@@ -2271,7 +2366,7 @@ test('selects a cover and loads its detail drawer without losing the collection'
     render(<App/>);
 
     const moonlit = await screen.findByRole('button', {
-        name: 'Moonlit Workshop 11112222-3333-4444-8555-666677778888',
+        name: 'Moonlit Workshop',
     });
     await user.click(moonlit);
 
@@ -2282,6 +2377,179 @@ test('selects a cover and loads its detail drawer without losing the collection'
     expect(loadStoryDetail).toHaveBeenLastCalledWith(2);
 });
 
+test('shows the story artwork and readable description in the details dialog', async () => {
+    const user = userEvent.setup();
+    loadStoryDetail.mockResolvedValue(new app.StoryDetailResponse({
+        detail: {
+            story: {
+                ...stories[0],
+                artworkId: 'rainbow-cover',
+                description: 'Un dragon !<br/><br/>Aide <b>Lou</b> &amp; ses amis.<span class="SF_splitter"></span>',
+            },
+            archive: {
+                originalFilename: 'clockwork-forest.zip',
+                sha256: 'a'.repeat(64),
+                verification: 'compatible',
+            },
+        },
+    }));
+    render(<App/>);
+    await user.click(await screen.findByRole('button', {name: 'Open details'}));
+    const dialog = await screen.findByRole('dialog', {name: 'Clockwork Forest'});
+
+    expect(within(dialog).getByRole('img', {name: 'Clockwork Forest artwork'}))
+        .toHaveAttribute('src', '/artwork/rainbow-cover');
+    expect(within(dialog).getByText('Un dragon ! Aide Lou & ses amis.'))
+        .toBeInTheDocument();
+    expect(dialog).not.toHaveTextContent('<br');
+    expect(dialog).not.toHaveTextContent('SF_splitter');
+    fireEvent.error(within(dialog).getByRole('img', {name: 'Clockwork Forest artwork'}));
+    expect(within(dialog).queryByRole('img')).not.toBeInTheDocument();
+    expect(within(dialog).getByRole('heading', {name: 'Clockwork Forest'}))
+        .toBeInTheDocument();
+});
+
+test('keeps technical story details behind a show and hide toggle', async () => {
+    const user = userEvent.setup();
+    render(<App/>);
+    await user.click(await screen.findByRole('button', {name: 'Open details'}));
+    const dialog = screen.getByRole('dialog', {name: 'Clockwork Forest'});
+    expect(within(dialog).queryByText(stories[0].uuid)).not.toBeInTheDocument();
+    expect(within(dialog).queryByText('Story UUID')).not.toBeInTheDocument();
+    expect(within(dialog).queryByText('a'.repeat(64))).not.toBeInTheDocument();
+
+    await user.click(within(dialog).getByRole('button', {name: 'Show technical details'}));
+    expect(within(dialog).getByText(stories[0].uuid)).toBeInTheDocument();
+    expect(within(dialog).getByText('clockwork-forest.zip')).toBeInTheDocument();
+    expect(within(dialog).getByText('Verified')).toBeInTheDocument();
+    expect(within(dialog).getByText('a'.repeat(64))).toBeInTheDocument();
+    await user.click(within(dialog).getByRole('button', {name: 'Hide technical details'}));
+    expect(within(dialog).queryByText(stories[0].uuid)).not.toBeInTheDocument();
+});
+
+test('asks for confirmation only after choosing to remove a story', async () => {
+    const user = userEvent.setup();
+    render(<App/>);
+    await user.click(await screen.findByRole('button', {name: 'Open details'}));
+    const dialog = screen.getByRole('dialog', {name: 'Clockwork Forest'});
+    expect(within(dialog).queryByText('Remove from this library?')).not.toBeInTheDocument();
+    expect(within(dialog).queryByRole('button', {name: 'Move to trash'})).not.toBeInTheDocument();
+
+    await user.click(within(dialog).getByRole('button', {name: 'Remove from library…'}));
+    expect(within(dialog).getByText('Remove from this library?')).toBeInTheDocument();
+    expect(removeStory).not.toHaveBeenCalled();
+    const cancel = within(dialog).getByRole('button', {name: 'Keep story'});
+    await waitFor(() => expect(cancel).toHaveFocus());
+    await user.click(cancel);
+    expect(within(dialog).queryByRole('button', {name: 'Move to trash'})).not.toBeInTheDocument();
+    expect(removeStory).not.toHaveBeenCalled();
+    expect(within(dialog).getByRole('button', {name: 'Remove from library…'})).toHaveFocus();
+
+    await user.click(within(dialog).getByRole('button', {name: 'Remove from library…'}));
+    await user.keyboard('{Escape}');
+    expect(dialog).toBeInTheDocument();
+    expect(within(dialog).queryByRole('button', {name: 'Move to trash'})).not.toBeInTheDocument();
+    expect(removeStory).not.toHaveBeenCalled();
+});
+
+test('dismisses story details only when clicking outside the popup', async () => {
+    const user = userEvent.setup();
+    render(<App/>);
+    const opener = await screen.findByRole('button', {name: 'Open details'});
+    await user.click(opener);
+    const dialog = screen.getByRole('dialog', {name: 'Clockwork Forest'});
+    await user.click(within(dialog).getByRole('heading', {name: 'Clockwork Forest'}));
+    expect(dialog).toBeInTheDocument();
+    await user.click(dialog.closest('.dialog-backdrop')!);
+    expect(dialog).not.toBeInTheDocument();
+    expect(opener).toHaveFocus();
+    expect(removeStory).not.toHaveBeenCalled();
+});
+
+test('shows tags and their edit action in details and returns from the tag editor', async () => {
+    const user = userEvent.setup();
+    loadTagAssignmentWorkspace.mockResolvedValue(new app.TagAssignmentWorkspaceResponse({
+        workspace: {
+            catalog: {definitions: [{id: 2, key: 'mood', label: 'Mood', kind: 'choice',
+                color: '#405cf5', values: [{id: 20, label: 'Calm'}]}]},
+            requestedStories: 1,
+            states: [{definitionId: 2, assignedStories: 0, values: [{valueId: 20, assignedStories: 1}]}],
+        },
+    }));
+    render(<App/>);
+    expect(screen.queryByRole('button', {name: 'Edit tags'})).not.toBeInTheDocument();
+    await user.click(await screen.findByRole('button', {name: 'Open details'}));
+    const dialog = screen.getByRole('dialog', {name: 'Clockwork Forest'});
+    expect(await within(dialog).findByText('Mood · Calm')).toBeInTheDocument();
+    expect(loadTagAssignmentWorkspace).toHaveBeenCalledWith([1]);
+    await user.click(within(dialog).getByRole('button', {name: 'Edit tags'}));
+    const editor = await screen.findByRole('dialog', {name: 'Edit story tags'});
+    expect(screen.getAllByRole('dialog')).toHaveLength(1);
+    expect(await within(editor).findByRole('checkbox', {name: 'Calm'})).toBeChecked();
+    await user.click(within(editor).getByRole('button', {name: 'Done'}));
+    const reopened = await screen.findByRole('dialog', {name: 'Clockwork Forest'});
+    expect(await within(reopened).findByText('Mood · Calm')).toBeInTheDocument();
+    await user.keyboard('{Escape}');
+    expect(screen.queryByRole('button', {name: 'Edit tags'})).not.toBeInTheDocument();
+    expect(screen.getByRole('button', {name: 'Open details'})).toHaveFocus();
+});
+
+test('collapses choice tag filters without clearing their selection', async () => {
+    const user = userEvent.setup();
+    render(<App/>);
+    const mood = await screen.findByRole('button', {name: 'Mood'});
+    await user.click(screen.getByRole('checkbox', {name: 'Calm'}));
+    await user.click(mood);
+    expect(mood).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.queryByRole('checkbox', {name: 'Calm'})).not.toBeInTheDocument();
+    await user.click(mood);
+    expect(screen.getByRole('checkbox', {name: 'Calm'})).toBeChecked();
+});
+
+test('uses a separate include-broken control and identifies broken story covers', async () => {
+    const user = userEvent.setup();
+    queryStories.mockImplementation(async (query) => new app.LibraryPageResponse({
+        page: {stories: query.includeBroken ? [{...stories[0], broken: true}, stories[1]] : [stories[1]],
+            page: 1, pageSize: 12, totalItems: query.includeBroken ? 2 : 1, totalPages: 1, sort: 'imported_desc'},
+    }));
+    render(<App/>);
+    const include = await screen.findByRole('checkbox', {name: 'Include broken stories'});
+    expect(include).not.toBeChecked();
+    expect(screen.queryByRole('checkbox', {name: 'Broken'})).not.toBeInTheDocument();
+    expect(screen.queryByRole('checkbox', {name: 'Not Broken'})).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', {name: 'Clockwork Forest'})).not.toBeInTheDocument();
+    await user.click(include);
+    const broken = await screen.findByRole('button', {name: 'Clockwork Forest'});
+    expect(within(broken).getByText('Broken')).toBeInTheDocument();
+    expect(broken.closest('.story-card')).toHaveClass('is-broken');
+    expect(window.location.hash).toContain('includeBroken=true');
+    await user.click(include);
+    await waitFor(() => expect(screen.queryByRole('button', {name: 'Clockwork Forest'})).not.toBeInTheDocument());
+});
+
+test('keeps removal pending in the dialog and allows retry after a failure', async () => {
+    const user = userEvent.setup();
+    let rejectRemoval: ((reason?: unknown) => void) | undefined;
+    removeStory.mockImplementationOnce(() => new Promise((_, reject) => {
+        rejectRemoval = reject;
+    }));
+    render(<App/>);
+    await user.click(await screen.findByRole('button', {name: 'Open details'}));
+    const dialog = screen.getByRole('dialog', {name: 'Clockwork Forest'});
+    await user.click(within(dialog).getByRole('button', {name: 'Remove from library…'}));
+    await user.click(within(dialog).getByRole('button', {name: 'Move to trash'}));
+    expect(within(dialog).getByRole('button', {name: 'Moving to trash…'})).toBeDisabled();
+    expect(within(dialog).getByRole('button', {name: 'Keep story'})).toBeDisabled();
+    await user.keyboard('{Escape}');
+    expect(dialog).toBeInTheDocument();
+    rejectRemoval?.(new Error('Disconnected'));
+    expect(await within(dialog).findByText(
+        'The story could not be moved to trash. Please try again.',
+    )).toBeInTheDocument();
+    expect(within(dialog).getByRole('button', {name: 'Move to trash'})).toBeEnabled();
+    expect(screen.getByRole('button', {name: 'Clockwork Forest'})).toBeInTheDocument();
+});
+
 test('traps detail-dialog focus, closes with Escape, and restores its opener', async () => {
     const user = userEvent.setup();
     render(<App/>);
@@ -2289,14 +2557,16 @@ test('traps detail-dialog focus, closes with Escape, and restores its opener', a
     const opener = await screen.findByRole('button', {name: 'Open details'});
     await user.click(opener);
     const dialog = await screen.findByRole('dialog', {name: 'Clockwork Forest'});
-    const cancel = within(dialog).getByRole('button', {name: 'Cancel'});
-    const remove = within(dialog).getByRole('button', {name: 'Move to trash'});
+    const cancel = within(dialog).getByRole('button', {name: 'Close'});
+    const remove = within(dialog).getByRole('button', {name: 'Remove from library…'});
     await waitFor(() => expect(cancel).toHaveFocus());
 
     await user.tab({shift: true});
     expect(remove).toHaveFocus();
     await user.tab();
     expect(cancel).toHaveFocus();
+    await user.tab();
+    expect(within(dialog).getByRole('button', {name: 'Edit tags'})).toHaveFocus();
 
     await user.keyboard('{Escape}');
     expect(screen.queryByRole('dialog', {name: 'Clockwork Forest'}))
@@ -2332,11 +2602,11 @@ test('keeps bulk selection in the collection and exposes updated tag chips', asy
     ));
     render(<App/>);
 
-    const first = await screen.findByRole('button', {name: 'Clockwork Forest Lunii'});
+    const first = await screen.findByRole('button', {name: 'Clockwork Forest'});
     const second = screen.getByRole('button', {
-        name: 'Moonlit Workshop 11112222-3333-4444-8555-666677778888',
+        name: 'Moonlit Workshop',
     });
-    expect((await screen.findAllByText('Broken')).length).toBeGreaterThan(1);
+    expect((await screen.findAllByText('Broken')).length).toBeGreaterThan(0);
 
     await user.keyboard('{Control>}');
     await user.click(second);
@@ -2344,7 +2614,8 @@ test('keeps bulk selection in the collection and exposes updated tag chips', asy
 
     expect(first).toHaveAttribute('aria-pressed', 'true');
     expect(second).toHaveAttribute('aria-pressed', 'true');
-    await user.click(screen.getByRole('button', {name: 'Edit tags'}));
+    await user.click(screen.getByRole('button', {name: 'Open details'}));
+    await user.click(screen.getByRole('button', {name: 'Edit tags for 2 stories'}));
     expect(await screen.findByRole('heading', {name: 'Edit tags for 2 stories'}))
         .toBeInTheDocument();
 });
@@ -2392,16 +2663,16 @@ test('shows never-synced metadata and runs a cancellable refresh with matched fr
     render(<App/>);
 
     expect(await screen.findByRole('heading', {
-        name: 'Official metadata has not been synced',
+        name: 'Add covers and richer story details',
     })).toBeInTheDocument();
-    await user.click(screen.getByRole('button', {name: '↻ Sync'}));
+    await user.click(screen.getByRole('button', {name: 'Sync with Lunii'}));
     expect(refreshOfficialMetadata).toHaveBeenCalledTimes(1);
     expect(await screen.findByRole('heading', {
         name: 'Refreshing official metadata',
     })).toBeInTheDocument();
     expect(screen.getByText('0 of 1 refresh phases complete. Your local collection remains available.'))
         .toBeInTheDocument();
-    expect(screen.getByRole('button', {name: 'Refreshing…'})).toBeDisabled();
+    expect(screen.getByRole('button', {name: 'Syncing with Lunii…'})).toBeDisabled();
     await user.click(screen.getByRole('button', {name: 'Cancel refresh'}));
     expect(cancelOperation).toHaveBeenCalledWith('00112233-4455-4677-8899-aabbccddeef0');
 
@@ -2439,6 +2710,9 @@ test('shows never-synced metadata and runs a cancellable refresh with matched fr
     await waitFor(() => expect(
         screen.getByText(/1 local story matched\./),
     ).toBeInTheDocument());
+    const sync = screen.getByRole('region', {name: 'Official Lunii sync'});
+    expect(sync).toHaveAttribute('data-state', 'lunii-sync-status');
+    expect(sync.querySelector('time')).toHaveAttribute('dateTime', '2026-07-25T16:01:00Z');
 });
 
 test('shows a stale-cache state without blocking the collection', async () => {
@@ -2455,7 +2729,7 @@ test('shows a stale-cache state without blocking the collection', async () => {
     render(<App/>);
 
     expect(await screen.findByRole('heading', {
-        name: 'Using saved official metadata',
+        name: 'Using saved Lunii story details',
     })).toBeInTheDocument();
     expect(await screen.findByRole('heading', {name: 'Clockwork Forest'}))
         .toBeInTheDocument();
@@ -2502,7 +2776,7 @@ test('restores metadata freshness after a later import becomes the visible opera
     });
 
     expect(await screen.findByRole('heading', {
-        name: 'Official metadata is available',
+        name: 'Lunii covers and story details',
     })).toBeInTheDocument();
 });
 
@@ -2528,7 +2802,7 @@ test('shows nonblocking import progress and terminal validation feedback', async
     }));
     render(<App/>);
 
-    await user.click(await screen.findByRole('button', {name: '＋ Import stories'}));
+    await user.click(await screen.findByRole('button', {name: 'Import'}));
     expect(screen.getByRole('heading', {name: 'Importing 1 story'})).toBeInTheDocument();
 
     operationChanged?.({
@@ -2822,6 +3096,7 @@ test('restores, displays, and polls every concurrent active import', async () =>
 });
 
 test('reloads selected story detail when an operation refreshes the collection', async () => {
+    const user = userEvent.setup();
     loadStoryDetail
         .mockResolvedValueOnce(new app.StoryDetailResponse({
             detail: {
@@ -2849,7 +3124,10 @@ test('reloads selected story detail when an operation refreshes the collection',
         }));
     render(<App/>);
 
-    expect(await screen.findByText('before-refresh.zip · 1.0 MB · Verified'))
+    await user.click(await screen.findByRole('button', {name: 'Clockwork Forest'}));
+    await user.click(await screen.findByRole('button', {name: 'Open details'}));
+    await user.click(screen.getByRole('button', {name: 'Show technical details'}));
+    expect(await screen.findByText('before-refresh.zip'))
         .toBeInTheDocument();
     operationChanged?.({
         id: '00112233-4455-4677-8899-aabbccddeeff',
@@ -2871,7 +3149,7 @@ test('reloads selected story detail when an operation refreshes the collection',
         }],
     });
 
-    expect(await screen.findByText('after-refresh.zip · 1.0 MB · Verified'))
+    expect(await screen.findByText('after-refresh.zip'))
         .toBeInTheDocument();
     expect(loadStoryDetail).toHaveBeenCalledTimes(2);
 });
@@ -2882,11 +3160,11 @@ test('cancels story removal without changing the collection', async () => {
 
     await user.click(await screen.findByRole('button', {name: 'Open details'}));
     expect(screen.getByRole('dialog', {name: 'Clockwork Forest'})).toBeInTheDocument();
-    await user.click(screen.getByRole('button', {name: 'Cancel'}));
+    await user.click(screen.getByRole('button', {name: 'Close'}));
 
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(removeStory).not.toHaveBeenCalled();
-    expect(screen.getByRole('button', {name: 'Clockwork Forest Lunii'}))
+    expect(screen.getByRole('button', {name: 'Clockwork Forest'}))
         .toBeInTheDocument();
 });
 
@@ -2916,6 +3194,7 @@ test('confirms removal, refreshes the collection, and reports trash custody', as
     render(<App/>);
 
     await user.click(await screen.findByRole('button', {name: 'Open details'}));
+    await user.click(screen.getByRole('button', {name: 'Remove from library…'}));
     await user.click(screen.getByRole('button', {name: 'Move to trash'}));
 
     expect(removeStory).toHaveBeenCalledWith(1);
@@ -2924,7 +3203,7 @@ test('confirms removal, refreshes the collection, and reports trash custody', as
     })).toBeInTheDocument();
     expect(screen.getByText('Clockwork Forest was moved to application trash.'))
         .toBeInTheDocument();
-    expect(screen.queryByRole('button', {name: 'Clockwork Forest Lunii'}))
+    expect(screen.queryByRole('button', {name: 'Clockwork Forest'}))
         .not.toBeInTheDocument();
 });
 
@@ -2997,12 +3276,12 @@ test('completes the import, list, select, detail, and remove workflow', async ()
         }],
     });
 
-    const cover = await screen.findByRole('button', {name: 'Clockwork Forest Lunii'});
+    const cover = await screen.findByRole('button', {name: 'Clockwork Forest'});
     expect(cover).toHaveAttribute('aria-pressed', 'true');
-    expect(await screen.findByText('clockwork-forest.zip · 1.0 MB · Verified'))
-        .toBeInTheDocument();
+    expect(screen.getByRole('button', {name: 'Open details'})).toBeEnabled();
     await user.click(screen.getByRole('button', {name: 'Open details'}));
     expect(screen.getByRole('dialog', {name: 'Clockwork Forest'})).toBeInTheDocument();
+    await user.click(screen.getByRole('button', {name: 'Remove from library…'}));
     await user.click(screen.getByRole('button', {name: 'Move to trash'}));
 
     expect(removeStory).toHaveBeenCalledWith(1);
@@ -3060,7 +3339,7 @@ test('loads every result when a story is beyond the initial collection page', as
     await user.click(await screen.findByRole('button', {name: 'View all →'}));
 
     expect(await screen.findByRole('button', {
-        name: 'The Twelfth Story 12223333-4444-4555-8666-777788889999',
+        name: 'The Twelfth Story',
     })).toBeInTheDocument();
     expect(screen.getByRole('button', {name: 'Loading…'})).toBeDisabled();
     resolveSecondBatch(new app.LibraryPageResponse({
@@ -3075,7 +3354,7 @@ test('loads every result when a story is beyond the initial collection page', as
         }));
 
     expect(await screen.findByRole('button', {
-        name: 'The Thirteenth Story 22223333-4444-4555-8666-777788889999',
+        name: 'The Thirteenth Story',
     })).toBeInTheDocument();
     expect(queryStories).toHaveBeenCalledWith(expect.objectContaining({
         page: 2,

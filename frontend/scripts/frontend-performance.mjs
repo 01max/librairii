@@ -105,8 +105,10 @@ async function measureSample(browserInstance, url) {
             .locator('section.shelf')
             .first()
             .locator('.shelf-head button');
-        const collectionRail = page.getByRole('button', {
-            name: 'Story collection',
+        // Probe pointer dispatch without triggering navigation or cancelling the
+        // expansion under measurement. The Library shortcut now resets the view.
+        const pointerTarget = page.getByRole('img', {
+            name: 'Librairii',
             exact: true,
         });
         try {
@@ -164,9 +166,9 @@ async function measureSample(browserInstance, url) {
 
         const startedAt = await page.evaluate(() => performance.now());
         await viewAll.click();
-        const railBox = await collectionRail.boundingBox();
-        if (!railBox) {
-            throw new Error('story collection rail button has no layout box');
+        const pointerBox = await pointerTarget.boundingBox();
+        if (!pointerBox) {
+            throw new Error('library logo has no layout box for the pointer probe');
         }
         const completionDeadline = Date.now() + 10_000;
         while ((await viewAll.textContent())?.trim() !== 'All shown') {
@@ -176,8 +178,8 @@ async function measureSample(browserInstance, url) {
                 );
             }
             await page.mouse.click(
-                railBox.x + railBox.width / 2,
-                railBox.y + railBox.height / 2,
+                pointerBox.x + pointerBox.width / 2,
+                pointerBox.y + pointerBox.height / 2,
             );
             await new Promise((resolveDelay) => setTimeout(resolveDelay, 25));
         }
