@@ -93,6 +93,9 @@ An export can snapshot any of these scopes:
 - one saved shelf; or
 - the deduplicated union of several shelves.
 
+The story drawer shows **Export selected stories** only when multiple stories
+are selected. For a single story, export the current result or its shelf.
+
 Before copying, Librairii reevaluates the scope and checks each managed archive,
 its checksum and validation state, its extension, the destination, and filename
 conflicts. Exports preserve the original filename, supported extension, and
@@ -100,6 +103,10 @@ archive bytes. They do not add a manifest, decrypt, rewrite, transcode, or
 otherwise mutate a pack. Destination-local temporary files are published
 atomically and existing files are never overwritten. Cancellation removes
 unfinished temporary files but retains exports that were already completed.
+
+If all destination filenames already exist, preflight explains the filename
+conflicts. Use **Choose another folder** to retry the same export scope in a
+different destination. Cancelling the picker keeps the current preflight open.
 
 The resulting files are intended to remain selectable or draggable into
 Lunii.QT's supported import flow. This is archive passthrough interoperability,
