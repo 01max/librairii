@@ -1,5 +1,5 @@
 import {existsSync} from 'node:fs';
-import {copyFile, mkdtemp, rm} from 'node:fs/promises';
+import {copyFile, mkdtemp, rm, writeFile} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join, resolve} from 'node:path';
 import {fileURLToPath} from 'node:url';
@@ -13,7 +13,7 @@ const frontendRoot = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const repositoryRoot = resolve(frontendRoot, '..');
 const canonicalPrototype = resolve(
     repositoryRoot,
-    'openspec/ui-prototypes/05-archive-shelves.html',
+    'testdata/ui-prototypes/05-archive-shelves.html',
 );
 const outputDirectory = await mkdtemp(
     join(tmpdir(), 'librairii-frontend-visual-parity-'),
@@ -66,6 +66,7 @@ try {
     }
     const report = {
         canonicalPrototype: 'openspec/ui-prototypes/05-archive-shelves.html',
+        canonicalSnapshot: 'testdata/ui-prototypes/05-archive-shelves.html',
         applicationFixture: '?fixture=parity',
         pixelThreshold,
         maximumMismatchRatio,
@@ -134,6 +135,10 @@ async function compareViewport(browserInstance, origin, viewport) {
                 threshold: pixelThreshold,
             },
         );
+        if (mismatchedPixels / (canonical.width * canonical.height) > maximumMismatchRatio) {
+            await writeFile(join(tmpdir(), `librairii-reference-${viewport.width}.png`), canonicalBuffer);
+            await writeFile(join(tmpdir(), `librairii-actual-${viewport.width}.png`), applicationBuffer);
+        }
         return {
             viewport,
             comparedPixels: canonical.width * canonical.height,
@@ -179,16 +184,11 @@ function resolveChromeExecutable() {
                 '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
                 '/Applications/Chromium.app/Contents/MacOS/Chromium',
             ]
-            : process.platform === 'win32'
-                ? [
-                    'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
-                    'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
-                ]
-                : [
-                    '/usr/bin/google-chrome',
-                    '/usr/bin/chromium',
-                    '/usr/bin/chromium-browser',
-                ];
+            : [
+                '/usr/bin/google-chrome',
+                '/usr/bin/chromium',
+                '/usr/bin/chromium-browser',
+            ];
     const executable = candidates.find((candidate) => existsSync(candidate));
     if (!executable) {
         throw new Error(

@@ -42,20 +42,28 @@ func (i *ZIPInspector) Inspect(
 	}
 	defer archive.Close()
 
+	var result Result
 	if archive.has(studioStoryEntry) {
 		if !strings.HasSuffix(strings.ToLower(candidate.OriginalFilename), ".zip") {
 			return Result{}, &ValidationError{Code: CodeUnsupportedFormat}
 		}
-		return inspectStudio(ctx, archive, limits, catalog.FormatStudioZIP)
+		result, err = inspectStudio(ctx, archive, limits, catalog.FormatStudioZIP)
+	} else if isPlainFilename(candidate.OriginalFilename) || archive.has(plainUUIDEntry) {
+		result, err = inspectPlain(ctx, archive, limits)
+	} else {
+		var format catalog.ArchiveFormat
+		format, err = luniiZIPFormat(candidate.OriginalFilename)
+		if err == nil {
+			result, err = inspectLuniiPack(ctx, archive, format, limits)
+		}
 	}
-	if isPlainFilename(candidate.OriginalFilename) || archive.has(plainUUIDEntry) {
-		return inspectPlain(ctx, archive, limits)
-	}
-	format, err := luniiZIPFormat(candidate.OriginalFilename)
 	if err != nil {
 		return Result{}, err
 	}
-	return inspectLuniiPack(ctx, archive, format, limits)
+	if err := archive.verifyPayloads(ctx, limits.MaxExpandedBytes); err != nil {
+		return Result{}, err
+	}
+	return result, nil
 }
 
 func inspectPlain(ctx context.Context, archive archiveView, limits Limits) (Result, error) {

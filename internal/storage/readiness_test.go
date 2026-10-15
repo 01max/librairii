@@ -5,7 +5,6 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
-	"runtime"
 	"testing"
 )
 
@@ -86,9 +85,6 @@ func TestReadinessRejectsUnwritableArea(t *testing.T) {
 
 func TestPathContainedResolvesSymlinkEscapes(t *testing.T) {
 	t.Parallel()
-	if runtime.GOOS == "windows" {
-		t.Skip("symlink creation requires platform-specific privileges")
-	}
 
 	parent := t.TempDir()
 	root := filepath.Join(parent, "root")

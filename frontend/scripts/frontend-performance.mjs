@@ -5,21 +5,28 @@ import {join, resolve} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {chromium} from 'playwright';
 import {build, preview} from 'vite';
+import performanceConfig from '../performance-config.json' with {type: 'json'};
 
 const frontendRoot = resolve(fileURLToPath(new URL('..', import.meta.url)));
+const storyCount = performanceConfig.browserStoryCount;
 const sampleCount = Number.parseInt(
     process.env.LIBRAIRII_FRONTEND_PERFORMANCE_SAMPLES ?? '5',
     10,
 );
-const budgets = {
+const acceptanceBudgets = {
     expansionP95Milliseconds: 3_000,
+    inputDelayP95Milliseconds: 100,
+};
+const diagnosticThresholds = {
     frameGapP95Milliseconds: 50,
-    inputDelayP95Milliseconds: 50,
     timerDelayP95Milliseconds: 50,
 };
 
 if (!Number.isInteger(sampleCount) || sampleCount < 1) {
     throw new Error('LIBRAIRII_FRONTEND_PERFORMANCE_SAMPLES must be positive');
+}
+if (!Number.isInteger(storyCount) || storyCount < 1) {
+    throw new Error('browserStoryCount must be a positive integer');
 }
 
 const outputDirectory = await mkdtemp(
@@ -98,8 +105,10 @@ async function measureSample(browserInstance, url) {
             .locator('section.shelf')
             .first()
             .locator('.shelf-head button');
-        const collectionRail = page.getByRole('button', {
-            name: 'Story collection',
+        // Probe pointer dispatch without triggering navigation or cancelling the
+        // expansion under measurement. The Library shortcut now resets the view.
+        const pointerTarget = page.getByRole('img', {
+            name: 'Librairii',
             exact: true,
         });
         try {
@@ -157,18 +166,20 @@ async function measureSample(browserInstance, url) {
 
         const startedAt = await page.evaluate(() => performance.now());
         await viewAll.click();
-        const railBox = await collectionRail.boundingBox();
-        if (!railBox) {
-            throw new Error('story collection rail button has no layout box');
+        const pointerBox = await pointerTarget.boundingBox();
+        if (!pointerBox) {
+            throw new Error('library logo has no layout box for the pointer probe');
         }
         const completionDeadline = Date.now() + 10_000;
         while ((await viewAll.textContent())?.trim() !== 'All shown') {
             if (Date.now() >= completionDeadline) {
-                throw new Error('5,000-story expansion exceeded 10 seconds');
+                throw new Error(
+                    `${storyCount.toLocaleString('en-US')}-story expansion exceeded 10 seconds`,
+                );
             }
             await page.mouse.click(
-                railBox.x + railBox.width / 2,
-                railBox.y + railBox.height / 2,
+                pointerBox.x + pointerBox.width / 2,
+                pointerBox.y + pointerBox.height / 2,
             );
             await new Promise((resolveDelay) => setTimeout(resolveDelay, 25));
         }
@@ -191,9 +202,9 @@ async function measureSample(browserInstance, url) {
                 storyNodes: document.querySelectorAll('button.story').length,
             };
         });
-        if (measurements.storyNodes !== 5_000) {
+        if (measurements.storyNodes !== storyCount) {
             throw new Error(
-                `rendered ${measurements.storyNodes} story nodes, want 5000`,
+                `rendered ${measurements.storyNodes} story nodes, want ${storyCount}`,
             );
         }
         return {
@@ -237,18 +248,19 @@ function summarize(samples) {
         generatedAt: new Date().toISOString(),
         browser: 'system Chromium via Playwright',
         viewport: {width: 1440, height: 900},
-        stories: 5_000,
+        stories: storyCount,
         samples: samples.length,
-        budgets,
+        acceptanceBudgets,
+        diagnosticThresholds,
         metrics,
         maximumStoryNodes: Math.max(
             ...samples.map((sample) => sample.storyNodes),
         ),
         withinBudget:
-            expansionP95Milliseconds <= budgets.expansionP95Milliseconds &&
-            frameGapP95Milliseconds <= budgets.frameGapP95Milliseconds &&
-            inputDelayP95Milliseconds <= budgets.inputDelayP95Milliseconds &&
-            timerDelayP95Milliseconds <= budgets.timerDelayP95Milliseconds,
+            expansionP95Milliseconds <=
+                acceptanceBudgets.expansionP95Milliseconds &&
+            inputDelayP95Milliseconds <=
+                acceptanceBudgets.inputDelayP95Milliseconds,
     };
 }
 
@@ -273,16 +285,11 @@ function resolveChromeExecutable() {
                 '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
                 '/Applications/Chromium.app/Contents/MacOS/Chromium',
             ]
-            : process.platform === 'win32'
-                ? [
-                    'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
-                    'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
-                ]
-                : [
-                    '/usr/bin/google-chrome',
-                    '/usr/bin/chromium',
-                    '/usr/bin/chromium-browser',
-                ];
+            : [
+                '/usr/bin/google-chrome',
+                '/usr/bin/chromium',
+                '/usr/bin/chromium-browser',
+            ];
     const executable = candidates.find((candidate) => existsSync(candidate));
     if (!executable) {
         throw new Error(

@@ -22,7 +22,7 @@ export function useModalFocus(
             ? document.activeElement
             : null;
         const focusInitial = window.setTimeout(() => {
-            initial.current?.focus();
+            initial.current?.focus({preventScroll: true});
         }, 0);
         const trapTab = (event: KeyboardEvent) => {
             if (event.key !== 'Tab' || !container.current) {
@@ -52,7 +52,7 @@ export function useModalFocus(
         return () => {
             window.clearTimeout(focusInitial);
             document.removeEventListener('keydown', trapTab);
-            opener?.focus();
+            opener?.focus({preventScroll: true});
         };
     }, [active, container, initial]);
 }
