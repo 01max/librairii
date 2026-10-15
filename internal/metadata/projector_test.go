@@ -150,6 +150,56 @@ func TestCatalogProjectorReservesConfiguredFacetBeforeFirstRefresh(t *testing.T)
 	}
 }
 
+func TestProtectedColorsSurviveStartupAndMetadataProjection(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	repository, connection := openMetadataRepository(t)
+	snapshot, _ := stageAgeProjectionFixture(t, repository, connection)
+	projector, err := NewCatalogProjector(connection, DefaultCatalogProjectionConfig())
+	if err != nil {
+		t.Fatal(err)
+	}
+	ageID, err := projector.EnsureFacets(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var initialColor string
+	if err := connection.QueryRow("SELECT color FROM tag_definitions WHERE id = ?", ageID).Scan(&initialColor); err != nil {
+		t.Fatal(err)
+	}
+	if initialColor != "#267D5D" {
+		t.Fatalf("default age color=%s", initialColor)
+	}
+	broken, err := tagging.SeedBuiltIns(ctx, connection)
+	if err != nil {
+		t.Fatal(err)
+	}
+	service, err := tagging.NewService(connection)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, id := range []int64{ageID, broken.ID} {
+		if _, err := service.RecolorDefinition(ctx, id, "#405CF5"); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, err := tagging.SeedBuiltIns(ctx, connection); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := projector.Rebuild(ctx, snapshot.ID); err != nil {
+		t.Fatal(err)
+	}
+	for _, id := range []int64{ageID, broken.ID} {
+		var color string
+		if err := connection.QueryRow("SELECT color FROM tag_definitions WHERE id = ?", id).Scan(&color); err != nil {
+			t.Fatal(err)
+		}
+		if color != "#405CF5" {
+			t.Fatalf("custom color was reset: %s", color)
+		}
+	}
+}
+
 func TestCatalogProjectorIsIdempotentAndRejectsFacetDrift(t *testing.T) {
 	t.Parallel()
 

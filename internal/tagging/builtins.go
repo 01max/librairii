@@ -150,7 +150,6 @@ func (d Definition) canonicalBroken() bool {
 	return d.Key == BrokenKey &&
 		d.NormalizedKey == BrokenKey &&
 		d.Label == BrokenLabel &&
-		d.Color == BrokenColor &&
 		d.Kind == KindBoolean &&
 		d.Source == SourceBuiltIn &&
 		d.Presentation == PresentationWarning &&

@@ -40,9 +40,10 @@ const (
 )
 
 type ListRequest struct {
-	Page     int  `json:"page"`
-	PageSize int  `json:"pageSize"`
-	Sort     Sort `json:"sort"`
+	IncludeBroken bool `json:"includeBroken"`
+	Page          int  `json:"page"`
+	PageSize      int  `json:"pageSize"`
+	Sort          Sort `json:"sort"`
 }
 
 type DisplaySources struct {
@@ -53,6 +54,7 @@ type DisplaySources struct {
 }
 
 type StorySummary struct {
+	Broken              bool                  `json:"broken"`
 	ID                  int64                 `json:"id"`
 	UUID                string                `json:"uuid"`
 	Title               string                `json:"title"`
@@ -163,9 +165,10 @@ func (q *Query) List(ctx context.Context, request ListRequest) (Page, error) {
 		return Page{}, err
 	}
 	return q.searchNormalized(ctx, StoryLibraryQuery{
-		Page:     request.Page,
-		PageSize: request.PageSize,
-		Sort:     request.Sort,
+		IncludeBroken: request.IncludeBroken,
+		Page:          request.Page,
+		PageSize:      request.PageSize,
+		Sort:          request.Sort,
 	})
 }
 
@@ -313,6 +316,7 @@ func (q *Query) exportStoriesFromRecords(
 }
 
 type localRecord struct {
+	broken              bool
 	id                  int64
 	uuid                string
 	embeddedTitle       string
@@ -420,7 +424,11 @@ const localRecordSelect = `SELECT
 		a.sha256,
 		a.byte_size,
 		a.managed_path,
-		a.validation_state
+		a.validation_state,
+		EXISTS (SELECT 1 FROM story_tag_assignments broken_assignment
+        JOIN tag_definitions broken_definition ON broken_definition.id = broken_assignment.definition_id
+        WHERE broken_assignment.story_id = s.id AND broken_definition.normalized_key = 'broken'
+        AND broken_definition.source = 'builtin' AND broken_assignment.value_id IS NULL)
 	FROM stories s
 	JOIN story_archives a ON a.story_id = s.id`
 
@@ -450,6 +458,7 @@ func (q *Query) queryLocalRecords(
 			&record.byteSize,
 			&record.managedPath,
 			&record.validationState,
+			&record.broken,
 		); err != nil {
 			return nil, err
 		}
@@ -496,6 +505,7 @@ func resolveSummary(record localRecord, official OfficialMetadata) StorySummary 
 		}
 	}
 	return StorySummary{
+		Broken:      record.broken,
 		ID:          record.id,
 		UUID:        record.uuid,
 		Title:       title,

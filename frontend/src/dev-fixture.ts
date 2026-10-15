@@ -13,7 +13,7 @@ const parityAgeDefinition = {
     key: 'age',
     normalizedKey: 'age',
     label: 'Age',
-    color: '#ff705c',
+    color: '#267d5d',
     kind: 'choice',
     source: 'derived',
     presentation: 'filter',
@@ -224,7 +224,9 @@ export function installCollectionFixture() {
             ? performanceStories
             : fixture === 'parity'
                 ? [...CANONICAL_PARITY_FIXTURE.stories]
-            : stories;
+            : fixture === 'broken-stories'
+                ? stories.slice(0, 3).map((story, index) => ({...story, broken: index === 0}))
+                : stories;
     const totalItems = fixture === 'collection' || fixture === 'parity'
         ? 48
         : fixtureStories.length;
@@ -234,8 +236,9 @@ export function installCollectionFixture() {
         pageSize: number,
         sort: string,
         matchingItems = totalItems,
+        source = fixtureStories,
     ) => ({
-        stories: fixtureStories.slice(
+        stories: source.slice(
             (pageNumber - 1) * pageSize,
             pageNumber * pageSize,
         ),
@@ -272,19 +275,20 @@ export function installCollectionFixture() {
                 )
                 : [],
         }),
-        OfficialMetadataStatus: async () => fixture === 'parity' ? {} : ({
+        OfficialMetadataStatus: async () => ({
             status: {
-                state: 'fresh',
+                state: fixture === 'first-sync' ? 'never_synced' : 'fresh',
                 locale: 'en-GB',
                 storyCount: totalItems,
                 matchedStoryCount: totalItems,
-                activatedAt: '2026-07-25T09:00:00Z',
+                activatedAt: fixture === 'first-sync' ? undefined : '2026-07-25T09:00:00Z',
             },
         }),
         ListStories: async () => ({
             page: page(1, 12, 'imported_desc'),
         }),
         QueryStories: async (query: {
+            includeBroken?: boolean;
             page: number;
             pageSize: number;
             sort: string;
@@ -301,12 +305,16 @@ export function installCollectionFixture() {
                 : ageValueIDs.includes(102)
                     ? 18
                     : totalItems;
+            const visible = fixture === 'broken-stories' && !query.includeBroken
+                ? fixtureStories.filter((story) => !('broken' in story && story.broken))
+                : fixtureStories;
             return {
                 page: page(
                     query.page,
                     query.pageSize,
                     query.sort,
-                    matchingItems,
+                    fixture === 'broken-stories' ? visible.length : matchingItems,
+                    visible,
                 ),
             };
         },
@@ -415,7 +423,7 @@ export function installCollectionFixture() {
                 states: fixture === 'parity' ? [
                     {
                         definitionId: 10,
-                        assignedStories: storyIDs.length,
+                        assignedStories: 0,
                         values: [{
                             valueId: 101,
                             assignedStories: storyIDs.length,
@@ -423,7 +431,7 @@ export function installCollectionFixture() {
                     },
                     {
                         definitionId: 11,
-                        assignedStories: storyIDs.length,
+                        assignedStories: 0,
                         values: [{
                             valueId: 111,
                             assignedStories: storyIDs.length,
