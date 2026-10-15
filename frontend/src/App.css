@@ -526,15 +526,19 @@ select:focus-visible {
     gap: 24px;
     margin-bottom: 26px;
     padding: 18px 22px;
-    border: 1px solid var(--line);
+    border: 1px solid #304aab;
+    border-left: 5px solid var(--yellow);
     border-radius: 12px;
-    background: white;
+    background: #233885;
+    color: white;
+    box-shadow: 0 8px 20px rgba(35, 56, 133, .14);
 }
 
 .lunii-sync.first-sync {
     padding: 26px;
-    border-color: #a9b6ff;
-    background: #e8edff;
+    border-color: #304aab;
+    border-left-color: var(--yellow);
+    background: #233885;
 }
 
 .lunii-sync h3 {
@@ -550,7 +554,7 @@ select:focus-visible {
 .lunii-sync p {
     max-width: 60ch;
     margin: 0;
-    color: #526079;
+    color: #e1e6ff;
     font-size: 12px;
     line-height: 1.55;
 }
@@ -562,7 +566,7 @@ select:focus-visible {
 
 .lunii-sync .sync-warning {
     margin-top: 10px;
-    color: #8b3b2e;
+    color: #ffe3b6;
 }
 
 .lunii-sync > button {
@@ -570,8 +574,8 @@ select:focus-visible {
     padding: 12px 18px;
     border: 0;
     border-radius: 9px;
-    color: white;
-    background: var(--blue);
+    color: var(--ink);
+    background: var(--yellow);
     font-size: 13px;
     font-weight: 800;
 }
@@ -1030,6 +1034,7 @@ select:focus-visible {
     width: 100%;
     display: block;
     line-height: 0;
+    position: relative;
 }
 
 .story-card {
@@ -1545,16 +1550,81 @@ select:focus-visible {
 }
 
 .story-detail-actions .story-remove-action {
-    padding: 8px 0;
-    border: 0;
-    color: #6a5961;
-    background: transparent;
+    padding: 11px 15px;
+    border: 1px solid #b43c2e;
+    color: #9b3326;
+    background: #fff4f2;
+    font-size: 13px;
+}
+
+.story-detail-actions .story-remove-action:hover {
+    color: #a33528;
+    background: #ffe8e3;
+}
+
+.include-broken {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 18px 0 24px;
+    color: #526079;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.include-broken input {
+    margin: 0;
+    accent-color: var(--blue);
+}
+
+.is-broken .cover {
+    filter: saturate(.18) brightness(.92);
+}
+
+.broken-badge {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    z-index: 4;
+    padding: 5px 8px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    border: 1px solid var(--broken-color, #ff705c);
+    border-radius: 6px;
+    color: var(--ink);
+    background: white;
+    font: 800 11px/1.2 var(--sans);
+}
+
+.broken-badge i {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--broken-color, #ff705c);
+}
+
+.story-detail-tags {
+    margin-top: 22px;
+}
+
+.story-detail-tags h4 {
+    margin: 0 0 10px;
+    font-size: 13px;
+}
+
+.story-detail-tags .tag {
     font-size: 12px;
 }
 
-.story-remove-action:hover {
-    color: #a33528;
-    text-decoration: underline;
+.story-detail-tags p {
+    margin: 0;
+    color: #526079;
+    font-size: 12px;
+}
+
+.protected-color .protected-note {
+    grid-column: 1 / -1;
 }
 
 .story-detail-removal {

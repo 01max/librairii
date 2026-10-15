@@ -12,7 +12,7 @@ test('matches the shared Go collection-query codec fixtures', () => {
     for (const fixture of fixtures) {
         const query = fixture.query as CollectionQuery;
         expect(encodeCollectionQuery(query), fixture.name).toBe(fixture.hash);
-        expect(decodeCollectionQuery(fixture.hash), fixture.name).toEqual(query);
+        expect(decodeCollectionQuery(fixture.hash), fixture.name).toEqual({...query, includeBroken: query.includeBroken ?? false});
     }
 });
 

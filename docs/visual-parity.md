@@ -20,6 +20,14 @@ the grid within the window height. Collection and filter panels scroll
 independently. Responsive checks also exercise 900px, 520px and 320px heights,
 wheel input over each panel, and navigation visibility in short windows.
 
+The popup/tag revision adds backdrop dismissal, tags in story details, a
+visible removal button, an Include broken stories control below saved shelves,
+muted broken covers with badges, a contrasting Lunii sync panel, green age tags,
+and editable protected tag colors. Import remains in the labeled navigation.
+Browser checks exercise popup dismissal and color editing; `?fixture=broken-stories`
+covers the visibility toggle and badges. Migration 014 enables protected color
+changes while retaining identity protection and updates the previous age color.
+
 `npm --prefix frontend run test:visual` builds the production frontend with
 the deterministic `?fixture=parity` data, renders both the canonical HTML and
 the application in the same system Chromium process, and compares viewport

@@ -1,5 +1,7 @@
+import ModalBackdrop from './ModalBackdrop';
 import {type CSSProperties, useEffect, useMemo, useRef, useState} from 'react';
-import {library} from '../wailsjs/go/models';
+import {library, tagging} from '../wailsjs/go/models';
+import {TagAssignmentWorkspace} from '../wailsjs/go/main/App';
 import {useModalFocus} from './modal-focus';
 import {readableStoryDescription} from './story-description';
 
@@ -19,6 +21,28 @@ export default function StoryDetailsDialog({
     story, archive, artworkURL, coverStyle, verification,
     removing, error, onClose, onRemove,
 }: Props) {
+    const [tagWorkspace, setTagWorkspace] = useState<tagging.AssignmentWorkspace | null>(null);
+    const [tagError, setTagError] = useState(false);
+    useEffect(() => {
+        let active = true;
+        void TagAssignmentWorkspace([story.id]).then((response) => {
+            if (active) {
+                setTagWorkspace(response.workspace ?? null);
+                setTagError(!response.workspace);
+            }
+        }).catch(() => { if (active) setTagError(true); });
+        return () => { active = false; };
+    }, [story.id]);
+    const tags = tagWorkspace?.catalog.definitions.flatMap((definition) => {
+        const state = tagWorkspace.states.find((candidate) => candidate.definitionId === definition.id);
+        if (!state?.assignedStories) return [];
+        if (definition.kind === 'boolean') {
+            return [{key: `${definition.id}`, label: definition.label, color: definition.color}];
+        }
+        return definition.values.filter((value) => state.values.some(
+            (assigned) => assigned.valueId === value.id && assigned.assignedStories > 0,
+        )).map((value) => ({key: `${definition.id}-${value.id}`, label: `${definition.label} · ${value.label}`, color: definition.color}));
+    }) ?? [];
     const [technicalOpen, setTechnicalOpen] = useState(false);
     const [confirming, setConfirming] = useState(false);
     const [failedArtworkURL, setFailedArtworkURL] = useState<string>();
@@ -59,7 +83,7 @@ export default function StoryDetailsDialog({
     }, [confirming, removing, onClose]);
 
     return (
-        <div className="dialog-backdrop">
+        <ModalBackdrop onDismiss={onClose} disabled={removing}>
             <section
                 ref={dialog}
                 className="detail-dialog story-details-dialog"
@@ -94,6 +118,19 @@ export default function StoryDetailsDialog({
                         </p>
                     </div>
                 </div>
+                <section className="story-detail-tags" aria-label="Story tags">
+                    <h4>Tags</h4>
+                    <div className="tags">
+                        {tags.map((tag) => (
+                            <span className="tag" key={tag.key}>
+                                <i style={{'--c': tag.color} as CSSProperties} aria-hidden="true"/>
+                                {tag.label}
+                            </span>
+                        ))}
+                        {tags.length === 0 && <p>{tagError ? 'Tags could not be loaded.' :
+                            tagWorkspace ? 'No tags yet.' : 'Loading tags…'}</p>}
+                    </div>
+                </section>
                 <div className="story-detail-technical">
                     <button
                         type="button"
@@ -163,6 +200,6 @@ export default function StoryDetailsDialog({
                     </div>
                 )}
             </section>
-        </div>
+        </ModalBackdrop>
     );
 }

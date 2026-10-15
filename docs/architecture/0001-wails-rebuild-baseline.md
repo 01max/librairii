@@ -15,7 +15,7 @@ The only UI source of truth is:
 
 - `openspec/ui-prototypes/05-archive-shelves.html`
 - tracked CI mirror: `testdata/ui-prototypes/05-archive-shelves.html`
-- SHA-256: `f39a5c74b6a10eb403c742b40306e1cf8d0cc38f73ac93d81e8272e23f6e42b4`
+- SHA-256: `6544e87395c92760931d703568a88dad0639b66856f94f1386db49cc94284cd9`
 - the `.app` subtree is normative
 - the `.back` gallery link is excluded from the product
 
@@ -39,6 +39,13 @@ The 2026-10-15 viewport revision bounds the application grid to the window
 height and makes collection and filter panels scroll independently. The
 nonfunctional profile badge is removed; the navigation remains visible while
 either content panel scrolls.
+
+The popup/tag revision treats broken-story inclusion as a query option applied
+before pagination and counting, including shelf previews and current-view
+exports. Summary records carry the broken state for accessible badges. Protected
+tag identities remain fixed while colors are user-editable and preserved by
+startup seeding and metadata projection. Migration 014 relaxes only color
+updates and changes the previous default age color to green.
 
 ## Tracked removal allowlist
 

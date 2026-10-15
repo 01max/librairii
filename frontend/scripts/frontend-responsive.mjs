@@ -142,6 +142,7 @@ try {
             );
             await assertViewportScrolling(page);
             if (acceptanceCase.name === 'above 1180px') {
+                await assertPopupInteractions(page);
                 await assertRealAgeFacetAction(page);
                 await assertFamilyBrowsingArtwork(page);
             }
@@ -168,6 +169,53 @@ async function installFixtureQueryRecorder(page) {
             globalThis.__librairiiFixtureQueries.push(event.detail);
         });
     });
+}
+
+async function assertPopupInteractions(page) {
+    await page.getByRole('button', {name: 'Open details', exact: true}).click();
+    const details = page.getByRole('dialog');
+    await details.getByRole('region', {name: 'Story tags'}).getByText('Age · 3–5', {exact: true}).waitFor();
+    await details.getByRole('heading', {name: 'The Little Prince'}).click();
+    if (!await details.isVisible()) throw new Error('inside click dismissed story details');
+    await details.screenshot({path: join(tmpdir(), 'librairii-story-details-review.png')});
+    await page.locator('.dialog-backdrop').click({position: {x: 5, y: 5}});
+    await details.waitFor({state: 'detached'});
+    await page.evaluate(() => {
+        const app = window.go.main.App;
+        const catalog = app.TagCatalog;
+        const colors = {};
+        app.TagCatalog = async () => {
+            const response = await catalog();
+            return {catalog: {definitions: response.catalog.definitions.map((definition) => ({
+                ...definition, color: colors[definition.id] ?? definition.color,
+            }))}};
+        };
+        app.RecolorTagDefinition = async (id, color) => {
+            colors[id] = color;
+            return {};
+        };
+    });
+    const navigation = page.getByRole('navigation', {name: 'Primary navigation'});
+    await navigation.getByRole('button', {name: 'Tags', exact: true}).click();
+    const manager = page.getByRole('dialog', {name: 'Manage tags'});
+    const color = manager.getByLabel('Color for Age');
+    await color.waitFor();
+    if (await color.inputValue() !== '#267d5d') throw new Error('age default is not green');
+    await color.evaluate((input) => { input.value = '#405cf5'; });
+    await manager.getByRole('button', {name: 'Save Age color'}).click();
+    await manager.getByRole('button', {name: 'Save Age color'}).waitFor();
+    await manager.screenshot({path: join(tmpdir(), 'librairii-tag-manager-review.png')});
+    await page.locator('.tag-manager-backdrop').click({position: {x: 5, y: 5}});
+    await manager.waitFor({state: 'detached'});
+    await navigation.getByRole('button', {name: 'Tags', exact: true}).click();
+    if (await manager.getByLabel('Color for Age').inputValue() !== '#405cf5') {
+        throw new Error('protected tag color did not survive reopening');
+    }
+    await page.locator('.tag-manager-backdrop').click({position: {x: 5, y: 5}});
+    await manager.waitFor({state: 'detached'});
+    // Reset the fixture after verifying the custom color, before parity checks.
+    await page.reload({waitUntil: 'networkidle'});
+    await page.getByRole('heading', {name: 'Weekend adventures'}).waitFor();
 }
 
 async function assertViewportScrolling(page) {
@@ -327,6 +375,25 @@ async function assertFamilyBrowsingArtwork(page) {
             throw new Error('a labeled rail action is hidden at 320px');
         }
     }
+    url.search = '?fixture=broken-stories';
+    await page.goto(url.toString(), {waitUntil: 'networkidle'});
+    const brokenControl = page.getByRole('checkbox', {name: 'Include broken stories'});
+    // The sidebar is visible on desktop; inclusion is then preserved at narrow widths.
+    await page.setViewportSize({width: 1181, height: 900});
+    await brokenControl.waitFor();
+    const brokenStory = page.getByRole('button', {name: 'The Little Prince', exact: true});
+    if (await brokenStory.count() !== 0) throw new Error('broken story is visible by default');
+    await brokenControl.check();
+    await brokenStory.waitFor();
+    if (await brokenStory.getByText('Broken', {exact: true}).count() !== 1) {
+        throw new Error('broken story badge is missing');
+    }
+    const artworkFilter = await brokenStory.locator('.cover').evaluate((cover) => getComputedStyle(cover).filter);
+    if (!artworkFilter.includes('saturate(0.18)')) throw new Error('broken cover is not visually muted');
+    if (await page.locator('.top button').count() !== 0) throw new Error('top-right import action is still present');
+    await page.screenshot({path: join(tmpdir(), 'librairii-broken-library-review.png')});
+    await brokenControl.uncheck();
+    await brokenStory.waitFor({state: 'detached'});
 }
 
 async function assertRealAgeFacetAction(page) {

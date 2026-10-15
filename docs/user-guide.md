@@ -38,6 +38,9 @@ Descriptions display readable text and paragraph breaks, including when the
 archive or catalog contains HTML. If artwork is unavailable, a colorful title
 cover appears instead.
 
+Assigned tags appear in the story details. Click outside an application popup
+to close it, or use its Close button or Escape key.
+
 Choose **Show technical details** to inspect the story UUID, archive filename,
 verification status, and full checksum. **Hide technical details** folds them
 away again.
@@ -65,6 +68,15 @@ the current view.
 The application fits the window height. The navigation stays in place while
 the story collection scrolls; long shelf and filter lists scroll independently
 in their sidebar.
+
+**Include broken stories**, just below the saved shelves, shows stories marked
+as broken. They are hidden by default; when included, they have a Broken badge
+and muted cover artwork. Counts, pagination, and exports of the current view
+follow this choice. Use **Edit tags** to mark or unmark a story as broken.
+
+Age tags start green. **Manage tags** lets you change the color of any tag,
+including protected built-in and derived tags. Their names and system-managed
+values stay protected, and chosen colors survive later metadata syncs.
 
 ## Export passthrough and Lunii.QT
 

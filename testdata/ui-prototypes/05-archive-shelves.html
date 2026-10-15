@@ -157,15 +157,72 @@
     .main{min-height:0;overflow-y:auto;overscroll-behavior-y:contain}
     @media(min-width:561px) and (max-height:480px){.rail{padding:18px 0 12px}.rail .mark{margin-bottom:18px;flex-shrink:0}.rail nav{gap:4px}.rail button{min-height:50px}}
     @media(max-width:560px){.app{display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:58px minmax(0,1fr)}}
+
+    /* Inclusive broken-story control and stronger Lunii sync styling. */
+.include-broken {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 18px 0 24px;
+    color: #526079;
+    font-size: 11px;
+    font-weight: 700;
+}
+.include-broken input {
+    margin: 0;
+    accent-color: var(--blue);
+}
+.lunii-sync {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    margin-bottom: 26px;
+    padding: 18px 22px;
+    border: 1px solid #304aab;
+    border-left: 5px solid var(--yellow);
+    border-radius: 12px;
+    background: #233885;
+    color: white;
+    box-shadow: 0 8px 20px rgba(35, 56, 133, .14);
+}
+.lunii-sync.first-sync {
+    padding: 26px;
+    border-color: #304aab;
+    border-left-color: var(--yellow);
+    background: #233885;
+}
+.lunii-sync p {
+    max-width: 60ch;
+    margin: 0;
+    color: #e1e6ff;
+    font-size: 12px;
+    line-height: 1.55;
+}
+.lunii-sync > button {
+    flex-shrink: 0;
+    padding: 12px 18px;
+    border: 0;
+    border-radius: 9px;
+    color: var(--ink);
+    background: var(--yellow);
+    font-size: 13px;
+    font-weight: 800;
+}
+.lunii-sync .sync-warning {
+    margin-top: 10px;
+    color: #ffe3b6;
+}
+    @media(max-width:560px){.lunii-sync{align-items:flex-start;flex-direction:column;gap:16px;padding:18px}.lunii-sync.first-sync{padding:20px}}
   </style>
 </head>
 <body>
   <a class="back" href="index.html">← All directions</a>
   <div class="app">
     <aside class="rail"><div class="mark"><i></i><i></i><i></i></div><nav><button class="active"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h4v16H4zM10 4h4v16h-4zM16 5l3-1 4 15-3 1z"></path></svg><span>Library</span></button><button><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3h8l10 10-8 8L3 11z"></path><circle cx="7" cy="7" r="1"></circle></svg><span>Tags</span></button><button><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5"></path></svg><span>Import</span></button><button><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V3m-5 5 5-5 5 5M4 16v5h16v-5"></path></svg><span>Export</span></button></nav></aside>
-    <aside class="filters"><h1>Librairii</h1><div class="path">~/Stories/Librairii</div><div class="caption">Saved shelves</div><nav class="saved"><button class="active"><i style="--c:#405cf5"></i>All stories <span>12</span></button><button><i style="--c:#ff705c"></i>Bedtime <span>12</span></button><button><i style="--c:#55b79a"></i>Adventures <span>16</span></button><button><i style="--c:#f5bc41"></i>Favorites <span>9</span></button></nav><div class="caption">Refine this shelf</div><div class="facet"><div class="facet-title">Age <b>−</b></div><label class="choice"><input type="checkbox" checked><i style="--c:#ff705c"></i>3–5 years <span>12</span></label><label class="choice"><input type="checkbox"><i style="--c:#ff705c"></i>6–8 years <span>18</span></label></div><div class="facet"><div class="facet-title">Language <b>＋</b></div></div><div class="facet"><div class="facet-title">Import status <b>＋</b></div></div><button class="manage">＋ Manage tags</button></aside>
+    <aside class="filters"><h1>Librairii</h1><div class="path">~/Stories/Librairii</div><div class="caption">Saved shelves</div><nav class="saved"><button class="active"><i style="--c:#405cf5"></i>All stories <span>12</span></button><button><i style="--c:#ff705c"></i>Bedtime <span>12</span></button><button><i style="--c:#55b79a"></i>Adventures <span>16</span></button><button><i style="--c:#f5bc41"></i>Favorites <span>9</span></button></nav><label class="include-broken"><input type="checkbox">Include broken stories</label><div class="caption">Refine this shelf</div><div class="facet"><div class="facet-title">Age <b>−</b></div><label class="choice"><input type="checkbox" checked><i style="--c:#267d5d"></i>3–5 years <span>12</span></label><label class="choice"><input type="checkbox"><i style="--c:#267d5d"></i>6–8 years <span>18</span></label></div><div class="facet"><div class="facet-title">Language <b>＋</b></div></div><div class="facet"><div class="facet-title">Import status <b>＋</b></div></div><button class="manage">＋ Manage tags</button></aside>
     <main class="main">
-      <div class="top"><label class="search">⌕ <input type="search" placeholder="Search 12 stories, authors, publishers…"></label><button class="import">＋ Import stories</button></div>
+      <div class="top"><label class="search">⌕ <input type="search" placeholder="Search 12 stories, authors, publishers…"></label></div>
       <div class="heading"><div><h2>My story shelves</h2><p>Stories grouped by your tags · 12 archives</p></div><div class="sort">Recently added ⌄</div></div>
       <section class="lunii-sync"><div class="lunii-sync-copy"><h3>Lunii covers and story details</h3><p>Sync with the official Lunii API for richer descriptions and cover images for matching stories.</p><p class="last-sync">Last successful sync: <time datetime="2026-07-25T09:00:00Z"></time></p></div><button>Sync with Lunii</button></section>
       <section class="shelf"><div class="shelf-head"><h3>Bedtime</h3><span>9 stories · Mood tag</span><button>View all →</button></div><div class="story-row preview">
@@ -185,7 +242,7 @@
         <div class="story-card"><button class="story" style="--sky:#579c85;--sun:#f5c75a;--land:#315f53"><div class="cover"></div></button><p class="story-title">Fox and Fern</p></div>
       </div></section>
     </main>
-    <aside class="drawer"><div class="drawer-art"></div><div class="drawer-info"><h3>The Little Prince</h3><p>Antoine de Saint-Exupéry · metadata synced today</p><div class="facts"><div class="fact"><span>Stories</span><b>12</b></div><div class="fact"><span>Duration</span><b>54 min</b></div><div class="fact"><span>Language</span><b>English</b></div></div></div><div class="drawer-tags"><div class="tag-title">My tags <button>Edit tags</button></div><div class="tags"><span class="tag"><i style="--c:#ff705c"></i>Age · 3–5</span><span class="tag"><i style="--c:#6779e8"></i>Mood · Bedtime</span><span class="tag"><i style="--c:#55b79a"></i>Favorite</span></div><div class="archive">the-little-prince.v2.pk · 86.4 MB · Verified</div></div><div class="drawer-actions"><button>Open details</button><button class="export">Add to export →</button></div></aside>
+    <aside class="drawer"><div class="drawer-art"></div><div class="drawer-info"><h3>The Little Prince</h3><p>Antoine de Saint-Exupéry · metadata synced today</p><div class="facts"><div class="fact"><span>Stories</span><b>12</b></div><div class="fact"><span>Duration</span><b>54 min</b></div><div class="fact"><span>Language</span><b>English</b></div></div></div><div class="drawer-tags"><div class="tag-title">My tags <button>Edit tags</button></div><div class="tags"><span class="tag"><i style="--c:#267d5d"></i>Age · 3–5</span><span class="tag"><i style="--c:#6779e8"></i>Mood · Bedtime</span><span class="tag"><i style="--c:#55b79a"></i>Favorite</span></div><div class="archive">the-little-prince.v2.pk · 86.4 MB · Verified</div></div><div class="drawer-actions"><button>Open details</button><button class="export">Add to export →</button></div></aside>
   </div>
   <script>
     document.querySelectorAll('time[datetime]').forEach((time) => {

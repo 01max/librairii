@@ -498,8 +498,8 @@ test('keeps interactive controls in their canonical regions', async () => {
         .toBeInTheDocument();
     expect(within(main).getByRole('button', {name: 'Sync with Lunii'}))
         .toBeInTheDocument();
-    expect(within(main).getByRole('button', {name: '＋ Import stories'}))
-        .toBeInTheDocument();
+    expect(within(main).queryByRole('button', {name: '＋ Import stories'}))
+        .not.toBeInTheDocument();
     expect(within(drawer).getByRole('button', {name: 'Edit tags'}))
         .toBeInTheDocument();
     expect(within(drawer).getByRole('button', {name: 'Open details'}))
@@ -1592,11 +1592,11 @@ test('previews a multi-shelf union with per-shelf and overlap counts', async () 
     await user.click(await screen.findByRole('checkbox', {
         name: 'Select Moon for combined shelf preview',
     }));
-    await waitFor(() => expect(previewShelves).toHaveBeenLastCalledWith([7]));
+    await waitFor(() => expect(previewShelves).toHaveBeenLastCalledWith([7], false));
     await user.click(screen.getByRole('checkbox', {
         name: 'Select Forest for combined shelf preview',
     }));
-    await waitFor(() => expect(previewShelves).toHaveBeenLastCalledWith([7, 8]));
+    await waitFor(() => expect(previewShelves).toHaveBeenLastCalledWith([7, 8], false));
 
     const preview = await screen.findByRole('region', {name: 'Combined shelf preview'});
     expect(preview).toHaveTextContent('Moon2');
@@ -1659,7 +1659,7 @@ test('previews a multi-shelf union with per-shelf and overlap counts', async () 
     });
     await waitFor(() => expect(invalidSelection).toBeEnabled());
     expect(invalidSelection).toBeChecked();
-    await waitFor(() => expect(previewShelves).toHaveBeenLastCalledWith([7, 8]));
+    await waitFor(() => expect(previewShelves).toHaveBeenLastCalledWith([7, 8], false));
     expect(await screen.findByText('Repair the selected shelf before continuing.'))
         .toBeInTheDocument();
 
@@ -1672,7 +1672,7 @@ test('previews a multi-shelf union with per-shelf and overlap counts', async () 
         },
     }));
     await user.click(invalidSelection);
-    await waitFor(() => expect(previewShelves).toHaveBeenLastCalledWith([8]));
+    await waitFor(() => expect(previewShelves).toHaveBeenLastCalledWith([8], false));
     expect(invalidSelection).not.toBeChecked();
     expect(screen.queryByText('Repair the selected shelf before continuing.'))
         .not.toBeInTheDocument();
@@ -1783,13 +1783,14 @@ test('composes canonical search, tri-state and choice refinements with clear-all
     await waitFor(() => expect(queryStories).toHaveBeenLastCalledWith(
         expect.objectContaining({name: 'foret', page: 1}),
     ));
-    await user.click(screen.getByRole('checkbox', {name: 'Broken'}));
+    await user.click(screen.getByRole('checkbox', {name: 'Include broken stories'}));
     await user.click(screen.getByRole('checkbox', {name: 'Calm'}));
     await user.click(screen.getByRole('checkbox', {name: 'Bold'}));
 
     await waitFor(() => expect(queryStories).toHaveBeenLastCalledWith(
         expect.objectContaining({
-            booleanFilters: [{definitionId: 1, state: 'true'}],
+            includeBroken: true,
+            booleanFilters: [],
             choiceFilters: [{definitionId: 2, valueIds: [20, 21]}],
         }),
     ));
@@ -1838,7 +1839,7 @@ test('composes official language, import status, and derived age refinements', a
                 key: 'age',
                 normalizedKey: 'age',
                 label: 'Age',
-                color: '#ff705c',
+                color: '#267d5d',
                 kind: 'choice',
                 source: 'derived',
                 presentation: 'system',
@@ -1891,7 +1892,7 @@ test('refreshes derived facet counts when an import changes the collection', asy
                 key: 'age',
                 normalizedKey: 'age',
                 label: 'Age',
-                color: '#ff705c',
+                color: '#267d5d',
                 kind: 'choice',
                 source: 'derived',
                 presentation: 'system',
@@ -1999,7 +2000,7 @@ test('keeps matched metadata, artwork, provenance, and combined refinements usab
                 id: 3,
                 key: 'age',
                 label: 'Age',
-                color: '#ff705c',
+                color: '#267d5d',
                 kind: 'choice',
                 source: 'derived',
                 protected: true,
@@ -2439,6 +2440,58 @@ test('asks for confirmation only after choosing to remove a story', async () => 
     expect(removeStory).not.toHaveBeenCalled();
 });
 
+test('dismisses story details only when clicking outside the popup', async () => {
+    const user = userEvent.setup();
+    render(<App/>);
+    const opener = await screen.findByRole('button', {name: 'Open details'});
+    await user.click(opener);
+    const dialog = screen.getByRole('dialog', {name: 'Clockwork Forest'});
+    await user.click(within(dialog).getByRole('heading', {name: 'Clockwork Forest'}));
+    expect(dialog).toBeInTheDocument();
+    await user.click(dialog.closest('.dialog-backdrop')!);
+    expect(dialog).not.toBeInTheDocument();
+    expect(opener).toHaveFocus();
+    expect(removeStory).not.toHaveBeenCalled();
+});
+
+test('shows the selected story tags in details', async () => {
+    const user = userEvent.setup();
+    loadTagAssignmentWorkspace.mockResolvedValue(new app.TagAssignmentWorkspaceResponse({
+        workspace: {
+            catalog: {definitions: [{id: 2, key: 'mood', label: 'Mood', kind: 'choice',
+                color: '#405cf5', values: [{id: 20, label: 'Calm'}]}]},
+            requestedStories: 1,
+            states: [{definitionId: 2, assignedStories: 1, values: [{valueId: 20, assignedStories: 1}]}],
+        },
+    }));
+    render(<App/>);
+    await user.click(await screen.findByRole('button', {name: 'Open details'}));
+    const dialog = screen.getByRole('dialog', {name: 'Clockwork Forest'});
+    expect(await within(dialog).findByText('Mood · Calm')).toBeInTheDocument();
+    expect(loadTagAssignmentWorkspace).toHaveBeenCalledWith([1]);
+});
+
+test('uses a separate include-broken control and identifies broken story covers', async () => {
+    const user = userEvent.setup();
+    queryStories.mockImplementation(async (query) => new app.LibraryPageResponse({
+        page: {stories: query.includeBroken ? [{...stories[0], broken: true}, stories[1]] : [stories[1]],
+            page: 1, pageSize: 12, totalItems: query.includeBroken ? 2 : 1, totalPages: 1, sort: 'imported_desc'},
+    }));
+    render(<App/>);
+    const include = await screen.findByRole('checkbox', {name: 'Include broken stories'});
+    expect(include).not.toBeChecked();
+    expect(screen.queryByRole('checkbox', {name: 'Broken'})).not.toBeInTheDocument();
+    expect(screen.queryByRole('checkbox', {name: 'Not Broken'})).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', {name: 'Clockwork Forest'})).not.toBeInTheDocument();
+    await user.click(include);
+    const broken = await screen.findByRole('button', {name: 'Clockwork Forest'});
+    expect(within(broken).getByText('Broken')).toBeInTheDocument();
+    expect(broken.closest('.story-card')).toHaveClass('is-broken');
+    expect(window.location.hash).toContain('includeBroken=true');
+    await user.click(include);
+    await waitFor(() => expect(screen.queryByRole('button', {name: 'Clockwork Forest'})).not.toBeInTheDocument());
+});
+
 test('keeps removal pending in the dialog and allows retry after a failure', async () => {
     const user = userEvent.setup();
     let rejectRemoval: ((reason?: unknown) => void) | undefined;
@@ -2518,7 +2571,7 @@ test('keeps bulk selection in the collection and exposes updated tag chips', asy
     const second = screen.getByRole('button', {
         name: 'Moonlit Workshop',
     });
-    expect((await screen.findAllByText('Broken')).length).toBeGreaterThan(1);
+    expect((await screen.findAllByText('Broken')).length).toBeGreaterThan(0);
 
     await user.keyboard('{Control>}');
     await user.click(second);
@@ -2713,7 +2766,7 @@ test('shows nonblocking import progress and terminal validation feedback', async
     }));
     render(<App/>);
 
-    await user.click(await screen.findByRole('button', {name: '＋ Import stories'}));
+    await user.click(await screen.findByRole('button', {name: 'Import'}));
     expect(screen.getByRole('heading', {name: 'Importing 1 story'})).toBeInTheDocument();
 
     operationChanged?.({

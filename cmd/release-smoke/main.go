@@ -166,29 +166,33 @@ func runReleaseSmoke(
 	}{
 		{
 			request: exporter.PreflightRequest{
-				SourceType: operations.ExportSourceSelection,
-				StoryIDs:   []int64{defaultStory.ID},
+				IncludeBroken: true,
+				SourceType:    operations.ExportSourceSelection,
+				StoryIDs:      []int64{defaultStory.ID},
 			},
 			count: 1,
 		},
 		{
 			request: exporter.PreflightRequest{
-				SourceType: operations.ExportSourceCurrentQuery,
-				Query:      officialQuery,
+				IncludeBroken: true,
+				SourceType:    operations.ExportSourceCurrentQuery,
+				Query:         officialQuery,
 			},
 			count: 1,
 		},
 		{
 			request: exporter.PreflightRequest{
-				SourceType: operations.ExportSourceShelf,
-				ShelfIDs:   []int64{calmShelf.ID},
+				IncludeBroken: true,
+				SourceType:    operations.ExportSourceShelf,
+				ShelfIDs:      []int64{calmShelf.ID},
 			},
 			count: 1,
 		},
 		{
 			request: exporter.PreflightRequest{
-				SourceType: operations.ExportSourceShelves,
-				ShelfIDs:   []int64{allShelf.ID, officialShelf.ID},
+				IncludeBroken: true,
+				SourceType:    operations.ExportSourceShelves,
+				ShelfIDs:      []int64{allShelf.ID, officialShelf.ID},
 			},
 			count: 2,
 		},
@@ -224,7 +228,8 @@ func runReleaseSmoke(
 	remaining := composition.application.QueryStories(
 		ctx,
 		library.StoryLibraryQuery{
-			Page: 1, PageSize: 100, Sort: library.SortNameAscending,
+			IncludeBroken: true,
+			Page:          1, PageSize: 100, Sort: library.SortNameAscending,
 		},
 	)
 	if remaining.Error != nil ||
@@ -404,7 +409,8 @@ func importAndInspect(
 		return nil, fmt.Errorf("release smoke import failed: %#v", terminal)
 	}
 	page := application.QueryStories(ctx, library.StoryLibraryQuery{
-		Page: 1, PageSize: 100, Sort: library.SortNameAscending,
+		IncludeBroken: true,
+		Page:          1, PageSize: 100, Sort: library.SortNameAscending,
 	})
 	if page.Error != nil || page.Page == nil || page.Page.TotalItems != 2 {
 		return nil, fmt.Errorf("query imported stories: %#v", page)
@@ -482,7 +488,8 @@ func tagSearchFilterAndSaveShelf(
 	}
 
 	nameSearch := application.QueryStories(ctx, library.StoryLibraryQuery{
-		Name: "clockwork forest", Page: 1, PageSize: 100,
+		IncludeBroken: true,
+		Name:          "clockwork forest", Page: 1, PageSize: 100,
 		Sort: library.SortNameAscending,
 	})
 	if nameSearch.Error != nil ||
@@ -493,6 +500,7 @@ func tagSearchFilterAndSaveShelf(
 			fmt.Errorf("name search smoke: %#v", nameSearch)
 	}
 	query := library.StoryLibraryQuery{
+		IncludeBroken: true,
 		BooleanFilters: []library.BooleanFilter{{
 			DefinitionID: broken.ID,
 			State:        library.BooleanTrue,
@@ -522,7 +530,8 @@ func tagSearchFilterAndSaveShelf(
 		ctx,
 		shelfResponse.Shelf.ID,
 		library.ListRequest{
-			Page: 1, PageSize: 100, Sort: library.SortNameAscending,
+			IncludeBroken: true,
+			Page:          1, PageSize: 100, Sort: library.SortNameAscending,
 		},
 	)
 	if opened.Error != nil ||
@@ -570,8 +579,9 @@ func refreshAndFilterOfficialMetadata(
 		return library.StoryLibraryQuery{}, errors.New("derived age value is missing")
 	}
 	query := library.StoryLibraryQuery{
-		Name:      "clockwork mountain",
-		Languages: []string{metadata.DefaultLocale},
+		IncludeBroken: true,
+		Name:          "clockwork mountain",
+		Languages:     []string{metadata.DefaultLocale},
 		ChoiceFilters: []library.ChoiceFilter{{
 			DefinitionID: age.ID,
 			ValueIDs:     []int64{ageValue.ID},
@@ -607,7 +617,7 @@ func createExportShelves(
 	allResponse := application.CreateShelf(
 		ctx,
 		"All smoke stories",
-		library.StoryLibraryQuery{},
+		library.StoryLibraryQuery{IncludeBroken: true},
 	)
 	if allResponse.Error != nil || allResponse.Shelf == nil {
 		return shelves.Shelf{}, shelves.Shelf{},
@@ -625,6 +635,7 @@ func createExportShelves(
 	preview := application.PreviewShelves(
 		ctx,
 		[]int64{allResponse.Shelf.ID, officialResponse.Shelf.ID},
+		true,
 	)
 	if preview.Error != nil ||
 		preview.Preview == nil ||
@@ -786,7 +797,8 @@ func verifyRecoveryAndOfflineRestart(
 		return fmt.Errorf("abandoned staging remains: %#v", stagingEntries)
 	}
 	page := composition.application.QueryStories(ctx, library.StoryLibraryQuery{
-		Name: "clockwork mountain", Page: 1, PageSize: 100,
+		IncludeBroken: true,
+		Name:          "clockwork mountain", Page: 1, PageSize: 100,
 		Sort: library.SortNameAscending,
 	})
 	if page.Error != nil ||
