@@ -423,7 +423,7 @@ export function installCollectionFixture() {
                 states: fixture === 'parity' ? [
                     {
                         definitionId: 10,
-                        assignedStories: storyIDs.length,
+                        assignedStories: 0,
                         values: [{
                             valueId: 101,
                             assignedStories: storyIDs.length,
@@ -431,7 +431,7 @@ export function installCollectionFixture() {
                     },
                     {
                         definitionId: 11,
-                        assignedStories: storyIDs.length,
+                        assignedStories: 0,
                         values: [{
                             valueId: 111,
                             assignedStories: storyIDs.length,

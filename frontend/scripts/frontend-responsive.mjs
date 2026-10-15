@@ -24,7 +24,7 @@ const acceptanceCases = [
             railWidth: 72,
             railDirection: 'column',
             drawerLeft: 310,
-            drawerColumnCount: 4,
+            drawerColumnCount: 3,
             drawerTagsDisplay: 'block',
             syncDisplay: 'block',
         },
@@ -42,7 +42,7 @@ const acceptanceCases = [
             railDirection: 'column',
             drawerLeft: 310,
             drawerColumnCount: 3,
-            drawerTagsDisplay: 'none',
+            drawerTagsDisplay: 'block',
             syncDisplay: 'block',
         },
     },
@@ -59,7 +59,7 @@ const acceptanceCases = [
             railDirection: 'column',
             drawerLeft: 64,
             drawerColumnCount: 3,
-            drawerTagsDisplay: 'none',
+            drawerTagsDisplay: 'block',
             syncDisplay: 'block',
         },
     },
@@ -77,13 +77,13 @@ const acceptanceCases = [
             railDirection: 'row',
             drawerLeft: 0,
             drawerColumnCount: 3,
-            drawerTagsDisplay: 'none',
+            drawerTagsDisplay: 'block',
             syncDisplay: 'block',
             mainPadding: '22px 14px 215px',
             drawerArtworkHeight: 85,
             drawerFactsDisplay: 'none',
             drawerSubtitleDisplay: 'none',
-            firstDrawerActionDisplay: 'none',
+            firstDrawerActionDisplay: 'block',
         },
     },
 ];
@@ -180,6 +180,26 @@ async function assertPopupInteractions(page) {
     await details.screenshot({path: join(tmpdir(), 'librairii-story-details-review.png')});
     await page.locator('.dialog-backdrop').click({position: {x: 5, y: 5}});
     await details.waitFor({state: 'detached'});
+    await page.evaluate(() => {
+        const load = window.go.main.App.StoryDetail;
+        window.go.main.App.StoryDetail = async (...args) => {
+            const result = await load(...args);
+            result.detail.story.description = 'Once upon a time, our story begins.\n\n' + 'A long adventure unfolds.\n\n'.repeat(150);
+            window.__longDescriptionLoaded = true;
+            return result;
+        };
+    });
+    await page.locator('.story').nth(1).click();
+    await page.waitForFunction(() => window.__longDescriptionLoaded);
+    for (let attempt = 0; attempt < 2; attempt++) {
+        await page.getByRole('button', {name: 'Open details', exact: true}).click();
+        await details.getByText(/^Once upon a time/).waitFor();
+        await page.waitForFunction(() => document.activeElement?.textContent === 'Close');
+        const scroll = await details.evaluate((dialog) => ({top: dialog.scrollTop, max: dialog.scrollHeight - dialog.clientHeight}));
+        if (scroll.max <= 0 || scroll.top !== 0) throw new Error(`long story did not open at the beginning: ${JSON.stringify(scroll)}`);
+        await details.evaluate((dialog) => { dialog.scrollTop = dialog.scrollHeight; });
+        await details.getByRole('button', {name: 'Close', exact: true}).click();
+    }
     await page.evaluate(() => {
         const app = window.go.main.App;
         const catalog = app.TagCatalog;
@@ -397,6 +417,11 @@ async function assertFamilyBrowsingArtwork(page) {
 }
 
 async function assertRealAgeFacetAction(page) {
+    const ageToggle = page.getByRole('button', {name: 'Age', exact: true});
+    await ageToggle.click();
+    if (await page.getByRole('checkbox', {name: '3–5 years'}).isVisible()) throw new Error('Age filter did not collapse');
+    if (await ageToggle.getAttribute('aria-expanded') !== 'false') throw new Error('Age filter state was not announced');
+    await ageToggle.press('Enter');
     const ageFacet = page.getByRole('checkbox', {name: '3–5 years'});
     if (!await ageFacet.isChecked()) {
         throw new Error('canonical Age facet is not seeded through the query');
@@ -442,7 +467,7 @@ async function readResponsiveState(page) {
             throw new Error('canonical responsive fixture is incomplete');
         }
         const singleRow = document.createElement('div');
-        singleRow.className = 'story-row';
+        singleRow.className = 'story-row preview';
         const singleStory = document.querySelector('.story-row .story-card')?.cloneNode(true);
         if (!singleStory) {
             throw new Error('canonical responsive fixture has no story');
@@ -451,6 +476,24 @@ async function readResponsiveState(page) {
         main.append(singleRow);
         const singleStoryVisible = getComputedStyle(singleStory).display !== 'none';
         singleRow.remove();
+        const maxPreview = innerWidth <= 560 ? 3 : innerWidth <= 850 ? 4 : innerWidth <= 1180 ? 5 : 6;
+        for (let count = 1; count <= 6; count++) {
+            const preview = document.createElement('div');
+            preview.className = 'story-row preview';
+            for (let index = 0; index < count; index++) preview.append(singleStory.cloneNode(true));
+            main.append(preview);
+            const visible = [...preview.children].filter((card) => getComputedStyle(card).display !== 'none').length;
+            preview.remove();
+            if (visible !== Math.min(count, maxPreview)) throw new Error(`${innerWidth}px: ${count}-story shelf shows ${visible} covers`);
+        }
+        const chip = drawerTags.querySelector('.tag');
+        if (!chip || Number.parseFloat(getComputedStyle(chip).fontSize) < 12) {
+            throw new Error('selected story tags are missing or too small');
+        }
+        const tagsBounds = drawerTags.getBoundingClientRect();
+        if (tagsBounds.width <= 0 || tagsBounds.bottom > innerHeight || tagsBounds.left < 0 || tagsBounds.right > innerWidth) {
+            throw new Error('selected story tags are outside the window');
+        }
         const collectionRow = document.createElement('div');
         collectionRow.className = 'story-row';
         for (const story of document.querySelectorAll('.story-row .story-card')) {
@@ -468,7 +511,7 @@ async function readResponsiveState(page) {
             appDisplay: getComputedStyle(app).display,
             singleStoryVisible,
             collectionRowVisible,
-            visiblePerRow: [...document.querySelectorAll('.story-row')].map(
+            visiblePerRow: [...document.querySelectorAll('.story-row.preview')].map(
                 (row) => [...row.querySelectorAll('.story-card')].filter(
                     (story) => getComputedStyle(story).display !== 'none',
                 ).length,

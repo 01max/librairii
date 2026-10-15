@@ -35,9 +35,11 @@ export default function StoryDetailsDialog({
     }, [story.id]);
     const tags = tagWorkspace?.catalog.definitions.flatMap((definition) => {
         const state = tagWorkspace.states.find((candidate) => candidate.definitionId === definition.id);
-        if (!state?.assignedStories) return [];
+        if (!state) return [];
         if (definition.kind === 'boolean') {
-            return [{key: `${definition.id}`, label: definition.label, color: definition.color}];
+            return state.assignedStories > 0
+                ? [{key: `${definition.id}`, label: definition.label, color: definition.color}]
+                : [];
         }
         return definition.values.filter((value) => state.values.some(
             (assigned) => assigned.valueId === value.id && assigned.assignedStories > 0,

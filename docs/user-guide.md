@@ -38,7 +38,9 @@ Descriptions display readable text and paragraph breaks, including when the
 archive or catalog contains HTML. If artwork is unavailable, a colorful title
 cover appears instead.
 
-Assigned tags appear in the story details. Click outside an application popup
+Assigned tags appear in the selected-story panel at every window size and in
+the story details. Details open at the beginning of the description, including
+when you reopen a long story. Click outside an application popup
 to close it, or use its Close button or Escape key.
 
 Choose **Show technical details** to inspect the story UUID, archive filename,
@@ -117,6 +119,11 @@ The collection URL hash records the live query, sort, and page so reload,
 back, and forward restore navigation. A saved shelf stores only membership:
 name search and membership-affecting filters. It does not store pagination,
 sort, current selection, dialog state, or operation progress.
+
+Choose **All stories** to clear the name search and tag refinements. The full
+collection appears above saved-shelf previews, including stories outside those
+shelves. This reset survives a reload. Click any tag filter heading, including
+**Age**, to expand or collapse it; collapsing keeps its selected filters.
 
 Shelves are dynamic saved queries rather than folders of copied stories. Their
 membership and count are reevaluated after imports, removals, metadata refreshes,

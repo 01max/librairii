@@ -435,6 +435,7 @@ function App() {
     const [requestError, setRequestError] = useState<string | null>(null);
     const [languageFacetOpen, setLanguageFacetOpen] = useState(false);
     const [importFacetOpen, setImportFacetOpen] = useState(false);
+    const [collapsedTagFacets, setCollapsedTagFacets] = useState<Set<number>>(new Set());
     const [detailsOpen, setDetailsOpen] = useState(false);
     const [removing, setRemoving] = useState(false);
     const [removalError, setRemovalError] = useState<string | null>(null);
@@ -1211,8 +1212,15 @@ function App() {
         ...collectionQuery.languages,
     ])].sort();
     const collectionRows = useMemo<CollectionShelfRow[]>(() => (
-        showSavedShelfRows
-            ? previewableShelves.map((shelf) => ({
+        [
+            ...rows.map((row, rowIndex) => ({
+                key: `collection-${rowIndex}`,
+                name: rowIndex === 0 ? 'Recently added' : 'More stories',
+                storyCount: row.length,
+                source: 'Local archive',
+                stories: row,
+            })),
+            ...(showSavedShelfRows ? previewableShelves.map((shelf) => ({
                 key: `saved-shelf-${shelf.id}`,
                 name: savedShelfPreviewDetails[shelf.id]?.name ?? shelf.name,
                 storyCount: savedShelfPreviewDetails[shelf.id]?.count ?? shelf.count,
@@ -1220,14 +1228,8 @@ function App() {
                 stories: savedShelfStories[shelf.id] ?? [],
                 shelfID: shelf.id,
                 error: savedShelfPreviewErrors[shelf.id],
-            }))
-            : rows.map((row, rowIndex) => ({
-                key: `collection-${rowIndex}`,
-                name: rowIndex === 0 ? 'Recently added' : 'More stories',
-                storyCount: row.length,
-                source: 'Local archive',
-                stories: row,
-            }))
+            })) : []),
+        ]
     ), [
         previewableShelves,
         rows,
@@ -1352,21 +1354,6 @@ function App() {
                     ? [[preview.shelfID, preview.error]]
                     : [],
             )));
-            const visibleStories = previews.flatMap((preview) => preview.stories);
-            setSelectedIDs((current) => {
-                const visible = current.filter((storyID) => (
-                    visibleStories.some((story) => story.id === storyID)
-                ));
-                if (visible.length > 0) {
-                    return visible;
-                }
-                return visibleStories[0] ? [visibleStories[0].id] : [];
-            });
-            setSelectedID((current) => (
-                visibleStories.some((story) => story.id === current)
-                    ? current
-                    : visibleStories[0]?.id ?? null
-            ));
         });
         return () => {
             active = false;
@@ -1749,71 +1736,86 @@ function App() {
 
     const renderTagFacet = (definition: tagging.DefinitionWithValues) => (
         <div className="facet" key={definition.id}>
-            <div className="facet-title">{definition.label} <b>−</b></div>
-            {definition.kind === 'boolean' ? (
-                <>
-                    <label className="choice">
-                        <input
-                            type="checkbox"
-                            checked={collectionQuery.booleanFilters.some(
-                                (filter) => (
-                                    filter.definitionId === definition.id &&
-                                    filter.state === 'true'
-                                ),
-                            )}
-                            onChange={(event) => setBooleanFilter(
-                                definition.id,
-                                event.currentTarget.checked ? 'true' : 'ignored',
-                            )}
-                        />
-                        <i style={{'--c': definition.color} as CSSProperties}/>
-                        {definition.label}
-                    </label>
-                    <label className="choice">
-                        <input
-                            type="checkbox"
-                            checked={collectionQuery.booleanFilters.some(
-                                (filter) => (
-                                    filter.definitionId === definition.id &&
-                                    filter.state === 'false'
-                                ),
-                            )}
-                            onChange={(event) => setBooleanFilter(
-                                definition.id,
-                                event.currentTarget.checked ? 'false' : 'ignored',
-                            )}
-                        />
-                        <i style={{'--c': definition.color} as CSSProperties}/>
-                        Not {definition.label}
-                    </label>
-                </>
-            ) : definition.values.map((value) => (
-                <label className="choice" key={value.id}>
-                    {(() => {
-                        const checkedByQuery = collectionQuery.choiceFilters.some(
-                            (filter) => (
-                                filter.definitionId === definition.id &&
-                                filter.valueIds.includes(value.id)
-                            ),
-                        );
-                        return (
+            <button
+                className="facet-title"
+                type="button"
+                aria-expanded={!collapsedTagFacets.has(definition.id)}
+                aria-controls={`tag-facet-${definition.id}`}
+                onClick={() => setCollapsedTagFacets((current) => {
+                    const next = new Set(current);
+                    if (next.has(definition.id)) next.delete(definition.id);
+                    else next.add(definition.id);
+                    return next;
+                })}
+            >
+                {definition.label} <b aria-hidden="true">{collapsedTagFacets.has(definition.id) ? '+' : '−'}</b>
+            </button>
+            <div id={`tag-facet-${definition.id}`} hidden={collapsedTagFacets.has(definition.id)}>
+                {definition.kind === 'boolean' ? (
+                    <>
+                        <label className="choice">
                             <input
                                 type="checkbox"
-                                checked={checkedByQuery}
-                                onChange={() => toggleChoiceFilter(
+                                checked={collectionQuery.booleanFilters.some(
+                                    (filter) => (
+                                        filter.definitionId === definition.id &&
+                                        filter.state === 'true'
+                                    ),
+                                )}
+                                onChange={(event) => setBooleanFilter(
                                     definition.id,
-                                    value.id,
+                                    event.currentTarget.checked ? 'true' : 'ignored',
                                 )}
                             />
-                        );
-                    })()}
-                    <i style={{'--c': definition.color} as CSSProperties}/>
-                    {value.label}
-                    {facetCounts[value.id] !== undefined && (
-                        <span aria-hidden="true">{facetCounts[value.id]}</span>
-                    )}
-                </label>
-            ))}
+                            <i style={{'--c': definition.color} as CSSProperties}/>
+                            {definition.label}
+                        </label>
+                        <label className="choice">
+                            <input
+                                type="checkbox"
+                                checked={collectionQuery.booleanFilters.some(
+                                    (filter) => (
+                                        filter.definitionId === definition.id &&
+                                        filter.state === 'false'
+                                    ),
+                                )}
+                                onChange={(event) => setBooleanFilter(
+                                    definition.id,
+                                    event.currentTarget.checked ? 'false' : 'ignored',
+                                )}
+                            />
+                            <i style={{'--c': definition.color} as CSSProperties}/>
+                            Not {definition.label}
+                        </label>
+                    </>
+                ) : definition.values.map((value) => (
+                    <label className="choice" key={value.id}>
+                        {(() => {
+                            const checkedByQuery = collectionQuery.choiceFilters.some(
+                                (filter) => (
+                                    filter.definitionId === definition.id &&
+                                    filter.valueIds.includes(value.id)
+                                ),
+                            );
+                            return (
+                                <input
+                                    type="checkbox"
+                                    checked={checkedByQuery}
+                                    onChange={() => toggleChoiceFilter(
+                                        definition.id,
+                                        value.id,
+                                    )}
+                                />
+                            );
+                        })()}
+                        <i style={{'--c': definition.color} as CSSProperties}/>
+                        {value.label}
+                        {facetCounts[value.id] !== undefined && (
+                            <span aria-hidden="true">{facetCounts[value.id]}</span>
+                        )}
+                    </label>
+                ))}
+            </div>
         </div>
     );
 
@@ -2468,7 +2470,6 @@ function App() {
                                         aria-pressed={selectedIDs.includes(story.id)}
                                         aria-keyshortcuts="Control+Enter Meta+Enter"
                                         onClick={(event) => {
-                                            setDetail(null);
                                             if (event.ctrlKey || event.metaKey || event.shiftKey) {
                                                 const next = selectedIDs.includes(story.id)
                                                     ? selectedIDs.length === 1
@@ -2502,7 +2503,7 @@ function App() {
                         </div>
                     </section>
                 ))}
-                {!showSavedShelfRows && (page?.totalPages ?? 0) > 1 && (
+                {(page?.totalPages ?? 0) > 1 && (
                     <nav className="pagination" aria-label="Collection pages">
                         <button
                             type="button"
@@ -2598,15 +2599,6 @@ function App() {
                                     {tag.label}
                                 </span>
                             ))}
-                        </div>
-                        <div className="archive">
-                            {detail?.archive.originalFilename ?? 'Loading archive details…'}
-                            {' · '}
-                            {formatBytes(detail?.archive.byteSize ?? selected.byteSize)}
-                            {' · '}
-                            {compatibilityLabel(
-                                detail?.archive.verification ?? selected.compatibility,
-                            )}
                         </div>
                     </div>
                     <div className="drawer-actions">

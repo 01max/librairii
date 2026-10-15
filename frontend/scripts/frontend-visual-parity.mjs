@@ -1,5 +1,5 @@
 import {existsSync} from 'node:fs';
-import {copyFile, mkdtemp, rm} from 'node:fs/promises';
+import {copyFile, mkdtemp, rm, writeFile} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join, resolve} from 'node:path';
 import {fileURLToPath} from 'node:url';
@@ -135,6 +135,10 @@ async function compareViewport(browserInstance, origin, viewport) {
                 threshold: pixelThreshold,
             },
         );
+        if (mismatchedPixels / (canonical.width * canonical.height) > maximumMismatchRatio) {
+            await writeFile(join(tmpdir(), `librairii-reference-${viewport.width}.png`), canonicalBuffer);
+            await writeFile(join(tmpdir(), `librairii-actual-${viewport.width}.png`), applicationBuffer);
+        }
         return {
             viewport,
             comparedPixels: canonical.width * canonical.height,
