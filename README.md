@@ -19,7 +19,7 @@ the architecture boundary.
 
 ## Development
 
-Install Go 1.25 or newer, Node 24, and the Wails CLI version recorded in
+Install Go 1.26 or newer, Node 24.15 or newer, and the Wails CLI version recorded in
 `.wails-version`, then run:
 
 ```sh
