@@ -1,3 +1,5 @@
+import casefold from './search-casefold.json';
+
 export const STORY_LIBRARY_QUERY_VERSION = 1;
 export const STORY_LIBRARY_HASH_PATH = '#/library';
 
@@ -15,6 +17,7 @@ export type CollectionChoiceFilter = {
 };
 
 export type CollectionQuery = {
+    includeBroken?: boolean;
     name: string;
     languages: string[];
     compatibilities: CompatibilityFilter[];
@@ -26,6 +29,7 @@ export type CollectionQuery = {
 };
 
 export const DEFAULT_COLLECTION_QUERY: CollectionQuery = {
+    includeBroken: false,
     name: '',
     languages: [],
     compatibilities: [],
@@ -45,6 +49,9 @@ export class InvalidCollectionQuery extends Error {}
 export function encodeCollectionQuery(input: CollectionQuery): string {
     const query = canonicalCollectionQuery(input);
     const entries: Array<[string, string]> = [['v', String(STORY_LIBRARY_QUERY_VERSION)]];
+    if (query.includeBroken) {
+        entries.push(['includeBroken', 'true']);
+    }
     if (query.name) {
         entries.push(['name', query.name]);
     }
@@ -89,6 +96,7 @@ export function decodeCollectionQuery(hash: string): CollectionQuery {
     const parameters = new URLSearchParams(hash.slice(queryIndex + 1));
     const allowed = new Set([
         'v',
+        'includeBroken',
         'name',
         'page',
         'size',
@@ -133,7 +141,12 @@ export function decodeCollectionQuery(hash: string): CollectionQuery {
                 .map(positiveInteger),
         };
     });
+    const includeBroken = oneValue(parameters, 'includeBroken', false);
+    if (includeBroken && includeBroken !== 'true') {
+        throw new InvalidCollectionQuery('Invalid broken-story visibility.');
+    }
     return canonicalCollectionQuery({
+        includeBroken: includeBroken === 'true',
         name: oneValue(parameters, 'name', false),
         languages: parameters.getAll('language'),
         compatibilities: parameters.getAll('compatibility') as CompatibilityFilter[],
@@ -194,6 +207,7 @@ export function canonicalCollectionQuery(input: CollectionQuery): CollectionQuer
     booleanFilters.sort((left, right) => left.definitionId - right.definitionId);
     choiceFilters.sort((left, right) => left.definitionId - right.definitionId);
     return {
+        includeBroken: input.includeBroken ?? false,
         name,
         languages,
         compatibilities,
@@ -218,12 +232,13 @@ function canonicalLanguage(value: string): string {
 }
 
 function normalizeSearchText(value: string): string {
-    return value
-        .trim()
-        .toLocaleLowerCase()
+    return [...value]
+        .map((character) => (casefold as Record<string, string>)[character] ?? character)
+        .join('')
         .normalize('NFKD')
-        .replace(/\p{M}/gu, '')
-        .replace(/\s+/gu, ' ');
+        .replace(/\p{Mn}/gu, '')
+        .replace(/\p{White_Space}+/gu, ' ')
+        .replace(/^ | $/gu, '');
 }
 
 function oneValue(

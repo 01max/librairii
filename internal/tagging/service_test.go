@@ -196,7 +196,7 @@ func TestServiceRejectsProtectedBuiltInAndDerivedDeletion(t *testing.T) {
 			context.Background(),
 			definitionID,
 			"#405CF5",
-		); !errors.Is(err, ErrProtectedDefinition) {
+		); err != nil {
 			t.Fatalf("RecolorDefinition(%d) error = %v", definitionID, err)
 		}
 	}

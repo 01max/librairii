@@ -182,8 +182,8 @@ func (a *App) RemoveStory(storyID int64) coreapp.RemovalResponse {
 	return a.core.RemoveStory(a.runtimeContext(), storyID)
 }
 
-func (a *App) ListShelves() coreapp.ShelfListResponse {
-	return a.core.ListShelves(a.runtimeContext())
+func (a *App) ListShelves(includeBroken bool) coreapp.ShelfListResponse {
+	return a.core.ListShelves(a.runtimeContext(), includeBroken)
 }
 
 func (a *App) CreateShelf(
@@ -225,8 +225,9 @@ func (a *App) DeleteShelf(shelfID int64) coreapp.MutationResponse {
 
 func (a *App) PreviewShelves(
 	shelfIDs []int64,
+	includeBroken bool,
 ) coreapp.ShelfSelectionPreviewResponse {
-	return a.core.PreviewShelves(a.runtimeContext(), shelfIDs)
+	return a.core.PreviewShelves(a.runtimeContext(), shelfIDs, includeBroken)
 }
 
 func (a *App) TagCatalog() coreapp.TagCatalogResponse {

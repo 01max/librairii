@@ -88,6 +88,7 @@ func (r *Resolver) ResolveCurrentQuery(
 func (r *Resolver) ResolveShelf(
 	ctx context.Context,
 	shelfID int64,
+	includeBroken ...bool,
 ) (Scope, error) {
 	if shelfID <= 0 {
 		return Scope{}, ErrInvalidScope
@@ -96,7 +97,7 @@ func (r *Resolver) ResolveShelf(
 	if err != nil {
 		return Scope{}, fmt.Errorf("open export shelf %d: %w", shelfID, err)
 	}
-	stories, err := r.library.ExportQuery(ctx, opened.Query.StoryLibraryQuery())
+	stories, err := r.library.ExportQuery(ctx, exportVisibility(opened.Query.StoryLibraryQuery(), includeBroken))
 	if err != nil {
 		return Scope{}, fmt.Errorf(
 			"%w: resolve export shelf %d: %v",
@@ -118,6 +119,7 @@ func (r *Resolver) ResolveShelf(
 func (r *Resolver) ResolveShelves(
 	ctx context.Context,
 	shelfIDs []int64,
+	includeBroken ...bool,
 ) (Scope, error) {
 	if len(shelfIDs) < 2 {
 		return Scope{}, ErrInvalidScope
@@ -145,7 +147,7 @@ func (r *Resolver) ResolveShelves(
 		if err != nil {
 			return Scope{}, fmt.Errorf("open export shelf %d: %w", shelfID, err)
 		}
-		members, err := r.library.ExportQuery(ctx, opened.Query.StoryLibraryQuery())
+		members, err := r.library.ExportQuery(ctx, exportVisibility(opened.Query.StoryLibraryQuery(), includeBroken))
 		if err != nil {
 			return Scope{}, fmt.Errorf(
 				"%w: resolve export shelf %d: %v",
@@ -186,4 +188,11 @@ func uniqueIDs(ids []int64) ([]int64, error) {
 		unique = append(unique, id)
 	}
 	return unique, nil
+}
+
+func exportVisibility(query library.StoryLibraryQuery, override []bool) library.StoryLibraryQuery {
+	if len(override) > 0 {
+		query.IncludeBroken = override[0]
+	}
+	return query
 }

@@ -111,8 +111,28 @@ func (r *Repository) Publish(staged StagedFile) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	if _, err := os.Stat(destination); err == nil {
-		return "", ErrDestinationExists
+	contained, err = creationPathContained(r.layout.Archives, destination)
+	if err != nil || !contained {
+		return "", ErrInvalidManagedPath
+	}
+	if info, err := os.Lstat(destination); err == nil {
+		if !info.Mode().IsRegular() {
+			return "", ErrDestinationExists
+		}
+		// A crash may have left the published bytes without a catalog row.
+		// The caller checks catalog identity before Publish, and exact bytes
+		// make this path safe to reuse on an import retry.
+		existingChecksum, existingSize, hashErr := hashFile(destination)
+		if hashErr != nil {
+			return "", hashErr
+		}
+		if existingChecksum != checksum || existingSize != size {
+			return "", ErrDestinationExists
+		}
+		if err := r.Cleanup(staged); err != nil {
+			return "", err
+		}
+		return filepath.ToSlash(relativePath), nil
 	} else if !errors.Is(err, os.ErrNotExist) {
 		return "", fmt.Errorf("inspect managed destination: %w", err)
 	}
