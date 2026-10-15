@@ -86,6 +86,61 @@ func TestStoryLibraryQueryNormalizesLiteralNameSearch(t *testing.T) {
 	}
 }
 
+func TestBrokenVisibilityAppliesBeforePaginationCountingAndExport(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	query, repository, connection := newLibraryQuery(t, nil)
+	damaged := createQueryableStory(t, repository, "00112233-4455-4677-8899-aabbccddeeff", "Damaged", "a")
+	healthy := createQueryableStory(t, repository, "11112222-3333-4444-8555-666677778888", "Healthy", "b")
+	broken, err := tagging.SeedBuiltIns(ctx, connection)
+	if err != nil {
+		t.Fatal(err)
+	}
+	tags, err := tagging.NewService(connection)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := tags.SetStoryBoolean(ctx, damaged.ID, broken.ID, true); err != nil {
+		t.Fatal(err)
+	}
+	for _, include := range []bool{false, true} {
+		request := StoryLibraryQuery{IncludeBroken: include, Page: 1, PageSize: 1}
+		page, err := query.Search(ctx, request)
+		if err != nil {
+			t.Fatal(err)
+		}
+		expected := 1
+		if include {
+			expected = 2
+		}
+		if page.TotalItems != expected {
+			t.Fatalf("include=%t: total=%d", include, page.TotalItems)
+		}
+		count, err := query.Count(ctx, request)
+		if err != nil || count != expected {
+			t.Fatalf("count=%d, %v", count, err)
+		}
+		exports, err := query.ExportQuery(ctx, request)
+		if err != nil || len(exports) != expected {
+			t.Fatalf("exports=%d, %v", len(exports), err)
+		}
+		if !include && (page.Stories[0].ID != healthy.ID || page.Stories[0].Broken) {
+			t.Fatalf("unexpected default result: %#v", page)
+		}
+	}
+	detail, err := query.Detail(ctx, damaged.ID)
+	if err != nil || !detail.Story.Broken {
+		t.Fatalf("broken detail: %#v, %v", detail, err)
+	}
+	if _, err := tags.SetStoryBoolean(ctx, damaged.ID, broken.ID, false); err != nil {
+		t.Fatal(err)
+	}
+	page, err := query.Search(ctx, StoryLibraryQuery{})
+	if err != nil || page.TotalItems != 2 {
+		t.Fatalf("repaired story remained hidden: %#v, %v", page, err)
+	}
+}
+
 func TestStoryLibraryQueryUsesUnicodeCaseFolding(t *testing.T) {
 	t.Parallel()
 	query, repository, database := newLibraryQuery(t, nil)
@@ -236,7 +291,7 @@ func TestStoryLibraryQueryComposesBooleanAndChoiceGroups(t *testing.T) {
 	assertQueryStoryIDs(
 		t,
 		query,
-		StoryLibraryQuery{BooleanFilters: []BooleanFilter{{
+		StoryLibraryQuery{IncludeBroken: true, BooleanFilters: []BooleanFilter{{
 			DefinitionID: broken.ID,
 			State:        BooleanTrue,
 		}}},
@@ -245,7 +300,7 @@ func TestStoryLibraryQueryComposesBooleanAndChoiceGroups(t *testing.T) {
 	assertQueryStoryIDs(
 		t,
 		query,
-		StoryLibraryQuery{BooleanFilters: []BooleanFilter{{
+		StoryLibraryQuery{IncludeBroken: true, BooleanFilters: []BooleanFilter{{
 			DefinitionID: broken.ID,
 			State:        BooleanFalse,
 		}}},
@@ -255,7 +310,7 @@ func TestStoryLibraryQueryComposesBooleanAndChoiceGroups(t *testing.T) {
 	assertQueryStoryIDs(
 		t,
 		query,
-		StoryLibraryQuery{
+		StoryLibraryQuery{IncludeBroken: true,
 			ChoiceFilters: []ChoiceFilter{
 				{DefinitionID: mood.ID, ValueIDs: []int64{calm.ID, adventure.ID}},
 				{DefinitionID: theme.ID, ValueIDs: []int64{night.ID}},
@@ -267,7 +322,7 @@ func TestStoryLibraryQueryComposesBooleanAndChoiceGroups(t *testing.T) {
 	assertQueryStoryIDs(
 		t,
 		query,
-		StoryLibraryQuery{
+		StoryLibraryQuery{IncludeBroken: true,
 			BooleanFilters: []BooleanFilter{{
 				DefinitionID: broken.ID,
 				State:        BooleanFalse,
@@ -282,7 +337,7 @@ func TestStoryLibraryQueryComposesBooleanAndChoiceGroups(t *testing.T) {
 	assertQueryStoryIDs(
 		t,
 		query,
-		StoryLibraryQuery{BooleanFilters: []BooleanFilter{{
+		StoryLibraryQuery{IncludeBroken: true, BooleanFilters: []BooleanFilter{{
 			DefinitionID: broken.ID,
 			State:        BooleanIgnored,
 		}}},
