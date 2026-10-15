@@ -58,11 +58,13 @@ for the packaged-app walkthrough.
 On the current macOS host, build and independently verify the installer with:
 
 ```sh
-make build-current-installer
-make verify-current-installer
+make dmg
 make smoke-release
 make verify-packaged-acceptance
 ```
+
+`make dmg` runs `build-current-installer` followed by `verify-current-installer`.
+Both targets can also be run individually.
 
 The packaged acceptance gate launches the installed application twice against
 an isolated data root and covers the release UI, SQLite persistence, native
