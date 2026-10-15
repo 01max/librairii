@@ -4,11 +4,21 @@ WAILS_VERSION := $(shell cat .wails-version)
 WAILS ?= $(shell go env GOPATH)/bin/wails
 GO_PACKAGES := . ./internal/... ./cmd/...
 
-.PHONY: setup fmt fmt-check vet test-go typecheck lint-frontend test-frontend test-frontend-accessibility test-frontend-performance test-frontend-release test-frontend-responsive test-frontend-visual build-frontend check build build-current-installer verify-current-installer verify-packaged-acceptance verify-platform-linux smoke-foundation smoke-first-story smoke-release
+.PHONY: setup setup-wails check-wails fmt fmt-check vet test-go typecheck lint-frontend test-frontend test-frontend-accessibility test-frontend-performance test-frontend-release test-frontend-responsive test-frontend-visual build-frontend check build build-current-installer verify-current-installer verify-packaged-acceptance verify-platform-linux smoke-foundation smoke-first-story smoke-release
 
-setup:
+setup: setup-wails
 	go mod download
 	npm --prefix frontend ci
+
+setup-wails:
+	GOBIN="$(shell go env GOPATH)/bin" go install github.com/wailsapp/wails/v2/cmd/wails@$(WAILS_VERSION)
+
+check-wails:
+	@installed="$$($(WAILS) version 2>/dev/null | head -n 1)"; \
+	if [ "$$installed" != "$(WAILS_VERSION)" ]; then \
+		printf 'Wails CLI at %s must be %s (found: %s). Run make setup-wails.\n' "$(WAILS)" "$(WAILS_VERSION)" "$${installed:-missing}" >&2; \
+		exit 1; \
+	fi
 
 fmt:
 	go fmt $(GO_PACKAGES)
@@ -53,8 +63,7 @@ build-frontend:
 
 check: build-frontend fmt-check vet test-go typecheck lint-frontend test-frontend-release test-frontend-performance
 
-build: build-frontend
-	test "$$($(WAILS) version | head -n 1)" = "$(WAILS_VERSION)"
+build: check-wails build-frontend
 	$(WAILS) build -m -nocolour
 	find frontend/wailsjs/go -type f -exec chmod 644 {} +
 

@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	_ "embed"
 	"fmt"
 	"io/fs"
 	"net/http"
@@ -17,6 +18,9 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/options/linux"
 	"github.com/wailsapp/wails/v2/pkg/options/mac"
 )
+
+//go:embed VERSION
+var applicationVersion string
 
 const (
 	applicationTitle      = "Librairii"
@@ -118,8 +122,13 @@ func productionOptions(
 		Mac: &mac.Options{
 			About: &mac.AboutInfo{
 				Title: applicationTitle,
-				Message: "A local-first story archive library for " +
-					"Lunii.QT-compatible collections.",
+				Message: fmt.Sprintf(
+					"Version %s\n\n"+
+						"A local-first story archive library for Lunii.QT-compatible collections.\n\n"+
+						"Contributors: https://github.com/01max/librairii/graphs/contributors\n\n"+
+						"Repository: https://github.com/01max/librairii",
+					strings.TrimSpace(applicationVersion),
+				),
 			},
 		},
 		Linux: &linux.Options{

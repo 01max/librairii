@@ -19,14 +19,16 @@ the architecture boundary.
 
 ## Development
 
-Install Go 1.26 or newer, the Node version recorded in `.nvmrc`, and the Wails CLI
-version recorded in `.wails-version`, then run:
+Install Go 1.26 or newer and the Node version recorded in `.nvmrc`, then run:
 
 ```sh
 make setup
 make check
 make build
 ```
+
+`make setup` installs the Wails CLI version recorded in `.wails-version`.
+After that pin changes, run `make setup-wails` to update the local CLI.
 
 With nvm, run `nvm install` and `nvm use` first to select the Node version in
 `.nvmrc`, matching CI. The frontend requires Node `^24.15.0 || >=26.0.0`.
