@@ -62,6 +62,10 @@ details. The left rail provides labeled **Library**, **Tags**, **Import**, and
 manager, Import opens the archive picker, and Export prepares the stories in
 the current view.
 
+The application fits the window height. The navigation stays in place while
+the story collection scrolls; long shelf and filter lists scroll independently
+in their sidebar.
+
 ## Export passthrough and Lunii.QT
 
 An export can snapshot any of these scopes:

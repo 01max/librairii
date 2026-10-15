@@ -67,7 +67,7 @@ const acceptanceCases = [
         name: 'at 560px',
         viewport: {width: 560, height: 900},
         expected: {
-            appDisplay: 'block',
+            appDisplay: 'grid',
             visiblePerRow: [3, 3],
             singleStoryVisible: true,
             collectionRowVisible: 6,
@@ -140,6 +140,7 @@ try {
                 actual,
                 acceptanceCase.expected,
             );
+            await assertViewportScrolling(page);
             if (acceptanceCase.name === 'above 1180px') {
                 await assertRealAgeFacetAction(page);
                 await assertFamilyBrowsingArtwork(page);
@@ -167,6 +168,79 @@ async function installFixtureQueryRecorder(page) {
             globalThis.__librairiiFixtureQueries.push(event.detail);
         });
     });
+}
+
+async function assertViewportScrolling(page) {
+    const initialViewport = page.viewportSize();
+    for (const height of [900, 520, 320]) {
+        await page.setViewportSize({...initialViewport, height});
+        const layout = await page.evaluate(() => {
+            const rail = document.querySelector('.rail');
+            const main = document.querySelector('.main');
+            return {
+                windowHeight: innerHeight,
+                documentHeight: document.documentElement.scrollHeight,
+                railTop: rail.getBoundingClientRect().top,
+                railHeight: rail.getBoundingClientRect().height,
+                mainHeight: main.clientHeight,
+                mainContentHeight: main.scrollHeight,
+                avatar: document.querySelector('.avatar, [aria-label="Local profile"]') !== null,
+            };
+        });
+        if (layout.documentHeight > height || layout.railTop !== 0 ||
+            layout.railHeight > height || layout.avatar) {
+            throw new Error(`viewport scroll regression at ${initialViewport.width}x${height}: ${JSON.stringify(layout)}`);
+        }
+        for (const action of await page.getByRole('navigation', {
+            name: 'Primary navigation',
+        }).getByRole('button').all()) {
+            const bounds = await action.boundingBox();
+            if (!bounds || bounds.y < 0 || bounds.y + bounds.height > height) {
+                throw new Error(`navigation action is clipped at ${initialViewport.width}x${height}`);
+            }
+        }
+        const main = page.locator('.main');
+        await main.evaluate((element) => { element.scrollTop = 0; });
+        await main.hover({position: {x: 10, y: 20}});
+        await page.mouse.wheel(0, 500);
+        await page.waitForFunction(() => document.querySelector('.main').scrollTop > 0);
+        const after = await page.evaluate(() => ({
+            windowScroll: window.scrollY,
+            railTop: document.querySelector('.rail').getBoundingClientRect().top,
+        }));
+        if (after.windowScroll !== 0 || after.railTop !== 0) {
+            throw new Error(`collection scrolling moved navigation: ${JSON.stringify(after)}`);
+        }
+        await page.getByRole('navigation', {name: 'Primary navigation'}).hover();
+        await page.mouse.wheel(0, 500);
+        if (await page.evaluate(() => window.scrollY !== 0 ||
+            document.querySelector('.rail').getBoundingClientRect().top !== 0)) {
+            throw new Error('wheel over navigation scrolls the application window');
+        }
+        await main.evaluate((element) => { element.scrollTop = 0; });
+        const filters = page.locator('.filters');
+        if (await filters.isVisible()) {
+            await filters.evaluate((element) => {
+                const extraFilters = document.createElement('div');
+                extraFilters.dataset.scrollFixture = '';
+                extraFilters.style.height = '1200px';
+                element.append(extraFilters);
+                element.scrollTop = 0;
+            });
+            await filters.hover({position: {x: 10, y: 20}});
+            await page.mouse.wheel(0, 500);
+            await page.waitForFunction(() => document.querySelector('.filters').scrollTop > 0);
+            if (await page.evaluate(() => window.scrollY !== 0 ||
+                document.querySelector('.rail').getBoundingClientRect().top !== 0)) {
+                throw new Error('long filter list moves navigation or the window');
+            }
+            await filters.evaluate((element) => {
+                element.querySelector('[data-scroll-fixture]').remove();
+                element.scrollTop = 0;
+            });
+        }
+    }
+    await page.setViewportSize(initialViewport);
 }
 
 async function assertFamilyBrowsingArtwork(page) {

@@ -1810,7 +1810,6 @@ function App() {
                     onImport={() => void startImport()}
                     onExport={() => void prepareExport('current_query')}
                 />
-                <div className="avatar" aria-label="Local profile">ML</div>
             </aside>
 
             <aside className="filters" aria-label="Saved shelves and refinements">

@@ -15,6 +15,11 @@ captions. Real artwork uses its intrinsic aspect ratio. The prominent first-sync
 state is available through `?fixture=first-sync`; the parity fixture uses a
 previously synced catalog. The prototype and checksum include this revision.
 
+The 2026-10-15 viewport revision removes the decorative profile badge and keeps
+the grid within the window height. Collection and filter panels scroll
+independently. Responsive checks also exercise 900px, 520px and 320px heights,
+wheel input over each panel, and navigation visibility in short windows.
+
 `npm --prefix frontend run test:visual` builds the production frontend with
 the deterministic `?fixture=parity` data, renders both the canonical HTML and
 the application in the same system Chromium process, and compares viewport
