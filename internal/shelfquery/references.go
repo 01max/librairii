@@ -36,6 +36,7 @@ type References struct {
 // Payload is the single versioned saved-query wire schema shared by shelf
 // evaluation and tag-reference planning.
 type Payload struct {
+	IncludeBroken   bool               `json:"includeBroken,omitempty"`
 	Name            string             `json:"name,omitempty"`
 	Languages       []string           `json:"languages,omitempty"`
 	Compatibilities []string           `json:"compatibilities,omitempty"`

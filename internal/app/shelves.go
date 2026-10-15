@@ -8,8 +8,8 @@ import (
 	"github.com/01max/librairii/internal/shelves"
 )
 
-func (a *Application) ListShelves(ctx context.Context) ShelfListResponse {
-	summaries, err := a.shelves.ListShelves(ctx)
+func (a *Application) ListShelves(ctx context.Context, includeBroken ...bool) ShelfListResponse {
+	summaries, err := a.shelves.ListShelves(ctx, includeBroken...)
 	if err != nil {
 		return ShelfListResponse{Error: shelfAPIError(err)}
 	}
@@ -123,8 +123,9 @@ func (a *Application) DeleteShelf(
 func (a *Application) PreviewShelves(
 	ctx context.Context,
 	shelfIDs []int64,
+	includeBroken ...bool,
 ) ShelfSelectionPreviewResponse {
-	preview, err := a.shelves.PreviewShelves(ctx, shelfIDs)
+	preview, err := a.shelves.PreviewShelves(ctx, shelfIDs, includeBroken...)
 	if err != nil {
 		return ShelfSelectionPreviewResponse{Error: shelfAPIError(err)}
 	}

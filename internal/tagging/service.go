@@ -140,11 +140,12 @@ func (s *Service) RenameDefinition(
 	if err != nil {
 		return Definition{}, err
 	}
-	return s.updateUserDefinition(
+	return s.updateDefinition(
 		ctx,
 		definitionID,
 		"label = ?, updated_at = CURRENT_TIMESTAMP",
 		label,
+		false,
 	)
 }
 
@@ -157,11 +158,12 @@ func (s *Service) RecolorDefinition(
 	if err != nil {
 		return Definition{}, err
 	}
-	return s.updateUserDefinition(
+	return s.updateDefinition(
 		ctx,
 		definitionID,
 		"color = ?, updated_at = CURRENT_TIMESTAMP",
 		color,
+		true,
 	)
 }
 
@@ -323,20 +325,25 @@ func (s *Service) DeleteDefinition(
 	return nil
 }
 
-func (s *Service) updateUserDefinition(
+func (s *Service) updateDefinition(
 	ctx context.Context,
 	definitionID int64,
 	setClause string,
 	value string,
+	allowProtected bool,
 ) (Definition, error) {
 	transaction, err := s.database.BeginTx(ctx, nil)
 	if err != nil {
 		return Definition{}, fmt.Errorf("begin tag definition update: %w", err)
 	}
 	defer transaction.Rollback()
+	where := " WHERE id = ?"
+	if !allowProtected {
+		where += " AND source = 'user'"
+	}
 	result, err := transaction.ExecContext(
 		ctx,
-		"UPDATE tag_definitions SET "+setClause+" WHERE id = ? AND source = 'user'",
+		"UPDATE tag_definitions SET "+setClause+where,
 		value,
 		definitionID,
 	)

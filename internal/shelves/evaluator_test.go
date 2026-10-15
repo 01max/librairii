@@ -92,7 +92,7 @@ func TestEvaluatorReevaluatesTagAssignmentsThroughStoryLibraryQuery(t *testing.T
 	shelf, err := harness.shelves.Create(
 		context.Background(),
 		"Broken stories",
-		library.StoryLibraryQuery{
+		library.StoryLibraryQuery{IncludeBroken: true,
 			BooleanFilters: []library.BooleanFilter{{
 				DefinitionID: broken.ID,
 				State:        library.BooleanTrue,
