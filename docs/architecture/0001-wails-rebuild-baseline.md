@@ -15,7 +15,7 @@ The only UI source of truth is:
 
 - `openspec/ui-prototypes/05-archive-shelves.html`
 - tracked CI mirror: `testdata/ui-prototypes/05-archive-shelves.html`
-- SHA-256: `50b1ec88b8a4c3e7d04f9be32f348935ddc71c449609d1719a2ee09f2ffd3017`
+- SHA-256: `aa172d807086698fc8f70d8551dc0c7a21f43d22335bdf80407501c5f645a6b6`
 - the `.app` subtree is normative
 - the `.back` gallery link is excluded from the product
 

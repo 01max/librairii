@@ -13,13 +13,15 @@ type Props = {
     verification: string;
     removing: boolean;
     error: string | null;
+    tagSelectionCount: number;
+    onEditTags: () => void;
     onClose: () => void;
     onRemove: () => void;
 };
 
 export default function StoryDetailsDialog({
     story, archive, artworkURL, coverStyle, verification,
-    removing, error, onClose, onRemove,
+    removing, error, tagSelectionCount, onEditTags, onClose, onRemove,
 }: Props) {
     const [tagWorkspace, setTagWorkspace] = useState<tagging.AssignmentWorkspace | null>(null);
     const [tagError, setTagError] = useState(false);
@@ -121,7 +123,12 @@ export default function StoryDetailsDialog({
                     </div>
                 </div>
                 <section className="story-detail-tags" aria-label="Story tags">
-                    <h4>Tags</h4>
+                    <div className="story-detail-tags-heading">
+                        <h4>Tags</h4>
+                        <button type="button" disabled={removing} onClick={onEditTags}>
+                            {tagSelectionCount > 1 ? `Edit tags for ${tagSelectionCount} stories` : 'Edit tags'}
+                        </button>
+                    </div>
                     <div className="tags">
                         {tags.map((tag) => (
                             <span className="tag" key={tag.key}>

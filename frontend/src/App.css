@@ -1627,8 +1627,26 @@ select:focus-visible {
 }
 
 .story-detail-tags h4 {
-    margin: 0 0 10px;
+    margin: 0;
     font-size: 13px;
+}
+
+.story-detail-tags-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 10px;
+}
+
+.story-detail-tags-heading button {
+    padding: 8px 12px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    color: var(--blue);
+    background: white;
+    font-size: 12px;
+    font-weight: 800;
 }
 
 .story-detail-tags .tag {

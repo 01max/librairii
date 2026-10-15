@@ -481,6 +481,7 @@ function App() {
     const activeShelfIDRef = useRef<number | null>(initialHistoryState.shelfID);
     const refreshedOperations = useRef(new Set<string>());
     const searchInput = useRef<HTMLInputElement>(null);
+    const openDetailsButton = useRef<HTMLButtonElement>(null);
     const collectionRequestGeneration = useRef(0);
     const shelfPreviewGeneration = useRef(0);
     const shelfListRequestGeneration = useRef(0);
@@ -2573,15 +2574,6 @@ function App() {
                             {selectedIDs.length > 1
                                 ? `${selectedIDs.length} stories selected`
                                 : 'My tags'}
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    setTagAssignmentStoryIDs([...selectedIDs]);
-                                    setTagAssignmentOpen(true);
-                                }}
-                            >
-                                Edit tags
-                            </button>
                         </div>
                         <div className="tags">
                             {assignedTags.map((tag) => (
@@ -2603,6 +2595,7 @@ function App() {
                     </div>
                     <div className="drawer-actions">
                         <button
+                            ref={openDetailsButton}
                             type="button"
                             onClick={() => {
                                 setRemovalError(null);
@@ -2741,7 +2734,7 @@ function App() {
                 </ModalBackdrop>
             )}
 
-            {detailsOpen && selected && (
+            {detailsOpen && selected && !tagAssignmentOpen && (
                 <StoryDetailsDialog
                     key={selected.id}
                     story={selected}
@@ -2751,7 +2744,15 @@ function App() {
                     verification={compatibilityLabel(selected.compatibility)}
                     removing={removing}
                     error={removalError}
-                    onClose={() => setDetailsOpen(false)}
+                    tagSelectionCount={selectedIDs.length}
+                    onEditTags={() => {
+                        setTagAssignmentStoryIDs([...selectedIDs]);
+                        setTagAssignmentOpen(true);
+                    }}
+                    onClose={() => {
+                        setDetailsOpen(false);
+                        openDetailsButton.current?.focus({preventScroll: true});
+                    }}
                     onRemove={() => void confirmRemoval()}
                 />
             )}
@@ -2934,6 +2935,10 @@ function App() {
                 <TagAssignmentEditor
                     storyIDs={tagAssignmentStoryIDs}
                     onClose={() => {
+                        if (selectedID === null || !tagAssignmentStoryIDs.includes(selectedID)) {
+                            setDetailsOpen(false);
+                            openDetailsButton.current?.focus({preventScroll: true});
+                        }
                         setTagAssignmentOpen(false);
                         setTagAssignmentStoryIDs([]);
                     }}

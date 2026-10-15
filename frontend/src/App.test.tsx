@@ -499,8 +499,8 @@ test('keeps interactive controls in their canonical regions', async () => {
         .toBeInTheDocument();
     expect(within(main).queryByRole('button', {name: '＋ Import stories'}))
         .not.toBeInTheDocument();
-    expect(within(drawer).getByRole('button', {name: 'Edit tags'}))
-        .toBeInTheDocument();
+    expect(within(drawer).queryByRole('button', {name: 'Edit tags'}))
+        .not.toBeInTheDocument();
     expect(within(drawer).getByRole('button', {name: 'Open details'}))
         .toBeInTheDocument();
     expect(within(drawer).getByRole('button', {name: 'Add to export →'}))
@@ -2237,6 +2237,7 @@ test('freezes assignment targets when a tag change removes stories from the filt
     render(<App/>);
     await screen.findByRole('heading', {name: 'Clockwork Forest'});
 
+    await user.click(screen.getByRole('button', {name: 'Open details'}));
     await user.click(screen.getByRole('button', {name: 'Edit tags'}));
     const broken = await screen.findByRole('checkbox', {name: 'Broken warning'});
     await user.click(broken);
@@ -2465,7 +2466,7 @@ test('dismisses story details only when clicking outside the popup', async () =>
     expect(removeStory).not.toHaveBeenCalled();
 });
 
-test('shows the selected story tags in details', async () => {
+test('shows tags and their edit action in details and returns from the tag editor', async () => {
     const user = userEvent.setup();
     loadTagAssignmentWorkspace.mockResolvedValue(new app.TagAssignmentWorkspaceResponse({
         workspace: {
@@ -2476,10 +2477,21 @@ test('shows the selected story tags in details', async () => {
         },
     }));
     render(<App/>);
+    expect(screen.queryByRole('button', {name: 'Edit tags'})).not.toBeInTheDocument();
     await user.click(await screen.findByRole('button', {name: 'Open details'}));
     const dialog = screen.getByRole('dialog', {name: 'Clockwork Forest'});
     expect(await within(dialog).findByText('Mood · Calm')).toBeInTheDocument();
     expect(loadTagAssignmentWorkspace).toHaveBeenCalledWith([1]);
+    await user.click(within(dialog).getByRole('button', {name: 'Edit tags'}));
+    const editor = await screen.findByRole('dialog', {name: 'Edit story tags'});
+    expect(screen.getAllByRole('dialog')).toHaveLength(1);
+    expect(await within(editor).findByRole('checkbox', {name: 'Calm'})).toBeChecked();
+    await user.click(within(editor).getByRole('button', {name: 'Done'}));
+    const reopened = await screen.findByRole('dialog', {name: 'Clockwork Forest'});
+    expect(await within(reopened).findByText('Mood · Calm')).toBeInTheDocument();
+    await user.keyboard('{Escape}');
+    expect(screen.queryByRole('button', {name: 'Edit tags'})).not.toBeInTheDocument();
+    expect(screen.getByRole('button', {name: 'Open details'})).toHaveFocus();
 });
 
 test('collapses choice tag filters without clearing their selection', async () => {
@@ -2554,7 +2566,7 @@ test('traps detail-dialog focus, closes with Escape, and restores its opener', a
     await user.tab();
     expect(cancel).toHaveFocus();
     await user.tab();
-    expect(within(dialog).getByRole('button', {name: 'Show technical details'})).toHaveFocus();
+    expect(within(dialog).getByRole('button', {name: 'Edit tags'})).toHaveFocus();
 
     await user.keyboard('{Escape}');
     expect(screen.queryByRole('dialog', {name: 'Clockwork Forest'}))
@@ -2602,7 +2614,8 @@ test('keeps bulk selection in the collection and exposes updated tag chips', asy
 
     expect(first).toHaveAttribute('aria-pressed', 'true');
     expect(second).toHaveAttribute('aria-pressed', 'true');
-    await user.click(screen.getByRole('button', {name: 'Edit tags'}));
+    await user.click(screen.getByRole('button', {name: 'Open details'}));
+    await user.click(screen.getByRole('button', {name: 'Edit tags for 2 stories'}));
     expect(await screen.findByRole('heading', {name: 'Edit tags for 2 stories'}))
         .toBeInTheDocument();
 });

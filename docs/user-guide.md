@@ -43,6 +43,10 @@ the story details. Details open at the beginning of the description, including
 when you reopen a long story. Click outside an application popup
 to close it, or use its Close button or Escape key.
 
+Choose **Edit tags** inside the story details popup to change assignments.
+Closing the tag editor returns to the details with the current tags. The index
+shows assigned tags without an edit action.
+
 Choose **Show technical details** to inspect the story UUID, archive filename,
 verification status, and full checksum. **Hide technical details** folds them
 away again.

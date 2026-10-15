@@ -172,8 +172,15 @@ async function installFixtureQueryRecorder(page) {
 }
 
 async function assertPopupInteractions(page) {
+    if (await page.getByRole('button', {name: 'Edit tags', exact: true}).count()) {
+        throw new Error('Edit tags is still visible on the index');
+    }
     await page.getByRole('button', {name: 'Open details', exact: true}).click();
     const details = page.getByRole('dialog');
+    await details.getByRole('region', {name: 'Story tags'}).getByText('Age · 3–5', {exact: true}).waitFor();
+    await details.getByRole('button', {name: 'Edit tags', exact: true}).click();
+    const editor = page.getByRole('dialog', {name: 'Edit story tags'});
+    await editor.getByRole('button', {name: 'Done', exact: true}).click();
     await details.getByRole('region', {name: 'Story tags'}).getByText('Age · 3–5', {exact: true}).waitFor();
     await details.getByRole('heading', {name: 'The Little Prince'}).click();
     if (!await details.isVisible()) throw new Error('inside click dismissed story details');
