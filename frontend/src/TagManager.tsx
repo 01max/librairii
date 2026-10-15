@@ -1,3 +1,4 @@
+import ModalBackdrop from './ModalBackdrop';
 import {
     type CSSProperties,
     type FormEvent,
@@ -65,7 +66,7 @@ function DeletionConfirmation({
     const initialFocus = useRef<HTMLButtonElement>(null);
     useModalFocus(dialog, initialFocus);
     return (
-        <div className="dialog-backdrop confirmation-backdrop">
+        <ModalBackdrop className="confirmation-backdrop" onDismiss={onCancel} disabled={busy}>
             <section
                 ref={dialog}
                 className="detail-dialog"
@@ -101,7 +102,7 @@ function DeletionConfirmation({
                     </button>
                 </div>
             </section>
-        </div>
+        </ModalBackdrop>
     );
 }
 
@@ -281,7 +282,7 @@ export default function TagManager({onClose, onCatalogChange}: TagManagerProps) 
     ) ?? [];
 
     return (
-        <div className="dialog-backdrop tag-manager-backdrop">
+        <ModalBackdrop className="tag-manager-backdrop" onDismiss={onClose} disabled={busy || deletion !== null}>
             <section
                 ref={dialog}
                 className="tag-manager"
@@ -348,9 +349,20 @@ export default function TagManager({onClose, onCatalogChange}: TagManagerProps) 
                                 </div>
 
                                 {definition.protected ? (
-                                    <p className="protected-note">
-                                        Managed by Librairii and shown with a text label as well as color.
-                                    </p>
+                                    <form className="tag-edit protected-color" onSubmit={(event) => {
+                                        event.preventDefault();
+                                        const color = String(new FormData(event.currentTarget).get('color'));
+                                        if (color.toUpperCase() !== definition.color.toUpperCase()) {
+                                            void run(() => RecolorTagDefinition(definition.id, color));
+                                        }
+                                    }}>
+                                        <p className="protected-note">Managed by Librairii. You can change its color.</p>
+                                        <label>
+                                            Color
+                                            <input type="color" name="color" aria-label={`Color for ${definition.label}`} defaultValue={definition.color}/>
+                                        </label>
+                                        <button type="submit" disabled={busy}>Save {definition.label} color</button>
+                                    </form>
                                 ) : (
                                     <>
                                         <form
@@ -467,6 +479,6 @@ export default function TagManager({onClose, onCatalogChange}: TagManagerProps) 
                     onConfirm={() => void confirmDeletion()}
                 />
             )}
-        </div>
+        </ModalBackdrop>
     );
 }

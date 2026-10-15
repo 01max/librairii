@@ -110,6 +110,48 @@ func TestStageUsesUniqueDirectoriesAndCleansCancellation(t *testing.T) {
 	}
 }
 
+func TestPublishReusesOnlyMatchingManagedBytes(t *testing.T) {
+	t.Parallel()
+	repository, _ := newTestRepository(t)
+	source := filepath.Join(t.TempDir(), "story.pk")
+	if err := os.WriteFile(source, []byte("original"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	first, err := repository.Stage(context.Background(), source)
+	if err != nil {
+		t.Fatal(err)
+	}
+	relative, err := repository.Publish(first)
+	if err != nil {
+		t.Fatal(err)
+	}
+	matching, err := repository.Stage(context.Background(), source)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if reused, err := repository.Publish(matching); err != nil || reused != relative {
+		t.Fatalf("Publish(matching) = %q, %v", reused, err)
+	}
+	if _, err := os.Stat(matching.Directory); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("matching staged directory remains: %v", err)
+	}
+	managed, err := repository.Resolve(relative)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(managed, []byte("modified"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	conflicting, err := repository.Stage(context.Background(), source)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = repository.Cleanup(conflicting) })
+	if _, err := repository.Publish(conflicting); !errors.Is(err, ErrDestinationExists) {
+		t.Fatalf("Publish(conflicting) error = %v", err)
+	}
+}
+
 func TestPublishRejectsChangedStagingBytes(t *testing.T) {
 	t.Parallel()
 

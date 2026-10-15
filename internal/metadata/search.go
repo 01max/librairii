@@ -14,27 +14,29 @@ func BackfillNormalizedTitles(ctx context.Context, database *sql.DB) error {
 	}
 	rows, err := database.QueryContext(
 		ctx,
-		`SELECT id, COALESCE(title, '')
+		`SELECT id, COALESCE(title, ''), title_normalized
 		 FROM official_story_metadata
-		 WHERE title_normalized = ''
 		 ORDER BY id`,
 	)
 	if err != nil {
 		return fmt.Errorf("list official titles for normalization: %w", err)
 	}
 	type update struct {
-		id    int64
-		title string
+		id         int64
+		title      string
+		normalized string
 	}
 	var updates []update
 	for rows.Next() {
 		var item update
-		if err := rows.Scan(&item.id, &item.title); err != nil {
+		if err := rows.Scan(&item.id, &item.title, &item.normalized); err != nil {
 			_ = rows.Close()
 			return fmt.Errorf("scan official title for normalization: %w", err)
 		}
 		item.title = searchtext.Normalize(item.title)
-		updates = append(updates, item)
+		if item.title != item.normalized {
+			updates = append(updates, item)
+		}
 	}
 	if err := rows.Close(); err != nil {
 		return fmt.Errorf("close official title rows: %w", err)

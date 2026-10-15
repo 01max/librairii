@@ -381,6 +381,7 @@ func (o *fakeOperations) SetBulkChoiceValue(
 
 func (o *fakeOperations) ListShelves(
 	context.Context,
+	...bool,
 ) ([]shelves.Summary, error) {
 	return nil, o.err
 }
@@ -439,6 +440,7 @@ func (o *fakeOperations) DeleteShelf(context.Context, int64) error {
 func (o *fakeOperations) PreviewShelves(
 	context.Context,
 	[]int64,
+	...bool,
 ) (shelves.SelectionPreview, error) {
 	return shelves.SelectionPreview{}, o.err
 }
