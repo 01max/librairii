@@ -14,7 +14,7 @@ import (
 const (
 	AgeDefinitionKey      = "age"
 	AgeDefinitionLabel    = "Age"
-	AgeDefinitionColor    = "#FF705C"
+	AgeDefinitionColor    = "#267D5D"
 	AgeDefinitionPosition = 0
 )
 
@@ -346,7 +346,6 @@ func ensureAgeFacet(
 	if key != AgeDefinitionKey ||
 		normalizedKey != AgeDefinitionKey ||
 		label != AgeDefinitionLabel ||
-		color != AgeDefinitionColor ||
 		kind != tagging.KindChoice ||
 		source != tagging.SourceDerived ||
 		presentation != tagging.PresentationSystem ||

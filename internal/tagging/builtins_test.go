@@ -10,6 +10,54 @@ import (
 	"github.com/01max/librairii/internal/database"
 )
 
+func TestColorMigrationUpgradesExistingProtectedTags(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	connection := openTaggingDatabase(t)
+	broken, err := SeedBuiltIns(ctx, connection)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := connection.Exec(`INSERT INTO tag_definitions
+        (key, normalized_key, label, color, kind, source, presentation, position, is_protected)
+        VALUES ('age', 'age', 'Age', '#FF705C', 'choice', 'derived', 'system', 0, 1)`); err != nil {
+		t.Fatal(err)
+	}
+	legacy, err := os.ReadFile("../database/migrations/005_protected_broken_tag.sql")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := connection.Exec(`DROP TRIGGER protected_broken_requires_canonical_insert;
+        DROP TRIGGER protected_broken_rejects_update;
+        DROP TRIGGER protected_broken_rejects_delete;` + string(legacy)); err != nil {
+		t.Fatal(err)
+	}
+	upgrade, err := os.ReadFile("../database/migrations/014_tag_colors.sql")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := connection.Exec(string(upgrade)); err != nil {
+		t.Fatal(err)
+	}
+	var ageColor string
+	if err := connection.QueryRow("SELECT color FROM tag_definitions WHERE normalized_key = 'age'").Scan(&ageColor); err != nil {
+		t.Fatal(err)
+	}
+	if ageColor != "#267D5D" {
+		t.Fatalf("migrated age color = %s", ageColor)
+	}
+	service, err := NewService(connection)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := service.RecolorDefinition(ctx, broken.ID, "#405CF5"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := SeedBuiltIns(ctx, connection); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestSeedBuiltInsCreatesExactlyOneCanonicalBrokenDefinition(t *testing.T) {
 	t.Parallel()
 
@@ -71,12 +119,13 @@ func TestProtectedBrokenDefinitionCannotDriftOrGainValues(t *testing.T) {
 		"UPDATE tag_definitions SET presentation = 'default' WHERE id = ?",
 		broken.ID,
 	)
-	assertProtectedMutationFails(
-		t,
-		connection,
-		"UPDATE tag_definitions SET color = '#405CF5' WHERE id = ?",
-		broken.ID,
-	)
+	if _, err := connection.Exec("UPDATE tag_definitions SET color = '#405CF5' WHERE id = ?", broken.ID); err != nil {
+		t.Fatal(err)
+	}
+	recolored, err := SeedBuiltIns(context.Background(), connection)
+	if err != nil || recolored.Color != "#405CF5" {
+		t.Fatalf("reseed changed color: %#v, %v", recolored, err)
+	}
 	assertProtectedMutationFails(
 		t,
 		connection,
