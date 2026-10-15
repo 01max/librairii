@@ -103,19 +103,12 @@ func NormalizeCatalogSnapshot(
 			return NormalizedCatalog{}, catalogError("catalog record has no localized metadata")
 		}
 
-		localizedBody, found, err := localizedValue(record.LocalizedInfos, locale)
-		if err != nil {
-			return NormalizedCatalog{}, err
-		}
-		available, err := localeAvailable(record.LocalesAvailable, locale)
+		localizedBody, storyLocale, found, err := selectLocalizedValue(record, locale)
 		if err != nil {
 			return NormalizedCatalog{}, err
 		}
 		if !found {
 			continue
-		}
-		if !available {
-			return NormalizedCatalog{}, catalogError("localized metadata is not declared available")
 		}
 		if _, exists := seenUUIDs[storyUUID]; exists {
 			return NormalizedCatalog{}, catalogError("catalog contains a duplicate story UUID")
@@ -127,7 +120,7 @@ func NormalizeCatalogSnapshot(
 			localizedBody,
 			sourceID,
 			storyUUID,
-			locale,
+			storyLocale,
 		)
 		if err != nil {
 			return NormalizedCatalog{}, err
@@ -143,7 +136,7 @@ func NormalizeCatalogSnapshot(
 		}
 	}
 	if len(normalized) == 0 {
-		return NormalizedCatalog{}, catalogError("catalog contains no records for the requested locale")
+		return NormalizedCatalog{}, catalogError("catalog contains no available localized records")
 	}
 	artworkIDs := make([]string, 0, len(artworks))
 	for id := range artworks {
@@ -211,6 +204,11 @@ func normalizeStory(
 	)
 	if err != nil {
 		return NewOfficialStoryMetadata{}, nil, err
+	}
+	// The live catalog uses -1 for an open-ended upper age. Store it as
+	// unspecified while continuing to reject other negative ages.
+	if maximumAge != nil && *maximumAge == -1 {
+		maximumAge = nil
 	}
 	if duration != nil && *duration < 0 {
 		return NewOfficialStoryMetadata{}, nil, catalogError("negative story duration")
@@ -298,55 +296,64 @@ func canonicalUUID(value string) (string, error) {
 	return parsed.String(), nil
 }
 
-func localizedValue(
-	values map[string]json.RawMessage,
-	locale string,
-) (json.RawMessage, bool, error) {
-	var selected json.RawMessage
-	found := false
-	for key, value := range values {
-		canonical, err := canonicalLocale(key)
+func selectLocalizedValue(
+	record rawCatalogRecord,
+	preferredLocale string,
+) (json.RawMessage, string, bool, error) {
+	available := make(map[string]bool, len(record.LocalesAvailable))
+	for key, value := range record.LocalesAvailable {
+		locale, err := canonicalLocale(key)
 		if err != nil {
-			return nil, false, catalogError("invalid localized metadata locale")
+			return nil, "", false, catalogError("invalid available locale")
 		}
-		if canonical != locale {
-			continue
+		if _, exists := available[locale]; exists {
+			return nil, "", false, catalogError("ambiguous available locale")
 		}
-		if found {
-			return nil, false, catalogError("ambiguous localized metadata locale")
-		}
-		selected = value
-		found = true
-	}
-	return selected, found, nil
-}
-
-func localeAvailable(
-	values map[string]json.RawMessage,
-	locale string,
-) (bool, error) {
-	found := false
-	available := false
-	for key, value := range values {
-		canonical, err := canonicalLocale(key)
-		if err != nil {
-			return false, catalogError("invalid available locale")
-		}
-		if canonical != locale {
-			continue
-		}
-		if found {
-			return false, catalogError("ambiguous available locale")
-		}
-		found = true
 		var declaration *bool
-		if err := json.Unmarshal(value, &declaration); err != nil ||
-			declaration == nil {
-			return false, catalogError("invalid available locale declaration")
+		if err := json.Unmarshal(value, &declaration); err != nil || declaration == nil {
+			return nil, "", false, catalogError("invalid available locale declaration")
 		}
-		available = *declaration
+		available[locale] = *declaration
 	}
-	return found && available, nil
+
+	localized := make(map[string]json.RawMessage, len(record.LocalizedInfos))
+	locales := make([]string, 0, len(record.LocalizedInfos))
+	for key, value := range record.LocalizedInfos {
+		locale, err := canonicalLocale(key)
+		if err != nil {
+			return nil, "", false, catalogError("invalid localized metadata locale")
+		}
+		if _, exists := localized[locale]; exists {
+			return nil, "", false, catalogError("ambiguous localized metadata locale")
+		}
+		localized[locale] = value
+		if available[locale] {
+			locales = append(locales, locale)
+		}
+	}
+	if len(locales) == 0 {
+		return nil, "", false, nil
+	}
+
+	preferredLanguage, _, _ := strings.Cut(preferredLocale, "-")
+	sort.Slice(locales, func(i, j int) bool {
+		rank := func(locale string) int {
+			if locale == preferredLocale {
+				return 0
+			}
+			language, _, _ := strings.Cut(locale, "-")
+			if language == preferredLanguage {
+				return 1
+			}
+			return 2
+		}
+		if rank(locales[i]) != rank(locales[j]) {
+			return rank(locales[i]) < rank(locales[j])
+		}
+		return locales[i] < locales[j]
+	})
+	selected := locales[0]
+	return localized[selected], selected, true, nil
 }
 
 func requiredString(

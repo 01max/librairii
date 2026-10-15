@@ -115,10 +115,11 @@ func (r PreflightReport) OperationItems() []operations.ExportWorkItem {
 }
 
 type PreflightRequest struct {
-	SourceType operations.ExportSourceType `json:"sourceType"`
-	StoryIDs   []int64                     `json:"storyIds,omitempty"`
-	Query      library.StoryLibraryQuery   `json:"query"`
-	ShelfIDs   []int64                     `json:"shelfIds,omitempty"`
+	IncludeBroken bool                        `json:"includeBroken"`
+	SourceType    operations.ExportSourceType `json:"sourceType"`
+	StoryIDs      []int64                     `json:"storyIds,omitempty"`
+	Query         library.StoryLibraryQuery   `json:"query"`
+	ShelfIDs      []int64                     `json:"shelfIds,omitempty"`
 }
 
 type PreflightService struct {
@@ -182,9 +183,9 @@ func (s *PreflightService) resolve(
 		if len(request.ShelfIDs) != 1 {
 			return Scope{}, ErrInvalidScope
 		}
-		return s.resolver.ResolveShelf(ctx, request.ShelfIDs[0])
+		return s.resolver.ResolveShelf(ctx, request.ShelfIDs[0], request.IncludeBroken)
 	case operations.ExportSourceShelves:
-		return s.resolver.ResolveShelves(ctx, request.ShelfIDs)
+		return s.resolver.ResolveShelves(ctx, request.ShelfIDs, request.IncludeBroken)
 	default:
 		return Scope{}, ErrInvalidScope
 	}

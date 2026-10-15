@@ -1,9 +1,12 @@
 package main
 
 import (
+	"encoding/json"
 	"os"
 	"strings"
 	"testing"
+
+	"github.com/01max/librairii/internal/performancefixture"
 )
 
 func TestUserGuideCoversReleaseBehavior(t *testing.T) {
@@ -52,16 +55,15 @@ func TestReleaseMatrixHasIndependentPlatformTasks(t *testing.T) {
 	}
 	matrix := string(body)
 	required := []string{
-		"Windows x64",
-		"make verify-platform-windows",
-		"scripts/verify-platform-windows.ps1",
+		"macOS 15, arm64",
+		"make verify-packaged-acceptance",
 		"Linux x64 with WebKitGTK 4.1",
 		"make verify-platform-linux",
 		"scripts/verify-platform-linux",
 		"launch the actual packaged",
 		"create and reopen SQLite",
-		"host-native dialog and reveal acceptance",
-		"complete headless\nstory-library smoke",
+		"host-native dialog",
+		"complete headless story-library smoke",
 		".github/workflows/platform-release.yml",
 	}
 	for _, fragment := range required {
@@ -72,28 +74,11 @@ func TestReleaseMatrixHasIndependentPlatformTasks(t *testing.T) {
 
 	implementationFiles := map[string][]string{
 		".github/workflows/platform-release.yml": {
-			"runs-on: windows-2025",
 			"runs-on: ubuntu-24.04",
 			"dbus-x11",
 			"pcmanfm",
 			"procps",
-			"scripts/verify-platform-windows.ps1",
 			"scripts/verify-platform-linux",
-		},
-		"scripts/verify-platform-windows.ps1": {
-			"-platform windows/amd64",
-			"-nsis",
-			"InstalledBinary",
-			"uninstall.exe",
-			"uninstall-retention.txt",
-			"LIBRAIRII_PACKAGED_ACCEPTANCE",
-			"scenario_started",
-			"native_import_dialog_selected",
-			"native_destination_dialog_selected",
-			"native_reveal_succeeded",
-			"./cmd/foundation-smoke",
-			"./internal/platform",
-			"./cmd/release-smoke",
 		},
 		"scripts/verify-platform-linux": {
 			"-platform linux/amd64",
@@ -125,10 +110,9 @@ func TestReleaseMatrixHasIndependentPlatformTasks(t *testing.T) {
 		"packaged_acceptance_native_linux.go": {
 			"GTK_IS_FILE_CHOOSER",
 			"gtk_file_chooser_select_filename",
-		},
-		"packaged_acceptance_native_windows.go": {
-			"FindWindowW",
-			"SendInput",
+			"gtk_file_chooser_set_current_folder",
+			"selectionReady",
+			"gtk_widget_get_mapped",
 		},
 		"scripts/run-linux-native-acceptance": {
 			"/proc/$file_manager_pid/comm",
@@ -160,14 +144,120 @@ func TestReleaseMatrixHasIndependentPlatformTasks(t *testing.T) {
 			}
 		}
 	}
-	windowsScript, err := os.ReadFile("scripts/verify-platform-windows.ps1")
+}
+
+func TestBuildEntrypointsGenerateFrontendBeforeGoConsumesEmbed(t *testing.T) {
+	t.Parallel()
+
+	makefile, err := os.ReadFile("Makefile")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if strings.Contains(string(windowsScript), "-windowsconsole") {
-		t.Error("Windows release verifier builds a console-subsystem executable")
+	for _, target := range []string{
+		"check: build-frontend",
+		"build: build-frontend",
+		"build-current-installer: build-frontend",
+		"verify-platform-linux: build-frontend",
+	} {
+		if !strings.Contains(string(makefile), target) {
+			t.Errorf("Makefile does not declare %q", target)
+		}
 	}
-	if !strings.Contains(string(windowsScript), "0x0002") {
-		t.Error("Windows release verifier does not enforce the GUI PE subsystem")
+
+	entrypoints := []struct {
+		path       string
+		frontend   string
+		goConsumer string
+	}{
+		{
+			path:       "scripts/build-current-installer",
+			frontend:   "npm --prefix frontend run build",
+			goConsumer: `"$wails_cli" build`,
+		},
+		{
+			path:       "scripts/verify-platform-linux",
+			frontend:   "npm --prefix frontend run build",
+			goConsumer: `"$wails_cli" build`,
+		},
+	}
+	for _, entrypoint := range entrypoints {
+		body, readErr := os.ReadFile(entrypoint.path)
+		if readErr != nil {
+			t.Errorf("read %s: %v", entrypoint.path, readErr)
+			continue
+		}
+		contents := string(body)
+		frontendIndex := strings.Index(contents, entrypoint.frontend)
+		goConsumerIndex := strings.Index(contents, entrypoint.goConsumer)
+		if frontendIndex < 0 {
+			t.Errorf("%s does not build the frontend", entrypoint.path)
+			continue
+		}
+		if goConsumerIndex < 0 {
+			t.Errorf("%s does not contain the Wails build", entrypoint.path)
+			continue
+		}
+		if frontendIndex > goConsumerIndex {
+			t.Errorf("%s builds the frontend after Wails consumes the embed", entrypoint.path)
+		}
+	}
+}
+
+func TestPerformanceFixturesSeparateBrowserAndBackendScale(t *testing.T) {
+	t.Parallel()
+
+	body, err := os.ReadFile("frontend/performance-config.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var config struct {
+		BrowserStoryCount int `json:"browserStoryCount"`
+	}
+	if err := json.Unmarshal(body, &config); err != nil {
+		t.Fatal(err)
+	}
+	if config.BrowserStoryCount != 1_000 {
+		t.Fatalf(
+			"browser performance story count = %d, want 1000",
+			config.BrowserStoryCount,
+		)
+	}
+	if performancefixture.MinimumLargeLibraryStories < 5_000 {
+		t.Fatalf(
+			"backend performance story count = %d, want at least 5000",
+			performancefixture.MinimumLargeLibraryStories,
+		)
+	}
+}
+
+func TestFrontendPerformanceGatesProductCoupledMetricsOnly(t *testing.T) {
+	t.Parallel()
+
+	body, err := os.ReadFile("frontend/scripts/frontend-performance.mjs")
+	if err != nil {
+		t.Fatal(err)
+	}
+	contents := string(body)
+	for _, expected := range []string{
+		"const acceptanceBudgets = {",
+		"inputDelayP95Milliseconds: 100,",
+		"const diagnosticThresholds = {",
+		"expansionP95Milliseconds <=\n                acceptanceBudgets.expansionP95Milliseconds",
+		"inputDelayP95Milliseconds <=\n                acceptanceBudgets.inputDelayP95Milliseconds",
+	} {
+		if !strings.Contains(contents, expected) {
+			t.Errorf("frontend performance gate is missing %q", expected)
+		}
+	}
+	for _, schedulerPredicate := range []string{
+		"frameGapP95Milliseconds <=",
+		"timerDelayP95Milliseconds <=",
+	} {
+		if strings.Contains(contents, schedulerPredicate) {
+			t.Errorf(
+				"frontend performance gate treats host scheduler metric as acceptance: %q",
+				schedulerPredicate,
+			)
+		}
 	}
 }

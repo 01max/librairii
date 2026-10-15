@@ -14,17 +14,38 @@ Functional scope comes only from:
 The only UI source of truth is:
 
 - `openspec/ui-prototypes/05-archive-shelves.html`
-- SHA-256: `19119b85ed820e1893020347ad5015bbed173ef8c8e6e1164405d83f1b5f00f9`
+- tracked CI mirror: `testdata/ui-prototypes/05-archive-shelves.html`
+- SHA-256: `aa172d807086698fc8f70d8551dc0c7a21f43d22335bdf80407501c5f645a6b6`
 - the `.app` subtree is normative
 - the `.back` gallery link is excluded from the product
 
-`prototype_contract_test.go` verifies the checksum and both subtree markers on
-every Go test run. The frontend `?fixture=parity` bridge is deterministic and
-records every sample shelf, cover title, count, selection, fact, tag, and
-archive detail from that exact file.
+`prototype_contract_test.go` verifies the tracked mirror's checksum and both
+subtree markers on every Go test run. The frontend `?fixture=parity` bridge is
+deterministic and records every sample shelf, cover title, count, selection,
+fact, tag, and archive detail from that exact file.
 
 The Rails screens and Tauri shell are implementation history, not product or
 visual references.
+
+The 2026-10-14 user-requested browsing revision updates the visual contract for
+labeled, working Library/Tags/Import/Export actions, the central official Lunii
+sync prompt and last-successful-sync timestamp, and image-only story buttons
+with external title captions. Image buttons follow intrinsic artwork ratios.
+The original sidebar and drawer layout remain the baseline. Story details now
+show artwork and readable descriptions, with technical data behind a toggle
+and removal behind a separate confirmation.
+
+The 2026-10-15 viewport revision bounds the application grid to the window
+height and makes collection and filter panels scroll independently. The
+nonfunctional profile badge is removed; the navigation remains visible while
+either content panel scrolls.
+
+The popup/tag revision treats broken-story inclusion as a query option applied
+before pagination and counting, including shelf previews and current-view
+exports. Summary records carry the broken state for accessible badges. Protected
+tag identities remain fixed while colors are user-editable and preserved by
+startup seeding and metadata projection. Migration 014 relaxes only color
+updates and changes the previous default age color to green.
 
 ## Tracked removal allowlist
 

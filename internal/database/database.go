@@ -211,14 +211,22 @@ func writableDSN(path string) string {
 	query.Add("_pragma", "foreign_keys(1)")
 	query.Add("_pragma", "journal_mode(WAL)")
 	query.Add("_pragma", fmt.Sprintf("busy_timeout(%d)", busyTimeoutMilliseconds))
-	return (&url.URL{Scheme: "file", Path: filepath.Clean(path), RawQuery: query.Encode()}).String()
+	return sqliteFileDSN(path, query)
 }
 
 func readOnlyDSN(path string) string {
 	query := url.Values{}
 	query.Set("mode", "ro")
 	query.Add("_pragma", "query_only(1)")
-	return (&url.URL{Scheme: "file", Path: filepath.Clean(path), RawQuery: query.Encode()}).String()
+	return sqliteFileDSN(path, query)
+}
+
+func sqliteFileDSN(path string, query url.Values) string {
+	return (&url.URL{
+		Scheme:   "file",
+		Path:     filepath.ToSlash(filepath.Clean(path)),
+		RawQuery: query.Encode(),
+	}).String()
 }
 
 func pendingMigrations(

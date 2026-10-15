@@ -142,7 +142,7 @@ func validateEntryPath(name string, limits Limits) error {
 		clean == "." ||
 		clean == ".." ||
 		strings.HasPrefix(clean, "../") ||
-		hasWindowsDrivePrefix(normalized) {
+		hasDriveLetterPrefix(normalized) {
 		return &ValidationError{Code: CodeUnsafePath, Entry: name}
 	}
 
@@ -158,7 +158,7 @@ func validateEntryPath(name string, limits Limits) error {
 	return nil
 }
 
-func hasWindowsDrivePrefix(name string) bool {
+func hasDriveLetterPrefix(name string) bool {
 	return len(name) >= 2 &&
 		((name[0] >= 'A' && name[0] <= 'Z') || (name[0] >= 'a' && name[0] <= 'z')) &&
 		name[1] == ':'

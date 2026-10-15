@@ -100,6 +100,41 @@ func TestImportIsIdempotentByExactChecksum(t *testing.T) {
 	assertDirectoryEmpty(t, layout.Staging)
 }
 
+func TestImportRetriesAfterArchivePublicationWithoutCatalogRecord(t *testing.T) {
+	t.Parallel()
+	service, repository, archives, layout, sqlDatabase := newTestService(t)
+	source := writeFixture(t, testfixture.GenericZIP())
+	staged, err := archives.Stage(context.Background(), source)
+	if err != nil {
+		t.Fatal(err)
+	}
+	managedPath, err := archives.Publish(staged)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := archives.CleanupAbandoned(); err != nil {
+		t.Fatal(err)
+	}
+	if count := countRows(t, sqlDatabase, "stories"); count != 0 {
+		t.Fatalf("story count before retry = %d", count)
+	}
+	outcome, err := service.Import(context.Background(), source)
+	if err != nil {
+		t.Fatalf("Import(retry) error = %v", err)
+	}
+	if outcome.Code != OutcomeImported {
+		t.Fatalf("Import(retry) = %#v", outcome)
+	}
+	_, storyArchive, err := repository.FindByChecksum(context.Background(), outcome.Checksum)
+	if err != nil || storyArchive.ManagedPath != managedPath {
+		t.Fatalf("catalog archive = %#v, %v", storyArchive, err)
+	}
+	if count := countManagedArchives(t, layout.Archives); count != 1 {
+		t.Fatalf("managed archive count = %d", count)
+	}
+	assertDirectoryEmpty(t, layout.Staging)
+}
+
 func TestConcurrentExactImportsShareOneWriterLane(t *testing.T) {
 	t.Parallel()
 

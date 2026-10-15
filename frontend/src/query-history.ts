@@ -26,12 +26,14 @@ function sameMembershipCriteria(
     right: CollectionQuery,
 ): boolean {
     return JSON.stringify([
+        left.includeBroken ?? false,
         left.name,
         left.languages,
         left.compatibilities,
         left.booleanFilters,
         left.choiceFilters,
     ]) === JSON.stringify([
+        right.includeBroken ?? false,
         right.name,
         right.languages,
         right.compatibilities,

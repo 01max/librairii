@@ -1,3 +1,4 @@
+import ModalBackdrop from './ModalBackdrop';
 import {
     type ChangeEvent,
     type CSSProperties,
@@ -132,7 +133,7 @@ export default function TagAssignmentEditor({
     );
 
     return (
-        <div className="dialog-backdrop">
+        <ModalBackdrop onDismiss={onClose} disabled={busy}>
             <section
                 ref={dialog}
                 className="assignment-editor"
@@ -271,6 +272,6 @@ export default function TagAssignmentEditor({
                     <button type="button" onClick={onClose}>Done</button>
                 </div>
             </section>
-        </div>
+        </ModalBackdrop>
     );
 }

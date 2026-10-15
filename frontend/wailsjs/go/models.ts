@@ -851,6 +851,7 @@ export namespace exporter {
 		}
 	}
 	export class PreflightRequest {
+	    includeBroken: boolean;
 	    sourceType: string;
 	    storyIds?: number[];
 	    query: library.StoryLibraryQuery;
@@ -862,6 +863,7 @@ export namespace exporter {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.includeBroken = source["includeBroken"];
 	        this.sourceType = source["sourceType"];
 	        this.storyIds = source["storyIds"];
 	        this.query = this.convertValues(source["query"], library.StoryLibraryQuery);
@@ -1020,6 +1022,7 @@ export namespace library {
 	    }
 	}
 	export class ListRequest {
+	    includeBroken: boolean;
 	    page: number;
 	    pageSize: number;
 	    sort: string;
@@ -1030,6 +1033,7 @@ export namespace library {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.includeBroken = source["includeBroken"];
 	        this.page = source["page"];
 	        this.pageSize = source["pageSize"];
 	        this.sort = source["sort"];
@@ -1068,6 +1072,7 @@ export namespace library {
 	    }
 	}
 	export class StorySummary {
+	    broken: boolean;
 	    id: number;
 	    uuid: string;
 	    title: string;
@@ -1088,6 +1093,7 @@ export namespace library {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.broken = source["broken"];
 	        this.id = source["id"];
 	        this.uuid = source["uuid"];
 	        this.title = source["title"];
@@ -1194,6 +1200,7 @@ export namespace library {
 		}
 	}
 	export class StoryLibraryQuery {
+	    includeBroken?: boolean;
 	    name: string;
 	    languages: string[];
 	    compatibilities: string[];
@@ -1209,6 +1216,7 @@ export namespace library {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.includeBroken = source["includeBroken"];
 	        this.name = source["name"];
 	        this.languages = source["languages"];
 	        this.compatibilities = source["compatibilities"];
@@ -1410,6 +1418,7 @@ export namespace removal {
 export namespace shelves {
 	
 	export class SavedLibraryQuery {
+	    includeBroken?: boolean;
 	    name?: string;
 	    languages?: string[];
 	    compatibilities?: string[];
@@ -1422,6 +1431,7 @@ export namespace shelves {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.includeBroken = source["includeBroken"];
 	        this.name = source["name"];
 	        this.languages = source["languages"];
 	        this.compatibilities = source["compatibilities"];

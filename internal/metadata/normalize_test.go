@@ -47,6 +47,95 @@ func TestNormalizeCatalogSelectsLocaleAndNormalizesSupportedFields(t *testing.T)
 	}
 }
 
+func TestNormalizeCatalogTreatsOpenEndedMaximumAgeAsUnspecified(t *testing.T) {
+	t.Parallel()
+	payload, err := json.Marshal(map[string]any{"response": map[string]any{
+		"pack": map[string]any{
+			"uuid":              "123e4567-e89b-42d3-a456-426614174000",
+			"locales_available": map[string]any{"en_GB": true},
+			"localized_infos": map[string]any{"en_GB": map[string]any{
+				"title":   "Synthetic story",
+				"age_min": 3,
+				"age_max": -1,
+			}},
+		},
+	}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	catalog, err := NormalizeCatalogSnapshot(payload, "en-GB")
+	if err != nil {
+		t.Fatalf("open-ended age rejected: %v", err)
+	}
+	if len(catalog.Stories) != 1 || catalog.Stories[0].MinimumAge == nil ||
+		*catalog.Stories[0].MinimumAge != 3 || catalog.Stories[0].MaximumAge != nil {
+		t.Fatalf("normalized ages = %#v", catalog.Stories)
+	}
+}
+
+func TestNormalizeCatalogFallsBackToAvailableTranslation(t *testing.T) {
+	t.Parallel()
+	payload, err := json.Marshal(map[string]any{"response": map[string]any{
+		"pack": map[string]any{
+			"uuid":              "ef1c88e3-f1d3-4413-b75f-96baf2a20c6e",
+			"locales_available": map[string]any{"fr_FR": true},
+			"localized_infos": map[string]any{"fr_FR": map[string]any{
+				"title": "Histoire synthétique", "age_min": 3, "age_max": -1,
+			}},
+		},
+	}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	catalog, err := NormalizeCatalogSnapshot(payload, "en-GB")
+	if err != nil {
+		t.Fatalf("available translation rejected: %v", err)
+	}
+	if len(catalog.Stories) != 1 ||
+		catalog.Stories[0].Title != "Histoire synthétique" ||
+		catalog.Stories[0].Language != "fr-FR" {
+		t.Fatalf("fallback translation = %#v", catalog.Stories)
+	}
+}
+
+func TestNormalizeCatalogPrefersRequestedThenSameLanguageTranslation(t *testing.T) {
+	t.Parallel()
+	payload, err := json.Marshal(map[string]any{"response": map[string]any{
+		"preferred": map[string]any{
+			"uuid": "123e4567-e89b-42d3-a456-426614174000",
+			"locales_available": map[string]any{
+				"en_GB": true, "en_US": true,
+			},
+			"localized_infos": map[string]any{
+				"en_GB": map[string]any{"title": "British title"},
+				"en_US": map[string]any{"title": "American title"},
+			},
+		},
+		"same-language": map[string]any{
+			"uuid": "123e4567-e89b-42d3-a456-426614174001",
+			"locales_available": map[string]any{
+				"fr_FR": true, "en_US": true,
+			},
+			"localized_infos": map[string]any{
+				"fr_FR": map[string]any{"title": "Titre français"},
+				"en_US": map[string]any{"title": "American title"},
+			},
+		},
+	}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	stories, err := NormalizeCatalog(payload, "en-GB")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(stories) != 2 ||
+		stories[0].Title != "British title" || stories[0].Language != "en-GB" ||
+		stories[1].Title != "American title" || stories[1].Language != "en-US" {
+		t.Fatalf("selected translations = %#v", stories)
+	}
+}
+
 func TestNormalizeCatalogRejectsCorruptOrInconsistentPayloads(t *testing.T) {
 	t.Parallel()
 
@@ -179,6 +268,21 @@ func TestNormalizeCatalogRejectsCorruptOrInconsistentPayloads(t *testing.T) {
 			locale: "en-GB",
 		},
 		{
+			name: "invalid negative maximum age",
+			payload: map[string]any{"response": map[string]any{
+				"pack": map[string]any{
+					"uuid":              "123e4567-e89b-42d3-a456-426614174000",
+					"locales_available": validRecord["locales_available"],
+					"localized_infos": map[string]any{
+						"en_GB": map[string]any{
+							"title": "Fixture", "age_min": 3, "age_max": -2,
+						},
+					},
+				},
+			}},
+			locale: "en-GB",
+		},
+		{
 			name: "external artwork URL",
 			payload: map[string]any{"response": map[string]any{
 				"pack": map[string]any{
@@ -213,11 +317,6 @@ func TestNormalizeCatalogRejectsCorruptOrInconsistentPayloads(t *testing.T) {
 				},
 			}},
 			locale: "en-GB",
-		},
-		{
-			name:    "unsupported requested locale",
-			payload: map[string]any{"response": map[string]any{"pack": validRecord}},
-			locale:  "fr-FR",
 		},
 	}
 
