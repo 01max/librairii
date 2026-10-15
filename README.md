@@ -19,14 +19,17 @@ the architecture boundary.
 
 ## Development
 
-Install Go 1.26 or newer, Node 24.15 or newer, and the Wails CLI version recorded in
-`.wails-version`, then run:
+Install Go 1.26 or newer, the Node version recorded in `.nvmrc`, and the Wails CLI
+version recorded in `.wails-version`, then run:
 
 ```sh
 make setup
 make check
 make build
 ```
+
+With nvm, run `nvm install` and `nvm use` first to select the Node version in
+`.nvmrc`, matching CI. The frontend requires Node `^24.15.0 || >=26.0.0`.
 
 `make check` formats and vets Go, runs Go and frontend tests, type-checks and
 lints TypeScript, and builds the production frontend.
