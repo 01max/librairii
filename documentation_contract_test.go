@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"os"
+	"slices"
 	"strings"
 	"testing"
 
@@ -154,13 +155,21 @@ func TestBuildEntrypointsGenerateFrontendBeforeGoConsumesEmbed(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, target := range []string{
-		"check: build-frontend",
-		"build: build-frontend",
-		"build-current-installer: build-frontend",
-		"verify-platform-linux: build-frontend",
+		"check",
+		"build",
+		"build-current-installer",
+		"verify-platform-linux",
 	} {
-		if !strings.Contains(string(makefile), target) {
-			t.Errorf("Makefile does not declare %q", target)
+		found := false
+		for line := range strings.SplitSeq(string(makefile), "\n") {
+			name, prerequisites, _ := strings.Cut(line, ":")
+			if name == target && slices.Contains(strings.Fields(prerequisites), "build-frontend") {
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Errorf("Makefile target %q does not depend on build-frontend", target)
 		}
 	}
 
