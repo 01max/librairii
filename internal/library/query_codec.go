@@ -23,6 +23,9 @@ func EncodeStoryLibraryQuery(query StoryLibraryQuery) (string, error) {
 	}
 	values := url.Values{}
 	values.Set("v", strconv.Itoa(StoryLibraryQueryVersion))
+	if query.IncludeBroken {
+		values.Set("includeBroken", "true")
+	}
 	if query.Name != "" {
 		values.Set("name", query.Name)
 	}
@@ -78,6 +81,7 @@ func DecodeStoryLibraryQuery(hash string) (StoryLibraryQuery, error) {
 	for key := range values {
 		switch key {
 		case "v",
+			"includeBroken",
 			"name",
 			"page",
 			"size",
@@ -95,6 +99,11 @@ func DecodeStoryLibraryQuery(hash string) (StoryLibraryQuery, error) {
 		return StoryLibraryQuery{}, ErrInvalidStoryLibraryHash
 	}
 	var query StoryLibraryQuery
+	visibility, visibilityErr := oneQueryValue(values, "includeBroken", false)
+	if visibilityErr != nil || (visibility != "" && visibility != "true") {
+		return StoryLibraryQuery{}, ErrInvalidStoryLibraryHash
+	}
+	query.IncludeBroken = visibility == "true"
 	if query.Name, err = oneQueryValue(values, "name", false); err != nil {
 		return StoryLibraryQuery{}, err
 	}

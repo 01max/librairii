@@ -31,6 +31,59 @@ archive stay authoritative and the conflicting source is not published.
 Encrypted, malformed, unsafe, incomplete, or unsupported archives are rejected.
 Librairii does not decrypt, repair, or convert story packs.
 
+## Story details
+
+Select a story and choose **Open details** to see its cover and description.
+Descriptions display readable text and paragraph breaks, including when the
+archive or catalog contains HTML. If artwork is unavailable, a colorful title
+cover appears instead.
+
+Assigned tags appear in the selected-story panel at every window size and in
+the story details. Details open at the beginning of the description, including
+when you reopen a long story. Click outside an application popup
+to close it, or use its Close button or Escape key.
+
+Choose **Edit tags** inside the story details popup to change assignments.
+Closing the tag editor returns to the details with the current tags. The index
+shows assigned tags without an edit action.
+
+Choose **Show technical details** to inspect the story UUID, archive filename,
+verification status, and full checksum. **Hide technical details** folds them
+away again.
+
+To remove a story, choose **Remove from library…**, then confirm with **Move to
+trash**. **Keep story** returns to the story without removing it. The managed
+copy moves to application trash; your original source file stays in place.
+
+## Lunii covers and story details
+
+**Sync with Lunii** contacts the official Lunii API to fetch contextual details
+and cover images for matching stories. Before the first successful sync, a
+prominent prompt appears above the shelves. The sync panel always shows the
+last successful sync in your local date and time, including while an import or
+another operation is running. A failed sync keeps the previous successful time
+and the saved catalog available.
+
+Shelf covers keep their image proportions, with the story title below the
+image. Author and publisher information is available in the selected story's
+details. The left rail provides labeled **Library**, **Tags**, **Import**, and
+**Export** shortcuts: Library returns to all stories, Tags opens the tag
+manager, Import opens the archive picker, and Export prepares the stories in
+the current view.
+
+The application fits the window height. The navigation stays in place while
+the story collection scrolls; long shelf and filter lists scroll independently
+in their sidebar.
+
+**Include broken stories**, just below the saved shelves, shows stories marked
+as broken. They are hidden by default; when included, they have a Broken badge
+and muted cover artwork. Counts, pagination, and exports of the current view
+follow this choice. Use **Edit tags** to mark or unmark a story as broken.
+
+Age tags start green. **Manage tags** lets you change the color of any tag,
+including protected built-in and derived tags. Their names and system-managed
+values stay protected, and chosen colors survive later metadata syncs.
+
 ## Export passthrough and Lunii.QT
 
 An export can snapshot any of these scopes:
@@ -71,6 +124,11 @@ back, and forward restore navigation. A saved shelf stores only membership:
 name search and membership-affecting filters. It does not store pagination,
 sort, current selection, dialog state, or operation progress.
 
+Choose **All stories** to clear the name search and tag refinements. The full
+collection appears above saved-shelf previews, including stories outside those
+shelves. This reset survives a reload. Click any tag filter heading, including
+**Age**, to expand or collapse it; collapsing keeps its selected filters.
+
 Shelves are dynamic saved queries rather than folders of copied stories. Their
 membership and count are reevaluated after imports, removals, metadata refreshes,
 and tag changes. An empty saved query intentionally means all active stories.
@@ -86,7 +144,6 @@ The default application data root is:
 | Platform | Location |
 | --- | --- |
 | macOS | `~/Library/Application Support/Librairii` |
-| Windows | `%LOCALAPPDATA%\Librairii` |
 | Linux | `$XDG_DATA_HOME/librairii`, or `~/.local/share/librairii` when `XDG_DATA_HOME` is unset |
 
 Development and test commands may select a different absolute root with
@@ -137,8 +194,9 @@ before atomically activating it. A failed, cancelled, corrupt, timed-out, or
 offline refresh leaves the last-known-good snapshot active.
 
 Only complete archive UUIDs are matched. For display fields, active official
-metadata in the configured locale takes precedence, then permitted embedded
-metadata, then a deterministic UUID fallback. The detail UI exposes source and
+metadata prefers the configured locale, then an available translation of the
+same language, then another available official translation. Permitted embedded
+metadata and a deterministic UUID fallback follow. The detail UI exposes source and
 freshness information such as locale, publisher, source record, source update,
 fetch, and activation timestamps when the catalog provides them. Missing or
 ambiguous age data is left unassigned; unambiguous ages produce read-only

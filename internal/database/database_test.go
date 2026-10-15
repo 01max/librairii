@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"io/fs"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -13,6 +14,21 @@ import (
 
 	_ "modernc.org/sqlite"
 )
+
+func TestSQLiteFileDSNCanonicalizesPath(t *testing.T) {
+	t.Parallel()
+
+	query := url.Values{}
+	query.Add("_pragma", "foreign_keys(1)")
+	query.Set("mode", "ro")
+
+	path := "/tmp/Librairii Data/db/librairii.sqlite3"
+	want := "file:///tmp/Librairii%20Data/db/librairii.sqlite3" +
+		"?_pragma=foreign_keys%281%29&mode=ro"
+	if got := sqliteFileDSN(path, query); got != want {
+		t.Fatalf("sqliteFileDSN() = %q, want %q", got, want)
+	}
+}
 
 func TestOpenCreatesMigratesAndReopensDatabase(t *testing.T) {
 	t.Parallel()
@@ -48,8 +64,8 @@ func TestOpenCreatesMigratesAndReopensDatabase(t *testing.T) {
 	if err := database.SQL().QueryRow("SELECT COUNT(*) FROM schema_migrations").Scan(&migrations); err != nil {
 		t.Fatalf("migration count query error = %v", err)
 	}
-	if migrations != 13 {
-		t.Fatalf("migration count = %d, want 13", migrations)
+	if migrations != 14 {
+		t.Fatalf("migration count = %d, want 14", migrations)
 	}
 	if err := database.Close(); err != nil {
 		t.Fatalf("Close() error = %v", err)

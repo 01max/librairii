@@ -1,6 +1,7 @@
 export const CANONICAL_PROTOTYPE = {
     path: 'openspec/ui-prototypes/05-archive-shelves.html',
-    sha256: '19119b85ed820e1893020347ad5015bbed173ef8c8e6e1164405d83f1b5f00f9',
+    snapshotPath: 'testdata/ui-prototypes/05-archive-shelves.html',
+    sha256: 'aa172d807086698fc8f70d8551dc0c7a21f43d22335bdf80407501c5f645a6b6',
     normativeSelector: '.app',
     excludedSelector: '.back',
 } as const;
@@ -125,7 +126,7 @@ export const CANONICAL_PARITY_FIXTURE = {
             {label: 'Language', value: 'English'},
         ],
         tags: [
-            {label: 'Age · 3–5', color: '#ff705c'},
+            {label: 'Age · 3–5', color: '#267d5d'},
             {label: 'Mood · Bedtime', color: '#6779e8'},
             {label: 'Favorite', color: '#55b79a'},
         ],

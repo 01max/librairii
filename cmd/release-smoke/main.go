@@ -166,29 +166,33 @@ func runReleaseSmoke(
 	}{
 		{
 			request: exporter.PreflightRequest{
-				SourceType: operations.ExportSourceSelection,
-				StoryIDs:   []int64{defaultStory.ID},
+				IncludeBroken: true,
+				SourceType:    operations.ExportSourceSelection,
+				StoryIDs:      []int64{defaultStory.ID},
 			},
 			count: 1,
 		},
 		{
 			request: exporter.PreflightRequest{
-				SourceType: operations.ExportSourceCurrentQuery,
-				Query:      officialQuery,
+				IncludeBroken: true,
+				SourceType:    operations.ExportSourceCurrentQuery,
+				Query:         officialQuery,
 			},
 			count: 1,
 		},
 		{
 			request: exporter.PreflightRequest{
-				SourceType: operations.ExportSourceShelf,
-				ShelfIDs:   []int64{calmShelf.ID},
+				IncludeBroken: true,
+				SourceType:    operations.ExportSourceShelf,
+				ShelfIDs:      []int64{calmShelf.ID},
 			},
 			count: 1,
 		},
 		{
 			request: exporter.PreflightRequest{
-				SourceType: operations.ExportSourceShelves,
-				ShelfIDs:   []int64{allShelf.ID, officialShelf.ID},
+				IncludeBroken: true,
+				SourceType:    operations.ExportSourceShelves,
+				ShelfIDs:      []int64{allShelf.ID, officialShelf.ID},
 			},
 			count: 2,
 		},
@@ -224,7 +228,8 @@ func runReleaseSmoke(
 	remaining := composition.application.QueryStories(
 		ctx,
 		library.StoryLibraryQuery{
-			Page: 1, PageSize: 100, Sort: library.SortNameAscending,
+			IncludeBroken: true,
+			Page:          1, PageSize: 100, Sort: library.SortNameAscending,
 		},
 	)
 	if remaining.Error != nil ||
@@ -313,6 +318,14 @@ type smokeComposition struct {
 	readiness   *platform.StorageReadiness
 }
 
+type smokeReadiness interface {
+	Check(context.Context) (coreapp.ReadinessReport, error)
+}
+
+type smokeRuntimeStarter interface {
+	Start(context.Context) error
+}
+
 func newSmokeComposition(
 	root string,
 	fetcher metadata.CatalogFetcher,
@@ -321,46 +334,59 @@ func newSmokeComposition(
 ) (*smokeComposition, error) {
 	readiness := platform.NewStorageReadiness(root)
 	clock := platform.SystemClock{}
-	runtime, err := coreapp.NewImportRuntime(
-		readiness,
-		clock,
-		events,
-		2,
-		coreapp.WithMetadataFetcher(fetcher),
-	)
-	if err != nil {
-		return nil, fmt.Errorf("construct release smoke runtime: %w", err)
-	}
-	application, err := coreapp.New(coreapp.Dependencies{
-		Clock:       clock,
-		Dialogs:     dialogs,
-		Events:      events,
-		Readiness:   readiness,
-		Operations:  runtime,
-		Library:     runtime,
-		Removal:     runtime,
-		Tags:        runtime,
-		Shelves:     runtime,
-		Diagnostics: runtime,
-		Resources:   []coreapp.ResourcePort{readiness},
+	composition, err := coreapp.NewComposition(coreapp.CompositionOptions{
+		Storage:         readiness,
+		Clock:           clock,
+		Dialogs:         dialogs,
+		Events:          events,
+		MetadataFetcher: fetcher,
+		Workers:         2,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("construct release smoke application: %w", err)
 	}
 	return &smokeComposition{
-		application: application,
-		runtime:     runtime,
+		application: composition.Application,
+		runtime:     composition.Runtime,
 		readiness:   readiness,
 	}, nil
 }
 
 func (c *smokeComposition) start(ctx context.Context) error {
+	if err := prepareSmokeStartup(ctx, c.readiness, c.runtime); err != nil {
+		return err
+	}
 	if err := c.application.Start(ctx); err != nil {
 		return fmt.Errorf("start release smoke application: %w", err)
 	}
-	status := c.application.Status()
-	if status.State != coreapp.StateReady || !status.MutationsAllowed {
-		return fmt.Errorf("release smoke application is not ready: %#v", status)
+	response := c.application.StatusResponse()
+	if response.Status.State != coreapp.StateReady ||
+		!response.Status.MutationsAllowed {
+		return fmt.Errorf(
+			"release smoke application is not ready: %#v",
+			response,
+		)
+	}
+	return nil
+}
+
+func prepareSmokeStartup(
+	ctx context.Context,
+	readiness smokeReadiness,
+	runtime smokeRuntimeStarter,
+) error {
+	report, err := readiness.Check(ctx)
+	if err != nil {
+		return fmt.Errorf("check release smoke storage readiness: %w", err)
+	}
+	if !report.MutationsAllowed {
+		return fmt.Errorf(
+			"release smoke storage requires recovery: %#v",
+			report,
+		)
+	}
+	if err := runtime.Start(ctx); err != nil {
+		return fmt.Errorf("start release smoke runtime: %w", err)
 	}
 	return nil
 }
@@ -383,7 +409,8 @@ func importAndInspect(
 		return nil, fmt.Errorf("release smoke import failed: %#v", terminal)
 	}
 	page := application.QueryStories(ctx, library.StoryLibraryQuery{
-		Page: 1, PageSize: 100, Sort: library.SortNameAscending,
+		IncludeBroken: true,
+		Page:          1, PageSize: 100, Sort: library.SortNameAscending,
 	})
 	if page.Error != nil || page.Page == nil || page.Page.TotalItems != 2 {
 		return nil, fmt.Errorf("query imported stories: %#v", page)
@@ -461,7 +488,8 @@ func tagSearchFilterAndSaveShelf(
 	}
 
 	nameSearch := application.QueryStories(ctx, library.StoryLibraryQuery{
-		Name: "clockwork forest", Page: 1, PageSize: 100,
+		IncludeBroken: true,
+		Name:          "clockwork forest", Page: 1, PageSize: 100,
 		Sort: library.SortNameAscending,
 	})
 	if nameSearch.Error != nil ||
@@ -472,6 +500,7 @@ func tagSearchFilterAndSaveShelf(
 			fmt.Errorf("name search smoke: %#v", nameSearch)
 	}
 	query := library.StoryLibraryQuery{
+		IncludeBroken: true,
 		BooleanFilters: []library.BooleanFilter{{
 			DefinitionID: broken.ID,
 			State:        library.BooleanTrue,
@@ -501,7 +530,8 @@ func tagSearchFilterAndSaveShelf(
 		ctx,
 		shelfResponse.Shelf.ID,
 		library.ListRequest{
-			Page: 1, PageSize: 100, Sort: library.SortNameAscending,
+			IncludeBroken: true,
+			Page:          1, PageSize: 100, Sort: library.SortNameAscending,
 		},
 	)
 	if opened.Error != nil ||
@@ -549,8 +579,9 @@ func refreshAndFilterOfficialMetadata(
 		return library.StoryLibraryQuery{}, errors.New("derived age value is missing")
 	}
 	query := library.StoryLibraryQuery{
-		Name:      "clockwork mountain",
-		Languages: []string{metadata.DefaultLocale},
+		IncludeBroken: true,
+		Name:          "clockwork mountain",
+		Languages:     []string{metadata.DefaultLocale},
 		ChoiceFilters: []library.ChoiceFilter{{
 			DefinitionID: age.ID,
 			ValueIDs:     []int64{ageValue.ID},
@@ -586,7 +617,7 @@ func createExportShelves(
 	allResponse := application.CreateShelf(
 		ctx,
 		"All smoke stories",
-		library.StoryLibraryQuery{},
+		library.StoryLibraryQuery{IncludeBroken: true},
 	)
 	if allResponse.Error != nil || allResponse.Shelf == nil {
 		return shelves.Shelf{}, shelves.Shelf{},
@@ -604,6 +635,7 @@ func createExportShelves(
 	preview := application.PreviewShelves(
 		ctx,
 		[]int64{allResponse.Shelf.ID, officialResponse.Shelf.ID},
+		true,
 	)
 	if preview.Error != nil ||
 		preview.Preview == nil ||
@@ -765,7 +797,8 @@ func verifyRecoveryAndOfflineRestart(
 		return fmt.Errorf("abandoned staging remains: %#v", stagingEntries)
 	}
 	page := composition.application.QueryStories(ctx, library.StoryLibraryQuery{
-		Name: "clockwork mountain", Page: 1, PageSize: 100,
+		IncludeBroken: true,
+		Name:          "clockwork mountain", Page: 1, PageSize: 100,
 		Sort: library.SortNameAscending,
 	})
 	if page.Error != nil ||

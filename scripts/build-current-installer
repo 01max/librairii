@@ -27,6 +27,7 @@ if [ "$("$wails_cli" version | head -n 1)" != "$wails_version" ]; then
     exit 1
 fi
 
+npm --prefix frontend run build
 "$wails_cli" build -clean -trimpath -m -nocolour
 find frontend/wailsjs/go -type f -exec chmod 644 {} +
 

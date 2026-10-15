@@ -2,6 +2,7 @@ package inspection
 
 import (
 	"archive/zip"
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -89,6 +90,37 @@ func TestZIPInspectorRejectsInvalidContainerAndExtension(t *testing.T) {
 	}, DefaultLimits())
 	if !ErrorHasCode(err, CodeUnsupportedFormat) {
 		t.Fatalf("Inspect(extension mismatch) error = %v", err)
+	}
+}
+
+func TestZIPInspectorRejectsCorruptRequiredPayload(t *testing.T) {
+	t.Parallel()
+	for _, fixture := range []testfixture.Archive{
+		testfixture.GenericZIP(),
+		testfixture.PlainPK(),
+	} {
+		t.Run(string(fixture.ExpectedFormat), func(t *testing.T) {
+			t.Parallel()
+			archiveBytes, err := testfixture.ZIPBytes(fixture)
+			if err != nil {
+				t.Fatal(err)
+			}
+			index := bytes.Index(archiveBytes, []byte("synthetic ni"))
+			if index < 0 {
+				t.Fatal("fixture ni payload not found")
+			}
+			archiveBytes[index] ^= 1
+			path := filepath.Join(t.TempDir(), fixture.Filename)
+			if err := os.WriteFile(path, archiveBytes, 0o600); err != nil {
+				t.Fatal(err)
+			}
+			_, err = NewZIPInspector().Inspect(context.Background(), Candidate{
+				Path: path, OriginalFilename: fixture.Filename,
+			}, DefaultLimits())
+			if !ErrorHasCode(err, CodeInvalidContainer) {
+				t.Fatalf("Inspect(corrupt ni) error = %v", err)
+			}
+		})
 	}
 }
 

@@ -54,6 +54,7 @@ type ChoiceFilter struct {
 }
 
 type StoryLibraryQuery struct {
+	IncludeBroken   bool            `json:"includeBroken,omitempty"`
 	Name            string          `json:"name"`
 	Languages       []string        `json:"languages"`
 	Compatibilities []Compatibility `json:"compatibilities"`
@@ -391,6 +392,15 @@ func storyLibraryPredicate(
 ) (string, []any) {
 	var predicates []string
 	var arguments []any
+	if !request.IncludeBroken {
+		predicates = append(predicates, `NOT EXISTS (
+            SELECT 1 FROM story_tag_assignments broken_assignment
+            JOIN tag_definitions broken_definition ON broken_definition.id = broken_assignment.definition_id
+            WHERE broken_assignment.story_id = s.id AND broken_definition.normalized_key = 'broken'
+            AND broken_definition.source = 'builtin' AND broken_assignment.value_id IS NULL
+        )`)
+	}
+
 	if request.Name != "" {
 		predicates = append(
 			predicates,

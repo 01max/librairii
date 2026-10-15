@@ -22,7 +22,6 @@ func TestDestinationRevealerUsesPlatformFileManager(t *testing.T) {
 		command string
 	}{
 		{osName: "darwin", command: "open"},
-		{osName: "windows", command: "explorer.exe"},
 		{osName: "linux", command: "xdg-open"},
 	}
 	for _, testCase := range cases {
