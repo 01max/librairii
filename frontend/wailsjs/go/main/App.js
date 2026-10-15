@@ -46,8 +46,8 @@ export function FrontendRendered() {
   return window['go']['main']['App']['FrontendRendered']();
 }
 
-export function ListShelves() {
-  return window['go']['main']['App']['ListShelves']();
+export function ListShelves(arg1) {
+  return window['go']['main']['App']['ListShelves'](arg1);
 }
 
 export function ListStories(arg1) {
@@ -78,8 +78,8 @@ export function PlanTagValueDeletion(arg1) {
   return window['go']['main']['App']['PlanTagValueDeletion'](arg1);
 }
 
-export function PreviewShelves(arg1) {
-  return window['go']['main']['App']['PreviewShelves'](arg1);
+export function PreviewShelves(arg1, arg2) {
+  return window['go']['main']['App']['PreviewShelves'](arg1, arg2);
 }
 
 export function QueryStories(arg1) {

@@ -79,6 +79,8 @@ func (e *Evaluator) Evaluate(
 		return Evaluation{}, err
 	}
 	query := opened.Query.StoryLibraryQuery()
+	query.IncludeBroken = request.IncludeBroken
+	opened.Query.IncludeBroken = request.IncludeBroken
 	query.Page = request.Page
 	query.PageSize = request.PageSize
 	query.Sort = request.Sort
@@ -93,19 +95,19 @@ func (e *Evaluator) Evaluate(
 	}, nil
 }
 
-func (e *Evaluator) Count(ctx context.Context, shelfID int64) (ShelfCount, error) {
+func (e *Evaluator) Count(ctx context.Context, shelfID int64, includeBroken ...bool) (ShelfCount, error) {
 	opened, err := e.shelves.Open(ctx, shelfID)
 	if err != nil {
 		return ShelfCount{}, err
 	}
 	if counter, ok := e.library.(storyLibraryCounter); ok {
-		count, err := counter.Count(ctx, opened.Query.StoryLibraryQuery())
+		count, err := counter.Count(ctx, withVisibility(opened.Query.StoryLibraryQuery(), includeBroken))
 		if err != nil {
 			return ShelfCount{}, err
 		}
 		return ShelfCount{ShelfID: shelfID, Count: count}, nil
 	}
-	query := opened.Query.StoryLibraryQuery()
+	query := withVisibility(opened.Query.StoryLibraryQuery(), includeBroken)
 	query.Page = 1
 	query.PageSize = 1
 	query.Sort = library.SortNameAscending
@@ -119,14 +121,14 @@ func (e *Evaluator) Count(ctx context.Context, shelfID int64) (ShelfCount, error
 	}, nil
 }
 
-func (e *Evaluator) Counts(ctx context.Context) ([]ShelfCount, error) {
+func (e *Evaluator) Counts(ctx context.Context, includeBroken ...bool) ([]ShelfCount, error) {
 	shelves, err := e.shelves.List(ctx)
 	if err != nil {
 		return nil, err
 	}
 	counts := make([]ShelfCount, 0, len(shelves))
 	for _, shelf := range shelves {
-		count, err := e.Count(ctx, shelf.ID)
+		count, err := e.Count(ctx, shelf.ID, includeBroken...)
 		if err != nil {
 			return nil, err
 		}
@@ -135,7 +137,7 @@ func (e *Evaluator) Counts(ctx context.Context) ([]ShelfCount, error) {
 	return counts, nil
 }
 
-func (e *Evaluator) Summaries(ctx context.Context) ([]Summary, error) {
+func (e *Evaluator) Summaries(ctx context.Context, includeBroken ...bool) ([]Summary, error) {
 	shelves, err := e.shelves.List(ctx)
 	if err != nil {
 		return nil, err
@@ -157,7 +159,7 @@ func (e *Evaluator) Summaries(ctx context.Context) ([]Summary, error) {
 			})
 			continue
 		}
-		count, err := e.Count(ctx, shelf.ID)
+		count, err := e.Count(ctx, shelf.ID, includeBroken...)
 		if err != nil {
 			return nil, err
 		}
@@ -175,6 +177,7 @@ func (e *Evaluator) Summaries(ctx context.Context) ([]Summary, error) {
 func (e *Evaluator) PreviewSelection(
 	ctx context.Context,
 	shelfIDs []int64,
+	includeBroken ...bool,
 ) (SelectionPreview, error) {
 	if len(shelfIDs) == 0 {
 		return SelectionPreview{}, ErrInvalidShelfSelection
@@ -199,7 +202,7 @@ func (e *Evaluator) PreviewSelection(
 		if err != nil {
 			return SelectionPreview{}, err
 		}
-		query := opened.Query.StoryLibraryQuery()
+		query := withVisibility(opened.Query.StoryLibraryQuery(), includeBroken)
 		query.Page = 1
 		query.PageSize = library.MaxPageSize
 		query.Sort = library.SortNameAscending
@@ -233,4 +236,11 @@ func (e *Evaluator) PreviewSelection(
 	preview.UniqueStoryCount = len(union)
 	preview.OverlapCount = totalMemberships - preview.UniqueStoryCount
 	return preview, nil
+}
+
+func withVisibility(query library.StoryLibraryQuery, override []bool) library.StoryLibraryQuery {
+	if len(override) > 0 {
+		query.IncludeBroken = override[0]
+	}
+	return query
 }
