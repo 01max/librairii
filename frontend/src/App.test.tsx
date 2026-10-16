@@ -503,8 +503,8 @@ test('keeps interactive controls in their canonical regions', async () => {
         .not.toBeInTheDocument();
     expect(within(drawer).getByRole('button', {name: 'Open details'}))
         .toBeInTheDocument();
-    expect(within(drawer).getByRole('button', {name: 'Add to export →'}))
-        .toBeInTheDocument();
+    expect(within(drawer).queryByRole('button', {name: /export/i}))
+        .not.toBeInTheDocument();
 
     const language = within(sidebar).getByRole('button', {name: 'Language ＋'});
     expect(within(sidebar).queryByRole('checkbox', {name: 'English'}))
@@ -616,7 +616,7 @@ test('preflights explicit selections and complete current results', async () => 
     fireEvent.click(screen.getByRole('button', {name: /Moonlit Workshop/}), {
         ctrlKey: true,
     });
-    await user.click(screen.getByRole('button', {name: 'Add to export →'}));
+    await user.click(screen.getByRole('button', {name: 'Export 2 selected stories →'}));
     expect(selectAndPreflightExport).toHaveBeenLastCalledWith(
         expect.objectContaining({
             sourceType: 'selection',
@@ -668,6 +668,85 @@ test('renders empty and blocked export preflight guidance', async () => {
         );
     expect(screen.getByRole('button', {name: 'Export unavailable'})).toBeDisabled();
 });
+
+test.each(['current_query', 'selection'] as const)(
+    'retries a blocked %s export with the same scope and a new folder',
+    async (sourceType) => {
+        const user = userEvent.setup();
+        const blocked = new exporter.PreflightReport({
+            source: {type: sourceType},
+            destination: 'Existing archives',
+            resolvedCount: 2,
+            readyCount: 0,
+            totalBytes: 0,
+            detectedFormats: ['zip'],
+            collapsedOverlap: 0,
+            items: [],
+            issues: [{
+                code: 'no_exportable_stories',
+                message: 'Every story in this scope has a filename conflict. Choose another destination folder or resolve the duplicate filenames, then try again.',
+                blocks: true,
+            }],
+            partial: true,
+            blocked: true,
+            canExport: false,
+        });
+        selectAndPreflightExport
+            .mockResolvedValueOnce(new app.ExportPreflightResponse({preflight: blocked}))
+            .mockResolvedValueOnce(new app.ExportPreflightResponse({cancelled: true}))
+            .mockRejectedValueOnce(new Error('picker unavailable'))
+            .mockResolvedValueOnce(new app.ExportPreflightResponse({
+                error: {code: 'internal', message: 'The export destination picker could not be opened.'},
+            }))
+            .mockResolvedValueOnce(new app.ExportPreflightResponse({
+                preflight: new exporter.PreflightReport({
+                    ...blocked,
+                    preparationId: 'new-folder-preflight',
+                    destination: 'Empty export folder',
+                    readyCount: 2,
+                    partial: false,
+                    blocked: false,
+                    canExport: true,
+                    issues: [],
+                }),
+            }));
+        startPreparedExport.mockResolvedValue(new app.OperationResponse({}));
+        render(<App/>);
+
+        await screen.findByRole('complementary', {name: 'Clockwork Forest details'});
+        if (sourceType === 'selection') {
+            fireEvent.click(screen.getByRole('button', {name: /Moonlit Workshop/}), {
+                ctrlKey: true,
+            });
+            await user.click(screen.getByRole('button', {name: 'Export 2 selected stories →'}));
+        } else {
+            await user.click(screen.getByRole('button', {name: 'Export current result'}));
+        }
+        const originalRequest = selectAndPreflightExport.mock.calls[0][0];
+        expect(originalRequest.sourceType).toBe(sourceType);
+        expect(screen.getByRole('button', {name: 'Export unavailable'})).toBeDisabled();
+        expect(startPreparedExport).not.toHaveBeenCalled();
+
+        await user.click(screen.getByRole('button', {name: 'Choose another folder'}));
+        expect(screen.getByRole('dialog', {name: 'Export is blocked'})).toBeInTheDocument();
+        expect(screen.getByText('Existing archives')).toBeInTheDocument();
+        await user.click(screen.getByRole('button', {name: 'Choose another folder'}));
+        expect(within(screen.getByRole('dialog')).getByRole('alert'))
+            .toHaveTextContent('The export could not be prepared.');
+        await user.click(screen.getByRole('button', {name: 'Choose another folder'}));
+        expect(within(screen.getByRole('dialog')).getByRole('alert'))
+            .toHaveTextContent('The export destination picker could not be opened.');
+        await user.click(screen.getByRole('button', {name: 'Choose another folder'}));
+        expect(selectAndPreflightExport).toHaveBeenCalledTimes(5);
+        for (const [request] of selectAndPreflightExport.mock.calls) {
+            expect(request).toEqual(originalRequest);
+        }
+        expect(screen.getByRole('dialog', {name: 'Ready to export'})).toBeInTheDocument();
+        expect(screen.getByText('Empty export folder')).toBeInTheDocument();
+        await user.click(screen.getByRole('button', {name: 'Start export'}));
+        expect(startPreparedExport).toHaveBeenCalledWith('new-folder-preflight');
+    },
+);
 
 test('renders saved shelf preview rows and opens them from view all', async () => {
     const user = userEvent.setup();

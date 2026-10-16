@@ -475,6 +475,8 @@ function App() {
     const [deleteShelfID, setDeleteShelfID] = useState<number | null>(null);
     const [exportPreflight, setExportPreflight] =
         useState<exporter.PreflightReport | null>(null);
+    const [exportPreflightRequest, setExportPreflightRequest] =
+        useState<exporter.PreflightRequest | null>(null);
     const [exportPreparing, setExportPreparing] = useState(false);
     const [exportStarting, setExportStarting] = useState(false);
     const [exportStartError, setExportStartError] = useState<string | null>(null);
@@ -938,28 +940,32 @@ function App() {
             : sourceType === 'shelves'
                 ? selectedShelfIDs
                 : [];
+        await preflightExport(new exporter.PreflightRequest({
+            sourceType,
+            includeBroken: !!collectionQuery.includeBroken,
+            storyIds: sourceType === 'selection' ? [...selectedIDs] : [],
+            query: sourceType === 'current_query'
+                ? new library.StoryLibraryQuery(collectionQuery)
+                : new library.StoryLibraryQuery({}),
+            shelfIds: [...shelfIDs],
+        }));
+    }
+
+    async function preflightExport(request: exporter.PreflightRequest) {
+        const showError = exportPreflight ? setExportStartError : setRequestError;
         setExportPreparing(true);
         setExportStartError(null);
         setRequestError(null);
         try {
-            const response = await SelectAndPreflightExport(
-                new exporter.PreflightRequest({
-                    sourceType,
-                    includeBroken: !!collectionQuery.includeBroken,
-                    storyIds: sourceType === 'selection' ? selectedIDs : [],
-                    query: sourceType === 'current_query'
-                        ? new library.StoryLibraryQuery(collectionQuery)
-                        : new library.StoryLibraryQuery({}),
-                    shelfIds: shelfIDs,
-                }),
-            );
+            const response = await SelectAndPreflightExport(request);
             if (response.error) {
-                setRequestError(response.error.message);
+                showError(response.error.message);
             } else if (response.preflight) {
+                setExportPreflightRequest(request);
                 setExportPreflight(response.preflight);
             }
         } catch {
-            setRequestError('The export could not be prepared.');
+            showError('The export could not be prepared.');
         } finally {
             setExportPreparing(false);
         }
@@ -2604,20 +2610,24 @@ function App() {
                         >
                             Open details
                         </button>
-                        <button
-                            className="export"
-                            type="button"
-                            disabled={exportPreparing || selectedIDs.length === 0}
-                            onClick={() => void prepareExport('selection')}
-                        >
-                            {exportPreparing ? 'Preparing…' : 'Add to export →'}
-                        </button>
+                        {selectedIDs.length > 1 && (
+                            <button
+                                className="export"
+                                type="button"
+                                disabled={exportPreparing}
+                                onClick={() => void prepareExport('selection')}
+                            >
+                                {exportPreparing
+                                    ? 'Preparing…'
+                                    : `Export ${selectedIDs.length} selected stories →`}
+                            </button>
+                        )}
                     </div>
                 </aside>
             )}
 
             {exportPreflight && (
-                <ModalBackdrop onDismiss={() => setExportPreflight(null)} disabled={exportStarting}>
+                <ModalBackdrop onDismiss={() => setExportPreflight(null)} disabled={exportStarting || exportPreparing}>
                     <section
                         ref={exportPreflightDialog}
                         className="detail-dialog export-preflight"
@@ -2705,7 +2715,7 @@ function App() {
                             <button
                                 ref={exportPreflightInitialFocus}
                                 type="button"
-                                disabled={exportStarting}
+                                disabled={exportStarting || exportPreparing}
                                 onClick={() => {
                                     setExportPreflight(null);
                                     setExportStartError(null);
@@ -2713,11 +2723,21 @@ function App() {
                             >
                                 Close
                             </button>
+                            {exportPreflightRequest && (
+                                <button
+                                    type="button"
+                                    disabled={exportStarting || exportPreparing}
+                                    onClick={() => void preflightExport(exportPreflightRequest)}
+                                >
+                                    {exportPreparing ? 'Preparing…' : 'Choose another folder'}
+                                </button>
+                            )}
                             <button
                                 className="export"
                                 type="button"
                                 disabled={
                                     exportStarting ||
+                                    exportPreparing ||
                                     !exportPreflight.canExport ||
                                     !exportPreflight.preparationId
                                 }

@@ -233,6 +233,7 @@ func (s *PreflightService) inspect(
 	}
 
 	formats := make(map[string]struct{})
+	conflictedCount := 0
 	outputNames := make(map[string]struct{}, len(scope.Stories))
 	for _, story := range scope.Stories {
 		formats[story.DetectedFormat] = struct{}{}
@@ -251,15 +252,22 @@ func (s *PreflightService) inspect(
 			}
 			report.ReadyCount++
 			report.TotalBytes += story.ByteSize
-		case DispositionSkipped, DispositionConflicted:
+		case DispositionConflicted:
+			conflictedCount++
+			report.Partial = true
+		case DispositionSkipped:
 			report.Partial = true
 		}
 	}
 	report.DetectedFormats = sortedKeys(formats)
 	if report.ReadyCount == 0 {
+		message := "No stories in this scope are currently exportable. Review the story checks below for the reasons."
+		if conflictedCount == len(report.Items) {
+			message = "Every story in this scope has a filename conflict. Choose another destination folder or resolve the duplicate filenames, then try again."
+		}
 		report.Issues = append(report.Issues, blockingIssue(
 			IssueNoExportableStories,
-			"No stories in this scope are currently exportable.",
+			message,
 		))
 		report.Blocked = true
 	}

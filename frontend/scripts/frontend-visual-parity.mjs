@@ -159,6 +159,8 @@ async function prepareScreenshot(page, canonical) {
         await document.fonts.ready;
         if (hideGalleryLink) {
             document.querySelector('.back')?.remove();
+            // Single-story export was deliberately removed after the prototype.
+            document.querySelector('.drawer-actions .export')?.remove();
         }
         const style = document.createElement('style');
         style.textContent = `

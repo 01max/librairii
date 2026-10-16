@@ -228,6 +228,53 @@ func TestPreflightCollapsesDuplicateOutputNames(t *testing.T) {
 	}
 }
 
+func TestPreflightExplainsExistingFilesAndAllowsAnotherDestination(t *testing.T) {
+	t.Parallel()
+	layout, err := storage.Initialize(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	story := writeManagedExportStory(t, layout, 1, "story.zip", []byte("archive"))
+	resolver, err := NewResolver(&fakeLibraryResolver{
+		stories: map[int64]library.ExportStory{story.ID: story},
+	}, fakeShelfResolver{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	service, err := NewPreflightService(resolver, layout)
+	if err != nil {
+		t.Fatal(err)
+	}
+	destination := t.TempDir()
+	existing := filepath.Join(destination, story.OriginalFilename)
+	if err := os.WriteFile(existing, []byte("keep existing file"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	request := PreflightRequest{
+		SourceType: operations.ExportSourceSelection,
+		StoryIDs:   []int64{story.ID},
+	}
+	report, err := service.Plan(context.Background(), request, destination)
+	if err != nil {
+		t.Fatal(err)
+	}
+	assertBlockedPreflight(t, report, IssueNoExportableStories)
+	if report.Issues[0].Message != "Every story in this scope has a filename conflict. Choose another destination folder or resolve the duplicate filenames, then try again." {
+		t.Fatalf("conflict guidance = %q", report.Issues[0].Message)
+	}
+	if report.Items[0].Issue == nil || report.Items[0].Issue.Code != IssueFilenameConflict {
+		t.Fatalf("story check = %#v", report.Items[0])
+	}
+	ready, err := service.Plan(context.Background(), request, t.TempDir())
+	if err != nil || !ready.CanExport || ready.ReadyCount != 1 {
+		t.Fatalf("preflight in empty folder = %#v, %v", ready, err)
+	}
+	content, err := os.ReadFile(existing)
+	if err != nil || string(content) != "keep existing file" {
+		t.Fatalf("existing destination changed: %q, %v", content, err)
+	}
+}
+
 func TestPreflightSkipsFilenameRejectedByOperationPersistence(t *testing.T) {
 	t.Parallel()
 
