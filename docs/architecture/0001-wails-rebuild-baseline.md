@@ -1,25 +1,22 @@
 # Wails rebuild baseline and removal boundary
 
-Status: accepted for `rebuild-local-story-library-wails`
+Status: accepted
 
 Baseline commit: `9ed05ebb0672b9002e837312424c3d2bb12e0e86`
 
 ## Product and UI source of truth
 
-Functional scope comes only from:
+Product behavior is documented in the [user guide](../user-guide.md) and
+verified by application and release acceptance tests.
 
-- `openspec/changes/build-local-story-library/`
-- `openspec/changes/rebuild-local-story-library-wails/`
+The UI baseline is tracked in the repository:
 
-The only UI source of truth is:
-
-- `openspec/ui-prototypes/05-archive-shelves.html`
-- tracked CI mirror: `testdata/ui-prototypes/05-archive-shelves.html`
+- reference: `testdata/ui-prototypes/05-archive-shelves.html`
 - SHA-256: `aa172d807086698fc8f70d8551dc0c7a21f43d22335bdf80407501c5f645a6b6`
 - the `.app` subtree is normative
 - the `.back` gallery link is excluded from the product
 
-`prototype_contract_test.go` verifies the tracked mirror's checksum and both
+`prototype_contract_test.go` verifies the reference's checksum and both
 subtree markers on every Go test run. The frontend `?fixture=parity` bridge is
 deterministic and records every sample shelf, cover title, count, selection,
 fact, tag, and archive detail from that exact file.
@@ -79,7 +76,7 @@ The reset must preserve:
 - `.github/` paths while replacing only legacy workflow content
 - `.gitignore` while replacing legacy ignore rules
 - `docs/`
-- all OpenSpec changes and prototypes
+- UI prototypes and their contract tests
 - any untracked application-data directory outside this repository
 
 No removal command may target the repository root, the user home directory, or

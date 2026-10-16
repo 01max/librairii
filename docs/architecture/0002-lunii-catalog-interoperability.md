@@ -1,11 +1,11 @@
 # Lunii catalog interoperability boundary
 
-Status: accepted for `rebuild-local-story-library-wails`
+Status: accepted
 
-Librairii's official-metadata scope is defined only by the active OpenSpec
-change. The wire-level endpoint names, guest-token envelope, catalog header
-names, and catalog envelope were independently reimplemented from observable
-behavior in [Lunii.QT](https://github.com/o-daneel/Lunii.QT) at tree
+Librairii's official-metadata integration is limited to the public catalog and
+associated artwork. The wire-level endpoint names, guest-token envelope,
+catalog header names, and catalog envelope were independently reimplemented
+from observable behavior in [Lunii.QT](https://github.com/o-daneel/Lunii.QT) at tree
 `c8afe43dde21c2be33c0667ced962dc023eb948a`. Lunii.QT is licensed GPL-3.0;
 none of its source code or copyrighted catalog data is copied into Librairii.
 

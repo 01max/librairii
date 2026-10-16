@@ -208,22 +208,8 @@ requirements and evidence contract.
 | A safe demo without a device or Lunii account | [First-story walkthrough](docs/demos/first-story-vertical-slice.md) |
 | Packaging and platform qualification | [Release platform matrix](docs/release-platforms.md) |
 | The application architecture | [Wails rebuild baseline](docs/architecture/0001-wails-rebuild-baseline.md) |
-| The UI reference and visual checks | [Visual parity](docs/visual-parity.md) |
 | Large-library performance and budgets | [Performance guide](docs/performance/large-library.md) |
 | The Lunii catalog integration boundary | [Interoperability decision](docs/architecture/0002-lunii-catalog-interoperability.md) |
-
-<details>
-<summary><strong>Functional and visual contracts</strong></summary>
-
-The functional contract lives in the OpenSpec change
-`rebuild-local-story-library-wails`. The visual baseline is
-`openspec/ui-prototypes/05-archive-shelves.html`; clean checkouts verify the
-checksum-locked mirror at
-[`testdata/ui-prototypes/05-archive-shelves.html`](testdata/ui-prototypes/05-archive-shelves.html).
-The [architecture baseline](docs/architecture/0001-wails-rebuild-baseline.md)
-records subsequent UI revisions.
-
-</details>
 
 ## Help improve Librairii
 
