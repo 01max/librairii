@@ -507,3 +507,44 @@ func TestCombinedCollectionPersistsDynamicUnionAcrossBrowsingCountsAndExport(t *
 		t.Fatal("refined union", result, err)
 	}
 }
+
+func TestCombinedCollectionCopiesCriteriaWithoutLiveDependencies(t *testing.T) {
+	h := newEvaluationHarness(t)
+	ctx := context.Background()
+	for i, title := range []string{"Moon", "Forest", "Moon forest", "Ocean"} {
+		createEvaluationStory(t, h.catalog, fmt.Sprintf("223e4567-e89b-42d3-a456-%012d", i), title, string(rune('a'+i)))
+	}
+	moon, err := h.collections.Create(ctx, "Moon", library.StoryLibraryQuery{Name: "moon"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	forest, err := h.collections.Create(ctx, "Forest", library.StoryLibraryQuery{Name: "forest"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	preview, err := h.evaluator.PreviewSelection(ctx, []int64{moon.ID, forest.ID})
+	if err != nil || preview.UniqueStoryCount != 3 || preview.OverlapCount != 1 {
+		t.Fatalf("OR union: %#v %v", preview, err)
+	}
+	left, err := h.collections.Open(ctx, moon.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	right, err := h.collections.Open(ctx, forest.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	combined, err := h.collections.Create(ctx, "Combined", library.StoryLibraryQuery{AnyOf: []library.StoryLibraryQuery{left.Query.StoryLibraryQuery(), right.Query.StoryLibraryQuery()}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := h.collections.ReplaceQuery(ctx, moon.ID, library.StoryLibraryQuery{Name: "ocean"}); err != nil {
+		t.Fatal(err)
+	}
+	if err := h.collections.Delete(ctx, forest.ID); err != nil {
+		t.Fatal(err)
+	}
+	assertCollectionCount(t, h.evaluator, combined.ID, 3)
+	createEvaluationStory(t, h.catalog, "223e4567-e89b-42d3-a456-000000000009", "New moon", "f")
+	assertCollectionCount(t, h.evaluator, combined.ID, 4)
+}

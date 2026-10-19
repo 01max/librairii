@@ -48,7 +48,7 @@ func TestBrokenFlagsPreserveExportScopesAndPreparedSelections(t *testing.T) {
 		t.Fatal(err)
 	}
 	if _, err := db.Exec(`INSERT INTO legacy_broken_tag VALUES (1,9);
-        INSERT INTO shelves (id,name,normalized_name,position,query_version,query_payload)
+        INSERT INTO collections (id,name,normalized_name,position,query_version,query_payload)
         VALUES (20,'Legacy broken','legacy broken',1,3,'{"includeBroken":true,"anyOf":[{"booleanFilters":[{"definitionId":9,"state":"true"}]}]}');`); err != nil {
 		t.Fatal(err)
 	}

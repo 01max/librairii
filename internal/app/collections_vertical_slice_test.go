@@ -201,7 +201,7 @@ func TestSavedCollectionsVerticalSliceThroughApplication(t *testing.T) {
 	}
 	if _, err := provider.SQL().ExecContext(
 		ctx,
-		`UPDATE shelves
+		`UPDATE collections
 		 SET query_version = 1,
 		     query_payload = ?
 		 WHERE id = ?`,
@@ -324,7 +324,7 @@ func TestSavedCollectionsVerticalSliceThroughApplication(t *testing.T) {
 
 	if _, err := provider.SQL().ExecContext(
 		ctx,
-		"UPDATE shelves SET query_version = 99 WHERE id = ?",
+		"UPDATE collections SET query_version = 99 WHERE id = ?",
 		emptyCollection.ID,
 	); err != nil {
 		t.Fatal(err)

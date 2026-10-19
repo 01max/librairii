@@ -369,7 +369,7 @@ func seedShelves(
 	}
 	statement, err := transaction.PrepareContext(
 		ctx,
-		`INSERT INTO shelves (
+		`INSERT INTO collections (
 			id,
 			name,
 			normalized_name,

@@ -51,7 +51,7 @@ func main() {
 		want  int
 	}{
 		{label: "stories", query: "SELECT COUNT(*) FROM stories", want: *expectedStories},
-		{label: "shelves", query: "SELECT COUNT(*) FROM shelves", want: *expectedShelves},
+		{label: "shelves", query: "SELECT COUNT(*) FROM collections", want: *expectedShelves},
 	} {
 		if expectation.want < 0 {
 			continue

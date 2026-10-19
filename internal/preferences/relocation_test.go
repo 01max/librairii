@@ -27,7 +27,7 @@ func moveFixture(t *testing.T) (Journal, Profile, string) {
 		`INSERT INTO stories(id,uuid,embedded_title) VALUES(73,'11111111-1111-1111-1111-111111111111','Une histoire')`,
 		`INSERT INTO tag_definitions(id,key,normalized_key,label,color,kind,source,position) VALUES(42,'favorite','favorite','Favoris','#405CF5','boolean','user',0)`,
 		`INSERT INTO story_tag_assignments(story_id,definition_id,source) VALUES(73,42,'manual')`,
-		`INSERT INTO shelves(id,name,normalized_name,position,query_version,query_payload) VALUES(42,'Mes histoires','mes histoires',0,1,'{}')`,
+		`INSERT INTO collections(id,name,normalized_name,position,query_version,query_payload) VALUES(42,'Mes histoires','mes histoires',0,1,'{}')`,
 		`INSERT INTO file_operations(id,kind,status) VALUES('22222222-2222-2222-2222-222222222222','import','succeeded')`,
 	} {
 		if _, err := db.Writer().ExecContext(ctx, statement); err != nil {
@@ -185,7 +185,7 @@ func TestCompleteLibraryMovePreservesEveryRecordedByte(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, query := range []string{"SELECT COUNT(*) FROM stories WHERE id=73 AND embedded_title='Une histoire'", "SELECT COUNT(*) FROM tag_definitions WHERE id=42 AND label='Favoris'", "SELECT COUNT(*) FROM story_tag_assignments WHERE story_id=73 AND definition_id=42", "SELECT COUNT(*) FROM shelves WHERE id=42", "SELECT COUNT(*) FROM file_operations"} {
+	for _, query := range []string{"SELECT COUNT(*) FROM stories WHERE id=73 AND embedded_title='Une histoire'", "SELECT COUNT(*) FROM tag_definitions WHERE id=42 AND label='Favoris'", "SELECT COUNT(*) FROM story_tag_assignments WHERE story_id=73 AND definition_id=42", "SELECT COUNT(*) FROM collections WHERE id=42", "SELECT COUNT(*) FROM file_operations"} {
 		var count int
 		if err := db.SQL().QueryRowContext(ctx, query).Scan(&count); err != nil || count != 1 {
 			t.Fatal(query, count, err)

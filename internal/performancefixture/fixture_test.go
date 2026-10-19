@@ -60,7 +60,7 @@ func TestGenerateBuildsCopyrightFreeFiveThousandStoryFixture(t *testing.T) {
 		t.Fatal(err)
 	}
 	if err := opened.SQL().QueryRow(
-		"SELECT COUNT(*) FROM shelves",
+		"SELECT COUNT(*) FROM collections",
 	).Scan(&shelfCount); err != nil {
 		t.Fatal(err)
 	}
