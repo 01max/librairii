@@ -78,6 +78,7 @@ import OperationHistoryDialog from './OperationHistoryDialog';
 import ExportReport from './ExportReport';
 import LuniiSync from './LuniiSync';
 import StoryCover from './StoryCover';
+import StoryFlagButton from './StoryFlagButton';
 import TagAssignmentEditor from './TagAssignmentEditor';
 import {describeMetadataRefresh} from './metadata-state';
 import {useModalFocus} from './modal-focus';
@@ -2511,6 +2512,7 @@ function App() {
                                         className={`story${selectedIDs.includes(story.id) ? ' selected' : ''}`}
                                         style={paletteFor(story.id)}
                                         type="button"
+                                        data-story-id={story.id}
                                         aria-label={story.title}
                                         aria-describedby={story.broken ? `broken-${row.key}-${story.id}` : undefined}
                                         aria-pressed={selectedIDs.includes(story.id)}
@@ -2549,6 +2551,9 @@ function App() {
                                                 <i aria-hidden="true"/>{t("Broken")}</span>
                                         )}
                                     </button>
+                                    <StoryFlagButton title={story.title} broken={!!story.broken}
+                                        disabled={flags.pending || applicationState !== 'ready'}
+                                        onChange={(broken) => void flags.set([story.id], broken)}/>
                                     {libraryView !== 'list' && <p className="story-title">{story.title}</p>}
                                 </div>
                             ))}

@@ -2770,3 +2770,14 @@ select:focus-visible {
 .library-location { overflow-wrap: anywhere; user-select: text; }
 
 .flag-feedback { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px; margin: 12px 0; border: 1px solid var(--line); border-radius: 8px; background: var(--white); }
+
+.story-card { position: relative; }
+.story-flag-action { position: absolute; z-index: 5; top: 6px; right: 6px; width: 32px; height: 32px; display: grid; place-items: center; padding: 4px; border: 1px solid #775423; border-radius: 7px; background: white; color: #684613; opacity: 0; }
+.story-card:hover .story-flag-action, .story-card:focus-within .story-flag-action, .is-broken .story-flag-action { opacity: 1; }
+.story-flag-action:focus-visible { outline: 3px solid var(--blue); outline-offset: 3px; }
+.story-flag-action:disabled { cursor: wait; }
+.view-list .story-card { display: flex; align-items: center; gap: 8px; }
+.view-list .story-card > .story { flex: 1; min-width: 0; }
+.view-list .story-flag-action { position: static; opacity: 1; flex-shrink: 0; }
+.view-small .story-flag-action { top: 2px; right: 2px; width: 26px; height: 26px; }
+@media (hover: none) { .story-flag-action { opacity: 1; } }
