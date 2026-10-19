@@ -22,6 +22,17 @@ func moveFixture(t *testing.T) (Journal, Profile, string) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	for _, statement := range []string{
+		`INSERT INTO stories(id,uuid,embedded_title) VALUES(73,'11111111-1111-1111-1111-111111111111','Une histoire')`,
+		`INSERT INTO tag_definitions(id,key,normalized_key,label,color,kind,source,position) VALUES(42,'favorite','favorite','Favoris','#405CF5','boolean','user',0)`,
+		`INSERT INTO story_tag_assignments(story_id,definition_id,source) VALUES(73,42,'manual')`,
+		`INSERT INTO shelves(id,name,normalized_name,position,query_version,query_payload) VALUES(42,'Mes histoires','mes histoires',0,1,'{}')`,
+		`INSERT INTO file_operations(id,kind,status) VALUES('22222222-2222-2222-2222-222222222222','import','succeeded')`,
+	} {
+		if _, err := db.Writer().ExecContext(ctx, statement); err != nil {
+			t.Fatal(err)
+		}
+	}
 	if err = db.Close(); err != nil {
 		t.Fatal(err)
 	}
@@ -128,6 +139,63 @@ func TestCancellationCorruptionAndUnknownDestinationFiles(t *testing.T) {
 		t.Fatal(err)
 	}
 	if err := ValidateLibrary(context.Background(), j.Source, j.LibraryID); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestCompleteLibraryMovePreservesEveryRecordedByte(t *testing.T) {
+	j, p, config := moveFixture(t)
+	ctx := context.Background()
+	external := filepath.Join(t.TempDir(), "original.pk")
+	os.WriteFile(external, []byte("original"), 0600)
+	if err := WriteJournal(config, j); err != nil {
+		t.Fatal(err)
+	}
+	if err := Reserve(j.Destination, j.ID, 0); err != nil {
+		t.Fatal(err)
+	}
+	var copied int64
+	if err := CopyLibrary(ctx, j, func(n int64) { copied += n }); err != nil {
+		t.Fatal(err)
+	}
+	if copied == 0 {
+		t.Fatal("no byte progress")
+	}
+	if err := VerifyCopy(ctx, j, j.Workspace()); err != nil {
+		t.Fatal(err)
+	}
+	if err := Publish(j.Workspace(), j.Destination, j.ID); err != nil {
+		t.Fatal(err)
+	}
+	store := NewStore(config)
+	if _, err := store.Update(func(next *Profile) error { p.Root = j.Destination; *next = p; return nil }); err != nil {
+		t.Fatal(err)
+	}
+	if err := Reconcile(ctx, config, p); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(j.Source); !errors.Is(err, os.ErrNotExist) {
+		t.Fatal("old root still exists", err)
+	}
+	if err := VerifyCopy(ctx, j, j.Destination); err != nil {
+		t.Fatal(err)
+	}
+	db, err := database.Open(ctx, DatabasePath(j.Destination))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, query := range []string{"SELECT COUNT(*) FROM stories WHERE id=73 AND embedded_title='Une histoire'", "SELECT COUNT(*) FROM tag_definitions WHERE id=42 AND label='Favoris'", "SELECT COUNT(*) FROM story_tag_assignments WHERE story_id=73 AND definition_id=42", "SELECT COUNT(*) FROM shelves WHERE id=42", "SELECT COUNT(*) FROM file_operations"} {
+		var count int
+		if err := db.SQL().QueryRowContext(ctx, query).Scan(&count); err != nil || count != 1 {
+			t.Fatal(query, count, err)
+		}
+	}
+	db.Close()
+	reloaded, err := NewStore(config).Load()
+	if err != nil || reloaded.Root != j.Destination || reloaded.Language != "fr" {
+		t.Fatal(reloaded, err)
+	}
+	if data, err := os.ReadFile(external); err != nil || string(data) != "original" {
 		t.Fatal(err)
 	}
 }
