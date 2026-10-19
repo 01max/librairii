@@ -347,3 +347,27 @@ func TestBrokenIsAnOrdinaryUserTag(t *testing.T) {
 		t.Fatal("ordinary tag changed the independent story flag")
 	}
 }
+
+func TestRetiredBrokenShelfReferenceDoesNotBelongToReusedTag(t *testing.T) {
+	ctx := context.Background()
+	db := openTaggingDatabase(t)
+	if _, err := db.Exec(`INSERT INTO legacy_broken_tag VALUES (1,9);
+        INSERT INTO tag_definitions (id,key,normalized_key,label,color,kind,source,presentation,position,is_protected)
+        VALUES (9,'broken','broken','My tag','#405CF5','boolean','user','default',0,0);
+        INSERT INTO shelves (id,name,normalized_name,position,query_version,query_payload)
+        VALUES (1,'Old','old',0,3,'{"booleanFilters":[{"definitionId":9,"state":"true"}]}'),
+          (2,'New','new',1,4,'{"booleanFilters":[{"definitionId":9,"state":"true"}]}');`); err != nil {
+		t.Fatal(err)
+	}
+	service, err := NewService(db)
+	if err != nil {
+		t.Fatal(err)
+	}
+	plan, err := service.PlanDefinitionDeletion(ctx, 9)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if plan.AffectedShelfCount != 1 || plan.AffectedShelfIDs[0] != 2 {
+		t.Fatalf("plan=%#v", plan)
+	}
+}

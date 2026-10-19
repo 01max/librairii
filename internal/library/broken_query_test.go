@@ -67,3 +67,64 @@ func TestLegacyBrokenURLTranslation(t *testing.T) {
 		t.Fatal("duplicate legacy criteria accepted")
 	}
 }
+
+func TestRetiredBrokenIDIsOnlyTranslatedForLegacyVersions(t *testing.T) {
+	ctx := context.Background()
+	query, repository, db := newLibraryQuery(t, nil)
+	flagged := createQueryableStory(t, repository, "00112233-4455-4677-8899-aabbccddeeff", "Flagged", "a")
+	tagged := createQueryableStory(t, repository, "11112222-3333-4444-8555-666677778888", "Tagged", "b")
+	if _, err := db.Exec(`INSERT INTO legacy_broken_tag VALUES (1,9);
+        INSERT INTO tag_definitions (id,key,normalized_key,label,color,kind,source,presentation,position,is_protected)
+        VALUES (9,'broken','broken','My broken tag','#405CF5','boolean','user','default',0,0)`); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db.Exec("UPDATE stories SET is_broken=1 WHERE id=?", flagged.ID); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db.Exec("INSERT INTO story_tag_assignments (story_id,definition_id,source) VALUES (?,9,'manual')", tagged.ID); err != nil {
+		t.Fatal(err)
+	}
+	info, err := query.CompatibilityInfo(ctx)
+	if err != nil || info.LegacyBrokenTagID != 9 {
+		t.Fatalf("compatibility=%#v, %v", info, err)
+	}
+	for _, test := range []struct {
+		hash string
+		id   int64
+	}{
+		{"#/library?v=1&includeBroken=true&bool=9:true", flagged.ID},
+		{"#/library?v=2&brokenVisibility=include&bool=9:true", tagged.ID},
+	} {
+		request, err := DecodeStoryLibraryQuery(test.hash, info.LegacyBrokenTagID)
+		if err != nil {
+			t.Fatal(err)
+		}
+		page, err := query.Search(ctx, request)
+		if err != nil || page.TotalItems != 1 || page.Stories[0].ID != test.id {
+			t.Fatalf("page=%#v, err=%v", page, err)
+		}
+	}
+	for _, mode := range []BrokenVisibility{BrokenHide, BrokenOnly, BrokenInclude} {
+		predicate, args := storyLibraryPredicate(StoryLibraryQuery{BrokenVisibility: mode}, "")
+		statement := "EXPLAIN QUERY PLAN SELECT s.id FROM stories s JOIN story_archives a ON a.story_id=s.id"
+		if predicate != "" {
+			statement += " WHERE " + predicate
+		}
+		rows, err := db.Query(statement, args...)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for rows.Next() {
+			var id, parent, unused int
+			var detail string
+			if err := rows.Scan(&id, &parent, &unused, &detail); err != nil {
+				t.Fatal(err)
+			}
+			t.Logf("%s: %s", mode, detail)
+		}
+		if err := rows.Err(); err != nil {
+			t.Fatal(err)
+		}
+		rows.Close()
+	}
+}
