@@ -160,6 +160,12 @@ func runReleaseSmoke(
 		return smokeResult{}, err
 	}
 
+	// Flagging is exercised above; explicit clearing makes these byte-for-byte
+	// passthrough smoke scopes eligible under the universal Broken exclusion.
+	if response := composition.application.SetStoriesBroken(ctx, []int64{defaultStory.ID}, false); response.Error != nil {
+		return smokeResult{}, response.Error
+	}
+
 	exportRequests := []struct {
 		request exporter.PreflightRequest
 		count   int
@@ -183,16 +189,16 @@ func runReleaseSmoke(
 		{
 			request: exporter.PreflightRequest{
 
-				SourceType: operations.ExportSourceShelf,
-				ShelfIDs:   []int64{calmShelf.ID},
+				SourceType:    operations.ExportSourceCollection,
+				CollectionIDs: []int64{calmShelf.ID},
 			},
 			count: 1,
 		},
 		{
 			request: exporter.PreflightRequest{
 
-				SourceType: operations.ExportSourceShelves,
-				ShelfIDs:   []int64{allShelf.ID, officialShelf.ID},
+				SourceType:    operations.ExportSourceCollections,
+				CollectionIDs: []int64{allShelf.ID, officialShelf.ID},
 			},
 			count: 2,
 		},

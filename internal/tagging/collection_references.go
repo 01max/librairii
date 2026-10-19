@@ -95,7 +95,7 @@ func matchingCollectionIDs(
 				err,
 			)
 		}
-		if version < collectionquery.CurrentVersion && legacyID > 0 {
+		if version < 4 && legacyID > 0 {
 			filters := query.BooleanFilters[:0]
 			for _, filter := range query.BooleanFilters {
 				if filter.DefinitionID != legacyID {

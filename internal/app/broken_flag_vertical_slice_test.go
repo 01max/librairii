@@ -63,7 +63,7 @@ func TestMigratedBrokenLibraryThroughApplicationRestartRefreshAndExport(t *testi
 		}
 	}
 	ids := []int64{}
-	var flaggedBytes []byte
+	var healthyBytes []byte
 	for index, fixture := range []testfixture.Archive{
 		testfixture.GenericZIP(),
 		storyFixtureWithUUID(testfixture.GenericZIP(), "11112222-3333-4444-8555-666677778888", "second.zip"),
@@ -92,8 +92,8 @@ func TestMigratedBrokenLibraryThroughApplicationRestartRefreshAndExport(t *testi
 			t.Fatal(err)
 		}
 		ids = append(ids, story.ID)
-		if index == 0 {
-			flaggedBytes = content
+		if index == 1 {
+			healthyBytes = content
 		}
 	}
 	if _, err := legacy.Exec(`INSERT INTO tag_definitions
@@ -205,7 +205,7 @@ func TestMigratedBrokenLibraryThroughApplicationRestartRefreshAndExport(t *testi
 		t.Fatalf("refreshed flagged detail=%#v", detail)
 	}
 	destination := t.TempDir()
-	preflight, err := runtime.PrepareExport(ctx, exporter.PreflightRequest{SourceType: operations.ExportSourceSelection, StoryIDs: ids[:1]}, destination)
+	preflight, err := runtime.PrepareExport(ctx, exporter.PreflightRequest{SourceType: operations.ExportSourceSelection, StoryIDs: ids}, destination)
 	if err != nil || !preflight.CanExport || preflight.ReadyCount != 1 {
 		t.Fatalf("preflight=%#v, %v", preflight, err)
 	}
@@ -213,11 +213,14 @@ func TestMigratedBrokenLibraryThroughApplicationRestartRefreshAndExport(t *testi
 	if exported.Error != nil || exported.Operation == nil {
 		t.Fatalf("export=%#v", exported)
 	}
-	if terminal := events.waitTerminal(t, exported.Operation.ID); terminal.Status != operations.StatusSucceeded {
+	if terminal := events.waitTerminal(t, exported.Operation.ID); terminal.Status != operations.StatusPartiallySucceeded {
 		t.Fatalf("export terminal=%#v", terminal)
 	}
-	copied, err := os.ReadFile(filepath.Join(destination, "legacy-0.zip"))
-	if err != nil || !bytes.Equal(copied, flaggedBytes) {
+	if _, err := os.Stat(filepath.Join(destination, "legacy-0.zip")); !os.IsNotExist(err) {
+		t.Fatalf("flagged archive was exported: %v", err)
+	}
+	copied, err := os.ReadFile(filepath.Join(destination, "legacy-1.zip"))
+	if err != nil || !bytes.Equal(copied, healthyBytes) {
 		t.Fatalf("flagged archive bytes changed: %v", err)
 	}
 	var reserved int
