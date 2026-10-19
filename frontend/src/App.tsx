@@ -453,7 +453,6 @@ function App() {
     const openDetailsButton = useRef<HTMLButtonElement>(null);
     const collectionRequestGeneration = useRef(0);
     const pendingFlagFocus = useRef<{storyID?: number} | null>(null);
-    const visiblePreviewStories = useRef<library.StorySummary[]>([]);
     const shelfPreviewGeneration = useRef(0);
     const shelfListRequestGeneration = useRef(0);
     const shelfDialog = useRef<HTMLFormElement>(null);
@@ -539,26 +538,10 @@ function App() {
                 setCollectionQuery(queryHistory.replace({...collectionQuery, page: lastPage}, activeShelfIDRef.current));
                 return;
             }
-            const visibleStories = [...result.page.stories, ...visiblePreviewStories.current];
             setRequestError(null);
             setPage(result.page);
             setDetail(null);
             setDetailRevision((current) => current + 1);
-            setSelectedIDs((current) => {
-                const visible = current.filter((storyID) => (
-                    visibleStories.some((story) => story.id === storyID)
-                ));
-                if (visible.length > 0) {
-                    return visible;
-                }
-                return result.page?.stories[0] ? [result.page.stories[0].id] : [];
-            });
-            setSelectedID((current) => {
-                if (visibleStories.some((story) => story.id === current)) {
-                    return current;
-                }
-                return result.page?.stories[0]?.id ?? null;
-            });
         } catch {
             if (generation === collectionRequestGeneration.current) {
                 setRequestError(t("The story collection could not be loaded."));
@@ -644,7 +627,6 @@ function App() {
         const remainsVisible = (story: library.StorySummary) => mode === 'include' || (mode === 'only' ? story.broken : !story.broken);
         const refreshStories = (stories: library.StorySummary[]) => stories.map((story) => changes.has(story.id)
             ? new library.StorySummary({...story, broken: changes.get(story.id)}) : story).filter(remainsVisible);
-        visiblePreviewStories.current = refreshStories(visiblePreviewStories.current);
         setSavedShelfStories((current) => Object.fromEntries(Object.entries(current).map(([id, stories]) => [id, refreshStories(stories)])));
         const trigger = document.activeElement?.closest('.story-card');
         const triggerStory = trigger?.querySelector<HTMLElement>('[data-story-id]');
@@ -1283,9 +1265,17 @@ function App() {
         () => collectionRows.flatMap((row) => row.stories),
         [collectionRows],
     );
-    useEffect(() => {
-        visiblePreviewStories.current = showSavedShelfRows ? Object.values(savedShelfStories).flat() : [];
-    }, [showSavedShelfRows, savedShelfStories]);
+    const [previousRenderedStories, setPreviousRenderedStories] = useState(renderedStories);
+    if (renderedStories !== previousRenderedStories) {
+        setPreviousRenderedStories(renderedStories);
+        const visibleIDs = new Set(renderedStories.map((story) => story.id));
+        const visibleSelection = selectedIDs.filter((id) => visibleIDs.has(id));
+        const nextSelection = visibleSelection.length > 0
+            ? visibleSelection : renderedStories.slice(0, 1).map((story) => story.id);
+        setSelectedIDs(nextSelection);
+        setSelectedID(selectedID !== null && nextSelection.includes(selectedID)
+            ? selectedID : nextSelection[0] ?? null);
+    }
     useEffect(() => {
         if (!pendingFlagFocus.current) return;
         const targetID = pendingFlagFocus.current.storyID;

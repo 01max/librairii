@@ -3704,9 +3704,9 @@ test('saves the union of selected shelves instead of only the displayed shelf', 
     })));
 });
 
-function installStoryFlagsFixture(initialFlags: number[] = []) {
-    const state = new Map(stories.map((story) => [story.id, initialFlags.includes(story.id)]));
-    const summaries = () => stories.map((story) => new library.StorySummary({...story, broken: state.get(story.id)}));
+function installStoryFlagsFixture(initialFlags: number[] = [], fixtureStories = stories) {
+    const state = new Map(fixtureStories.map((story) => [story.id, initialFlags.includes(story.id)]));
+    const summaries = () => fixtureStories.map((story) => new library.StorySummary({...story, broken: state.get(story.id)}));
     const pageFor = (request: {brokenVisibility?: string; brokenState?: string; page?: number; pageSize?: number}) => {
         const mode = request.brokenVisibility ?? 'hide';
         const matches = summaries().filter((story) => (mode === 'include' || (mode === 'only' ? story.broken : !story.broken)) &&
@@ -3873,4 +3873,41 @@ test('updates duplicate story copies in saved shelf previews', async () => {
     expect(await screen.findByRole('button', {name: 'Favorites, 1 story'})).toBeInTheDocument();
     await user.click(screen.getByRole('button', {name: 'Undo'}));
     await waitFor(() => expect(screen.getAllByRole('button', {name: 'Clockwork Forest'})).toHaveLength(2));
+});
+
+test.each(['collection', 'preview'])('reconciles preview-only selection when %s refresh finishes first', async (first) => {
+    const previewStory = new library.StorySummary({...stories[0], id: 3, title: 'Preview story'});
+    const {state, pageFor} = installStoryFlagsFixture([], [...stories, previewStory]);
+    window.history.replaceState(null, '', '/#/library?v=2&brokenVisibility=include&size=2');
+    let finishRefresh!: () => void;
+    const delayedRefresh = new Promise<void>((resolve) => { finishRefresh = resolve; });
+    queryStories.mockImplementation(async (query) => {
+        if (state.get(3) && first === 'preview') await delayedRefresh;
+        return new app.LibraryPageResponse({page: pageFor(query)});
+    });
+    listShelves.mockImplementation(async () => new app.ShelfListResponse({shelves: [
+        {id: 7, name: 'Unflagged', position: 0, validity: 'valid', count: state.get(3) ? 0 : 1},
+    ]}));
+    openShelf.mockImplementation(async () => {
+        if (state.get(3) && first === 'collection') await delayedRefresh;
+        return new app.ShelfEvaluationResponse({evaluation: {
+            shelf: {id: 7, name: 'Unflagged', validity: 'valid'},
+            query: {brokenState: 'false'},
+            page: {...pageFor({brokenVisibility: 'include'}), stories: state.get(3) ? [] : [previewStory]},
+        }});
+    });
+    const user = userEvent.setup();
+    render(<App/>);
+    await user.click(await screen.findByRole('button', {name: 'Preview story'}));
+    expect(await screen.findByRole('complementary', {name: 'Preview story details'})).toBeInTheDocument();
+    await user.click(screen.getByRole('button', {name: 'Mark Preview story as broken'}));
+    await waitFor(() => expect(state.get(3)).toBe(true));
+    await act(async () => { finishRefresh(); });
+    await waitFor(() => expect(screen.queryByRole('button', {name: 'Preview story'})).not.toBeInTheDocument());
+    expect(await screen.findByRole('complementary', {name: 'Clockwork Forest details'})).toBeInTheDocument();
+    await user.keyboard('{Control>}');
+    await user.click(screen.getByRole('button', {name: 'Moonlit Workshop'}));
+    await user.keyboard('{/Control}');
+    await user.click(screen.getByRole('button', {name: 'Clear broken flags'}));
+    expect(SetStoriesBroken).toHaveBeenLastCalledWith([1, 2], false);
 });
