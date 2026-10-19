@@ -83,36 +83,32 @@ views keeps the current search, filters, sort order, and selected stories.
 The application fits the window height. The navigation stays in place while
 the story collection scrolls; long shelf and filter lists scroll independently
 in their sidebar.
-In a narrow window, choose **Shelves & filters** above the stories to open saved
-shelves, shelf management actions, and **Refine this shelf**. The panel scrolls
+In a narrow window, choose **Library & filters** above the stories to open Collections,
+Shelves, their management actions, and **Refine this view**. The panel scrolls
 independently; choose **Done**, press Escape, or click outside to close it.
 
-**Broken stories**, just below the saved shelves, offers **Hide broken stories**
-(the default), **Include broken stories**, and **Broken only**. Visible flagged
-stories have a warning icon, a **Broken** badge, and muted cover artwork. Counts,
-pagination, shelf previews, and exports of the current view follow this choice.
-Explicitly selected flagged stories can still be exported; the flag adds no
-export restriction.
+Broken stories remain visible and counted in the Library, Collections, Shelves,
+and review proposals. A warning icon, **Broken** badge, and muted artwork identify
+them. There is no built-in Broken visibility filter. Every export skips flagged
+stories, including explicitly selected ones, and explains the skipped items.
 
-Use the flag button directly on any list row or cover card to **Mark as broken**
-or **Clear broken flag**, including in saved-shelf previews. Cover controls appear
-on hover or keyboard focus and stay visible on flagged stories and touch screens.
-The selected-story panel offers the same actions and explicit bulk actions for
-multiple selections. Details have a separate **Story warning** section.
+Use the flag button directly on a list row or cover card to **Mark as broken**
+or **Clear broken flag**, including in Collection previews and Shelves. Cover
+controls appear on hover or keyboard focus and stay visible on flagged stories
+and touch screens. Single and bulk actions are also available from the selected
+story panel. Details have a separate **Story warning** section.
 
-Flagging in the default view hides the story and explains what happened.
-**Undo** restores the previous flags for the stories actually changed, including
-mixed bulk selections. Clearing a flag in **Broken only** similarly removes the
-story from that view. Open details stay available when flagging hides a story.
-If Undo finds a removed story or a flag that no longer matches the action, it
-reports the conflict without partially restoring the selection.
+Flagging leaves cards, selections, counts, pagination, and focus in place.
+**Undo** restores the previous flags only for stories actually changed, including
+mixed bulk selections. If a story was removed or a flag changed again, Undo
+reports a conflict without partially restoring the selection.
 
-Broken is a manual story flag, separate from archive validation and tags.
-Clearing it does not certify playback or repair missing/invalid archive bytes.
-Its fixed warning style is independent of tag colors. Upgrades preserve old
-Broken assignments as flags and translate supported saved queries and collection
-URLs without broadening their results. The old built-in tag and its color setting
-are retired. A custom tag named broken is an ordinary tag with no flag behavior.
+Broken is a manual flag, separate from validation and tags. Clearing it does not
+repair archive bytes or certify playback. Upgrades preserve old built-in Broken
+assignments as flags. Supported older saved queries and URLs deliberately lose
+built-in flag restrictions, including nested ones, while keeping other criteria.
+This can broaden old queries. Ordinary user tags named broken keep their normal
+tag behavior, including reused tag IDs. Unsupported queries remain repairable.
 
 Age tags start green. **Manage tags** lets you change the color of any tag,
 including protected derived tags. Their names and system-managed
@@ -124,11 +120,21 @@ An export can snapshot any of these scopes:
 
 - the explicit story selection;
 - every result in the current query, not only the visible page;
-- one saved shelf; or
-- the deduplicated union of several shelves.
+- one dynamic Collection or approved Shelf; or
+- a deduplicated union of several Collections or several Shelves.
 
 The story drawer shows **Export selected stories** only when multiple stories
-are selected. For a single story, export the current result or its shelf.
+are selected. For a single Library story, export the current result or its
+Collection. A Shelf offers **Export whole Shelf**, **Export current result**
+(with view-only refinements), and **Export selection** separately. Checkboxes in
+the Shelves section offer a deduplicated export of the selected Shelves.
+
+The preflight includes every intended UUID. Broken stories and unavailable Shelf
+members appear as skipped, with their title/UUID and reason. Skips reserve no
+filename or export bytes. A scope with no eligible stories cannot start. Pending
+Shelf suggestions are never included. Flag changes before starting require a
+fresh preview; later queued items are checked again immediately before copying.
+Flagging a story already being copied does not retract that copy or earlier files.
 
 Before copying, Librairii reevaluates the scope and checks each managed archive,
 its checksum and validation state, its extension, the destination, and filename
@@ -162,40 +168,78 @@ Dates use your local time. **Load older activity** shows earlier records, and
 **Refresh history** reloads the latest activity. Closing History leaves dismissed
 notices hidden. Use Close, Escape, or click outside to return to the collection.
 
-## Search and saved shelves
+## Search, Collections, and Shelves
 
 Name search is a literal, case-insensitive, accent-insensitive substring match
-against the currently displayed title. Characters such as `%` and `_` have no
-wildcard meaning. Name, language, archive compatibility, broken visibility, user
-boolean tags, choice tags, and supported derived metadata filters combine as follows:
+against the displayed title. `%` and `_` have no wildcard meaning. Name,
+language, archive compatibility, boolean tags, choice tags, and supported
+derived metadata filters combine as follows:
 
-- selected values inside one choice definition use OR;
+- values inside one choice definition use OR;
 - separate filter groups use AND;
-- a boolean filter can require assigned, require unassigned, or be ignored.
+- a boolean filter requires assigned, requires unassigned, or is ignored.
 
-The collection URL hash records the live query, sort, and page so reload,
-back, and forward restore navigation. A saved shelf stores only membership:
-name search and membership-affecting filters. It does not store pagination,
-sort, current selection, dialog state, or operation progress.
+The query hash and typed navigation history restore the active Library,
+Collection, or Shelf when reloading or moving back and forward. Collection and
+Shelf identities stay separate even when their numeric IDs are the same.
+**All stories** clears the active name and tag refinements. Collapsing a filter
+heading keeps its criteria selected.
 
-Choose **All stories** to clear the name search and tag refinements. The full
-collection appears above saved-shelf previews, including stories outside those
-shelves. This reset survives a reload. Click any tag filter heading, including
-**Age**, to expand or collapse it; collapsing keeps its selected filters.
+Collections are dynamic saved searches. Existing saved Shelves become Collections
+with their names, order, IDs, and supported non-Broken criteria preserved.
+They reevaluate after library or metadata changes. An empty query means all
+active stories. Broken flags affect neither matching nor counts. Missing tag
+criteria require repair; they never become an unfiltered query silently.
 
-Shelves are dynamic saved queries rather than folders of copied stories. Their
-membership and count are reevaluated after imports, removals, metadata refreshes,
-tag changes, and broken-flag changes. An empty saved query intentionally means all active stories.
-When a referenced tag or value is deleted, the shelf is marked as needing
-attention and evaluation/export is blocked; Librairii never silently broadens
-the query. Multi-shelf views and exports count each story once and report
-overlap separately.
+Select Collections and choose **Save current query** to save a copied OR query:
+a story matching any selected Collection appears once. Later edits or deletion
+of the original Collections do not modify that copied query. Collection exports
+use current matches and deduplicate overlaps.
 
-To save a combination of shelves, select their checkboxes in the sidebar and use
-**Save current query**. The new shelf includes stories matching any of the
-selected shelves, counting each story once. It keeps a copy of their criteria,
-so matching imports appear automatically and later edits or deletion of the
-original shelves do not change the combined shelf.
+Shelves retain approved story UUIDs. **Create Shelf** opens an explicit initial
+preview; choose the stories and confirm **Create with N stories**. A new empty
+Shelf is valid. **Add to Shelf…** in the selected-story panel adds chosen stories
+to an existing Shelf or previews a new Shelf from the selection. Manual additions
+are protected and clear any prior exclusion for that UUID.
+
+Shelf search, sidebar refinements, and sorting change the view only. They never
+replace approved membership or create source rules. Manual-order arrow buttons
+explicitly reorder members; Rename, Duplicate, and Delete operate on that Shelf.
+A duplicate retains approved membership, protection, exclusions, and source
+attribution independently; it accepts no fresh source matches.
+
+**Manage sources** links Collections with the meaning “matches any of these
+Collections.” Linking never adds stories automatically. **Review updates** shows
+current additions and source-derived removals; every decision initially says
+**Not now**. **Add** approves membership, **Exclude from suggestions** records a
+persistent exclusion, **Keep and protect** prevents later source removal, and
+**Remove and exclude** removes membership and suppresses future suggestions.
+Bulk actions are explicit too. Review the final action totals before applying.
+Deferring or cancelling changes nothing. Expired or stale reviews require a
+fresh preview and renewed decisions.
+
+Current matching sources explain additions; **Added from** records historical
+acceptance, including detached sources. Protected stories and unavailable UUIDs
+are never inferred removals. If any source needs attention or cannot evaluate,
+healthy sources may still suggest additions but all source removals pause.
+The review says **Review incomplete** rather than **Up to date**.
+
+Unprotecting keeps a story in place but allows a later source review to suggest
+removal. A Shelf without sources keeps all members protected. **Manage exclusions**
+can allow suggestions again without adding the story. Removing selected stories
+from a Shelf also excludes their future suggestions; library archives remain.
+
+Detaching sources previews affected members. Explicitly **Keep all and apply
+sources**, or decide Keep/Remove for every affected story before applying. Removal
+is disabled when source coverage is uncertain or a story is unavailable. Removing
+the last source protects every retained member. Deleting a linked Collection
+reviews all affected Shelves and commits their approved decisions together with
+the deletion. Cancelling leaves both Collections and Shelves unchanged.
+
+Library removal leaves Shelf membership, exclusions, and acceptance origins
+intact. Missing members show **Unavailable**, with cached title and UUID; importing
+the same UUID reconnects membership even when its internal database ID changes.
+Shelves are local curation, without filesystem synchronization or manifests.
 
 ## Application data, trash, and recovery
 
@@ -211,7 +255,7 @@ A chosen library location is remembered in Settings. Development and test comman
 
 | Path | Purpose |
 | --- | --- |
-| `db/librairii.sqlite3` | stories, archive custody, tags, shelves, metadata state, and operation history |
+| `db/librairii.sqlite3` | stories, archive custody, tags, Collections, Shelves, metadata state, and operation history |
 | `archives/` | content-addressed managed archive copies |
 | `catalog/` | validated official-metadata snapshots and cached artwork |
 | `staging/` | incomplete local operations; abandoned entries are cleaned during startup recovery |
@@ -242,6 +286,12 @@ moves the database and any WAL/SHM sidecars into a unique
 overwritten. If preservation cannot be completed, Librairii keeps mutations
 disabled and does not silently initialize over the conflicting files.
 
+A downgrade after a successful Collections/Shelves upgrade requires quitting the
+app and restoring the matching pre-upgrade backup (preferably the complete
+library root) with the older application version. Preserve a copy of the current
+root first. An older binary cannot interpret the new curated decisions, and
+there is no reverse migration that merges them into dynamic saved queries.
+
 Uninstalling the application bundle does not delete the application data root.
 Delete that root separately only when you intend to permanently erase the
 library, managed archives, catalog cache, trash, logs, and recovery files.
@@ -263,8 +313,8 @@ ambiguous age data is left unassigned; unambiguous ages produce read-only
 derived facets.
 
 Refreshing official metadata can change display text, artwork, derived facets,
-search results, and dynamic shelf membership. It never changes user-created
-tag definitions, manual tag assignments, saved shelf definitions, archive
+search results, and dynamic Collection matches and Shelf suggestions. It never changes user-created
+tag definitions, manual tag assignments, Collection definitions and approved Shelf membership, archive
 bytes, or manual broken flags.
 
 ## Privacy and network behavior
@@ -309,7 +359,7 @@ Choose **Français** or **English** for the interface. Your explicit choice is
 remembered and applies immediately. On first launch, French is selected for a
 French system language; other system languages default to English. This setting
 changes interface text and formatting. Story titles, descriptions, custom tag
-labels, and shelf names keep their existing text. Lunii metadata fetching and
+labels, and Collection/Shelf names keep their existing text. Lunii metadata fetching and
 its existing locale policy remain unchanged.
 
 A new installation asks you to confirm where the library will live before
