@@ -36,7 +36,7 @@ export function FrontendRendered():Promise<void>;
 
 export function LibraryCompatibility():Promise<app.LibraryCompatibilityResponse>;
 
-export function ListShelves(arg1:boolean):Promise<app.ShelfListResponse>;
+export function ListShelves(arg1:library.BrokenVisibility):Promise<app.ShelfListResponse>;
 
 export function ListStories(arg1:library.ListRequest):Promise<app.LibraryPageResponse>;
 
@@ -56,7 +56,7 @@ export function PlanTagDefinitionDeletion(arg1:number):Promise<app.TagDefinition
 
 export function PlanTagValueDeletion(arg1:number):Promise<app.TagValueDeletionPlanResponse>;
 
-export function PreviewShelves(arg1:Array<number>,arg2:boolean):Promise<app.ShelfSelectionPreviewResponse>;
+export function PreviewShelves(arg1:Array<number>,arg2:library.BrokenVisibility):Promise<app.ShelfSelectionPreviewResponse>;
 
 export function QueryStories(arg1:library.StoryLibraryQuery):Promise<app.LibraryPageResponse>;
 

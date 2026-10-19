@@ -635,7 +635,7 @@ func createExportShelves(
 	preview := application.PreviewShelves(
 		ctx,
 		[]int64{allResponse.Shelf.ID, officialResponse.Shelf.ID},
-		true,
+		library.BrokenInclude,
 	)
 	if preview.Error != nil ||
 		preview.Preview == nil ||

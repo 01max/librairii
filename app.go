@@ -274,7 +274,7 @@ func (a *App) RemoveStory(storyID int64) coreapp.RemovalResponse {
 	return a.core.RemoveStory(a.runtimeContext(), storyID)
 }
 
-func (a *App) ListShelves(includeBroken bool) coreapp.ShelfListResponse {
+func (a *App) ListShelves(includeBroken library.BrokenVisibility) coreapp.ShelfListResponse {
 	if !a.libraryGate.TryRLock() {
 		return coreapp.ShelfListResponse{Error: coreapp.NewAPIError(coreapp.ErrorNotReady, "settings.busy")}
 	}
@@ -349,7 +349,7 @@ func (a *App) DeleteShelf(shelfID int64) coreapp.MutationResponse {
 
 func (a *App) PreviewShelves(
 	shelfIDs []int64,
-	includeBroken bool,
+	includeBroken library.BrokenVisibility,
 ) coreapp.ShelfSelectionPreviewResponse {
 	if !a.libraryGate.TryRLock() {
 		return coreapp.ShelfSelectionPreviewResponse{Error: coreapp.NewAPIError(coreapp.ErrorNotReady, "settings.busy")}

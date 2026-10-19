@@ -61,6 +61,8 @@ import {
 } from './query-history';
 import {
     type CompatibilityFilter,
+    type BrokenVisibility,
+    type BooleanFilterState,
     type CollectionQuery,
     DEFAULT_COLLECTION_QUERY,
 } from './query-codec';
@@ -172,7 +174,8 @@ function collectionQueryFromShelf(
 ): CollectionQuery {
     return {
         ...(saved.anyOf?.length ? {anyOf: saved.anyOf.map((branch) => collectionQueryFromShelf(branch, current))} : {}),
-        includeBroken: saved.includeBroken ?? false,
+        brokenVisibility: (saved.brokenVisibility ?? (saved.includeBroken ? 'include' : 'hide')) as BrokenVisibility,
+        ...(saved.brokenState ? {brokenState: saved.brokenState as BooleanFilterState} : {}),
         name: saved.name ?? '',
         languages: [...(saved.languages ?? [])],
         compatibilities: [...(saved.compatibilities ?? [])] as CompatibilityFilter[],
@@ -367,10 +370,10 @@ function App() {
     const [collectionQuery, setCollectionQuery] = useState(
         initialHistoryState.query,
     );
-    const includeBrokenRef = useRef(!!collectionQuery.includeBroken);
+    const brokenVisibilityRef = useRef((collectionQuery.brokenVisibility ?? 'hide'));
     useEffect(() => {
-        includeBrokenRef.current = !!collectionQuery.includeBroken;
-    }, [collectionQuery.includeBroken]);
+        brokenVisibilityRef.current = (collectionQuery.brokenVisibility ?? 'hide');
+    }, [collectionQuery.brokenVisibility]);
     const [page, setPage] = useState<library.Page | null>(null);
     const [selectedID, setSelectedID] = useState<number | null>(null);
     const [selectedIDs, setSelectedIDs] = useState<number[]>([]);
@@ -582,7 +585,7 @@ function App() {
     const loadSavedShelves = useCallback(async () => {
         try {
             const generation = ++shelfListRequestGeneration.current;
-            const response = await ListShelves(includeBrokenRef.current);
+            const response = await ListShelves(brokenVisibilityRef.current);
             if (generation !== shelfListRequestGeneration.current) return;
             if (response.error) {
                 setRequestError(response.error.message);
@@ -608,14 +611,14 @@ function App() {
         }
     }, [activateShelf, queryHistory]);
 
-    const previousVisibility = useRef(!!collectionQuery.includeBroken);
+    const previousVisibility = useRef((collectionQuery.brokenVisibility ?? 'hide'));
     useEffect(() => {
-        const visibility = !!collectionQuery.includeBroken;
+        const visibility = (collectionQuery.brokenVisibility ?? 'hide');
         if (visibility !== previousVisibility.current) {
             previousVisibility.current = visibility;
             if (applicationState === 'ready') void loadSavedShelves();
         }
-    }, [collectionQuery.includeBroken, applicationState, loadSavedShelves]);
+    }, [collectionQuery.brokenVisibility, applicationState, loadSavedShelves]);
 
     const invalidateCollection = useCallback(async () => {
         setCollectionRevision((current) => current + 1);
@@ -678,7 +681,7 @@ function App() {
                     if (active) {
                         setTagCatalog(catalogResponse.catalog ?? null);
                     }
-                    const shelvesResponse = await ListShelves(includeBrokenRef.current);
+                    const shelvesResponse = await ListShelves(brokenVisibilityRef.current);
                     if (!active) {
                         return;
                     }
@@ -778,7 +781,7 @@ function App() {
             setShelfSelectionBusy(true);
             setShelfSelectionError(null);
             try {
-                const response = await PreviewShelves(selectedShelfIDs, !!collectionQuery.includeBroken);
+                const response = await PreviewShelves(selectedShelfIDs, (collectionQuery.brokenVisibility ?? 'hide'));
                 if (!active) {
                     return;
                 }
@@ -806,7 +809,7 @@ function App() {
         return () => {
             active = false;
         };
-    }, [applicationState, savedShelves, selectedShelfIDs, collectionQuery.includeBroken]);
+    }, [applicationState, savedShelves, selectedShelfIDs, collectionQuery.brokenVisibility]);
 
     useEffect(() => {
         const unsubscribe = EventsOn('operation:changed', (value: unknown) => {
@@ -906,7 +909,7 @@ function App() {
                 : [];
         await preflightExport(new exporter.PreflightRequest({
             sourceType,
-            includeBroken: !!collectionQuery.includeBroken,
+            brokenVisibility: (collectionQuery.brokenVisibility ?? 'hide'),
             storyIds: sourceType === 'selection' ? [...selectedIDs] : [],
             query: sourceType === 'current_query'
                 ? new library.StoryLibraryQuery(collectionQuery)
@@ -1276,7 +1279,7 @@ function App() {
                 const response = await OpenShelf(
                     shelf.id,
                     new library.ListRequest({
-                        includeBroken: !!collectionQuery.includeBroken,
+                        brokenVisibility: (collectionQuery.brokenVisibility ?? 'hide'),
                         page: 1,
                         pageSize: 6,
                         sort: collectionQuery.sort,
@@ -1337,7 +1340,7 @@ function App() {
         applicationState,
         assignmentWorkspace?.catalog,
         collectionQuery.sort,
-        collectionQuery.includeBroken,
+        collectionQuery.brokenVisibility,
         previewableShelves,
         showSavedShelfRows,
         tagCatalog,
@@ -1364,7 +1367,7 @@ function App() {
             const response = await OpenShelf(
                 shelfID,
                 new library.ListRequest({
-                    includeBroken: !!collectionQuery.includeBroken,
+                    brokenVisibility: (collectionQuery.brokenVisibility ?? 'hide'),
                     page: 1,
                     pageSize: collectionQuery.pageSize,
                     sort: collectionQuery.sort,
@@ -1421,7 +1424,7 @@ function App() {
                 const selected = await Promise.all(selectedShelfIDs.map((id) => OpenShelf(
                     id,
                     new library.ListRequest({
-                        includeBroken: !!collectionQuery.includeBroken,
+                        brokenVisibility: (collectionQuery.brokenVisibility ?? 'hide'),
                         page: 1,
                         pageSize: 1,
                         sort: collectionQuery.sort,
@@ -1433,7 +1436,7 @@ function App() {
                 }
                 queryToSave = {
                     ...initialCollectionQuery,
-                    includeBroken: collectionQuery.includeBroken,
+                    brokenVisibility: collectionQuery.brokenVisibility,
                     sort: collectionQuery.sort,
                     pageSize: collectionQuery.pageSize,
                     anyOf: selected.map((response) => collectionQueryFromShelf(response.evaluation!.query, collectionQuery)),
@@ -1957,9 +1960,9 @@ function App() {
                 <label className="include-broken">
                     <input
                         type="checkbox"
-                        checked={!!collectionQuery.includeBroken}
+                        checked={collectionQuery.brokenVisibility === 'include'}
                         onChange={(event) => {
-                            const next = {...collectionQuery, includeBroken: event.currentTarget.checked, page: 1};
+                            const next = {...collectionQuery, brokenVisibility: (event.currentTarget.checked ? 'include' : 'hide') as BrokenVisibility, page: 1};
                             if (allStoriesActive) {
                                 setCollectionQuery(queryHistory.push(next, null, 'all'));
                             } else {

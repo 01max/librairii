@@ -678,7 +678,7 @@ func (r *ImportRuntime) SetBulkChoiceValue(
 
 func (r *ImportRuntime) ListShelves(
 	ctx context.Context,
-	includeBroken ...bool,
+	includeBroken ...library.BrokenVisibility,
 ) ([]shelves.Summary, error) {
 	_, evaluator, err := r.currentShelves()
 	if err != nil {
@@ -772,7 +772,7 @@ func (r *ImportRuntime) DeleteShelf(
 func (r *ImportRuntime) PreviewShelves(
 	ctx context.Context,
 	shelfIDs []int64,
-	includeBroken ...bool,
+	includeBroken ...library.BrokenVisibility,
 ) (shelves.SelectionPreview, error) {
 	_, evaluator, err := r.currentShelves()
 	if err != nil {

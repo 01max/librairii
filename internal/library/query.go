@@ -40,10 +40,11 @@ const (
 )
 
 type ListRequest struct {
-	IncludeBroken bool `json:"includeBroken"`
-	Page          int  `json:"page"`
-	PageSize      int  `json:"pageSize"`
-	Sort          Sort `json:"sort"`
+	BrokenVisibility BrokenVisibility `json:"brokenVisibility,omitempty"`
+	IncludeBroken    bool             `json:"includeBroken"`
+	Page             int              `json:"page"`
+	PageSize         int              `json:"pageSize"`
+	Sort             Sort             `json:"sort"`
 }
 
 type DisplaySources struct {
@@ -164,11 +165,12 @@ func (q *Query) List(ctx context.Context, request ListRequest) (Page, error) {
 	if err != nil {
 		return Page{}, err
 	}
-	return q.searchNormalized(ctx, StoryLibraryQuery{
-		IncludeBroken: request.IncludeBroken,
-		Page:          request.Page,
-		PageSize:      request.PageSize,
-		Sort:          request.Sort,
+	return q.Search(ctx, StoryLibraryQuery{
+		IncludeBroken:    request.IncludeBroken,
+		BrokenVisibility: request.BrokenVisibility,
+		Page:             request.Page,
+		PageSize:         request.PageSize,
+		Sort:             request.Sort,
 	})
 }
 

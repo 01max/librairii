@@ -917,6 +917,7 @@ export namespace exporter {
 		}
 	}
 	export class PreflightRequest {
+	    brokenVisibility?: string;
 	    includeBroken: boolean;
 	    sourceType: string;
 	    storyIds?: number[];
@@ -929,6 +930,7 @@ export namespace exporter {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.brokenVisibility = source["brokenVisibility"];
 	        this.includeBroken = source["includeBroken"];
 	        this.sourceType = source["sourceType"];
 	        this.storyIds = source["storyIds"];
@@ -1100,6 +1102,7 @@ export namespace library {
 	    }
 	}
 	export class ListRequest {
+	    brokenVisibility?: string;
 	    includeBroken: boolean;
 	    page: number;
 	    pageSize: number;
@@ -1111,6 +1114,7 @@ export namespace library {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.brokenVisibility = source["brokenVisibility"];
 	        this.includeBroken = source["includeBroken"];
 	        this.page = source["page"];
 	        this.pageSize = source["pageSize"];
@@ -1628,6 +1632,8 @@ export namespace removal {
 export namespace shelves {
 	
 	export class SavedLibraryQuery {
+	    brokenVisibility?: string;
+	    brokenState?: string;
 	    anyOf?: SavedLibraryQuery[];
 	    includeBroken?: boolean;
 	    name?: string;
@@ -1642,6 +1648,8 @@ export namespace shelves {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.brokenVisibility = source["brokenVisibility"];
+	        this.brokenState = source["brokenState"];
 	        this.anyOf = this.convertValues(source["anyOf"], SavedLibraryQuery);
 	        this.includeBroken = source["includeBroken"];
 	        this.name = source["name"];

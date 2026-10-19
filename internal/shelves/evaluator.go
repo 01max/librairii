@@ -79,8 +79,8 @@ func (e *Evaluator) Evaluate(
 		return Evaluation{}, err
 	}
 	query := opened.Query.StoryLibraryQuery()
-	query.IncludeBroken = request.IncludeBroken
-	opened.Query.IncludeBroken = request.IncludeBroken
+	query.BrokenVisibility = library.Visibility(request.BrokenVisibility, request.IncludeBroken)
+	opened.Query.BrokenVisibility = query.BrokenVisibility
 	query.Page = request.Page
 	query.PageSize = request.PageSize
 	query.Sort = request.Sort
@@ -95,7 +95,7 @@ func (e *Evaluator) Evaluate(
 	}, nil
 }
 
-func (e *Evaluator) Count(ctx context.Context, shelfID int64, includeBroken ...bool) (ShelfCount, error) {
+func (e *Evaluator) Count(ctx context.Context, shelfID int64, includeBroken ...library.BrokenVisibility) (ShelfCount, error) {
 	opened, err := e.shelves.Open(ctx, shelfID)
 	if err != nil {
 		return ShelfCount{}, err
@@ -121,7 +121,7 @@ func (e *Evaluator) Count(ctx context.Context, shelfID int64, includeBroken ...b
 	}, nil
 }
 
-func (e *Evaluator) Counts(ctx context.Context, includeBroken ...bool) ([]ShelfCount, error) {
+func (e *Evaluator) Counts(ctx context.Context, includeBroken ...library.BrokenVisibility) ([]ShelfCount, error) {
 	shelves, err := e.shelves.List(ctx)
 	if err != nil {
 		return nil, err
@@ -137,7 +137,7 @@ func (e *Evaluator) Counts(ctx context.Context, includeBroken ...bool) ([]ShelfC
 	return counts, nil
 }
 
-func (e *Evaluator) Summaries(ctx context.Context, includeBroken ...bool) ([]Summary, error) {
+func (e *Evaluator) Summaries(ctx context.Context, includeBroken ...library.BrokenVisibility) ([]Summary, error) {
 	shelves, err := e.shelves.List(ctx)
 	if err != nil {
 		return nil, err
@@ -177,7 +177,7 @@ func (e *Evaluator) Summaries(ctx context.Context, includeBroken ...bool) ([]Sum
 func (e *Evaluator) PreviewSelection(
 	ctx context.Context,
 	shelfIDs []int64,
-	includeBroken ...bool,
+	includeBroken ...library.BrokenVisibility,
 ) (SelectionPreview, error) {
 	if len(shelfIDs) == 0 {
 		return SelectionPreview{}, ErrInvalidShelfSelection
@@ -238,9 +238,10 @@ func (e *Evaluator) PreviewSelection(
 	return preview, nil
 }
 
-func withVisibility(query library.StoryLibraryQuery, override []bool) library.StoryLibraryQuery {
+func withVisibility(query library.StoryLibraryQuery, override []library.BrokenVisibility) library.StoryLibraryQuery {
 	if len(override) > 0 {
-		query.IncludeBroken = override[0]
+		query.BrokenVisibility = override[0]
+		query.IncludeBroken = false
 	}
 	return query
 }

@@ -14,7 +14,7 @@ type CollectionWindow = Pick<Window, 'addEventListener' | 'removeEventListener'>
 export type CollectionScope = 'all' | 'shelf' | 'custom';
 
 function hasMembershipCriteria(query: CollectionQuery): boolean {
-    return !!query.anyOf?.length || query.name !== '' ||
+    return !!query.brokenState || !!query.anyOf?.length || query.name !== '' ||
         query.languages.length > 0 ||
         query.compatibilities.length > 0 ||
         query.booleanFilters.length > 0 ||
@@ -26,7 +26,7 @@ function sameMembershipCriteria(
     right: CollectionQuery,
 ): boolean {
     return JSON.stringify([
-        left.includeBroken ?? false,
+        left.brokenVisibility ?? 'hide', left.brokenState,
         left.name,
         left.languages,
         left.compatibilities,
@@ -34,7 +34,7 @@ function sameMembershipCriteria(
         left.choiceFilters,
         left.anyOf,
     ]) === JSON.stringify([
-        right.includeBroken ?? false,
+        right.brokenVisibility ?? 'hide', right.brokenState,
         right.name,
         right.languages,
         right.compatibilities,
