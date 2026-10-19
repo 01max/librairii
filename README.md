@@ -57,11 +57,12 @@ need the UUID, archive filename, verification status, or checksum.
 
 ### A library organized your way
 
-Define reusable tags and colors. Built-in and derived tags keep their protected
-names and values while letting you choose their colors.
+Define reusable tags and colors. Derived tags keep their protected names and
+values while letting you choose their colors. Flag troublesome stories directly
+from a list or cover, and undo flag changes without opening the tag editor.
 
 <p align="center">
-  <img src="docs/assets/tag-manager.png" width="850" alt="Tag manager with controls for creating a tag and changing the built-in Age tag's color">
+  <img src="docs/assets/tag-manager.png" width="850" alt="Tag manager with controls for creating a tag and changing the derived Age tag's color">
 </p>
 
 These screenshots use the frontend's deterministic `?fixture=parity` demo data.

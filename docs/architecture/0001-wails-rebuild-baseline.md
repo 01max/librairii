@@ -12,7 +12,7 @@ verified by application and release acceptance tests.
 The UI baseline is tracked in the repository:
 
 - reference: `testdata/ui-prototypes/05-archive-shelves.html`
-- SHA-256: `a3709c344b0c0dd0af362e0bdc7be3d8892560c2aec8175e3f3e48b87832bd16`
+- SHA-256: `4fe9cc8555095892e56195a4b4df9abdf676b229ac3b3961cab9dff727c2b8b1`
 - the `.app` subtree is normative
 - the `.back` gallery link is excluded from the product
 
@@ -102,3 +102,24 @@ The reset must preserve:
 No removal command may target the repository root, the user home directory, or
 an application-data directory. Legacy external data is never interpreted,
 overwritten, or deleted by the rebuild.
+
+## Dedicated broken-story flag revision (2026-10-19)
+
+Migration 015 moves the retired built-in Broken assignments into
+`stories.is_broken`, removes its definition and protection triggers, and records
+the retired definition ID separately for legacy decoding. No tag key is reserved
+for flag behavior. Startup seeds derived facets independently. Manual flags
+survive metadata projection, import rediscovery, and archive verification.
+
+Dedicated atomic set/restore operations accept explicit story states. Undo
+checks target availability and expected current flags before committing the
+whole restore. UI controls are separate from selection and tag editing, with
+independent details state when a story disappears from the current result.
+
+Collection URL version 2 and shelf payload version 4 separate root broken
+visibility (hide/include/only) from explicit per-node flag membership. Older
+payloads translate retired tag IDs before live reference validation; AND/OR
+composition and even contradictory empty results are retained. Only old versions
+interpret the compatibility identity, so a new tag can safely reuse its ID.
+Current-query/shelf exports follow visibility, explicit selections still allow
+flagged stories, and prepared scopes remain snapshots.
