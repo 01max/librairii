@@ -111,6 +111,13 @@ try {
             const historyResult = await new AxeBuilder({page})
                 .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze();
             if (historyResult.violations.length) throw new Error(`History: ${JSON.stringify(historyResult.violations)}`);
+            for (const fixture of ['settings', 'setup', 'relocating']) {
+                await page.goto(`http://127.0.0.1:${address.port}/?fixture=${fixture}&lang=fr`, {waitUntil:'networkidle'});
+                await page.getByRole('dialog').waitFor();
+                const settingsResult = await new AxeBuilder({page}).withTags(['wcag2a','wcag2aa','wcag21a','wcag21aa']).analyze();
+                if (settingsResult.violations.length) throw new Error(`${fixture}: ${JSON.stringify(settingsResult.violations)}`);
+                if (await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth)) throw new Error(`${fixture}: horizontal overflow`);
+            }
             results.push({
                 viewport,
                 axeViolations: violations.length,

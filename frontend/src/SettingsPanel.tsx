@@ -21,6 +21,15 @@ export default function SettingsPanel({onReady}: {onReady: () => void}) {
  const moving = !!snapshot?.move && !['succeeded','failed','cancelled','cleanup_pending'].includes(snapshot.move.phase);
     const dialog = useRef<HTMLElement>(null);
     const close = useRef<HTMLButtonElement>(null);
+    useEffect(() => {
+        if (!open) return;
+        const root=dialog.current?.closest('.app');
+        if (!root) return;
+        const siblings=[...root.children].filter((child): child is HTMLElement => child instanceof HTMLElement && !child.contains(dialog.current));
+        const previous=siblings.map((child) => child.inert);
+        siblings.forEach((child) => {child.inert=true;});
+        return () => siblings.forEach((child,index) => {child.inert=previous[index];});
+    },[open]);
     useModalFocus(dialog, close, open);
     function accept(value: Snapshot) {
         setSnapshot(value);

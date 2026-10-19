@@ -264,15 +264,29 @@ export function installCollectionFixture() {
         totalPages: matchingItems === 0 ? 0 : Math.ceil(matchingItems / pageSize),
         sort,
     });
+    let settingsLanguage = new URLSearchParams(window.location.search).get('lang') === 'fr' ? 'fr' : 'en';
+    let setupComplete = fixture !== 'setup';
+    let movePhase = fixture === 'relocating' ? 'copying' : '';
+    const settingsSnapshot = () => ({language:settingsLanguage,root:'~/Stories/Librairii',setupRequired:!setupComplete,isolated:false,recovery:false,
+        pendingOpen:['settings','relocating'].includes(fixture),
+        move:movePhase ? {phase:movePhase,copied:512,total:1024,cancelable:movePhase==='copying'} : undefined});
     const fixtureApp = {
+        Settings: async () => settingsSnapshot(),
+        SetUILanguage: async (language: string) => { settingsLanguage=language; return settingsSnapshot(); },
+        SelectLibraryLocation: async () => ({...settingsSnapshot(),preparation:{id:'fixture-move',source:'~/Stories/Librairii',destination:'/Volumes/Histoires/Librairii',bytes:1024,libraryId:'fixture'}}),
+        ConfirmLibrarySetup: async () => {setupComplete=true;return {success:true};},
+        StartLibraryMove: async () => {movePhase='copying';return settingsSnapshot();},
+        CancelLibraryMove: async () => {movePhase='cancelled';return settingsSnapshot();},
+        RetryLibrary: async () => settingsSnapshot(),
+        LocateLibrary: async () => settingsSnapshot(),
         ActiveOperations: async () => ({
             operations: fixture === 'history' ? [historyOperations[0]]
                 : fixtureSnapshot?.status === 'running' ? [fixtureSnapshot] : [],
         }),
         ApplicationStatus: async () => ({
             status: {
-                state: 'ready',
-                mutationsAllowed: true,
+                state: setupComplete ? 'ready' : 'setup_required',
+                mutationsAllowed: setupComplete,
                 recoveryAvailable: false,
             },
         }),

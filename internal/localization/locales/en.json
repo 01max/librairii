@@ -246,7 +246,7 @@
   "Select {0} for combined shelf preview": "Select {0} for combined shelf preview",
   "Selected folder": "Selected folder",
   "Shelf name": "Shelf name",
-  "Shelves &amp; filters": "Shelves &amp; filters",
+  "Shelves &amp; filters": "Shelves & filters",
   "Show Lunii sync": "Show Lunii sync",
   "Show all stories": "Show all stories",
   "Show technical details": "Show technical details",
@@ -379,5 +379,6 @@
   "settings.identity_mismatch": "This folder does not contain the expected library.",
   "Story archives": "Story archives",
   "Export story archives": "Export story archives",
-  "Export diagnostics": "Export diagnostics"
+  "Export diagnostics": "Export diagnostics",
+  "settings.cleanup_pending": "The library is active at its new location; some old files need cleanup."
 }

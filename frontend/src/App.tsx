@@ -339,6 +339,7 @@ function compatibilityLabel(value: string): string {
 function App() {
     useLanguage();
     const [settingsRevision,setSettingsRevision] = useState(0);
+ const acceptanceStarted=useRef(false);
     const [libraryView, setLibraryView] = useLibraryView();
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const closeSidebar = useCallback(() => setSidebarOpen(false), []);
@@ -754,7 +755,8 @@ function App() {
     }, [applicationState, loadCollection]);
 
     useEffect(() => {
-        if (applicationState === 'ready') {
+        if ((applicationState === 'ready'||applicationState==='setup_required')&&!acceptanceStarted.current) {
+ acceptanceStarted.current=true;
             void runPackagedAcceptance();
         }
     }, [applicationState]);

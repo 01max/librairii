@@ -379,5 +379,6 @@
   "settings.identity_mismatch": "Ce dossier ne contient pas la bibliothèque attendue.",
   "Story archives": "Archives d’histoires",
   "Export story archives": "Exporter des archives d’histoires",
-  "Export diagnostics": "Exporter les diagnostics"
+  "Export diagnostics": "Exporter les diagnostics",
+  "settings.cleanup_pending": "La bibliothèque est active au nouvel emplacement ; certains anciens fichiers restent à nettoyer."
 }
