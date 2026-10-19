@@ -193,6 +193,20 @@ func (r *ImportRuntime) Start(ctx context.Context) error {
 		}
 	}
 	manager, err := operations.NewManager(operations.Dependencies{
+		CheckExportEligibility: func(ctx context.Context, item operations.NewItem) (string, string, error) {
+			states, err := library.NewQuery(readDatabase, nil).ExportStates(ctx, []string{item.StoryUUID})
+			if err != nil {
+				return "", "", err
+			}
+			state := states[item.StoryUUID]
+			if state.ID == 0 || state.ID != item.StoryID {
+				return "story_unavailable", "This approved story is unavailable in the library.", nil
+			}
+			if state.Broken {
+				return "story_marked_broken", "This story is marked as broken.", nil
+			}
+			return "", "", nil
+		},
 		Repository:     operations.NewRepository(writeDatabase),
 		Imports:        importExecutor,
 		Exports:        exportExecutor,
