@@ -591,5 +591,14 @@
   "Stories changed after the export preview. Refresh the preview and try again.": "Les histoires ont changé depuis l’aperçu de l’export. Actualisez l’aperçu puis réessayez.",
   "A selected Collection needs attention before it can be exported.": "Une collection sélectionnée nécessite une intervention avant de pouvoir être exportée.",
   "Broken: {0}": "Défectueuse : {0}",
-  "Selected stories": "Histoires sélectionnées"
+  "Selected stories": "Histoires sélectionnées",
+  "Filter by tags": "Filtrer par étiquettes",
+  "Search tags": "Rechercher une étiquette",
+  "No matching tags.": "Aucune étiquette correspondante.",
+  "Match": "Correspondance",
+  "{0} filter": "Filtre {0}",
+  "Any": "Toutes",
+  "Tagged": "Avec cette étiquette",
+  "Not tagged": "Sans cette étiquette",
+  "Clear tag filters": "Effacer les filtres"
 }

@@ -3955,3 +3955,25 @@ test('shows Broken feedback only after a toggle and clears it when details close
     expect(within(dialog).queryByRole('status')).not.toBeInTheDocument();
     expect(within(dialog).getByRole('switch', {name: 'Broken: Clockwork Forest'})).toBeChecked();
 });
+
+test('combines tag filters with text search from the search toolbar', async () => {
+    const user = userEvent.setup();
+    render(<App/>);
+    const search = await screen.findByRole('searchbox', {name: 'Search stories'});
+    await user.type(search, 'moon forest');
+    const opener = screen.getByRole('button', {name: 'Filter by tags'});
+    await user.click(opener);
+    const panel = screen.getByRole('region', {name: 'Tag filters'});
+    expect(within(panel).getByRole('searchbox', {name: 'Search tags'})).toHaveFocus();
+    await user.selectOptions(within(panel).getByRole('combobox', {name: 'Favorite filter'}), 'false');
+    await user.click(within(panel).getByRole('checkbox', {name: 'Calm'}));
+    await waitFor(() => expect(queryStories).toHaveBeenLastCalledWith(expect.objectContaining({
+        name: 'moon forest', booleanFilters: [{definitionId: 1, state: 'false'}], choiceFilters: [{definitionId: 2, valueIds: [20]}], page: 1,
+    })));
+    await user.click(within(panel).getByRole('button', {name: 'Clear tag filters'}));
+    await waitFor(() => expect(queryStories).toHaveBeenLastCalledWith(expect.objectContaining({name: 'moon forest', choiceFilters: []})));
+    await user.keyboard('{Escape}');
+    expect(screen.queryByRole('region', {name: 'Tag filters'})).not.toBeInTheDocument();
+    expect(opener).toHaveFocus();
+    expect(search).toHaveValue('moon forest');
+});

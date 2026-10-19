@@ -591,5 +591,14 @@
   "Stories changed after the export preview. Refresh the preview and try again.": "Stories changed after the export preview. Refresh the preview and try again.",
   "A selected Collection needs attention before it can be exported.": "A selected Collection needs attention before it can be exported.",
   "Broken: {0}": "Broken: {0}",
-  "Selected stories": "Selected stories"
+  "Selected stories": "Selected stories",
+  "Filter by tags": "Filter by tags",
+  "Search tags": "Search tags",
+  "No matching tags.": "No matching tags.",
+  "Match": "Match",
+  "{0} filter": "{0} filter",
+  "Any": "Any",
+  "Tagged": "Tagged",
+  "Not tagged": "Not tagged",
+  "Clear tag filters": "Clear tag filters"
 }

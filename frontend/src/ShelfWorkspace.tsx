@@ -1,7 +1,8 @@
+import TagSearchFilters from './TagSearchFilters';
 import SearchInput from './SearchInput';
 import {useCallback, useEffect, useRef, useState} from 'react';
 import {OpenShelf, RenameShelf, DuplicateShelf, DeleteShelf, RemoveStoriesFromShelf, ReorderShelfStories, SetShelfStoryProtected, ClearShelfExclusion} from '../wailsjs/go/main/App';
-import {collections, exporter, library, shelves} from '../wailsjs/go/models';
+import {collections, exporter, library, shelves, tagging} from '../wailsjs/go/models';
 import {type CollectionQuery, DEFAULT_COLLECTION_QUERY} from './query-codec';
 import {t} from './i18n';
 import {type LibraryView} from './library-view';
@@ -13,8 +14,8 @@ import ShelfDialog from './ShelfDialog';
 import StoryCover from './StoryCover';
 import OutcomeText from './OutcomeText';
 
-export default function ShelfWorkspace({id, revision, query, onQuery, collections: sourceOptions, onChanged, onDeleted, onInspect, onExport, manualOrder = true, onManualOrder, viewMode = 'large', exportBusy = false}: {
-    exportBusy?: boolean; viewMode?: LibraryView; manualOrder?: boolean; onManualOrder?: (manual: boolean) => void; collections: collections.Summary[]; id: number; revision: number; query: CollectionQuery; onQuery: (query: CollectionQuery) => void;
+export default function ShelfWorkspace({catalog, id, revision, query, onQuery, collections: sourceOptions, onChanged, onDeleted, onInspect, onExport, manualOrder = true, onManualOrder, viewMode = 'large', exportBusy = false}: {
+    catalog?: tagging.Catalog | null; exportBusy?: boolean; viewMode?: LibraryView; manualOrder?: boolean; onManualOrder?: (manual: boolean) => void; collections: collections.Summary[]; id: number; revision: number; query: CollectionQuery; onQuery: (query: CollectionQuery) => void;
     onExport: (request: exporter.PreflightRequest) => void; onChanged: () => void; onDeleted: () => void; onInspect: (story: library.StorySummary) => void;
 }) {
     const [view, setView] = useState<shelves.Evaluation | null>(null);
@@ -82,7 +83,7 @@ export default function ShelfWorkspace({id, revision, query, onQuery, collection
         <BrokenToggle title={t('Selected stories')} disabled={flags.pending || !selectedStoryIDs.length}
             broken={selectedStoryIDs.length > 0 && selectedStoryIDs.every((id) => Object.values(knownMembers).some((member) => member.story?.id === id && member.story.broken))}
             onChange={(broken) => void flags.set(selectedStoryIDs, broken)}/>
-        <label>{t('Refine this view')}<SearchInput value={query.name} onChange={(name) => onQuery({...query, name, page: 1})}/></label>
+        <div className="shelf-search"><label>{t('Refine this view')}<SearchInput value={query.name} onChange={(name) => onQuery({...query, name, page: 1})}/></label><TagSearchFilters catalog={catalog} query={query} onChange={onQuery}/></div>
         <label>{t('Sort stories')}<select value={manualOrder ? '' : query.sort} onChange={(event) => {onManualOrder?.(event.target.value === ''); if (event.target.value) onQuery({...query, sort: event.target.value as CollectionQuery['sort'], page: 1});}}>
             <option value="">{t('Manual order')}</option><option value="name_asc">{t('Name A–Z')}</option><option value="imported_desc">{t('Newest imported')}</option></select></label>
         <p>{t('Refinements change this view only. Approved membership stays the same.')}</p>
