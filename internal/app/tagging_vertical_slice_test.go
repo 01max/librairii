@@ -88,16 +88,15 @@ func TestTaggingAndSharedQueryVerticalSlice(t *testing.T) {
 	catalog := application.TagCatalog(context.Background())
 	if catalog.Error != nil ||
 		catalog.Catalog == nil ||
-		len(catalog.Catalog.Definitions) != 2 ||
-		catalog.Catalog.Definitions[0].Key != tagging.BrokenKey ||
-		catalog.Catalog.Definitions[1].Key != "age" ||
-		catalog.Catalog.Definitions[1].Source != tagging.SourceDerived {
+		len(catalog.Catalog.Definitions) != 1 ||
+		catalog.Catalog.Definitions[0].Key != "age" ||
+		catalog.Catalog.Definitions[0].Source != tagging.SourceDerived {
 		t.Fatalf("TagCatalog() = %#v", catalog)
 	}
-	broken := catalog.Catalog.Definitions[0]
+	age := catalog.Catalog.Definitions[0]
 	if renamed := application.RenameTagDefinition(
 		context.Background(),
-		broken.ID,
+		age.ID,
 		"Unsafe",
 	); renamed.Error == nil || renamed.Error.Code != ErrorConflict {
 		t.Fatalf("RenameTagDefinition(broken) = %#v", renamed)
@@ -129,10 +128,9 @@ func TestTaggingAndSharedQueryVerticalSlice(t *testing.T) {
 	}
 	calm := calmResponse.Value
 
-	assignedBroken := application.SetBooleanTag(
+	assignedBroken := application.SetStoriesBroken(
 		context.Background(),
 		storyIDs,
-		broken.ID,
 		true,
 	)
 	if assignedBroken.Error != nil ||
@@ -140,10 +138,9 @@ func TestTaggingAndSharedQueryVerticalSlice(t *testing.T) {
 		assignedBroken.Result.ChangedStories != 2 {
 		t.Fatalf("SetBooleanTag() = %#v", assignedBroken)
 	}
-	idempotent := application.SetBooleanTag(
+	idempotent := application.SetStoriesBroken(
 		context.Background(),
 		storyIDs,
-		broken.ID,
 		true,
 	)
 	if idempotent.Error != nil ||
@@ -170,18 +167,15 @@ func TestTaggingAndSharedQueryVerticalSlice(t *testing.T) {
 	)
 	if workspace.Error != nil ||
 		workspace.Workspace == nil ||
-		workspace.Workspace.States[0].AssignedStories != 2 ||
-		workspace.Workspace.States[1].Values[0].AssignedStories != 1 {
+		len(workspace.Workspace.States) != 2 ||
+		workspace.Workspace.States[0].Values[0].AssignedStories != 1 {
 		t.Fatalf("TagAssignmentWorkspace() = %#v", workspace)
 	}
 	filtered := application.QueryStories(
 		context.Background(),
 		library.StoryLibraryQuery{
-			IncludeBroken: true,
-			BooleanFilters: []library.BooleanFilter{{
-				DefinitionID: broken.ID,
-				State:        library.BooleanTrue,
-			}},
+			BrokenVisibility: library.BrokenInclude,
+			BrokenState:      library.BooleanTrue,
 			ChoiceFilters: []library.ChoiceFilter{{
 				DefinitionID: mood.ID,
 				ValueIDs:     []int64{calm.ID},

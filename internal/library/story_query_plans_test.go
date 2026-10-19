@@ -3,6 +3,7 @@ package library
 import (
 	"context"
 	"errors"
+	"github.com/01max/librairii/internal/testsupport"
 	"strings"
 	"testing"
 
@@ -99,7 +100,7 @@ func TestStoryLibraryQueryRejectsInvalidBoundedInputsAndSQLText(t *testing.T) {
 		"Dragon",
 		"a",
 	)
-	broken, err := tagging.SeedBuiltIns(context.Background(), database)
+	broken, err := testsupport.SeedBooleanTag(context.Background(), database)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -178,7 +179,7 @@ func TestStoryLibraryQueryPlanUsesAssignmentIndexes(t *testing.T) {
 		"Dragon",
 		"a",
 	)
-	broken, err := tagging.SeedBuiltIns(context.Background(), database)
+	broken, err := testsupport.SeedBooleanTag(context.Background(), database)
 	if err != nil {
 		t.Fatal(err)
 	}

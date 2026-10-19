@@ -440,14 +440,6 @@ func tagSearchFilterAndSaveShelf(
 		return library.StoryLibraryQuery{}, shelves.Shelf{},
 			fmt.Errorf("load tag catalog: %#v", catalogResponse)
 	}
-	broken, found := findDefinition(
-		catalogResponse.Catalog.Definitions,
-		tagging.BrokenKey,
-	)
-	if !found {
-		return library.StoryLibraryQuery{}, shelves.Shelf{},
-			errors.New("protected broken tag is missing")
-	}
 	moodResponse := application.CreateTagDefinition(ctx, tagging.CreateDefinition{
 		Key:   "smoke-mood",
 		Label: "Smoke mood",
@@ -467,10 +459,9 @@ func tagSearchFilterAndSaveShelf(
 		return library.StoryLibraryQuery{}, shelves.Shelf{},
 			fmt.Errorf("create smoke tag value: %#v", calmResponse)
 	}
-	if assigned := application.SetBooleanTag(
+	if assigned := application.SetStoriesBroken(
 		ctx,
 		[]int64{storyID},
-		broken.ID,
 		true,
 	); assigned.Error != nil {
 		return library.StoryLibraryQuery{}, shelves.Shelf{},
@@ -501,10 +492,7 @@ func tagSearchFilterAndSaveShelf(
 	}
 	query := library.StoryLibraryQuery{
 		IncludeBroken: true,
-		BooleanFilters: []library.BooleanFilter{{
-			DefinitionID: broken.ID,
-			State:        library.BooleanTrue,
-		}},
+		BrokenState:   library.BooleanTrue,
 		ChoiceFilters: []library.ChoiceFilter{{
 			DefinitionID: moodResponse.Definition.ID,
 			ValueIDs:     []int64{calmResponse.Value.ID},

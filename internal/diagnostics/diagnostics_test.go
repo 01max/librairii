@@ -204,7 +204,7 @@ func TestExportContainsOnlyAggregateFactsAndValidatedLogs(t *testing.T) {
 		}
 	}
 	if manifest.FormatVersion != formatVersion ||
-		manifest.SchemaVersion != 14 ||
+		manifest.SchemaVersion != 15 ||
 		manifest.StoryCount != 1 ||
 		manifest.ShelfCount != 0 ||
 		manifest.OperationCount != 0 {

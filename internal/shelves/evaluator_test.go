@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"github.com/01max/librairii/internal/testsupport"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -82,7 +83,7 @@ func TestEvaluatorReevaluatesTagAssignmentsThroughStoryLibraryQuery(t *testing.T
 		"Tag story",
 		"a",
 	)
-	broken, err := tagging.SeedBuiltIns(context.Background(), harness.database)
+	broken, err := testsupport.SeedBooleanTag(context.Background(), harness.database)
 	if err != nil {
 		t.Fatal(err)
 	}

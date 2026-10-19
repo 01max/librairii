@@ -87,7 +87,7 @@ func TestServiceRejectsValuesForBooleanAndDerivedDefinitions(t *testing.T) {
 	t.Parallel()
 
 	connection := openTaggingDatabase(t)
-	broken, err := SeedBuiltIns(context.Background(), connection)
+	broken, err := seedTestBoolean(context.Background(), connection)
 	if err != nil {
 		t.Fatal(err)
 	}

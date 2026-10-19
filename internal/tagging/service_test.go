@@ -11,7 +11,7 @@ func TestServiceCreatesNormalizesAndValidatesUserDefinitions(t *testing.T) {
 	t.Parallel()
 
 	connection := openTaggingDatabase(t)
-	if _, err := SeedBuiltIns(context.Background(), connection); err != nil {
+	if _, err := seedTestBoolean(context.Background(), connection); err != nil {
 		t.Fatal(err)
 	}
 	service, err := NewService(connection)
@@ -44,14 +44,6 @@ func TestServiceCreatesNormalizesAndValidatesUserDefinitions(t *testing.T) {
 		t.Fatalf("CreateDefinition(duplicate) error = %v", err)
 	}
 	if _, err := service.CreateDefinition(context.Background(), CreateDefinition{
-		Key:   "broken",
-		Label: "User broken",
-		Color: "#405CF5",
-		Kind:  KindBoolean,
-	}); !errors.Is(err, ErrDuplicateDefinition) {
-		t.Fatalf("CreateDefinition(protected key) error = %v", err)
-	}
-	if _, err := service.CreateDefinition(context.Background(), CreateDefinition{
 		Key:   "pale",
 		Label: "Pale",
 		Color: "#FFFFFF",
@@ -65,10 +57,7 @@ func TestServiceRenamesRecolorsAndReordersOnlyUserDefinitions(t *testing.T) {
 	t.Parallel()
 
 	connection := openTaggingDatabase(t)
-	broken, err := SeedBuiltIns(context.Background(), connection)
-	if err != nil {
-		t.Fatal(err)
-	}
+	broken := Definition{ID: insertDerivedDefinition(t, connection)}
 	service, err := NewService(connection)
 	if err != nil {
 		t.Fatal(err)
@@ -100,10 +89,10 @@ func TestServiceRenamesRecolorsAndReordersOnlyUserDefinitions(t *testing.T) {
 		t.Fatal(err)
 	}
 	if len(definitions) != 4 ||
-		definitions[0].ID != broken.ID ||
-		definitions[1].ID != third.ID ||
-		definitions[2].ID != first.ID ||
-		definitions[3].ID != second.ID {
+		definitions[0].ID != third.ID ||
+		definitions[1].ID != first.ID ||
+		definitions[2].ID != second.ID ||
+		definitions[3].ID != broken.ID {
 		t.Fatalf("ReorderDefinitions() = %#v", definitions)
 	}
 	if _, err := service.ReorderDefinitions(
@@ -125,7 +114,7 @@ func TestServicePlansAndConfirmsDefinitionDeletion(t *testing.T) {
 	t.Parallel()
 
 	connection := openTaggingDatabase(t)
-	if _, err := SeedBuiltIns(context.Background(), connection); err != nil {
+	if _, err := seedTestBoolean(context.Background(), connection); err != nil {
 		t.Fatal(err)
 	}
 	service, err := NewService(connection)
@@ -172,20 +161,16 @@ func TestServicePlansAndConfirmsDefinitionDeletion(t *testing.T) {
 	}
 }
 
-func TestServiceRejectsProtectedBuiltInAndDerivedDeletion(t *testing.T) {
+func TestServiceRejectsProtectedDerivedDeletion(t *testing.T) {
 	t.Parallel()
 
 	connection := openTaggingDatabase(t)
-	broken, err := SeedBuiltIns(context.Background(), connection)
-	if err != nil {
-		t.Fatal(err)
-	}
 	derivedID := insertDerivedDefinition(t, connection)
 	service, err := NewService(connection)
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, definitionID := range []int64{broken.ID, derivedID} {
+	for _, definitionID := range []int64{derivedID} {
 		if _, err := service.PlanDefinitionDeletion(
 			context.Background(),
 			definitionID,
