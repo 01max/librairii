@@ -120,3 +120,25 @@ func (r *ImportRuntime) ClearShelfExclusion(ctx context.Context, shelfID int64, 
 	}
 	return service.ClearExclusion(ctx, shelfID, storyUUID)
 }
+
+func (r *ImportRuntime) AttachShelfSources(ctx context.Context, shelfID int64, collectionIDs []int64) (shelves.Shelf, error) {
+	service, err := r.currentShelves()
+	if err != nil {
+		return shelves.Shelf{}, err
+	}
+	return service.AttachSources(ctx, shelfID, collectionIDs)
+}
+func (r *ImportRuntime) PreviewShelfUpdate(ctx context.Context, shelfID int64) (shelves.Review, error) {
+	service, err := r.currentShelves()
+	if err != nil {
+		return shelves.Review{}, err
+	}
+	return service.Preview(ctx, shelfID)
+}
+func (r *ImportRuntime) ApplyShelfUpdate(ctx context.Context, shelfID int64, token string, decisions []shelves.Decision) (shelves.Shelf, error) {
+	service, err := r.currentShelves()
+	if err != nil {
+		return shelves.Shelf{}, err
+	}
+	return service.Apply(ctx, shelfID, token, decisions)
+}

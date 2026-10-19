@@ -34,13 +34,22 @@ type reviewTicket struct {
 func fingerprint(e reviewEvaluation) ([32]byte, error) {
 	// Broken state changes export eligibility, never membership review validity.
 	e.Shelf.BrokenCount = 0
+	type heading struct{ UUID, Title string }
+	headings := make([]heading, 0, len(e.Review.Additions)+len(e.Review.Removals))
+	for _, candidate := range e.Review.Additions {
+		headings = append(headings, heading{candidate.UUID, candidate.Title})
+	}
+	for _, candidate := range e.Review.Removals {
+		headings = append(headings, heading{candidate.UUID, candidate.Title})
+	}
 	data, err := json.Marshal(struct {
 		Shelf      Shelf
 		Members    []Member
 		Exclusions []Exclusion
 		Sources    []evaluatedSource
 		Available  []string
-	}{e.Shelf, e.Members, e.Exclusions, e.Sources, e.Available})
+		Headings   []heading
+	}{e.Shelf, e.Members, e.Exclusions, e.Sources, e.Available, headings})
 	if err != nil {
 		return [32]byte{}, err
 	}

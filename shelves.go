@@ -3,6 +3,7 @@ package main
 import (
 	coreapp "github.com/01max/librairii/internal/app"
 	"github.com/01max/librairii/internal/library"
+	"github.com/01max/librairii/internal/shelves"
 )
 
 func (a *App) ListShelves() coreapp.ShelfListResponse {
@@ -107,4 +108,26 @@ func (a *App) ClearShelfExclusion(shelfID int64, storyUUID string) coreapp.Shelf
 	}
 	defer a.libraryGate.RUnlock()
 	return a.core.ClearShelfExclusion(a.runtimeContext(), shelfID, storyUUID)
+}
+
+func (a *App) AttachShelfSources(shelfID int64, collectionIDs []int64) coreapp.ShelfResponse {
+	if !a.libraryGate.TryRLock() {
+		return coreapp.ShelfResponse{Error: coreapp.NewAPIError(coreapp.ErrorNotReady, "settings.busy")}
+	}
+	defer a.libraryGate.RUnlock()
+	return a.core.AttachShelfSources(a.runtimeContext(), shelfID, collectionIDs)
+}
+func (a *App) PreviewShelfUpdate(shelfID int64) coreapp.ShelfReviewResponse {
+	if !a.libraryGate.TryRLock() {
+		return coreapp.ShelfReviewResponse{Error: coreapp.NewAPIError(coreapp.ErrorNotReady, "settings.busy")}
+	}
+	defer a.libraryGate.RUnlock()
+	return a.core.PreviewShelfUpdate(a.runtimeContext(), shelfID)
+}
+func (a *App) ApplyShelfUpdate(shelfID int64, token string, decisions []shelves.Decision) coreapp.ShelfResponse {
+	if !a.libraryGate.TryRLock() {
+		return coreapp.ShelfResponse{Error: coreapp.NewAPIError(coreapp.ErrorNotReady, "settings.busy")}
+	}
+	defer a.libraryGate.RUnlock()
+	return a.core.ApplyShelfUpdate(a.runtimeContext(), shelfID, token, decisions)
 }
