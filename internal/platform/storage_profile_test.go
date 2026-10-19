@@ -40,3 +40,20 @@ func TestConfiguredMissingLibraryIsNotCreated(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestExplicitRootIgnoresProductionProfile(t *testing.T) {
+	root := t.TempDir()
+	r := NewStorageReadiness(root)
+	report, err := r.Check(context.Background())
+	if err != nil || !report.MutationsAllowed {
+		t.Fatalf("%+v %v", report, err)
+	}
+	defer r.Close()
+	p := r.Profile()
+	if !r.Isolated() || p.Language != "en" || p.Root != root {
+		t.Fatalf("%+v", p)
+	}
+	if _, err = os.Stat(filepath.Join(root, "settings.json")); !errors.Is(err, os.ErrNotExist) {
+		t.Fatal(err)
+	}
+}

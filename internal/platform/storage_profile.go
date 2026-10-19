@@ -45,3 +45,5 @@ func (r *StorageReadiness) Profile() preferences.Profile {
 	}
 	return p
 }
+
+func (r *StorageReadiness) Isolated() bool { return r.profileStore == nil }
