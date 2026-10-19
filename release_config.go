@@ -99,6 +99,7 @@ func productionOptions(
 
 	return &options.App{
 		Title:     applicationTitle,
+		Menu:      settingsMenu(app),
 		Width:     1180,
 		Height:    900,
 		MinWidth:  560,

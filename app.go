@@ -65,6 +65,10 @@ func (a *App) startup(ctx context.Context) {
 }
 
 func (a *App) domReady(ctx context.Context) {
+	if a.settings != nil {
+		a.settings.changed = a.refreshSettingsMenu
+		a.refreshSettingsMenu(ctx)
+	}
 	a.core.AnnounceReady(ctx)
 	if a.quit != nil {
 		a.quit(ctx)
