@@ -41,5 +41,15 @@ The checksum contract and both parity fixtures identify the updated snapshot.
 
 ## Final checks
 
-Final command results and the migrated-library walkthrough are recorded below
-as their implementation subtasks complete.
+On 2026-10-19, `make check` passed: frontend build, Go formatting and vet,
+all Go tests, TypeScript, ESLint, prototype checksum, all 165 frontend unit
+tests, responsive browser checks, visual parity, accessibility, and performance.
+The separately exercised `make` targets use those same browser scripts.
+
+The 1,000-story browser performance run stayed within budget: expansion p95
+388 ms (3,000 ms budget), input delay p95 4 ms (100 ms budget), and frame gap
+p95 16.7 ms. The 5,000-story SQLite fixture retains indexed archive, language,
+and tag-value lookups without adding a low-selectivity flag index.
+
+The migrated-library application walkthrough is recorded below after its
+integration subtask completes.
