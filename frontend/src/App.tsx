@@ -84,7 +84,7 @@ import OperationHistoryDialog from './OperationHistoryDialog';
 import ExportReport from './ExportReport';
 import LuniiSync from './LuniiSync';
 import StoryCover from './StoryCover';
-import StoryFlagButton from './StoryFlagButton';
+import BrokenToggle from './BrokenToggle';
 import TagAssignmentEditor from './TagAssignmentEditor';
 import {describeMetadataRefresh} from './metadata-state';
 import {useModalFocus} from './modal-focus';
@@ -2570,9 +2570,6 @@ function App() {
                                                 <span aria-hidden="true">⚠</span>{t("Broken")}</span>
                                         )}
                                     </button>
-                                    <StoryFlagButton title={story.title} broken={!!story.broken}
-                                        disabled={flags.pending || applicationState !== 'ready'}
-                                        onChange={(broken) => void flags.set([story.id], broken)}/>
                                     {libraryView !== 'list' && <p className="story-title">{story.title}</p>}
                                 </div>
                             ))}
@@ -2669,16 +2666,10 @@ function App() {
                     </div>
                     <div className="drawer-actions">
                         <button type="button" onClick={() => setAddShelfOpen(true)}>{t('Add to Shelf…')}</button>
-                        {selectedIDs.length > 1 ? <>
-                            <span className="drawer-flag-count">{t('{0} selected · {1} flagged', selectedIDs.length, selectedFlaggedCount)}</span>
-                            <button type="button" disabled={flags.pending} onClick={() => void flags.set(selectedIDs, true)}>{t('Mark selected as broken')}</button>
-                            <button type="button" disabled={flags.pending} onClick={() => void flags.set(selectedIDs, false)}>{t('Clear broken flags')}</button>
-                        </> : <>
-                            {selected.broken && <span className="story-warning-label">⚠ {t('Broken')}</span>}
-                            <button type="button" disabled={flags.pending} onClick={() => void flags.set([selected.id], !selected.broken)}>
-                                {selected.broken ? t('Clear broken flag') : t('Mark as broken')}
-                            </button>
-                        </>}
+                        {selectedIDs.length > 1 && <span className="drawer-flag-count">{t('{0} selected · {1} flagged', selectedIDs.length, selectedFlaggedCount)}</span>}
+                        <BrokenToggle title={selectedIDs.length > 1 ? t('Selected stories') : selected.title}
+                            broken={selectedFlaggedCount === selectedIDs.length} disabled={flags.pending}
+                            onChange={(broken) => void flags.set(selectedIDs, broken)}/>
                         <button
                             ref={openDetailsButton}
                             type="button"

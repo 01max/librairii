@@ -6,7 +6,7 @@ import {type CollectionQuery, DEFAULT_COLLECTION_QUERY} from './query-codec';
 import {t} from './i18n';
 import {type LibraryView} from './library-view';
 import {useStoryFlags} from './use-story-flags';
-import StoryFlagButton from './StoryFlagButton';
+import BrokenToggle from './BrokenToggle';
 import ShelfReview from './ShelfReview';
 import ShelfSources from './ShelfSources';
 import ShelfDialog from './ShelfDialog';
@@ -79,8 +79,9 @@ export default function ShelfWorkspace({id, revision, query, onQuery, collection
         </div>
         {flags.error && <p role="alert"><OutcomeText text={flags.error}/></p>}
         {flags.notice && <p role="status">{flags.notice} {flags.canUndo && <button type="button" disabled={flags.pending} onClick={() => void flags.undo()}>{t('Undo')}</button>}</p>}
-        <div className="curated-actions"><button type="button" disabled={flags.pending || !selectedStoryIDs.length} onClick={() => void flags.set(selectedStoryIDs, true)}>{t('Mark selected as broken')}</button>
-            <button type="button" disabled={flags.pending || !selectedStoryIDs.length} onClick={() => void flags.set(selectedStoryIDs, false)}>{t('Clear broken flags')}</button></div>
+        <BrokenToggle title={t('Selected stories')} disabled={flags.pending || !selectedStoryIDs.length}
+            broken={selectedStoryIDs.length > 0 && selectedStoryIDs.every((id) => Object.values(knownMembers).some((member) => member.story?.id === id && member.story.broken))}
+            onChange={(broken) => void flags.set(selectedStoryIDs, broken)}/>
         <label>{t('Refine this view')}<SearchInput value={query.name} onChange={(name) => onQuery({...query, name, page: 1})}/></label>
         <label>{t('Sort stories')}<select value={manualOrder ? '' : query.sort} onChange={(event) => {onManualOrder?.(event.target.value === ''); if (event.target.value) onQuery({...query, sort: event.target.value as CollectionQuery['sort'], page: 1});}}>
             <option value="">{t('Manual order')}</option><option value="name_asc">{t('Name A–Z')}</option><option value="imported_desc">{t('Newest imported')}</option></select></label>
@@ -91,7 +92,6 @@ export default function ShelfWorkspace({id, revision, query, onQuery, collection
         <ul className={`curated-members curated-${viewMode}`}>{view.members.map((member) => <li key={member.uuid} className={member.story?.broken ? 'is-broken' : ''}>
             <label><input type="checkbox" checked={selected.includes(member.uuid)} disabled={busy} onChange={() => setSelected(selected.includes(member.uuid) ? selected.filter((uuid) => uuid !== member.uuid) : [...selected, member.uuid])}/>{member.story?.title ?? member.cachedTitle}</label>
             {member.story ? <button type="button" className="curated-cover" onClick={() => onInspect(member.story!)} aria-label={t('Details for {0}', member.story.title)}>{viewMode === 'list' ? t('Open details') : <StoryCover story={member.story}/>}</button> : <p>{t('Unavailable')} · {member.uuid}</p>}
-            {member.story && <StoryFlagButton title={member.story.title} broken={member.story.broken} disabled={flags.pending} onChange={(broken) => void flags.set([member.story!.id], broken)}/>}
             <button type="button" disabled={busy || (!view.sources.some((source) => source.active) && member.protected)} onClick={() => void act(() => SetShelfStoryProtected(id, member.uuid, !member.protected))}>{member.protected ? t('Unprotect {0}', member.cachedTitle) : t('Protect {0}', member.cachedTitle)}</button>
             {member.story?.broken && <p>{t('Broken · excluded from exports')}</p>}
             <small>{member.protected ? t('Protected') : t('Source-derived')} · {t('Added from: {0}', (member.origins ?? []).map((origin) => origin.name + (origin.active ? '' : ` (${t('detached')})`)).join(', ') || t('Manual selection'))}</small>

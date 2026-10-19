@@ -2714,7 +2714,7 @@ test('traps detail-dialog focus, closes with Escape, and restores its opener', a
     await user.tab();
     expect(cancel).toHaveFocus();
     await user.tab();
-    expect(within(dialog).getByRole('button', {name: 'Mark as broken'})).toHaveFocus();
+    expect(within(dialog).getByRole('switch', {name: 'Broken: Clockwork Forest'})).toHaveFocus();
     await user.tab();
     expect(within(dialog).getByRole('button', {name: 'Edit tags'})).toHaveFocus();
 
@@ -3755,19 +3755,19 @@ function installStoryFlagsFixture(initialFlags: number[] = [], fixtureStories = 
     return {state, pageFor};
 }
 
-test.each(['List', 'Small covers', 'Large covers'])('flags and undoes directly from the %s index', async (view) => {
+test.each(['List', 'Small covers', 'Large covers'])('toggles Broken and undoes from the %s detail drawer', async (view) => {
     installStoryFlagsFixture();
     const user = userEvent.setup();
     render(<App/>);
     await screen.findByRole('button', {name: 'Clockwork Forest'});
     await user.click(screen.getByRole('button', {name: view}));
-    const action = screen.getByRole('button', {name: 'Mark Clockwork Forest as broken'});
+    const action = screen.getByRole('switch', {name: 'Broken: Clockwork Forest'});
     expect(action.closest('.story')).toBeNull();
     await user.click(action);
     expect(SetStoriesBroken).toHaveBeenCalledWith([1], true);
     await waitFor(() => expect(screen.getAllByRole('button', {name: 'Clockwork Forest'}).length).toBeGreaterThan(0));
     expect(screen.getByRole('status')).toHaveTextContent('1 of 1 stories updated.');
-    expect(screen.getByRole('button', {name: 'Clear broken flag for Clockwork Forest'})).toHaveFocus();
+    expect(screen.getByRole('switch', {name: 'Broken: Clockwork Forest'})).toHaveFocus();
     await user.click(screen.getByRole('button', {name: 'Undo'}));
     expect(await screen.findByRole('button', {name: 'Clockwork Forest'})).toBeInTheDocument();
     expect(RestoreStoryFlags).toHaveBeenCalledWith([expect.objectContaining({storyId: 1, previous: false, current: true})]);
@@ -3776,11 +3776,11 @@ test.each(['List', 'Small covers', 'Large covers'])('flags and undoes directly f
 test('clears and restores flagged stories without changing visible membership', async () => {
     installStoryFlagsFixture([1]);
     const user = userEvent.setup(); render(<App/>);
-    await user.click(await screen.findByRole('button', {name: 'Clear broken flag for Clockwork Forest'}));
-    expect(await screen.findByRole('button', {name: 'Mark Clockwork Forest as broken'})).toHaveFocus();
+    await user.click(await screen.findByRole('switch', {name: 'Broken: Clockwork Forest'}));
+    expect(await screen.findByRole('switch', {name: 'Broken: Clockwork Forest'})).toHaveFocus();
     expect(screen.getByRole('button', {name: 'Clockwork Forest'})).toBeInTheDocument();
     await user.click(screen.getByRole('button', {name: 'Undo'}));
-    expect(await screen.findByRole('button', {name: 'Clear broken flag for Clockwork Forest'})).toBeInTheDocument();
+    expect(await screen.findByRole('switch', {name: 'Broken: Clockwork Forest'})).toBeInTheDocument();
 });
 
 test('keeps individual flag actions separate from mixed bulk selection and restores only changed flags', async () => {
@@ -3788,14 +3788,14 @@ test('keeps individual flag actions separate from mixed bulk selection and resto
     const user = userEvent.setup();
     render(<App/>);
     await screen.findByRole('button', {name: 'Clockwork Forest'});
+    await user.click(screen.getByRole('switch', {name: 'Broken: Clockwork Forest'}));
+    expect(SetStoriesBroken).toHaveBeenLastCalledWith([1], true);
     const second = await screen.findByRole('button', {name: 'Moonlit Workshop'});
     await user.keyboard('{Control>}');
     await user.click(second);
     await user.keyboard('{/Control}');
-    await user.click(screen.getByRole('button', {name: 'Mark Clockwork Forest as broken'}));
-    expect(SetStoriesBroken).toHaveBeenLastCalledWith([1], true);
     expect(await screen.findByText('2 selected · 1 flagged')).toBeInTheDocument();
-    await user.click(screen.getByRole('button', {name: 'Mark selected as broken'}));
+    await user.click(screen.getByRole('switch', {name: 'Broken: Selected stories'}));
     expect(SetStoriesBroken).toHaveBeenLastCalledWith([1, 2], true);
     expect(await screen.findByText('2 selected · 2 flagged')).toBeInTheDocument();
     await user.click(screen.getByRole('button', {name: 'Undo'}));
@@ -3810,11 +3810,11 @@ test('keeps inspected and rendered stories available after flagging', async () =
     render(<App/>);
     await user.click(await screen.findByRole('button', {name: 'Open details'}));
     const dialog = await screen.findByRole('dialog', {name: 'Clockwork Forest'});
-    await user.click(within(dialog).getByRole('button', {name: 'Mark as broken'}));
+    await user.click(within(dialog).getByRole('switch', {name: 'Broken: Clockwork Forest'}));
     await waitFor(() => expect(screen.getAllByRole('button', {name: 'Clockwork Forest'}).length).toBeGreaterThan(0));
     expect(dialog).toBeInTheDocument();
     expect(within(dialog).getByRole('region', {name: 'Story warning'})).toHaveTextContent('Broken');
-    await user.click(within(dialog).getByRole('button', {name: 'Clear broken flag'}));
+    await user.click(within(dialog).getByRole('switch', {name: 'Broken: Clockwork Forest'}));
     expect(await screen.findByRole('button', {name: 'Clockwork Forest'})).toBeInTheDocument();
     expect(SetStoriesBroken).toHaveBeenLastCalledWith([1], false);
 });
@@ -3825,7 +3825,7 @@ test('prevents repeated pending flag actions and preserves results after a faile
     vi.mocked(SetStoriesBroken).mockImplementation(() => new Promise((resolve) => { finish = resolve; }));
     const user = userEvent.setup();
     render(<App/>);
-    const action = await screen.findByRole('button', {name: 'Mark Clockwork Forest as broken'});
+    const action = await screen.findByRole('switch', {name: 'Broken: Clockwork Forest'});
     await user.click(action);
     expect(action).toBeDisabled();
     await user.click(action);
@@ -3841,7 +3841,7 @@ test('reports no-op flag writes without offering Undo', async () => {
     vi.mocked(SetStoriesBroken).mockResolvedValue(new app.StoryFlagsResponse({result: {requestedStories: 1, changedStories: 0, changes: []}}));
     const user = userEvent.setup();
     render(<App/>);
-    await user.click(await screen.findByRole('button', {name: 'Mark Clockwork Forest as broken'}));
+    await user.click(await screen.findByRole('switch', {name: 'Broken: Clockwork Forest'}));
     expect(await screen.findByRole('status')).toHaveTextContent('No broken flags changed.');
     expect(screen.queryByRole('button', {name: 'Undo'})).not.toBeInTheDocument();
 });
@@ -3850,8 +3850,8 @@ test('flagging retains the current final page and focused control', async () => 
     installStoryFlagsFixture();
     window.history.replaceState(null, '', '/#/library?v=2&page=2&size=1');
     const user = userEvent.setup(); render(<App/>);
-    await user.click(await screen.findByRole('button', {name: 'Mark Moonlit Workshop as broken'}));
-    expect(await screen.findByRole('button', {name: 'Clear broken flag for Moonlit Workshop'})).toHaveFocus();
+    await user.click(await screen.findByRole('switch', {name: 'Broken: Moonlit Workshop'}));
+    expect(await screen.findByRole('switch', {name: 'Broken: Moonlit Workshop'})).toHaveFocus();
     expect(queryStories).toHaveBeenLastCalledWith(expect.objectContaining({page: 2, pageSize: 1}));
     expect(screen.getByRole('button', {name: 'Moonlit Workshop'})).toBeInTheDocument();
 });
@@ -3877,8 +3877,10 @@ test('updates duplicate story copies in saved collection previews', async () => 
     }}));
     const user = userEvent.setup();
     render(<App/>);
-    await waitFor(() => expect(screen.getAllByRole('button', {name: 'Mark Clockwork Forest as broken'})).toHaveLength(2));
-    await user.click(screen.getAllByRole('button', {name: 'Mark Clockwork Forest as broken'})[1]);
+    await waitFor(() => expect(screen.getAllByRole('button', {name: 'Clockwork Forest'})).toHaveLength(2));
+    expect(document.querySelector('.story-card [role=switch]')).toBeNull();
+    await user.click(screen.getByRole('switch', {name: 'Broken: Clockwork Forest'}));
+    await waitFor(() => expect(document.querySelectorAll('.story-card.is-broken')).toHaveLength(2));
     await waitFor(() => expect(screen.getAllByRole('button', {name: 'Clockwork Forest'}).length).toBeGreaterThan(0));
     expect(await screen.findByRole('button', {name: 'Favorites, 2 stories'})).toBeInTheDocument();
     await user.click(screen.getByRole('button', {name: 'Undo'}));
@@ -3889,9 +3891,9 @@ test.each(['true', 'false'] as const)('legacy brokenState=%s URLs retain both re
     installStoryFlagsFixture(brokenState === 'true' ? [1, 2] : []);
     window.history.replaceState(null, '', `/#/library?v=2&brokenVisibility=include&brokenState=${brokenState}`);
     const user = userEvent.setup(); render(<App/>);
-    const action = await screen.findByRole('button', {name: brokenState === 'true' ? 'Clear broken flag for Clockwork Forest' : 'Mark Clockwork Forest as broken'});
+    const action = await screen.findByRole('switch', {name: 'Broken: Clockwork Forest'});
     action.focus(); await user.keyboard('{Enter}');
-    expect(await screen.findByRole('button', {name: brokenState === 'true' ? 'Mark Clockwork Forest as broken' : 'Clear broken flag for Clockwork Forest'})).toHaveFocus();
+    expect(await screen.findByRole('switch', {name: 'Broken: Clockwork Forest'})).toHaveFocus();
     expect(screen.getByRole('button', {name: 'Clockwork Forest'})).toBeInTheDocument();
     expect(screen.getByRole('button', {name: 'Moonlit Workshop'})).toBeInTheDocument();
 });
@@ -3901,8 +3903,8 @@ test('normalizes nested legacy flag alternatives while preserving nonflag criter
     const branch = {...DEFAULT_COLLECTION_QUERY, brokenVisibility: 'include', brokenState: 'true'};
     window.history.replaceState(null, '', `/#/library?v=2&any=${encodeURIComponent(JSON.stringify([{...branch, anyOf: [branch]}, {...DEFAULT_COLLECTION_QUERY, name: 'Clockwork Forest'}]))}`);
     const user = userEvent.setup(); render(<App/>);
-    await user.click(await screen.findByRole('button', {name: 'Clear broken flag for Clockwork Forest'}));
-    expect(await screen.findByRole('button', {name: 'Mark Clockwork Forest as broken'})).toHaveFocus();
+    await user.click(await screen.findByRole('switch', {name: 'Broken: Clockwork Forest'}));
+    expect(await screen.findByRole('switch', {name: 'Broken: Clockwork Forest'})).toHaveFocus();
     expect(screen.getByRole('button', {name: 'Moonlit Workshop'})).toBeInTheDocument();
     expect(queryStories.mock.lastCall?.[0].anyOf?.[0].anyOf?.[0]).toHaveProperty('brokenState', undefined);
 });

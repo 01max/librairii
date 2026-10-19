@@ -34,8 +34,8 @@ test('exports distinguish whole Shelf refinements and selected unavailable UUIDs
 test('flag changes retain membership selection and direct control focus', async () => {
     const user = userEvent.setup(); mount();
     await user.click(await screen.findByRole('checkbox', {name: 'First'}));
-    await user.click(screen.getByRole('button', {name: 'Mark First as broken'}));
-    expect(await screen.findByRole('button', {name: 'Clear broken flag for First'})).toHaveFocus();
+    await user.click(screen.getByRole('switch', {name: 'Broken: Selected stories'}));
+    expect(await screen.findByRole('switch', {name: 'Broken: Selected stories'})).toHaveFocus();
     expect(screen.getByRole('checkbox', {name: 'First'})).toBeChecked();
     expect(screen.getByText('Broken · excluded from exports')).toBeInTheDocument();
     expect(screen.getByRole('checkbox', {name: 'Lost'})).toBeInTheDocument();

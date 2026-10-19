@@ -589,5 +589,7 @@
   "Affected Shelf pages": "Pages des étagères concernées",
   "This story is marked as broken.": "Cette histoire est marquée comme défectueuse.",
   "Stories changed after the export preview. Refresh the preview and try again.": "Les histoires ont changé depuis l’aperçu de l’export. Actualisez l’aperçu puis réessayez.",
-  "A selected Collection needs attention before it can be exported.": "Une collection sélectionnée nécessite une intervention avant de pouvoir être exportée."
+  "A selected Collection needs attention before it can be exported.": "Une collection sélectionnée nécessite une intervention avant de pouvoir être exportée.",
+  "Broken: {0}": "Défectueuse : {0}",
+  "Selected stories": "Histoires sélectionnées"
 }

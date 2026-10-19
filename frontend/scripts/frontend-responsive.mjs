@@ -594,22 +594,24 @@ async function assertFamilyBrowsingArtwork(page) {
     if (!artworkFilter.includes('saturate(0.18)')) throw new Error('broken cover is not visually muted');
     for (const view of ['List', 'Small covers', 'Large covers']) {
         await page.getByRole('button', {name: view, exact: true}).click();
-        const action = page.getByRole('button', {name: 'Mark The Secret Forest as broken', exact: true});
+        await page.getByRole('button', {name: 'The Secret Forest', exact: true}).click();
+        const action = page.getByRole('switch', {name: 'Broken: The Secret Forest', exact: true});
         await action.focus();
         if (await action.evaluate((button) => getComputedStyle(button).opacity) !== '1') throw new Error(`${view}: flag action not revealed by keyboard focus`);
         await action.press('Enter');
-        await page.getByRole('button', {name: 'Clear broken flag for The Secret Forest', exact: true}).waitFor();
+        await page.waitForFunction(() => document.querySelector('[role=switch][aria-checked=true]'));
         await page.getByRole('button', {name: 'The Secret Forest', exact: true}).waitFor();
         await page.getByRole('button', {name: 'Undo', exact: true}).click();
     }
     const touchPage = await page.context().browser().newPage({viewport: {width: 390, height: 844}, hasTouch: true, isMobile: true});
     try {
         await touchPage.goto(url.toString(), {waitUntil: 'networkidle'});
-        const action = touchPage.getByRole('button', {name: 'Mark The Secret Forest as broken', exact: true});
+        await touchPage.getByRole('button', {name: 'The Secret Forest', exact: true}).tap();
+        const action = touchPage.getByRole('switch', {name: 'Broken: The Secret Forest', exact: true});
         await action.waitFor();
         if (await action.evaluate((button) => getComputedStyle(button).opacity) !== '1') throw new Error('touch flag action requires hover');
         await action.tap();
-        await touchPage.getByRole('button', {name: 'Clear broken flag for The Secret Forest', exact: true}).waitFor();
+        await touchPage.waitForFunction(() => document.querySelector('[role=switch][aria-checked=true]'));
         await touchPage.getByRole('button', {name: 'Undo', exact: true}).tap();
         await touchPage.getByRole('button', {name: 'The Secret Forest', exact: true}).waitFor();
     } finally { await touchPage.close(); }
