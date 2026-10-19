@@ -7,8 +7,20 @@ project_root="$(CDPATH='' cd -- "$(dirname -- "$0")/.." && pwd)"
 verification_root="$(mktemp -d "${TMPDIR:-/tmp}/librairii-settings-acceptance.XXXXXX")"
 application_pid=""
 cleanup() {
-    if [ -n "$application_pid" ]; then kill -TERM "$application_pid" 2>/dev/null || true; fi
-    rm -rf -- "$verification_root"
+    if [ -n "$application_pid" ]; then
+        kill -TERM "$application_pid" 2>/dev/null || true
+        wait "$application_pid" 2>/dev/null || true
+    fi
+    # GTK/WebKit helpers can finish writing profile caches after the app exits.
+    cleanup_attempt=1
+    while ! rm -rf -- "$verification_root"; do
+        if [ "$cleanup_attempt" -ge 5 ]; then
+            printf 'Temporary settings profile could not be removed: %s\n' "$verification_root" >&2
+            return 1
+        fi
+        cleanup_attempt=$((cleanup_attempt + 1))
+        sleep 0.2
+    done
 }
 trap cleanup EXIT HUP INT TERM
 mkdir -p "$verification_root/home" "$verification_root/library" "$verification_root/moved" "$verification_root/export" "$verification_root/config" "$verification_root/data"
