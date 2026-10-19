@@ -16,18 +16,19 @@ var ErrMissingLibrary = errors.New("settings.library_missing")
 var ErrSetupRequired = errors.New("settings.setup_required")
 
 type Profile struct {
-	Version   int    `json:"version"`
-	Language  string `json:"language"`
-	Root      string `json:"root"`
-	LibraryID string `json:"libraryId"`
-	Complete  bool   `json:"complete"`
+	Version    int    `json:"version"`
+	Language   string `json:"language"`
+	Root       string `json:"root"`
+	LibraryID  string `json:"libraryId"`
+	Complete   bool   `json:"complete"`
+	Recovering bool   `json:"recovering,omitempty"`
 }
 
 func (p Profile) Validate() error {
 	if p.Version != Version || (p.Language != "en" && p.Language != "fr") {
 		return ErrInvalid
 	}
-	if p.Complete && (!filepath.IsAbs(p.Root) || p.LibraryID == "") {
+	if (p.Complete || p.Recovering) && (!filepath.IsAbs(p.Root) || p.LibraryID == "") {
 		return ErrInvalid
 	}
 	return nil

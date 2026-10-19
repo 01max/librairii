@@ -109,7 +109,7 @@ export default function OperationHistoryDialog({liveOperations, onClose, onRevea
                             </summary>
                             <div className="history-detail">
                                 <p>{operation.completedItems} {' ' + t("of") + ' '}{operation.totalItems} {' ' + t("items finished.")}</p>
-                                {operation.errorMessage && <p>{<OutcomeText text={operation.errorMessage}/>}</p>}
+                                {operation.errorMessage && <p>{<OutcomeText text={operation.errorMessage} status={operation.status}/>}</p>}
                                 {operation.kind === 'export' && operationIsTerminal(operation) ? (
                                     <ExportReport operation={operation} onReveal={(operationID) => {
                                         setRevealError(null);
@@ -120,7 +120,7 @@ export default function OperationHistoryDialog({liveOperations, onClose, onRevea
                                         {operation.items.map((item) => (
                                             <li key={item.id}>
                                                 <b>{item.storyTitle || item.sourceName}</b>
-                                                <span>{<OutcomeText text={item.outcomeMessage || statusLabels[item.status] || item.status}/>}</span>
+                                                <span>{<OutcomeText text={item.outcomeMessage || statusLabels[item.status] || item.status} status={item.status}/>}</span>
                                             </li>
                                         ))}
                                     </ul>

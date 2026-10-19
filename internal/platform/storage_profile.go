@@ -29,6 +29,36 @@ func (r *StorageReadiness) prepareProfile(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+	if p.Recovering {
+		id, err := preferences.Identity(p.Root)
+		if err != nil || id != p.LibraryID {
+			return preferences.ErrMissingLibrary
+		}
+		r.override = p.Root
+		identity, err := (database.SchemaProbe{}).Inspect(ctx, preferences.DatabasePath(p.Root))
+		if err != nil {
+			return err
+		}
+		// A crash before preservation must still require the recovery action.
+		if identity == database.IdentityForeign {
+			return nil
+		}
+		db, err := database.Open(ctx, preferences.DatabasePath(p.Root))
+		if err != nil {
+			return err
+		}
+		if err := db.Close(); err != nil {
+			return err
+		}
+		p, err = r.profileStore.Update(func(next *preferences.Profile) error {
+			next.Complete, next.Recovering = true, false
+			return nil
+		})
+		if err != nil {
+			return err
+		}
+		r.profile = p
+	}
 	if !p.Complete {
 		return preferences.ErrSetupRequired
 	}

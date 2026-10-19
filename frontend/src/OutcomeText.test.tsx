@@ -10,3 +10,19 @@ test('unknown historical details have a French summary with preserved diagnostic
  fireEvent.click(screen.getByRole('button',{name:'Détails techniques'}));
  expect(screen.getByText('Legacy database diagnostic')).toBeInTheDocument();
 });
+
+test('unknown successful outcomes keep their success summary and original details', () => {
+ setLanguage('fr');
+ render(<OutcomeText text="Future successful outcome" status="succeeded"/>);
+ expect(screen.getByText('Terminé')).toBeInTheDocument();
+ expect(screen.queryByText('L’action n’a pas pu être effectuée')).not.toBeInTheDocument();
+ fireEvent.click(screen.getByRole('button', {name: 'Détails techniques'}));
+ expect(screen.getByText('Future successful outcome')).toBeInTheDocument();
+});
+
+test('successful current outcomes translate without a diagnostic disclosure', () => {
+ setLanguage('fr');
+ render(<OutcomeText text="Story imported." status="succeeded"/>);
+ expect(screen.getByText('Histoire importée.')).toBeInTheDocument();
+ expect(screen.queryByRole('button', {name: 'Détails techniques'})).not.toBeInTheDocument();
+});

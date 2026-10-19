@@ -395,5 +395,14 @@
   "settings.restart_required": "Settings persistence could not be confirmed. Restart Librairii to recover safely.",
   "A local-first story archive library for Lunii.QT-compatible collections.": "A local-first story archive library for Lunii.QT-compatible collections.",
   "Contributors": "Contributors",
-  "Repository": "Repository"
+  "Repository": "Repository",
+  "Story imported.": "Story imported.",
+  "Story archive exported.": "Story archive exported.",
+  "Official metadata refreshed; {0} local stories matched.": "Official metadata refreshed; {0} local stories matched.",
+  "This archive is already in the collection.": "This archive is already in the collection.",
+  "Different archive bytes already use this story UUID.": "Different archive bytes already use this story UUID.",
+  "Import cancelled.": "Import cancelled.",
+  "Story export cancelled.": "Story export cancelled.",
+  "Official metadata refresh was cancelled.": "Official metadata refresh was cancelled.",
+  "Action result unavailable": "Action result unavailable"
 }

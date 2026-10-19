@@ -55,7 +55,7 @@ export default function ExportReport({
                                                 item.sourceName}
                                         </b>
                                         <span>
-                                            <OutcomeText text={item.outcomeMessage || item.outputName || item.status}/>
+                                            <OutcomeText text={item.outcomeMessage || item.outputName || item.status} status={item.status}/>
                                         </span>
                                     </li>
                                 ))}

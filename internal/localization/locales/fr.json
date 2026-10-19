@@ -395,5 +395,14 @@
   "settings.restart_required": "L’enregistrement des réglages n’a pas pu être confirmé. Redémarrez Librairii pour récupérer les données en sécurité.",
   "A local-first story archive library for Lunii.QT-compatible collections.": "Une bibliothèque locale d’archives d’histoires pour les collections compatibles avec Lunii.QT.",
   "Contributors": "Contributeurs",
-  "Repository": "Dépôt"
+  "Repository": "Dépôt",
+  "Story imported.": "Histoire importée.",
+  "Story archive exported.": "Archive de l’histoire exportée.",
+  "Official metadata refreshed; {0} local stories matched.": "Métadonnées officielles actualisées ; {0} histoires locales associées.",
+  "This archive is already in the collection.": "Cette archive est déjà dans la collection.",
+  "Different archive bytes already use this story UUID.": "Une archive différente utilise déjà cet UUID d’histoire.",
+  "Import cancelled.": "Importation annulée.",
+  "Story export cancelled.": "Exportation de l’histoire annulée.",
+  "Official metadata refresh was cancelled.": "L’actualisation des métadonnées officielles a été annulée.",
+  "Action result unavailable": "Résultat de l’action indisponible"
 }

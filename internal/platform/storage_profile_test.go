@@ -179,3 +179,30 @@ func TestInterruptedSetupRetriesConfirmedFolderAfterRestart(t *testing.T) {
 		t.Fatal(next.Profile())
 	}
 }
+
+func TestSetupCreatesMissingDefaultParentsAfterConfirmation(t *testing.T) {
+	for _, relative := range []string{".local/share/librairii", "custom/data/home/librairii", "Library/Application Support/Librairii"} {
+		t.Run(relative, func(t *testing.T) {
+			home := t.TempDir()
+			root := filepath.Join(home, filepath.FromSlash(relative))
+			r := NewConfiguredStorageReadiness(t.TempDir(), root, "fr")
+			if _, err := r.Check(context.Background()); !errors.Is(err, preferences.ErrSetupRequired) {
+				t.Fatal(err)
+			}
+			if _, err := os.Stat(filepath.Dir(root)); !errors.Is(err, os.ErrNotExist) {
+				t.Fatal("created parents before confirmation", err)
+			}
+			if err := r.InitializeLibrary(context.Background(), root); err != nil {
+				t.Fatal(err)
+			}
+			report, err := r.Check(context.Background())
+			if err != nil || !report.MutationsAllowed {
+				t.Fatal(report, err)
+			}
+			defer r.Close()
+			if !r.Profile().Complete || r.Profile().Root != root {
+				t.Fatal(r.Profile())
+			}
+		})
+	}
+}

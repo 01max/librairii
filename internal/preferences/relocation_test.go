@@ -248,3 +248,58 @@ func TestCompleteLibraryMoveAcrossVolumes(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestCancellationDuringFileCopyReleasesMoveForRetry(t *testing.T) {
+	j, p, config := moveFixture(t)
+	sourceFile := filepath.Join(j.Source, "000-large-archive")
+	contents := make([]byte, 1024*1024)
+	for i := range contents {
+		contents[i] = byte(i % 251)
+	}
+	if err := os.WriteFile(sourceFile, contents, 0600); err != nil {
+		t.Fatal(err)
+	}
+	var err error
+	j.Entries, err = Manifest(context.Background(), j.Source)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := WriteJournal(config, j); err != nil {
+		t.Fatal(err)
+	}
+	if err := Reserve(j.Destination, j.ID, 0); err != nil {
+		t.Fatal(err)
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	var copied int64
+	err = CopyLibrary(ctx, j, func(n int64) {
+		copied += n
+		if copied >= 128*1024 {
+			cancel()
+		}
+	})
+	if !errors.Is(err, context.Canceled) || copied == 0 || copied >= int64(len(contents)) {
+		t.Fatal(copied, err)
+	}
+	if err := Reconcile(context.Background(), config, p); err != nil {
+		t.Fatal(err)
+	}
+	for _, path := range []string{j.Workspace(), j.Destination, filepath.Join(config, "relocation.json")} {
+		if _, err := os.Stat(path); !errors.Is(err, os.ErrNotExist) {
+			t.Fatalf("%s remains: %v", path, err)
+		}
+	}
+	if err := ValidateLibrary(context.Background(), j.Source, j.LibraryID); err != nil {
+		t.Fatal(err)
+	}
+	if err := Reserve(j.Destination, j.ID, 0); err != nil {
+		t.Fatal(err)
+	}
+	if err := CopyLibrary(context.Background(), j, nil); err != nil {
+		t.Fatal(err)
+	}
+	if err := VerifyCopy(context.Background(), j, j.Workspace()); err != nil {
+		t.Fatal(err)
+	}
+}

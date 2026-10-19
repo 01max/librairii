@@ -2343,7 +2343,7 @@ function App() {
                                         {operation.items.map((item) => (
                                             <li key={item.id}>
                                                 <b>{item.sourceName}</b>
-                                                <span>{<OutcomeText text={item.outcomeMessage || item.status}/>}</span>
+                                                <span>{<OutcomeText text={item.outcomeMessage || item.status} status={item.status}/>}</span>
                                             </li>
                                         ))}
                                     </ul>

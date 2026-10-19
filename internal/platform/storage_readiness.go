@@ -94,6 +94,8 @@ func (r *StorageReadiness) Check(ctx context.Context) (coreapp.ReadinessReport, 
 func (r *StorageReadiness) RecoverSchemaConflict(
 	ctx context.Context,
 ) (string, error) {
+	r.bootstrapMu.Lock()
+	defer r.bootstrapMu.Unlock()
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	if r.db != nil {
@@ -107,6 +109,29 @@ func (r *StorageReadiness) RecoverSchemaConflict(
 	layout, err := storage.Initialize(root)
 	if err != nil {
 		return "", err
+	}
+	if r.profileStore != nil {
+		identity, err := (database.SchemaProbe{}).Inspect(ctx, preferences.DatabasePath(root))
+		if err != nil {
+			return "", err
+		}
+		if identity != database.IdentityForeign {
+			return "", database.ErrNoSchemaConflict
+		}
+		id, err := preferences.EnsureIdentity(root)
+		if err != nil {
+			return "", err
+		}
+		pending, err := r.profileStore.Update(func(p *preferences.Profile) error {
+			p.Root, p.LibraryID = root, id
+			p.Language = r.profile.Language
+			p.Complete, p.Recovering = false, true
+			return nil
+		})
+		if err != nil {
+			return "", err
+		}
+		r.profile = pending
 	}
 	recoveryDirectory, err := database.RelocateSchemaConflict(
 		ctx,

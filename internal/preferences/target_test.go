@@ -42,3 +42,36 @@ func TestSourceLinksAreRejected(t *testing.T) {
 		t.Fatal("followed source link")
 	}
 }
+
+func TestMissingTargetAncestorsAreValidatedWithoutCreation(t *testing.T) {
+	base := t.TempDir()
+	actual := filepath.Join(base, "actual")
+	if err := os.Mkdir(actual, 0700); err != nil {
+		t.Fatal(err)
+	}
+	alias := filepath.Join(base, "alias")
+	if err := os.Symlink(actual, alias); err != nil {
+		t.Fatal(err)
+	}
+	target := filepath.Join(alias, ".local", "share", "librairii")
+	canonical, err := Canonical(target)
+	resolved, resolveErr := filepath.EvalSymlinks(actual)
+	if err != nil || resolveErr != nil || canonical != filepath.Join(resolved, ".local", "share", "librairii") {
+		t.Fatal(canonical, err, resolveErr)
+	}
+	if err := EmptyTarget(target, filepath.Join(base, "config"), ""); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(filepath.Join(actual, ".local")); !os.IsNotExist(err) {
+		t.Fatal("validation created parents", err)
+	}
+	if err := EmptyTarget(target, filepath.Join(alias, ".local", "share", "librairii", "config"), ""); err == nil {
+		t.Fatal("accepted configuration inside target")
+	}
+	if err := os.Symlink(filepath.Join(base, "absent"), filepath.Join(base, "dangling")); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := Canonical(filepath.Join(base, "dangling", "child")); err == nil {
+		t.Fatal("accepted dangling ancestor")
+	}
+}

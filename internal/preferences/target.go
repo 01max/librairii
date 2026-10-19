@@ -14,18 +14,25 @@ func Canonical(path string) (string, error) {
 		return "", ErrDestination
 	}
 	path = filepath.Clean(path)
-	resolved, err := filepath.EvalSymlinks(path)
-	if err == nil {
-		return resolved, nil
+	var missing []string
+	for {
+		resolved, err := filepath.EvalSymlinks(path)
+		if err == nil {
+			for i := len(missing) - 1; i >= 0; i-- {
+				resolved = filepath.Join(resolved, missing[i])
+			}
+			return resolved, nil
+		}
+		if !errors.Is(err, os.ErrNotExist) {
+			return "", err
+		}
+		// An existing dangling symlink is not a missing directory to create.
+		if _, statErr := os.Lstat(path); !errors.Is(statErr, os.ErrNotExist) {
+			return "", err
+		}
+		missing = append(missing, filepath.Base(path))
+		path = filepath.Dir(path)
 	}
-	if !errors.Is(err, os.ErrNotExist) {
-		return "", err
-	}
-	parent, err := filepath.EvalSymlinks(filepath.Dir(path))
-	if err != nil {
-		return "", err
-	}
-	return filepath.Join(parent, filepath.Base(path)), nil
 }
 func Contains(parent, child string) bool {
 	rel, err := filepath.Rel(parent, child)
@@ -62,6 +69,19 @@ func EmptyTarget(root, config, source string) error {
 	parent := filepath.Dir(target)
 	if err == nil {
 		parent = target
+	}
+	for {
+		info, err := os.Stat(parent)
+		if err == nil {
+			if !info.IsDir() {
+				return ErrDestination
+			}
+			break
+		}
+		if !errors.Is(err, os.ErrNotExist) {
+			return ErrDestination
+		}
+		parent = filepath.Dir(parent)
 	}
 	probe, err := os.CreateTemp(parent, ".librairii-probe-*")
 	if err != nil {

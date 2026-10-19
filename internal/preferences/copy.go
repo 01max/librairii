@@ -148,6 +148,10 @@ func copyEntry(ctx context.Context, source, target string, entry Entry, progress
 	if err != nil {
 		return err
 	}
+	created, err := output.Stat()
+	if err != nil {
+		return errors.Join(err, output.Close())
+	}
 	hash := sha256.New()
 	n, err := io.CopyBuffer(io.MultiWriter(output, hash), contextReader{ctx, progressReader{reader: input, progress: progress}}, make([]byte, 128*1024))
 	if err == nil && (n != entry.Size || hex.EncodeToString(hash.Sum(nil)) != entry.SHA256) {
@@ -156,7 +160,19 @@ func copyEntry(ctx context.Context, source, target string, entry Entry, progress
 	if err == nil {
 		err = output.Sync()
 	}
-	return errors.Join(err, output.Close())
+	err = errors.Join(err, output.Close())
+	if err != nil {
+		// Cancellation can leave a prefix of the source. Remove only the file
+		// we created, and only while its bytes still match what we wrote.
+		current, statErr := os.Lstat(target)
+		if statErr == nil && os.SameFile(created, current) && current.Mode().IsRegular() && current.Size() == n {
+			actual, hashErr := fileHash(context.Background(), target)
+			if hashErr == nil && actual == hex.EncodeToString(hash.Sum(nil)) {
+				err = errors.Join(err, os.Remove(target))
+			}
+		}
+	}
+	return err
 }
 
 type progressReader struct {
