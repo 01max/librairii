@@ -1,7 +1,7 @@
 [
   {
     "name": "defaults",
-    "hash": "#/library?v=1",
+    "hash": "#/library?v=2",
     "query": {
       "name": "",
       "languages": [],
@@ -10,12 +10,13 @@
       "choiceFilters": [],
       "page": 1,
       "pageSize": 24,
-      "sort": "name_asc"
+      "sort": "name_asc",
+      "brokenVisibility": "hide"
     }
   },
   {
     "name": "mixed filters and nondefault paging",
-    "hash": "#/library?bool=7%3Afalse&choice=9%3A11%2C12&name=dragon&page=2&size=12&sort=imported_desc&v=1",
+    "hash": "#/library?bool=7%3Afalse&choice=9%3A11%2C12&name=dragon&page=2&size=12&sort=imported_desc&v=2",
     "query": {
       "name": "dragon",
       "languages": [],
@@ -37,12 +38,13 @@
       ],
       "page": 2,
       "pageSize": 12,
-      "sort": "imported_desc"
+      "sort": "imported_desc",
+      "brokenVisibility": "hide"
     }
   },
   {
     "name": "unicode and literal wildcard semantics",
-    "hash": "#/library?name=ete+%25_&v=1",
+    "hash": "#/library?name=ete+%25_&v=2",
     "query": {
       "name": "ete %_",
       "languages": [],
@@ -51,12 +53,13 @@
       "choiceFilters": [],
       "page": 1,
       "pageSize": 24,
-      "sort": "name_asc"
+      "sort": "name_asc",
+      "brokenVisibility": "hide"
     }
   },
   {
     "name": "canonical filter ordering",
-    "hash": "#/library?bool=2%3Atrue&bool=8%3Afalse&choice=4%3A5%2C6&choice=10%3A20&v=1",
+    "hash": "#/library?bool=2%3Atrue&bool=8%3Afalse&choice=4%3A5%2C6&choice=10%3A20&v=2",
     "query": {
       "name": "",
       "languages": [],
@@ -88,12 +91,13 @@
       ],
       "page": 1,
       "pageSize": 24,
-      "sort": "name_asc"
+      "sort": "name_asc",
+      "brokenVisibility": "hide"
     }
   },
   {
     "name": "official language and import status",
-    "hash": "#/library?compatibility=compatible&compatibility=missing&language=en-GB&language=fr-FR&v=1",
+    "hash": "#/library?compatibility=compatible&compatibility=missing&language=en-GB&language=fr-FR&v=2",
     "query": {
       "name": "",
       "languages": [
@@ -108,13 +112,13 @@
       "choiceFilters": [],
       "page": 1,
       "pageSize": 24,
-      "sort": "name_asc"
+      "sort": "name_asc",
+      "brokenVisibility": "hide"
     }
   },
   {
     "name": "include broken stories",
     "query": {
-      "includeBroken": true,
       "name": "",
       "languages": [],
       "compatibilities": [],
@@ -122,8 +126,56 @@
       "choiceFilters": [],
       "page": 1,
       "pageSize": 24,
-      "sort": "name_asc"
+      "sort": "name_asc",
+      "brokenVisibility": "include"
     },
-    "hash": "#/library?includeBroken=true&v=1"
+    "hash": "#/library?brokenVisibility=include&v=2"
+  },
+  {
+    "name": "broken stories only",
+    "query": {
+      "name": "",
+      "languages": [],
+      "compatibilities": [],
+      "booleanFilters": [],
+      "choiceFilters": [],
+      "page": 1,
+      "pageSize": 24,
+      "sort": "name_asc",
+      "brokenVisibility": "only"
+    },
+    "hash": "#/library?brokenVisibility=only&v=2"
+  },
+  {
+    "name": "explicit unflagged membership",
+    "query": {
+      "name": "",
+      "languages": [],
+      "compatibilities": [],
+      "booleanFilters": [],
+      "choiceFilters": [],
+      "page": 1,
+      "pageSize": 24,
+      "sort": "name_asc",
+      "brokenVisibility": "include",
+      "brokenState": "false"
+    },
+    "hash": "#/library?brokenState=false&brokenVisibility=include&v=2"
+  },
+  {
+    "name": "contradictory flag criterion",
+    "query": {
+      "name": "",
+      "languages": [],
+      "compatibilities": [],
+      "booleanFilters": [],
+      "choiceFilters": [],
+      "page": 1,
+      "pageSize": 24,
+      "sort": "name_asc",
+      "brokenVisibility": "hide",
+      "brokenState": "true"
+    },
+    "hash": "#/library?brokenState=true&v=2"
   }
 ]

@@ -88,7 +88,7 @@ func (r *Resolver) ResolveCurrentQuery(
 func (r *Resolver) ResolveShelf(
 	ctx context.Context,
 	shelfID int64,
-	includeBroken ...bool,
+	includeBroken ...library.BrokenVisibility,
 ) (Scope, error) {
 	if shelfID <= 0 {
 		return Scope{}, ErrInvalidScope
@@ -119,7 +119,7 @@ func (r *Resolver) ResolveShelf(
 func (r *Resolver) ResolveShelves(
 	ctx context.Context,
 	shelfIDs []int64,
-	includeBroken ...bool,
+	includeBroken ...library.BrokenVisibility,
 ) (Scope, error) {
 	if len(shelfIDs) < 2 {
 		return Scope{}, ErrInvalidScope
@@ -190,9 +190,10 @@ func uniqueIDs(ids []int64) ([]int64, error) {
 	return unique, nil
 }
 
-func exportVisibility(query library.StoryLibraryQuery, override []bool) library.StoryLibraryQuery {
+func exportVisibility(query library.StoryLibraryQuery, override []library.BrokenVisibility) library.StoryLibraryQuery {
 	if len(override) > 0 {
-		query.IncludeBroken = override[0]
+		query.BrokenVisibility = override[0]
+		query.IncludeBroken = false
 	}
 	return query
 }

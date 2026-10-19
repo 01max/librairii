@@ -86,6 +86,38 @@ export namespace app {
 		    return a;
 		}
 	}
+	export class LibraryCompatibilityResponse {
+	    compatibility: library.CompatibilityInfo;
+	    error?: APIError;
+	
+	    static createFrom(source: any = {}) {
+	        return new LibraryCompatibilityResponse(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.compatibility = this.convertValues(source["compatibility"], library.CompatibilityInfo);
+	        this.error = this.convertValues(source["error"], APIError);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
 	export class LibraryPageResponse {
 	    page?: library.Page;
 	    error?: APIError;
@@ -522,6 +554,38 @@ export namespace app {
 		    return a;
 		}
 	}
+	export class StoryFlagsResponse {
+	    result?: library.FlagResult;
+	    error?: APIError;
+	
+	    static createFrom(source: any = {}) {
+	        return new StoryFlagsResponse(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.result = this.convertValues(source["result"], library.FlagResult);
+	        this.error = this.convertValues(source["error"], APIError);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
 	export class TagAssignmentResponse {
 	    result?: tagging.AssignmentResult;
 	    error?: APIError;
@@ -885,6 +949,7 @@ export namespace exporter {
 		}
 	}
 	export class PreflightRequest {
+	    brokenVisibility?: string;
 	    includeBroken: boolean;
 	    sourceType: string;
 	    storyIds?: number[];
@@ -897,6 +962,7 @@ export namespace exporter {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.brokenVisibility = source["brokenVisibility"];
 	        this.includeBroken = source["includeBroken"];
 	        this.sourceType = source["sourceType"];
 	        this.storyIds = source["storyIds"];
@@ -1009,6 +1075,18 @@ export namespace library {
 	        this.valueIds = source["valueIds"];
 	    }
 	}
+	export class CompatibilityInfo {
+	    legacyBrokenTagId: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new CompatibilityInfo(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.legacyBrokenTagId = source["legacyBrokenTagId"];
+	    }
+	}
 	export class DisplaySources {
 	    title: string;
 	    description: string;
@@ -1055,7 +1133,58 @@ export namespace library {
 	        this.Verification = source["Verification"];
 	    }
 	}
+	export class FlagChange {
+	    storyId: number;
+	    previous: boolean;
+	    current: boolean;
+	
+	    static createFrom(source: any = {}) {
+	        return new FlagChange(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.storyId = source["storyId"];
+	        this.previous = source["previous"];
+	        this.current = source["current"];
+	    }
+	}
+	export class FlagResult {
+	    requestedStories: number;
+	    changedStories: number;
+	    changes: FlagChange[];
+	
+	    static createFrom(source: any = {}) {
+	        return new FlagResult(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.requestedStories = source["requestedStories"];
+	        this.changedStories = source["changedStories"];
+	        this.changes = this.convertValues(source["changes"], FlagChange);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
 	export class ListRequest {
+	    brokenVisibility?: string;
 	    includeBroken: boolean;
 	    page: number;
 	    pageSize: number;
@@ -1067,6 +1196,7 @@ export namespace library {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.brokenVisibility = source["brokenVisibility"];
 	        this.includeBroken = source["includeBroken"];
 	        this.page = source["page"];
 	        this.pageSize = source["pageSize"];
@@ -1234,6 +1364,8 @@ export namespace library {
 		}
 	}
 	export class StoryLibraryQuery {
+	    brokenVisibility?: string;
+	    brokenState?: string;
 	    anyOf?: StoryLibraryQuery[];
 	    includeBroken?: boolean;
 	    name: string;
@@ -1251,6 +1383,8 @@ export namespace library {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.brokenVisibility = source["brokenVisibility"];
+	        this.brokenState = source["brokenState"];
 	        this.anyOf = this.convertValues(source["anyOf"], StoryLibraryQuery);
 	        this.includeBroken = source["includeBroken"];
 	        this.name = source["name"];
@@ -1580,6 +1714,8 @@ export namespace removal {
 export namespace shelves {
 	
 	export class SavedLibraryQuery {
+	    brokenVisibility?: string;
+	    brokenState?: string;
 	    anyOf?: SavedLibraryQuery[];
 	    includeBroken?: boolean;
 	    name?: string;
@@ -1594,6 +1730,8 @@ export namespace shelves {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.brokenVisibility = source["brokenVisibility"];
+	        this.brokenState = source["brokenState"];
 	        this.anyOf = this.convertValues(source["anyOf"], SavedLibraryQuery);
 	        this.includeBroken = source["includeBroken"];
 	        this.name = source["name"];

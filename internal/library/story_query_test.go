@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"github.com/01max/librairii/internal/testsupport"
 	"strings"
 	"testing"
 	"time"
@@ -92,15 +93,8 @@ func TestBrokenVisibilityAppliesBeforePaginationCountingAndExport(t *testing.T) 
 	query, repository, connection := newLibraryQuery(t, nil)
 	damaged := createQueryableStory(t, repository, "00112233-4455-4677-8899-aabbccddeeff", "Damaged", "a")
 	healthy := createQueryableStory(t, repository, "11112222-3333-4444-8555-666677778888", "Healthy", "b")
-	broken, err := tagging.SeedBuiltIns(ctx, connection)
-	if err != nil {
-		t.Fatal(err)
-	}
-	tags, err := tagging.NewService(connection)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if _, err := tags.SetStoryBoolean(ctx, damaged.ID, broken.ID, true); err != nil {
+	flags := NewBrokenFlags(connection)
+	if _, err := flags.Set(ctx, []int64{damaged.ID}, true); err != nil {
 		t.Fatal(err)
 	}
 	for _, include := range []bool{false, true} {
@@ -132,7 +126,7 @@ func TestBrokenVisibilityAppliesBeforePaginationCountingAndExport(t *testing.T) 
 	if err != nil || !detail.Story.Broken {
 		t.Fatalf("broken detail: %#v, %v", detail, err)
 	}
-	if _, err := tags.SetStoryBoolean(ctx, damaged.ID, broken.ID, false); err != nil {
+	if _, err := flags.Set(ctx, []int64{damaged.ID}, false); err != nil {
 		t.Fatal(err)
 	}
 	page, err := query.Search(ctx, StoryLibraryQuery{})
@@ -258,7 +252,7 @@ func TestStoryLibraryQueryComposesBooleanAndChoiceGroups(t *testing.T) {
 		"Forest",
 		"c",
 	)
-	broken, err := tagging.SeedBuiltIns(context.Background(), database)
+	broken, err := testsupport.SeedBooleanTag(context.Background(), database)
 	if err != nil {
 		t.Fatal(err)
 	}

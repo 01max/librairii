@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"github.com/01max/librairii/internal/testsupport"
 	"strings"
 	"testing"
 	"time"
@@ -170,7 +171,7 @@ func TestProtectedColorsSurviveStartupAndMetadataProjection(t *testing.T) {
 	if initialColor != "#267D5D" {
 		t.Fatalf("default age color=%s", initialColor)
 	}
-	broken, err := tagging.SeedBuiltIns(ctx, connection)
+	broken, err := testsupport.SeedBooleanTag(ctx, connection)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -183,7 +184,7 @@ func TestProtectedColorsSurviveStartupAndMetadataProjection(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	if _, err := tagging.SeedBuiltIns(ctx, connection); err != nil {
+	if _, err := testsupport.SeedBooleanTag(ctx, connection); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := projector.Rebuild(ctx, snapshot.ID); err != nil {

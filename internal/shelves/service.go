@@ -133,9 +133,13 @@ func (s *Service) Inspect(ctx context.Context, shelfID int64) (Inspection, error
 	if err != nil {
 		return Inspection{}, fmt.Errorf("read shelf for inspection: %w", err)
 	}
+	legacyID, err := library.ReadLegacyBrokenTagID(ctx, transaction)
+	if err != nil {
+		return Inspection{}, err
+	}
 	migrated, err := MigrateSavedLibraryQuery(
 		shelf.QueryVersion,
-		shelf.QueryPayload,
+		shelf.QueryPayload, legacyID,
 	)
 	if err != nil {
 		return finishAttentionInspection(
@@ -270,9 +274,13 @@ func (s *Service) Duplicate(
 	if source.Validity != ValidityValid {
 		return Shelf{}, ErrShelfNeedsAttention
 	}
+	legacyID, err := library.ReadLegacyBrokenTagID(ctx, transaction)
+	if err != nil {
+		return Shelf{}, err
+	}
 	migrated, err := MigrateSavedLibraryQuery(
 		source.QueryVersion,
-		source.QueryPayload,
+		source.QueryPayload, legacyID,
 	)
 	if err != nil {
 		return Shelf{}, err

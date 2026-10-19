@@ -58,6 +58,10 @@ export function FrontendRendered() {
   return window['go']['main']['App']['FrontendRendered']();
 }
 
+export function LibraryCompatibility() {
+  return window['go']['main']['App']['LibraryCompatibility']();
+}
+
 export function ListShelves(arg1) {
   return window['go']['main']['App']['ListShelves'](arg1);
 }
@@ -154,6 +158,10 @@ export function ReplaceShelfQuery(arg1, arg2) {
   return window['go']['main']['App']['ReplaceShelfQuery'](arg1, arg2);
 }
 
+export function RestoreStoryFlags(arg1) {
+  return window['go']['main']['App']['RestoreStoryFlags'](arg1);
+}
+
 export function RetryLibrary() {
   return window['go']['main']['App']['RetryLibrary']();
 }
@@ -188,6 +196,10 @@ export function SetChoiceTagValue(arg1, arg2, arg3, arg4) {
 
 export function SetChoiceTagValues(arg1, arg2, arg3) {
   return window['go']['main']['App']['SetChoiceTagValues'](arg1, arg2, arg3);
+}
+
+export function SetStoriesBroken(arg1, arg2) {
+  return window['go']['main']['App']['SetStoriesBroken'](arg1, arg2);
 }
 
 export function SetUILanguage(arg1) {

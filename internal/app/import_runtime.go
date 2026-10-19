@@ -44,6 +44,7 @@ type ImportRuntime struct {
 	metadataFetcher  metadata.CatalogFetcher
 	manager          *operations.Manager
 	query            *library.Query
+	flags            *library.BrokenFlags
 	removal          *removal.Service
 	tags             *tagging.Service
 	shelves          *shelves.Service
@@ -130,9 +131,6 @@ func (r *ImportRuntime) Start(ctx context.Context) error {
 	)
 	if err != nil {
 		return fmt.Errorf("construct diagnostic export service: %w", err)
-	}
-	if _, err := tagging.SeedBuiltIns(ctx, writeDatabase); err != nil {
-		return fmt.Errorf("seed built-in tags: %w", err)
 	}
 	if err := metadata.SeedDefaultDerivedFacets(ctx, writeDatabase); err != nil {
 		return fmt.Errorf("seed derived tags: %w", err)
@@ -265,6 +263,7 @@ func (r *ImportRuntime) Start(ctx context.Context) error {
 	}
 	r.manager = manager
 	r.query = libraryQuery
+	r.flags = library.NewBrokenFlags(writeDatabase)
 	r.removal = removalService
 	r.tags = tagService
 	r.shelves = shelfService
@@ -681,7 +680,7 @@ func (r *ImportRuntime) SetBulkChoiceValue(
 
 func (r *ImportRuntime) ListShelves(
 	ctx context.Context,
-	includeBroken ...bool,
+	includeBroken ...library.BrokenVisibility,
 ) ([]shelves.Summary, error) {
 	_, evaluator, err := r.currentShelves()
 	if err != nil {
@@ -775,7 +774,7 @@ func (r *ImportRuntime) DeleteShelf(
 func (r *ImportRuntime) PreviewShelves(
 	ctx context.Context,
 	shelfIDs []int64,
-	includeBroken ...bool,
+	includeBroken ...library.BrokenVisibility,
 ) (shelves.SelectionPreview, error) {
 	_, evaluator, err := r.currentShelves()
 	if err != nil {
@@ -790,6 +789,7 @@ func (r *ImportRuntime) Close() error {
 	diagnosticLogger := r.diagnosticLogger
 	r.manager = nil
 	r.query = nil
+	r.flags = nil
 	r.removal = nil
 	r.tags = nil
 	r.shelves = nil

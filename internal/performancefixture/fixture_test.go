@@ -138,8 +138,21 @@ func TestGenerateBuildsCopyrightFreeFiveThousandStoryFixture(t *testing.T) {
 		t.Fatal(err)
 	}
 	combinedPlan := strings.Join(plans["combinedFilters"], "\n")
+	if !strings.Contains(combinedPlan, "idx_story_archives_validation_story") && !strings.Contains(combinedPlan, "sqlite_autoindex_story_archives_1") {
+		t.Fatalf("combined plan omitted indexed archive lookup:\n%s", combinedPlan)
+	}
+	var flags, reserved int
+	if err := opened.SQL().QueryRow("SELECT count(*) FROM stories WHERE is_broken=1").Scan(&flags); err != nil {
+		t.Fatal(err)
+	}
+	if err := opened.SQL().QueryRow("SELECT count(*) FROM tag_definitions WHERE source='builtin' AND normalized_key='broken'").Scan(&reserved); err != nil {
+		t.Fatal(err)
+	}
+	if flags != MinimumLargeLibraryStories/7 || reserved != 0 {
+		t.Fatalf("fixture flags=%d, reserved=%d", flags, reserved)
+	}
+
 	for _, index := range []string{
-		"idx_story_archives_validation_story",
 		"idx_official_metadata_language_story",
 		"idx_story_tag_assignments_filter",
 	} {

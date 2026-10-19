@@ -34,7 +34,9 @@ export function DuplicateShelf(arg1:number,arg2:string):Promise<app.ShelfRespons
 
 export function FrontendRendered():Promise<void>;
 
-export function ListShelves(arg1:boolean):Promise<app.ShelfListResponse>;
+export function LibraryCompatibility():Promise<app.LibraryCompatibilityResponse>;
+
+export function ListShelves(arg1:library.BrokenVisibility):Promise<app.ShelfListResponse>;
 
 export function ListStories(arg1:library.ListRequest):Promise<app.LibraryPageResponse>;
 
@@ -54,7 +56,7 @@ export function PlanTagDefinitionDeletion(arg1:number):Promise<app.TagDefinition
 
 export function PlanTagValueDeletion(arg1:number):Promise<app.TagValueDeletionPlanResponse>;
 
-export function PreviewShelves(arg1:Array<number>,arg2:boolean):Promise<app.ShelfSelectionPreviewResponse>;
+export function PreviewShelves(arg1:Array<number>,arg2:library.BrokenVisibility):Promise<app.ShelfSelectionPreviewResponse>;
 
 export function QueryStories(arg1:library.StoryLibraryQuery):Promise<app.LibraryPageResponse>;
 
@@ -82,6 +84,8 @@ export function ReorderTagValues(arg1:number,arg2:Array<number>):Promise<app.Mut
 
 export function ReplaceShelfQuery(arg1:number,arg2:library.StoryLibraryQuery):Promise<app.ShelfResponse>;
 
+export function RestoreStoryFlags(arg1:Array<library.FlagChange>):Promise<app.StoryFlagsResponse>;
+
 export function RetryLibrary():Promise<main.SettingsSnapshot>;
 
 export function RevealExportDestination(arg1:string):Promise<app.MutationResponse>;
@@ -99,6 +103,8 @@ export function SetBooleanTag(arg1:Array<number>,arg2:number,arg3:boolean):Promi
 export function SetChoiceTagValue(arg1:Array<number>,arg2:number,arg3:number,arg4:boolean):Promise<app.TagAssignmentResponse>;
 
 export function SetChoiceTagValues(arg1:Array<number>,arg2:number,arg3:Array<number>):Promise<app.TagAssignmentResponse>;
+
+export function SetStoriesBroken(arg1:Array<number>,arg2:boolean):Promise<app.StoryFlagsResponse>;
 
 export function SetUILanguage(arg1:string):Promise<main.SettingsSnapshot>;
 

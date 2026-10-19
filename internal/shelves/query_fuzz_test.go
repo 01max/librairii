@@ -37,7 +37,7 @@ func FuzzSavedLibraryQueryCodecPreservesMembership(f *testing.F) {
 	f.Fuzz(func(t *testing.T, version int, payload string) {
 		decoded, err := DecodeSavedLibraryQuery(version, payload)
 		if err != nil {
-			if version != 1 && version != 2 &&
+			if version != 1 && version != 2 && version != 3 &&
 				version != CurrentSavedLibraryQueryVersion &&
 				!errors.Is(err, ErrUnsupportedSavedQueryVersion) {
 				t.Fatalf(
@@ -48,7 +48,7 @@ func FuzzSavedLibraryQueryCodecPreservesMembership(f *testing.F) {
 			}
 			return
 		}
-		if version != 1 && version != 2 && version != CurrentSavedLibraryQueryVersion {
+		if version != 1 && version != 2 && version != 3 && version != CurrentSavedLibraryQueryVersion {
 			t.Fatalf("unsupported version %d decoded successfully", version)
 		}
 		encoded, err := EncodeSavedLibraryQuery(decoded.StoryLibraryQuery())

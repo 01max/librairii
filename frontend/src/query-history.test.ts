@@ -1,7 +1,7 @@
 import {waitFor} from '@testing-library/react';
 import {beforeEach, expect, test, vi} from 'vitest';
 import {CollectionQueryHistory} from './query-history';
-import {type CollectionQuery, DEFAULT_COLLECTION_QUERY} from './query-codec';
+import {type CollectionQuery, DEFAULT_COLLECTION_QUERY, canonicalCollectionQuery} from './query-codec';
 
 const applicationDefault: CollectionQuery = {
     ...DEFAULT_COLLECTION_QUERY,
@@ -134,5 +134,5 @@ test('clears one criterion or all membership filters while retaining sort', () =
         name: 'dragon',
         choiceFilters: [],
     });
-    expect(history.clearAll()).toEqual(applicationDefault);
+    expect(history.clearAll()).toEqual(canonicalCollectionQuery(applicationDefault));
 });

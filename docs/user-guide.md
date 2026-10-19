@@ -87,13 +87,35 @@ In a narrow window, choose **Shelves & filters** above the stories to open saved
 shelves, shelf management actions, and **Refine this shelf**. The panel scrolls
 independently; choose **Done**, press Escape, or click outside to close it.
 
-**Include broken stories**, just below the saved shelves, shows stories marked
-as broken. They are hidden by default; when included, they have a Broken badge
-and muted cover artwork. Counts, pagination, and exports of the current view
-follow this choice. Use **Edit tags** to mark or unmark a story as broken.
+**Broken stories**, just below the saved shelves, offers **Hide broken stories**
+(the default), **Include broken stories**, and **Broken only**. Visible flagged
+stories have a warning icon, a **Broken** badge, and muted cover artwork. Counts,
+pagination, shelf previews, and exports of the current view follow this choice.
+Explicitly selected flagged stories can still be exported; the flag adds no
+export restriction.
+
+Use the flag button directly on any list row or cover card to **Mark as broken**
+or **Clear broken flag**, including in saved-shelf previews. Cover controls appear
+on hover or keyboard focus and stay visible on flagged stories and touch screens.
+The selected-story panel offers the same actions and explicit bulk actions for
+multiple selections. Details have a separate **Story warning** section.
+
+Flagging in the default view hides the story and explains what happened.
+**Undo** restores the previous flags for the stories actually changed, including
+mixed bulk selections. Clearing a flag in **Broken only** similarly removes the
+story from that view. Open details stay available when flagging hides a story.
+If Undo finds a removed story or a flag that no longer matches the action, it
+reports the conflict without partially restoring the selection.
+
+Broken is a manual story flag, separate from archive validation and tags.
+Clearing it does not certify playback or repair missing/invalid archive bytes.
+Its fixed warning style is independent of tag colors. Upgrades preserve old
+Broken assignments as flags and translate supported saved queries and collection
+URLs without broadening their results. The old built-in tag and its color setting
+are retired. A custom tag named broken is an ordinary tag with no flag behavior.
 
 Age tags start green. **Manage tags** lets you change the color of any tag,
-including protected built-in and derived tags. Their names and system-managed
+including protected derived tags. Their names and system-managed
 values stay protected, and chosen colors survive later metadata syncs.
 
 ## Export passthrough and Lunii.QT
@@ -144,8 +166,8 @@ notices hidden. Use Close, Escape, or click outside to return to the collection.
 
 Name search is a literal, case-insensitive, accent-insensitive substring match
 against the currently displayed title. Characters such as `%` and `_` have no
-wildcard meaning. Name, language, archive compatibility, built-in/user boolean
-tags, choice tags, and supported derived metadata filters combine as follows:
+wildcard meaning. Name, language, archive compatibility, broken visibility, user
+boolean tags, choice tags, and supported derived metadata filters combine as follows:
 
 - selected values inside one choice definition use OR;
 - separate filter groups use AND;
@@ -163,7 +185,7 @@ shelves. This reset survives a reload. Click any tag filter heading, including
 
 Shelves are dynamic saved queries rather than folders of copied stories. Their
 membership and count are reevaluated after imports, removals, metadata refreshes,
-and tag changes. An empty saved query intentionally means all active stories.
+tag changes, and broken-flag changes. An empty saved query intentionally means all active stories.
 When a referenced tag or value is deleted, the shelf is marked as needing
 attention and evaluation/export is blocked; Librairii never silently broadens
 the query. Multi-shelf views and exports count each story once and report
@@ -243,7 +265,7 @@ derived facets.
 Refreshing official metadata can change display text, artwork, derived facets,
 search results, and dynamic shelf membership. It never changes user-created
 tag definitions, manual tag assignments, saved shelf definitions, archive
-bytes, or the protected built-in `broken` tag.
+bytes, or manual broken flags.
 
 ## Privacy and network behavior
 

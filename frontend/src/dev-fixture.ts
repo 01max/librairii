@@ -246,6 +246,9 @@ export function installCollectionFixture() {
     const totalItems = fixture === 'collection' || fixture === 'parity'
         ? 48
         : fixtureStories.length;
+    const fixtureFlags = new Map(fixtureStories.map((story) => [story.id, 'broken' in story && !!story.broken]));
+    const currentStories = () => fixtureStories.map((story) => ({...story, broken: fixtureFlags.get(story.id) ?? false}));
+    const matchesVisibility = (broken: boolean, mode = 'hide') => mode === 'include' || (mode === 'only' ? broken : !broken);
     const fixtureSnapshot = fixtureOperation(fixture);
     const page = (
         pageNumber: number,
@@ -285,6 +288,7 @@ export function installCollectionFixture() {
             operations: fixture === 'history' ? [historyOperations[0]]
                 : fixtureSnapshot?.status === 'running' ? [fixtureSnapshot] : [],
         }),
+        LibraryCompatibility: async () => ({compatibility: {legacyBrokenTagId: 0}}),
         ApplicationStatus: async () => ({
             status: {
                 state: setupComplete ? 'ready' : 'setup_required',
@@ -321,7 +325,8 @@ export function installCollectionFixture() {
             page: page(1, 12, 'imported_desc'),
         }),
         QueryStories: async (query: {
-            includeBroken?: boolean;
+            brokenVisibility?: string;
+            brokenState?: string;
             page: number;
             pageSize: number;
             sort: string;
@@ -338,9 +343,8 @@ export function installCollectionFixture() {
                 : ageValueIDs.includes(102)
                     ? 18
                     : totalItems;
-            const visible = fixture === 'broken-stories' && !query.includeBroken
-                ? fixtureStories.filter((story) => !('broken' in story && story.broken))
-                : fixtureStories;
+            const visible = currentStories().filter((story) => matchesVisibility(story.broken, query.brokenVisibility) &&
+                (!query.brokenState || (query.brokenState === 'true' ? story.broken : !story.broken)));
             return {
                 page: page(
                     query.page,
@@ -353,12 +357,12 @@ export function installCollectionFixture() {
         },
         OpenShelf: async (
             shelfID: number,
-            request: {page: number; pageSize: number; sort: string},
+            request: {page: number; pageSize: number; sort: string; brokenVisibility?: string},
         ) => {
             const preview = CANONICAL_PARITY_FIXTURE.mainShelves.find(
                 (shelf) => shelf.sourceShelfID === shelfID,
             );
-            const source = preview?.stories ?? [];
+            const source = (preview?.stories ?? []).map((story) => ({...story, broken: fixtureFlags.get(story.id) ?? false})).filter((story) => matchesVisibility(story.broken, request.brokenVisibility));
             return {
                 evaluation: {
                     shelf: {
@@ -394,7 +398,7 @@ export function installCollectionFixture() {
             };
         },
         StoryDetail: async (storyID: number) => {
-            const story = fixtureStories.find(
+            const story = currentStories().find(
                 (candidate) => candidate.id === storyID,
             ) ?? fixtureStories[0] ?? stories[0];
             const parityArchive = fixture === 'parity' && storyID === 1
@@ -418,39 +422,13 @@ export function installCollectionFixture() {
         },
         TagCatalog: async () => ({
             catalog: {
-                definitions: fixture === 'parity' ? [parityAgeDefinition] : [{
-                    id: 1,
-                    key: 'broken',
-                    normalizedKey: 'broken',
-                    label: 'Broken',
-                    color: '#ff705c',
-                    kind: 'boolean',
-                    source: 'builtin',
-                    presentation: 'warning',
-                    position: 0,
-                    protected: true,
-                    values: [],
-                }],
+                definitions: [parityAgeDefinition],
             },
         }),
         TagAssignmentWorkspace: async (storyIDs: number[]) => ({
             workspace: {
                 catalog: {
-                    definitions: fixture === 'parity'
-                        ? parityAssignmentDefinitions
-                        : [{
-                        id: 1,
-                        key: 'broken',
-                        normalizedKey: 'broken',
-                        label: 'Broken',
-                        color: '#ff705c',
-                        kind: 'boolean',
-                        source: 'builtin',
-                        presentation: 'warning',
-                        position: 0,
-                        protected: true,
-                        values: [],
-                    }],
+                    definitions: fixture === 'parity' ? parityAssignmentDefinitions : [parityAgeDefinition],
                 },
                 requestedStories: storyIDs.length,
                 states: fixture === 'parity' ? [
@@ -475,13 +453,21 @@ export function installCollectionFixture() {
                         assignedStories: storyIDs.length,
                         values: [],
                     },
-                ] : [{
-                    definitionId: 1,
-                    assignedStories: 0,
-                    values: [],
-                }],
+                ] : [],
             },
         }),
+        SetStoriesBroken: async (storyIDs: number[], broken: boolean) => {
+            const ids = [...new Set(storyIDs)];
+            const changes = ids.filter((id) => fixtureFlags.get(id) !== broken).map((id) => ({storyId: id, previous: fixtureFlags.get(id) ?? false, current: broken}));
+            changes.forEach((change) => fixtureFlags.set(change.storyId, change.current));
+            return {result: {requestedStories: ids.length, changedStories: changes.length, changes}};
+        },
+        RestoreStoryFlags: async (changes: Array<{storyId: number; previous: boolean; current: boolean}>) => {
+            if (changes.some((change) => fixtureFlags.get(change.storyId) !== change.current)) return {error: {message: 'These flags changed after this action. Refresh the collection before retrying.'}};
+            const restored = changes.map((change) => ({storyId: change.storyId, previous: change.current, current: change.previous}));
+            restored.forEach((change) => fixtureFlags.set(change.storyId, change.current));
+            return {result: {requestedStories: restored.length, changedStories: restored.length, changes: restored}};
+        },
         SetBooleanTag: async (storyIDs: number[]) => ({
             result: {
                 requestedStories: storyIDs.length,

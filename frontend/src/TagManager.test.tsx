@@ -49,12 +49,12 @@ const reorderTagValues = vi.mocked(ReorderTagValues);
 const catalog = new tagging.Catalog({
     definitions: [{
         id: 1,
-        key: 'broken',
-        normalizedKey: 'broken',
-        label: 'Broken',
+        key: 'age',
+        normalizedKey: 'age',
+        label: 'Age',
         color: '#ff705c',
-        kind: 'boolean',
-        source: 'builtin',
+        kind: 'choice',
+        source: 'derived',
         presentation: 'warning',
         position: 0,
         protected: true,
@@ -117,10 +117,10 @@ beforeEach(() => {
 test('presents protected and custom definitions with non-color-only state labels', async () => {
     render(<TagManager onClose={vi.fn()} onCatalogChange={vi.fn()}/>);
 
-    expect(await screen.findByText('Built-in · Boolean · Protected')).toBeInTheDocument();
-    const broken = screen.getByText('Broken').closest('article');
+    expect(await screen.findByText('System-derived · Choice · Protected')).toBeInTheDocument();
+    const broken = screen.getByText('Age').closest('article');
     expect(broken).not.toBeNull();
-    expect(within(broken!).queryByRole('button', {name: 'Delete Broken'}))
+    expect(within(broken!).queryByRole('button', {name: 'Delete Age'}))
         .not.toBeInTheDocument();
     expect(screen.getByText('Custom · Choice')).toBeInTheDocument();
 });
@@ -128,9 +128,9 @@ test('presents protected and custom definitions with non-color-only state labels
 test('allows protected tag colors without renaming their definitions', async () => {
     const user = userEvent.setup();
     render(<TagManager onClose={vi.fn()} onCatalogChange={vi.fn()}/>);
-    const color = await screen.findByLabelText('Color for Broken');
+    const color = await screen.findByLabelText('Color for Age');
     fireEvent.change(color, {target: {value: '#405cf5'}});
-    await user.click(screen.getByRole('button', {name: 'Save Broken color'}));
+    await user.click(screen.getByRole('button', {name: 'Save Age color'}));
     expect(recolorTagDefinition).toHaveBeenCalledWith(1, '#405cf5');
     expect(renameTagDefinition).not.toHaveBeenCalled();
     expect(deleteTagDefinition).not.toHaveBeenCalled();
@@ -153,7 +153,7 @@ test('submits typed definitions and renders backend validation inline', async ()
         error: {code: 'invalid_input', message: 'Key must use lowercase words.'},
     }));
     render(<TagManager onClose={vi.fn()} onCatalogChange={vi.fn()}/>);
-    await screen.findByText('Broken');
+    await screen.findByText('Age');
 
     const form = screen.getByRole('heading', {name: 'New tag'}).closest('form');
     await user.type(within(form!).getByLabelText('Key'), 'Bad Key');

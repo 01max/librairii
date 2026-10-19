@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"github.com/01max/librairii/internal/testsupport"
 	"os"
 	"path/filepath"
 	"strings"
@@ -357,7 +358,7 @@ func TestRepositoryActivationRebuildsOnlyDerivedAgeAssignments(t *testing.T) {
 	ctx := context.Background()
 	storyUUID := "20000000-0000-4000-8000-000000000001"
 	storyResult, err := connection.Exec(
-		"INSERT INTO stories (uuid) VALUES (?)",
+		"INSERT INTO stories (uuid, is_broken) VALUES (?, 1)",
 		storyUUID,
 	)
 	if err != nil {
@@ -367,7 +368,7 @@ func TestRepositoryActivationRebuildsOnlyDerivedAgeAssignments(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	broken, err := tagging.SeedBuiltIns(ctx, connection)
+	broken, err := testsupport.SeedBooleanTag(ctx, connection)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -465,6 +466,14 @@ func TestRepositoryActivationRebuildsOnlyDerivedAgeAssignments(t *testing.T) {
 	if first.Status != SnapshotSuperseded || second.Status != SnapshotActive {
 		t.Fatalf("snapshots after rebuild = %#v, %#v", first, second)
 	}
+	var manualFlag bool
+	if err := connection.QueryRow("SELECT is_broken FROM stories WHERE id=?", storyID).Scan(&manualFlag); err != nil {
+		t.Fatal(err)
+	}
+	if !manualFlag {
+		t.Fatal("metadata refresh cleared the manual broken flag")
+	}
+
 }
 
 func TestRepositoryRollsBackActivationWhenDerivedProjectionFails(t *testing.T) {

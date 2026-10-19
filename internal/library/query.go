@@ -40,10 +40,11 @@ const (
 )
 
 type ListRequest struct {
-	IncludeBroken bool `json:"includeBroken"`
-	Page          int  `json:"page"`
-	PageSize      int  `json:"pageSize"`
-	Sort          Sort `json:"sort"`
+	BrokenVisibility BrokenVisibility `json:"brokenVisibility,omitempty"`
+	IncludeBroken    bool             `json:"includeBroken"`
+	Page             int              `json:"page"`
+	PageSize         int              `json:"pageSize"`
+	Sort             Sort             `json:"sort"`
 }
 
 type DisplaySources struct {
@@ -164,11 +165,12 @@ func (q *Query) List(ctx context.Context, request ListRequest) (Page, error) {
 	if err != nil {
 		return Page{}, err
 	}
-	return q.searchNormalized(ctx, StoryLibraryQuery{
-		IncludeBroken: request.IncludeBroken,
-		Page:          request.Page,
-		PageSize:      request.PageSize,
-		Sort:          request.Sort,
+	return q.Search(ctx, StoryLibraryQuery{
+		IncludeBroken:    request.IncludeBroken,
+		BrokenVisibility: request.BrokenVisibility,
+		Page:             request.Page,
+		PageSize:         request.PageSize,
+		Sort:             request.Sort,
 	})
 }
 
@@ -425,10 +427,7 @@ const localRecordSelect = `SELECT
 		a.byte_size,
 		a.managed_path,
 		a.validation_state,
-		EXISTS (SELECT 1 FROM story_tag_assignments broken_assignment
-        JOIN tag_definitions broken_definition ON broken_definition.id = broken_assignment.definition_id
-        WHERE broken_assignment.story_id = s.id AND broken_definition.normalized_key = 'broken'
-        AND broken_definition.source = 'builtin' AND broken_assignment.value_id IS NULL)
+		s.is_broken
 	FROM stories s
 	JOIN story_archives a ON a.story_id = s.id`
 

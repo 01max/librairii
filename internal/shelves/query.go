@@ -19,13 +19,15 @@ var (
 )
 
 type SavedLibraryQuery struct {
-	AnyOf           []SavedLibraryQuery     `json:"anyOf,omitempty"`
-	IncludeBroken   bool                    `json:"includeBroken,omitempty"`
-	Name            string                  `json:"name,omitempty"`
-	Languages       []string                `json:"languages,omitempty"`
-	Compatibilities []library.Compatibility `json:"compatibilities,omitempty"`
-	BooleanFilters  []library.BooleanFilter `json:"booleanFilters,omitempty"`
-	ChoiceFilters   []library.ChoiceFilter  `json:"choiceFilters,omitempty"`
+	BrokenVisibility library.BrokenVisibility   `json:"brokenVisibility,omitempty"`
+	BrokenState      library.BooleanFilterState `json:"brokenState,omitempty"`
+	AnyOf            []SavedLibraryQuery        `json:"anyOf,omitempty"`
+	IncludeBroken    bool                       `json:"includeBroken,omitempty"`
+	Name             string                     `json:"name,omitempty"`
+	Languages        []string                   `json:"languages,omitempty"`
+	Compatibilities  []library.Compatibility    `json:"compatibilities,omitempty"`
+	BooleanFilters   []library.BooleanFilter    `json:"booleanFilters,omitempty"`
+	ChoiceFilters    []library.ChoiceFilter     `json:"choiceFilters,omitempty"`
 }
 
 type SerializedQuery struct {
@@ -57,6 +59,7 @@ func EncodeSavedLibraryQuery(
 func DecodeSavedLibraryQuery(
 	version int,
 	payload string,
+	legacyBrokenID ...int64,
 ) (SavedLibraryQuery, error) {
 	decoded, err := shelfquery.DecodePayload(version, payload)
 	if errors.Is(err, shelfquery.ErrUnsupportedVersion) {
@@ -69,14 +72,19 @@ func DecodeSavedLibraryQuery(
 			err,
 		)
 	}
-	return canonicalSavedLibraryQuery(storyLibraryQueryFromPayload(decoded))
+	query := storyLibraryQueryFromPayload(decoded)
+	if version < CurrentSavedLibraryQueryVersion && len(legacyBrokenID) > 0 {
+		query = library.TranslateLegacyBroken(query, legacyBrokenID[0])
+	}
+	return canonicalSavedLibraryQuery(query)
 }
 
 func MigrateSavedLibraryQuery(
 	version int,
 	payload string,
+	legacyBrokenID ...int64,
 ) (SerializedQuery, error) {
-	saved, err := DecodeSavedLibraryQuery(version, payload)
+	saved, err := DecodeSavedLibraryQuery(version, payload, legacyBrokenID...)
 	if err != nil {
 		return SerializedQuery{}, err
 	}
@@ -89,13 +97,15 @@ func (q SavedLibraryQuery) StoryLibraryQuery() library.StoryLibraryQuery {
 		branches = append(branches, branch.StoryLibraryQuery())
 	}
 	return library.StoryLibraryQuery{
-		IncludeBroken:   q.IncludeBroken,
-		AnyOf:           branches,
-		Name:            q.Name,
-		Languages:       append([]string(nil), q.Languages...),
-		Compatibilities: append([]library.Compatibility(nil), q.Compatibilities...),
-		BooleanFilters:  append([]library.BooleanFilter(nil), q.BooleanFilters...),
-		ChoiceFilters:   cloneChoiceFilters(q.ChoiceFilters),
+		IncludeBroken:    q.IncludeBroken,
+		BrokenVisibility: q.BrokenVisibility,
+		BrokenState:      q.BrokenState,
+		AnyOf:            branches,
+		Name:             q.Name,
+		Languages:        append([]string(nil), q.Languages...),
+		Compatibilities:  append([]library.Compatibility(nil), q.Compatibilities...),
+		BooleanFilters:   append([]library.BooleanFilter(nil), q.BooleanFilters...),
+		ChoiceFilters:    cloneChoiceFilters(q.ChoiceFilters),
 	}
 }
 
@@ -119,13 +129,15 @@ func canonicalSavedLibraryQuery(
 		branches = append(branches, saved)
 	}
 	return SavedLibraryQuery{
-		AnyOf:           branches,
-		IncludeBroken:   query.IncludeBroken,
-		Name:            query.Name,
-		Languages:       append([]string(nil), query.Languages...),
-		Compatibilities: append([]library.Compatibility(nil), query.Compatibilities...),
-		BooleanFilters:  append([]library.BooleanFilter(nil), query.BooleanFilters...),
-		ChoiceFilters:   cloneChoiceFilters(query.ChoiceFilters),
+		AnyOf:            branches,
+		IncludeBroken:    query.IncludeBroken,
+		BrokenVisibility: savedVisibility(query.BrokenVisibility),
+		BrokenState:      query.BrokenState,
+		Name:             query.Name,
+		Languages:        append([]string(nil), query.Languages...),
+		Compatibilities:  append([]library.Compatibility(nil), query.Compatibilities...),
+		BooleanFilters:   append([]library.BooleanFilter(nil), query.BooleanFilters...),
+		ChoiceFilters:    cloneChoiceFilters(query.ChoiceFilters),
 	}, nil
 }
 
@@ -175,13 +187,15 @@ func savedLibraryQueryPayload(query SavedLibraryQuery) shelfquery.Payload {
 		compatibilities = append(compatibilities, string(compatibility))
 	}
 	return shelfquery.Payload{
-		AnyOf:           branches,
-		IncludeBroken:   query.IncludeBroken,
-		Name:            query.Name,
-		Languages:       append([]string(nil), query.Languages...),
-		Compatibilities: compatibilities,
-		BooleanFilters:  booleanFilters,
-		ChoiceFilters:   choiceFilters,
+		AnyOf:            branches,
+		IncludeBroken:    query.IncludeBroken,
+		BrokenVisibility: string(query.BrokenVisibility),
+		BrokenState:      string(query.BrokenState),
+		Name:             query.Name,
+		Languages:        append([]string(nil), query.Languages...),
+		Compatibilities:  compatibilities,
+		BooleanFilters:   booleanFilters,
+		ChoiceFilters:    choiceFilters,
 	}
 }
 
@@ -224,12 +238,21 @@ func storyLibraryQueryFromPayload(payload shelfquery.Payload) library.StoryLibra
 		})
 	}
 	return library.StoryLibraryQuery{
-		IncludeBroken:   payload.IncludeBroken,
-		AnyOf:           branches,
-		Name:            payload.Name,
-		Languages:       append([]string(nil), payload.Languages...),
-		Compatibilities: compatibilities,
-		BooleanFilters:  booleanFilters,
-		ChoiceFilters:   choiceFilters,
+		IncludeBroken:    payload.IncludeBroken,
+		BrokenVisibility: library.BrokenVisibility(payload.BrokenVisibility),
+		BrokenState:      library.BooleanFilterState(payload.BrokenState),
+		AnyOf:            branches,
+		Name:             payload.Name,
+		Languages:        append([]string(nil), payload.Languages...),
+		Compatibilities:  compatibilities,
+		BooleanFilters:   booleanFilters,
+		ChoiceFilters:    choiceFilters,
 	}
+}
+
+func savedVisibility(mode library.BrokenVisibility) library.BrokenVisibility {
+	if mode == library.BrokenHide {
+		return ""
+	}
+	return mode
 }

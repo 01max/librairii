@@ -24,7 +24,6 @@ import (
 
 const (
 	MinimumLargeLibraryStories = 5_000
-	BrokenDefinitionID         = int64(1)
 	MoodDefinitionID           = int64(2)
 	CalmValueID                = int64(1)
 	SyntheticArtworkVariants   = 24
@@ -224,12 +223,7 @@ func Generate(
 			)
 		}
 		if index%7 == 0 {
-			if _, err := assignmentStatement.ExecContext(
-				ctx,
-				index,
-				BrokenDefinitionID,
-				nil,
-			); err != nil {
+			if _, err := transaction.ExecContext(ctx, "UPDATE stories SET is_broken=1 WHERE id=?", index); err != nil {
 				return Fixture{}, err
 			}
 		}
@@ -289,8 +283,6 @@ func seedTags(ctx context.Context, transaction *sql.Tx) error {
 			id, key, normalized_key, label, color, kind, source,
 			presentation, position, is_protected
 		) VALUES
-			(1, 'broken', 'broken', 'Broken', '#FF705C', 'boolean',
-			 'builtin', 'warning', 0, 1),
 			(2, 'mood', 'mood', 'Mood', '#405CF5', 'choice',
 			 'user', 'default', 0, 0);
 		 INSERT INTO tag_values (
@@ -365,10 +357,7 @@ func seedShelves(
 			},
 		}},
 		{name: "Broken stories", query: library.StoryLibraryQuery{
-			BooleanFilters: []library.BooleanFilter{{
-				DefinitionID: BrokenDefinitionID,
-				State:        library.BooleanTrue,
-			}},
+			BrokenVisibility: library.BrokenOnly,
 		}},
 		{name: "Calm stories", query: library.StoryLibraryQuery{
 			ChoiceFilters: []library.ChoiceFilter{{
@@ -424,10 +413,7 @@ func CombinedQuery() library.StoryLibraryQuery {
 		Compatibilities: []library.Compatibility{
 			library.CompatibilityCompatible,
 		},
-		BooleanFilters: []library.BooleanFilter{{
-			DefinitionID: BrokenDefinitionID,
-			State:        library.BooleanFalse,
-		}},
+		BrokenState: library.BooleanFalse,
 		ChoiceFilters: []library.ChoiceFilter{{
 			DefinitionID: MoodDefinitionID,
 			ValueIDs:     []int64{CalmValueID},

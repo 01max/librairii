@@ -1,5 +1,5 @@
 import OutcomeText from './OutcomeText';
-import {systemLabel, systemValue} from './system-label';
+import {isStoryTag, systemLabel, systemValue} from './system-label';
 import {t} from './i18n';
 import ModalBackdrop from './ModalBackdrop';
 import {
@@ -168,16 +168,15 @@ export default function TagAssignmentEditor({
                 {notice && <p className="assignment-notice" role="status">{notice}</p>}
 
                 <div className="assignment-list">
-                    {workspace?.catalog.definitions.map((definition) => {
+                    {workspace?.catalog.definitions.filter(isStoryTag).map((definition) => {
                         const state = states.get(definition.id);
                         const derived = definition.source === 'derived';
-                        const warning = definition.key === 'broken';
                         const assigned = state?.assignedStories ?? 0;
                         const all = assigned === workspace.requestedStories;
                         const mixed = assigned > 0 && !all;
                         return (
                             <section
-                                className={`assignment-definition${warning ? ' warning' : ''}`}
+                                className="assignment-definition"
                                 key={definition.id}
                             >
                                 <div className="assignment-definition-head">
@@ -198,10 +197,6 @@ export default function TagAssignmentEditor({
                                         </span>
                                     </div>
                                 </div>
-                                {warning && (
-                                    <p className="broken-help">
-                                        {t("Mark stories that may disrupt the Lunii device menu.")}</p>
-                                )}
                                 {derived ? (
                                     <>
                                         <p className="protected-note">
@@ -232,7 +227,7 @@ export default function TagAssignmentEditor({
                                         checked={all}
                                         mixed={mixed}
                                         disabled={busy}
-                                        label={warning ? t("Broken warning") : systemLabel(definition)}
+                                        label={systemLabel(definition)}
                                         onChange={(checked) => void apply(() => (
                                             SetBooleanTag(storyIDs, definition.id, checked)
                                         ))}

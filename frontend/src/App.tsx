@@ -1,6 +1,7 @@
+import {useStoryFlags} from './use-story-flags';
 import SettingsPanel from './SettingsPanel';
 import OutcomeText from './OutcomeText';
-import {systemLabel, systemValue} from './system-label';
+import {isStoryTag, systemLabel, systemValue} from './system-label';
 import {t, currentLanguage} from './i18n';
 import {useLanguage} from './use-language';
 import ModalBackdrop from './ModalBackdrop';
@@ -16,6 +17,7 @@ import './App.css';
 import {
     ActiveOperations,
     ApplicationStatus,
+    LibraryCompatibility,
     CancelOperation,
     CreateShelf,
     DeleteShelf,
@@ -60,6 +62,8 @@ import {
 } from './query-history';
 import {
     type CompatibilityFilter,
+    type BrokenVisibility,
+    type BooleanFilterState,
     type CollectionQuery,
     DEFAULT_COLLECTION_QUERY,
 } from './query-codec';
@@ -74,6 +78,7 @@ import OperationHistoryDialog from './OperationHistoryDialog';
 import ExportReport from './ExportReport';
 import LuniiSync from './LuniiSync';
 import StoryCover from './StoryCover';
+import StoryFlagButton from './StoryFlagButton';
 import TagAssignmentEditor from './TagAssignmentEditor';
 import {describeMetadataRefresh} from './metadata-state';
 import {useModalFocus} from './modal-focus';
@@ -171,7 +176,8 @@ function collectionQueryFromShelf(
 ): CollectionQuery {
     return {
         ...(saved.anyOf?.length ? {anyOf: saved.anyOf.map((branch) => collectionQueryFromShelf(branch, current))} : {}),
-        includeBroken: saved.includeBroken ?? false,
+        brokenVisibility: (saved.brokenVisibility ?? (saved.includeBroken ? 'include' : 'hide')) as BrokenVisibility,
+        ...(saved.brokenState ? {brokenState: saved.brokenState as BooleanFilterState} : {}),
         name: saved.name ?? '',
         languages: [...(saved.languages ?? [])],
         compatibilities: [...(saved.compatibilities ?? [])] as CompatibilityFilter[],
@@ -366,10 +372,10 @@ function App() {
     const [collectionQuery, setCollectionQuery] = useState(
         initialHistoryState.query,
     );
-    const includeBrokenRef = useRef(!!collectionQuery.includeBroken);
+    const brokenVisibilityRef = useRef((collectionQuery.brokenVisibility ?? 'hide'));
     useEffect(() => {
-        includeBrokenRef.current = !!collectionQuery.includeBroken;
-    }, [collectionQuery.includeBroken]);
+        brokenVisibilityRef.current = (collectionQuery.brokenVisibility ?? 'hide');
+    }, [collectionQuery.brokenVisibility]);
     const [page, setPage] = useState<library.Page | null>(null);
     const [selectedID, setSelectedID] = useState<number | null>(null);
     const [selectedIDs, setSelectedIDs] = useState<number[]>([]);
@@ -395,6 +401,9 @@ function App() {
     const [importFacetOpen, setImportFacetOpen] = useState(false);
     const [collapsedTagFacets, setCollapsedTagFacets] = useState<Set<number>>(new Set());
     const [detailsOpen, setDetailsOpen] = useState(false);
+    const inspectedStoryID = useRef<number | null>(null);
+    const [inspectedStory, setInspectedStory] = useState<library.StorySummary | null>(null);
+    const [inspectedArchive, setInspectedArchive] = useState<library.ArchiveDetails>();
     const [removing, setRemoving] = useState(false);
     const [removalError, setRemovalError] = useState<string | null>(null);
     const [removalNotice, setRemovalNotice] = useState<string | null>(null);
@@ -443,6 +452,7 @@ function App() {
     const searchInput = useRef<HTMLInputElement>(null);
     const openDetailsButton = useRef<HTMLButtonElement>(null);
     const collectionRequestGeneration = useRef(0);
+    const pendingFlagFocus = useRef<{trigger: Element; candidates: HTMLElement[]} | null>(null);
     const shelfPreviewGeneration = useRef(0);
     const shelfListRequestGeneration = useRef(0);
     const shelfDialog = useRef<HTMLFormElement>(null);
@@ -523,31 +533,21 @@ function App() {
                 );
                 return;
             }
+            const lastPage = Math.max(1, result.page.totalPages);
+            if (collectionQuery.page > lastPage) {
+                setCollectionQuery(queryHistory.replace({...collectionQuery, page: lastPage}, activeShelfIDRef.current));
+                return;
+            }
             setRequestError(null);
             setPage(result.page);
             setDetail(null);
             setDetailRevision((current) => current + 1);
-            setSelectedIDs((current) => {
-                const visible = current.filter((storyID) => (
-                    result.page?.stories.some((story) => story.id === storyID)
-                ));
-                if (visible.length > 0) {
-                    return visible;
-                }
-                return result.page?.stories[0] ? [result.page.stories[0].id] : [];
-            });
-            setSelectedID((current) => {
-                if (result.page?.stories.some((story) => story.id === current)) {
-                    return current;
-                }
-                return result.page?.stories[0]?.id ?? null;
-            });
         } catch {
             if (generation === collectionRequestGeneration.current) {
                 setRequestError(t("The story collection could not be loaded."));
             }
         }
-    }, [collectionQuery]);
+    }, [collectionQuery, queryHistory]);
     const loadCollectionRef = useRef(loadCollection);
     useEffect(() => {
         loadCollectionRef.current = loadCollection;
@@ -558,11 +558,6 @@ function App() {
     }, [collectionQuery]);
 
     useEffect(() => {
-        queryHistory.replace(
-            queryHistory.current(),
-            activeShelfIDRef.current,
-            initialHistoryState.scope,
-        );
         return queryHistory.subscribe((query, shelfID, scope) => {
             collectionRequestGeneration.current++;
             activateShelf(shelfID, scope);
@@ -586,7 +581,7 @@ function App() {
     const loadSavedShelves = useCallback(async () => {
         try {
             const generation = ++shelfListRequestGeneration.current;
-            const response = await ListShelves(includeBrokenRef.current);
+            const response = await ListShelves(brokenVisibilityRef.current);
             if (generation !== shelfListRequestGeneration.current) return;
             if (response.error) {
                 setRequestError(response.error.message);
@@ -612,19 +607,47 @@ function App() {
         }
     }, [activateShelf, queryHistory]);
 
-    const previousVisibility = useRef(!!collectionQuery.includeBroken);
+    const previousVisibility = useRef((collectionQuery.brokenVisibility ?? 'hide'));
     useEffect(() => {
-        const visibility = !!collectionQuery.includeBroken;
+        const visibility = (collectionQuery.brokenVisibility ?? 'hide');
         if (visibility !== previousVisibility.current) {
             previousVisibility.current = visibility;
             if (applicationState === 'ready') void loadSavedShelves();
         }
-    }, [collectionQuery.includeBroken, applicationState, loadSavedShelves]);
+    }, [collectionQuery.brokenVisibility, applicationState, loadSavedShelves]);
 
     const invalidateCollection = useCallback(async () => {
         setCollectionRevision((current) => current + 1);
         await Promise.all([loadCollectionRef.current(), loadSavedShelves()]);
     }, [loadSavedShelves]);
+
+    const onFlagsChanged = useCallback(async (result: library.FlagResult) => {
+        const changes = new Map(result.changes.map((change) => [change.storyId, change.current]));
+        const mode = collectionQuery.brokenVisibility ?? 'hide';
+        const remainsVisible = (story: library.StorySummary) => mode === 'include' || (mode === 'only' ? story.broken : !story.broken);
+        const refreshStories = (stories: library.StorySummary[]) => stories.map((story) => changes.has(story.id)
+            ? new library.StorySummary({...story, broken: changes.get(story.id)}) : story).filter(remainsVisible);
+        setSavedShelfStories((current) => Object.fromEntries(Object.entries(current).map(([id, stories]) => [id, refreshStories(stories)])));
+        const trigger = document.activeElement;
+        const triggerStory = trigger?.closest('.story-card')?.querySelector<HTMLElement>('[data-story-id]');
+        const triggerID = Number(triggerStory?.dataset.storyId);
+        pendingFlagFocus.current = null;
+        if (trigger && triggerStory && changes.has(triggerID)) {
+            const candidates = Array.from(document.querySelectorAll<HTMLElement>('.story[data-story-id]'));
+            const index = candidates.indexOf(triggerStory);
+            pendingFlagFocus.current = {
+                trigger,
+                candidates: [...candidates.slice(index + 1), ...candidates.slice(0, index)]
+                    .filter((candidate) => !changes.has(Number(candidate.dataset.storyId))),
+            };
+        }
+        setInspectedStory((current) => {
+            const change = result.changes.find((item) => item.storyId === current?.id);
+            return current && change ? new library.StorySummary({...current, broken: change.current}) : current;
+        });
+        await invalidateCollection();
+    }, [invalidateCollection, collectionQuery.brokenVisibility]);
+    const flags = useStoryFlags(onFlagsChanged, collectionQuery.brokenVisibility ?? 'hide');
 
     const reconcileOperation = useCallback((snapshot: operations.Snapshot) => {
         setOperationSnapshots((current) => {
@@ -665,6 +688,15 @@ function App() {
                 if (!active) {
                     return;
                 }
+                if (state === 'ready') {
+                    const compatibility = await LibraryCompatibility();
+                    if (!active) return;
+                    if (compatibility.error) throw new Error(compatibility.error.message);
+                    queryHistory.configureLegacyBrokenTagID(compatibility.compatibility.legacyBrokenTagId);
+                    const migratedQuery = queryHistory.current();
+                    queryHistory.replace(migratedQuery, activeShelfIDRef.current, initialHistoryState.scope);
+                    setCollectionQuery(migratedQuery);
+                }
                 setApplicationState(state);
                 setApplicationError(response.error?.message ?? '');
                 setStorageRecoveryAvailable(response.status.recoveryAvailable);
@@ -673,7 +705,7 @@ function App() {
                     if (active) {
                         setTagCatalog(catalogResponse.catalog ?? null);
                     }
-                    const shelvesResponse = await ListShelves(includeBrokenRef.current);
+                    const shelvesResponse = await ListShelves(brokenVisibilityRef.current);
                     if (!active) {
                         return;
                     }
@@ -731,7 +763,7 @@ function App() {
         return () => {
             active = false;
         };
-    }, [activateShelf, queryHistory, reconcileOperation, settingsRevision]);
+    }, [activateShelf, initialHistoryState.scope, queryHistory, reconcileOperation, settingsRevision]);
 
     const recoverStorage = async () => {
         setStorageRecovering(true);
@@ -773,7 +805,7 @@ function App() {
             setShelfSelectionBusy(true);
             setShelfSelectionError(null);
             try {
-                const response = await PreviewShelves(selectedShelfIDs, !!collectionQuery.includeBroken);
+                const response = await PreviewShelves(selectedShelfIDs, (collectionQuery.brokenVisibility ?? 'hide'));
                 if (!active) {
                     return;
                 }
@@ -801,7 +833,7 @@ function App() {
         return () => {
             active = false;
         };
-    }, [applicationState, savedShelves, selectedShelfIDs, collectionQuery.includeBroken]);
+    }, [applicationState, savedShelves, selectedShelfIDs, collectionQuery.brokenVisibility]);
 
     useEffect(() => {
         const unsubscribe = EventsOn('operation:changed', (value: unknown) => {
@@ -901,7 +933,7 @@ function App() {
                 : [];
         await preflightExport(new exporter.PreflightRequest({
             sourceType,
-            includeBroken: !!collectionQuery.includeBroken,
+            brokenVisibility: (collectionQuery.brokenVisibility ?? 'hide'),
             storyIds: sourceType === 'selection' ? [...selectedIDs] : [],
             query: sourceType === 'current_query'
                 ? new library.StoryLibraryQuery(collectionQuery)
@@ -978,14 +1010,15 @@ function App() {
     }
 
     async function confirmRemoval() {
-        if (!selected || removing) {
+        const target = inspectedStory ?? selected;
+        if (!target || removing) {
             return;
         }
         setRemoving(true);
         setRemovalError(null);
-        const title = selected.title;
+        const title = target.title;
         try {
-            const response = await RemoveStory(selected.id);
+            const response = await RemoveStory(target.id);
             if (response.error) {
                 setRemovalError(response.error.message);
                 return;
@@ -1054,6 +1087,8 @@ function App() {
         }
     }
 
+    useEffect(() => { inspectedStoryID.current = inspectedStory?.id ?? null; }, [inspectedStory?.id]);
+
     useEffect(() => {
         if (selectedID === null) {
             return;
@@ -1062,12 +1097,28 @@ function App() {
         void LoadStoryDetail(selectedID).then((response) => {
             if (active) {
                 setDetail(response.detail ?? null);
+                if (response.detail && inspectedStoryID.current === selectedID) {
+                    setInspectedStory(response.detail.story);
+                    setInspectedArchive(response.detail.archive);
+                }
             }
         });
         return () => {
             active = false;
         };
     }, [detailRevision, selectedID]);
+
+    useEffect(() => {
+        if (!detailsOpen || !inspectedStory?.id || inspectedStory.id === selectedID) return;
+        let active = true;
+        void LoadStoryDetail(inspectedStory.id).then((response) => {
+            if (active && response.detail) {
+                setInspectedStory(response.detail.story);
+                setInspectedArchive(response.detail.archive);
+            }
+        });
+        return () => { active = false; };
+    }, [detailsOpen, inspectedStory?.id, selectedID, detailRevision]);
 
     const selectedStoryKey = selectedIDs.join(',');
     const tagAssignmentTargetKey = tagAssignmentStoryIDs.join(',');
@@ -1133,7 +1184,7 @@ function App() {
         (definition) => definition.source === 'derived',
     ) ?? [];
     const editableDefinitions = tagCatalog?.definitions.filter(
-        (definition) => definition.source !== 'derived' && definition.key !== 'broken',
+        (definition) => definition.source !== 'derived' && isStoryTag(definition),
     ) ?? [];
     useEffect(() => {
         const values = tagCatalog?.definitions.flatMap((definition) => (
@@ -1212,12 +1263,43 @@ function App() {
         () => collectionRows.flatMap((row) => row.stories),
         [collectionRows],
     );
+    const [previousRenderedStories, setPreviousRenderedStories] = useState(renderedStories);
+    if (renderedStories !== previousRenderedStories) {
+        setPreviousRenderedStories(renderedStories);
+        const visibleIDs = new Set(renderedStories.map((story) => story.id));
+        const visibleSelection = selectedIDs.filter((id) => visibleIDs.has(id));
+        const nextSelection = visibleSelection.length > 0
+            ? visibleSelection : renderedStories.slice(0, 1).map((story) => story.id);
+        setSelectedIDs(nextSelection);
+        setSelectedID(selectedID !== null && nextSelection.includes(selectedID)
+            ? selectedID : nextSelection[0] ?? null);
+    }
+    useEffect(() => {
+        const pending = pendingFlagFocus.current;
+        if (!pending || pending.trigger.isConnected) return;
+        pendingFlagFocus.current = null;
+        if (document.activeElement !== document.body) return;
+        const target = pending.candidates.find((candidate) => candidate.isConnected)
+            ?? document.querySelector<HTMLElement>('main');
+        target?.focus({preventScroll: true});
+    }, [renderedStories]);
+    useEffect(() => {
+        const cancelFlagFocus = (event: FocusEvent) => {
+            if (pendingFlagFocus.current && event.target !== pendingFlagFocus.current.trigger) {
+                pendingFlagFocus.current = null;
+            }
+        };
+        document.addEventListener('focusin', cancelFlagFocus);
+        return () => document.removeEventListener('focusin', cancelFlagFocus);
+    }, []);
     const selectedSummary = renderedStories.find(
         (story) => story.id === selectedID,
     ) ?? null;
     const selected = selectedSummary
         ? detail?.story.id === selectedID ? detail.story : selectedSummary
         : null;
+    const inspected = inspectedStory ?? selected;
+    const selectedFlaggedCount = selectedIDs.filter((id) => renderedStories.some((story) => story.id === id && story.broken)).length;
     const selectedPalette = selected ? paletteFor(selected.id) : undefined;
     const selectedShelfCount = selected
         ? savedShelves.find((shelf) => (
@@ -1225,7 +1307,7 @@ function App() {
         ))?.count
         : undefined;
     const empty = page !== null && page.totalItems === 0 && !importing;
-    const assignedTags = assignmentWorkspace?.catalog.definitions.flatMap((definition) => {
+    const assignedTags = assignmentWorkspace?.catalog.definitions.filter(isStoryTag).flatMap((definition) => {
         const state = assignmentWorkspace.states.find(
             (candidate) => candidate.definitionId === definition.id,
         );
@@ -1271,7 +1353,7 @@ function App() {
                 const response = await OpenShelf(
                     shelf.id,
                     new library.ListRequest({
-                        includeBroken: !!collectionQuery.includeBroken,
+                        brokenVisibility: (collectionQuery.brokenVisibility ?? 'hide'),
                         page: 1,
                         pageSize: 6,
                         sort: collectionQuery.sort,
@@ -1332,7 +1414,8 @@ function App() {
         applicationState,
         assignmentWorkspace?.catalog,
         collectionQuery.sort,
-        collectionQuery.includeBroken,
+        collectionQuery.brokenVisibility,
+        collectionRevision,
         previewableShelves,
         showSavedShelfRows,
         tagCatalog,
@@ -1359,7 +1442,7 @@ function App() {
             const response = await OpenShelf(
                 shelfID,
                 new library.ListRequest({
-                    includeBroken: !!collectionQuery.includeBroken,
+                    brokenVisibility: (collectionQuery.brokenVisibility ?? 'hide'),
                     page: 1,
                     pageSize: collectionQuery.pageSize,
                     sort: collectionQuery.sort,
@@ -1389,6 +1472,7 @@ function App() {
         updateQuery({
             ...collectionQuery,
             anyOf: undefined,
+            brokenState: undefined,
             name: '',
             languages: [],
             compatibilities: [],
@@ -1416,7 +1500,7 @@ function App() {
                 const selected = await Promise.all(selectedShelfIDs.map((id) => OpenShelf(
                     id,
                     new library.ListRequest({
-                        includeBroken: !!collectionQuery.includeBroken,
+                        brokenVisibility: (collectionQuery.brokenVisibility ?? 'hide'),
                         page: 1,
                         pageSize: 1,
                         sort: collectionQuery.sort,
@@ -1428,7 +1512,7 @@ function App() {
                 }
                 queryToSave = {
                     ...initialCollectionQuery,
-                    includeBroken: collectionQuery.includeBroken,
+                    brokenVisibility: collectionQuery.brokenVisibility,
                     sort: collectionQuery.sort,
                     pageSize: collectionQuery.pageSize,
                     anyOf: selected.map((response) => collectionQueryFromShelf(response.evaluation!.query, collectionQuery)),
@@ -1657,7 +1741,22 @@ function App() {
     }
 
     const unavailableCriteria = hasUnavailableCriteria(collectionQuery, tagCatalog);
+    const flagCriteria = (query: CollectionQuery, path: number[] = []): Array<{path: number[]; state: BooleanFilterState}> => [
+        ...(query.brokenState && query.brokenState !== 'ignored' ? [{path, state: query.brokenState}] : []),
+        ...(query.anyOf?.flatMap((branch, index) => flagCriteria(branch, [...path, index])) ?? []),
+    ];
+    const removeFlagCriterion = (query: CollectionQuery, path: number[]): CollectionQuery => path.length === 0
+        ? {...query, brokenState: undefined}
+        : {...query, anyOf: query.anyOf?.map((branch, index) => index === path[0] ? removeFlagCriterion(branch, path.slice(1)) : branch)};
     const activeFilters = [
+        ...flagCriteria(collectionQuery).map((criterion) => {
+            const label = criterion.state === 'true' ? t('Broken flag: set') : t('Broken flag: clear');
+            return {
+                key: `flag-${criterion.path.join('-')}`,
+                label: criterion.path.length ? t('Alternative {0} · {1}', criterion.path.map((index) => index + 1).join('.'), label) : label,
+                remove: () => updateQuery({...removeFlagCriterion(collectionQuery, criterion.path), page: 1}),
+            };
+        }),
         ...(collectionQuery.name
             ? [{
                 key: 'name',
@@ -1949,20 +2048,19 @@ function App() {
                         </div>
                     ))}
                 </nav>
-                <label className="include-broken">
-                    <input
-                        type="checkbox"
-                        checked={!!collectionQuery.includeBroken}
+                <label className="broken-visibility">
+                    <span>{t('Broken stories')}</span>
+                    <select value={collectionQuery.brokenVisibility ?? 'hide'}
                         onChange={(event) => {
-                            const next = {...collectionQuery, includeBroken: event.currentTarget.checked, page: 1};
-                            if (allStoriesActive) {
-                                setCollectionQuery(queryHistory.push(next, null, 'all'));
-                            } else {
-                                updateQuery(next);
-                            }
-                        }}
-                    />
-                    {t("Include broken stories")}</label>
+                            const next = {...collectionQuery, brokenVisibility: event.currentTarget.value as BrokenVisibility, page: 1};
+                            if (allStoriesActive) setCollectionQuery(queryHistory.push(next, null, 'all'));
+                            else updateQuery(next);
+                        }}>
+                        <option value="hide">{t('Hide broken stories')}</option>
+                        <option value="include">{t('Include broken stories')}</option>
+                        <option value="only">{t('Broken only')}</option>
+                    </select>
+                </label>
                 {selectedShelfIDs.length > 0 && (
                     <section className="combined-shelves" aria-label={t("Combined shelf preview")}>
                         <div className="combined-shelves-title">
@@ -2022,6 +2120,7 @@ function App() {
                         )}
                     </section>
                 )}
+
                 {activeFilters.length > 0 && !showSavedShelfRows && (
                     <button
                         className="manage shelf-save"
@@ -2094,7 +2193,7 @@ function App() {
                     {t("＋ Manage tags")}</button>
             </LibrarySidebar>
 
-            <main className="main" inert={sidebarOpen || historyOpen}>
+            <main tabIndex={-1} className="main" inert={sidebarOpen || historyOpen}>
                 <div className="top">
                     <label className="search">
                         <span aria-hidden="true">⌕</span>
@@ -2124,7 +2223,8 @@ function App() {
                             {page?.totalItems ?? 0} {' '}{t("archives")}</p>
                     </div>
                     <div className="heading-actions">
-                        {activeFilters.length > 0 && !showSavedShelfRows && (
+
+                {activeFilters.length > 0 && !showSavedShelfRows && (
                             <button
                                 className="scope-export"
                                 type="button"
@@ -2178,6 +2278,12 @@ function App() {
                     )}
                 </div>
 
+                {flags.error && !detailsOpen && <p className="flag-feedback dialog-error" role="alert"><OutcomeText text={flags.error}/></p>}
+                {flags.notice && !detailsOpen && <div className="flag-feedback" role="status">
+                    <span>{flags.notice}</span>
+                    {flags.canUndo && <button type="button" disabled={flags.pending} onClick={() => void flags.undo()}>{t('Undo')}</button>}
+                </div>}
+
                 {activeFilters.length > 0 && !showSavedShelfRows && (
                     <section className="active-query" aria-label={t("Active filters")}>
                         <span>{page?.totalItems ?? 0} {' ' + t("matching stories")}</span>
@@ -2201,6 +2307,8 @@ function App() {
                                 updateQuery({
                                     ...collectionQuery,
                                     name: '',
+                                    anyOf: undefined,
+                                    brokenState: undefined,
                                     languages: [],
                                     compatibilities: [],
                                     booleanFilters: [],
@@ -2423,6 +2531,8 @@ function App() {
                                 onClick={() => updateQuery({
                                     ...collectionQuery,
                                     name: '',
+                                    anyOf: undefined,
+                                    brokenState: undefined,
                                     languages: [],
                                     compatibilities: [],
                                     booleanFilters: [],
@@ -2482,6 +2592,7 @@ function App() {
                                         className={`story${selectedIDs.includes(story.id) ? ' selected' : ''}`}
                                         style={paletteFor(story.id)}
                                         type="button"
+                                        data-story-id={story.id}
                                         aria-label={story.title}
                                         aria-describedby={story.broken ? `broken-${row.key}-${story.id}` : undefined}
                                         aria-pressed={selectedIDs.includes(story.id)}
@@ -2513,13 +2624,14 @@ function App() {
                                             <span
                                                 className="broken-badge"
                                                 id={`broken-${row.key}-${story.id}`}
-                                                style={{'--broken-color': tagCatalog?.definitions.find(
-                                                    (definition) => definition.key === 'broken',
-                                                )?.color ?? '#FF705C'} as CSSProperties}
+
                                             >
-                                                <i aria-hidden="true"/>{t("Broken")}</span>
+                                                <span aria-hidden="true">⚠</span>{t("Broken")}</span>
                                         )}
                                     </button>
+                                    <StoryFlagButton title={story.title} broken={!!story.broken}
+                                        disabled={flags.pending || applicationState !== 'ready'}
+                                        onChange={(broken) => void flags.set([story.id], broken)}/>
                                     {libraryView !== 'list' && <p className="story-title">{story.title}</p>}
                                 </div>
                             ))}
@@ -2614,11 +2726,23 @@ function App() {
                         </div>
                     </div>
                     <div className="drawer-actions">
+                        {selectedIDs.length > 1 ? <>
+                            <span className="drawer-flag-count">{t('{0} selected · {1} flagged', selectedIDs.length, selectedFlaggedCount)}</span>
+                            <button type="button" disabled={flags.pending} onClick={() => void flags.set(selectedIDs, true)}>{t('Mark selected as broken')}</button>
+                            <button type="button" disabled={flags.pending} onClick={() => void flags.set(selectedIDs, false)}>{t('Clear broken flags')}</button>
+                        </> : <>
+                            {selected.broken && <span className="story-warning-label">⚠ {t('Broken')}</span>}
+                            <button type="button" disabled={flags.pending} onClick={() => void flags.set([selected.id], !selected.broken)}>
+                                {selected.broken ? t('Clear broken flag') : t('Mark as broken')}
+                            </button>
+                        </>}
                         <button
                             ref={openDetailsButton}
                             type="button"
                             onClick={() => {
                                 setRemovalError(null);
+                                setInspectedStory(selected);
+                                setInspectedArchive(detail?.story.id === selected.id ? detail.archive : undefined);
                                 setDetailsOpen(true);
                             }}
                         >
@@ -2762,23 +2886,31 @@ function App() {
                 </ModalBackdrop>
             )}
 
-            {detailsOpen && selected && !tagAssignmentOpen && (
+            {detailsOpen && inspected && !tagAssignmentOpen && (
                 <StoryDetailsDialog
-                    key={selected.id}
-                    story={selected}
-                    archive={detail?.story.id === selected.id ? detail.archive : undefined}
-                    artworkURL={artworkURL(selected.artworkId)}
-                    coverStyle={selectedPalette}
-                    verification={compatibilityLabel(selected.compatibility)}
+                    key={inspected.id}
+                    story={inspected}
+                    archive={inspectedArchive ?? (detail?.story.id === inspected.id ? detail.archive : undefined)}
+                    artworkURL={artworkURL(inspected.artworkId)}
+                    coverStyle={paletteFor(inspected.id)}
+                    verification={compatibilityLabel(inspected.compatibility)}
                     removing={removing}
                     error={removalError}
-                    tagSelectionCount={selectedIDs.length}
+                    flagging={flags.pending}
+                    flagError={flags.error}
+                    flagNotice={flags.notice}
+                    canUndoFlag={flags.canUndo}
+                    onFlagChange={(broken) => void flags.set([inspected.id], broken)}
+                    onUndoFlag={() => void flags.undo()}
+                    tagSelectionCount={selectedIDs.includes(inspected.id) ? selectedIDs.length : 1}
                     onEditTags={() => {
-                        setTagAssignmentStoryIDs([...selectedIDs]);
+                        setTagAssignmentStoryIDs(selectedIDs.includes(inspected.id) ? [...selectedIDs] : [inspected.id]);
                         setTagAssignmentOpen(true);
                     }}
                     onClose={() => {
                         setDetailsOpen(false);
+                        setInspectedStory(null);
+                        setInspectedArchive(undefined);
                         openDetailsButton.current?.focus({preventScroll: true});
                     }}
                     onRemove={() => void confirmRemoval()}

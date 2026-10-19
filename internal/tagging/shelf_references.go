@@ -63,7 +63,8 @@ func matchingShelfIDs(
 ) ([]int64, error) {
 	rows, err := queryer.QueryContext(
 		ctx,
-		`SELECT id, query_version, query_payload, validity_state
+		`SELECT id, query_version, query_payload, validity_state,
+            COALESCE((SELECT definition_id FROM legacy_broken_tag WHERE singleton=1), 0)
 		 FROM shelves
 		 ORDER BY id`,
 	)
@@ -78,7 +79,8 @@ func matchingShelfIDs(
 		var version int
 		var payload string
 		var validity string
-		if err := rows.Scan(&shelfID, &version, &payload, &validity); err != nil {
+		var legacyID int64
+		if err := rows.Scan(&shelfID, &version, &payload, &validity, &legacyID); err != nil {
 			return nil, fmt.Errorf("scan saved shelf reference: %w", err)
 		}
 		query, err := shelfquery.DecodeReferences(version, payload)
@@ -92,6 +94,15 @@ func matchingShelfIDs(
 				shelfID,
 				err,
 			)
+		}
+		if version < shelfquery.CurrentVersion && legacyID > 0 {
+			filters := query.BooleanFilters[:0]
+			for _, filter := range query.BooleanFilters {
+				if filter.DefinitionID != legacyID {
+					filters = append(filters, filter)
+				}
+			}
+			query.BooleanFilters = filters
 		}
 		if matches(query) {
 			matched = append(matched, shelfID)

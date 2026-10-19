@@ -9,7 +9,7 @@ func TestCatalogReturnsDefinitionsAndOrderedValues(t *testing.T) {
 	t.Parallel()
 
 	connection := openTaggingDatabase(t)
-	if _, err := SeedBuiltIns(context.Background(), connection); err != nil {
+	if _, err := seedTestBoolean(context.Background(), connection); err != nil {
 		t.Fatal(err)
 	}
 	service, err := NewService(connection)
@@ -32,7 +32,7 @@ func TestCatalogReturnsDefinitionsAndOrderedValues(t *testing.T) {
 		t.Fatal(err)
 	}
 	if len(catalog.Definitions) != 2 ||
-		catalog.Definitions[0].Key != BrokenKey ||
+		catalog.Definitions[0].Key != "fixture-boolean" ||
 		len(catalog.Definitions[0].Values) != 0 ||
 		catalog.Definitions[1].ID != definition.ID ||
 		catalog.Definitions[1].Values[0].ID != second.ID ||

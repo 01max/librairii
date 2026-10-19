@@ -115,11 +115,12 @@ func (r PreflightReport) OperationItems() []operations.ExportWorkItem {
 }
 
 type PreflightRequest struct {
-	IncludeBroken bool                        `json:"includeBroken"`
-	SourceType    operations.ExportSourceType `json:"sourceType"`
-	StoryIDs      []int64                     `json:"storyIds,omitempty"`
-	Query         library.StoryLibraryQuery   `json:"query"`
-	ShelfIDs      []int64                     `json:"shelfIds,omitempty"`
+	BrokenVisibility library.BrokenVisibility    `json:"brokenVisibility,omitempty"`
+	IncludeBroken    bool                        `json:"includeBroken"`
+	SourceType       operations.ExportSourceType `json:"sourceType"`
+	StoryIDs         []int64                     `json:"storyIds,omitempty"`
+	Query            library.StoryLibraryQuery   `json:"query"`
+	ShelfIDs         []int64                     `json:"shelfIds,omitempty"`
 }
 
 type PreflightService struct {
@@ -183,9 +184,9 @@ func (s *PreflightService) resolve(
 		if len(request.ShelfIDs) != 1 {
 			return Scope{}, ErrInvalidScope
 		}
-		return s.resolver.ResolveShelf(ctx, request.ShelfIDs[0], request.IncludeBroken)
+		return s.resolver.ResolveShelf(ctx, request.ShelfIDs[0], library.Visibility(request.BrokenVisibility, request.IncludeBroken))
 	case operations.ExportSourceShelves:
-		return s.resolver.ResolveShelves(ctx, request.ShelfIDs, request.IncludeBroken)
+		return s.resolver.ResolveShelves(ctx, request.ShelfIDs, library.Visibility(request.BrokenVisibility, request.IncludeBroken))
 	default:
 		return Scope{}, ErrInvalidScope
 	}

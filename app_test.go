@@ -286,7 +286,7 @@ func (facadeOperations) SetBulkChoiceValue(
 	return tagging.AssignmentResult{}, nil
 }
 
-func (facadeOperations) ListShelves(context.Context, ...bool) ([]shelves.Summary, error) {
+func (facadeOperations) ListShelves(context.Context, ...library.BrokenVisibility) ([]shelves.Summary, error) {
 	return nil, nil
 }
 
@@ -344,7 +344,7 @@ func (facadeOperations) DeleteShelf(context.Context, int64) error {
 func (facadeOperations) PreviewShelves(
 	context.Context,
 	[]int64,
-	...bool,
+	...library.BrokenVisibility,
 ) (shelves.SelectionPreview, error) {
 	return shelves.SelectionPreview{}, nil
 }

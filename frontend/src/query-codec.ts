@@ -1,9 +1,10 @@
 import casefold from './search-casefold.json';
 
-export const STORY_LIBRARY_QUERY_VERSION = 1;
+export const STORY_LIBRARY_QUERY_VERSION = 2;
 export const STORY_LIBRARY_HASH_PATH = '#/library';
 
 export type BooleanFilterState = 'ignored' | 'true' | 'false';
+export type BrokenVisibility = 'hide' | 'include' | 'only';
 export type CompatibilityFilter = 'compatible' | 'missing' | 'invalid';
 
 export type CollectionBooleanFilter = {
@@ -19,6 +20,8 @@ export type CollectionChoiceFilter = {
 export type CollectionQuery = {
     anyOf?: CollectionQuery[];
     includeBroken?: boolean;
+    brokenVisibility?: BrokenVisibility;
+    brokenState?: BooleanFilterState;
     name: string;
     languages: string[];
     compatibilities: CompatibilityFilter[];
@@ -51,9 +54,8 @@ export function encodeCollectionQuery(input: CollectionQuery): string {
     const query = canonicalCollectionQuery(input);
     const entries: Array<[string, string]> = [['v', String(STORY_LIBRARY_QUERY_VERSION)]];
     if (query.anyOf?.length) entries.push(['any', JSON.stringify(query.anyOf)]);
-    if (query.includeBroken) {
-        entries.push(['includeBroken', 'true']);
-    }
+    if (query.brokenVisibility !== 'hide') entries.push(['brokenVisibility', query.brokenVisibility!]);
+    if (query.brokenState) entries.push(['brokenState', query.brokenState]);
     if (query.name) {
         entries.push(['name', query.name]);
     }
@@ -84,7 +86,7 @@ export function encodeCollectionQuery(input: CollectionQuery): string {
     return `${STORY_LIBRARY_HASH_PATH}?${new URLSearchParams(entries).toString()}`;
 }
 
-export function decodeCollectionQuery(hash: string): CollectionQuery {
+export function decodeCollectionQuery(hash: string, legacyBrokenTagID = 0): CollectionQuery {
     if (hash === '') {
         return canonicalCollectionQuery(DEFAULT_COLLECTION_QUERY);
     }
@@ -99,7 +101,7 @@ export function decodeCollectionQuery(hash: string): CollectionQuery {
     const allowed = new Set([
         'any',
         'v',
-        'includeBroken',
+        'includeBroken', 'brokenVisibility', 'brokenState',
         'name',
         'page',
         'size',
@@ -114,7 +116,8 @@ export function decodeCollectionQuery(hash: string): CollectionQuery {
             throw new InvalidCollectionQuery(`Unknown collection query field: ${key}`);
         }
     }
-    if (oneValue(parameters, 'v', true) !== String(STORY_LIBRARY_QUERY_VERSION)) {
+    const version = oneValue(parameters, 'v', true);
+    if (version !== '1' && version !== String(STORY_LIBRARY_QUERY_VERSION)) {
         throw new InvalidCollectionQuery('Unsupported collection query version.');
     }
 
@@ -148,6 +151,11 @@ export function decodeCollectionQuery(hash: string): CollectionQuery {
     if (includeBroken && includeBroken !== 'true') {
         throw new InvalidCollectionQuery('Invalid broken-story visibility.');
     }
+    const brokenVisibility = oneValue(parameters, 'brokenVisibility', false);
+    const brokenState = oneValue(parameters, 'brokenState', false);
+    if ((version === '1' && (brokenVisibility || brokenState)) || (version !== '1' && includeBroken)) {
+        throw new InvalidCollectionQuery('Invalid broken-story query version.');
+    }
     let anyOf: CollectionQuery[] | undefined;
     const alternatives = oneValue(parameters, 'any', false);
     if (alternatives) {
@@ -157,8 +165,10 @@ export function decodeCollectionQuery(hash: string): CollectionQuery {
             if (!Array.isArray(anyOf)) throw new Error();
         } catch { throw new InvalidCollectionQuery('Invalid combined query.'); }
     }
-    return canonicalCollectionQuery({
+    const decoded = canonicalCollectionQuery({
         ...(anyOf?.length ? {anyOf} : {}),
+        ...(brokenVisibility ? {brokenVisibility: brokenVisibility as BrokenVisibility} : {}),
+        ...(brokenState ? {brokenState: brokenState as BooleanFilterState} : {}),
         includeBroken: includeBroken === 'true',
         name: oneValue(parameters, 'name', false),
         languages: parameters.getAll('language'),
@@ -169,6 +179,7 @@ export function decodeCollectionQuery(hash: string): CollectionQuery {
         pageSize,
         sort: sort as CollectionQuery['sort'],
     });
+    return version === '1' ? translateLegacyBroken(decoded, legacyBrokenTagID) : decoded;
 }
 
 export function canonicalCollectionQuery(input: CollectionQuery): CollectionQuery {
@@ -182,7 +193,7 @@ function canonicalQueryNode(input: CollectionQuery, budget: {remaining: number})
         !Array.isArray(input.compatibilities) || !Array.isArray(input.booleanFilters) || !Array.isArray(input.choiceFilters)) {
         throw new InvalidCollectionQuery('Invalid combined query.');
     }
-    const allowed = new Set(['anyOf', 'includeBroken', 'name', 'languages', 'compatibilities', 'booleanFilters', 'choiceFilters', 'page', 'pageSize', 'sort']);
+    const allowed = new Set(['anyOf', 'includeBroken', 'brokenVisibility', 'brokenState', 'name', 'languages', 'compatibilities', 'booleanFilters', 'choiceFilters', 'page', 'pageSize', 'sort']);
     const anyOf = input.anyOf?.map((branch) => {
         if (!branch || typeof branch !== 'object' || Array.isArray(branch) || Object.keys(branch).some((key) => !allowed.has(key))) {
             throw new InvalidCollectionQuery('Invalid combined query branch.');
@@ -196,6 +207,11 @@ function canonicalQueryNode(input: CollectionQuery, budget: {remaining: number})
             choiceFilters: branch.choiceFilters ?? [],
         }, budget);
     });
+    const brokenVisibility = input.brokenVisibility ?? (input.includeBroken ? 'include' : 'hide');
+    if (!['hide', 'include', 'only'].includes(brokenVisibility) ||
+        (input.brokenState !== undefined && !isBooleanState(input.brokenState))) {
+        throw new InvalidCollectionQuery('Invalid broken-story criterion.');
+    }
     const name = normalizeSearchText(input.name);
     const languages = [...new Set(input.languages.map(canonicalLanguage))].sort();
     const compatibilities = [...new Set(input.compatibilities)].sort();
@@ -245,7 +261,8 @@ function canonicalQueryNode(input: CollectionQuery, budget: {remaining: number})
     choiceFilters.sort((left, right) => left.definitionId - right.definitionId);
     return {
         ...(anyOf?.length ? {anyOf} : {}),
-        includeBroken: input.includeBroken ?? false,
+        brokenVisibility,
+        ...(input.brokenState && input.brokenState !== 'ignored' ? {brokenState: input.brokenState} : {}),
         name,
         languages,
         compatibilities,
@@ -319,4 +336,13 @@ function isBooleanState(value: string): value is BooleanFilterState {
 
 function isCompatibility(value: string): value is CompatibilityFilter {
     return ['compatible', 'missing', 'invalid'].includes(value);
+}
+
+function translateLegacyBroken(query: CollectionQuery, legacyID: number): CollectionQuery {
+    const filter = legacyID > 0 ? query.booleanFilters.find((item) => item.definitionId === legacyID) : undefined;
+    return {...query,
+        ...(filter && filter.state !== 'ignored' ? {brokenState: filter.state} : {}),
+        booleanFilters: query.booleanFilters.filter((item) => !filter || item.definitionId !== legacyID),
+        ...(query.anyOf ? {anyOf: query.anyOf.map((branch) => translateLegacyBroken(branch, legacyID))} : {}),
+    };
 }

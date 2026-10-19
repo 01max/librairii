@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	CurrentVersion  = 3
+	CurrentVersion  = 4
 	MaxPayloadBytes = 262_144
 )
 
@@ -36,13 +36,15 @@ type References struct {
 // Payload is the single versioned saved-query wire schema shared by shelf
 // evaluation and tag-reference planning.
 type Payload struct {
-	AnyOf           []Payload          `json:"anyOf,omitempty"`
-	IncludeBroken   bool               `json:"includeBroken,omitempty"`
-	Name            string             `json:"name,omitempty"`
-	Languages       []string           `json:"languages,omitempty"`
-	Compatibilities []string           `json:"compatibilities,omitempty"`
-	BooleanFilters  []BooleanReference `json:"booleanFilters,omitempty"`
-	ChoiceFilters   []ChoiceReference  `json:"choiceFilters,omitempty"`
+	BrokenVisibility string             `json:"brokenVisibility,omitempty"`
+	BrokenState      string             `json:"brokenState,omitempty"`
+	AnyOf            []Payload          `json:"anyOf,omitempty"`
+	IncludeBroken    bool               `json:"includeBroken,omitempty"`
+	Name             string             `json:"name,omitempty"`
+	Languages        []string           `json:"languages,omitempty"`
+	Compatibilities  []string           `json:"compatibilities,omitempty"`
+	BooleanFilters   []BooleanReference `json:"booleanFilters,omitempty"`
+	ChoiceFilters    []ChoiceReference  `json:"choiceFilters,omitempty"`
 }
 
 type legacyPayload struct {
@@ -72,7 +74,7 @@ func DecodePayload(version int, payload string) (Payload, error) {
 			return Payload{}, err
 		}
 		decoded = legacy.Payload
-	case 2, CurrentVersion:
+	case 2, 3, CurrentVersion:
 		if err := decode(payload, &decoded); err != nil {
 			return Payload{}, err
 		}

@@ -162,7 +162,7 @@ func TestImportRuntimeComposesNativeImportSlice(t *testing.T) {
 	`).Scan(&brokenDefinitions); err != nil {
 		t.Fatal(err)
 	}
-	if brokenDefinitions != 1 {
+	if brokenDefinitions != 0 {
 		t.Fatalf("broken definition count = %d", brokenDefinitions)
 	}
 

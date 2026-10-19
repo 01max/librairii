@@ -75,13 +75,7 @@ func QueryPlans(ctx context.Context, database *sql.DB) (Plan, error) {
 					  AND official_language.language = ?
 				  )
 				  AND a.validation_state = ?
-				  AND NOT EXISTS (
-					SELECT 1
-					FROM story_tag_assignments boolean_assignment
-					WHERE boolean_assignment.story_id = s.id
-					  AND boolean_assignment.definition_id = ?
-					  AND boolean_assignment.value_id IS NULL
-				  )
+				  AND s.is_broken = 0
 				  AND EXISTS (
 					SELECT 1
 					FROM story_tag_assignments choice_assignment
@@ -96,7 +90,6 @@ func QueryPlans(ctx context.Context, database *sql.DB) (Plan, error) {
 				"forest",
 				"en-GB",
 				"valid",
-				BrokenDefinitionID,
 				MoodDefinitionID,
 				CalmValueID,
 				"en-GB",

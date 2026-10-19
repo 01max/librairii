@@ -167,7 +167,7 @@ type TaggingPort interface {
 }
 
 type ShelfPort interface {
-	ListShelves(context.Context, ...bool) ([]shelves.Summary, error)
+	ListShelves(context.Context, ...library.BrokenVisibility) ([]shelves.Summary, error)
 	CreateShelf(context.Context, string, library.StoryLibraryQuery) (shelves.Shelf, error)
 	OpenShelf(context.Context, int64, library.ListRequest) (shelves.Evaluation, error)
 	RenameShelf(context.Context, int64, string) (shelves.Shelf, error)
@@ -179,7 +179,7 @@ type ShelfPort interface {
 	) (shelves.Shelf, error)
 	ReorderShelves(context.Context, []int64) ([]shelves.Shelf, error)
 	DeleteShelf(context.Context, int64) error
-	PreviewShelves(context.Context, []int64, ...bool) (shelves.SelectionPreview, error)
+	PreviewShelves(context.Context, []int64, ...library.BrokenVisibility) (shelves.SelectionPreview, error)
 }
 
 type DiagnosticsPort interface {

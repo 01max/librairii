@@ -53,17 +53,38 @@ type ChoiceFilter struct {
 	ValueIDs     []int64 `json:"valueIds"`
 }
 
+type BrokenVisibility string
+
+const (
+	BrokenHide    BrokenVisibility = "hide"
+	BrokenInclude BrokenVisibility = "include"
+	BrokenOnly    BrokenVisibility = "only"
+)
+
+// Visibility accepts the old include switch at compatibility boundaries.
+func Visibility(mode BrokenVisibility, include bool) BrokenVisibility {
+	if mode != "" {
+		return mode
+	}
+	if include {
+		return BrokenInclude
+	}
+	return BrokenHide
+}
+
 type StoryLibraryQuery struct {
-	AnyOf           []StoryLibraryQuery `json:"anyOf,omitempty"`
-	IncludeBroken   bool                `json:"includeBroken,omitempty"`
-	Name            string              `json:"name"`
-	Languages       []string            `json:"languages"`
-	Compatibilities []Compatibility     `json:"compatibilities"`
-	BooleanFilters  []BooleanFilter     `json:"booleanFilters"`
-	ChoiceFilters   []ChoiceFilter      `json:"choiceFilters"`
-	Page            int                 `json:"page"`
-	PageSize        int                 `json:"pageSize"`
-	Sort            Sort                `json:"sort"`
+	BrokenVisibility BrokenVisibility    `json:"brokenVisibility,omitempty"`
+	BrokenState      BooleanFilterState  `json:"brokenState,omitempty"`
+	AnyOf            []StoryLibraryQuery `json:"anyOf,omitempty"`
+	IncludeBroken    bool                `json:"includeBroken,omitempty"`
+	Name             string              `json:"name"`
+	Languages        []string            `json:"languages"`
+	Compatibilities  []Compatibility     `json:"compatibilities"`
+	BooleanFilters   []BooleanFilter     `json:"booleanFilters"`
+	ChoiceFilters    []ChoiceFilter      `json:"choiceFilters"`
+	Page             int                 `json:"page"`
+	PageSize         int                 `json:"pageSize"`
+	Sort             Sort                `json:"sort"`
 }
 
 func (q *Query) Search(
@@ -230,6 +251,18 @@ func normalizeStoryLibraryQuery(request StoryLibraryQuery) (StoryLibraryQuery, e
 }
 
 func normalizeStoryLibraryQueryNode(request StoryLibraryQuery, remaining *int) (StoryLibraryQuery, error) {
+	request.BrokenVisibility = Visibility(request.BrokenVisibility, request.IncludeBroken)
+	if request.BrokenVisibility != BrokenHide && request.BrokenVisibility != BrokenInclude && request.BrokenVisibility != BrokenOnly {
+		return StoryLibraryQuery{}, ErrInvalidStoryLibraryQuery
+	}
+	if request.BrokenState != "" && request.BrokenState != BooleanIgnored && request.BrokenState != BooleanTrue && request.BrokenState != BooleanFalse {
+		return StoryLibraryQuery{}, ErrInvalidStoryLibraryQuery
+	}
+	if request.BrokenState == BooleanIgnored {
+		request.BrokenState = ""
+	}
+	request.IncludeBroken = false
+
 	*remaining--
 	if *remaining < 0 {
 		return StoryLibraryQuery{}, ErrInvalidStoryLibraryQuery
@@ -417,13 +450,18 @@ func storyLibraryPredicate(
 ) (string, []any) {
 	var predicates []string
 	var arguments []any
-	if !request.IncludeBroken {
-		predicates = append(predicates, `NOT EXISTS (
-            SELECT 1 FROM story_tag_assignments broken_assignment
-            JOIN tag_definitions broken_definition ON broken_definition.id = broken_assignment.definition_id
-            WHERE broken_assignment.story_id = s.id AND broken_definition.normalized_key = 'broken'
-            AND broken_definition.source = 'builtin' AND broken_assignment.value_id IS NULL
-        )`)
+
+	switch Visibility(request.BrokenVisibility, request.IncludeBroken) {
+	case BrokenHide:
+		predicates = append(predicates, "s.is_broken = 0")
+	case BrokenOnly:
+		predicates = append(predicates, "s.is_broken = 1")
+	}
+	switch request.BrokenState {
+	case BooleanTrue:
+		predicates = append(predicates, "s.is_broken = 1")
+	case BooleanFalse:
+		predicates = append(predicates, "s.is_broken = 0")
 	}
 
 	if request.Name != "" {
@@ -503,7 +541,8 @@ func storyLibraryPredicate(
 		for _, branch := range request.AnyOf {
 			// Visibility belongs to the collection; explicit broken-tag criteria
 			// remain part of each branch's membership filters.
-			branch.IncludeBroken = true
+			branch.BrokenVisibility = BrokenInclude
+			branch.IncludeBroken = false
 			predicate, args := storyLibraryPredicate(branch, officialLocale)
 			if predicate == "" {
 				predicate = "1"
