@@ -11,6 +11,7 @@ import (
 	"github.com/01max/librairii/internal/library"
 	"github.com/01max/librairii/internal/metadata"
 	"github.com/01max/librairii/internal/operations"
+	"github.com/01max/librairii/internal/preferences"
 	"github.com/01max/librairii/internal/removal"
 )
 
@@ -161,6 +162,11 @@ func (a *Application) Start(ctx context.Context) error {
 	}
 
 	a.startedAt = a.clock.Now().UTC()
+	if errors.Is(err, preferences.ErrSetupRequired) {
+		a.state = StateSetupRequired
+		a.ready = false
+		return nil
+	}
 	if err != nil {
 		a.state = StateRecovery
 		a.ready = false

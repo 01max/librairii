@@ -8,11 +8,16 @@ import (
 
 	coreapp "github.com/01max/librairii/internal/app"
 	"github.com/01max/librairii/internal/database"
+	"github.com/01max/librairii/internal/preferences"
 	"github.com/01max/librairii/internal/storage"
 )
 
 type StorageReadiness struct {
-	override string
+	override     string
+	profileStore *preferences.Store
+	legacyRoot   string
+	profile      preferences.Profile
+	bootstrapMu  sync.Mutex
 
 	mu     sync.RWMutex
 	layout storage.Layout
@@ -24,6 +29,8 @@ func NewStorageReadiness(override string) *StorageReadiness {
 }
 
 func (r *StorageReadiness) Check(ctx context.Context) (coreapp.ReadinessReport, error) {
+	r.bootstrapMu.Lock()
+	defer r.bootstrapMu.Unlock()
 	r.mu.RLock()
 	if r.db != nil {
 		r.mu.RUnlock()
@@ -31,6 +38,12 @@ func (r *StorageReadiness) Check(ctx context.Context) (coreapp.ReadinessReport, 
 	}
 	r.mu.RUnlock()
 
+	r.mu.Lock()
+	profileErr := r.prepareProfile(ctx)
+	r.mu.Unlock()
+	if profileErr != nil {
+		return coreapp.ReadinessReport{}, profileErr
+	}
 	root, err := storage.ResolveRoot(r.override)
 	if err != nil {
 		return coreapp.ReadinessReport{}, err

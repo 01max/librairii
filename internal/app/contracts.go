@@ -18,11 +18,13 @@ import (
 type LifecycleState string
 
 const (
-	StateInitializing LifecycleState = "initializing"
-	StateReady        LifecycleState = "ready"
-	StateRecovery     LifecycleState = "recovery"
-	StateStopping     LifecycleState = "stopping"
-	StateStopped      LifecycleState = "stopped"
+	StateSetupRequired LifecycleState = "setup_required"
+	StateRelocating    LifecycleState = "relocating"
+	StateInitializing  LifecycleState = "initializing"
+	StateReady         LifecycleState = "ready"
+	StateRecovery      LifecycleState = "recovery"
+	StateStopping      LifecycleState = "stopping"
+	StateStopped       LifecycleState = "stopped"
 )
 
 type ErrorCode string
