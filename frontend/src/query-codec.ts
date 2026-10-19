@@ -1,6 +1,6 @@
 import casefold from './search-casefold.json';
 
-export const STORY_LIBRARY_QUERY_VERSION = 2;
+export const STORY_LIBRARY_QUERY_VERSION = 3;
 export const STORY_LIBRARY_HASH_PATH = '#/library';
 
 export type BooleanFilterState = 'ignored' | 'true' | 'false';
@@ -33,7 +33,6 @@ export type CollectionQuery = {
 };
 
 export const DEFAULT_COLLECTION_QUERY: CollectionQuery = {
-    includeBroken: false,
     name: '',
     languages: [],
     compatibilities: [],
@@ -54,8 +53,6 @@ export function encodeCollectionQuery(input: CollectionQuery): string {
     const query = canonicalCollectionQuery(input);
     const entries: Array<[string, string]> = [['v', String(STORY_LIBRARY_QUERY_VERSION)]];
     if (query.anyOf?.length) entries.push(['any', JSON.stringify(query.anyOf)]);
-    if (query.brokenVisibility !== 'hide') entries.push(['brokenVisibility', query.brokenVisibility!]);
-    if (query.brokenState) entries.push(['brokenState', query.brokenState]);
     if (query.name) {
         entries.push(['name', query.name]);
     }
@@ -117,7 +114,7 @@ export function decodeCollectionQuery(hash: string, legacyBrokenTagID = 0): Coll
         }
     }
     const version = oneValue(parameters, 'v', true);
-    if (version !== '1' && version !== String(STORY_LIBRARY_QUERY_VERSION)) {
+    if (version !== '1' && version !== '2' && version !== String(STORY_LIBRARY_QUERY_VERSION)) {
         throw new InvalidCollectionQuery('Unsupported collection query version.');
     }
 
@@ -165,7 +162,7 @@ export function decodeCollectionQuery(hash: string, legacyBrokenTagID = 0): Coll
             if (!Array.isArray(anyOf)) throw new Error();
         } catch { throw new InvalidCollectionQuery('Invalid combined query.'); }
     }
-    const decoded = canonicalCollectionQuery({
+    const decoded: CollectionQuery = {
         ...(anyOf?.length ? {anyOf} : {}),
         ...(brokenVisibility ? {brokenVisibility: brokenVisibility as BrokenVisibility} : {}),
         ...(brokenState ? {brokenState: brokenState as BooleanFilterState} : {}),
@@ -178,8 +175,12 @@ export function decodeCollectionQuery(hash: string, legacyBrokenTagID = 0): Coll
         page,
         pageSize,
         sort: sort as CollectionQuery['sort'],
-    });
-    return version === '1' ? translateLegacyBroken(decoded, legacyBrokenTagID) : decoded;
+    };
+    // Validate duplicate/non-flag criteria before retiring historical references.
+    canonicalCollectionQuery(withoutBrokenRestrictions(decoded));
+    if (version === String(STORY_LIBRARY_QUERY_VERSION)) return canonicalCollectionQuery(decoded);
+    const translated = version === '1' ? translateLegacyBroken(decoded, legacyBrokenTagID) : decoded;
+    return canonicalCollectionQuery(withoutBrokenRestrictions(translated));
 }
 
 export function canonicalCollectionQuery(input: CollectionQuery): CollectionQuery {
@@ -207,10 +208,8 @@ function canonicalQueryNode(input: CollectionQuery, budget: {remaining: number})
             choiceFilters: branch.choiceFilters ?? [],
         }, budget);
     });
-    const brokenVisibility = input.brokenVisibility ?? (input.includeBroken ? 'include' : 'hide');
-    if (!['hide', 'include', 'only'].includes(brokenVisibility) ||
-        (input.brokenState !== undefined && !isBooleanState(input.brokenState))) {
-        throw new InvalidCollectionQuery('Invalid broken-story criterion.');
+    if (input.includeBroken || input.brokenVisibility || input.brokenState) {
+        throw new InvalidCollectionQuery('Built-in broken filtering is no longer supported.');
     }
     const name = normalizeSearchText(input.name);
     const languages = [...new Set(input.languages.map(canonicalLanguage))].sort();
@@ -261,8 +260,6 @@ function canonicalQueryNode(input: CollectionQuery, budget: {remaining: number})
     choiceFilters.sort((left, right) => left.definitionId - right.definitionId);
     return {
         ...(anyOf?.length ? {anyOf} : {}),
-        brokenVisibility,
-        ...(input.brokenState && input.brokenState !== 'ignored' ? {brokenState: input.brokenState} : {}),
         name,
         languages,
         compatibilities,
@@ -345,4 +342,13 @@ function translateLegacyBroken(query: CollectionQuery, legacyID: number): Collec
         booleanFilters: query.booleanFilters.filter((item) => !filter || item.definitionId !== legacyID),
         ...(query.anyOf ? {anyOf: query.anyOf.map((branch) => translateLegacyBroken(branch, legacyID))} : {}),
     };
+}
+
+function withoutBrokenRestrictions(query: CollectionQuery): CollectionQuery {
+    const clean = {...query};
+    delete clean.includeBroken;
+    delete clean.brokenVisibility;
+    delete clean.brokenState;
+    if (clean.anyOf) clean.anyOf = clean.anyOf.map(withoutBrokenRestrictions);
+    return clean;
 }

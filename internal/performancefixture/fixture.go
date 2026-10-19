@@ -413,7 +413,6 @@ func CombinedQuery() library.StoryLibraryQuery {
 		Compatibilities: []library.Compatibility{
 			library.CompatibilityCompatible,
 		},
-		BrokenState: library.BooleanFalse,
 		ChoiceFilters: []library.ChoiceFilter{{
 			DefinitionID: MoodDefinitionID,
 			ValueIDs:     []int64{CalmValueID},
