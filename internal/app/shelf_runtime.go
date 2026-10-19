@@ -142,3 +142,18 @@ func (r *ImportRuntime) ApplyShelfUpdate(ctx context.Context, shelfID int64, tok
 	}
 	return service.Apply(ctx, shelfID, token, decisions)
 }
+
+func (r *ImportRuntime) PreviewShelfCreation(ctx context.Context, request shelves.CreationRequest) (shelves.Review, error) {
+	service, err := r.currentShelves()
+	if err != nil {
+		return shelves.Review{}, err
+	}
+	return service.PreviewCreation(ctx, request)
+}
+func (r *ImportRuntime) CreateShelfFromReview(ctx context.Context, token string, selectedUUIDs []string) (shelves.Shelf, error) {
+	service, err := r.currentShelves()
+	if err != nil {
+		return shelves.Shelf{}, err
+	}
+	return service.CreateFromReview(ctx, token, selectedUUIDs)
+}

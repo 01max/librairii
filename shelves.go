@@ -131,3 +131,18 @@ func (a *App) ApplyShelfUpdate(shelfID int64, token string, decisions []shelves.
 	defer a.libraryGate.RUnlock()
 	return a.core.ApplyShelfUpdate(a.runtimeContext(), shelfID, token, decisions)
 }
+
+func (a *App) PreviewShelfCreation(request shelves.CreationRequest) coreapp.ShelfReviewResponse {
+	if !a.libraryGate.TryRLock() {
+		return coreapp.ShelfReviewResponse{Error: coreapp.NewAPIError(coreapp.ErrorNotReady, "settings.busy")}
+	}
+	defer a.libraryGate.RUnlock()
+	return a.core.PreviewShelfCreation(a.runtimeContext(), request)
+}
+func (a *App) CreateShelfFromReview(token string, selectedUUIDs []string) coreapp.ShelfResponse {
+	if !a.libraryGate.TryRLock() {
+		return coreapp.ShelfResponse{Error: coreapp.NewAPIError(coreapp.ErrorNotReady, "settings.busy")}
+	}
+	defer a.libraryGate.RUnlock()
+	return a.core.CreateShelfFromReview(a.runtimeContext(), token, selectedUUIDs)
+}

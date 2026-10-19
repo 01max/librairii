@@ -17,6 +17,7 @@ type Candidate struct {
 	Sources []Source              `json:"sources"`
 	Origins []Source              `json:"origins"`
 	Reason  string                `json:"reason"`
+	Manual  bool                  `json:"manual,omitempty"`
 }
 
 type ReviewWarning struct {

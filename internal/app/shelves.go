@@ -24,6 +24,8 @@ type ShelfPort interface {
 	AttachShelfSources(context.Context, int64, []int64) (shelves.Shelf, error)
 	PreviewShelfUpdate(context.Context, int64) (shelves.Review, error)
 	ApplyShelfUpdate(context.Context, int64, string, []shelves.Decision) (shelves.Shelf, error)
+	PreviewShelfCreation(context.Context, shelves.CreationRequest) (shelves.Review, error)
+	CreateShelfFromReview(context.Context, string, []string) (shelves.Shelf, error)
 }
 type ShelfListResponse struct {
 	Shelves []shelves.Shelf `json:"shelves"`
@@ -225,6 +227,27 @@ func (a *Application) ApplyShelfUpdate(ctx context.Context, shelfID int64, token
 		return ShelfResponse{Error: NewAPIError(ErrorNotReady, "Shelves are unavailable until storage is ready.")}
 	}
 	result, err := a.shelves.ApplyShelfUpdate(ctx, shelfID, token, decisions)
+	if err != nil {
+		return ShelfResponse{Error: shelfAPIError(err)}
+	}
+	return ShelfResponse{Shelf: &result}
+}
+
+func (a *Application) PreviewShelfCreation(ctx context.Context, request shelves.CreationRequest) ShelfReviewResponse {
+	if a.shelves == nil {
+		return ShelfReviewResponse{Error: NewAPIError(ErrorNotReady, "Shelves are unavailable until storage is ready.")}
+	}
+	result, err := a.shelves.PreviewShelfCreation(ctx, request)
+	if err != nil {
+		return ShelfReviewResponse{Error: shelfAPIError(err)}
+	}
+	return ShelfReviewResponse{Review: &result}
+}
+func (a *Application) CreateShelfFromReview(ctx context.Context, token string, selectedUUIDs []string) ShelfResponse {
+	if a.shelves == nil || !a.Status().MutationsAllowed {
+		return ShelfResponse{Error: NewAPIError(ErrorNotReady, "Shelves are unavailable until storage is ready.")}
+	}
+	result, err := a.shelves.CreateShelfFromReview(ctx, token, selectedUUIDs)
 	if err != nil {
 		return ShelfResponse{Error: shelfAPIError(err)}
 	}
