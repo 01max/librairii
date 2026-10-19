@@ -1,4 +1,4 @@
-package shelves_test
+package collections_test
 
 import (
 	"context"
@@ -11,10 +11,10 @@ import (
 	"time"
 
 	"github.com/01max/librairii/internal/catalog"
+	shelfstore "github.com/01max/librairii/internal/collections"
 	"github.com/01max/librairii/internal/database"
 	"github.com/01max/librairii/internal/library"
 	"github.com/01max/librairii/internal/metadata"
-	shelfstore "github.com/01max/librairii/internal/shelves"
 	"github.com/01max/librairii/internal/tagging"
 )
 
@@ -24,7 +24,7 @@ func TestEvaluatorReevaluatesImportsAndRemovalsThroughStoryLibraryQuery(
 	t.Parallel()
 
 	harness := newEvaluationHarness(t)
-	shelf, err := harness.shelves.Create(
+	shelf, err := harness.collections.Create(
 		context.Background(),
 		"Moon stories",
 		library.StoryLibraryQuery{Name: "moon"},
@@ -91,7 +91,7 @@ func TestEvaluatorReevaluatesTagAssignmentsThroughStoryLibraryQuery(t *testing.T
 	if err != nil {
 		t.Fatal(err)
 	}
-	shelf, err := harness.shelves.Create(
+	shelf, err := harness.collections.Create(
 		context.Background(),
 		"Broken stories",
 		library.StoryLibraryQuery{IncludeBroken: true,
@@ -140,7 +140,7 @@ func TestEvaluatorReevaluatesActiveOfficialMetadataThroughStoryLibraryQuery(
 		"Embedded title",
 		"a",
 	)
-	shelf, err := harness.shelves.Create(
+	shelf, err := harness.collections.Create(
 		context.Background(),
 		"Official match",
 		library.StoryLibraryQuery{Name: "official"},
@@ -196,7 +196,7 @@ func TestEvaluatorPreviewsDeduplicatedMultiShelfMembership(t *testing.T) {
 		"Forest walk",
 		"c",
 	)
-	moon, err := harness.shelves.Create(
+	moon, err := harness.collections.Create(
 		context.Background(),
 		"Moon",
 		library.StoryLibraryQuery{Name: "moon"},
@@ -204,7 +204,7 @@ func TestEvaluatorPreviewsDeduplicatedMultiShelfMembership(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	forest, err := harness.shelves.Create(
+	forest, err := harness.collections.Create(
 		context.Background(),
 		"Forest",
 		library.StoryLibraryQuery{Name: "forest"},
@@ -241,7 +241,7 @@ func TestEvaluatorPreviewsDeduplicatedMultiShelfMembership(t *testing.T) {
 		t.Fatalf("PreviewSelection(duplicate) error = %v", err)
 	}
 	if _, err := harness.database.Exec(
-		"UPDATE shelves SET validity_state = 'needs_attention' WHERE id = ?",
+		"UPDATE collections SET validity_state = 'needs_attention' WHERE id = ?",
 		forest.ID,
 	); err != nil {
 		t.Fatal(err)
@@ -258,7 +258,7 @@ func TestEvaluatorReturnsOrderedCountsAndRequiresDependencies(t *testing.T) {
 	t.Parallel()
 
 	harness := newEvaluationHarness(t)
-	first, err := harness.shelves.Create(
+	first, err := harness.collections.Create(
 		context.Background(),
 		"All",
 		library.StoryLibraryQuery{},
@@ -266,7 +266,7 @@ func TestEvaluatorReturnsOrderedCountsAndRequiresDependencies(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	second, err := harness.shelves.Create(
+	second, err := harness.collections.Create(
 		context.Background(),
 		"Missing",
 		library.StoryLibraryQuery{Name: "missing"},
@@ -292,7 +292,7 @@ func TestEvaluatorReturnsOrderedCountsAndRequiresDependencies(t *testing.T) {
 		t.Fatalf("Counts() = %#v", counts)
 	}
 	if _, err := harness.database.Exec(
-		"UPDATE shelves SET query_version = ? WHERE id = ?",
+		"UPDATE collections SET query_version = ? WHERE id = ?",
 		shelfstore.CurrentSavedLibraryQueryVersion+10,
 		second.ID,
 	); err != nil {
@@ -316,7 +316,7 @@ func TestEvaluatorReturnsOrderedCountsAndRequiresDependencies(t *testing.T) {
 		t.Fatalf("NewEvaluator(nil service) error = %v", err)
 	}
 	if _, err := shelfstore.NewEvaluator(
-		harness.shelves,
+		harness.collections,
 		nil,
 	); err != shelfstore.ErrMissingLibraryQuery {
 		t.Fatalf("NewEvaluator(nil query) error = %v", err)
@@ -324,12 +324,12 @@ func TestEvaluatorReturnsOrderedCountsAndRequiresDependencies(t *testing.T) {
 }
 
 type evaluationHarness struct {
-	database  *sql.DB
-	catalog   *catalog.Repository
-	metadata  *metadata.Repository
-	library   *library.Query
-	shelves   *shelfstore.Service
-	evaluator *shelfstore.Evaluator
+	database    *sql.DB
+	catalog     *catalog.Repository
+	metadata    *metadata.Repository
+	library     *library.Query
+	collections *shelfstore.Service
+	evaluator   *shelfstore.Evaluator
 }
 
 func newEvaluationHarness(t *testing.T) *evaluationHarness {
@@ -365,12 +365,12 @@ func newEvaluationHarness(t *testing.T) *evaluationHarness {
 		t.Fatal(err)
 	}
 	return &evaluationHarness{
-		database:  opened.SQL(),
-		catalog:   catalog.NewRepository(opened.SQL()),
-		metadata:  metadataRepository,
-		library:   libraryQuery,
-		shelves:   shelfService,
-		evaluator: evaluator,
+		database:    opened.SQL(),
+		catalog:     catalog.NewRepository(opened.SQL()),
+		metadata:    metadataRepository,
+		library:     libraryQuery,
+		collections: shelfService,
+		evaluator:   evaluator,
 	}
 }
 
@@ -476,7 +476,7 @@ func TestCombinedShelfPersistsDynamicUnionAcrossBrowsingCountsAndExport(t *testi
 	for i, title := range []string{"Moon workshop", "Forest train", "Moon forest", "Ocean"} {
 		createEvaluationStory(t, h.catalog, fmt.Sprintf("123e4567-e89b-42d3-a456-%012d", i), title, string(rune('a'+i)))
 	}
-	combined, err := h.shelves.Create(ctx, "arc + aqua", library.StoryLibraryQuery{AnyOf: []library.StoryLibraryQuery{
+	combined, err := h.collections.Create(ctx, "arc + aqua", library.StoryLibraryQuery{AnyOf: []library.StoryLibraryQuery{
 		{Name: "moon"}, {Name: "forest"},
 	}})
 	if err != nil {
@@ -487,7 +487,7 @@ func TestCombinedShelfPersistsDynamicUnionAcrossBrowsingCountsAndExport(t *testi
 	if err != nil || page.Page.TotalItems != 3 || len(page.Page.Stories) != 1 {
 		t.Fatal(page, err)
 	}
-	reopened, err := h.shelves.Open(ctx, combined.ID)
+	reopened, err := h.collections.Open(ctx, combined.ID)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"slices"
 
-	"github.com/01max/librairii/internal/shelfquery"
+	"github.com/01max/librairii/internal/collectionquery"
 )
 
 var ErrSavedShelfQueryInvalid = errors.New("saved shelf query cannot be inspected")
@@ -26,7 +26,7 @@ func shelvesReferencingDefinition(
 	queryer shelfReferenceQueryer,
 	definitionID int64,
 ) ([]int64, error) {
-	return matchingShelfIDs(ctx, queryer, func(query shelfquery.References) bool {
+	return matchingShelfIDs(ctx, queryer, func(query collectionquery.References) bool {
 		for _, filter := range query.BooleanFilters {
 			if filter.DefinitionID == definitionID && filter.State != "ignored" {
 				return true
@@ -46,7 +46,7 @@ func shelvesReferencingValue(
 	queryer shelfReferenceQueryer,
 	valueID int64,
 ) ([]int64, error) {
-	return matchingShelfIDs(ctx, queryer, func(query shelfquery.References) bool {
+	return matchingShelfIDs(ctx, queryer, func(query collectionquery.References) bool {
 		for _, filter := range query.ChoiceFilters {
 			if slices.Contains(filter.ValueIDs, valueID) {
 				return true
@@ -59,7 +59,7 @@ func shelvesReferencingValue(
 func matchingShelfIDs(
 	ctx context.Context,
 	queryer shelfReferenceQueryer,
-	matches func(shelfquery.References) bool,
+	matches func(collectionquery.References) bool,
 ) ([]int64, error) {
 	rows, err := queryer.QueryContext(
 		ctx,
@@ -83,7 +83,7 @@ func matchingShelfIDs(
 		if err := rows.Scan(&shelfID, &version, &payload, &validity, &legacyID); err != nil {
 			return nil, fmt.Errorf("scan saved shelf reference: %w", err)
 		}
-		query, err := shelfquery.DecodeReferences(version, payload)
+		query, err := collectionquery.DecodeReferences(version, payload)
 		if err != nil {
 			if validity == "needs_attention" {
 				continue
@@ -95,7 +95,7 @@ func matchingShelfIDs(
 				err,
 			)
 		}
-		if version < shelfquery.CurrentVersion && legacyID > 0 {
+		if version < collectionquery.CurrentVersion && legacyID > 0 {
 			filters := query.BooleanFilters[:0]
 			for _, filter := range query.BooleanFilters {
 				if filter.DefinitionID != legacyID {

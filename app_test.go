@@ -6,12 +6,12 @@ import (
 	"time"
 
 	coreapp "github.com/01max/librairii/internal/app"
+	"github.com/01max/librairii/internal/collections"
 	"github.com/01max/librairii/internal/exporter"
 	"github.com/01max/librairii/internal/library"
 	"github.com/01max/librairii/internal/metadata"
 	"github.com/01max/librairii/internal/operations"
 	"github.com/01max/librairii/internal/removal"
-	"github.com/01max/librairii/internal/shelves"
 	"github.com/01max/librairii/internal/tagging"
 )
 
@@ -286,7 +286,7 @@ func (facadeOperations) SetBulkChoiceValue(
 	return tagging.AssignmentResult{}, nil
 }
 
-func (facadeOperations) ListShelves(context.Context, ...library.BrokenVisibility) ([]shelves.Summary, error) {
+func (facadeOperations) ListShelves(context.Context, ...library.BrokenVisibility) ([]collections.Summary, error) {
 	return nil, nil
 }
 
@@ -294,46 +294,46 @@ func (facadeOperations) CreateShelf(
 	context.Context,
 	string,
 	library.StoryLibraryQuery,
-) (shelves.Shelf, error) {
-	return shelves.Shelf{}, nil
+) (collections.Shelf, error) {
+	return collections.Shelf{}, nil
 }
 
 func (facadeOperations) OpenShelf(
 	context.Context,
 	int64,
 	library.ListRequest,
-) (shelves.Evaluation, error) {
-	return shelves.Evaluation{}, nil
+) (collections.Evaluation, error) {
+	return collections.Evaluation{}, nil
 }
 
 func (facadeOperations) RenameShelf(
 	context.Context,
 	int64,
 	string,
-) (shelves.Shelf, error) {
-	return shelves.Shelf{}, nil
+) (collections.Shelf, error) {
+	return collections.Shelf{}, nil
 }
 
 func (facadeOperations) DuplicateShelf(
 	context.Context,
 	int64,
 	string,
-) (shelves.Shelf, error) {
-	return shelves.Shelf{}, nil
+) (collections.Shelf, error) {
+	return collections.Shelf{}, nil
 }
 
 func (facadeOperations) ReplaceShelfQuery(
 	context.Context,
 	int64,
 	library.StoryLibraryQuery,
-) (shelves.Shelf, error) {
-	return shelves.Shelf{}, nil
+) (collections.Shelf, error) {
+	return collections.Shelf{}, nil
 }
 
 func (facadeOperations) ReorderShelves(
 	context.Context,
 	[]int64,
-) ([]shelves.Shelf, error) {
+) ([]collections.Shelf, error) {
 	return nil, nil
 }
 
@@ -345,8 +345,8 @@ func (facadeOperations) PreviewShelves(
 	context.Context,
 	[]int64,
 	...library.BrokenVisibility,
-) (shelves.SelectionPreview, error) {
-	return shelves.SelectionPreview{}, nil
+) (collections.SelectionPreview, error) {
+	return collections.SelectionPreview{}, nil
 }
 
 func TestAppExposesTypedLifecycleStatus(t *testing.T) {

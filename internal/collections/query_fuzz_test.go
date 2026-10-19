@@ -1,11 +1,11 @@
-package shelves
+package collections
 
 import (
 	"errors"
 	"reflect"
 	"testing"
 
-	"github.com/01max/librairii/internal/shelfquery"
+	"github.com/01max/librairii/internal/collectionquery"
 )
 
 func FuzzSavedLibraryQueryCodecPreservesMembership(f *testing.F) {
@@ -55,8 +55,8 @@ func FuzzSavedLibraryQueryCodecPreservesMembership(f *testing.F) {
 		if err != nil {
 			t.Fatalf("EncodeSavedLibraryQuery(decoded) error = %v", err)
 		}
-		if encoded.Version != shelfquery.CurrentVersion ||
-			len(encoded.Payload) > shelfquery.MaxPayloadBytes {
+		if encoded.Version != collectionquery.CurrentVersion ||
+			len(encoded.Payload) > collectionquery.MaxPayloadBytes {
 			t.Fatalf("canonical saved query = %#v", encoded)
 		}
 		roundTrip, err := DecodeSavedLibraryQuery(

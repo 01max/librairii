@@ -6,10 +6,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/01max/librairii/internal/collections"
 	"github.com/01max/librairii/internal/inspection/testfixture"
 	"github.com/01max/librairii/internal/library"
 	"github.com/01max/librairii/internal/operations"
-	"github.com/01max/librairii/internal/shelves"
 	"github.com/01max/librairii/internal/tagging"
 )
 
@@ -183,7 +183,7 @@ func TestSavedShelvesVerticalSliceThroughApplication(t *testing.T) {
 		verticalShelfSummary(t, listed, emptyShelf.ID).Count != 0 {
 		t.Fatalf("ListShelves(initial) = %#v", listed)
 	}
-	savedSearch, err := shelves.DecodeSavedLibraryQuery(
+	savedSearch, err := collections.DecodeSavedLibraryQuery(
 		searchShelf.QueryVersion,
 		searchShelf.QueryPayload,
 	)
@@ -268,9 +268,9 @@ func TestSavedShelvesVerticalSliceThroughApplication(t *testing.T) {
 	listed = application.ListShelves(ctx)
 	if listed.Error != nil ||
 		verticalShelfSummary(t, listed, calmShelf.ID).Validity !=
-			shelves.ValidityNeedsAttention ||
+			collections.ValidityNeedsAttention ||
 		verticalShelfSummary(t, listed, adventureShelf.ID).Validity !=
-			shelves.ValidityValid {
+			collections.ValidityValid {
 		t.Fatalf("ListShelves(after criterion deletion) = %#v", listed)
 	}
 	blocked := application.OpenShelf(ctx, calmShelf.ID, library.ListRequest{})
@@ -292,7 +292,7 @@ func TestSavedShelvesVerticalSliceThroughApplication(t *testing.T) {
 	)
 	if repaired.Error != nil ||
 		repaired.Shelf == nil ||
-		repaired.Shelf.Validity != shelves.ValidityValid {
+		repaired.Shelf.Validity != collections.ValidityValid {
 		t.Fatalf("ReplaceShelfQuery(repair) = %#v", repaired)
 	}
 	openedEmpty := application.OpenShelf(ctx, calmShelf.ID, library.ListRequest{})
@@ -332,7 +332,7 @@ func TestSavedShelvesVerticalSliceThroughApplication(t *testing.T) {
 	listed = application.ListShelves(ctx)
 	if listed.Error != nil ||
 		verticalShelfSummary(t, listed, emptyShelf.ID).AttentionReason !=
-			shelves.AttentionUnmigratableQuery {
+			collections.AttentionUnmigratableQuery {
 		t.Fatalf("ListShelves(unmigratable) = %#v", listed)
 	}
 	if deleted := application.DeleteShelf(ctx, emptyShelf.ID); deleted.Error != nil ||
@@ -371,7 +371,7 @@ func createVerticalShelf(
 	application *Application,
 	name string,
 	query library.StoryLibraryQuery,
-) shelves.Shelf {
+) collections.Shelf {
 	t.Helper()
 
 	response := application.CreateShelf(context.Background(), name, query)
@@ -385,7 +385,7 @@ func verticalShelfSummary(
 	t *testing.T,
 	response ShelfListResponse,
 	shelfID int64,
-) shelves.Summary {
+) collections.Summary {
 	t.Helper()
 
 	for _, summary := range response.Shelves {
@@ -394,5 +394,5 @@ func verticalShelfSummary(
 		}
 	}
 	t.Fatalf("shelf %d missing from %#v", shelfID, response)
-	return shelves.Summary{}
+	return collections.Summary{}
 }

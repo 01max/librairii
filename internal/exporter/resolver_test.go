@@ -6,9 +6,9 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/01max/librairii/internal/collections"
 	"github.com/01max/librairii/internal/library"
 	"github.com/01max/librairii/internal/operations"
-	"github.com/01max/librairii/internal/shelves"
 )
 
 func TestResolverSnapshotsEverySupportedScope(t *testing.T) {
@@ -179,23 +179,23 @@ func (f *fakeLibraryResolver) ExportStories(
 	return stories, nil
 }
 
-type fakeShelfResolver map[int64]shelves.OpenedShelf
+type fakeShelfResolver map[int64]collections.OpenedShelf
 
 func (f fakeShelfResolver) Open(
 	_ context.Context,
 	shelfID int64,
-) (shelves.OpenedShelf, error) {
+) (collections.OpenedShelf, error) {
 	opened, found := f[shelfID]
 	if !found {
-		return shelves.OpenedShelf{}, shelves.ErrShelfNotFound
+		return collections.OpenedShelf{}, collections.ErrShelfNotFound
 	}
 	return opened, nil
 }
 
-func openedShelf(id int64, name string, queryName string) shelves.OpenedShelf {
-	return shelves.OpenedShelf{
-		Shelf: shelves.Shelf{ID: id, Name: name},
-		Query: shelves.SavedLibraryQuery{Name: queryName},
+func openedShelf(id int64, name string, queryName string) collections.OpenedShelf {
+	return collections.OpenedShelf{
+		Shelf: collections.Shelf{ID: id, Name: name},
+		Query: collections.SavedLibraryQuery{Name: queryName},
 	}
 }
 

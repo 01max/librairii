@@ -11,9 +11,9 @@ import (
 	"testing"
 
 	"github.com/01max/librairii/internal/catalog"
+	"github.com/01max/librairii/internal/collections"
 	"github.com/01max/librairii/internal/library"
 	"github.com/01max/librairii/internal/operations"
-	"github.com/01max/librairii/internal/shelves"
 	"github.com/01max/librairii/internal/storage"
 )
 
@@ -152,7 +152,7 @@ func TestPreflightBlocksEmptyInvalidShelfAndUnwritableDestination(t *testing.T) 
 	}
 	resolver, err := NewResolver(
 		libraryQuery,
-		failingShelfResolver{err: shelves.ErrShelfNeedsAttention},
+		failingShelfResolver{err: collections.ErrShelfNeedsAttention},
 	)
 	if err != nil {
 		t.Fatal(err)
@@ -331,8 +331,8 @@ type failingShelfResolver struct {
 func (f failingShelfResolver) Open(
 	context.Context,
 	int64,
-) (shelves.OpenedShelf, error) {
-	return shelves.OpenedShelf{}, f.err
+) (collections.OpenedShelf, error) {
+	return collections.OpenedShelf{}, f.err
 }
 
 func writeManagedExportStory(

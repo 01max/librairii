@@ -1,16 +1,16 @@
-package shelves
+package collections
 
 import (
 	"errors"
 	"fmt"
 
+	"github.com/01max/librairii/internal/collectionquery"
 	"github.com/01max/librairii/internal/library"
-	"github.com/01max/librairii/internal/shelfquery"
 )
 
 const (
-	CurrentSavedLibraryQueryVersion = shelfquery.CurrentVersion
-	maxSavedQueryPayloadBytes       = shelfquery.MaxPayloadBytes
+	CurrentSavedLibraryQueryVersion = collectionquery.CurrentVersion
+	maxSavedQueryPayloadBytes       = collectionquery.MaxPayloadBytes
 )
 
 var (
@@ -42,7 +42,7 @@ func EncodeSavedLibraryQuery(
 	if err != nil {
 		return SerializedQuery{}, err
 	}
-	payload, err := shelfquery.EncodePayload(savedLibraryQueryPayload(saved))
+	payload, err := collectionquery.EncodePayload(savedLibraryQueryPayload(saved))
 	if err != nil {
 		return SerializedQuery{}, fmt.Errorf(
 			"%w: encode canonical query: %v",
@@ -61,8 +61,8 @@ func DecodeSavedLibraryQuery(
 	payload string,
 	legacyBrokenID ...int64,
 ) (SavedLibraryQuery, error) {
-	decoded, err := shelfquery.DecodePayload(version, payload)
-	if errors.Is(err, shelfquery.ErrUnsupportedVersion) {
+	decoded, err := collectionquery.DecodePayload(version, payload)
+	if errors.Is(err, collectionquery.ErrUnsupportedVersion) {
 		return SavedLibraryQuery{}, ErrUnsupportedSavedQueryVersion
 	}
 	if err != nil {
@@ -155,29 +155,29 @@ func cloneChoiceFilters(filters []library.ChoiceFilter) []library.ChoiceFilter {
 	return cloned
 }
 
-func savedLibraryQueryPayload(query SavedLibraryQuery) shelfquery.Payload {
-	var branches []shelfquery.Payload
+func savedLibraryQueryPayload(query SavedLibraryQuery) collectionquery.Payload {
+	var branches []collectionquery.Payload
 	for _, branch := range query.AnyOf {
 		branches = append(branches, savedLibraryQueryPayload(branch))
 	}
 	booleanFilters := make(
-		[]shelfquery.BooleanReference,
+		[]collectionquery.BooleanReference,
 		0,
 		len(query.BooleanFilters),
 	)
 	for _, filter := range query.BooleanFilters {
-		booleanFilters = append(booleanFilters, shelfquery.BooleanReference{
+		booleanFilters = append(booleanFilters, collectionquery.BooleanReference{
 			DefinitionID: filter.DefinitionID,
 			State:        string(filter.State),
 		})
 	}
 	choiceFilters := make(
-		[]shelfquery.ChoiceReference,
+		[]collectionquery.ChoiceReference,
 		0,
 		len(query.ChoiceFilters),
 	)
 	for _, filter := range query.ChoiceFilters {
-		choiceFilters = append(choiceFilters, shelfquery.ChoiceReference{
+		choiceFilters = append(choiceFilters, collectionquery.ChoiceReference{
 			DefinitionID: filter.DefinitionID,
 			ValueIDs:     append([]int64(nil), filter.ValueIDs...),
 		})
@@ -186,7 +186,7 @@ func savedLibraryQueryPayload(query SavedLibraryQuery) shelfquery.Payload {
 	for _, compatibility := range query.Compatibilities {
 		compatibilities = append(compatibilities, string(compatibility))
 	}
-	return shelfquery.Payload{
+	return collectionquery.Payload{
 		AnyOf:            branches,
 		IncludeBroken:    query.IncludeBroken,
 		BrokenVisibility: string(query.BrokenVisibility),
@@ -199,7 +199,7 @@ func savedLibraryQueryPayload(query SavedLibraryQuery) shelfquery.Payload {
 	}
 }
 
-func storyLibraryQueryFromPayload(payload shelfquery.Payload) library.StoryLibraryQuery {
+func storyLibraryQueryFromPayload(payload collectionquery.Payload) library.StoryLibraryQuery {
 	var branches []library.StoryLibraryQuery
 	for _, branch := range payload.AnyOf {
 		branches = append(branches, storyLibraryQueryFromPayload(branch))

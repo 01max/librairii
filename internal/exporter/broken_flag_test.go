@@ -3,10 +3,10 @@ package exporter
 import (
 	"context"
 	"github.com/01max/librairii/internal/catalog"
+	"github.com/01max/librairii/internal/collections"
 	"github.com/01max/librairii/internal/database"
 	"github.com/01max/librairii/internal/library"
 	"github.com/01max/librairii/internal/operations"
-	"github.com/01max/librairii/internal/shelves"
 	"github.com/01max/librairii/internal/storage"
 	"path/filepath"
 	"testing"
@@ -39,7 +39,7 @@ func TestBrokenFlagsPreserveExportScopesAndPreparedSelections(t *testing.T) {
 	if _, err := flags.Set(ctx, ids[:1], true); err != nil {
 		t.Fatal(err)
 	}
-	shelfService, err := shelves.NewService(db)
+	shelfService, err := collections.NewService(db)
 	if err != nil {
 		t.Fatal(err)
 	}

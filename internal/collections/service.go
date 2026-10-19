@@ -1,4 +1,4 @@
-package shelves
+package collections
 
 import (
 	"context"
@@ -173,7 +173,7 @@ func (s *Service) Inspect(ctx context.Context, shelfID int64) (Inspection, error
 		shelf.QueryPayload != migrated.Payload {
 		if _, err := transaction.ExecContext(
 			ctx,
-			`UPDATE shelves
+			`UPDATE collections
 			 SET query_version = ?,
 			     query_payload = ?,
 			     updated_at = CURRENT_TIMESTAMP
@@ -217,7 +217,7 @@ func (s *Service) Rename(
 
 	result, err := transaction.ExecContext(
 		ctx,
-		`UPDATE shelves
+		`UPDATE collections
 		 SET name = ?,
 		     normalized_name = ?,
 		     updated_at = CURRENT_TIMESTAMP
@@ -333,7 +333,7 @@ func (s *Service) ReplaceQuery(
 
 	result, err := transaction.ExecContext(
 		ctx,
-		`UPDATE shelves
+		`UPDATE collections
 		 SET query_version = ?,
 		     query_payload = ?,
 		     validity_state = 'valid',
@@ -378,7 +378,7 @@ func (s *Service) Reorder(
 		offset := maxPosition + len(orderedIDs) + reorderShelfPadding
 		if _, err := transaction.ExecContext(
 			ctx,
-			`UPDATE shelves
+			`UPDATE collections
 			 SET position = position + ?,
 			     updated_at = CURRENT_TIMESTAMP`,
 			offset,
@@ -388,7 +388,7 @@ func (s *Service) Reorder(
 		for position, shelfID := range orderedIDs {
 			result, err := transaction.ExecContext(
 				ctx,
-				`UPDATE shelves
+				`UPDATE collections
 				 SET position = ?,
 				     updated_at = CURRENT_TIMESTAMP
 				 WHERE id = ?`,
@@ -413,7 +413,7 @@ func (s *Service) Reorder(
 func (s *Service) Delete(ctx context.Context, shelfID int64) error {
 	result, err := s.database.ExecContext(
 		ctx,
-		"DELETE FROM shelves WHERE id = ?",
+		"DELETE FROM collections WHERE id = ?",
 		shelfID,
 	)
 	return requireShelfMutation(result, err)
@@ -432,7 +432,7 @@ func finishAttentionInspection(
 	if shelf.Validity == ValidityValid {
 		result, err := transaction.ExecContext(
 			ctx,
-			`UPDATE shelves
+			`UPDATE collections
 			 SET validity_state = 'needs_attention',
 			     updated_at = CURRENT_TIMESTAMP
 			 WHERE id = ? AND validity_state = 'valid'`,
@@ -473,7 +473,7 @@ func nextShelfPosition(ctx context.Context, queryer shelfQueryer) (int, error) {
 	var position int
 	if err := queryer.QueryRowContext(
 		ctx,
-		"SELECT COALESCE(MAX(position), -1) + 1 FROM shelves",
+		"SELECT COALESCE(MAX(position), -1) + 1 FROM collections",
 	).Scan(&position); err != nil {
 		return 0, fmt.Errorf("read next shelf position: %w", err)
 	}
@@ -494,12 +494,12 @@ func requireShelfMutation(result sql.Result, err error) error {
 	return nil
 }
 
-func sameShelfIDs(shelves []Shelf, orderedIDs []int64) bool {
-	if len(shelves) != len(orderedIDs) {
+func sameShelfIDs(collections []Shelf, orderedIDs []int64) bool {
+	if len(collections) != len(orderedIDs) {
 		return false
 	}
 	seen := make(map[int64]struct{}, len(orderedIDs))
-	for _, shelf := range shelves {
+	for _, shelf := range collections {
 		seen[shelf.ID] = struct{}{}
 	}
 	for _, shelfID := range orderedIDs {

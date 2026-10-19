@@ -1,4 +1,4 @@
-package shelves
+package collections
 
 import (
 	"context"
@@ -64,7 +64,7 @@ func insertShelf(
 	}
 	result, err := executor.ExecContext(
 		ctx,
-		`INSERT INTO shelves (
+		`INSERT INTO collections (
 			name,
 			normalized_name,
 			position,
@@ -125,15 +125,15 @@ func listShelves(ctx context.Context, queryer shelfQueryer) ([]Shelf, error) {
 			query_version,
 			query_payload,
 			validity_state
-		 FROM shelves
+		 FROM collections
 		 ORDER BY position, id`,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("list shelves: %w", err)
+		return nil, fmt.Errorf("list collections: %w", err)
 	}
 	defer rows.Close()
 
-	shelves := make([]Shelf, 0)
+	collections := make([]Shelf, 0)
 	for rows.Next() {
 		var shelf Shelf
 		if err := rows.Scan(
@@ -147,12 +147,12 @@ func listShelves(ctx context.Context, queryer shelfQueryer) ([]Shelf, error) {
 		); err != nil {
 			return nil, fmt.Errorf("scan shelf: %w", err)
 		}
-		shelves = append(shelves, shelf)
+		collections = append(collections, shelf)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("iterate shelves: %w", err)
+		return nil, fmt.Errorf("iterate collections: %w", err)
 	}
-	return shelves, nil
+	return collections, nil
 }
 
 func readShelf(
@@ -171,7 +171,7 @@ func readShelf(
 			query_version,
 			query_payload,
 			validity_state
-		 FROM shelves
+		 FROM collections
 		 WHERE id = ?`,
 		shelfID,
 	).Scan(

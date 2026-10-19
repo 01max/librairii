@@ -1,4 +1,4 @@
-package shelves
+package collections
 
 import (
 	"context"
@@ -45,28 +45,28 @@ type SelectedShelfPreview struct {
 }
 
 type SelectionPreview struct {
-	Shelves          []SelectedShelfPreview `json:"shelves"`
+	Shelves          []SelectedShelfPreview `json:"collections"`
 	SourceShelfNames []string               `json:"sourceShelfNames"`
 	UniqueStoryCount int                    `json:"uniqueStoryCount"`
 	OverlapCount     int                    `json:"overlapCount"`
 }
 
 type Evaluator struct {
-	shelves *Service
-	library storyLibrarySearcher
+	collections *Service
+	library     storyLibrarySearcher
 }
 
 func NewEvaluator(
-	shelves *Service,
+	collections *Service,
 	libraryQuery storyLibrarySearcher,
 ) (*Evaluator, error) {
-	if shelves == nil {
+	if collections == nil {
 		return nil, ErrMissingDatabase
 	}
 	if libraryQuery == nil {
 		return nil, ErrMissingLibraryQuery
 	}
-	return &Evaluator{shelves: shelves, library: libraryQuery}, nil
+	return &Evaluator{collections: collections, library: libraryQuery}, nil
 }
 
 func (e *Evaluator) Evaluate(
@@ -74,7 +74,7 @@ func (e *Evaluator) Evaluate(
 	shelfID int64,
 	request library.ListRequest,
 ) (Evaluation, error) {
-	opened, err := e.shelves.Open(ctx, shelfID)
+	opened, err := e.collections.Open(ctx, shelfID)
 	if err != nil {
 		return Evaluation{}, err
 	}
@@ -96,7 +96,7 @@ func (e *Evaluator) Evaluate(
 }
 
 func (e *Evaluator) Count(ctx context.Context, shelfID int64, includeBroken ...library.BrokenVisibility) (ShelfCount, error) {
-	opened, err := e.shelves.Open(ctx, shelfID)
+	opened, err := e.collections.Open(ctx, shelfID)
 	if err != nil {
 		return ShelfCount{}, err
 	}
@@ -122,12 +122,12 @@ func (e *Evaluator) Count(ctx context.Context, shelfID int64, includeBroken ...l
 }
 
 func (e *Evaluator) Counts(ctx context.Context, includeBroken ...library.BrokenVisibility) ([]ShelfCount, error) {
-	shelves, err := e.shelves.List(ctx)
+	collections, err := e.collections.List(ctx)
 	if err != nil {
 		return nil, err
 	}
-	counts := make([]ShelfCount, 0, len(shelves))
-	for _, shelf := range shelves {
+	counts := make([]ShelfCount, 0, len(collections))
+	for _, shelf := range collections {
 		count, err := e.Count(ctx, shelf.ID, includeBroken...)
 		if err != nil {
 			return nil, err
@@ -138,13 +138,13 @@ func (e *Evaluator) Counts(ctx context.Context, includeBroken ...library.BrokenV
 }
 
 func (e *Evaluator) Summaries(ctx context.Context, includeBroken ...library.BrokenVisibility) ([]Summary, error) {
-	shelves, err := e.shelves.List(ctx)
+	collections, err := e.collections.List(ctx)
 	if err != nil {
 		return nil, err
 	}
-	summaries := make([]Summary, 0, len(shelves))
-	for _, shelf := range shelves {
-		inspection, err := e.shelves.Inspect(ctx, shelf.ID)
+	summaries := make([]Summary, 0, len(collections))
+	for _, shelf := range collections {
+		inspection, err := e.collections.Inspect(ctx, shelf.ID)
 		if err != nil {
 			return nil, err
 		}
@@ -198,7 +198,7 @@ func (e *Evaluator) PreviewSelection(
 		}
 		seenShelves[shelfID] = struct{}{}
 
-		opened, err := e.shelves.Open(ctx, shelfID)
+		opened, err := e.collections.Open(ctx, shelfID)
 		if err != nil {
 			return SelectionPreview{}, err
 		}

@@ -1,4 +1,4 @@
-package shelves
+package collections
 
 import (
 	"errors"
@@ -12,5 +12,5 @@ func isDuplicateShelfName(err error) bool {
 	var sqliteError *sqliteDriver.Error
 	return errors.As(err, &sqliteError) &&
 		sqliteError.Code() == sqlite3.SQLITE_CONSTRAINT_UNIQUE &&
-		strings.Contains(sqliteError.Error(), "shelves.normalized_name")
+		strings.Contains(sqliteError.Error(), "collections.normalized_name")
 }

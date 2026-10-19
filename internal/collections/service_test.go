@@ -1,4 +1,4 @@
-package shelves
+package collections
 
 import (
 	"context"
@@ -332,14 +332,14 @@ func TestServiceRejectsDuplicateAndInvalidShelfNamesWithoutChangingRecords(
 			t.Fatalf("Create(%q) error = %v", name, err)
 		}
 	}
-	shelves, err := service.List(context.Background())
+	collections, err := service.List(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(shelves) != 2 ||
-		shelves[0].Name != "Été" ||
-		shelves[1].Name != "Other" {
-		t.Fatalf("List(after rejected names) = %#v", shelves)
+	if len(collections) != 2 ||
+		collections[0].Name != "Été" ||
+		collections[1].Name != "Other" {
+		t.Fatalf("List(after rejected names) = %#v", collections)
 	}
 }
 
@@ -380,7 +380,7 @@ func TestServiceRejectsStaleOrdersMissingShelvesAndAttentionSources(t *testing.T
 		}
 	}
 	if _, err := connection.Exec(
-		"UPDATE shelves SET validity_state = 'needs_attention' WHERE id = ?",
+		"UPDATE collections SET validity_state = 'needs_attention' WHERE id = ?",
 		second.ID,
 	); err != nil {
 		t.Fatal(err)

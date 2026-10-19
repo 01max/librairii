@@ -1,4 +1,4 @@
-package shelfquery
+package collectionquery
 
 import (
 	"errors"

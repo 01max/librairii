@@ -16,9 +16,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/01max/librairii/internal/collections"
 	"github.com/01max/librairii/internal/library"
 	"github.com/01max/librairii/internal/searchtext"
-	"github.com/01max/librairii/internal/shelves"
 	"github.com/01max/librairii/internal/storage"
 )
 
@@ -385,7 +385,7 @@ func seedShelves(
 	defer statement.Close()
 	ids := make([]int64, 0, len(queries))
 	for index, candidate := range queries {
-		encoded, err := shelves.EncodeSavedLibraryQuery(candidate.query)
+		encoded, err := collections.EncodeSavedLibraryQuery(candidate.query)
 		if err != nil {
 			return nil, err
 		}

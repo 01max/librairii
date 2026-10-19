@@ -15,9 +15,9 @@ import (
 
 	"github.com/01max/librairii/internal/archive"
 	"github.com/01max/librairii/internal/catalog"
+	"github.com/01max/librairii/internal/collections"
 	"github.com/01max/librairii/internal/library"
 	"github.com/01max/librairii/internal/operations"
-	"github.com/01max/librairii/internal/shelves"
 	"github.com/01max/librairii/internal/storage"
 )
 
@@ -153,8 +153,8 @@ func (s *PreflightService) Plan(
 	destination string,
 ) (PreflightReport, error) {
 	scope, err := s.resolve(ctx, request)
-	if errors.Is(err, shelves.ErrShelfNeedsAttention) ||
-		errors.Is(err, shelves.ErrShelfCriteriaUnavailable) {
+	if errors.Is(err, collections.ErrShelfNeedsAttention) ||
+		errors.Is(err, collections.ErrShelfCriteriaUnavailable) {
 		issue := blockingIssue(
 			IssueShelfNeedsAttention,
 			"A selected shelf needs attention before it can be exported.",

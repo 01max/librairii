@@ -1,4 +1,4 @@
-package shelves
+package collections
 
 import (
 	"github.com/01max/librairii/internal/library"

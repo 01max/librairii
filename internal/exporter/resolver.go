@@ -5,9 +5,9 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/01max/librairii/internal/collections"
 	"github.com/01max/librairii/internal/library"
 	"github.com/01max/librairii/internal/operations"
-	"github.com/01max/librairii/internal/shelves"
 )
 
 var (
@@ -23,7 +23,7 @@ type libraryResolver interface {
 }
 
 type shelfResolver interface {
-	Open(context.Context, int64) (shelves.OpenedShelf, error)
+	Open(context.Context, int64) (collections.OpenedShelf, error)
 }
 
 type Scope struct {
@@ -93,7 +93,7 @@ func (r *Resolver) ResolveShelf(
 	if shelfID <= 0 {
 		return Scope{}, ErrInvalidScope
 	}
-	opened, err := r.shelves.Open(ctx, shelfID)
+	opened, err := r.collections.Open(ctx, shelfID)
 	if err != nil {
 		return Scope{}, fmt.Errorf("open export shelf %d: %w", shelfID, err)
 	}
@@ -143,7 +143,7 @@ func (r *Resolver) ResolveShelves(
 	}
 	totalMemberships := 0
 	for _, shelfID := range shelfIDs {
-		opened, err := r.shelves.Open(ctx, shelfID)
+		opened, err := r.collections.Open(ctx, shelfID)
 		if err != nil {
 			return Scope{}, fmt.Errorf("open export shelf %d: %w", shelfID, err)
 		}

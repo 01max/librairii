@@ -9,13 +9,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/01max/librairii/internal/collections"
 	"github.com/01max/librairii/internal/diagnostics"
 	"github.com/01max/librairii/internal/exporter"
 	"github.com/01max/librairii/internal/library"
 	"github.com/01max/librairii/internal/metadata"
 	"github.com/01max/librairii/internal/operations"
 	"github.com/01max/librairii/internal/removal"
-	"github.com/01max/librairii/internal/shelves"
 	"github.com/01max/librairii/internal/tagging"
 )
 
@@ -389,7 +389,7 @@ func (o *fakeOperations) SetBulkChoiceValue(
 func (o *fakeOperations) ListShelves(
 	context.Context,
 	...library.BrokenVisibility,
-) ([]shelves.Summary, error) {
+) ([]collections.Summary, error) {
 	return nil, o.err
 }
 
@@ -397,46 +397,46 @@ func (o *fakeOperations) CreateShelf(
 	context.Context,
 	string,
 	library.StoryLibraryQuery,
-) (shelves.Shelf, error) {
-	return shelves.Shelf{}, o.err
+) (collections.Shelf, error) {
+	return collections.Shelf{}, o.err
 }
 
 func (o *fakeOperations) OpenShelf(
 	context.Context,
 	int64,
 	library.ListRequest,
-) (shelves.Evaluation, error) {
-	return shelves.Evaluation{}, o.err
+) (collections.Evaluation, error) {
+	return collections.Evaluation{}, o.err
 }
 
 func (o *fakeOperations) RenameShelf(
 	context.Context,
 	int64,
 	string,
-) (shelves.Shelf, error) {
-	return shelves.Shelf{}, o.err
+) (collections.Shelf, error) {
+	return collections.Shelf{}, o.err
 }
 
 func (o *fakeOperations) DuplicateShelf(
 	context.Context,
 	int64,
 	string,
-) (shelves.Shelf, error) {
-	return shelves.Shelf{}, o.err
+) (collections.Shelf, error) {
+	return collections.Shelf{}, o.err
 }
 
 func (o *fakeOperations) ReplaceShelfQuery(
 	context.Context,
 	int64,
 	library.StoryLibraryQuery,
-) (shelves.Shelf, error) {
-	return shelves.Shelf{}, o.err
+) (collections.Shelf, error) {
+	return collections.Shelf{}, o.err
 }
 
 func (o *fakeOperations) ReorderShelves(
 	context.Context,
 	[]int64,
-) ([]shelves.Shelf, error) {
+) ([]collections.Shelf, error) {
 	return nil, o.err
 }
 
@@ -448,8 +448,8 @@ func (o *fakeOperations) PreviewShelves(
 	context.Context,
 	[]int64,
 	...library.BrokenVisibility,
-) (shelves.SelectionPreview, error) {
-	return shelves.SelectionPreview{}, o.err
+) (collections.SelectionPreview, error) {
+	return collections.SelectionPreview{}, o.err
 }
 
 func TestApplicationLifecycle(t *testing.T) {

@@ -1,4 +1,4 @@
-package shelves
+package collections
 
 import (
 	"context"
@@ -50,9 +50,9 @@ func TestRepositoryPersistsCanonicalShelfFieldsInPositionOrder(t *testing.T) {
 	assertShelfIndexes(
 		t,
 		connection,
-		"idx_shelves_normalized_name",
-		"idx_shelves_position",
-		"idx_shelves_validity_position",
+		"idx_collections_normalized_name",
+		"idx_collections_position",
+		"idx_collections_validity_position",
 	)
 }
 
@@ -221,7 +221,7 @@ func openShelfRepository(t *testing.T) (*Repository, *sql.DB) {
 func assertShelfIndexes(t *testing.T, connection *sql.DB, expected ...string) {
 	t.Helper()
 
-	rows, err := connection.Query("PRAGMA index_list(shelves)")
+	rows, err := connection.Query("PRAGMA index_list(collections)")
 	if err != nil {
 		t.Fatal(err)
 	}

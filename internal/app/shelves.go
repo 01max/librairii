@@ -4,12 +4,12 @@ import (
 	"context"
 	"errors"
 
+	"github.com/01max/librairii/internal/collections"
 	"github.com/01max/librairii/internal/library"
-	"github.com/01max/librairii/internal/shelves"
 )
 
 func (a *Application) ListShelves(ctx context.Context, includeBroken ...library.BrokenVisibility) ShelfListResponse {
-	summaries, err := a.shelves.ListShelves(ctx, includeBroken...)
+	summaries, err := a.collections.ListShelves(ctx, includeBroken...)
 	if err != nil {
 		return ShelfListResponse{Error: shelfAPIError(err)}
 	}
@@ -24,7 +24,7 @@ func (a *Application) CreateShelf(
 	if response := a.requireShelfMutation(); response != nil {
 		return *response
 	}
-	shelf, err := a.shelves.CreateShelf(ctx, name, query)
+	shelf, err := a.collections.CreateShelf(ctx, name, query)
 	if err != nil {
 		return ShelfResponse{Error: shelfAPIError(err)}
 	}
@@ -36,7 +36,7 @@ func (a *Application) OpenShelf(
 	shelfID int64,
 	request library.ListRequest,
 ) ShelfEvaluationResponse {
-	evaluation, err := a.shelves.OpenShelf(ctx, shelfID, request)
+	evaluation, err := a.collections.OpenShelf(ctx, shelfID, request)
 	if err != nil {
 		return ShelfEvaluationResponse{Error: shelfAPIError(err)}
 	}
@@ -51,7 +51,7 @@ func (a *Application) RenameShelf(
 	if response := a.requireShelfMutation(); response != nil {
 		return *response
 	}
-	shelf, err := a.shelves.RenameShelf(ctx, shelfID, name)
+	shelf, err := a.collections.RenameShelf(ctx, shelfID, name)
 	if err != nil {
 		return ShelfResponse{Error: shelfAPIError(err)}
 	}
@@ -66,7 +66,7 @@ func (a *Application) DuplicateShelf(
 	if response := a.requireShelfMutation(); response != nil {
 		return *response
 	}
-	shelf, err := a.shelves.DuplicateShelf(ctx, shelfID, name)
+	shelf, err := a.collections.DuplicateShelf(ctx, shelfID, name)
 	if err != nil {
 		return ShelfResponse{Error: shelfAPIError(err)}
 	}
@@ -81,7 +81,7 @@ func (a *Application) ReplaceShelfQuery(
 	if response := a.requireShelfMutation(); response != nil {
 		return *response
 	}
-	shelf, err := a.shelves.ReplaceShelfQuery(ctx, shelfID, query)
+	shelf, err := a.collections.ReplaceShelfQuery(ctx, shelfID, query)
 	if err != nil {
 		return ShelfResponse{Error: shelfAPIError(err)}
 	}
@@ -98,7 +98,7 @@ func (a *Application) ReorderShelves(
 			"Saved shelves are unavailable until storage is ready.",
 		)}
 	}
-	if _, err := a.shelves.ReorderShelves(ctx, orderedIDs); err != nil {
+	if _, err := a.collections.ReorderShelves(ctx, orderedIDs); err != nil {
 		return ShelfListResponse{Error: shelfAPIError(err)}
 	}
 	return a.ListShelves(ctx)
@@ -114,7 +114,7 @@ func (a *Application) DeleteShelf(
 			"Saved shelves are unavailable until storage is ready.",
 		)}
 	}
-	if err := a.shelves.DeleteShelf(ctx, shelfID); err != nil {
+	if err := a.collections.DeleteShelf(ctx, shelfID); err != nil {
 		return MutationResponse{Error: shelfAPIError(err)}
 	}
 	return MutationResponse{Success: true}
@@ -125,7 +125,7 @@ func (a *Application) PreviewShelves(
 	shelfIDs []int64,
 	includeBroken ...library.BrokenVisibility,
 ) ShelfSelectionPreviewResponse {
-	preview, err := a.shelves.PreviewShelves(ctx, shelfIDs, includeBroken...)
+	preview, err := a.collections.PreviewShelves(ctx, shelfIDs, includeBroken...)
 	if err != nil {
 		return ShelfSelectionPreviewResponse{Error: shelfAPIError(err)}
 	}
@@ -144,17 +144,17 @@ func (a *Application) requireShelfMutation() *ShelfResponse {
 
 func shelfAPIError(err error) *APIError {
 	switch {
-	case errors.Is(err, shelves.ErrInvalidShelfName),
-		errors.Is(err, shelves.ErrDuplicateShelfName),
-		errors.Is(err, shelves.ErrInvalidShelfOrder),
-		errors.Is(err, shelves.ErrInvalidShelfSelection),
-		errors.Is(err, shelves.ErrShelfCriteriaUnavailable),
-		errors.Is(err, shelves.ErrInvalidSavedLibraryQuery),
-		errors.Is(err, shelves.ErrUnsupportedSavedQueryVersion):
+	case errors.Is(err, collections.ErrInvalidShelfName),
+		errors.Is(err, collections.ErrDuplicateShelfName),
+		errors.Is(err, collections.ErrInvalidShelfOrder),
+		errors.Is(err, collections.ErrInvalidShelfSelection),
+		errors.Is(err, collections.ErrShelfCriteriaUnavailable),
+		errors.Is(err, collections.ErrInvalidSavedLibraryQuery),
+		errors.Is(err, collections.ErrUnsupportedSavedQueryVersion):
 		return NewAPIError(ErrorInvalidInput, "The saved shelf could not be validated.")
-	case errors.Is(err, shelves.ErrShelfNotFound):
+	case errors.Is(err, collections.ErrShelfNotFound):
 		return NewAPIError(ErrorConflict, "The saved shelf no longer exists.")
-	case errors.Is(err, shelves.ErrShelfNeedsAttention):
+	case errors.Is(err, collections.ErrShelfNeedsAttention):
 		return NewAPIError(ErrorConflict, "The saved shelf needs attention before it can be opened.")
 	default:
 		return NewAPIError(ErrorInternal, "The saved shelf action could not be completed.")

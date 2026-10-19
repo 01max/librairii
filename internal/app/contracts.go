@@ -5,13 +5,13 @@ import (
 	"errors"
 	"time"
 
+	"github.com/01max/librairii/internal/collections"
 	"github.com/01max/librairii/internal/diagnostics"
 	"github.com/01max/librairii/internal/exporter"
 	"github.com/01max/librairii/internal/library"
 	"github.com/01max/librairii/internal/metadata"
 	"github.com/01max/librairii/internal/operations"
 	"github.com/01max/librairii/internal/removal"
-	"github.com/01max/librairii/internal/shelves"
 	"github.com/01max/librairii/internal/tagging"
 )
 
@@ -167,19 +167,19 @@ type TaggingPort interface {
 }
 
 type ShelfPort interface {
-	ListShelves(context.Context, ...library.BrokenVisibility) ([]shelves.Summary, error)
-	CreateShelf(context.Context, string, library.StoryLibraryQuery) (shelves.Shelf, error)
-	OpenShelf(context.Context, int64, library.ListRequest) (shelves.Evaluation, error)
-	RenameShelf(context.Context, int64, string) (shelves.Shelf, error)
-	DuplicateShelf(context.Context, int64, string) (shelves.Shelf, error)
+	ListShelves(context.Context, ...library.BrokenVisibility) ([]collections.Summary, error)
+	CreateShelf(context.Context, string, library.StoryLibraryQuery) (collections.Shelf, error)
+	OpenShelf(context.Context, int64, library.ListRequest) (collections.Evaluation, error)
+	RenameShelf(context.Context, int64, string) (collections.Shelf, error)
+	DuplicateShelf(context.Context, int64, string) (collections.Shelf, error)
 	ReplaceShelfQuery(
 		context.Context,
 		int64,
 		library.StoryLibraryQuery,
-	) (shelves.Shelf, error)
-	ReorderShelves(context.Context, []int64) ([]shelves.Shelf, error)
+	) (collections.Shelf, error)
+	ReorderShelves(context.Context, []int64) ([]collections.Shelf, error)
 	DeleteShelf(context.Context, int64) error
-	PreviewShelves(context.Context, []int64, ...library.BrokenVisibility) (shelves.SelectionPreview, error)
+	PreviewShelves(context.Context, []int64, ...library.BrokenVisibility) (collections.SelectionPreview, error)
 }
 
 type DiagnosticsPort interface {
@@ -289,21 +289,21 @@ type TagAssignmentResponse struct {
 }
 
 type ShelfListResponse struct {
-	Shelves []shelves.Summary `json:"shelves"`
-	Error   *APIError         `json:"error,omitempty"`
+	Shelves []collections.Summary `json:"shelves"`
+	Error   *APIError             `json:"error,omitempty"`
 }
 
 type ShelfResponse struct {
-	Shelf *shelves.Shelf `json:"shelf,omitempty"`
-	Error *APIError      `json:"error,omitempty"`
+	Shelf *collections.Shelf `json:"shelf,omitempty"`
+	Error *APIError          `json:"error,omitempty"`
 }
 
 type ShelfEvaluationResponse struct {
-	Evaluation *shelves.Evaluation `json:"evaluation,omitempty"`
-	Error      *APIError           `json:"error,omitempty"`
+	Evaluation *collections.Evaluation `json:"evaluation,omitempty"`
+	Error      *APIError               `json:"error,omitempty"`
 }
 
 type ShelfSelectionPreviewResponse struct {
-	Preview *shelves.SelectionPreview `json:"preview,omitempty"`
-	Error   *APIError                 `json:"error,omitempty"`
+	Preview *collections.SelectionPreview `json:"preview,omitempty"`
+	Error   *APIError                     `json:"error,omitempty"`
 }

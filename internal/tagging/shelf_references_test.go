@@ -6,8 +6,8 @@ import (
 	"slices"
 	"testing"
 
+	"github.com/01max/librairii/internal/collections"
 	"github.com/01max/librairii/internal/library"
-	"github.com/01max/librairii/internal/shelves"
 )
 
 func TestDefinitionDeletionPlansAndInvalidatesEveryReferencingShelf(t *testing.T) {
@@ -19,11 +19,11 @@ func TestDefinitionDeletionPlansAndInvalidatesEveryReferencingShelf(t *testing.T
 	if err != nil {
 		t.Fatal(err)
 	}
-	shelfService, err := shelves.NewService(connection)
+	shelfService, err := collections.NewService(connection)
 	if err != nil {
 		t.Fatal(err)
 	}
-	repository, err := shelves.NewRepository(connection)
+	repository, err := collections.NewRepository(connection)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -84,14 +84,14 @@ func TestDefinitionDeletionPlansAndInvalidatesEveryReferencingShelf(t *testing.T
 			t,
 			repository,
 			shelfID,
-			shelves.ValidityNeedsAttention,
+			collections.ValidityNeedsAttention,
 		)
 	}
 	assertTagReferenceShelfValidity(
 		t,
 		repository,
 		unrelatedShelf.ID,
-		shelves.ValidityValid,
+		collections.ValidityValid,
 	)
 	preserved, err := repository.Shelf(ctx, calmShelf.ID)
 	if err != nil {
@@ -117,11 +117,11 @@ func TestValueDeletionInvalidatesWholeQueryWithoutDroppingMissingCriterion(
 	if err != nil {
 		t.Fatal(err)
 	}
-	shelfService, err := shelves.NewService(connection)
+	shelfService, err := collections.NewService(connection)
 	if err != nil {
 		t.Fatal(err)
 	}
-	repository, err := shelves.NewRepository(connection)
+	repository, err := collections.NewRepository(connection)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -163,19 +163,19 @@ func TestValueDeletionInvalidatesWholeQueryWithoutDroppingMissingCriterion(
 		t,
 		repository,
 		calmShelf.ID,
-		shelves.ValidityNeedsAttention,
+		collections.ValidityNeedsAttention,
 	)
 	assertTagReferenceShelfValidity(
 		t,
 		repository,
 		mixedShelf.ID,
-		shelves.ValidityNeedsAttention,
+		collections.ValidityNeedsAttention,
 	)
 	assertTagReferenceShelfValidity(
 		t,
 		repository,
 		dreamyShelf.ID,
-		shelves.ValidityValid,
+		collections.ValidityValid,
 	)
 	preserved, err := repository.Shelf(ctx, mixedShelf.ID)
 	if err != nil {
@@ -207,22 +207,22 @@ func TestValueDeletionInvalidatesWholeQueryWithoutDroppingMissingCriterion(
 		t,
 		repository,
 		mixedShelf.ID,
-		shelves.ValidityNeedsAttention,
+		collections.ValidityNeedsAttention,
 	)
 	assertTagReferenceShelfValidity(
 		t,
 		repository,
 		dreamyShelf.ID,
-		shelves.ValidityNeedsAttention,
+		collections.ValidityNeedsAttention,
 	)
 }
 
 func createTagReferenceShelf(
 	t *testing.T,
-	service *shelves.Service,
+	service *collections.Service,
 	name string,
 	query library.StoryLibraryQuery,
-) shelves.Shelf {
+) collections.Shelf {
 	t.Helper()
 
 	shelf, err := service.Create(context.Background(), name, query)
@@ -234,9 +234,9 @@ func createTagReferenceShelf(
 
 func assertTagReferenceShelfValidity(
 	t *testing.T,
-	repository *shelves.Repository,
+	repository *collections.Repository,
 	shelfID int64,
-	want shelves.Validity,
+	want collections.Validity,
 ) {
 	t.Helper()
 
