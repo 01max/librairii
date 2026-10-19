@@ -1,5 +1,5 @@
 import {useEffect, useRef, useState} from 'react';
-import {Settings, SetUILanguage, SelectLibraryLocation, ConfirmLibrarySetup, StartLibraryMove, CancelLibraryMove} from '../wailsjs/go/main/App';
+import {Settings, SetUILanguage, SelectLibraryLocation, ConfirmLibrarySetup, StartLibraryMove, CancelLibraryMove, RetryLibrary, LocateLibrary} from '../wailsjs/go/main/App';
 import type {main} from '../wailsjs/go/models';
 import {EventsOn} from '../wailsjs/runtime/runtime';
 import {setLanguage, t, number, type Language} from './i18n';
@@ -75,6 +75,11 @@ export default function SettingsPanel({onReady}: {onReady: () => void}) {
                 <p className="library-location">{snapshot?.root || '—'}</p>
                 {snapshot?.isolated ? <p>{t('Location is controlled by LIBRAIRII_DATA_ROOT.')}</p> :
                     <button type="button" disabled={working || moving || !snapshot} onClick={() => void update(SelectLibraryLocation)}>{t('Change location…')}</button>}
+                {snapshot?.recovery && <div>
+                    <p>{t('Library unavailable')}</p>
+                    <button type="button" disabled={working} onClick={() => void update(async () => { const result=await RetryLibrary(); if (!result.recovery) {onReady();setOpen(false);}return result; })}>{t('Try again')}</button>
+                    <button type="button" disabled={working} onClick={() => void update(async () => { const result=await LocateLibrary(); if (!result.recovery) {onReady();setOpen(false);}return result; })}>{t('Locate library…')}</button>
+                </div>}
                 {snapshot?.preparation && !moving && <div className="move-preview">
                     <p>{t('All library files will be moved.')}</p>
                     <p>{snapshot.preparation.source} → {snapshot.preparation.destination}</p>

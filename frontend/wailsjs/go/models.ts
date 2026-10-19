@@ -1327,6 +1327,7 @@ export namespace main {
 	    }
 	}
 	export class SettingsSnapshot {
+	    recovery: boolean;
 	    move?: MoveProgress;
 	    preparation?: MovePreparation;
 	    language: string;
@@ -1342,6 +1343,7 @@ export namespace main {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.recovery = source["recovery"];
 	        this.move = this.convertValues(source["move"], MoveProgress);
 	        this.preparation = this.convertValues(source["preparation"], MovePreparation);
 	        this.language = source["language"];

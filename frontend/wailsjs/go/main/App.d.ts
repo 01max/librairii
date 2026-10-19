@@ -36,6 +36,8 @@ export function ListShelves(arg1:boolean):Promise<app.ShelfListResponse>;
 
 export function ListStories(arg1:library.ListRequest):Promise<app.LibraryPageResponse>;
 
+export function LocateLibrary():Promise<main.SettingsSnapshot>;
+
 export function OfficialMetadataStatus():Promise<app.MetadataStatusResponse>;
 
 export function OpenShelf(arg1:number,arg2:library.ListRequest):Promise<app.ShelfEvaluationResponse>;
@@ -77,6 +79,8 @@ export function ReorderTagDefinitions(arg1:Array<number>):Promise<app.MutationRe
 export function ReorderTagValues(arg1:number,arg2:Array<number>):Promise<app.MutationResponse>;
 
 export function ReplaceShelfQuery(arg1:number,arg2:library.StoryLibraryQuery):Promise<app.ShelfResponse>;
+
+export function RetryLibrary():Promise<main.SettingsSnapshot>;
 
 export function RevealExportDestination(arg1:string):Promise<app.MutationResponse>;
 

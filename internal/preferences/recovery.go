@@ -25,8 +25,11 @@ func Reconcile(ctx context.Context, directory string, p Profile) error {
 	if err := ValidateLibrary(ctx, p.Root, p.LibraryID); err != nil {
 		return err
 	}
-	switch p.Root {
-	case j.Source:
+	authority, _ := Canonical(p.Root)
+	source, _ := Canonical(j.Source)
+	destination, _ := Canonical(j.Destination)
+	switch authority {
+	case source:
 		if err := DiscardOwned(ctx, j.Workspace(), j); err != nil {
 			return err
 		}
@@ -36,7 +39,7 @@ func Reconcile(ctx context.Context, directory string, p Profile) error {
 		if err := ReleaseReservation(j.Destination, j.ID); err != nil && !errors.Is(err, os.ErrNotExist) {
 			return err
 		}
-	case j.Destination:
+	case destination:
 		if err := CleanupSource(ctx, j, p.Root); err != nil {
 			return errors.Join(ErrCleanupPending, err)
 		}

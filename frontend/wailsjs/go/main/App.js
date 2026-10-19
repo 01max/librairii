@@ -62,6 +62,10 @@ export function ListStories(arg1) {
   return window['go']['main']['App']['ListStories'](arg1);
 }
 
+export function LocateLibrary() {
+  return window['go']['main']['App']['LocateLibrary']();
+}
+
 export function OfficialMetadataStatus() {
   return window['go']['main']['App']['OfficialMetadataStatus']();
 }
@@ -144,6 +148,10 @@ export function ReorderTagValues(arg1, arg2) {
 
 export function ReplaceShelfQuery(arg1, arg2) {
   return window['go']['main']['App']['ReplaceShelfQuery'](arg1, arg2);
+}
+
+export function RetryLibrary() {
+  return window['go']['main']['App']['RetryLibrary']();
 }
 
 export function RevealExportDestination(arg1) {

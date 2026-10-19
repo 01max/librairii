@@ -27,6 +27,7 @@ type MoveProgress struct {
 	Cancelable  bool   `json:"cancelable"`
 }
 type SettingsSnapshot struct {
+	Recovery      bool             `json:"recovery"`
 	Move          *MoveProgress    `json:"move,omitempty"`
 	Preparation   *MovePreparation `json:"preparation,omitempty"`
 	Language      string           `json:"language"`
@@ -68,9 +69,14 @@ func (a *App) Settings() SettingsSnapshot {
 		copy := *s.move
 		move = &copy
 	}
+	if move == nil && s.storage.ConfigurationDirectory() != "" {
+		if journal, err := preferences.ReadJournal(s.storage.ConfigurationDirectory()); err == nil && p.Root == journal.Destination {
+			move = &MoveProgress{Phase: "cleanup_pending", CleanupPath: journal.Source, Error: "settings.cleanup_pending"}
+		}
+	}
 	pending := s.pendingOpen
 	s.pendingOpen = false
-	return SettingsSnapshot{Language: p.Language, Root: root, SetupRequired: !p.Complete, Isolated: s.storage.Isolated(), PendingOpen: pending, Preparation: s.preparation, Move: move}
+	return SettingsSnapshot{Language: p.Language, Root: root, SetupRequired: a.core.Status().State == coreapp.StateSetupRequired, Recovery: a.core.Status().State == coreapp.StateRecovery, Isolated: s.storage.Isolated(), PendingOpen: pending, Preparation: s.preparation, Move: move}
 }
 func (a *App) SetUILanguage(language string) SettingsSnapshot {
 	if a.settings == nil {
@@ -150,4 +156,45 @@ func (a *App) ConfirmLibrarySetup() coreapp.MutationResponse {
 	}
 	_ = a.core.ResumeStorage(a.runtimeContext())
 	return coreapp.MutationResponse{Success: a.core.Status().MutationsAllowed}
+}
+
+func (a *App) RetryLibrary() SettingsSnapshot {
+	if a.settings == nil {
+		return a.Settings()
+	}
+	if !a.libraryGate.TryLock() {
+		result := a.Settings()
+		result.Error = "settings.busy"
+		return result
+	}
+	defer a.libraryGate.Unlock()
+	_ = a.core.ResumeStorage(a.runtimeContext())
+	result := a.Settings()
+	if !a.core.Status().MutationsAllowed {
+		result.Error = "settings.library_missing"
+	}
+	return result
+}
+func (a *App) LocateLibrary() SettingsSnapshot {
+	if a.settings == nil {
+		return a.Settings()
+	}
+	if !a.libraryGate.TryLock() {
+		result := a.Settings()
+		result.Error = "settings.busy"
+		return result
+	}
+	defer a.libraryGate.Unlock()
+	path, err := a.settings.dialogs.OpenDirectory(a.runtimeContext(), "Locate library…")
+	if err == nil && path != "" {
+		err = a.settings.storage.LocateLibrary(a.runtimeContext(), path)
+		if err == nil {
+			_ = a.core.ResumeStorage(a.runtimeContext())
+		}
+	}
+	result := a.Settings()
+	if err != nil {
+		result.Error = "settings.identity_mismatch"
+	}
+	return result
 }

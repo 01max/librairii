@@ -3,6 +3,7 @@ package platform
 import (
 	"context"
 	"errors"
+	"os"
 	"path/filepath"
 
 	"github.com/01max/librairii/internal/database"
@@ -149,4 +150,18 @@ func (r *StorageReadiness) ConfigurationDirectory() string {
 		return ""
 	}
 	return r.profileStore.Directory()
+}
+
+func (r *StorageReadiness) LocateLibrary(ctx context.Context, root string) error {
+	p := r.Profile()
+	if !p.Complete || r.Isolated() {
+		return preferences.ErrInvalid
+	}
+	if err := preferences.ValidateLibrary(ctx, root, p.LibraryID); err != nil {
+		return err
+	}
+	if _, err := preferences.ReadJournal(r.ConfigurationDirectory()); !errors.Is(err, os.ErrNotExist) {
+		return preferences.ErrInvalid
+	}
+	return r.CommitRoot(root)
 }
