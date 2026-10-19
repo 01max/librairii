@@ -1,3 +1,5 @@
+import {outcomeText} from './OutcomeText';
+import {t} from './i18n';
 import {operations} from '../wailsjs/go/models';
 
 export type ImportNoticeTone = 'working' | 'success' | 'warning' | 'error' | 'neutral';
@@ -28,7 +30,7 @@ const invalidArchiveCodes = new Set([
 ]);
 
 function plural(count: number, singular: string, multiple = `${singular}s`): string {
-    return count === 1 ? singular : multiple;
+    return t(count === 1 ? singular : multiple);
 }
 
 export function operationIsActive(snapshot: operations.Snapshot | null): boolean {
@@ -51,8 +53,8 @@ export function describeImport(snapshot: operations.Snapshot): ImportNotice {
         return {
             state: 'importing',
             tone: 'working',
-            title: `Importing ${snapshot.totalItems} ${plural(snapshot.totalItems, 'story')}`,
-            message: `${completed} of ${snapshot.totalItems} ${plural(snapshot.totalItems, 'archive')} inspected.`,
+            title: t("Importing {0} {1}", snapshot.totalItems, plural(snapshot.totalItems, 'story')),
+            message: t("{0} of {1} {2} inspected.", completed, snapshot.totalItems, plural(snapshot.totalItems, 'archive')),
         };
     }
 
@@ -66,48 +68,48 @@ export function describeImport(snapshot: operations.Snapshot): ImportNotice {
         return {
             state: 'success',
             tone: needsAttention === 0 ? 'success' : 'warning',
-            title: `${imported.length} ${plural(imported.length, 'story')} imported`,
+            title: t("{0} {1} imported", imported.length, plural(imported.length, 'story')),
             message: needsAttention === 0
-                ? 'Your local collection is up to date.'
-                : `${needsAttention} ${plural(needsAttention, 'file')} also needs attention.`,
+                ? t("Your local collection is up to date.")
+                : t("{0} {1} also needs attention.", needsAttention, plural(needsAttention, 'file')),
         };
     }
     if (duplicates.length === snapshot.items.length && duplicates.length > 0) {
         return {
             state: 'duplicate-checksum',
             tone: 'neutral',
-            title: 'Already in your library',
-            message: `${duplicates.length} identical ${plural(duplicates.length, 'archive')} skipped safely.`,
+            title: t("Already in your library"),
+            message: t("{0} identical {1} skipped safely.", duplicates.length, plural(duplicates.length, 'archive')),
         };
     }
     if (conflicts.length > 0) {
         return {
             state: 'uuid-conflict',
             tone: 'warning',
-            title: 'A different archive uses this story UUID',
-            message: 'The existing story was kept and no managed bytes were replaced.',
+            title: t("A different archive uses this story UUID"),
+            message: t("The existing story was kept and no managed bytes were replaced."),
         };
     }
     if (invalid.length > 0) {
         return {
             state: 'invalid-format',
             tone: 'warning',
-            title: 'Unsupported or invalid story archive',
-            message: 'Choose a valid Lunii story pack in PK, ZIP, or 7z format.',
+            title: t("Unsupported or invalid story archive"),
+            message: t("Choose a valid Lunii story pack in PK, ZIP, or 7z format."),
         };
     }
     if (snapshot.status === 'cancelled') {
         return {
             state: 'cancelled',
             tone: 'neutral',
-            title: 'Import cancelled',
-            message: 'No incomplete story was added to the collection.',
+            title: t("Import cancelled"),
+            message: t("No incomplete story was added to the collection."),
         };
     }
     return {
         state: 'failed-import',
         tone: 'error',
-        title: 'The import could not be completed',
-        message: snapshot.errorMessage || 'Your existing collection and source files were left unchanged.',
+        title: t("The import could not be completed"),
+        message: (snapshot.errorMessage ? outcomeText(snapshot.errorMessage) : null) || t("Your existing collection and source files were left unchanged."),
     };
 }

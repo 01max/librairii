@@ -1,3 +1,4 @@
+import {t} from './i18n';
 import {metadata} from '../wailsjs/go/models';
 
 type Props = {
@@ -15,32 +16,30 @@ export default function LuniiSync({status, busy, onSync, onDismiss}: Props) {
     return (
         <section
             className={`lunii-sync${firstSync ? ' first-sync' : ''}`}
-            aria-label="Official Lunii sync"
+            aria-label={t("Official Lunii sync")}
             data-state={firstSync ? 'first-lunii-sync' : 'lunii-sync-status'}
         >
             <div className="lunii-sync-copy">
-                <h3>{firstSync ? 'Add covers and richer story details' :
-                    status?.state === 'stale_cache' ? 'Using saved Lunii story details' :
-                        'Lunii covers and story details'}</h3>
+                <h3>{firstSync ? t("Add covers and richer story details") :
+                    status?.state === 'stale_cache' ? t("Using saved Lunii story details") :
+                        t("Lunii covers and story details")}</h3>
                 <p>
-                    Sync with the official Lunii API for richer descriptions and
-                    cover images for matching stories.
-                </p>
+                    {t("Sync with the official Lunii API for richer descriptions and cover images for matching stories.")}</p>
                 <p className="last-sync">
-                    Last successful sync: {validDate ? (
+                    {t("Last successful sync:")}{validDate ? (
                         <time dateTime={timestamp}>{date.toLocaleString()}</time>
-                    ) : firstSync ? 'Never' : 'Not available yet'}
+                    ) : firstSync ? t("Never") : t("Not available yet")}
                 </p>
                 {status?.state === 'stale_cache' && (
                     <p className="sync-warning" role="status">
-                        {status.errorMessage || 'The latest sync failed. Saved Lunii details are still available.'}
+                        {status.errorMessage || t("The latest sync failed. Saved Lunii details are still available.")}
                     </p>
                 )}
             </div>
             <button type="button" disabled={busy} onClick={onSync}>
-                {busy ? 'Syncing with Lunii…' : 'Sync with Lunii'}
+                {busy ? t("Syncing with Lunii…") : t("Sync with Lunii")}
             </button>
-            <button type="button" className="notice-dismiss" aria-label="Close Lunii sync"
+            <button type="button" className="notice-dismiss" aria-label={t("Close Lunii sync")}
                 onClick={onDismiss}>
                 <span aria-hidden="true">×</span>
             </button>
