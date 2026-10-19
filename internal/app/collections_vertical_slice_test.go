@@ -256,9 +256,9 @@ func TestSavedCollectionsVerticalSliceThroughApplication(t *testing.T) {
 	plan := application.PlanTagValueDeletion(ctx, calm.ID)
 	if plan.Error != nil ||
 		plan.Plan == nil ||
-		plan.Plan.AffectedShelfCount != 1 ||
-		len(plan.Plan.AffectedShelfIDs) != 1 ||
-		plan.Plan.AffectedShelfIDs[0] != calmCollection.ID {
+		plan.Plan.AffectedCollectionCount != 1 ||
+		len(plan.Plan.AffectedCollectionIDs) != 1 ||
+		plan.Plan.AffectedCollectionIDs[0] != calmCollection.ID {
 		t.Fatalf("PlanTagValueDeletion() = %#v", plan)
 	}
 	deletedValue := application.DeleteTagValue(ctx, *plan.Plan)

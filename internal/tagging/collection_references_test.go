@@ -28,6 +28,14 @@ func TestDefinitionDeletionPlansAndInvalidatesEveryReferencingShelf(t *testing.T
 		t.Fatal(err)
 	}
 	definition := createUserDefinition(t, tags, "mood", KindChoice)
+	if _, err := connection.Exec(`
+		INSERT INTO shelves(id,name,normalized_name,position) VALUES(1,'Keep','keep',0);
+		INSERT INTO shelf_stories(shelf_id,story_uuid,position,protected)
+		VALUES(1,'123e4567-e89b-42d3-a456-426614174000',0,1);
+		INSERT INTO shelf_exclusions(shelf_id,story_uuid)
+		VALUES(1,'223e4567-e89b-42d3-a456-426614174000');`); err != nil {
+		t.Fatal(err)
+	}
 	calm := createChoiceValue(t, tags, definition.ID, "calm")
 	dreamy := createChoiceValue(t, tags, definition.ID, "dreamy")
 
@@ -54,8 +62,8 @@ func TestDefinitionDeletionPlansAndInvalidatesEveryReferencingShelf(t *testing.T
 	if err != nil {
 		t.Fatal(err)
 	}
-	if plan.AffectedShelfCount != 2 ||
-		!slices.Equal(plan.AffectedShelfIDs, []int64{calmShelf.ID, mixedShelf.ID}) {
+	if plan.AffectedCollectionCount != 2 ||
+		!slices.Equal(plan.AffectedCollectionIDs, []int64{calmShelf.ID, mixedShelf.ID}) {
 		t.Fatalf("PlanDefinitionDeletion() = %#v", plan)
 	}
 
@@ -73,7 +81,7 @@ func TestDefinitionDeletionPlansAndInvalidatesEveryReferencingShelf(t *testing.T
 	if err != nil {
 		t.Fatal(err)
 	}
-	if plan.AffectedShelfCount != 3 {
+	if plan.AffectedCollectionCount != 3 {
 		t.Fatalf("PlanDefinitionDeletion(second) = %#v", plan)
 	}
 	if err := tags.DeleteDefinition(ctx, plan); err != nil {
@@ -103,6 +111,16 @@ func TestDefinitionDeletionPlansAndInvalidatesEveryReferencingShelf(t *testing.T
 			calmShelf.QueryPayload,
 			preserved.QueryPayload,
 		)
+	}
+	var members, protected, exclusions int
+	if err := connection.QueryRow(`SELECT count(*),sum(protected) FROM shelf_stories WHERE shelf_id=1`).Scan(&members, &protected); err != nil {
+		t.Fatal(err)
+	}
+	if err := connection.QueryRow(`SELECT count(*) FROM shelf_exclusions WHERE shelf_id=1`).Scan(&exclusions); err != nil {
+		t.Fatal(err)
+	}
+	if members != 1 || protected != 1 || exclusions != 1 {
+		t.Fatalf("tag deletion changed curated decisions: %d %d %d", members, protected, exclusions)
 	}
 }
 
@@ -152,8 +170,8 @@ func TestValueDeletionInvalidatesWholeQueryWithoutDroppingMissingCriterion(
 	if err != nil {
 		t.Fatal(err)
 	}
-	if plan.AffectedShelfCount != 2 ||
-		!slices.Equal(plan.AffectedShelfIDs, []int64{calmShelf.ID, mixedShelf.ID}) {
+	if plan.AffectedCollectionCount != 2 ||
+		!slices.Equal(plan.AffectedCollectionIDs, []int64{calmShelf.ID, mixedShelf.ID}) {
 		t.Fatalf("PlanValueDeletion() = %#v", plan)
 	}
 	if err := tags.DeleteValue(ctx, plan); err != nil {
@@ -193,9 +211,9 @@ func TestValueDeletionInvalidatesWholeQueryWithoutDroppingMissingCriterion(
 	if err != nil {
 		t.Fatal(err)
 	}
-	if dreamyPlan.AffectedShelfCount != 2 ||
+	if dreamyPlan.AffectedCollectionCount != 2 ||
 		!slices.Equal(
-			dreamyPlan.AffectedShelfIDs,
+			dreamyPlan.AffectedCollectionIDs,
 			[]int64{mixedShelf.ID, dreamyShelf.ID},
 		) {
 		t.Fatalf("PlanValueDeletion(after prior invalidation) = %#v", dreamyPlan)

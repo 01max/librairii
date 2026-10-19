@@ -10,7 +10,7 @@ import (
 	"github.com/01max/librairii/internal/collectionquery"
 )
 
-var ErrSavedShelfQueryInvalid = errors.New("saved shelf query cannot be inspected")
+var ErrSavedCollectionQueryInvalid = errors.New("saved shelf query cannot be inspected")
 
 type shelfReferenceQueryer interface {
 	QueryContext(context.Context, string, ...any) (*sql.Rows, error)
@@ -21,12 +21,12 @@ type shelfReferenceExecutor interface {
 	QueryRowContext(context.Context, string, ...any) *sql.Row
 }
 
-func shelvesReferencingDefinition(
+func collectionsReferencingDefinition(
 	ctx context.Context,
 	queryer shelfReferenceQueryer,
 	definitionID int64,
 ) ([]int64, error) {
-	return matchingShelfIDs(ctx, queryer, func(query collectionquery.References) bool {
+	return matchingCollectionIDs(ctx, queryer, func(query collectionquery.References) bool {
 		for _, filter := range query.BooleanFilters {
 			if filter.DefinitionID == definitionID && filter.State != "ignored" {
 				return true
@@ -41,12 +41,12 @@ func shelvesReferencingDefinition(
 	})
 }
 
-func shelvesReferencingValue(
+func collectionsReferencingValue(
 	ctx context.Context,
 	queryer shelfReferenceQueryer,
 	valueID int64,
 ) ([]int64, error) {
-	return matchingShelfIDs(ctx, queryer, func(query collectionquery.References) bool {
+	return matchingCollectionIDs(ctx, queryer, func(query collectionquery.References) bool {
 		for _, filter := range query.ChoiceFilters {
 			if slices.Contains(filter.ValueIDs, valueID) {
 				return true
@@ -56,7 +56,7 @@ func shelvesReferencingValue(
 	})
 }
 
-func matchingShelfIDs(
+func matchingCollectionIDs(
 	ctx context.Context,
 	queryer shelfReferenceQueryer,
 	matches func(collectionquery.References) bool,
@@ -65,7 +65,7 @@ func matchingShelfIDs(
 		ctx,
 		`SELECT id, query_version, query_payload, validity_state,
             COALESCE((SELECT definition_id FROM legacy_broken_tag WHERE singleton=1), 0)
-		 FROM shelves
+		 FROM collections
 		 ORDER BY id`,
 	)
 	if err != nil {
@@ -90,7 +90,7 @@ func matchingShelfIDs(
 			}
 			return nil, fmt.Errorf(
 				"%w: shelf %d: %v",
-				ErrSavedShelfQueryInvalid,
+				ErrSavedCollectionQueryInvalid,
 				shelfID,
 				err,
 			)
@@ -114,7 +114,7 @@ func matchingShelfIDs(
 	return matched, nil
 }
 
-func markShelvesNeedingAttention(
+func markCollectionsNeedingAttention(
 	ctx context.Context,
 	executor shelfReferenceExecutor,
 	shelfIDs []int64,
@@ -123,7 +123,7 @@ func markShelvesNeedingAttention(
 	for _, shelfID := range shelfIDs {
 		result, err := executor.ExecContext(
 			ctx,
-			`UPDATE shelves
+			`UPDATE collections
 			 SET validity_state = 'needs_attention',
 			     updated_at = CURRENT_TIMESTAMP
 			 WHERE id = ? AND validity_state = 'valid'`,
@@ -140,7 +140,7 @@ func markShelvesNeedingAttention(
 			var validity string
 			err := executor.QueryRowContext(
 				ctx,
-				"SELECT validity_state FROM shelves WHERE id = ?",
+				"SELECT validity_state FROM collections WHERE id = ?",
 				shelfID,
 			).Scan(&validity)
 			if errors.Is(err, sql.ErrNoRows) {
@@ -157,6 +157,6 @@ func markShelvesNeedingAttention(
 	return nil
 }
 
-func sameShelfReferenceIDs(current []int64, planned []int64) bool {
+func sameCollectionReferenceIDs(current []int64, planned []int64) bool {
 	return slices.Equal(current, planned)
 }
