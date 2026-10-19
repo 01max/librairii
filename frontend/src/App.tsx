@@ -1,4 +1,5 @@
 import {useStoryFlags} from './use-story-flags';
+import {CollectionDeletion} from './ShelfSources';
 import ShelfWorkspace from './ShelfWorkspace';
 import ShelfCreation from './ShelfCreation';
 import SettingsPanel from './SettingsPanel';
@@ -22,7 +23,6 @@ import {
     LibraryCompatibility,
     CancelOperation,
     CreateCollection,
-    DeleteCollection,
     DuplicateCollection,
     ListCollections,
     ListShelves,
@@ -67,7 +67,6 @@ import {
 } from './query-history';
 import {
     type CompatibilityFilter,
-    type BooleanFilterState,
     type CollectionQuery,
     DEFAULT_COLLECTION_QUERY,
 } from './query-codec';
@@ -466,13 +465,10 @@ function App() {
     const collectionDialogInitialFocus = useRef<HTMLInputElement>(null);
     const repairCollectionDialog = useRef<HTMLElement>(null);
     const repairCollectionInitialFocus = useRef<HTMLButtonElement>(null);
-    const deleteCollectionDialog = useRef<HTMLElement>(null);
-    const deleteCollectionInitialFocus = useRef<HTMLButtonElement>(null);
     const exportPreflightDialog = useRef<HTMLElement>(null);
     const exportPreflightInitialFocus = useRef<HTMLButtonElement>(null);
     useModalFocus(collectionDialog, collectionDialogInitialFocus, collectionDialogMode !== null);
     useModalFocus(repairCollectionDialog, repairCollectionInitialFocus, repairCollectionID !== null);
-    useModalFocus(deleteCollectionDialog, deleteCollectionInitialFocus, deleteCollectionID !== null);
     useModalFocus(
         exportPreflightDialog,
         exportPreflightInitialFocus,
@@ -1577,38 +1573,6 @@ function App() {
         }
     }
 
-    async function confirmCollectionDeletion() {
-        if (!deleteCollection) {
-            return;
-        }
-        setCollectionBusy(true);
-        setCollectionDialogError(null);
-        try {
-            const response = await DeleteCollection(deleteCollection.id);
-            if (!response.success) {
-                setCollectionDialogError(
-                    response.error?.message ?? t("The saved collection could not be deleted."),
-                );
-                return;
-            }
-            setDeleteCollectionID(null);
-            if (activeCollectionID === deleteCollection.id) {
-                queryHistory.replace(collectionQuery, null);
-                activateCollection(null, 'custom');
-            }
-            if (repairCollectionID === deleteCollection.id) {
-                setRepairCollectionID(null);
-            }
-            setSelectedCollectionIDs((current) => current.filter(
-                (collectionID) => collectionID !== deleteCollection.id,
-            ));
-            await loadSavedCollections();
-        } catch {
-            setCollectionDialogError(t("The saved collection could not be deleted."));
-        } finally {
-            setCollectionBusy(false);
-        }
-    }
 
     async function repairCollectionWithCurrentQuery() {
         if (!repairCollection || unavailableCriteria) {
@@ -2148,7 +2112,7 @@ function App() {
             <main tabIndex={-1} className="main" inert={sidebarOpen || historyOpen}>
                 {curatedShelfID !== null && <><button className="sidebar-toggle" type="button" onClick={() => setSidebarOpen(true)}>{t('Library & filters')}</button>
                     <ShelfWorkspace key={curatedShelfID} id={curatedShelfID} revision={shelfRevision + collectionRevision + detailRevision}
-                        query={collectionQuery} onQuery={(query) => setCollectionQuery(queryHistory.pushShelf(curatedShelfID, query))}
+                        collections={savedCollections} query={collectionQuery} onQuery={(query) => setCollectionQuery(queryHistory.pushShelf(curatedShelfID, query))}
                         onChanged={() => setShelfRevision((value) => value + 1)} onDeleted={openAllStories}
                         onInspect={(story) => {setInspectedStory(story); setDetailsOpen(true);}}/>
                 </>}
@@ -3016,43 +2980,8 @@ function App() {
                     </section>
                 </ModalBackdrop>
             )}
-            {deleteCollection && (
-                <ModalBackdrop onDismiss={() => setDeleteCollectionID(null)} disabled={collectionBusy}>
-                    <section
-                        ref={deleteCollectionDialog}
-                        className="detail-dialog collection-dialog"
-                        role="dialog"
-                        aria-modal="true"
-                        aria-labelledby="delete-shelf-title"
-                        data-state="shelf-delete-confirmation"
-                    >
-                        <div className="dialog-kicker">{t("Saved collections")}</div>
-                        <h3 id="delete-shelf-title">{t("Delete “")}{deleteCollection.name}”?</h3>
-                        <p>
-                            {t("Only this saved query will be removed. Matching stories and their managed archives will stay in your library.")}</p>
-                        {collectionDialogError && (
-                            <p className="dialog-error">{<OutcomeText text={collectionDialogError}/> }</p>
-                        )}
-                        <div className="dialog-actions">
-                            <button
-                                ref={deleteCollectionInitialFocus}
-                                type="button"
-                                disabled={collectionBusy}
-                                onClick={() => setDeleteCollectionID(null)}
-                            >
-                                {t("Cancel")}</button>
-                            <button
-                                className="danger"
-                                type="button"
-                                disabled={collectionBusy}
-                                onClick={() => void confirmCollectionDeletion()}
-                            >
-                                {collectionBusy ? t("Deleting…") : t("Delete collection")}
-                            </button>
-                        </div>
-                    </section>
-                </ModalBackdrop>
-            )}
+            {deleteCollection && <CollectionDeletion key={deleteCollection.id} id={deleteCollection.id} name={deleteCollection.name} onClose={() => setDeleteCollectionID(null)}
+                onDeleted={() => {setDeleteCollectionID(null); if (activeCollectionID === deleteCollection.id) openAllStories(); setShelfRevision((value) => value + 1); void loadSavedCollections();}}/>}
             {tagManagerOpen && (
                 <TagManager
                     onClose={() => setTagManagerOpen(false)}

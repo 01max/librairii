@@ -1,14 +1,15 @@
 import {useCallback, useEffect, useRef, useState} from 'react';
 import {OpenShelf, RenameShelf, DuplicateShelf, DeleteShelf, RemoveStoriesFromShelf, ReorderShelfStories} from '../wailsjs/go/main/App';
-import {library, shelves} from '../wailsjs/go/models';
+import {collections, library, shelves} from '../wailsjs/go/models';
 import {type CollectionQuery, DEFAULT_COLLECTION_QUERY} from './query-codec';
 import {t} from './i18n';
+import ShelfSources from './ShelfSources';
 import ShelfDialog from './ShelfDialog';
 import StoryCover from './StoryCover';
 import OutcomeText from './OutcomeText';
 
-export default function ShelfWorkspace({id, revision, query, onQuery, onChanged, onDeleted, onInspect}: {
-    id: number; revision: number; query: CollectionQuery; onQuery: (query: CollectionQuery) => void;
+export default function ShelfWorkspace({id, revision, query, onQuery, collections: sourceOptions, onChanged, onDeleted, onInspect}: {
+    collections: collections.Summary[]; id: number; revision: number; query: CollectionQuery; onQuery: (query: CollectionQuery) => void;
     onChanged: () => void; onDeleted: () => void; onInspect: (story: library.StorySummary) => void;
 }) {
     const [manualOrder, setManualOrder] = useState(true);
@@ -16,6 +17,7 @@ export default function ShelfWorkspace({id, revision, query, onQuery, onChanged,
     const [selected, setSelected] = useState<string[]>([]);
     const [error, setError] = useState('');
     const [busy, setBusy] = useState(false);
+    const [manageSources, setManageSources] = useState(false);
     const [dialog, setDialog] = useState<'rename' | 'duplicate' | 'delete' | null>(null);
     const [name, setName] = useState('');
     const generation = useRef(0);
@@ -28,7 +30,7 @@ export default function ShelfWorkspace({id, revision, query, onQuery, onChanged,
             setView(response.evaluation); setError('');
         } catch (error) { if (request === generation.current) setError(error instanceof Error ? error.message : t('Shelf could not be opened.')); }
     }, [id, query, manualOrder]);
-    useEffect(() => { void load(); return () => {generation.current++;}; }, [load, revision]);
+    useEffect(() => { const pending = generation; const timer = window.setTimeout(() => void load(), 0); return () => {window.clearTimeout(timer); pending.current++;}; }, [load, revision]);
     const act = async (action: () => Promise<{error?: {message: string}}>) => {
         setBusy(true); setError('');
         try { const result = await action(); if (result.error) throw new Error(result.error.message); await load(); onChanged(); }
@@ -54,6 +56,9 @@ export default function ShelfWorkspace({id, revision, query, onQuery, onChanged,
         <div className="heading"><div><h2>{view.shelf.name}</h2><p>{t('{0} approved stories · {1} unavailable', view.shelf.count, view.shelf.unavailableCount)}</p></div>
             <div className="curated-actions">{(['rename', 'duplicate', 'delete'] as const).map((action) => <button key={action} type="button" disabled={busy}
                 onClick={() => {setName(action === 'rename' ? view.shelf.name : ''); setDialog(action);}}>{t(action === 'rename' ? 'Rename Shelf' : action === 'duplicate' ? 'Duplicate Shelf' : 'Delete Shelf')}</button>)}</div></div>
+        <div className="curated-actions"><button type="button" disabled={busy} onClick={() => setManageSources(true)}>{t('Manage sources')}</button></div>
+        <p>{t('Sources (any match): {0}', view.sources.filter((source) => source.active).map((source) => source.name).join(', ') || t('None'))}</p>
+        {manageSources && <ShelfSources id={id} sources={view.sources} collections={sourceOptions} onClose={() => setManageSources(false)} onChanged={() => {void load(); onChanged();}}/>}
         <label>{t('Refine this view')}<input type="search" value={query.name} onChange={(event) => onQuery({...query, name: event.target.value, page: 1})}/></label>
         <label>{t('Sort stories')}<select value={manualOrder ? '' : query.sort} onChange={(event) => {setManualOrder(event.target.value === ''); if (event.target.value) onQuery({...query, sort: event.target.value as CollectionQuery['sort'], page: 1});}}>
             <option value="">{t('Manual order')}</option><option value="name_asc">{t('Name A–Z')}</option><option value="imported_desc">{t('Newest imported')}</option></select></label>
