@@ -43,3 +43,19 @@ relocation scenario using GTK native dialogs and the Settings accelerator.
 Linux native execution was not available on this macOS host and remains a
 platform-specific verification item. Native acceptance must use the packaged
 app; standalone macOS executable launches produced unreliable panel automation.
+
+## Capability review
+
+Strict OpenSpec validation passes for `add-settings-and-library-location`.
+The implementation was checked against all four capability deltas:
+
+| Capability | Verified behavior |
+| --- | --- |
+| Application settings | Native/in-app access, early-command acknowledgement, atomic independent preferences, first-run confirmation, legacy adoption, and isolated override launches |
+| UI localization | English/French UI, immediate persisted switching, protected-label presentation, localized outcomes, and unchanged metadata/content policy |
+| Library location | Native selection, destination validation, whole-library copy/verification, exclusive lifecycle access, cancellation, restart recovery, and identity-checked missing-library recovery |
+| Local story catalog | User-confirmed new-library initialization and preservation of configured or existing libraries without silent empty replacement |
+
+All 41 implementation subtasks are complete. Linux native execution remains the
+host-specific limitation recorded above; its acceptance scenario is wired into
+the Linux verification script.
