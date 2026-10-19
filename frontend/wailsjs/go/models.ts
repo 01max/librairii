@@ -554,6 +554,38 @@ export namespace app {
 		    return a;
 		}
 	}
+	export class StoryFlagsResponse {
+	    result?: library.FlagResult;
+	    error?: APIError;
+	
+	    static createFrom(source: any = {}) {
+	        return new StoryFlagsResponse(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.result = this.convertValues(source["result"], library.FlagResult);
+	        this.error = this.convertValues(source["error"], APIError);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
 	export class TagAssignmentResponse {
 	    result?: tagging.AssignmentResult;
 	    error?: APIError;
@@ -1100,6 +1132,56 @@ export namespace library {
 	        this.ManagedRelativePath = source["ManagedRelativePath"];
 	        this.Verification = source["Verification"];
 	    }
+	}
+	export class FlagChange {
+	    storyId: number;
+	    previous: boolean;
+	    current: boolean;
+	
+	    static createFrom(source: any = {}) {
+	        return new FlagChange(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.storyId = source["storyId"];
+	        this.previous = source["previous"];
+	        this.current = source["current"];
+	    }
+	}
+	export class FlagResult {
+	    requestedStories: number;
+	    changedStories: number;
+	    changes: FlagChange[];
+	
+	    static createFrom(source: any = {}) {
+	        return new FlagResult(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.requestedStories = source["requestedStories"];
+	        this.changedStories = source["changedStories"];
+	        this.changes = this.convertValues(source["changes"], FlagChange);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
 	}
 	export class ListRequest {
 	    brokenVisibility?: string;

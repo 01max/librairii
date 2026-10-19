@@ -84,6 +84,8 @@ export function ReorderTagValues(arg1:number,arg2:Array<number>):Promise<app.Mut
 
 export function ReplaceShelfQuery(arg1:number,arg2:library.StoryLibraryQuery):Promise<app.ShelfResponse>;
 
+export function RestoreStoryFlags(arg1:Array<library.FlagChange>):Promise<app.StoryFlagsResponse>;
+
 export function RetryLibrary():Promise<main.SettingsSnapshot>;
 
 export function RevealExportDestination(arg1:string):Promise<app.MutationResponse>;
@@ -101,6 +103,8 @@ export function SetBooleanTag(arg1:Array<number>,arg2:number,arg3:boolean):Promi
 export function SetChoiceTagValue(arg1:Array<number>,arg2:number,arg3:number,arg4:boolean):Promise<app.TagAssignmentResponse>;
 
 export function SetChoiceTagValues(arg1:Array<number>,arg2:number,arg3:Array<number>):Promise<app.TagAssignmentResponse>;
+
+export function SetStoriesBroken(arg1:Array<number>,arg2:boolean):Promise<app.StoryFlagsResponse>;
 
 export function SetUILanguage(arg1:string):Promise<main.SettingsSnapshot>;
 

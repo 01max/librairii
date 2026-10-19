@@ -44,6 +44,7 @@ type ImportRuntime struct {
 	metadataFetcher  metadata.CatalogFetcher
 	manager          *operations.Manager
 	query            *library.Query
+	flags            *library.BrokenFlags
 	removal          *removal.Service
 	tags             *tagging.Service
 	shelves          *shelves.Service
@@ -262,6 +263,7 @@ func (r *ImportRuntime) Start(ctx context.Context) error {
 	}
 	r.manager = manager
 	r.query = libraryQuery
+	r.flags = library.NewBrokenFlags(writeDatabase)
 	r.removal = removalService
 	r.tags = tagService
 	r.shelves = shelfService
@@ -787,6 +789,7 @@ func (r *ImportRuntime) Close() error {
 	diagnosticLogger := r.diagnosticLogger
 	r.manager = nil
 	r.query = nil
+	r.flags = nil
 	r.removal = nil
 	r.tags = nil
 	r.shelves = nil
