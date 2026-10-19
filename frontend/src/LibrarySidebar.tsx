@@ -1,3 +1,4 @@
+import {t} from './i18n';
 import {type PropsWithChildren, useEffect, useRef} from 'react';
 import {useModalFocus} from './modal-focus';
 
@@ -37,9 +38,9 @@ export default function LibrarySidebar({children, open, onClose, suspended, iner
                 className={`filters${open ? ' sidebar-open' : ''}`}
                 role={open ? 'dialog' : undefined}
                 aria-modal={open ? true : undefined}
-                aria-label="Saved shelves and refinements">
+                aria-label={t("Saved shelves and refinements")}>
                 <button ref={closeButton} className="sidebar-close" type="button"
-                    onClick={onClose} aria-label="Close shelves and filters">Done <span aria-hidden="true">×</span></button>
+                    onClick={onClose} aria-label={t("Close shelves and filters")}>{t("Done") + ' '}<span aria-hidden="true">×</span></button>
                 {children}
             </aside>
         </>
