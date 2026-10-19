@@ -438,7 +438,7 @@ export function installCollectionFixture() {
         },
         TagCatalog: async () => ({
             catalog: {
-                definitions: [parityAgeDefinition],
+                definitions: fixture === 'parity' ? [parityAgeDefinition, ...parityAssignmentDefinitions.slice(1)] : [parityAgeDefinition],
             },
         }),
         TagAssignmentWorkspace: async (storyIDs: number[]) => ({

@@ -92,6 +92,22 @@ try {
                 );
             }
             assertAccessibilityContract(viewport, contract);
+            await page.getByRole('button', {name: 'Filter by tags', exact: true}).click();
+            await page.getByRole('region', {name: 'Tag filters', exact: true}).waitFor();
+            const tagFiltersResult = await new AxeBuilder({page}).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze();
+            if (tagFiltersResult.violations.length) throw new Error(`tag search: ${JSON.stringify(tagFiltersResult.violations)}`);
+            await page.keyboard.press('Escape');
+            if (!await page.getByRole('button', {name: 'Filter by tags', exact: true}).evaluate((button) => button === document.activeElement)) throw new Error('tag search did not restore focus');
+            await page.getByRole('button', {name: 'Open details', exact: true}).click();
+            const storyDetails = page.getByRole('dialog', {name: 'The Little Prince', exact: true});
+            await storyDetails.waitFor();
+            if (await storyDetails.locator('.flag-feedback').count()) throw new Error('Broken notice appeared before a change');
+            await storyDetails.getByRole('switch', {name: 'Broken: The Little Prince', exact: true}).click();
+            await storyDetails.getByRole('button', {name: 'Undo', exact: true}).waitFor();
+            const toggleResult = await new AxeBuilder({page}).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze();
+            if (toggleResult.violations.length) throw new Error(`Broken toggle: ${JSON.stringify(toggleResult.violations)}`);
+            await storyDetails.getByRole('button', {name: 'Undo', exact: true}).click();
+            await storyDetails.getByRole('button', {name: 'Close', exact: true}).click();
             for (const view of ['List', 'Small covers']) {
                 await page.getByRole('group', {name: 'Story view'}).getByRole('button', {name: view, exact: true}).click();
                 const result = await new AxeBuilder({page}).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze();

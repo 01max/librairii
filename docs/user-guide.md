@@ -92,11 +92,11 @@ and review proposals. A warning icon, **Broken** badge, and muted artwork identi
 them. There is no built-in Broken visibility filter. Every export skips flagged
 stories, including explicitly selected ones, and explains the skipped items.
 
-Use the flag button directly on a list row or cover card to **Mark as broken**
-or **Clear broken flag**, including in Collection previews and Shelves. Cover
-controls appear on hover or keyboard focus and stay visible on flagged stories
-and touch screens. Single and bulk actions are also available from the selected
-story panel. Details have a separate **Story warning** section.
+Use the **Broken** switch in the selected story panel or in **Open details**.
+For a bulk selection, the switch applies to all selected stories. In a Shelf,
+select members to use its bulk switch, or open an available member's details.
+Story cards retain their warning badge without extra action buttons. The change
+notice and **Undo** appear only after a toggle; closing details clears its notice.
 
 Flagging leaves cards, selections, counts, pagination, and focus in place.
 **Undo** restores the previous flags only for stories actually changed, including
@@ -178,6 +178,12 @@ derived metadata filters combine as follows:
 - values inside one choice definition use OR;
 - separate filter groups use AND;
 - a boolean filter requires assigned, requires unassigned, or is ignored.
+
+Choose **Filter by tags** beside search to find tags and combine them with the
+text query. Boolean tags offer **Tagged**, **Not tagged**, or **Any**; choice tags
+allow multiple values. **Clear tag filters** keeps your search text. This picker
+also refines Shelf views without changing approved membership. Spaces and letter
+case stay intact while you type; matching still uses the normalized query.
 
 The query hash and typed navigation history restore the active Library,
 Collection, or Shelf when reloading or moving back and forward. Collection and

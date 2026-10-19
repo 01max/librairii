@@ -44,8 +44,19 @@ select {
 }
 
 button {
+    appearance: none;
     cursor: pointer;
+    padding: 8px 12px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--white);
+    color: var(--ink);
+    font-weight: 600;
+    line-height: 1.3;
 }
+button:hover:not(:disabled) { border-color: var(--blue); }
+button:disabled { cursor: default; opacity: .5; }
+
 
 button:focus-visible,
 a:focus-visible,
@@ -451,8 +462,8 @@ select:focus-visible {
     border-radius: 6px;
     color: #657087;
     background: white;
-    font-size: 9px;
-    font-weight: 900;
+    font-size: 13px;
+    font-weight: 600;
 }
 
 .saved-tools button:disabled,
@@ -786,8 +797,8 @@ select:focus-visible {
     border-radius: 9px;
     color: var(--ink);
     background: white;
-    font-size: 9px;
-    font-weight: 900;
+    font-size: 13px;
+    font-weight: 600;
 }
 
 .pagination button:disabled {
@@ -880,8 +891,8 @@ select:focus-visible {
     border-radius: 9px;
     color: var(--ink);
     background: white;
-    font-size: 9px;
-    font-weight: 900;
+    font-size: 13px;
+    font-weight: 600;
 }
 
 .operation-items {
@@ -1386,8 +1397,8 @@ select:focus-visible {
     border-radius: 9px;
     color: var(--ink);
     background: white;
-    font-size: 9px;
-    font-weight: 900;
+    font-size: 13px;
+    font-weight: 600;
 }
 
 .drawer-actions .export {
@@ -1530,8 +1541,8 @@ select:focus-visible {
     border-radius: 9px;
     color: var(--ink);
     background: white;
-    font-size: 9px;
-    font-weight: 900;
+    font-size: 13px;
+    font-weight: 600;
 }
 
 .dialog-actions .danger {
@@ -2818,7 +2829,6 @@ select:focus-visible {
 .curated-cover { display: block; width: 100%; padding: 0; border: 0; background: transparent; }
 .curated-cover .cover { height: 130px; border-radius: 8px; background: #edf0fc; }
 .curated-members small, .curated-candidates small { display: block; margin: 8px 0; }
-.curated-workspace button, .curated-dialog button { cursor: pointer; padding: 7px 10px; border: 1px solid #d9dce3; border-radius: 8px; background: white; color: #34364a; }
 .curated-workspace button:disabled, .curated-dialog button:disabled { opacity: .5; cursor: default; }
 .curated-workspace button:focus-visible, .curated-dialog button:focus-visible { outline: 3px solid #405cf5; outline-offset: 2px; }
 @media (max-width: 600px) { .curated-dialog { width: calc(100vw - 24px); } .curated-workspace .heading { display: block; } }
@@ -2863,3 +2873,12 @@ select:focus-visible {
 .shelf-search { display: flex; align-items: end; flex-wrap: wrap; gap: 12px; }
 .shelf-search > label { display: grid; flex: 1; gap: 6px; font-size: 13px; }
 @media (max-width: 560px) { .top { flex-wrap: wrap; } .top .search { flex-basis: 100%; } .tag-filter-panel { left: 0; right: auto; } }
+
+/* Shared action controls; navigation, covers and switches keep their own shape. */
+:where(.dialog-actions, .drawer-actions, .curated-actions, .settings-panel, .flag-feedback, .tag-filter-actions) button,
+.tag-filter-trigger { min-height: 36px; padding: 8px 12px; border-radius: 8px; font-size: 13px; font-weight: 600; line-height: 1.3; }
+.dialog-actions .danger { color: white; background: #b33d32; border-color: #b33d32; }
+.dialog-actions button:hover:not(:disabled), .drawer-actions button:hover:not(:disabled) { border-color: var(--blue); }
+.dialog-actions .danger:hover:not(:disabled) { border-color: #912c23; background: #912c23; }
+button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px solid var(--blue); outline-offset: 3px; }
+.rail button:focus-visible { outline-color: var(--yellow); }
