@@ -11,7 +11,7 @@ import (
 func (a *Application) ListCollections(ctx context.Context, includeBroken ...library.BrokenVisibility) CollectionListResponse {
 	summaries, err := a.collections.ListCollections(ctx, includeBroken...)
 	if err != nil {
-		return CollectionListResponse{Error: shelfAPIError(err)}
+		return CollectionListResponse{Error: collectionAPIError(err)}
 	}
 	return CollectionListResponse{Collections: summaries}
 }
@@ -26,7 +26,7 @@ func (a *Application) CreateCollection(
 	}
 	shelf, err := a.collections.CreateCollection(ctx, name, query)
 	if err != nil {
-		return CollectionResponse{Error: shelfAPIError(err)}
+		return CollectionResponse{Error: collectionAPIError(err)}
 	}
 	return CollectionResponse{Collection: &shelf}
 }
@@ -38,7 +38,7 @@ func (a *Application) OpenCollection(
 ) CollectionEvaluationResponse {
 	evaluation, err := a.collections.OpenCollection(ctx, shelfID, request)
 	if err != nil {
-		return CollectionEvaluationResponse{Error: shelfAPIError(err)}
+		return CollectionEvaluationResponse{Error: collectionAPIError(err)}
 	}
 	return CollectionEvaluationResponse{Evaluation: &evaluation}
 }
@@ -53,7 +53,7 @@ func (a *Application) RenameCollection(
 	}
 	shelf, err := a.collections.RenameCollection(ctx, shelfID, name)
 	if err != nil {
-		return CollectionResponse{Error: shelfAPIError(err)}
+		return CollectionResponse{Error: collectionAPIError(err)}
 	}
 	return CollectionResponse{Collection: &shelf}
 }
@@ -68,7 +68,7 @@ func (a *Application) DuplicateCollection(
 	}
 	shelf, err := a.collections.DuplicateCollection(ctx, shelfID, name)
 	if err != nil {
-		return CollectionResponse{Error: shelfAPIError(err)}
+		return CollectionResponse{Error: collectionAPIError(err)}
 	}
 	return CollectionResponse{Collection: &shelf}
 }
@@ -83,7 +83,7 @@ func (a *Application) ReplaceCollectionQuery(
 	}
 	shelf, err := a.collections.ReplaceCollectionQuery(ctx, shelfID, query)
 	if err != nil {
-		return CollectionResponse{Error: shelfAPIError(err)}
+		return CollectionResponse{Error: collectionAPIError(err)}
 	}
 	return CollectionResponse{Collection: &shelf}
 }
@@ -99,7 +99,7 @@ func (a *Application) ReorderCollections(
 		)}
 	}
 	if _, err := a.collections.ReorderCollections(ctx, orderedIDs); err != nil {
-		return CollectionListResponse{Error: shelfAPIError(err)}
+		return CollectionListResponse{Error: collectionAPIError(err)}
 	}
 	return a.ListCollections(ctx)
 }
@@ -115,7 +115,7 @@ func (a *Application) DeleteCollection(
 		)}
 	}
 	if err := a.collections.DeleteCollection(ctx, shelfID); err != nil {
-		return MutationResponse{Error: shelfAPIError(err)}
+		return MutationResponse{Error: collectionAPIError(err)}
 	}
 	return MutationResponse{Success: true}
 }
@@ -127,7 +127,7 @@ func (a *Application) PreviewCollections(
 ) CollectionSelectionPreviewResponse {
 	preview, err := a.collections.PreviewCollections(ctx, shelfIDs, includeBroken...)
 	if err != nil {
-		return CollectionSelectionPreviewResponse{Error: shelfAPIError(err)}
+		return CollectionSelectionPreviewResponse{Error: collectionAPIError(err)}
 	}
 	return CollectionSelectionPreviewResponse{Preview: &preview}
 }
@@ -142,7 +142,7 @@ func (a *Application) requireCollectionMutation() *CollectionResponse {
 	)}
 }
 
-func shelfAPIError(err error) *APIError {
+func collectionAPIError(err error) *APIError {
 	switch {
 	case errors.Is(err, collections.ErrInvalidCollectionName),
 		errors.Is(err, collections.ErrDuplicateCollectionName),

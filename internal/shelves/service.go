@@ -35,6 +35,7 @@ type Member struct {
 	Protected   bool                  `json:"protected"`
 	CachedTitle string                `json:"cachedTitle"`
 	Story       *library.StorySummary `json:"story,omitempty"`
+	Origins     []Source              `json:"origins"`
 }
 
 type Service struct {

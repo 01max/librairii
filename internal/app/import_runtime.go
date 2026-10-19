@@ -20,6 +20,7 @@ import (
 	"github.com/01max/librairii/internal/metadata"
 	"github.com/01max/librairii/internal/operations"
 	"github.com/01max/librairii/internal/removal"
+	"github.com/01max/librairii/internal/shelves"
 	"github.com/01max/librairii/internal/storage"
 	"github.com/01max/librairii/internal/tagging"
 	"github.com/google/uuid"
@@ -48,6 +49,7 @@ type ImportRuntime struct {
 	removal          *removal.Service
 	tags             *tagging.Service
 	collections      *collections.Service
+	shelves          *shelves.Service
 	shelfEvaluator   *collections.Evaluator
 	exportPreflight  *exporter.PreflightService
 	diagnosticLogger *diagnostics.Logger
@@ -233,6 +235,11 @@ func (r *ImportRuntime) Start(ctx context.Context) error {
 		return fmt.Errorf("construct official metadata provider: %w", err)
 	}
 	libraryQuery := library.NewQuery(readDatabase, officialProvider)
+	curatedService, err := shelves.NewService(writeDatabase, libraryQuery)
+	if err != nil {
+		_ = manager.Close()
+		return err
+	}
 	shelfService, err := collections.NewService(writeDatabase)
 	if err != nil {
 		_ = manager.Close()
@@ -267,6 +274,7 @@ func (r *ImportRuntime) Start(ctx context.Context) error {
 	r.removal = removalService
 	r.tags = tagService
 	r.collections = shelfService
+	r.shelves = curatedService
 	r.shelfEvaluator = shelfEvaluator
 	r.exportPreflight = exportPreflight
 	r.diagnosticLogger = diagnosticLogger
@@ -793,6 +801,7 @@ func (r *ImportRuntime) Close() error {
 	r.removal = nil
 	r.tags = nil
 	r.collections = nil
+	r.shelves = nil
 	r.shelfEvaluator = nil
 	r.exportPreflight = nil
 	r.diagnosticLogger = nil

@@ -55,6 +55,7 @@ func NewComposition(options CompositionOptions) (*Composition, error) {
 		Removal:     runtime,
 		Tags:        runtime,
 		Collections: runtime,
+		Shelves:     runtime,
 		Diagnostics: runtime,
 		Resources:   []ResourcePort{options.Storage},
 	})

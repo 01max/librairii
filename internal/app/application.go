@@ -30,6 +30,7 @@ type Application struct {
 	removal     RemovalPort
 	tags        TaggingPort
 	collections CollectionPort
+	shelves     ShelfPort
 	diagnostics DiagnosticsPort
 	resources   []ResourcePort
 	state       LifecycleState
@@ -64,6 +65,7 @@ func New(deps Dependencies) (*Application, error) {
 		removal:     deps.Removal,
 		tags:        deps.Tags,
 		collections: deps.Collections,
+		shelves:     deps.Shelves,
 		diagnostics: deps.Diagnostics,
 		resources:   resources,
 		state:       StateInitializing,

@@ -196,6 +196,7 @@ type Dependencies struct {
 	Removal     RemovalPort
 	Tags        TaggingPort
 	Collections CollectionPort
+	Shelves     ShelfPort
 	Diagnostics DiagnosticsPort
 	Resources   []ResourcePort
 }
