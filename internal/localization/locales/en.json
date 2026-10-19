@@ -431,5 +431,6 @@
   "Select valid stories to change their broken flags.": "Select valid stories to change their broken flags.",
   "A story is no longer available. Refresh the collection and try again.": "A story is no longer available. Refresh the collection and try again.",
   "These flags changed after this action. Refresh the collection before retrying.": "These flags changed after this action. Refresh the collection before retrying.",
-  "Story flags could not be updated. Try again.": "Story flags could not be updated. Try again."
+  "Story flags could not be updated. Try again.": "Story flags could not be updated. Try again.",
+  "Source collections ·": "Source collections ·"
 }

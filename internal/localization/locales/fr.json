@@ -431,5 +431,6 @@
   "Select valid stories to change their broken flags.": "Sélectionnez des histoires valides pour modifier leurs signalements.",
   "A story is no longer available. Refresh the collection and try again.": "Une histoire n’est plus disponible. Actualisez la collection et réessayez.",
   "These flags changed after this action. Refresh the collection before retrying.": "Ces signalements ont changé depuis cette action. Actualisez la collection avant de réessayer.",
-  "Story flags could not be updated. Try again.": "Les signalements n’ont pas pu être mis à jour. Réessayez."
+  "Story flags could not be updated. Try again.": "Les signalements n’ont pas pu être mis à jour. Réessayez.",
+  "Source collections ·": "Collections sources ·"
 }

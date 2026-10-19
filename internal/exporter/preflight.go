@@ -130,6 +130,7 @@ type PreflightRequest struct {
 	SourceType       operations.ExportSourceType `json:"sourceType"`
 	StoryIDs         []int64                     `json:"storyIds,omitempty"`
 	Query            library.StoryLibraryQuery   `json:"query"`
+	CollectionIDs    []int64                     `json:"collectionIds,omitempty"`
 	ShelfIDs         []int64                     `json:"shelfIds,omitempty"`
 }
 
@@ -194,12 +195,20 @@ func (s *PreflightService) resolve(
 		}
 		return s.resolver.ResolveCurrentQuery(ctx, request.Query)
 	case operations.ExportSourceShelf, operations.ExportSourceCollection:
-		if len(request.ShelfIDs) != 1 {
+		ids := request.CollectionIDs
+		if request.SourceType == operations.ExportSourceShelf {
+			ids = request.ShelfIDs
+		}
+		if len(ids) != 1 {
 			return Scope{}, ErrInvalidScope
 		}
-		return s.resolver.ResolveCollection(ctx, request.ShelfIDs[0], library.Visibility(request.BrokenVisibility, request.IncludeBroken))
+		return s.resolver.ResolveCollection(ctx, ids[0], library.Visibility(request.BrokenVisibility, request.IncludeBroken))
 	case operations.ExportSourceShelves, operations.ExportSourceCollections:
-		return s.resolver.ResolveCollections(ctx, request.ShelfIDs, library.Visibility(request.BrokenVisibility, request.IncludeBroken))
+		ids := request.CollectionIDs
+		if request.SourceType == operations.ExportSourceShelves {
+			ids = request.ShelfIDs
+		}
+		return s.resolver.ResolveCollections(ctx, ids, library.Visibility(request.BrokenVisibility, request.IncludeBroken))
 	case operations.ExportSourceCuratedShelf:
 		if len(request.ShelfIDs) != 1 {
 			return Scope{}, ErrInvalidScope
@@ -387,8 +396,9 @@ func (s *PreflightService) inspectStory(
 
 func sourceFromRequest(request PreflightRequest) operations.ExportSource {
 	return operations.ExportSource{
-		Type:     request.SourceType,
-		ShelfIDs: append([]int64(nil), request.ShelfIDs...),
+		Type:          request.SourceType,
+		ShelfIDs:      append([]int64(nil), request.ShelfIDs...),
+		CollectionIDs: append([]int64(nil), request.CollectionIDs...),
 	}
 }
 

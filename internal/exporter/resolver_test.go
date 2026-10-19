@@ -234,8 +234,8 @@ func assertResolvedScope(
 	}
 	if scope.Source.Type != sourceType ||
 		!reflect.DeepEqual(gotIDs, storyIDs) ||
-		!reflect.DeepEqual(scope.Source.ShelfIDs, shelfIDs) ||
-		!reflect.DeepEqual(scope.Source.ShelfNames, shelfNames) ||
+		!reflect.DeepEqual(scope.Source.GroupIDs(), shelfIDs) ||
+		!reflect.DeepEqual(scope.Source.GroupNames(), shelfNames) ||
 		scope.CollapsedOverlap != overlap {
 		t.Fatalf("resolved scope = %#v, story IDs = %#v", scope, gotIDs)
 	}

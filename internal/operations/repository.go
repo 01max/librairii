@@ -115,11 +115,11 @@ func (r *Repository) create(
 				ErrInvalidTransition,
 			)
 		}
-		ids, err := json.Marshal(nonNilInt64s(operation.ExportSource.ShelfIDs))
+		ids, err := json.Marshal(nonNilInt64s(operation.ExportSource.GroupIDs()))
 		if err != nil {
 			return Snapshot{}, fmt.Errorf("encode export shelf IDs: %w", err)
 		}
-		names, err := json.Marshal(nonNilStrings(operation.ExportSource.ShelfNames))
+		names, err := json.Marshal(nonNilStrings(operation.ExportSource.GroupNames()))
 		if err != nil {
 			return Snapshot{}, fmt.Errorf("encode export shelf names: %w", err)
 		}
@@ -268,6 +268,16 @@ func validateNewItems(kind Kind, items []NewItem) (int64, error) {
 }
 
 func validateExportSource(source ExportSource) error {
+	if source.Type == ExportSourceCollection || source.Type == ExportSourceCollections {
+		if len(source.ShelfIDs) > 0 || len(source.ShelfNames) > 0 {
+			return ErrInvalidTransition
+		}
+		source.ShelfIDs = source.CollectionIDs
+		source.ShelfNames = source.CollectionNames
+	} else if len(source.CollectionIDs) > 0 || len(source.CollectionNames) > 0 {
+		return ErrInvalidTransition
+	}
+
 	if len(source.ShelfIDs) != len(source.ShelfNames) {
 		return fmt.Errorf(
 			"%w: export shelf identity mismatch",
@@ -631,6 +641,10 @@ func (r *Repository) Snapshot(ctx context.Context, id string) (Snapshot, error) 
 		); err != nil {
 			return Snapshot{}, fmt.Errorf("decode export shelf names: %w", err)
 		}
+	}
+	if IsCollectionExport(snapshot.ExportSourceType) {
+		snapshot.SourceCollectionIDs = append([]int64(nil), snapshot.SourceShelfIDs...)
+		snapshot.SourceCollectionNames = append([]string(nil), snapshot.SourceShelfNames...)
 	}
 
 	rows, err := r.database.QueryContext(

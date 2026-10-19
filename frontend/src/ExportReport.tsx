@@ -1,6 +1,7 @@
 import OutcomeText from './OutcomeText';
 import {t} from './i18n';
 import {operations} from '../wailsjs/go/models';
+import {exportSourceContext} from './export-source';
 
 const exportReportGroups: Array<{
     status: string;
@@ -20,15 +21,16 @@ export default function ExportReport({
     operation: operations.Snapshot;
     onReveal: (operationID: string) => void;
 }) {
+    const source = exportSourceContext(operation);
     return (
         <section className="export-report" aria-label={t("Export report")}>
             <div className="export-report-context">
                 <span>
                     {t("Destination ·")}{' '}{operation.destination || t("Selected folder")}
                 </span>
-                {operation.sourceShelfNames && operation.sourceShelfNames.length > 0 && (
+                {source.names.length > 0 && (
                     <span>
-                        {t("Source shelves ·")}{' '}{operation.sourceShelfNames.join(', ')}
+                        {t(source.label)}{' '}{source.names.join(', ')}
                     </span>
                 )}
             </div>
@@ -69,4 +71,3 @@ export default function ExportReport({
         </section>
     );
 }
-

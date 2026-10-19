@@ -118,9 +118,9 @@ func (r *Resolver) ResolveCollection(
 	}
 	return Scope{
 		Source: operations.ExportSource{
-			Type:       operations.ExportSourceCollection,
-			ShelfIDs:   []int64{opened.Collection.ID},
-			ShelfNames: []string{opened.Collection.Name},
+			Type:            operations.ExportSourceCollection,
+			CollectionIDs:   []int64{opened.Collection.ID},
+			CollectionNames: []string{opened.Collection.Name},
 		},
 		Stories: stories,
 	}, nil
@@ -147,9 +147,9 @@ func (r *Resolver) ResolveCollections(
 	union := make(map[string]struct{})
 	var stories []library.ExportStory
 	source := operations.ExportSource{
-		Type:       operations.ExportSourceCollections,
-		ShelfIDs:   make([]int64, 0, len(shelfIDs)),
-		ShelfNames: make([]string, 0, len(shelfIDs)),
+		Type:            operations.ExportSourceCollections,
+		CollectionIDs:   make([]int64, 0, len(shelfIDs)),
+		CollectionNames: make([]string, 0, len(shelfIDs)),
 	}
 	totalMemberships := 0
 	for _, shelfID := range shelfIDs {
@@ -174,8 +174,8 @@ func (r *Resolver) ResolveCollections(
 			union[story.UUID] = struct{}{}
 			stories = append(stories, story)
 		}
-		source.ShelfIDs = append(source.ShelfIDs, opened.Collection.ID)
-		source.ShelfNames = append(source.ShelfNames, opened.Collection.Name)
+		source.CollectionIDs = append(source.CollectionIDs, opened.Collection.ID)
+		source.CollectionNames = append(source.CollectionNames, opened.Collection.Name)
 	}
 	return Scope{
 		Source:           source,

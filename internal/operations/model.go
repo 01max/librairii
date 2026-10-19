@@ -22,9 +22,11 @@ const (
 )
 
 type ExportSource struct {
-	Type       ExportSourceType `json:"type"`
-	ShelfIDs   []int64          `json:"shelfIds,omitempty"`
-	ShelfNames []string         `json:"shelfNames,omitempty"`
+	Type            ExportSourceType `json:"type"`
+	CollectionIDs   []int64          `json:"collectionIds,omitempty"`
+	CollectionNames []string         `json:"collectionNames,omitempty"`
+	ShelfIDs        []int64          `json:"shelfIds,omitempty"`
+	ShelfNames      []string         `json:"shelfNames,omitempty"`
 }
 
 type Status string
@@ -94,24 +96,26 @@ type ItemSnapshot struct {
 }
 
 type Snapshot struct {
-	ID               string           `json:"id"`
-	Kind             Kind             `json:"kind"`
-	Status           Status           `json:"status"`
-	ExportSourceType ExportSourceType `json:"exportSourceType,omitempty"`
-	SourceShelfIDs   []int64          `json:"sourceShelfIds,omitempty"`
-	SourceShelfNames []string         `json:"sourceShelfNames,omitempty"`
-	Destination      string           `json:"-"`
-	DestinationLabel string           `json:"destination,omitempty"`
-	CompletedItems   int              `json:"completedItems"`
-	TotalItems       int              `json:"totalItems"`
-	TotalBytes       int64            `json:"totalBytes"`
-	CancelRequested  bool             `json:"cancelRequested"`
-	ErrorCode        string           `json:"errorCode,omitempty"`
-	ErrorMessage     string           `json:"errorMessage,omitempty"`
-	CreatedAt        string           `json:"createdAt"`
-	StartedAt        string           `json:"startedAt,omitempty"`
-	FinishedAt       string           `json:"finishedAt,omitempty"`
-	Items            []ItemSnapshot   `json:"items"`
+	ID                    string           `json:"id"`
+	Kind                  Kind             `json:"kind"`
+	Status                Status           `json:"status"`
+	ExportSourceType      ExportSourceType `json:"exportSourceType,omitempty"`
+	SourceCollectionIDs   []int64          `json:"sourceCollectionIds,omitempty"`
+	SourceCollectionNames []string         `json:"sourceCollectionNames,omitempty"`
+	SourceShelfIDs        []int64          `json:"sourceShelfIds,omitempty"`
+	SourceShelfNames      []string         `json:"sourceShelfNames,omitempty"`
+	Destination           string           `json:"-"`
+	DestinationLabel      string           `json:"destination,omitempty"`
+	CompletedItems        int              `json:"completedItems"`
+	TotalItems            int              `json:"totalItems"`
+	TotalBytes            int64            `json:"totalBytes"`
+	CancelRequested       bool             `json:"cancelRequested"`
+	ErrorCode             string           `json:"errorCode,omitempty"`
+	ErrorMessage          string           `json:"errorMessage,omitempty"`
+	CreatedAt             string           `json:"createdAt"`
+	StartedAt             string           `json:"startedAt,omitempty"`
+	FinishedAt            string           `json:"finishedAt,omitempty"`
+	Items                 []ItemSnapshot   `json:"items"`
 }
 
 func (s Snapshot) Terminal() bool {
@@ -125,4 +129,20 @@ func (s Snapshot) Terminal() bool {
 	default:
 		return false
 	}
+}
+
+func (s ExportSource) GroupIDs() []int64 {
+	if s.Type == ExportSourceCollection || s.Type == ExportSourceCollections {
+		return s.CollectionIDs
+	}
+	return s.ShelfIDs
+}
+func (s ExportSource) GroupNames() []string {
+	if s.Type == ExportSourceCollection || s.Type == ExportSourceCollections {
+		return s.CollectionNames
+	}
+	return s.ShelfNames
+}
+func IsCollectionExport(t ExportSourceType) bool {
+	return t == ExportSourceCollection || t == ExportSourceCollections || t == ExportSourceShelf || t == ExportSourceShelves
 }
