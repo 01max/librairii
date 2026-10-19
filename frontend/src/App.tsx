@@ -26,6 +26,7 @@ import {
     DuplicateCollection,
     ListCollections,
     ListShelves,
+    ReorderShelves,
     AddStoriesToShelf,
     OfficialMetadataStatus,
     OpenCollection,
@@ -370,6 +371,7 @@ function App() {
     const [curatedShelves, setCuratedShelves] = useState<shelves.Shelf[]>([]);
     const [shelfRevision, setShelfRevision] = useState(0);
     const [createShelfUUIDs, setCreateShelfUUIDs] = useState<string[] | null>(null);
+    const [selectedCuratedIDs, setSelectedCuratedIDs] = useState<number[]>([]);
     const [addShelfID, setAddShelfID] = useState('');
     const openCuratedShelf = (id: number) => {
         setCollectionQuery(queryHistory.pushShelf(id));
@@ -1847,7 +1849,7 @@ function App() {
                     onLibrary={openAllStories}
                     onTags={() => setTagManagerOpen(true)}
                     onImport={() => void startImport()}
-                    onExport={() => void prepareExport('current_query')}
+                    onExport={() => curatedShelfID === null ? void prepareExport('current_query') : void preflightExport(new exporter.PreflightRequest({sourceType: 'current_query', queryShelfId: curatedShelfID, query: collectionQuery}))}
                 />
             </aside>
 
@@ -1973,9 +1975,14 @@ function App() {
                 </nav>
                 <section aria-label={t('Shelves')}>
                     <div className="caption">{t('Shelves')}</div><button type="button" disabled={applicationState !== 'ready'} onClick={() => setCreateShelfUUIDs([])}>{t('Create Shelf')}</button>
-                    {curatedShelves.map((shelf) => <button className="saved-picker" type="button" key={shelf.id}
+                    {curatedShelves.map((shelf, index) => <div key={shelf.id}><label><input type="checkbox" checked={selectedCuratedIDs.includes(shelf.id)} aria-label={t('Select Shelf {0} for export', shelf.name)} onChange={() => setSelectedCuratedIDs(selectedCuratedIDs.includes(shelf.id) ? selectedCuratedIDs.filter((id) => id !== shelf.id) : [...selectedCuratedIDs, shelf.id])}/><span className="sr-only">{shelf.name}</span></label><button className="saved-picker" type="button" key={shelf.id}
                         aria-current={curatedShelfID === shelf.id ? 'page' : undefined}
-                        onClick={() => openCuratedShelf(shelf.id)}>{shelf.name}<span>{shelf.count}</span></button>)}
+                        onClick={() => openCuratedShelf(shelf.id)}>{shelf.name}<span>{shelf.count}</span></button>
+                        <button type="button" disabled={collectionBusy || index === 0} aria-label={t('Move Shelf {0} up', shelf.name)} onClick={() => {
+                            const ids = curatedShelves.map((entry) => entry.id); [ids[index], ids[index - 1]] = [ids[index - 1], ids[index]];
+                            setCollectionBusy(true); void ReorderShelves(ids).then((response) => {if (response.error) setRequestError(response.error.message); else setShelfRevision((value) => value + 1);}).catch(() => setRequestError(t('Shelves could not be reordered.'))).finally(() => setCollectionBusy(false));
+                        }}>↑</button></div>)}
+                    {selectedCuratedIDs.length > 0 && <button type="button" disabled={exportPreparing} onClick={() => void preflightExport(new exporter.PreflightRequest({sourceType: selectedCuratedIDs.length === 1 ? 'curated_shelf' : 'curated_shelves', shelfIds: selectedCuratedIDs, query: {}}))}>{t('Export selected Shelves')}</button>}
                 </section>
                 {selectedCollectionIDs.length > 0 && (
                     <section className="combined-shelves" aria-label={t("Combined collection preview")}>
@@ -2114,7 +2121,7 @@ function App() {
                     <ShelfWorkspace key={curatedShelfID} id={curatedShelfID} revision={shelfRevision + collectionRevision + detailRevision}
                         collections={savedCollections} query={collectionQuery} onQuery={(query) => setCollectionQuery(queryHistory.pushShelf(curatedShelfID, query))}
                         onChanged={() => setShelfRevision((value) => value + 1)} onDeleted={openAllStories}
-                        onInspect={(story) => {setInspectedStory(story); setDetailsOpen(true);}}/>
+                        onExport={(request) => void preflightExport(request)} onInspect={(story) => {setInspectedStory(story); setDetailsOpen(true);}}/>
                 </>}
                 <div hidden={curatedShelfID !== null}>
                 <div className="top">
@@ -2589,7 +2596,7 @@ function App() {
                 </div>
             </main>
 
-            {selected && (
+            {selected && curatedShelfID === null && (
                 <aside className="drawer" aria-label={t("{0} details", selected.title)} inert={sidebarOpen || historyOpen}>
                     <div
                         className={`drawer-art${selected.artworkId ? ' has-artwork' : ''}`}

@@ -68,6 +68,14 @@ func TestCuratedExportUsesApprovedUUIDsAndRetainsUnavailableReferences(t *testin
 	if err != nil || scope.Source.Type != operations.ExportSourceCuratedShelf || len(scope.Stories) != 2 || scope.Stories[0].UUID != uuids[0] || scope.Stories[0].ID != 0 {
 		t.Fatalf("approved scope: %#v %v", scope, err)
 	}
+	selection, err := resolver.ResolveShelfSelection(ctx, shelf.ID, []string{uuids[0], uuids[0]})
+	if err != nil || selection.Source.Type != operations.ExportSourceSelection || len(selection.Stories) != 1 || selection.Stories[0].ID != 0 {
+		t.Fatalf("unavailable selection: %#v %v", selection, err)
+	}
+	if _, err := resolver.ResolveShelfSelection(ctx, shelf.ID, []string{uuids[2]}); err == nil {
+		t.Fatal("selection escaped approved membership")
+	}
+
 	union, err := resolver.ResolveShelves(ctx, []int64{shelf.ID, copy.ID})
 	if err != nil || len(union.Stories) != 2 || union.CollapsedOverlap != 2 {
 		t.Fatalf("deduplicated scope: %#v %v", union, err)

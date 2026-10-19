@@ -1361,6 +1361,7 @@ export namespace exporter {
 	export class PreflightRequest {
 	    brokenVisibility?: string;
 	    includeBroken: boolean;
+	    shelfSelectionUuids?: string[];
 	    queryShelfId?: number;
 	    sourceType: string;
 	    storyIds?: number[];
@@ -1376,6 +1377,7 @@ export namespace exporter {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.brokenVisibility = source["brokenVisibility"];
 	        this.includeBroken = source["includeBroken"];
+	        this.shelfSelectionUuids = source["shelfSelectionUuids"];
 	        this.queryShelfId = source["queryShelfId"];
 	        this.sourceType = source["sourceType"];
 	        this.storyIds = source["storyIds"];

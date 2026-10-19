@@ -124,14 +124,15 @@ func (r PreflightReport) OperationItems() []operations.ExportWorkItem {
 }
 
 type PreflightRequest struct {
-	BrokenVisibility library.BrokenVisibility    `json:"brokenVisibility,omitempty"`
-	IncludeBroken    bool                        `json:"includeBroken"`
-	QueryShelfID     int64                       `json:"queryShelfId,omitempty"`
-	SourceType       operations.ExportSourceType `json:"sourceType"`
-	StoryIDs         []int64                     `json:"storyIds,omitempty"`
-	Query            library.StoryLibraryQuery   `json:"query"`
-	CollectionIDs    []int64                     `json:"collectionIds,omitempty"`
-	ShelfIDs         []int64                     `json:"shelfIds,omitempty"`
+	BrokenVisibility    library.BrokenVisibility    `json:"brokenVisibility,omitempty"`
+	IncludeBroken       bool                        `json:"includeBroken"`
+	ShelfSelectionUUIDs []string                    `json:"shelfSelectionUuids,omitempty"`
+	QueryShelfID        int64                       `json:"queryShelfId,omitempty"`
+	SourceType          operations.ExportSourceType `json:"sourceType"`
+	StoryIDs            []int64                     `json:"storyIds,omitempty"`
+	Query               library.StoryLibraryQuery   `json:"query"`
+	CollectionIDs       []int64                     `json:"collectionIds,omitempty"`
+	ShelfIDs            []int64                     `json:"shelfIds,omitempty"`
 }
 
 type PreflightService struct {
@@ -188,6 +189,15 @@ func (s *PreflightService) resolve(
 ) (Scope, error) {
 	switch request.SourceType {
 	case operations.ExportSourceSelection:
+		if request.QueryShelfID > 0 {
+			if len(request.StoryIDs) > 0 {
+				return Scope{}, ErrInvalidScope
+			}
+			return s.resolver.ResolveShelfSelection(ctx, request.QueryShelfID, request.ShelfSelectionUUIDs)
+		}
+		if len(request.ShelfSelectionUUIDs) > 0 {
+			return Scope{}, ErrInvalidScope
+		}
 		return s.resolver.ResolveSelection(ctx, request.StoryIDs)
 	case operations.ExportSourceCurrentQuery:
 		if request.QueryShelfID > 0 {

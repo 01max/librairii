@@ -229,6 +229,35 @@ func (r *Resolver) ResolveShelfResult(ctx context.Context, id int64, query libra
 	scope.Source = operations.ExportSource{Type: operations.ExportSourceCurrentQuery}
 	return scope, nil
 }
+
+// ResolveShelfSelection preserves unavailable UUIDs so selections explain every skip.
+func (r *Resolver) ResolveShelfSelection(ctx context.Context, id int64, uuids []string) (Scope, error) {
+	if len(uuids) == 0 {
+		return Scope{}, ErrInvalidScope
+	}
+	scope, err := r.ResolveShelf(ctx, id)
+	if err != nil {
+		return Scope{}, err
+	}
+	selected := make(map[string]bool, len(uuids))
+	for _, uuid := range uuids {
+		selected[uuid] = true
+	}
+	members := make([]library.ExportStory, 0, len(selected))
+	for _, story := range scope.Stories {
+		if selected[story.UUID] {
+			members = append(members, story)
+			delete(selected, story.UUID)
+		}
+	}
+	if len(selected) != 0 {
+		return Scope{}, ErrInvalidScope
+	}
+	scope.Stories = members
+	scope.Source = operations.ExportSource{Type: operations.ExportSourceSelection}
+	return scope, nil
+}
+
 func (r *Resolver) resolveCurated(ctx context.Context, ids []int64, refinement *library.StoryLibraryQuery) (Scope, error) {
 	if r.shelves == nil {
 		return Scope{}, ErrMissingShelves
