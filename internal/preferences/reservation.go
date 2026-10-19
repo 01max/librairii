@@ -68,7 +68,12 @@ func Publish(workspace, target, id string) error {
 	if err := os.Remove(filepath.Join(target, reservationFile)); err != nil {
 		return err
 	}
-	// POSIX rename can replace an empty directory, but cannot overwrite one that
-	// acquired files after the ownership check.
-	return os.Rename(workspace, target)
+	// Removing the empty reservation fails if another process added files.
+	if err := os.Remove(target); err != nil {
+		return err
+	}
+	if err := os.Rename(workspace, target); err != nil {
+		return err
+	}
+	return syncDirectory(filepath.Dir(target))
 }

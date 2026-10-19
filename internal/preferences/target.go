@@ -95,3 +95,8 @@ func TreeSize(root string) (int64, error) {
 	})
 	return size, err
 }
+
+func containedResolved(root, path string) bool {
+	canonical, err := Canonical(root)
+	return err == nil && Contains(canonical, path)
+}

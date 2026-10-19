@@ -118,6 +118,13 @@ func CopyLibrary(ctx context.Context, j Journal, progress func(int64)) error {
 			return err
 		}
 	}
+	for i := len(j.Entries) - 1; i >= 0; i-- {
+		if j.Entries[i].Directory {
+			if err := syncDirectory(filepath.Join(j.Workspace(), j.Entries[i].Path)); err != nil {
+				return err
+			}
+		}
+	}
 	return syncDirectory(j.Workspace())
 }
 func copyEntry(ctx context.Context, source, target string, entry Entry, progress func(int64)) error {

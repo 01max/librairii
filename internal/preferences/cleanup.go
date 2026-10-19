@@ -35,7 +35,7 @@ func CleanupSource(ctx context.Context, j Journal, authority string) error {
 			continue
 		}
 		resolved, err := Canonical(path)
-		if err != nil || !Contains(j.Source, resolved) {
+		if err != nil || !containedResolved(j.Source, resolved) {
 			failures = append(failures, ErrCleanupPending)
 			continue
 		}

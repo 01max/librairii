@@ -27,10 +27,10 @@ func Reconcile(ctx context.Context, directory string, p Profile) error {
 	}
 	switch p.Root {
 	case j.Source:
-		if err := DiscardOwned(j.Workspace(), j.ID); err != nil {
+		if err := DiscardOwned(ctx, j.Workspace(), j); err != nil {
 			return err
 		}
-		if err := DiscardOwned(j.Destination, j.ID); err != nil {
+		if err := DiscardOwned(ctx, j.Destination, j); err != nil {
 			return err
 		}
 		if err := ReleaseReservation(j.Destination, j.ID); err != nil && !errors.Is(err, os.ErrNotExist) {
@@ -51,7 +51,7 @@ func Reconcile(ctx context.Context, directory string, p Profile) error {
 
 // DiscardOwned is restricted to unique, unpublished move-owned directories.
 // An unrelated or changed destination is never recursively removed.
-func DiscardOwned(root, id string) error {
+func DiscardOwned(ctx context.Context, root string, j Journal) error {
 	data, err := os.ReadFile(filepath.Join(root, moveMarker))
 	if errors.Is(err, os.ErrNotExist) {
 		return nil
@@ -59,8 +59,52 @@ func DiscardOwned(root, id string) error {
 	if err != nil {
 		return err
 	}
-	if string(data) != id {
+	if string(data) != j.ID {
 		return ErrInvalid
 	}
-	return os.RemoveAll(root)
+	var failures []error
+	for _, entry := range j.Entries {
+		if entry.Directory {
+			continue
+		}
+		path := filepath.Join(root, entry.Path)
+		if _, err := os.Lstat(path); errors.Is(err, os.ErrNotExist) {
+			continue
+		}
+		resolved, err := Canonical(path)
+		if err != nil || !containedResolved(root, resolved) {
+			failures = append(failures, ErrCleanupPending)
+			continue
+		}
+		hash, err := fileHash(ctx, path)
+		if err != nil || hash != entry.SHA256 {
+			failures = append(failures, ErrCleanupPending)
+			continue
+		}
+		if err := os.Remove(path); err != nil {
+			failures = append(failures, err)
+		}
+	}
+	for i := len(j.Entries) - 1; i >= 0; i-- {
+		entry := j.Entries[i]
+		if entry.Directory {
+			if err := os.Remove(filepath.Join(root, entry.Path)); err != nil && !errors.Is(err, os.ErrNotExist) {
+				failures = append(failures, err)
+			}
+		}
+	}
+	if len(failures) > 0 {
+		return errors.Join(append(failures, ErrCleanupPending)...)
+	}
+	entries, err := os.ReadDir(root)
+	if err != nil {
+		return err
+	}
+	if len(entries) != 1 || entries[0].Name() != moveMarker {
+		return ErrCleanupPending
+	}
+	if err := os.Remove(filepath.Join(root, moveMarker)); err != nil {
+		return err
+	}
+	return os.Remove(root)
 }
