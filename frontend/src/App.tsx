@@ -401,6 +401,7 @@ function App() {
     const [importFacetOpen, setImportFacetOpen] = useState(false);
     const [collapsedTagFacets, setCollapsedTagFacets] = useState<Set<number>>(new Set());
     const [detailsOpen, setDetailsOpen] = useState(false);
+    const inspectedStoryID = useRef<number | null>(null);
     const [inspectedStory, setInspectedStory] = useState<library.StorySummary | null>(null);
     const [inspectedArchive, setInspectedArchive] = useState<library.ArchiveDetails>();
     const [removing, setRemoving] = useState(false);
@@ -1106,6 +1107,8 @@ function App() {
         }
     }
 
+    useEffect(() => { inspectedStoryID.current = inspectedStory?.id ?? null; }, [inspectedStory?.id]);
+
     useEffect(() => {
         if (selectedID === null) {
             return;
@@ -1114,12 +1117,28 @@ function App() {
         void LoadStoryDetail(selectedID).then((response) => {
             if (active) {
                 setDetail(response.detail ?? null);
+                if (response.detail && inspectedStoryID.current === selectedID) {
+                    setInspectedStory(response.detail.story);
+                    setInspectedArchive(response.detail.archive);
+                }
             }
         });
         return () => {
             active = false;
         };
     }, [detailRevision, selectedID]);
+
+    useEffect(() => {
+        if (!detailsOpen || !inspectedStory?.id || inspectedStory.id === selectedID) return;
+        let active = true;
+        void LoadStoryDetail(inspectedStory.id).then((response) => {
+            if (active && response.detail) {
+                setInspectedStory(response.detail.story);
+                setInspectedArchive(response.detail.archive);
+            }
+        });
+        return () => { active = false; };
+    }, [detailsOpen, inspectedStory?.id, selectedID, detailRevision]);
 
     const selectedStoryKey = selectedIDs.join(',');
     const tagAssignmentTargetKey = tagAssignmentStoryIDs.join(',');
@@ -2102,11 +2121,6 @@ function App() {
                         )}
                     </section>
                 )}
-                {flags.error && !detailsOpen && <p className="flag-feedback dialog-error" role="alert"><OutcomeText text={flags.error}/></p>}
-                {flags.notice && !detailsOpen && <div className="flag-feedback" role="status">
-                    <span>{flags.notice}</span>
-                    {flags.canUndo && <button type="button" disabled={flags.pending} onClick={() => void flags.undo()}>{t('Undo')}</button>}
-                </div>}
 
                 {activeFilters.length > 0 && !showSavedShelfRows && (
                     <button
@@ -2210,11 +2224,6 @@ function App() {
                             {page?.totalItems ?? 0} {' '}{t("archives")}</p>
                     </div>
                     <div className="heading-actions">
-                        {flags.error && !detailsOpen && <p className="flag-feedback dialog-error" role="alert"><OutcomeText text={flags.error}/></p>}
-                {flags.notice && !detailsOpen && <div className="flag-feedback" role="status">
-                    <span>{flags.notice}</span>
-                    {flags.canUndo && <button type="button" disabled={flags.pending} onClick={() => void flags.undo()}>{t('Undo')}</button>}
-                </div>}
 
                 {activeFilters.length > 0 && !showSavedShelfRows && (
                             <button

@@ -23,11 +23,11 @@ const workspace = new tagging.AssignmentWorkspace({
     catalog: {
         definitions: [{
             id: 1,
-            key: 'broken',
-            label: 'Broken',
+            key: 'favorite',
+            label: 'Favorite',
             color: '#ff705c',
             kind: 'boolean',
-            source: 'builtin',
+            source: 'user',
             protected: true,
             values: [],
         }, {
@@ -111,7 +111,7 @@ test('shows mixed bulk state and keeps protected derived tags read-only', async 
         />,
     );
 
-    const broken = await screen.findByRole('checkbox', {name: /Broken warning/});
+    const broken = await screen.findByRole('checkbox', {name: /Favorite/});
     expect(broken).toHaveAttribute('aria-checked', 'mixed');
     expect(screen.getByText('Mixed')).toBeInTheDocument();
     expect(screen.getByText(/Derived tags are read-only/)).toBeInTheDocument();
@@ -119,7 +119,7 @@ test('shows mixed bulk state and keeps protected derived tags read-only', async 
     expect(screen.queryByRole('checkbox', {name: 'Age'})).not.toBeInTheDocument();
 });
 
-test('prominently toggles broken across the selected stories', async () => {
+test('toggles an ordinary boolean tag across the selected stories', async () => {
     const user = userEvent.setup();
     const onAssignmentsChange = vi.fn();
     render(
@@ -131,7 +131,7 @@ test('prominently toggles broken across the selected stories', async () => {
         />,
     );
 
-    await user.click(await screen.findByRole('checkbox', {name: /Broken warning/}));
+    await user.click(await screen.findByRole('checkbox', {name: /Favorite/}));
     expect(setBooleanTag).toHaveBeenCalledWith([1, 2], 1, true);
     expect(await screen.findByRole('status')).toHaveTextContent(
         '1 of 2 selected stories updated.',
@@ -177,4 +177,18 @@ test('closes without a keyboard trap', async () => {
 
     await user.keyboard('{Escape}');
     await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
+});
+
+test('hides retired Broken definitions while allowing ordinary custom tags with that name', async () => {
+    tagAssignmentWorkspace.mockResolvedValue(new app.TagAssignmentWorkspaceResponse({workspace: {
+        ...workspace,
+        catalog: {definitions: [
+            {...workspace.catalog.definitions[0], id: 9, key: 'broken', label: 'Retired broken', source: 'builtin'},
+            {...workspace.catalog.definitions[0], key: 'broken', label: 'My broken tag', source: 'user'},
+        ]},
+    }}));
+    render(<TagAssignmentEditor storyIDs={[1, 2]} onClose={vi.fn()} onWorkspaceChange={vi.fn()} onAssignmentsChange={vi.fn()}/>);
+    expect(await screen.findByRole('checkbox', {name: /My broken tag/})).toBeInTheDocument();
+    expect(screen.queryByText('Retired broken')).not.toBeInTheDocument();
+    expect(screen.queryByText('Broken warning')).not.toBeInTheDocument();
 });
