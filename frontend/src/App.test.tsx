@@ -123,6 +123,17 @@ const loadStoryDetail = vi.mocked(LoadStoryDetail);
 const loadTagAssignmentWorkspace = vi.mocked(LoadTagAssignmentWorkspace);
 const loadTagCatalog = vi.mocked(LoadTagCatalog);
 const eventsOn = vi.mocked(EventsOn);
+
+test('preserves spaces and case while typing a multiword search', async () => {
+    const user = userEvent.setup();
+    render(<App/>);
+    const search = await screen.findByRole('searchbox', {name: 'Search stories'});
+    await user.type(search, 'moon ');
+    expect(search).toHaveValue('moon ');
+    await user.type(search, 'Forest');
+    expect(search).toHaveValue('moon Forest');
+    await waitFor(() => expect(queryStories).toHaveBeenLastCalledWith(expect.objectContaining({name: 'moon forest'})));
+});
 let operationChanged: ((value: unknown) => void) | undefined;
 
 const stories = [

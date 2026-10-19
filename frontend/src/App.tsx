@@ -1,3 +1,4 @@
+import SearchInput from './SearchInput';
 import {useStoryFlags} from './use-story-flags';
 import {CollectionDeletion} from './ShelfSources';
 import ShelfDialog from './ShelfDialog';
@@ -2137,15 +2138,15 @@ function App() {
                 <div className="top">
                     <label className="search">
                         <span aria-hidden="true">⌕</span>
-                        <input
+                        <SearchInput
                             ref={searchInput}
                             type="search"
                             aria-label={t("Search stories")}
                             placeholder={t("Search {0} stories, authors, publishers…", page?.totalItems ?? 0)}
                             value={collectionQuery.name}
-                            onChange={(event) => updateQuery({
+                            onChange={(name) => updateQuery({
                                 ...collectionQuery,
-                                name: event.currentTarget.value,
+                                name,
                                 page: 1,
                             })}
                         />

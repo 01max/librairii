@@ -283,7 +283,7 @@ function canonicalLanguage(value: string): string {
     }
 }
 
-function normalizeSearchText(value: string): string {
+export function normalizeSearchText(value: string): string {
     return [...value]
         .map((character) => (casefold as Record<string, string>)[character] ?? character)
         .join('')

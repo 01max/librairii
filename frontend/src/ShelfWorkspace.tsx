@@ -1,3 +1,4 @@
+import SearchInput from './SearchInput';
 import {useCallback, useEffect, useRef, useState} from 'react';
 import {OpenShelf, RenameShelf, DuplicateShelf, DeleteShelf, RemoveStoriesFromShelf, ReorderShelfStories, SetShelfStoryProtected, ClearShelfExclusion} from '../wailsjs/go/main/App';
 import {collections, exporter, library, shelves} from '../wailsjs/go/models';
@@ -80,7 +81,7 @@ export default function ShelfWorkspace({id, revision, query, onQuery, collection
         {flags.notice && <p role="status">{flags.notice} {flags.canUndo && <button type="button" disabled={flags.pending} onClick={() => void flags.undo()}>{t('Undo')}</button>}</p>}
         <div className="curated-actions"><button type="button" disabled={flags.pending || !selectedStoryIDs.length} onClick={() => void flags.set(selectedStoryIDs, true)}>{t('Mark selected as broken')}</button>
             <button type="button" disabled={flags.pending || !selectedStoryIDs.length} onClick={() => void flags.set(selectedStoryIDs, false)}>{t('Clear broken flags')}</button></div>
-        <label>{t('Refine this view')}<input type="search" value={query.name} onChange={(event) => onQuery({...query, name: event.target.value, page: 1})}/></label>
+        <label>{t('Refine this view')}<SearchInput value={query.name} onChange={(name) => onQuery({...query, name, page: 1})}/></label>
         <label>{t('Sort stories')}<select value={manualOrder ? '' : query.sort} onChange={(event) => {onManualOrder?.(event.target.value === ''); if (event.target.value) onQuery({...query, sort: event.target.value as CollectionQuery['sort'], page: 1});}}>
             <option value="">{t('Manual order')}</option><option value="name_asc">{t('Name A–Z')}</option><option value="imported_desc">{t('Newest imported')}</option></select></label>
         <p>{t('Refinements change this view only. Approved membership stays the same.')}</p>
