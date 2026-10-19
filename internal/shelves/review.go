@@ -194,5 +194,13 @@ func (s *Service) Preview(ctx context.Context, id int64) (Review, error) {
 	if err != nil {
 		return Review{}, err
 	}
-	return evaluation.Review, tx.Commit()
+	hash, err := fingerprint(evaluation)
+	if err != nil {
+		return Review{}, err
+	}
+	if err := tx.Commit(); err != nil {
+		return Review{}, err
+	}
+	evaluation.Review.Token = s.issueTicket("update", id, hash, reviewArguments{})
+	return evaluation.Review, nil
 }

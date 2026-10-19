@@ -5,6 +5,8 @@ import (
 	"database/sql"
 	"errors"
 	"strings"
+	"sync"
+	"time"
 	"unicode"
 	"unicode/utf8"
 
@@ -39,15 +41,18 @@ type Member struct {
 }
 
 type Service struct {
-	database *sql.DB
-	library  *library.Query
+	database  *sql.DB
+	library   *library.Query
+	reviewsMu sync.Mutex
+	reviews   map[string]reviewTicket
+	now       func() time.Time
 }
 
 func NewService(database *sql.DB, query *library.Query) (*Service, error) {
 	if database == nil || query == nil {
 		return nil, ErrInvalidInput
 	}
-	return &Service{database: database, library: query}, nil
+	return &Service{database: database, library: query, now: time.Now, reviews: make(map[string]reviewTicket)}, nil
 }
 
 type reader interface {
