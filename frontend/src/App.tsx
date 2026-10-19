@@ -170,6 +170,7 @@ function collectionQueryFromShelf(
     current: CollectionQuery,
 ): CollectionQuery {
     return {
+        ...(saved.anyOf?.length ? {anyOf: saved.anyOf.map((branch) => collectionQueryFromShelf(branch, current))} : {}),
         includeBroken: saved.includeBroken ?? false,
         name: saved.name ?? '',
         languages: [...(saved.languages ?? [])],
@@ -230,7 +231,7 @@ function hasUnavailableCriteria(
     const definitions = new Map(
         catalog.definitions.map((definition) => [definition.id, definition]),
     );
-    return query.booleanFilters.some(
+    return query.anyOf?.some((branch) => hasUnavailableCriteria(branch, catalog)) || query.booleanFilters.some(
         (filter) => definitions.get(filter.definitionId)?.kind !== 'boolean',
     ) || query.choiceFilters.some((filter) => {
         const definition = definitions.get(filter.definitionId);
@@ -251,6 +252,7 @@ function withoutUnavailableCriteria(
     );
     return {
         ...query,
+        ...(query.anyOf?.length ? {anyOf: query.anyOf.map((branch) => withoutUnavailableCriteria(branch, catalog))} : {}),
         booleanFilters: query.booleanFilters.filter(
             (filter) => definitions.get(filter.definitionId)?.kind === 'boolean',
         ),
@@ -1183,9 +1185,9 @@ function App() {
         [
             ...rows.map((row, rowIndex) => ({
                 key: `collection-${rowIndex}`,
-                name: rowIndex === 0 ? t("Recently added") : t("More stories"),
+                name: rowIndex === 0 ? "Recently added" : "More stories",
                 storyCount: row.length,
-                source: t("Local archive"),
+                source: "Local archive",
                 stories: row,
             })),
             ...(showSavedShelfRows ? previewableShelves.map((shelf) => ({
@@ -1386,6 +1388,7 @@ function App() {
         activateShelf(null, 'all');
         updateQuery({
             ...collectionQuery,
+            anyOf: undefined,
             name: '',
             languages: [],
             compatibilities: [],
@@ -1408,10 +1411,33 @@ function App() {
         setShelfBusy(true);
         setShelfDialogError(null);
         try {
+            let queryToSave = collectionQuery;
+            if (shelfDialogMode === 'save' && selectedShelfIDs.length > 0) {
+                const selected = await Promise.all(selectedShelfIDs.map((id) => OpenShelf(
+                    id,
+                    new library.ListRequest({
+                        includeBroken: !!collectionQuery.includeBroken,
+                        page: 1,
+                        pageSize: 1,
+                        sort: collectionQuery.sort,
+                    }),
+                )));
+                if (selected.some((response) => !response.evaluation)) {
+                    setShelfDialogError(selected.find((response) => !response.evaluation)?.error?.message ?? t('The saved shelf could not be opened.'));
+                    return;
+                }
+                queryToSave = {
+                    ...initialCollectionQuery,
+                    includeBroken: collectionQuery.includeBroken,
+                    sort: collectionQuery.sort,
+                    pageSize: collectionQuery.pageSize,
+                    anyOf: selected.map((response) => collectionQueryFromShelf(response.evaluation!.query, collectionQuery)),
+                };
+            }
             const response = shelfDialogMode === 'save'
                 ? await CreateShelf(
                     shelfDialogName,
-                    new library.StoryLibraryQuery(collectionQuery),
+                    new library.StoryLibraryQuery(queryToSave),
                 )
                 : shelfDialogMode === 'rename' && activeShelf
                     ? await RenameShelf(activeShelf.id, shelfDialogName)
@@ -1429,7 +1455,8 @@ function App() {
             setShelfDialogName('');
             await loadSavedShelves();
             if (shelfDialogMode === 'save') {
-                queryHistory.replace(collectionQuery, changedShelf.id);
+                setCollectionQuery(queryHistory.replace(queryToSave, changedShelf.id));
+                setCollectionScope(queryHistory.currentScope());
                 activateShelf(changedShelf.id, 'shelf');
             } else if (shelfDialogMode === 'duplicate') {
                 await openSavedShelf(changedShelf.id);
@@ -2417,11 +2444,11 @@ function App() {
                 {collectionRows.map((row) => (
                     <section className="shelf" key={row.key}>
                         <div className="shelf-head">
-                            <h3>{row.name}</h3>
+                            <h3>{row.shelfID === undefined ? t(row.name) : row.name}</h3>
                             <span>
                                 {row.storyCount} {
                                     row.storyCount === 1 ? t("story") : t("stories")
-                                } · {row.source}
+                                } · {row.shelfID === undefined ? t(row.source) : row.source}
                             </span>
                             <button
                                 type="button"

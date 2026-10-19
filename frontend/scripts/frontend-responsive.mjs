@@ -1,5 +1,5 @@
 import {existsSync} from 'node:fs';
-import {mkdtemp, rm} from 'node:fs/promises';
+import {mkdir, mkdtemp, rm} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join, resolve} from 'node:path';
 import {fileURLToPath} from 'node:url';
@@ -151,6 +151,7 @@ try {
             }
             await assertNoticeDismissal(page);
             await assertHistoryView(page);
+            await assertFrenchControlsFit(page);
             results.push({
                 name: acceptanceCase.name,
                 viewport: acceptanceCase.viewport,
@@ -758,4 +759,36 @@ function resolveChromeExecutable() {
         );
     }
     return executable;
+}
+
+async function assertFrenchControlsFit(page) {
+    const url = new URL(page.url());
+    url.search = '?fixture=history&lang=fr';
+    url.hash = '';
+    await page.goto(url.toString(), {waitUntil: 'networkidle'});
+    await page.getByRole('button', {name: 'Bibliothèque', exact: true}).waitFor();
+    const overflowingLabels = await page.locator('.rail nav button span').evaluateAll((labels) => labels
+        .filter((label) => {
+            const parent = label.closest('button').getBoundingClientRect();
+            const bounds = label.getBoundingClientRect();
+            return bounds.left < parent.left - 1 || bounds.right > parent.right + 1;
+        }).map((label) => label.textContent));
+    const screenshotDirectory = process.env.LIBRAIRII_LAYOUT_SCREENSHOTS;
+    if (screenshotDirectory) {
+        await mkdir(screenshotDirectory, {recursive: true});
+        await page.screenshot({path: join(screenshotDirectory, `library-${page.viewportSize().width}.png`)});
+    }
+    await page.locator('.rail nav button').nth(1).click();
+    const editor = page.locator('.protected-color');
+    await editor.waitFor();
+    const colorWidth = await page.locator('.tag-manager input[type="color"]').evaluateAll((inputs) =>
+        Math.max(...inputs.map((input) => input.getBoundingClientRect().width)));
+    const buttonOverflows = await editor.locator('button').evaluate((button) =>
+        button.scrollHeight > button.clientHeight || button.scrollWidth > button.clientWidth);
+    if (screenshotDirectory) {
+        await page.screenshot({path: join(screenshotDirectory, `tags-${page.viewportSize().width}.png`)});
+    }
+    if (overflowingLabels.length || colorWidth > 80 || buttonOverflows) {
+        throw new Error(`French controls overflow: ${JSON.stringify({overflowingLabels, colorWidth, buttonOverflows})}`);
+    }
 }

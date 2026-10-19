@@ -1234,6 +1234,7 @@ export namespace library {
 		}
 	}
 	export class StoryLibraryQuery {
+	    anyOf?: StoryLibraryQuery[];
 	    includeBroken?: boolean;
 	    name: string;
 	    languages: string[];
@@ -1250,6 +1251,7 @@ export namespace library {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.anyOf = this.convertValues(source["anyOf"], StoryLibraryQuery);
 	        this.includeBroken = source["includeBroken"];
 	        this.name = source["name"];
 	        this.languages = source["languages"];
@@ -1578,6 +1580,7 @@ export namespace removal {
 export namespace shelves {
 	
 	export class SavedLibraryQuery {
+	    anyOf?: SavedLibraryQuery[];
 	    includeBroken?: boolean;
 	    name?: string;
 	    languages?: string[];
@@ -1591,6 +1594,7 @@ export namespace shelves {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.anyOf = this.convertValues(source["anyOf"], SavedLibraryQuery);
 	        this.includeBroken = source["includeBroken"];
 	        this.name = source["name"];
 	        this.languages = source["languages"];

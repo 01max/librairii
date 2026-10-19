@@ -169,6 +169,12 @@ attention and evaluation/export is blocked; Librairii never silently broadens
 the query. Multi-shelf views and exports count each story once and report
 overlap separately.
 
+To save a combination of shelves, select their checkboxes in the sidebar and use
+**Save current query**. The new shelf includes stories matching any of the
+selected shelves, counting each story once. It keeps a copy of their criteria,
+so matching imports appear automatically and later edits or deletion of the
+original shelves do not change the combined shelf.
+
 ## Application data, trash, and recovery
 
 The proposed default library root is:

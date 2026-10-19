@@ -3659,3 +3659,35 @@ test('switches interface language without changing the selected story or query',
  expect(refreshOfficialMetadata.mock.calls.length).toBe(refreshCalls);
  act(() => setLanguage('en'));
 });
+
+test('updates the recently added heading when switching to French', async () => {
+    render(<App/>);
+    expect(await screen.findByRole('heading', {name: 'Recently added'})).toBeInTheDocument();
+    act(() => setLanguage('fr'));
+    expect(screen.getByRole('heading', {name: 'Ajout récent'})).toBeInTheDocument();
+});
+
+test('saves the union of selected shelves instead of only the displayed shelf', async () => {
+    const user = userEvent.setup();
+    listShelves.mockResolvedValue(new app.ShelfListResponse({shelves: [
+        {id: 7, name: 'arc', position: 0, validity: 'valid', count: 1},
+        {id: 8, name: 'aqua', position: 1, validity: 'valid', count: 1},
+    ]}));
+    openShelf.mockImplementation(async (id) => new app.ShelfEvaluationResponse({evaluation: {
+        shelf: {id, name: id === 7 ? 'arc' : 'aqua', validity: 'valid'},
+        query: {name: id === 7 ? 'forest' : 'moon'},
+        page: {stories: [stories[id === 7 ? 0 : 1]], page: 1, pageSize: 12, totalItems: 1, totalPages: 1, sort: 'imported_desc'},
+    }}));
+    createShelf.mockResolvedValue(new app.ShelfResponse({shelf: {id: 9, name: 't2', validity: 'valid'}}));
+    render(<App/>);
+    await user.click(await screen.findByRole('button', {name: 'arc, 1 story'}));
+    await screen.findByRole('heading', {name: 'arc'});
+    await user.click(screen.getByRole('checkbox', {name: 'Select arc for combined shelf preview'}));
+    await user.click(screen.getByRole('checkbox', {name: 'Select aqua for combined shelf preview'}));
+    await user.click(screen.getByRole('button', {name: '＋ Save current query'}));
+    await user.type(screen.getByRole('textbox', {name: 'Shelf name'}), 't2');
+    await user.click(screen.getByRole('button', {name: 'Save shelf'}));
+    await waitFor(() => expect(createShelf).toHaveBeenCalledWith('t2', expect.objectContaining({
+        anyOf: [expect.objectContaining({name: 'forest'}), expect.objectContaining({name: 'moon'})],
+    })));
+});

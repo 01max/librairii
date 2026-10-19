@@ -28,6 +28,7 @@ func FuzzSavedLibraryQueryCodecPreservesMembership(f *testing.F) {
 		},
 		{version: 2, payload: `{"choiceFilters":[],"choiceFilters":[{"definitionId":1,"valueIds":[2]}]}`},
 		{version: 2, payload: `{"selection":[1]}`},
+		{version: 3, payload: `{"anyOf":[{"name":"moon"},{"name":"forest"}]}`},
 		{version: 99, payload: `{}`},
 	} {
 		f.Add(seed.version, seed.payload)
@@ -36,7 +37,7 @@ func FuzzSavedLibraryQueryCodecPreservesMembership(f *testing.F) {
 	f.Fuzz(func(t *testing.T, version int, payload string) {
 		decoded, err := DecodeSavedLibraryQuery(version, payload)
 		if err != nil {
-			if version != 1 &&
+			if version != 1 && version != 2 &&
 				version != CurrentSavedLibraryQueryVersion &&
 				!errors.Is(err, ErrUnsupportedSavedQueryVersion) {
 				t.Fatalf(
@@ -47,7 +48,7 @@ func FuzzSavedLibraryQueryCodecPreservesMembership(f *testing.F) {
 			}
 			return
 		}
-		if version != 1 && version != CurrentSavedLibraryQueryVersion {
+		if version != 1 && version != 2 && version != CurrentSavedLibraryQueryVersion {
 			t.Fatalf("unsupported version %d decoded successfully", version)
 		}
 		encoded, err := EncodeSavedLibraryQuery(decoded.StoryLibraryQuery())

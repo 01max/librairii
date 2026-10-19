@@ -357,7 +357,7 @@ export default function TagManager({onClose, onCatalogChange}: TagManagerProps) 
                                         <label>
                                             {t("Color")}<input type="color" name="color" aria-label={t("Color for {0}", definition.label)} defaultValue={definition.color}/>
                                         </label>
-                                        <button type="submit" disabled={busy}>{t("Save {0} color",systemLabel(definition))}</button>
+                                        <button type="submit" disabled={busy} aria-label={t("Save {0} color",systemLabel(definition))}>{t("Save color")}</button>
                                     </form>
                                 ) : (
                                     <>

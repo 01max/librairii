@@ -218,3 +218,19 @@ func TestSavedLibraryQueryConversionDoesNotAliasCallerSlices(t *testing.T) {
 		t.Fatalf("StoryLibraryQuery() aliased saved data: %#v", saved)
 	}
 }
+
+func TestCombinedSavedQueryExcludesBranchNavigationAndBoundsComplexity(t *testing.T) {
+	query := library.StoryLibraryQuery{AnyOf: []library.StoryLibraryQuery{{Name: "Moon", Page: 9}, {Name: "Forest", PageSize: 1}}}
+	encoded, err := EncodeSavedLibraryQuery(query)
+	if err != nil || strings.Contains(encoded.Payload, "page") {
+		t.Fatal(encoded, err)
+	}
+	saved, err := DecodeSavedLibraryQuery(encoded.Version, encoded.Payload)
+	if err != nil || len(saved.AnyOf) != 2 || saved.AnyOf[0].Name != "moon" {
+		t.Fatal(saved, err)
+	}
+	query.AnyOf = make([]library.StoryLibraryQuery, 50)
+	if _, err := EncodeSavedLibraryQuery(query); err == nil {
+		t.Fatal("accepted oversized union")
+	}
+}

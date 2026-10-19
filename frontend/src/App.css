@@ -151,6 +151,20 @@ select:focus-visible {
     stroke-linejoin: round;
 }
 
+.rail button span {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+    text-align: center;
+}
+
+:lang(fr) .rail button {
+    font-size: 9px;
+}
+
+:lang(fr) .rail button:first-child {
+    font-size: 8px;
+}
+
 .rail button:disabled {
     opacity: .5;
     cursor: default;
@@ -1962,7 +1976,8 @@ select:focus-visible {
 
 .new-tag input[type="color"],
 .tag-edit input[type="color"] {
-    width: 100%;
+    width: 64px;
+    max-width: 100%;
     padding: 4px;
 }
 
@@ -2042,6 +2057,18 @@ select:focus-visible {
 
 .tag-edit {
     grid-template-columns: 1.4fr 75px auto 34px 34px auto;
+}
+
+.tag-edit.protected-color {
+    grid-template-columns: 64px max-content;
+    justify-content: start;
+}
+
+.protected-color button {
+    height: auto;
+    min-height: 34px;
+    padding: 8px 12px;
+    line-height: 1.3;
 }
 
 .tag-edit .text-danger,

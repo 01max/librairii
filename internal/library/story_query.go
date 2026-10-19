@@ -54,15 +54,16 @@ type ChoiceFilter struct {
 }
 
 type StoryLibraryQuery struct {
-	IncludeBroken   bool            `json:"includeBroken,omitempty"`
-	Name            string          `json:"name"`
-	Languages       []string        `json:"languages"`
-	Compatibilities []Compatibility `json:"compatibilities"`
-	BooleanFilters  []BooleanFilter `json:"booleanFilters"`
-	ChoiceFilters   []ChoiceFilter  `json:"choiceFilters"`
-	Page            int             `json:"page"`
-	PageSize        int             `json:"pageSize"`
-	Sort            Sort            `json:"sort"`
+	AnyOf           []StoryLibraryQuery `json:"anyOf,omitempty"`
+	IncludeBroken   bool                `json:"includeBroken,omitempty"`
+	Name            string              `json:"name"`
+	Languages       []string            `json:"languages"`
+	Compatibilities []Compatibility     `json:"compatibilities"`
+	BooleanFilters  []BooleanFilter     `json:"booleanFilters"`
+	ChoiceFilters   []ChoiceFilter      `json:"choiceFilters"`
+	Page            int                 `json:"page"`
+	PageSize        int                 `json:"pageSize"`
+	Sort            Sort                `json:"sort"`
 }
 
 func (q *Query) Search(
@@ -223,9 +224,28 @@ func BackfillNormalizedDisplayNames(ctx context.Context, database *sql.DB) error
 	return nil
 }
 
-func normalizeStoryLibraryQuery(
-	request StoryLibraryQuery,
-) (StoryLibraryQuery, error) {
+func normalizeStoryLibraryQuery(request StoryLibraryQuery) (StoryLibraryQuery, error) {
+	remaining := 50
+	return normalizeStoryLibraryQueryNode(request, &remaining)
+}
+
+func normalizeStoryLibraryQueryNode(request StoryLibraryQuery, remaining *int) (StoryLibraryQuery, error) {
+	*remaining--
+	if *remaining < 0 {
+		return StoryLibraryQuery{}, ErrInvalidStoryLibraryQuery
+	}
+	branches := make([]StoryLibraryQuery, len(request.AnyOf))
+	for i, branch := range request.AnyOf {
+		var err error
+		branches[i], err = normalizeStoryLibraryQueryNode(branch, remaining)
+		if err != nil {
+			return StoryLibraryQuery{}, err
+		}
+	}
+	if len(branches) > 0 {
+		request.AnyOf = branches
+	}
+
 	listRequest, err := normalizeListRequest(ListRequest{
 		Page:     request.Page,
 		PageSize: request.PageSize,
@@ -337,6 +357,11 @@ func (q *Query) validateFilterDefinitions(
 	ctx context.Context,
 	request StoryLibraryQuery,
 ) error {
+	for _, branch := range request.AnyOf {
+		if err := q.validateFilterDefinitions(ctx, branch); err != nil {
+			return err
+		}
+	}
 	for _, filter := range request.BooleanFilters {
 		var kind string
 		err := q.database.QueryRowContext(
@@ -472,6 +497,21 @@ func storyLibraryPredicate(
 		for _, valueID := range filter.ValueIDs {
 			arguments = append(arguments, valueID)
 		}
+	}
+	if len(request.AnyOf) > 0 {
+		alternatives := make([]string, 0, len(request.AnyOf))
+		for _, branch := range request.AnyOf {
+			// Visibility belongs to the collection; explicit broken-tag criteria
+			// remain part of each branch's membership filters.
+			branch.IncludeBroken = true
+			predicate, args := storyLibraryPredicate(branch, officialLocale)
+			if predicate == "" {
+				predicate = "1"
+			}
+			alternatives = append(alternatives, "("+predicate+")")
+			arguments = append(arguments, args...)
+		}
+		predicates = append(predicates, "("+strings.Join(alternatives, " OR ")+")")
 	}
 	return strings.Join(predicates, " AND "), arguments
 }

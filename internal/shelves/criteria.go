@@ -16,6 +16,11 @@ func validateSavedCriteria(
 	queryer criteriaQueryer,
 	query SavedLibraryQuery,
 ) error {
+	for _, branch := range query.AnyOf {
+		if err := validateSavedCriteria(ctx, queryer, branch); err != nil {
+			return err
+		}
+	}
 	for _, filter := range query.BooleanFilters {
 		if err := requireDefinitionKind(
 			ctx,
