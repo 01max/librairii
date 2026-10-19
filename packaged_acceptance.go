@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -31,6 +32,12 @@ const (
 )
 
 var acceptanceCheckpoints = map[string]struct{}{
+	"move_selection_failed":               {},
+	"native_library_dialog_selected":      {},
+	"native_relocation_dialog_selected":   {},
+	"setup_completed":                     {},
+	"settings_menu_selected":              {},
+	"library_relocated":                   {},
 	acceptanceCheckpointStarted:           {},
 	acceptanceCheckpointNativeImport:      {},
 	acceptanceCheckpointImportQueued:      {},
@@ -47,13 +54,14 @@ var acceptanceCheckpoints = map[string]struct{}{
 }
 
 type packagedAcceptance struct {
-	enabled     bool
-	source      string
-	destination string
-	checkpoints string
-	native      coreapp.DialogPort
-	automate    nativeDialogAutomation
-	mu          sync.Mutex
+	librarySelections int
+	enabled           bool
+	source            string
+	destination       string
+	checkpoints       string
+	native            coreapp.DialogPort
+	automate          nativeDialogAutomation
+	mu                sync.Mutex
 }
 
 type nativeDialogKind uint8
@@ -146,21 +154,40 @@ func (a *packagedAcceptance) OpenDirectory(
 	ctx context.Context,
 	title string,
 ) (string, error) {
-	if !a.enabled || title != "Export story archives" {
+	if !a.enabled || (title != "Export story archives" && title != "Choose library folder") {
 		return "", errors.New("packaged acceptance directory dialog contract mismatch")
+	}
+	selection := a.destination
+	checkpoint := acceptanceCheckpointNativeDestination
+	if title == "Choose library folder" {
+		a.mu.Lock()
+		count := a.librarySelections
+		a.librarySelections++
+		a.mu.Unlock()
+		selection = os.Getenv("LIBRAIRII_ACCEPTANCE_LIBRARY")
+		checkpoint = "native_library_dialog_selected"
+		if count > 0 {
+			selection = os.Getenv("LIBRAIRII_ACCEPTANCE_RELOCATION")
+			checkpoint = "native_relocation_dialog_selected"
+		}
+		if !filepath.IsAbs(selection) {
+			return "", errors.New("acceptance library path must be absolute")
+		}
 	}
 	automation := a.startDialogAutomation(
 		ctx,
 		title,
-		a.destination,
+		selection,
 		nativeDirectoryDialog,
 	)
+	log.Printf("acceptance opening directory %s: %s", title, selection)
 	destination, dialogErr := a.native.OpenDirectory(ctx, title)
+	log.Printf("acceptance native directory returned %s: %s (%v)", title, destination, dialogErr)
 	automationErr := <-automation
 	if err := errors.Join(dialogErr, automationErr); err != nil {
 		return "", err
 	}
-	expected, err := exporter.ResolveDestination(a.destination)
+	expected, err := exporter.ResolveDestination(selection)
 	if err != nil {
 		return "", err
 	}
@@ -169,7 +196,7 @@ func (a *packagedAcceptance) OpenDirectory(
 			"packaged acceptance native destination selection mismatch",
 		)
 	}
-	return destination, a.record(acceptanceCheckpointNativeDestination)
+	return destination, a.record(checkpoint)
 }
 
 func (a *packagedAcceptance) RevealDirectory(

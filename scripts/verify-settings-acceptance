@@ -1,0 +1,61 @@
+#!/bin/sh
+# Exercise a fresh production profile through native setup and relocation,
+# independently of the existing explicit-data-root acceptance scenario.
+set -eu
+binary="$1"
+project_root="$(CDPATH='' cd -- "$(dirname -- "$0")/.." && pwd)"
+verification_root="$(mktemp -d "${TMPDIR:-/tmp}/librairii-settings-acceptance.XXXXXX")"
+application_pid=""
+cleanup() {
+    if [ -n "$application_pid" ]; then kill -TERM "$application_pid" 2>/dev/null || true; fi
+    rm -rf -- "$verification_root"
+}
+trap cleanup EXIT HUP INT TERM
+mkdir -p "$verification_root/home" "$verification_root/library" "$verification_root/moved" "$verification_root/export" "$verification_root/config" "$verification_root/data"
+set -- "$binary"
+if [ "$(uname -s)" = Linux ]; then
+    set -- "$project_root/scripts/run-linux-native-acceptance" "$binary"
+    mkdir -p "$verification_root/data/applications"
+    cp "$project_root/build/linux/librairii-acceptance-file-manager.desktop" "$verification_root/data/applications/"
+    XDG_DATA_HOME="$verification_root/data" update-desktop-database "$verification_root/data/applications"
+    XDG_CONFIG_HOME="$verification_root/config" XDG_DATA_HOME="$verification_root/data" xdg-mime default librairii-acceptance-file-manager.desktop inode/directory
+fi
+# HOME and XDG directories isolate both profile and proposed default root.
+env -u LIBRAIRII_DATA_ROOT \
+    PATH="$project_root/scripts:$PATH" \
+    LIBRAIRII_NATIVE_REVEAL_EVIDENCE="$verification_root/reveal.log" \
+    HOME="$verification_root/home" \
+    XDG_CONFIG_HOME="$verification_root/config" \
+    XDG_DATA_HOME="$verification_root/data" \
+    LIBRAIRII_PACKAGED_ACCEPTANCE=1 \
+    LIBRAIRII_ACCEPTANCE_SOURCE="$project_root/internal/inspection/testfixture/testdata/generic.7z" \
+    LIBRAIRII_ACCEPTANCE_DESTINATION="$verification_root/export" \
+    LIBRAIRII_ACCEPTANCE_LIBRARY="$verification_root/library" \
+    LIBRAIRII_ACCEPTANCE_RELOCATION="$verification_root/moved" \
+    LIBRAIRII_ACCEPTANCE_CHECKPOINTS="$verification_root/checkpoints.log" \
+    "$@" > "$verification_root/launch.log" 2>&1 &
+application_pid=$!
+(
+    sleep 45
+    kill -TERM "$application_pid" 2>/dev/null || true
+) &
+watchdog_pid=$!
+if wait "$application_pid"; then result=0; else result=$?; fi
+application_pid=""
+kill -TERM "$watchdog_pid" 2>/dev/null || true
+wait "$watchdog_pid" 2>/dev/null || true
+if [ "$result" -ne 0 ] || ! test -f "$verification_root/checkpoints.log"; then cat "$verification_root/launch.log" >&2; exit 1; fi
+printf '%s\n' \
+    scenario_started native_library_dialog_selected setup_completed settings_menu_selected \
+    native_import_dialog_selected import_queued import_succeeded collection_loaded \
+    native_relocation_dialog_selected library_relocated \
+    native_destination_dialog_selected export_prepared export_queued export_succeeded \
+    native_reveal_succeeded reveal_succeeded complete > "$verification_root/expected.log"
+if ! cmp -s "$verification_root/expected.log" "$verification_root/checkpoints.log"; then
+    diff -u "$verification_root/expected.log" "$verification_root/checkpoints.log" >&2 || true
+    cat "$verification_root/launch.log" >&2
+    exit 1
+fi
+test -f "$verification_root/moved/db/librairii.sqlite3"
+test ! -e "$verification_root/library"
+printf 'Native settings, setup, relocation, and post-move export passed.\n'

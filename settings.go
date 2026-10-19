@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/01max/librairii/internal/preferences"
 	"github.com/google/uuid"
+	"log"
 	"sync"
 
 	coreapp "github.com/01max/librairii/internal/app"
@@ -86,8 +87,13 @@ func (a *App) SetUILanguage(language string) SettingsSnapshot {
 	result := a.Settings()
 	if err != nil {
 		result.Error = "settings.invalid"
-	} else if a.settings.changed != nil {
-		a.settings.changed(a.runtimeContext())
+	} else {
+		a.settings.mu.Lock()
+		changed := a.settings.changed
+		a.settings.mu.Unlock()
+		if changed != nil {
+			changed(a.runtimeContext())
+		}
 	}
 	return result
 }
@@ -109,7 +115,7 @@ func (a *App) SelectLibraryLocation() SettingsSnapshot {
 	current := a.settings.storage.Profile()
 	if current.Complete {
 		active := a.core.ActiveOperations(a.runtimeContext())
-		if active.Error == nil && len(active.Operations) > 0 {
+		if active.Error == nil && hasRunningOperations(active.Operations) {
 			result := a.Settings()
 			result.Error = "settings.busy"
 			return result
@@ -122,6 +128,10 @@ func (a *App) SelectLibraryLocation() SettingsSnapshot {
 			source, _ := preferences.Canonical(current.Root)
 			target, _ := preferences.Canonical(path)
 			if source == target {
+				a.settings.mu.Lock()
+				a.settings.preparation = nil
+				a.settings.selected = ""
+				a.settings.mu.Unlock()
 				return a.Settings()
 			}
 			err = preferences.EmptyTarget(path, a.settings.storage.ConfigurationDirectory(), current.Root)
@@ -142,11 +152,18 @@ func (a *App) SelectLibraryLocation() SettingsSnapshot {
 	}
 	result := a.Settings()
 	if err != nil {
+		if a.packagedAcceptance != nil {
+			log.Printf("settings acceptance folder selection: %v", err)
+		}
 		result.Error = "settings.destination_invalid"
 	}
 	return result
 }
 func (a *App) ConfirmLibrarySetup() coreapp.MutationResponse {
+	if !a.libraryGate.TryLock() {
+		return coreapp.MutationResponse{Error: coreapp.NewAPIError(coreapp.ErrorNotReady, "settings.busy")}
+	}
+	defer a.libraryGate.Unlock()
 	if a.settings == nil {
 		return coreapp.MutationResponse{Error: coreapp.NewAPIError(coreapp.ErrorInvalidInput, "settings.invalid")}
 	}

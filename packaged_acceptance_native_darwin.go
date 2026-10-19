@@ -74,6 +74,7 @@ import "C"
 import (
 	"context"
 	"errors"
+	"log"
 	"time"
 	"unsafe"
 )
@@ -91,7 +92,11 @@ func automateHostNativeDialog(
 	defer ticker.Stop()
 	seen := false
 	for {
-		switch C.librairiiAcceptNativeDialog(selection) {
+		state := C.librairiiAcceptNativeDialog(selection)
+		if state == 2 && !seen {
+			log.Printf("acceptance selected native panel: %s", path)
+		}
+		switch state {
 		case 0:
 			if seen {
 				return nil

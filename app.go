@@ -67,7 +67,9 @@ func (a *App) startup(ctx context.Context) {
 
 func (a *App) domReady(ctx context.Context) {
 	if a.settings != nil {
+		a.settings.mu.Lock()
 		a.settings.changed = a.refreshSettingsMenu
+		a.settings.mu.Unlock()
 		a.refreshSettingsMenu(ctx)
 	}
 	a.core.AnnounceReady(ctx)
@@ -122,6 +124,11 @@ func (a *App) RecordPackagedAcceptance(checkpoint string) coreapp.MutationRespon
 				coreapp.ErrorNotReady,
 				"Packaged acceptance is not enabled.",
 			),
+		}
+	}
+	if checkpoint == "settings_menu_selected" {
+		if err := automateHostSettingsMenu(a.runtimeContext()); err != nil {
+			return coreapp.MutationResponse{Error: coreapp.NewAPIError(coreapp.ErrorInternal, err.Error())}
 		}
 	}
 	if err := a.packagedAcceptance(checkpoint); err != nil {

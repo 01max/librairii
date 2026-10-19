@@ -1,5 +1,6 @@
 import {beforeEach, expect, test, vi} from 'vitest';
 import {
+    Settings,
     OperationSnapshot,
     PackagedAcceptanceMode,
     QueryStories,
@@ -9,10 +10,11 @@ import {
     SelectAndPreflightExport,
     StartPreparedExport,
 } from '../wailsjs/go/main/App';
-import {app, exporter, library, operations} from '../wailsjs/go/models';
+import {app, exporter, library, operations, main} from '../wailsjs/go/models';
 import {runPackagedAcceptance} from './packaged-acceptance';
 
 vi.mock('../wailsjs/go/main/App', () => ({
+    Settings: vi.fn(),
     OperationSnapshot: vi.fn(),
     PackagedAcceptanceMode: vi.fn(),
     QueryStories: vi.fn(),
@@ -34,6 +36,7 @@ const startPreparedExport = vi.mocked(StartPreparedExport);
 
 beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(Settings).mockResolvedValue(new main.SettingsSnapshot({isolated:true}));
     packagedAcceptanceMode.mockResolvedValue(true);
     recordPackagedAcceptance.mockResolvedValue(new app.MutationResponse({
         success: true,

@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/01max/librairii/internal/library"
+	"github.com/01max/librairii/internal/operations"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -36,4 +37,13 @@ func TestInflightArtworkBlocksMove(t *testing.T) {
 	}
 	close(release)
 	<-done
+}
+
+func TestCompletedReportsDoNotBlockRelocation(t *testing.T) {
+	if hasRunningOperations([]operations.Snapshot{{Status: operations.StatusSucceeded}, {Status: operations.StatusFailed}}) {
+		t.Fatal("terminal reports treated as active work")
+	}
+	if !hasRunningOperations([]operations.Snapshot{{Status: operations.StatusRunning}}) {
+		t.Fatal("running work was ignored")
+	}
 }
