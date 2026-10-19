@@ -29,7 +29,7 @@ type Application struct {
 	library     LibraryPort
 	removal     RemovalPort
 	tags        TaggingPort
-	shelves     ShelfPort
+	collections CollectionPort
 	diagnostics DiagnosticsPort
 	resources   []ResourcePort
 	state       LifecycleState
@@ -48,7 +48,7 @@ func New(deps Dependencies) (*Application, error) {
 		deps.Library == nil ||
 		deps.Removal == nil ||
 		deps.Tags == nil ||
-		deps.Shelves == nil {
+		deps.Collections == nil {
 		return nil, ErrMissingDependency
 	}
 
@@ -63,7 +63,7 @@ func New(deps Dependencies) (*Application, error) {
 		library:     deps.Library,
 		removal:     deps.Removal,
 		tags:        deps.Tags,
-		shelves:     deps.Shelves,
+		collections: deps.Collections,
 		diagnostics: deps.Diagnostics,
 		resources:   resources,
 		state:       StateInitializing,

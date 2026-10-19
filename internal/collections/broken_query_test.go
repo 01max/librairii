@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-func TestLegacyBrokenShelfCriteriaPreserveNestedComposition(t *testing.T) {
+func TestLegacyBrokenCollectionCriteriaPreserveNestedComposition(t *testing.T) {
 	payload := `{"includeBroken":false,"booleanFilters":[{"definitionId":9,"state":"true"}],"anyOf":[{"booleanFilters":[{"definitionId":9,"state":"false"}]},{"name":"moon","booleanFilters":[{"definitionId":9,"state":"ignored"}]}]}`
 	for _, version := range []int{1, 2, 3} {
 		saved, err := DecodeSavedLibraryQuery(version, payload, 9)

@@ -274,88 +274,88 @@ func (a *App) RemoveStory(storyID int64) coreapp.RemovalResponse {
 	return a.core.RemoveStory(a.runtimeContext(), storyID)
 }
 
-func (a *App) ListShelves(includeBroken library.BrokenVisibility) coreapp.ShelfListResponse {
+func (a *App) ListCollections(includeBroken library.BrokenVisibility) coreapp.CollectionListResponse {
 	if !a.libraryGate.TryRLock() {
-		return coreapp.ShelfListResponse{Error: coreapp.NewAPIError(coreapp.ErrorNotReady, "settings.busy")}
+		return coreapp.CollectionListResponse{Error: coreapp.NewAPIError(coreapp.ErrorNotReady, "settings.busy")}
 	}
 	defer a.libraryGate.RUnlock()
-	return a.core.ListShelves(a.runtimeContext(), includeBroken)
+	return a.core.ListCollections(a.runtimeContext(), includeBroken)
 }
 
-func (a *App) CreateShelf(
+func (a *App) CreateCollection(
 	name string,
 	query library.StoryLibraryQuery,
-) coreapp.ShelfResponse {
+) coreapp.CollectionResponse {
 	if !a.libraryGate.TryRLock() {
-		return coreapp.ShelfResponse{Error: coreapp.NewAPIError(coreapp.ErrorNotReady, "settings.busy")}
+		return coreapp.CollectionResponse{Error: coreapp.NewAPIError(coreapp.ErrorNotReady, "settings.busy")}
 	}
 	defer a.libraryGate.RUnlock()
-	return a.core.CreateShelf(a.runtimeContext(), name, query)
+	return a.core.CreateCollection(a.runtimeContext(), name, query)
 }
 
-func (a *App) OpenShelf(
+func (a *App) OpenCollection(
 	shelfID int64,
 	request library.ListRequest,
-) coreapp.ShelfEvaluationResponse {
+) coreapp.CollectionEvaluationResponse {
 	if !a.libraryGate.TryRLock() {
-		return coreapp.ShelfEvaluationResponse{Error: coreapp.NewAPIError(coreapp.ErrorNotReady, "settings.busy")}
+		return coreapp.CollectionEvaluationResponse{Error: coreapp.NewAPIError(coreapp.ErrorNotReady, "settings.busy")}
 	}
 	defer a.libraryGate.RUnlock()
-	return a.core.OpenShelf(a.runtimeContext(), shelfID, request)
+	return a.core.OpenCollection(a.runtimeContext(), shelfID, request)
 }
 
-func (a *App) RenameShelf(shelfID int64, name string) coreapp.ShelfResponse {
+func (a *App) RenameCollection(shelfID int64, name string) coreapp.CollectionResponse {
 	if !a.libraryGate.TryRLock() {
-		return coreapp.ShelfResponse{Error: coreapp.NewAPIError(coreapp.ErrorNotReady, "settings.busy")}
+		return coreapp.CollectionResponse{Error: coreapp.NewAPIError(coreapp.ErrorNotReady, "settings.busy")}
 	}
 	defer a.libraryGate.RUnlock()
-	return a.core.RenameShelf(a.runtimeContext(), shelfID, name)
+	return a.core.RenameCollection(a.runtimeContext(), shelfID, name)
 }
 
-func (a *App) DuplicateShelf(shelfID int64, name string) coreapp.ShelfResponse {
+func (a *App) DuplicateCollection(shelfID int64, name string) coreapp.CollectionResponse {
 	if !a.libraryGate.TryRLock() {
-		return coreapp.ShelfResponse{Error: coreapp.NewAPIError(coreapp.ErrorNotReady, "settings.busy")}
+		return coreapp.CollectionResponse{Error: coreapp.NewAPIError(coreapp.ErrorNotReady, "settings.busy")}
 	}
 	defer a.libraryGate.RUnlock()
-	return a.core.DuplicateShelf(a.runtimeContext(), shelfID, name)
+	return a.core.DuplicateCollection(a.runtimeContext(), shelfID, name)
 }
 
-func (a *App) ReplaceShelfQuery(
+func (a *App) ReplaceCollectionQuery(
 	shelfID int64,
 	query library.StoryLibraryQuery,
-) coreapp.ShelfResponse {
+) coreapp.CollectionResponse {
 	if !a.libraryGate.TryRLock() {
-		return coreapp.ShelfResponse{Error: coreapp.NewAPIError(coreapp.ErrorNotReady, "settings.busy")}
+		return coreapp.CollectionResponse{Error: coreapp.NewAPIError(coreapp.ErrorNotReady, "settings.busy")}
 	}
 	defer a.libraryGate.RUnlock()
-	return a.core.ReplaceShelfQuery(a.runtimeContext(), shelfID, query)
+	return a.core.ReplaceCollectionQuery(a.runtimeContext(), shelfID, query)
 }
 
-func (a *App) ReorderShelves(orderedIDs []int64) coreapp.ShelfListResponse {
+func (a *App) ReorderCollections(orderedIDs []int64) coreapp.CollectionListResponse {
 	if !a.libraryGate.TryRLock() {
-		return coreapp.ShelfListResponse{Error: coreapp.NewAPIError(coreapp.ErrorNotReady, "settings.busy")}
+		return coreapp.CollectionListResponse{Error: coreapp.NewAPIError(coreapp.ErrorNotReady, "settings.busy")}
 	}
 	defer a.libraryGate.RUnlock()
-	return a.core.ReorderShelves(a.runtimeContext(), orderedIDs)
+	return a.core.ReorderCollections(a.runtimeContext(), orderedIDs)
 }
 
-func (a *App) DeleteShelf(shelfID int64) coreapp.MutationResponse {
+func (a *App) DeleteCollection(shelfID int64) coreapp.MutationResponse {
 	if !a.libraryGate.TryRLock() {
 		return coreapp.MutationResponse{Error: coreapp.NewAPIError(coreapp.ErrorNotReady, "settings.busy")}
 	}
 	defer a.libraryGate.RUnlock()
-	return a.core.DeleteShelf(a.runtimeContext(), shelfID)
+	return a.core.DeleteCollection(a.runtimeContext(), shelfID)
 }
 
-func (a *App) PreviewShelves(
+func (a *App) PreviewCollections(
 	shelfIDs []int64,
 	includeBroken library.BrokenVisibility,
-) coreapp.ShelfSelectionPreviewResponse {
+) coreapp.CollectionSelectionPreviewResponse {
 	if !a.libraryGate.TryRLock() {
-		return coreapp.ShelfSelectionPreviewResponse{Error: coreapp.NewAPIError(coreapp.ErrorNotReady, "settings.busy")}
+		return coreapp.CollectionSelectionPreviewResponse{Error: coreapp.NewAPIError(coreapp.ErrorNotReady, "settings.busy")}
 	}
 	defer a.libraryGate.RUnlock()
-	return a.core.PreviewShelves(a.runtimeContext(), shelfIDs, includeBroken)
+	return a.core.PreviewCollections(a.runtimeContext(), shelfIDs, includeBroken)
 }
 
 func (a *App) TagCatalog() coreapp.TagCatalogResponse {

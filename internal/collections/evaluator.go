@@ -8,7 +8,7 @@ import (
 )
 
 var ErrMissingLibraryQuery = errors.New("story library query is required")
-var ErrInvalidShelfSelection = errors.New("shelf selection is invalid")
+var ErrInvalidCollectionSelection = errors.New("collection selection is invalid")
 
 type storyLibrarySearcher interface {
 	Search(context.Context, library.StoryLibraryQuery) (library.Page, error)
@@ -19,14 +19,14 @@ type storyLibraryCounter interface {
 }
 
 type Evaluation struct {
-	Shelf Shelf             `json:"shelf"`
-	Query SavedLibraryQuery `json:"query"`
-	Page  library.Page      `json:"page"`
+	Collection Collection        `json:"collection"`
+	Query      SavedLibraryQuery `json:"query"`
+	Page       library.Page      `json:"page"`
 }
 
-type ShelfCount struct {
-	ShelfID int64 `json:"shelfId"`
-	Count   int   `json:"count"`
+type CollectionCount struct {
+	CollectionID int64 `json:"collectionId"`
+	Count        int   `json:"count"`
 }
 
 type Summary struct {
@@ -38,17 +38,17 @@ type Summary struct {
 	Count           int             `json:"count"`
 }
 
-type SelectedShelfPreview struct {
+type SelectedCollectionPreview struct {
 	ID    int64  `json:"id"`
 	Name  string `json:"name"`
 	Count int    `json:"count"`
 }
 
 type SelectionPreview struct {
-	Shelves          []SelectedShelfPreview `json:"collections"`
-	SourceShelfNames []string               `json:"sourceShelfNames"`
-	UniqueStoryCount int                    `json:"uniqueStoryCount"`
-	OverlapCount     int                    `json:"overlapCount"`
+	Collections           []SelectedCollectionPreview `json:"collections"`
+	SourceCollectionNames []string                    `json:"sourceCollectionNames"`
+	UniqueStoryCount      int                         `json:"uniqueStoryCount"`
+	OverlapCount          int                         `json:"overlapCount"`
 }
 
 type Evaluator struct {
@@ -71,10 +71,10 @@ func NewEvaluator(
 
 func (e *Evaluator) Evaluate(
 	ctx context.Context,
-	shelfID int64,
+	collectionID int64,
 	request library.ListRequest,
 ) (Evaluation, error) {
-	opened, err := e.collections.Open(ctx, shelfID)
+	opened, err := e.collections.Open(ctx, collectionID)
 	if err != nil {
 		return Evaluation{}, err
 	}
@@ -89,23 +89,23 @@ func (e *Evaluator) Evaluate(
 		return Evaluation{}, err
 	}
 	return Evaluation{
-		Shelf: opened.Shelf,
-		Query: opened.Query,
-		Page:  page,
+		Collection: opened.Collection,
+		Query:      opened.Query,
+		Page:       page,
 	}, nil
 }
 
-func (e *Evaluator) Count(ctx context.Context, shelfID int64, includeBroken ...library.BrokenVisibility) (ShelfCount, error) {
-	opened, err := e.collections.Open(ctx, shelfID)
+func (e *Evaluator) Count(ctx context.Context, collectionID int64, includeBroken ...library.BrokenVisibility) (CollectionCount, error) {
+	opened, err := e.collections.Open(ctx, collectionID)
 	if err != nil {
-		return ShelfCount{}, err
+		return CollectionCount{}, err
 	}
 	if counter, ok := e.library.(storyLibraryCounter); ok {
 		count, err := counter.Count(ctx, withVisibility(opened.Query.StoryLibraryQuery(), includeBroken))
 		if err != nil {
-			return ShelfCount{}, err
+			return CollectionCount{}, err
 		}
-		return ShelfCount{ShelfID: shelfID, Count: count}, nil
+		return CollectionCount{CollectionID: collectionID, Count: count}, nil
 	}
 	query := withVisibility(opened.Query.StoryLibraryQuery(), includeBroken)
 	query.Page = 1
@@ -113,22 +113,22 @@ func (e *Evaluator) Count(ctx context.Context, shelfID int64, includeBroken ...l
 	query.Sort = library.SortNameAscending
 	page, err := e.library.Search(ctx, query)
 	if err != nil {
-		return ShelfCount{}, err
+		return CollectionCount{}, err
 	}
-	return ShelfCount{
-		ShelfID: shelfID,
-		Count:   page.TotalItems,
+	return CollectionCount{
+		CollectionID: collectionID,
+		Count:        page.TotalItems,
 	}, nil
 }
 
-func (e *Evaluator) Counts(ctx context.Context, includeBroken ...library.BrokenVisibility) ([]ShelfCount, error) {
+func (e *Evaluator) Counts(ctx context.Context, includeBroken ...library.BrokenVisibility) ([]CollectionCount, error) {
 	collections, err := e.collections.List(ctx)
 	if err != nil {
 		return nil, err
 	}
-	counts := make([]ShelfCount, 0, len(collections))
-	for _, shelf := range collections {
-		count, err := e.Count(ctx, shelf.ID, includeBroken...)
+	counts := make([]CollectionCount, 0, len(collections))
+	for _, collection := range collections {
+		count, err := e.Count(ctx, collection.ID, includeBroken...)
 		if err != nil {
 			return nil, err
 		}
@@ -143,31 +143,31 @@ func (e *Evaluator) Summaries(ctx context.Context, includeBroken ...library.Brok
 		return nil, err
 	}
 	summaries := make([]Summary, 0, len(collections))
-	for _, shelf := range collections {
-		inspection, err := e.collections.Inspect(ctx, shelf.ID)
+	for _, collection := range collections {
+		inspection, err := e.collections.Inspect(ctx, collection.ID)
 		if err != nil {
 			return nil, err
 		}
-		shelf = inspection.Shelf
-		if shelf.Validity != ValidityValid {
+		collection = inspection.Collection
+		if collection.Validity != ValidityValid {
 			summaries = append(summaries, Summary{
-				ID:              shelf.ID,
-				Name:            shelf.Name,
-				Position:        shelf.Position,
-				Validity:        shelf.Validity,
+				ID:              collection.ID,
+				Name:            collection.Name,
+				Position:        collection.Position,
+				Validity:        collection.Validity,
 				AttentionReason: inspection.AttentionReason,
 			})
 			continue
 		}
-		count, err := e.Count(ctx, shelf.ID, includeBroken...)
+		count, err := e.Count(ctx, collection.ID, includeBroken...)
 		if err != nil {
 			return nil, err
 		}
 		summaries = append(summaries, Summary{
-			ID:       shelf.ID,
-			Name:     shelf.Name,
-			Position: shelf.Position,
-			Validity: shelf.Validity,
+			ID:       collection.ID,
+			Name:     collection.Name,
+			Position: collection.Position,
+			Validity: collection.Validity,
 			Count:    count.Count,
 		})
 	}
@@ -176,29 +176,29 @@ func (e *Evaluator) Summaries(ctx context.Context, includeBroken ...library.Brok
 
 func (e *Evaluator) PreviewSelection(
 	ctx context.Context,
-	shelfIDs []int64,
+	collectionIDs []int64,
 	includeBroken ...library.BrokenVisibility,
 ) (SelectionPreview, error) {
-	if len(shelfIDs) == 0 {
-		return SelectionPreview{}, ErrInvalidShelfSelection
+	if len(collectionIDs) == 0 {
+		return SelectionPreview{}, ErrInvalidCollectionSelection
 	}
-	seenShelves := make(map[int64]struct{}, len(shelfIDs))
+	seenCollections := make(map[int64]struct{}, len(collectionIDs))
 	union := make(map[int64]struct{})
 	preview := SelectionPreview{
-		Shelves:          make([]SelectedShelfPreview, 0, len(shelfIDs)),
-		SourceShelfNames: make([]string, 0, len(shelfIDs)),
+		Collections:           make([]SelectedCollectionPreview, 0, len(collectionIDs)),
+		SourceCollectionNames: make([]string, 0, len(collectionIDs)),
 	}
 	totalMemberships := 0
-	for _, shelfID := range shelfIDs {
-		if shelfID <= 0 {
-			return SelectionPreview{}, ErrInvalidShelfSelection
+	for _, collectionID := range collectionIDs {
+		if collectionID <= 0 {
+			return SelectionPreview{}, ErrInvalidCollectionSelection
 		}
-		if _, duplicate := seenShelves[shelfID]; duplicate {
-			return SelectionPreview{}, ErrInvalidShelfSelection
+		if _, duplicate := seenCollections[collectionID]; duplicate {
+			return SelectionPreview{}, ErrInvalidCollectionSelection
 		}
-		seenShelves[shelfID] = struct{}{}
+		seenCollections[collectionID] = struct{}{}
 
-		opened, err := e.collections.Open(ctx, shelfID)
+		opened, err := e.collections.Open(ctx, collectionID)
 		if err != nil {
 			return SelectionPreview{}, err
 		}
@@ -223,14 +223,14 @@ func (e *Evaluator) PreviewSelection(
 		}
 		count := len(members)
 		totalMemberships += count
-		preview.Shelves = append(preview.Shelves, SelectedShelfPreview{
-			ID:    opened.Shelf.ID,
-			Name:  opened.Shelf.Name,
+		preview.Collections = append(preview.Collections, SelectedCollectionPreview{
+			ID:    opened.Collection.ID,
+			Name:  opened.Collection.Name,
 			Count: count,
 		})
-		preview.SourceShelfNames = append(
-			preview.SourceShelfNames,
-			opened.Shelf.Name,
+		preview.SourceCollectionNames = append(
+			preview.SourceCollectionNames,
+			opened.Collection.Name,
 		)
 	}
 	preview.UniqueStoryCount = len(union)

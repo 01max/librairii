@@ -10,10 +10,10 @@ import (
 	"github.com/01max/librairii/internal/library"
 )
 
-func TestServiceRunsShelfCRUDWithoutChangingStories(t *testing.T) {
+func TestServiceRunsCollectionCRUDWithoutChangingStories(t *testing.T) {
 	t.Parallel()
 
-	repository, connection := openShelfRepository(t)
+	repository, connection := openCollectionRepository(t)
 	service, err := NewService(connection)
 	if err != nil {
 		t.Fatal(err)
@@ -79,7 +79,7 @@ func TestServiceRunsShelfCRUDWithoutChangingStories(t *testing.T) {
 		renamed.NormalizedName != "histoires d'ete" {
 		t.Fatalf("Rename() = %#v", renamed)
 	}
-	insertShelfTestBooleanDefinition(t, connection, 4, "favorite")
+	insertCollectionTestBooleanDefinition(t, connection, 4, "favorite")
 	replaced, err := service.ReplaceQuery(
 		context.Background(),
 		bedtime.ID,
@@ -101,7 +101,7 @@ func TestServiceRunsShelfCRUDWithoutChangingStories(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if opened.Shelf != replaced ||
+	if opened.Collection != replaced ||
 		len(opened.Query.BooleanFilters) != 1 ||
 		opened.Query.BooleanFilters[0].DefinitionID != 4 {
 		t.Fatalf("Open() = %#v", opened)
@@ -126,30 +126,30 @@ func TestServiceRunsShelfCRUDWithoutChangingStories(t *testing.T) {
 	if err := service.Delete(context.Background(), bedtime.ID); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := repository.Shelf(
+	if _, err := repository.Collection(
 		context.Background(),
 		bedtime.ID,
 	); err == nil {
-		t.Fatal("deleted shelf still exists")
+		t.Fatal("deleted collection still exists")
 	}
 	var stories int
 	if err := connection.QueryRow("SELECT COUNT(*) FROM stories").Scan(&stories); err != nil {
 		t.Fatal(err)
 	}
 	if stories != 1 {
-		t.Fatalf("story count after shelf delete = %d", stories)
+		t.Fatalf("story count after collection delete = %d", stories)
 	}
 }
 
-func TestServiceMigratesSupportedShelfQueryWhenOpened(t *testing.T) {
+func TestServiceMigratesSupportedCollectionQueryWhenOpened(t *testing.T) {
 	t.Parallel()
 
-	repository, connection := openShelfRepository(t)
+	repository, connection := openCollectionRepository(t)
 	service, err := NewService(connection)
 	if err != nil {
 		t.Fatal(err)
 	}
-	legacy, err := repository.Insert(context.Background(), NewShelf{
+	legacy, err := repository.Insert(context.Background(), NewCollection{
 		Name:           "Legacy",
 		NormalizedName: "legacy",
 		Position:       0,
@@ -165,19 +165,19 @@ func TestServiceMigratesSupportedShelfQueryWhenOpened(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	insertShelfTestBooleanDefinition(t, connection, 5, "legacy-filter")
+	insertCollectionTestBooleanDefinition(t, connection, 5, "legacy-filter")
 
 	opened, err := service.Open(context.Background(), legacy.ID)
 	if err != nil {
 		t.Fatal(err)
 	}
 	const expected = `{"name":"ete","booleanFilters":[{"definitionId":5,"state":"true"}]}`
-	if opened.Shelf.QueryVersion != CurrentSavedLibraryQueryVersion ||
-		opened.Shelf.QueryPayload != expected ||
+	if opened.Collection.QueryVersion != CurrentSavedLibraryQueryVersion ||
+		opened.Collection.QueryPayload != expected ||
 		opened.Query.Name != "ete" {
 		t.Fatalf("Open(legacy) = %#v", opened)
 	}
-	persisted, err := repository.Shelf(context.Background(), legacy.ID)
+	persisted, err := repository.Collection(context.Background(), legacy.ID)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -191,12 +191,12 @@ func TestServiceMarksUnsafeQueriesAndRequiresExplicitRepair(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
-	repository, connection := openShelfRepository(t)
+	repository, connection := openCollectionRepository(t)
 	service, err := NewService(connection)
 	if err != nil {
 		t.Fatal(err)
 	}
-	missing, err := repository.Insert(ctx, NewShelf{
+	missing, err := repository.Insert(ctx, NewCollection{
 		Name:           "Missing criterion",
 		NormalizedName: "missing criterion",
 		Position:       0,
@@ -208,7 +208,7 @@ func TestServiceMarksUnsafeQueriesAndRequiresExplicitRepair(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	unmigratable, err := repository.Insert(ctx, NewShelf{
+	unmigratable, err := repository.Insert(ctx, NewCollection{
 		Name:           "Old query",
 		NormalizedName: "old query",
 		Position:       1,
@@ -223,7 +223,7 @@ func TestServiceMarksUnsafeQueriesAndRequiresExplicitRepair(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if missingInspection.Shelf.Validity != ValidityNeedsAttention ||
+	if missingInspection.Collection.Validity != ValidityNeedsAttention ||
 		missingInspection.AttentionReason != AttentionMissingCriteria {
 		t.Fatalf("Inspect(missing) = %#v", missingInspection)
 	}
@@ -231,16 +231,16 @@ func TestServiceMarksUnsafeQueriesAndRequiresExplicitRepair(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if oldInspection.Shelf.Validity != ValidityNeedsAttention ||
+	if oldInspection.Collection.Validity != ValidityNeedsAttention ||
 		oldInspection.AttentionReason != AttentionUnmigratableQuery {
 		t.Fatalf("Inspect(unmigratable) = %#v", oldInspection)
 	}
-	for _, shelfID := range []int64{missing.ID, unmigratable.ID} {
-		if _, err := service.Open(ctx, shelfID); !errors.Is(
+	for _, collectionID := range []int64{missing.ID, unmigratable.ID} {
+		if _, err := service.Open(ctx, collectionID); !errors.Is(
 			err,
-			ErrShelfNeedsAttention,
+			ErrCollectionNeedsAttention,
 		) {
-			t.Fatalf("Open(%d) error = %v", shelfID, err)
+			t.Fatalf("Open(%d) error = %v", collectionID, err)
 		}
 	}
 	if _, err := service.Create(ctx, "Unsafe", library.StoryLibraryQuery{
@@ -248,7 +248,7 @@ func TestServiceMarksUnsafeQueriesAndRequiresExplicitRepair(t *testing.T) {
 			DefinitionID: 77,
 			State:        library.BooleanFalse,
 		}},
-	}); !errors.Is(err, ErrShelfCriteriaUnavailable) {
+	}); !errors.Is(err, ErrCollectionCriteriaUnavailable) {
 		t.Fatalf("Create(missing criterion) error = %v", err)
 	}
 	if _, err := service.ReplaceQuery(ctx, missing.ID, library.StoryLibraryQuery{
@@ -256,7 +256,7 @@ func TestServiceMarksUnsafeQueriesAndRequiresExplicitRepair(t *testing.T) {
 			DefinitionID: 77,
 			State:        library.BooleanFalse,
 		}},
-	}); !errors.Is(err, ErrShelfCriteriaUnavailable) {
+	}); !errors.Is(err, ErrCollectionCriteriaUnavailable) {
 		t.Fatalf("ReplaceQuery(missing criterion) error = %v", err)
 	}
 
@@ -281,12 +281,12 @@ func TestServiceMarksUnsafeQueriesAndRequiresExplicitRepair(t *testing.T) {
 	}
 }
 
-func TestServiceRejectsDuplicateAndInvalidShelfNamesWithoutChangingRecords(
+func TestServiceRejectsDuplicateAndInvalidCollectionNamesWithoutChangingRecords(
 	t *testing.T,
 ) {
 	t.Parallel()
 
-	service, err := NewService(openShelfDatabase(t))
+	service, err := NewService(openCollectionDatabase(t))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -301,7 +301,7 @@ func TestServiceRejectsDuplicateAndInvalidShelfNamesWithoutChangingRecords(
 		context.Background(),
 		" ETE ",
 		library.StoryLibraryQuery{},
-	); !errors.Is(err, ErrDuplicateShelfName) {
+	); !errors.Is(err, ErrDuplicateCollectionName) {
 		t.Fatalf("Create(duplicate normalized name) error = %v", err)
 	}
 	if _, err := service.Create(
@@ -315,20 +315,20 @@ func TestServiceRejectsDuplicateAndInvalidShelfNamesWithoutChangingRecords(
 		context.Background(),
 		2,
 		"été",
-	); !errors.Is(err, ErrDuplicateShelfName) {
+	); !errors.Is(err, ErrDuplicateCollectionName) {
 		t.Fatalf("Rename(duplicate normalized name) error = %v", err)
 	}
 	for _, name := range []string{
 		"",
 		"   ",
 		"bad\x00name",
-		strings.Repeat("x", maxShelfNameRunes+1),
+		strings.Repeat("x", maxCollectionNameRunes+1),
 	} {
 		if _, err := service.Create(
 			context.Background(),
 			name,
 			library.StoryLibraryQuery{},
-		); !errors.Is(err, ErrInvalidShelfName) {
+		); !errors.Is(err, ErrInvalidCollectionName) {
 			t.Fatalf("Create(%q) error = %v", name, err)
 		}
 	}
@@ -343,10 +343,10 @@ func TestServiceRejectsDuplicateAndInvalidShelfNamesWithoutChangingRecords(
 	}
 }
 
-func TestServiceRejectsStaleOrdersMissingShelvesAndAttentionSources(t *testing.T) {
+func TestServiceRejectsStaleOrdersMissingCollectionsAndAttentionSources(t *testing.T) {
 	t.Parallel()
 
-	repository, connection := openShelfRepository(t)
+	repository, connection := openCollectionRepository(t)
 	service, err := NewService(connection)
 	if err != nil {
 		t.Fatal(err)
@@ -375,7 +375,7 @@ func TestServiceRejectsStaleOrdersMissingShelvesAndAttentionSources(t *testing.T
 		if _, err := service.Reorder(
 			context.Background(),
 			order,
-		); !errors.Is(err, ErrInvalidShelfOrder) {
+		); !errors.Is(err, ErrInvalidCollectionOrder) {
 			t.Fatalf("Reorder(%v) error = %v", order, err)
 		}
 	}
@@ -388,14 +388,14 @@ func TestServiceRejectsStaleOrdersMissingShelvesAndAttentionSources(t *testing.T
 	if _, err := service.Open(
 		context.Background(),
 		second.ID,
-	); !errors.Is(err, ErrShelfNeedsAttention) {
+	); !errors.Is(err, ErrCollectionNeedsAttention) {
 		t.Fatalf("Open(needs attention) error = %v", err)
 	}
 	if _, err := service.Duplicate(
 		context.Background(),
 		second.ID,
 		"Blocked copy",
-	); !errors.Is(err, ErrShelfNeedsAttention) {
+	); !errors.Is(err, ErrCollectionNeedsAttention) {
 		t.Fatalf("Duplicate(needs attention) error = %v", err)
 	}
 	for _, operation := range []func() error{
@@ -423,8 +423,8 @@ func TestServiceRejectsStaleOrdersMissingShelvesAndAttentionSources(t *testing.T
 			return service.Delete(context.Background(), 999)
 		},
 	} {
-		if err := operation(); !errors.Is(err, ErrShelfNotFound) {
-			t.Fatalf("missing shelf operation error = %v", err)
+		if err := operation(); !errors.Is(err, ErrCollectionNotFound) {
+			t.Fatalf("missing collection operation error = %v", err)
 		}
 	}
 
@@ -439,14 +439,14 @@ func TestServiceRejectsStaleOrdersMissingShelvesAndAttentionSources(t *testing.T
 	}
 }
 
-func openShelfDatabase(t *testing.T) *sql.DB {
+func openCollectionDatabase(t *testing.T) *sql.DB {
 	t.Helper()
 
-	_, connection := openShelfRepository(t)
+	_, connection := openCollectionRepository(t)
 	return connection
 }
 
-func insertShelfTestBooleanDefinition(
+func insertCollectionTestBooleanDefinition(
 	t *testing.T,
 	connection *sql.DB,
 	definitionID int64,

@@ -166,20 +166,20 @@ type TaggingPort interface {
 	SetBulkChoiceValue(context.Context, []int64, int64, int64, bool) (tagging.AssignmentResult, error)
 }
 
-type ShelfPort interface {
-	ListShelves(context.Context, ...library.BrokenVisibility) ([]collections.Summary, error)
-	CreateShelf(context.Context, string, library.StoryLibraryQuery) (collections.Shelf, error)
-	OpenShelf(context.Context, int64, library.ListRequest) (collections.Evaluation, error)
-	RenameShelf(context.Context, int64, string) (collections.Shelf, error)
-	DuplicateShelf(context.Context, int64, string) (collections.Shelf, error)
-	ReplaceShelfQuery(
+type CollectionPort interface {
+	ListCollections(context.Context, ...library.BrokenVisibility) ([]collections.Summary, error)
+	CreateCollection(context.Context, string, library.StoryLibraryQuery) (collections.Collection, error)
+	OpenCollection(context.Context, int64, library.ListRequest) (collections.Evaluation, error)
+	RenameCollection(context.Context, int64, string) (collections.Collection, error)
+	DuplicateCollection(context.Context, int64, string) (collections.Collection, error)
+	ReplaceCollectionQuery(
 		context.Context,
 		int64,
 		library.StoryLibraryQuery,
-	) (collections.Shelf, error)
-	ReorderShelves(context.Context, []int64) ([]collections.Shelf, error)
-	DeleteShelf(context.Context, int64) error
-	PreviewShelves(context.Context, []int64, ...library.BrokenVisibility) (collections.SelectionPreview, error)
+	) (collections.Collection, error)
+	ReorderCollections(context.Context, []int64) ([]collections.Collection, error)
+	DeleteCollection(context.Context, int64) error
+	PreviewCollections(context.Context, []int64, ...library.BrokenVisibility) (collections.SelectionPreview, error)
 }
 
 type DiagnosticsPort interface {
@@ -195,7 +195,7 @@ type Dependencies struct {
 	Library     LibraryPort
 	Removal     RemovalPort
 	Tags        TaggingPort
-	Shelves     ShelfPort
+	Collections CollectionPort
 	Diagnostics DiagnosticsPort
 	Resources   []ResourcePort
 }
@@ -288,22 +288,22 @@ type TagAssignmentResponse struct {
 	Error  *APIError                 `json:"error,omitempty"`
 }
 
-type ShelfListResponse struct {
-	Shelves []collections.Summary `json:"shelves"`
-	Error   *APIError             `json:"error,omitempty"`
+type CollectionListResponse struct {
+	Collections []collections.Summary `json:"collections"`
+	Error       *APIError             `json:"error,omitempty"`
 }
 
-type ShelfResponse struct {
-	Shelf *collections.Shelf `json:"shelf,omitempty"`
-	Error *APIError          `json:"error,omitempty"`
+type CollectionResponse struct {
+	Collection *collections.Collection `json:"collection,omitempty"`
+	Error      *APIError               `json:"error,omitempty"`
 }
 
-type ShelfEvaluationResponse struct {
+type CollectionEvaluationResponse struct {
 	Evaluation *collections.Evaluation `json:"evaluation,omitempty"`
 	Error      *APIError               `json:"error,omitempty"`
 }
 
-type ShelfSelectionPreviewResponse struct {
+type CollectionSelectionPreviewResponse struct {
 	Preview *collections.SelectionPreview `json:"preview,omitempty"`
 	Error   *APIError                     `json:"error,omitempty"`
 }

@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/01max/librairii/internal/catalog"
-	shelfstore "github.com/01max/librairii/internal/collections"
+	collectionstore "github.com/01max/librairii/internal/collections"
 	"github.com/01max/librairii/internal/database"
 	"github.com/01max/librairii/internal/library"
 	"github.com/01max/librairii/internal/metadata"
@@ -24,7 +24,7 @@ func TestEvaluatorReevaluatesImportsAndRemovalsThroughStoryLibraryQuery(
 	t.Parallel()
 
 	harness := newEvaluationHarness(t)
-	shelf, err := harness.collections.Create(
+	collection, err := harness.collections.Create(
 		context.Background(),
 		"Moon stories",
 		library.StoryLibraryQuery{Name: "moon"},
@@ -32,7 +32,7 @@ func TestEvaluatorReevaluatesImportsAndRemovalsThroughStoryLibraryQuery(
 	if err != nil {
 		t.Fatal(err)
 	}
-	assertShelfCount(t, harness.evaluator, shelf.ID, 0)
+	assertCollectionCount(t, harness.evaluator, collection.ID, 0)
 
 	matching := createEvaluationStory(
 		t,
@@ -50,13 +50,13 @@ func TestEvaluatorReevaluatesImportsAndRemovalsThroughStoryLibraryQuery(
 	)
 	evaluation, err := harness.evaluator.Evaluate(
 		context.Background(),
-		shelf.ID,
+		collection.ID,
 		library.ListRequest{Page: 1, PageSize: 12},
 	)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if evaluation.Shelf.ID != shelf.ID ||
+	if evaluation.Collection.ID != collection.ID ||
 		evaluation.Page.TotalItems != 1 ||
 		len(evaluation.Page.Stories) != 1 ||
 		evaluation.Page.Stories[0].ID != matching.ID {
@@ -69,7 +69,7 @@ func TestEvaluatorReevaluatesImportsAndRemovalsThroughStoryLibraryQuery(
 	); err != nil {
 		t.Fatal(err)
 	}
-	assertShelfCount(t, harness.evaluator, shelf.ID, 0)
+	assertCollectionCount(t, harness.evaluator, collection.ID, 0)
 }
 
 func TestEvaluatorReevaluatesTagAssignmentsThroughStoryLibraryQuery(t *testing.T) {
@@ -91,7 +91,7 @@ func TestEvaluatorReevaluatesTagAssignmentsThroughStoryLibraryQuery(t *testing.T
 	if err != nil {
 		t.Fatal(err)
 	}
-	shelf, err := harness.collections.Create(
+	collection, err := harness.collections.Create(
 		context.Background(),
 		"Broken stories",
 		library.StoryLibraryQuery{IncludeBroken: true,
@@ -104,7 +104,7 @@ func TestEvaluatorReevaluatesTagAssignmentsThroughStoryLibraryQuery(t *testing.T
 	if err != nil {
 		t.Fatal(err)
 	}
-	assertShelfCount(t, harness.evaluator, shelf.ID, 0)
+	assertCollectionCount(t, harness.evaluator, collection.ID, 0)
 
 	if _, err := tags.SetStoryBoolean(
 		context.Background(),
@@ -114,7 +114,7 @@ func TestEvaluatorReevaluatesTagAssignmentsThroughStoryLibraryQuery(t *testing.T
 	); err != nil {
 		t.Fatal(err)
 	}
-	assertShelfCount(t, harness.evaluator, shelf.ID, 1)
+	assertCollectionCount(t, harness.evaluator, collection.ID, 1)
 
 	if _, err := tags.SetStoryBoolean(
 		context.Background(),
@@ -124,7 +124,7 @@ func TestEvaluatorReevaluatesTagAssignmentsThroughStoryLibraryQuery(t *testing.T
 	); err != nil {
 		t.Fatal(err)
 	}
-	assertShelfCount(t, harness.evaluator, shelf.ID, 0)
+	assertCollectionCount(t, harness.evaluator, collection.ID, 0)
 }
 
 func TestEvaluatorReevaluatesActiveOfficialMetadataThroughStoryLibraryQuery(
@@ -140,7 +140,7 @@ func TestEvaluatorReevaluatesActiveOfficialMetadataThroughStoryLibraryQuery(
 		"Embedded title",
 		"a",
 	)
-	shelf, err := harness.collections.Create(
+	collection, err := harness.collections.Create(
 		context.Background(),
 		"Official match",
 		library.StoryLibraryQuery{Name: "official"},
@@ -148,7 +148,7 @@ func TestEvaluatorReevaluatesActiveOfficialMetadataThroughStoryLibraryQuery(
 	if err != nil {
 		t.Fatal(err)
 	}
-	assertShelfCount(t, harness.evaluator, shelf.ID, 0)
+	assertCollectionCount(t, harness.evaluator, collection.ID, 0)
 
 	activateEvaluationMetadata(
 		t,
@@ -158,7 +158,7 @@ func TestEvaluatorReevaluatesActiveOfficialMetadataThroughStoryLibraryQuery(
 		"Official Moon",
 		1,
 	)
-	assertShelfCount(t, harness.evaluator, shelf.ID, 1)
+	assertCollectionCount(t, harness.evaluator, collection.ID, 1)
 
 	activateEvaluationMetadata(
 		t,
@@ -168,10 +168,10 @@ func TestEvaluatorReevaluatesActiveOfficialMetadataThroughStoryLibraryQuery(
 		"Renamed catalog title",
 		2,
 	)
-	assertShelfCount(t, harness.evaluator, shelf.ID, 0)
+	assertCollectionCount(t, harness.evaluator, collection.ID, 0)
 }
 
-func TestEvaluatorPreviewsDeduplicatedMultiShelfMembership(t *testing.T) {
+func TestEvaluatorPreviewsDeduplicatedMultiCollectionMembership(t *testing.T) {
 	t.Parallel()
 
 	harness := newEvaluationHarness(t)
@@ -220,16 +220,16 @@ func TestEvaluatorPreviewsDeduplicatedMultiShelfMembership(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(preview.Shelves) != 2 ||
-		preview.Shelves[0] != (shelfstore.SelectedShelfPreview{
+	if len(preview.Collections) != 2 ||
+		preview.Collections[0] != (collectionstore.SelectedCollectionPreview{
 			ID: forest.ID, Name: "Forest", Count: 2,
 		}) ||
-		preview.Shelves[1] != (shelfstore.SelectedShelfPreview{
+		preview.Collections[1] != (collectionstore.SelectedCollectionPreview{
 			ID: moon.ID, Name: "Moon", Count: 2,
 		}) ||
-		len(preview.SourceShelfNames) != 2 ||
-		preview.SourceShelfNames[0] != "Forest" ||
-		preview.SourceShelfNames[1] != "Moon" ||
+		len(preview.SourceCollectionNames) != 2 ||
+		preview.SourceCollectionNames[0] != "Forest" ||
+		preview.SourceCollectionNames[1] != "Moon" ||
 		preview.UniqueStoryCount != 3 ||
 		preview.OverlapCount != 1 {
 		t.Fatalf("PreviewSelection() = %#v", preview)
@@ -237,7 +237,7 @@ func TestEvaluatorPreviewsDeduplicatedMultiShelfMembership(t *testing.T) {
 	if _, err := harness.evaluator.PreviewSelection(
 		context.Background(),
 		[]int64{moon.ID, moon.ID},
-	); err != shelfstore.ErrInvalidShelfSelection {
+	); err != collectionstore.ErrInvalidCollectionSelection {
 		t.Fatalf("PreviewSelection(duplicate) error = %v", err)
 	}
 	if _, err := harness.database.Exec(
@@ -249,7 +249,7 @@ func TestEvaluatorPreviewsDeduplicatedMultiShelfMembership(t *testing.T) {
 	if _, err := harness.evaluator.PreviewSelection(
 		context.Background(),
 		[]int64{forest.ID},
-	); err != shelfstore.ErrShelfNeedsAttention {
+	); err != collectionstore.ErrCollectionNeedsAttention {
 		t.Fatalf("PreviewSelection(invalid) error = %v", err)
 	}
 }
@@ -287,13 +287,13 @@ func TestEvaluatorReturnsOrderedCountsAndRequiresDependencies(t *testing.T) {
 		t.Fatal(err)
 	}
 	if len(counts) != 2 ||
-		counts[0] != (shelfstore.ShelfCount{ShelfID: first.ID, Count: 1}) ||
-		counts[1] != (shelfstore.ShelfCount{ShelfID: second.ID, Count: 0}) {
+		counts[0] != (collectionstore.CollectionCount{CollectionID: first.ID, Count: 1}) ||
+		counts[1] != (collectionstore.CollectionCount{CollectionID: second.ID, Count: 0}) {
 		t.Fatalf("Counts() = %#v", counts)
 	}
 	if _, err := harness.database.Exec(
 		"UPDATE collections SET query_version = ? WHERE id = ?",
-		shelfstore.CurrentSavedLibraryQueryVersion+10,
+		collectionstore.CurrentSavedLibraryQueryVersion+10,
 		second.ID,
 	); err != nil {
 		t.Fatal(err)
@@ -304,21 +304,21 @@ func TestEvaluatorReturnsOrderedCountsAndRequiresDependencies(t *testing.T) {
 	}
 	if len(summaries) != 2 ||
 		summaries[0].Count != 1 ||
-		summaries[1].Validity != shelfstore.ValidityNeedsAttention ||
-		summaries[1].AttentionReason != shelfstore.AttentionUnmigratableQuery ||
+		summaries[1].Validity != collectionstore.ValidityNeedsAttention ||
+		summaries[1].AttentionReason != collectionstore.AttentionUnmigratableQuery ||
 		summaries[1].Count != 0 {
 		t.Fatalf("Summaries() = %#v", summaries)
 	}
-	if _, err := shelfstore.NewEvaluator(
+	if _, err := collectionstore.NewEvaluator(
 		nil,
 		harness.library,
-	); err != shelfstore.ErrMissingDatabase {
+	); err != collectionstore.ErrMissingDatabase {
 		t.Fatalf("NewEvaluator(nil service) error = %v", err)
 	}
-	if _, err := shelfstore.NewEvaluator(
+	if _, err := collectionstore.NewEvaluator(
 		harness.collections,
 		nil,
-	); err != shelfstore.ErrMissingLibraryQuery {
+	); err != collectionstore.ErrMissingLibraryQuery {
 		t.Fatalf("NewEvaluator(nil query) error = %v", err)
 	}
 }
@@ -328,8 +328,8 @@ type evaluationHarness struct {
 	catalog     *catalog.Repository
 	metadata    *metadata.Repository
 	library     *library.Query
-	collections *shelfstore.Service
-	evaluator   *shelfstore.Evaluator
+	collections *collectionstore.Service
+	evaluator   *collectionstore.Evaluator
 }
 
 func newEvaluationHarness(t *testing.T) *evaluationHarness {
@@ -355,12 +355,12 @@ func newEvaluationHarness(t *testing.T) *evaluationHarness {
 	if err != nil {
 		t.Fatal(err)
 	}
-	shelfService, err := shelfstore.NewService(opened.SQL())
+	collectionService, err := collectionstore.NewService(opened.SQL())
 	if err != nil {
 		t.Fatal(err)
 	}
 	libraryQuery := library.NewQuery(opened.SQL(), provider)
-	evaluator, err := shelfstore.NewEvaluator(shelfService, libraryQuery)
+	evaluator, err := collectionstore.NewEvaluator(collectionService, libraryQuery)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -369,7 +369,7 @@ func newEvaluationHarness(t *testing.T) *evaluationHarness {
 		catalog:     catalog.NewRepository(opened.SQL()),
 		metadata:    metadataRepository,
 		library:     libraryQuery,
-		collections: shelfService,
+		collections: collectionService,
 		evaluator:   evaluator,
 	}
 }
@@ -453,24 +453,24 @@ func activateEvaluationMetadata(
 	}
 }
 
-func assertShelfCount(
+func assertCollectionCount(
 	t *testing.T,
-	evaluator *shelfstore.Evaluator,
-	shelfID int64,
+	evaluator *collectionstore.Evaluator,
+	collectionID int64,
 	expected int,
 ) {
 	t.Helper()
 
-	count, err := evaluator.Count(context.Background(), shelfID)
+	count, err := evaluator.Count(context.Background(), collectionID)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if count.ShelfID != shelfID || count.Count != expected {
-		t.Fatalf("Count(%d) = %#v, want %d", shelfID, count, expected)
+	if count.CollectionID != collectionID || count.Count != expected {
+		t.Fatalf("Count(%d) = %#v, want %d", collectionID, count, expected)
 	}
 }
 
-func TestCombinedShelfPersistsDynamicUnionAcrossBrowsingCountsAndExport(t *testing.T) {
+func TestCombinedCollectionPersistsDynamicUnionAcrossBrowsingCountsAndExport(t *testing.T) {
 	h := newEvaluationHarness(t)
 	ctx := context.Background()
 	for i, title := range []string{"Moon workshop", "Forest train", "Moon forest", "Ocean"} {
@@ -482,7 +482,7 @@ func TestCombinedShelfPersistsDynamicUnionAcrossBrowsingCountsAndExport(t *testi
 	if err != nil {
 		t.Fatal(err)
 	}
-	assertShelfCount(t, h.evaluator, combined.ID, 3)
+	assertCollectionCount(t, h.evaluator, combined.ID, 3)
 	page, err := h.evaluator.Evaluate(ctx, combined.ID, library.ListRequest{PageSize: 1})
 	if err != nil || page.Page.TotalItems != 3 || len(page.Page.Stories) != 1 {
 		t.Fatal(page, err)
@@ -499,7 +499,7 @@ func TestCombinedShelfPersistsDynamicUnionAcrossBrowsingCountsAndExport(t *testi
 		t.Fatal("export union", len(exported), err)
 	}
 	createEvaluationStory(t, h.catalog, "123e4567-e89b-42d3-a456-000000000009", "Another forest", "e")
-	assertShelfCount(t, h.evaluator, combined.ID, 4)
+	assertCollectionCount(t, h.evaluator, combined.ID, 4)
 	refined := reopened.Query.StoryLibraryQuery()
 	refined.Name = "workshop"
 	result, err := h.library.Search(ctx, refined)

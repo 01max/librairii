@@ -14,17 +14,17 @@ import (
 )
 
 const (
-	maxShelfNameRunes   = 80
-	reorderShelfPadding = 1
+	maxCollectionNameRunes   = 80
+	reorderCollectionPadding = 1
 )
 
 var (
-	ErrInvalidShelfName         = errors.New("shelf name is invalid")
-	ErrDuplicateShelfName       = errors.New("shelf name already exists")
-	ErrShelfNotFound            = errors.New("shelf does not exist")
-	ErrInvalidShelfOrder        = errors.New("shelf order is invalid")
-	ErrShelfNeedsAttention      = errors.New("shelf needs attention")
-	ErrShelfCriteriaUnavailable = errors.New("shelf criteria are unavailable")
+	ErrInvalidCollectionName         = errors.New("collection name is invalid")
+	ErrDuplicateCollectionName       = errors.New("collection name already exists")
+	ErrCollectionNotFound            = errors.New("collection does not exist")
+	ErrInvalidCollectionOrder        = errors.New("collection order is invalid")
+	ErrCollectionNeedsAttention      = errors.New("collection needs attention")
+	ErrCollectionCriteriaUnavailable = errors.New("collection criteria are unavailable")
 )
 
 type AttentionReason string
@@ -34,13 +34,13 @@ const (
 	AttentionUnmigratableQuery AttentionReason = "unmigratable_query"
 )
 
-type OpenedShelf struct {
-	Shelf Shelf             `json:"shelf"`
-	Query SavedLibraryQuery `json:"query"`
+type OpenedCollection struct {
+	Collection Collection        `json:"collection"`
+	Query      SavedLibraryQuery `json:"query"`
 }
 
 type Inspection struct {
-	Shelf           Shelf
+	Collection      Collection
 	Query           SavedLibraryQuery
 	AttentionReason AttentionReason
 }
@@ -60,92 +60,92 @@ func (s *Service) Create(
 	ctx context.Context,
 	name string,
 	query library.StoryLibraryQuery,
-) (Shelf, error) {
-	name, normalizedName, err := normalizeShelfName(name)
+) (Collection, error) {
+	name, normalizedName, err := normalizeCollectionName(name)
 	if err != nil {
-		return Shelf{}, err
+		return Collection{}, err
 	}
 	serialized, err := EncodeSavedLibraryQuery(query)
 	if err != nil {
-		return Shelf{}, err
+		return Collection{}, err
 	}
 	transaction, err := s.database.BeginTx(ctx, nil)
 	if err != nil {
-		return Shelf{}, fmt.Errorf("begin shelf creation: %w", err)
+		return Collection{}, fmt.Errorf("begin collection creation: %w", err)
 	}
 	defer transaction.Rollback()
 	savedQuery, err := DecodeSavedLibraryQuery(serialized.Version, serialized.Payload)
 	if err != nil {
-		return Shelf{}, err
+		return Collection{}, err
 	}
 	if err := validateSavedCriteria(ctx, transaction, savedQuery); err != nil {
-		return Shelf{}, err
+		return Collection{}, err
 	}
 
-	position, err := nextShelfPosition(ctx, transaction)
+	position, err := nextCollectionPosition(ctx, transaction)
 	if err != nil {
-		return Shelf{}, err
+		return Collection{}, err
 	}
-	shelf, err := insertShelf(ctx, transaction, NewShelf{
+	collection, err := insertCollection(ctx, transaction, NewCollection{
 		Name:           name,
 		NormalizedName: normalizedName,
 		Position:       position,
 		QueryVersion:   serialized.Version,
 		QueryPayload:   serialized.Payload,
 	})
-	if isDuplicateShelfName(err) {
-		return Shelf{}, ErrDuplicateShelfName
+	if isDuplicateCollectionName(err) {
+		return Collection{}, ErrDuplicateCollectionName
 	}
 	if err != nil {
-		return Shelf{}, err
+		return Collection{}, err
 	}
 	if err := transaction.Commit(); err != nil {
-		return Shelf{}, fmt.Errorf("commit shelf creation: %w", err)
+		return Collection{}, fmt.Errorf("commit collection creation: %w", err)
 	}
-	return shelf, nil
+	return collection, nil
 }
 
-func (s *Service) Open(ctx context.Context, shelfID int64) (OpenedShelf, error) {
-	inspection, err := s.Inspect(ctx, shelfID)
+func (s *Service) Open(ctx context.Context, collectionID int64) (OpenedCollection, error) {
+	inspection, err := s.Inspect(ctx, collectionID)
 	if err != nil {
-		return OpenedShelf{}, err
+		return OpenedCollection{}, err
 	}
-	if inspection.Shelf.Validity != ValidityValid {
-		return OpenedShelf{}, ErrShelfNeedsAttention
+	if inspection.Collection.Validity != ValidityValid {
+		return OpenedCollection{}, ErrCollectionNeedsAttention
 	}
-	return OpenedShelf{
-		Shelf: inspection.Shelf,
-		Query: inspection.Query,
+	return OpenedCollection{
+		Collection: inspection.Collection,
+		Query:      inspection.Query,
 	}, nil
 }
 
-func (s *Service) Inspect(ctx context.Context, shelfID int64) (Inspection, error) {
+func (s *Service) Inspect(ctx context.Context, collectionID int64) (Inspection, error) {
 	transaction, err := s.database.BeginTx(ctx, nil)
 	if err != nil {
-		return Inspection{}, fmt.Errorf("begin shelf inspection: %w", err)
+		return Inspection{}, fmt.Errorf("begin collection inspection: %w", err)
 	}
 	defer transaction.Rollback()
 
-	shelf, err := readShelf(ctx, transaction, shelfID)
+	collection, err := readCollection(ctx, transaction, collectionID)
 	if errors.Is(err, sql.ErrNoRows) {
-		return Inspection{}, ErrShelfNotFound
+		return Inspection{}, ErrCollectionNotFound
 	}
 	if err != nil {
-		return Inspection{}, fmt.Errorf("read shelf for inspection: %w", err)
+		return Inspection{}, fmt.Errorf("read collection for inspection: %w", err)
 	}
 	legacyID, err := library.ReadLegacyBrokenTagID(ctx, transaction)
 	if err != nil {
 		return Inspection{}, err
 	}
 	migrated, err := MigrateSavedLibraryQuery(
-		shelf.QueryVersion,
-		shelf.QueryPayload, legacyID,
+		collection.QueryVersion,
+		collection.QueryPayload, legacyID,
 	)
 	if err != nil {
 		return finishAttentionInspection(
 			ctx,
 			transaction,
-			shelf,
+			collection,
 			AttentionUnmigratableQuery,
 		)
 	}
@@ -154,23 +154,23 @@ func (s *Service) Inspect(ctx context.Context, shelfID int64) (Inspection, error
 		return finishAttentionInspection(
 			ctx,
 			transaction,
-			shelf,
+			collection,
 			AttentionUnmigratableQuery,
 		)
 	}
 	if err := validateSavedCriteria(ctx, transaction, query); err != nil {
-		if errors.Is(err, ErrShelfCriteriaUnavailable) {
+		if errors.Is(err, ErrCollectionCriteriaUnavailable) {
 			return finishAttentionInspection(
 				ctx,
 				transaction,
-				shelf,
+				collection,
 				AttentionMissingCriteria,
 			)
 		}
 		return Inspection{}, err
 	}
-	if shelf.QueryVersion != migrated.Version ||
-		shelf.QueryPayload != migrated.Payload {
+	if collection.QueryVersion != migrated.Version ||
+		collection.QueryPayload != migrated.Payload {
 		if _, err := transaction.ExecContext(
 			ctx,
 			`UPDATE collections
@@ -180,38 +180,38 @@ func (s *Service) Inspect(ctx context.Context, shelfID int64) (Inspection, error
 			 WHERE id = ?`,
 			migrated.Version,
 			migrated.Payload,
-			shelf.ID,
+			collection.ID,
 		); err != nil {
-			return Inspection{}, fmt.Errorf("migrate saved shelf query: %w", err)
+			return Inspection{}, fmt.Errorf("migrate saved collection query: %w", err)
 		}
-		shelf.QueryVersion = migrated.Version
-		shelf.QueryPayload = migrated.Payload
+		collection.QueryVersion = migrated.Version
+		collection.QueryPayload = migrated.Payload
 	}
 	if err := transaction.Commit(); err != nil {
-		return Inspection{}, fmt.Errorf("commit shelf inspection: %w", err)
+		return Inspection{}, fmt.Errorf("commit collection inspection: %w", err)
 	}
-	if shelf.Validity != ValidityValid {
+	if collection.Validity != ValidityValid {
 		return Inspection{
-			Shelf:           shelf,
+			Collection:      collection,
 			Query:           query,
 			AttentionReason: AttentionMissingCriteria,
 		}, nil
 	}
-	return Inspection{Shelf: shelf, Query: query}, nil
+	return Inspection{Collection: collection, Query: query}, nil
 }
 
 func (s *Service) Rename(
 	ctx context.Context,
-	shelfID int64,
+	collectionID int64,
 	name string,
-) (Shelf, error) {
-	name, normalizedName, err := normalizeShelfName(name)
+) (Collection, error) {
+	name, normalizedName, err := normalizeCollectionName(name)
 	if err != nil {
-		return Shelf{}, err
+		return Collection{}, err
 	}
 	transaction, err := s.database.BeginTx(ctx, nil)
 	if err != nil {
-		return Shelf{}, fmt.Errorf("begin shelf rename: %w", err)
+		return Collection{}, fmt.Errorf("begin collection rename: %w", err)
 	}
 	defer transaction.Rollback()
 
@@ -224,72 +224,72 @@ func (s *Service) Rename(
 		 WHERE id = ?`,
 		name,
 		normalizedName,
-		shelfID,
+		collectionID,
 	)
-	if isDuplicateShelfName(err) {
-		return Shelf{}, ErrDuplicateShelfName
+	if isDuplicateCollectionName(err) {
+		return Collection{}, ErrDuplicateCollectionName
 	}
-	if err := requireShelfMutation(result, err); err != nil {
-		return Shelf{}, err
+	if err := requireCollectionMutation(result, err); err != nil {
+		return Collection{}, err
 	}
-	shelf, err := readShelf(ctx, transaction, shelfID)
+	collection, err := readCollection(ctx, transaction, collectionID)
 	if err != nil {
-		return Shelf{}, fmt.Errorf("read renamed shelf: %w", err)
+		return Collection{}, fmt.Errorf("read renamed collection: %w", err)
 	}
 	if err := transaction.Commit(); err != nil {
-		return Shelf{}, fmt.Errorf("commit shelf rename: %w", err)
+		return Collection{}, fmt.Errorf("commit collection rename: %w", err)
 	}
-	return shelf, nil
+	return collection, nil
 }
 
 func (s *Service) Duplicate(
 	ctx context.Context,
-	shelfID int64,
+	collectionID int64,
 	name string,
-) (Shelf, error) {
-	name, normalizedName, err := normalizeShelfName(name)
+) (Collection, error) {
+	name, normalizedName, err := normalizeCollectionName(name)
 	if err != nil {
-		return Shelf{}, err
+		return Collection{}, err
 	}
-	inspection, err := s.Inspect(ctx, shelfID)
+	inspection, err := s.Inspect(ctx, collectionID)
 	if err != nil {
-		return Shelf{}, err
+		return Collection{}, err
 	}
-	if inspection.Shelf.Validity != ValidityValid {
-		return Shelf{}, ErrShelfNeedsAttention
+	if inspection.Collection.Validity != ValidityValid {
+		return Collection{}, ErrCollectionNeedsAttention
 	}
 	transaction, err := s.database.BeginTx(ctx, nil)
 	if err != nil {
-		return Shelf{}, fmt.Errorf("begin shelf duplication: %w", err)
+		return Collection{}, fmt.Errorf("begin collection duplication: %w", err)
 	}
 	defer transaction.Rollback()
 
-	source, err := readShelf(ctx, transaction, shelfID)
+	source, err := readCollection(ctx, transaction, collectionID)
 	if errors.Is(err, sql.ErrNoRows) {
-		return Shelf{}, ErrShelfNotFound
+		return Collection{}, ErrCollectionNotFound
 	}
 	if err != nil {
-		return Shelf{}, fmt.Errorf("read shelf to duplicate: %w", err)
+		return Collection{}, fmt.Errorf("read collection to duplicate: %w", err)
 	}
 	if source.Validity != ValidityValid {
-		return Shelf{}, ErrShelfNeedsAttention
+		return Collection{}, ErrCollectionNeedsAttention
 	}
 	legacyID, err := library.ReadLegacyBrokenTagID(ctx, transaction)
 	if err != nil {
-		return Shelf{}, err
+		return Collection{}, err
 	}
 	migrated, err := MigrateSavedLibraryQuery(
 		source.QueryVersion,
 		source.QueryPayload, legacyID,
 	)
 	if err != nil {
-		return Shelf{}, err
+		return Collection{}, err
 	}
-	position, err := nextShelfPosition(ctx, transaction)
+	position, err := nextCollectionPosition(ctx, transaction)
 	if err != nil {
-		return Shelf{}, err
+		return Collection{}, err
 	}
-	duplicate, err := insertShelf(ctx, transaction, NewShelf{
+	duplicate, err := insertCollection(ctx, transaction, NewCollection{
 		Name:           name,
 		NormalizedName: normalizedName,
 		Position:       position,
@@ -297,38 +297,38 @@ func (s *Service) Duplicate(
 		QueryPayload:   migrated.Payload,
 		Validity:       source.Validity,
 	})
-	if isDuplicateShelfName(err) {
-		return Shelf{}, ErrDuplicateShelfName
+	if isDuplicateCollectionName(err) {
+		return Collection{}, ErrDuplicateCollectionName
 	}
 	if err != nil {
-		return Shelf{}, err
+		return Collection{}, err
 	}
 	if err := transaction.Commit(); err != nil {
-		return Shelf{}, fmt.Errorf("commit shelf duplication: %w", err)
+		return Collection{}, fmt.Errorf("commit collection duplication: %w", err)
 	}
 	return duplicate, nil
 }
 
 func (s *Service) ReplaceQuery(
 	ctx context.Context,
-	shelfID int64,
+	collectionID int64,
 	query library.StoryLibraryQuery,
-) (Shelf, error) {
+) (Collection, error) {
 	serialized, err := EncodeSavedLibraryQuery(query)
 	if err != nil {
-		return Shelf{}, err
+		return Collection{}, err
 	}
 	transaction, err := s.database.BeginTx(ctx, nil)
 	if err != nil {
-		return Shelf{}, fmt.Errorf("begin shelf query replacement: %w", err)
+		return Collection{}, fmt.Errorf("begin collection query replacement: %w", err)
 	}
 	defer transaction.Rollback()
 	savedQuery, err := DecodeSavedLibraryQuery(serialized.Version, serialized.Payload)
 	if err != nil {
-		return Shelf{}, err
+		return Collection{}, err
 	}
 	if err := validateSavedCriteria(ctx, transaction, savedQuery); err != nil {
-		return Shelf{}, err
+		return Collection{}, err
 	}
 
 	result, err := transaction.ExecContext(
@@ -341,41 +341,41 @@ func (s *Service) ReplaceQuery(
 		 WHERE id = ?`,
 		serialized.Version,
 		serialized.Payload,
-		shelfID,
+		collectionID,
 	)
-	if err := requireShelfMutation(result, err); err != nil {
-		return Shelf{}, err
+	if err := requireCollectionMutation(result, err); err != nil {
+		return Collection{}, err
 	}
-	shelf, err := readShelf(ctx, transaction, shelfID)
+	collection, err := readCollection(ctx, transaction, collectionID)
 	if err != nil {
-		return Shelf{}, fmt.Errorf("read updated shelf: %w", err)
+		return Collection{}, fmt.Errorf("read updated collection: %w", err)
 	}
 	if err := transaction.Commit(); err != nil {
-		return Shelf{}, fmt.Errorf("commit shelf query replacement: %w", err)
+		return Collection{}, fmt.Errorf("commit collection query replacement: %w", err)
 	}
-	return shelf, nil
+	return collection, nil
 }
 
 func (s *Service) Reorder(
 	ctx context.Context,
 	orderedIDs []int64,
-) ([]Shelf, error) {
+) ([]Collection, error) {
 	transaction, err := s.database.BeginTx(ctx, nil)
 	if err != nil {
-		return nil, fmt.Errorf("begin shelf reorder: %w", err)
+		return nil, fmt.Errorf("begin collection reorder: %w", err)
 	}
 	defer transaction.Rollback()
 
-	current, err := listShelves(ctx, transaction)
+	current, err := listCollections(ctx, transaction)
 	if err != nil {
 		return nil, err
 	}
-	if !sameShelfIDs(current, orderedIDs) {
-		return nil, ErrInvalidShelfOrder
+	if !sameCollectionIDs(current, orderedIDs) {
+		return nil, ErrInvalidCollectionOrder
 	}
 	if len(orderedIDs) > 0 {
 		maxPosition := current[len(current)-1].Position
-		offset := maxPosition + len(orderedIDs) + reorderShelfPadding
+		offset := maxPosition + len(orderedIDs) + reorderCollectionPadding
 		if _, err := transaction.ExecContext(
 			ctx,
 			`UPDATE collections
@@ -383,9 +383,9 @@ func (s *Service) Reorder(
 			     updated_at = CURRENT_TIMESTAMP`,
 			offset,
 		); err != nil {
-			return nil, fmt.Errorf("stage shelf reorder: %w", err)
+			return nil, fmt.Errorf("stage collection reorder: %w", err)
 		}
-		for position, shelfID := range orderedIDs {
+		for position, collectionID := range orderedIDs {
 			result, err := transaction.ExecContext(
 				ctx,
 				`UPDATE collections
@@ -393,94 +393,94 @@ func (s *Service) Reorder(
 				     updated_at = CURRENT_TIMESTAMP
 				 WHERE id = ?`,
 				position,
-				shelfID,
+				collectionID,
 			)
-			if err := requireShelfMutation(result, err); err != nil {
-				return nil, fmt.Errorf("position shelf: %w", err)
+			if err := requireCollectionMutation(result, err); err != nil {
+				return nil, fmt.Errorf("position collection: %w", err)
 			}
 		}
 	}
-	reordered, err := listShelves(ctx, transaction)
+	reordered, err := listCollections(ctx, transaction)
 	if err != nil {
 		return nil, err
 	}
 	if err := transaction.Commit(); err != nil {
-		return nil, fmt.Errorf("commit shelf reorder: %w", err)
+		return nil, fmt.Errorf("commit collection reorder: %w", err)
 	}
 	return reordered, nil
 }
 
-func (s *Service) Delete(ctx context.Context, shelfID int64) error {
+func (s *Service) Delete(ctx context.Context, collectionID int64) error {
 	result, err := s.database.ExecContext(
 		ctx,
 		"DELETE FROM collections WHERE id = ?",
-		shelfID,
+		collectionID,
 	)
-	return requireShelfMutation(result, err)
+	return requireCollectionMutation(result, err)
 }
 
-func (s *Service) List(ctx context.Context) ([]Shelf, error) {
-	return listShelves(ctx, s.database)
+func (s *Service) List(ctx context.Context) ([]Collection, error) {
+	return listCollections(ctx, s.database)
 }
 
 func finishAttentionInspection(
 	ctx context.Context,
 	transaction *sql.Tx,
-	shelf Shelf,
+	collection Collection,
 	reason AttentionReason,
 ) (Inspection, error) {
-	if shelf.Validity == ValidityValid {
+	if collection.Validity == ValidityValid {
 		result, err := transaction.ExecContext(
 			ctx,
 			`UPDATE collections
 			 SET validity_state = 'needs_attention',
 			     updated_at = CURRENT_TIMESTAMP
 			 WHERE id = ? AND validity_state = 'valid'`,
-			shelf.ID,
+			collection.ID,
 		)
-		if err := requireShelfMutation(result, err); err != nil {
-			return Inspection{}, fmt.Errorf("mark shelf as needing attention: %w", err)
+		if err := requireCollectionMutation(result, err); err != nil {
+			return Inspection{}, fmt.Errorf("mark collection as needing attention: %w", err)
 		}
-		shelf.Validity = ValidityNeedsAttention
+		collection.Validity = ValidityNeedsAttention
 	}
 	if err := transaction.Commit(); err != nil {
-		return Inspection{}, fmt.Errorf("commit shelf attention state: %w", err)
+		return Inspection{}, fmt.Errorf("commit collection attention state: %w", err)
 	}
-	return Inspection{Shelf: shelf, AttentionReason: reason}, nil
+	return Inspection{Collection: collection, AttentionReason: reason}, nil
 }
 
-func normalizeShelfName(value string) (string, string, error) {
+func normalizeCollectionName(value string) (string, string, error) {
 	if !utf8.ValidString(value) {
-		return "", "", ErrInvalidShelfName
+		return "", "", ErrInvalidCollectionName
 	}
 	for _, character := range value {
 		if unicode.IsControl(character) && !unicode.IsSpace(character) {
-			return "", "", ErrInvalidShelfName
+			return "", "", ErrInvalidCollectionName
 		}
 	}
 	name := strings.Join(strings.Fields(value), " ")
 	normalized := searchtext.Normalize(name)
 	if name == "" ||
 		normalized == "" ||
-		utf8.RuneCountInString(name) > maxShelfNameRunes ||
-		utf8.RuneCountInString(normalized) > maxShelfNameRunes {
-		return "", "", ErrInvalidShelfName
+		utf8.RuneCountInString(name) > maxCollectionNameRunes ||
+		utf8.RuneCountInString(normalized) > maxCollectionNameRunes {
+		return "", "", ErrInvalidCollectionName
 	}
 	return name, normalized, nil
 }
 
-func nextShelfPosition(ctx context.Context, queryer shelfQueryer) (int, error) {
+func nextCollectionPosition(ctx context.Context, queryer collectionQueryer) (int, error) {
 	var position int
 	if err := queryer.QueryRowContext(
 		ctx,
 		"SELECT COALESCE(MAX(position), -1) + 1 FROM collections",
 	).Scan(&position); err != nil {
-		return 0, fmt.Errorf("read next shelf position: %w", err)
+		return 0, fmt.Errorf("read next collection position: %w", err)
 	}
 	return position, nil
 }
 
-func requireShelfMutation(result sql.Result, err error) error {
+func requireCollectionMutation(result sql.Result, err error) error {
 	if err != nil {
 		return err
 	}
@@ -489,24 +489,24 @@ func requireShelfMutation(result sql.Result, err error) error {
 		return err
 	}
 	if affected != 1 {
-		return ErrShelfNotFound
+		return ErrCollectionNotFound
 	}
 	return nil
 }
 
-func sameShelfIDs(collections []Shelf, orderedIDs []int64) bool {
+func sameCollectionIDs(collections []Collection, orderedIDs []int64) bool {
 	if len(collections) != len(orderedIDs) {
 		return false
 	}
 	seen := make(map[int64]struct{}, len(orderedIDs))
-	for _, shelf := range collections {
-		seen[shelf.ID] = struct{}{}
+	for _, collection := range collections {
+		seen[collection.ID] = struct{}{}
 	}
-	for _, shelfID := range orderedIDs {
-		if _, exists := seen[shelfID]; !exists {
+	for _, collectionID := range orderedIDs {
+		if _, exists := seen[collectionID]; !exists {
 			return false
 		}
-		delete(seen, shelfID)
+		delete(seen, collectionID)
 	}
 	return len(seen) == 0
 }

@@ -24,7 +24,7 @@ func (p *flagTestPort) RestoreStoryFlags(context.Context, []library.FlagChange) 
 func TestStoryFlagBindingsRequireReadinessAndExposeResults(t *testing.T) {
 	ctx := context.Background()
 	port := &flagTestPort{fakeOperations: &fakeOperations{}}
-	application, err := New(Dependencies{Clock: fixedClock{now: time.Now()}, Dialogs: fakeDialogs{}, Events: &fakeEvents{}, Readiness: fakeReadiness{report: ReadinessReport{MutationsAllowed: true}}, Operations: port, Library: port, Removal: port, Tags: port, Shelves: port})
+	application, err := New(Dependencies{Clock: fixedClock{now: time.Now()}, Dialogs: fakeDialogs{}, Events: &fakeEvents{}, Readiness: fakeReadiness{report: ReadinessReport{MutationsAllowed: true}}, Operations: port, Library: port, Removal: port, Tags: port, Collections: port})
 	if err != nil {
 		t.Fatal(err)
 	}

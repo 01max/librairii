@@ -153,8 +153,8 @@ func (s *PreflightService) Plan(
 	destination string,
 ) (PreflightReport, error) {
 	scope, err := s.resolve(ctx, request)
-	if errors.Is(err, collections.ErrShelfNeedsAttention) ||
-		errors.Is(err, collections.ErrShelfCriteriaUnavailable) {
+	if errors.Is(err, collections.ErrCollectionNeedsAttention) ||
+		errors.Is(err, collections.ErrCollectionCriteriaUnavailable) {
 		issue := blockingIssue(
 			IssueShelfNeedsAttention,
 			"A selected shelf needs attention before it can be exported.",

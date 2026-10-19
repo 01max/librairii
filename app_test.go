@@ -286,19 +286,19 @@ func (facadeOperations) SetBulkChoiceValue(
 	return tagging.AssignmentResult{}, nil
 }
 
-func (facadeOperations) ListShelves(context.Context, ...library.BrokenVisibility) ([]collections.Summary, error) {
+func (facadeOperations) ListCollections(context.Context, ...library.BrokenVisibility) ([]collections.Summary, error) {
 	return nil, nil
 }
 
-func (facadeOperations) CreateShelf(
+func (facadeOperations) CreateCollection(
 	context.Context,
 	string,
 	library.StoryLibraryQuery,
-) (collections.Shelf, error) {
-	return collections.Shelf{}, nil
+) (collections.Collection, error) {
+	return collections.Collection{}, nil
 }
 
-func (facadeOperations) OpenShelf(
+func (facadeOperations) OpenCollection(
 	context.Context,
 	int64,
 	library.ListRequest,
@@ -306,42 +306,42 @@ func (facadeOperations) OpenShelf(
 	return collections.Evaluation{}, nil
 }
 
-func (facadeOperations) RenameShelf(
+func (facadeOperations) RenameCollection(
 	context.Context,
 	int64,
 	string,
-) (collections.Shelf, error) {
-	return collections.Shelf{}, nil
+) (collections.Collection, error) {
+	return collections.Collection{}, nil
 }
 
-func (facadeOperations) DuplicateShelf(
+func (facadeOperations) DuplicateCollection(
 	context.Context,
 	int64,
 	string,
-) (collections.Shelf, error) {
-	return collections.Shelf{}, nil
+) (collections.Collection, error) {
+	return collections.Collection{}, nil
 }
 
-func (facadeOperations) ReplaceShelfQuery(
+func (facadeOperations) ReplaceCollectionQuery(
 	context.Context,
 	int64,
 	library.StoryLibraryQuery,
-) (collections.Shelf, error) {
-	return collections.Shelf{}, nil
+) (collections.Collection, error) {
+	return collections.Collection{}, nil
 }
 
-func (facadeOperations) ReorderShelves(
+func (facadeOperations) ReorderCollections(
 	context.Context,
 	[]int64,
-) ([]collections.Shelf, error) {
+) ([]collections.Collection, error) {
 	return nil, nil
 }
 
-func (facadeOperations) DeleteShelf(context.Context, int64) error {
+func (facadeOperations) DeleteCollection(context.Context, int64) error {
 	return nil
 }
 
-func (facadeOperations) PreviewShelves(
+func (facadeOperations) PreviewCollections(
 	context.Context,
 	[]int64,
 	...library.BrokenVisibility,
@@ -353,15 +353,15 @@ func TestAppExposesTypedLifecycleStatus(t *testing.T) {
 	t.Parallel()
 
 	core, err := coreapp.New(coreapp.Dependencies{
-		Clock:      facadeClock{},
-		Dialogs:    facadeDialogs{},
-		Events:     facadeEvents{},
-		Readiness:  facadeReadiness{},
-		Operations: facadeOperations{},
-		Library:    facadeOperations{},
-		Removal:    facadeOperations{},
-		Tags:       facadeOperations{},
-		Shelves:    facadeOperations{},
+		Clock:       facadeClock{},
+		Dialogs:     facadeDialogs{},
+		Events:      facadeEvents{},
+		Readiness:   facadeReadiness{},
+		Operations:  facadeOperations{},
+		Library:     facadeOperations{},
+		Removal:     facadeOperations{},
+		Tags:        facadeOperations{},
+		Collections: facadeOperations{},
 	})
 	if err != nil {
 		t.Fatalf("New() error = %v", err)
@@ -393,15 +393,15 @@ func TestAppExposesExportPreparationStartAndRevealBindings(t *testing.T) {
 		},
 	}
 	core, err := coreapp.New(coreapp.Dependencies{
-		Clock:      facadeClock{},
-		Dialogs:    dialogs,
-		Events:     facadeEvents{},
-		Readiness:  facadeReadiness{},
-		Operations: operationPort,
-		Library:    facadeOperations{},
-		Removal:    facadeOperations{},
-		Tags:       facadeOperations{},
-		Shelves:    facadeOperations{},
+		Clock:       facadeClock{},
+		Dialogs:     dialogs,
+		Events:      facadeEvents{},
+		Readiness:   facadeReadiness{},
+		Operations:  operationPort,
+		Library:     facadeOperations{},
+		Removal:     facadeOperations{},
+		Tags:        facadeOperations{},
+		Collections: facadeOperations{},
 	})
 	if err != nil {
 		t.Fatalf("New() error = %v", err)
@@ -442,15 +442,15 @@ func TestAppCanQuitAfterDOMReadyForPackagedSmoke(t *testing.T) {
 	t.Parallel()
 
 	core, err := coreapp.New(coreapp.Dependencies{
-		Clock:      facadeClock{},
-		Dialogs:    facadeDialogs{},
-		Events:     facadeEvents{},
-		Readiness:  facadeReadiness{},
-		Operations: facadeOperations{},
-		Library:    facadeOperations{},
-		Removal:    facadeOperations{},
-		Tags:       facadeOperations{},
-		Shelves:    facadeOperations{},
+		Clock:       facadeClock{},
+		Dialogs:     facadeDialogs{},
+		Events:      facadeEvents{},
+		Readiness:   facadeReadiness{},
+		Operations:  facadeOperations{},
+		Library:     facadeOperations{},
+		Removal:     facadeOperations{},
+		Tags:        facadeOperations{},
+		Collections: facadeOperations{},
 	})
 	if err != nil {
 		t.Fatalf("New() error = %v", err)

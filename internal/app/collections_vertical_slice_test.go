@@ -13,7 +13,7 @@ import (
 	"github.com/01max/librairii/internal/tagging"
 )
 
-func TestSavedShelvesVerticalSliceThroughApplication(t *testing.T) {
+func TestSavedCollectionsVerticalSliceThroughApplication(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
@@ -61,15 +61,15 @@ func TestSavedShelvesVerticalSliceThroughApplication(t *testing.T) {
 		sources = append(sources, source)
 	}
 	application, err := New(Dependencies{
-		Clock:      fixedClock{now: time.Now()},
-		Dialogs:    &recordingDialogs{paths: sources},
-		Events:     events,
-		Readiness:  fakeReadiness{report: ReadinessReport{MutationsAllowed: true}},
-		Operations: importRuntime,
-		Library:    importRuntime,
-		Removal:    importRuntime,
-		Tags:       importRuntime,
-		Shelves:    importRuntime,
+		Clock:       fixedClock{now: time.Now()},
+		Dialogs:     &recordingDialogs{paths: sources},
+		Events:      events,
+		Readiness:   fakeReadiness{report: ReadinessReport{MutationsAllowed: true}},
+		Operations:  importRuntime,
+		Library:     importRuntime,
+		Removal:     importRuntime,
+		Tags:        importRuntime,
+		Collections: importRuntime,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -120,8 +120,8 @@ func TestSavedShelvesVerticalSliceThroughApplication(t *testing.T) {
 	if moodResponse.Error != nil || moodResponse.Definition == nil {
 		t.Fatalf("CreateTagDefinition() = %#v", moodResponse)
 	}
-	calm := createVerticalShelfValue(t, application, moodResponse.Definition.ID, "calm")
-	adventure := createVerticalShelfValue(
+	calm := createVerticalCollectionValue(t, application, moodResponse.Definition.ID, "calm")
+	adventure := createVerticalCollectionValue(
 		t,
 		application,
 		moodResponse.Definition.ID,
@@ -146,13 +146,13 @@ func TestSavedShelvesVerticalSliceThroughApplication(t *testing.T) {
 		t.Fatalf("SetChoiceTagValue(adventure) = %#v", response)
 	}
 
-	calmShelf := createVerticalShelf(t, application, "Calm", library.StoryLibraryQuery{
+	calmCollection := createVerticalCollection(t, application, "Calm", library.StoryLibraryQuery{
 		ChoiceFilters: []library.ChoiceFilter{{
 			DefinitionID: moodResponse.Definition.ID,
 			ValueIDs:     []int64{calm.ID},
 		}},
 	})
-	adventureShelf := createVerticalShelf(
+	adventureCollection := createVerticalCollection(
 		t,
 		application,
 		"Adventure",
@@ -161,31 +161,31 @@ func TestSavedShelvesVerticalSliceThroughApplication(t *testing.T) {
 			ValueIDs:     []int64{adventure.ID},
 		}}},
 	)
-	searchShelf := createVerticalShelf(
+	searchCollection := createVerticalCollection(
 		t,
 		application,
 		"Named search",
 		library.StoryLibraryQuery{Name: searchName},
 	)
-	emptyShelf := createVerticalShelf(
+	emptyCollection := createVerticalCollection(
 		t,
 		application,
 		"Empty",
 		library.StoryLibraryQuery{Name: "never-matches"},
 	)
 
-	listed := application.ListShelves(ctx)
+	listed := application.ListCollections(ctx)
 	if listed.Error != nil ||
-		verticalShelfSummary(t, listed, calmShelf.ID).Count != 2 ||
-		verticalShelfSummary(t, listed, adventureShelf.ID).Count != 2 ||
-		verticalShelfSummary(t, listed, searchShelf.ID).Count !=
+		verticalCollectionSummary(t, listed, calmCollection.ID).Count != 2 ||
+		verticalCollectionSummary(t, listed, adventureCollection.ID).Count != 2 ||
+		verticalCollectionSummary(t, listed, searchCollection.ID).Count !=
 			searchPage.Page.TotalItems ||
-		verticalShelfSummary(t, listed, emptyShelf.ID).Count != 0 {
-		t.Fatalf("ListShelves(initial) = %#v", listed)
+		verticalCollectionSummary(t, listed, emptyCollection.ID).Count != 0 {
+		t.Fatalf("ListCollections(initial) = %#v", listed)
 	}
 	savedSearch, err := collections.DecodeSavedLibraryQuery(
-		searchShelf.QueryVersion,
-		searchShelf.QueryPayload,
+		searchCollection.QueryVersion,
+		searchCollection.QueryPayload,
 	)
 	if err != nil {
 		t.Fatal(err)
@@ -206,13 +206,13 @@ func TestSavedShelvesVerticalSliceThroughApplication(t *testing.T) {
 		     query_payload = ?
 		 WHERE id = ?`,
 		string(legacyPayload),
-		searchShelf.ID,
+		searchCollection.ID,
 	); err != nil {
 		t.Fatal(err)
 	}
-	openedSearch := application.OpenShelf(
+	openedSearch := application.OpenCollection(
 		ctx,
-		searchShelf.ID,
+		searchCollection.ID,
 		library.ListRequest{
 			Page: 1, PageSize: 12, Sort: library.SortImportedNewest,
 		},
@@ -221,21 +221,21 @@ func TestSavedShelvesVerticalSliceThroughApplication(t *testing.T) {
 		openedSearch.Evaluation == nil ||
 		openedSearch.Evaluation.Query.Name != savedSearch.Name ||
 		openedSearch.Evaluation.Page.TotalItems != searchPage.Page.TotalItems {
-		t.Fatalf("OpenShelf(migrated search) = %#v", openedSearch)
+		t.Fatalf("OpenCollection(migrated search) = %#v", openedSearch)
 	}
 
-	preview := application.PreviewShelves(
+	preview := application.PreviewCollections(
 		ctx,
-		[]int64{calmShelf.ID, adventureShelf.ID},
+		[]int64{calmCollection.ID, adventureCollection.ID},
 	)
 	if preview.Error != nil ||
 		preview.Preview == nil ||
 		preview.Preview.UniqueStoryCount != 3 ||
 		preview.Preview.OverlapCount != 1 ||
-		len(preview.Preview.SourceShelfNames) != 2 ||
-		preview.Preview.SourceShelfNames[0] != "Calm" ||
-		preview.Preview.SourceShelfNames[1] != "Adventure" {
-		t.Fatalf("PreviewShelves() = %#v", preview)
+		len(preview.Preview.SourceCollectionNames) != 2 ||
+		preview.Preview.SourceCollectionNames[0] != "Calm" ||
+		preview.Preview.SourceCollectionNames[1] != "Adventure" {
+		t.Fatalf("PreviewCollections() = %#v", preview)
 	}
 
 	if response := application.SetChoiceTagValue(
@@ -247,10 +247,10 @@ func TestSavedShelvesVerticalSliceThroughApplication(t *testing.T) {
 	); response.Error != nil {
 		t.Fatalf("SetChoiceTagValue(remove calm) = %#v", response)
 	}
-	listed = application.ListShelves(ctx)
+	listed = application.ListCollections(ctx)
 	if listed.Error != nil ||
-		verticalShelfSummary(t, listed, calmShelf.ID).Count != 1 {
-		t.Fatalf("ListShelves(after dynamic tag change) = %#v", listed)
+		verticalCollectionSummary(t, listed, calmCollection.ID).Count != 1 {
+		t.Fatalf("ListCollections(after dynamic tag change) = %#v", listed)
 	}
 
 	plan := application.PlanTagValueDeletion(ctx, calm.ID)
@@ -258,96 +258,96 @@ func TestSavedShelvesVerticalSliceThroughApplication(t *testing.T) {
 		plan.Plan == nil ||
 		plan.Plan.AffectedShelfCount != 1 ||
 		len(plan.Plan.AffectedShelfIDs) != 1 ||
-		plan.Plan.AffectedShelfIDs[0] != calmShelf.ID {
+		plan.Plan.AffectedShelfIDs[0] != calmCollection.ID {
 		t.Fatalf("PlanTagValueDeletion() = %#v", plan)
 	}
 	deletedValue := application.DeleteTagValue(ctx, *plan.Plan)
 	if deletedValue.Error != nil || !deletedValue.Success {
 		t.Fatalf("DeleteTagValue() = %#v", deletedValue)
 	}
-	listed = application.ListShelves(ctx)
+	listed = application.ListCollections(ctx)
 	if listed.Error != nil ||
-		verticalShelfSummary(t, listed, calmShelf.ID).Validity !=
+		verticalCollectionSummary(t, listed, calmCollection.ID).Validity !=
 			collections.ValidityNeedsAttention ||
-		verticalShelfSummary(t, listed, adventureShelf.ID).Validity !=
+		verticalCollectionSummary(t, listed, adventureCollection.ID).Validity !=
 			collections.ValidityValid {
-		t.Fatalf("ListShelves(after criterion deletion) = %#v", listed)
+		t.Fatalf("ListCollections(after criterion deletion) = %#v", listed)
 	}
-	blocked := application.OpenShelf(ctx, calmShelf.ID, library.ListRequest{})
+	blocked := application.OpenCollection(ctx, calmCollection.ID, library.ListRequest{})
 	if blocked.Error == nil || blocked.Error.Code != ErrorConflict {
-		t.Fatalf("OpenShelf(needs attention) = %#v", blocked)
+		t.Fatalf("OpenCollection(needs attention) = %#v", blocked)
 	}
-	blockedPreview := application.PreviewShelves(
+	blockedPreview := application.PreviewCollections(
 		ctx,
-		[]int64{calmShelf.ID, adventureShelf.ID},
+		[]int64{calmCollection.ID, adventureCollection.ID},
 	)
 	if blockedPreview.Error == nil || blockedPreview.Error.Code != ErrorConflict {
-		t.Fatalf("PreviewShelves(needs attention) = %#v", blockedPreview)
+		t.Fatalf("PreviewCollections(needs attention) = %#v", blockedPreview)
 	}
 
-	repaired := application.ReplaceShelfQuery(
+	repaired := application.ReplaceCollectionQuery(
 		ctx,
-		calmShelf.ID,
+		calmCollection.ID,
 		library.StoryLibraryQuery{Name: "never-matches"},
 	)
 	if repaired.Error != nil ||
-		repaired.Shelf == nil ||
-		repaired.Shelf.Validity != collections.ValidityValid {
-		t.Fatalf("ReplaceShelfQuery(repair) = %#v", repaired)
+		repaired.Collection == nil ||
+		repaired.Collection.Validity != collections.ValidityValid {
+		t.Fatalf("ReplaceCollectionQuery(repair) = %#v", repaired)
 	}
-	openedEmpty := application.OpenShelf(ctx, calmShelf.ID, library.ListRequest{})
+	openedEmpty := application.OpenCollection(ctx, calmCollection.ID, library.ListRequest{})
 	if openedEmpty.Error != nil ||
 		openedEmpty.Evaluation == nil ||
 		openedEmpty.Evaluation.Page.TotalItems != 0 {
-		t.Fatalf("OpenShelf(valid empty repair) = %#v", openedEmpty)
+		t.Fatalf("OpenCollection(valid empty repair) = %#v", openedEmpty)
 	}
 
-	renamed := application.RenameShelf(ctx, adventureShelf.ID, "Quest")
-	if renamed.Error != nil || renamed.Shelf == nil || renamed.Shelf.Name != "Quest" {
-		t.Fatalf("RenameShelf() = %#v", renamed)
+	renamed := application.RenameCollection(ctx, adventureCollection.ID, "Quest")
+	if renamed.Error != nil || renamed.Collection == nil || renamed.Collection.Name != "Quest" {
+		t.Fatalf("RenameCollection() = %#v", renamed)
 	}
-	duplicated := application.DuplicateShelf(ctx, searchShelf.ID, "Named search copy")
-	if duplicated.Error != nil || duplicated.Shelf == nil {
-		t.Fatalf("DuplicateShelf() = %#v", duplicated)
+	duplicated := application.DuplicateCollection(ctx, searchCollection.ID, "Named search copy")
+	if duplicated.Error != nil || duplicated.Collection == nil {
+		t.Fatalf("DuplicateCollection() = %#v", duplicated)
 	}
-	listed = application.ListShelves(ctx)
-	orderedIDs := make([]int64, 0, len(listed.Shelves))
-	for index := len(listed.Shelves) - 1; index >= 0; index-- {
-		orderedIDs = append(orderedIDs, listed.Shelves[index].ID)
+	listed = application.ListCollections(ctx)
+	orderedIDs := make([]int64, 0, len(listed.Collections))
+	for index := len(listed.Collections) - 1; index >= 0; index-- {
+		orderedIDs = append(orderedIDs, listed.Collections[index].ID)
 	}
-	reordered := application.ReorderShelves(ctx, orderedIDs)
+	reordered := application.ReorderCollections(ctx, orderedIDs)
 	if reordered.Error != nil ||
-		len(reordered.Shelves) != len(orderedIDs) ||
-		reordered.Shelves[0].ID != orderedIDs[0] {
-		t.Fatalf("ReorderShelves() = %#v", reordered)
+		len(reordered.Collections) != len(orderedIDs) ||
+		reordered.Collections[0].ID != orderedIDs[0] {
+		t.Fatalf("ReorderCollections() = %#v", reordered)
 	}
 
 	if _, err := provider.SQL().ExecContext(
 		ctx,
 		"UPDATE shelves SET query_version = 99 WHERE id = ?",
-		emptyShelf.ID,
+		emptyCollection.ID,
 	); err != nil {
 		t.Fatal(err)
 	}
-	listed = application.ListShelves(ctx)
+	listed = application.ListCollections(ctx)
 	if listed.Error != nil ||
-		verticalShelfSummary(t, listed, emptyShelf.ID).AttentionReason !=
+		verticalCollectionSummary(t, listed, emptyCollection.ID).AttentionReason !=
 			collections.AttentionUnmigratableQuery {
-		t.Fatalf("ListShelves(unmigratable) = %#v", listed)
+		t.Fatalf("ListCollections(unmigratable) = %#v", listed)
 	}
-	if deleted := application.DeleteShelf(ctx, emptyShelf.ID); deleted.Error != nil ||
+	if deleted := application.DeleteCollection(ctx, emptyCollection.ID); deleted.Error != nil ||
 		!deleted.Success {
-		t.Fatalf("DeleteShelf(invalid) = %#v", deleted)
+		t.Fatalf("DeleteCollection(invalid) = %#v", deleted)
 	}
-	if deleted := application.DeleteShelf(
+	if deleted := application.DeleteCollection(
 		ctx,
-		duplicated.Shelf.ID,
+		duplicated.Collection.ID,
 	); deleted.Error != nil || !deleted.Success {
-		t.Fatalf("DeleteShelf(duplicate) = %#v", deleted)
+		t.Fatalf("DeleteCollection(duplicate) = %#v", deleted)
 	}
 }
 
-func createVerticalShelfValue(
+func createVerticalCollectionValue(
 	t *testing.T,
 	application *Application,
 	definitionID int64,
@@ -366,29 +366,29 @@ func createVerticalShelfValue(
 	return *response.Value
 }
 
-func createVerticalShelf(
+func createVerticalCollection(
 	t *testing.T,
 	application *Application,
 	name string,
 	query library.StoryLibraryQuery,
-) collections.Shelf {
+) collections.Collection {
 	t.Helper()
 
-	response := application.CreateShelf(context.Background(), name, query)
-	if response.Error != nil || response.Shelf == nil {
-		t.Fatalf("CreateShelf(%s) = %#v", name, response)
+	response := application.CreateCollection(context.Background(), name, query)
+	if response.Error != nil || response.Collection == nil {
+		t.Fatalf("CreateCollection(%s) = %#v", name, response)
 	}
-	return *response.Shelf
+	return *response.Collection
 }
 
-func verticalShelfSummary(
+func verticalCollectionSummary(
 	t *testing.T,
-	response ShelfListResponse,
+	response CollectionListResponse,
 	shelfID int64,
 ) collections.Summary {
 	t.Helper()
 
-	for _, summary := range response.Shelves {
+	for _, summary := range response.Collections {
 		if summary.ID == shelfID {
 			return summary
 		}

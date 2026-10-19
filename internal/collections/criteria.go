@@ -50,17 +50,17 @@ func validateSavedCriteria(
 			if errors.Is(err, sql.ErrNoRows) {
 				return fmt.Errorf(
 					"%w: choice value %d",
-					ErrShelfCriteriaUnavailable,
+					ErrCollectionCriteriaUnavailable,
 					valueID,
 				)
 			}
 			if err != nil {
-				return fmt.Errorf("read saved shelf choice value: %w", err)
+				return fmt.Errorf("read saved collection choice value: %w", err)
 			}
 			if definitionID != filter.DefinitionID {
 				return fmt.Errorf(
 					"%w: choice value %d",
-					ErrShelfCriteriaUnavailable,
+					ErrCollectionCriteriaUnavailable,
 					valueID,
 				)
 			}
@@ -84,17 +84,17 @@ func requireDefinitionKind(
 	if errors.Is(err, sql.ErrNoRows) {
 		return fmt.Errorf(
 			"%w: tag definition %d",
-			ErrShelfCriteriaUnavailable,
+			ErrCollectionCriteriaUnavailable,
 			definitionID,
 		)
 	}
 	if err != nil {
-		return fmt.Errorf("read saved shelf tag definition: %w", err)
+		return fmt.Errorf("read saved collection tag definition: %w", err)
 	}
 	if kind != expected {
 		return fmt.Errorf(
 			"%w: tag definition %d",
-			ErrShelfCriteriaUnavailable,
+			ErrCollectionCriteriaUnavailable,
 			definitionID,
 		)
 	}

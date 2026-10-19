@@ -9,11 +9,11 @@ import (
 	"github.com/01max/librairii/internal/database"
 )
 
-func TestRepositoryPersistsCanonicalShelfFieldsInPositionOrder(t *testing.T) {
+func TestRepositoryPersistsCanonicalCollectionFieldsInPositionOrder(t *testing.T) {
 	t.Parallel()
 
-	repository, connection := openShelfRepository(t)
-	second, err := repository.Insert(context.Background(), NewShelf{
+	repository, connection := openCollectionRepository(t)
+	second, err := repository.Insert(context.Background(), NewCollection{
 		Name:           "Bedtime",
 		NormalizedName: "bedtime",
 		Position:       1,
@@ -23,7 +23,7 @@ func TestRepositoryPersistsCanonicalShelfFieldsInPositionOrder(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	first, err := repository.Insert(context.Background(), NewShelf{
+	first, err := repository.Insert(context.Background(), NewCollection{
 		Name:           "All stories",
 		NormalizedName: "all stories",
 		Position:       0,
@@ -47,7 +47,7 @@ func TestRepositoryPersistsCanonicalShelfFieldsInPositionOrder(t *testing.T) {
 		t.Fatalf("List() = %#v", saved)
 	}
 
-	assertShelfIndexes(
+	assertCollectionIndexes(
 		t,
 		connection,
 		"idx_collections_normalized_name",
@@ -56,11 +56,11 @@ func TestRepositoryPersistsCanonicalShelfFieldsInPositionOrder(t *testing.T) {
 	)
 }
 
-func TestRepositoryRejectsInvalidShelfIdentityQueryStateAndOrdering(t *testing.T) {
+func TestRepositoryRejectsInvalidCollectionIdentityQueryStateAndOrdering(t *testing.T) {
 	t.Parallel()
 
-	repository, _ := openShelfRepository(t)
-	valid := NewShelf{
+	repository, _ := openCollectionRepository(t)
+	valid := NewCollection{
 		Name:           "Bedtime",
 		NormalizedName: "bedtime",
 		Position:       0,
@@ -73,11 +73,11 @@ func TestRepositoryRejectsInvalidShelfIdentityQueryStateAndOrdering(t *testing.T
 
 	tests := []struct {
 		name  string
-		input NewShelf
+		input NewCollection
 	}{
 		{
 			name: "duplicate normalized name",
-			input: NewShelf{
+			input: NewCollection{
 				Name:           "BEDTIME",
 				NormalizedName: "BEDTIME",
 				Position:       1,
@@ -87,7 +87,7 @@ func TestRepositoryRejectsInvalidShelfIdentityQueryStateAndOrdering(t *testing.T
 		},
 		{
 			name: "duplicate position",
-			input: NewShelf{
+			input: NewCollection{
 				Name:           "Favorites",
 				NormalizedName: "favorites",
 				Position:       valid.Position,
@@ -97,7 +97,7 @@ func TestRepositoryRejectsInvalidShelfIdentityQueryStateAndOrdering(t *testing.T
 		},
 		{
 			name: "untrimmed name",
-			input: NewShelf{
+			input: NewCollection{
 				Name:           " Favorites ",
 				NormalizedName: "favorites",
 				Position:       2,
@@ -107,7 +107,7 @@ func TestRepositoryRejectsInvalidShelfIdentityQueryStateAndOrdering(t *testing.T
 		},
 		{
 			name: "empty normalized name",
-			input: NewShelf{
+			input: NewCollection{
 				Name:           "Favorites",
 				NormalizedName: "",
 				Position:       2,
@@ -117,7 +117,7 @@ func TestRepositoryRejectsInvalidShelfIdentityQueryStateAndOrdering(t *testing.T
 		},
 		{
 			name: "negative position",
-			input: NewShelf{
+			input: NewCollection{
 				Name:           "Favorites",
 				NormalizedName: "favorites",
 				Position:       -1,
@@ -127,7 +127,7 @@ func TestRepositoryRejectsInvalidShelfIdentityQueryStateAndOrdering(t *testing.T
 		},
 		{
 			name: "invalid query version",
-			input: NewShelf{
+			input: NewCollection{
 				Name:           "Favorites",
 				NormalizedName: "favorites",
 				Position:       2,
@@ -137,7 +137,7 @@ func TestRepositoryRejectsInvalidShelfIdentityQueryStateAndOrdering(t *testing.T
 		},
 		{
 			name: "malformed query payload",
-			input: NewShelf{
+			input: NewCollection{
 				Name:           "Favorites",
 				NormalizedName: "favorites",
 				Position:       2,
@@ -147,7 +147,7 @@ func TestRepositoryRejectsInvalidShelfIdentityQueryStateAndOrdering(t *testing.T
 		},
 		{
 			name: "non-object query payload",
-			input: NewShelf{
+			input: NewCollection{
 				Name:           "Favorites",
 				NormalizedName: "favorites",
 				Position:       2,
@@ -157,7 +157,7 @@ func TestRepositoryRejectsInvalidShelfIdentityQueryStateAndOrdering(t *testing.T
 		},
 		{
 			name: "unsupported validity state",
-			input: NewShelf{
+			input: NewCollection{
 				Name:           "Favorites",
 				NormalizedName: "favorites",
 				Position:       2,
@@ -196,7 +196,7 @@ func TestNewRepositoryRequiresDatabase(t *testing.T) {
 	}
 }
 
-func openShelfRepository(t *testing.T) (*Repository, *sql.DB) {
+func openCollectionRepository(t *testing.T) (*Repository, *sql.DB) {
 	t.Helper()
 
 	opened, err := database.Open(
@@ -218,7 +218,7 @@ func openShelfRepository(t *testing.T) (*Repository, *sql.DB) {
 	return repository, opened.SQL()
 }
 
-func assertShelfIndexes(t *testing.T, connection *sql.DB, expected ...string) {
+func assertCollectionIndexes(t *testing.T, connection *sql.DB, expected ...string) {
 	t.Helper()
 
 	rows, err := connection.Query("PRAGMA index_list(collections)")
@@ -243,7 +243,7 @@ func assertShelfIndexes(t *testing.T, connection *sql.DB, expected ...string) {
 	}
 	for _, name := range expected {
 		if !found[name] {
-			t.Errorf("missing shelf index %q; found %#v", name, found)
+			t.Errorf("missing collection index %q; found %#v", name, found)
 		}
 	}
 }

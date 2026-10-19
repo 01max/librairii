@@ -136,7 +136,7 @@ func TestMigratedBrokenLibraryThroughApplicationRestartRefreshAndExport(t *testi
 		if err != nil {
 			t.Fatal(err)
 		}
-		application, err := New(Dependencies{Clock: fixedClock{now: time.Now()}, Dialogs: fakeDialogs{}, Events: events, Readiness: fakeReadiness{report: ReadinessReport{MutationsAllowed: true}}, Operations: runtime, Library: runtime, Removal: runtime, Tags: runtime, Shelves: runtime})
+		application, err := New(Dependencies{Clock: fixedClock{now: time.Now()}, Dialogs: fakeDialogs{}, Events: events, Readiness: fakeReadiness{report: ReadinessReport{MutationsAllowed: true}}, Operations: runtime, Library: runtime, Removal: runtime, Tags: runtime, Collections: runtime})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -162,7 +162,7 @@ func TestMigratedBrokenLibraryThroughApplicationRestartRefreshAndExport(t *testi
 	if compatibility.Error != nil || compatibility.Compatibility.LegacyBrokenTagID != 9 {
 		t.Fatalf("compatibility=%#v", compatibility)
 	}
-	shelf := application.OpenShelf(ctx, 7, library.ListRequest{BrokenVisibility: library.BrokenOnly})
+	shelf := application.OpenCollection(ctx, 7, library.ListRequest{BrokenVisibility: library.BrokenOnly})
 	if shelf.Error != nil || shelf.Evaluation == nil || shelf.Evaluation.Page.TotalItems != 1 || shelf.Evaluation.Page.Stories[0].ID != ids[0] {
 		t.Fatalf("migrated shelf=%#v", shelf)
 	}

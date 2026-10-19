@@ -152,7 +152,7 @@ func TestPreflightBlocksEmptyInvalidShelfAndUnwritableDestination(t *testing.T) 
 	}
 	resolver, err := NewResolver(
 		libraryQuery,
-		failingShelfResolver{err: collections.ErrShelfNeedsAttention},
+		failingShelfResolver{err: collections.ErrCollectionNeedsAttention},
 	)
 	if err != nil {
 		t.Fatal(err)
@@ -331,8 +331,8 @@ type failingShelfResolver struct {
 func (f failingShelfResolver) Open(
 	context.Context,
 	int64,
-) (collections.OpenedShelf, error) {
-	return collections.OpenedShelf{}, f.err
+) (collections.OpenedCollection, error) {
+	return collections.OpenedCollection{}, f.err
 }
 
 func writeManagedExportStory(

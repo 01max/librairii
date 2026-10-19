@@ -93,7 +93,7 @@ func TestDefinitionDeletionPlansAndInvalidatesEveryReferencingShelf(t *testing.T
 		unrelatedShelf.ID,
 		collections.ValidityValid,
 	)
-	preserved, err := repository.Shelf(ctx, calmShelf.ID)
+	preserved, err := repository.Collection(ctx, calmShelf.ID)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -177,7 +177,7 @@ func TestValueDeletionInvalidatesWholeQueryWithoutDroppingMissingCriterion(
 		dreamyShelf.ID,
 		collections.ValidityValid,
 	)
-	preserved, err := repository.Shelf(ctx, mixedShelf.ID)
+	preserved, err := repository.Collection(ctx, mixedShelf.ID)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -222,7 +222,7 @@ func createTagReferenceShelf(
 	service *collections.Service,
 	name string,
 	query library.StoryLibraryQuery,
-) collections.Shelf {
+) collections.Collection {
 	t.Helper()
 
 	shelf, err := service.Create(context.Background(), name, query)
@@ -240,7 +240,7 @@ func assertTagReferenceShelfValidity(
 ) {
 	t.Helper()
 
-	shelf, err := repository.Shelf(context.Background(), shelfID)
+	shelf, err := repository.Collection(context.Background(), shelfID)
 	if err != nil {
 		t.Fatal(err)
 	}

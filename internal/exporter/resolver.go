@@ -23,7 +23,7 @@ type libraryResolver interface {
 }
 
 type shelfResolver interface {
-	Open(context.Context, int64) (collections.OpenedShelf, error)
+	Open(context.Context, int64) (collections.OpenedCollection, error)
 }
 
 type Scope struct {
@@ -33,8 +33,8 @@ type Scope struct {
 }
 
 type Resolver struct {
-	library libraryResolver
-	shelves shelfResolver
+	library     libraryResolver
+	collections shelfResolver
 }
 
 func NewResolver(
@@ -48,8 +48,8 @@ func NewResolver(
 		return nil, ErrMissingShelves
 	}
 	return &Resolver{
-		library: libraryQuery,
-		shelves: shelfService,
+		library:     libraryQuery,
+		collections: shelfService,
 	}, nil
 }
 
@@ -109,8 +109,8 @@ func (r *Resolver) ResolveShelf(
 	return Scope{
 		Source: operations.ExportSource{
 			Type:       operations.ExportSourceShelf,
-			ShelfIDs:   []int64{opened.Shelf.ID},
-			ShelfNames: []string{opened.Shelf.Name},
+			ShelfIDs:   []int64{opened.Collection.ID},
+			ShelfNames: []string{opened.Collection.Name},
 		},
 		Stories: stories,
 	}, nil
@@ -164,8 +164,8 @@ func (r *Resolver) ResolveShelves(
 			union[story.ID] = struct{}{}
 			stories = append(stories, story)
 		}
-		source.ShelfIDs = append(source.ShelfIDs, opened.Shelf.ID)
-		source.ShelfNames = append(source.ShelfNames, opened.Shelf.Name)
+		source.ShelfIDs = append(source.ShelfIDs, opened.Collection.ID)
+		source.ShelfNames = append(source.ShelfNames, opened.Collection.Name)
 	}
 	return Scope{
 		Source:           source,

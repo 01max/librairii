@@ -14,9 +14,9 @@ const (
 	ValidityNeedsAttention Validity = "needs_attention"
 )
 
-var ErrMissingDatabase = errors.New("shelf database is required")
+var ErrMissingDatabase = errors.New("collection database is required")
 
-type Shelf struct {
+type Collection struct {
 	ID             int64    `json:"id"`
 	Name           string   `json:"name"`
 	NormalizedName string   `json:"normalizedName"`
@@ -26,7 +26,7 @@ type Shelf struct {
 	Validity       Validity `json:"validity"`
 }
 
-type NewShelf struct {
+type NewCollection struct {
 	Name           string
 	NormalizedName string
 	Position       int
@@ -48,16 +48,16 @@ func NewRepository(database *sql.DB) (*Repository, error) {
 
 func (r *Repository) Insert(
 	ctx context.Context,
-	input NewShelf,
-) (Shelf, error) {
-	return insertShelf(ctx, r.database, input)
+	input NewCollection,
+) (Collection, error) {
+	return insertCollection(ctx, r.database, input)
 }
 
-func insertShelf(
+func insertCollection(
 	ctx context.Context,
-	executor shelfExecutor,
-	input NewShelf,
-) (Shelf, error) {
+	executor collectionExecutor,
+	input NewCollection,
+) (Collection, error) {
 	validity := input.Validity
 	if validity == "" {
 		validity = ValidityValid
@@ -80,13 +80,13 @@ func insertShelf(
 		validity,
 	)
 	if err != nil {
-		return Shelf{}, fmt.Errorf("insert shelf: %w", err)
+		return Collection{}, fmt.Errorf("insert collection: %w", err)
 	}
 	id, err := result.LastInsertId()
 	if err != nil {
-		return Shelf{}, fmt.Errorf("read shelf id: %w", err)
+		return Collection{}, fmt.Errorf("read collection id: %w", err)
 	}
-	return Shelf{
+	return Collection{
 		ID:             id,
 		Name:           input.Name,
 		NormalizedName: input.NormalizedName,
@@ -97,24 +97,24 @@ func insertShelf(
 	}, nil
 }
 
-func (r *Repository) List(ctx context.Context) ([]Shelf, error) {
-	return listShelves(ctx, r.database)
+func (r *Repository) List(ctx context.Context) ([]Collection, error) {
+	return listCollections(ctx, r.database)
 }
 
-func (r *Repository) Shelf(ctx context.Context, shelfID int64) (Shelf, error) {
-	return readShelf(ctx, r.database, shelfID)
+func (r *Repository) Collection(ctx context.Context, collectionID int64) (Collection, error) {
+	return readCollection(ctx, r.database, collectionID)
 }
 
-type shelfExecutor interface {
+type collectionExecutor interface {
 	ExecContext(context.Context, string, ...any) (sql.Result, error)
 }
 
-type shelfQueryer interface {
+type collectionQueryer interface {
 	QueryContext(context.Context, string, ...any) (*sql.Rows, error)
 	QueryRowContext(context.Context, string, ...any) *sql.Row
 }
 
-func listShelves(ctx context.Context, queryer shelfQueryer) ([]Shelf, error) {
+func listCollections(ctx context.Context, queryer collectionQueryer) ([]Collection, error) {
 	rows, err := queryer.QueryContext(
 		ctx,
 		`SELECT
@@ -133,21 +133,21 @@ func listShelves(ctx context.Context, queryer shelfQueryer) ([]Shelf, error) {
 	}
 	defer rows.Close()
 
-	collections := make([]Shelf, 0)
+	collections := make([]Collection, 0)
 	for rows.Next() {
-		var shelf Shelf
+		var collection Collection
 		if err := rows.Scan(
-			&shelf.ID,
-			&shelf.Name,
-			&shelf.NormalizedName,
-			&shelf.Position,
-			&shelf.QueryVersion,
-			&shelf.QueryPayload,
-			&shelf.Validity,
+			&collection.ID,
+			&collection.Name,
+			&collection.NormalizedName,
+			&collection.Position,
+			&collection.QueryVersion,
+			&collection.QueryPayload,
+			&collection.Validity,
 		); err != nil {
-			return nil, fmt.Errorf("scan shelf: %w", err)
+			return nil, fmt.Errorf("scan collection: %w", err)
 		}
-		collections = append(collections, shelf)
+		collections = append(collections, collection)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("iterate collections: %w", err)
@@ -155,12 +155,12 @@ func listShelves(ctx context.Context, queryer shelfQueryer) ([]Shelf, error) {
 	return collections, nil
 }
 
-func readShelf(
+func readCollection(
 	ctx context.Context,
-	queryer shelfQueryer,
-	shelfID int64,
-) (Shelf, error) {
-	var shelf Shelf
+	queryer collectionQueryer,
+	collectionID int64,
+) (Collection, error) {
+	var collection Collection
 	err := queryer.QueryRowContext(
 		ctx,
 		`SELECT
@@ -173,18 +173,18 @@ func readShelf(
 			validity_state
 		 FROM collections
 		 WHERE id = ?`,
-		shelfID,
+		collectionID,
 	).Scan(
-		&shelf.ID,
-		&shelf.Name,
-		&shelf.NormalizedName,
-		&shelf.Position,
-		&shelf.QueryVersion,
-		&shelf.QueryPayload,
-		&shelf.Validity,
+		&collection.ID,
+		&collection.Name,
+		&collection.NormalizedName,
+		&collection.Position,
+		&collection.QueryVersion,
+		&collection.QueryPayload,
+		&collection.Validity,
 	)
 	if err != nil {
-		return Shelf{}, err
+		return Collection{}, err
 	}
-	return shelf, nil
+	return collection, nil
 }

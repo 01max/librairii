@@ -47,7 +47,7 @@ type ImportRuntime struct {
 	flags            *library.BrokenFlags
 	removal          *removal.Service
 	tags             *tagging.Service
-	shelves          *collections.Service
+	collections      *collections.Service
 	shelfEvaluator   *collections.Evaluator
 	exportPreflight  *exporter.PreflightService
 	diagnosticLogger *diagnostics.Logger
@@ -266,7 +266,7 @@ func (r *ImportRuntime) Start(ctx context.Context) error {
 	r.flags = library.NewBrokenFlags(writeDatabase)
 	r.removal = removalService
 	r.tags = tagService
-	r.shelves = shelfService
+	r.collections = shelfService
 	r.shelfEvaluator = shelfEvaluator
 	r.exportPreflight = exportPreflight
 	r.diagnosticLogger = diagnosticLogger
@@ -678,105 +678,105 @@ func (r *ImportRuntime) SetBulkChoiceValue(
 	return service.SetBulkChoiceValue(ctx, storyIDs, definitionID, valueID, assigned)
 }
 
-func (r *ImportRuntime) ListShelves(
+func (r *ImportRuntime) ListCollections(
 	ctx context.Context,
 	includeBroken ...library.BrokenVisibility,
 ) ([]collections.Summary, error) {
-	_, evaluator, err := r.currentShelves()
+	_, evaluator, err := r.currentCollections()
 	if err != nil {
 		return nil, err
 	}
 	return evaluator.Summaries(ctx, includeBroken...)
 }
 
-func (r *ImportRuntime) CreateShelf(
+func (r *ImportRuntime) CreateCollection(
 	ctx context.Context,
 	name string,
 	query library.StoryLibraryQuery,
-) (collections.Shelf, error) {
-	service, _, err := r.currentShelves()
+) (collections.Collection, error) {
+	service, _, err := r.currentCollections()
 	if err != nil {
-		return collections.Shelf{}, err
+		return collections.Collection{}, err
 	}
 	return service.Create(ctx, name, query)
 }
 
-func (r *ImportRuntime) OpenShelf(
+func (r *ImportRuntime) OpenCollection(
 	ctx context.Context,
 	shelfID int64,
 	request library.ListRequest,
 ) (collections.Evaluation, error) {
-	_, evaluator, err := r.currentShelves()
+	_, evaluator, err := r.currentCollections()
 	if err != nil {
 		return collections.Evaluation{}, err
 	}
 	return evaluator.Evaluate(ctx, shelfID, request)
 }
 
-func (r *ImportRuntime) RenameShelf(
+func (r *ImportRuntime) RenameCollection(
 	ctx context.Context,
 	shelfID int64,
 	name string,
-) (collections.Shelf, error) {
-	service, _, err := r.currentShelves()
+) (collections.Collection, error) {
+	service, _, err := r.currentCollections()
 	if err != nil {
-		return collections.Shelf{}, err
+		return collections.Collection{}, err
 	}
 	return service.Rename(ctx, shelfID, name)
 }
 
-func (r *ImportRuntime) DuplicateShelf(
+func (r *ImportRuntime) DuplicateCollection(
 	ctx context.Context,
 	shelfID int64,
 	name string,
-) (collections.Shelf, error) {
-	service, _, err := r.currentShelves()
+) (collections.Collection, error) {
+	service, _, err := r.currentCollections()
 	if err != nil {
-		return collections.Shelf{}, err
+		return collections.Collection{}, err
 	}
 	return service.Duplicate(ctx, shelfID, name)
 }
 
-func (r *ImportRuntime) ReplaceShelfQuery(
+func (r *ImportRuntime) ReplaceCollectionQuery(
 	ctx context.Context,
 	shelfID int64,
 	query library.StoryLibraryQuery,
-) (collections.Shelf, error) {
-	service, _, err := r.currentShelves()
+) (collections.Collection, error) {
+	service, _, err := r.currentCollections()
 	if err != nil {
-		return collections.Shelf{}, err
+		return collections.Collection{}, err
 	}
 	return service.ReplaceQuery(ctx, shelfID, query)
 }
 
-func (r *ImportRuntime) ReorderShelves(
+func (r *ImportRuntime) ReorderCollections(
 	ctx context.Context,
 	orderedIDs []int64,
-) ([]collections.Shelf, error) {
-	service, _, err := r.currentShelves()
+) ([]collections.Collection, error) {
+	service, _, err := r.currentCollections()
 	if err != nil {
 		return nil, err
 	}
 	return service.Reorder(ctx, orderedIDs)
 }
 
-func (r *ImportRuntime) DeleteShelf(
+func (r *ImportRuntime) DeleteCollection(
 	ctx context.Context,
 	shelfID int64,
 ) error {
-	service, _, err := r.currentShelves()
+	service, _, err := r.currentCollections()
 	if err != nil {
 		return err
 	}
 	return service.Delete(ctx, shelfID)
 }
 
-func (r *ImportRuntime) PreviewShelves(
+func (r *ImportRuntime) PreviewCollections(
 	ctx context.Context,
 	shelfIDs []int64,
 	includeBroken ...library.BrokenVisibility,
 ) (collections.SelectionPreview, error) {
-	_, evaluator, err := r.currentShelves()
+	_, evaluator, err := r.currentCollections()
 	if err != nil {
 		return collections.SelectionPreview{}, err
 	}
@@ -792,7 +792,7 @@ func (r *ImportRuntime) Close() error {
 	r.flags = nil
 	r.removal = nil
 	r.tags = nil
-	r.shelves = nil
+	r.collections = nil
 	r.shelfEvaluator = nil
 	r.exportPreflight = nil
 	r.diagnosticLogger = nil
@@ -882,21 +882,21 @@ func (r *ImportRuntime) currentTags() (*tagging.Service, error) {
 	return r.tags, nil
 }
 
-func (r *ImportRuntime) currentShelves() (
+func (r *ImportRuntime) currentCollections() (
 	*collections.Service,
 	*collections.Evaluator,
 	error,
 ) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
-	if r.shelves == nil || r.shelfEvaluator == nil {
+	if r.collections == nil || r.shelfEvaluator == nil {
 		return nil, nil, ErrImportRuntimeNotReady
 	}
-	return r.shelves, r.shelfEvaluator, nil
+	return r.collections, r.shelfEvaluator, nil
 }
 
 var _ OperationPort = (*ImportRuntime)(nil)
 var _ LibraryPort = (*ImportRuntime)(nil)
 var _ RemovalPort = (*ImportRuntime)(nil)
 var _ TaggingPort = (*ImportRuntime)(nil)
-var _ ShelfPort = (*ImportRuntime)(nil)
+var _ CollectionPort = (*ImportRuntime)(nil)

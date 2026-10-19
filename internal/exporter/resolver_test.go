@@ -179,23 +179,23 @@ func (f *fakeLibraryResolver) ExportStories(
 	return stories, nil
 }
 
-type fakeShelfResolver map[int64]collections.OpenedShelf
+type fakeShelfResolver map[int64]collections.OpenedCollection
 
 func (f fakeShelfResolver) Open(
 	_ context.Context,
 	shelfID int64,
-) (collections.OpenedShelf, error) {
+) (collections.OpenedCollection, error) {
 	opened, found := f[shelfID]
 	if !found {
-		return collections.OpenedShelf{}, collections.ErrShelfNotFound
+		return collections.OpenedCollection{}, collections.ErrCollectionNotFound
 	}
 	return opened, nil
 }
 
-func openedShelf(id int64, name string, queryName string) collections.OpenedShelf {
-	return collections.OpenedShelf{
-		Shelf: collections.Shelf{ID: id, Name: name},
-		Query: collections.SavedLibraryQuery{Name: queryName},
+func openedShelf(id int64, name string, queryName string) collections.OpenedCollection {
+	return collections.OpenedCollection{
+		Collection: collections.Collection{ID: id, Name: name},
+		Query:      collections.SavedLibraryQuery{Name: queryName},
 	}
 }
 
