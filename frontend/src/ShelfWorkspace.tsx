@@ -3,6 +3,7 @@ import {OpenShelf, RenameShelf, DuplicateShelf, DeleteShelf, RemoveStoriesFromSh
 import {collections, library, shelves} from '../wailsjs/go/models';
 import {type CollectionQuery, DEFAULT_COLLECTION_QUERY} from './query-codec';
 import {t} from './i18n';
+import ShelfReview from './ShelfReview';
 import ShelfSources from './ShelfSources';
 import ShelfDialog from './ShelfDialog';
 import StoryCover from './StoryCover';
@@ -17,6 +18,7 @@ export default function ShelfWorkspace({id, revision, query, onQuery, collection
     const [selected, setSelected] = useState<string[]>([]);
     const [error, setError] = useState('');
     const [busy, setBusy] = useState(false);
+    const [reviewOpen, setReviewOpen] = useState(false);
     const [manageSources, setManageSources] = useState(false);
     const [dialog, setDialog] = useState<'rename' | 'duplicate' | 'delete' | null>(null);
     const [name, setName] = useState('');
@@ -56,8 +58,9 @@ export default function ShelfWorkspace({id, revision, query, onQuery, collection
         <div className="heading"><div><h2>{view.shelf.name}</h2><p>{t('{0} approved stories · {1} unavailable', view.shelf.count, view.shelf.unavailableCount)}</p></div>
             <div className="curated-actions">{(['rename', 'duplicate', 'delete'] as const).map((action) => <button key={action} type="button" disabled={busy}
                 onClick={() => {setName(action === 'rename' ? view.shelf.name : ''); setDialog(action);}}>{t(action === 'rename' ? 'Rename Shelf' : action === 'duplicate' ? 'Duplicate Shelf' : 'Delete Shelf')}</button>)}</div></div>
-        <div className="curated-actions"><button type="button" disabled={busy} onClick={() => setManageSources(true)}>{t('Manage sources')}</button></div>
+        <div className="curated-actions"><button type="button" disabled={busy} onClick={() => setReviewOpen(true)}>{t('Review updates')}</button><button type="button" disabled={busy} onClick={() => setManageSources(true)}>{t('Manage sources')}</button></div>
         <p>{t('Sources (any match): {0}', view.sources.filter((source) => source.active).map((source) => source.name).join(', ') || t('None'))}</p>
+        {reviewOpen && <ShelfReview id={id} onClose={() => setReviewOpen(false)} onApplied={() => {void load(); onChanged();}}/>}
         {manageSources && <ShelfSources id={id} sources={view.sources} collections={sourceOptions} onClose={() => setManageSources(false)} onChanged={() => {void load(); onChanged();}}/>}
         <label>{t('Refine this view')}<input type="search" value={query.name} onChange={(event) => onQuery({...query, name: event.target.value, page: 1})}/></label>
         <label>{t('Sort stories')}<select value={manualOrder ? '' : query.sort} onChange={(event) => {setManualOrder(event.target.value === ''); if (event.target.value) onQuery({...query, sort: event.target.value as CollectionQuery['sort'], page: 1});}}>
