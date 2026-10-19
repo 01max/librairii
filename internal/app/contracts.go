@@ -39,9 +39,10 @@ const (
 )
 
 type APIError struct {
-	Code    ErrorCode         `json:"code"`
-	Message string            `json:"message"`
-	Details map[string]string `json:"details,omitempty"`
+	Code       ErrorCode         `json:"code"`
+	Message    string            `json:"message"`
+	MessageKey string            `json:"messageKey,omitempty"`
+	Details    map[string]string `json:"details,omitempty"`
 }
 
 func (e *APIError) Error() string {
@@ -49,7 +50,7 @@ func (e *APIError) Error() string {
 }
 
 func NewAPIError(code ErrorCode, message string) *APIError {
-	return &APIError{Code: code, Message: message}
+	return &APIError{Code: code, Message: message, MessageKey: message}
 }
 
 func AsAPIError(err error) *APIError {
