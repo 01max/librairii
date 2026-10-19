@@ -2,13 +2,11 @@ import {useCallback, useRef, useState} from 'react';
 import {RestoreStoryFlags, SetStoriesBroken} from '../wailsjs/go/main/App';
 import {library} from '../wailsjs/go/models';
 import {t} from './i18n';
-import type {BrokenVisibility} from './query-codec';
 
 type FlagResponse = {result?: library.FlagResult; error?: {message: string}};
 
 export function useStoryFlags(
     onChanged: (result: library.FlagResult) => Promise<void>,
-    visibility: BrokenVisibility = 'hide',
 ) {
     const locked = useRef(false);
     const [pending, setPending] = useState(false);
@@ -33,11 +31,7 @@ export function useStoryFlags(
             else if (broken === undefined) setNotice(t('Previous broken flags restored.'));
             else {
                 const counts = t('{0} of {1} stories updated.', result.changedStories, result.requestedStories);
-                setNotice(broken && visibility === 'hide'
-                    ? t('{0} Marked as broken and hidden.', counts)
-                    : !broken && visibility === 'only'
-                        ? t('{0} Cleared flags; stories no longer match Broken only.', counts)
-                        : counts);
+                setNotice(counts);
             }
             await onChanged(result);
         } catch {
@@ -46,7 +40,7 @@ export function useStoryFlags(
             locked.current = false;
             setPending(false);
         }
-    }, [onChanged, visibility]);
+    }, [onChanged]);
 
     const set = useCallback((ids: number[], broken: boolean) =>
         execute(() => SetStoriesBroken(ids, broken), broken), [execute]);

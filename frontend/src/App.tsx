@@ -62,7 +62,6 @@ import {
 } from './query-history';
 import {
     type CompatibilityFilter,
-    type BrokenVisibility,
     type BooleanFilterState,
     type CollectionQuery,
     DEFAULT_COLLECTION_QUERY,
@@ -176,8 +175,6 @@ function collectionQueryFromShelf(
 ): CollectionQuery {
     return {
         ...(saved.anyOf?.length ? {anyOf: saved.anyOf.map((branch) => collectionQueryFromShelf(branch, current))} : {}),
-        brokenVisibility: (saved.brokenVisibility ?? (saved.includeBroken ? 'include' : 'hide')) as BrokenVisibility,
-        ...(saved.brokenState ? {brokenState: saved.brokenState as BooleanFilterState} : {}),
         name: saved.name ?? '',
         languages: [...(saved.languages ?? [])],
         compatibilities: [...(saved.compatibilities ?? [])] as CompatibilityFilter[],
@@ -372,10 +369,6 @@ function App() {
     const [collectionQuery, setCollectionQuery] = useState(
         initialHistoryState.query,
     );
-    const brokenVisibilityRef = useRef((collectionQuery.brokenVisibility ?? 'hide'));
-    useEffect(() => {
-        brokenVisibilityRef.current = (collectionQuery.brokenVisibility ?? 'hide');
-    }, [collectionQuery.brokenVisibility]);
     const [page, setPage] = useState<library.Page | null>(null);
     const [selectedID, setSelectedID] = useState<number | null>(null);
     const [selectedIDs, setSelectedIDs] = useState<number[]>([]);
@@ -452,7 +445,6 @@ function App() {
     const searchInput = useRef<HTMLInputElement>(null);
     const openDetailsButton = useRef<HTMLButtonElement>(null);
     const collectionRequestGeneration = useRef(0);
-    const pendingFlagFocus = useRef<{trigger: Element; candidates: HTMLElement[]} | null>(null);
     const shelfPreviewGeneration = useRef(0);
     const shelfListRequestGeneration = useRef(0);
     const shelfDialog = useRef<HTMLFormElement>(null);
@@ -581,7 +573,7 @@ function App() {
     const loadSavedShelves = useCallback(async () => {
         try {
             const generation = ++shelfListRequestGeneration.current;
-            const response = await ListShelves(brokenVisibilityRef.current);
+            const response = await ListShelves('include');
             if (generation !== shelfListRequestGeneration.current) return;
             if (response.error) {
                 setRequestError(response.error.message);
@@ -607,15 +599,6 @@ function App() {
         }
     }, [activateShelf, queryHistory]);
 
-    const previousVisibility = useRef((collectionQuery.brokenVisibility ?? 'hide'));
-    useEffect(() => {
-        const visibility = (collectionQuery.brokenVisibility ?? 'hide');
-        if (visibility !== previousVisibility.current) {
-            previousVisibility.current = visibility;
-            if (applicationState === 'ready') void loadSavedShelves();
-        }
-    }, [collectionQuery.brokenVisibility, applicationState, loadSavedShelves]);
-
     const invalidateCollection = useCallback(async () => {
         setCollectionRevision((current) => current + 1);
         await Promise.all([loadCollectionRef.current(), loadSavedShelves()]);
@@ -623,31 +606,16 @@ function App() {
 
     const onFlagsChanged = useCallback(async (result: library.FlagResult) => {
         const changes = new Map(result.changes.map((change) => [change.storyId, change.current]));
-        const mode = collectionQuery.brokenVisibility ?? 'hide';
-        const remainsVisible = (story: library.StorySummary) => mode === 'include' || (mode === 'only' ? story.broken : !story.broken);
         const refreshStories = (stories: library.StorySummary[]) => stories.map((story) => changes.has(story.id)
-            ? new library.StorySummary({...story, broken: changes.get(story.id)}) : story).filter(remainsVisible);
+            ? new library.StorySummary({...story, broken: changes.get(story.id)}) : story);
         setSavedShelfStories((current) => Object.fromEntries(Object.entries(current).map(([id, stories]) => [id, refreshStories(stories)])));
-        const trigger = document.activeElement;
-        const triggerStory = trigger?.closest('.story-card')?.querySelector<HTMLElement>('[data-story-id]');
-        const triggerID = Number(triggerStory?.dataset.storyId);
-        pendingFlagFocus.current = null;
-        if (trigger && triggerStory && changes.has(triggerID)) {
-            const candidates = Array.from(document.querySelectorAll<HTMLElement>('.story[data-story-id]'));
-            const index = candidates.indexOf(triggerStory);
-            pendingFlagFocus.current = {
-                trigger,
-                candidates: [...candidates.slice(index + 1), ...candidates.slice(0, index)]
-                    .filter((candidate) => !changes.has(Number(candidate.dataset.storyId))),
-            };
-        }
         setInspectedStory((current) => {
             const change = result.changes.find((item) => item.storyId === current?.id);
             return current && change ? new library.StorySummary({...current, broken: change.current}) : current;
         });
         await invalidateCollection();
-    }, [invalidateCollection, collectionQuery.brokenVisibility]);
-    const flags = useStoryFlags(onFlagsChanged, collectionQuery.brokenVisibility ?? 'hide');
+    }, [invalidateCollection]);
+    const flags = useStoryFlags(onFlagsChanged);
 
     const reconcileOperation = useCallback((snapshot: operations.Snapshot) => {
         setOperationSnapshots((current) => {
@@ -705,7 +673,7 @@ function App() {
                     if (active) {
                         setTagCatalog(catalogResponse.catalog ?? null);
                     }
-                    const shelvesResponse = await ListShelves(brokenVisibilityRef.current);
+                    const shelvesResponse = await ListShelves('include');
                     if (!active) {
                         return;
                     }
@@ -805,7 +773,7 @@ function App() {
             setShelfSelectionBusy(true);
             setShelfSelectionError(null);
             try {
-                const response = await PreviewShelves(selectedShelfIDs, (collectionQuery.brokenVisibility ?? 'hide'));
+                const response = await PreviewShelves(selectedShelfIDs, 'include');
                 if (!active) {
                     return;
                 }
@@ -833,7 +801,7 @@ function App() {
         return () => {
             active = false;
         };
-    }, [applicationState, savedShelves, selectedShelfIDs, collectionQuery.brokenVisibility]);
+    }, [applicationState, savedShelves, selectedShelfIDs]);
 
     useEffect(() => {
         const unsubscribe = EventsOn('operation:changed', (value: unknown) => {
@@ -933,7 +901,6 @@ function App() {
                 : [];
         await preflightExport(new exporter.PreflightRequest({
             sourceType,
-            brokenVisibility: (collectionQuery.brokenVisibility ?? 'hide'),
             storyIds: sourceType === 'selection' ? [...selectedIDs] : [],
             query: sourceType === 'current_query'
                 ? new library.StoryLibraryQuery(collectionQuery)
@@ -1274,24 +1241,6 @@ function App() {
         setSelectedID(selectedID !== null && nextSelection.includes(selectedID)
             ? selectedID : nextSelection[0] ?? null);
     }
-    useEffect(() => {
-        const pending = pendingFlagFocus.current;
-        if (!pending || pending.trigger.isConnected) return;
-        pendingFlagFocus.current = null;
-        if (document.activeElement !== document.body) return;
-        const target = pending.candidates.find((candidate) => candidate.isConnected)
-            ?? document.querySelector<HTMLElement>('main');
-        target?.focus({preventScroll: true});
-    }, [renderedStories]);
-    useEffect(() => {
-        const cancelFlagFocus = (event: FocusEvent) => {
-            if (pendingFlagFocus.current && event.target !== pendingFlagFocus.current.trigger) {
-                pendingFlagFocus.current = null;
-            }
-        };
-        document.addEventListener('focusin', cancelFlagFocus);
-        return () => document.removeEventListener('focusin', cancelFlagFocus);
-    }, []);
     const selectedSummary = renderedStories.find(
         (story) => story.id === selectedID,
     ) ?? null;
@@ -1353,7 +1302,6 @@ function App() {
                 const response = await OpenShelf(
                     shelf.id,
                     new library.ListRequest({
-                        brokenVisibility: (collectionQuery.brokenVisibility ?? 'hide'),
                         page: 1,
                         pageSize: 6,
                         sort: collectionQuery.sort,
@@ -1414,7 +1362,7 @@ function App() {
         applicationState,
         assignmentWorkspace?.catalog,
         collectionQuery.sort,
-        collectionQuery.brokenVisibility,
+        
         collectionRevision,
         previewableShelves,
         showSavedShelfRows,
@@ -1442,7 +1390,6 @@ function App() {
             const response = await OpenShelf(
                 shelfID,
                 new library.ListRequest({
-                    brokenVisibility: (collectionQuery.brokenVisibility ?? 'hide'),
                     page: 1,
                     pageSize: collectionQuery.pageSize,
                     sort: collectionQuery.sort,
@@ -1500,7 +1447,6 @@ function App() {
                 const selected = await Promise.all(selectedShelfIDs.map((id) => OpenShelf(
                     id,
                     new library.ListRequest({
-                        brokenVisibility: (collectionQuery.brokenVisibility ?? 'hide'),
                         page: 1,
                         pageSize: 1,
                         sort: collectionQuery.sort,
@@ -1512,7 +1458,6 @@ function App() {
                 }
                 queryToSave = {
                     ...initialCollectionQuery,
-                    brokenVisibility: collectionQuery.brokenVisibility,
                     sort: collectionQuery.sort,
                     pageSize: collectionQuery.pageSize,
                     anyOf: selected.map((response) => collectionQueryFromShelf(response.evaluation!.query, collectionQuery)),
@@ -1741,22 +1686,7 @@ function App() {
     }
 
     const unavailableCriteria = hasUnavailableCriteria(collectionQuery, tagCatalog);
-    const flagCriteria = (query: CollectionQuery, path: number[] = []): Array<{path: number[]; state: BooleanFilterState}> => [
-        ...(query.brokenState && query.brokenState !== 'ignored' ? [{path, state: query.brokenState}] : []),
-        ...(query.anyOf?.flatMap((branch, index) => flagCriteria(branch, [...path, index])) ?? []),
-    ];
-    const removeFlagCriterion = (query: CollectionQuery, path: number[]): CollectionQuery => path.length === 0
-        ? {...query, brokenState: undefined}
-        : {...query, anyOf: query.anyOf?.map((branch, index) => index === path[0] ? removeFlagCriterion(branch, path.slice(1)) : branch)};
     const activeFilters = [
-        ...flagCriteria(collectionQuery).map((criterion) => {
-            const label = criterion.state === 'true' ? t('Broken flag: set') : t('Broken flag: clear');
-            return {
-                key: `flag-${criterion.path.join('-')}`,
-                label: criterion.path.length ? t('Alternative {0} · {1}', criterion.path.map((index) => index + 1).join('.'), label) : label,
-                remove: () => updateQuery({...removeFlagCriterion(collectionQuery, criterion.path), page: 1}),
-            };
-        }),
         ...(collectionQuery.name
             ? [{
                 key: 'name',
@@ -2048,19 +1978,6 @@ function App() {
                         </div>
                     ))}
                 </nav>
-                <label className="broken-visibility">
-                    <span>{t('Broken stories')}</span>
-                    <select value={collectionQuery.brokenVisibility ?? 'hide'}
-                        onChange={(event) => {
-                            const next = {...collectionQuery, brokenVisibility: event.currentTarget.value as BrokenVisibility, page: 1};
-                            if (allStoriesActive) setCollectionQuery(queryHistory.push(next, null, 'all'));
-                            else updateQuery(next);
-                        }}>
-                        <option value="hide">{t('Hide broken stories')}</option>
-                        <option value="include">{t('Include broken stories')}</option>
-                        <option value="only">{t('Broken only')}</option>
-                    </select>
-                </label>
                 {selectedShelfIDs.length > 0 && (
                     <section className="combined-shelves" aria-label={t("Combined shelf preview")}>
                         <div className="combined-shelves-title">
