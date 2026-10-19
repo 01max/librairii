@@ -51,5 +51,24 @@ The 1,000-story browser performance run stayed within budget: expansion p95
 p95 16.7 ms. The 5,000-story SQLite fixture retains indexed archive, language,
 and tag-value lookups without adding a low-selectivity flag index.
 
-The migrated-library application walkthrough is recorded below after its
-integration subtask completes.
+## Migrated-library walkthrough
+
+`TestMigratedBrokenLibraryThroughApplicationRestartRefreshAndExport` passes
+against real SQLite and managed ZIP archives. It constructs a version-14
+library with a customized Broken tag and a composed saved shelf, upgrades it,
+and verifies the retained compatibility identity and equivalent shelf results.
+It then marks an unflagged story, checks default disappearance, undoes it,
+clears the migrated flag from Broken only, and undoes that change.
+
+After closing and reopening the database and application runtime, it refreshes
+metadata from a local catalog fixture, verifies that the story gains official
+metadata while retaining its manual flag, and exports the explicitly selected
+flagged story through preflight and the durable export operation. Exported
+bytes match the original managed ZIP exactly. Neither restart nor refresh
+recreates the retired tag.
+
+Index interaction, disappearance/Undo, and the three view modes are exercised
+through the real browser against the stateful development fixture; the above
+application integration test verifies the same operations with migrated storage.
+The complete Go suite passes again after adding this walkthrough test.
+OpenSpec strict validation passes and all 27 subtasks are complete.
