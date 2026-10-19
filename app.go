@@ -15,6 +15,7 @@ const frontendRenderedEvent = "frontend:rendered"
 // App is the narrow Wails binding facade. Domain behaviour stays in internal
 // application services and only stable DTOs cross this boundary.
 type App struct {
+	libraryGate                sync.RWMutex
 	settings                   *settingsController
 	core                       *coreapp.Application
 	quit                       func(context.Context)
@@ -81,10 +82,18 @@ func (a *App) shutdown(ctx context.Context) {
 
 // ApplicationStatus returns a stable lifecycle snapshot for the frontend.
 func (a *App) ApplicationStatus() coreapp.StatusResponse {
+	if !a.libraryGate.TryRLock() {
+		return coreapp.StatusResponse{Error: coreapp.NewAPIError(coreapp.ErrorNotReady, "settings.busy")}
+	}
+	defer a.libraryGate.RUnlock()
 	return a.core.StatusResponse()
 }
 
 func (a *App) RecoverStorage() coreapp.MutationResponse {
+	if !a.libraryGate.TryRLock() {
+		return coreapp.MutationResponse{Error: coreapp.NewAPIError(coreapp.ErrorNotReady, "settings.busy")}
+	}
+	defer a.libraryGate.RUnlock()
 	return a.core.RecoverStorage(a.runtimeContext())
 }
 
@@ -101,6 +110,10 @@ func (a *App) PackagedAcceptanceMode() bool {
 }
 
 func (a *App) RecordPackagedAcceptance(checkpoint string) coreapp.MutationResponse {
+	if !a.libraryGate.TryRLock() {
+		return coreapp.MutationResponse{Error: coreapp.NewAPIError(coreapp.ErrorNotReady, "settings.busy")}
+	}
+	defer a.libraryGate.RUnlock()
 	if a.packagedAcceptance == nil {
 		return coreapp.MutationResponse{
 			Error: coreapp.NewAPIError(
@@ -126,12 +139,20 @@ func (a *App) RecordPackagedAcceptance(checkpoint string) coreapp.MutationRespon
 }
 
 func (a *App) SelectAndExportDiagnostics() coreapp.DiagnosticExportResponse {
+	if !a.libraryGate.TryRLock() {
+		return coreapp.DiagnosticExportResponse{Error: coreapp.NewAPIError(coreapp.ErrorNotReady, "settings.busy")}
+	}
+	defer a.libraryGate.RUnlock()
 	return a.core.SelectAndExportDiagnostics(a.runtimeContext())
 }
 
 // SelectAndImportStories opens the native picker and starts one durable import
 // operation without exposing selected filesystem paths to the frontend.
 func (a *App) SelectAndImportStories() coreapp.OperationResponse {
+	if !a.libraryGate.TryRLock() {
+		return coreapp.OperationResponse{Error: coreapp.NewAPIError(coreapp.ErrorNotReady, "settings.busy")}
+	}
+	defer a.libraryGate.RUnlock()
 	return a.core.SelectAndStartImport(a.runtimeContext())
 }
 
@@ -140,58 +161,114 @@ func (a *App) SelectAndImportStories() coreapp.OperationResponse {
 func (a *App) SelectAndPreflightExport(
 	request exporter.PreflightRequest,
 ) coreapp.ExportPreflightResponse {
+	if !a.libraryGate.TryRLock() {
+		return coreapp.ExportPreflightResponse{Error: coreapp.NewAPIError(coreapp.ErrorNotReady, "settings.busy")}
+	}
+	defer a.libraryGate.RUnlock()
 	return a.core.SelectAndPreflightExport(a.runtimeContext(), request)
 }
 
 func (a *App) StartPreparedExport(preparationID string) coreapp.OperationResponse {
+	if !a.libraryGate.TryRLock() {
+		return coreapp.OperationResponse{Error: coreapp.NewAPIError(coreapp.ErrorNotReady, "settings.busy")}
+	}
+	defer a.libraryGate.RUnlock()
 	return a.core.StartPreparedExport(a.runtimeContext(), preparationID)
 }
 
 func (a *App) RevealExportDestination(operationID string) coreapp.MutationResponse {
+	if !a.libraryGate.TryRLock() {
+		return coreapp.MutationResponse{Error: coreapp.NewAPIError(coreapp.ErrorNotReady, "settings.busy")}
+	}
+	defer a.libraryGate.RUnlock()
 	return a.core.RevealExportDestination(a.runtimeContext(), operationID)
 }
 
 func (a *App) RefreshOfficialMetadata() coreapp.OperationResponse {
+	if !a.libraryGate.TryRLock() {
+		return coreapp.OperationResponse{Error: coreapp.NewAPIError(coreapp.ErrorNotReady, "settings.busy")}
+	}
+	defer a.libraryGate.RUnlock()
 	return a.core.RefreshOfficialMetadata(a.runtimeContext())
 }
 
 func (a *App) OfficialMetadataStatus() coreapp.MetadataStatusResponse {
+	if !a.libraryGate.TryRLock() {
+		return coreapp.MetadataStatusResponse{Error: coreapp.NewAPIError(coreapp.ErrorNotReady, "settings.busy")}
+	}
+	defer a.libraryGate.RUnlock()
 	return a.core.OfficialMetadataStatus(a.runtimeContext())
 }
 
 func (a *App) CancelOperation(operationID string) coreapp.OperationResponse {
+	if !a.libraryGate.TryRLock() {
+		return coreapp.OperationResponse{Error: coreapp.NewAPIError(coreapp.ErrorNotReady, "settings.busy")}
+	}
+	defer a.libraryGate.RUnlock()
 	return a.core.CancelOperation(a.runtimeContext(), operationID)
 }
 
 func (a *App) OperationSnapshot(operationID string) coreapp.OperationResponse {
+	if !a.libraryGate.TryRLock() {
+		return coreapp.OperationResponse{Error: coreapp.NewAPIError(coreapp.ErrorNotReady, "settings.busy")}
+	}
+	defer a.libraryGate.RUnlock()
 	return a.core.OperationSnapshot(a.runtimeContext(), operationID)
 }
 
 func (a *App) OperationHistory(before string) coreapp.OperationHistoryResponse {
+	if !a.libraryGate.TryRLock() {
+		return coreapp.OperationHistoryResponse{Error: coreapp.NewAPIError(coreapp.ErrorNotReady, "settings.busy")}
+	}
+	defer a.libraryGate.RUnlock()
 	return a.core.OperationHistory(a.runtimeContext(), before)
 }
 
 func (a *App) ActiveOperations() coreapp.OperationListResponse {
+	if !a.libraryGate.TryRLock() {
+		return coreapp.OperationListResponse{Error: coreapp.NewAPIError(coreapp.ErrorNotReady, "settings.busy")}
+	}
+	defer a.libraryGate.RUnlock()
 	return a.core.ActiveOperations(a.runtimeContext())
 }
 
 func (a *App) ListStories(request library.ListRequest) coreapp.LibraryPageResponse {
+	if !a.libraryGate.TryRLock() {
+		return coreapp.LibraryPageResponse{Error: coreapp.NewAPIError(coreapp.ErrorNotReady, "settings.busy")}
+	}
+	defer a.libraryGate.RUnlock()
 	return a.core.ListStories(a.runtimeContext(), request)
 }
 
 func (a *App) QueryStories(request library.StoryLibraryQuery) coreapp.LibraryPageResponse {
+	if !a.libraryGate.TryRLock() {
+		return coreapp.LibraryPageResponse{Error: coreapp.NewAPIError(coreapp.ErrorNotReady, "settings.busy")}
+	}
+	defer a.libraryGate.RUnlock()
 	return a.core.QueryStories(a.runtimeContext(), request)
 }
 
 func (a *App) StoryDetail(storyID int64) coreapp.StoryDetailResponse {
+	if !a.libraryGate.TryRLock() {
+		return coreapp.StoryDetailResponse{Error: coreapp.NewAPIError(coreapp.ErrorNotReady, "settings.busy")}
+	}
+	defer a.libraryGate.RUnlock()
 	return a.core.StoryDetail(a.runtimeContext(), storyID)
 }
 
 func (a *App) RemoveStory(storyID int64) coreapp.RemovalResponse {
+	if !a.libraryGate.TryRLock() {
+		return coreapp.RemovalResponse{Error: coreapp.NewAPIError(coreapp.ErrorNotReady, "settings.busy")}
+	}
+	defer a.libraryGate.RUnlock()
 	return a.core.RemoveStory(a.runtimeContext(), storyID)
 }
 
 func (a *App) ListShelves(includeBroken bool) coreapp.ShelfListResponse {
+	if !a.libraryGate.TryRLock() {
+		return coreapp.ShelfListResponse{Error: coreapp.NewAPIError(coreapp.ErrorNotReady, "settings.busy")}
+	}
+	defer a.libraryGate.RUnlock()
 	return a.core.ListShelves(a.runtimeContext(), includeBroken)
 }
 
@@ -199,6 +276,10 @@ func (a *App) CreateShelf(
 	name string,
 	query library.StoryLibraryQuery,
 ) coreapp.ShelfResponse {
+	if !a.libraryGate.TryRLock() {
+		return coreapp.ShelfResponse{Error: coreapp.NewAPIError(coreapp.ErrorNotReady, "settings.busy")}
+	}
+	defer a.libraryGate.RUnlock()
 	return a.core.CreateShelf(a.runtimeContext(), name, query)
 }
 
@@ -206,14 +287,26 @@ func (a *App) OpenShelf(
 	shelfID int64,
 	request library.ListRequest,
 ) coreapp.ShelfEvaluationResponse {
+	if !a.libraryGate.TryRLock() {
+		return coreapp.ShelfEvaluationResponse{Error: coreapp.NewAPIError(coreapp.ErrorNotReady, "settings.busy")}
+	}
+	defer a.libraryGate.RUnlock()
 	return a.core.OpenShelf(a.runtimeContext(), shelfID, request)
 }
 
 func (a *App) RenameShelf(shelfID int64, name string) coreapp.ShelfResponse {
+	if !a.libraryGate.TryRLock() {
+		return coreapp.ShelfResponse{Error: coreapp.NewAPIError(coreapp.ErrorNotReady, "settings.busy")}
+	}
+	defer a.libraryGate.RUnlock()
 	return a.core.RenameShelf(a.runtimeContext(), shelfID, name)
 }
 
 func (a *App) DuplicateShelf(shelfID int64, name string) coreapp.ShelfResponse {
+	if !a.libraryGate.TryRLock() {
+		return coreapp.ShelfResponse{Error: coreapp.NewAPIError(coreapp.ErrorNotReady, "settings.busy")}
+	}
+	defer a.libraryGate.RUnlock()
 	return a.core.DuplicateShelf(a.runtimeContext(), shelfID, name)
 }
 
@@ -221,14 +314,26 @@ func (a *App) ReplaceShelfQuery(
 	shelfID int64,
 	query library.StoryLibraryQuery,
 ) coreapp.ShelfResponse {
+	if !a.libraryGate.TryRLock() {
+		return coreapp.ShelfResponse{Error: coreapp.NewAPIError(coreapp.ErrorNotReady, "settings.busy")}
+	}
+	defer a.libraryGate.RUnlock()
 	return a.core.ReplaceShelfQuery(a.runtimeContext(), shelfID, query)
 }
 
 func (a *App) ReorderShelves(orderedIDs []int64) coreapp.ShelfListResponse {
+	if !a.libraryGate.TryRLock() {
+		return coreapp.ShelfListResponse{Error: coreapp.NewAPIError(coreapp.ErrorNotReady, "settings.busy")}
+	}
+	defer a.libraryGate.RUnlock()
 	return a.core.ReorderShelves(a.runtimeContext(), orderedIDs)
 }
 
 func (a *App) DeleteShelf(shelfID int64) coreapp.MutationResponse {
+	if !a.libraryGate.TryRLock() {
+		return coreapp.MutationResponse{Error: coreapp.NewAPIError(coreapp.ErrorNotReady, "settings.busy")}
+	}
+	defer a.libraryGate.RUnlock()
 	return a.core.DeleteShelf(a.runtimeContext(), shelfID)
 }
 
@@ -236,16 +341,28 @@ func (a *App) PreviewShelves(
 	shelfIDs []int64,
 	includeBroken bool,
 ) coreapp.ShelfSelectionPreviewResponse {
+	if !a.libraryGate.TryRLock() {
+		return coreapp.ShelfSelectionPreviewResponse{Error: coreapp.NewAPIError(coreapp.ErrorNotReady, "settings.busy")}
+	}
+	defer a.libraryGate.RUnlock()
 	return a.core.PreviewShelves(a.runtimeContext(), shelfIDs, includeBroken)
 }
 
 func (a *App) TagCatalog() coreapp.TagCatalogResponse {
+	if !a.libraryGate.TryRLock() {
+		return coreapp.TagCatalogResponse{Error: coreapp.NewAPIError(coreapp.ErrorNotReady, "settings.busy")}
+	}
+	defer a.libraryGate.RUnlock()
 	return a.core.TagCatalog(a.runtimeContext())
 }
 
 func (a *App) CreateTagDefinition(
 	input tagging.CreateDefinition,
 ) coreapp.TagDefinitionResponse {
+	if !a.libraryGate.TryRLock() {
+		return coreapp.TagDefinitionResponse{Error: coreapp.NewAPIError(coreapp.ErrorNotReady, "settings.busy")}
+	}
+	defer a.libraryGate.RUnlock()
 	return a.core.CreateTagDefinition(a.runtimeContext(), input)
 }
 
@@ -253,6 +370,10 @@ func (a *App) RenameTagDefinition(
 	definitionID int64,
 	label string,
 ) coreapp.TagDefinitionResponse {
+	if !a.libraryGate.TryRLock() {
+		return coreapp.TagDefinitionResponse{Error: coreapp.NewAPIError(coreapp.ErrorNotReady, "settings.busy")}
+	}
+	defer a.libraryGate.RUnlock()
 	return a.core.RenameTagDefinition(a.runtimeContext(), definitionID, label)
 }
 
@@ -260,26 +381,46 @@ func (a *App) RecolorTagDefinition(
 	definitionID int64,
 	color string,
 ) coreapp.TagDefinitionResponse {
+	if !a.libraryGate.TryRLock() {
+		return coreapp.TagDefinitionResponse{Error: coreapp.NewAPIError(coreapp.ErrorNotReady, "settings.busy")}
+	}
+	defer a.libraryGate.RUnlock()
 	return a.core.RecolorTagDefinition(a.runtimeContext(), definitionID, color)
 }
 
 func (a *App) ReorderTagDefinitions(orderedIDs []int64) coreapp.MutationResponse {
+	if !a.libraryGate.TryRLock() {
+		return coreapp.MutationResponse{Error: coreapp.NewAPIError(coreapp.ErrorNotReady, "settings.busy")}
+	}
+	defer a.libraryGate.RUnlock()
 	return a.core.ReorderTagDefinitions(a.runtimeContext(), orderedIDs)
 }
 
 func (a *App) PlanTagDefinitionDeletion(
 	definitionID int64,
 ) coreapp.TagDefinitionDeletionPlanResponse {
+	if !a.libraryGate.TryRLock() {
+		return coreapp.TagDefinitionDeletionPlanResponse{Error: coreapp.NewAPIError(coreapp.ErrorNotReady, "settings.busy")}
+	}
+	defer a.libraryGate.RUnlock()
 	return a.core.PlanTagDefinitionDeletion(a.runtimeContext(), definitionID)
 }
 
 func (a *App) DeleteTagDefinition(
 	plan tagging.DefinitionDeletionPlan,
 ) coreapp.MutationResponse {
+	if !a.libraryGate.TryRLock() {
+		return coreapp.MutationResponse{Error: coreapp.NewAPIError(coreapp.ErrorNotReady, "settings.busy")}
+	}
+	defer a.libraryGate.RUnlock()
 	return a.core.DeleteTagDefinition(a.runtimeContext(), plan)
 }
 
 func (a *App) CreateTagValue(input tagging.CreateValue) coreapp.TagValueResponse {
+	if !a.libraryGate.TryRLock() {
+		return coreapp.TagValueResponse{Error: coreapp.NewAPIError(coreapp.ErrorNotReady, "settings.busy")}
+	}
+	defer a.libraryGate.RUnlock()
 	return a.core.CreateTagValue(a.runtimeContext(), input)
 }
 
@@ -287,6 +428,10 @@ func (a *App) RenameTagValue(
 	valueID int64,
 	label string,
 ) coreapp.TagValueResponse {
+	if !a.libraryGate.TryRLock() {
+		return coreapp.TagValueResponse{Error: coreapp.NewAPIError(coreapp.ErrorNotReady, "settings.busy")}
+	}
+	defer a.libraryGate.RUnlock()
 	return a.core.RenameTagValue(a.runtimeContext(), valueID, label)
 }
 
@@ -294,22 +439,38 @@ func (a *App) ReorderTagValues(
 	definitionID int64,
 	orderedIDs []int64,
 ) coreapp.MutationResponse {
+	if !a.libraryGate.TryRLock() {
+		return coreapp.MutationResponse{Error: coreapp.NewAPIError(coreapp.ErrorNotReady, "settings.busy")}
+	}
+	defer a.libraryGate.RUnlock()
 	return a.core.ReorderTagValues(a.runtimeContext(), definitionID, orderedIDs)
 }
 
 func (a *App) PlanTagValueDeletion(
 	valueID int64,
 ) coreapp.TagValueDeletionPlanResponse {
+	if !a.libraryGate.TryRLock() {
+		return coreapp.TagValueDeletionPlanResponse{Error: coreapp.NewAPIError(coreapp.ErrorNotReady, "settings.busy")}
+	}
+	defer a.libraryGate.RUnlock()
 	return a.core.PlanTagValueDeletion(a.runtimeContext(), valueID)
 }
 
 func (a *App) DeleteTagValue(plan tagging.ValueDeletionPlan) coreapp.MutationResponse {
+	if !a.libraryGate.TryRLock() {
+		return coreapp.MutationResponse{Error: coreapp.NewAPIError(coreapp.ErrorNotReady, "settings.busy")}
+	}
+	defer a.libraryGate.RUnlock()
 	return a.core.DeleteTagValue(a.runtimeContext(), plan)
 }
 
 func (a *App) TagAssignmentWorkspace(
 	storyIDs []int64,
 ) coreapp.TagAssignmentWorkspaceResponse {
+	if !a.libraryGate.TryRLock() {
+		return coreapp.TagAssignmentWorkspaceResponse{Error: coreapp.NewAPIError(coreapp.ErrorNotReady, "settings.busy")}
+	}
+	defer a.libraryGate.RUnlock()
 	return a.core.TagAssignmentWorkspace(a.runtimeContext(), storyIDs)
 }
 
@@ -318,6 +479,10 @@ func (a *App) SetBooleanTag(
 	definitionID int64,
 	assigned bool,
 ) coreapp.TagAssignmentResponse {
+	if !a.libraryGate.TryRLock() {
+		return coreapp.TagAssignmentResponse{Error: coreapp.NewAPIError(coreapp.ErrorNotReady, "settings.busy")}
+	}
+	defer a.libraryGate.RUnlock()
 	return a.core.SetBooleanTag(a.runtimeContext(), storyIDs, definitionID, assigned)
 }
 
@@ -326,6 +491,10 @@ func (a *App) SetChoiceTagValues(
 	definitionID int64,
 	valueIDs []int64,
 ) coreapp.TagAssignmentResponse {
+	if !a.libraryGate.TryRLock() {
+		return coreapp.TagAssignmentResponse{Error: coreapp.NewAPIError(coreapp.ErrorNotReady, "settings.busy")}
+	}
+	defer a.libraryGate.RUnlock()
 	return a.core.SetChoiceTagValues(
 		a.runtimeContext(),
 		storyIDs,
@@ -340,6 +509,10 @@ func (a *App) SetChoiceTagValue(
 	valueID int64,
 	assigned bool,
 ) coreapp.TagAssignmentResponse {
+	if !a.libraryGate.TryRLock() {
+		return coreapp.TagAssignmentResponse{Error: coreapp.NewAPIError(coreapp.ErrorNotReady, "settings.busy")}
+	}
+	defer a.libraryGate.RUnlock()
 	return a.core.SetChoiceTagValue(
 		a.runtimeContext(),
 		storyIDs,
