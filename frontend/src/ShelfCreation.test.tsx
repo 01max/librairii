@@ -18,7 +18,20 @@ test('creation previews any-source union and requires explicit approval before c
     expect(await screen.findByRole('button', {name: 'Create with 0 stories'})).toBeEnabled();
     expect(CreateShelfFromReview).not.toHaveBeenCalled();
     await user.click(screen.getByLabelText('Flagged story · Broken'));
-    await user.click(screen.getByRole('button', {name: 'Create with 1 stories'}));
+    await user.click(screen.getByRole('button', {name: 'Create with 1 story'}));
     await waitFor(() => expect(onCreated).toHaveBeenCalledWith(7));
     expect(CreateShelfFromReview).toHaveBeenCalledWith('snapshot', ['one']);
+});
+
+test('French creation is keyboard accessible and returns focus after cancellation', async () => {
+    const {setLanguage} = await import('./i18n');
+    setLanguage('fr');
+    const user = userEvent.setup(), close = vi.fn();
+    const opener = document.createElement('button'); document.body.appendChild(opener); opener.focus();
+    const view = render(<ShelfCreation collections={[]} manualUUIDs={[]} onClose={close} onCreated={vi.fn()}/>);
+    expect(await screen.findByRole('dialog', {name: 'Créer une étagère'})).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByRole('button', {name: 'Annuler'})).toHaveFocus());
+    await user.keyboard('{Escape}');
+    expect(close).toHaveBeenCalled(); view.unmount();
+    expect(opener).toHaveFocus(); opener.remove(); setLanguage('en');
 });

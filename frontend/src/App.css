@@ -1430,11 +1430,11 @@ select:focus-visible {
     letter-spacing: -.04em;
 }
 
-.shelf-dialog {
+.shelf-dialog, .collection-dialog {
     width: min(430px, 100%);
 }
 
-.shelf-dialog > p {
+.shelf-dialog > p, .collection-dialog > p {
     margin: 0 0 18px;
     color: var(--muted);
     font-size: 9px;
@@ -2808,3 +2808,6 @@ select:focus-visible {
 .curated-workspace button:disabled, .curated-dialog button:disabled { opacity: .5; cursor: default; }
 .curated-workspace button:focus-visible, .curated-dialog button:focus-visible { outline: 3px solid #405cf5; outline-offset: 2px; }
 @media (max-width: 600px) { .curated-dialog { width: calc(100vw - 24px); } .curated-workspace .heading { display: block; } }
+
+.curated-preview { max-width: 110px; }
+.curated-preview .cover {height: 80px; background: #edf0fc; border-radius: 8px;}

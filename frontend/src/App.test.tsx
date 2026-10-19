@@ -11,8 +11,12 @@ import {
     CancelOperation,
     CreateCollection,
     DeleteCollection,
+    ApplyCollectionDeletion,
     DuplicateCollection,
     ListCollections,
+    ListShelves,
+    OpenShelf,
+    AddStoriesToShelf,
     OfficialMetadataStatus,
     OpenCollection,
     OperationHistory,
@@ -54,8 +58,12 @@ vi.mock('../wailsjs/go/main/App', () => ({
     CreateCollection: vi.fn(),
     DeleteCollection: vi.fn(),
     DuplicateCollection: vi.fn(),
+    PreviewCollectionDeletion: vi.fn(async (id) => ({review: {token: String(id), shelves: []}})),
+    ApplyCollectionDeletion: vi.fn(),
     ListCollections: vi.fn(),
     ListShelves: vi.fn(async () => ({shelves: []})),
+    OpenShelf: vi.fn(),
+    AddStoriesToShelf: vi.fn(),
     OfficialMetadataStatus: vi.fn(),
     OpenCollection: vi.fn(),
     OperationHistory: vi.fn(),
@@ -162,7 +170,9 @@ beforeEach(() => {
     applicationStatus.mockReset();
     cancelOperation.mockReset();
     createCollection.mockReset();
+    vi.mocked(ListShelves).mockResolvedValue(new app.ShelfListResponse({shelves: []}));
     deleteCollection.mockReset();
+    vi.mocked(ApplyCollectionDeletion).mockImplementation(async (token) => DeleteCollection(Number(token)));
     duplicateCollection.mockReset();
     listCollections.mockReset();
     officialMetadataStatus.mockReset();
@@ -1405,7 +1415,7 @@ test('renames, reorders, duplicates, and deletes saved collections', async () =>
     expect(deleteOpener).toHaveFocus();
 
     await user.click(deleteOpener);
-    await user.click(screen.getByRole('button', {name: "Delete collection"}));
+    await user.click(screen.getByRole('button', {name: "Keep all Shelf stories and delete Collection"}));
     await waitFor(() => expect(deleteCollection).toHaveBeenCalledWith(9));
     expect(screen.queryByRole('button', {name: 'Evening copy, 1 story'}))
         .not.toBeInTheDocument();
@@ -1453,7 +1463,7 @@ test('keeps a deleted active collection query as custom instead of labeling all 
     render(<App/>);
     await user.click(await screen.findByRole('button', {name: 'Bedtime, 1 story'}));
     await user.click(screen.getByRole('button', {name: 'Delete Bedtime'}));
-    await user.click(screen.getByRole('button', {name: "Delete collection"}));
+    await user.click(screen.getByRole('button', {name: "Keep all Shelf stories and delete Collection"}));
 
     await waitFor(() => expect(deleteCollection).toHaveBeenCalledWith(7));
     expect(screen.getByRole('searchbox', {name: 'Search stories'}))
@@ -1743,11 +1753,11 @@ test('previews a multi-collection union with per-collection and overlap counts',
     await user.click(await screen.findByRole('checkbox', {
         name: "Select Moon for combined collection preview",
     }));
-    await waitFor(() => expect(previewCollections).toHaveBeenLastCalledWith([7], 'hide'));
+    await waitFor(() => expect(previewCollections).toHaveBeenLastCalledWith([7]));
     await user.click(screen.getByRole('checkbox', {
         name: "Select Forest for combined collection preview",
     }));
-    await waitFor(() => expect(previewCollections).toHaveBeenLastCalledWith([7, 8], 'hide'));
+    await waitFor(() => expect(previewCollections).toHaveBeenLastCalledWith([7, 8]));
 
     const preview = await screen.findByRole('region', {name: "Combined collection preview"});
     expect(preview).toHaveTextContent('Moon2');
@@ -1810,7 +1820,7 @@ test('previews a multi-collection union with per-collection and overlap counts',
     });
     await waitFor(() => expect(invalidSelection).toBeEnabled());
     expect(invalidSelection).toBeChecked();
-    await waitFor(() => expect(previewCollections).toHaveBeenLastCalledWith([7, 8], 'hide'));
+    await waitFor(() => expect(previewCollections).toHaveBeenLastCalledWith([7, 8]));
     expect(await screen.findByText("Repair the selected collection before continuing."))
         .toBeInTheDocument();
 
@@ -1823,7 +1833,7 @@ test('previews a multi-collection union with per-collection and overlap counts',
         },
     }));
     await user.click(invalidSelection);
-    await waitFor(() => expect(previewCollections).toHaveBeenLastCalledWith([8], 'hide'));
+    await waitFor(() => expect(previewCollections).toHaveBeenLastCalledWith([8]));
     expect(invalidSelection).not.toBeChecked();
     expect(screen.queryByText('Repair the selected collection before continuing.'))
         .not.toBeInTheDocument();
@@ -1934,13 +1944,11 @@ test('composes canonical search, tri-state and choice refinements with clear-all
     await waitFor(() => expect(queryStories).toHaveBeenLastCalledWith(
         expect.objectContaining({name: 'foret', page: 1}),
     ));
-    await user.selectOptions(screen.getByRole('combobox', {name: 'Broken stories'}), 'include');
     await user.click(screen.getByRole('checkbox', {name: 'Calm'}));
     await user.click(screen.getByRole('checkbox', {name: 'Bold'}));
 
     await waitFor(() => expect(queryStories).toHaveBeenLastCalledWith(
         expect.objectContaining({
-            brokenVisibility: 'include',
             booleanFilters: [],
             choiceFilters: [{definitionId: 2, valueIds: [20, 21]}],
         }),
@@ -2647,25 +2655,13 @@ test('collapses choice tag filters without clearing their selection', async () =
     expect(screen.getByRole('checkbox', {name: 'Calm'})).toBeChecked();
 });
 
-test('uses a separate include-broken control and identifies broken story covers', async () => {
-    const user = userEvent.setup();
-    queryStories.mockImplementation(async (query) => new app.LibraryPageResponse({
-        page: {stories: query.brokenVisibility === 'include' ? [{...stories[0], broken: true}, stories[1]] : [stories[1]],
-            page: 1, pageSize: 12, totalItems: query.brokenVisibility === 'include' ? 2 : 1, totalPages: 1, sort: 'imported_desc'},
-    }));
+test('always displays flagged covers without a visibility selector', async () => {
+    queryStories.mockResolvedValue(new app.LibraryPageResponse({page: {stories: [{...stories[0], broken: true}, stories[1]], page: 1, pageSize: 12, totalItems: 2, totalPages: 1, sort: 'imported_desc'}}));
     render(<App/>);
-    const include = await screen.findByRole('combobox', {name: 'Broken stories'});
-    expect(include).toHaveValue('hide');
-    expect(screen.queryByRole('checkbox', {name: 'Broken'})).not.toBeInTheDocument();
-    expect(screen.queryByRole('checkbox', {name: 'Not Broken'})).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', {name: 'Clockwork Forest'})).not.toBeInTheDocument();
-    await user.selectOptions(include, 'include');
     const broken = await screen.findByRole('button', {name: 'Clockwork Forest'});
     expect(within(broken).getByText('Broken')).toBeInTheDocument();
     expect(broken.closest('.story-card')).toHaveClass('is-broken');
-    expect(window.location.hash).toContain('brokenVisibility=include');
-    await user.selectOptions(include, 'hide');
-    await waitFor(() => expect(screen.queryByRole('button', {name: 'Clockwork Forest'})).not.toBeInTheDocument());
+    expect(screen.queryByRole('combobox', {name: 'Broken stories'})).not.toBeInTheDocument();
 });
 
 test('keeps removal pending in the dialog and allows retry after a failure', async () => {
@@ -3718,14 +3714,11 @@ function installStoryFlagsFixture(initialFlags: number[] = [], fixtureStories = 
     const state = new Map(fixtureStories.map((story) => [story.id, initialFlags.includes(story.id)]));
     const summaries = () => fixtureStories.map((story) => new library.StorySummary({...story, broken: state.get(story.id)}));
     const matchesCriteria = (story: library.StorySummary, query: FlagFixtureQuery): boolean => (
-        (!query.brokenState || query.brokenState === 'ignored' || (query.brokenState === 'true' ? story.broken : !story.broken)) &&
         (!query.name || story.title.toLowerCase().includes(query.name.toLowerCase())) &&
         (!query.anyOf?.length || query.anyOf.some((branch) => matchesCriteria(story, branch)))
     );
     const pageFor = (request: FlagFixtureQuery) => {
-        const mode = request.brokenVisibility ?? 'hide';
-        const matches = summaries().filter((story) => (mode === 'include' || (mode === 'only' ? story.broken : !story.broken)) &&
-            matchesCriteria(story, request));
+        const matches = summaries().filter((story) => matchesCriteria(story, request));
         const size = request.pageSize || 12;
         const page = request.page || 1;
         return {stories: matches.slice((page - 1) * size, page * size), page, pageSize: size,
@@ -3761,34 +3754,29 @@ test.each(['List', 'Small covers', 'Large covers'])('flags and undoes directly f
     expect(action.closest('.story')).toBeNull();
     await user.click(action);
     expect(SetStoriesBroken).toHaveBeenCalledWith([1], true);
-    await waitFor(() => expect(screen.queryByRole('button', {name: 'Clockwork Forest'})).not.toBeInTheDocument());
-    expect(screen.getByRole('status')).toHaveTextContent('Marked as broken and hidden.');
-    await waitFor(() => expect(screen.getByRole('button', {name: 'Moonlit Workshop'})).toHaveFocus());
+    await waitFor(() => expect(screen.getAllByRole('button', {name: 'Clockwork Forest'}).length).toBeGreaterThan(0));
+    expect(screen.getByRole('status')).toHaveTextContent('1 of 1 stories updated.');
+    expect(screen.getByRole('button', {name: 'Clear broken flag for Clockwork Forest'})).toHaveFocus();
     await user.click(screen.getByRole('button', {name: 'Undo'}));
     expect(await screen.findByRole('button', {name: 'Clockwork Forest'})).toBeInTheDocument();
     expect(RestoreStoryFlags).toHaveBeenCalledWith([expect.objectContaining({storyId: 1, previous: false, current: true})]);
 });
 
-test('clears and restores stories from Broken only without hiding the recovery action', async () => {
+test('clears and restores flagged stories without changing visible membership', async () => {
     installStoryFlagsFixture([1]);
-    const user = userEvent.setup();
-    render(<App/>);
-    const visibility = await screen.findByRole('combobox', {name: 'Broken stories'});
-    await user.selectOptions(visibility, 'only');
+    const user = userEvent.setup(); render(<App/>);
     await user.click(await screen.findByRole('button', {name: 'Clear broken flag for Clockwork Forest'}));
-    await waitFor(() => expect(screen.queryByRole('button', {name: 'Clockwork Forest'})).not.toBeInTheDocument());
-    expect(screen.getByRole('status')).toHaveTextContent('no longer match Broken only');
-    expect(screen.getByRole('main')).toHaveFocus();
+    expect(await screen.findByRole('button', {name: 'Mark Clockwork Forest as broken'})).toHaveFocus();
+    expect(screen.getByRole('button', {name: 'Clockwork Forest'})).toBeInTheDocument();
     await user.click(screen.getByRole('button', {name: 'Undo'}));
-    expect(await screen.findByRole('button', {name: 'Clockwork Forest'})).toBeInTheDocument();
-    expect(visibility).toHaveValue('only');
+    expect(await screen.findByRole('button', {name: 'Clear broken flag for Clockwork Forest'})).toBeInTheDocument();
 });
 
 test('keeps individual flag actions separate from mixed bulk selection and restores only changed flags', async () => {
     const {state} = installStoryFlagsFixture();
     const user = userEvent.setup();
     render(<App/>);
-    await user.selectOptions(await screen.findByRole('combobox', {name: 'Broken stories'}), 'include');
+    await screen.findByRole('button', {name: 'Clockwork Forest'});
     const second = await screen.findByRole('button', {name: 'Moonlit Workshop'});
     await user.keyboard('{Control>}');
     await user.click(second);
@@ -3805,14 +3793,14 @@ test('keeps individual flag actions separate from mixed bulk selection and resto
     expect(RestoreStoryFlags).toHaveBeenLastCalledWith([expect.objectContaining({storyId: 2, previous: false, current: true})]);
 });
 
-test('keeps the inspected story available after flagging hides its result', async () => {
+test('keeps inspected and rendered stories available after flagging', async () => {
     installStoryFlagsFixture();
     const user = userEvent.setup();
     render(<App/>);
     await user.click(await screen.findByRole('button', {name: 'Open details'}));
     const dialog = await screen.findByRole('dialog', {name: 'Clockwork Forest'});
     await user.click(within(dialog).getByRole('button', {name: 'Mark as broken'}));
-    await waitFor(() => expect(screen.queryByRole('button', {name: 'Clockwork Forest'})).not.toBeInTheDocument());
+    await waitFor(() => expect(screen.getAllByRole('button', {name: 'Clockwork Forest'}).length).toBeGreaterThan(0));
     expect(dialog).toBeInTheDocument();
     expect(within(dialog).getByRole('region', {name: 'Story warning'})).toHaveTextContent('Broken');
     await user.click(within(dialog).getByRole('button', {name: 'Clear broken flag'}));
@@ -3847,30 +3835,26 @@ test('reports no-op flag writes without offering Undo', async () => {
     expect(screen.queryByRole('button', {name: 'Undo'})).not.toBeInTheDocument();
 });
 
-test('reconciles the final page after its last story is flagged', async () => {
+test('flagging retains the current final page and focused control', async () => {
     installStoryFlagsFixture();
     window.history.replaceState(null, '', '/#/library?v=2&page=2&size=1');
-    const user = userEvent.setup();
-    render(<App/>);
+    const user = userEvent.setup(); render(<App/>);
     await user.click(await screen.findByRole('button', {name: 'Mark Moonlit Workshop as broken'}));
-    expect(await screen.findByRole('button', {name: 'Clockwork Forest'})).toBeInTheDocument();
-    await waitFor(() => expect(queryStories).toHaveBeenLastCalledWith(expect.objectContaining({page: 1, pageSize: 1})));
-    expect(screen.queryByRole('button', {name: 'Moonlit Workshop'})).not.toBeInTheDocument();
+    expect(await screen.findByRole('button', {name: 'Clear broken flag for Moonlit Workshop'})).toHaveFocus();
+    expect(queryStories).toHaveBeenLastCalledWith(expect.objectContaining({page: 2, pageSize: 1}));
+    expect(screen.getByRole('button', {name: 'Moonlit Workshop'})).toBeInTheDocument();
 });
 
-test('translates retired tag criteria before validating or rewriting an old URL', async () => {
+test('normalizes retired tag URL criteria without a Broken filter chip', async () => {
     installStoryFlagsFixture([1]);
     vi.mocked(LibraryCompatibility).mockResolvedValue(new app.LibraryCompatibilityResponse({compatibility: {legacyBrokenTagId: 9}}));
     window.history.replaceState(null, '', '/#/library?v=1&includeBroken=true&bool=9:true');
-    const user = userEvent.setup();
     render(<App/>);
-    const criterion = await screen.findByRole('button', {name: 'Remove filter Broken flag: set'});
-    await waitFor(() => expect(queryStories).toHaveBeenLastCalledWith(expect.objectContaining({brokenState: 'true', brokenVisibility: 'include', booleanFilters: []})));
-    expect(window.location.hash).toContain('v=2');
+    await screen.findByRole('button', {name: 'Clockwork Forest'});
+    await waitFor(() => expect(window.location.hash).toContain('v=3'));
     expect(window.location.hash).not.toContain('bool=');
-    await user.click(criterion);
-    await waitFor(() => expect(queryStories).toHaveBeenLastCalledWith(expect.objectContaining({brokenVisibility: 'include', booleanFilters: []})));
-    expect(queryStories.mock.lastCall?.[0].brokenState).toBeUndefined();
+    expect(queryStories.mock.lastCall?.[0]).toHaveProperty('brokenState', undefined);
+    expect(screen.queryByRole('button', {name: 'Remove filter Broken flag: set'})).not.toBeInTheDocument();
 });
 
 test('updates duplicate story copies in saved collection previews', async () => {
@@ -3884,137 +3868,54 @@ test('updates duplicate story copies in saved collection previews', async () => 
     render(<App/>);
     await waitFor(() => expect(screen.getAllByRole('button', {name: 'Mark Clockwork Forest as broken'})).toHaveLength(2));
     await user.click(screen.getAllByRole('button', {name: 'Mark Clockwork Forest as broken'})[1]);
-    await waitFor(() => expect(screen.queryByRole('button', {name: 'Clockwork Forest'})).not.toBeInTheDocument());
-    expect(await screen.findByRole('button', {name: 'Favorites, 1 story'})).toBeInTheDocument();
+    await waitFor(() => expect(screen.getAllByRole('button', {name: 'Clockwork Forest'}).length).toBeGreaterThan(0));
+    expect(await screen.findByRole('button', {name: 'Favorites, 2 stories'})).toBeInTheDocument();
     await user.click(screen.getByRole('button', {name: 'Undo'}));
     await waitFor(() => expect(screen.getAllByRole('button', {name: 'Clockwork Forest'})).toHaveLength(2));
 });
 
-test.each(['collection', 'preview'])('reconciles preview-only selection when %s refresh finishes first', async (first) => {
-    const previewStory = new library.StorySummary({...stories[0], id: 3, title: 'Preview story'});
-    const {state, pageFor} = installStoryFlagsFixture([], [...stories, previewStory]);
-    window.history.replaceState(null, '', '/#/library?v=2&brokenVisibility=include&size=2');
-    let finishRefresh!: () => void;
-    const delayedRefresh = new Promise<void>((resolve) => { finishRefresh = resolve; });
-    queryStories.mockImplementation(async (query) => {
-        if (state.get(3) && first === 'preview') await delayedRefresh;
-        return new app.LibraryPageResponse({page: pageFor(query)});
-    });
-    listCollections.mockImplementation(async () => new app.CollectionListResponse({collections: [
-        {id: 7, name: 'Unflagged', position: 0, validity: 'valid', count: state.get(3) ? 0 : 1},
-    ]}));
-    openCollection.mockImplementation(async () => {
-        if (state.get(3) && first === 'collection') await delayedRefresh;
-        return new app.CollectionEvaluationResponse({evaluation: {
-            collection: {id: 7, name: 'Unflagged', validity: 'valid'},
-            query: {brokenState: 'false'},
-            page: {...pageFor({brokenVisibility: 'include'}), stories: state.get(3) ? [] : [previewStory]},
-        }});
-    });
-    const user = userEvent.setup();
-    render(<App/>);
-    await user.click(await screen.findByRole('button', {name: 'Preview story'}));
-    expect(await screen.findByRole('complementary', {name: 'Preview story details'})).toBeInTheDocument();
-    const action = screen.getByRole('button', {name: 'Mark Preview story as broken'});
-    await user.click(action);
-    await waitFor(() => expect(state.get(3)).toBe(true));
-    if (first === 'collection') expect(action).toHaveFocus();
-    await act(async () => { finishRefresh(); });
-    await waitFor(() => expect(screen.queryByRole('button', {name: 'Preview story'})).not.toBeInTheDocument());
-    expect(await screen.findByRole('complementary', {name: 'Clockwork Forest details'})).toBeInTheDocument();
-    await waitFor(() => expect(screen.getByRole('button', {name: 'Clockwork Forest'})).toHaveFocus());
-    await user.keyboard('{Control>}');
-    await user.click(screen.getByRole('button', {name: 'Moonlit Workshop'}));
-    await user.keyboard('{/Control}');
-    await user.click(screen.getByRole('button', {name: 'Clear broken flags'}));
-    expect(SetStoriesBroken).toHaveBeenLastCalledWith([1, 2], false);
-});
-
-test.each(['true', 'false'] as const)('restores focus after a root brokenState=%s criterion removes a card in Include mode', async (brokenState) => {
+test.each(['true', 'false'] as const)('legacy brokenState=%s URLs retain both results and focus after flag changes', async (brokenState) => {
     installStoryFlagsFixture(brokenState === 'true' ? [1, 2] : []);
     window.history.replaceState(null, '', `/#/library?v=2&brokenVisibility=include&brokenState=${brokenState}`);
-    const user = userEvent.setup();
-    render(<App/>);
-    const action = await screen.findByRole('button', {name: brokenState === 'true'
-        ? 'Clear broken flag for Clockwork Forest' : 'Mark Clockwork Forest as broken'});
-    action.focus();
-    await user.keyboard('{Enter}');
-    await waitFor(() => expect(screen.queryByRole('button', {name: 'Clockwork Forest'})).not.toBeInTheDocument());
-    await waitFor(() => expect(screen.getByRole('button', {name: 'Moonlit Workshop'})).toHaveFocus());
-});
-
-test.each([false, true])('restores focus for nested brokenState criteria with an empty result: %s', async (empty) => {
-    installStoryFlagsFixture(empty ? [1] : [1, 2]);
-    const branch = {...DEFAULT_COLLECTION_QUERY, brokenVisibility: 'include' as const, brokenState: 'true' as const};
-    window.history.replaceState(null, '', `/${encodeCollectionQuery({
-        ...DEFAULT_COLLECTION_QUERY, brokenVisibility: 'include', anyOf: [{...branch, brokenState: undefined, anyOf: [branch]}],
-    })}`);
-    const user = userEvent.setup();
-    render(<App/>);
-    const action = await screen.findByRole('button', {name: 'Clear broken flag for Clockwork Forest'});
-    action.focus();
-    await user.keyboard('{Enter}');
-    await waitFor(() => expect(screen.queryByRole('button', {name: 'Clockwork Forest'})).not.toBeInTheDocument());
-    await waitFor(() => expect(empty ? screen.getByRole('main') : screen.getByRole('button', {name: 'Moonlit Workshop'})).toHaveFocus());
-});
-
-test('preserves focus when another union branch keeps the changed story in the results', async () => {
-    installStoryFlagsFixture([1, 2]);
-    const branch = {...DEFAULT_COLLECTION_QUERY, brokenVisibility: 'include' as const};
-    window.history.replaceState(null, '', `/${encodeCollectionQuery({
-        ...branch, anyOf: [{...branch, brokenState: 'true'}, {...branch, name: 'Clockwork Forest'}],
-    })}`);
-    const user = userEvent.setup();
-    render(<App/>);
-    const action = await screen.findByRole('button', {name: 'Clear broken flag for Clockwork Forest'});
-    action.focus();
-    await user.keyboard('{Enter}');
-    const updated = await screen.findByRole('button', {name: 'Mark Clockwork Forest as broken'});
-    expect(updated).toHaveFocus();
+    const user = userEvent.setup(); render(<App/>);
+    const action = await screen.findByRole('button', {name: brokenState === 'true' ? 'Clear broken flag for Clockwork Forest' : 'Mark Clockwork Forest as broken'});
+    action.focus(); await user.keyboard('{Enter}');
+    expect(await screen.findByRole('button', {name: brokenState === 'true' ? 'Mark Clockwork Forest as broken' : 'Clear broken flag for Clockwork Forest'})).toHaveFocus();
     expect(screen.getByRole('button', {name: 'Clockwork Forest'})).toBeInTheDocument();
+    expect(screen.getByRole('button', {name: 'Moonlit Workshop'})).toBeInTheDocument();
 });
 
-test('preserves user focus changes while flag results are refreshing', async () => {
-    const {state, pageFor} = installStoryFlagsFixture([1, 2]);
-    window.history.replaceState(null, '', '/#/library?v=2&brokenVisibility=include&brokenState=true');
-    let finishRefresh!: () => void;
-    const delayedRefresh = new Promise<void>((resolve) => { finishRefresh = resolve; });
-    queryStories.mockImplementation(async (query) => {
-        if (!state.get(1)) await delayedRefresh;
-        return new app.LibraryPageResponse({page: pageFor(query)});
-    });
-    const user = userEvent.setup();
-    render(<App/>);
+test('normalizes nested legacy flag alternatives while preserving nonflag criteria', async () => {
+    installStoryFlagsFixture([1, 2]);
+    const branch = {...DEFAULT_COLLECTION_QUERY, brokenVisibility: 'include', brokenState: 'true'};
+    window.history.replaceState(null, '', `/#/library?v=2&any=${encodeURIComponent(JSON.stringify([{...branch, anyOf: [branch]}, {...DEFAULT_COLLECTION_QUERY, name: 'Clockwork Forest'}]))}`);
+    const user = userEvent.setup(); render(<App/>);
     await user.click(await screen.findByRole('button', {name: 'Clear broken flag for Clockwork Forest'}));
-    await waitFor(() => expect(state.get(1)).toBe(false));
-    const search = screen.getByRole('searchbox');
-    await user.click(search);
-    await act(async () => { finishRefresh(); });
-    await waitFor(() => expect(screen.queryByRole('button', {name: 'Clockwork Forest'})).not.toBeInTheDocument());
-    expect(search).toHaveFocus();
+    expect(await screen.findByRole('button', {name: 'Mark Clockwork Forest as broken'})).toHaveFocus();
+    expect(screen.getByRole('button', {name: 'Moonlit Workshop'})).toBeInTheDocument();
+    expect(queryStories.mock.lastCall?.[0].anyOf?.[0].anyOf?.[0]).toHaveProperty('brokenState', undefined);
 });
 
-test('skips duplicate copies of the changed story while collection results are still refreshing', async () => {
-    const {state, pageFor} = installStoryFlagsFixture();
-    let finishRefresh!: () => void;
-    const delayedRefresh = new Promise<void>((resolve) => { finishRefresh = resolve; });
-    queryStories.mockImplementation(async (query) => {
-        if (state.get(1)) await delayedRefresh;
-        return new app.LibraryPageResponse({page: pageFor(query)});
-    });
-    listCollections.mockResolvedValue(new app.CollectionListResponse({collections: [
-        {id: 7, name: 'Forest', position: 0, validity: 'valid', count: 1},
-    ]}));
-    openCollection.mockImplementation(async (_id, request) => new app.CollectionEvaluationResponse({evaluation: {
-        collection: {id: 7, name: 'Forest', validity: 'valid'},
-        query: {name: 'Forest'}, page: pageFor({...request, name: 'Forest'}),
-    }}));
-    const user = userEvent.setup();
+
+test('restores a curated Shelf without opening a same-id migrated Collection', async () => {
+    vi.mocked(ListShelves).mockResolvedValue(new app.ShelfListResponse({shelves: [{id: 7, name: 'Curated', count: 0}]}));
+    vi.mocked(OpenShelf).mockResolvedValue(new app.ShelfEvaluationResponse({evaluation: {shelf: {id: 7, name: 'Curated', count: 0}, members: [], sources: [], exclusions: [], page: 1, totalPages: 0}}));
+    const hash = encodeCollectionQuery({...DEFAULT_COLLECTION_QUERY, name: 'refined'});
+    window.history.replaceState({collectionQuery: {hash, group: {kind: 'shelf', id: 7}, scope: 'shelf'}}, '', `/${hash}`);
     render(<App/>);
-    await waitFor(() => expect(screen.getAllByRole('button', {name: 'Mark Clockwork Forest as broken'})).toHaveLength(2));
-    await user.click(screen.getAllByRole('button', {name: 'Mark Clockwork Forest as broken'})[1]);
-    await waitFor(() => expect(screen.getAllByRole('button', {name: 'Clockwork Forest'})).toHaveLength(1));
-    await act(async () => { finishRefresh(); });
-    await waitFor(() => expect(screen.queryByRole('button', {name: 'Clockwork Forest'})).not.toBeInTheDocument());
-    expect(screen.getByRole('button', {name: 'Moonlit Workshop'})).toHaveFocus();
+    expect(await screen.findByRole('heading', {name: 'Curated'})).toBeInTheDocument();
+    expect(screen.getByRole('searchbox', {name: 'Refine this view'})).toHaveValue('refined');
+    expect(OpenShelf).toHaveBeenCalledWith(7, expect.objectContaining({name: 'refined'}));
+    expect(OpenCollection).not.toHaveBeenCalled();
+    expect(window.history.state.collectionQuery.group).toEqual({kind: 'shelf', id: 7});
+});
+
+test('adds the selected story UUID explicitly to an existing Shelf', async () => {
+    vi.mocked(ListShelves).mockResolvedValue(new app.ShelfListResponse({shelves: [{id: 7, name: 'Curated', count: 0}]}));
+    vi.mocked(AddStoriesToShelf).mockResolvedValue(new app.ShelfResponse({shelf: {id: 7}}));
+    const user = userEvent.setup(); render(<App/>);
+    await user.selectOptions(await screen.findByLabelText('Add selection to Shelf'), '7');
+    expect(AddStoriesToShelf).not.toHaveBeenCalled();
+    await user.click(screen.getByRole('button', {name: 'Add selected stories'}));
+    await waitFor(() => expect(AddStoriesToShelf).toHaveBeenCalledWith(7, [stories[0].uuid]));
 });

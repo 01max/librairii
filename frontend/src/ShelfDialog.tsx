@@ -14,6 +14,19 @@ export default function ShelfDialog({title, busy, onClose, children}: PropsWithC
         document.addEventListener('keydown', escape, true);
         return () => document.removeEventListener('keydown', escape, true);
     }, [busy, onClose]);
+    useEffect(() => {
+        const changed: Array<[HTMLElement, boolean]> = [];
+        let ancestor: HTMLElement | null = panel.current?.parentElement ?? null;
+        while (ancestor && !ancestor.classList.contains('app')) {
+            const parent: HTMLElement | null = ancestor.parentElement;
+            if (!parent) break;
+            for (const sibling of parent.children) {
+                if (sibling !== ancestor && sibling instanceof HTMLElement) {changed.push([sibling, sibling.inert]); sibling.setAttribute('inert', '');}
+            }
+            ancestor = parent;
+        }
+        return () => {for (const [element, previous] of changed.reverse()) element.toggleAttribute('inert', previous);};
+    }, []);
     return <ModalBackdrop onDismiss={onClose} disabled={busy}>
         <section ref={panel} className="detail-dialog curated-dialog" role="dialog" aria-modal="true" aria-label={title}>
             <div className="dialog-kicker">{t('Shelves')}</div><h3>{title}</h3>

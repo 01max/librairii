@@ -59,7 +59,7 @@ export default function ShelfCreation({collections: sources, manualUUIDs, onClos
                 <button type="button" disabled={(page + 1) * 25 >= review.additions.length} onClick={() => setPage(page + 1)}>{t('Next →')}</button></div>
             <button type="button" disabled={busy} onClick={() => {setReview(null); setSelected([]);}}>{t('Change inputs')}</button>
             <button type="button" disabled={busy} onClick={() => void preview()}>{t('Refresh preview')}</button>
-            <button type="button" disabled={busy} onClick={() => void create()}>{t('Create with {0} stories', selected.length)}</button>
+            <button type="button" disabled={busy} onClick={() => void create()}>{t(selected.length === 1 ? 'Create with {0} story' : 'Create with {0} stories', selected.length)}</button>
         </>}
         {error && <p role="alert" className="dialog-error"><OutcomeText text={error}/></p>}
     </ShelfDialog>;

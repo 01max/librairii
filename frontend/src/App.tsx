@@ -527,6 +527,7 @@ function App() {
     ]);
 
     const loadCollection = useCallback(async () => {
+        if (curatedShelfID !== null) return;
         const generation = ++collectionRequestGeneration.current;
         try {
             const result = await QueryStories(new library.StoryLibraryQuery(collectionQuery));
@@ -553,7 +554,7 @@ function App() {
                 setRequestError(t("The story collection could not be loaded."));
             }
         }
-    }, [collectionQuery, queryHistory]);
+    }, [collectionQuery, queryHistory, curatedShelfID]);
     const loadCollectionRef = useRef(loadCollection);
     useEffect(() => {
         loadCollectionRef.current = loadCollection;
@@ -1855,7 +1856,7 @@ function App() {
 
             <LibrarySidebar open={sidebarOpen} onClose={closeSidebar} inert={historyOpen}
                 suspended={tagManagerOpen || tagAssignmentOpen || collectionDialogMode !== null ||
-                    repairCollectionID !== null || deleteCollectionID !== null || exportPreflight !== null || historyOpen}>
+                    repairCollectionID !== null || deleteCollectionID !== null || createShelfUUIDs !== null || exportPreflight !== null || historyOpen}>
                 <h1>Librairii</h1>
                 <div className="path">{libraryRoot}</div>
                 <div className="caption">{t("Library")}</div>
@@ -2988,7 +2989,7 @@ function App() {
                 </ModalBackdrop>
             )}
             {deleteCollection && <CollectionDeletion key={deleteCollection.id} id={deleteCollection.id} name={deleteCollection.name} onClose={() => setDeleteCollectionID(null)}
-                onDeleted={() => {setDeleteCollectionID(null); if (activeCollectionID === deleteCollection.id) openAllStories(); setShelfRevision((value) => value + 1); void loadSavedCollections();}}/>}
+                onDeleted={() => {setDeleteCollectionID(null); if (activeCollectionID === deleteCollection.id) {activateCollection(null, 'custom'); setCollectionQuery(queryHistory.replace(collectionQuery, null, 'custom'));} setShelfRevision((value) => value + 1); void loadSavedCollections();}}/>}
             {tagManagerOpen && (
                 <TagManager
                     onClose={() => setTagManagerOpen(false)}

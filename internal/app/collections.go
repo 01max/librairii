@@ -95,7 +95,7 @@ func (a *Application) ReorderCollections(
 	if !a.Status().MutationsAllowed {
 		return CollectionListResponse{Error: NewAPIError(
 			ErrorNotReady,
-			"Saved shelves are unavailable until storage is ready.",
+			"Collections are unavailable until storage is ready.",
 		)}
 	}
 	if _, err := a.collections.ReorderCollections(ctx, orderedIDs); err != nil {
@@ -111,7 +111,7 @@ func (a *Application) DeleteCollection(
 	if !a.Status().MutationsAllowed {
 		return MutationResponse{Error: NewAPIError(
 			ErrorNotReady,
-			"Saved shelves are unavailable until storage is ready.",
+			"Collections are unavailable until storage is ready.",
 		)}
 	}
 	if err := a.collections.DeleteCollection(ctx, shelfID); err != nil {
@@ -138,7 +138,7 @@ func (a *Application) requireCollectionMutation() *CollectionResponse {
 	}
 	return &CollectionResponse{Error: NewAPIError(
 		ErrorNotReady,
-		"Saved shelves are unavailable until storage is ready.",
+		"Collections are unavailable until storage is ready.",
 	)}
 }
 
@@ -153,12 +153,12 @@ func collectionAPIError(err error) *APIError {
 		errors.Is(err, collections.ErrCollectionCriteriaUnavailable),
 		errors.Is(err, collections.ErrInvalidSavedLibraryQuery),
 		errors.Is(err, collections.ErrUnsupportedSavedQueryVersion):
-		return NewAPIError(ErrorInvalidInput, "The saved shelf could not be validated.")
+		return NewAPIError(ErrorInvalidInput, "The saved collection could not be validated.")
 	case errors.Is(err, collections.ErrCollectionNotFound):
-		return NewAPIError(ErrorConflict, "The saved shelf no longer exists.")
+		return NewAPIError(ErrorConflict, "The saved collection no longer exists.")
 	case errors.Is(err, collections.ErrCollectionNeedsAttention):
-		return NewAPIError(ErrorConflict, "The saved shelf needs attention before it can be opened.")
+		return NewAPIError(ErrorConflict, "The saved collection needs attention before it can be opened.")
 	default:
-		return NewAPIError(ErrorInternal, "The saved shelf action could not be completed.")
+		return NewAPIError(ErrorInternal, "The saved collection action could not be completed.")
 	}
 }
