@@ -2787,3 +2787,6 @@ select:focus-visible {
 
 .broken-badge { color: #684613; border-color: #c9a56f; background: #fffaf0; }
 .view-small .broken-badge { top: auto; bottom: 4px; left: 2px; font-size: 8px; padding: 3px; gap: 2px; }
+
+.broken-visibility { display: grid; gap: 7px; margin: 14px 0 20px; font-size: 12px; font-weight: 700; }
+.broken-visibility select { width: 100%; min-height: 36px; padding: 7px; border: 1px solid var(--line); border-radius: 6px; color: var(--ink); background: var(--white); font: inherit; }

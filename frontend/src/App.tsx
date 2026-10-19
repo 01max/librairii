@@ -1413,6 +1413,7 @@ function App() {
         updateQuery({
             ...collectionQuery,
             anyOf: undefined,
+            brokenState: undefined,
             name: '',
             languages: [],
             compatibilities: [],
@@ -1681,7 +1682,22 @@ function App() {
     }
 
     const unavailableCriteria = hasUnavailableCriteria(collectionQuery, tagCatalog);
+    const flagCriteria = (query: CollectionQuery, path: number[] = []): Array<{path: number[]; state: BooleanFilterState}> => [
+        ...(query.brokenState && query.brokenState !== 'ignored' ? [{path, state: query.brokenState}] : []),
+        ...(query.anyOf?.flatMap((branch, index) => flagCriteria(branch, [...path, index])) ?? []),
+    ];
+    const removeFlagCriterion = (query: CollectionQuery, path: number[]): CollectionQuery => path.length === 0
+        ? {...query, brokenState: undefined}
+        : {...query, anyOf: query.anyOf?.map((branch, index) => index === path[0] ? removeFlagCriterion(branch, path.slice(1)) : branch)};
     const activeFilters = [
+        ...flagCriteria(collectionQuery).map((criterion) => {
+            const label = criterion.state === 'true' ? t('Broken flag: set') : t('Broken flag: clear');
+            return {
+                key: `flag-${criterion.path.join('-')}`,
+                label: criterion.path.length ? t('Alternative {0} · {1}', criterion.path.map((index) => index + 1).join('.'), label) : label,
+                remove: () => updateQuery({...removeFlagCriterion(collectionQuery, criterion.path), page: 1}),
+            };
+        }),
         ...(collectionQuery.name
             ? [{
                 key: 'name',
@@ -1973,20 +1989,19 @@ function App() {
                         </div>
                     ))}
                 </nav>
-                <label className="include-broken">
-                    <input
-                        type="checkbox"
-                        checked={collectionQuery.brokenVisibility === 'include'}
+                <label className="broken-visibility">
+                    <span>{t('Broken stories')}</span>
+                    <select value={collectionQuery.brokenVisibility ?? 'hide'}
                         onChange={(event) => {
-                            const next = {...collectionQuery, brokenVisibility: (event.currentTarget.checked ? 'include' : 'hide') as BrokenVisibility, page: 1};
-                            if (allStoriesActive) {
-                                setCollectionQuery(queryHistory.push(next, null, 'all'));
-                            } else {
-                                updateQuery(next);
-                            }
-                        }}
-                    />
-                    {t("Include broken stories")}</label>
+                            const next = {...collectionQuery, brokenVisibility: event.currentTarget.value as BrokenVisibility, page: 1};
+                            if (allStoriesActive) setCollectionQuery(queryHistory.push(next, null, 'all'));
+                            else updateQuery(next);
+                        }}>
+                        <option value="hide">{t('Hide broken stories')}</option>
+                        <option value="include">{t('Include broken stories')}</option>
+                        <option value="only">{t('Broken only')}</option>
+                    </select>
+                </label>
                 {selectedShelfIDs.length > 0 && (
                     <section className="combined-shelves" aria-label={t("Combined shelf preview")}>
                         <div className="combined-shelves-title">
@@ -2243,6 +2258,8 @@ function App() {
                                 updateQuery({
                                     ...collectionQuery,
                                     name: '',
+                                    anyOf: undefined,
+                                    brokenState: undefined,
                                     languages: [],
                                     compatibilities: [],
                                     booleanFilters: [],
@@ -2465,6 +2482,8 @@ function App() {
                                 onClick={() => updateQuery({
                                     ...collectionQuery,
                                     name: '',
+                                    anyOf: undefined,
+                                    brokenState: undefined,
                                     languages: [],
                                     compatibilities: [],
                                     booleanFilters: [],

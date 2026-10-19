@@ -153,6 +153,7 @@ export class CollectionQueryHistory {
         return this.push({
             ...current,
             anyOf: undefined,
+            brokenState: undefined,
             name: '',
             languages: [],
             compatibilities: [],
