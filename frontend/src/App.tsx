@@ -1,3 +1,5 @@
+import OutcomeText from './OutcomeText';
+import {systemLabel} from './system-label';
 import {t} from './i18n';
 import {useLanguage} from './use-language';
 import ModalBackdrop from './ModalBackdrop';
@@ -1230,7 +1232,7 @@ function App() {
                 derived: definition.source === 'derived',
                 label: state.assignedStories === assignmentWorkspace.requestedStories
                     ? definition.label
-                    : `${definition.label} · Mixed`,
+                    : `${systemLabel(definition)} · Mixed`,
             }];
         }
         return definition.values.flatMap((value) => {
@@ -1245,8 +1247,8 @@ function App() {
                 color: definition.color,
                 derived: definition.source === 'derived',
                 label: valueState.assignedStories === assignmentWorkspace.requestedStories
-                    ? `${definition.label} · ${value.label}`
-                    : `${definition.label} · ${value.label} · Mixed`,
+                    ? `${systemLabel(definition)} · ${value.label}`
+                    : `${systemLabel(definition)} · ${value.label} · Mixed`,
             }];
         });
     }) ?? [];
@@ -1677,7 +1679,7 @@ function App() {
                 return value
                     ? [{
                         key: `choice-${definition.id}-${value.id}`,
-                        label: `${definition.label} · ${value.label}`,
+                        label: `${systemLabel(definition)} · ${value.label}`,
                         remove: () => toggleChoiceFilter(definition.id, value.id),
                     }]
                     : [{
@@ -1703,7 +1705,7 @@ function App() {
                     return next;
                 })}
             >
-                {definition.label} <b aria-hidden="true">{collapsedTagFacets.has(definition.id) ? '+' : '−'}</b>
+                {systemLabel(definition)} <b aria-hidden="true">{collapsedTagFacets.has(definition.id) ? '+' : '−'}</b>
             </button>
             <div id={`tag-facet-${definition.id}`} hidden={collapsedTagFacets.has(definition.id)}>
                 {definition.kind === 'boolean' ? (
@@ -1723,7 +1725,7 @@ function App() {
                                 )}
                             />
                             <i style={{'--c': definition.color} as CSSProperties}/>
-                            {definition.label}
+                            {systemLabel(definition)}
                         </label>
                         <label className="choice">
                             <input
@@ -1740,7 +1742,7 @@ function App() {
                                 )}
                             />
                             <i style={{'--c': definition.color} as CSSProperties}/>
-                            {t("Not")}{definition.label}
+                            {t("Not")}{systemLabel(definition)}
                         </label>
                     </>
                 ) : definition.values.map((value) => (
@@ -1950,7 +1952,7 @@ function App() {
                                 </ul>
                                 <strong>
                                     {shelfSelectionPreview.uniqueStoryCount}{' '}
-                                    {t("unique")}{shelfSelectionPreview.uniqueStoryCount === 1
+                                    {t("unique")} {shelfSelectionPreview.uniqueStoryCount === 1
                                         ? t("story")
                                         : t("stories")}
                                 </strong>
@@ -1962,7 +1964,7 @@ function App() {
                                                 : 'memberships')}
                                 </p>
                                 <small>
-                                    {t("Sources:")}{shelfSelectionPreview.sourceShelfNames.join(', ')}
+                                    {t("Sources:")} {shelfSelectionPreview.sourceShelfNames.join(', ')}
                                 </small>
                                 <button
                                     className="combined-export"
@@ -2015,7 +2017,7 @@ function App() {
                         aria-expanded={languageFacetOpen}
                         onClick={() => setLanguageFacetOpen((open) => !open)}
                     >
-                        {t("Language")}<b>{languageFacetOpen ? '−' : '＋'}</b>
+                        {t("Language")} <b>{languageFacetOpen ? '−' : '＋'}</b>
                     </button>
                     {languageFacetOpen && languageOptions.map((locale) => (
                             <label className="choice" key={locale}>
@@ -2036,7 +2038,7 @@ function App() {
                         aria-expanded={importFacetOpen}
                         onClick={() => setImportFacetOpen((open) => !open)}
                     >
-                        {t("Import status")}<b>{importFacetOpen ? '−' : '＋'}</b>
+                        {t("Import status")} <b>{importFacetOpen ? '−' : '＋'}</b>
                     </button>
                     {importFacetOpen && compatibilityOptions.map((option) => (
                             <label className="choice" key={option.value}>
@@ -2336,7 +2338,7 @@ function App() {
                                         {operation.items.map((item) => (
                                             <li key={item.id}>
                                                 <b>{item.sourceName}</b>
-                                                <span>{item.outcomeMessage || item.status}</span>
+                                                <span>{<OutcomeText text={item.outcomeMessage || item.status}/>}</span>
                                             </li>
                                         ))}
                                     </ul>

@@ -1,3 +1,5 @@
+import {systemLabel} from './system-label';
+import {t} from './i18n';
 import ModalBackdrop from './ModalBackdrop';
 import {type CSSProperties, useEffect, useMemo, useRef, useState} from 'react';
 import {library, tagging} from '../wailsjs/go/models';
@@ -40,12 +42,12 @@ export default function StoryDetailsDialog({
         if (!state) return [];
         if (definition.kind === 'boolean') {
             return state.assignedStories > 0
-                ? [{key: `${definition.id}`, label: definition.label, color: definition.color}]
+                ? [{key: `${definition.id}`, label: systemLabel(definition), color: definition.color}]
                 : [];
         }
         return definition.values.filter((value) => state.values.some(
             (assigned) => assigned.valueId === value.id && assigned.assignedStories > 0,
-        )).map((value) => ({key: `${definition.id}-${value.id}`, label: `${definition.label} · ${value.label}`, color: definition.color}));
+        )).map((value) => ({key: `${definition.id}-${value.id}`, label: `${systemLabel(definition)} · ${value.label}`, color: definition.color}));
     }) ?? [];
     const [technicalOpen, setTechnicalOpen] = useState(false);
     const [confirming, setConfirming] = useState(false);
@@ -104,7 +106,7 @@ export default function StoryDetailsDialog({
                         {hasArtwork ? (
                             <img
                                 src={artworkURL}
-                                alt={`${story.title} artwork`}
+                                alt={t("{0} artwork", story.title)}
                                 decoding="async"
                                 onError={() => setFailedArtworkURL(artworkURL)}
                             />
@@ -118,15 +120,15 @@ export default function StoryDetailsDialog({
                             </p>
                         )}
                         <p className="dialog-description">
-                            {description || 'No story description is available yet.'}
+                            {description || t("No story description is available yet.")}
                         </p>
                     </div>
                 </div>
-                <section className="story-detail-tags" aria-label="Story tags">
+                <section className="story-detail-tags" aria-label={t("Story tags")}>
                     <div className="story-detail-tags-heading">
-                        <h4>Tags</h4>
+                        <h4>{t("Tags")}</h4>
                         <button type="button" disabled={removing} onClick={onEditTags}>
-                            {tagSelectionCount > 1 ? `Edit tags for ${tagSelectionCount} stories` : 'Edit tags'}
+                            {tagSelectionCount > 1 ? t("Edit tags for {0} stories", tagSelectionCount) : t("Edit tags")}
                         </button>
                     </div>
                     <div className="tags">
@@ -136,8 +138,8 @@ export default function StoryDetailsDialog({
                                 {tag.label}
                             </span>
                         ))}
-                        {tags.length === 0 && <p>{tagError ? 'Tags could not be loaded.' :
-                            tagWorkspace ? 'No tags yet.' : 'Loading tags…'}</p>}
+                        {tags.length === 0 && <p>{tagError ? t("Tags could not be loaded.") :
+                            tagWorkspace ? t("No tags yet.") : t("Loading tags…")}</p>}
                     </div>
                 </section>
                 <div className="story-detail-technical">
@@ -147,19 +149,19 @@ export default function StoryDetailsDialog({
                         aria-controls="story-technical-details"
                         onClick={() => setTechnicalOpen(!technicalOpen)}
                     >
-                        {technicalOpen ? 'Hide technical details' : 'Show technical details'}
+                        {technicalOpen ? t("Hide technical details") : t("Show technical details")}
                     </button>
                     {technicalOpen && (
                         <dl id="story-technical-details" className="dialog-facts">
-                            <div><dt>Story UUID</dt><dd>{story.uuid}</dd></div>
+                            <div><dt>{t("Story UUID")}</dt><dd>{story.uuid}</dd></div>
                             <div>
-                                <dt>Archive</dt>
-                                <dd>{archive?.originalFilename ?? 'Loading…'}</dd>
+                                <dt>{t("Archive")}</dt>
+                                <dd>{archive?.originalFilename ?? t("Loading…")}</dd>
                             </div>
-                            <div><dt>Verification</dt><dd>{verification}</dd></div>
+                            <div><dt>{t("Verification")}</dt><dd>{verification}</dd></div>
                             <div>
-                                <dt>Checksum</dt>
-                                <dd>{archive?.sha256 ?? 'Loading…'}</dd>
+                                <dt>{t("Checksum")}</dt>
+                                <dd>{archive?.sha256 ?? t("Loading…")}</dd>
                             </div>
                         </dl>
                     )}
@@ -167,11 +169,9 @@ export default function StoryDetailsDialog({
                 {confirming ? (
                     <div className="story-detail-removal">
                         <div className="removal-confirmation" role="alert">
-                            <b>Remove from this library?</b>
+                            <b>{t("Remove from this library?")}</b>
                             <p>
-                                “{story.title}” will move to application trash.
-                                Your original source file will stay where it is.
-                            </p>
+                                “{story.title}{t("” will move to application trash. Your original source file will stay where it is.")}</p>
                         </div>
                         {error && <p className="dialog-error" role="alert">{error}</p>}
                         <div className="dialog-actions">
@@ -181,15 +181,14 @@ export default function StoryDetailsDialog({
                                 disabled={removing}
                                 onClick={() => setConfirming(false)}
                             >
-                                Keep story
-                            </button>
+                                {t("Keep story")}</button>
                             <button
                                 className="danger"
                                 type="button"
                                 disabled={removing}
                                 onClick={onRemove}
                             >
-                                {removing ? 'Moving to trash…' : 'Move to trash'}
+                                {removing ? t("Moving to trash…") : t("Move to trash")}
                             </button>
                         </div>
                     </div>
@@ -201,11 +200,9 @@ export default function StoryDetailsDialog({
                             type="button"
                             onClick={() => setConfirming(true)}
                         >
-                            Remove from library…
-                        </button>
+                            {t("Remove from library…")}</button>
                         <button ref={closeButton} type="button" onClick={onClose}>
-                            Close
-                        </button>
+                            {t("Close")}</button>
                     </div>
                 )}
             </section>
