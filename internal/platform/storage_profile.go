@@ -126,3 +126,24 @@ func (r *StorageReadiness) InitializeLibrary(ctx context.Context, root string) e
 	r.override = root
 	return nil
 }
+
+func (r *StorageReadiness) CommitRoot(root string) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if r.profileStore == nil {
+		return preferences.ErrInvalid
+	}
+	p, err := r.profileStore.Update(func(p *preferences.Profile) error { p.Root = root; return nil })
+	if err != nil {
+		return err
+	}
+	r.profile = p
+	r.override = root
+	return nil
+}
+func (r *StorageReadiness) ConfigurationDirectory() string {
+	if r.profileStore == nil {
+		return ""
+	}
+	return r.profileStore.Directory()
+}

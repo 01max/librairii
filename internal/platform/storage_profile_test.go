@@ -81,3 +81,32 @@ func TestSetupInitializesConfirmedFolderOnly(t *testing.T) {
 		t.Fatal(next.Profile())
 	}
 }
+
+func TestClosedStorageReopensAtCommittedRoot(t *testing.T) {
+	ctx := context.Background()
+	r := NewConfiguredStorageReadiness(t.TempDir(), "/unused", "en")
+	old := filepath.Join(t.TempDir(), "old")
+	newRoot := filepath.Join(t.TempDir(), "new")
+	if err := r.InitializeLibrary(ctx, old); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := r.Check(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if err := r.Close(); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Rename(old, newRoot); err != nil {
+		t.Fatal(err)
+	}
+	if err := r.CommitRoot(newRoot); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := r.Check(ctx); err != nil {
+		t.Fatal(err)
+	}
+	defer r.Close()
+	if r.Layout().Root != newRoot || r.SQL() == nil {
+		t.Fatal(r.Layout())
+	}
+}
