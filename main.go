@@ -31,7 +31,7 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
-		readiness = platform.NewConfiguredStorageReadiness(directory, legacy, "en")
+		readiness = platform.NewConfiguredStorageReadiness(directory, legacy, platform.SystemLanguage())
 	}
 	nativeDialogs := platform.NewRuntimeDialogs()
 	acceptance, err := newPackagedAcceptanceFromEnvironment(nativeDialogs)
