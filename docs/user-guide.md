@@ -71,9 +71,17 @@ details. The left rail provides labeled **Library**, **Tags**, **Import**, and
 manager, Import opens the archive picker, and Export prepares the stories in
 the current view.
 
+Use **List**, **Small covers**, or **Large covers** above the shelves to choose
+how stories appear. List shows titles and authors without cover images; the two
+grids show covers at different sizes. Librairii remembers your choice. Switching
+views keeps the current search, filters, sort order, and selected stories.
+
 The application fits the window height. The navigation stays in place while
 the story collection scrolls; long shelf and filter lists scroll independently
 in their sidebar.
+In a narrow window, choose **Shelves & filters** above the stories to open saved
+shelves, shelf management actions, and **Refine this shelf**. The panel scrolls
+independently; choose **Done**, press Escape, or click outside to close it.
 
 **Include broken stories**, just below the saved shelves, shows stories marked
 as broken. They are hidden by default; when included, they have a Broken badge

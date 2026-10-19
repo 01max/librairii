@@ -141,6 +141,7 @@ const stories = [
 ];
 
 beforeEach(() => {
+    window.localStorage.clear();
     window.history.replaceState(null, '', '/');
     activeOperations.mockReset();
     applicationStatus.mockReset();
@@ -309,6 +310,49 @@ beforeEach(() => {
             uuid: stories[0].uuid,
         },
     }));
+});
+
+test('switches story views without losing the query or selection and remembers the choice', async () => {
+    const user = userEvent.setup();
+    const {unmount} = render(<App/>);
+    const story = await screen.findByRole('button', {name: 'Clockwork Forest'});
+    await user.click(story);
+    const query = window.location.hash;
+    const queries = queryStories.mock.calls.length;
+    const views = screen.getByRole('group', {name: 'Story view'});
+    expect(within(views).getByRole('button', {name: 'Large covers'})).toHaveAttribute('aria-pressed', 'true');
+    await user.click(within(views).getByRole('button', {name: 'Small covers'}));
+    expect(story.closest('.app')).toHaveClass('view-small');
+    await user.click(within(views).getByRole('button', {name: 'List'}));
+    expect(story).toHaveAttribute('aria-pressed', 'true');
+    expect(story.querySelector('.cover')).toBeNull();
+    expect(within(story).getByText('Lunii')).toBeInTheDocument();
+    expect(window.location.hash).toBe(query);
+    expect(queryStories.mock.calls.length).toBe(queries);
+    unmount();
+    render(<App/>);
+    await screen.findByRole('button', {name: 'Clockwork Forest'});
+    expect(screen.getByRole('button', {name: 'List'})).toHaveAttribute('aria-pressed', 'true');
+    expect(document.querySelector('.app')).toHaveClass('view-list');
+});
+
+test('ignores unknown stored story views and works without preference storage', async () => {
+    window.localStorage.setItem('librairii.library-view', 'unknown');
+    const {unmount} = render(<App/>);
+    await screen.findByRole('button', {name: 'Clockwork Forest'});
+    expect(screen.getByRole('button', {name: 'Large covers'})).toHaveAttribute('aria-pressed', 'true');
+    unmount();
+    const get = vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => { throw new Error('unavailable'); });
+    const set = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => { throw new Error('unavailable'); });
+    try {
+        render(<App/>);
+        await screen.findByRole('button', {name: 'Clockwork Forest'});
+        await userEvent.click(screen.getByRole('button', {name: 'List'}));
+        expect(document.querySelector('.app')).toHaveClass('view-list');
+    } finally {
+        get.mockRestore();
+        set.mockRestore();
+    }
 });
 
 test('renders the canonical collection shell from typed library data', async () => {

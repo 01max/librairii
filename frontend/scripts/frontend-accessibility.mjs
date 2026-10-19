@@ -92,6 +92,17 @@ try {
                 );
             }
             assertAccessibilityContract(viewport, contract);
+            for (const view of ['List', 'Small covers']) {
+                await page.getByRole('group', {name: 'Story view'}).getByRole('button', {name: view, exact: true}).click();
+                const result = await new AxeBuilder({page}).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze();
+                if (result.violations.length) throw new Error(`${viewport.width}px ${view}: ${JSON.stringify(result.violations)}`);
+            }
+            if (viewport.width <= 850) {
+                await page.getByRole('button', {name: 'Shelves & filters', exact: true}).click();
+                await page.getByRole('dialog', {name: 'Saved shelves and refinements'}).waitFor();
+                const result = await new AxeBuilder({page}).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze();
+                if (result.violations.length) throw new Error(`sidebar: ${JSON.stringify(result.violations)}`);
+            }
             results.push({
                 viewport,
                 axeViolations: violations.length,

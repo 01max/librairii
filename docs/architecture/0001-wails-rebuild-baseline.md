@@ -12,7 +12,7 @@ verified by application and release acceptance tests.
 The UI baseline is tracked in the repository:
 
 - reference: `testdata/ui-prototypes/05-archive-shelves.html`
-- SHA-256: `aa172d807086698fc8f70d8551dc0c7a21f43d22335bdf80407501c5f645a6b6`
+- SHA-256: `2cb8a9c0d61416fa143f22a2a6a405294fd751352cdbe6874585f53a0896f625`
 - the `.app` subtree is normative
 - the `.back` gallery link is excluded from the product
 
@@ -43,6 +43,14 @@ exports. Summary records carry the broken state for accessible badges. Protected
 tag identities remain fixed while colors are user-editable and preserved by
 startup seeding and metadata projection. Migration 014 relaxes only color
 updates and changes the previous default age color to green.
+
+The 2026-10-19 browsing revision adds a persisted presentation preference for
+text lists, compact cover grids, and the existing large cover grid. Presentation
+does not enter saved queries or change selection, pagination, sorting, or exports.
+At widths of 850px or less, a Shelves & filters disclosure opens the existing
+sidebar as a scrollable modal panel with keyboard dismissal and focus return.
+The previous breakpoint hid the sidebar without providing a reopening action.
+The visual reference includes the view picker and the narrow-window disclosure.
 
 ## Tracked removal allowlist
 

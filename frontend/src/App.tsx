@@ -61,6 +61,9 @@ import {
 import TagManager from './TagManager';
 import StoryDetailsDialog from './StoryDetailsDialog';
 import LibraryNavigation from './LibraryNavigation';
+import LibrarySidebar from './LibrarySidebar';
+import LibraryViewPicker from './LibraryViewPicker';
+import {useLibraryView} from './library-view';
 import LuniiSync from './LuniiSync';
 import StoryCover from './StoryCover';
 import TagAssignmentEditor from './TagAssignmentEditor';
@@ -399,6 +402,9 @@ function compatibilityLabel(value: string): string {
 }
 
 function App() {
+    const [libraryView, setLibraryView] = useLibraryView();
+    const [sidebarOpen, setSidebarOpen] = useState(false);
+    const closeSidebar = useCallback(() => setSidebarOpen(false), []);
     const queryHistory = useMemo(
         () => new CollectionQueryHistory(window, initialCollectionQuery),
         [],
@@ -1137,7 +1143,9 @@ function App() {
     );
 
     const stories = useMemo(() => page?.stories ?? [], [page]);
-    const rows = useMemo(() => chunkStories(stories), [stories]);
+    const rows = useMemo(() => libraryView === 'large'
+        ? chunkStories(stories)
+        : stories.length ? [stories] : [], [libraryView, stories]);
     const activeShelf = savedShelves.find((shelf) => shelf.id === activeShelfID) ?? null;
     const allStoriesActive = activeShelfID === null &&
         collectionScope === 'all';
@@ -1827,11 +1835,11 @@ function App() {
     );
 
     return (
-        <div className="app">
+        <div className={`app view-${libraryView}`}>
             <span className="sr-only" data-testid="application-state">
                 Application state: {applicationState}
             </span>
-            <aside className="rail" aria-label="Primary navigation">
+            <aside className="rail" aria-label="Primary navigation" inert={sidebarOpen}>
                 <div className="mark" role="img" aria-label="Librairii">
                     <i/><i/><i/>
                 </div>
@@ -1847,7 +1855,9 @@ function App() {
                 />
             </aside>
 
-            <aside className="filters" aria-label="Saved shelves and refinements">
+            <LibrarySidebar open={sidebarOpen} onClose={closeSidebar}
+                suspended={tagManagerOpen || tagAssignmentOpen || shelfDialogMode !== null ||
+                    repairShelfID !== null || deleteShelfID !== null || exportPreflight !== null}>
                 <h1>Librairii</h1>
                 <div className="path">~/Stories/Librairii</div>
                 <div className="caption">Saved shelves</div>
@@ -2113,9 +2123,9 @@ function App() {
                 >
                     ＋ Manage tags
                 </button>
-            </aside>
+            </LibrarySidebar>
 
-            <main className="main">
+            <main className="main" inert={sidebarOpen}>
                 <div className="top">
                     <label className="search">
                         <span aria-hidden="true">⌕</span>
@@ -2181,6 +2191,15 @@ function App() {
                             </select>
                         </label>
                     </div>
+                </div>
+
+                <div className="collection-toolbar">
+                    <button className="sidebar-toggle" type="button"
+                        aria-expanded={sidebarOpen} aria-controls="library-sidebar"
+                        onClick={() => setSidebarOpen(true)}>
+                        Shelves &amp; filters
+                    </button>
+                    <LibraryViewPicker view={libraryView} onChange={setLibraryView}/>
                 </div>
 
                 {activeFilters.length > 0 && !showSavedShelfRows && (
@@ -2491,7 +2510,14 @@ function App() {
                                             }
                                         }}
                                     >
-                                        <StoryCover story={story}/>
+                                        {libraryView === 'list' ? (
+                                            <span className="story-list-info">
+                                                <span className="story-list-title">{story.title}</span>
+                                                <span className="story-list-meta">
+                                                    {story.author || 'Local story'}
+                                                </span>
+                                            </span>
+                                        ) : <StoryCover story={story}/>}
                                         {story.broken && (
                                             <span
                                                 className="broken-badge"
@@ -2504,7 +2530,7 @@ function App() {
                                             </span>
                                         )}
                                     </button>
-                                    <p className="story-title">{story.title}</p>
+                                    {libraryView !== 'list' && <p className="story-title">{story.title}</p>}
                                 </div>
                             ))}
                         </div>
@@ -2540,7 +2566,7 @@ function App() {
             </main>
 
             {selected && (
-                <aside className="drawer" aria-label={`${selected.title} details`}>
+                <aside className="drawer" aria-label={`${selected.title} details`} inert={sidebarOpen}>
                     <div
                         className={`drawer-art${selected.artworkId ? ' has-artwork' : ''}`}
                         style={selectedPalette}
