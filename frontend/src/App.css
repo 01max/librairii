@@ -2790,3 +2790,21 @@ select:focus-visible {
 
 .broken-visibility { display: grid; gap: 7px; margin: 14px 0 20px; font-size: 12px; font-weight: 700; }
 .broken-visibility select { width: 100%; min-height: 36px; padding: 7px; border: 1px solid var(--line); border-radius: 6px; color: var(--ink); background: var(--white); font: inherit; }
+
+/* Curated membership extends the existing library panels. */
+.curated-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 12px 0; }
+.curated-workspace { max-width: 1100px; margin: auto; }
+.curated-workspace label, .curated-dialog label { display: flex; align-items: center; gap: 8px; margin: 10px 0; }
+.curated-workspace input[type=search], .curated-dialog input:not([type=checkbox]) { min-width: 0; max-width: 100%; padding: 8px; border: 1px solid #d9dce3; border-radius: 8px; }
+.curated-dialog { max-width: 760px; max-height: 85dvh; overflow: auto; }
+.curated-members, .curated-candidates { list-style: none; margin: 16px 0; padding: 0; }
+.curated-members { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; }
+.curated-members > li, .curated-candidates > li { border: 1px solid #d9dce3; border-radius: 12px; padding: 12px; overflow-wrap: anywhere; }
+.curated-candidates > li { margin-bottom: 8px; }
+.curated-cover { display: block; width: 100%; padding: 0; border: 0; background: transparent; }
+.curated-cover .cover { height: 130px; border-radius: 8px; background: #edf0fc; }
+.curated-members small, .curated-candidates small { display: block; margin: 8px 0; }
+.curated-workspace button, .curated-dialog button { cursor: pointer; padding: 7px 10px; border: 1px solid #d9dce3; border-radius: 8px; background: white; color: #34364a; }
+.curated-workspace button:disabled, .curated-dialog button:disabled { opacity: .5; cursor: default; }
+.curated-workspace button:focus-visible, .curated-dialog button:focus-visible { outline: 3px solid #405cf5; outline-offset: 2px; }
+@media (max-width: 600px) { .curated-dialog { width: calc(100vw - 24px); } .curated-workspace .heading { display: block; } }

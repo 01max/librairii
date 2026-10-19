@@ -1,4 +1,6 @@
 import {useStoryFlags} from './use-story-flags';
+import ShelfWorkspace from './ShelfWorkspace';
+import ShelfCreation from './ShelfCreation';
 import SettingsPanel from './SettingsPanel';
 import OutcomeText from './OutcomeText';
 import {isStoryTag, systemLabel, systemValue} from './system-label';
@@ -24,6 +26,7 @@ import {
     DuplicateCollection,
     ListCollections,
     ListShelves,
+    AddStoriesToShelf,
     OfficialMetadataStatus,
     OpenCollection,
     OperationSnapshot,
@@ -366,9 +369,11 @@ function App() {
     }, [queryHistory]);
     const [curatedShelfID, setCuratedShelfID] = useState<number | null>(() => queryHistory.currentCuratedShelfID());
     const [curatedShelves, setCuratedShelves] = useState<shelves.Shelf[]>([]);
-    const [shelfRevision] = useState(0);
+    const [shelfRevision, setShelfRevision] = useState(0);
+    const [createShelfUUIDs, setCreateShelfUUIDs] = useState<string[] | null>(null);
+    const [addShelfID, setAddShelfID] = useState('');
     const openCuratedShelf = (id: number) => {
-        queryHistory.pushShelf(id);
+        setCollectionQuery(queryHistory.pushShelf(id));
         setCuratedShelfID(id);
         setSidebarOpen(false);
     };
@@ -685,7 +690,7 @@ function App() {
                     if (compatibility.error) throw new Error(compatibility.error.message);
                     queryHistory.configureLegacyBrokenTagID(compatibility.compatibility.legacyBrokenTagId);
                     const migratedQuery = queryHistory.current();
-                    queryHistory.replace(migratedQuery, activeCollectionIDRef.current, initialHistoryState.scope);
+                    if (queryHistory.currentCuratedShelfID() === null) queryHistory.replace(migratedQuery, activeCollectionIDRef.current, initialHistoryState.scope);
                     setCollectionQuery(migratedQuery);
                 }
                 setApplicationState(state);
@@ -2003,7 +2008,7 @@ function App() {
                     ))}
                 </nav>
                 <section aria-label={t('Shelves')}>
-                    <div className="caption">{t('Shelves')}</div>
+                    <div className="caption">{t('Shelves')}</div><button type="button" disabled={applicationState !== 'ready'} onClick={() => setCreateShelfUUIDs([])}>{t('Create Shelf')}</button>
                     {curatedShelves.map((shelf) => <button className="saved-picker" type="button" key={shelf.id}
                         aria-current={curatedShelfID === shelf.id ? 'page' : undefined}
                         onClick={() => openCuratedShelf(shelf.id)}>{shelf.name}<span>{shelf.count}</span></button>)}
@@ -2141,7 +2146,12 @@ function App() {
             </LibrarySidebar>
 
             <main tabIndex={-1} className="main" inert={sidebarOpen || historyOpen}>
-                {curatedShelfID !== null && <section><h2>{curatedShelves.find((shelf) => shelf.id === curatedShelfID)?.name}</h2><button type="button" onClick={openAllStories}>{t("All stories")}</button></section>}
+                {curatedShelfID !== null && <><button className="sidebar-toggle" type="button" onClick={() => setSidebarOpen(true)}>{t('Library & filters')}</button>
+                    <ShelfWorkspace key={curatedShelfID} id={curatedShelfID} revision={shelfRevision + collectionRevision + detailRevision}
+                        query={collectionQuery} onQuery={(query) => setCollectionQuery(queryHistory.pushShelf(curatedShelfID, query))}
+                        onChanged={() => setShelfRevision((value) => value + 1)} onDeleted={openAllStories}
+                        onInspect={(story) => {setInspectedStory(story); setDetailsOpen(true);}}/>
+                </>}
                 <div hidden={curatedShelfID !== null}>
                 <div className="top">
                     <label className="search">
@@ -2676,6 +2686,15 @@ function App() {
                         </div>
                     </div>
                     <div className="drawer-actions">
+                        <label>{t('Add selection to Shelf')}<select value={addShelfID} onChange={(event) => setAddShelfID(event.target.value)}><option value="">{t('Choose Shelf')}</option>
+                            {curatedShelves.map((shelf) => <option key={shelf.id} value={shelf.id}>{shelf.name}</option>)}</select></label>
+                        <button type="button" disabled={!addShelfID || collectionBusy} onClick={() => {
+                            setCollectionBusy(true);
+                            void AddStoriesToShelf(Number(addShelfID), renderedStories.filter((story) => selectedIDs.includes(story.id)).map((story) => story.uuid)).then((response) => {
+                                if (response.error) setRequestError(response.error.message); else setShelfRevision((value) => value + 1);
+                            }).catch(() => setRequestError(t('Shelf could not be changed.'))).finally(() => setCollectionBusy(false));
+                        }}>{t('Add selected stories')}</button>
+                        <button type="button" onClick={() => setCreateShelfUUIDs(renderedStories.filter((story) => selectedIDs.includes(story.id)).map((story) => story.uuid))}>{t('Create Shelf from selection')}</button>
                         {selectedIDs.length > 1 ? <>
                             <span className="drawer-flag-count">{t('{0} selected · {1} flagged', selectedIDs.length, selectedFlaggedCount)}</span>
                             <button type="button" disabled={flags.pending} onClick={() => void flags.set(selectedIDs, true)}>{t('Mark selected as broken')}</button>
@@ -2872,6 +2891,8 @@ function App() {
                     onReveal={revealExportDestination}/>
             )}
 
+            {createShelfUUIDs !== null && <ShelfCreation collections={savedCollections} manualUUIDs={createShelfUUIDs}
+                onClose={() => setCreateShelfUUIDs(null)} onCreated={(id) => {setCreateShelfUUIDs(null); setShelfRevision((value) => value + 1); openCuratedShelf(id);}}/>}
             {collectionDialogMode && (
                 <ModalBackdrop onDismiss={() => setCollectionDialogMode(null)} disabled={collectionBusy}>
                     <form
