@@ -57,3 +57,27 @@ func TestExplicitRootIgnoresProductionProfile(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestSetupInitializesConfirmedFolderOnly(t *testing.T) {
+	ctx := context.Background()
+	root := filepath.Join(t.TempDir(), "bibliothèque choisie")
+	r := NewConfiguredStorageReadiness(t.TempDir(), "/unused", "fr")
+	if err := r.InitializeLibrary(ctx, root); err != nil {
+		t.Fatal(err)
+	}
+	if !r.Profile().Complete || r.Profile().Root != root {
+		t.Fatal(r.Profile())
+	}
+	if _, err := r.Check(ctx); err != nil {
+		t.Fatal(err)
+	}
+	r.Close()
+	next := NewConfiguredStorageReadiness(r.profileStore.Directory(), "/unused", "en")
+	if _, err := next.Check(ctx); err != nil {
+		t.Fatal(err)
+	}
+	defer next.Close()
+	if next.Profile().Language != "fr" {
+		t.Fatal(next.Profile())
+	}
+}
