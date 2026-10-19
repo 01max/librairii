@@ -452,7 +452,7 @@ function App() {
     const searchInput = useRef<HTMLInputElement>(null);
     const openDetailsButton = useRef<HTMLButtonElement>(null);
     const collectionRequestGeneration = useRef(0);
-    const pendingFlagFocus = useRef<{storyID?: number} | null>(null);
+    const pendingFlagFocus = useRef<{trigger: Element; candidates: HTMLElement[]} | null>(null);
     const shelfPreviewGeneration = useRef(0);
     const shelfListRequestGeneration = useRef(0);
     const shelfDialog = useRef<HTMLFormElement>(null);
@@ -628,20 +628,18 @@ function App() {
         const refreshStories = (stories: library.StorySummary[]) => stories.map((story) => changes.has(story.id)
             ? new library.StorySummary({...story, broken: changes.get(story.id)}) : story).filter(remainsVisible);
         setSavedShelfStories((current) => Object.fromEntries(Object.entries(current).map(([id, stories]) => [id, refreshStories(stories)])));
-        const trigger = document.activeElement?.closest('.story-card');
-        const triggerStory = trigger?.querySelector<HTMLElement>('[data-story-id]');
+        const trigger = document.activeElement;
+        const triggerStory = trigger?.closest('.story-card')?.querySelector<HTMLElement>('[data-story-id]');
         const triggerID = Number(triggerStory?.dataset.storyId);
-        if (trigger && changes.has(triggerID)) {
-            const broken = changes.get(triggerID);
-            if ((mode === 'hide' && broken) || (mode === 'only' && !broken)) {
-                const candidates = Array.from(document.querySelectorAll<HTMLElement>('.story[data-story-id]'));
-                const index = candidates.indexOf(triggerStory!);
-                const next = [...candidates.slice(index + 1), ...candidates.slice(0, index)].find((candidate) => {
-                    const value = changes.get(Number(candidate.dataset.storyId));
-                    return value === undefined || (mode === 'only' ? value : !value);
-                });
-                pendingFlagFocus.current = {storyID: next ? Number(next.dataset.storyId) : undefined};
-            }
+        pendingFlagFocus.current = null;
+        if (trigger && triggerStory && changes.has(triggerID)) {
+            const candidates = Array.from(document.querySelectorAll<HTMLElement>('.story[data-story-id]'));
+            const index = candidates.indexOf(triggerStory);
+            pendingFlagFocus.current = {
+                trigger,
+                candidates: [...candidates.slice(index + 1), ...candidates.slice(0, index)]
+                    .filter((candidate) => !changes.has(Number(candidate.dataset.storyId))),
+            };
         }
         setInspectedStory((current) => {
             const change = result.changes.find((item) => item.storyId === current?.id);
@@ -1277,12 +1275,23 @@ function App() {
             ? selectedID : nextSelection[0] ?? null);
     }
     useEffect(() => {
-        if (!pendingFlagFocus.current) return;
-        const targetID = pendingFlagFocus.current.storyID;
-        const target = targetID ? document.querySelector<HTMLElement>(`.story[data-story-id="${targetID}"]`) : null;
-        (target ?? document.querySelector<HTMLElement>('main'))?.focus({preventScroll: true});
+        const pending = pendingFlagFocus.current;
+        if (!pending || pending.trigger.isConnected) return;
         pendingFlagFocus.current = null;
-    }, [page, savedShelfStories]);
+        if (document.activeElement !== document.body) return;
+        const target = pending.candidates.find((candidate) => candidate.isConnected)
+            ?? document.querySelector<HTMLElement>('main');
+        target?.focus({preventScroll: true});
+    }, [renderedStories]);
+    useEffect(() => {
+        const cancelFlagFocus = (event: FocusEvent) => {
+            if (pendingFlagFocus.current && event.target !== pendingFlagFocus.current.trigger) {
+                pendingFlagFocus.current = null;
+            }
+        };
+        document.addEventListener('focusin', cancelFlagFocus);
+        return () => document.removeEventListener('focusin', cancelFlagFocus);
+    }, []);
     const selectedSummary = renderedStories.find(
         (story) => story.id === selectedID,
     ) ?? null;

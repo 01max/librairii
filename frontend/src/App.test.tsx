@@ -3704,13 +3704,27 @@ test('saves the union of selected shelves instead of only the displayed shelf', 
     })));
 });
 
+type FlagFixtureQuery = {
+    brokenVisibility?: string;
+    brokenState?: string;
+    anyOf?: FlagFixtureQuery[];
+    name?: string;
+    page?: number;
+    pageSize?: number;
+};
+
 function installStoryFlagsFixture(initialFlags: number[] = [], fixtureStories = stories) {
     const state = new Map(fixtureStories.map((story) => [story.id, initialFlags.includes(story.id)]));
     const summaries = () => fixtureStories.map((story) => new library.StorySummary({...story, broken: state.get(story.id)}));
-    const pageFor = (request: {brokenVisibility?: string; brokenState?: string; page?: number; pageSize?: number}) => {
+    const matchesCriteria = (story: library.StorySummary, query: FlagFixtureQuery): boolean => (
+        (!query.brokenState || query.brokenState === 'ignored' || (query.brokenState === 'true' ? story.broken : !story.broken)) &&
+        (!query.name || story.title.toLowerCase().includes(query.name.toLowerCase())) &&
+        (!query.anyOf?.length || query.anyOf.some((branch) => matchesCriteria(story, branch)))
+    );
+    const pageFor = (request: FlagFixtureQuery) => {
         const mode = request.brokenVisibility ?? 'hide';
         const matches = summaries().filter((story) => (mode === 'include' || (mode === 'only' ? story.broken : !story.broken)) &&
-            (!request.brokenState || (request.brokenState === 'true' ? story.broken : !story.broken)));
+            matchesCriteria(story, request));
         const size = request.pageSize || 12;
         const page = request.page || 1;
         return {stories: matches.slice((page - 1) * size, page * size), page, pageSize: size,
@@ -3900,14 +3914,106 @@ test.each(['collection', 'preview'])('reconciles preview-only selection when %s 
     render(<App/>);
     await user.click(await screen.findByRole('button', {name: 'Preview story'}));
     expect(await screen.findByRole('complementary', {name: 'Preview story details'})).toBeInTheDocument();
-    await user.click(screen.getByRole('button', {name: 'Mark Preview story as broken'}));
+    const action = screen.getByRole('button', {name: 'Mark Preview story as broken'});
+    await user.click(action);
     await waitFor(() => expect(state.get(3)).toBe(true));
+    if (first === 'collection') expect(action).toHaveFocus();
     await act(async () => { finishRefresh(); });
     await waitFor(() => expect(screen.queryByRole('button', {name: 'Preview story'})).not.toBeInTheDocument());
     expect(await screen.findByRole('complementary', {name: 'Clockwork Forest details'})).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByRole('button', {name: 'Clockwork Forest'})).toHaveFocus());
     await user.keyboard('{Control>}');
     await user.click(screen.getByRole('button', {name: 'Moonlit Workshop'}));
     await user.keyboard('{/Control}');
     await user.click(screen.getByRole('button', {name: 'Clear broken flags'}));
     expect(SetStoriesBroken).toHaveBeenLastCalledWith([1, 2], false);
+});
+
+test.each(['true', 'false'] as const)('restores focus after a root brokenState=%s criterion removes a card in Include mode', async (brokenState) => {
+    installStoryFlagsFixture(brokenState === 'true' ? [1, 2] : []);
+    window.history.replaceState(null, '', `/#/library?v=2&brokenVisibility=include&brokenState=${brokenState}`);
+    const user = userEvent.setup();
+    render(<App/>);
+    const action = await screen.findByRole('button', {name: brokenState === 'true'
+        ? 'Clear broken flag for Clockwork Forest' : 'Mark Clockwork Forest as broken'});
+    action.focus();
+    await user.keyboard('{Enter}');
+    await waitFor(() => expect(screen.queryByRole('button', {name: 'Clockwork Forest'})).not.toBeInTheDocument());
+    await waitFor(() => expect(screen.getByRole('button', {name: 'Moonlit Workshop'})).toHaveFocus());
+});
+
+test.each([false, true])('restores focus for nested brokenState criteria with an empty result: %s', async (empty) => {
+    installStoryFlagsFixture(empty ? [1] : [1, 2]);
+    const branch = {...DEFAULT_COLLECTION_QUERY, brokenVisibility: 'include' as const, brokenState: 'true' as const};
+    window.history.replaceState(null, '', `/${encodeCollectionQuery({
+        ...DEFAULT_COLLECTION_QUERY, brokenVisibility: 'include', anyOf: [{...branch, brokenState: undefined, anyOf: [branch]}],
+    })}`);
+    const user = userEvent.setup();
+    render(<App/>);
+    const action = await screen.findByRole('button', {name: 'Clear broken flag for Clockwork Forest'});
+    action.focus();
+    await user.keyboard('{Enter}');
+    await waitFor(() => expect(screen.queryByRole('button', {name: 'Clockwork Forest'})).not.toBeInTheDocument());
+    await waitFor(() => expect(empty ? screen.getByRole('main') : screen.getByRole('button', {name: 'Moonlit Workshop'})).toHaveFocus());
+});
+
+test('preserves focus when another union branch keeps the changed story in the results', async () => {
+    installStoryFlagsFixture([1, 2]);
+    const branch = {...DEFAULT_COLLECTION_QUERY, brokenVisibility: 'include' as const};
+    window.history.replaceState(null, '', `/${encodeCollectionQuery({
+        ...branch, anyOf: [{...branch, brokenState: 'true'}, {...branch, name: 'Clockwork Forest'}],
+    })}`);
+    const user = userEvent.setup();
+    render(<App/>);
+    const action = await screen.findByRole('button', {name: 'Clear broken flag for Clockwork Forest'});
+    action.focus();
+    await user.keyboard('{Enter}');
+    const updated = await screen.findByRole('button', {name: 'Mark Clockwork Forest as broken'});
+    expect(updated).toHaveFocus();
+    expect(screen.getByRole('button', {name: 'Clockwork Forest'})).toBeInTheDocument();
+});
+
+test('preserves user focus changes while flag results are refreshing', async () => {
+    const {state, pageFor} = installStoryFlagsFixture([1, 2]);
+    window.history.replaceState(null, '', '/#/library?v=2&brokenVisibility=include&brokenState=true');
+    let finishRefresh!: () => void;
+    const delayedRefresh = new Promise<void>((resolve) => { finishRefresh = resolve; });
+    queryStories.mockImplementation(async (query) => {
+        if (!state.get(1)) await delayedRefresh;
+        return new app.LibraryPageResponse({page: pageFor(query)});
+    });
+    const user = userEvent.setup();
+    render(<App/>);
+    await user.click(await screen.findByRole('button', {name: 'Clear broken flag for Clockwork Forest'}));
+    await waitFor(() => expect(state.get(1)).toBe(false));
+    const search = screen.getByRole('searchbox');
+    await user.click(search);
+    await act(async () => { finishRefresh(); });
+    await waitFor(() => expect(screen.queryByRole('button', {name: 'Clockwork Forest'})).not.toBeInTheDocument());
+    expect(search).toHaveFocus();
+});
+
+test('skips duplicate copies of the changed story while collection results are still refreshing', async () => {
+    const {state, pageFor} = installStoryFlagsFixture();
+    let finishRefresh!: () => void;
+    const delayedRefresh = new Promise<void>((resolve) => { finishRefresh = resolve; });
+    queryStories.mockImplementation(async (query) => {
+        if (state.get(1)) await delayedRefresh;
+        return new app.LibraryPageResponse({page: pageFor(query)});
+    });
+    listShelves.mockResolvedValue(new app.ShelfListResponse({shelves: [
+        {id: 7, name: 'Forest', position: 0, validity: 'valid', count: 1},
+    ]}));
+    openShelf.mockImplementation(async (_id, request) => new app.ShelfEvaluationResponse({evaluation: {
+        shelf: {id: 7, name: 'Forest', validity: 'valid'},
+        query: {name: 'Forest'}, page: pageFor({...request, name: 'Forest'}),
+    }}));
+    const user = userEvent.setup();
+    render(<App/>);
+    await waitFor(() => expect(screen.getAllByRole('button', {name: 'Mark Clockwork Forest as broken'})).toHaveLength(2));
+    await user.click(screen.getAllByRole('button', {name: 'Mark Clockwork Forest as broken'})[1]);
+    await waitFor(() => expect(screen.getAllByRole('button', {name: 'Clockwork Forest'})).toHaveLength(1));
+    await act(async () => { finishRefresh(); });
+    await waitFor(() => expect(screen.queryByRole('button', {name: 'Clockwork Forest'})).not.toBeInTheDocument());
+    expect(screen.getByRole('button', {name: 'Moonlit Workshop'})).toHaveFocus();
 });
