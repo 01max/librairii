@@ -401,6 +401,8 @@ function App() {
     const [importFacetOpen, setImportFacetOpen] = useState(false);
     const [collapsedTagFacets, setCollapsedTagFacets] = useState<Set<number>>(new Set());
     const [detailsOpen, setDetailsOpen] = useState(false);
+    const [inspectedStory, setInspectedStory] = useState<library.StorySummary | null>(null);
+    const [inspectedArchive, setInspectedArchive] = useState<library.ArchiveDetails>();
     const [removing, setRemoving] = useState(false);
     const [removalError, setRemovalError] = useState<string | null>(null);
     const [removalNotice, setRemovalNotice] = useState<string | null>(null);
@@ -627,7 +629,14 @@ function App() {
         await Promise.all([loadCollectionRef.current(), loadSavedShelves()]);
     }, [loadSavedShelves]);
 
-    const flags = useStoryFlags(invalidateCollection, collectionQuery.brokenVisibility ?? 'hide');
+    const onFlagsChanged = useCallback(async (result: library.FlagResult) => {
+        setInspectedStory((current) => {
+            const change = result.changes.find((item) => item.storyId === current?.id);
+            return current && change ? new library.StorySummary({...current, broken: change.current}) : current;
+        });
+        await invalidateCollection();
+    }, [invalidateCollection]);
+    const flags = useStoryFlags(onFlagsChanged, collectionQuery.brokenVisibility ?? 'hide');
 
     const reconcileOperation = useCallback((snapshot: operations.Snapshot) => {
         setOperationSnapshots((current) => {
@@ -990,14 +999,15 @@ function App() {
     }
 
     async function confirmRemoval() {
-        if (!selected || removing) {
+        const target = inspectedStory ?? selected;
+        if (!target || removing) {
             return;
         }
         setRemoving(true);
         setRemovalError(null);
-        const title = selected.title;
+        const title = target.title;
         try {
-            const response = await RemoveStory(selected.id);
+            const response = await RemoveStory(target.id);
             if (response.error) {
                 setRemovalError(response.error.message);
                 return;
@@ -1230,6 +1240,8 @@ function App() {
     const selected = selectedSummary
         ? detail?.story.id === selectedID ? detail.story : selectedSummary
         : null;
+    const inspected = inspectedStory ?? selected;
+    const selectedFlaggedCount = selectedIDs.filter((id) => renderedStories.some((story) => story.id === id && story.broken)).length;
     const selectedPalette = selected ? paletteFor(selected.id) : undefined;
     const selectedShelfCount = selected
         ? savedShelves.find((shelf) => (
@@ -2034,8 +2046,8 @@ function App() {
                         )}
                     </section>
                 )}
-                {flags.error && <p className="flag-feedback dialog-error" role="alert"><OutcomeText text={flags.error}/></p>}
-                {flags.notice && <div className="flag-feedback" role="status">
+                {flags.error && !detailsOpen && <p className="flag-feedback dialog-error" role="alert"><OutcomeText text={flags.error}/></p>}
+                {flags.notice && !detailsOpen && <div className="flag-feedback" role="status">
                     <span>{flags.notice}</span>
                     {flags.canUndo && <button type="button" disabled={flags.pending} onClick={() => void flags.undo()}>{t('Undo')}</button>}
                 </div>}
@@ -2142,8 +2154,8 @@ function App() {
                             {page?.totalItems ?? 0} {' '}{t("archives")}</p>
                     </div>
                     <div className="heading-actions">
-                        {flags.error && <p className="flag-feedback dialog-error" role="alert"><OutcomeText text={flags.error}/></p>}
-                {flags.notice && <div className="flag-feedback" role="status">
+                        {flags.error && !detailsOpen && <p className="flag-feedback dialog-error" role="alert"><OutcomeText text={flags.error}/></p>}
+                {flags.notice && !detailsOpen && <div className="flag-feedback" role="status">
                     <span>{flags.notice}</span>
                     {flags.canUndo && <button type="button" disabled={flags.pending} onClick={() => void flags.undo()}>{t('Undo')}</button>}
                 </div>}
@@ -2202,8 +2214,8 @@ function App() {
                     )}
                 </div>
 
-                {flags.error && <p className="flag-feedback dialog-error" role="alert"><OutcomeText text={flags.error}/></p>}
-                {flags.notice && <div className="flag-feedback" role="status">
+                {flags.error && !detailsOpen && <p className="flag-feedback dialog-error" role="alert"><OutcomeText text={flags.error}/></p>}
+                {flags.notice && !detailsOpen && <div className="flag-feedback" role="status">
                     <span>{flags.notice}</span>
                     {flags.canUndo && <button type="button" disabled={flags.pending} onClick={() => void flags.undo()}>{t('Undo')}</button>}
                 </div>}
@@ -2648,11 +2660,23 @@ function App() {
                         </div>
                     </div>
                     <div className="drawer-actions">
+                        {selectedIDs.length > 1 ? <>
+                            <span className="drawer-flag-count">{t('{0} selected · {1} flagged', selectedIDs.length, selectedFlaggedCount)}</span>
+                            <button type="button" disabled={flags.pending} onClick={() => void flags.set(selectedIDs, true)}>{t('Mark selected as broken')}</button>
+                            <button type="button" disabled={flags.pending} onClick={() => void flags.set(selectedIDs, false)}>{t('Clear broken flags')}</button>
+                        </> : <>
+                            {selected.broken && <span className="story-warning-label">⚠ {t('Broken')}</span>}
+                            <button type="button" disabled={flags.pending} onClick={() => void flags.set([selected.id], !selected.broken)}>
+                                {selected.broken ? t('Clear broken flag') : t('Mark as broken')}
+                            </button>
+                        </>}
                         <button
                             ref={openDetailsButton}
                             type="button"
                             onClick={() => {
                                 setRemovalError(null);
+                                setInspectedStory(selected);
+                                setInspectedArchive(detail?.story.id === selected.id ? detail.archive : undefined);
                                 setDetailsOpen(true);
                             }}
                         >
@@ -2796,23 +2820,31 @@ function App() {
                 </ModalBackdrop>
             )}
 
-            {detailsOpen && selected && !tagAssignmentOpen && (
+            {detailsOpen && inspected && !tagAssignmentOpen && (
                 <StoryDetailsDialog
-                    key={selected.id}
-                    story={selected}
-                    archive={detail?.story.id === selected.id ? detail.archive : undefined}
-                    artworkURL={artworkURL(selected.artworkId)}
-                    coverStyle={selectedPalette}
-                    verification={compatibilityLabel(selected.compatibility)}
+                    key={inspected.id}
+                    story={inspected}
+                    archive={inspectedArchive ?? (detail?.story.id === inspected.id ? detail.archive : undefined)}
+                    artworkURL={artworkURL(inspected.artworkId)}
+                    coverStyle={paletteFor(inspected.id)}
+                    verification={compatibilityLabel(inspected.compatibility)}
                     removing={removing}
                     error={removalError}
-                    tagSelectionCount={selectedIDs.length}
+                    flagging={flags.pending}
+                    flagError={flags.error}
+                    flagNotice={flags.notice}
+                    canUndoFlag={flags.canUndo}
+                    onFlagChange={(broken) => void flags.set([inspected.id], broken)}
+                    onUndoFlag={() => void flags.undo()}
+                    tagSelectionCount={selectedIDs.includes(inspected.id) ? selectedIDs.length : 1}
                     onEditTags={() => {
-                        setTagAssignmentStoryIDs([...selectedIDs]);
+                        setTagAssignmentStoryIDs(selectedIDs.includes(inspected.id) ? [...selectedIDs] : [inspected.id]);
                         setTagAssignmentOpen(true);
                     }}
                     onClose={() => {
                         setDetailsOpen(false);
+                        setInspectedStory(null);
+                        setInspectedArchive(undefined);
                         openDetailsButton.current?.focus({preventScroll: true});
                     }}
                     onRemove={() => void confirmRemoval()}

@@ -17,6 +17,12 @@ type Props = {
     removing: boolean;
     error: string | null;
     tagSelectionCount: number;
+    flagging: boolean;
+    flagError: string | null;
+    flagNotice: string | null;
+    canUndoFlag: boolean;
+    onFlagChange: (broken: boolean) => void;
+    onUndoFlag: () => void;
     onEditTags: () => void;
     onClose: () => void;
     onRemove: () => void;
@@ -25,6 +31,7 @@ type Props = {
 export default function StoryDetailsDialog({
     story, archive, artworkURL, coverStyle, verification,
     removing, error, tagSelectionCount, onEditTags, onClose, onRemove,
+    flagging, flagError, flagNotice, canUndoFlag, onFlagChange, onUndoFlag,
 }: Props) {
     const [tagWorkspace, setTagWorkspace] = useState<tagging.AssignmentWorkspace | null>(null);
     const [tagError, setTagError] = useState(false);
@@ -125,6 +132,19 @@ export default function StoryDetailsDialog({
                         </p>
                     </div>
                 </div>
+                <section className="story-detail-warning" aria-label={t('Story warning')}>
+                    <div>
+                        {story.broken && <strong className="story-warning-label">⚠ {t('Broken')}</strong>}
+                        <p>{t('Flag stories that may disrupt the Lunii device menu.')}</p>
+                    </div>
+                    <button type="button" disabled={flagging || removing} onClick={() => onFlagChange(!story.broken)}>
+                        {story.broken ? t('Clear broken flag') : t('Mark as broken')}
+                    </button>
+                    {flagError && <p role="alert"><OutcomeText text={flagError}/></p>}
+                    {flagNotice && <div role="status">{flagNotice}
+                        {canUndoFlag && <button type="button" disabled={flagging} onClick={onUndoFlag}>{t('Undo')}</button>}
+                    </div>}
+                </section>
                 <section className="story-detail-tags" aria-label={t("Story tags")}>
                     <div className="story-detail-tags-heading">
                         <h4>{t("Tags")}</h4>
