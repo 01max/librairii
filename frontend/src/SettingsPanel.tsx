@@ -1,8 +1,8 @@
 import {useEffect, useRef, useState} from 'react';
-import {Settings, SetUILanguage, SelectLibraryLocation, ConfirmLibrarySetup} from '../wailsjs/go/main/App';
+import {Settings, SetUILanguage, SelectLibraryLocation, ConfirmLibrarySetup, StartLibraryMove, CancelLibraryMove} from '../wailsjs/go/main/App';
 import type {main} from '../wailsjs/go/models';
 import {EventsOn} from '../wailsjs/runtime/runtime';
-import {setLanguage, t, type Language} from './i18n';
+import {setLanguage, t, number, type Language} from './i18n';
 import {useLanguage} from './use-language';
 import {useModalFocus} from './modal-focus';
 import ModalBackdrop from './ModalBackdrop';
@@ -17,6 +17,8 @@ export default function SettingsPanel({onReady}: {onReady: () => void}) {
     const [open, setOpen] = useState(false);
     const [working, setWorking] = useState(false);
     const [error, setError] = useState('');
+ const lastMove = useRef('');
+ const moving = !!snapshot?.move && !['succeeded','failed','cancelled','cleanup_pending'].includes(snapshot.move.phase);
     const dialog = useRef<HTMLElement>(null);
     const close = useRef<HTMLButtonElement>(null);
     useModalFocus(dialog, close, open);
@@ -37,18 +39,29 @@ export default function SettingsPanel({onReady}: {onReady: () => void}) {
     useEffect(() => {
         if (!open) return;
         const escape = (event: KeyboardEvent) => {
-            if (event.key === 'Escape' && !working && !snapshot?.setupRequired) { event.stopImmediatePropagation(); setOpen(false); }
+            if (event.key === 'Escape' && !working && !moving && !snapshot?.setupRequired) { event.stopImmediatePropagation(); setOpen(false); }
         };
         window.addEventListener('keydown', escape, true);
         return () => window.removeEventListener('keydown', escape, true);
-    }, [open, working, snapshot?.setupRequired]);
+    }, [open, working, moving, snapshot?.setupRequired]);
+    useEffect(() => {
+        if (!snapshot?.move) return;
+        const phase = snapshot.move.phase;
+        if (['succeeded','failed','cancelled','cleanup_pending'].includes(phase)) {
+            if (lastMove.current !== phase) { lastMove.current = phase; onReady(); }
+            return;
+        }
+        lastMove.current = phase;
+        const timer = window.setInterval(() => { void Settings().then(accept).catch(() => setError('settings.invalid')); }, 200);
+        return () => window.clearInterval(timer);
+    }, [snapshot?.move?.phase, onReady]);
     async function update(action: () => Promise<Snapshot>) {
         setWorking(true); setError('');
         try { accept(await action()); } catch { setError('settings.invalid'); } finally { setWorking(false); }
     }
     return <>
         <button type="button" className="settings-entry" onClick={() => { setOpen(true); if (nativeSettingsAvailable()) void update(Settings); }} aria-label={t('Settings')}>⚙</button>
-        {open && <ModalBackdrop onDismiss={() => setOpen(false)} disabled={working || snapshot?.setupRequired} className="settings-backdrop">
+        {open && <ModalBackdrop onDismiss={() => setOpen(false)} disabled={working || moving || snapshot?.setupRequired} className="settings-backdrop">
             <section ref={dialog} className="detail-dialog settings-panel" role="dialog" aria-modal="true" aria-labelledby="settings-title">
                 <h2 id="settings-title">{t(snapshot?.setupRequired ? 'Welcome to Librairii' : 'Settings')}</h2>
  {snapshot?.setupRequired && <p>{t('Choose where to keep your library.')}</p>}
@@ -61,7 +74,20 @@ export default function SettingsPanel({onReady}: {onReady: () => void}) {
                 <h3>{t('Stories library')}</h3>
                 <p className="library-location">{snapshot?.root || '—'}</p>
                 {snapshot?.isolated ? <p>{t('Location is controlled by LIBRAIRII_DATA_ROOT.')}</p> :
-                    <button type="button" disabled={working || !snapshot} onClick={() => void update(SelectLibraryLocation)}>{t('Change location…')}</button>}
+                    <button type="button" disabled={working || moving || !snapshot} onClick={() => void update(SelectLibraryLocation)}>{t('Change location…')}</button>}
+                {snapshot?.preparation && !moving && <div className="move-preview">
+                    <p>{t('All library files will be moved.')}</p>
+                    <p>{snapshot.preparation.source} → {snapshot.preparation.destination}</p>
+                    <p>{t('Total size')}: {number(snapshot.preparation.bytes)} B</p>
+                    <button type="button" disabled={working} onClick={() => void update(() => StartLibraryMove(snapshot.preparation!.id))}>{t('Move library')}</button>
+                </div>}
+                {snapshot?.move && <div role="status" aria-live="polite">
+                    <p>{t(({copying:'Moving library…',verifying:'Verification',committing:'Moving library…',cleanup:'Moving library…',succeeded:'Library moved successfully.',failed:'settings.move_failed',cancelled:'Cancelled',cleanup_pending:'Previous location needs cleanup.'} as Record<string,string>)[snapshot.move.phase] ?? 'Moving library…')}</p>
+                    {moving && <><progress max={Math.max(1,snapshot.move.total)} value={snapshot.move.copied}/><p>{number(snapshot.move.copied)} / {number(snapshot.move.total)} B</p></>}
+                    {snapshot.move.cleanupPath && <p className="library-location">{snapshot.move.cleanupPath}</p>}
+                    {snapshot.move.error && <p>{t(snapshot.move.error)}</p>}
+                    {snapshot.move.cancelable && <button type="button" onClick={() => void update(CancelLibraryMove)}>{t('Cancel')}</button>}
+                </div>}
                 {error && <p role="alert">{t(error)}</p>}
                 <div className="dialog-actions">
  {snapshot?.setupRequired && <button type="button" disabled={working} onClick={() => {
@@ -72,7 +98,7 @@ export default function SettingsPanel({onReady}: {onReady: () => void}) {
    accept(await Settings()); setOpen(false); onReady();
   }).catch(() => setError('settings.invalid')).finally(() => setWorking(false));
  }}>{t('Use this folder')}</button>}
- <button ref={close} type="button" disabled={working || snapshot?.setupRequired} onClick={() => { setOpen(false); }}>{t('Close')}</button></div>
+ <button ref={close} type="button" disabled={working || moving || snapshot?.setupRequired} onClick={() => { setOpen(false); }}>{t('Close')}</button></div>
             </section>
         </ModalBackdrop>}
     </>;

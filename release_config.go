@@ -35,6 +35,7 @@ const (
 var bindingMethodAllowlist = []string{
 	"ActiveOperations",
 	"ApplicationStatus",
+	"CancelLibraryMove",
 	"CancelOperation",
 	"ConfirmLibrarySetup",
 	"CreateShelf",
@@ -78,6 +79,7 @@ var bindingMethodAllowlist = []string{
 	"SetChoiceTagValues",
 	"SetUILanguage",
 	"Settings",
+	"StartLibraryMove",
 	"StartPreparedExport",
 	"StoryDetail",
 	"TagAssignmentWorkspace",

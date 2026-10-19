@@ -10,6 +10,10 @@ export function ApplicationStatus() {
   return window['go']['main']['App']['ApplicationStatus']();
 }
 
+export function CancelLibraryMove() {
+  return window['go']['main']['App']['CancelLibraryMove']();
+}
+
 export function CancelOperation(arg1) {
   return window['go']['main']['App']['CancelOperation'](arg1);
 }
@@ -180,6 +184,10 @@ export function SetUILanguage(arg1) {
 
 export function Settings() {
   return window['go']['main']['App']['Settings']();
+}
+
+export function StartLibraryMove(arg1) {
+  return window['go']['main']['App']['StartLibraryMove'](arg1);
 }
 
 export function StartPreparedExport(arg1) {

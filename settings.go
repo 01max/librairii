@@ -18,7 +18,16 @@ type MovePreparation struct {
 	LibraryID   string `json:"libraryId"`
 }
 
+type MoveProgress struct {
+	Phase       string `json:"phase"`
+	Copied      int64  `json:"copied"`
+	Total       int64  `json:"total"`
+	Error       string `json:"error,omitempty"`
+	CleanupPath string `json:"cleanupPath,omitempty"`
+	Cancelable  bool   `json:"cancelable"`
+}
 type SettingsSnapshot struct {
+	Move          *MoveProgress    `json:"move,omitempty"`
 	Preparation   *MovePreparation `json:"preparation,omitempty"`
 	Language      string           `json:"language"`
 	Root          string           `json:"root"`
@@ -32,6 +41,8 @@ type settingsController struct {
 	storage     *platform.StorageReadiness
 	dialogs     coreapp.DialogPort
 	selected    string
+	move        *MoveProgress
+	cancelMove  context.CancelFunc
 	preparation *MovePreparation
 	pendingOpen bool
 	changed     func(context.Context)
@@ -52,9 +63,14 @@ func (a *App) Settings() SettingsSnapshot {
 	if s.selected != "" && !p.Complete {
 		root = s.selected
 	}
+	var move *MoveProgress
+	if s.move != nil {
+		copy := *s.move
+		move = &copy
+	}
 	pending := s.pendingOpen
 	s.pendingOpen = false
-	return SettingsSnapshot{Language: p.Language, Root: root, SetupRequired: !p.Complete, Isolated: s.storage.Isolated(), PendingOpen: pending, Preparation: s.preparation}
+	return SettingsSnapshot{Language: p.Language, Root: root, SetupRequired: !p.Complete, Isolated: s.storage.Isolated(), PendingOpen: pending, Preparation: s.preparation, Move: move}
 }
 func (a *App) SetUILanguage(language string) SettingsSnapshot {
 	if a.settings == nil {
