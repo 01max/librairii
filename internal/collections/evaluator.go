@@ -79,8 +79,6 @@ func (e *Evaluator) Evaluate(
 		return Evaluation{}, err
 	}
 	query := opened.Query.StoryLibraryQuery()
-	query.BrokenVisibility = library.Visibility(request.BrokenVisibility, request.IncludeBroken)
-	opened.Query.BrokenVisibility = query.BrokenVisibility
 	query.Page = request.Page
 	query.PageSize = request.PageSize
 	query.Sort = request.Sort
@@ -239,9 +237,5 @@ func (e *Evaluator) PreviewSelection(
 }
 
 func withVisibility(query library.StoryLibraryQuery, override []library.BrokenVisibility) library.StoryLibraryQuery {
-	if len(override) > 0 {
-		query.BrokenVisibility = override[0]
-		query.IncludeBroken = false
-	}
 	return query
 }

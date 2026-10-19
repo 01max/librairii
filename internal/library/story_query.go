@@ -251,17 +251,9 @@ func normalizeStoryLibraryQuery(request StoryLibraryQuery) (StoryLibraryQuery, e
 }
 
 func normalizeStoryLibraryQueryNode(request StoryLibraryQuery, remaining *int) (StoryLibraryQuery, error) {
-	request.BrokenVisibility = Visibility(request.BrokenVisibility, request.IncludeBroken)
-	if request.BrokenVisibility != BrokenHide && request.BrokenVisibility != BrokenInclude && request.BrokenVisibility != BrokenOnly {
+	if request.IncludeBroken || request.BrokenVisibility != "" || request.BrokenState != "" {
 		return StoryLibraryQuery{}, ErrInvalidStoryLibraryQuery
 	}
-	if request.BrokenState != "" && request.BrokenState != BooleanIgnored && request.BrokenState != BooleanTrue && request.BrokenState != BooleanFalse {
-		return StoryLibraryQuery{}, ErrInvalidStoryLibraryQuery
-	}
-	if request.BrokenState == BooleanIgnored {
-		request.BrokenState = ""
-	}
-	request.IncludeBroken = false
 
 	*remaining--
 	if *remaining < 0 {
@@ -451,19 +443,6 @@ func storyLibraryPredicate(
 	var predicates []string
 	var arguments []any
 
-	switch Visibility(request.BrokenVisibility, request.IncludeBroken) {
-	case BrokenHide:
-		predicates = append(predicates, "s.is_broken = 0")
-	case BrokenOnly:
-		predicates = append(predicates, "s.is_broken = 1")
-	}
-	switch request.BrokenState {
-	case BooleanTrue:
-		predicates = append(predicates, "s.is_broken = 1")
-	case BooleanFalse:
-		predicates = append(predicates, "s.is_broken = 0")
-	}
-
 	if request.Name != "" {
 		predicates = append(
 			predicates,
@@ -539,10 +518,6 @@ func storyLibraryPredicate(
 	if len(request.AnyOf) > 0 {
 		alternatives := make([]string, 0, len(request.AnyOf))
 		for _, branch := range request.AnyOf {
-			// Visibility belongs to the collection; explicit broken-tag criteria
-			// remain part of each branch's membership filters.
-			branch.BrokenVisibility = BrokenInclude
-			branch.IncludeBroken = false
 			predicate, args := storyLibraryPredicate(branch, officialLocale)
 			if predicate == "" {
 				predicate = "1"

@@ -166,11 +166,9 @@ func (q *Query) List(ctx context.Context, request ListRequest) (Page, error) {
 		return Page{}, err
 	}
 	return q.Search(ctx, StoryLibraryQuery{
-		IncludeBroken:    request.IncludeBroken,
-		BrokenVisibility: request.BrokenVisibility,
-		Page:             request.Page,
-		PageSize:         request.PageSize,
-		Sort:             request.Sort,
+		Page:     request.Page,
+		PageSize: request.PageSize,
+		Sort:     request.Sort,
 	})
 }
 

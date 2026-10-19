@@ -191,9 +191,5 @@ func uniqueIDs(ids []int64) ([]int64, error) {
 }
 
 func exportVisibility(query library.StoryLibraryQuery, override []library.BrokenVisibility) library.StoryLibraryQuery {
-	if len(override) > 0 {
-		query.BrokenVisibility = override[0]
-		query.IncludeBroken = false
-	}
 	return query
 }
