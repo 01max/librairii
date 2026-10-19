@@ -13,6 +13,7 @@ export function useModalFocus(
     container: RefObject<HTMLElement | null>,
     initial: RefObject<HTMLElement | null>,
     active = true,
+    suspended = false,
 ) {
     useEffect(() => {
         if (!active) {
@@ -21,6 +22,13 @@ export function useModalFocus(
         const opener = document.activeElement instanceof HTMLElement
             ? document.activeElement
             : null;
+        return () => opener?.focus({preventScroll: true});
+    }, [active]);
+
+    useEffect(() => {
+        if (!active || suspended) {
+            return;
+        }
         const focusInitial = window.setTimeout(() => {
             initial.current?.focus({preventScroll: true});
         }, 0);
@@ -52,7 +60,6 @@ export function useModalFocus(
         return () => {
             window.clearTimeout(focusInitial);
             document.removeEventListener('keydown', trapTab);
-            opener?.focus({preventScroll: true});
         };
-    }, [active, container, initial]);
+    }, [active, suspended, container, initial]);
 }

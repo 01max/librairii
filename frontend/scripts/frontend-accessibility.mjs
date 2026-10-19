@@ -103,6 +103,14 @@ try {
                 const result = await new AxeBuilder({page}).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze();
                 if (result.violations.length) throw new Error(`sidebar: ${JSON.stringify(result.violations)}`);
             }
+            await page.goto(`http://127.0.0.1:${address.port}/?fixture=history`, {waitUntil: 'networkidle'});
+            await page.getByRole('button', {name: 'History', exact: true}).click();
+            const history = page.getByRole('dialog', {name: 'History'});
+            await history.getByText('Export', {exact: true}).click();
+            await history.getByText('Milo and the Moon', {exact: true}).waitFor();
+            const historyResult = await new AxeBuilder({page})
+                .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze();
+            if (historyResult.violations.length) throw new Error(`History: ${JSON.stringify(historyResult.violations)}`);
             results.push({
                 viewport,
                 axeViolations: violations.length,

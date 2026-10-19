@@ -200,6 +200,22 @@ function fixtureOperation(fixture: string) {
     };
 }
 
+const historyOperations = [{
+    id: '00000000-0000-4000-8000-000000000901', kind: 'export', status: 'succeeded',
+    completedItems: 1, totalItems: 1, totalBytes: 100, cancelRequested: false,
+    createdAt: '2026-07-25T10:00:00Z', finishedAt: '2026-07-25T10:01:00Z',
+    destination: 'Lunii export', sourceShelfNames: ['Bedtime'],
+    items: [{id: 901, sourceName: 'moon.zip', storyTitle: 'Milo and the Moon',
+        outputName: 'moon.zip', status: 'succeeded', outcomeMessage: 'Story archive exported.',
+        completedBytes: 100, totalBytes: 100}],
+}, {
+    id: '00000000-0000-4000-8000-000000000900', kind: 'import', status: 'succeeded',
+    completedItems: 1, totalItems: 1, totalBytes: 100, cancelRequested: false,
+    createdAt: '2026-07-25T09:00:00Z', finishedAt: '2026-07-25T09:01:00Z',
+    items: [{id: 900, sourceName: 'moon.zip', status: 'succeeded', outcomeCode: 'imported',
+        outcomeMessage: 'Story imported.', completedBytes: 100, totalBytes: 100}],
+}];
+
 export function installCollectionFixture() {
     const fixture = new URLSearchParams(window.location.search).get('fixture') ?? 'collection';
     if (fixture === 'parity') {
@@ -250,7 +266,8 @@ export function installCollectionFixture() {
     });
     const fixtureApp = {
         ActiveOperations: async () => ({
-            operations: fixtureSnapshot?.status === 'running' ? [fixtureSnapshot] : [],
+            operations: fixture === 'history' ? [historyOperations[0]]
+                : fixtureSnapshot?.status === 'running' ? [fixtureSnapshot] : [],
         }),
         ApplicationStatus: async () => ({
             status: {
@@ -475,6 +492,10 @@ export function installCollectionFixture() {
                 )?.uuid ?? '',
             },
         }),
+        OperationHistory: async () => ({page: {
+            operations: fixture === 'history' ? historyOperations : [],
+        }}),
+        RevealExportDestination: async () => ({success: true}),
         OperationSnapshot: async () => ({}),
     };
     (window as typeof window & {go: unknown}).go = {main: {App: fixtureApp}};

@@ -35,6 +35,8 @@ export function OfficialMetadataStatus():Promise<app.MetadataStatusResponse>;
 
 export function OpenShelf(arg1:number,arg2:library.ListRequest):Promise<app.ShelfEvaluationResponse>;
 
+export function OperationHistory(arg1:string):Promise<app.OperationHistoryResponse>;
+
 export function OperationSnapshot(arg1:string):Promise<app.OperationResponse>;
 
 export function PackagedAcceptanceMode():Promise<boolean>;

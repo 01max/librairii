@@ -162,6 +162,10 @@ func (a *App) OperationSnapshot(operationID string) coreapp.OperationResponse {
 	return a.core.OperationSnapshot(a.runtimeContext(), operationID)
 }
 
+func (a *App) OperationHistory(before string) coreapp.OperationHistoryResponse {
+	return a.core.OperationHistory(a.runtimeContext(), before)
+}
+
 func (a *App) ActiveOperations() coreapp.OperationListResponse {
 	return a.core.ActiveOperations(a.runtimeContext())
 }

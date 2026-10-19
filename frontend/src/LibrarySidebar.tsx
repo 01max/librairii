@@ -1,14 +1,15 @@
 import {type PropsWithChildren, useEffect, useRef} from 'react';
 import {useModalFocus} from './modal-focus';
 
-export default function LibrarySidebar({children, open, onClose, suspended}: PropsWithChildren<{
+export default function LibrarySidebar({children, open, onClose, suspended, inert = false}: PropsWithChildren<{
     open: boolean;
     onClose: () => void;
     suspended: boolean;
+    inert?: boolean;
 }>) {
     const panel = useRef<HTMLElement>(null);
     const closeButton = useRef<HTMLButtonElement>(null);
-    useModalFocus(panel, closeButton, open && !suspended);
+    useModalFocus(panel, closeButton, open, suspended);
 
     useEffect(() => {
         if (!open) return;
@@ -32,7 +33,7 @@ export default function LibrarySidebar({children, open, onClose, suspended}: Pro
     return (
         <>
             {open && <div className="sidebar-backdrop" onClick={onClose} aria-hidden="true"/>}
-            <aside ref={panel} id="library-sidebar"
+            <aside ref={panel} id="library-sidebar" inert={inert}
                 className={`filters${open ? ' sidebar-open' : ''}`}
                 role={open ? 'dialog' : undefined}
                 aria-modal={open ? true : undefined}

@@ -62,6 +62,10 @@ export function OpenShelf(arg1, arg2) {
   return window['go']['main']['App']['OpenShelf'](arg1, arg2);
 }
 
+export function OperationHistory(arg1) {
+  return window['go']['main']['App']['OperationHistory'](arg1);
+}
+
 export function OperationSnapshot(arg1) {
   return window['go']['main']['App']['OperationSnapshot'](arg1);
 }

@@ -149,6 +149,8 @@ try {
                 await page.goto(`http://127.0.0.1:${address.port}/?fixture=parity`, {waitUntil: 'networkidle'});
                 await assertLibraryViews(page);
             }
+            await assertNoticeDismissal(page);
+            await assertHistoryView(page);
             results.push({
                 name: acceptanceCase.name,
                 viewport: acceptanceCase.viewport,
@@ -163,6 +165,79 @@ try {
     await browser?.close();
     previewServer?.httpServer.close();
     await rm(outputDirectory, {recursive: true, force: true});
+}
+
+async function assertNoticeDismissal(page) {
+    const panel = page.getByRole('region', {name: 'Official Lunii sync'});
+    const close = panel.getByRole('button', {name: 'Close Lunii sync'});
+    await close.scrollIntoViewIfNeeded();
+    await close.click();
+    await panel.waitFor({state: 'detached'});
+    const reopen = page.getByRole('button', {name: 'Show Lunii sync'});
+    if (!await reopen.evaluate((button) => button === document.activeElement)) {
+        throw new Error('closing the Lunii panel did not focus its disclosure');
+    }
+    const main = page.locator('.main');
+    if (await main.evaluate((element) => element.scrollWidth > element.clientWidth)) {
+        throw new Error('dismissed Lunii disclosure overflows the collection');
+    }
+    await reopen.press('Enter');
+    await panel.waitFor();
+    await panel.getByRole('button', {name: 'Sync with Lunii'}).waitFor();
+}
+
+async function assertHistoryView(page) {
+    const url = new URL(page.url());
+    url.search = '?fixture=history';
+    url.hash = '';
+    await page.goto(url.toString(), {waitUntil: 'networkidle'});
+    await page.getByRole('button', {name: 'Close Export complete'}).click();
+    await page.getByRole('button', {name: 'Close Lunii sync'}).click();
+    await page.reload({waitUntil: 'networkidle'});
+    await page.getByRole('button', {name: 'History', exact: true}).waitFor();
+    if (await page.getByRole('heading', {name: 'Export complete'}).count() ||
+        await page.getByRole('region', {name: 'Official Lunii sync'}).count()) {
+        throw new Error('dismissed notices reopened after reloading the application');
+    }
+    const historyButton = page.getByRole('button', {name: 'History', exact: true});
+    await historyButton.click();
+    const dialog = page.getByRole('dialog', {name: 'History'});
+    await dialog.getByText('Export', {exact: true}).click();
+    const report = dialog.getByRole('region', {name: 'Export report'});
+    await report.getByText('Milo and the Moon', {exact: true}).waitFor();
+    await report.getByRole('button', {name: 'Reveal destination'}).click();
+    await dialog.getByText('Import', {exact: true}).click();
+    await dialog.getByText('Story imported.', {exact: true}).waitFor();
+    const bounds = await dialog.boundingBox();
+    const viewport = page.viewportSize();
+    if (!bounds || bounds.x < 0 || bounds.y < 0 || bounds.x + bounds.width > viewport.width ||
+        bounds.y + bounds.height > viewport.height ||
+        await dialog.evaluate((element) => element.scrollWidth > element.clientWidth)) {
+        throw new Error('History does not fit inside the window');
+    }
+    await page.screenshot({path: join(tmpdir(), `librairii-history-${viewport.width}.png`)});
+    for (const height of [900, 320]) {
+        await page.setViewportSize({width: 320, height});
+        const compact = await dialog.boundingBox();
+        if (!compact || compact.x < 0 || compact.y < 0 || compact.x + compact.width > 320 ||
+            compact.y + compact.height > height ||
+            await dialog.evaluate((element) => element.scrollWidth > element.clientWidth)) {
+            throw new Error(`History overflows at 320x${height}`);
+        }
+    }
+    await page.setViewportSize(viewport);
+    await page.keyboard.press('Escape');
+    await dialog.waitFor({state: 'detached'});
+    if (!await historyButton.evaluate((button) => button === document.activeElement)) {
+        throw new Error('History did not return keyboard focus to its opener');
+    }
+    await historyButton.click();
+    await dialog.waitFor();
+    await page.locator('.history-backdrop').click({position: {x: 2, y: 2}});
+    await dialog.waitFor({state: 'detached'});
+    // The sync panel can still be restored explicitly.
+    await page.getByRole('button', {name: 'Show Lunii sync'}).click();
+    await page.getByRole('region', {name: 'Official Lunii sync'}).waitFor();
 }
 
 async function assertSidebarAccess(page) {
@@ -212,6 +287,10 @@ async function assertSidebarAccess(page) {
     await manager.waitFor({state: 'detached'});
     if (!await panel.isVisible()) throw new Error('closing a nested dialog also closed the sidebar');
     await close.click();
+    await panel.waitFor({state: 'hidden'});
+    if (!await toggle.evaluate((button) => button === document.activeElement)) {
+        throw new Error('closing the sidebar after a nested dialog did not restore disclosure focus');
+    }
     // Opening a saved shelf keeps its management actions reachable.
     await toggle.click();
     await panel.getByRole('button', {name: 'Bedtime, 12 stories', exact: true}).click();

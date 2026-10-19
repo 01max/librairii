@@ -12,7 +12,7 @@ verified by application and release acceptance tests.
 The UI baseline is tracked in the repository:
 
 - reference: `testdata/ui-prototypes/05-archive-shelves.html`
-- SHA-256: `2cb8a9c0d61416fa143f22a2a6a405294fd751352cdbe6874585f53a0896f625`
+- SHA-256: `a3709c344b0c0dd0af362e0bdc7be3d8892560c2aec8175e3f3e48b87832bd16`
 - the `.app` subtree is normative
 - the `.back` gallery link is excluded from the product
 
@@ -50,7 +50,19 @@ does not enter saved queries or change selection, pagination, sorting, or export
 At widths of 850px or less, a Shelves & filters disclosure opens the existing
 sidebar as a scrollable modal panel with keyboard dismissal and focus return.
 The previous breakpoint hid the sidebar without providing a reopening action.
-The visual reference includes the view picker and the narrow-window disclosure.
+Nested dialogs suspend the sidebar focus trap while retaining its original
+disclosure as the focus return target until the sidebar closes.
+
+The notice dismissal revision adds close controls to the Lunii sync panel and
+finished-operation notices. Dismissed operation IDs and sync-panel visibility
+are stored as local preferences and restored across app restarts; reconciliation
+and new operations continue normally. A compact Show Lunii sync disclosure
+restores the panel without triggering network work.
+History reads the existing SQLite operation records in pages of 20 using a
+creation-time/ID cursor, including reports whose notices were dismissed. Loading
+history does not feed historical records into the collection notice stream.
+The visual reference includes the view picker, History, and the narrow-window
+disclosure.
 
 ## Tracked removal allowlist
 

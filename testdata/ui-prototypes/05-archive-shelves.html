@@ -291,6 +291,203 @@
 .heading{flex-wrap:wrap;gap:14px}.heading h2{overflow-wrap:anywhere}.heading-actions{flex-wrap:wrap}
 @media(max-width:850px){.sidebar-toggle{display:flex;border:1px solid var(--line);background:var(--white)}}
 @media(max-width:560px){.heading{align-items:flex-start;flex-direction:column;gap:14px}.heading-actions{flex-wrap:wrap}}
+/* Dismissible notices retain room for a keyboard-accessible close control. */
+.collection-state:has(.notice-dismiss) {
+    padding-right: 54px;
+}
+
+.lunii-sync,
+.lunii-sync.first-sync {
+    position: relative;
+    padding-right: 58px;
+}
+
+.lunii-sync-copy {
+    min-width: 0;
+}
+
+.collection-state > .notice-dismiss,
+.lunii-sync > .notice-dismiss {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    display: grid;
+    place-items: center;
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: white;
+    color: var(--ink);
+    font: 500 22px/1 var(--sans);
+    cursor: pointer;
+}
+
+.lunii-sync > .notice-dismiss {
+    color: white;
+    background: transparent;
+    border-color: #7185cb;
+}
+
+.sync-disclosure {
+    padding: 9px 12px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: white;
+    color: var(--ink);
+    font-size: 12px;
+    font-weight: 700;
+}
+
+
+.lunii-sync[hidden] { display: none; }
+.history-disclosure {
+    padding: 9px 12px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: white;
+    color: var(--ink);
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.history-backdrop {
+    z-index: 50;
+}
+
+.operation-history {
+    --muted: #59657a;
+    display: flex;
+    flex-direction: column;
+    width: min(720px, 100%);
+    max-height: calc(100dvh - 48px);
+    min-height: 0;
+}
+
+.history-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+.history-header p,
+.history-detail p,
+.history-empty,
+.history-entries > p {
+    margin: 8px 0;
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.history-header button,
+.history-actions button {
+    flex-shrink: 0;
+    padding: 9px 12px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: white;
+    color: var(--ink);
+    font-weight: 700;
+}
+
+.history-entries {
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+}
+
+.history-entry {
+    border-bottom: 1px solid var(--line);
+}
+
+.history-entry summary {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 12px;
+    padding: 16px 4px;
+    cursor: pointer;
+    font-size: 13px;
+}
+
+.history-entry summary::before {
+    content: '+';
+    width: 12px;
+    font-size: 18px;
+}
+
+.history-entry[open] summary::before {
+    content: '−';
+}
+
+.history-kind {
+    font-weight: 800;
+}
+
+.history-status {
+    color: var(--muted);
+}
+
+.history-status.failed,
+.history-status.interrupted {
+    color: #b9382c;
+}
+
+.history-status.succeeded {
+    color: #267d5d;
+}
+
+.history-entry time {
+    margin-left: auto;
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.history-detail {
+    padding: 0 4px 16px;
+    overflow-wrap: anywhere;
+}
+
+.history-detail .operation-items {
+    font-size: 12px;
+}
+
+.history-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 12px;
+    padding-top: 20px;
+}
+
+@media (max-width: 560px) {
+    .history-entry time {
+        flex-basis: 100%;
+        margin-left: 24px;
+    }
+}
+
+.operation-history .export-report-context {
+    color: var(--muted);
+    font: 600 12px/1.5 var(--sans);
+}
+
+.operation-history .export-report-group h4,
+.operation-history .export-report-group li b,
+.operation-history .export-report > button {
+    font-size: 12px;
+}
+
+.operation-history .export-report-group li span,
+.operation-history .operation-items li span {
+    color: var(--muted);
+    font-size: 12px;
+}
+
   </style>
 </head>
 <body>
@@ -301,8 +498,8 @@
     <main class="main">
       <div class="top"><label class="search">⌕ <input type="search" placeholder="Search 12 stories, authors, publishers…"></label></div>
       <div class="heading"><div><h2>My story shelves</h2><p>Stories grouped by your tags · 12 archives</p></div><div class="sort">Recently added ⌄</div></div>
-      <div class="collection-toolbar"><button class="sidebar-toggle" type="button" aria-expanded="false">Shelves &amp; filters</button><div class="library-views" role="group" aria-label="Story view"><button type="button" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h18M3 12h18M3 19h18"></path></svg><span>List</span></button><button type="button" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3h4v4H3zM10 3h4v4h-4zM17 3h4v4h-4zM3 10h4v4H3zM10 10h4v4h-4zM17 10h4v4h-4zM3 17h4v4H3zM10 17h4v4h-4zM17 17h4v4h-4z"></path></svg><span>Small covers</span></button><button type="button" aria-pressed="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h7v7h-7z"></path></svg><span>Large covers</span></button></div></div>
-      <section class="lunii-sync"><div class="lunii-sync-copy"><h3>Lunii covers and story details</h3><p>Sync with the official Lunii API for richer descriptions and cover images for matching stories.</p><p class="last-sync">Last successful sync: <time datetime="2026-07-25T09:00:00Z"></time></p></div><button>Sync with Lunii</button></section>
+      <div class="collection-toolbar"><button class="sidebar-toggle" type="button" aria-expanded="false">Shelves &amp; filters</button><div class="library-views" role="group" aria-label="Story view"><button type="button" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h18M3 12h18M3 19h18"></path></svg><span>List</span></button><button type="button" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3h4v4H3zM10 3h4v4h-4zM17 3h4v4h-4zM3 10h4v4H3zM10 10h4v4h-4zM17 10h4v4h-4zM3 17h4v4H3zM10 17h4v4h-4zM17 17h4v4h-4z"></path></svg><span>Small covers</span></button><button type="button" aria-pressed="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h7v7h-7z"></path></svg><span>Large covers</span></button></div><button type="button" class="history-disclosure">History</button><button type="button" class="sync-disclosure" hidden onclick="document.querySelector('.lunii-sync').hidden=false;this.hidden=true">Show Lunii sync</button></div>
+      <section class="lunii-sync"><div class="lunii-sync-copy"><h3>Lunii covers and story details</h3><p>Sync with the official Lunii API for richer descriptions and cover images for matching stories.</p><p class="last-sync">Last successful sync: <time datetime="2026-07-25T09:00:00Z"></time></p></div><button>Sync with Lunii</button><button type="button" class="notice-dismiss" aria-label="Close Lunii sync" onclick="this.closest('.lunii-sync').hidden=true;document.querySelector('.sync-disclosure').hidden=false"><span aria-hidden="true">×</span></button></section>
       <section class="shelf"><div class="shelf-head"><h3>Recently added</h3><span>6 stories · Local archive</span><button disabled>All shown</button></div><div class="story-row">
         <div class="story-card"><button class="story selected" style="--sky:#31559f;--sun:#f7c85b;--land:#e06a53"><div class="cover"></div></button><p class="story-title">The Little Prince</p></div>
         <div class="story-card"><button class="story" style="--sky:#ef765f;--sun:#ffe380;--land:#7354b8"><div class="cover"></div></button><p class="story-title">The Secret Forest</p></div>

@@ -64,6 +64,9 @@ import LibraryNavigation from './LibraryNavigation';
 import LibrarySidebar from './LibrarySidebar';
 import LibraryViewPicker from './LibraryViewPicker';
 import {useLibraryView} from './library-view';
+import {useNoticePreferences} from './notice-preferences';
+import OperationHistoryDialog from './OperationHistoryDialog';
+import ExportReport from './ExportReport';
 import LuniiSync from './LuniiSync';
 import StoryCover from './StoryCover';
 import TagAssignmentEditor from './TagAssignmentEditor';
@@ -284,77 +287,6 @@ type SavedShelfPreviewDetails = {
     source: string;
 };
 
-const exportReportGroups: Array<{
-    status: string;
-    label: string;
-}> = [
-    {status: 'succeeded', label: 'Exported'},
-    {status: 'skipped', label: 'Skipped'},
-    {status: 'conflicted', label: 'Conflicted'},
-    {status: 'failed', label: 'Failed'},
-    {status: 'cancelled', label: 'Cancelled'},
-];
-
-function ExportReport({
-    operation,
-    onReveal,
-}: {
-    operation: operations.Snapshot;
-    onReveal: (operationID: string) => void;
-}) {
-    return (
-        <section className="export-report" aria-label="Export report">
-            <div className="export-report-context">
-                <span>
-                    Destination · {operation.destination || 'Selected folder'}
-                </span>
-                {operation.sourceShelfNames && operation.sourceShelfNames.length > 0 && (
-                    <span>
-                        Source shelves · {operation.sourceShelfNames.join(', ')}
-                    </span>
-                )}
-            </div>
-            <div className="export-report-groups">
-                {exportReportGroups.map((group) => {
-                    const items = operation.items.filter(
-                        (item) => item.status === group.status,
-                    );
-                    if (items.length === 0) {
-                        return null;
-                    }
-                    return (
-                        <section
-                            className={`export-report-group ${group.status}`}
-                            key={group.status}
-                        >
-                            <h4>{group.label} · {items.length}</h4>
-                            <ul>
-                                {items.map((item) => (
-                                    <li key={item.id}>
-                                        <b>
-                                            {item.storyTitle ||
-                                                item.outputName ||
-                                                item.sourceName}
-                                        </b>
-                                        <span>
-                                            {item.outcomeMessage ||
-                                                item.outputName ||
-                                                item.status}
-                                        </span>
-                                    </li>
-                                ))}
-                            </ul>
-                        </section>
-                    );
-                })}
-            </div>
-            <button type="button" onClick={() => onReveal(operation.id)}>
-                Reveal destination
-            </button>
-        </section>
-    );
-}
-
 function paletteFor(storyID: number): CoverStyle {
     const palette = coverPalettes[
         Math.abs(storyID - 1) % coverPalettes.length
@@ -435,6 +367,17 @@ function App() {
     const [detail, setDetail] = useState<library.StoryDetail | null>(null);
     const [detailRevision, setDetailRevision] = useState(0);
     const [operationSnapshots, setOperationSnapshots] = useState<operations.Snapshot[]>([]);
+    const {dismissedOperations, luniiSyncDismissed, dismissOperation, setLuniiSyncDismissed} =
+        useNoticePreferences();
+    const [historyOpen, setHistoryOpen] = useState(false);
+    const luniiSyncToggle = useRef<HTMLButtonElement>(null);
+    const previousSyncDismissal = useRef(luniiSyncDismissed);
+    useEffect(() => {
+        if (luniiSyncDismissed && !previousSyncDismissal.current) {
+            luniiSyncToggle.current?.focus();
+        }
+        previousSyncDismissal.current = luniiSyncDismissed;
+    }, [luniiSyncDismissed]);
     const [metadataStarting, setMetadataStarting] = useState(false);
     const [metadataStatus, setMetadataStatus] =
         useState<metadata.CatalogStatus | null>(null);
@@ -1002,11 +945,13 @@ function App() {
         setRequestError(null);
         try {
             const response = await RevealExportDestination(operationID);
-            if (response.error) {
-                setRequestError(response.error.message);
-            }
+            const message = response.error?.message ?? null;
+            setRequestError(message);
+            return message;
         } catch {
-            setRequestError('The export destination could not be revealed.');
+            const message = 'The export destination could not be revealed.';
+            setRequestError(message);
+            return message;
         }
     }
 
@@ -1164,12 +1109,12 @@ function App() {
     const primaryVisibleOperations = activeOperations.length > 0
         ? activeOperations
         : operationSnapshots.slice(0, 1);
-    const visibleOperations = latestTerminalExport &&
+    const visibleOperations = (latestTerminalExport &&
         !primaryVisibleOperations.some(
             (snapshot) => snapshot.id === latestTerminalExport.id,
         )
         ? [...primaryVisibleOperations, latestTerminalExport]
-        : primaryVisibleOperations;
+        : primaryVisibleOperations).filter((snapshot) => !dismissedOperations.has(snapshot.id));
     const importing = activeOperations.some((snapshot) => snapshot.kind === 'import');
     const metadataRefreshing = activeOperations.some(
         (snapshot) => snapshot.kind === 'metadata_sync',
@@ -1839,7 +1784,7 @@ function App() {
             <span className="sr-only" data-testid="application-state">
                 Application state: {applicationState}
             </span>
-            <aside className="rail" aria-label="Primary navigation" inert={sidebarOpen}>
+            <aside className="rail" aria-label="Primary navigation" inert={sidebarOpen || historyOpen}>
                 <div className="mark" role="img" aria-label="Librairii">
                     <i/><i/><i/>
                 </div>
@@ -1855,9 +1800,9 @@ function App() {
                 />
             </aside>
 
-            <LibrarySidebar open={sidebarOpen} onClose={closeSidebar}
+            <LibrarySidebar open={sidebarOpen} onClose={closeSidebar} inert={historyOpen}
                 suspended={tagManagerOpen || tagAssignmentOpen || shelfDialogMode !== null ||
-                    repairShelfID !== null || deleteShelfID !== null || exportPreflight !== null}>
+                    repairShelfID !== null || deleteShelfID !== null || exportPreflight !== null || historyOpen}>
                 <h1>Librairii</h1>
                 <div className="path">~/Stories/Librairii</div>
                 <div className="caption">Saved shelves</div>
@@ -2125,7 +2070,7 @@ function App() {
                 </button>
             </LibrarySidebar>
 
-            <main className="main" inert={sidebarOpen}>
+            <main className="main" inert={sidebarOpen || historyOpen}>
                 <div className="top">
                     <label className="search">
                         <span aria-hidden="true">⌕</span>
@@ -2200,6 +2145,19 @@ function App() {
                         Shelves &amp; filters
                     </button>
                     <LibraryViewPicker view={libraryView} onChange={setLibraryView}/>
+                    <button type="button" className="history-disclosure"
+                        disabled={applicationState !== 'ready'} onClick={() => setHistoryOpen(true)}>
+                        History
+                    </button>
+                    {luniiSyncDismissed && (
+                        <button ref={luniiSyncToggle} type="button" className="sync-disclosure"
+                            onClick={() => {
+                                setLuniiSyncDismissed(false);
+                                searchInput.current?.focus();
+                            }}>
+                            Show Lunii sync
+                        </button>
+                    )}
                 </div>
 
                 {activeFilters.length > 0 && !showSavedShelfRows && (
@@ -2239,11 +2197,12 @@ function App() {
                     </section>
                 )}
 
-                {applicationState === 'ready' && (
+                {applicationState === 'ready' && !luniiSyncDismissed && (
                     <LuniiSync
                         status={metadataStatus}
                         busy={metadataStarting || metadataRefreshing}
                         onSync={() => void startMetadataRefresh()}
+                        onDismiss={() => setLuniiSyncDismissed(true)}
                     />
                 )}
 
@@ -2307,6 +2266,13 @@ function App() {
                             <h3>The action could not be completed</h3>
                             <p>{requestError}</p>
                         </div>
+                        <button type="button" className="notice-dismiss" aria-label="Close action error"
+                            onClick={() => {
+                                setRequestError(null);
+                                searchInput.current?.focus();
+                            }}>
+                            <span aria-hidden="true">×</span>
+                        </button>
                     </section>
                 )}
 
@@ -2317,6 +2283,13 @@ function App() {
                             <h3>Story removed from this collection</h3>
                             <p>{removalNotice}</p>
                         </div>
+                        <button type="button" className="notice-dismiss" aria-label="Close removal notice"
+                            onClick={() => {
+                                setRemovalNotice(null);
+                                searchInput.current?.focus();
+                            }}>
+                            <span aria-hidden="true">×</span>
+                        </button>
                     </section>
                 )}
 
@@ -2393,6 +2366,16 @@ function App() {
                                     </ul>
                                 )}
                             </div>
+                            {!operationActive && (
+                                <button type="button" className="notice-dismiss"
+                                    aria-label={`Close ${notice.title}`}
+                                    onClick={() => {
+                                        dismissOperation(operation.id);
+                                        searchInput.current?.focus();
+                                    }}>
+                                    <span aria-hidden="true">×</span>
+                                </button>
+                            )}
                             {operationActive && (
                                 <button
                                     type="button"
@@ -2566,7 +2549,7 @@ function App() {
             </main>
 
             {selected && (
-                <aside className="drawer" aria-label={`${selected.title} details`} inert={sidebarOpen}>
+                <aside className="drawer" aria-label={`${selected.title} details`} inert={sidebarOpen || historyOpen}>
                     <div
                         className={`drawer-art${selected.artworkId ? ' has-artwork' : ''}`}
                         style={selectedPalette}
@@ -2802,6 +2785,12 @@ function App() {
                     onRemove={() => void confirmRemoval()}
                 />
             )}
+            {historyOpen && (
+                <OperationHistoryDialog liveOperations={operationSnapshots}
+                    onClose={() => setHistoryOpen(false)}
+                    onReveal={revealExportDestination}/>
+            )}
+
             {shelfDialogMode && (
                 <ModalBackdrop onDismiss={() => setShelfDialogMode(null)} disabled={shelfBusy}>
                     <form

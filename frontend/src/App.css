@@ -2530,3 +2530,200 @@ select:focus-visible {
         color: #4d586d;
     }
 }
+
+
+/* Dismissible notices retain room for a keyboard-accessible close control. */
+.collection-state:has(.notice-dismiss) {
+    padding-right: 54px;
+}
+
+.lunii-sync,
+.lunii-sync.first-sync {
+    position: relative;
+    padding-right: 58px;
+}
+
+.lunii-sync-copy {
+    min-width: 0;
+}
+
+.collection-state > .notice-dismiss,
+.lunii-sync > .notice-dismiss {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    display: grid;
+    place-items: center;
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: white;
+    color: var(--ink);
+    font: 500 22px/1 var(--sans);
+    cursor: pointer;
+}
+
+.lunii-sync > .notice-dismiss {
+    color: white;
+    background: transparent;
+    border-color: #7185cb;
+}
+
+.sync-disclosure {
+    padding: 9px 12px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: white;
+    color: var(--ink);
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.history-disclosure {
+    padding: 9px 12px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: white;
+    color: var(--ink);
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.history-backdrop {
+    z-index: 50;
+}
+
+.operation-history {
+    --muted: #59657a;
+    display: flex;
+    flex-direction: column;
+    width: min(720px, 100%);
+    max-height: calc(100dvh - 48px);
+    min-height: 0;
+}
+
+.history-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+.history-header p,
+.history-detail p,
+.history-empty,
+.history-entries > p {
+    margin: 8px 0;
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.history-header button,
+.history-actions button {
+    flex-shrink: 0;
+    padding: 9px 12px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: white;
+    color: var(--ink);
+    font-weight: 700;
+}
+
+.history-entries {
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+}
+
+.history-entry {
+    border-bottom: 1px solid var(--line);
+}
+
+.history-entry summary {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 12px;
+    padding: 16px 4px;
+    cursor: pointer;
+    font-size: 13px;
+}
+
+.history-entry summary::before {
+    content: '+';
+    width: 12px;
+    font-size: 18px;
+}
+
+.history-entry[open] summary::before {
+    content: '−';
+}
+
+.history-kind {
+    font-weight: 800;
+}
+
+.history-status {
+    color: var(--muted);
+}
+
+.history-status.failed,
+.history-status.interrupted {
+    color: #b9382c;
+}
+
+.history-status.succeeded {
+    color: #267d5d;
+}
+
+.history-entry time {
+    margin-left: auto;
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.history-detail {
+    padding: 0 4px 16px;
+    overflow-wrap: anywhere;
+}
+
+.history-detail .operation-items {
+    font-size: 12px;
+}
+
+.history-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 12px;
+    padding-top: 20px;
+}
+
+@media (max-width: 560px) {
+    .history-entry time {
+        flex-basis: 100%;
+        margin-left: 24px;
+    }
+}
+
+
+.operation-history .export-report-context {
+    color: var(--muted);
+    font: 600 12px/1.5 var(--sans);
+}
+
+.operation-history .export-report-group h4,
+.operation-history .export-report-group li b,
+.operation-history .export-report > button {
+    font-size: 12px;
+}
+
+.operation-history .export-report-group li span,
+.operation-history .operation-items li span {
+    color: var(--muted);
+    font-size: 12px;
+}
