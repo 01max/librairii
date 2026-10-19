@@ -70,3 +70,28 @@ func EmptyTarget(root, config, source string) error {
 	probe.Close()
 	return os.Remove(probe.Name())
 }
+
+func TreeSize(root string) (int64, error) {
+	var size int64
+	err := filepath.WalkDir(root, func(path string, entry os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if entry.Type()&os.ModeSymlink != 0 {
+			return ErrDestination
+		}
+		if entry.IsDir() {
+			return nil
+		}
+		info, err := entry.Info()
+		if err != nil {
+			return err
+		}
+		if !info.Mode().IsRegular() {
+			return ErrDestination
+		}
+		size += info.Size()
+		return nil
+	})
+	return size, err
+}
