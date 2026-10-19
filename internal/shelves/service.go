@@ -132,20 +132,7 @@ func createShelf(ctx context.Context, tx *sql.Tx, name string) (int64, error) {
 }
 
 func (s *Service) Create(ctx context.Context, name string) (Shelf, error) {
-	tx, err := s.database.BeginTx(ctx, nil)
-	if err != nil {
-		return Shelf{}, err
-	}
-	defer tx.Rollback()
-	id, err := createShelf(ctx, tx, name)
-	if err != nil {
-		return Shelf{}, err
-	}
-	result, err := readShelf(ctx, tx, id)
-	if err != nil {
-		return Shelf{}, err
-	}
-	return result, tx.Commit()
+	return s.CreateManual(ctx, name, nil)
 }
 
 func (s *Service) mutate(ctx context.Context, id int64, fn func(*sql.Tx) (bool, error)) (Shelf, error) {
