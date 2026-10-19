@@ -102,7 +102,7 @@ func main() {
 	}
 	app := NewApp(composition.Application, appOptions...)
 
-	appOptionsConfig, err := productionOptions(app, artworkHandler, assets)
+	appOptionsConfig, err := productionOptions(app, app.gatedArtwork(artworkHandler), assets)
 	if err != nil {
 		log.Fatal(err)
 	}

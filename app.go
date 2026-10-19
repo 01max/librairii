@@ -77,6 +77,8 @@ func (a *App) domReady(ctx context.Context) {
 }
 
 func (a *App) shutdown(ctx context.Context) {
+	a.libraryGate.Lock()
+	defer a.libraryGate.Unlock()
 	a.core.Stop(ctx)
 }
 

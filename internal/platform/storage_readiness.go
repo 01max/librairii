@@ -3,6 +3,7 @@ package platform
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"path/filepath"
 	"sync"
 
@@ -150,7 +151,8 @@ func (r *StorageReadiness) Close() error {
 	if connection == nil {
 		return nil
 	}
-	return connection.Close()
+	_, checkpointErr := connection.Writer().Exec("PRAGMA wal_checkpoint(TRUNCATE)")
+	return errors.Join(checkpointErr, connection.Close())
 }
 
 type sqliteSchemaProbe struct{}

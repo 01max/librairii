@@ -556,3 +556,18 @@ func (a *Application) ResumeStorage(ctx context.Context) error {
 	a.mu.Unlock()
 	return a.Start(ctx)
 }
+
+// PauseStorage closes every root-bound resource while the host holds exclusive
+// library access. ResumeStorage reconstructs services through the normal ports.
+func (a *Application) PauseStorage() error {
+	a.mu.Lock()
+	a.state = StateRelocating
+	a.ready = false
+	resources := append([]ResourcePort(nil), a.resources...)
+	a.mu.Unlock()
+	var errs []error
+	for i := len(resources) - 1; i >= 0; i-- {
+		errs = append(errs, resources[i].Close())
+	}
+	return errors.Join(errs...)
+}
