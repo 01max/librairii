@@ -98,8 +98,8 @@ try {
                 if (result.violations.length) throw new Error(`${viewport.width}px ${view}: ${JSON.stringify(result.violations)}`);
             }
             if (viewport.width <= 850) {
-                await page.getByRole('button', {name: 'Shelves & filters', exact: true}).click();
-                await page.getByRole('dialog', {name: 'Saved shelves and refinements'}).waitFor();
+                await page.getByRole('button', {name: 'Library & filters', exact: true}).click();
+                await page.getByRole('dialog', {name: 'Saved collections and refinements'}).waitFor();
                 const result = await new AxeBuilder({page}).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze();
                 if (result.violations.length) throw new Error(`sidebar: ${JSON.stringify(result.violations)}`);
             }
@@ -118,6 +118,7 @@ try {
                 if (settingsResult.violations.length) throw new Error(`${fixture}: ${JSON.stringify(settingsResult.violations)}`);
                 if (await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth)) throw new Error(`${fixture}: horizontal overflow`);
             }
+            await assertCuration(page, `http://127.0.0.1:${address.port}`, viewport);
             results.push({
                 viewport,
                 axeViolations: violations.length,
@@ -196,4 +197,45 @@ function resolveChromeExecutable() {
         );
     }
     return executable;
+}
+
+
+async function assertCuration(page, origin, viewport) {
+    await page.goto(`${origin}/?fixture=curated`, {waitUntil: 'networkidle'});
+    if (viewport.width <= 850) await page.getByRole('button', {name: 'Library & filters', exact: true}).click();
+    await page.getByRole('button', {name: 'Weekend Shelf 3', exact: true}).click();
+    await page.getByRole('heading', {name: 'Weekend Shelf', exact: true}).waitFor();
+    const check = async (name) => {
+        const result = await new AxeBuilder({page}).withTags(['wcag2a','wcag2aa','wcag21a','wcag21aa']).analyze();
+        if (result.violations.length) throw new Error(`${viewport.width}px ${name}: ${JSON.stringify(result.violations)}`);
+        if (await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth)) {await page.screenshot({path: join(tmpdir(), 'librairii-overflow.png')}); throw new Error(`${viewport.width}px ${name}: horizontal overflow ${await page.evaluate(() => document.documentElement.scrollWidth)} ${JSON.stringify(await page.evaluate(() => [...document.querySelectorAll('.app *')].filter((e) => e.getBoundingClientRect().right > innerWidth + 1 && getComputedStyle(e).display !== 'none').slice(0, 8).map((e) => ({tag:e.tagName,cls:e.className,right:e.getBoundingClientRect().right,text:e.textContent.slice(0,60)}))))}`);}
+    };
+    await check('curated Shelf');
+    await page.screenshot({path: join(tmpdir(), `librairii-curated-${viewport.width}.png`)});
+    const reviewButton = page.getByRole('button', {name: 'Review updates', exact: true});
+    await reviewButton.click();
+    const review = page.getByRole('dialog', {name: 'Review Shelf updates'});
+    await review.getByRole('combobox').first().waitFor();
+    if (await review.getByRole('combobox').count() !== 25) throw new Error('review rendered more than one candidate page');
+    if (!await review.getByRole('button', {name: 'Apply 0 approved changes'}).isDisabled()) throw new Error('review preapproved candidates');
+    await check('update review');
+    await page.screenshot({path: join(tmpdir(), `librairii-review-${viewport.width}.png`)});
+    await page.keyboard.press('Escape');
+    await review.waitFor({state:'detached'});
+    if (!await reviewButton.evaluate((button) => button === document.activeElement)) throw new Error('review did not return focus');
+    await page.getByRole('button', {name: 'Manage sources', exact:true}).click();
+    await page.getByRole('button', {name: 'Preview source changes'}).click();
+    await page.getByRole('combobox', {name: 'Source story'}).waitFor();
+    await check('source detachment');
+    await page.keyboard.press('Escape');
+    await page.getByRole('button', {name: 'Manage exclusions (1)'}).click();
+    await check('exclusions');
+    await page.keyboard.press('Escape');
+    if (viewport.width <= 850) await page.getByRole('button', {name:'Library & filters', exact:true}).click();
+    await page.getByRole('button', {name:'Create Shelf', exact:true}).click();
+    await page.getByRole('textbox', {name:'Shelf name'}).fill('New Shelf');
+    await page.getByRole('button', {name:'Preview initial stories'}).click();
+    await page.getByRole('button', {name:'Create with 0 stories'}).waitFor();
+    await check('creation confirmation');
+    await page.keyboard.press('Escape');
 }

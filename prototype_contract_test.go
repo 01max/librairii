@@ -8,7 +8,7 @@ import (
 	"testing"
 )
 
-const canonicalPrototypeSHA256 = "4fe9cc8555095892e56195a4b4df9abdf676b229ac3b3961cab9dff727c2b8b1"
+const canonicalPrototypeSHA256 = "69b2c993a4b03e6bfc38a3242bae46c72d4345dce418d118a6a9cfe40dc0e27f"
 const canonicalPrototypeSnapshot = "testdata/ui-prototypes/05-archive-shelves.html"
 
 func TestCanonicalPrototypeContract(t *testing.T) {

@@ -8,7 +8,6 @@ export default function ShelfDialog({title, busy, onClose, children}: PropsWithC
 }>) {
     const panel = useRef<HTMLElement>(null);
     const close = useRef<HTMLButtonElement>(null);
-    useModalFocus(panel, close);
     useEffect(() => {
         const escape = (event: KeyboardEvent) => { if (event.key === 'Escape' && !busy) { event.stopImmediatePropagation(); onClose(); } };
         document.addEventListener('keydown', escape, true);
@@ -27,6 +26,7 @@ export default function ShelfDialog({title, busy, onClose, children}: PropsWithC
         }
         return () => {for (const [element, previous] of changed.reverse()) element.toggleAttribute('inert', previous);};
     }, []);
+    useModalFocus(panel, close);
     return <ModalBackdrop onDismiss={onClose} disabled={busy}>
         <section ref={panel} className="detail-dialog curated-dialog" role="dialog" aria-modal="true" aria-label={title}>
             <div className="dialog-kicker">{t('Shelves')}</div><h3>{title}</h3>

@@ -48,7 +48,7 @@ type CollectionHistoryState = {
         shelfId?: number | null;
         collectionId?: number | null;
         scope?: CollectionScope;
-        group?: {kind: 'shelf'; id: number};
+        group?: {kind: 'shelf'; id: number; manualOrder?: boolean};
     };
 };
 
@@ -96,10 +96,15 @@ export class CollectionQueryHistory {
         return id !== null && Number.isSafeInteger(id) && id > 0 ? id : null;
     }
 
-    pushShelf(id: number, query: CollectionQuery = this.#fallback): CollectionQuery {
+    currentShelfManualOrder(): boolean {
+        const entry = (this.#target.history.state as CollectionHistoryState | null)?.collectionQuery;
+        return entry?.hash === this.#target.location.hash && entry.group?.kind === 'shelf' ? entry.group.manualOrder !== false : true;
+    }
+
+    pushShelf(id: number, query: CollectionQuery = this.#fallback, manualOrder?: boolean): CollectionQuery {
         const canonical = canonicalCollectionQuery(query);
         const hash = encodeCollectionQuery(canonical);
-        this.#target.history.pushState({collectionQuery: {hash, group: {kind: 'shelf', id}, scope: 'shelf'}}, '',
+        this.#target.history.pushState({collectionQuery: {hash, group: {kind: 'shelf', id, manualOrder: manualOrder ?? (this.currentCuratedShelfID() === id ? this.currentShelfManualOrder() : true)}, scope: 'shelf'}}, '',
             `${this.#target.location.pathname}${this.#target.location.search}${hash}`);
         return canonical;
     }

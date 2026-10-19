@@ -582,5 +582,6 @@
   "The saved collection no longer exists.": "La collection enregistrée n’existe plus.",
   "The saved collection needs attention before it can be opened.": "La collection enregistrée nécessite une intervention avant son ouverture.",
   "The saved collection action could not be completed.": "Impossible de terminer l’action sur la collection enregistrée.",
-  "Collections are unavailable until storage is ready.": "Les collections sont indisponibles tant que le stockage n’est pas prêt."
+  "Collections are unavailable until storage is ready.": "Les collections sont indisponibles tant que le stockage n’est pas prêt.",
+  "Add to Shelf…": "Ajouter à une étagère…"
 }

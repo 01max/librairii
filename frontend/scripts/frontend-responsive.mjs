@@ -243,15 +243,15 @@ async function assertHistoryView(page) {
 
 async function assertSidebarAccess(page) {
     const viewport = page.viewportSize();
-    const toggle = page.getByRole('button', {name: 'Shelves & filters', exact: true});
+    const toggle = page.getByRole('button', {name: 'Library & filters', exact: true});
     if (!await toggle.isVisible()) {
         throw new Error(`${viewport.width}px: shelves and refinements are hidden with no way to reopen them`);
     }
-    const panel = page.getByRole('dialog', {name: 'Saved shelves and refinements'});
-    const close = panel.getByRole('button', {name: 'Close shelves and filters'});
+    const panel = page.getByRole('dialog', {name: 'Saved collections and refinements'});
+    const close = panel.getByRole('button', {name: 'Close collections and filters'});
     await toggle.click();
     await panel.waitFor();
-    await page.waitForFunction(() => document.activeElement?.getAttribute('aria-label') === 'Close shelves and filters');
+    await page.waitForFunction(() => document.activeElement?.getAttribute('aria-label') === 'Close collections and filters');
     await page.keyboard.press('Shift+Tab');
     await page.waitForFunction(() => document.activeElement?.textContent.includes('Manage tags'));
     await page.keyboard.press('Tab');
@@ -264,16 +264,13 @@ async function assertSidebarAccess(page) {
         await page.screenshot({path: join(tmpdir(), 'librairii-sidebar-review.png')});
     }
     // Exercise an actual query control without expanding the window.
-    const broken = panel.getByRole('combobox', {name: 'Broken stories'});
-    await broken.selectOption('include');
-    if (!new URL(page.url()).hash.includes('brokenVisibility=include')) throw new Error('narrow filter did not update the query');
-    await broken.selectOption('hide');
+    if (await panel.getByRole('combobox', {name: 'Broken stories'}).count()) throw new Error('retired Broken filter is still visible');
     const age = panel.getByRole('button', {name: 'Age', exact: true});
     await age.click();
     await age.click();
     await close.click();
     await panel.waitFor({state: 'hidden'});
-    await page.waitForFunction(() => document.activeElement?.textContent === 'Shelves & filters');
+    await page.waitForFunction(() => document.activeElement?.textContent === 'Library & filters');
     await toggle.click();
     await page.keyboard.press('Escape');
     await panel.waitFor({state: 'hidden'});
@@ -336,9 +333,9 @@ async function assertLibraryViews(page) {
         if (width <= 850) {
             await page.setViewportSize({width, height: 320});
             await assertSidebarAccess(page);
-            await page.getByRole('button', {name: 'Shelves & filters', exact: true}).click();
+            await page.getByRole('button', {name: 'Library & filters', exact: true}).click();
             await page.setViewportSize({width: 1181, height: 900});
-            await page.getByRole('dialog', {name: 'Saved shelves and refinements'}).waitFor({state: 'hidden'});
+            await page.getByRole('dialog', {name: 'Saved collections and refinements'}).waitFor({state: 'hidden'});
         }
     }
     await page.getByRole('button', {name: 'List', exact: true}).click();
@@ -527,13 +524,13 @@ async function assertFamilyBrowsingArtwork(page) {
                 bridge = value;
                 const app = value.main.App;
                 const queryStories = app.QueryStories;
-                const openShelf = app.OpenShelf;
+                const openShelf = app.OpenCollection;
                 app.QueryStories = async (...args) => {
                     const response = await queryStories(...args);
                     response.page.stories = enrich(response.page.stories);
                     return response;
                 };
-                app.OpenShelf = async (...args) => {
+                app.OpenCollection = async (...args) => {
                     const response = await openShelf(...args);
                     response.evaluation.page.stories = enrich(response.evaluation.page.stories);
                     return response;
@@ -588,39 +585,23 @@ async function assertFamilyBrowsingArtwork(page) {
     }
     url.search = '?fixture=broken-stories';
     await page.goto(url.toString(), {waitUntil: 'networkidle'});
-    const brokenControl = page.getByRole('combobox', {name: 'Broken stories'});
-    // The sidebar is visible on desktop; inclusion is then preserved at narrow widths.
     await page.setViewportSize({width: 1181, height: 900});
-    await brokenControl.waitFor();
+    if (await page.getByRole('combobox', {name: 'Broken stories'}).count()) throw new Error('retired Broken filter remains');
     const brokenStory = page.getByRole('button', {name: 'The Little Prince', exact: true});
-    if (await brokenStory.count() !== 0) throw new Error('broken story is visible by default');
-    await brokenControl.selectOption('include');
     await brokenStory.waitFor();
-    if (await brokenStory.locator('.broken-badge').filter({hasText: 'Broken'}).count() !== 1) {
-        throw new Error('broken story badge is missing');
-    }
+    if (await brokenStory.locator('.broken-badge').count() !== 1) throw new Error('Broken badge missing');
     const artworkFilter = await brokenStory.locator('.cover').evaluate((cover) => getComputedStyle(cover).filter);
     if (!artworkFilter.includes('saturate(0.18)')) throw new Error('broken cover is not visually muted');
-    if (await page.locator('.top button').count() !== 0) throw new Error('top-right import action is still present');
-    await page.screenshot({path: join(tmpdir(), 'librairii-broken-library-review.png')});
-    await brokenControl.selectOption('hide');
-    await brokenStory.waitFor({state: 'detached'});
     for (const view of ['List', 'Small covers', 'Large covers']) {
         await page.getByRole('button', {name: view, exact: true}).click();
         const action = page.getByRole('button', {name: 'Mark The Secret Forest as broken', exact: true});
         await action.focus();
         if (await action.evaluate((button) => getComputedStyle(button).opacity) !== '1') throw new Error(`${view}: flag action not revealed by keyboard focus`);
         await action.press('Enter');
-        await page.getByRole('button', {name: 'The Secret Forest', exact: true}).waitFor({state: 'detached'});
-        await page.getByRole('button', {name: 'Undo', exact: true}).click();
+        await page.getByRole('button', {name: 'Clear broken flag for The Secret Forest', exact: true}).waitFor();
         await page.getByRole('button', {name: 'The Secret Forest', exact: true}).waitFor();
+        await page.getByRole('button', {name: 'Undo', exact: true}).click();
     }
-    await brokenControl.selectOption('only');
-    await page.getByRole('button', {name: 'Clear broken flag for The Little Prince', exact: true}).click();
-    await brokenStory.waitFor({state: 'detached'});
-    await page.getByRole('button', {name: 'Undo', exact: true}).click();
-    await brokenStory.waitFor();
-    await brokenControl.selectOption('hide');
     const touchPage = await page.context().browser().newPage({viewport: {width: 390, height: 844}, hasTouch: true, isMobile: true});
     try {
         await touchPage.goto(url.toString(), {waitUntil: 'networkidle'});
@@ -628,7 +609,7 @@ async function assertFamilyBrowsingArtwork(page) {
         await action.waitFor();
         if (await action.evaluate((button) => getComputedStyle(button).opacity) !== '1') throw new Error('touch flag action requires hover');
         await action.tap();
-        await touchPage.getByRole('button', {name: 'The Secret Forest', exact: true}).waitFor({state: 'detached'});
+        await touchPage.getByRole('button', {name: 'Clear broken flag for The Secret Forest', exact: true}).waitFor();
         await touchPage.getByRole('button', {name: 'Undo', exact: true}).tap();
         await touchPage.getByRole('button', {name: 'The Secret Forest', exact: true}).waitFor();
     } finally { await touchPage.close(); }

@@ -3907,13 +3907,14 @@ test('restores a curated Shelf without opening a same-id migrated Collection', a
     expect(screen.getByRole('searchbox', {name: 'Refine this view'})).toHaveValue('refined');
     expect(OpenShelf).toHaveBeenCalledWith(7, expect.objectContaining({name: 'refined'}));
     expect(OpenCollection).not.toHaveBeenCalled();
-    expect(window.history.state.collectionQuery.group).toEqual({kind: 'shelf', id: 7});
+    expect(window.history.state.collectionQuery.group).toEqual(expect.objectContaining({kind: 'shelf', id: 7}));
 });
 
 test('adds the selected story UUID explicitly to an existing Shelf', async () => {
     vi.mocked(ListShelves).mockResolvedValue(new app.ShelfListResponse({shelves: [{id: 7, name: 'Curated', count: 0}]}));
     vi.mocked(AddStoriesToShelf).mockResolvedValue(new app.ShelfResponse({shelf: {id: 7}}));
     const user = userEvent.setup(); render(<App/>);
+    await user.click(await screen.findByRole('button', {name: 'Add to Shelf…'}));
     await user.selectOptions(await screen.findByLabelText('Add selection to Shelf'), '7');
     expect(AddStoriesToShelf).not.toHaveBeenCalled();
     await user.click(screen.getByRole('button', {name: 'Add selected stories'}));

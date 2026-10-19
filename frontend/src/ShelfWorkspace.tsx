@@ -3,6 +3,7 @@ import {OpenShelf, RenameShelf, DuplicateShelf, DeleteShelf, RemoveStoriesFromSh
 import {collections, exporter, library, shelves} from '../wailsjs/go/models';
 import {type CollectionQuery, DEFAULT_COLLECTION_QUERY} from './query-codec';
 import {t} from './i18n';
+import {type LibraryView} from './library-view';
 import {useStoryFlags} from './use-story-flags';
 import StoryFlagButton from './StoryFlagButton';
 import ShelfReview from './ShelfReview';
@@ -11,11 +12,10 @@ import ShelfDialog from './ShelfDialog';
 import StoryCover from './StoryCover';
 import OutcomeText from './OutcomeText';
 
-export default function ShelfWorkspace({id, revision, query, onQuery, collections: sourceOptions, onChanged, onDeleted, onInspect, onExport}: {
-    collections: collections.Summary[]; id: number; revision: number; query: CollectionQuery; onQuery: (query: CollectionQuery) => void;
+export default function ShelfWorkspace({id, revision, query, onQuery, collections: sourceOptions, onChanged, onDeleted, onInspect, onExport, manualOrder = true, onManualOrder, viewMode = 'large'}: {
+    viewMode?: LibraryView; manualOrder?: boolean; onManualOrder?: (manual: boolean) => void; collections: collections.Summary[]; id: number; revision: number; query: CollectionQuery; onQuery: (query: CollectionQuery) => void;
     onExport: (request: exporter.PreflightRequest) => void; onChanged: () => void; onDeleted: () => void; onInspect: (story: library.StorySummary) => void;
 }) {
-    const [manualOrder, setManualOrder] = useState(true);
     const [view, setView] = useState<shelves.Evaluation | null>(null);
     const [exclusionsOpen, setExclusionsOpen] = useState(false);
     const [exclusionPage, setExclusionPage] = useState(0);
@@ -81,15 +81,15 @@ export default function ShelfWorkspace({id, revision, query, onQuery, collection
         <div className="curated-actions"><button type="button" disabled={flags.pending || !selectedStoryIDs.length} onClick={() => void flags.set(selectedStoryIDs, true)}>{t('Mark selected as broken')}</button>
             <button type="button" disabled={flags.pending || !selectedStoryIDs.length} onClick={() => void flags.set(selectedStoryIDs, false)}>{t('Clear broken flags')}</button></div>
         <label>{t('Refine this view')}<input type="search" value={query.name} onChange={(event) => onQuery({...query, name: event.target.value, page: 1})}/></label>
-        <label>{t('Sort stories')}<select value={manualOrder ? '' : query.sort} onChange={(event) => {setManualOrder(event.target.value === ''); if (event.target.value) onQuery({...query, sort: event.target.value as CollectionQuery['sort'], page: 1});}}>
+        <label>{t('Sort stories')}<select value={manualOrder ? '' : query.sort} onChange={(event) => {onManualOrder?.(event.target.value === ''); if (event.target.value) onQuery({...query, sort: event.target.value as CollectionQuery['sort'], page: 1});}}>
             <option value="">{t('Manual order')}</option><option value="name_asc">{t('Name A–Z')}</option><option value="imported_desc">{t('Newest imported')}</option></select></label>
         <p>{t('Refinements change this view only. Approved membership stays the same.')}</p>
         {error && <p role="alert" className="dialog-error"><OutcomeText text={error}/></p>}
         <div className="curated-actions"><button type="button" disabled={busy || !selected.length}
             onClick={() => void act(async () => {const result = await RemoveStoriesFromShelf(id, selected); if (!result.error) setSelected([]); return result;})}>{t('Remove selected and exclude from suggestions')}</button></div>
-        <ul className="curated-members">{view.members.map((member) => <li key={member.uuid} className={member.story?.broken ? 'is-broken' : ''}>
+        <ul className={`curated-members curated-${viewMode}`}>{view.members.map((member) => <li key={member.uuid} className={member.story?.broken ? 'is-broken' : ''}>
             <label><input type="checkbox" checked={selected.includes(member.uuid)} disabled={busy} onChange={() => setSelected(selected.includes(member.uuid) ? selected.filter((uuid) => uuid !== member.uuid) : [...selected, member.uuid])}/>{member.story?.title ?? member.cachedTitle}</label>
-            {member.story ? <button type="button" className="curated-cover" onClick={() => onInspect(member.story!)} aria-label={t('Details for {0}', member.story.title)}><StoryCover story={member.story}/></button> : <p>{t('Unavailable')} · {member.uuid}</p>}
+            {member.story ? <button type="button" className="curated-cover" onClick={() => onInspect(member.story!)} aria-label={t('Details for {0}', member.story.title)}>{viewMode === 'list' ? t('Open details') : <StoryCover story={member.story}/>}</button> : <p>{t('Unavailable')} · {member.uuid}</p>}
             {member.story && <StoryFlagButton title={member.story.title} broken={member.story.broken} disabled={flags.pending} onChange={(broken) => void flags.set([member.story!.id], broken)}/>}
             <button type="button" disabled={busy || (!view.sources.some((source) => source.active) && member.protected)} onClick={() => void act(() => SetShelfStoryProtected(id, member.uuid, !member.protected))}>{member.protected ? t('Unprotect {0}', member.cachedTitle) : t('Protect {0}', member.cachedTitle)}</button>
             {member.story?.broken && <p>{t('Broken · excluded from exports')}</p>}

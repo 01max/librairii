@@ -582,5 +582,6 @@
   "The saved collection no longer exists.": "The saved collection no longer exists.",
   "The saved collection needs attention before it can be opened.": "The saved collection needs attention before it can be opened.",
   "The saved collection action could not be completed.": "The saved collection action could not be completed.",
-  "Collections are unavailable until storage is ready.": "Collections are unavailable until storage is ready."
+  "Collections are unavailable until storage is ready.": "Collections are unavailable until storage is ready.",
+  "Add to Shelf…": "Add to Shelf…"
 }

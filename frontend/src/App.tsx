@@ -1,5 +1,6 @@
 import {useStoryFlags} from './use-story-flags';
 import {CollectionDeletion} from './ShelfSources';
+import ShelfDialog from './ShelfDialog';
 import ShelfWorkspace from './ShelfWorkspace';
 import ShelfCreation from './ShelfCreation';
 import SettingsPanel from './SettingsPanel';
@@ -372,9 +373,11 @@ function App() {
     const [shelfRevision, setShelfRevision] = useState(0);
     const [createShelfUUIDs, setCreateShelfUUIDs] = useState<string[] | null>(null);
     const [selectedCuratedIDs, setSelectedCuratedIDs] = useState<number[]>([]);
+    const [addShelfOpen, setAddShelfOpen] = useState(false);
     const [addShelfID, setAddShelfID] = useState('');
     const openCuratedShelf = (id: number) => {
         setCollectionQuery(queryHistory.pushShelf(id));
+        activeCollectionIDRef.current = null; setActiveCollectionID(null); setCollectionScope('shelf');
         setCuratedShelfID(id);
         setSidebarOpen(false);
     };
@@ -1400,9 +1403,13 @@ function App() {
         next: CollectionQuery,
         collectionID?: number | null,
     ) => {
+        if (curatedShelfID !== null && collectionID === undefined) {
+            setCollectionQuery(queryHistory.pushShelf(curatedShelfID, next));
+            return;
+        }
         setCollectionQuery(queryHistory.push(next, collectionID));
         setCollectionScope(queryHistory.currentScope());
-    }, [queryHistory]);
+    }, [queryHistory, curatedShelfID]);
 
     function toggleCollectionSelection(collectionID: number) {
         setSelectedCollectionIDs((current) => current.includes(collectionID)
@@ -1975,7 +1982,7 @@ function App() {
                     ))}
                 </nav>
                 <section aria-label={t('Shelves')}>
-                    <div className="caption">{t('Shelves')}</div><button type="button" disabled={applicationState !== 'ready'} onClick={() => setCreateShelfUUIDs([])}>{t('Create Shelf')}</button>
+                    <div className="caption">{t('Shelves')}</div><button type="button" className="manage" disabled={applicationState !== 'ready'} onClick={() => setCreateShelfUUIDs([])}>{t('Create Shelf')}</button>
                     {curatedShelves.map((shelf, index) => <div key={shelf.id}><label><input type="checkbox" checked={selectedCuratedIDs.includes(shelf.id)} aria-label={t('Select Shelf {0} for export', shelf.name)} onChange={() => setSelectedCuratedIDs(selectedCuratedIDs.includes(shelf.id) ? selectedCuratedIDs.filter((id) => id !== shelf.id) : [...selectedCuratedIDs, shelf.id])}/><span className="sr-only">{shelf.name}</span></label><button className="saved-picker" type="button" key={shelf.id}
                         aria-current={curatedShelfID === shelf.id ? 'page' : undefined}
                         onClick={() => openCuratedShelf(shelf.id)}>{shelf.name}<span>{shelf.count}</span></button>
@@ -2119,8 +2126,9 @@ function App() {
 
             <main tabIndex={-1} className="main" inert={sidebarOpen || historyOpen}>
                 {curatedShelfID !== null && <><button className="sidebar-toggle" type="button" onClick={() => setSidebarOpen(true)}>{t('Library & filters')}</button>
-                    <ShelfWorkspace key={curatedShelfID} id={curatedShelfID} revision={shelfRevision + collectionRevision + detailRevision}
-                        collections={savedCollections} query={collectionQuery} onQuery={(query) => setCollectionQuery(queryHistory.pushShelf(curatedShelfID, query))}
+                    <LibraryViewPicker view={libraryView} onChange={setLibraryView}/>
+                    <ShelfWorkspace viewMode={libraryView} key={curatedShelfID} id={curatedShelfID} revision={shelfRevision + collectionRevision + detailRevision}
+                        manualOrder={queryHistory.currentShelfManualOrder()} onManualOrder={(manual) => setCollectionQuery(queryHistory.pushShelf(curatedShelfID, collectionQuery, manual))} collections={savedCollections} query={collectionQuery} onQuery={(query) => setCollectionQuery(queryHistory.pushShelf(curatedShelfID, query))}
                         onChanged={() => setShelfRevision((value) => value + 1)} onDeleted={openAllStories}
                         onExport={(request) => void preflightExport(request)} onInspect={(story) => {setInspectedStory(story); setDetailsOpen(true);}}/>
                 </>}
@@ -2194,7 +2202,7 @@ function App() {
                     <button className="sidebar-toggle" type="button"
                         aria-expanded={sidebarOpen} aria-controls="library-sidebar"
                         onClick={() => setSidebarOpen(true)}>
-                        {t("Library &amp; filters")}</button>
+                        {t("Library & filters")}</button>
                     <LibraryViewPicker view={libraryView} onChange={setLibraryView}/>
                     <button type="button" className="history-disclosure"
                         disabled={applicationState !== 'ready'} onClick={() => setHistoryOpen(true)}>
@@ -2658,15 +2666,7 @@ function App() {
                         </div>
                     </div>
                     <div className="drawer-actions">
-                        <label>{t('Add selection to Shelf')}<select value={addShelfID} onChange={(event) => setAddShelfID(event.target.value)}><option value="">{t('Choose Shelf')}</option>
-                            {curatedShelves.map((shelf) => <option key={shelf.id} value={shelf.id}>{shelf.name}</option>)}</select></label>
-                        <button type="button" disabled={!addShelfID || collectionBusy} onClick={() => {
-                            setCollectionBusy(true);
-                            void AddStoriesToShelf(Number(addShelfID), renderedStories.filter((story) => selectedIDs.includes(story.id)).map((story) => story.uuid)).then((response) => {
-                                if (response.error) setRequestError(response.error.message); else setShelfRevision((value) => value + 1);
-                            }).catch(() => setRequestError(t('Shelf could not be changed.'))).finally(() => setCollectionBusy(false));
-                        }}>{t('Add selected stories')}</button>
-                        <button type="button" onClick={() => setCreateShelfUUIDs(renderedStories.filter((story) => selectedIDs.includes(story.id)).map((story) => story.uuid))}>{t('Create Shelf from selection')}</button>
+                        <button type="button" onClick={() => setAddShelfOpen(true)}>{t('Add to Shelf…')}</button>
                         {selectedIDs.length > 1 ? <>
                             <span className="drawer-flag-count">{t('{0} selected · {1} flagged', selectedIDs.length, selectedFlaggedCount)}</span>
                             <button type="button" disabled={flags.pending} onClick={() => void flags.set(selectedIDs, true)}>{t('Mark selected as broken')}</button>
@@ -2863,6 +2863,18 @@ function App() {
                     onReveal={revealExportDestination}/>
             )}
 
+            {addShelfOpen && <ShelfDialog title={t('Add selection to Shelf')} busy={collectionBusy} onClose={() => setAddShelfOpen(false)}>
+                        <label>{t('Add selection to Shelf')}<select value={addShelfID} onChange={(event) => setAddShelfID(event.target.value)}><option value="">{t('Choose Shelf')}</option>
+                            {curatedShelves.map((shelf) => <option key={shelf.id} value={shelf.id}>{shelf.name}</option>)}</select></label>
+                        <button type="button" disabled={!addShelfID || collectionBusy} onClick={() => {
+                            setCollectionBusy(true);
+                            void AddStoriesToShelf(Number(addShelfID), renderedStories.filter((story) => selectedIDs.includes(story.id)).map((story) => story.uuid)).then((response) => {
+                                if (response.error) setRequestError(response.error.message); else {setShelfRevision((value) => value + 1); setAddShelfOpen(false);}
+                            }).catch(() => setRequestError(t('Shelf could not be changed.'))).finally(() => setCollectionBusy(false));
+                        }}>{t('Add selected stories')}</button>
+                        <button type="button" onClick={() => {setAddShelfOpen(false); setCreateShelfUUIDs(renderedStories.filter((story) => selectedIDs.includes(story.id)).map((story) => story.uuid));}}>{t('Create Shelf from selection')}</button>
+
+            </ShelfDialog>}
             {createShelfUUIDs !== null && <ShelfCreation collections={savedCollections} manualUUIDs={createShelfUUIDs}
                 onClose={() => setCreateShelfUUIDs(null)} onCreated={(id) => {setCreateShelfUUIDs(null); setShelfRevision((value) => value + 1); openCuratedShelf(id);}}/>}
             {collectionDialogMode && (

@@ -2811,3 +2811,13 @@ select:focus-visible {
 
 .curated-preview { max-width: 110px; }
 .curated-preview .cover {height: 80px; background: #edf0fc; border-radius: 8px;}
+.curated-members .story-flag-action { position: static; opacity: 1; margin: 8px 0; }
+.curated-members .curated-cover { padding: 0; }
+.curated-members .cover { width: 100%; }
+.curated-workspace .heading-actions { flex-wrap: wrap; }
+.curated-dialog .dialog-kicker { color: #525d72; }
+.curated-members.curated-list { display: block; }
+.curated-members.curated-list > li { margin-bottom: 10px; }
+.curated-members.curated-list .curated-cover { width: auto; padding: 7px 10px; }
+.curated-members.curated-small { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
+.curated-members.curated-small .cover { height: 90px; }

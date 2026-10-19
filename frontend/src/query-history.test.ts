@@ -152,3 +152,14 @@ test('keeps curated scope identities separate from legacy dynamic shelf ids on r
     expect(history.currentCollectionID()).toBe(7);
     expect(history.currentCuratedShelfID()).toBeNull();
 });
+
+test('preserves manual versus view sorting within a curated scope across reloads and refinements', () => {
+    const history = new CollectionQueryHistory(window, applicationDefault);
+    history.pushShelf(7, applicationDefault, false);
+    const reloaded = new CollectionQueryHistory(window, applicationDefault);
+    expect(reloaded.currentShelfManualOrder()).toBe(false);
+    reloaded.pushShelf(7, {...applicationDefault, name: 'moon'});
+    expect(reloaded.currentShelfManualOrder()).toBe(false);
+    reloaded.pushShelf(7, applicationDefault, true);
+    expect(reloaded.currentShelfManualOrder()).toBe(true);
+});
