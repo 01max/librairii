@@ -264,10 +264,10 @@ async function assertSidebarAccess(page) {
         await page.screenshot({path: join(tmpdir(), 'librairii-sidebar-review.png')});
     }
     // Exercise an actual query control without expanding the window.
-    const broken = panel.getByRole('checkbox', {name: 'Include broken stories'});
-    await broken.check();
-    if (!new URL(page.url()).hash.includes('includeBroken=true')) throw new Error('narrow filter did not update the query');
-    await broken.uncheck();
+    const broken = panel.getByRole('combobox', {name: 'Broken stories'});
+    await broken.selectOption('include');
+    if (!new URL(page.url()).hash.includes('brokenVisibility=include')) throw new Error('narrow filter did not update the query');
+    await broken.selectOption('hide');
     const age = panel.getByRole('button', {name: 'Age', exact: true});
     await age.click();
     await age.click();
@@ -588,23 +588,50 @@ async function assertFamilyBrowsingArtwork(page) {
     }
     url.search = '?fixture=broken-stories';
     await page.goto(url.toString(), {waitUntil: 'networkidle'});
-    const brokenControl = page.getByRole('checkbox', {name: 'Include broken stories'});
+    const brokenControl = page.getByRole('combobox', {name: 'Broken stories'});
     // The sidebar is visible on desktop; inclusion is then preserved at narrow widths.
     await page.setViewportSize({width: 1181, height: 900});
     await brokenControl.waitFor();
     const brokenStory = page.getByRole('button', {name: 'The Little Prince', exact: true});
     if (await brokenStory.count() !== 0) throw new Error('broken story is visible by default');
-    await brokenControl.check();
+    await brokenControl.selectOption('include');
     await brokenStory.waitFor();
-    if (await brokenStory.getByText('Broken', {exact: true}).count() !== 1) {
+    if (await brokenStory.locator('.broken-badge').filter({hasText: 'Broken'}).count() !== 1) {
         throw new Error('broken story badge is missing');
     }
     const artworkFilter = await brokenStory.locator('.cover').evaluate((cover) => getComputedStyle(cover).filter);
     if (!artworkFilter.includes('saturate(0.18)')) throw new Error('broken cover is not visually muted');
     if (await page.locator('.top button').count() !== 0) throw new Error('top-right import action is still present');
     await page.screenshot({path: join(tmpdir(), 'librairii-broken-library-review.png')});
-    await brokenControl.uncheck();
+    await brokenControl.selectOption('hide');
     await brokenStory.waitFor({state: 'detached'});
+    for (const view of ['List', 'Small covers', 'Large covers']) {
+        await page.getByRole('button', {name: view, exact: true}).click();
+        const action = page.getByRole('button', {name: 'Mark The Secret Forest as broken', exact: true});
+        await action.focus();
+        if (await action.evaluate((button) => getComputedStyle(button).opacity) !== '1') throw new Error(`${view}: flag action not revealed by keyboard focus`);
+        await action.press('Enter');
+        await page.getByRole('button', {name: 'The Secret Forest', exact: true}).waitFor({state: 'detached'});
+        await page.getByRole('button', {name: 'Undo', exact: true}).click();
+        await page.getByRole('button', {name: 'The Secret Forest', exact: true}).waitFor();
+    }
+    await brokenControl.selectOption('only');
+    await page.getByRole('button', {name: 'Clear broken flag for The Little Prince', exact: true}).click();
+    await brokenStory.waitFor({state: 'detached'});
+    await page.getByRole('button', {name: 'Undo', exact: true}).click();
+    await brokenStory.waitFor();
+    await brokenControl.selectOption('hide');
+    const touchPage = await page.context().browser().newPage({viewport: {width: 390, height: 844}, hasTouch: true, isMobile: true});
+    try {
+        await touchPage.goto(url.toString(), {waitUntil: 'networkidle'});
+        const action = touchPage.getByRole('button', {name: 'Mark The Secret Forest as broken', exact: true});
+        await action.waitFor();
+        if (await action.evaluate((button) => getComputedStyle(button).opacity) !== '1') throw new Error('touch flag action requires hover');
+        await action.tap();
+        await touchPage.getByRole('button', {name: 'The Secret Forest', exact: true}).waitFor({state: 'detached'});
+        await touchPage.getByRole('button', {name: 'Undo', exact: true}).tap();
+        await touchPage.getByRole('button', {name: 'The Secret Forest', exact: true}).waitFor();
+    } finally { await touchPage.close(); }
 }
 
 async function assertRealAgeFacetAction(page) {
