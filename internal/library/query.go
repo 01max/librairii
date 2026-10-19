@@ -85,6 +85,7 @@ type StoryDetail struct {
 }
 
 type ExportStory struct {
+	Broken              bool
 	ID                  int64
 	UUID                string
 	Title               string
@@ -301,6 +302,7 @@ func (q *Query) exportStoriesFromRecords(
 		summary := resolveSummary(record, official[record.uuid])
 		verification, _ := compatibility(record.validationState)
 		stories = append(stories, ExportStory{
+			Broken:              record.broken,
 			ID:                  record.id,
 			UUID:                record.uuid,
 			Title:               summary.Title,

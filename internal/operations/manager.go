@@ -394,6 +394,9 @@ func (m *Manager) StartExport(
 			return Snapshot{}, ErrInvalidRequest
 		}
 		item := work.Item
+		if item.ExportSkipCode != "" && (work.PlannedStatus != ItemSkipped || item.ExportSkipCode != work.OutcomeCode) {
+			return Snapshot{}, ErrInvalidRequest
+		}
 		if work.PlannedStatus != ItemPending {
 			item.TotalBytes = 0
 		}

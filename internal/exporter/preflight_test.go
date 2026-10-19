@@ -29,6 +29,7 @@ func TestPreflightReportsReadySkippedAndConflictedStories(t *testing.T) {
 	ready := writeManagedExportStory(t, layout, 1, "ready.zip", []byte("ready"))
 	missing := ready
 	missing.ID = 2
+	missing.UUID = fmt.Sprintf("00112233-4455-4677-8899-%012d", 2)
 	missing.Title = "Missing"
 	missing.OriginalFilename = "missing.zip"
 	missing.Verification = library.CompatibilityMissing

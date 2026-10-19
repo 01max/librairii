@@ -183,10 +183,11 @@ func (r *Repository) create(
 				output_name,
 				archive_relative_path,
 				archive_sha256,
+ export_skip_code,
 				status,
 				total_bytes
 			) VALUES (?, ?, ?, NULLIF(?, ''), NULLIF(?, ''), ?, NULLIF(?, ''),
-				NULLIF(?, ''), NULLIF(?, ''), 'pending', ?)`,
+				NULLIF(?, ''), NULLIF(?, ''), NULLIF(?, ''), 'pending', ?)`,
 			id,
 			storyID,
 			storyID,
@@ -196,6 +197,7 @@ func (r *Repository) create(
 			item.OutputName,
 			item.ArchiveRelativePath,
 			item.ArchiveSHA256,
+			item.ExportSkipCode,
 			item.TotalBytes,
 		); err != nil {
 			return Snapshot{}, fmt.Errorf("insert operation item: %w", err)
@@ -210,6 +212,7 @@ func (r *Repository) create(
 func validateNewItems(kind Kind, items []NewItem) (int64, error) {
 	var totalBytes int64
 	storyIDs := make(map[int64]struct{}, len(items))
+	storyUUIDs := make(map[string]bool, len(items))
 	for _, item := range items {
 		if strings.TrimSpace(item.SourceName) == "" || item.TotalBytes < 0 {
 			return 0, fmt.Errorf(
@@ -225,6 +228,16 @@ func validateNewItems(kind Kind, items []NewItem) (int64, error) {
 		}
 		totalBytes += item.TotalBytes
 		if kind != KindExport {
+			continue
+		}
+		if _, err := uuid.Parse(item.StoryUUID); err != nil || strings.TrimSpace(item.StoryTitle) == "" || storyUUIDs[item.StoryUUID] {
+			return 0, ErrInvalidTransition
+		}
+		storyUUIDs[item.StoryUUID] = true
+		if item.ExportSkipCode != "" {
+			if (item.ExportSkipCode != "story_marked_broken" && item.ExportSkipCode != "story_unavailable") || item.TotalBytes != 0 || item.StoryID < 0 {
+				return 0, ErrInvalidTransition
+			}
 			continue
 		}
 		if item.StoryID <= 0 {

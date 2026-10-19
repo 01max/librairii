@@ -32,6 +32,8 @@ const (
 type PreflightIssueCode string
 
 const (
+	IssueStoryMarkedBroken      PreflightIssueCode = "story_marked_broken"
+	IssueStoryUnavailable       PreflightIssueCode = "story_unavailable"
 	IssueShelfNeedsAttention    PreflightIssueCode = "shelf_needs_attention"
 	IssueEmptyScope             PreflightIssueCode = "empty_scope"
 	IssueNoExportableStories    PreflightIssueCode = "no_exportable_stories"
@@ -80,13 +82,13 @@ type PreflightReport struct {
 }
 
 func (r PreflightReport) OperationItems() []operations.ExportWorkItem {
-	preflightByStoryID := make(map[int64]PreflightItem, len(r.Items))
+	preflightByStoryID := make(map[string]PreflightItem, len(r.Items))
 	for _, item := range r.Items {
-		preflightByStoryID[item.StoryID] = item
+		preflightByStoryID[item.StoryUUID] = item
 	}
 	items := make([]operations.ExportWorkItem, 0, len(r.Scope.Stories))
 	for _, story := range r.Scope.Stories {
-		preflight := preflightByStoryID[story.ID]
+		preflight := preflightByStoryID[story.UUID]
 		work := operations.ExportWorkItem{
 			Item: operations.NewItem{
 				StoryID:             story.ID,
@@ -100,12 +102,19 @@ func (r PreflightReport) OperationItems() []operations.ExportWorkItem {
 			},
 			PlannedStatus: operations.ItemPending,
 		}
+		if work.Item.SourceName == "" {
+			work.Item.SourceName = story.Title
+		}
 		if preflight.Disposition == DispositionSkipped {
 			work.PlannedStatus = operations.ItemSkipped
 		} else if preflight.Disposition == DispositionConflicted {
 			work.PlannedStatus = operations.ItemConflicted
 		}
 		if preflight.Issue != nil {
+			if preflight.Issue.Code == IssueStoryMarkedBroken || preflight.Issue.Code == IssueStoryUnavailable {
+				work.Item.ExportSkipCode = string(preflight.Issue.Code)
+				work.Item.TotalBytes = 0
+			}
 			work.OutcomeCode = string(preflight.Issue.Code)
 			work.OutcomeMessage = preflight.Issue.Message
 		}
@@ -302,6 +311,13 @@ func (s *PreflightService) inspectStory(
 		ByteSize:       story.ByteSize,
 		Disposition:    DispositionReady,
 	}
+	if story.ID == 0 {
+		return skippedItem(item, IssueStoryUnavailable, "This approved story is unavailable in the library."), nil
+	}
+	if story.Broken {
+		return skippedItem(item, IssueStoryMarkedBroken, "This story is marked as broken."), nil
+	}
+
 	switch story.Verification {
 	case library.CompatibilityMissing:
 		return skippedItem(item, IssueArchiveMissing, "Managed archive bytes are missing."), nil

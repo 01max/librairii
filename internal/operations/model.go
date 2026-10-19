@@ -52,6 +52,7 @@ const (
 )
 
 type NewItem struct {
+	ExportSkipCode      string
 	StoryID             int64
 	StoryUUID           string
 	StoryTitle          string
