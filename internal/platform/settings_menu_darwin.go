@@ -10,7 +10,7 @@ import "unsafe"
 
 // IntegrateSettingsMenu retains Wails callbacks while placing the command in
 // the OS application menu, whose standard roles Wails v2 otherwise owns.
-func IntegrateSettingsMenu(description string) {
+func IntegrateSettingsMenu(description, _ string) {
 	value := C.CString(description)
 	defer C.free(unsafe.Pointer(value))
 	C.LibrairiiIntegrateSettingsMenu(value)

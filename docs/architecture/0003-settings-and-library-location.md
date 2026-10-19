@@ -36,3 +36,10 @@ custom labels, and saved query identities. Stable outcome identities and a
 localized fallback keep historical technical messages inspectable. macOS uses
 a small native adapter to relocate the Wails callback item into the standard
 application menu while retaining native application/Edit roles.
+
+Linux retains the original Wails menu and updates its Settings label on the GTK
+thread. Wails v2.16.0's menu replacement resets callback mappings without
+removing the attached menu or its accelerators, so replacing it during startup
+or language changes can crash when Control-comma activates an old item. Native
+acceptance checks the translated menu label and accelerator after switching to
+French and back to English.

@@ -7,6 +7,7 @@ import (
 	coreapp "github.com/01max/librairii/internal/app"
 	"github.com/01max/librairii/internal/exporter"
 	"github.com/01max/librairii/internal/library"
+	"github.com/01max/librairii/internal/localization"
 	"github.com/01max/librairii/internal/tagging"
 )
 
@@ -126,8 +127,8 @@ func (a *App) RecordPackagedAcceptance(checkpoint string) coreapp.MutationRespon
 			),
 		}
 	}
-	if checkpoint == "settings_menu_selected" {
-		if err := automateHostSettingsMenu(a.runtimeContext()); err != nil {
+	if checkpoint == "settings_menu_selected" || checkpoint == "settings_menu_french_selected" {
+		if err := automateHostSettingsMenu(a.runtimeContext(), localization.Text(a.interfaceLanguage(), "Settings…")); err != nil {
 			return coreapp.MutationResponse{Error: coreapp.NewAPIError(coreapp.ErrorInternal, err.Error())}
 		}
 	}

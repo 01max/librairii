@@ -37,6 +37,7 @@ var acceptanceCheckpoints = map[string]struct{}{
 	"native_relocation_dialog_selected":   {},
 	"setup_completed":                     {},
 	"settings_menu_selected":              {},
+	"settings_menu_french_selected":       {},
 	"library_relocated":                   {},
 	acceptanceCheckpointStarted:           {},
 	acceptanceCheckpointNativeImport:      {},

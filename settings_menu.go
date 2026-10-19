@@ -40,10 +40,14 @@ func settingsMenu(a *App) *menu.Menu {
 	return result
 }
 func (a *App) refreshSettingsMenu(ctx context.Context) {
-	wruntime.MenuSetApplicationMenu(ctx, settingsMenu(a))
+	// Wails' Linux replacement leaves the old accelerator attached while
+	// discarding its callback mapping. Keep that menu and update its label.
+	if runtime.GOOS == "darwin" {
+		wruntime.MenuSetApplicationMenu(ctx, settingsMenu(a))
+	}
 	language := a.interfaceLanguage()
 	description := localization.Text(language, "A local-first story archive library for Lunii.QT-compatible collections.") + "\n\n" + localization.Text(language, "Contributors") + ": https://github.com/01max/librairii/graphs/contributors\n\n" + localization.Text(language, "Repository") + ": https://github.com/01max/librairii"
-	platform.IntegrateSettingsMenu(description)
+	platform.IntegrateSettingsMenu(description, localization.Text(language, "Settings…"))
 }
 
 func (a *App) interfaceLanguage() string {

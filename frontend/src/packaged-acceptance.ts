@@ -28,6 +28,9 @@ export async function runPackagedAcceptance(): Promise<void> {
             await SelectLibraryLocation();
             const setup=await ConfirmLibrarySetup();if(!setup.success)throw new Error('setup failed');
             await checkpoint('setup_completed');
+            const french=await SetUILanguage('fr');if(french.error)throw new Error(french.error);
+            await checkpoint('settings_menu_french_selected');
+            const english=await SetUILanguage('en');if(english.error)throw new Error(english.error);
             await checkpoint('settings_menu_selected');
         }
         const imported = await SelectAndImportStories();
