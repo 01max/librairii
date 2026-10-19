@@ -1696,19 +1696,14 @@ select:focus-visible {
     display: inline-flex;
     align-items: center;
     gap: 4px;
-    border: 1px solid var(--broken-color, #ff705c);
+    border: 1px solid #a67b3c;
     border-radius: 6px;
     color: var(--ink);
     background: white;
     font: 800 11px/1.2 var(--sans);
 }
 
-.broken-badge i {
-    width: 5px;
-    height: 5px;
-    border-radius: 50%;
-    background: var(--broken-color, #ff705c);
-}
+
 
 .story-detail-tags {
     margin-top: 22px;
@@ -2789,3 +2784,6 @@ select:focus-visible {
 .story-warning-label { color: #684613; font-size: 12px; font-weight: 800; }
 .drawer-flag-count { font-size: 11px; color: var(--muted); }
 @media (max-width: 560px) { .drawer-actions { max-width: 160px; } .drawer-actions button { padding: 7px 9px; font-size: 10px; } }
+
+.broken-badge { color: #684613; border-color: #c9a56f; background: #fffaf0; }
+.view-small .broken-badge { top: auto; bottom: 4px; left: 2px; font-size: 8px; padding: 3px; gap: 2px; }

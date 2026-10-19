@@ -1,7 +1,7 @@
 import {useStoryFlags} from './use-story-flags';
 import SettingsPanel from './SettingsPanel';
 import OutcomeText from './OutcomeText';
-import {systemLabel, systemValue} from './system-label';
+import {isStoryTag, systemLabel, systemValue} from './system-label';
 import {t, currentLanguage} from './i18n';
 import {useLanguage} from './use-language';
 import ModalBackdrop from './ModalBackdrop';
@@ -1155,7 +1155,7 @@ function App() {
         (definition) => definition.source === 'derived',
     ) ?? [];
     const editableDefinitions = tagCatalog?.definitions.filter(
-        (definition) => definition.source !== 'derived' && definition.key !== 'broken',
+        (definition) => definition.source !== 'derived' && isStoryTag(definition),
     ) ?? [];
     useEffect(() => {
         const values = tagCatalog?.definitions.flatMap((definition) => (
@@ -1249,7 +1249,7 @@ function App() {
         ))?.count
         : undefined;
     const empty = page !== null && page.totalItems === 0 && !importing;
-    const assignedTags = assignmentWorkspace?.catalog.definitions.flatMap((definition) => {
+    const assignedTags = assignmentWorkspace?.catalog.definitions.filter(isStoryTag).flatMap((definition) => {
         const state = assignmentWorkspace.states.find(
             (candidate) => candidate.definitionId === definition.id,
         );
@@ -2556,11 +2556,9 @@ function App() {
                                             <span
                                                 className="broken-badge"
                                                 id={`broken-${row.key}-${story.id}`}
-                                                style={{'--broken-color': tagCatalog?.definitions.find(
-                                                    (definition) => definition.key === 'broken',
-                                                )?.color ?? '#FF705C'} as CSSProperties}
+
                                             >
-                                                <i aria-hidden="true"/>{t("Broken")}</span>
+                                                <span aria-hidden="true">⚠</span>{t("Broken")}</span>
                                         )}
                                     </button>
                                     <StoryFlagButton title={story.title} broken={!!story.broken}

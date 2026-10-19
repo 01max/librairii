@@ -6,3 +6,7 @@ export function systemLabel(definition: {key: string; source: string; label: str
 export function systemValue(definition: {source: string}, value: {label: string}): string {
     return definition.source === 'user' ? value.label : t(value.label);
 }
+
+export function isStoryTag(definition: {key: string; source: string}): boolean {
+    return definition.source !== 'builtin' || definition.key !== 'broken';
+}

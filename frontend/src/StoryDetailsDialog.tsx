@@ -1,5 +1,5 @@
 import OutcomeText from './OutcomeText';
-import {systemLabel, systemValue} from './system-label';
+import {isStoryTag, systemLabel, systemValue} from './system-label';
 import {t} from './i18n';
 import ModalBackdrop from './ModalBackdrop';
 import {type CSSProperties, useEffect, useMemo, useRef, useState} from 'react';
@@ -45,7 +45,7 @@ export default function StoryDetailsDialog({
         }).catch(() => { if (active) setTagError(true); });
         return () => { active = false; };
     }, [story.id]);
-    const tags = tagWorkspace?.catalog.definitions.flatMap((definition) => {
+    const tags = tagWorkspace?.catalog.definitions.filter(isStoryTag).flatMap((definition) => {
         const state = tagWorkspace.states.find((candidate) => candidate.definitionId === definition.id);
         if (!state) return [];
         if (definition.kind === 'boolean') {

@@ -1,5 +1,5 @@
 import OutcomeText from './OutcomeText';
-import {systemLabel, systemValue} from './system-label';
+import {isStoryTag, systemLabel, systemValue} from './system-label';
 import {t} from './i18n';
 import ModalBackdrop from './ModalBackdrop';
 import {
@@ -119,7 +119,7 @@ export default function TagManager({onClose, onCatalogChange}: TagManagerProps) 
     const load = useCallback(async () => {
         const response = await TagCatalog();
         if (response.catalog) {
-            setCatalog(response.catalog);
+            setCatalog(new tagging.Catalog({...response.catalog, definitions: response.catalog.definitions.filter(isStoryTag)}));
             onCatalogChange(response.catalog);
             setError(null);
         } else {
