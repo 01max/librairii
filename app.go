@@ -274,12 +274,12 @@ func (a *App) RemoveStory(storyID int64) coreapp.RemovalResponse {
 	return a.core.RemoveStory(a.runtimeContext(), storyID)
 }
 
-func (a *App) ListCollections(includeBroken library.BrokenVisibility) coreapp.CollectionListResponse {
+func (a *App) ListCollections() coreapp.CollectionListResponse {
 	if !a.libraryGate.TryRLock() {
 		return coreapp.CollectionListResponse{Error: coreapp.NewAPIError(coreapp.ErrorNotReady, "settings.busy")}
 	}
 	defer a.libraryGate.RUnlock()
-	return a.core.ListCollections(a.runtimeContext(), includeBroken)
+	return a.core.ListCollections(a.runtimeContext())
 }
 
 func (a *App) CreateCollection(
@@ -349,13 +349,12 @@ func (a *App) DeleteCollection(shelfID int64) coreapp.MutationResponse {
 
 func (a *App) PreviewCollections(
 	shelfIDs []int64,
-	includeBroken library.BrokenVisibility,
 ) coreapp.CollectionSelectionPreviewResponse {
 	if !a.libraryGate.TryRLock() {
 		return coreapp.CollectionSelectionPreviewResponse{Error: coreapp.NewAPIError(coreapp.ErrorNotReady, "settings.busy")}
 	}
 	defer a.libraryGate.RUnlock()
-	return a.core.PreviewCollections(a.runtimeContext(), shelfIDs, includeBroken)
+	return a.core.PreviewCollections(a.runtimeContext(), shelfIDs)
 }
 
 func (a *App) TagCatalog() coreapp.TagCatalogResponse {

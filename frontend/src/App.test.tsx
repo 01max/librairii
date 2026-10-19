@@ -9,23 +9,23 @@ import {
     SetStoriesBroken,
     RestoreStoryFlags,
     CancelOperation,
-    CreateShelf,
-    DeleteShelf,
-    DuplicateShelf,
-    ListShelves,
+    CreateCollection,
+    DeleteCollection,
+    DuplicateCollection,
+    ListCollections,
     OfficialMetadataStatus,
-    OpenShelf,
+    OpenCollection,
     OperationHistory,
     OperationSnapshot,
     PackagedAcceptanceMode,
-    PreviewShelves,
+    PreviewCollections,
     QueryStories,
     RecordPackagedAcceptance,
     RecoverStorage,
     RevealExportDestination,
-    RenameShelf,
-    ReorderShelves,
-    ReplaceShelfQuery,
+    RenameCollection,
+    ReorderCollections,
+    ReplaceCollectionQuery,
     RefreshOfficialMetadata,
     RemoveStory,
     SelectAndImportStories,
@@ -36,7 +36,7 @@ import {
     TagAssignmentWorkspace as LoadTagAssignmentWorkspace,
     TagCatalog as LoadTagCatalog,
 } from '../wailsjs/go/main/App';
-import {app, exporter, library, metadata, shelves} from '../wailsjs/go/models';
+import {app, exporter, library, metadata, collections} from '../wailsjs/go/models';
 import {EventsOn} from '../wailsjs/runtime/runtime';
 import App from './App';
 import {
@@ -51,23 +51,24 @@ vi.mock('../wailsjs/go/main/App', () => ({
     RestoreStoryFlags: vi.fn(),
     LibraryCompatibility: vi.fn(async () => ({compatibility: {legacyBrokenTagId: 0}})),
     CancelOperation: vi.fn(),
-    CreateShelf: vi.fn(),
-    DeleteShelf: vi.fn(),
-    DuplicateShelf: vi.fn(),
-    ListShelves: vi.fn(),
+    CreateCollection: vi.fn(),
+    DeleteCollection: vi.fn(),
+    DuplicateCollection: vi.fn(),
+    ListCollections: vi.fn(),
+    ListShelves: vi.fn(async () => ({shelves: []})),
     OfficialMetadataStatus: vi.fn(),
-    OpenShelf: vi.fn(),
+    OpenCollection: vi.fn(),
     OperationHistory: vi.fn(),
     OperationSnapshot: vi.fn(),
     PackagedAcceptanceMode: vi.fn(),
-    PreviewShelves: vi.fn(),
+    PreviewCollections: vi.fn(),
     QueryStories: vi.fn(),
     RecordPackagedAcceptance: vi.fn(),
     RecoverStorage: vi.fn(),
     RevealExportDestination: vi.fn(),
-    RenameShelf: vi.fn(),
-    ReorderShelves: vi.fn(),
-    ReplaceShelfQuery: vi.fn(),
+    RenameCollection: vi.fn(),
+    ReorderCollections: vi.fn(),
+    ReplaceCollectionQuery: vi.fn(),
     RefreshOfficialMetadata: vi.fn(),
     RemoveStory: vi.fn(),
     SelectAndImportStories: vi.fn(),
@@ -87,23 +88,23 @@ vi.mock('../wailsjs/runtime/runtime', () => ({
 const activeOperations = vi.mocked(ActiveOperations);
 const applicationStatus = vi.mocked(ApplicationStatus);
 const cancelOperation = vi.mocked(CancelOperation);
-const createShelf = vi.mocked(CreateShelf);
-const deleteShelf = vi.mocked(DeleteShelf);
-const duplicateShelf = vi.mocked(DuplicateShelf);
-const listShelves = vi.mocked(ListShelves);
+const createCollection = vi.mocked(CreateCollection);
+const deleteCollection = vi.mocked(DeleteCollection);
+const duplicateCollection = vi.mocked(DuplicateCollection);
+const listCollections = vi.mocked(ListCollections);
 const officialMetadataStatus = vi.mocked(OfficialMetadataStatus);
-const openShelf = vi.mocked(OpenShelf);
+const openCollection = vi.mocked(OpenCollection);
 const operationHistory = vi.mocked(OperationHistory);
 const operationSnapshot = vi.mocked(OperationSnapshot);
 const packagedAcceptanceMode = vi.mocked(PackagedAcceptanceMode);
-const previewShelves = vi.mocked(PreviewShelves);
+const previewCollections = vi.mocked(PreviewCollections);
 const queryStories = vi.mocked(QueryStories);
 const recordPackagedAcceptance = vi.mocked(RecordPackagedAcceptance);
 const recoverStorage = vi.mocked(RecoverStorage);
 const revealExportDestination = vi.mocked(RevealExportDestination);
-const renameShelf = vi.mocked(RenameShelf);
-const reorderShelves = vi.mocked(ReorderShelves);
-const replaceShelfQuery = vi.mocked(ReplaceShelfQuery);
+const renameCollection = vi.mocked(RenameCollection);
+const reorderCollections = vi.mocked(ReorderCollections);
+const replaceCollectionQuery = vi.mocked(ReplaceCollectionQuery);
 const refreshOfficialMetadata = vi.mocked(RefreshOfficialMetadata);
 const removeStory = vi.mocked(RemoveStory);
 const selectAndImportStories = vi.mocked(SelectAndImportStories);
@@ -160,23 +161,23 @@ beforeEach(() => {
     activeOperations.mockReset();
     applicationStatus.mockReset();
     cancelOperation.mockReset();
-    createShelf.mockReset();
-    deleteShelf.mockReset();
-    duplicateShelf.mockReset();
-    listShelves.mockReset();
+    createCollection.mockReset();
+    deleteCollection.mockReset();
+    duplicateCollection.mockReset();
+    listCollections.mockReset();
     officialMetadataStatus.mockReset();
-    openShelf.mockReset();
+    openCollection.mockReset();
     operationHistory.mockReset();
     operationSnapshot.mockReset();
     packagedAcceptanceMode.mockReset();
-    previewShelves.mockReset();
+    previewCollections.mockReset();
     queryStories.mockReset();
     recordPackagedAcceptance.mockReset();
     recoverStorage.mockReset();
     revealExportDestination.mockReset();
-    renameShelf.mockReset();
-    reorderShelves.mockReset();
-    replaceShelfQuery.mockReset();
+    renameCollection.mockReset();
+    reorderCollections.mockReset();
+    replaceCollectionQuery.mockReset();
     refreshOfficialMetadata.mockReset();
     removeStory.mockReset();
     selectAndImportStories.mockReset();
@@ -202,8 +203,8 @@ beforeEach(() => {
     activeOperations.mockResolvedValue(new app.OperationListResponse({
         operations: [],
     }));
-    listShelves.mockResolvedValue(new app.ShelfListResponse({
-        shelves: [],
+    listCollections.mockResolvedValue(new app.CollectionListResponse({
+        collections: [],
     }));
     officialMetadataStatus.mockResolvedValue(new app.MetadataStatusResponse({
         status: {
@@ -217,7 +218,7 @@ beforeEach(() => {
     revealExportDestination.mockResolvedValue(new app.MutationResponse({
         success: true,
     }));
-    previewShelves.mockResolvedValue(new app.ShelfSelectionPreviewResponse({}));
+    previewCollections.mockResolvedValue(new app.CollectionSelectionPreviewResponse({}));
     queryStories.mockResolvedValue(new app.LibraryPageResponse({
         page: {
             stories,
@@ -542,7 +543,7 @@ test('keeps interactive controls in their canonical regions', async () => {
 
     const rail = screen.getByRole('navigation', {name: 'Primary navigation'});
     const sidebar = screen.getByRole('complementary', {
-        name: 'Saved shelves and refinements',
+        name: "Saved collections and refinements",
     });
     const main = screen.getByRole('main');
     const drawer = await screen.findByRole('complementary', {
@@ -707,7 +708,7 @@ test('renders empty and blocked export preflight guidance', async () => {
             items: [],
             issues: [{
                 code: 'empty_scope',
-                message: 'No stories match this export scope. Select stories, adjust the search or filters, or choose a shelf with matching stories, then try again.',
+                message: "No stories match this export scope. Select stories, adjust the search or filters, or choose a collection with matching stories, then try again.",
                 blocks: true,
             }],
             partial: false,
@@ -724,7 +725,7 @@ test('renders empty and blocked export preflight guidance', async () => {
         .toBeInTheDocument();
     expect(screen.getByRole('list', {name: 'Export blockers'}))
         .toHaveTextContent(
-            'Select stories, adjust the search or filters, or choose a shelf with matching stories, then try again.',
+            'Select stories, adjust the search or filters, or choose a collection with matching stories, then try again.',
         );
     expect(screen.getByRole('button', {name: 'Export unavailable'})).toBeDisabled();
 });
@@ -808,17 +809,17 @@ test.each(['current_query', 'selection'] as const)(
     },
 );
 
-test('renders saved shelf preview rows and opens them from view all', async () => {
+test('renders saved collection preview rows and opens them from view all', async () => {
     const user = userEvent.setup();
     const summaries = [
-        new shelves.Summary({
+        new collections.Summary({
             id: 7,
             name: 'Bedtime',
             position: 0,
             validity: 'valid',
             count: 1,
         }),
-        new shelves.Summary({
+        new collections.Summary({
             id: 8,
             name: 'Adventures',
             position: 1,
@@ -826,13 +827,13 @@ test('renders saved shelf preview rows and opens them from view all', async () =
             count: 1,
         }),
     ];
-    listShelves.mockResolvedValue(new app.ShelfListResponse({shelves: summaries}));
-    openShelf.mockImplementation(async (shelfID) => {
-        const bedtime = shelfID === 7;
-        return new app.ShelfEvaluationResponse({
+    listCollections.mockResolvedValue(new app.CollectionListResponse({collections: summaries}));
+    openCollection.mockImplementation(async (collectionID) => {
+        const bedtime = collectionID === 7;
+        return new app.CollectionEvaluationResponse({
             evaluation: {
-                shelf: {
-                    id: shelfID,
+                collection: {
+                    id: collectionID,
                     name: bedtime ? 'Bedtime' : 'Adventures',
                     normalizedName: bedtime ? 'bedtime' : 'adventures',
                     position: bedtime ? 0 : 1,
@@ -863,7 +864,7 @@ test('renders saved shelf preview rows and opens them from view all', async () =
         .closest('section');
     expect(bedtimeRow).not.toBeNull();
     expect(adventuresRow).not.toBeNull();
-    expect(within(bedtimeRow!).getByText('1 story · Saved shelf'))
+    expect(within(bedtimeRow!).getByText('1 story · Saved collection'))
         .toBeInTheDocument();
     expect(within(bedtimeRow!).getByRole('button', {
         name: 'View all stories in Bedtime',
@@ -873,7 +874,7 @@ test('renders saved shelf preview rows and opens them from view all', async () =
     })).toBeInTheDocument();
     await waitFor(() => expect(within(adventuresRow!).getByText('Clockwork Forest'))
         .toBeInTheDocument());
-    await waitFor(() => expect(openShelf).toHaveBeenCalledWith(
+    await waitFor(() => expect(openCollection).toHaveBeenCalledWith(
         7,
         expect.objectContaining({page: 1, pageSize: 6, sort: 'imported_desc'}),
     ));
@@ -881,7 +882,7 @@ test('renders saved shelf preview rows and opens them from view all', async () =
     await user.click(within(bedtimeRow!).getByRole('button', {
         name: 'View all stories in Bedtime',
     }));
-    await waitFor(() => expect(openShelf).toHaveBeenCalledWith(
+    await waitFor(() => expect(openCollection).toHaveBeenCalledWith(
         7,
         expect.objectContaining({page: 1, pageSize: 12, sort: 'imported_desc'}),
     ));
@@ -891,10 +892,10 @@ test('renders saved shelf preview rows and opens them from view all', async () =
         .toHaveValue('moon');
 });
 
-test('keeps stories outside saved shelf searches available in All stories', async () => {
+test('keeps stories outside saved collection searches available in All stories', async () => {
     const user = userEvent.setup();
-    listShelves.mockResolvedValue(new app.ShelfListResponse({
-        shelves: [new shelves.Summary({
+    listCollections.mockResolvedValue(new app.CollectionListResponse({
+        collections: [new collections.Summary({
             id: 7,
             name: 'Bedtime',
             position: 0,
@@ -902,9 +903,9 @@ test('keeps stories outside saved shelf searches available in All stories', asyn
             count: 1,
         })],
     }));
-    openShelf.mockResolvedValue(new app.ShelfEvaluationResponse({
+    openCollection.mockResolvedValue(new app.CollectionEvaluationResponse({
         evaluation: {
-            shelf: {
+            collection: {
                 id: 7,
                 name: 'Bedtime',
                 normalizedName: 'bedtime',
@@ -953,8 +954,8 @@ test('keeps stories outside saved shelf searches available in All stories', asyn
 
 test('switches saved previews to filtered results and restores the custom URL', async () => {
     const user = userEvent.setup();
-    listShelves.mockResolvedValue(new app.ShelfListResponse({
-        shelves: [new shelves.Summary({
+    listCollections.mockResolvedValue(new app.CollectionListResponse({
+        collections: [new collections.Summary({
             id: 7,
             name: 'Bedtime',
             position: 0,
@@ -962,9 +963,9 @@ test('switches saved previews to filtered results and restores the custom URL', 
             count: 1,
         })],
     }));
-    openShelf.mockResolvedValue(new app.ShelfEvaluationResponse({
+    openCollection.mockResolvedValue(new app.CollectionEvaluationResponse({
         evaluation: {
-            shelf: {
+            collection: {
                 id: 7,
                 name: 'Bedtime',
                 normalizedName: 'bedtime',
@@ -994,7 +995,7 @@ test('switches saved previews to filtered results and restores the custom URL', 
     window.history.replaceState({
         collectionQuery: {
             hash: allStoriesHash,
-            shelfId: null,
+            collectionId: null,
             scope: 'all',
         },
     }, '', `/${allStoriesHash}`);
@@ -1007,7 +1008,7 @@ test('switches saved previews to filtered results and restores the custom URL', 
         screen.getByRole('combobox', {name: 'Sort stories'}),
         'name_asc',
     );
-    await waitFor(() => expect(openShelf).toHaveBeenLastCalledWith(
+    await waitFor(() => expect(openCollection).toHaveBeenLastCalledWith(
         7,
         expect.objectContaining({sort: 'name_asc'}),
     ));
@@ -1048,9 +1049,9 @@ test('switches saved previews to filtered results and restores the custom URL', 
         .toBeInTheDocument();
 });
 
-test('surfaces saved shelf API and transport preview failures', async () => {
-    listShelves.mockResolvedValue(new app.ShelfListResponse({
-        shelves: [new shelves.Summary({
+test('surfaces saved collection API and transport preview failures', async () => {
+    listCollections.mockResolvedValue(new app.CollectionListResponse({
+        collections: [new collections.Summary({
             id: 7,
             name: 'Bedtime',
             position: 0,
@@ -1058,7 +1059,7 @@ test('surfaces saved shelf API and transport preview failures', async () => {
             count: 2,
         })],
     }));
-    openShelf.mockResolvedValue(new app.ShelfEvaluationResponse({
+    openCollection.mockResolvedValue(new app.CollectionEvaluationResponse({
         error: {
             code: 'internal',
             message: 'Bedtime preview is temporarily unavailable.',
@@ -1070,13 +1071,13 @@ test('surfaces saved shelf API and transport preview failures', async () => {
     const bedtimeRow = (await screen.findByRole('heading', {name: 'Bedtime'}))
         .closest('section');
     expect(bedtimeRow).not.toBeNull();
-    expect(within(bedtimeRow!).getByText('2 stories · Saved shelf'))
+    expect(within(bedtimeRow!).getByText('2 stories · Saved collection'))
         .toBeInTheDocument();
     expect(await within(bedtimeRow!).findByRole('alert'))
         .toHaveTextContent('Bedtime preview is temporarily unavailable.');
 
     view.unmount();
-    openShelf.mockRejectedValue(new Error('bridge unavailable'));
+    openCollection.mockRejectedValue(new Error('bridge unavailable'));
     render(<App/>);
     const rejectedRow = (await screen.findByRole('heading', {name: 'Bedtime'}))
         .closest('section');
@@ -1085,21 +1086,21 @@ test('surfaces saved shelf API and transport preview failures', async () => {
         .toHaveTextContent('Bedtime could not be previewed.');
 });
 
-test('opens a dynamic saved shelf and updates it from the current query', async () => {
+test('opens a dynamic saved collection and updates it from the current query', async () => {
     const user = userEvent.setup();
-    const summary = new shelves.Summary({
+    const summary = new collections.Summary({
         id: 7,
         name: 'Bedtime',
         position: 0,
         validity: 'valid',
         count: 1,
     });
-    listShelves.mockResolvedValue(new app.ShelfListResponse({
-        shelves: [summary],
+    listCollections.mockResolvedValue(new app.CollectionListResponse({
+        collections: [summary],
     }));
-    openShelf.mockResolvedValue(new app.ShelfEvaluationResponse({
+    openCollection.mockResolvedValue(new app.CollectionEvaluationResponse({
         evaluation: {
-            shelf: {
+            collection: {
                 id: 7,
                 name: 'Bedtime',
                 normalizedName: 'bedtime',
@@ -1119,8 +1120,8 @@ test('opens a dynamic saved shelf and updates it from the current query', async 
             },
         },
     }));
-    replaceShelfQuery.mockResolvedValue(new app.ShelfResponse({
-        shelf: {
+    replaceCollectionQuery.mockResolvedValue(new app.CollectionResponse({
+        collection: {
             id: 7,
             name: 'Bedtime',
             normalizedName: 'bedtime',
@@ -1134,7 +1135,7 @@ test('opens a dynamic saved shelf and updates it from the current query', async 
     render(<App/>);
 
     await user.click(await screen.findByRole('button', {name: 'Bedtime, 1 story'}));
-    await waitFor(() => expect(openShelf).toHaveBeenCalledWith(
+    await waitFor(() => expect(openCollection).toHaveBeenCalledWith(
         7,
         expect.objectContaining({page: 1, pageSize: 12, sort: 'imported_desc'}),
     ));
@@ -1147,23 +1148,23 @@ test('opens a dynamic saved shelf and updates it from the current query', async 
         .not.toHaveAttribute('aria-current');
 
     await user.click(screen.getByRole('button', {name: '↻ Update “Bedtime”'}));
-    await waitFor(() => expect(replaceShelfQuery).toHaveBeenCalledWith(
+    await waitFor(() => expect(replaceCollectionQuery).toHaveBeenCalledWith(
         7,
         expect.objectContaining({name: 'moon', page: 1}),
     ));
 });
 
-test('restores active shelf identity across back, forward, and reload', async () => {
+test('restores active collection identity across back, forward, and reload', async () => {
     const user = userEvent.setup();
     const summaries = [
-        new shelves.Summary({
+        new collections.Summary({
             id: 7,
             name: 'Bedtime',
             position: 0,
             validity: 'valid',
             count: 1,
         }),
-        new shelves.Summary({
+        new collections.Summary({
             id: 8,
             name: 'Adventures',
             position: 1,
@@ -1171,17 +1172,17 @@ test('restores active shelf identity across back, forward, and reload', async ()
             count: 1,
         }),
     ];
-    listShelves.mockResolvedValue(new app.ShelfListResponse({shelves: summaries}));
-    openShelf.mockImplementation(async (shelfID) => {
-        const bedtime = shelfID === 7;
+    listCollections.mockResolvedValue(new app.CollectionListResponse({collections: summaries}));
+    openCollection.mockImplementation(async (collectionID) => {
+        const bedtime = collectionID === 7;
         const name = bedtime ? 'moon' : 'forest';
-        const shelfName = bedtime ? 'Bedtime' : 'Adventures';
-        return new app.ShelfEvaluationResponse({
+        const collectionName = bedtime ? 'Bedtime' : 'Adventures';
+        return new app.CollectionEvaluationResponse({
             evaluation: {
-                shelf: {
-                    id: shelfID,
-                    name: shelfName,
-                    normalizedName: shelfName.toLowerCase(),
+                collection: {
+                    id: collectionID,
+                    name: collectionName,
+                    normalizedName: collectionName.toLowerCase(),
                     position: bedtime ? 0 : 1,
                     queryVersion: 2,
                     queryPayload: `{"name":"${name}"}`,
@@ -1227,23 +1228,23 @@ test('restores active shelf identity across back, forward, and reload', async ()
         .toHaveValue('forest');
 });
 
-test('saves the current query as a named active shelf with its live count', async () => {
+test('saves the current query as a named active collection with its live count', async () => {
     const user = userEvent.setup();
-    const saved = new shelves.Summary({
+    const saved = new collections.Summary({
         id: 8,
-        name: 'Moon shelf',
+        name: 'Moon collection',
         position: 0,
         validity: 'valid',
         count: 2,
     });
-    listShelves
-        .mockResolvedValueOnce(new app.ShelfListResponse({shelves: []}))
-        .mockResolvedValue(new app.ShelfListResponse({shelves: [saved]}));
-    createShelf.mockResolvedValue(new app.ShelfResponse({
-        shelf: {
+    listCollections
+        .mockResolvedValueOnce(new app.CollectionListResponse({collections: []}))
+        .mockResolvedValue(new app.CollectionListResponse({collections: [saved]}));
+    createCollection.mockResolvedValue(new app.CollectionResponse({
+        collection: {
             id: 8,
-            name: 'Moon shelf',
-            normalizedName: 'moon shelf',
+            name: 'Moon collection',
+            normalizedName: 'moon collection',
             position: 0,
             queryVersion: 2,
             queryPayload: '{"name":"moon"}',
@@ -1258,37 +1259,37 @@ test('saves the current query as a named active shelf with its live count', asyn
     await user.click(saveOpener);
     expect(screen.getByRole('heading', {name: 'Save the current query'}))
         .toBeInTheDocument();
-    const shelfName = screen.getByRole('textbox', {name: 'Shelf name'});
-    await waitFor(() => expect(shelfName).toHaveFocus());
+    const collectionName = screen.getByRole('textbox', {name: "Collection name"});
+    await waitFor(() => expect(collectionName).toHaveFocus());
     await user.keyboard('{Escape}');
     expect(screen.queryByRole('heading', {name: 'Save the current query'}))
         .not.toBeInTheDocument();
     expect(saveOpener).toHaveFocus();
 
     await user.click(saveOpener);
-    await user.type(screen.getByRole('textbox', {name: 'Shelf name'}), 'Moon shelf');
-    await user.click(screen.getByRole('button', {name: 'Save shelf'}));
+    await user.type(screen.getByRole('textbox', {name: "Collection name"}), "Moon collection");
+    await user.click(screen.getByRole('button', {name: "Save collection"}));
 
-    await waitFor(() => expect(createShelf).toHaveBeenCalledWith(
-        'Moon shelf',
+    await waitFor(() => expect(createCollection).toHaveBeenCalledWith(
+        'Moon collection',
         expect.objectContaining({name: 'moon', page: 1}),
     ));
-    expect(await screen.findByRole('heading', {name: 'Moon shelf'})).toBeInTheDocument();
-    expect(screen.getByRole('button', {name: 'Moon shelf, 2 stories'}))
+    expect(await screen.findByRole('heading', {name: "Moon collection"})).toBeInTheDocument();
+    expect(screen.getByRole('button', {name: "Moon collection, 2 stories"}))
         .toHaveClass('active');
 });
 
-test('renames, reorders, duplicates, and deletes saved shelves', async () => {
+test('renames, reorders, duplicates, and deletes saved collections', async () => {
     const user = userEvent.setup();
     let summaries = [
-        new shelves.Summary({
+        new collections.Summary({
             id: 7,
             name: 'Bedtime',
             position: 0,
             validity: 'valid',
             count: 1,
         }),
-        new shelves.Summary({
+        new collections.Summary({
             id: 8,
             name: 'Adventures',
             position: 1,
@@ -1296,18 +1297,18 @@ test('renames, reorders, duplicates, and deletes saved shelves', async () => {
             count: 2,
         }),
     ];
-    listShelves.mockImplementation(async () => new app.ShelfListResponse({
-        shelves: summaries,
+    listCollections.mockImplementation(async () => new app.CollectionListResponse({
+        collections: summaries,
     }));
-    openShelf.mockImplementation(async (shelfID) => {
-        const shelf = summaries.find((candidate) => candidate.id === shelfID);
-        return new app.ShelfEvaluationResponse({
+    openCollection.mockImplementation(async (collectionID) => {
+        const collection = summaries.find((candidate) => candidate.id === collectionID);
+        return new app.CollectionEvaluationResponse({
             evaluation: {
-                shelf: {
-                    id: shelfID,
-                    name: shelf?.name ?? 'Shelf',
-                    normalizedName: shelf?.name.toLowerCase() ?? 'shelf',
-                    position: shelf?.position ?? 0,
+                collection: {
+                    id: collectionID,
+                    name: collection?.name ?? "Collection",
+                    normalizedName: collection?.name.toLowerCase() ?? 'collection',
+                    position: collection?.position ?? 0,
                     queryVersion: 2,
                     queryPayload: '{}',
                     validity: 'valid',
@@ -1324,13 +1325,13 @@ test('renames, reorders, duplicates, and deletes saved shelves', async () => {
             },
         });
     });
-    renameShelf.mockImplementation(async (shelfID, name) => {
-        summaries = summaries.map((shelf) => shelf.id === shelfID
-            ? new shelves.Summary({...shelf, name})
-            : shelf);
-        return new app.ShelfResponse({
-            shelf: {
-                id: shelfID,
+    renameCollection.mockImplementation(async (collectionID, name) => {
+        summaries = summaries.map((collection) => collection.id === collectionID
+            ? new collections.Summary({...collection, name})
+            : collection);
+        return new app.CollectionResponse({
+            collection: {
+                id: collectionID,
                 name,
                 normalizedName: name.toLowerCase(),
                 position: 0,
@@ -1340,15 +1341,15 @@ test('renames, reorders, duplicates, and deletes saved shelves', async () => {
             },
         });
     });
-    reorderShelves.mockImplementation(async (orderedIDs) => {
-        summaries = orderedIDs.map((id, position) => new shelves.Summary({
-            ...summaries.find((shelf) => shelf.id === id),
+    reorderCollections.mockImplementation(async (orderedIDs) => {
+        summaries = orderedIDs.map((id, position) => new collections.Summary({
+            ...summaries.find((collection) => collection.id === id),
             position,
         }));
-        return new app.ShelfListResponse({shelves: summaries});
+        return new app.CollectionListResponse({collections: summaries});
     });
-    duplicateShelf.mockImplementation(async (_shelfID, name) => {
-        const duplicate = new shelves.Summary({
+    duplicateCollection.mockImplementation(async (_collectionID, name) => {
+        const duplicate = new collections.Summary({
             id: 9,
             name,
             position: summaries.length,
@@ -1356,8 +1357,8 @@ test('renames, reorders, duplicates, and deletes saved shelves', async () => {
             count: 1,
         });
         summaries = [...summaries, duplicate];
-        return new app.ShelfResponse({
-            shelf: {
+        return new app.CollectionResponse({
+            collection: {
                 id: duplicate.id,
                 name,
                 normalizedName: name.toLowerCase(),
@@ -1368,8 +1369,8 @@ test('renames, reorders, duplicates, and deletes saved shelves', async () => {
             },
         });
     });
-    deleteShelf.mockImplementation(async (shelfID) => {
-        summaries = summaries.filter((shelf) => shelf.id !== shelfID);
+    deleteCollection.mockImplementation(async (collectionID) => {
+        summaries = summaries.filter((collection) => collection.id !== collectionID);
         return new app.MutationResponse({success: true});
     });
 
@@ -1377,19 +1378,19 @@ test('renames, reorders, duplicates, and deletes saved shelves', async () => {
     await user.click(await screen.findByRole('button', {name: 'Bedtime, 1 story'}));
 
     await user.click(screen.getByRole('button', {name: 'Rename Bedtime'}));
-    const name = screen.getByRole('textbox', {name: 'Shelf name'});
+    const name = screen.getByRole('textbox', {name: "Collection name"});
     await user.clear(name);
     await user.type(name, 'Evening');
-    await user.click(screen.getByRole('button', {name: 'Rename shelf'}));
-    await waitFor(() => expect(renameShelf).toHaveBeenCalledWith(7, 'Evening'));
+    await user.click(screen.getByRole('button', {name: "Rename collection"}));
+    await waitFor(() => expect(renameCollection).toHaveBeenCalledWith(7, 'Evening'));
 
     await user.click(await screen.findByRole('button', {name: 'Move Evening down'}));
-    await waitFor(() => expect(reorderShelves).toHaveBeenCalledWith([8, 7]));
+    await waitFor(() => expect(reorderCollections).toHaveBeenCalledWith([8, 7]));
 
     await user.click(screen.getByRole('button', {name: 'Duplicate Evening'}));
-    await user.type(screen.getByRole('textbox', {name: 'Shelf name'}), 'Evening copy');
-    await user.click(screen.getByRole('button', {name: 'Duplicate shelf'}));
-    await waitFor(() => expect(duplicateShelf).toHaveBeenCalledWith(7, 'Evening copy'));
+    await user.type(screen.getByRole('textbox', {name: "Collection name"}), 'Evening copy');
+    await user.click(screen.getByRole('button', {name: "Duplicate collection"}));
+    await waitFor(() => expect(duplicateCollection).toHaveBeenCalledWith(7, 'Evening copy'));
     expect(await screen.findByRole('heading', {name: 'Evening copy'})).toBeInTheDocument();
 
     const deleteOpener = screen.getByRole('button', {name: 'Delete Evening copy'});
@@ -1404,27 +1405,27 @@ test('renames, reorders, duplicates, and deletes saved shelves', async () => {
     expect(deleteOpener).toHaveFocus();
 
     await user.click(deleteOpener);
-    await user.click(screen.getByRole('button', {name: 'Delete shelf'}));
-    await waitFor(() => expect(deleteShelf).toHaveBeenCalledWith(9));
+    await user.click(screen.getByRole('button', {name: "Delete collection"}));
+    await waitFor(() => expect(deleteCollection).toHaveBeenCalledWith(9));
     expect(screen.queryByRole('button', {name: 'Evening copy, 1 story'}))
         .not.toBeInTheDocument();
 });
 
-test('keeps a deleted active shelf query as custom instead of labeling all stories', async () => {
+test('keeps a deleted active collection query as custom instead of labeling all stories', async () => {
     const user = userEvent.setup();
-    let summaries = [new shelves.Summary({
+    let summaries = [new collections.Summary({
         id: 7,
         name: 'Bedtime',
         position: 0,
         validity: 'valid',
         count: 1,
     })];
-    listShelves.mockImplementation(async () => new app.ShelfListResponse({
-        shelves: summaries,
+    listCollections.mockImplementation(async () => new app.CollectionListResponse({
+        collections: summaries,
     }));
-    openShelf.mockResolvedValue(new app.ShelfEvaluationResponse({
+    openCollection.mockResolvedValue(new app.CollectionEvaluationResponse({
         evaluation: {
-            shelf: {
+            collection: {
                 id: 7,
                 name: 'Bedtime',
                 normalizedName: 'bedtime',
@@ -1444,7 +1445,7 @@ test('keeps a deleted active shelf query as custom instead of labeling all stori
             },
         },
     }));
-    deleteShelf.mockImplementation(async () => {
+    deleteCollection.mockImplementation(async () => {
         summaries = [];
         return new app.MutationResponse({success: true});
     });
@@ -1452,9 +1453,9 @@ test('keeps a deleted active shelf query as custom instead of labeling all stori
     render(<App/>);
     await user.click(await screen.findByRole('button', {name: 'Bedtime, 1 story'}));
     await user.click(screen.getByRole('button', {name: 'Delete Bedtime'}));
-    await user.click(screen.getByRole('button', {name: 'Delete shelf'}));
+    await user.click(screen.getByRole('button', {name: "Delete collection"}));
 
-    await waitFor(() => expect(deleteShelf).toHaveBeenCalledWith(7));
+    await waitFor(() => expect(deleteCollection).toHaveBeenCalledWith(7));
     expect(screen.getByRole('searchbox', {name: 'Search stories'}))
         .toHaveValue('moon');
     expect(screen.getByRole('button', {name: /All stories/}))
@@ -1463,9 +1464,9 @@ test('keeps a deleted active shelf query as custom instead of labeling all stori
         .not.toBeInTheDocument();
 });
 
-test('blocks unsafe shelf evaluation until its query is explicitly replaced', async () => {
+test('blocks unsafe collection evaluation until its query is explicitly replaced', async () => {
     const user = userEvent.setup();
-    const invalid = new shelves.Summary({
+    const invalid = new collections.Summary({
         id: 12,
         name: 'Old moods',
         position: 0,
@@ -1473,18 +1474,18 @@ test('blocks unsafe shelf evaluation until its query is explicitly replaced', as
         attentionReason: 'missing_criteria',
         count: 0,
     });
-    const repaired = new shelves.Summary({
+    const repaired = new collections.Summary({
         id: 12,
         name: 'Old moods',
         position: 0,
         validity: 'valid',
         count: 2,
     });
-    listShelves
-        .mockResolvedValueOnce(new app.ShelfListResponse({shelves: [invalid]}))
-        .mockResolvedValue(new app.ShelfListResponse({shelves: [repaired]}));
-    replaceShelfQuery.mockResolvedValue(new app.ShelfResponse({
-        shelf: {
+    listCollections
+        .mockResolvedValueOnce(new app.CollectionListResponse({collections: [invalid]}))
+        .mockResolvedValue(new app.CollectionListResponse({collections: [repaired]}));
+    replaceCollectionQuery.mockResolvedValue(new app.CollectionResponse({
+        collection: {
             id: 12,
             name: 'Old moods',
             normalizedName: 'old moods',
@@ -1501,7 +1502,7 @@ test('blocks unsafe shelf evaluation until its query is explicitly replaced', as
     });
     await user.click(repairOpener);
 
-    expect(openShelf).not.toHaveBeenCalled();
+    expect(openCollection).not.toHaveBeenCalled();
     expect(screen.getByRole('heading', {name: 'Repair “Old moods”'}))
         .toBeInTheDocument();
     expect(screen.getByText('Evaluation and export are blocked.')).toBeInTheDocument();
@@ -1515,7 +1516,7 @@ test('blocks unsafe shelf evaluation until its query is explicitly replaced', as
 
     await user.click(repairOpener);
     await user.click(screen.getByRole('button', {name: 'Replace with current query'}));
-    await waitFor(() => expect(replaceShelfQuery).toHaveBeenCalledWith(
+    await waitFor(() => expect(replaceCollectionQuery).toHaveBeenCalledWith(
         12,
         expect.objectContaining({
             name: '',
@@ -1528,31 +1529,31 @@ test('blocks unsafe shelf evaluation until its query is explicitly replaced', as
         .toHaveClass('active');
 });
 
-test('requires explicit removal of unavailable criteria before shelf repair', async () => {
+test('requires explicit removal of unavailable criteria before collection repair', async () => {
     const user = userEvent.setup();
     window.history.replaceState(
         null,
         '',
         '/#/library?bool=999%3Atrue&size=12&sort=imported_desc&v=1',
     );
-    const invalid = new shelves.Summary({
+    const invalid = new collections.Summary({
         id: 15,
-        name: 'Deleted tag shelf',
+        name: 'Deleted tag collection',
         position: 0,
         validity: 'needs_attention',
         attentionReason: 'missing_criteria',
         count: 0,
     });
-    const repaired = new shelves.Summary({
+    const repaired = new collections.Summary({
         id: 15,
-        name: 'Deleted tag shelf',
+        name: 'Deleted tag collection',
         position: 0,
         validity: 'valid',
         count: 2,
     });
-    listShelves
-        .mockResolvedValueOnce(new app.ShelfListResponse({shelves: [invalid]}))
-        .mockResolvedValue(new app.ShelfListResponse({shelves: [repaired]}));
+    listCollections
+        .mockResolvedValueOnce(new app.CollectionListResponse({collections: [invalid]}))
+        .mockResolvedValue(new app.CollectionListResponse({collections: [repaired]}));
     queryStories.mockImplementation(async (query) => (
         query.booleanFilters.length > 0
             ? new app.LibraryPageResponse({
@@ -1572,11 +1573,11 @@ test('requires explicit removal of unavailable criteria before shelf repair', as
                 },
             })
     ));
-    replaceShelfQuery.mockResolvedValue(new app.ShelfResponse({
-        shelf: {
+    replaceCollectionQuery.mockResolvedValue(new app.CollectionResponse({
+        collection: {
             id: 15,
-            name: 'Deleted tag shelf',
-            normalizedName: 'deleted tag shelf',
+            name: 'Deleted tag collection',
+            normalizedName: 'deleted tag collection',
             position: 0,
             queryVersion: 2,
             queryPayload: '{}',
@@ -1589,7 +1590,7 @@ test('requires explicit removal of unavailable criteria before shelf repair', as
         name: 'Remove filter Unavailable saved criterion · definition 999',
     })).toBeInTheDocument();
     await user.click(screen.getByRole('button', {
-        name: 'Deleted tag shelf, needs attention',
+        name: "Deleted tag collection, needs attention",
     }));
 
     const replace = screen.getByRole('button', {name: 'Replace with current query'});
@@ -1603,22 +1604,22 @@ test('requires explicit removal of unavailable criteria before shelf repair', as
     expect(replace).toBeEnabled();
     await user.click(replace);
 
-    await waitFor(() => expect(replaceShelfQuery).toHaveBeenCalledWith(
+    await waitFor(() => expect(replaceCollectionQuery).toHaveBeenCalledWith(
         15,
         expect.objectContaining({booleanFilters: []}),
     ));
 });
 
-test('moves an active shelf into repair when refreshed validity becomes unsafe', async () => {
+test('moves an active collection into repair when refreshed validity becomes unsafe', async () => {
     const user = userEvent.setup();
-    const valid = new shelves.Summary({
+    const valid = new collections.Summary({
         id: 16,
         name: 'Mood',
         position: 0,
         validity: 'valid',
         count: 1,
     });
-    const invalid = new shelves.Summary({
+    const invalid = new collections.Summary({
         id: 16,
         name: 'Mood',
         position: 0,
@@ -1626,12 +1627,12 @@ test('moves an active shelf into repair when refreshed validity becomes unsafe',
         attentionReason: 'missing_criteria',
         count: 0,
     });
-    listShelves
-        .mockResolvedValueOnce(new app.ShelfListResponse({shelves: [valid]}))
-        .mockResolvedValue(new app.ShelfListResponse({shelves: [invalid]}));
-    openShelf.mockResolvedValue(new app.ShelfEvaluationResponse({
+    listCollections
+        .mockResolvedValueOnce(new app.CollectionListResponse({collections: [valid]}))
+        .mockResolvedValue(new app.CollectionListResponse({collections: [invalid]}));
+    openCollection.mockResolvedValue(new app.CollectionEvaluationResponse({
         evaluation: {
-            shelf: {
+            collection: {
                 id: 16,
                 name: 'Mood',
                 normalizedName: 'mood',
@@ -1673,18 +1674,18 @@ test('moves an active shelf into repair when refreshed validity becomes unsafe',
         .not.toHaveClass('active');
 });
 
-test('previews a multi-shelf union with per-shelf and overlap counts', async () => {
+test('previews a multi-collection union with per-collection and overlap counts', async () => {
     const user = userEvent.setup();
-    listShelves.mockResolvedValue(new app.ShelfListResponse({
-        shelves: [
-            new shelves.Summary({
+    listCollections.mockResolvedValue(new app.CollectionListResponse({
+        collections: [
+            new collections.Summary({
                 id: 7,
                 name: 'Moon',
                 position: 0,
                 validity: 'valid',
                 count: 2,
             }),
-            new shelves.Summary({
+            new collections.Summary({
                 id: 8,
                 name: 'Forest',
                 position: 1,
@@ -1693,21 +1694,21 @@ test('previews a multi-shelf union with per-shelf and overlap counts', async () 
             }),
         ],
     }));
-    previewShelves.mockImplementation(async (shelfIDs) => (
-        new app.ShelfSelectionPreviewResponse({
-            preview: shelfIDs.length === 1
+    previewCollections.mockImplementation(async (collectionIDs) => (
+        new app.CollectionSelectionPreviewResponse({
+            preview: collectionIDs.length === 1
                 ? {
-                    shelves: [{id: 7, name: 'Moon', count: 2}],
-                    sourceShelfNames: ['Moon'],
+                    collections: [{id: 7, name: 'Moon', count: 2}],
+                    sourceCollectionNames: ['Moon'],
                     uniqueStoryCount: 2,
                     overlapCount: 0,
                 }
                 : {
-                    shelves: [
+                    collections: [
                         {id: 7, name: 'Moon', count: 2},
                         {id: 8, name: 'Forest', count: 2},
                     ],
-                    sourceShelfNames: ['Moon', 'Forest'],
+                    sourceCollectionNames: ['Moon', 'Forest'],
                     uniqueStoryCount: 3,
                     overlapCount: 1,
                 },
@@ -1718,17 +1719,17 @@ test('previews a multi-shelf union with per-shelf and overlap counts', async () 
             preflight: {
                 source: {
                     type: request.sourceType,
-                    shelfIds: request.shelfIds,
-                    shelfNames: request.shelfIds?.length === 1
+                    collectionIds: request.collectionIds,
+                    collectionNames: request.collectionIds?.length === 1
                         ? ['Forest']
                         : ['Moon', 'Forest'],
                 },
                 destination: 'Lunii export',
-                resolvedCount: request.shelfIds?.length === 1 ? 2 : 3,
-                readyCount: request.shelfIds?.length === 1 ? 2 : 3,
+                resolvedCount: request.collectionIds?.length === 1 ? 2 : 3,
+                readyCount: request.collectionIds?.length === 1 ? 2 : 3,
                 totalBytes: 3145728,
                 detectedFormats: ['zip'],
-                collapsedOverlap: request.sourceType === 'shelves' ? 1 : 0,
+                collapsedOverlap: request.sourceType === 'collections' ? 1 : 0,
                 items: [],
                 issues: [],
                 partial: false,
@@ -1740,36 +1741,36 @@ test('previews a multi-shelf union with per-shelf and overlap counts', async () 
 
     render(<App/>);
     await user.click(await screen.findByRole('checkbox', {
-        name: 'Select Moon for combined shelf preview',
+        name: "Select Moon for combined collection preview",
     }));
-    await waitFor(() => expect(previewShelves).toHaveBeenLastCalledWith([7], 'hide'));
+    await waitFor(() => expect(previewCollections).toHaveBeenLastCalledWith([7], 'hide'));
     await user.click(screen.getByRole('checkbox', {
-        name: 'Select Forest for combined shelf preview',
+        name: "Select Forest for combined collection preview",
     }));
-    await waitFor(() => expect(previewShelves).toHaveBeenLastCalledWith([7, 8], 'hide'));
+    await waitFor(() => expect(previewCollections).toHaveBeenLastCalledWith([7, 8], 'hide'));
 
-    const preview = await screen.findByRole('region', {name: 'Combined shelf preview'});
+    const preview = await screen.findByRole('region', {name: "Combined collection preview"});
     expect(preview).toHaveTextContent('Moon2');
     expect(preview).toHaveTextContent('Forest2');
     expect(preview).toHaveTextContent('3 unique stories');
     expect(preview).toHaveTextContent('1 overlapping membership collapsed.');
     expect(preview).toHaveTextContent('Sources: Moon, Forest');
     await user.click(within(preview).getByRole('button', {
-        name: 'Export selected shelves',
+        name: "Export selected collections",
     }));
     expect(selectAndPreflightExport).toHaveBeenLastCalledWith(
         expect.objectContaining({
-            sourceType: 'shelves',
-            shelfIds: [7, 8],
+            sourceType: 'collections',
+            collectionIds: [7, 8],
         }),
     );
     expect(screen.getByText('1', {selector: '.export-preflight-facts dd'}))
         .toBeInTheDocument();
     await user.click(screen.getByRole('button', {name: 'Close'}));
 
-    listShelves.mockResolvedValue(new app.ShelfListResponse({
-        shelves: [
-            new shelves.Summary({
+    listCollections.mockResolvedValue(new app.CollectionListResponse({
+        collections: [
+            new collections.Summary({
                 id: 7,
                 name: 'Moon',
                 position: 0,
@@ -1777,7 +1778,7 @@ test('previews a multi-shelf union with per-shelf and overlap counts', async () 
                 attentionReason: 'missing_criteria',
                 count: 0,
             }),
-            new shelves.Summary({
+            new collections.Summary({
                 id: 8,
                 name: 'Forest',
                 position: 1,
@@ -1786,10 +1787,10 @@ test('previews a multi-shelf union with per-shelf and overlap counts', async () 
             }),
         ],
     }));
-    previewShelves.mockResolvedValue(new app.ShelfSelectionPreviewResponse({
+    previewCollections.mockResolvedValue(new app.CollectionSelectionPreviewResponse({
         error: {
             code: 'conflict',
-            message: 'Repair the selected shelf before continuing.',
+            message: "Repair the selected collection before continuing.",
         },
     }));
     operationChanged?.({
@@ -1805,41 +1806,41 @@ test('previews a multi-shelf union with per-shelf and overlap counts', async () 
     });
 
     const invalidSelection = await screen.findByRole('checkbox', {
-        name: 'Select Moon for combined shelf preview',
+        name: "Select Moon for combined collection preview",
     });
     await waitFor(() => expect(invalidSelection).toBeEnabled());
     expect(invalidSelection).toBeChecked();
-    await waitFor(() => expect(previewShelves).toHaveBeenLastCalledWith([7, 8], 'hide'));
-    expect(await screen.findByText('Repair the selected shelf before continuing.'))
+    await waitFor(() => expect(previewCollections).toHaveBeenLastCalledWith([7, 8], 'hide'));
+    expect(await screen.findByText("Repair the selected collection before continuing."))
         .toBeInTheDocument();
 
-    previewShelves.mockResolvedValue(new app.ShelfSelectionPreviewResponse({
+    previewCollections.mockResolvedValue(new app.CollectionSelectionPreviewResponse({
         preview: {
-            shelves: [{id: 8, name: 'Forest', count: 2}],
-            sourceShelfNames: ['Forest'],
+            collections: [{id: 8, name: 'Forest', count: 2}],
+            sourceCollectionNames: ['Forest'],
             uniqueStoryCount: 2,
             overlapCount: 0,
         },
     }));
     await user.click(invalidSelection);
-    await waitFor(() => expect(previewShelves).toHaveBeenLastCalledWith([8], 'hide'));
+    await waitFor(() => expect(previewCollections).toHaveBeenLastCalledWith([8], 'hide'));
     expect(invalidSelection).not.toBeChecked();
-    expect(screen.queryByText('Repair the selected shelf before continuing.'))
+    expect(screen.queryByText('Repair the selected collection before continuing.'))
         .not.toBeInTheDocument();
     expect(screen.getByText('2 unique stories')).toBeInTheDocument();
-    await user.click(screen.getByRole('button', {name: 'Export selected shelf'}));
+    await user.click(screen.getByRole('button', {name: "Export selected collection"}));
     expect(selectAndPreflightExport).toHaveBeenLastCalledWith(
         expect.objectContaining({
-            sourceType: 'shelf',
-            shelfIds: [8],
+            sourceType: 'collection',
+            collectionIds: [8],
         }),
     );
 });
 
-test('keeps a valid empty saved shelf active with edit and import recovery actions', async () => {
+test('keeps a valid empty saved collection active with edit and import recovery actions', async () => {
     const user = userEvent.setup();
-    listShelves.mockResolvedValue(new app.ShelfListResponse({
-        shelves: [new shelves.Summary({
+    listCollections.mockResolvedValue(new app.CollectionListResponse({
+        collections: [new collections.Summary({
             id: 14,
             name: 'Quiet',
             position: 0,
@@ -1847,9 +1848,9 @@ test('keeps a valid empty saved shelf active with edit and import recovery actio
             count: 0,
         })],
     }));
-    openShelf.mockResolvedValue(new app.ShelfEvaluationResponse({
+    openCollection.mockResolvedValue(new app.CollectionEvaluationResponse({
         evaluation: {
-            shelf: {
+            collection: {
                 id: 14,
                 name: 'Quiet',
                 normalizedName: 'quiet',
@@ -1886,7 +1887,7 @@ test('keeps a valid empty saved shelf active with edit and import recovery actio
     expect(await screen.findByRole('heading', {name: 'Quiet is currently empty'}))
         .toBeInTheDocument();
     expect(screen.getByText(/saved query remains valid/)).toBeInTheDocument();
-    expect(screen.getByRole('button', {name: 'Edit shelf query'})).toBeInTheDocument();
+    expect(screen.getByRole('button', {name: "Edit collection query"})).toBeInTheDocument();
     expect(screen.getByRole('button', {name: '＋ Import your first stories'}))
         .toBeInTheDocument();
     expect(screen.getByRole('button', {name: '↻ Update “Quiet”'}))
@@ -3079,9 +3080,9 @@ test('groups final export outcomes and reveals the retained destination', async 
         id: 'finished-export',
         kind: 'export',
         status: 'partially_succeeded',
-        exportSourceType: 'shelves',
-        sourceShelfIds: [7, 8],
-        sourceShelfNames: ['Moon', 'Forest'],
+        exportSourceType: 'collections',
+        sourceCollectionIds: [7, 8],
+        sourceCollectionNames: ['Moon', 'Forest'],
         destination: 'Lunii export',
         completedItems: 5,
         totalItems: 5,
@@ -3148,7 +3149,7 @@ test('groups final export outcomes and reveals the retained destination', async 
     render(<App/>);
 
     const report = await screen.findByRole('region', {name: 'Export report'});
-    expect(report).toHaveTextContent('Source shelves · Moon, Forest');
+    expect(report).toHaveTextContent("Source collections · Moon, Forest");
     expect(report).toHaveTextContent('Destination · Lunii export');
     for (const label of [
         'Exported · 1',
@@ -3679,27 +3680,27 @@ test('updates the recently added heading when switching to French', async () => 
     expect(screen.getByRole('heading', {name: 'Ajout récent'})).toBeInTheDocument();
 });
 
-test('saves the union of selected shelves instead of only the displayed shelf', async () => {
+test('saves the union of selected collections instead of only the displayed collection', async () => {
     const user = userEvent.setup();
-    listShelves.mockResolvedValue(new app.ShelfListResponse({shelves: [
+    listCollections.mockResolvedValue(new app.CollectionListResponse({collections: [
         {id: 7, name: 'arc', position: 0, validity: 'valid', count: 1},
         {id: 8, name: 'aqua', position: 1, validity: 'valid', count: 1},
     ]}));
-    openShelf.mockImplementation(async (id) => new app.ShelfEvaluationResponse({evaluation: {
-        shelf: {id, name: id === 7 ? 'arc' : 'aqua', validity: 'valid'},
+    openCollection.mockImplementation(async (id) => new app.CollectionEvaluationResponse({evaluation: {
+        collection: {id, name: id === 7 ? 'arc' : 'aqua', validity: 'valid'},
         query: {name: id === 7 ? 'forest' : 'moon'},
         page: {stories: [stories[id === 7 ? 0 : 1]], page: 1, pageSize: 12, totalItems: 1, totalPages: 1, sort: 'imported_desc'},
     }}));
-    createShelf.mockResolvedValue(new app.ShelfResponse({shelf: {id: 9, name: 't2', validity: 'valid'}}));
+    createCollection.mockResolvedValue(new app.CollectionResponse({collection: {id: 9, name: 't2', validity: 'valid'}}));
     render(<App/>);
     await user.click(await screen.findByRole('button', {name: 'arc, 1 story'}));
     await screen.findByRole('heading', {name: 'arc'});
-    await user.click(screen.getByRole('checkbox', {name: 'Select arc for combined shelf preview'}));
-    await user.click(screen.getByRole('checkbox', {name: 'Select aqua for combined shelf preview'}));
+    await user.click(screen.getByRole('checkbox', {name: "Select arc for combined collection preview"}));
+    await user.click(screen.getByRole('checkbox', {name: "Select aqua for combined collection preview"}));
     await user.click(screen.getByRole('button', {name: '＋ Save current query'}));
-    await user.type(screen.getByRole('textbox', {name: 'Shelf name'}), 't2');
-    await user.click(screen.getByRole('button', {name: 'Save shelf'}));
-    await waitFor(() => expect(createShelf).toHaveBeenCalledWith('t2', expect.objectContaining({
+    await user.type(screen.getByRole('textbox', {name: "Collection name"}), 't2');
+    await user.click(screen.getByRole('button', {name: "Save collection"}));
+    await waitFor(() => expect(createCollection).toHaveBeenCalledWith('t2', expect.objectContaining({
         anyOf: [expect.objectContaining({name: 'forest'}), expect.objectContaining({name: 'moon'})],
     })));
 });
@@ -3872,11 +3873,11 @@ test('translates retired tag criteria before validating or rewriting an old URL'
     expect(queryStories.mock.lastCall?.[0].brokenState).toBeUndefined();
 });
 
-test('updates duplicate story copies in saved shelf previews', async () => {
+test('updates duplicate story copies in saved collection previews', async () => {
     const {pageFor} = installStoryFlagsFixture();
-    listShelves.mockImplementation(async (mode) => new app.ShelfListResponse({shelves: [{id: 7, name: 'Favorites', position: 0, validity: 'valid', count: pageFor({brokenVisibility: mode}).totalItems}]}));
-    openShelf.mockImplementation(async (_id, request) => new app.ShelfEvaluationResponse({evaluation: {
-        shelf: {id: 7, name: 'Favorites', normalizedName: 'favorites', position: 0, queryVersion: 4, queryPayload: '{}', validity: 'valid'},
+    listCollections.mockImplementation(async () => new app.CollectionListResponse({collections: [{id: 7, name: 'Favorites', position: 0, validity: 'valid', count: pageFor({}).totalItems}]}));
+    openCollection.mockImplementation(async (_id, request) => new app.CollectionEvaluationResponse({evaluation: {
+        collection: {id: 7, name: 'Favorites', normalizedName: 'favorites', position: 0, queryVersion: 4, queryPayload: '{}', validity: 'valid'},
         query: {}, page: pageFor(request),
     }}));
     const user = userEvent.setup();
@@ -3899,13 +3900,13 @@ test.each(['collection', 'preview'])('reconciles preview-only selection when %s 
         if (state.get(3) && first === 'preview') await delayedRefresh;
         return new app.LibraryPageResponse({page: pageFor(query)});
     });
-    listShelves.mockImplementation(async () => new app.ShelfListResponse({shelves: [
+    listCollections.mockImplementation(async () => new app.CollectionListResponse({collections: [
         {id: 7, name: 'Unflagged', position: 0, validity: 'valid', count: state.get(3) ? 0 : 1},
     ]}));
-    openShelf.mockImplementation(async () => {
+    openCollection.mockImplementation(async () => {
         if (state.get(3) && first === 'collection') await delayedRefresh;
-        return new app.ShelfEvaluationResponse({evaluation: {
-            shelf: {id: 7, name: 'Unflagged', validity: 'valid'},
+        return new app.CollectionEvaluationResponse({evaluation: {
+            collection: {id: 7, name: 'Unflagged', validity: 'valid'},
             query: {brokenState: 'false'},
             page: {...pageFor({brokenVisibility: 'include'}), stories: state.get(3) ? [] : [previewStory]},
         }});
@@ -4001,11 +4002,11 @@ test('skips duplicate copies of the changed story while collection results are s
         if (state.get(1)) await delayedRefresh;
         return new app.LibraryPageResponse({page: pageFor(query)});
     });
-    listShelves.mockResolvedValue(new app.ShelfListResponse({shelves: [
+    listCollections.mockResolvedValue(new app.CollectionListResponse({collections: [
         {id: 7, name: 'Forest', position: 0, validity: 'valid', count: 1},
     ]}));
-    openShelf.mockImplementation(async (_id, request) => new app.ShelfEvaluationResponse({evaluation: {
-        shelf: {id: 7, name: 'Forest', validity: 'valid'},
+    openCollection.mockImplementation(async (_id, request) => new app.CollectionEvaluationResponse({evaluation: {
+        collection: {id: 7, name: 'Forest', validity: 'valid'},
         query: {name: 'Forest'}, page: pageFor({...request, name: 'Forest'}),
     }}));
     const user = userEvent.setup();

@@ -48,6 +48,7 @@ type CollectionHistoryState = {
         shelfId?: number | null;
         collectionId?: number | null;
         scope?: CollectionScope;
+        group?: {kind: 'shelf'; id: number};
     };
 };
 
@@ -81,6 +82,7 @@ export class CollectionQueryHistory {
         const state = this.#target.history.state as CollectionHistoryState | null;
         const entry = state?.collectionQuery;
         if (!entry || entry.hash !== this.#target.location.hash) return null;
+        if (entry.group?.kind === 'shelf') return null;
         const id = entry.collectionId ?? entry.shelfId ?? null;
         return id !== null && Number.isSafeInteger(id) && id > 0 ? id : null;
     }
@@ -88,7 +90,22 @@ export class CollectionQueryHistory {
     // Compatibility for callers being migrated from dynamic Shelf terminology.
     currentShelfID(): number | null { return this.currentCollectionID(); }
 
+    currentCuratedShelfID(): number | null {
+        const entry = (this.#target.history.state as CollectionHistoryState | null)?.collectionQuery;
+        const id = entry?.hash === this.#target.location.hash && entry.group?.kind === 'shelf' ? entry.group.id : null;
+        return id !== null && Number.isSafeInteger(id) && id > 0 ? id : null;
+    }
+
+    pushShelf(id: number, query: CollectionQuery = this.#fallback): CollectionQuery {
+        const canonical = canonicalCollectionQuery(query);
+        const hash = encodeCollectionQuery(canonical);
+        this.#target.history.pushState({collectionQuery: {hash, group: {kind: 'shelf', id}, scope: 'shelf'}}, '',
+            `${this.#target.location.pathname}${this.#target.location.search}${hash}`);
+        return canonical;
+    }
+
     currentScope(): CollectionScope {
+        if (this.currentCuratedShelfID() !== null) return 'shelf';
         const shelfID = this.currentShelfID();
         if (shelfID !== null) {
             return 'collection';
@@ -162,12 +179,14 @@ export class CollectionQueryHistory {
             query: CollectionQuery,
             shelfId: number | null,
             scope: CollectionScope,
+            curatedShelfId: number | null,
         ) => void,
     ): () => void {
         const onHistory = () => listener(
             this.current(),
             this.currentShelfID(),
             this.currentScope(),
+            this.currentCuratedShelfID(),
         );
         this.#target.addEventListener('popstate', onHistory);
         return () => this.#target.removeEventListener('popstate', onHistory);

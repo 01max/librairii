@@ -204,7 +204,7 @@ const historyOperations = [{
     id: '00000000-0000-4000-8000-000000000901', kind: 'export', status: 'succeeded',
     completedItems: 1, totalItems: 1, totalBytes: 100, cancelRequested: false,
     createdAt: '2026-07-25T10:00:00Z', finishedAt: '2026-07-25T10:01:00Z',
-    destination: 'Lunii export', sourceShelfNames: ['Bedtime'],
+    destination: 'Lunii export', sourceCollectionNames: ['Bedtime'],
     items: [{id: 901, sourceName: 'moon.zip', storyTitle: 'Milo and the Moon',
         outputName: 'moon.zip', status: 'succeeded', outcomeMessage: 'Story archive exported.',
         completedBytes: 100, totalBytes: 100}],
@@ -229,7 +229,7 @@ export function installCollectionFixture() {
         window.history.replaceState({
             collectionQuery: {
                 hash,
-                shelfId: null,
+                collectionId: null,
                 scope: 'all',
             },
         }, '', `${window.location.pathname}${window.location.search}${hash}`);
@@ -299,15 +299,16 @@ export function installCollectionFixture() {
         PackagedAcceptanceMode: async () => false,
         RecordPackagedAcceptance: async () => ({success: false}),
         RecoverStorage: async () => ({success: false}),
-        ListShelves: async () => ({
-            shelves: fixture === 'parity'
-                ? CANONICAL_PARITY_FIXTURE.savedShelves.map(
-                    (shelf, position) => ({
-                        id: shelf.id,
-                        name: shelf.name,
+        ListShelves: async () => ({shelves: []}),
+        ListCollections: async () => ({
+            collections: fixture === 'parity'
+                ? CANONICAL_PARITY_FIXTURE.savedCollections.map(
+                    (collection, position) => ({
+                        id: collection.id,
+                        name: collection.name,
                         position,
-                        validity: shelf.id === 3 ? 'sidebar_only' : 'valid',
-                        count: shelf.count,
+                        validity: collection.id === 3 ? 'sidebar_only' : 'valid',
+                        count: collection.count,
                     }),
                 )
                 : [],
@@ -355,20 +356,20 @@ export function installCollectionFixture() {
                 ),
             };
         },
-        OpenShelf: async (
-            shelfID: number,
+        OpenCollection: async (
+            collectionID: number,
             request: {page: number; pageSize: number; sort: string; brokenVisibility?: string},
         ) => {
-            const preview = CANONICAL_PARITY_FIXTURE.mainShelves.find(
-                (shelf) => shelf.sourceShelfID === shelfID,
+            const preview = CANONICAL_PARITY_FIXTURE.mainCollections.find(
+                (collection) => collection.sourceCollectionID === collectionID,
             );
             const source = (preview?.stories ?? []).map((story) => ({...story, broken: fixtureFlags.get(story.id) ?? false})).filter((story) => matchesVisibility(story.broken, request.brokenVisibility));
             return {
                 evaluation: {
-                    shelf: {
-                        id: shelfID,
+                    collection: {
+                        id: collectionID,
                         name: preview?.name ?? 'Favorites',
-                        position: shelfID - 1,
+                        position: collectionID - 1,
                         queryVersion: 1,
                         queryPayload: '{}',
                         validity: 'valid',

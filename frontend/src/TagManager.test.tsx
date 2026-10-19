@@ -204,7 +204,7 @@ test('plans destructive changes and confirms the displayed assignment impact', a
         definition: catalog.definitions[1],
         valueCount: 2,
         assignmentCount: 12,
-        affectedShelfCount: 3,
+        affectedCollectionCount: 3,
     });
     planTagDefinitionDeletion.mockResolvedValue(
         new app.TagDefinitionDeletionPlanResponse({plan}),
@@ -214,7 +214,7 @@ test('plans destructive changes and confirms the displayed assignment impact', a
 
     await user.click(within(mood!).getByRole('button', {name: 'Delete Mood'}));
     expect(await screen.findByText(
-        '12 assignments, 2 values, and 3 saved shelves are affected.',
+        "12 assignments, 2 values, and 3 saved collections are affected.",
     )).toBeInTheDocument();
     const cancel = screen.getByRole('button', {name: 'Cancel'});
     await waitFor(() => expect(cancel).toHaveFocus());
@@ -233,7 +233,7 @@ test('renames and deletes choice values and closes from the keyboard', async () 
     const plan = new tagging.ValueDeletionPlan({
         value: catalog.definitions[1].values[0],
         assignmentCount: 4,
-        affectedShelfCount: 1,
+        affectedCollectionCount: 1,
     });
     planTagValueDeletion.mockResolvedValue(new app.TagValueDeletionPlanResponse({plan}));
     render(<TagManager onClose={onClose} onCatalogChange={vi.fn()}/>);

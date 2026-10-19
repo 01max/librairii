@@ -38,9 +38,9 @@ export default function LibrarySidebar({children, open, onClose, suspended, iner
                 className={`filters${open ? ' sidebar-open' : ''}`}
                 role={open ? 'dialog' : undefined}
                 aria-modal={open ? true : undefined}
-                aria-label={t("Saved shelves and refinements")}>
+                aria-label={t("Saved collections and refinements")}>
                 <button ref={closeButton} className="sidebar-close" type="button"
-                    onClick={onClose} aria-label={t("Close shelves and filters")}>{t("Done") + ' '}<span aria-hidden="true">×</span></button>
+                    onClick={onClose} aria-label={t("Close collections and filters")}>{t("Done") + ' '}<span aria-hidden="true">×</span></button>
                 {children}
             </aside>
         </>

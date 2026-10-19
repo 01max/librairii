@@ -87,7 +87,7 @@ const stories: FixtureStory[] = sampleStories.map(
 
 export const CANONICAL_PARITY_FIXTURE = {
     totalArchives: 48,
-    savedShelves: [
+    savedCollections: [
         {id: 1, name: 'Bedtime', count: 12, color: '#ff705c'},
         {id: 2, name: 'Adventures', count: 16, color: '#55b79a'},
         {id: 3, name: 'Favorites', count: 9, color: '#f5bc41'},
@@ -99,16 +99,16 @@ export const CANONICAL_PARITY_FIXTURE = {
         ],
         collapsed: ['Language', 'Import status'],
     },
-    mainShelves: [
+    mainCollections: [
         {
-            sourceShelfID: 1,
+            sourceCollectionID: 1,
             name: 'Bedtime',
             count: 9,
             source: 'Mood tag',
             stories: stories.slice(0, 6),
         },
         {
-            sourceShelfID: 2,
+            sourceCollectionID: 2,
             name: 'Weekend adventures',
             count: 12,
             source: 'Mood tag',

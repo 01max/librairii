@@ -43,12 +43,14 @@ test('restores back and forward query states', async () => {
         dragon,
         7,
         'collection',
+        null,
     ));
     window.history.forward();
     await waitFor(() => expect(listener).toHaveBeenLastCalledWith(
         filtered,
         8,
         'collection',
+        null,
     ));
     unsubscribe();
 });
@@ -135,4 +137,18 @@ test('clears one criterion or all membership filters while retaining sort', () =
         choiceFilters: [],
     });
     expect(history.clearAll()).toEqual(canonicalCollectionQuery(applicationDefault));
+});
+
+
+test('keeps curated scope identities separate from legacy dynamic shelf ids on reload', () => {
+    const history = new CollectionQueryHistory(window, applicationDefault);
+    history.pushShelf(7, {...applicationDefault, name: 'night'});
+    const reloaded = new CollectionQueryHistory(window, applicationDefault);
+    expect(reloaded.currentCuratedShelfID()).toBe(7);
+    expect(reloaded.currentCollectionID()).toBeNull();
+    expect(reloaded.currentScope()).toBe('shelf');
+    expect(reloaded.current().name).toBe('night');
+    history.push(applicationDefault, 7);
+    expect(history.currentCollectionID()).toBe(7);
+    expect(history.currentCuratedShelfID()).toBeNull();
 });

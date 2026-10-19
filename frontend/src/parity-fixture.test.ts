@@ -16,14 +16,14 @@ describe('canonical parity fixture', () => {
     });
 
     test('reproduces every visible sample value', () => {
-        expect(CANONICAL_PARITY_FIXTURE.savedShelves.map(
+        expect(CANONICAL_PARITY_FIXTURE.savedCollections.map(
             ({name, count}) => [name, count],
         )).toEqual([
             ['Bedtime', 12],
             ['Adventures', 16],
             ['Favorites', 9],
         ]);
-        expect(CANONICAL_PARITY_FIXTURE.mainShelves.map(
+        expect(CANONICAL_PARITY_FIXTURE.mainCollections.map(
             ({name, count}) => [name, count],
         )).toEqual([
             ['Bedtime', 9],

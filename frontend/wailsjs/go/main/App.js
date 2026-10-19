@@ -6,8 +6,28 @@ export function ActiveOperations() {
   return window['go']['main']['App']['ActiveOperations']();
 }
 
+export function AddStoriesToShelf(arg1, arg2) {
+  return window['go']['main']['App']['AddStoriesToShelf'](arg1, arg2);
+}
+
 export function ApplicationStatus() {
   return window['go']['main']['App']['ApplicationStatus']();
+}
+
+export function ApplyCollectionDeletion(arg1, arg2, arg3) {
+  return window['go']['main']['App']['ApplyCollectionDeletion'](arg1, arg2, arg3);
+}
+
+export function ApplyShelfSources(arg1, arg2, arg3, arg4) {
+  return window['go']['main']['App']['ApplyShelfSources'](arg1, arg2, arg3, arg4);
+}
+
+export function ApplyShelfUpdate(arg1, arg2, arg3) {
+  return window['go']['main']['App']['ApplyShelfUpdate'](arg1, arg2, arg3);
+}
+
+export function AttachShelfSources(arg1, arg2) {
+  return window['go']['main']['App']['AttachShelfSources'](arg1, arg2);
 }
 
 export function CancelLibraryMove() {
@@ -18,12 +38,24 @@ export function CancelOperation(arg1) {
   return window['go']['main']['App']['CancelOperation'](arg1);
 }
 
+export function ClearShelfExclusion(arg1, arg2) {
+  return window['go']['main']['App']['ClearShelfExclusion'](arg1, arg2);
+}
+
 export function ConfirmLibrarySetup() {
   return window['go']['main']['App']['ConfirmLibrarySetup']();
 }
 
+export function CreateCollection(arg1, arg2) {
+  return window['go']['main']['App']['CreateCollection'](arg1, arg2);
+}
+
 export function CreateShelf(arg1, arg2) {
   return window['go']['main']['App']['CreateShelf'](arg1, arg2);
+}
+
+export function CreateShelfFromReview(arg1, arg2) {
+  return window['go']['main']['App']['CreateShelfFromReview'](arg1, arg2);
 }
 
 export function CreateTagDefinition(arg1) {
@@ -32,6 +64,10 @@ export function CreateTagDefinition(arg1) {
 
 export function CreateTagValue(arg1) {
   return window['go']['main']['App']['CreateTagValue'](arg1);
+}
+
+export function DeleteCollection(arg1) {
+  return window['go']['main']['App']['DeleteCollection'](arg1);
 }
 
 export function DeleteShelf(arg1) {
@@ -50,6 +86,10 @@ export function DismissSettings() {
   return window['go']['main']['App']['DismissSettings']();
 }
 
+export function DuplicateCollection(arg1, arg2) {
+  return window['go']['main']['App']['DuplicateCollection'](arg1, arg2);
+}
+
 export function DuplicateShelf(arg1, arg2) {
   return window['go']['main']['App']['DuplicateShelf'](arg1, arg2);
 }
@@ -62,8 +102,16 @@ export function LibraryCompatibility() {
   return window['go']['main']['App']['LibraryCompatibility']();
 }
 
-export function ListShelves(arg1) {
-  return window['go']['main']['App']['ListShelves'](arg1);
+export function ListCollections() {
+  return window['go']['main']['App']['ListCollections']();
+}
+
+export function ListShelfExclusions(arg1) {
+  return window['go']['main']['App']['ListShelfExclusions'](arg1);
+}
+
+export function ListShelves() {
+  return window['go']['main']['App']['ListShelves']();
 }
 
 export function ListStories(arg1) {
@@ -76,6 +124,10 @@ export function LocateLibrary() {
 
 export function OfficialMetadataStatus() {
   return window['go']['main']['App']['OfficialMetadataStatus']();
+}
+
+export function OpenCollection(arg1, arg2) {
+  return window['go']['main']['App']['OpenCollection'](arg1, arg2);
 }
 
 export function OpenShelf(arg1, arg2) {
@@ -102,8 +154,24 @@ export function PlanTagValueDeletion(arg1) {
   return window['go']['main']['App']['PlanTagValueDeletion'](arg1);
 }
 
-export function PreviewShelves(arg1, arg2) {
-  return window['go']['main']['App']['PreviewShelves'](arg1, arg2);
+export function PreviewCollectionDeletion(arg1) {
+  return window['go']['main']['App']['PreviewCollectionDeletion'](arg1);
+}
+
+export function PreviewCollections(arg1) {
+  return window['go']['main']['App']['PreviewCollections'](arg1);
+}
+
+export function PreviewShelfCreation(arg1) {
+  return window['go']['main']['App']['PreviewShelfCreation'](arg1);
+}
+
+export function PreviewShelfSources(arg1, arg2) {
+  return window['go']['main']['App']['PreviewShelfSources'](arg1, arg2);
+}
+
+export function PreviewShelfUpdate(arg1) {
+  return window['go']['main']['App']['PreviewShelfUpdate'](arg1);
 }
 
 export function QueryStories(arg1) {
@@ -126,8 +194,16 @@ export function RefreshOfficialMetadata() {
   return window['go']['main']['App']['RefreshOfficialMetadata']();
 }
 
+export function RemoveStoriesFromShelf(arg1, arg2) {
+  return window['go']['main']['App']['RemoveStoriesFromShelf'](arg1, arg2);
+}
+
 export function RemoveStory(arg1) {
   return window['go']['main']['App']['RemoveStory'](arg1);
+}
+
+export function RenameCollection(arg1, arg2) {
+  return window['go']['main']['App']['RenameCollection'](arg1, arg2);
 }
 
 export function RenameShelf(arg1, arg2) {
@@ -142,6 +218,14 @@ export function RenameTagValue(arg1, arg2) {
   return window['go']['main']['App']['RenameTagValue'](arg1, arg2);
 }
 
+export function ReorderCollections(arg1) {
+  return window['go']['main']['App']['ReorderCollections'](arg1);
+}
+
+export function ReorderShelfStories(arg1, arg2) {
+  return window['go']['main']['App']['ReorderShelfStories'](arg1, arg2);
+}
+
 export function ReorderShelves(arg1) {
   return window['go']['main']['App']['ReorderShelves'](arg1);
 }
@@ -154,8 +238,8 @@ export function ReorderTagValues(arg1, arg2) {
   return window['go']['main']['App']['ReorderTagValues'](arg1, arg2);
 }
 
-export function ReplaceShelfQuery(arg1, arg2) {
-  return window['go']['main']['App']['ReplaceShelfQuery'](arg1, arg2);
+export function ReplaceCollectionQuery(arg1, arg2) {
+  return window['go']['main']['App']['ReplaceCollectionQuery'](arg1, arg2);
 }
 
 export function RestoreStoryFlags(arg1) {
@@ -196,6 +280,10 @@ export function SetChoiceTagValue(arg1, arg2, arg3, arg4) {
 
 export function SetChoiceTagValues(arg1, arg2, arg3) {
   return window['go']['main']['App']['SetChoiceTagValues'](arg1, arg2, arg3);
+}
+
+export function SetShelfStoryProtected(arg1, arg2, arg3) {
+  return window['go']['main']['App']['SetShelfStoryProtected'](arg1, arg2, arg3);
 }
 
 export function SetStoriesBroken(arg1, arg2) {

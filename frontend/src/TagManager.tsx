@@ -87,8 +87,8 @@ function DeletionConfirmation({
                     <b>{t("This removes saved metadata.")}</b>
                     <p>
                         {deletion.kind === 'definition'
-                            ? t("{0} assignments, {1} values, and {2} saved shelves are affected.", deletion.plan.assignmentCount, deletion.plan.valueCount, deletion.plan.affectedShelfCount)
-                            : t("{0} assignments and {1} saved shelves are affected.", deletion.plan.assignmentCount, deletion.plan.affectedShelfCount)}
+                            ? t("{0} assignments, {1} values, and {2} saved collections are affected.", deletion.plan.assignmentCount, deletion.plan.valueCount, deletion.plan.affectedCollectionCount)
+                            : t("{0} assignments and {1} saved collections are affected.", deletion.plan.assignmentCount, deletion.plan.affectedCollectionCount)}
                     </p>
                 </div>
                 <div className="dialog-actions">
