@@ -25,6 +25,13 @@ body,
     margin: 0;
 }
 
+html,
+body {
+    height: 100%;
+    overflow: hidden;
+    overscroll-behavior: none;
+}
+
 body {
     color: var(--ink);
     background: var(--paper);
@@ -183,7 +190,7 @@ select:focus-visible {
 .filters {
     min-height: 0;
     overflow-y: auto;
-    overscroll-behavior-y: contain;
+    overscroll-behavior: none;
     padding: 29px 20px;
     border-right: 1px solid var(--line);
     background: #f8f9fc;
