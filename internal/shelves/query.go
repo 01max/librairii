@@ -131,7 +131,7 @@ func canonicalSavedLibraryQuery(
 	return SavedLibraryQuery{
 		AnyOf:            branches,
 		IncludeBroken:    query.IncludeBroken,
-		BrokenVisibility: query.BrokenVisibility,
+		BrokenVisibility: savedVisibility(query.BrokenVisibility),
 		BrokenState:      query.BrokenState,
 		Name:             query.Name,
 		Languages:        append([]string(nil), query.Languages...),
@@ -248,4 +248,11 @@ func storyLibraryQueryFromPayload(payload shelfquery.Payload) library.StoryLibra
 		BooleanFilters:   booleanFilters,
 		ChoiceFilters:    choiceFilters,
 	}
+}
+
+func savedVisibility(mode library.BrokenVisibility) library.BrokenVisibility {
+	if mode == library.BrokenHide {
+		return ""
+	}
+	return mode
 }

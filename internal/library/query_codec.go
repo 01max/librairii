@@ -187,6 +187,10 @@ func DecodeStoryLibraryQuery(hash string, legacyBrokenID ...int64) (StoryLibrary
 		}
 		query.ChoiceFilters = append(query.ChoiceFilters, filter)
 	}
+	query, err = canonicalStoryLibraryQuery(query)
+	if err != nil {
+		return StoryLibraryQuery{}, ErrInvalidStoryLibraryHash
+	}
 	if version == "1" && len(legacyBrokenID) > 0 {
 		query = TranslateLegacyBroken(query, legacyBrokenID[0])
 	}
