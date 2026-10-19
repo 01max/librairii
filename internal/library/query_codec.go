@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	StoryLibraryQueryVersion = 1
+	StoryLibraryQueryVersion = 2
 	storyLibraryHashPath     = "#/library"
 )
 
@@ -32,8 +32,11 @@ func EncodeStoryLibraryQuery(query StoryLibraryQuery) (string, error) {
 		values.Set("any", string(data))
 	}
 	values.Set("v", strconv.Itoa(StoryLibraryQueryVersion))
-	if query.IncludeBroken {
-		values.Set("includeBroken", "true")
+	if query.BrokenVisibility != BrokenHide {
+		values.Set("brokenVisibility", string(query.BrokenVisibility))
+	}
+	if query.BrokenState != "" {
+		values.Set("brokenState", string(query.BrokenState))
 	}
 	if query.Name != "" {
 		values.Set("name", query.Name)
@@ -75,7 +78,7 @@ func EncodeStoryLibraryQuery(query StoryLibraryQuery) (string, error) {
 	return storyLibraryHashPath + "?" + values.Encode(), nil
 }
 
-func DecodeStoryLibraryQuery(hash string) (StoryLibraryQuery, error) {
+func DecodeStoryLibraryQuery(hash string, legacyBrokenID ...int64) (StoryLibraryQuery, error) {
 	if hash == "" {
 		return canonicalStoryLibraryQuery(StoryLibraryQuery{})
 	}
@@ -90,7 +93,7 @@ func DecodeStoryLibraryQuery(hash string) (StoryLibraryQuery, error) {
 	for key := range values {
 		switch key {
 		case "any", "v",
-			"includeBroken",
+			"includeBroken", "brokenVisibility", "brokenState",
 			"name",
 			"page",
 			"size",
@@ -104,7 +107,7 @@ func DecodeStoryLibraryQuery(hash string) (StoryLibraryQuery, error) {
 		}
 	}
 	version, err := oneQueryValue(values, "v", true)
-	if err != nil || version != strconv.Itoa(StoryLibraryQueryVersion) {
+	if err != nil || (version != "1" && version != strconv.Itoa(StoryLibraryQueryVersion)) {
 		return StoryLibraryQuery{}, ErrInvalidStoryLibraryHash
 	}
 	var query StoryLibraryQuery
@@ -122,6 +125,13 @@ func DecodeStoryLibraryQuery(hash string) (StoryLibraryQuery, error) {
 		return StoryLibraryQuery{}, ErrInvalidStoryLibraryHash
 	}
 	query.IncludeBroken = visibility == "true"
+	mode, modeErr := oneQueryValue(values, "brokenVisibility", false)
+	state, stateErr := oneQueryValue(values, "brokenState", false)
+	if modeErr != nil || stateErr != nil || (version == "1" && (mode != "" || state != "")) || (version != "1" && visibility != "") {
+		return StoryLibraryQuery{}, ErrInvalidStoryLibraryHash
+	}
+	query.BrokenVisibility = BrokenVisibility(mode)
+	query.BrokenState = BooleanFilterState(state)
 	if query.Name, err = oneQueryValue(values, "name", false); err != nil {
 		return StoryLibraryQuery{}, err
 	}
@@ -176,6 +186,9 @@ func DecodeStoryLibraryQuery(hash string) (StoryLibraryQuery, error) {
 			filter.ValueIDs = append(filter.ValueIDs, valueID)
 		}
 		query.ChoiceFilters = append(query.ChoiceFilters, filter)
+	}
+	if version == "1" && len(legacyBrokenID) > 0 {
+		query = TranslateLegacyBroken(query, legacyBrokenID[0])
 	}
 	query, err = canonicalStoryLibraryQuery(query)
 	if err != nil {
@@ -294,4 +307,24 @@ func oneQueryValue(
 		return "", fmt.Errorf("%w: %s", ErrInvalidStoryLibraryHash, key)
 	}
 	return found[0], nil
+}
+
+// TranslateLegacyBroken is called only at a legacy-version boundary. Current
+// user tags, including reused IDs, must never be interpreted as story flags.
+func TranslateLegacyBroken(query StoryLibraryQuery, legacyID int64) StoryLibraryQuery {
+	filters := make([]BooleanFilter, 0, len(query.BooleanFilters))
+	for _, filter := range query.BooleanFilters {
+		if legacyID > 0 && filter.DefinitionID == legacyID {
+			if filter.State != BooleanIgnored {
+				query.BrokenState = filter.State
+			}
+		} else {
+			filters = append(filters, filter)
+		}
+	}
+	query.BooleanFilters = filters
+	for i, branch := range query.AnyOf {
+		query.AnyOf[i] = TranslateLegacyBroken(branch, legacyID)
+	}
+	return query
 }

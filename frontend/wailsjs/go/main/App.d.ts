@@ -34,6 +34,8 @@ export function DuplicateShelf(arg1:number,arg2:string):Promise<app.ShelfRespons
 
 export function FrontendRendered():Promise<void>;
 
+export function LibraryCompatibility():Promise<app.LibraryCompatibilityResponse>;
+
 export function ListShelves(arg1:boolean):Promise<app.ShelfListResponse>;
 
 export function ListStories(arg1:library.ListRequest):Promise<app.LibraryPageResponse>;

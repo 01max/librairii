@@ -44,6 +44,7 @@ import {
 vi.mock('../wailsjs/go/main/App', () => ({
     ActiveOperations: vi.fn(),
     ApplicationStatus: vi.fn(),
+    LibraryCompatibility: vi.fn(async () => ({compatibility: {legacyBrokenTagId: 0}})),
     CancelOperation: vi.fn(),
     CreateShelf: vi.fn(),
     DeleteShelf: vi.fn(),

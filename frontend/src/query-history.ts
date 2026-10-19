@@ -55,6 +55,9 @@ type CollectionHistoryState = {
 export class CollectionQueryHistory {
     readonly #target: CollectionWindow;
     readonly #fallback: CollectionQuery;
+    #legacyBrokenTagID = 0;
+
+    configureLegacyBrokenTagID(id: number) { this.#legacyBrokenTagID = id; }
 
     constructor(target: CollectionWindow, fallback: CollectionQuery) {
         this.#target = target;
@@ -66,7 +69,7 @@ export class CollectionQueryHistory {
             return canonicalCollectionQuery(this.#fallback);
         }
         try {
-            return decodeCollectionQuery(this.#target.location.hash);
+            return decodeCollectionQuery(this.#target.location.hash, this.#legacyBrokenTagID);
         } catch (error) {
             if (!(error instanceof InvalidCollectionQuery)) {
                 throw error;

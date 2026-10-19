@@ -16,6 +16,7 @@ import './App.css';
 import {
     ActiveOperations,
     ApplicationStatus,
+    LibraryCompatibility,
     CancelOperation,
     CreateShelf,
     DeleteShelf,
@@ -558,11 +559,6 @@ function App() {
     }, [collectionQuery]);
 
     useEffect(() => {
-        queryHistory.replace(
-            queryHistory.current(),
-            activeShelfIDRef.current,
-            initialHistoryState.scope,
-        );
         return queryHistory.subscribe((query, shelfID, scope) => {
             collectionRequestGeneration.current++;
             activateShelf(shelfID, scope);
@@ -664,6 +660,15 @@ function App() {
                 const state = response.status.state;
                 if (!active) {
                     return;
+                }
+                if (state === 'ready') {
+                    const compatibility = await LibraryCompatibility();
+                    if (!active) return;
+                    if (compatibility.error) throw new Error(compatibility.error.message);
+                    queryHistory.configureLegacyBrokenTagID(compatibility.compatibility.legacyBrokenTagId);
+                    const migratedQuery = queryHistory.current();
+                    queryHistory.replace(migratedQuery, activeShelfIDRef.current, initialHistoryState.scope);
+                    setCollectionQuery(migratedQuery);
                 }
                 setApplicationState(state);
                 setApplicationError(response.error?.message ?? '');

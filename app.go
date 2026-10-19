@@ -540,3 +540,11 @@ func (a *App) runtimeContext() context.Context {
 	}
 	return a.ctx
 }
+
+func (a *App) LibraryCompatibility() coreapp.LibraryCompatibilityResponse {
+	if !a.libraryGate.TryRLock() {
+		return coreapp.LibraryCompatibilityResponse{Error: coreapp.NewAPIError(coreapp.ErrorNotReady, "settings.busy")}
+	}
+	defer a.libraryGate.RUnlock()
+	return a.core.LibraryCompatibility(a.runtimeContext())
+}

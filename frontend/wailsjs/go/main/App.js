@@ -58,6 +58,10 @@ export function FrontendRendered() {
   return window['go']['main']['App']['FrontendRendered']();
 }
 
+export function LibraryCompatibility() {
+  return window['go']['main']['App']['LibraryCompatibility']();
+}
+
 export function ListShelves(arg1) {
   return window['go']['main']['App']['ListShelves'](arg1);
 }

@@ -285,6 +285,7 @@ export function installCollectionFixture() {
             operations: fixture === 'history' ? [historyOperations[0]]
                 : fixtureSnapshot?.status === 'running' ? [fixtureSnapshot] : [],
         }),
+        LibraryCompatibility: async () => ({compatibility: {legacyBrokenTagId: 0}}),
         ApplicationStatus: async () => ({
             status: {
                 state: setupComplete ? 'ready' : 'setup_required',
