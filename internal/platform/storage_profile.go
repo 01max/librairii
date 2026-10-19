@@ -31,6 +31,9 @@ func (r *StorageReadiness) prepareProfile(ctx context.Context) error {
 	if !p.Complete {
 		return preferences.ErrSetupRequired
 	}
+	if recoveryErr := preferences.Reconcile(ctx, r.profileStore.Directory(), p); recoveryErr != nil && !errors.Is(recoveryErr, preferences.ErrCleanupPending) {
+		return recoveryErr
+	}
 	if err = preferences.ValidateLibrary(ctx, p.Root, p.LibraryID); err != nil {
 		return err
 	}
