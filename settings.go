@@ -40,7 +40,9 @@ func (a *App) Settings() SettingsSnapshot {
 	if s.selected != "" {
 		root = s.selected
 	}
-	return SettingsSnapshot{Language: p.Language, Root: root, SetupRequired: !p.Complete, Isolated: s.storage.Isolated(), PendingOpen: s.pendingOpen}
+	pending := s.pendingOpen
+	s.pendingOpen = false
+	return SettingsSnapshot{Language: p.Language, Root: root, SetupRequired: !p.Complete, Isolated: s.storage.Isolated(), PendingOpen: pending}
 }
 func (a *App) SetUILanguage(language string) SettingsSnapshot {
 	if a.settings == nil {

@@ -1,3 +1,4 @@
+import SettingsPanel from './SettingsPanel';
 import OutcomeText from './OutcomeText';
 import {systemLabel} from './system-label';
 import {t} from './i18n';
@@ -337,6 +338,7 @@ function compatibilityLabel(value: string): string {
 
 function App() {
     useLanguage();
+    const [settingsRevision,setSettingsRevision] = useState(0);
     const [libraryView, setLibraryView] = useLibraryView();
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const closeSidebar = useCallback(() => setSidebarOpen(false), []);
@@ -725,7 +727,7 @@ function App() {
         return () => {
             active = false;
         };
-    }, [activateShelf, queryHistory, reconcileOperation]);
+    }, [activateShelf, queryHistory, reconcileOperation, settingsRevision]);
 
     const recoverStorage = async () => {
         setStorageRecovering(true);
@@ -1778,6 +1780,7 @@ function App() {
 
     return (
         <div className={`app view-${libraryView}`}>
+ <SettingsPanel onReady={() => setSettingsRevision((value) => value + 1)}/>
             <span className="sr-only" data-testid="application-state">
                 {t("Application state:")}{' '}{applicationState}
             </span>
