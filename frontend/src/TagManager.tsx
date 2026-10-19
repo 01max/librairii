@@ -78,7 +78,7 @@ function DeletionConfirmation({
             >
                 <div className="dialog-kicker">{t("Confirm impact")}</div>
                 <h3 id="tag-delete-title">
-                    {t("Delete")}{deletion.kind === 'definition'
+                    {t("Delete")}{' '}{deletion.kind === 'definition'
                         ? deletion.plan.definition.label
                         : deletion.plan.value.label}?
                 </h3>
@@ -374,7 +374,7 @@ export default function TagManager({onClose, onCatalogChange}: TagManagerProps) 
                                                     defaultValue={definition.color}
                                                 />
                                             </label>
-                                            <button type="submit" disabled={busy}>{t("Save")}</button>
+                                            <button type="submit" disabled={busy}>{t("Save")}{' '}</button>
                                             <button
                                                 type="button"
                                                 aria-label={t("Move {0} up", definition.label)}
@@ -398,7 +398,7 @@ export default function TagManager({onClose, onCatalogChange}: TagManagerProps) 
                                                 disabled={busy}
                                                 onClick={() => void planDefinitionDeletion(definition.id)}
                                             >
-                                                {t("Delete")}</button>
+                                                {t("Delete")}{' '}</button>
                                         </form>
 
                                         {definition.kind === 'choice' && (
@@ -417,7 +417,7 @@ export default function TagManager({onClose, onCatalogChange}: TagManagerProps) 
                                                             </span>
                                                             <input name="label" defaultValue={value.label}/>
                                                         </label>
-                                                        <button type="submit" disabled={busy}>{t("Save")}</button>
+                                                        <button type="submit" disabled={busy}>{t("Save")}{' '}</button>
                                                         <button
                                                             type="button"
                                                             aria-label={t("Move {0} up", value.label)}
@@ -441,7 +441,7 @@ export default function TagManager({onClose, onCatalogChange}: TagManagerProps) 
                                                             disabled={busy}
                                                             onClick={() => void planValueDeletion(value.id)}
                                                         >
-                                                            {t("Delete")}</button>
+                                                            {t("Delete")}{' '}</button>
                                                     </form>
                                                 ))}
                                                 <form

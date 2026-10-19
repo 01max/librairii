@@ -1,4 +1,5 @@
-import {fireEvent, render, screen, waitFor, within} from '@testing-library/react';
+import {setLanguage} from './i18n';
+import {act, fireEvent, render, screen, waitFor, within} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {beforeEach, expect, test, vi} from 'vitest';
 import {
@@ -144,6 +145,7 @@ const stories = [
 ];
 
 beforeEach(() => {
+    setLanguage('en');
     window.localStorage.clear();
     window.history.replaceState(null, '', '/');
     activeOperations.mockReset();
@@ -3639,4 +3641,21 @@ test('keeps saved terminal history newer than stale progress and explains reveal
     await user.click(within(dialog).getByText('Export', {exact: true}));
     await user.click(within(dialog).getByRole('button', {name: 'Reveal destination'}));
     expect(await within(dialog).findByRole('alert')).toHaveTextContent('The export folder is no longer available.');
+});
+
+
+test('switches interface language without changing the selected story or query', async () => {
+ const user = userEvent.setup();
+ render(<App/>);
+ const story = await screen.findByRole('button', {name: 'Clockwork Forest'});
+ await user.click(story);
+ const query = window.location.hash;
+ const refreshCalls = refreshOfficialMetadata.mock.calls.length;
+ act(() => setLanguage('fr'));
+ expect(screen.getByRole('navigation', {name: 'Navigation principale'})).toBeInTheDocument();
+ expect(screen.getByRole('button', {name: 'Clockwork Forest'})).toHaveAttribute('aria-pressed','true');
+ expect(window.location.hash).toBe(query);
+ expect(document.documentElement.lang).toBe('fr');
+ expect(refreshOfficialMetadata.mock.calls.length).toBe(refreshCalls);
+ act(() => setLanguage('en'));
 });

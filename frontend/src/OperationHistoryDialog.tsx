@@ -92,7 +92,7 @@ export default function OperationHistoryDialog({liveOperations, onClose, onRevea
                         <p>{t("Imports, Lunii syncs, and exports saved in your library.")}</p>
                     </div>
                     <button ref={close} type="button" onClick={onClose} aria-label={t("Close history")}>
-                        {t("Close")}<span aria-hidden="true">×</span>
+                        {t("Close")}{' '}<span aria-hidden="true">×</span>
                     </button>
                 </header>
                 <div className="history-entries" aria-busy={loading}>

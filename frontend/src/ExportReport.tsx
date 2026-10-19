@@ -24,11 +24,11 @@ export default function ExportReport({
         <section className="export-report" aria-label={t("Export report")}>
             <div className="export-report-context">
                 <span>
-                    {t("Destination ·")}{operation.destination || t("Selected folder")}
+                    {t("Destination ·")}{' '}{operation.destination || t("Selected folder")}
                 </span>
                 {operation.sourceShelfNames && operation.sourceShelfNames.length > 0 && (
                     <span>
-                        {t("Source shelves ·")}{operation.sourceShelfNames.join(', ')}
+                        {t("Source shelves ·")}{' '}{operation.sourceShelfNames.join(', ')}
                     </span>
                 )}
             </div>

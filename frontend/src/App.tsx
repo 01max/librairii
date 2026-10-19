@@ -1742,7 +1742,7 @@ function App() {
                                 )}
                             />
                             <i style={{'--c': definition.color} as CSSProperties}/>
-                            {t("Not")}{systemLabel(definition)}
+                            {t("Not")}{' '}{systemLabel(definition)}
                         </label>
                     </>
                 ) : definition.values.map((value) => (
@@ -1779,7 +1779,7 @@ function App() {
     return (
         <div className={`app view-${libraryView}`}>
             <span className="sr-only" data-testid="application-state">
-                {t("Application state:")}{applicationState}
+                {t("Application state:")}{' '}{applicationState}
             </span>
             <aside className="rail" aria-label={t("Primary navigation")} inert={sidebarOpen || historyOpen}>
                 <div className="mark" role="img" aria-label="Librairii">
@@ -2088,7 +2088,7 @@ function App() {
                                 ? t("Dynamic saved shelf")
                                 : t("Stories grouped by your tags")}
                             {' · '}
-                            {page?.totalItems ?? 0} {t("archives")}</p>
+                            {page?.totalItems ?? 0} {' '}{t("archives")}</p>
                     </div>
                     <div className="heading-actions">
                         {activeFilters.length > 0 && !showSavedShelfRows && (
@@ -2506,7 +2506,7 @@ function App() {
                         >
                             {t("← Previous")}</button>
                         <span>
-                            {t("Page")}{page?.page ?? collectionQuery.page} {' ' + t("of") + ' '}{page?.totalPages}
+                            {t("Page")}{' '}{page?.page ?? collectionQuery.page} {' ' + t("of") + ' '}{page?.totalPages}
                         </span>
                         <button
                             type="button"
@@ -2548,7 +2548,7 @@ function App() {
                                 <b>{formatDuration(selected.official?.durationSeconds)}</b>
                             </div>
                             <div className="fact">
-                                <span>{t("Language")}</span>
+                                <span>{t("Language")}{' '}</span>
                                 <b>
                                     {selected.official?.language
                                         ? languageLabel(selected.official.language)

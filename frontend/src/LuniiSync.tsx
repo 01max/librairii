@@ -26,7 +26,7 @@ export default function LuniiSync({status, busy, onSync, onDismiss}: Props) {
                 <p>
                     {t("Sync with the official Lunii API for richer descriptions and cover images for matching stories.")}</p>
                 <p className="last-sync">
-                    {t("Last successful sync:")}{validDate ? (
+                    {t("Last successful sync:")}{' '}{validDate ? (
                         <time dateTime={timestamp}>{date.toLocaleString()}</time>
                     ) : firstSync ? t("Never") : t("Not available yet")}
                 </p>

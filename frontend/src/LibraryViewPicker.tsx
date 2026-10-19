@@ -17,7 +17,7 @@ export default function LibraryViewPicker({view, onChange}: {
                 <button key={value} type="button" aria-pressed={view === value}
                     onClick={() => onChange(value)}>
                     <svg viewBox="0 0 24 24" aria-hidden="true"><path d={path}/></svg>
-                    <span>{label}</span>
+                    <span>{t(label)}</span>
                 </button>
             ))}
         </div>
