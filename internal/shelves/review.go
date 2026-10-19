@@ -3,6 +3,7 @@ package shelves
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"sort"
 
 	"github.com/01max/librairii/internal/collections"
@@ -68,14 +69,26 @@ func evaluateSources(ctx context.Context, tx *sql.Tx, query *library.Query, sour
 	union := map[string][]Source{}
 	for _, source := range sources {
 		opened, err := collections.InspectInTransaction(ctx, tx, source.CollectionID)
+		state := evaluatedSource{Source: source, Definition: opened.Collection, Matches: []string{}}
 		if err != nil {
-			return nil, nil, err
+			if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+				return nil, nil, err
+			}
+			state.Warning = "source_needs_attention"
+			states = append(states, state)
+			continue
 		}
 		matches, err := query.MatchingUUIDs(ctx, opened.Query.StoryLibraryQuery())
 		if err != nil {
-			return nil, nil, err
+			if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+				return nil, nil, err
+			}
+			state.Warning = "source_evaluation_failed"
+			states = append(states, state)
+			continue
 		}
-		states = append(states, evaluatedSource{Source: source, Definition: opened.Collection, Matches: matches})
+		state.Matches = matches
+		states = append(states, state)
 		for _, storyUUID := range matches {
 			union[storyUUID] = append(union[storyUUID], source)
 		}
@@ -141,6 +154,12 @@ func (s *Service) evaluateReview(ctx context.Context, tx *sql.Tx, id int64) (rev
 		excluded[item.UUID] = true
 	}
 	review := Review{ShelfID: id, Revision: shelf.Revision, Additions: make([]Candidate, 0), Removals: make([]Candidate, 0), Warnings: make([]ReviewWarning, 0)}
+	for _, state := range states {
+		if state.Warning != "" {
+			review.Incomplete = true
+			review.Warnings = append(review.Warnings, ReviewWarning{SourceID: state.Source.ID, CollectionID: state.Source.CollectionID, Name: state.Source.Name, Code: state.Warning, Message: "A source needs attention. Removal suggestions are paused."})
+		}
+	}
 	for _, story := range stories {
 		matching := union[story.UUID]
 		if len(matching) > 0 && !current[story.UUID] && !excluded[story.UUID] {
@@ -152,7 +171,7 @@ func (s *Service) evaluateReview(ctx context.Context, tx *sql.Tx, id int64) (rev
 			review.Warnings = append(review.Warnings, ReviewWarning{StoryUUID: member.UUID, Code: "story_unavailable", Message: "This approved story is unavailable in the library."})
 			continue
 		}
-		if len(sources) == 0 || member.Protected || len(union[member.UUID]) > 0 {
+		if review.Incomplete || len(sources) == 0 || member.Protected || len(union[member.UUID]) > 0 {
 			continue
 		}
 		title := member.CachedTitle
@@ -161,7 +180,7 @@ func (s *Service) evaluateReview(ctx context.Context, tx *sql.Tx, id int64) (rev
 		}
 		review.Removals = append(review.Removals, Candidate{UUID: member.UUID, Title: title, Story: byUUID[member.UUID], Origins: origins[member.UUID], Reason: "No longer matches any linked Collection."})
 	}
-	review.UpToDate = len(review.Additions) == 0 && len(review.Removals) == 0
+	review.UpToDate = !review.Incomplete && len(review.Additions) == 0 && len(review.Removals) == 0
 	return reviewEvaluation{Review: review, Shelf: shelf, Members: members, Exclusions: exclusions, Sources: states, Available: sortedKeys(available)}, nil
 }
 
