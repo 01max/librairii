@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	CurrentVersion  = 4
+	CurrentVersion  = 5
 	MaxPayloadBytes = 262_144
 )
 
@@ -55,6 +55,9 @@ type legacyPayload struct {
 }
 
 func EncodePayload(payload Payload) (string, error) {
+	if hasBrokenRestrictions(payload) {
+		return "", ErrInvalidPayload
+	}
 	if _, err := referencesFromPayload(payload); err != nil {
 		return "", err
 	}
@@ -74,12 +77,15 @@ func DecodePayload(version int, payload string) (Payload, error) {
 			return Payload{}, err
 		}
 		decoded = legacy.Payload
-	case 2, 3, CurrentVersion:
+	case 2, 3, 4, CurrentVersion:
 		if err := decode(payload, &decoded); err != nil {
 			return Payload{}, err
 		}
 	default:
 		return Payload{}, ErrUnsupportedVersion
+	}
+	if version == CurrentVersion && hasBrokenRestrictions(decoded) {
+		return Payload{}, ErrInvalidPayload
 	}
 	if _, err := referencesFromPayload(decoded); err != nil {
 		return Payload{}, err
@@ -176,4 +182,17 @@ func decode(payload string, target any) error {
 		return ErrInvalidPayload
 	}
 	return nil
+}
+
+// Built-in flag fields are accepted only while decoding historical versions.
+func hasBrokenRestrictions(p Payload) bool {
+	if p.IncludeBroken || p.BrokenVisibility != "" || p.BrokenState != "" {
+		return true
+	}
+	for _, branch := range p.AnyOf {
+		if hasBrokenRestrictions(branch) {
+			return true
+		}
+	}
+	return false
 }

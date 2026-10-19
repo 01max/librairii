@@ -73,8 +73,11 @@ func DecodeSavedLibraryQuery(
 		)
 	}
 	query := storyLibraryQueryFromPayload(decoded)
-	if version < CurrentSavedLibraryQueryVersion && len(legacyBrokenID) > 0 {
+	if version < 4 && len(legacyBrokenID) > 0 {
 		query = library.TranslateLegacyBroken(query, legacyBrokenID[0])
+	}
+	if version < CurrentSavedLibraryQueryVersion {
+		query = library.WithoutBrokenRestrictions(query)
 	}
 	return canonicalSavedLibraryQuery(query)
 }
