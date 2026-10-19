@@ -586,5 +586,8 @@
   "Add to Shelf…": "Add to Shelf…",
   "Review warnings ({0})": "Review warnings ({0})",
   "Warning pages": "Warning pages",
-  "Affected Shelf pages": "Affected Shelf pages"
+  "Affected Shelf pages": "Affected Shelf pages",
+  "This story is marked as broken.": "This story is marked as broken.",
+  "Stories changed after the export preview. Refresh the preview and try again.": "Stories changed after the export preview. Refresh the preview and try again.",
+  "A selected Collection needs attention before it can be exported.": "A selected Collection needs attention before it can be exported."
 }

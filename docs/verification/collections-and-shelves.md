@@ -78,3 +78,19 @@ pixel comparisons, accessibility, and the existing browser performance gate.
 Bindings are generated with the pinned Wails CLI (`wails generate module`) and
 normalized to file mode 0644. Automated browser checks use local preview servers.
 Platform installer/device acceptance is separate from this feature's automated gate.
+
+Final local evidence (2026-10-19, macOS arm64, Go 1.26.5):
+
+- `make check` passed, including all 186 frontend tests, four zero-mismatch
+  canonical comparisons, responsive layouts, and zero axe violations at both
+  desktop and compact widths across the new curation dialogs.
+- `go test -race ./internal/...` passed. An initial run alongside the normal Go
+  suite hit the existing 750 ms browsing deadline; isolation and the full rerun
+  passed without weakening that test or changing its deadline.
+- Strict OpenSpec validation passed. Regenerating pinned Wails bindings produced
+  no drift after file modes were normalized.
+- Browser performance remained within budget (381.8 ms expansion p95, 3.8 ms
+  input-delay p95 in the final gate). The earlier recorded baseline is retained
+  as an observation, not a machine-independent latency requirement.
+- Linux packaged installer evidence runs in CI; it was not executed on this
+  macOS host. No device transfer acceptance is claimed.

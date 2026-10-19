@@ -586,5 +586,8 @@
   "Add to Shelf…": "Ajouter à une étagère…",
   "Review warnings ({0})": "Avertissements de la revue ({0})",
   "Warning pages": "Pages des avertissements",
-  "Affected Shelf pages": "Pages des étagères concernées"
+  "Affected Shelf pages": "Pages des étagères concernées",
+  "This story is marked as broken.": "Cette histoire est marquée comme défectueuse.",
+  "Stories changed after the export preview. Refresh the preview and try again.": "Les histoires ont changé depuis l’aperçu de l’export. Actualisez l’aperçu puis réessayez.",
+  "A selected Collection needs attention before it can be exported.": "Une collection sélectionnée nécessite une intervention avant de pouvoir être exportée."
 }

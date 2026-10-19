@@ -3908,6 +3908,10 @@ test('restores a curated Shelf without opening a same-id migrated Collection', a
     expect(OpenShelf).toHaveBeenCalledWith(7, expect.objectContaining({name: 'refined'}));
     expect(OpenCollection).not.toHaveBeenCalled();
     expect(window.history.state.collectionQuery.group).toEqual(expect.objectContaining({kind: 'shelf', id: 7}));
+    selectAndPreflightExport.mockResolvedValue(new app.ExportPreflightResponse({error: {code: 'internal', message: 'Shelf export unavailable'}}));
+    await userEvent.setup().click(screen.getByRole('button', {name: 'Export whole Shelf'}));
+    expect(await screen.findByRole('alert')).toHaveTextContent('Shelf export unavailable');
+
 });
 
 test('adds the selected story UUID explicitly to an existing Shelf', async () => {
@@ -3915,7 +3919,7 @@ test('adds the selected story UUID explicitly to an existing Shelf', async () =>
     vi.mocked(AddStoriesToShelf).mockResolvedValue(new app.ShelfResponse({shelf: {id: 7}}));
     const user = userEvent.setup(); render(<App/>);
     await user.click(await screen.findByRole('button', {name: 'Add to Shelf…'}));
-    await user.selectOptions(await screen.findByLabelText('Add selection to Shelf'), '7');
+    await user.selectOptions(await screen.findByRole('combobox', {name: 'Add selection to Shelf'}), '7');
     expect(AddStoriesToShelf).not.toHaveBeenCalled();
     await user.click(screen.getByRole('button', {name: 'Add selected stories'}));
     await waitFor(() => expect(AddStoriesToShelf).toHaveBeenCalledWith(7, [stories[0].uuid]));

@@ -12,8 +12,8 @@ import ShelfDialog from './ShelfDialog';
 import StoryCover from './StoryCover';
 import OutcomeText from './OutcomeText';
 
-export default function ShelfWorkspace({id, revision, query, onQuery, collections: sourceOptions, onChanged, onDeleted, onInspect, onExport, manualOrder = true, onManualOrder, viewMode = 'large'}: {
-    viewMode?: LibraryView; manualOrder?: boolean; onManualOrder?: (manual: boolean) => void; collections: collections.Summary[]; id: number; revision: number; query: CollectionQuery; onQuery: (query: CollectionQuery) => void;
+export default function ShelfWorkspace({id, revision, query, onQuery, collections: sourceOptions, onChanged, onDeleted, onInspect, onExport, manualOrder = true, onManualOrder, viewMode = 'large', exportBusy = false}: {
+    exportBusy?: boolean; viewMode?: LibraryView; manualOrder?: boolean; onManualOrder?: (manual: boolean) => void; collections: collections.Summary[]; id: number; revision: number; query: CollectionQuery; onQuery: (query: CollectionQuery) => void;
     onExport: (request: exporter.PreflightRequest) => void; onChanged: () => void; onDeleted: () => void; onInspect: (story: library.StorySummary) => void;
 }) {
     const [view, setView] = useState<shelves.Evaluation | null>(null);
@@ -71,9 +71,9 @@ export default function ShelfWorkspace({id, revision, query, onQuery, collection
         {reviewOpen && <ShelfReview id={id} onClose={() => setReviewOpen(false)} onApplied={() => {void load(); onChanged();}}/>}
         {manageSources && <ShelfSources id={id} sources={view.sources} collections={sourceOptions} onClose={() => setManageSources(false)} onChanged={() => {void load(); onChanged();}}/>}
         <div className="curated-actions">
-            <button type="button" onClick={() => onExport(new exporter.PreflightRequest({sourceType: 'curated_shelf', shelfIds: [id], query: {}}))}>{t('Export whole Shelf')}</button>
-            <button type="button" onClick={() => onExport(new exporter.PreflightRequest({sourceType: 'current_query', queryShelfId: id, query}))}>{t('Export current result')}</button>
-            <button type="button" disabled={!selected.length} onClick={() => onExport(new exporter.PreflightRequest({sourceType: 'selection', queryShelfId: id, shelfSelectionUuids: selected, query: {}}))}>{t('Export selection')}</button>
+            <button type="button" disabled={exportBusy} onClick={() => onExport(new exporter.PreflightRequest({sourceType: 'curated_shelf', shelfIds: [id], query: {}}))}>{t('Export whole Shelf')}</button>
+            <button type="button" disabled={exportBusy} onClick={() => onExport(new exporter.PreflightRequest({sourceType: 'current_query', queryShelfId: id, query}))}>{t('Export current result')}</button>
+            <button type="button" disabled={exportBusy || !selected.length} onClick={() => onExport(new exporter.PreflightRequest({sourceType: 'selection', queryShelfId: id, shelfSelectionUuids: selected, query: {}}))}>{t('Export selection')}</button>
             <button type="button" onClick={() => setExclusionsOpen(true)}>{t('Manage exclusions ({0})', view.exclusions.length)}</button>
         </div>
         {flags.error && <p role="alert"><OutcomeText text={flags.error}/></p>}

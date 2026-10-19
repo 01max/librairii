@@ -2127,7 +2127,8 @@ function App() {
             <main tabIndex={-1} className="main" inert={sidebarOpen || historyOpen}>
                 {curatedShelfID !== null && <><button className="sidebar-toggle" type="button" onClick={() => setSidebarOpen(true)}>{t('Library & filters')}</button>
                     <LibraryViewPicker view={libraryView} onChange={setLibraryView}/>
-                    <ShelfWorkspace viewMode={libraryView} key={curatedShelfID} id={curatedShelfID} revision={shelfRevision + collectionRevision + detailRevision}
+                    {requestError && <p role="alert" className="dialog-error"><OutcomeText text={requestError}/></p>}
+                    <ShelfWorkspace exportBusy={exportPreparing} viewMode={libraryView} key={curatedShelfID} id={curatedShelfID} revision={shelfRevision + collectionRevision + detailRevision}
                         manualOrder={queryHistory.currentShelfManualOrder()} onManualOrder={(manual) => setCollectionQuery(queryHistory.pushShelf(curatedShelfID, collectionQuery, manual))} collections={savedCollections} query={collectionQuery} onQuery={(query) => setCollectionQuery(queryHistory.pushShelf(curatedShelfID, query))}
                         onChanged={() => setShelfRevision((value) => value + 1)} onDeleted={openAllStories}
                         onExport={(request) => void preflightExport(request)} onInspect={(story) => {setInspectedStory(story); setDetailsOpen(true);}}/>

@@ -169,7 +169,7 @@ func (s *PreflightService) Plan(
 		errors.Is(err, collections.ErrCollectionCriteriaUnavailable) {
 		issue := blockingIssue(
 			IssueShelfNeedsAttention,
-			"A selected shelf needs attention before it can be exported.",
+			"A selected Collection needs attention before it can be exported.",
 		)
 		return PreflightReport{
 			Source:  sourceFromRequest(request),
