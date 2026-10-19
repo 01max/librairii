@@ -2854,7 +2854,7 @@ select:focus-visible {
 @media (prefers-reduced-motion: reduce) { .broken-toggle button > span { transition: none; } }
 
 .story-broken-setting { display: flex; align-items: center; flex-wrap: wrap; gap: 10px 24px; margin: 22px 0; }
-.story-broken-setting > span { color: var(--muted); font-size: 12px; }
+.story-broken-setting > span { color: #526079; font-size: 12px; }
 .story-details-dialog .flag-feedback { font-size: 13px; }
 
 .search-tag-filter { position: relative; flex-shrink: 0; }
