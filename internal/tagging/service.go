@@ -72,9 +72,6 @@ func (s *Service) CreateDefinition(
 	if input.Kind != KindBoolean && input.Kind != KindChoice {
 		return Definition{}, fmt.Errorf("%w: unsupported kind", ErrInvalidDefinition)
 	}
-	if normalizedKey == BrokenKey {
-		return Definition{}, ErrDuplicateDefinition
-	}
 
 	transaction, err := s.database.BeginTx(ctx, nil)
 	if err != nil {

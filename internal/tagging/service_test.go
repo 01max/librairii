@@ -319,3 +319,31 @@ func insertDerivedDefinition(t *testing.T, connection interface {
 	}
 	return id
 }
+
+func TestBrokenIsAnOrdinaryUserTag(t *testing.T) {
+	connection := openTaggingDatabase(t)
+	service, err := NewService(connection)
+	if err != nil {
+		t.Fatal(err)
+	}
+	definition, err := service.CreateDefinition(context.Background(), CreateDefinition{
+		Key: "broken", Label: "My broken tag", Color: "#405CF5", Kind: KindBoolean,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if definition.Protected || definition.Source != SourceUser {
+		t.Fatalf("definition = %#v", definition)
+	}
+	id := insertServiceStory(t, connection)
+	if _, err := service.SetStoryBoolean(context.Background(), id, definition.ID, true); err != nil {
+		t.Fatal(err)
+	}
+	var flagged bool
+	if err := connection.QueryRow("SELECT is_broken FROM stories WHERE id = ?", id).Scan(&flagged); err != nil {
+		t.Fatal(err)
+	}
+	if flagged {
+		t.Fatal("ordinary tag changed the independent story flag")
+	}
+}

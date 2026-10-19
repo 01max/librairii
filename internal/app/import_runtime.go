@@ -131,9 +131,6 @@ func (r *ImportRuntime) Start(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("construct diagnostic export service: %w", err)
 	}
-	if _, err := tagging.SeedBuiltIns(ctx, writeDatabase); err != nil {
-		return fmt.Errorf("seed built-in tags: %w", err)
-	}
 	if err := metadata.SeedDefaultDerivedFacets(ctx, writeDatabase); err != nil {
 		return fmt.Errorf("seed derived tags: %w", err)
 	}
