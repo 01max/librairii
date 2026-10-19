@@ -21,6 +21,10 @@ func (s *Store) Directory() string     { return s.directory }
 func (s *Store) Load() (Profile, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	return s.loadLocked()
+}
+
+func (s *Store) loadLocked() (Profile, error) {
 	if s.loaded {
 		return s.profile, nil
 	}
@@ -46,6 +50,11 @@ func (s *Store) Load() (Profile, error) {
 func (s *Store) Update(change func(*Profile) error) (Profile, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	if !s.loaded {
+		if _, err := s.loadLocked(); err != nil && !errors.Is(err, os.ErrNotExist) {
+			return s.profile, err
+		}
+	}
 	next := s.profile
 	if !s.loaded {
 		next = Profile{Version: Version, Language: "en"}

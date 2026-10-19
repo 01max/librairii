@@ -15,6 +15,7 @@ const frontendRenderedEvent = "frontend:rendered"
 // App is the narrow Wails binding facade. Domain behaviour stays in internal
 // application services and only stable DTOs cross this boundary.
 type App struct {
+	settings                   *settingsController
 	core                       *coreapp.Application
 	quit                       func(context.Context)
 	frontendRendered           func()

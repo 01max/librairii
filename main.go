@@ -68,7 +68,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	appOptions := make([]AppOption, 0, 2)
+	appOptions := []AppOption{WithSettings(readiness, dialogs)}
 	if acceptance.enabled {
 		appOptions = append(appOptions, WithPackagedAcceptance(
 			acceptance.record,

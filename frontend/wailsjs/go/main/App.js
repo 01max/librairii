@@ -14,6 +14,10 @@ export function CancelOperation(arg1) {
   return window['go']['main']['App']['CancelOperation'](arg1);
 }
 
+export function ConfirmLibrarySetup() {
+  return window['go']['main']['App']['ConfirmLibrarySetup']();
+}
+
 export function CreateShelf(arg1, arg2) {
   return window['go']['main']['App']['CreateShelf'](arg1, arg2);
 }
@@ -154,6 +158,10 @@ export function SelectAndPreflightExport(arg1) {
   return window['go']['main']['App']['SelectAndPreflightExport'](arg1);
 }
 
+export function SelectLibraryLocation() {
+  return window['go']['main']['App']['SelectLibraryLocation']();
+}
+
 export function SetBooleanTag(arg1, arg2, arg3) {
   return window['go']['main']['App']['SetBooleanTag'](arg1, arg2, arg3);
 }
@@ -164,6 +172,14 @@ export function SetChoiceTagValue(arg1, arg2, arg3, arg4) {
 
 export function SetChoiceTagValues(arg1, arg2, arg3) {
   return window['go']['main']['App']['SetChoiceTagValues'](arg1, arg2, arg3);
+}
+
+export function SetUILanguage(arg1) {
+  return window['go']['main']['App']['SetUILanguage'](arg1);
+}
+
+export function Settings() {
+  return window['go']['main']['App']['Settings']();
 }
 
 export function StartPreparedExport(arg1) {

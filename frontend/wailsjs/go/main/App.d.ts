@@ -4,12 +4,15 @@ import {app} from '../models';
 import {library} from '../models';
 import {tagging} from '../models';
 import {exporter} from '../models';
+import {main} from '../models';
 
 export function ActiveOperations():Promise<app.OperationListResponse>;
 
 export function ApplicationStatus():Promise<app.StatusResponse>;
 
 export function CancelOperation(arg1:string):Promise<app.OperationResponse>;
+
+export function ConfirmLibrarySetup():Promise<app.MutationResponse>;
 
 export function CreateShelf(arg1:string,arg2:library.StoryLibraryQuery):Promise<app.ShelfResponse>;
 
@@ -81,11 +84,17 @@ export function SelectAndImportStories():Promise<app.OperationResponse>;
 
 export function SelectAndPreflightExport(arg1:exporter.PreflightRequest):Promise<app.ExportPreflightResponse>;
 
+export function SelectLibraryLocation():Promise<main.SettingsSnapshot>;
+
 export function SetBooleanTag(arg1:Array<number>,arg2:number,arg3:boolean):Promise<app.TagAssignmentResponse>;
 
 export function SetChoiceTagValue(arg1:Array<number>,arg2:number,arg3:number,arg4:boolean):Promise<app.TagAssignmentResponse>;
 
 export function SetChoiceTagValues(arg1:Array<number>,arg2:number,arg3:Array<number>):Promise<app.TagAssignmentResponse>;
+
+export function SetUILanguage(arg1:string):Promise<main.SettingsSnapshot>;
+
+export function Settings():Promise<main.SettingsSnapshot>;
 
 export function StartPreparedExport(arg1:string):Promise<app.OperationResponse>;
 

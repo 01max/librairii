@@ -7,6 +7,7 @@ import (
 
 	"github.com/01max/librairii/internal/database"
 	"github.com/01max/librairii/internal/preferences"
+	"github.com/01max/librairii/internal/storage"
 )
 
 // NewConfiguredStorageReadiness loads the independent profile before storage
@@ -41,9 +42,87 @@ func (r *StorageReadiness) Profile() preferences.Profile {
 	defer r.mu.RUnlock()
 	p := r.profile
 	if r.profileStore == nil {
-		p = preferences.Profile{Version: preferences.Version, Language: "en", Root: r.override, Complete: true}
+		language := r.profile.Language
+		if language == "" {
+			language = "en"
+		}
+		p = preferences.Profile{Version: preferences.Version, Language: language, Root: r.override, Complete: true}
 	}
 	return p
 }
 
 func (r *StorageReadiness) Isolated() bool { return r.profileStore == nil }
+
+func (r *StorageReadiness) SuggestedRoot() string {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	if r.profile.Complete {
+		return r.profile.Root
+	}
+	return r.legacyRoot
+}
+func (r *StorageReadiness) SetLanguage(language string) error {
+	if language != "en" && language != "fr" {
+		return preferences.ErrInvalid
+	}
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if r.profileStore == nil {
+		r.profile.Language = language
+		return nil
+	}
+	p, err := r.profileStore.Update(func(p *preferences.Profile) error { p.Language = language; return nil })
+	if err == nil {
+		r.profile = p
+	}
+	return err
+}
+func (r *StorageReadiness) InitializeLibrary(ctx context.Context, root string) error {
+	r.bootstrapMu.Lock()
+	defer r.bootstrapMu.Unlock()
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if r.profileStore == nil {
+		return preferences.ErrInvalid
+	}
+	if r.profile.Complete {
+		return preferences.ErrInvalid
+	}
+	// Permit retry only for this process's previously initialized setup root.
+	if r.profile.Root != root || r.profile.LibraryID == "" {
+		if err := preferences.EmptyTarget(root, r.profileStore.Directory(), ""); err != nil {
+			return err
+		}
+	}
+	layout, err := storage.Initialize(root)
+	if err != nil {
+		return err
+	}
+	db, err := database.Open(ctx, preferences.DatabasePath(root))
+	if err != nil {
+		return err
+	}
+	if err = db.Close(); err != nil {
+		return err
+	}
+	id, err := preferences.EnsureIdentity(root)
+	if err != nil {
+		return err
+	}
+	r.profile.Root = root
+	r.profile.LibraryID = id
+	p, err := r.profileStore.Update(func(p *preferences.Profile) error {
+		p.Root = root
+		p.LibraryID = id
+		p.Complete = true
+		p.Language = r.profile.Language
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+	r.profile = p
+	r.layout = layout
+	r.override = root
+	return nil
+}

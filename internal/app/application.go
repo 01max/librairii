@@ -547,3 +547,12 @@ func removalAPIError(err error) *APIError {
 		return NewAPIError(ErrorInternal, "The story could not be moved to trash.")
 	}
 }
+
+// ResumeStorage re-evaluates readiness after an explicit setup or recovery action.
+func (a *Application) ResumeStorage(ctx context.Context) error {
+	a.mu.Lock()
+	a.state = StateInitializing
+	a.ready = false
+	a.mu.Unlock()
+	return a.Start(ctx)
+}

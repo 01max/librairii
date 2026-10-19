@@ -3,6 +3,7 @@ export namespace app {
 	export class APIError {
 	    code: string;
 	    message: string;
+	    messageKey?: string;
 	    details?: Record<string, string>;
 	
 	    static createFrom(source: any = {}) {
@@ -13,6 +14,7 @@ export namespace app {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.code = source["code"];
 	        this.message = source["message"];
+	        this.messageKey = source["messageKey"];
 	        this.details = source["details"];
 	    }
 	}
@@ -1276,6 +1278,33 @@ export namespace library {
 		    }
 		    return a;
 		}
+	}
+
+}
+
+export namespace main {
+	
+	export class SettingsSnapshot {
+	    language: string;
+	    root: string;
+	    setupRequired: boolean;
+	    isolated: boolean;
+	    pendingOpen: boolean;
+	    error?: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new SettingsSnapshot(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.language = source["language"];
+	        this.root = source["root"];
+	        this.setupRequired = source["setupRequired"];
+	        this.isolated = source["isolated"];
+	        this.pendingOpen = source["pendingOpen"];
+	        this.error = source["error"];
+	    }
 	}
 
 }
