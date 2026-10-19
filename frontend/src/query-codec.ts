@@ -4,6 +4,7 @@ export const STORY_LIBRARY_QUERY_VERSION = 1;
 export const STORY_LIBRARY_HASH_PATH = '#/library';
 
 export type BooleanFilterState = 'ignored' | 'true' | 'false';
+export type BrokenVisibility = 'hide' | 'include' | 'only';
 export type CompatibilityFilter = 'compatible' | 'missing' | 'invalid';
 
 export type CollectionBooleanFilter = {
@@ -19,6 +20,8 @@ export type CollectionChoiceFilter = {
 export type CollectionQuery = {
     anyOf?: CollectionQuery[];
     includeBroken?: boolean;
+    brokenVisibility?: BrokenVisibility;
+    brokenState?: BooleanFilterState;
     name: string;
     languages: string[];
     compatibilities: CompatibilityFilter[];
@@ -182,7 +185,7 @@ function canonicalQueryNode(input: CollectionQuery, budget: {remaining: number})
         !Array.isArray(input.compatibilities) || !Array.isArray(input.booleanFilters) || !Array.isArray(input.choiceFilters)) {
         throw new InvalidCollectionQuery('Invalid combined query.');
     }
-    const allowed = new Set(['anyOf', 'includeBroken', 'name', 'languages', 'compatibilities', 'booleanFilters', 'choiceFilters', 'page', 'pageSize', 'sort']);
+    const allowed = new Set(['anyOf', 'includeBroken', 'brokenVisibility', 'brokenState', 'name', 'languages', 'compatibilities', 'booleanFilters', 'choiceFilters', 'page', 'pageSize', 'sort']);
     const anyOf = input.anyOf?.map((branch) => {
         if (!branch || typeof branch !== 'object' || Array.isArray(branch) || Object.keys(branch).some((key) => !allowed.has(key))) {
             throw new InvalidCollectionQuery('Invalid combined query branch.');
@@ -196,6 +199,11 @@ function canonicalQueryNode(input: CollectionQuery, budget: {remaining: number})
             choiceFilters: branch.choiceFilters ?? [],
         }, budget);
     });
+    const brokenVisibility = input.brokenVisibility ?? (input.includeBroken ? 'include' : 'hide');
+    if (!['hide', 'include', 'only'].includes(brokenVisibility) ||
+        (input.brokenState !== undefined && !isBooleanState(input.brokenState))) {
+        throw new InvalidCollectionQuery('Invalid broken-story criterion.');
+    }
     const name = normalizeSearchText(input.name);
     const languages = [...new Set(input.languages.map(canonicalLanguage))].sort();
     const compatibilities = [...new Set(input.compatibilities)].sort();
@@ -245,7 +253,8 @@ function canonicalQueryNode(input: CollectionQuery, budget: {remaining: number})
     choiceFilters.sort((left, right) => left.definitionId - right.definitionId);
     return {
         ...(anyOf?.length ? {anyOf} : {}),
-        includeBroken: input.includeBroken ?? false,
+        brokenVisibility,
+        ...(input.brokenState && input.brokenState !== 'ignored' ? {brokenState: input.brokenState} : {}),
         name,
         languages,
         compatibilities,
