@@ -11,10 +11,14 @@ const (
 type ExportSourceType string
 
 const (
-	ExportSourceSelection    ExportSourceType = "selection"
-	ExportSourceCurrentQuery ExportSourceType = "current_query"
-	ExportSourceShelf        ExportSourceType = "shelf"
-	ExportSourceShelves      ExportSourceType = "shelves"
+	ExportSourceSelection      ExportSourceType = "selection"
+	ExportSourceCurrentQuery   ExportSourceType = "current_query"
+	ExportSourceShelf          ExportSourceType = "shelf"
+	ExportSourceShelves        ExportSourceType = "shelves"
+	ExportSourceCollection     ExportSourceType = "collection"
+	ExportSourceCollections    ExportSourceType = "collections"
+	ExportSourceCuratedShelf   ExportSourceType = "curated_shelf"
+	ExportSourceCuratedShelves ExportSourceType = "curated_shelves"
 )
 
 type ExportSource struct {

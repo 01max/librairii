@@ -269,14 +269,14 @@ func validateExportSource(source ExportSource) error {
 				ErrInvalidTransition,
 			)
 		}
-	case ExportSourceShelf:
+	case ExportSourceShelf, ExportSourceCollection, ExportSourceCuratedShelf:
 		if len(source.ShelfIDs) != 1 {
 			return fmt.Errorf(
 				"%w: single-shelf export identity is invalid",
 				ErrInvalidTransition,
 			)
 		}
-	case ExportSourceShelves:
+	case ExportSourceShelves, ExportSourceCollections, ExportSourceCuratedShelves:
 		if len(source.ShelfIDs) < 2 {
 			return fmt.Errorf(
 				"%w: multi-shelf export identity is invalid",

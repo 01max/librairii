@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -355,7 +356,7 @@ func writeManagedExportStory(
 	}
 	return library.ExportStory{
 		ID:                  id,
-		UUID:                "00112233-4455-4677-8899-aabbccddeeff",
+		UUID:                fmt.Sprintf("00112233-4455-4677-8899-%012d", id),
 		Title:               name,
 		OriginalFilename:    name,
 		DetectedFormat:      string(catalog.FormatZIP),

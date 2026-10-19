@@ -66,15 +66,15 @@ func TestBrokenFlagsPreserveExportScopesAndPreparedSelections(t *testing.T) {
 		if err != nil || len(current.Stories) != test.count {
 			t.Fatalf("current %s: %#v, %v", test.mode, current, err)
 		}
-		single, err := resolver.ResolveShelf(ctx, all.ID, test.mode)
+		single, err := resolver.ResolveCollection(ctx, all.ID, test.mode)
 		if err != nil || len(single.Stories) != test.count {
 			t.Fatalf("single %s: %#v, %v", test.mode, single, err)
 		}
-		migrated, err := resolver.ResolveShelf(ctx, 20, test.mode)
+		migrated, err := resolver.ResolveCollection(ctx, 20, test.mode)
 		if err != nil || len(migrated.Stories) != test.broken {
 			t.Fatalf("migrated %s: %#v, %v", test.mode, migrated, err)
 		}
-		union, err := resolver.ResolveShelves(ctx, []int64{all.ID, 20}, test.mode)
+		union, err := resolver.ResolveCollections(ctx, []int64{all.ID, 20}, test.mode)
 		if err != nil || len(union.Stories) != test.count || union.CollapsedOverlap != test.overlap {
 			t.Fatalf("union %s: %#v, %v", test.mode, union, err)
 		}

@@ -3,6 +3,7 @@ package exporter
 import (
 	"context"
 	"errors"
+	"fmt"
 	"reflect"
 	"testing"
 
@@ -76,28 +77,28 @@ func TestResolverSnapshotsEverySupportedScope(t *testing.T) {
 		t.Fatalf("current query exports = %#v", libraryQuery.exports)
 	}
 
-	single, err := resolver.ResolveShelf(ctx, 7)
+	single, err := resolver.ResolveCollection(ctx, 7)
 	if err != nil {
 		t.Fatal(err)
 	}
 	assertResolvedScope(
 		t,
 		single,
-		operations.ExportSourceShelf,
+		operations.ExportSourceCollection,
 		[]int64{1, 2},
 		[]int64{7},
 		[]string{"Bedtime"},
 		0,
 	)
 
-	multiple, err := resolver.ResolveShelves(ctx, []int64{7, 8})
+	multiple, err := resolver.ResolveCollections(ctx, []int64{7, 8})
 	if err != nil {
 		t.Fatal(err)
 	}
 	assertResolvedScope(
 		t,
 		multiple,
-		operations.ExportSourceShelves,
+		operations.ExportSourceCollections,
 		[]int64{1, 2, 3},
 		[]int64{7, 8},
 		[]string{"Bedtime", "Adventures"},
@@ -125,13 +126,13 @@ func TestResolverRejectsInvalidOrUnavailableScope(t *testing.T) {
 	); !errors.Is(err, ErrInvalidScope) {
 		t.Fatalf("ResolveSelection(invalid) error = %v", err)
 	}
-	if _, err := resolver.ResolveShelves(
+	if _, err := resolver.ResolveCollections(
 		context.Background(),
 		[]int64{7, 7},
 	); !errors.Is(err, ErrInvalidScope) {
 		t.Fatalf("ResolveShelves(duplicate) error = %v", err)
 	}
-	if _, err := resolver.ResolveShelf(
+	if _, err := resolver.ResolveCollection(
 		context.Background(),
 		7,
 	); !errors.Is(err, ErrStoryUnavailable) {
@@ -204,7 +205,7 @@ func exportStories(ids ...int64) map[int64]library.ExportStory {
 	for _, id := range ids {
 		stories[id] = library.ExportStory{
 			ID:                  id,
-			UUID:                "00112233-4455-4677-8899-aabbccddeeff",
+			UUID:                fmt.Sprintf("00112233-4455-4677-8899-%012d", id),
 			Title:               "Story",
 			OriginalFilename:    "story.zip",
 			DetectedFormat:      "zip",

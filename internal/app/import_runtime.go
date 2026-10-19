@@ -250,7 +250,7 @@ func (r *ImportRuntime) Start(ctx context.Context) error {
 		_ = manager.Close()
 		return fmt.Errorf("construct saved shelf evaluator: %w", err)
 	}
-	exportResolver, err := exporter.NewResolver(libraryQuery, shelfService)
+	exportResolver, err := exporter.NewResolver(libraryQuery, shelfService, curatedService)
 	if err != nil {
 		_ = manager.Close()
 		return fmt.Errorf("construct export resolver: %w", err)

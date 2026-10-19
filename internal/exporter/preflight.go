@@ -117,6 +117,7 @@ func (r PreflightReport) OperationItems() []operations.ExportWorkItem {
 type PreflightRequest struct {
 	BrokenVisibility library.BrokenVisibility    `json:"brokenVisibility,omitempty"`
 	IncludeBroken    bool                        `json:"includeBroken"`
+	QueryShelfID     int64                       `json:"queryShelfId,omitempty"`
 	SourceType       operations.ExportSourceType `json:"sourceType"`
 	StoryIDs         []int64                     `json:"storyIds,omitempty"`
 	Query            library.StoryLibraryQuery   `json:"query"`
@@ -179,14 +180,24 @@ func (s *PreflightService) resolve(
 	case operations.ExportSourceSelection:
 		return s.resolver.ResolveSelection(ctx, request.StoryIDs)
 	case operations.ExportSourceCurrentQuery:
+		if request.QueryShelfID > 0 {
+			return s.resolver.ResolveShelfResult(ctx, request.QueryShelfID, request.Query)
+		}
 		return s.resolver.ResolveCurrentQuery(ctx, request.Query)
-	case operations.ExportSourceShelf:
+	case operations.ExportSourceShelf, operations.ExportSourceCollection:
 		if len(request.ShelfIDs) != 1 {
 			return Scope{}, ErrInvalidScope
 		}
-		return s.resolver.ResolveShelf(ctx, request.ShelfIDs[0], library.Visibility(request.BrokenVisibility, request.IncludeBroken))
-	case operations.ExportSourceShelves:
-		return s.resolver.ResolveShelves(ctx, request.ShelfIDs, library.Visibility(request.BrokenVisibility, request.IncludeBroken))
+		return s.resolver.ResolveCollection(ctx, request.ShelfIDs[0], library.Visibility(request.BrokenVisibility, request.IncludeBroken))
+	case operations.ExportSourceShelves, operations.ExportSourceCollections:
+		return s.resolver.ResolveCollections(ctx, request.ShelfIDs, library.Visibility(request.BrokenVisibility, request.IncludeBroken))
+	case operations.ExportSourceCuratedShelf:
+		if len(request.ShelfIDs) != 1 {
+			return Scope{}, ErrInvalidScope
+		}
+		return s.resolver.ResolveShelf(ctx, request.ShelfIDs[0])
+	case operations.ExportSourceCuratedShelves:
+		return s.resolver.ResolveShelves(ctx, request.ShelfIDs)
 	default:
 		return Scope{}, ErrInvalidScope
 	}
