@@ -1,3 +1,4 @@
+import {useStoryFlags} from './use-story-flags';
 import SettingsPanel from './SettingsPanel';
 import OutcomeText from './OutcomeText';
 import {systemLabel, systemValue} from './system-label';
@@ -624,6 +625,8 @@ function App() {
         setCollectionRevision((current) => current + 1);
         await Promise.all([loadCollectionRef.current(), loadSavedShelves()]);
     }, [loadSavedShelves]);
+
+    const flags = useStoryFlags(invalidateCollection, collectionQuery.brokenVisibility ?? 'hide');
 
     const reconcileOperation = useCallback((snapshot: operations.Snapshot) => {
         setOperationSnapshots((current) => {
@@ -2030,6 +2033,12 @@ function App() {
                         )}
                     </section>
                 )}
+                {flags.error && <p className="flag-feedback dialog-error" role="alert"><OutcomeText text={flags.error}/></p>}
+                {flags.notice && <div className="flag-feedback" role="status">
+                    <span>{flags.notice}</span>
+                    {flags.canUndo && <button type="button" disabled={flags.pending} onClick={() => void flags.undo()}>{t('Undo')}</button>}
+                </div>}
+
                 {activeFilters.length > 0 && !showSavedShelfRows && (
                     <button
                         className="manage shelf-save"
@@ -2132,7 +2141,13 @@ function App() {
                             {page?.totalItems ?? 0} {' '}{t("archives")}</p>
                     </div>
                     <div className="heading-actions">
-                        {activeFilters.length > 0 && !showSavedShelfRows && (
+                        {flags.error && <p className="flag-feedback dialog-error" role="alert"><OutcomeText text={flags.error}/></p>}
+                {flags.notice && <div className="flag-feedback" role="status">
+                    <span>{flags.notice}</span>
+                    {flags.canUndo && <button type="button" disabled={flags.pending} onClick={() => void flags.undo()}>{t('Undo')}</button>}
+                </div>}
+
+                {activeFilters.length > 0 && !showSavedShelfRows && (
                             <button
                                 className="scope-export"
                                 type="button"
@@ -2185,6 +2200,12 @@ function App() {
                             {t("Show Lunii sync")}</button>
                     )}
                 </div>
+
+                {flags.error && <p className="flag-feedback dialog-error" role="alert"><OutcomeText text={flags.error}/></p>}
+                {flags.notice && <div className="flag-feedback" role="status">
+                    <span>{flags.notice}</span>
+                    {flags.canUndo && <button type="button" disabled={flags.pending} onClick={() => void flags.undo()}>{t('Undo')}</button>}
+                </div>}
 
                 {activeFilters.length > 0 && !showSavedShelfRows && (
                     <section className="active-query" aria-label={t("Active filters")}>
