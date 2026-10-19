@@ -157,3 +157,32 @@ func (r *ImportRuntime) CreateShelfFromReview(ctx context.Context, token string,
 	}
 	return service.CreateFromReview(ctx, token, selectedUUIDs)
 }
+
+func (r *ImportRuntime) PreviewShelfSources(ctx context.Context, shelfID int64, collectionIDs []int64) (shelves.SourceChangeReview, error) {
+	service, err := r.currentShelves()
+	if err != nil {
+		return shelves.SourceChangeReview{}, err
+	}
+	return service.PreviewSourceChange(ctx, shelfID, collectionIDs)
+}
+func (r *ImportRuntime) ApplyShelfSources(ctx context.Context, shelfID int64, token string, keepAll bool, decisions []shelves.Decision) (shelves.Shelf, error) {
+	service, err := r.currentShelves()
+	if err != nil {
+		return shelves.Shelf{}, err
+	}
+	return service.ApplySourceChange(ctx, shelfID, token, keepAll, decisions)
+}
+func (r *ImportRuntime) PreviewCollectionDeletion(ctx context.Context, collectionID int64) (shelves.CollectionDeletionReview, error) {
+	service, err := r.currentShelves()
+	if err != nil {
+		return shelves.CollectionDeletionReview{}, err
+	}
+	return service.PreviewCollectionDeletion(ctx, collectionID)
+}
+func (r *ImportRuntime) ApplyCollectionDeletion(ctx context.Context, token string, keepAll bool, decisions []shelves.ShelfDecisions) error {
+	service, err := r.currentShelves()
+	if err != nil {
+		return err
+	}
+	return service.ApplyCollectionDeletion(ctx, token, keepAll, decisions)
+}

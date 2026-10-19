@@ -22,6 +22,7 @@ var (
 	ErrInvalidCollectionName         = errors.New("collection name is invalid")
 	ErrDuplicateCollectionName       = errors.New("collection name already exists")
 	ErrCollectionNotFound            = errors.New("collection does not exist")
+	ErrCollectionInUse               = errors.New("collection supplies shelves; review its detachment before deletion")
 	ErrInvalidCollectionOrder        = errors.New("collection order is invalid")
 	ErrCollectionNeedsAttention      = errors.New("collection needs attention")
 	ErrCollectionCriteriaUnavailable = errors.New("collection criteria are unavailable")
@@ -412,12 +413,30 @@ func (s *Service) Reorder(
 }
 
 func (s *Service) Delete(ctx context.Context, collectionID int64) error {
-	result, err := s.database.ExecContext(
+	tx, err := s.database.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	var active int
+	if err := tx.QueryRowContext(ctx, `SELECT count(*) FROM shelf_sources WHERE collection_id=? AND active=1`, collectionID).Scan(&active); err != nil {
+		return err
+	}
+	if active > 0 {
+		return ErrCollectionInUse
+	}
+	if _, err := tx.ExecContext(ctx, `UPDATE shelf_sources SET collection_id=NULL WHERE collection_id=? AND active=0`, collectionID); err != nil {
+		return err
+	}
+	result, err := tx.ExecContext(
 		ctx,
 		"DELETE FROM collections WHERE id = ?",
 		collectionID,
 	)
-	return requireCollectionMutation(result, err)
+	if err := requireCollectionMutation(result, err); err != nil {
+		return err
+	}
+	return tx.Commit()
 }
 
 func (s *Service) List(ctx context.Context) ([]Collection, error) {

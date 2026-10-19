@@ -144,6 +144,8 @@ func (a *Application) requireCollectionMutation() *CollectionResponse {
 
 func collectionAPIError(err error) *APIError {
 	switch {
+	case errors.Is(err, collections.ErrCollectionInUse):
+		return NewAPIError(ErrorConflict, "This Collection supplies Shelves. Review its removal first.")
 	case errors.Is(err, collections.ErrInvalidCollectionName),
 		errors.Is(err, collections.ErrDuplicateCollectionName),
 		errors.Is(err, collections.ErrInvalidCollectionOrder),

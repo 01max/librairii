@@ -7,6 +7,10 @@ import (
 	"github.com/01max/librairii/internal/library"
 )
 
+func ReadInTransaction(ctx context.Context, tx *sql.Tx, id int64) (Collection, error) {
+	return readCollection(ctx, tx, id)
+}
+
 // InspectInTransaction validates a source without migrating or mutating it.
 // Shelf review can therefore evaluate and apply against one writer snapshot.
 func InspectInTransaction(ctx context.Context, tx *sql.Tx, id int64) (OpenedCollection, error) {

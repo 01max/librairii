@@ -146,3 +146,32 @@ func (a *App) CreateShelfFromReview(token string, selectedUUIDs []string) coreap
 	defer a.libraryGate.RUnlock()
 	return a.core.CreateShelfFromReview(a.runtimeContext(), token, selectedUUIDs)
 }
+
+func (a *App) PreviewShelfSources(shelfID int64, collectionIDs []int64) coreapp.ShelfSourceReviewResponse {
+	if !a.libraryGate.TryRLock() {
+		return coreapp.ShelfSourceReviewResponse{Error: coreapp.NewAPIError(coreapp.ErrorNotReady, "settings.busy")}
+	}
+	defer a.libraryGate.RUnlock()
+	return a.core.PreviewShelfSources(a.runtimeContext(), shelfID, collectionIDs)
+}
+func (a *App) ApplyShelfSources(shelfID int64, token string, keepAll bool, decisions []shelves.Decision) coreapp.ShelfResponse {
+	if !a.libraryGate.TryRLock() {
+		return coreapp.ShelfResponse{Error: coreapp.NewAPIError(coreapp.ErrorNotReady, "settings.busy")}
+	}
+	defer a.libraryGate.RUnlock()
+	return a.core.ApplyShelfSources(a.runtimeContext(), shelfID, token, keepAll, decisions)
+}
+func (a *App) PreviewCollectionDeletion(collectionID int64) coreapp.CollectionDeletionReviewResponse {
+	if !a.libraryGate.TryRLock() {
+		return coreapp.CollectionDeletionReviewResponse{Error: coreapp.NewAPIError(coreapp.ErrorNotReady, "settings.busy")}
+	}
+	defer a.libraryGate.RUnlock()
+	return a.core.PreviewCollectionDeletion(a.runtimeContext(), collectionID)
+}
+func (a *App) ApplyCollectionDeletion(token string, keepAll bool, decisions []shelves.ShelfDecisions) coreapp.MutationResponse {
+	if !a.libraryGate.TryRLock() {
+		return coreapp.MutationResponse{Error: coreapp.NewAPIError(coreapp.ErrorNotReady, "settings.busy")}
+	}
+	defer a.libraryGate.RUnlock()
+	return a.core.ApplyCollectionDeletion(a.runtimeContext(), token, keepAll, decisions)
+}

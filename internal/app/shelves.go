@@ -26,6 +26,10 @@ type ShelfPort interface {
 	ApplyShelfUpdate(context.Context, int64, string, []shelves.Decision) (shelves.Shelf, error)
 	PreviewShelfCreation(context.Context, shelves.CreationRequest) (shelves.Review, error)
 	CreateShelfFromReview(context.Context, string, []string) (shelves.Shelf, error)
+	PreviewShelfSources(context.Context, int64, []int64) (shelves.SourceChangeReview, error)
+	ApplyShelfSources(context.Context, int64, string, bool, []shelves.Decision) (shelves.Shelf, error)
+	PreviewCollectionDeletion(context.Context, int64) (shelves.CollectionDeletionReview, error)
+	ApplyCollectionDeletion(context.Context, string, bool, []shelves.ShelfDecisions) error
 }
 type ShelfListResponse struct {
 	Shelves []shelves.Shelf `json:"shelves"`
@@ -252,4 +256,53 @@ func (a *Application) CreateShelfFromReview(ctx context.Context, token string, s
 		return ShelfResponse{Error: shelfAPIError(err)}
 	}
 	return ShelfResponse{Shelf: &result}
+}
+
+type ShelfSourceReviewResponse struct {
+	Review *shelves.SourceChangeReview `json:"review,omitempty"`
+	Error  *APIError                   `json:"error,omitempty"`
+}
+type CollectionDeletionReviewResponse struct {
+	Review *shelves.CollectionDeletionReview `json:"review,omitempty"`
+	Error  *APIError                         `json:"error,omitempty"`
+}
+
+func (a *Application) PreviewShelfSources(ctx context.Context, shelfID int64, collectionIDs []int64) ShelfSourceReviewResponse {
+	if a.shelves == nil {
+		return ShelfSourceReviewResponse{Error: NewAPIError(ErrorNotReady, "Shelves are unavailable until storage is ready.")}
+	}
+	result, err := a.shelves.PreviewShelfSources(ctx, shelfID, collectionIDs)
+	if err != nil {
+		return ShelfSourceReviewResponse{Error: shelfAPIError(err)}
+	}
+	return ShelfSourceReviewResponse{Review: &result}
+}
+func (a *Application) ApplyShelfSources(ctx context.Context, shelfID int64, token string, keepAll bool, decisions []shelves.Decision) ShelfResponse {
+	if a.shelves == nil || !a.Status().MutationsAllowed {
+		return ShelfResponse{Error: NewAPIError(ErrorNotReady, "Shelves are unavailable until storage is ready.")}
+	}
+	result, err := a.shelves.ApplyShelfSources(ctx, shelfID, token, keepAll, decisions)
+	if err != nil {
+		return ShelfResponse{Error: shelfAPIError(err)}
+	}
+	return ShelfResponse{Shelf: &result}
+}
+func (a *Application) PreviewCollectionDeletion(ctx context.Context, collectionID int64) CollectionDeletionReviewResponse {
+	if a.shelves == nil {
+		return CollectionDeletionReviewResponse{Error: NewAPIError(ErrorNotReady, "Shelves are unavailable until storage is ready.")}
+	}
+	result, err := a.shelves.PreviewCollectionDeletion(ctx, collectionID)
+	if err != nil {
+		return CollectionDeletionReviewResponse{Error: shelfAPIError(err)}
+	}
+	return CollectionDeletionReviewResponse{Review: &result}
+}
+func (a *Application) ApplyCollectionDeletion(ctx context.Context, token string, keepAll bool, decisions []shelves.ShelfDecisions) MutationResponse {
+	if a.shelves == nil || !a.Status().MutationsAllowed {
+		return MutationResponse{Error: NewAPIError(ErrorNotReady, "Shelves are unavailable until storage is ready.")}
+	}
+	if err := a.shelves.ApplyCollectionDeletion(ctx, token, keepAll, decisions); err != nil {
+		return MutationResponse{Error: shelfAPIError(err)}
+	}
+	return MutationResponse{Success: true}
 }

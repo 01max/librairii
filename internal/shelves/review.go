@@ -54,6 +54,7 @@ type reviewEvaluation struct {
 	Exclusions []Exclusion
 	Sources    []evaluatedSource
 	Available  []string
+	Stories    map[string]*library.StorySummary
 }
 
 func sortedKeys[V any](values map[string]V) []string {
@@ -98,6 +99,9 @@ func evaluateSources(ctx context.Context, tx *sql.Tx, query *library.Query, sour
 }
 
 func (s *Service) evaluateReview(ctx context.Context, tx *sql.Tx, id int64) (reviewEvaluation, error) {
+	return s.evaluateReviewWithSources(ctx, tx, id, nil)
+}
+func (s *Service) evaluateReviewWithSources(ctx context.Context, tx *sql.Tx, id int64, override *[]Source) (reviewEvaluation, error) {
 	shelf, err := readShelf(ctx, tx, id)
 	if err != nil {
 		return reviewEvaluation{}, err
@@ -110,9 +114,14 @@ func (s *Service) evaluateReview(ctx context.Context, tx *sql.Tx, id int64) (rev
 	if err != nil {
 		return reviewEvaluation{}, err
 	}
-	sources, err := readSources(ctx, tx, id, true)
-	if err != nil {
-		return reviewEvaluation{}, err
+	var sources []Source
+	if override == nil {
+		sources, err = readSources(ctx, tx, id, true)
+		if err != nil {
+			return reviewEvaluation{}, err
+		}
+	} else {
+		sources = *override
 	}
 	query := s.library.WithTransaction(tx)
 	states, union, err := evaluateSources(ctx, tx, query, sources)
@@ -182,7 +191,7 @@ func (s *Service) evaluateReview(ctx context.Context, tx *sql.Tx, id int64) (rev
 		review.Removals = append(review.Removals, Candidate{UUID: member.UUID, Title: title, Story: byUUID[member.UUID], Origins: origins[member.UUID], Reason: "No longer matches any linked Collection."})
 	}
 	review.UpToDate = !review.Incomplete && len(review.Additions) == 0 && len(review.Removals) == 0
-	return reviewEvaluation{Review: review, Shelf: shelf, Members: members, Exclusions: exclusions, Sources: states, Available: sortedKeys(available)}, nil
+	return reviewEvaluation{Review: review, Shelf: shelf, Members: members, Exclusions: exclusions, Sources: states, Available: sortedKeys(available), Stories: byUUID}, nil
 }
 
 func (s *Service) Preview(ctx context.Context, id int64) (Review, error) {
