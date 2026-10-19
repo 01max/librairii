@@ -8,6 +8,7 @@ import (
 
 	coreapp "github.com/01max/librairii/internal/app"
 	"github.com/01max/librairii/internal/exporter"
+	"github.com/01max/librairii/internal/localization"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
@@ -24,6 +25,7 @@ func (RuntimeEvents) Emit(ctx context.Context, name string, payload any) {
 }
 
 type RuntimeDialogs struct {
+	Language      func() string
 	openFile      func(context.Context, runtime.OpenDialogOptions) (string, error)
 	openFiles     func(context.Context, runtime.OpenDialogOptions) ([]string, error)
 	openDirectory func(context.Context, runtime.OpenDialogOptions) (string, error)
@@ -67,10 +69,10 @@ func (d *RuntimeDialogs) OpenFiles(
 	request coreapp.FileDialogRequest,
 ) ([]string, error) {
 	options := runtime.OpenDialogOptions{
-		Title: request.Title,
+		Title: d.text(request.Title),
 		Filters: []runtime.FileFilter{
 			{
-				DisplayName: "Story archives",
+				DisplayName: d.text("Story archives"),
 				Pattern:     extensionPattern(request.Extensions),
 			},
 		},
@@ -92,7 +94,7 @@ func (d *RuntimeDialogs) OpenFiles(
 
 func (d *RuntimeDialogs) OpenDirectory(ctx context.Context, title string) (string, error) {
 	options := runtime.OpenDialogOptions{
-		Title:                title,
+		Title:                d.text(title),
 		CanCreateDirectories: true,
 		ResolvesAliases:      true,
 	}
@@ -130,4 +132,12 @@ func extensionPattern(extensions []string) string {
 		patterns = append(patterns, pattern)
 	}
 	return strings.Join(patterns, ";")
+}
+
+func (d *RuntimeDialogs) text(key string) string {
+	language := "en"
+	if d.Language != nil {
+		language = d.Language()
+	}
+	return localization.Text(language, key)
 }

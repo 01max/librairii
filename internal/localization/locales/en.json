@@ -376,5 +376,8 @@
   "settings.destination_invalid": "Choose an accessible empty folder outside the library and settings.",
   "settings.override": "Location is controlled by LIBRAIRII_DATA_ROOT.",
   "settings.move_failed": "The move could not finish. Your data was preserved.",
-  "settings.identity_mismatch": "This folder does not contain the expected library."
+  "settings.identity_mismatch": "This folder does not contain the expected library.",
+  "Story archives": "Story archives",
+  "Export story archives": "Export story archives",
+  "Export diagnostics": "Export diagnostics"
 }

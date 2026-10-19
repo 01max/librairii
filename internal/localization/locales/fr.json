@@ -376,5 +376,8 @@
   "settings.destination_invalid": "Choisissez un dossier vide accessible, distinct de la bibliothèque et des réglages.",
   "settings.override": "L’emplacement est défini par LIBRAIRII_DATA_ROOT.",
   "settings.move_failed": "Le déplacement n’a pas pu aboutir. Les données ont été conservées.",
-  "settings.identity_mismatch": "Ce dossier ne contient pas la bibliothèque attendue."
+  "settings.identity_mismatch": "Ce dossier ne contient pas la bibliothèque attendue.",
+  "Story archives": "Archives d’histoires",
+  "Export story archives": "Exporter des archives d’histoires",
+  "Export diagnostics": "Exporter les diagnostics"
 }
