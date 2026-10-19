@@ -1,57 +1,57 @@
 {
-  "generatedAt": "2026-07-25T19:22:17Z",
+  "generatedAt": "2026-10-19T19:33:13Z",
   "goVersion": "go1.26.5",
   "operatingSystem": "darwin",
   "architecture": "arm64",
   "stories": 5000,
-  "shelves": 6,
+  "collections": 6,
   "samples": 20,
-  "fixtureGenerationMilliseconds": 358.483,
+  "fixtureGenerationMilliseconds": 292.44,
   "metrics": {
     "artworkLoad": {
-      "medianMilliseconds": 14.435,
-      "p95Milliseconds": 15.558,
-      "maximumMilliseconds": 15.663,
+      "medianMilliseconds": 13.82,
+      "p95Milliseconds": 13.956,
+      "maximumMilliseconds": 14.033,
       "budgetMilliseconds": 50,
       "withinBudget": true,
       "resultCount": 24
     },
+    "collectionCounts": {
+      "medianMilliseconds": 19.656,
+      "p95Milliseconds": 20.362,
+      "maximumMilliseconds": 20.377,
+      "budgetMilliseconds": 250,
+      "withinBudget": true,
+      "resultCount": 13875
+    },
     "collectionQuery": {
-      "medianMilliseconds": 8.964,
-      "p95Milliseconds": 9.43,
-      "maximumMilliseconds": 9.453,
+      "medianMilliseconds": 8.421,
+      "p95Milliseconds": 8.548,
+      "maximumMilliseconds": 8.565,
       "budgetMilliseconds": 100,
       "withinBudget": true,
       "resultCount": 5000
     },
     "combinedFilters": {
-      "medianMilliseconds": 12.576,
-      "p95Milliseconds": 13.328,
-      "maximumMilliseconds": 13.409,
+      "medianMilliseconds": 11.957,
+      "p95Milliseconds": 12.045,
+      "maximumMilliseconds": 12.177,
       "budgetMilliseconds": 150,
       "withinBudget": true,
-      "resultCount": 74
+      "resultCount": 85
     },
     "deepPagination": {
-      "medianMilliseconds": 18.072,
-      "p95Milliseconds": 18.662,
-      "maximumMilliseconds": 18.904,
+      "medianMilliseconds": 16.942,
+      "p95Milliseconds": 17.461,
+      "maximumMilliseconds": 17.713,
       "budgetMilliseconds": 120,
       "withinBudget": true,
       "resultCount": 24
     },
-    "shelfCounts": {
-      "medianMilliseconds": 20.726,
-      "p95Milliseconds": 21.47,
-      "maximumMilliseconds": 21.491,
-      "budgetMilliseconds": 250,
-      "withinBudget": true,
-      "resultCount": 9578
-    },
     "substringSearch": {
-      "medianMilliseconds": 14.14,
-      "p95Milliseconds": 14.707,
-      "maximumMilliseconds": 15.209,
+      "medianMilliseconds": 13.557,
+      "p95Milliseconds": 13.87,
+      "maximumMilliseconds": 14.053,
       "budgetMilliseconds": 120,
       "withinBudget": true,
       "resultCount": 624
@@ -60,6 +60,11 @@
   "queryPlans": {
     "artworkLoad": [
       "SEARCH stories USING INTEGER PRIMARY KEY (rowid=?)"
+    ],
+    "collectionCounts": [
+      "SEARCH a USING COVERING INDEX idx_story_archives_validation_story (validation_state=?)",
+      "SEARCH s USING INTEGER PRIMARY KEY (rowid=?)",
+      "SEARCH choice_assignment EXISTS USING COVERING INDEX idx_story_tag_choice_assignment (story_id=? AND definition_id=? AND value_id=?)"
     ],
     "collectionQuery": [
       "SCAN s USING INDEX idx_stories_uuid",
@@ -76,12 +81,10 @@
       "SEARCH official_snapshot USING INDEX idx_catalog_snapshots_active_locale (locale=?)",
       "SEARCH official_name USING INDEX sqlite_autoindex_official_story_metadata_1 (snapshot_id=? AND story_uuid=?)",
       "CORRELATED SCALAR SUBQUERY 2",
-      "SEARCH official_language USING COVERING INDEX idx_official_metadata_language_story (language=? AND story_uuid=? AND snapshot_id=?)",
+      "SEARCH official_language USING COVERING INDEX idx_official_metadata_language_story (language=? AND story_uuid=?)",
       "SEARCH language_snapshot USING INTEGER PRIMARY KEY (rowid=?)",
-      "CORRELATED SCALAR SUBQUERY 3",
-      "SEARCH boolean_assignment USING COVERING INDEX idx_story_tag_assignments_filter (definition_id=? AND value_id=? AND story_id=?)",
       "SEARCH choice_assignment EXISTS USING COVERING INDEX idx_story_tag_choice_assignment (story_id=? AND definition_id=? AND value_id=?)",
-      "CORRELATED SCALAR SUBQUERY 5",
+      "CORRELATED SCALAR SUBQUERY 4",
       "SEARCH official_snapshot USING INDEX idx_catalog_snapshots_active_locale (locale=?)",
       "SEARCH official_name USING INDEX sqlite_autoindex_official_story_metadata_1 (snapshot_id=? AND story_uuid=?)",
       "USE TEMP B-TREE FOR ORDER BY"
@@ -93,11 +96,6 @@
       "SEARCH official_snapshot USING INDEX idx_catalog_snapshots_active_locale (locale=?)",
       "SEARCH official_name USING INDEX sqlite_autoindex_official_story_metadata_1 (snapshot_id=? AND story_uuid=?)",
       "USE TEMP B-TREE FOR ORDER BY"
-    ],
-    "shelfCounts": [
-      "SEARCH a USING COVERING INDEX idx_story_archives_validation_story (validation_state=?)",
-      "SEARCH s USING INTEGER PRIMARY KEY (rowid=?)",
-      "SEARCH choice_assignment EXISTS USING COVERING INDEX idx_story_tag_choice_assignment (story_id=? AND definition_id=? AND value_id=?)"
     ],
     "substringSearch": [
       "SCAN s USING INDEX idx_stories_display_name_normalized",

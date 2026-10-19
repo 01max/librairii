@@ -3,6 +3,7 @@ import {PreviewShelfCreation, CreateShelfFromReview} from '../wailsjs/go/main/Ap
 import {collections, shelves} from '../wailsjs/go/models';
 import {t} from './i18n';
 import ShelfDialog from './ShelfDialog';
+import ReviewWarnings from './ReviewWarnings';
 import OutcomeText from './OutcomeText';
 
 export default function ShelfCreation({collections: sources, manualUUIDs, onClose, onCreated}: {
@@ -45,7 +46,7 @@ export default function ShelfCreation({collections: sources, manualUUIDs, onClos
             <button type="button" disabled={busy || !name.trim()} onClick={() => void preview()}>{t('Preview initial stories')}</button>
         </> : <>
             {review.incomplete && <p role="status">{t('Review incomplete. Some sources could not be evaluated.')}</p>}
-            {(review.warnings ?? []).map((warning, index) => <p key={index}><OutcomeText text={warning.message}/></p>)}
+            <ReviewWarnings warnings={review.warnings ?? []}/>
             <p>{t('Choose initial members explicitly. Unchecked stories remain suggestions.')}</p>
             <button type="button" disabled={busy} onClick={() => setSelected(review.additions.map((item) => item.uuid))}>{t('Select all candidates')}</button>
             <button type="button" disabled={busy} onClick={() => setSelected([])}>{t('Clear selection')}</button>

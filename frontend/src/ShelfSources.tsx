@@ -2,6 +2,7 @@ import {useCallback, useEffect, useState} from 'react';
 import {PreviewShelfSources, ApplyShelfSources, PreviewCollectionDeletion, ApplyCollectionDeletion} from '../wailsjs/go/main/App';
 import {collections, shelves} from '../wailsjs/go/models';
 import ShelfDialog from './ShelfDialog';
+import ReviewWarnings from './ReviewWarnings';
 import OutcomeText from './OutcomeText';
 import {t} from './i18n';
 
@@ -11,7 +12,7 @@ export function AffectedMembers({plan, choices, onChange, busy}: {plan: shelves.
     return <section aria-label={plan.shelfName}>
         <h4>{plan.shelfName} · {t('{0} affected stories', plan.affected.length)}</h4>
         {plan.incomplete && <p role="status">{t('Review incomplete. Removal is unavailable while source coverage is uncertain.')}</p>}
-        {(plan.warnings ?? []).map((warning, index) => <p key={index}><OutcomeText text={warning.message}/></p>)}
+        <ReviewWarnings warnings={plan.warnings ?? []}/>
         <p>{t('Keep protects membership. Remove also excludes future suggestions. Every affected story needs a decision.')}</p>
         <ul className="curated-candidates">{plan.affected.slice(page * 25, (page + 1) * 25).map((item) => <li key={item.uuid}>
             <label>{item.title}<select disabled={busy} value={choices[item.uuid] ?? ''} onChange={(event) => onChange({...choices, [item.uuid]: event.target.value})}>
@@ -60,12 +61,13 @@ export default function ShelfSources({id, sources, collections: options, onClose
 }
 
 export function CollectionDeletion({id, name, onClose, onDeleted}: {id: number; name: string; onClose: () => void; onDeleted: () => void}) {
+    const [shelfPage, setShelfPage] = useState(0);
     const [plan, setPlan] = useState<shelves.CollectionDeletionReview | null>(null);
     const [choices, setChoices] = useState<Record<number, Choices>>({});
     const [busy, setBusy] = useState(false), [error, setError] = useState('');
     const preview = useCallback(async () => {
         setBusy(true); setError('');
-        try {const response = await PreviewCollectionDeletion(id); if (!response.review) throw new Error(response.error?.message ?? t('Source preview failed.')); setPlan(response.review); setChoices({});}
+        try {const response = await PreviewCollectionDeletion(id); if (!response.review) throw new Error(response.error?.message ?? t('Source preview failed.')); setPlan(response.review); setChoices({}); setShelfPage(0);}
         catch (error) {setError(error instanceof Error ? error.message : t('Source preview failed.'));} finally {setBusy(false);}
     }, [id]);
     useEffect(() => {const timer = window.setTimeout(() => void preview(), 0); return () => window.clearTimeout(timer);}, [preview]);
@@ -76,7 +78,8 @@ export function CollectionDeletion({id, name, onClose, onDeleted}: {id: number; 
     };
     return <ShelfDialog title={t('Delete “{0}”?', name)} busy={busy} onClose={onClose}>
         <p>{t('The Collection will be deleted after all linked Shelf decisions are approved. Library stories remain available.')}</p>
-        {plan?.shelves.map((shelf) => <AffectedMembers key={`${plan.token}-${shelf.shelfId}`} plan={shelf} busy={busy} choices={choices[shelf.shelfId] ?? {}} onChange={(value) => setChoices({...choices, [shelf.shelfId]: value})}/>)}
+        {plan?.shelves.slice(shelfPage, shelfPage + 1).map((shelf) => <AffectedMembers key={`${plan.token}-${shelf.shelfId}`} plan={shelf} busy={busy} choices={choices[shelf.shelfId] ?? {}} onChange={(value) => setChoices({...choices, [shelf.shelfId]: value})}/>)}
+        {plan && plan.shelves.length > 1 && <nav className="pagination" aria-label={t('Affected Shelf pages')}><button type="button" disabled={shelfPage === 0} onClick={() => setShelfPage(shelfPage - 1)}>{t('← Previous')}</button><span>{t('Page {0} of {1}', shelfPage + 1, plan.shelves.length)}</span><button type="button" disabled={shelfPage + 1 >= plan.shelves.length} onClick={() => setShelfPage(shelfPage + 1)}>{t('Next →')}</button></nav>}
         {error && <p role="alert" className="dialog-error"><OutcomeText text={error}/></p>}
         <button type="button" disabled={busy} onClick={() => void preview()}>{t('Refresh preview')}</button>
         <button type="button" disabled={busy || !plan} onClick={() => void apply(true)}>{t('Keep all Shelf stories and delete Collection')}</button>

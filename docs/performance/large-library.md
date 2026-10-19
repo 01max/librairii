@@ -3,13 +3,13 @@
 `go run ./cmd/library-performance -stories 5000 -samples 20` builds a fresh
 temporary Librairii data root and records representative collection timings.
 The generator creates deterministic synthetic titles, descriptions, UUIDs,
-metadata, tag assignments, saved shelves, archive records, and an original
+metadata, tag assignments, saved Collections, archive records, and an original
 set of 24 deterministic 320×400 procedural PNG covers. It does not copy
 copyrighted story or catalog content and it does not create usable
 story-archive payloads.
 
 The scenarios cover the first collection page, literal substring search,
-combined name/language/compatibility/boolean/choice filters, all saved-shelf
+combined name/language/compatibility/boolean/choice filters, all saved-Collection
 counts, deep offset pagination, and loading the 24 distinct embedded covers
 returned on the first page. Artwork timing exercises the application asset
 handler, reads each distinct local file, and fully decodes every PNG at its
@@ -31,7 +31,7 @@ interaction budget:
 | Collection query | 100 ms |
 | Literal substring search | 120 ms |
 | Combined filters | 150 ms |
-| Six saved-shelf counts | 250 ms |
+| Six saved-Collection counts | 250 ms |
 | Deep pagination | 120 ms |
 | 24 distinct asset-handler loads and PNG decodes | 50 ms |
 
@@ -74,7 +74,7 @@ shared CI runs.
 
 The browser scenario is intentionally separate from the 5,000-story
 Go/SQLite fixture above. Five thousand records remain the storage, query,
-filter, shelf, pagination, and artwork stress case; the UI gate models a
+filter, Collection, pagination, and artwork stress case; the UI gate models a
 generous interactive library without requiring every synthetic backend row to
 be mounted in the DOM simultaneously.
 
@@ -87,9 +87,34 @@ be mounted in the DOM simultaneously.
 - Literal substring semantics intentionally retain an indexed normalized-name
   scan. SQLite's B-tree indexes cannot answer arbitrary infix matches, and the
   measured p95 remains well inside budget without changing search behavior.
-- Shelf counts use a count-only library path, avoiding page-row and metadata
-  hydration. This reduced the six-shelf p95 from 66.093 ms to 21.480 ms.
+- Collection counts use a count-only library path, avoiding page-row and metadata
+  hydration. This reduced the six-Collection p95 from 66.093 ms to 21.480 ms.
 - “View all” fetches 50-story batches and publishes each batch between
   animation frames so React can paint and accept input during expansion.
 - Collection artwork remains native-lazy and now requests asynchronous image
   decoding; only the selected drawer artwork is eager.
+
+
+## Curated Shelf review baseline (2026-10-19)
+
+`go test ./internal/shelves -run TestLargeLibraryReviewUnionAndApplyBudget -count=1 -v`
+uses 5,000 archived UUIDs (including 1,000 Broken flags), two overlapping
+Collection sources, and four complete preview/fingerprint samples. It verifies
+one deduplicated candidate per UUID, applies 50 explicit additions, retains
+accepted origins, and checks that 4,950 candidates remain.
+
+On this macOS arm64 host (Go 1.26.5), the slowest sampled complete preview was
+23.12 ms; recomputation plus applying 50 decisions took 25.19 ms. The portable
+regression ceiling is 5 seconds per operation, including under the race detector.
+These observations are not latency promises for other hardware.
+
+Review, creation, detachment, warning, and exclusion lists render at most 25 rows per page. Collection deletion renders one affected Shelf at a time, retaining decisions across Shelf pages.
+A browser fixture carries 300 update candidates and asserts that only 25 decision
+controls mount, with none approved by default. Complete candidate snapshots stay
+on the server for validation. Membership reordering fetches UUID pages without
+mounting all member cards. Source evaluation uses set queries and one metadata
+hydration pass over the combined UUID set, rather than querying per candidate.
+
+The refreshed 5,000-record query/artwork and 1,000-card expansion observations
+are recorded in the adjacent baseline JSON files. The browser expansion p95 was
+382.8 ms and input-delay p95 was 4.1 ms, within the existing 3,000 ms / 100 ms gates.

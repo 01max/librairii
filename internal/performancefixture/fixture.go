@@ -34,7 +34,7 @@ const (
 
 type Fixture struct {
 	StoryCount           int
-	ShelfIDs             []int64
+	CollectionIDs        []int64
 	EmbeddedArtworkPaths []string
 }
 
@@ -259,7 +259,7 @@ func Generate(
 	); err != nil {
 		return Fixture{}, err
 	}
-	shelfIDs, err := seedShelves(ctx, transaction)
+	collectionIDs, err := seedCollections(ctx, transaction)
 	if err != nil {
 		return Fixture{}, err
 	}
@@ -271,7 +271,7 @@ func Generate(
 	}
 	return Fixture{
 		StoryCount:           storyCount,
-		ShelfIDs:             shelfIDs,
+		CollectionIDs:        collectionIDs,
 		EmbeddedArtworkPaths: artworkPaths,
 	}, nil
 }
@@ -339,7 +339,7 @@ func seedCatalog(
 	return nil
 }
 
-func seedShelves(
+func seedCollections(
 	ctx context.Context,
 	transaction *sql.Tx,
 ) ([]int64, error) {

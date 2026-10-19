@@ -3,6 +3,7 @@ import {PreviewShelfUpdate, ApplyShelfUpdate} from '../wailsjs/go/main/App';
 import {shelves} from '../wailsjs/go/models';
 import ShelfDialog from './ShelfDialog';
 import StoryCover from './StoryCover';
+import ReviewWarnings from './ReviewWarnings';
 import OutcomeText from './OutcomeText';
 import {t} from './i18n';
 
@@ -37,7 +38,7 @@ export default function ShelfReview({id, onClose, onApplied}: {id: number; onClo
         <p>{t('Suggestions match any linked Collection. Only approved decisions change this Shelf.')}</p>
         {review?.incomplete && <p role="status">{t('Review incomplete. Healthy sources can suggest additions; removals are suspended.')}</p>}
         {review?.upToDate && <p role="status">{t('Up to date')}</p>}
-        {(review?.warnings ?? []).map((warning, index) => <p key={index}><OutcomeText text={warning.message}/></p>)}
+        <ReviewWarnings warnings={review?.warnings ?? []}/>
         {review && <>
             <p>{t('{0} additions · {1} removals', review.additions.length, review.removals.length)}</p>
             <div className="curated-actions"><button type="button" disabled={busy || !review.additions.length} onClick={() => bulk('addition', 'add')}>{t('Approve all additions')}</button>

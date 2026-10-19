@@ -97,7 +97,7 @@ func QueryPlans(ctx context.Context, database *sql.DB) (Plan, error) {
 			},
 		},
 		{
-			name: "shelfCounts",
+			name: "collectionCounts",
 			statement: `SELECT COUNT(*)
 				FROM stories s
 				JOIN story_archives a ON a.story_id = s.id
