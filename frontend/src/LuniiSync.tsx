@@ -4,9 +4,10 @@ type Props = {
     status: metadata.CatalogStatus | null;
     busy: boolean;
     onSync: () => void;
+    onDismiss: () => void;
 };
 
-export default function LuniiSync({status, busy, onSync}: Props) {
+export default function LuniiSync({status, busy, onSync, onDismiss}: Props) {
     const firstSync = status?.state === 'never_synced';
     const timestamp = status?.activatedAt || status?.fetchedAt;
     const date = timestamp ? new Date(timestamp) : null;
@@ -38,6 +39,10 @@ export default function LuniiSync({status, busy, onSync}: Props) {
             </div>
             <button type="button" disabled={busy} onClick={onSync}>
                 {busy ? 'Syncing with Lunii…' : 'Sync with Lunii'}
+            </button>
+            <button type="button" className="notice-dismiss" aria-label="Close Lunii sync"
+                onClick={onDismiss}>
+                <span aria-hidden="true">×</span>
             </button>
         </section>
     );

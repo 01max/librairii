@@ -11,6 +11,7 @@ import {
     ListShelves,
     OfficialMetadataStatus,
     OpenShelf,
+    OperationHistory,
     OperationSnapshot,
     PackagedAcceptanceMode,
     PreviewShelves,
@@ -49,6 +50,7 @@ vi.mock('../wailsjs/go/main/App', () => ({
     ListShelves: vi.fn(),
     OfficialMetadataStatus: vi.fn(),
     OpenShelf: vi.fn(),
+    OperationHistory: vi.fn(),
     OperationSnapshot: vi.fn(),
     PackagedAcceptanceMode: vi.fn(),
     PreviewShelves: vi.fn(),
@@ -84,6 +86,7 @@ const duplicateShelf = vi.mocked(DuplicateShelf);
 const listShelves = vi.mocked(ListShelves);
 const officialMetadataStatus = vi.mocked(OfficialMetadataStatus);
 const openShelf = vi.mocked(OpenShelf);
+const operationHistory = vi.mocked(OperationHistory);
 const operationSnapshot = vi.mocked(OperationSnapshot);
 const packagedAcceptanceMode = vi.mocked(PackagedAcceptanceMode);
 const previewShelves = vi.mocked(PreviewShelves);
@@ -141,6 +144,7 @@ const stories = [
 ];
 
 beforeEach(() => {
+    window.localStorage.clear();
     window.history.replaceState(null, '', '/');
     activeOperations.mockReset();
     applicationStatus.mockReset();
@@ -151,6 +155,7 @@ beforeEach(() => {
     listShelves.mockReset();
     officialMetadataStatus.mockReset();
     openShelf.mockReset();
+    operationHistory.mockReset();
     operationSnapshot.mockReset();
     packagedAcceptanceMode.mockReset();
     previewShelves.mockReset();
@@ -196,6 +201,7 @@ beforeEach(() => {
             matchedStoryCount: 0,
         },
     }));
+    operationHistory.mockResolvedValue(new app.OperationHistoryResponse({page: {operations: []}}));
     operationSnapshot.mockResolvedValue(new app.OperationResponse({}));
     revealExportDestination.mockResolvedValue(new app.MutationResponse({
         success: true,
@@ -309,6 +315,49 @@ beforeEach(() => {
             uuid: stories[0].uuid,
         },
     }));
+});
+
+test('switches story views without losing the query or selection and remembers the choice', async () => {
+    const user = userEvent.setup();
+    const {unmount} = render(<App/>);
+    const story = await screen.findByRole('button', {name: 'Clockwork Forest'});
+    await user.click(story);
+    const query = window.location.hash;
+    const queries = queryStories.mock.calls.length;
+    const views = screen.getByRole('group', {name: 'Story view'});
+    expect(within(views).getByRole('button', {name: 'Large covers'})).toHaveAttribute('aria-pressed', 'true');
+    await user.click(within(views).getByRole('button', {name: 'Small covers'}));
+    expect(story.closest('.app')).toHaveClass('view-small');
+    await user.click(within(views).getByRole('button', {name: 'List'}));
+    expect(story).toHaveAttribute('aria-pressed', 'true');
+    expect(story.querySelector('.cover')).toBeNull();
+    expect(within(story).getByText('Lunii')).toBeInTheDocument();
+    expect(window.location.hash).toBe(query);
+    expect(queryStories.mock.calls.length).toBe(queries);
+    unmount();
+    render(<App/>);
+    await screen.findByRole('button', {name: 'Clockwork Forest'});
+    expect(screen.getByRole('button', {name: 'List'})).toHaveAttribute('aria-pressed', 'true');
+    expect(document.querySelector('.app')).toHaveClass('view-list');
+});
+
+test('ignores unknown stored story views and works without preference storage', async () => {
+    window.localStorage.setItem('librairii.library-view', 'unknown');
+    const {unmount} = render(<App/>);
+    await screen.findByRole('button', {name: 'Clockwork Forest'});
+    expect(screen.getByRole('button', {name: 'Large covers'})).toHaveAttribute('aria-pressed', 'true');
+    unmount();
+    const get = vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => { throw new Error('unavailable'); });
+    const set = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => { throw new Error('unavailable'); });
+    try {
+        render(<App/>);
+        await screen.findByRole('button', {name: 'Clockwork Forest'});
+        await userEvent.click(screen.getByRole('button', {name: 'List'}));
+        expect(document.querySelector('.app')).toHaveClass('view-list');
+    } finally {
+        get.mockRestore();
+        set.mockRestore();
+    }
 });
 
 test('renders the canonical collection shell from typed library data', async () => {
@@ -3443,4 +3492,151 @@ test('loads every result when a story is beyond the initial collection page', as
         booleanFilters: [],
         choiceFilters: [],
     }));
+});
+
+
+test('dismisses the Lunii panel and reopens sync without starting a refresh', async () => {
+    const user = userEvent.setup();
+    officialMetadataStatus.mockResolvedValue(new app.MetadataStatusResponse({
+        status: {state: 'fresh', activatedAt: '2026-07-25T16:01:00Z'},
+    }));
+    const view = render(<App/>);
+
+    const panel = await screen.findByRole('region', {name: 'Official Lunii sync'});
+    expect(within(panel).getByRole('heading', {name: 'Lunii covers and story details'}))
+        .toBeInTheDocument();
+    await user.click(within(panel).getByRole('button', {name: 'Close Lunii sync'}));
+    expect(screen.queryByRole('region', {name: 'Official Lunii sync'})).not.toBeInTheDocument();
+    const reopen = screen.getByRole('button', {name: 'Show Lunii sync'});
+    expect(reopen).toHaveFocus();
+    view.unmount();
+    render(<App/>);
+    await screen.findByRole('heading', {name: 'Clockwork Forest'});
+    expect(screen.queryByRole('region', {name: 'Official Lunii sync'})).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', {name: 'Show Lunii sync'}));
+    expect(await screen.findByRole('region', {name: 'Official Lunii sync'}))
+        .toHaveTextContent('Last successful sync:');
+    expect(refreshOfficialMetadata).not.toHaveBeenCalled();
+});
+
+test('keeps a dismissed export hidden after reopening the application', async () => {
+    const user = userEvent.setup();
+    activeOperations.mockResolvedValue(new app.OperationListResponse({operations: [{
+        id: 'persisted-export', kind: 'export', status: 'succeeded',
+        completedItems: 1, totalItems: 1, totalBytes: 100,
+        createdAt: '2026-07-25T09:00:00Z', finishedAt: '2026-07-25T09:01:00Z',
+        cancelRequested: false, items: [],
+    }]}));
+    const view = render(<App/>);
+    await user.click(await screen.findByRole('button', {name: 'Close Export complete'}));
+    view.unmount();
+    render(<App/>);
+    await screen.findByRole('heading', {name: 'Clockwork Forest'});
+    expect(screen.queryByRole('heading', {name: 'Export complete'})).not.toBeInTheDocument();
+});
+
+test('dismisses a finished export without restoring it on later events or hiding new exports', async () => {
+    const user = userEvent.setup();
+    const finished = {
+        id: 'dismissed-export', kind: 'export', status: 'succeeded',
+        completedItems: 1, totalItems: 1, totalBytes: 100,
+        createdAt: '2026-07-25T09:00:00Z', finishedAt: '2026-07-25T09:01:00Z',
+        cancelRequested: false, items: [],
+    };
+    activeOperations.mockResolvedValue(new app.OperationListResponse({operations: [finished]}));
+    render(<App/>);
+
+    expect(await screen.findByRole('heading', {name: 'Export complete'})).toBeInTheDocument();
+    await user.click(screen.getByRole('button', {name: 'Close Export complete'}));
+    expect(screen.queryByRole('region', {name: 'Export report'})).not.toBeInTheDocument();
+    expect(cancelOperation).not.toHaveBeenCalled();
+    expect(screen.getByRole('searchbox', {name: 'Search stories'})).toHaveFocus();
+
+    operationChanged?.(finished);
+    operationChanged?.({
+        ...finished, id: 'later-import', kind: 'import',
+        items: [{id: 1, sourceName: 'later.zip', status: 'succeeded',
+            outcomeCode: 'imported', completedBytes: 100, totalBytes: 100}],
+    });
+    expect(await screen.findByRole('heading', {name: '1 story imported'})).toBeInTheDocument();
+    expect(screen.queryByRole('heading', {name: 'Export complete'})).not.toBeInTheDocument();
+    operationChanged?.({...finished, id: 'new-export'});
+    expect(await screen.findByRole('heading', {name: 'Export complete'})).toBeInTheDocument();
+});
+
+
+test('opens persisted history, including dismissed exports and older activity', async () => {
+    const user = userEvent.setup();
+    const exported = {
+        id: 'history-export', kind: 'export', status: 'succeeded', destination: 'Lunii export',
+        completedItems: 1, totalItems: 1, totalBytes: 100,
+        createdAt: '2026-10-19T09:00:00Z', finishedAt: '2026-10-19T09:01:00Z',
+        cancelRequested: false, items: [{id: 1, sourceName: 'forest.zip', status: 'succeeded',
+            outcomeMessage: 'Story archive exported.', completedBytes: 100, totalBytes: 100}],
+    };
+    activeOperations.mockResolvedValue(new app.OperationListResponse({operations: [exported]}));
+    operationHistory.mockResolvedValueOnce(new app.OperationHistoryResponse({page: {
+        operations: [exported], nextBefore: 'history-export',
+    }})).mockResolvedValueOnce(new app.OperationHistoryResponse({page: {
+        operations: [{...exported, id: 'older-import', kind: 'import', status: 'failed',
+            createdAt: '2026-10-18T09:00:00Z', errorMessage: 'Unsupported archive.'}],
+    }}));
+    render(<App/>);
+    await user.click(await screen.findByRole('button', {name: 'Close Export complete'}));
+    const historyButton = screen.getByRole('button', {name: 'History'});
+    await user.click(historyButton);
+    const dialog = screen.getByRole('dialog', {name: 'History'});
+    await user.click(await within(dialog).findByText('Export', {exact: true}));
+    const report = within(dialog).getByRole('region', {name: 'Export report'});
+    expect(report).toHaveTextContent('forest.zip');
+    await user.click(within(report).getByRole('button', {name: 'Reveal destination'}));
+    expect(revealExportDestination).toHaveBeenCalledWith('history-export');
+    await user.click(within(dialog).getByRole('button', {name: 'Load older activity'}));
+    expect(await within(dialog).findByText('Import', {exact: true})).toBeInTheDocument();
+    expect(operationHistory.mock.calls).toEqual([[''], ['history-export']]);
+    expect(within(dialog).queryByRole('button', {name: 'Load older activity'})).not.toBeInTheDocument();
+    await user.keyboard('{Escape}');
+    expect(screen.queryByRole('dialog', {name: 'History'})).not.toBeInTheDocument();
+    expect(historyButton).toHaveFocus();
+    expect(screen.queryByRole('heading', {name: 'Export complete'})).not.toBeInTheDocument();
+});
+
+test('shows an actionable history error and retries to the empty state', async () => {
+    const user = userEvent.setup();
+    operationHistory.mockRejectedValueOnce(new Error('offline'));
+    render(<App/>);
+    await screen.findByRole('heading', {name: 'Clockwork Forest'});
+    await user.click(screen.getByRole('button', {name: 'History'}));
+    const dialog = screen.getByRole('dialog', {name: 'History'});
+    expect(await within(dialog).findByRole('alert')).toHaveTextContent('History could not be loaded.');
+    await user.click(within(dialog).getByRole('button', {name: 'Try again'}));
+    expect(await within(dialog).findByText(/No activity yet/)).toBeInTheDocument();
+    await user.click(within(dialog).getByRole('button', {name: 'Close history'}));
+    expect(screen.queryByRole('dialog', {name: 'History'})).not.toBeInTheDocument();
+});
+
+
+test('keeps saved terminal history newer than stale progress and explains reveal failures', async () => {
+    const user = userEvent.setup();
+    const operation = {
+        id: 'recent-export', kind: 'export', completedItems: 1, totalItems: 1,
+        totalBytes: 100, cancelRequested: false, createdAt: '2026-10-19T09:00:00Z', items: [],
+    };
+    activeOperations.mockResolvedValue(new app.OperationListResponse({operations: [
+        {...operation, status: 'running'},
+    ]}));
+    operationHistory.mockResolvedValue(new app.OperationHistoryResponse({page: {operations: [
+        {...operation, status: 'succeeded', finishedAt: '2026-10-19T09:01:00Z'},
+    ]}}));
+    revealExportDestination.mockResolvedValue(new app.MutationResponse({
+        error: {code: 'not_found', message: 'The export folder is no longer available.'},
+    }));
+    render(<App/>);
+    await screen.findByRole('heading', {name: 'Exporting story archives'});
+    await user.click(screen.getByRole('button', {name: 'History'}));
+    const dialog = screen.getByRole('dialog', {name: 'History'});
+    expect(await within(dialog).findByText('Completed', {exact: true})).toBeInTheDocument();
+    await user.click(within(dialog).getByText('Export', {exact: true}));
+    await user.click(within(dialog).getByRole('button', {name: 'Reveal destination'}));
+    expect(await within(dialog).findByRole('alert')).toHaveTextContent('The export folder is no longer available.');
 });

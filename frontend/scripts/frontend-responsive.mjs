@@ -140,12 +140,17 @@ try {
                 actual,
                 acceptanceCase.expected,
             );
+            if (acceptanceCase.viewport.width <= 850) await assertSidebarAccess(page);
             await assertViewportScrolling(page);
             if (acceptanceCase.name === 'above 1180px') {
                 await assertPopupInteractions(page);
                 await assertRealAgeFacetAction(page);
                 await assertFamilyBrowsingArtwork(page);
+                await page.goto(`http://127.0.0.1:${address.port}/?fixture=parity`, {waitUntil: 'networkidle'});
+                await assertLibraryViews(page);
             }
+            await assertNoticeDismissal(page);
+            await assertHistoryView(page);
             results.push({
                 name: acceptanceCase.name,
                 viewport: acceptanceCase.viewport,
@@ -160,6 +165,184 @@ try {
     await browser?.close();
     previewServer?.httpServer.close();
     await rm(outputDirectory, {recursive: true, force: true});
+}
+
+async function assertNoticeDismissal(page) {
+    const panel = page.getByRole('region', {name: 'Official Lunii sync'});
+    const close = panel.getByRole('button', {name: 'Close Lunii sync'});
+    await close.scrollIntoViewIfNeeded();
+    await close.click();
+    await panel.waitFor({state: 'detached'});
+    const reopen = page.getByRole('button', {name: 'Show Lunii sync'});
+    if (!await reopen.evaluate((button) => button === document.activeElement)) {
+        throw new Error('closing the Lunii panel did not focus its disclosure');
+    }
+    const main = page.locator('.main');
+    if (await main.evaluate((element) => element.scrollWidth > element.clientWidth)) {
+        throw new Error('dismissed Lunii disclosure overflows the collection');
+    }
+    await reopen.press('Enter');
+    await panel.waitFor();
+    await panel.getByRole('button', {name: 'Sync with Lunii'}).waitFor();
+}
+
+async function assertHistoryView(page) {
+    const url = new URL(page.url());
+    url.search = '?fixture=history';
+    url.hash = '';
+    await page.goto(url.toString(), {waitUntil: 'networkidle'});
+    await page.getByRole('button', {name: 'Close Export complete'}).click();
+    await page.getByRole('button', {name: 'Close Lunii sync'}).click();
+    await page.reload({waitUntil: 'networkidle'});
+    await page.getByRole('button', {name: 'History', exact: true}).waitFor();
+    if (await page.getByRole('heading', {name: 'Export complete'}).count() ||
+        await page.getByRole('region', {name: 'Official Lunii sync'}).count()) {
+        throw new Error('dismissed notices reopened after reloading the application');
+    }
+    const historyButton = page.getByRole('button', {name: 'History', exact: true});
+    await historyButton.click();
+    const dialog = page.getByRole('dialog', {name: 'History'});
+    await dialog.getByText('Export', {exact: true}).click();
+    const report = dialog.getByRole('region', {name: 'Export report'});
+    await report.getByText('Milo and the Moon', {exact: true}).waitFor();
+    await report.getByRole('button', {name: 'Reveal destination'}).click();
+    await dialog.getByText('Import', {exact: true}).click();
+    await dialog.getByText('Story imported.', {exact: true}).waitFor();
+    const bounds = await dialog.boundingBox();
+    const viewport = page.viewportSize();
+    if (!bounds || bounds.x < 0 || bounds.y < 0 || bounds.x + bounds.width > viewport.width ||
+        bounds.y + bounds.height > viewport.height ||
+        await dialog.evaluate((element) => element.scrollWidth > element.clientWidth)) {
+        throw new Error('History does not fit inside the window');
+    }
+    await page.screenshot({path: join(tmpdir(), `librairii-history-${viewport.width}.png`)});
+    for (const height of [900, 320]) {
+        await page.setViewportSize({width: 320, height});
+        const compact = await dialog.boundingBox();
+        if (!compact || compact.x < 0 || compact.y < 0 || compact.x + compact.width > 320 ||
+            compact.y + compact.height > height ||
+            await dialog.evaluate((element) => element.scrollWidth > element.clientWidth)) {
+            throw new Error(`History overflows at 320x${height}`);
+        }
+    }
+    await page.setViewportSize(viewport);
+    await page.keyboard.press('Escape');
+    await dialog.waitFor({state: 'detached'});
+    if (!await historyButton.evaluate((button) => button === document.activeElement)) {
+        throw new Error('History did not return keyboard focus to its opener');
+    }
+    await historyButton.click();
+    await dialog.waitFor();
+    await page.locator('.history-backdrop').click({position: {x: 2, y: 2}});
+    await dialog.waitFor({state: 'detached'});
+    // The sync panel can still be restored explicitly.
+    await page.getByRole('button', {name: 'Show Lunii sync'}).click();
+    await page.getByRole('region', {name: 'Official Lunii sync'}).waitFor();
+}
+
+async function assertSidebarAccess(page) {
+    const viewport = page.viewportSize();
+    const toggle = page.getByRole('button', {name: 'Shelves & filters', exact: true});
+    if (!await toggle.isVisible()) {
+        throw new Error(`${viewport.width}px: shelves and refinements are hidden with no way to reopen them`);
+    }
+    const panel = page.getByRole('dialog', {name: 'Saved shelves and refinements'});
+    const close = panel.getByRole('button', {name: 'Close shelves and filters'});
+    await toggle.click();
+    await panel.waitFor();
+    await page.waitForFunction(() => document.activeElement?.getAttribute('aria-label') === 'Close shelves and filters');
+    await page.keyboard.press('Shift+Tab');
+    await page.waitForFunction(() => document.activeElement?.textContent.includes('Manage tags'));
+    await page.keyboard.press('Tab');
+    if (!await close.evaluate((button) => button === document.activeElement)) throw new Error('sidebar keyboard focus escaped');
+    const bounds = await panel.boundingBox();
+    if (!bounds || bounds.x < 0 || bounds.x + bounds.width > viewport.width || bounds.y + bounds.height > viewport.height) {
+        throw new Error('sidebar does not fit inside the window');
+    }
+    if (viewport.width === 560 && viewport.height === 900) {
+        await page.screenshot({path: join(tmpdir(), 'librairii-sidebar-review.png')});
+    }
+    // Exercise an actual query control without expanding the window.
+    const broken = panel.getByRole('checkbox', {name: 'Include broken stories'});
+    await broken.check();
+    if (!new URL(page.url()).hash.includes('includeBroken=true')) throw new Error('narrow filter did not update the query');
+    await broken.uncheck();
+    const age = panel.getByRole('button', {name: 'Age', exact: true});
+    await age.click();
+    await age.click();
+    await close.click();
+    await panel.waitFor({state: 'hidden'});
+    await page.waitForFunction(() => document.activeElement?.textContent === 'Shelves & filters');
+    await toggle.click();
+    await page.keyboard.press('Escape');
+    await panel.waitFor({state: 'hidden'});
+    await toggle.click();
+    await page.locator('.sidebar-backdrop').click({position: {x: viewport.width - 2, y: 2}});
+    await panel.waitFor({state: 'hidden'});
+    await toggle.click();
+    await panel.getByRole('button', {name: 'Manage tags'}).click();
+    const manager = page.getByRole('dialog', {name: 'Manage tags'});
+    await manager.waitFor();
+    await page.keyboard.press('Escape');
+    await manager.waitFor({state: 'detached'});
+    if (!await panel.isVisible()) throw new Error('closing a nested dialog also closed the sidebar');
+    await close.click();
+    await panel.waitFor({state: 'hidden'});
+    if (!await toggle.evaluate((button) => button === document.activeElement)) {
+        throw new Error('closing the sidebar after a nested dialog did not restore disclosure focus');
+    }
+    // Opening a saved shelf keeps its management actions reachable.
+    await toggle.click();
+    await panel.getByRole('button', {name: 'Bedtime, 12 stories', exact: true}).click();
+    await panel.getByRole('button', {name: 'Rename Bedtime'}).waitFor();
+    await panel.getByRole('button', {name: 'All stories', exact: false}).click();
+    await close.click();
+}
+
+async function assertLibraryViews(page) {
+    await page.getByRole('heading', {name: 'Weekend adventures'}).waitFor();
+    for (const width of [1181, 851, 850, 560, 320]) {
+        await page.setViewportSize({width, height: 900});
+        const picker = page.getByRole('group', {name: 'Story view'});
+        const originalHash = new URL(page.url()).hash;
+        const originalQueries = await page.evaluate(() => globalThis.__librairiiFixtureQueries.length);
+        const originalSelection = await page.locator('.story[aria-pressed="true"]').count();
+        const largeWidth = await page.locator('.story').first().evaluate((button) => button.getBoundingClientRect().width);
+        for (const mode of ['Small covers', 'List', 'Large covers']) {
+            await picker.getByRole('button', {name: mode, exact: true}).click();
+            const layout = await page.evaluate(() => {
+                const main = document.querySelector('.main');
+                const story = document.querySelector('.story');
+                return {overflow: main.scrollWidth > main.clientWidth,
+                    width: story.getBoundingClientRect().width,
+                    hasCover: !!story.querySelector('.cover'),
+                    collectionRows: document.querySelectorAll('.story-row:not(.preview)').length,
+                    previews: [...document.querySelectorAll('.story-row.preview')].map((row) =>
+                        [...row.children].filter((card) => getComputedStyle(card).display !== 'none').length)};
+            });
+            if (layout.overflow) throw new Error(`${width}px ${mode}: collection overflows horizontally`);
+            if (width === 1181 && mode !== 'Large covers') {
+                await page.screenshot({path: join(tmpdir(), `librairii-${mode === 'List' ? 'list' : 'small-grid'}-review.png`)});
+            }
+            if (mode === 'Small covers' && layout.width >= largeWidth) throw new Error(`${width}px: small covers are not smaller`);
+            if (mode === 'List' && layout.hasCover) throw new Error('list view still renders large artwork');
+            if (mode !== 'Large covers' && layout.collectionRows !== 1) throw new Error('compact collection is still split into six-story shelves');
+            if (mode !== 'Large covers' && layout.previews.some((count) => count !== 6)) throw new Error('compact view hides shelf preview stories');
+            if (await picker.getByRole('button', {name: mode, exact: true}).getAttribute('aria-pressed') !== 'true') throw new Error('view is not announced');
+            if (new URL(page.url()).hash !== originalHash || await page.locator('.story[aria-pressed="true"]').count() !== originalSelection ||
+                await page.evaluate(() => globalThis.__librairiiFixtureQueries.length) !== originalQueries) throw new Error('changing views changed the collection');
+        }
+        if (width <= 850) {
+            await page.setViewportSize({width, height: 320});
+            await assertSidebarAccess(page);
+            await page.getByRole('button', {name: 'Shelves & filters', exact: true}).click();
+            await page.setViewportSize({width: 1181, height: 900});
+            await page.getByRole('dialog', {name: 'Saved shelves and refinements'}).waitFor({state: 'hidden'});
+        }
+    }
+    await page.getByRole('button', {name: 'List', exact: true}).click();
+    await page.reload({waitUntil: 'networkidle'});
+    if (await page.getByRole('button', {name: 'List', exact: true}).getAttribute('aria-pressed') !== 'true') throw new Error('view preference did not survive reload');
 }
 
 async function installFixtureQueryRecorder(page) {

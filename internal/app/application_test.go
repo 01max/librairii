@@ -149,6 +149,8 @@ type fakeOperations struct {
 	startPaths     []string
 	syncLocale     string
 	snapshot       operations.Snapshot
+	history        operations.HistoryPage
+	historyBefore  string
 	active         []operations.Snapshot
 	metadataStatus metadata.CatalogStatus
 	preflight      exporter.PreflightReport
@@ -220,6 +222,11 @@ func (o *fakeOperations) Snapshot(
 	string,
 ) (operations.Snapshot, error) {
 	return o.snapshot, o.err
+}
+
+func (o *fakeOperations) History(_ context.Context, before string) (operations.HistoryPage, error) {
+	o.historyBefore = before
+	return o.history, o.err
 }
 
 func (o *fakeOperations) Active(context.Context) ([]operations.Snapshot, error) {

@@ -180,6 +180,38 @@ export namespace app {
 		    return a;
 		}
 	}
+	export class OperationHistoryResponse {
+	    page?: operations.HistoryPage;
+	    error?: APIError;
+	
+	    static createFrom(source: any = {}) {
+	        return new OperationHistoryResponse(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.page = this.convertValues(source["page"], operations.HistoryPage);
+	        this.error = this.convertValues(source["error"], APIError);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
 	export class OperationListResponse {
 	    operations: operations.Snapshot[];
 	    error?: APIError;
@@ -1393,6 +1425,39 @@ export namespace operations {
 		    return a;
 		}
 	}
+	export class HistoryPage {
+	    operations: Snapshot[];
+	    nextBefore?: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new HistoryPage(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.operations = this.convertValues(source["operations"], Snapshot);
+	        this.nextBefore = source["nextBefore"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	
 
 }
 

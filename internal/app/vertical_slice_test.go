@@ -73,6 +73,13 @@ func TestFirstStoryVerticalSliceThroughPickerAndApplication(t *testing.T) {
 		t.Fatalf("terminal import = %#v", terminal)
 	}
 
+	history := application.OperationHistory(context.Background(), "")
+	if history.Error != nil || history.Page == nil || len(history.Page.Operations) != 1 ||
+		history.Page.Operations[0].ID != terminal.ID ||
+		history.Page.Operations[0].Items[0].OutcomeCode != "imported" {
+		t.Fatalf("OperationHistory() = %#v", history)
+	}
+
 	pageResponse := application.ListStories(context.Background(), library.ListRequest{})
 	if pageResponse.Error != nil ||
 		pageResponse.Page == nil ||

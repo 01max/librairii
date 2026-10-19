@@ -130,6 +130,7 @@ type OperationPort interface {
 	Cancel(context.Context, string) (operations.Snapshot, error)
 	Snapshot(context.Context, string) (operations.Snapshot, error)
 	Active(context.Context) ([]operations.Snapshot, error)
+	History(context.Context, string) (operations.HistoryPage, error)
 	Close() error
 }
 
@@ -212,6 +213,11 @@ type DiagnosticExportResponse struct {
 	Report    *diagnostics.Report `json:"report,omitempty"`
 	Cancelled bool                `json:"cancelled,omitempty"`
 	Error     *APIError           `json:"error,omitempty"`
+}
+
+type OperationHistoryResponse struct {
+	Page  *operations.HistoryPage `json:"page,omitempty"`
+	Error *APIError               `json:"error,omitempty"`
 }
 
 type OperationListResponse struct {

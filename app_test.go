@@ -163,6 +163,10 @@ func (facadeOperations) Snapshot(
 	return operations.Snapshot{}, nil
 }
 
+func (facadeOperations) History(context.Context, string) (operations.HistoryPage, error) {
+	return operations.HistoryPage{}, nil
+}
+
 func (facadeOperations) Active(context.Context) ([]operations.Snapshot, error) {
 	return nil, nil
 }

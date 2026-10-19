@@ -158,6 +158,14 @@ func TestRepositoryPersistsImmutableExportScopeAndOutcomeReport(t *testing.T) {
 		report.Items[0].OutcomeMessage != "The destination file already exists." {
 		t.Fatalf("Snapshot(export report) = %#v", report)
 	}
+	history, err := repository.History(ctx, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(history.Operations) != 1 || !reflect.DeepEqual(history.Operations[0], report) {
+		t.Fatalf("History(export report) = %#v", history)
+	}
+
 	latest, found, err := repository.LatestTerminalExport(ctx)
 	if err != nil {
 		t.Fatal(err)

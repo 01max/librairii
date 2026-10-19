@@ -433,6 +433,14 @@ func (r *ImportRuntime) Snapshot(
 	return manager.Snapshot(ctx, operationID)
 }
 
+func (r *ImportRuntime) History(ctx context.Context, before string) (operations.HistoryPage, error) {
+	manager, err := r.current()
+	if err != nil {
+		return operations.HistoryPage{}, err
+	}
+	return manager.History(ctx, before)
+}
+
 func (r *ImportRuntime) Active(
 	ctx context.Context,
 ) ([]operations.Snapshot, error) {

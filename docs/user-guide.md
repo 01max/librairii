@@ -64,6 +64,10 @@ last successful sync in your local date and time, including while an import or
 another operation is running. A failed sync keeps the previous successful time
 and the saved catalog available.
 
+Close the Lunii panel with its × button to make more room for stories.
+**Show Lunii sync** above the shelves reopens the panel without starting a sync.
+Your choice is remembered when you close and reopen Librairii.
+
 Shelf covers keep their image proportions, with the story title below the
 image. Author and publisher information is available in the selected story's
 details. The left rail provides labeled **Library**, **Tags**, **Import**, and
@@ -71,9 +75,17 @@ details. The left rail provides labeled **Library**, **Tags**, **Import**, and
 manager, Import opens the archive picker, and Export prepares the stories in
 the current view.
 
+Use **List**, **Small covers**, or **Large covers** above the shelves to choose
+how stories appear. List shows titles and authors without cover images; the two
+grids show covers at different sizes. Librairii remembers your choice. Switching
+views keeps the current search, filters, sort order, and selected stories.
+
 The application fits the window height. The navigation stays in place while
 the story collection scrolls; long shelf and filter lists scroll independently
 in their sidebar.
+In a narrow window, choose **Shelves & filters** above the stories to open saved
+shelves, shelf management actions, and **Refine this shelf**. The panel scrolls
+independently; choose **Done**, press Escape, or click outside to close it.
 
 **Include broken stories**, just below the saved shelves, shows stories marked
 as broken. They are hidden by default; when included, they have a Broken badge
@@ -104,6 +116,10 @@ otherwise mutate a pack. Destination-local temporary files are published
 atomically and existing files are never overwritten. Cancellation removes
 unfinished temporary files but retains exports that were already completed.
 
+Finished import, sync, and export notices have a × button. Closing a notice
+keeps it hidden after restarting the app without cancelling an operation or
+deleting exported files. New operations still show their own progress and results.
+
 If all destination filenames already exist, preflight explains the filename
 conflicts. Use **Choose another folder** to retry the same export scope in a
 different destination. Cancelling the picker keeps the current preflight open.
@@ -114,6 +130,15 @@ not a promise that Lunii.QT will accept every structurally valid archive or
 that every archive works with every device or firmware version. Librairii does
 not discover, pair with, update, or transfer files directly to a storyteller
 device.
+
+## Activity history
+
+Choose **History** above the shelves to revisit imports, Lunii syncs, and exports,
+including reports you closed and activity from previous app sessions. Expand an
+entry to inspect item outcomes; completed exports retain **Reveal destination**.
+Dates use your local time. **Load older activity** shows earlier records, and
+**Refresh history** reloads the latest activity. Closing History leaves dismissed
+notices hidden. Use Close, Escape, or click outside to return to the collection.
 
 ## Search and saved shelves
 

@@ -48,6 +48,7 @@ var bindingMethodAllowlist = []string{
 	"ListStories",
 	"OfficialMetadataStatus",
 	"OpenShelf",
+	"OperationHistory",
 	"OperationSnapshot",
 	"PackagedAcceptanceMode",
 	"PlanTagDefinitionDeletion",

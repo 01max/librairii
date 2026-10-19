@@ -438,6 +438,14 @@ func (a *Application) OperationSnapshot(
 	return OperationResponse{Operation: &snapshot}
 }
 
+func (a *Application) OperationHistory(ctx context.Context, before string) OperationHistoryResponse {
+	page, err := a.operations.History(ctx, before)
+	if err != nil {
+		return OperationHistoryResponse{Error: operationAPIError(err)}
+	}
+	return OperationHistoryResponse{Page: &page}
+}
+
 func (a *Application) ActiveOperations(ctx context.Context) OperationListResponse {
 	snapshots, err := a.operations.Active(ctx)
 	if err != nil {
