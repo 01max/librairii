@@ -110,3 +110,44 @@ func TestClosedStorageReopensAtCommittedRoot(t *testing.T) {
 		t.Fatal(r.Layout())
 	}
 }
+
+func TestMissingLibraryCanBeLocatedWithoutCreatingReplacement(t *testing.T) {
+	ctx := context.Background()
+	directory := t.TempDir()
+	old := filepath.Join(t.TempDir(), "old")
+	moved := filepath.Join(t.TempDir(), "moved")
+	r := NewConfiguredStorageReadiness(directory, "/unused", "fr")
+	if err := r.InitializeLibrary(ctx, old); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := r.Check(ctx); err != nil {
+		t.Fatal(err)
+	}
+	r.Close()
+	os.Rename(old, moved)
+	next := NewConfiguredStorageReadiness(directory, "/unused", "en")
+	if _, err := next.Check(ctx); err == nil {
+		t.Fatal("missing library accepted")
+	}
+	if _, err := os.Stat(old); !errors.Is(err, os.ErrNotExist) {
+		t.Fatal("created replacement", err)
+	}
+	other := NewConfiguredStorageReadiness(t.TempDir(), "/unused", "en")
+	wrong := filepath.Join(t.TempDir(), "wrong")
+	if err := other.InitializeLibrary(ctx, wrong); err != nil {
+		t.Fatal(err)
+	}
+	if err := next.LocateLibrary(ctx, wrong); err == nil {
+		t.Fatal("accepted unrelated library")
+	}
+	if err := next.LocateLibrary(ctx, moved); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := next.Check(ctx); err != nil {
+		t.Fatal(err)
+	}
+	defer next.Close()
+	if next.Profile().Root != moved || next.Profile().Language != "fr" {
+		t.Fatal(next.Profile())
+	}
+}
