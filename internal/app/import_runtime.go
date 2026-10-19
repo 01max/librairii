@@ -38,6 +38,7 @@ type StorageProvider interface {
 
 type ImportRuntime struct {
 	mu               sync.RWMutex
+	flagGate         sync.Mutex
 	storage          StorageProvider
 	clock            Clock
 	events           EventPort
@@ -361,6 +362,8 @@ func (r *ImportRuntime) StartPreparedExport(
 	ctx context.Context,
 	preparationID string,
 ) (operations.Snapshot, error) {
+	r.flagGate.Lock()
+	defer r.flagGate.Unlock()
 	if _, err := uuid.Parse(preparationID); err != nil {
 		return operations.Snapshot{}, operations.ErrInvalidRequest
 	}
@@ -373,6 +376,15 @@ func (r *ImportRuntime) StartPreparedExport(
 	r.mu.Unlock()
 	if !found || !report.CanExport {
 		return operations.Snapshot{}, operations.ErrInvalidRequest
+	}
+	r.mu.RLock()
+	preflight := r.exportPreflight
+	r.mu.RUnlock()
+	if preflight == nil {
+		return operations.Snapshot{}, ErrImportRuntimeNotReady
+	}
+	if err := preflight.ValidatePrepared(ctx, report); err != nil {
+		return operations.Snapshot{}, err
 	}
 	snapshot, err := manager.StartExport(
 		ctx,

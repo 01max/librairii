@@ -55,6 +55,8 @@ func (r *ImportRuntime) currentStoryFlags() (*library.BrokenFlags, error) {
 }
 
 func (r *ImportRuntime) SetStoriesBroken(ctx context.Context, ids []int64, broken bool) (library.FlagResult, error) {
+	r.flagGate.Lock()
+	defer r.flagGate.Unlock()
 	flags, err := r.currentStoryFlags()
 	if err != nil {
 		return library.FlagResult{}, err
@@ -63,6 +65,8 @@ func (r *ImportRuntime) SetStoriesBroken(ctx context.Context, ids []int64, broke
 }
 
 func (r *ImportRuntime) RestoreStoryFlags(ctx context.Context, changes []library.FlagChange) (library.FlagResult, error) {
+	r.flagGate.Lock()
+	defer r.flagGate.Unlock()
 	flags, err := r.currentStoryFlags()
 	if err != nil {
 		return library.FlagResult{}, err

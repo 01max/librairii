@@ -510,6 +510,8 @@ func (a *Application) statusLocked() Status {
 
 func operationAPIError(err error) *APIError {
 	switch {
+	case errors.Is(err, exporter.ErrPreparedExportStale):
+		return NewAPIError(ErrorConflict, "Stories changed after the export preview. Refresh the preview and try again.")
 	case errors.Is(err, context.Canceled):
 		return NewAPIError(ErrorCancelled, "The operation was cancelled.")
 	case errors.Is(err, operations.ErrInvalidRequest):
