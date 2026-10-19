@@ -267,11 +267,13 @@ export function installCollectionFixture() {
     let settingsLanguage = new URLSearchParams(window.location.search).get('lang') === 'fr' ? 'fr' : 'en';
     let setupComplete = fixture !== 'setup';
     let movePhase = fixture === 'relocating' ? 'copying' : '';
+    let pendingSettings=['settings','relocating'].includes(fixture);
     const settingsSnapshot = () => ({language:settingsLanguage,root:'~/Stories/Librairii',setupRequired:!setupComplete,isolated:false,recovery:false,
-        pendingOpen:['settings','relocating'].includes(fixture),
+        pendingOpen:pendingSettings,
         move:movePhase ? {phase:movePhase,copied:512,total:1024,cancelable:movePhase==='copying'} : undefined});
     const fixtureApp = {
         Settings: async () => settingsSnapshot(),
+        DismissSettings: async () => {pendingSettings=false;},
         SetUILanguage: async (language: string) => { settingsLanguage=language; return settingsSnapshot(); },
         SelectLibraryLocation: async () => ({...settingsSnapshot(),preparation:{id:'fixture-move',source:'~/Stories/Librairii',destination:'/Volumes/Histoires/Librairii',bytes:1024,libraryId:'fixture'}}),
         ConfirmLibrarySetup: async () => {setupComplete=true;return {success:true};},

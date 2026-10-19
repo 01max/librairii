@@ -1,5 +1,5 @@
-import {outcomeText} from './OutcomeText';
-import {t} from './i18n';
+import {outcomeText} from './outcome-message';
+import {t, currentLanguage} from './i18n';
 import {operations} from '../wailsjs/go/models';
 
 export type ImportNoticeTone = 'working' | 'success' | 'warning' | 'error' | 'neutral';
@@ -29,8 +29,8 @@ const invalidArchiveCodes = new Set([
     'malformed_metadata',
 ]);
 
-function plural(count: number, singular: string, multiple = `${singular}s`): string {
-    return t(count === 1 ? singular : multiple);
+function plural(count: number, singular: string, multiple = singular === 'story' ? 'stories' : `${singular}s`): string {
+    return t(new Intl.PluralRules(currentLanguage()).select(count) === 'one' ? singular : multiple);
 }
 
 export function operationIsActive(snapshot: operations.Snapshot | null): boolean {

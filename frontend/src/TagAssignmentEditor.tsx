@@ -1,4 +1,5 @@
-import {systemLabel} from './system-label';
+import OutcomeText from './OutcomeText';
+import {systemLabel, systemValue} from './system-label';
 import {t} from './i18n';
 import ModalBackdrop from './ModalBackdrop';
 import {
@@ -163,7 +164,7 @@ export default function TagAssignmentEditor({
                     </button>
                 </header>
 
-                {error && <p className="dialog-error" role="alert">{error}</p>}
+                {error && <p className="dialog-error" role="alert">{<OutcomeText text={error}/> }</p>}
                 {notice && <p className="assignment-notice" role="status">{notice}</p>}
 
                 <div className="assignment-list">
@@ -218,8 +219,8 @@ export default function TagAssignmentEditor({
                                                     workspace.requestedStories;
                                                 return [(
                                                     <span className="tag" key={value.id}>
-                                                        {systemLabel(definition)} · {value.label}
-                                                        {' · System-derived'}
+                                                        {systemLabel(definition)} · {systemValue(definition,value)}
+                                                        {t(" · System-derived")}
                                                         {mixedValue ? ' · Mixed' : ''}
                                                     </span>
                                                 )];
@@ -250,7 +251,7 @@ export default function TagAssignmentEditor({
                                                     checked={valueAll}
                                                     mixed={count > 0 && !valueAll}
                                                     disabled={busy}
-                                                    label={value.label}
+                                                    label={systemValue(definition,value)}
                                                     onChange={(checked) => void apply(() => (
                                                         SetChoiceTagValue(
                                                             storyIDs,

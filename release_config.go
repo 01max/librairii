@@ -44,6 +44,7 @@ var bindingMethodAllowlist = []string{
 	"DeleteShelf",
 	"DeleteTagDefinition",
 	"DeleteTagValue",
+	"DismissSettings",
 	"DuplicateShelf",
 	"FrontendRendered",
 	"ListShelves",

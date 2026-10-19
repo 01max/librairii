@@ -28,6 +28,8 @@ export function DeleteTagDefinition(arg1:tagging.DefinitionDeletionPlan):Promise
 
 export function DeleteTagValue(arg1:tagging.ValueDeletionPlan):Promise<app.MutationResponse>;
 
+export function DismissSettings():Promise<void>;
+
 export function DuplicateShelf(arg1:number,arg2:string):Promise<app.ShelfResponse>;
 
 export function FrontendRendered():Promise<void>;

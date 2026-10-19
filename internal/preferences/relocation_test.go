@@ -5,6 +5,7 @@ import (
 	"errors"
 	"github.com/01max/librairii/internal/database"
 	"github.com/google/uuid"
+	"golang.org/x/sys/unix"
 	"os"
 	"path/filepath"
 	"testing"
@@ -196,6 +197,54 @@ func TestCompleteLibraryMovePreservesEveryRecordedByte(t *testing.T) {
 		t.Fatal(reloaded, err)
 	}
 	if data, err := os.ReadFile(external); err != nil || string(data) != "original" {
+		t.Fatal(err)
+	}
+}
+
+// Set LIBRAIRII_TEST_DESTINATION_ROOT to a writable second local volume.
+func TestCompleteLibraryMoveAcrossVolumes(t *testing.T) {
+	root := os.Getenv("LIBRAIRII_TEST_DESTINATION_ROOT")
+	if root == "" {
+		t.Skip("second volume not configured")
+	}
+	j, p, config := moveFixture(t)
+	ctx := context.Background()
+	var sourceStat, targetStat unix.Stat_t
+	if err := unix.Stat(j.Source, &sourceStat); err != nil {
+		t.Fatal(err)
+	}
+	if err := unix.Stat(root, &targetStat); err != nil {
+		t.Fatal(err)
+	}
+	if sourceStat.Dev == targetStat.Dev {
+		t.Skip("destination must be a separate filesystem")
+	}
+	target, err := os.MkdirTemp(root, "librairii-relocation-")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { os.RemoveAll(target) })
+	j.Destination = target
+	if err = WriteJournal(config, j); err != nil {
+		t.Fatal(err)
+	}
+	if err = Reserve(target, j.ID, 0); err != nil {
+		t.Fatal(err)
+	}
+	if err = CopyLibrary(ctx, j, nil); err != nil {
+		t.Fatal(err)
+	}
+	if err = VerifyCopy(ctx, j, j.Workspace()); err != nil {
+		t.Fatal(err)
+	}
+	if err = Publish(j.Workspace(), target, j.ID); err != nil {
+		t.Fatal(err)
+	}
+	p.Root = target
+	if err = Reconcile(ctx, config, p); err != nil {
+		t.Fatal(err)
+	}
+	if err = VerifyCopy(ctx, j, target); err != nil {
 		t.Fatal(err)
 	}
 }

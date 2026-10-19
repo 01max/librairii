@@ -53,6 +53,16 @@ func CleanupSource(ctx context.Context, j Journal, authority string) error {
 		if !entry.Directory {
 			continue
 		}
+		path := filepath.Join(j.Source, entry.Path)
+		info, statErr := os.Lstat(path)
+		if errors.Is(statErr, os.ErrNotExist) {
+			continue
+		}
+		resolved, resolveErr := Canonical(path)
+		if statErr != nil || !info.IsDir() || resolveErr != nil || !containedResolved(j.Source, resolved) {
+			failures = append(failures, ErrCleanupPending)
+			continue
+		}
 		if err := os.Remove(filepath.Join(j.Source, entry.Path)); err != nil && !errors.Is(err, os.ErrNotExist) {
 			failures = append(failures, err)
 		}

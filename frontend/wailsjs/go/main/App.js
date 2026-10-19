@@ -46,6 +46,10 @@ export function DeleteTagValue(arg1) {
   return window['go']['main']['App']['DeleteTagValue'](arg1);
 }
 
+export function DismissSettings() {
+  return window['go']['main']['App']['DismissSettings']();
+}
+
 export function DuplicateShelf(arg1, arg2) {
   return window['go']['main']['App']['DuplicateShelf'](arg1, arg2);
 }

@@ -1,5 +1,5 @@
-import {outcomeText} from './OutcomeText';
-import {t} from './i18n';
+import {outcomeText} from './outcome-message';
+import {t, currentLanguage} from './i18n';
 import {metadata, operations} from '../wailsjs/go/models';
 import {operationIsActive} from './import-state';
 
@@ -21,7 +21,7 @@ function freshness(status: metadata.CatalogStatus | null): string {
     if (Number.isNaN(parsed.valueOf())) {
         return t("Last updated {0}.", value);
     }
-    return t("Last updated {0}.", parsed.toLocaleString());
+    return t("Last updated {0}.", parsed.toLocaleString(currentLanguage()));
 }
 
 function matched(status: metadata.CatalogStatus | null): string {

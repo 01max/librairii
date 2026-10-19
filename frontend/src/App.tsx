@@ -1,7 +1,7 @@
 import SettingsPanel from './SettingsPanel';
 import OutcomeText from './OutcomeText';
-import {systemLabel} from './system-label';
-import {t} from './i18n';
+import {systemLabel, systemValue} from './system-label';
+import {t, currentLanguage} from './i18n';
 import {useLanguage} from './use-language';
 import ModalBackdrop from './ModalBackdrop';
 import {
@@ -152,7 +152,7 @@ function metadataAttribution(story: library.StorySummary): string {
     const sameDay = syncedAt.getFullYear() === today.getFullYear() &&
         syncedAt.getMonth() === today.getMonth() &&
         syncedAt.getDate() === today.getDate();
-    return t("{0} · metadata synced {1}", author, sameDay ? 'today' : syncedAt.toLocaleDateString());
+    return t("{0} · metadata synced {1}", author, sameDay ? t('today') : syncedAt.toLocaleDateString(currentLanguage()));
 }
 
 function savedShelfColor(index: number): string {
@@ -339,6 +339,7 @@ function compatibilityLabel(value: string): string {
 function App() {
     useLanguage();
     const [settingsRevision,setSettingsRevision] = useState(0);
+ const [libraryRoot,setLibraryRoot]=useState('');
  const acceptanceStarted=useRef(false);
     const [libraryView, setLibraryView] = useLibraryView();
     const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -1235,8 +1236,8 @@ function App() {
                 color: definition.color,
                 derived: definition.source === 'derived',
                 label: state.assignedStories === assignmentWorkspace.requestedStories
-                    ? definition.label
-                    : `${systemLabel(definition)} · Mixed`,
+                    ? systemLabel(definition)
+                    : `${systemLabel(definition)} · ${t("Mixed")}`,
             }];
         }
         return definition.values.flatMap((value) => {
@@ -1251,8 +1252,8 @@ function App() {
                 color: definition.color,
                 derived: definition.source === 'derived',
                 label: valueState.assignedStories === assignmentWorkspace.requestedStories
-                    ? `${systemLabel(definition)} · ${value.label}`
-                    : `${systemLabel(definition)} · ${value.label} · Mixed`,
+                    ? `${systemLabel(definition)} · ${systemValue(definition,value)}`
+                    : `${systemLabel(definition)} · ${systemValue(definition,value)} · ${t("Mixed")}`,
             }];
         });
     }) ?? [];
@@ -1655,7 +1656,7 @@ function App() {
                 ? [{
                     key: `boolean-${filter.definitionId}`,
                     label: filter.state === 'true'
-                        ? definition.label
+                        ? systemLabel(definition)
                         : t("Not {0}", definition.label),
                     remove: () => setBooleanFilter(filter.definitionId, 'ignored'),
                 }]
@@ -1683,7 +1684,7 @@ function App() {
                 return value
                     ? [{
                         key: `choice-${definition.id}-${value.id}`,
-                        label: `${systemLabel(definition)} · ${value.label}`,
+                        label: `${systemLabel(definition)} · ${systemValue(definition,value)}`,
                         remove: () => toggleChoiceFilter(definition.id, value.id),
                     }]
                     : [{
@@ -1770,7 +1771,7 @@ function App() {
                             );
                         })()}
                         <i style={{'--c': definition.color} as CSSProperties}/>
-                        {value.label}
+                        {systemValue(definition,value)}
                         {facetCounts[value.id] !== undefined && (
                             <span aria-hidden="true">{facetCounts[value.id]}</span>
                         )}
@@ -1782,7 +1783,7 @@ function App() {
 
     return (
         <div className={`app view-${libraryView}`}>
- <SettingsPanel onReady={() => setSettingsRevision((value) => value + 1)}/>
+ <SettingsPanel onLocation={setLibraryRoot} onReady={() => setSettingsRevision((value) => value + 1)}/>
             <span className="sr-only" data-testid="application-state">
                 {t("Application state:")}{' '}{applicationState}
             </span>
@@ -1806,7 +1807,7 @@ function App() {
                 suspended={tagManagerOpen || tagAssignmentOpen || shelfDialogMode !== null ||
                     repairShelfID !== null || deleteShelfID !== null || exportPreflight !== null || historyOpen}>
                 <h1>Librairii</h1>
-                <div className="path">~/Stories/Librairii</div>
+                <div className="path">{libraryRoot}</div>
                 <div className="caption">{t("Saved shelves")}</div>
                 <nav className="saved">
                     <button
@@ -1943,7 +1944,7 @@ function App() {
                         </div>
                         {shelfSelectionBusy && <p>{t("Resolving current membership…")}</p>}
                         {shelfSelectionError && (
-                            <p className="dialog-error">{shelfSelectionError}</p>
+                            <p className="dialog-error">{<OutcomeText text={shelfSelectionError}/> }</p>
                         )}
                         {shelfSelectionPreview && !shelfSelectionBusy && (
                             <>
@@ -2220,8 +2221,7 @@ function App() {
                         <div className="state-copy">
                             <h3>{t("Local library needs recovery")}</h3>
                             <p>
-                                {applicationError ||
-                                    'Librairii cannot safely open its application data.'}
+                                <OutcomeText text={applicationError || 'Librairii cannot safely open its application data.'}/>
                             </p>
                             {storageRecoveryAvailable && (
                                 <p>
@@ -2247,7 +2247,7 @@ function App() {
                         <div className="state-mark" aria-hidden="true">!</div>
                         <div>
                             <h3>{t("The action could not be completed")}</h3>
-                            <p>{requestError}</p>
+                            <p>{<OutcomeText text={requestError}/> }</p>
                         </div>
                         <button type="button" className="notice-dismiss" aria-label={t("Close action error")}
                             onClick={() => {
@@ -2666,7 +2666,7 @@ function App() {
                                 {exportPreflight.issues.map((issue) => (
                                     <li key={issue.code}>
                                         <b>{issue.blocks ? t("Blocked") : t("Notice")}</b>
-                                        <span>{issue.message}</span>
+                                        <span>{<OutcomeText text={issue.message}/> }</span>
                                     </li>
                                 ))}
                             </ul>
@@ -2683,14 +2683,14 @@ function App() {
                                             <small>{item.outputName}</small>
                                         </span>
                                         <strong>{item.disposition}</strong>
-                                        {item.issue && <p>{item.issue.message}</p>}
+                                        {item.issue && <p>{<OutcomeText text={item.issue.message}/> }</p>}
                                     </li>
                                 ))}
                             </ul>
                         )}
                         {exportStartError && (
                             <p className="dialog-error" role="alert">
-                                {exportStartError}
+                                {<OutcomeText text={exportStartError}/> }
                             </p>
                         )}
                         <div className="dialog-actions">
@@ -2801,7 +2801,7 @@ function App() {
                             />
                         </label>
                         {shelfDialogError && (
-                            <p className="dialog-error">{shelfDialogError}</p>
+                            <p className="dialog-error">{<OutcomeText text={shelfDialogError}/> }</p>
                         )}
                         <div className="dialog-actions">
                             <button
@@ -2846,7 +2846,7 @@ function App() {
                                 {t("Replacing the criteria is explicit and permanent. Stories and managed archives are never changed.")}</p>
                         </div>
                         {shelfDialogError && (
-                            <p className="dialog-error">{shelfDialogError}</p>
+                            <p className="dialog-error">{<OutcomeText text={shelfDialogError}/> }</p>
                         )}
                         <div className="dialog-actions">
                             <button
@@ -2901,7 +2901,7 @@ function App() {
                         <p>
                             {t("Only this saved query will be removed. Matching stories and their managed archives will stay in your library.")}</p>
                         {shelfDialogError && (
-                            <p className="dialog-error">{shelfDialogError}</p>
+                            <p className="dialog-error">{<OutcomeText text={shelfDialogError}/> }</p>
                         )}
                         <div className="dialog-actions">
                             <button

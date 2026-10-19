@@ -18,8 +18,12 @@ func settingsMenu(a *App) *menu.Menu {
 	if runtime.GOOS == "darwin" {
 		result.Append(menu.AppMenu())
 	}
-	submenu := result.AddSubmenu("Librairii Settings")
-	language := a.Settings().Language
+	title := "Librairii"
+	if runtime.GOOS == "darwin" {
+		title = "Librairii Settings"
+	}
+	submenu := result.AddSubmenu(title)
+	language := a.interfaceLanguage()
 	submenu.AddText(localization.Text(language, "Settings…"), keys.CmdOrCtrl(","), func(*menu.CallbackData) {
 		if a.settings == nil {
 			return
@@ -37,5 +41,14 @@ func settingsMenu(a *App) *menu.Menu {
 }
 func (a *App) refreshSettingsMenu(ctx context.Context) {
 	wruntime.MenuSetApplicationMenu(ctx, settingsMenu(a))
-	platform.IntegrateSettingsMenu()
+	language := a.interfaceLanguage()
+	description := localization.Text(language, "A local-first story archive library for Lunii.QT-compatible collections.") + "\n\n" + localization.Text(language, "Contributors") + ": https://github.com/01max/librairii/graphs/contributors\n\n" + localization.Text(language, "Repository") + ": https://github.com/01max/librairii"
+	platform.IntegrateSettingsMenu(description)
+}
+
+func (a *App) interfaceLanguage() string {
+	if a.settings == nil {
+		return "en"
+	}
+	return a.settings.storage.Profile().Language
 }

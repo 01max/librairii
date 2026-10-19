@@ -33,7 +33,7 @@ func (a *App) StartLibraryMove(preparationID string) SettingsSnapshot {
 	s.cancelMove = cancel
 	s.move = &MoveProgress{Phase: "copying", Total: prepared.Bytes, Cancelable: true}
 	s.mu.Unlock()
-	go a.runLibraryMove(ctx, prepared)
+	go func() { defer cancel(); a.runLibraryMove(ctx, prepared) }()
 	return a.Settings()
 }
 func (a *App) CancelLibraryMove() SettingsSnapshot {
@@ -141,7 +141,7 @@ func (a *App) runLibraryMove(ctx context.Context, p *MovePreparation) {
 		return nil
 	}
 	err := work()
-	if !committed {
+	if !committed && !errors.Is(err, preferences.ErrCommitUncertain) {
 		if _, journalErr := preferences.ReadJournal(directory); journalErr == nil {
 			recoveryErr := preferences.Reconcile(context.Background(), directory, s.storage.Profile())
 			if recoveryErr != nil {
@@ -170,6 +170,9 @@ func (a *App) runLibraryMove(ctx context.Context, p *MovePreparation) {
 	}
 	if paused && !a.core.Status().MutationsAllowed {
 		s.move.Error = "settings.library_missing"
+	}
+	if errors.Is(err, preferences.ErrCommitUncertain) {
+		s.move.Error = "settings.restart_required"
 	}
 	s.selected = ""
 	s.mu.Unlock()

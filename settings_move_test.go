@@ -71,6 +71,14 @@ func TestApplicationUsesNewRootAfterMove(t *testing.T) {
 	}
 	a := NewApp(composition.Application, WithSettings(storage, dialogs))
 	a.startup(ctx)
+	a.settings.pendingOpen = true
+	if !a.Settings().PendingOpen || !a.Settings().PendingOpen {
+		t.Fatal("early settings request lost before acknowledgement")
+	}
+	a.DismissSettings()
+	if a.Settings().PendingOpen {
+		t.Fatal("settings dismissal not acknowledged")
+	}
 	defer a.shutdown(ctx)
 	imported := a.SelectAndImportStories()
 	if imported.Operation == nil {

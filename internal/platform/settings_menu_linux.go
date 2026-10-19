@@ -1,3 +1,3 @@
 package platform
 
-func IntegrateSettingsMenu() {}
+func IntegrateSettingsMenu(string) {}

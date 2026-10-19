@@ -1,14 +1,14 @@
-import {t, currentLanguage} from './i18n';
-import en from '../../internal/localization/locales/en.json';
+import {useState} from 'react';
+import {outcomeKey, outcomeText} from './outcome-message';
+import {t} from './i18n';
 import {useLanguage} from './use-language';
-export function outcomeText(text: string): string {
-    if (currentLanguage() === 'en' || Object.hasOwn(en, text)) return t(text);
-    return t('The action could not be completed');
-}
 export default function OutcomeText({text}: {text: string}) {
     useLanguage();
+    const [details, setDetails] = useState(false);
     const summary = outcomeText(text);
-    return <>{summary}{summary !== text && !Object.hasOwn(en, text) && (
-        <details><summary>{t('Technical details')}</summary><p>{text}</p></details>
-    )}</>;
+    const unknown = summary !== text && !outcomeKey(text);
+    return <span>{summary}{unknown && <>
+        {' '}<button type="button" aria-expanded={details} onClick={() => setDetails(!details)}>{t('Technical details')}</button>
+        {details && <span role="note"> {text}</span>}
+    </>}</span>;
 }

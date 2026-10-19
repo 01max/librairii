@@ -1,4 +1,4 @@
-import {outcomeText} from './OutcomeText';
+import {outcomeText} from './outcome-message';
 import {t} from './i18n';
 import {operations} from '../wailsjs/go/models';
 

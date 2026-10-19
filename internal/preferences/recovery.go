@@ -91,6 +91,16 @@ func DiscardOwned(ctx context.Context, root string, j Journal) error {
 	for i := len(j.Entries) - 1; i >= 0; i-- {
 		entry := j.Entries[i]
 		if entry.Directory {
+			path := filepath.Join(root, entry.Path)
+			info, statErr := os.Lstat(path)
+			if errors.Is(statErr, os.ErrNotExist) {
+				continue
+			}
+			resolved, resolveErr := Canonical(path)
+			if statErr != nil || !info.IsDir() || resolveErr != nil || !containedResolved(root, resolved) {
+				failures = append(failures, ErrCleanupPending)
+				continue
+			}
 			if err := os.Remove(filepath.Join(root, entry.Path)); err != nil && !errors.Is(err, os.ErrNotExist) {
 				failures = append(failures, err)
 			}

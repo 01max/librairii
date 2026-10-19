@@ -45,7 +45,7 @@ export default function ExportReport({
                             className={`export-report-group ${group.status}`}
                             key={group.status}
                         >
-                            <h4>{group.label} · {items.length}</h4>
+                            <h4>{t(group.label)} · {items.length}</h4>
                             <ul>
                                 {items.map((item) => (
                                     <li key={item.id}>
@@ -55,9 +55,7 @@ export default function ExportReport({
                                                 item.sourceName}
                                         </b>
                                         <span>
-                                            {item.outcomeMessage ||
-                                                item.outputName ||
-                                                item.status}
+                                            <OutcomeText text={item.outcomeMessage || item.outputName || item.status}/>
                                         </span>
                                     </li>
                                 ))}

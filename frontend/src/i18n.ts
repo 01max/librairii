@@ -14,7 +14,7 @@ export function setLanguage(next: Language) {
 export function t(key: string, ...values: unknown[]): string {
     const catalog: Record<string, string> = language === 'fr' ? fr : en;
     const text = catalog[key] ?? key;
-    return text.replace(/\{(\d+)\}/g, (_, index: string) => String(values[Number(index)] ?? ''));
+    return text.replace(/\{(\d+)\}/g, (_, index: string) => typeof values[Number(index)] === 'number' ? new Intl.NumberFormat(language).format(values[Number(index)] as number) : String(values[Number(index)] ?? ''));
 }
 export function message(key: MessageKey, ...values: unknown[]) { return t(key, ...values); }
 export function number(value: number) { return new Intl.NumberFormat(language).format(value); }

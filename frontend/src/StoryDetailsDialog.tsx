@@ -1,4 +1,5 @@
-import {systemLabel} from './system-label';
+import OutcomeText from './OutcomeText';
+import {systemLabel, systemValue} from './system-label';
 import {t} from './i18n';
 import ModalBackdrop from './ModalBackdrop';
 import {type CSSProperties, useEffect, useMemo, useRef, useState} from 'react';
@@ -47,7 +48,7 @@ export default function StoryDetailsDialog({
         }
         return definition.values.filter((value) => state.values.some(
             (assigned) => assigned.valueId === value.id && assigned.assignedStories > 0,
-        )).map((value) => ({key: `${definition.id}-${value.id}`, label: `${systemLabel(definition)} · ${value.label}`, color: definition.color}));
+        )).map((value) => ({key: `${definition.id}-${value.id}`, label: `${systemLabel(definition)} · ${systemValue(definition,value)}`, color: definition.color}));
     }) ?? [];
     const [technicalOpen, setTechnicalOpen] = useState(false);
     const [confirming, setConfirming] = useState(false);
@@ -173,7 +174,7 @@ export default function StoryDetailsDialog({
                             <p>
                                 “{story.title}{t("” will move to application trash. Your original source file will stay where it is.")}</p>
                         </div>
-                        {error && <p className="dialog-error" role="alert">{error}</p>}
+                        {error && <p className="dialog-error" role="alert">{<OutcomeText text={error}/> }</p>}
                         <div className="dialog-actions">
                             <button
                                 ref={keepButton}

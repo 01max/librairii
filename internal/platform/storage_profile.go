@@ -60,7 +60,7 @@ func (r *StorageReadiness) Isolated() bool { return r.profileStore == nil }
 func (r *StorageReadiness) SuggestedRoot() string {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
-	if r.profile.Complete {
+	if r.profile.Root != "" {
 		return r.profile.Root
 	}
 	return r.legacyRoot
@@ -92,21 +92,20 @@ func (r *StorageReadiness) InitializeLibrary(ctx context.Context, root string) e
 	if r.profile.Complete {
 		return preferences.ErrInvalid
 	}
-	// Permit retry only for this process's previously initialized setup root.
+	// Retry only a confirmed setup folder with the recorded identity.
 	if r.profile.Root != root || r.profile.LibraryID == "" {
 		if err := preferences.EmptyTarget(root, r.profileStore.Directory(), ""); err != nil {
 			return err
 		}
 	}
+	if r.profile.Root == root && r.profile.LibraryID != "" {
+		id, err := preferences.Identity(root)
+		if err != nil || id != r.profile.LibraryID {
+			return preferences.ErrInvalid
+		}
+	}
 	layout, err := storage.Initialize(root)
 	if err != nil {
-		return err
-	}
-	db, err := database.Open(ctx, preferences.DatabasePath(root))
-	if err != nil {
-		return err
-	}
-	if err = db.Close(); err != nil {
 		return err
 	}
 	id, err := preferences.EnsureIdentity(root)
@@ -115,6 +114,26 @@ func (r *StorageReadiness) InitializeLibrary(ctx context.Context, root string) e
 	}
 	r.profile.Root = root
 	r.profile.LibraryID = id
+	// Persist ownership of an incomplete setup so initialization can be retried
+	// in the same folder, including after an application restart.
+	pending, err := r.profileStore.Update(func(p *preferences.Profile) error {
+		p.Root = root
+		p.LibraryID = id
+		p.Complete = false
+		p.Language = r.profile.Language
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+	r.profile = pending
+	db, err := database.Open(ctx, preferences.DatabasePath(root))
+	if err != nil {
+		return err
+	}
+	if err = db.Close(); err != nil {
+		return err
+	}
 	p, err := r.profileStore.Update(func(p *preferences.Profile) error {
 		p.Root = root
 		p.LibraryID = id

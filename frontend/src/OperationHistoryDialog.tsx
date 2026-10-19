@@ -132,8 +132,8 @@ export default function OperationHistoryDialog({liveOperations, onClose, onRevea
                         <p className="history-empty">{t("No activity yet. Import stories or sync with Lunii to get started.")}</p>
                     )}
                     {loading && <p role="status">{t("Loading history…")}</p>}
-                    {error && <p role="alert">{error}</p>}
-                    {revealError && <p role="alert">{revealError}</p>}
+                    {error && <p role="alert">{<OutcomeText text={error}/> }</p>}
+                    {revealError && <p role="alert">{<OutcomeText text={revealError}/> }</p>}
                 </div>
                 <footer className="history-actions">
                     <button type="button" disabled={loading}

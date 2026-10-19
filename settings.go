@@ -76,7 +76,7 @@ func (a *App) Settings() SettingsSnapshot {
 		}
 	}
 	pending := s.pendingOpen
-	s.pendingOpen = false
+
 	return SettingsSnapshot{Language: p.Language, Root: root, SetupRequired: a.core.Status().State == coreapp.StateSetupRequired, Recovery: a.core.Status().State == coreapp.StateRecovery, Isolated: s.storage.Isolated(), PendingOpen: pending, Preparation: s.preparation, Move: move}
 }
 func (a *App) SetUILanguage(language string) SettingsSnapshot {
@@ -214,4 +214,13 @@ func (a *App) LocateLibrary() SettingsSnapshot {
 		result.Error = "settings.identity_mismatch"
 	}
 	return result
+}
+
+func (a *App) DismissSettings() {
+	if a.settings == nil {
+		return
+	}
+	a.settings.mu.Lock()
+	a.settings.pendingOpen = false
+	a.settings.mu.Unlock()
 }

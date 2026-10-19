@@ -1,4 +1,5 @@
-import {systemLabel} from './system-label';
+import OutcomeText from './OutcomeText';
+import {systemLabel, systemValue} from './system-label';
 import {t} from './i18n';
 import ModalBackdrop from './ModalBackdrop';
 import {
@@ -299,7 +300,7 @@ export default function TagManager({onClose, onCatalogChange}: TagManagerProps) 
                     <button type="button" onClick={onClose} aria-label={t("Close tag manager")}>×</button>
                 </header>
 
-                {error && <p className="dialog-error" role="alert">{error}</p>}
+                {error && <p className="dialog-error" role="alert">{<OutcomeText text={error}/> }</p>}
 
                 <form className="new-tag" onSubmit={(event) => void createDefinition(event)}>
                     <h3>{t("New tag")}</h3>
@@ -340,7 +341,7 @@ export default function TagManager({onClose, onCatalogChange}: TagManagerProps) 
                                     </div>
                                     <span>
                                         {sourceLabel(definition)} · {kindLabel(definition.kind)}
-                                        {definition.protected ? ' · Protected' : ''}
+                                        {definition.protected ? t(" · Protected") : ''}
                                     </span>
                                 </div>
 
@@ -356,7 +357,7 @@ export default function TagManager({onClose, onCatalogChange}: TagManagerProps) 
                                         <label>
                                             {t("Color")}<input type="color" name="color" aria-label={t("Color for {0}", definition.label)} defaultValue={definition.color}/>
                                         </label>
-                                        <button type="submit" disabled={busy}>{t("Save") + ' '}{systemLabel(definition)} color</button>
+                                        <button type="submit" disabled={busy}>{t("Save {0} color",systemLabel(definition))}</button>
                                     </form>
                                 ) : (
                                     <>
@@ -415,7 +416,7 @@ export default function TagManager({onClose, onCatalogChange}: TagManagerProps) 
                                                             <span className="sr-only">
                                                                 {t("Label for {0}", value.key)}
                                                             </span>
-                                                            <input name="label" defaultValue={value.label}/>
+                                                            <input name="label" defaultValue={systemValue(definition,value)}/>
                                                         </label>
                                                         <button type="submit" disabled={busy}>{t("Save")}{' '}</button>
                                                         <button

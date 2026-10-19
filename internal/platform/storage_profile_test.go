@@ -151,3 +151,31 @@ func TestMissingLibraryCanBeLocatedWithoutCreatingReplacement(t *testing.T) {
 		t.Fatal(next.Profile())
 	}
 }
+
+func TestInterruptedSetupRetriesConfirmedFolderAfterRestart(t *testing.T) {
+	directory := t.TempDir()
+	root := filepath.Join(t.TempDir(), "chosen")
+	r := NewConfiguredStorageReadiness(directory, "/unused", "fr")
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	if err := r.InitializeLibrary(ctx, root); err == nil {
+		t.Fatal("cancelled initialization succeeded")
+	}
+	next := NewConfiguredStorageReadiness(directory, "/unused", "en")
+	if _, err := next.Check(context.Background()); !errors.Is(err, preferences.ErrSetupRequired) {
+		t.Fatal(err)
+	}
+	if next.SuggestedRoot() != root {
+		t.Fatal("lost confirmed folder", next.SuggestedRoot())
+	}
+	if err := next.InitializeLibrary(context.Background(), root); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := next.Check(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	defer next.Close()
+	if next.Profile().Language != "fr" {
+		t.Fatal(next.Profile())
+	}
+}

@@ -1,4 +1,4 @@
-import {t} from './i18n';
+import {t, currentLanguage} from './i18n';
 import {metadata} from '../wailsjs/go/models';
 
 type Props = {
@@ -27,7 +27,7 @@ export default function LuniiSync({status, busy, onSync, onDismiss}: Props) {
                     {t("Sync with the official Lunii API for richer descriptions and cover images for matching stories.")}</p>
                 <p className="last-sync">
                     {t("Last successful sync:")}{' '}{validDate ? (
-                        <time dateTime={timestamp}>{date.toLocaleString()}</time>
+                        <time dateTime={timestamp}>{date.toLocaleString(currentLanguage())}</time>
                     ) : firstSync ? t("Never") : t("Not available yet")}
                 </p>
                 {status?.state === 'stale_cache' && (

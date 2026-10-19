@@ -1,5 +1,5 @@
-import {useEffect, useRef, useState} from 'react';
-import {Settings, SetUILanguage, SelectLibraryLocation, ConfirmLibrarySetup, StartLibraryMove, CancelLibraryMove, RetryLibrary, LocateLibrary} from '../wailsjs/go/main/App';
+import {useCallback, useEffect, useRef, useState} from 'react';
+import {Settings, SetUILanguage, SelectLibraryLocation, ConfirmLibrarySetup, StartLibraryMove, CancelLibraryMove, RetryLibrary, LocateLibrary, DismissSettings} from '../wailsjs/go/main/App';
 import type {main} from '../wailsjs/go/models';
 import {EventsOn} from '../wailsjs/runtime/runtime';
 import {setLanguage, t, number, type Language} from './i18n';
@@ -11,7 +11,7 @@ type Snapshot = main.SettingsSnapshot;
 function nativeSettingsAvailable() {
     return typeof (window as unknown as {go?: {main?: {App?: {Settings?: unknown}}}}).go?.main?.App?.Settings === 'function';
 }
-export default function SettingsPanel({onReady}: {onReady: () => void}) {
+export default function SettingsPanel({onReady,onLocation}: {onReady: () => void;onLocation?: (root: string) => void}) {
     useLanguage();
     const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
     const [open, setOpen] = useState(false);
@@ -31,12 +31,13 @@ export default function SettingsPanel({onReady}: {onReady: () => void}) {
         return () => siblings.forEach((child,index) => {child.inert=previous[index];});
     },[open]);
     useModalFocus(dialog, close, open);
-    function accept(value: Snapshot) {
+    const accept=useCallback((value: Snapshot) => {
+ onLocation?.(value.root);
         setSnapshot(value);
         if (value.language === 'fr' || value.language === 'en') setLanguage(value.language);
         if (value.pendingOpen || value.setupRequired) setOpen(true);
         setError(value.error ?? '');
-    }
+    },[onLocation]);
     useEffect(() => {
         if (!nativeSettingsAvailable()) return;
         let active = true;
@@ -44,18 +45,24 @@ export default function SettingsPanel({onReady}: {onReady: () => void}) {
         const unsubscribe = EventsOn('settings:open', () => { setOpen(true); refresh(); });
         refresh();
         return () => { active = false; unsubscribe(); };
-    }, []);
+    }, [accept]);
+    const dismiss=useCallback(() => {
+        if (working || moving || snapshot?.setupRequired) return;
+        if (nativeSettingsAvailable()) { void DismissSettings().then(() => setOpen(false)).catch(() => setError('settings.invalid')); }
+        else setOpen(false);
+    },[working,moving,snapshot?.setupRequired]);
     useEffect(() => {
         if (!open) return;
         const escape = (event: KeyboardEvent) => {
-            if (event.key === 'Escape' && !working && !moving && !snapshot?.setupRequired) { event.stopImmediatePropagation(); setOpen(false); }
+            if (event.key === 'Escape' && !working && !moving && !snapshot?.setupRequired) { event.stopImmediatePropagation(); dismiss(); }
         };
         window.addEventListener('keydown', escape, true);
         return () => window.removeEventListener('keydown', escape, true);
-    }, [open, working, moving, snapshot?.setupRequired]);
+    }, [open, working, moving, snapshot?.setupRequired,dismiss]);
+    const movePhase=snapshot?.move?.phase;
     useEffect(() => {
-        if (!snapshot?.move) return;
-        const phase = snapshot.move.phase;
+        if (!movePhase) return;
+        const phase = movePhase;
         if (['succeeded','failed','cancelled','cleanup_pending'].includes(phase)) {
             if (lastMove.current !== phase) { lastMove.current = phase; onReady(); }
             return;
@@ -63,14 +70,14 @@ export default function SettingsPanel({onReady}: {onReady: () => void}) {
         lastMove.current = phase;
         const timer = window.setInterval(() => { void Settings().then(accept).catch(() => setError('settings.invalid')); }, 200);
         return () => window.clearInterval(timer);
-    }, [snapshot?.move?.phase, onReady]);
+    }, [movePhase, onReady,accept]);
     async function update(action: () => Promise<Snapshot>) {
         setWorking(true); setError('');
         try { accept(await action()); } catch { setError('settings.invalid'); } finally { setWorking(false); }
     }
     return <>
         <button type="button" className="settings-entry" onClick={() => { setOpen(true); if (nativeSettingsAvailable()) void update(Settings); }} aria-label={t('Settings')}>⚙</button>
-        {open && <ModalBackdrop onDismiss={() => setOpen(false)} disabled={working || moving || snapshot?.setupRequired} className="settings-backdrop">
+        {open && <ModalBackdrop onDismiss={dismiss} disabled={working || moving || snapshot?.setupRequired} className="settings-backdrop">
             <section ref={dialog} className="detail-dialog settings-panel" role="dialog" aria-modal="true" aria-labelledby="settings-title">
                 <h2 id="settings-title">{t(snapshot?.setupRequired ? 'Welcome to Librairii' : 'Settings')}</h2>
  {snapshot?.setupRequired && <p>{t('Choose where to keep your library.')}</p>}
@@ -112,7 +119,7 @@ export default function SettingsPanel({onReady}: {onReady: () => void}) {
    accept(await Settings()); setOpen(false); onReady();
   }).catch(() => setError('settings.invalid')).finally(() => setWorking(false));
  }}>{t('Use this folder')}</button>}
- <button ref={close} type="button" disabled={working || moving || snapshot?.setupRequired} onClick={() => { setOpen(false); }}>{t('Close')}</button></div>
+ <button ref={close} type="button" disabled={working || moving || snapshot?.setupRequired} onClick={dismiss}>{t('Close')}</button></div>
             </section>
         </ModalBackdrop>}
     </>;

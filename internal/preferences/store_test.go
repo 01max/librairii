@@ -63,3 +63,29 @@ func TestConfigPaths(t *testing.T) {
 		t.Fatal(mac, linux)
 	}
 }
+
+func TestUncertainPublicationRequiresRestart(t *testing.T) {
+	store := NewStore(t.TempDir())
+	if _, err := store.Update(func(p *Profile) error { p.Language = "en"; return nil }); err != nil {
+		t.Fatal(err)
+	}
+	store.publish = func(path string, value any) error {
+		if err := WriteJSON(path, value); err != nil {
+			return err
+		}
+		return ErrCommitUncertain
+	}
+	if _, err := store.Update(func(p *Profile) error { p.Language = "fr"; return nil }); !errors.Is(err, ErrCommitUncertain) {
+		t.Fatal(err)
+	}
+	if _, err := store.Load(); !errors.Is(err, ErrCommitUncertain) {
+		t.Fatal("unsafe cached profile reused", err)
+	}
+	if _, err := store.Update(func(p *Profile) error { p.Language = "en"; return nil }); !errors.Is(err, ErrCommitUncertain) {
+		t.Fatal("uncertain profile overwritten", err)
+	}
+	reloaded, err := NewStore(store.Directory()).Load()
+	if err != nil || reloaded.Language != "fr" {
+		t.Fatal(reloaded, err)
+	}
+}

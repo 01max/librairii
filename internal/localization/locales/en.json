@@ -380,5 +380,20 @@
   "Story archives": "Story archives",
   "Export story archives": "Export story archives",
   "Export diagnostics": "Export diagnostics",
-  "settings.cleanup_pending": "The library is active at its new location; some old files need cleanup."
+  "settings.cleanup_pending": "The library is active at its new location; some old files need cleanup.",
+  "Age": "Age",
+  "3–5 years": "3–5 years",
+  "6–8 years": "6–8 years",
+  "today": "today",
+  " · Protected": " · Protected",
+  " · Mixed": " · Mixed",
+  " · System-derived": " · System-derived",
+  "Librairii cannot safely open its application data.": "Librairii cannot safely open its application data.",
+  "Completed files are available; review the stories not exported.": "Completed files are available; review the stories not exported.",
+  "No official catalog is active; embedded and fallback details remain available.": "No official catalog is active; embedded and fallback details remain available.",
+  "Save {0} color": "Save {0} color",
+  "settings.restart_required": "Settings persistence could not be confirmed. Restart Librairii to recover safely.",
+  "A local-first story archive library for Lunii.QT-compatible collections.": "A local-first story archive library for Lunii.QT-compatible collections.",
+  "Contributors": "Contributors",
+  "Repository": "Repository"
 }
