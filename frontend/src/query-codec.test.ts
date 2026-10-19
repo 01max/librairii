@@ -54,3 +54,20 @@ test('canonicalizes filter and value ordering', () => {
         '&language=en-GB&language=fr-FR&v=1',
     );
 });
+
+test('retains combined shelf membership across query navigation and reload', () => {
+    const query: CollectionQuery = {...fixtures[0].query as CollectionQuery,
+        anyOf: [
+            {...fixtures[0].query as CollectionQuery, name: 'moon'},
+            {...fixtures[0].query as CollectionQuery, name: 'forest'},
+        ],
+    };
+    expect(decodeCollectionQuery(encodeCollectionQuery(query)))
+        .toEqual(canonicalCollectionQuery(query));
+});
+
+test.each(['[null]', '["all"]', '[{"selection":[1]}]', '[{"languages":1}]'])(
+    'rejects malformed combined query %s instead of broadening its membership', (any) => {
+        expect(() => decodeCollectionQuery(`#/library?v=1&any=${encodeURIComponent(any)}`)).toThrow();
+    },
+);

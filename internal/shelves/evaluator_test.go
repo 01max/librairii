@@ -3,6 +3,7 @@ package shelves_test
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -465,5 +466,43 @@ func assertShelfCount(
 	}
 	if count.ShelfID != shelfID || count.Count != expected {
 		t.Fatalf("Count(%d) = %#v, want %d", shelfID, count, expected)
+	}
+}
+
+func TestCombinedShelfPersistsDynamicUnionAcrossBrowsingCountsAndExport(t *testing.T) {
+	h := newEvaluationHarness(t)
+	ctx := context.Background()
+	for i, title := range []string{"Moon workshop", "Forest train", "Moon forest", "Ocean"} {
+		createEvaluationStory(t, h.catalog, fmt.Sprintf("123e4567-e89b-42d3-a456-%012d", i), title, string(rune('a'+i)))
+	}
+	combined, err := h.shelves.Create(ctx, "arc + aqua", library.StoryLibraryQuery{AnyOf: []library.StoryLibraryQuery{
+		{Name: "moon"}, {Name: "forest"},
+	}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	assertShelfCount(t, h.evaluator, combined.ID, 3)
+	page, err := h.evaluator.Evaluate(ctx, combined.ID, library.ListRequest{PageSize: 1})
+	if err != nil || page.Page.TotalItems != 3 || len(page.Page.Stories) != 1 {
+		t.Fatal(page, err)
+	}
+	reopened, err := h.shelves.Open(ctx, combined.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(reopened.Query.AnyOf) != 2 {
+		t.Fatal("lost union", reopened.Query)
+	}
+	exported, err := h.library.ExportQuery(ctx, reopened.Query.StoryLibraryQuery())
+	if err != nil || len(exported) != 3 {
+		t.Fatal("export union", len(exported), err)
+	}
+	createEvaluationStory(t, h.catalog, "123e4567-e89b-42d3-a456-000000000009", "Another forest", "e")
+	assertShelfCount(t, h.evaluator, combined.ID, 4)
+	refined := reopened.Query.StoryLibraryQuery()
+	refined.Name = "workshop"
+	result, err := h.library.Search(ctx, refined)
+	if err != nil || result.TotalItems != 1 {
+		t.Fatal("refined union", result, err)
 	}
 }

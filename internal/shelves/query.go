@@ -19,6 +19,7 @@ var (
 )
 
 type SavedLibraryQuery struct {
+	AnyOf           []SavedLibraryQuery     `json:"anyOf,omitempty"`
 	IncludeBroken   bool                    `json:"includeBroken,omitempty"`
 	Name            string                  `json:"name,omitempty"`
 	Languages       []string                `json:"languages,omitempty"`
@@ -83,8 +84,13 @@ func MigrateSavedLibraryQuery(
 }
 
 func (q SavedLibraryQuery) StoryLibraryQuery() library.StoryLibraryQuery {
+	var branches []library.StoryLibraryQuery
+	for _, branch := range q.AnyOf {
+		branches = append(branches, branch.StoryLibraryQuery())
+	}
 	return library.StoryLibraryQuery{
 		IncludeBroken:   q.IncludeBroken,
+		AnyOf:           branches,
 		Name:            q.Name,
 		Languages:       append([]string(nil), q.Languages...),
 		Compatibilities: append([]library.Compatibility(nil), q.Compatibilities...),
@@ -104,7 +110,16 @@ func canonicalSavedLibraryQuery(
 			err,
 		)
 	}
+	var branches []SavedLibraryQuery
+	for _, branch := range query.AnyOf {
+		saved, err := canonicalSavedLibraryQuery(branch)
+		if err != nil {
+			return SavedLibraryQuery{}, err
+		}
+		branches = append(branches, saved)
+	}
 	return SavedLibraryQuery{
+		AnyOf:           branches,
 		IncludeBroken:   query.IncludeBroken,
 		Name:            query.Name,
 		Languages:       append([]string(nil), query.Languages...),
@@ -129,6 +144,10 @@ func cloneChoiceFilters(filters []library.ChoiceFilter) []library.ChoiceFilter {
 }
 
 func savedLibraryQueryPayload(query SavedLibraryQuery) shelfquery.Payload {
+	var branches []shelfquery.Payload
+	for _, branch := range query.AnyOf {
+		branches = append(branches, savedLibraryQueryPayload(branch))
+	}
 	booleanFilters := make(
 		[]shelfquery.BooleanReference,
 		0,
@@ -156,6 +175,7 @@ func savedLibraryQueryPayload(query SavedLibraryQuery) shelfquery.Payload {
 		compatibilities = append(compatibilities, string(compatibility))
 	}
 	return shelfquery.Payload{
+		AnyOf:           branches,
 		IncludeBroken:   query.IncludeBroken,
 		Name:            query.Name,
 		Languages:       append([]string(nil), query.Languages...),
@@ -166,6 +186,10 @@ func savedLibraryQueryPayload(query SavedLibraryQuery) shelfquery.Payload {
 }
 
 func storyLibraryQueryFromPayload(payload shelfquery.Payload) library.StoryLibraryQuery {
+	var branches []library.StoryLibraryQuery
+	for _, branch := range payload.AnyOf {
+		branches = append(branches, storyLibraryQueryFromPayload(branch))
+	}
 	compatibilities := make(
 		[]library.Compatibility,
 		0,
@@ -201,6 +225,7 @@ func storyLibraryQueryFromPayload(payload shelfquery.Payload) library.StoryLibra
 	}
 	return library.StoryLibraryQuery{
 		IncludeBroken:   payload.IncludeBroken,
+		AnyOf:           branches,
 		Name:            payload.Name,
 		Languages:       append([]string(nil), payload.Languages...),
 		Compatibilities: compatibilities,

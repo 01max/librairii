@@ -17,6 +17,7 @@ export type CollectionChoiceFilter = {
 };
 
 export type CollectionQuery = {
+    anyOf?: CollectionQuery[];
     includeBroken?: boolean;
     name: string;
     languages: string[];
@@ -49,6 +50,7 @@ export class InvalidCollectionQuery extends Error {}
 export function encodeCollectionQuery(input: CollectionQuery): string {
     const query = canonicalCollectionQuery(input);
     const entries: Array<[string, string]> = [['v', String(STORY_LIBRARY_QUERY_VERSION)]];
+    if (query.anyOf?.length) entries.push(['any', JSON.stringify(query.anyOf)]);
     if (query.includeBroken) {
         entries.push(['includeBroken', 'true']);
     }
@@ -95,6 +97,7 @@ export function decodeCollectionQuery(hash: string): CollectionQuery {
     }
     const parameters = new URLSearchParams(hash.slice(queryIndex + 1));
     const allowed = new Set([
+        'any',
         'v',
         'includeBroken',
         'name',
@@ -145,7 +148,17 @@ export function decodeCollectionQuery(hash: string): CollectionQuery {
     if (includeBroken && includeBroken !== 'true') {
         throw new InvalidCollectionQuery('Invalid broken-story visibility.');
     }
+    let anyOf: CollectionQuery[] | undefined;
+    const alternatives = oneValue(parameters, 'any', false);
+    if (alternatives) {
+        try {
+            if (alternatives.length > 262144) throw new Error();
+            anyOf = JSON.parse(alternatives);
+            if (!Array.isArray(anyOf)) throw new Error();
+        } catch { throw new InvalidCollectionQuery('Invalid combined query.'); }
+    }
     return canonicalCollectionQuery({
+        ...(anyOf?.length ? {anyOf} : {}),
         includeBroken: includeBroken === 'true',
         name: oneValue(parameters, 'name', false),
         languages: parameters.getAll('language'),
@@ -159,6 +172,30 @@ export function decodeCollectionQuery(hash: string): CollectionQuery {
 }
 
 export function canonicalCollectionQuery(input: CollectionQuery): CollectionQuery {
+    return canonicalQueryNode(input, {remaining: 50});
+}
+
+function canonicalQueryNode(input: CollectionQuery, budget: {remaining: number}): CollectionQuery {
+    if (--budget.remaining < 0 || !input || typeof input !== 'object' ||
+        (input.anyOf !== undefined && !Array.isArray(input.anyOf)) ||
+        typeof input.name !== 'string' || !Array.isArray(input.languages) ||
+        !Array.isArray(input.compatibilities) || !Array.isArray(input.booleanFilters) || !Array.isArray(input.choiceFilters)) {
+        throw new InvalidCollectionQuery('Invalid combined query.');
+    }
+    const allowed = new Set(['anyOf', 'includeBroken', 'name', 'languages', 'compatibilities', 'booleanFilters', 'choiceFilters', 'page', 'pageSize', 'sort']);
+    const anyOf = input.anyOf?.map((branch) => {
+        if (!branch || typeof branch !== 'object' || Array.isArray(branch) || Object.keys(branch).some((key) => !allowed.has(key))) {
+            throw new InvalidCollectionQuery('Invalid combined query branch.');
+        }
+        return canonicalQueryNode({
+            ...DEFAULT_COLLECTION_QUERY,
+            ...branch,
+            languages: branch.languages ?? [],
+            compatibilities: branch.compatibilities ?? [],
+            booleanFilters: branch.booleanFilters ?? [],
+            choiceFilters: branch.choiceFilters ?? [],
+        }, budget);
+    });
     const name = normalizeSearchText(input.name);
     const languages = [...new Set(input.languages.map(canonicalLanguage))].sort();
     const compatibilities = [...new Set(input.compatibilities)].sort();
@@ -207,6 +244,7 @@ export function canonicalCollectionQuery(input: CollectionQuery): CollectionQuer
     booleanFilters.sort((left, right) => left.definitionId - right.definitionId);
     choiceFilters.sort((left, right) => left.definitionId - right.definitionId);
     return {
+        ...(anyOf?.length ? {anyOf} : {}),
         includeBroken: input.includeBroken ?? false,
         name,
         languages,

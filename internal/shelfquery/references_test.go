@@ -182,3 +182,13 @@ func TestDecodeReferencesRejectsUnsafePayloads(t *testing.T) {
 		})
 	}
 }
+
+func TestCombinedQueriesKeepReferencesInEveryBranch(t *testing.T) {
+	refs, err := DecodeReferences(CurrentVersion, `{"anyOf":[{"booleanFilters":[{"definitionId":2,"state":"true"}]},{"choiceFilters":[{"definitionId":3,"valueIds":[7]}]}]}`)
+	if err != nil || len(refs.BooleanFilters) != 1 || len(refs.ChoiceFilters) != 1 {
+		t.Fatal(refs, err)
+	}
+	if _, err := DecodeReferences(CurrentVersion, `{"anyOf":[{"choiceFilters":[{"definitionId":0,"valueIds":[7]}]}]}`); err == nil {
+		t.Fatal("accepted invalid nested criterion")
+	}
+}

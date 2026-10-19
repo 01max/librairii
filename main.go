@@ -11,6 +11,8 @@ import (
 	"github.com/01max/librairii/internal/artwork"
 	"github.com/01max/librairii/internal/lunii"
 	"github.com/01max/librairii/internal/platform"
+	"github.com/01max/librairii/internal/preferences"
+	"github.com/01max/librairii/internal/storage"
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
@@ -20,7 +22,19 @@ var assets embed.FS
 
 func main() {
 	readiness := platform.NewStorageReadiness(os.Getenv("LIBRAIRII_DATA_ROOT"))
+	if os.Getenv("LIBRAIRII_DATA_ROOT") == "" {
+		directory, err := preferences.Directory()
+		if err != nil {
+			log.Fatal(err)
+		}
+		legacy, err := storage.ResolveRoot("")
+		if err != nil {
+			log.Fatal(err)
+		}
+		readiness = platform.NewConfiguredStorageReadiness(directory, legacy, platform.SystemLanguage())
+	}
 	nativeDialogs := platform.NewRuntimeDialogs()
+	nativeDialogs.Language = func() string { return readiness.Profile().Language }
 	acceptance, err := newPackagedAcceptanceFromEnvironment(nativeDialogs)
 	if err != nil {
 		log.Fatal(err)
@@ -54,7 +68,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	appOptions := make([]AppOption, 0, 2)
+	appOptions := []AppOption{WithSettings(readiness, dialogs)}
 	if acceptance.enabled {
 		appOptions = append(appOptions, WithPackagedAcceptance(
 			acceptance.record,
@@ -88,7 +102,7 @@ func main() {
 	}
 	app := NewApp(composition.Application, appOptions...)
 
-	appOptionsConfig, err := productionOptions(app, artworkHandler, assets)
+	appOptionsConfig, err := productionOptions(app, app.gatedArtwork(artworkHandler), assets)
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -104,3 +104,18 @@ func loadQueryCodecFixtures(t *testing.T) []queryCodecFixture {
 	}
 	return fixtures
 }
+
+func TestCombinedQueryHashRetainsBothBranches(t *testing.T) {
+	query := StoryLibraryQuery{AnyOf: []StoryLibraryQuery{{Name: "moon"}, {Name: "forest"}}}
+	hash, err := EncodeStoryLibraryQuery(query)
+	if err != nil {
+		t.Fatal(err)
+	}
+	decoded, err := DecodeStoryLibraryQuery(hash)
+	if err != nil || len(decoded.AnyOf) != 2 || decoded.AnyOf[1].Name != "forest" {
+		t.Fatal(decoded, err)
+	}
+	if _, err := DecodeStoryLibraryQuery(`#/library?v=1&any=%5B%7B%22selection%22%3A%5B1%5D%7D%5D`); err == nil {
+		t.Fatal("accepted unknown branch criteria")
+	}
+}

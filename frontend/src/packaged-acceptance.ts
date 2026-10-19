@@ -1,4 +1,5 @@
 import {
+    Settings, SetUILanguage, SelectLibraryLocation, ConfirmLibrarySetup, StartLibraryMove,
     OperationSnapshot,
     PackagedAcceptanceMode,
     QueryStories,
@@ -20,6 +21,18 @@ export async function runPackagedAcceptance(): Promise<void> {
     }
     try {
         await checkpoint('scenario_started');
+        const initialSettings=await Settings();
+        const settingsScenario=!initialSettings.isolated;
+        if (settingsScenario) {
+            const language=await SetUILanguage('en');if(language.error)throw new Error(language.error);
+            await SelectLibraryLocation();
+            const setup=await ConfirmLibrarySetup();if(!setup.success)throw new Error('setup failed');
+            await checkpoint('setup_completed');
+            const french=await SetUILanguage('fr');if(french.error)throw new Error(french.error);
+            await checkpoint('settings_menu_french_selected');
+            const english=await SetUILanguage('en');if(english.error)throw new Error(english.error);
+            await checkpoint('settings_menu_selected');
+        }
         const imported = await SelectAndImportStories();
         const importOperation = requiredOperation(imported, 'import');
         await checkpoint('import_queued');
@@ -37,6 +50,15 @@ export async function runPackagedAcceptance(): Promise<void> {
             throw new Error('packaged collection did not contain the imported story');
         }
         await checkpoint('collection_loaded');
+        if (settingsScenario) {
+            const selected=await SelectLibraryLocation();if(!selected.preparation){await checkpoint('move_selection_failed');throw new Error(selected.error || 'move preparation missing');}
+            const move=await StartLibraryMove(selected.preparation.id);if(move.error)throw new Error(move.error);
+            const deadline=Date.now()+operationTimeoutMilliseconds;
+            let moved=false;
+            while(Date.now()<deadline){const state=await Settings();if(state.move?.phase==='succeeded'){moved=true;break;}if(['failed','cleanup_pending'].includes(state.move?.phase ?? ''))throw new Error(state.move?.error);await new Promise((resolve)=>setTimeout(resolve,pollIntervalMilliseconds));}
+            if(!moved)throw new Error('library move timed out');
+            await checkpoint('library_relocated');
+        }
 
         const prepared = await SelectAndPreflightExport(new exporter.PreflightRequest({
             sourceType: 'current_query',

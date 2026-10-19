@@ -1,3 +1,5 @@
+import OutcomeText from './OutcomeText';
+import {t} from './i18n';
 import {operations} from '../wailsjs/go/models';
 
 const exportReportGroups: Array<{
@@ -19,14 +21,14 @@ export default function ExportReport({
     onReveal: (operationID: string) => void;
 }) {
     return (
-        <section className="export-report" aria-label="Export report">
+        <section className="export-report" aria-label={t("Export report")}>
             <div className="export-report-context">
                 <span>
-                    Destination · {operation.destination || 'Selected folder'}
+                    {t("Destination ·")}{' '}{operation.destination || t("Selected folder")}
                 </span>
                 {operation.sourceShelfNames && operation.sourceShelfNames.length > 0 && (
                     <span>
-                        Source shelves · {operation.sourceShelfNames.join(', ')}
+                        {t("Source shelves ·")}{' '}{operation.sourceShelfNames.join(', ')}
                     </span>
                 )}
             </div>
@@ -43,7 +45,7 @@ export default function ExportReport({
                             className={`export-report-group ${group.status}`}
                             key={group.status}
                         >
-                            <h4>{group.label} · {items.length}</h4>
+                            <h4>{t(group.label)} · {items.length}</h4>
                             <ul>
                                 {items.map((item) => (
                                     <li key={item.id}>
@@ -53,9 +55,7 @@ export default function ExportReport({
                                                 item.sourceName}
                                         </b>
                                         <span>
-                                            {item.outcomeMessage ||
-                                                item.outputName ||
-                                                item.status}
+                                            <OutcomeText text={item.outcomeMessage || item.outputName || item.status} status={item.status}/>
                                         </span>
                                     </li>
                                 ))}
@@ -65,8 +65,7 @@ export default function ExportReport({
                 })}
             </div>
             <button type="button" onClick={() => onReveal(operation.id)}>
-                Reveal destination
-            </button>
+                {t("Reveal destination")}</button>
         </section>
     );
 }

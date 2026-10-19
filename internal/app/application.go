@@ -11,6 +11,7 @@ import (
 	"github.com/01max/librairii/internal/library"
 	"github.com/01max/librairii/internal/metadata"
 	"github.com/01max/librairii/internal/operations"
+	"github.com/01max/librairii/internal/preferences"
 	"github.com/01max/librairii/internal/removal"
 )
 
@@ -161,6 +162,11 @@ func (a *Application) Start(ctx context.Context) error {
 	}
 
 	a.startedAt = a.clock.Now().UTC()
+	if errors.Is(err, preferences.ErrSetupRequired) {
+		a.state = StateSetupRequired
+		a.ready = false
+		return nil
+	}
 	if err != nil {
 		a.state = StateRecovery
 		a.ready = false
@@ -540,4 +546,28 @@ func removalAPIError(err error) *APIError {
 	default:
 		return NewAPIError(ErrorInternal, "The story could not be moved to trash.")
 	}
+}
+
+// ResumeStorage re-evaluates readiness after an explicit setup or recovery action.
+func (a *Application) ResumeStorage(ctx context.Context) error {
+	a.mu.Lock()
+	a.state = StateInitializing
+	a.ready = false
+	a.mu.Unlock()
+	return a.Start(ctx)
+}
+
+// PauseStorage closes every root-bound resource while the host holds exclusive
+// library access. ResumeStorage reconstructs services through the normal ports.
+func (a *Application) PauseStorage() error {
+	a.mu.Lock()
+	a.state = StateRelocating
+	a.ready = false
+	resources := append([]ResourcePort(nil), a.resources...)
+	a.mu.Unlock()
+	var errs []error
+	for i := len(resources) - 1; i >= 0; i-- {
+		errs = append(errs, resources[i].Close())
+	}
+	return errors.Join(errs...)
 }

@@ -10,8 +10,16 @@ export function ApplicationStatus() {
   return window['go']['main']['App']['ApplicationStatus']();
 }
 
+export function CancelLibraryMove() {
+  return window['go']['main']['App']['CancelLibraryMove']();
+}
+
 export function CancelOperation(arg1) {
   return window['go']['main']['App']['CancelOperation'](arg1);
+}
+
+export function ConfirmLibrarySetup() {
+  return window['go']['main']['App']['ConfirmLibrarySetup']();
 }
 
 export function CreateShelf(arg1, arg2) {
@@ -38,6 +46,10 @@ export function DeleteTagValue(arg1) {
   return window['go']['main']['App']['DeleteTagValue'](arg1);
 }
 
+export function DismissSettings() {
+  return window['go']['main']['App']['DismissSettings']();
+}
+
 export function DuplicateShelf(arg1, arg2) {
   return window['go']['main']['App']['DuplicateShelf'](arg1, arg2);
 }
@@ -52,6 +64,10 @@ export function ListShelves(arg1) {
 
 export function ListStories(arg1) {
   return window['go']['main']['App']['ListStories'](arg1);
+}
+
+export function LocateLibrary() {
+  return window['go']['main']['App']['LocateLibrary']();
 }
 
 export function OfficialMetadataStatus() {
@@ -138,6 +154,10 @@ export function ReplaceShelfQuery(arg1, arg2) {
   return window['go']['main']['App']['ReplaceShelfQuery'](arg1, arg2);
 }
 
+export function RetryLibrary() {
+  return window['go']['main']['App']['RetryLibrary']();
+}
+
 export function RevealExportDestination(arg1) {
   return window['go']['main']['App']['RevealExportDestination'](arg1);
 }
@@ -154,6 +174,10 @@ export function SelectAndPreflightExport(arg1) {
   return window['go']['main']['App']['SelectAndPreflightExport'](arg1);
 }
 
+export function SelectLibraryLocation() {
+  return window['go']['main']['App']['SelectLibraryLocation']();
+}
+
 export function SetBooleanTag(arg1, arg2, arg3) {
   return window['go']['main']['App']['SetBooleanTag'](arg1, arg2, arg3);
 }
@@ -164,6 +188,18 @@ export function SetChoiceTagValue(arg1, arg2, arg3, arg4) {
 
 export function SetChoiceTagValues(arg1, arg2, arg3) {
   return window['go']['main']['App']['SetChoiceTagValues'](arg1, arg2, arg3);
+}
+
+export function SetUILanguage(arg1) {
+  return window['go']['main']['App']['SetUILanguage'](arg1);
+}
+
+export function Settings() {
+  return window['go']['main']['App']['Settings']();
+}
+
+export function StartLibraryMove(arg1) {
+  return window['go']['main']['App']['StartLibraryMove'](arg1);
 }
 
 export function StartPreparedExport(arg1) {

@@ -204,3 +204,5 @@ GOCACHE="${GOCACHE:-/private/tmp/librairii-go-cache}" \
 npm --prefix frontend run test:release
 
 printf 'packaged acceptance passed: render, host-native dialogs, progress, reveal, persistence, shutdown\n'
+
+"$project_root/scripts/verify-settings-acceptance" "$application_binary"

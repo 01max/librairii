@@ -1,3 +1,6 @@
+import OutcomeText from './OutcomeText';
+import {systemLabel, systemValue} from './system-label';
+import {t} from './i18n';
 import ModalBackdrop from './ModalBackdrop';
 import {
     type ChangeEvent,
@@ -56,7 +59,7 @@ function MixedCheckbox({
                 )}
             />
             {label}
-            {mixed && <span>Mixed</span>}
+            {mixed && <span>{t("Mixed")}</span>}
         </label>
     );
 }
@@ -82,7 +85,7 @@ export default function TagAssignmentEditor({
             onWorkspaceChange(response.workspace);
             setError(null);
         } else {
-            setError(response.error?.message ?? 'Story tags could not be loaded.');
+            setError(response.error?.message ?? t("Story tags could not be loaded."));
         }
     }, [onWorkspaceChange, storyIDs]);
 
@@ -113,16 +116,16 @@ export default function TagAssignmentEditor({
         try {
             const response = await request();
             if (!response.result) {
-                setError(response.error?.message ?? 'Story tags could not be updated.');
+                setError(response.error?.message ?? t("Story tags could not be updated."));
                 return;
             }
             setNotice(response.result.changedStories === 0
                 ? 'No stories changed; this tag already matched the selection.'
-                : `${response.result.changedStories} of ${response.result.requestedStories} selected stories updated.`);
+                : t("{0} of {1} selected stories updated.", response.result.changedStories, response.result.requestedStories));
             await load();
             await onAssignmentsChange();
         } catch {
-            setError('The application could not be reached.');
+            setError(t("The application could not be reached."));
         } finally {
             setBusy(false);
         }
@@ -143,25 +146,25 @@ export default function TagAssignmentEditor({
             >
                 <header className="tag-manager-head">
                     <div>
-                        <div className="dialog-kicker">Story metadata</div>
+                        <div className="dialog-kicker">{t("Story metadata")}</div>
                         <h2 id="assignment-title">
                             {storyIDs.length === 1
-                                ? 'Edit story tags'
-                                : `Edit tags for ${storyIDs.length} stories`}
+                                ? t("Edit story tags")
+                                : t("Edit tags for {0} stories", storyIDs.length)}
                         </h2>
-                        <p>Mixed means the tag is present on only part of this selection.</p>
+                        <p>{t("Mixed means the tag is present on only part of this selection.")}</p>
                     </div>
                     <button
                         ref={initialFocus}
                         type="button"
                         onClick={onClose}
-                        aria-label="Close story tags"
+                        aria-label={t("Close story tags")}
                     >
                         ×
                     </button>
                 </header>
 
-                {error && <p className="dialog-error" role="alert">{error}</p>}
+                {error && <p className="dialog-error" role="alert">{<OutcomeText text={error}/> }</p>}
                 {notice && <p className="assignment-notice" role="status">{notice}</p>}
 
                 <div className="assignment-list">
@@ -183,28 +186,26 @@ export default function TagAssignmentEditor({
                                         aria-hidden="true"
                                     />
                                     <div>
-                                        <b>{definition.label}</b>
+                                        <b>{systemLabel(definition)}</b>
                                         <span>
                                             {definition.source === 'derived'
-                                                ? 'System-derived'
+                                                ? t("System-derived")
                                                 : definition.source === 'builtin'
-                                                    ? 'Built-in'
-                                                    : 'Custom'}
+                                                    ? t("Built-in")
+                                                    : t("Custom")}
                                             {' · '}
-                                            {definition.kind === 'choice' ? 'Choice' : 'Boolean'}
+                                            {definition.kind === 'choice' ? t("Choice") : t("Boolean")}
                                         </span>
                                     </div>
                                 </div>
                                 {warning && (
                                     <p className="broken-help">
-                                        Mark stories that may disrupt the Lunii device menu.
-                                    </p>
+                                        {t("Mark stories that may disrupt the Lunii device menu.")}</p>
                                 )}
                                 {derived ? (
                                     <>
                                         <p className="protected-note">
-                                            Derived tags are read-only. Use them to inspect and filter stories.
-                                        </p>
+                                            {t("Derived tags are read-only. Use them to inspect and filter stories.")}</p>
                                         <div className="assignment-values derived-values">
                                             {definition.values.flatMap((value) => {
                                                 const valueState = state?.values.find(
@@ -218,8 +219,8 @@ export default function TagAssignmentEditor({
                                                     workspace.requestedStories;
                                                 return [(
                                                     <span className="tag" key={value.id}>
-                                                        {definition.label} · {value.label}
-                                                        {' · System-derived'}
+                                                        {systemLabel(definition)} · {systemValue(definition,value)}
+                                                        {t(" · System-derived")}
                                                         {mixedValue ? ' · Mixed' : ''}
                                                     </span>
                                                 )];
@@ -231,7 +232,7 @@ export default function TagAssignmentEditor({
                                         checked={all}
                                         mixed={mixed}
                                         disabled={busy}
-                                        label={warning ? 'Broken warning' : definition.label}
+                                        label={warning ? t("Broken warning") : systemLabel(definition)}
                                         onChange={(checked) => void apply(() => (
                                             SetBooleanTag(storyIDs, definition.id, checked)
                                         ))}
@@ -250,7 +251,7 @@ export default function TagAssignmentEditor({
                                                     checked={valueAll}
                                                     mixed={count > 0 && !valueAll}
                                                     disabled={busy}
-                                                    label={value.label}
+                                                    label={systemValue(definition,value)}
                                                     onChange={(checked) => void apply(() => (
                                                         SetChoiceTagValue(
                                                             storyIDs,
@@ -269,7 +270,7 @@ export default function TagAssignmentEditor({
                     })}
                 </div>
                 <div className="dialog-actions">
-                    <button type="button" onClick={onClose}>Done</button>
+                    <button type="button" onClick={onClose}>{t("Done")}</button>
                 </div>
             </section>
         </ModalBackdrop>

@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	CurrentVersion  = 2
+	CurrentVersion  = 3
 	MaxPayloadBytes = 262_144
 )
 
@@ -36,6 +36,7 @@ type References struct {
 // Payload is the single versioned saved-query wire schema shared by shelf
 // evaluation and tag-reference planning.
 type Payload struct {
+	AnyOf           []Payload          `json:"anyOf,omitempty"`
 	IncludeBroken   bool               `json:"includeBroken,omitempty"`
 	Name            string             `json:"name,omitempty"`
 	Languages       []string           `json:"languages,omitempty"`
@@ -71,12 +72,15 @@ func DecodePayload(version int, payload string) (Payload, error) {
 			return Payload{}, err
 		}
 		decoded = legacy.Payload
-	case CurrentVersion:
+	case 2, CurrentVersion:
 		if err := decode(payload, &decoded); err != nil {
 			return Payload{}, err
 		}
 	default:
 		return Payload{}, ErrUnsupportedVersion
+	}
+	if _, err := referencesFromPayload(decoded); err != nil {
+		return Payload{}, err
 	}
 	return decoded, nil
 }
@@ -90,6 +94,15 @@ func DecodeReferences(version int, payload string) (References, error) {
 }
 
 func referencesFromPayload(payload Payload) (References, error) {
+	remaining := 50
+	return referencesFromNode(payload, &remaining)
+}
+
+func referencesFromNode(payload Payload, remaining *int) (References, error) {
+	*remaining--
+	if *remaining < 0 {
+		return References{}, ErrInvalidPayload
+	}
 	booleanFilters := make([]BooleanReference, 0, len(payload.BooleanFilters))
 	choiceFilters := make([]ChoiceReference, 0, len(payload.ChoiceFilters))
 	definitions := make(map[int64]struct{})
@@ -128,6 +141,14 @@ func referencesFromPayload(payload Payload) (References, error) {
 			values[valueID] = struct{}{}
 		}
 		choiceFilters = append(choiceFilters, filter)
+	}
+	for _, branch := range payload.AnyOf {
+		refs, err := referencesFromNode(branch, remaining)
+		if err != nil {
+			return References{}, err
+		}
+		booleanFilters = append(booleanFilters, refs.BooleanFilters...)
+		choiceFilters = append(choiceFilters, refs.ChoiceFilters...)
 	}
 	return References{
 		BooleanFilters: booleanFilters,

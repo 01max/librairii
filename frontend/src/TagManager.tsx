@@ -1,3 +1,6 @@
+import OutcomeText from './OutcomeText';
+import {systemLabel, systemValue} from './system-label';
+import {t} from './i18n';
 import ModalBackdrop from './ModalBackdrop';
 import {
     type CSSProperties,
@@ -35,20 +38,20 @@ type DeletionTarget =
 
 function sourceLabel(definition: tagging.DefinitionWithValues): string {
     if (definition.source === 'builtin') {
-        return 'Built-in';
+        return t("Built-in");
     }
     if (definition.source === 'derived') {
-        return 'System-derived';
+        return t("System-derived");
     }
-    return 'Custom';
+    return t("Custom");
 }
 
 function kindLabel(kind: string): string {
-    return kind === 'choice' ? 'Choice' : 'Boolean';
+    return kind === 'choice' ? t("Choice") : t("Boolean");
 }
 
 function errorMessage(error?: {message: string}): string {
-    return error?.message ?? 'The tag change could not be completed.';
+    return error?.message ?? t("The tag change could not be completed.");
 }
 
 function DeletionConfirmation({
@@ -74,32 +77,30 @@ function DeletionConfirmation({
                 aria-modal="true"
                 aria-labelledby="tag-delete-title"
             >
-                <div className="dialog-kicker">Confirm impact</div>
+                <div className="dialog-kicker">{t("Confirm impact")}</div>
                 <h3 id="tag-delete-title">
-                    Delete {deletion.kind === 'definition'
+                    {t("Delete")}{' '}{deletion.kind === 'definition'
                         ? deletion.plan.definition.label
                         : deletion.plan.value.label}?
                 </h3>
                 <div className="removal-confirmation">
-                    <b>This removes saved metadata.</b>
+                    <b>{t("This removes saved metadata.")}</b>
                     <p>
                         {deletion.kind === 'definition'
-                            ? `${deletion.plan.assignmentCount} assignments, ${deletion.plan.valueCount} values, and ${deletion.plan.affectedShelfCount} saved shelves are affected.`
-                            : `${deletion.plan.assignmentCount} assignments and ${deletion.plan.affectedShelfCount} saved shelves are affected.`}
+                            ? t("{0} assignments, {1} values, and {2} saved shelves are affected.", deletion.plan.assignmentCount, deletion.plan.valueCount, deletion.plan.affectedShelfCount)
+                            : t("{0} assignments and {1} saved shelves are affected.", deletion.plan.assignmentCount, deletion.plan.affectedShelfCount)}
                     </p>
                 </div>
                 <div className="dialog-actions">
                     <button ref={initialFocus} type="button" onClick={onCancel}>
-                        Cancel
-                    </button>
+                        {t("Cancel")}</button>
                     <button
                         className="danger"
                         type="button"
                         disabled={busy}
                         onClick={onConfirm}
                     >
-                        Delete permanently
-                    </button>
+                        {t("Delete permanently")}</button>
                 </div>
             </section>
         </ModalBackdrop>
@@ -157,7 +158,7 @@ export default function TagManager({onClose, onCatalogChange}: TagManagerProps) 
             await load();
             return true;
         } catch {
-            setError('The application could not be reached.');
+            setError(t("The application could not be reached."));
             return false;
         } finally {
             setBusy(false);
@@ -292,41 +293,37 @@ export default function TagManager({onClose, onCatalogChange}: TagManagerProps) 
             >
                 <header className="tag-manager-head">
                     <div>
-                        <div className="dialog-kicker">Library structure</div>
-                        <h2 id="tag-manager-title">Manage tags</h2>
-                        <p>Define reusable boolean flags and ordered choices for your stories.</p>
+                        <div className="dialog-kicker">{t("Library structure")}</div>
+                        <h2 id="tag-manager-title">{t("Manage tags")}</h2>
+                        <p>{t("Define reusable boolean flags and ordered choices for your stories.")}</p>
                     </div>
-                    <button type="button" onClick={onClose} aria-label="Close tag manager">×</button>
+                    <button type="button" onClick={onClose} aria-label={t("Close tag manager")}>×</button>
                 </header>
 
-                {error && <p className="dialog-error" role="alert">{error}</p>}
+                {error && <p className="dialog-error" role="alert">{<OutcomeText text={error}/> }</p>}
 
                 <form className="new-tag" onSubmit={(event) => void createDefinition(event)}>
-                    <h3>New tag</h3>
+                    <h3>{t("New tag")}</h3>
                     <label>
-                        Key
-                        <input ref={initialFocus} name="key" placeholder="reading-level"/>
+                        {t("Key")}<input ref={initialFocus} name="key" placeholder="reading-level"/>
                     </label>
                     <label>
-                        Label
-                        <input name="label" placeholder="Reading level"/>
+                        {t("Label")}<input name="label" placeholder={t("Reading level")}/>
                     </label>
                     <label>
-                        Color
-                        <input name="color" type="color" defaultValue="#405cf5"/>
+                        {t("Color")}<input name="color" type="color" defaultValue="#405cf5"/>
                     </label>
                     <label>
-                        State
-                        <select name="kind" defaultValue="boolean">
-                            <option value="boolean">Boolean</option>
-                            <option value="choice">Choice</option>
+                        {t("State")}<select name="kind" defaultValue="boolean">
+                            <option value="boolean">{t("Boolean")}</option>
+                            <option value="choice">{t("Choice")}</option>
                         </select>
                     </label>
-                    <button className="primary" type="submit" disabled={busy}>Add tag</button>
+                    <button className="primary" type="submit" disabled={busy}>{t("Add tag")}</button>
                 </form>
 
                 <div className="tag-definition-list">
-                    {!catalog && !error && <p className="tag-loading">Loading tags…</p>}
+                    {!catalog && !error && <p className="tag-loading">{t("Loading tags…")}</p>}
                     {catalog?.definitions.map((definition) => {
                         const userIndex = userDefinitions.findIndex(
                             (candidate) => candidate.id === definition.id,
@@ -339,12 +336,12 @@ export default function TagManager({onClose, onCatalogChange}: TagManagerProps) 
                                         aria-hidden="true"
                                     />
                                     <div>
-                                        <b>{definition.label}</b>
+                                        <b>{systemLabel(definition)}</b>
                                         <code>{definition.key}</code>
                                     </div>
                                     <span>
                                         {sourceLabel(definition)} · {kindLabel(definition.kind)}
-                                        {definition.protected ? ' · Protected' : ''}
+                                        {definition.protected ? t(" · Protected") : ''}
                                     </span>
                                 </div>
 
@@ -356,12 +353,11 @@ export default function TagManager({onClose, onCatalogChange}: TagManagerProps) 
                                             void run(() => RecolorTagDefinition(definition.id, color));
                                         }
                                     }}>
-                                        <p className="protected-note">Managed by Librairii. You can change its color.</p>
+                                        <p className="protected-note">{t("Managed by Librairii. You can change its color.")}</p>
                                         <label>
-                                            Color
-                                            <input type="color" name="color" aria-label={`Color for ${definition.label}`} defaultValue={definition.color}/>
+                                            {t("Color")}<input type="color" name="color" aria-label={t("Color for {0}", definition.label)} defaultValue={definition.color}/>
                                         </label>
-                                        <button type="submit" disabled={busy}>Save {definition.label} color</button>
+                                        <button type="submit" disabled={busy} aria-label={t("Save {0} color",systemLabel(definition))}>{t("Save color")}</button>
                                     </form>
                                 ) : (
                                     <>
@@ -370,21 +366,19 @@ export default function TagManager({onClose, onCatalogChange}: TagManagerProps) 
                                             onSubmit={(event) => void saveDefinition(event, definition)}
                                         >
                                             <label>
-                                                Label
-                                                <input name="label" defaultValue={definition.label}/>
+                                                {t("Label")}<input name="label" defaultValue={systemLabel(definition)}/>
                                             </label>
                                             <label>
-                                                Color
-                                                <input
+                                                {t("Color")}<input
                                                     name="color"
                                                     type="color"
                                                     defaultValue={definition.color}
                                                 />
                                             </label>
-                                            <button type="submit" disabled={busy}>Save</button>
+                                            <button type="submit" disabled={busy}>{t("Save")}{' '}</button>
                                             <button
                                                 type="button"
-                                                aria-label={`Move ${definition.label} up`}
+                                                aria-label={t("Move {0} up", definition.label)}
                                                 disabled={busy || userIndex === 0}
                                                 onClick={() => void moveDefinition(userIndex, -1)}
                                             >
@@ -392,7 +386,7 @@ export default function TagManager({onClose, onCatalogChange}: TagManagerProps) 
                                             </button>
                                             <button
                                                 type="button"
-                                                aria-label={`Move ${definition.label} down`}
+                                                aria-label={t("Move {0} down", definition.label)}
                                                 disabled={busy || userIndex === userDefinitions.length - 1}
                                                 onClick={() => void moveDefinition(userIndex, 1)}
                                             >
@@ -401,17 +395,16 @@ export default function TagManager({onClose, onCatalogChange}: TagManagerProps) 
                                             <button
                                                 className="text-danger"
                                                 type="button"
-                                                aria-label={`Delete ${definition.label}`}
+                                                aria-label={t("Delete {0}", definition.label)}
                                                 disabled={busy}
                                                 onClick={() => void planDefinitionDeletion(definition.id)}
                                             >
-                                                Delete
-                                            </button>
+                                                {t("Delete")}{' '}</button>
                                         </form>
 
                                         {definition.kind === 'choice' && (
                                             <div className="tag-values">
-                                                <h4>Choice values</h4>
+                                                <h4>{t("Choice values")}</h4>
                                                 {definition.values.map((value, index) => (
                                                     <form
                                                         className="tag-value"
@@ -421,14 +414,14 @@ export default function TagManager({onClose, onCatalogChange}: TagManagerProps) 
                                                         <code>{value.key}</code>
                                                         <label>
                                                             <span className="sr-only">
-                                                                {`Label for ${value.key}`}
+                                                                {t("Label for {0}", value.key)}
                                                             </span>
-                                                            <input name="label" defaultValue={value.label}/>
+                                                            <input name="label" defaultValue={systemValue(definition,value)}/>
                                                         </label>
-                                                        <button type="submit" disabled={busy}>Save</button>
+                                                        <button type="submit" disabled={busy}>{t("Save")}{' '}</button>
                                                         <button
                                                             type="button"
-                                                            aria-label={`Move ${value.label} up`}
+                                                            aria-label={t("Move {0} up", value.label)}
                                                             disabled={busy || index === 0}
                                                             onClick={() => void moveValue(definition, index, -1)}
                                                         >
@@ -436,7 +429,7 @@ export default function TagManager({onClose, onCatalogChange}: TagManagerProps) 
                                                         </button>
                                                         <button
                                                             type="button"
-                                                            aria-label={`Move ${value.label} down`}
+                                                            aria-label={t("Move {0} down", value.label)}
                                                             disabled={busy || index === definition.values.length - 1}
                                                             onClick={() => void moveValue(definition, index, 1)}
                                                         >
@@ -445,21 +438,20 @@ export default function TagManager({onClose, onCatalogChange}: TagManagerProps) 
                                                         <button
                                                             className="text-danger"
                                                             type="button"
-                                                            aria-label={`Delete ${value.label}`}
+                                                            aria-label={t("Delete {0}", value.label)}
                                                             disabled={busy}
                                                             onClick={() => void planValueDeletion(value.id)}
                                                         >
-                                                            Delete
-                                                        </button>
+                                                            {t("Delete")}{' '}</button>
                                                     </form>
                                                 ))}
                                                 <form
                                                     className="new-value"
                                                     onSubmit={(event) => void createValue(event, definition.id)}
                                                 >
-                                                    <input name="key" aria-label={`${definition.label} value key`} placeholder="key"/>
-                                                    <input name="label" aria-label={`${definition.label} value label`} placeholder="Label"/>
-                                                    <button type="submit" disabled={busy}>Add value</button>
+                                                    <input name="key" aria-label={t("{0} value key", definition.label)} placeholder="key"/>
+                                                    <input name="label" aria-label={t("{0} value label", definition.label)} placeholder={t("Label")}/>
+                                                    <button type="submit" disabled={busy}>{t("Add value")}</button>
                                                 </form>
                                             </div>
                                         )}

@@ -1,8 +1,10 @@
 package library
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/url"
 	"sort"
 	"strconv"
@@ -22,6 +24,13 @@ func EncodeStoryLibraryQuery(query StoryLibraryQuery) (string, error) {
 		return "", err
 	}
 	values := url.Values{}
+	if len(query.AnyOf) > 0 {
+		data, err := json.Marshal(query.AnyOf)
+		if err != nil {
+			return "", err
+		}
+		values.Set("any", string(data))
+	}
 	values.Set("v", strconv.Itoa(StoryLibraryQueryVersion))
 	if query.IncludeBroken {
 		values.Set("includeBroken", "true")
@@ -80,7 +89,7 @@ func DecodeStoryLibraryQuery(hash string) (StoryLibraryQuery, error) {
 	}
 	for key := range values {
 		switch key {
-		case "v",
+		case "any", "v",
 			"includeBroken",
 			"name",
 			"page",
@@ -99,6 +108,15 @@ func DecodeStoryLibraryQuery(hash string) (StoryLibraryQuery, error) {
 		return StoryLibraryQuery{}, ErrInvalidStoryLibraryHash
 	}
 	var query StoryLibraryQuery
+	if encoded, err := oneQueryValue(values, "any", false); err != nil {
+		return StoryLibraryQuery{}, err
+	} else if encoded != "" {
+		decoder := json.NewDecoder(strings.NewReader(encoded))
+		decoder.DisallowUnknownFields()
+		if len(encoded) > 262144 || decoder.Decode(&query.AnyOf) != nil || decoder.Decode(&struct{}{}) != io.EOF {
+			return StoryLibraryQuery{}, ErrInvalidStoryLibraryHash
+		}
+	}
 	visibility, visibilityErr := oneQueryValue(values, "includeBroken", false)
 	if visibilityErr != nil || (visibility != "" && visibility != "true") {
 		return StoryLibraryQuery{}, ErrInvalidStoryLibraryHash
@@ -209,6 +227,26 @@ func canonicalStoryLibraryQuery(
 func CanonicalStoryLibraryMembershipQuery(
 	query StoryLibraryQuery,
 ) (StoryLibraryQuery, error) {
+	remaining := 50
+	return canonicalMembershipNode(query, &remaining)
+}
+
+func canonicalMembershipNode(query StoryLibraryQuery, remaining *int) (StoryLibraryQuery, error) {
+	*remaining--
+	if *remaining < 0 {
+		return StoryLibraryQuery{}, ErrInvalidStoryLibraryQuery
+	}
+	if len(query.AnyOf) > 0 {
+		branches := make([]StoryLibraryQuery, len(query.AnyOf))
+		for i, branch := range query.AnyOf {
+			var err error
+			branches[i], err = canonicalMembershipNode(branch, remaining)
+			if err != nil {
+				return StoryLibraryQuery{}, err
+			}
+		}
+		query.AnyOf = branches
+	}
 	query.Languages = append([]string(nil), query.Languages...)
 	query.Compatibilities = append(
 		[]Compatibility(nil),

@@ -1,3 +1,4 @@
+import {t} from './i18n';
 import type {LibraryView} from './library-view';
 
 const views = [
@@ -11,12 +12,12 @@ export default function LibraryViewPicker({view, onChange}: {
     onChange: (view: LibraryView) => void;
 }) {
     return (
-        <div className="library-views" role="group" aria-label="Story view">
+        <div className="library-views" role="group" aria-label={t("Story view")}>
             {views.map(({value, label, path}) => (
                 <button key={value} type="button" aria-pressed={view === value}
                     onClick={() => onChange(value)}>
                     <svg viewBox="0 0 24 24" aria-hidden="true"><path d={path}/></svg>
-                    <span>{label}</span>
+                    <span>{t(label)}</span>
                 </button>
             ))}
         </div>

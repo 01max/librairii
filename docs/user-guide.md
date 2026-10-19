@@ -169,16 +169,22 @@ attention and evaluation/export is blocked; Librairii never silently broadens
 the query. Multi-shelf views and exports count each story once and report
 overlap separately.
 
+To save a combination of shelves, select their checkboxes in the sidebar and use
+**Save current query**. The new shelf includes stories matching any of the
+selected shelves, counting each story once. It keeps a copy of their criteria,
+so matching imports appear automatically and later edits or deletion of the
+original shelves do not change the combined shelf.
+
 ## Application data, trash, and recovery
 
-The default application data root is:
+The proposed default library root is:
 
 | Platform | Location |
 | --- | --- |
 | macOS | `~/Library/Application Support/Librairii` |
 | Linux | `$XDG_DATA_HOME/librairii`, or `~/.local/share/librairii` when `XDG_DATA_HOME` is unset |
 
-Development and test commands may select a different absolute root with
+A chosen library location is remembered in Settings. Development and test commands may select a different absolute root with
 `LIBRAIRII_DATA_ROOT`. A production library contains:
 
 | Path | Purpose |
@@ -270,3 +276,64 @@ workflow were independently reimplemented from observable behavior in
 GPL-3.0. Librairii contains no copied Lunii.QT source code or copyrighted
 catalog dataset. The detailed technical boundary is recorded in
 [the Lunii catalog interoperability decision](architecture/0002-lunii-catalog-interoperability.md).
+
+## Settings, interface language, and library location
+
+Open **Librairii → Settings…** (or **⌘,**) on macOS. On Linux use the
+application menu or the gear button in the app. The settings panel is also
+available when the library needs recovery.
+
+Choose **Français** or **English** for the interface. Your explicit choice is
+remembered and applies immediately. On first launch, French is selected for a
+French system language; other system languages default to English. This setting
+changes interface text and formatting. Story titles, descriptions, custom tag
+labels, and shelf names keep their existing text. Lunii metadata fetching and
+its existing locale policy remain unchanged.
+
+A new installation asks you to confirm where the library will live before
+creating it. You can accept the proposed platform default or choose a different
+empty folder using the native picker. The selected folder itself becomes the
+library root. Upgrading an existing installation keeps its current library in
+place automatically.
+
+To move the library, choose **Change location…**, select an empty folder, review
+the destination and total size, and choose **Move library**. Wait for imports,
+exports, and syncs to finish before starting a move. The move includes the
+database, story archives, tags, shelves, history, covers, catalog snapshots,
+staging, trash, diagnostic logs, and database recovery files. Original source
+archives and previously exported files outside the library remain in place.
+Another library or a nonempty destination cannot be merged or overwritten.
+
+Moving requires temporary free space approximately equal to the complete
+library. Progress is shown while copying and verifying. You can cancel before
+the new location is committed. The original library stays authoritative until
+the copied files and database have been verified and the new location saved.
+After an interruption, restart Librairii to reconcile the move. A pending
+cleanup notice means the new location is active but old files remain at the
+reported path; changed or newly added files are preserved. Keep backups and
+inspect that old location before removing retained files manually.
+
+If a drive is disconnected or the saved folder is missing, Librairii does not
+create an empty replacement. Open Settings, reconnect the drive and choose
+**Try again**, or choose **Locate library…** to identify the same library at a
+new path. A different library is rejected. A normal backup still requires
+quitting the application and copying the complete library root.
+
+Preferences and relocation recovery records are stored separately from the
+movable library:
+
+| Platform | Configuration directory |
+| --- | --- |
+| macOS | `~/Library/Preferences/io.github.librairii.app/` |
+| Linux | `$XDG_CONFIG_HOME/librairii/`, or `~/.config/librairii/` |
+
+Include that configuration directory in a full application backup. A corrupt or
+unsupported settings file enters recovery instead of silently resetting the
+library. The `LIBRAIRII_DATA_ROOT` developer/test override bypasses onboarding,
+uses isolated settings, and disables relocation; it never reads or updates the
+normal production profile.
+
+Older application versions do not read the new library-location setting.
+Before downgrading, quit Librairii and restore the complete current library to
+the previous version's default location from a verified backup. Never launch
+an older version while relocation is incomplete.

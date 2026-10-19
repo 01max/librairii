@@ -1,4 +1,5 @@
-import {fireEvent, render, screen, waitFor, within} from '@testing-library/react';
+import {setLanguage} from './i18n';
+import {act, fireEvent, render, screen, waitFor, within} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {beforeEach, expect, test, vi} from 'vitest';
 import {
@@ -144,6 +145,7 @@ const stories = [
 ];
 
 beforeEach(() => {
+    setLanguage('en');
     window.localStorage.clear();
     window.history.replaceState(null, '', '/');
     activeOperations.mockReset();
@@ -3639,4 +3641,53 @@ test('keeps saved terminal history newer than stale progress and explains reveal
     await user.click(within(dialog).getByText('Export', {exact: true}));
     await user.click(within(dialog).getByRole('button', {name: 'Reveal destination'}));
     expect(await within(dialog).findByRole('alert')).toHaveTextContent('The export folder is no longer available.');
+});
+
+
+test('switches interface language without changing the selected story or query', async () => {
+ const user = userEvent.setup();
+ render(<App/>);
+ const story = await screen.findByRole('button', {name: 'Clockwork Forest'});
+ await user.click(story);
+ const query = window.location.hash;
+ const refreshCalls = refreshOfficialMetadata.mock.calls.length;
+ act(() => setLanguage('fr'));
+ expect(screen.getByRole('navigation', {name: 'Navigation principale'})).toBeInTheDocument();
+ expect(screen.getByRole('button', {name: 'Clockwork Forest'})).toHaveAttribute('aria-pressed','true');
+ expect(window.location.hash).toBe(query);
+ expect(document.documentElement.lang).toBe('fr');
+ expect(refreshOfficialMetadata.mock.calls.length).toBe(refreshCalls);
+ act(() => setLanguage('en'));
+});
+
+test('updates the recently added heading when switching to French', async () => {
+    render(<App/>);
+    expect(await screen.findByRole('heading', {name: 'Recently added'})).toBeInTheDocument();
+    act(() => setLanguage('fr'));
+    expect(screen.getByRole('heading', {name: 'Ajout récent'})).toBeInTheDocument();
+});
+
+test('saves the union of selected shelves instead of only the displayed shelf', async () => {
+    const user = userEvent.setup();
+    listShelves.mockResolvedValue(new app.ShelfListResponse({shelves: [
+        {id: 7, name: 'arc', position: 0, validity: 'valid', count: 1},
+        {id: 8, name: 'aqua', position: 1, validity: 'valid', count: 1},
+    ]}));
+    openShelf.mockImplementation(async (id) => new app.ShelfEvaluationResponse({evaluation: {
+        shelf: {id, name: id === 7 ? 'arc' : 'aqua', validity: 'valid'},
+        query: {name: id === 7 ? 'forest' : 'moon'},
+        page: {stories: [stories[id === 7 ? 0 : 1]], page: 1, pageSize: 12, totalItems: 1, totalPages: 1, sort: 'imported_desc'},
+    }}));
+    createShelf.mockResolvedValue(new app.ShelfResponse({shelf: {id: 9, name: 't2', validity: 'valid'}}));
+    render(<App/>);
+    await user.click(await screen.findByRole('button', {name: 'arc, 1 story'}));
+    await screen.findByRole('heading', {name: 'arc'});
+    await user.click(screen.getByRole('checkbox', {name: 'Select arc for combined shelf preview'}));
+    await user.click(screen.getByRole('checkbox', {name: 'Select aqua for combined shelf preview'}));
+    await user.click(screen.getByRole('button', {name: '＋ Save current query'}));
+    await user.type(screen.getByRole('textbox', {name: 'Shelf name'}), 't2');
+    await user.click(screen.getByRole('button', {name: 'Save shelf'}));
+    await waitFor(() => expect(createShelf).toHaveBeenCalledWith('t2', expect.objectContaining({
+        anyOf: [expect.objectContaining({name: 'forest'}), expect.objectContaining({name: 'moon'})],
+    })));
 });

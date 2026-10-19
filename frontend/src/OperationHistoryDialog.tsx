@@ -1,3 +1,5 @@
+import OutcomeText from './OutcomeText';
+import {t, currentLanguage} from './i18n';
 import {useEffect, useMemo, useRef, useState} from 'react';
 import {OperationHistory} from '../wailsjs/go/main/App';
 import {operations} from '../wailsjs/go/models';
@@ -46,7 +48,7 @@ export default function OperationHistoryDialog({liveOperations, onClose, onRevea
         void OperationHistory(request.before).then((response) => {
             if (!active) return;
             if (!response.page) {
-                setError(response.error?.message ?? 'History could not be loaded. Try again.');
+                setError(response.error?.message ?? t("History could not be loaded. Try again."));
                 return;
             }
             const page = response.page;
@@ -55,7 +57,7 @@ export default function OperationHistoryDialog({liveOperations, onClose, onRevea
                 : page.operations);
             setNextBefore(page.nextBefore ?? '');
         }).catch(() => {
-            if (active) setError('History could not be loaded. Try again.');
+            if (active) setError(t("History could not be loaded. Try again."));
         }).finally(() => {
             if (active) setLoading(false);
         });
@@ -86,28 +88,28 @@ export default function OperationHistoryDialog({liveOperations, onClose, onRevea
                 aria-modal="true" aria-labelledby="operation-history-title">
                 <header className="history-header">
                     <div>
-                        <h3 id="operation-history-title">History</h3>
-                        <p>Imports, Lunii syncs, and exports saved in your library.</p>
+                        <h3 id="operation-history-title">{t("History")}</h3>
+                        <p>{t("Imports, Lunii syncs, and exports saved in your library.")}</p>
                     </div>
-                    <button ref={close} type="button" onClick={onClose} aria-label="Close history">
-                        Close <span aria-hidden="true">×</span>
+                    <button ref={close} type="button" onClick={onClose} aria-label={t("Close history")}>
+                        {t("Close")}{' '}<span aria-hidden="true">×</span>
                     </button>
                 </header>
                 <div className="history-entries" aria-busy={loading}>
                     {history.map((operation) => (
                         <details className="history-entry" key={operation.id}>
                             <summary>
-                                <span className="history-kind">{kindLabels[operation.kind] ?? operation.kind}</span>
+                                <span className="history-kind">{t(kindLabels[operation.kind] ?? operation.kind)}</span>
                                 <span className={`history-status ${operation.status}`}>
-                                    {statusLabels[operation.status] ?? operation.status}
+                                    {t(statusLabels[operation.status] ?? operation.status)}
                                 </span>
                                 <time dateTime={operation.createdAt}>
-                                    {new Date(operation.createdAt).toLocaleString()}
+                                    {new Date(operation.createdAt).toLocaleString(currentLanguage())}
                                 </time>
                             </summary>
                             <div className="history-detail">
-                                <p>{operation.completedItems} of {operation.totalItems} items finished.</p>
-                                {operation.errorMessage && <p>{operation.errorMessage}</p>}
+                                <p>{operation.completedItems} {' ' + t("of") + ' '}{operation.totalItems} {' ' + t("items finished.")}</p>
+                                {operation.errorMessage && <p>{<OutcomeText text={operation.errorMessage} status={operation.status}/>}</p>}
                                 {operation.kind === 'export' && operationIsTerminal(operation) ? (
                                     <ExportReport operation={operation} onReveal={(operationID) => {
                                         setRevealError(null);
@@ -118,7 +120,7 @@ export default function OperationHistoryDialog({liveOperations, onClose, onRevea
                                         {operation.items.map((item) => (
                                             <li key={item.id}>
                                                 <b>{item.storyTitle || item.sourceName}</b>
-                                                <span>{item.outcomeMessage || statusLabels[item.status] || item.status}</span>
+                                                <span>{<OutcomeText text={item.outcomeMessage || statusLabels[item.status] || item.status} status={item.status}/>}</span>
                                             </li>
                                         ))}
                                     </ul>
@@ -127,27 +129,24 @@ export default function OperationHistoryDialog({liveOperations, onClose, onRevea
                         </details>
                     ))}
                     {!loading && !error && history.length === 0 && (
-                        <p className="history-empty">No activity yet. Import stories or sync with Lunii to get started.</p>
+                        <p className="history-empty">{t("No activity yet. Import stories or sync with Lunii to get started.")}</p>
                     )}
-                    {loading && <p role="status">Loading history…</p>}
-                    {error && <p role="alert">{error}</p>}
-                    {revealError && <p role="alert">{revealError}</p>}
+                    {loading && <p role="status">{t("Loading history…")}</p>}
+                    {error && <p role="alert">{<OutcomeText text={error}/> }</p>}
+                    {revealError && <p role="alert">{<OutcomeText text={revealError}/> }</p>}
                 </div>
                 <footer className="history-actions">
                     <button type="button" disabled={loading}
                         onClick={() => loadPage('')}>
-                        Refresh history
-                    </button>
+                        {t("Refresh history")}</button>
                     {error ? (
                         <button type="button" disabled={loading}
                             onClick={() => loadPage(request.before)}>
-                            Try again
-                        </button>
+                            {t("Try again")}</button>
                     ) : nextBefore && (
                         <button type="button" disabled={loading}
                             onClick={() => loadPage(nextBefore)}>
-                            Load older activity
-                        </button>
+                            {t("Load older activity")}</button>
                     )}
                 </footer>
             </section>

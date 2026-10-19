@@ -1,3 +1,8 @@
+import SettingsPanel from './SettingsPanel';
+import OutcomeText from './OutcomeText';
+import {systemLabel, systemValue} from './system-label';
+import {t, currentLanguage} from './i18n';
+import {useLanguage} from './use-language';
 import ModalBackdrop from './ModalBackdrop';
 import {
     type CSSProperties,
@@ -107,15 +112,15 @@ function languageLabel(locale: string): string {
     const language = locale.split('-')[0]?.toLowerCase();
     switch (language) {
         case 'en':
-            return 'English';
+            return t("English");
         case 'fr':
-            return 'French';
+            return t("French");
         case 'de':
-            return 'German';
+            return t("German");
         case 'es':
-            return 'Spanish';
+            return t("Spanish");
         case 'it':
-            return 'Italian';
+            return t("Italian");
         default:
             return locale;
     }
@@ -130,13 +135,13 @@ function formatDuration(durationSeconds?: number): string {
         return '—';
     }
     const minutes = Math.max(0, Math.round(durationSeconds / 60));
-    return `${minutes} min`;
+    return t("{0} min", minutes);
 }
 
 function metadataAttribution(story: library.StorySummary): string {
-    const author = story.author || 'Local story';
+    const author = story.author || t("Local story");
     if (!story.official) {
-        return `${author} · ${story.sources.title} metadata`;
+        return t("{0} · {1} metadata", author, story.sources.title);
     }
     const timestamp = story.official.activatedAt || story.official.fetchedAt;
     if (!timestamp) {
@@ -147,9 +152,7 @@ function metadataAttribution(story: library.StorySummary): string {
     const sameDay = syncedAt.getFullYear() === today.getFullYear() &&
         syncedAt.getMonth() === today.getMonth() &&
         syncedAt.getDate() === today.getDate();
-    return `${author} · metadata synced ${
-        sameDay ? 'today' : syncedAt.toLocaleDateString()
-    }`;
+    return t("{0} · metadata synced {1}", author, sameDay ? t('today') : syncedAt.toLocaleDateString(currentLanguage()));
 }
 
 function savedShelfColor(index: number): string {
@@ -167,6 +170,7 @@ function collectionQueryFromShelf(
     current: CollectionQuery,
 ): CollectionQuery {
     return {
+        ...(saved.anyOf?.length ? {anyOf: saved.anyOf.map((branch) => collectionQueryFromShelf(branch, current))} : {}),
         includeBroken: saved.includeBroken ?? false,
         name: saved.name ?? '',
         languages: [...(saved.languages ?? [])],
@@ -202,19 +206,19 @@ function savedShelfSource(
         (definitionID) => definitions.get(definitionID) ?? [],
     ))];
     if (labels.length === 1) {
-        return `${labels[0]} tag`;
+        return t("{0} tag", labels[0]);
     }
     if (definitionIDs.length > 0) {
-        return 'Tag filters';
+        return t("Tag filters");
     }
-    return 'Saved shelf';
+    return t("Saved shelf");
 }
 
 function shelfAttentionMessage(reason?: string): string {
     if (reason === 'unmigratable_query') {
-        return 'This saved query uses an unsupported or damaged format and cannot be evaluated safely.';
+        return t("This saved query uses an unsupported or damaged format and cannot be evaluated safely.");
     }
-    return 'One or more saved tag criteria no longer exist. The original query is preserved until you explicitly replace it.';
+    return t("One or more saved tag criteria no longer exist. The original query is preserved until you explicitly replace it.");
 }
 
 function hasUnavailableCriteria(
@@ -227,7 +231,7 @@ function hasUnavailableCriteria(
     const definitions = new Map(
         catalog.definitions.map((definition) => [definition.id, definition]),
     );
-    return query.booleanFilters.some(
+    return query.anyOf?.some((branch) => hasUnavailableCriteria(branch, catalog)) || query.booleanFilters.some(
         (filter) => definitions.get(filter.definitionId)?.kind !== 'boolean',
     ) || query.choiceFilters.some((filter) => {
         const definition = definitions.get(filter.definitionId);
@@ -248,6 +252,7 @@ function withoutUnavailableCriteria(
     );
     return {
         ...query,
+        ...(query.anyOf?.length ? {anyOf: query.anyOf.map((branch) => withoutUnavailableCriteria(branch, catalog))} : {}),
         booleanFilters: query.booleanFilters.filter(
             (filter) => definitions.get(filter.definitionId)?.kind === 'boolean',
         ),
@@ -325,15 +330,19 @@ function formatBytes(byteSize: number): string {
 function compatibilityLabel(value: string): string {
     switch (value) {
         case 'compatible':
-            return 'Verified';
+            return t("Verified");
         case 'missing':
-            return 'Missing';
+            return t("Missing");
         default:
-            return 'Needs attention';
+            return t("Needs attention");
     }
 }
 
 function App() {
+    useLanguage();
+    const [settingsRevision,setSettingsRevision] = useState(0);
+ const [libraryRoot,setLibraryRoot]=useState('');
+ const acceptanceStarted=useRef(false);
     const [libraryView, setLibraryView] = useLibraryView();
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const closeSidebar = useCallback(() => setSidebarOpen(false), []);
@@ -510,7 +519,7 @@ function App() {
             }
             if (!result.page) {
                 setRequestError(
-                    result.error?.message ?? 'The story collection could not be loaded.',
+                    result.error?.message ?? t("The story collection could not be loaded."),
                 );
                 return;
             }
@@ -535,7 +544,7 @@ function App() {
             });
         } catch {
             if (generation === collectionRequestGeneration.current) {
-                setRequestError('The story collection could not be loaded.');
+                setRequestError(t("The story collection could not be loaded."));
             }
         }
     }, [collectionQuery]);
@@ -570,7 +579,7 @@ function App() {
             }
             setMetadataStatus(response.status);
         } catch {
-            setRequestError('Official metadata status could not be refreshed.');
+            setRequestError(t("Official metadata status could not be refreshed."));
         }
     }, []);
 
@@ -599,7 +608,7 @@ function App() {
                 queryHistory.replace(queryHistory.current(), null);
             }
         } catch {
-            setRequestError('Saved shelves could not be loaded.');
+            setRequestError(t("Saved shelves could not be loaded."));
         }
     }, [activateShelf, queryHistory]);
 
@@ -715,14 +724,14 @@ function App() {
             } catch {
                 if (active) {
                     setApplicationState('internal');
-                    setRequestError('The application could not be reached.');
+                    setRequestError(t("The application could not be reached."));
                 }
             }
         })();
         return () => {
             active = false;
         };
-    }, [activateShelf, queryHistory, reconcileOperation]);
+    }, [activateShelf, queryHistory, reconcileOperation, settingsRevision]);
 
     const recoverStorage = async () => {
         setStorageRecovering(true);
@@ -735,7 +744,7 @@ function App() {
             }
             window.location.reload();
         } catch {
-            setApplicationError('Storage recovery could not be started.');
+            setApplicationError(t("Storage recovery could not be started."));
         } finally {
             setStorageRecovering(false);
         }
@@ -749,7 +758,8 @@ function App() {
     }, [applicationState, loadCollection]);
 
     useEffect(() => {
-        if (applicationState === 'ready') {
+        if ((applicationState === 'ready'||applicationState==='setup_required')&&!acceptanceStarted.current) {
+ acceptanceStarted.current=true;
             void runPackagedAcceptance();
         }
     }, [applicationState]);
@@ -771,7 +781,7 @@ function App() {
                     setShelfSelectionPreview(null);
                     setShelfSelectionError(
                         response.error?.message ??
-                        'The shelf selection could not be previewed.',
+                        t("The shelf selection could not be previewed."),
                     );
                     return;
                 }
@@ -781,7 +791,7 @@ function App() {
                     return;
                 }
                 setShelfSelectionPreview(null);
-                setShelfSelectionError('The shelf selection could not be previewed.');
+                setShelfSelectionError(t("The shelf selection could not be previewed."));
             } finally {
                 if (active) {
                     setShelfSelectionBusy(false);
@@ -828,7 +838,7 @@ function App() {
                 }
             } catch {
                 if (active) {
-                    setRequestError('Operation progress could not be refreshed.');
+                    setRequestError(t("Operation progress could not be refreshed."));
                 }
             } finally {
                 requestsInFlight.delete(operationID);
@@ -873,7 +883,7 @@ function App() {
                 reconcileOperation(response.operation);
             }
         } catch {
-            setRequestError('Could not start the Lunii sync. Please try again.');
+            setRequestError(t("Could not start the Lunii sync. Please try again."));
         } finally {
             setMetadataStarting(false);
         }
@@ -914,7 +924,7 @@ function App() {
                 setExportPreflight(response.preflight);
             }
         } catch {
-            showError('The export could not be prepared.');
+            showError(t("The export could not be prepared."));
         } finally {
             setExportPreparing(false);
         }
@@ -935,7 +945,7 @@ function App() {
                 setExportPreflight(null);
             }
         } catch {
-            setExportStartError('The prepared export could not be started.');
+            setExportStartError(t("The prepared export could not be started."));
         } finally {
             setExportStarting(false);
         }
@@ -949,7 +959,7 @@ function App() {
             setRequestError(message);
             return message;
         } catch {
-            const message = 'The export destination could not be revealed.';
+            const message = t("The export destination could not be revealed.");
             setRequestError(message);
             return message;
         }
@@ -983,10 +993,10 @@ function App() {
             setDetailsOpen(false);
             setDetail(null);
             setSelectedID(null);
-            setRemovalNotice(`${title} was moved to application trash.`);
+            setRemovalNotice(t("{0} was moved to application trash.", title));
             await invalidateCollection();
         } catch {
-            setRemovalError('The story could not be moved to trash. Please try again.');
+            setRemovalError(t("The story could not be moved to trash. Please try again."));
         } finally {
             setRemoving(false);
         }
@@ -1006,7 +1016,7 @@ function App() {
                 return;
             }
             if (!first.page) {
-                setRequestError(first.error?.message ?? 'The full collection could not be loaded.');
+                setRequestError(first.error?.message ?? t("The full collection could not be loaded."));
                 return;
             }
             const byID = new Map(first.page.stories.map((story) => [story.id, story]));
@@ -1030,7 +1040,7 @@ function App() {
                     return;
                 }
                 if (!next.page) {
-                    setRequestError(next.error?.message ?? 'The full collection could not be loaded.');
+                    setRequestError(next.error?.message ?? t("The full collection could not be loaded."));
                     return;
                 }
                 for (const story of next.page.stories) {
@@ -1175,16 +1185,16 @@ function App() {
         [
             ...rows.map((row, rowIndex) => ({
                 key: `collection-${rowIndex}`,
-                name: rowIndex === 0 ? 'Recently added' : 'More stories',
+                name: rowIndex === 0 ? "Recently added" : "More stories",
                 storyCount: row.length,
-                source: 'Local archive',
+                source: "Local archive",
                 stories: row,
             })),
             ...(showSavedShelfRows ? previewableShelves.map((shelf) => ({
                 key: `saved-shelf-${shelf.id}`,
                 name: savedShelfPreviewDetails[shelf.id]?.name ?? shelf.name,
                 storyCount: savedShelfPreviewDetails[shelf.id]?.count ?? shelf.count,
-                source: savedShelfPreviewDetails[shelf.id]?.source ?? 'Saved shelf',
+                source: savedShelfPreviewDetails[shelf.id]?.source ?? t("Saved shelf"),
                 stories: savedShelfStories[shelf.id] ?? [],
                 shelfID: shelf.id,
                 error: savedShelfPreviewErrors[shelf.id],
@@ -1228,8 +1238,8 @@ function App() {
                 color: definition.color,
                 derived: definition.source === 'derived',
                 label: state.assignedStories === assignmentWorkspace.requestedStories
-                    ? definition.label
-                    : `${definition.label} · Mixed`,
+                    ? systemLabel(definition)
+                    : `${systemLabel(definition)} · ${t("Mixed")}`,
             }];
         }
         return definition.values.flatMap((value) => {
@@ -1244,8 +1254,8 @@ function App() {
                 color: definition.color,
                 derived: definition.source === 'derived',
                 label: valueState.assignedStories === assignmentWorkspace.requestedStories
-                    ? `${definition.label} · ${value.label}`
-                    : `${definition.label} · ${value.label} · Mixed`,
+                    ? `${systemLabel(definition)} · ${systemValue(definition,value)}`
+                    : `${systemLabel(definition)} · ${systemValue(definition,value)} · ${t("Mixed")}`,
             }];
         });
     }) ?? [];
@@ -1273,7 +1283,7 @@ function App() {
                         stories: [] as library.StorySummary[],
                         details: undefined,
                         error: response.error?.message ??
-                            `${shelf.name} could not be previewed.`,
+                            t("{0} could not be previewed.", shelf.name),
                     };
                 }
                 return {
@@ -1294,7 +1304,7 @@ function App() {
                     shelfID: shelf.id,
                     stories: [] as library.StorySummary[],
                     details: undefined,
-                    error: `${shelf.name} could not be previewed.`,
+                    error: t("{0} could not be previewed.", shelf.name),
                 };
             }
         })).then((previews) => {
@@ -1357,7 +1367,7 @@ function App() {
             );
             if (!response.evaluation) {
                 setRequestError(
-                    response.error?.message ?? 'The saved shelf could not be opened.',
+                    response.error?.message ?? t("The saved shelf could not be opened."),
                 );
                 return;
             }
@@ -1368,7 +1378,7 @@ function App() {
                 collectionQuery,
             ), shelfID);
         } catch {
-            setRequestError('The saved shelf could not be opened.');
+            setRequestError(t("The saved shelf could not be opened."));
         } finally {
             setShelfBusy(false);
         }
@@ -1378,6 +1388,7 @@ function App() {
         activateShelf(null, 'all');
         updateQuery({
             ...collectionQuery,
+            anyOf: undefined,
             name: '',
             languages: [],
             compatibilities: [],
@@ -1400,10 +1411,33 @@ function App() {
         setShelfBusy(true);
         setShelfDialogError(null);
         try {
+            let queryToSave = collectionQuery;
+            if (shelfDialogMode === 'save' && selectedShelfIDs.length > 0) {
+                const selected = await Promise.all(selectedShelfIDs.map((id) => OpenShelf(
+                    id,
+                    new library.ListRequest({
+                        includeBroken: !!collectionQuery.includeBroken,
+                        page: 1,
+                        pageSize: 1,
+                        sort: collectionQuery.sort,
+                    }),
+                )));
+                if (selected.some((response) => !response.evaluation)) {
+                    setShelfDialogError(selected.find((response) => !response.evaluation)?.error?.message ?? t('The saved shelf could not be opened.'));
+                    return;
+                }
+                queryToSave = {
+                    ...initialCollectionQuery,
+                    includeBroken: collectionQuery.includeBroken,
+                    sort: collectionQuery.sort,
+                    pageSize: collectionQuery.pageSize,
+                    anyOf: selected.map((response) => collectionQueryFromShelf(response.evaluation!.query, collectionQuery)),
+                };
+            }
             const response = shelfDialogMode === 'save'
                 ? await CreateShelf(
                     shelfDialogName,
-                    new library.StoryLibraryQuery(collectionQuery),
+                    new library.StoryLibraryQuery(queryToSave),
                 )
                 : shelfDialogMode === 'rename' && activeShelf
                     ? await RenameShelf(activeShelf.id, shelfDialogName)
@@ -1412,7 +1446,7 @@ function App() {
                         : null;
             if (!response?.shelf) {
                 setShelfDialogError(
-                    response?.error?.message ?? 'The saved shelf could not be changed.',
+                    response?.error?.message ?? t("The saved shelf could not be changed."),
                 );
                 return;
             }
@@ -1421,13 +1455,14 @@ function App() {
             setShelfDialogName('');
             await loadSavedShelves();
             if (shelfDialogMode === 'save') {
-                queryHistory.replace(collectionQuery, changedShelf.id);
+                setCollectionQuery(queryHistory.replace(queryToSave, changedShelf.id));
+                setCollectionScope(queryHistory.currentScope());
                 activateShelf(changedShelf.id, 'shelf');
             } else if (shelfDialogMode === 'duplicate') {
                 await openSavedShelf(changedShelf.id);
             }
         } catch {
-            setShelfDialogError('The saved shelf could not be changed.');
+            setShelfDialogError(t("The saved shelf could not be changed."));
         } finally {
             setShelfBusy(false);
         }
@@ -1446,13 +1481,13 @@ function App() {
             );
             if (!response.shelf) {
                 setRequestError(
-                    response.error?.message ?? 'The saved shelf could not be updated.',
+                    response.error?.message ?? t("The saved shelf could not be updated."),
                 );
                 return;
             }
             await loadSavedShelves();
         } catch {
-            setRequestError('The saved shelf could not be updated.');
+            setRequestError(t("The saved shelf could not be updated."));
         } finally {
             setShelfBusy(false);
         }
@@ -1479,7 +1514,7 @@ function App() {
                 })));
             }
         } catch {
-            setRequestError('Saved shelves could not be reordered.');
+            setRequestError(t("Saved shelves could not be reordered."));
         } finally {
             setShelfBusy(false);
         }
@@ -1495,7 +1530,7 @@ function App() {
             const response = await DeleteShelf(deleteShelf.id);
             if (!response.success) {
                 setShelfDialogError(
-                    response.error?.message ?? 'The saved shelf could not be deleted.',
+                    response.error?.message ?? t("The saved shelf could not be deleted."),
                 );
                 return;
             }
@@ -1512,7 +1547,7 @@ function App() {
             ));
             await loadSavedShelves();
         } catch {
-            setShelfDialogError('The saved shelf could not be deleted.');
+            setShelfDialogError(t("The saved shelf could not be deleted."));
         } finally {
             setShelfBusy(false);
         }
@@ -1531,7 +1566,7 @@ function App() {
             );
             if (!response.shelf) {
                 setShelfDialogError(
-                    response.error?.message ?? 'The saved shelf could not be repaired.',
+                    response.error?.message ?? t("The saved shelf could not be repaired."),
                 );
                 return;
             }
@@ -1540,7 +1575,7 @@ function App() {
             activateShelf(repairShelf.id, 'shelf');
             await loadSavedShelves();
         } catch {
-            setShelfDialogError('The saved shelf could not be repaired.');
+            setShelfDialogError(t("The saved shelf could not be repaired."));
         } finally {
             setShelfBusy(false);
         }
@@ -1626,20 +1661,18 @@ function App() {
         ...(collectionQuery.name
             ? [{
                 key: 'name',
-                label: `Name contains “${collectionQuery.name}”`,
+                label: t("Name contains “{0}”", collectionQuery.name),
                 remove: () => updateQuery({...collectionQuery, name: '', page: 1}),
             }]
             : []),
         ...collectionQuery.languages.map((locale) => ({
             key: `language-${locale}`,
-            label: `Language · ${languageLabel(locale)}`,
+            label: t("Language · {0}", languageLabel(locale)),
             remove: () => toggleLanguage(locale),
         })),
         ...collectionQuery.compatibilities.map((value) => ({
             key: `compatibility-${value}`,
-            label: `Import status · ${
-                compatibilityOptions.find((option) => option.value === value)?.label ?? value
-            }`,
+            label: t("Import status · {0}", compatibilityOptions.find((option) => option.value === value)?.label ?? value),
             remove: () => toggleCompatibility(value),
         })),
         ...collectionQuery.booleanFilters.flatMap((filter) => {
@@ -1650,15 +1683,13 @@ function App() {
                 ? [{
                     key: `boolean-${filter.definitionId}`,
                     label: filter.state === 'true'
-                        ? definition.label
-                        : `Not ${definition.label}`,
+                        ? systemLabel(definition)
+                        : t("Not {0}", definition.label),
                     remove: () => setBooleanFilter(filter.definitionId, 'ignored'),
                 }]
                 : [{
                     key: `unavailable-boolean-${filter.definitionId}`,
-                    label: `Unavailable saved criterion · definition ${
-                        filter.definitionId
-                    }`,
+                    label: t("Unavailable saved criterion · definition {0}", filter.definitionId),
                     remove: () => setBooleanFilter(filter.definitionId, 'ignored'),
                 }];
         }),
@@ -1669,9 +1700,7 @@ function App() {
             if (definition?.kind !== 'choice') {
                 return [{
                     key: `unavailable-choice-${filter.definitionId}`,
-                    label: `Unavailable saved criterion · definition ${
-                        filter.definitionId
-                    }`,
+                    label: t("Unavailable saved criterion · definition {0}", filter.definitionId),
                     remove: () => removeChoiceFilter(filter.definitionId),
                 }];
             }
@@ -1682,12 +1711,12 @@ function App() {
                 return value
                     ? [{
                         key: `choice-${definition.id}-${value.id}`,
-                        label: `${definition.label} · ${value.label}`,
+                        label: `${systemLabel(definition)} · ${systemValue(definition,value)}`,
                         remove: () => toggleChoiceFilter(definition.id, value.id),
                     }]
                     : [{
                         key: `unavailable-choice-${definition.id}-${valueID}`,
-                        label: `Unavailable ${definition.label} value · ${valueID}`,
+                        label: t("Unavailable {0} value · {1}", definition.label, valueID),
                         remove: () => toggleChoiceFilter(definition.id, valueID),
                     }];
             });
@@ -1708,7 +1737,7 @@ function App() {
                     return next;
                 })}
             >
-                {definition.label} <b aria-hidden="true">{collapsedTagFacets.has(definition.id) ? '+' : '−'}</b>
+                {systemLabel(definition)} <b aria-hidden="true">{collapsedTagFacets.has(definition.id) ? '+' : '−'}</b>
             </button>
             <div id={`tag-facet-${definition.id}`} hidden={collapsedTagFacets.has(definition.id)}>
                 {definition.kind === 'boolean' ? (
@@ -1728,7 +1757,7 @@ function App() {
                                 )}
                             />
                             <i style={{'--c': definition.color} as CSSProperties}/>
-                            {definition.label}
+                            {systemLabel(definition)}
                         </label>
                         <label className="choice">
                             <input
@@ -1745,7 +1774,7 @@ function App() {
                                 )}
                             />
                             <i style={{'--c': definition.color} as CSSProperties}/>
-                            Not {definition.label}
+                            {t("Not")}{' '}{systemLabel(definition)}
                         </label>
                     </>
                 ) : definition.values.map((value) => (
@@ -1769,7 +1798,7 @@ function App() {
                             );
                         })()}
                         <i style={{'--c': definition.color} as CSSProperties}/>
-                        {value.label}
+                        {systemValue(definition,value)}
                         {facetCounts[value.id] !== undefined && (
                             <span aria-hidden="true">{facetCounts[value.id]}</span>
                         )}
@@ -1781,10 +1810,11 @@ function App() {
 
     return (
         <div className={`app view-${libraryView}`}>
+ <SettingsPanel onLocation={setLibraryRoot} onReady={() => setSettingsRevision((value) => value + 1)}/>
             <span className="sr-only" data-testid="application-state">
-                Application state: {applicationState}
+                {t("Application state:")}{' '}{applicationState}
             </span>
-            <aside className="rail" aria-label="Primary navigation" inert={sidebarOpen || historyOpen}>
+            <aside className="rail" aria-label={t("Primary navigation")} inert={sidebarOpen || historyOpen}>
                 <div className="mark" role="img" aria-label="Librairii">
                     <i/><i/><i/>
                 </div>
@@ -1804,8 +1834,8 @@ function App() {
                 suspended={tagManagerOpen || tagAssignmentOpen || shelfDialogMode !== null ||
                     repairShelfID !== null || deleteShelfID !== null || exportPreflight !== null || historyOpen}>
                 <h1>Librairii</h1>
-                <div className="path">~/Stories/Librairii</div>
-                <div className="caption">Saved shelves</div>
+                <div className="path">{libraryRoot}</div>
+                <div className="caption">{t("Saved shelves")}</div>
                 <nav className="saved">
                     <button
                         className={`saved-picker${allStoriesActive ? ' active' : ''}`}
@@ -1815,8 +1845,7 @@ function App() {
                         onClick={openAllStories}
                     >
                         <i style={{'--c': '#405cf5'} as CSSProperties}/>
-                        All stories
-                        <span>{allStoriesActive ? page?.totalItems ?? 0 : 'All'}</span>
+                        {t("All stories")}<span>{allStoriesActive ? page?.totalItems ?? 0 : t("All")}</span>
                     </button>
                     {savedShelves.map((shelf, index) => (
                         <div className="saved-entry" key={shelf.id}>
@@ -1824,7 +1853,7 @@ function App() {
                                 <input
                                     className="shelf-selector"
                                     type="checkbox"
-                                    aria-label={`Select ${shelf.name} for combined shelf preview`}
+                                    aria-label={t("Select {0} for combined shelf preview", shelf.name)}
                                     checked={selectedShelfIDs.includes(shelf.id)}
                                     disabled={
                                         shelfBusy ||
@@ -1848,9 +1877,9 @@ function App() {
                                         activeShelfID === shelf.id ? 'page' : undefined
                                     }
                                     aria-label={shelf.validity === 'needs_attention'
-                                        ? `${shelf.name}, needs attention`
+                                        ? t("{0}, needs attention", shelf.name)
                                         : `${shelf.name}, ${shelf.count} ${
-                                            shelf.count === 1 ? 'story' : 'stories'
+                                            shelf.count === 1 ? t("story") : t("stories")
                                         }`}
                                     disabled={shelfBusy}
                                     onClick={() => shelf.validity === 'needs_attention'
@@ -1871,11 +1900,11 @@ function App() {
                                 </button>
                             </div>
                             {activeShelfID === shelf.id && (
-                                <div className="saved-tools" aria-label={`${shelf.name} actions`}>
+                                <div className="saved-tools" aria-label={t("{0} actions", shelf.name)}>
                                     <button
                                         type="button"
                                         disabled={shelfBusy || index === 0}
-                                        aria-label={`Move ${shelf.name} up`}
+                                        aria-label={t("Move {0} up", shelf.name)}
                                         onClick={() => void moveShelf(shelf.id, -1)}
                                     >
                                         ↑
@@ -1883,7 +1912,7 @@ function App() {
                                     <button
                                         type="button"
                                         disabled={shelfBusy || index === savedShelves.length - 1}
-                                        aria-label={`Move ${shelf.name} down`}
+                                        aria-label={t("Move {0} down", shelf.name)}
                                         onClick={() => void moveShelf(shelf.id, 1)}
                                     >
                                         ↓
@@ -1891,7 +1920,7 @@ function App() {
                                     <button
                                         type="button"
                                         disabled={shelfBusy}
-                                        aria-label={`Rename ${shelf.name}`}
+                                        aria-label={t("Rename {0}", shelf.name)}
                                         onClick={() => showShelfDialog('rename')}
                                     >
                                         ✎
@@ -1899,7 +1928,7 @@ function App() {
                                     <button
                                         type="button"
                                         disabled={shelfBusy}
-                                        aria-label={`Duplicate ${shelf.name}`}
+                                        aria-label={t("Duplicate {0}", shelf.name)}
                                         onClick={() => showShelfDialog('duplicate')}
                                     >
                                         ⧉
@@ -1907,7 +1936,7 @@ function App() {
                                     <button
                                         type="button"
                                         disabled={shelfBusy}
-                                        aria-label={`Delete ${shelf.name}`}
+                                        aria-label={t("Delete {0}", shelf.name)}
                                         onClick={() => {
                                             setShelfDialogError(null);
                                             setDeleteShelfID(shelf.id);
@@ -1933,17 +1962,16 @@ function App() {
                             }
                         }}
                     />
-                    Include broken stories
-                </label>
+                    {t("Include broken stories")}</label>
                 {selectedShelfIDs.length > 0 && (
-                    <section className="combined-shelves" aria-label="Combined shelf preview">
+                    <section className="combined-shelves" aria-label={t("Combined shelf preview")}>
                         <div className="combined-shelves-title">
-                            <b>Combined preview</b>
-                            <span>{selectedShelfIDs.length} selected</span>
+                            <b>{t("Combined preview")}</b>
+                            <span>{selectedShelfIDs.length} {' ' + t("selected")}</span>
                         </div>
-                        {shelfSelectionBusy && <p>Resolving current membership…</p>}
+                        {shelfSelectionBusy && <p>{t("Resolving current membership…")}</p>}
                         {shelfSelectionError && (
-                            <p className="dialog-error">{shelfSelectionError}</p>
+                            <p className="dialog-error">{<OutcomeText text={shelfSelectionError}/> }</p>
                         )}
                         {shelfSelectionPreview && !shelfSelectionBusy && (
                             <>
@@ -1957,21 +1985,19 @@ function App() {
                                 </ul>
                                 <strong>
                                     {shelfSelectionPreview.uniqueStoryCount}{' '}
-                                    unique {shelfSelectionPreview.uniqueStoryCount === 1
-                                        ? 'story'
-                                        : 'stories'}
+                                    {t("unique")} {shelfSelectionPreview.uniqueStoryCount === 1
+                                        ? t("story")
+                                        : t("stories")}
                                 </strong>
                                 <p>
                                     {shelfSelectionPreview.overlapCount === 0
-                                        ? 'No overlapping memberships.'
-                                        : `${shelfSelectionPreview.overlapCount} overlapping ${
-                                            shelfSelectionPreview.overlapCount === 1
+                                        ? t("No overlapping memberships.")
+                                        : t("{0} overlapping {1} collapsed.", shelfSelectionPreview.overlapCount, shelfSelectionPreview.overlapCount === 1
                                                 ? 'membership'
-                                                : 'memberships'
-                                        } collapsed.`}
+                                                : 'memberships')}
                                 </p>
                                 <small>
-                                    Sources: {shelfSelectionPreview.sourceShelfNames.join(', ')}
+                                    {t("Sources:")} {shelfSelectionPreview.sourceShelfNames.join(', ')}
                                 </small>
                                 <button
                                     className="combined-export"
@@ -1987,10 +2013,10 @@ function App() {
                                     )}
                                 >
                                     {exportPreparing
-                                        ? 'Preparing…'
+                                        ? t("Preparing…")
                                         : selectedShelfIDs.length === 1
-                                            ? 'Export selected shelf'
-                                            : 'Export selected shelves'}
+                                            ? t("Export selected shelf")
+                                            : t("Export selected shelves")}
                                 </button>
                             </>
                         )}
@@ -2003,8 +2029,7 @@ function App() {
                         disabled={shelfBusy}
                         onClick={() => showShelfDialog('save')}
                     >
-                        ＋ Save current query
-                    </button>
+                        {t("＋ Save current query")}</button>
                 )}
                 {activeShelf && (
                     <button
@@ -2013,10 +2038,10 @@ function App() {
                         disabled={shelfBusy}
                         onClick={() => void updateActiveShelf()}
                     >
-                        ↻ Update “{activeShelf.name}”
+                        {t("↻ Update “")}{activeShelf.name}”
                     </button>
                 )}
-                <div className="caption">Refine this shelf</div>
+                <div className="caption">{t("Refine this shelf")}</div>
                 {derivedDefinitions.map(renderTagFacet)}
                 <div className="facet">
                     <button
@@ -2025,7 +2050,7 @@ function App() {
                         aria-expanded={languageFacetOpen}
                         onClick={() => setLanguageFacetOpen((open) => !open)}
                     >
-                        Language <b>{languageFacetOpen ? '−' : '＋'}</b>
+                        {t("Language")} <b>{languageFacetOpen ? '−' : '＋'}</b>
                     </button>
                     {languageFacetOpen && languageOptions.map((locale) => (
                             <label className="choice" key={locale}>
@@ -2035,7 +2060,7 @@ function App() {
                                     onChange={() => toggleLanguage(locale)}
                                 />
                                 <i style={{'--c': '#6779e8'} as CSSProperties}/>
-                                {languageLabel(locale)}
+                                {t(languageLabel(locale))}
                             </label>
                         ))}
                 </div>
@@ -2046,7 +2071,7 @@ function App() {
                         aria-expanded={importFacetOpen}
                         onClick={() => setImportFacetOpen((open) => !open)}
                     >
-                        Import status <b>{importFacetOpen ? '−' : '＋'}</b>
+                        {t("Import status")} <b>{importFacetOpen ? '−' : '＋'}</b>
                     </button>
                     {importFacetOpen && compatibilityOptions.map((option) => (
                             <label className="choice" key={option.value}>
@@ -2056,7 +2081,7 @@ function App() {
                                     onChange={() => toggleCompatibility(option.value)}
                                 />
                                 <i style={{'--c': '#f5bc41'} as CSSProperties}/>
-                                {option.label}
+                                {t(option.label)}
                             </label>
                         ))}
                 </div>
@@ -2066,8 +2091,7 @@ function App() {
                     type="button"
                     onClick={() => setTagManagerOpen(true)}
                 >
-                    ＋ Manage tags
-                </button>
+                    {t("＋ Manage tags")}</button>
             </LibrarySidebar>
 
             <main className="main" inert={sidebarOpen || historyOpen}>
@@ -2077,8 +2101,8 @@ function App() {
                         <input
                             ref={searchInput}
                             type="search"
-                            aria-label="Search stories"
-                            placeholder={`Search ${page?.totalItems ?? 0} stories, authors, publishers…`}
+                            aria-label={t("Search stories")}
+                            placeholder={t("Search {0} stories, authors, publishers…", page?.totalItems ?? 0)}
                             value={collectionQuery.name}
                             onChange={(event) => updateQuery({
                                 ...collectionQuery,
@@ -2091,14 +2115,13 @@ function App() {
 
                 <div className="heading">
                     <div>
-                        <h2>{activeShelf?.name ?? 'My story shelves'}</h2>
+                        <h2>{activeShelf?.name ?? t("My story shelves")}</h2>
                         <p>
                             {activeShelf
-                                ? 'Dynamic saved shelf'
-                                : 'Stories grouped by your tags'}
+                                ? t("Dynamic saved shelf")
+                                : t("Stories grouped by your tags")}
                             {' · '}
-                            {page?.totalItems ?? 0} archives
-                        </p>
+                            {page?.totalItems ?? 0} {' '}{t("archives")}</p>
                     </div>
                     <div className="heading-actions">
                         {activeFilters.length > 0 && !showSavedShelfRows && (
@@ -2108,8 +2131,7 @@ function App() {
                                 disabled={exportPreparing}
                                 onClick={() => void prepareExport('current_query')}
                             >
-                                Export current result
-                            </button>
+                                {t("Export current result")}</button>
                         )}
                         {activeShelf && (
                             <button
@@ -2118,11 +2140,10 @@ function App() {
                                 disabled={exportPreparing}
                                 onClick={() => void prepareExport('shelf')}
                             >
-                                Export shelf
-                            </button>
+                                {t("Export shelf")}</button>
                         )}
                         <label className="sort">
-                            <span className="sr-only">Sort stories</span>
+                            <span className="sr-only">{t("Sort stories")}</span>
                             <select
                                 value={collectionQuery.sort}
                                 onChange={(event) => updateQuery({
@@ -2131,8 +2152,8 @@ function App() {
                                     page: 1,
                                 })}
                             >
-                                <option value="imported_desc">Recently added</option>
-                                <option value="name_asc">Name A–Z</option>
+                                <option value="imported_desc">{t("Recently added")}</option>
+                                <option value="name_asc">{t("Name A–Z")}</option>
                             </select>
                         </label>
                     </div>
@@ -2142,33 +2163,30 @@ function App() {
                     <button className="sidebar-toggle" type="button"
                         aria-expanded={sidebarOpen} aria-controls="library-sidebar"
                         onClick={() => setSidebarOpen(true)}>
-                        Shelves &amp; filters
-                    </button>
+                        {t("Shelves &amp; filters")}</button>
                     <LibraryViewPicker view={libraryView} onChange={setLibraryView}/>
                     <button type="button" className="history-disclosure"
                         disabled={applicationState !== 'ready'} onClick={() => setHistoryOpen(true)}>
-                        History
-                    </button>
+                        {t("History")}</button>
                     {luniiSyncDismissed && (
                         <button ref={luniiSyncToggle} type="button" className="sync-disclosure"
                             onClick={() => {
                                 setLuniiSyncDismissed(false);
                                 searchInput.current?.focus();
                             }}>
-                            Show Lunii sync
-                        </button>
+                            {t("Show Lunii sync")}</button>
                     )}
                 </div>
 
                 {activeFilters.length > 0 && !showSavedShelfRows && (
-                    <section className="active-query" aria-label="Active filters">
-                        <span>{page?.totalItems ?? 0} matching stories</span>
+                    <section className="active-query" aria-label={t("Active filters")}>
+                        <span>{page?.totalItems ?? 0} {' ' + t("matching stories")}</span>
                         {activeFilters.map((filter) => (
                             <button
                                 className="query-chip"
                                 type="button"
                                 key={filter.key}
-                                aria-label={`Remove filter ${filter.label}`}
+                                aria-label={t("Remove filter {0}", filter.label)}
                                 onClick={() => {
                                     filter.remove();
                                     searchInput.current?.focus();
@@ -2192,8 +2210,7 @@ function App() {
                                 searchInput.current?.focus();
                             }}
                         >
-                            Clear all
-                        </button>
+                            {t("Clear all")}</button>
                     </section>
                 )}
 
@@ -2214,11 +2231,9 @@ function App() {
                     >
                         <div className="state-mark" aria-hidden="true">↻</div>
                         <div className="state-copy">
-                            <h3>Opening your local library</h3>
+                            <h3>{t("Opening your local library")}</h3>
                             <p>
-                                Checking managed storage, SQLite, and interrupted
-                                operations…
-                            </p>
+                                {t("Checking managed storage, SQLite, and interrupted operations…")}</p>
                         </div>
                     </section>
                 )}
@@ -2231,18 +2246,13 @@ function App() {
                     >
                         <div className="state-mark" aria-hidden="true">!</div>
                         <div className="state-copy">
-                            <h3>Local library needs recovery</h3>
+                            <h3>{t("Local library needs recovery")}</h3>
                             <p>
-                                {applicationError ||
-                                    'Librairii cannot safely open its application data.'}
+                                <OutcomeText text={applicationError || 'Librairii cannot safely open its application data.'}/>
                             </p>
                             {storageRecoveryAvailable && (
                                 <p>
-                                    Continue only to preserve the incompatible
-                                    database in a unique recovery folder and create
-                                    a fresh Librairii database. Managed archives
-                                    are never deleted.
-                                </p>
+                                    {t("Continue only to preserve the incompatible database in a unique recovery folder and create a fresh Librairii database. Managed archives are never deleted.")}</p>
                             )}
                         </div>
                         {storageRecoveryAvailable && (
@@ -2252,8 +2262,8 @@ function App() {
                                 onClick={() => void recoverStorage()}
                             >
                                 {storageRecovering
-                                    ? 'Preserving database…'
-                                    : 'Preserve database and create new library'}
+                                    ? t("Preserving database…")
+                                    : t("Preserve database and create new library")}
                             </button>
                         )}
                     </section>
@@ -2263,10 +2273,10 @@ function App() {
                     <section className="collection-state error" data-state="failed-action">
                         <div className="state-mark" aria-hidden="true">!</div>
                         <div>
-                            <h3>The action could not be completed</h3>
-                            <p>{requestError}</p>
+                            <h3>{t("The action could not be completed")}</h3>
+                            <p>{<OutcomeText text={requestError}/> }</p>
                         </div>
-                        <button type="button" className="notice-dismiss" aria-label="Close action error"
+                        <button type="button" className="notice-dismiss" aria-label={t("Close action error")}
                             onClick={() => {
                                 setRequestError(null);
                                 searchInput.current?.focus();
@@ -2280,10 +2290,10 @@ function App() {
                     <section className="collection-state success" data-state="removal-success">
                         <div className="state-mark" aria-hidden="true">✓</div>
                         <div>
-                            <h3>Story removed from this collection</h3>
+                            <h3>{t("Story removed from this collection")}</h3>
                             <p>{removalNotice}</p>
                         </div>
-                        <button type="button" className="notice-dismiss" aria-label="Close removal notice"
+                        <button type="button" className="notice-dismiss" aria-label={t("Close removal notice")}
                             onClick={() => {
                                 setRemovalNotice(null);
                                 searchInput.current?.focus();
@@ -2333,7 +2343,7 @@ function App() {
                                     operation.items.length > 0 && (
                                     <ul
                                         className="operation-items"
-                                        aria-label="Export story progress"
+                                        aria-label={t("Export story progress")}
                                     >
                                         {operation.items.map((item) => (
                                             <li key={item.id}>
@@ -2360,7 +2370,7 @@ function App() {
                                         {operation.items.map((item) => (
                                             <li key={item.id}>
                                                 <b>{item.sourceName}</b>
-                                                <span>{item.outcomeMessage || item.status}</span>
+                                                <span>{<OutcomeText text={item.outcomeMessage || item.status} status={item.status}/>}</span>
                                             </li>
                                         ))}
                                     </ul>
@@ -2368,7 +2378,7 @@ function App() {
                             </div>
                             {!operationActive && (
                                 <button type="button" className="notice-dismiss"
-                                    aria-label={`Close ${notice.title}`}
+                                    aria-label={t("Close {0}", notice.title)}
                                     onClick={() => {
                                         dismissOperation(operation.id);
                                         searchInput.current?.focus();
@@ -2382,10 +2392,10 @@ function App() {
                                     onClick={() => void cancelOperation(operation)}
                                 >
                                     {operation.kind === 'metadata_sync'
-                                        ? 'Cancel refresh'
+                                        ? t("Cancel refresh")
                                         : operation.kind === 'export'
-                                            ? 'Cancel export'
-                                            : 'Cancel import'}
+                                            ? t("Cancel export")
+                                            : t("Cancel import")}
                                 </button>
                             )}
                         </section>
@@ -2399,13 +2409,13 @@ function App() {
                         </div>
                         <h3>
                             {activeShelf
-                                ? `${activeShelf.name} is currently empty`
-                                : 'Build your local story archive'}
+                                ? t("{0} is currently empty", activeShelf.name)
+                                : t("Build your local story archive")}
                         </h3>
                         <p>
                             {activeShelf
-                                ? 'This saved query remains valid and will fill automatically when stories start matching it.'
-                                : 'Import story packs you already own. Librairii validates and preserves each archive in managed local storage.'}
+                                ? t("This saved query remains valid and will fill automatically when stories start matching it.")
+                                : t("Import story packs you already own. Librairii validates and preserves each archive in managed local storage.")}
                         </p>
                         {activeShelf && (
                             <button
@@ -2420,33 +2430,31 @@ function App() {
                                     page: 1,
                                 })}
                             >
-                                Edit shelf query
-                            </button>
+                                {t("Edit shelf query")}</button>
                         )}
                         <button
                             className="import"
                             type="button"
                             onClick={() => void startImport()}
                         >
-                            ＋ Import your first stories
-                        </button>
+                            {t("＋ Import your first stories")}</button>
                     </section>
                 )}
 
                 {collectionRows.map((row) => (
                     <section className="shelf" key={row.key}>
                         <div className="shelf-head">
-                            <h3>{row.name}</h3>
+                            <h3>{row.shelfID === undefined ? t(row.name) : row.name}</h3>
                             <span>
                                 {row.storyCount} {
-                                    row.storyCount === 1 ? 'story' : 'stories'
-                                } · {row.source}
+                                    row.storyCount === 1 ? t("story") : t("stories")
+                                } · {row.shelfID === undefined ? t(row.source) : row.source}
                             </span>
                             <button
                                 type="button"
                                 aria-label={row.shelfID === undefined
                                     ? undefined
-                                    : `View all stories in ${row.name}`}
+                                    : t("View all stories in {0}", row.name)}
                                 disabled={row.shelfID === undefined
                                     ? expandingCollection ||
                                         stories.length >= (page?.totalItems ?? 0)
@@ -2456,12 +2464,12 @@ function App() {
                                     : void openSavedShelf(row.shelfID)}
                             >
                                 {row.shelfID !== undefined
-                                    ? 'View all →'
+                                    ? t("View all →")
                                     : stories.length >= (page?.totalItems ?? 0)
-                                    ? 'All shown'
+                                    ? t("All shown")
                                     : expandingCollection
-                                        ? 'Loading…'
-                                        : 'View all →'}
+                                        ? t("Loading…")
+                                        : t("View all →")}
                             </button>
                         </div>
                         {row.error && (
@@ -2497,7 +2505,7 @@ function App() {
                                             <span className="story-list-info">
                                                 <span className="story-list-title">{story.title}</span>
                                                 <span className="story-list-meta">
-                                                    {story.author || 'Local story'}
+                                                    {story.author || t("Local story")}
                                                 </span>
                                             </span>
                                         ) : <StoryCover story={story}/>}
@@ -2509,8 +2517,7 @@ function App() {
                                                     (definition) => definition.key === 'broken',
                                                 )?.color ?? '#FF705C'} as CSSProperties}
                                             >
-                                                <i aria-hidden="true"/>Broken
-                                            </span>
+                                                <i aria-hidden="true"/>{t("Broken")}</span>
                                         )}
                                     </button>
                                     {libraryView !== 'list' && <p className="story-title">{story.title}</p>}
@@ -2520,7 +2527,7 @@ function App() {
                     </section>
                 ))}
                 {(page?.totalPages ?? 0) > 1 && (
-                    <nav className="pagination" aria-label="Collection pages">
+                    <nav className="pagination" aria-label={t("Collection pages")}>
                         <button
                             type="button"
                             disabled={collectionQuery.page <= 1}
@@ -2529,10 +2536,9 @@ function App() {
                                 page: collectionQuery.page - 1,
                             })}
                         >
-                            ← Previous
-                        </button>
+                            {t("← Previous")}</button>
                         <span>
-                            Page {page?.page ?? collectionQuery.page} of {page?.totalPages}
+                            {t("Page")}{' '}{page?.page ?? collectionQuery.page} {' ' + t("of") + ' '}{page?.totalPages}
                         </span>
                         <button
                             type="button"
@@ -2542,14 +2548,13 @@ function App() {
                                 page: collectionQuery.page + 1,
                             })}
                         >
-                            Next →
-                        </button>
+                            {t("Next →")}</button>
                     </nav>
                 )}
             </main>
 
             {selected && (
-                <aside className="drawer" aria-label={`${selected.title} details`} inert={sidebarOpen || historyOpen}>
+                <aside className="drawer" aria-label={t("{0} details", selected.title)} inert={sidebarOpen || historyOpen}>
                     <div
                         className={`drawer-art${selected.artworkId ? ' has-artwork' : ''}`}
                         style={selectedPalette}
@@ -2557,7 +2562,7 @@ function App() {
                         {selected.artworkId && (
                             <img
                                 src={artworkURL(selected.artworkId)}
-                                alt={`${selected.title} artwork`}
+                                alt={t("{0} artwork", selected.title)}
                                 decoding="async"
                             />
                         )}
@@ -2567,15 +2572,15 @@ function App() {
                         <p>{metadataAttribution(selected)}</p>
                         <div className="facts">
                             <div className="fact">
-                                <span>Stories</span>
+                                <span>{t("Stories")}</span>
                                 <b>{selectedShelfCount ?? '—'}</b>
                             </div>
                             <div className="fact">
-                                <span>Duration</span>
+                                <span>{t("Duration")}</span>
                                 <b>{formatDuration(selected.official?.durationSeconds)}</b>
                             </div>
                             <div className="fact">
-                                <span>Language</span>
+                                <span>{t("Language")}{' '}</span>
                                 <b>
                                     {selected.official?.language
                                         ? languageLabel(selected.official.language)
@@ -2587,8 +2592,8 @@ function App() {
                     <div className="drawer-tags">
                         <div className="tag-title">
                             {selectedIDs.length > 1
-                                ? `${selectedIDs.length} stories selected`
-                                : 'My tags'}
+                                ? t("{0} stories selected", selectedIDs.length)
+                                : t("My tags")}
                         </div>
                         <div className="tags">
                             {assignedTags.map((tag) => (
@@ -2596,7 +2601,7 @@ function App() {
                                     className="tag"
                                     key={tag.key}
                                     aria-label={tag.derived
-                                        ? `System-derived tag: ${tag.label}`
+                                        ? t("System-derived tag: {0}", tag.label)
                                         : undefined}
                                 >
                                     <i
@@ -2617,8 +2622,7 @@ function App() {
                                 setDetailsOpen(true);
                             }}
                         >
-                            Open details
-                        </button>
+                            {t("Open details")}</button>
                         {selectedIDs.length > 1 && (
                             <button
                                 className="export"
@@ -2627,8 +2631,8 @@ function App() {
                                 onClick={() => void prepareExport('selection')}
                             >
                                 {exportPreparing
-                                    ? 'Preparing…'
-                                    : `Export ${selectedIDs.length} selected stories →`}
+                                    ? t("Preparing…")
+                                    : t("Export {0} selected stories →", selectedIDs.length)}
                             </button>
                         )}
                     </div>
@@ -2649,57 +2653,53 @@ function App() {
                                 ? 'export-preflight-partial'
                                 : 'export-preflight-ready'}
                     >
-                        <div className="dialog-kicker">Export preflight</div>
+                        <div className="dialog-kicker">{t("Export preflight")}</div>
                         <h3 id="export-preflight-title">
                             {exportPreflight.blocked
-                                ? 'Export is blocked'
+                                ? t("Export is blocked")
                                 : exportPreflight.partial
-                                    ? 'Review partial export'
-                                    : 'Ready to export'}
+                                    ? t("Review partial export")
+                                    : t("Ready to export")}
                         </h3>
                         <p className="dialog-description">
                             {exportPreflight.blocked
-                                ? 'Resolve the items below before copying can begin.'
-                                : `${exportPreflight.readyCount} of ${
-                                    exportPreflight.resolvedCount
-                                } resolved ${
-                                    exportPreflight.resolvedCount === 1
+                                ? t("Resolve the items below before copying can begin.")
+                                : t("{0} of {1} resolved {2} ready for byte-preserving export.", exportPreflight.readyCount, exportPreflight.resolvedCount, exportPreflight.resolvedCount === 1
                                         ? 'story is'
-                                        : 'stories are'
-                                } ready for byte-preserving export.`}
+                                        : 'stories are')}
                         </p>
                         <dl className="dialog-facts export-preflight-facts">
                             <div>
-                                <dt>Destination</dt>
-                                <dd>{exportPreflight.destination || 'Not available'}</dd>
+                                <dt>{t("Destination")}</dt>
+                                <dd>{exportPreflight.destination || t("Not available")}</dd>
                             </div>
                             <div>
-                                <dt>Total size</dt>
+                                <dt>{t("Total size")}</dt>
                                 <dd>{formatBytes(exportPreflight.totalBytes)}</dd>
                             </div>
                             <div>
-                                <dt>Formats</dt>
+                                <dt>{t("Formats")}</dt>
                                 <dd>
                                     {(exportPreflight.detectedFormats ?? []).join(', ') || '—'}
                                 </dd>
                             </div>
                             <div>
-                                <dt>Overlap collapsed</dt>
+                                <dt>{t("Overlap collapsed")}</dt>
                                 <dd>{exportPreflight.collapsedOverlap}</dd>
                             </div>
                         </dl>
                         {(exportPreflight.issues ?? []).length > 0 && (
-                            <ul className="preflight-issues" aria-label="Export blockers">
+                            <ul className="preflight-issues" aria-label={t("Export blockers")}>
                                 {exportPreflight.issues.map((issue) => (
                                     <li key={issue.code}>
-                                        <b>{issue.blocks ? 'Blocked' : 'Notice'}</b>
-                                        <span>{issue.message}</span>
+                                        <b>{issue.blocks ? t("Blocked") : t("Notice")}</b>
+                                        <span>{<OutcomeText text={issue.message}/> }</span>
                                     </li>
                                 ))}
                             </ul>
                         )}
                         {(exportPreflight.items ?? []).length > 0 && (
-                            <ul className="preflight-items" aria-label="Export story checks">
+                            <ul className="preflight-items" aria-label={t("Export story checks")}>
                                 {exportPreflight.items.map((item) => (
                                     <li
                                         className={item.disposition}
@@ -2710,14 +2710,14 @@ function App() {
                                             <small>{item.outputName}</small>
                                         </span>
                                         <strong>{item.disposition}</strong>
-                                        {item.issue && <p>{item.issue.message}</p>}
+                                        {item.issue && <p>{<OutcomeText text={item.issue.message}/> }</p>}
                                     </li>
                                 ))}
                             </ul>
                         )}
                         {exportStartError && (
                             <p className="dialog-error" role="alert">
-                                {exportStartError}
+                                {<OutcomeText text={exportStartError}/> }
                             </p>
                         )}
                         <div className="dialog-actions">
@@ -2730,15 +2730,14 @@ function App() {
                                     setExportStartError(null);
                                 }}
                             >
-                                Close
-                            </button>
+                                {t("Close")}</button>
                             {exportPreflightRequest && (
                                 <button
                                     type="button"
                                     disabled={exportStarting || exportPreparing}
                                     onClick={() => void preflightExport(exportPreflightRequest)}
                                 >
-                                    {exportPreparing ? 'Preparing…' : 'Choose another folder'}
+                                    {exportPreparing ? t("Preparing…") : t("Choose another folder")}
                                 </button>
                             )}
                             <button
@@ -2753,10 +2752,10 @@ function App() {
                                 onClick={() => void startPreparedExport()}
                             >
                                 {exportStarting
-                                    ? 'Starting…'
+                                    ? t("Starting…")
                                     : exportPreflight.canExport
-                                        ? 'Start export'
-                                        : 'Export unavailable'}
+                                        ? t("Start export")
+                                        : t("Export unavailable")}
                             </button>
                         </div>
                     </section>
@@ -2804,21 +2803,21 @@ function App() {
                             void submitShelfDialog();
                         }}
                     >
-                        <div className="dialog-kicker">Saved shelves</div>
+                        <div className="dialog-kicker">{t("Saved shelves")}</div>
                         <h3 id="shelf-dialog-title">
                             {shelfDialogMode === 'save'
-                                ? 'Save the current query'
+                                ? t("Save the current query")
                                 : shelfDialogMode === 'rename'
-                                    ? 'Rename this shelf'
-                                    : 'Duplicate this shelf'}
+                                    ? t("Rename this shelf")
+                                    : t("Duplicate this shelf")}
                         </h3>
                         <p>
                             {shelfDialogMode === 'save'
-                                ? 'The name search and active filters will stay dynamic as your local library changes.'
-                                : 'Choose a unique name for this saved shelf.'}
+                                ? t("The name search and active filters will stay dynamic as your local library changes.")
+                                : t("Choose a unique name for this saved shelf.")}
                         </p>
                         <label className="dialog-field">
-                            <span>Shelf name</span>
+                            <span>{t("Shelf name")}</span>
                             <input
                                 ref={shelfDialogInitialFocus}
                                 maxLength={80}
@@ -2829,7 +2828,7 @@ function App() {
                             />
                         </label>
                         {shelfDialogError && (
-                            <p className="dialog-error">{shelfDialogError}</p>
+                            <p className="dialog-error">{<OutcomeText text={shelfDialogError}/> }</p>
                         )}
                         <div className="dialog-actions">
                             <button
@@ -2837,20 +2836,19 @@ function App() {
                                 disabled={shelfBusy}
                                 onClick={() => setShelfDialogMode(null)}
                             >
-                                Cancel
-                            </button>
+                                {t("Cancel")}</button>
                             <button
                                 className="export"
                                 type="submit"
                                 disabled={shelfBusy || shelfDialogName.trim() === ''}
                             >
                                 {shelfBusy
-                                    ? 'Saving…'
+                                    ? t("Saving…")
                                     : shelfDialogMode === 'rename'
-                                        ? 'Rename shelf'
+                                        ? t("Rename shelf")
                                         : shelfDialogMode === 'duplicate'
-                                            ? 'Duplicate shelf'
-                                            : 'Save shelf'}
+                                            ? t("Duplicate shelf")
+                                            : t("Save shelf")}
                             </button>
                         </div>
                     </form>
@@ -2866,18 +2864,16 @@ function App() {
                         aria-labelledby="repair-shelf-title"
                         data-state="shelf-repair"
                     >
-                        <div className="dialog-kicker">Saved shelves</div>
-                        <h3 id="repair-shelf-title">Repair “{repairShelf.name}”</h3>
+                        <div className="dialog-kicker">{t("Saved shelves")}</div>
+                        <h3 id="repair-shelf-title">{t("Repair “")}{repairShelf.name}”</h3>
                         <p>{shelfAttentionMessage(repairShelf.attentionReason)}</p>
                         <div className="removal-confirmation">
-                            <b>Evaluation and export are blocked.</b>
+                            <b>{t("Evaluation and export are blocked.")}</b>
                             <p>
-                                Replacing the criteria is explicit and permanent. Stories and
-                                managed archives are never changed.
-                            </p>
+                                {t("Replacing the criteria is explicit and permanent. Stories and managed archives are never changed.")}</p>
                         </div>
                         {shelfDialogError && (
-                            <p className="dialog-error">{shelfDialogError}</p>
+                            <p className="dialog-error">{<OutcomeText text={shelfDialogError}/> }</p>
                         )}
                         <div className="dialog-actions">
                             <button
@@ -2886,8 +2882,7 @@ function App() {
                                 disabled={shelfBusy}
                                 onClick={() => setRepairShelfID(null)}
                             >
-                                Cancel
-                            </button>
+                                {t("Cancel")}</button>
                             <button
                                 className="danger"
                                 type="button"
@@ -2897,16 +2892,14 @@ function App() {
                                     setDeleteShelfID(repairShelf.id);
                                 }}
                             >
-                                Delete shelf
-                            </button>
+                                {t("Delete shelf")}</button>
                             {unavailableCriteria && (
                                 <button
                                     type="button"
                                     disabled={shelfBusy || !tagCatalog}
                                     onClick={removeUnavailableCriteria}
                                 >
-                                    Remove unavailable criteria
-                                </button>
+                                    {t("Remove unavailable criteria")}</button>
                             )}
                             <button
                                 className="export"
@@ -2914,7 +2907,7 @@ function App() {
                                 disabled={shelfBusy || unavailableCriteria}
                                 onClick={() => void repairShelfWithCurrentQuery()}
                             >
-                                {shelfBusy ? 'Replacing…' : 'Replace with current query'}
+                                {shelfBusy ? t("Replacing…") : t("Replace with current query")}
                             </button>
                         </div>
                     </section>
@@ -2930,14 +2923,12 @@ function App() {
                         aria-labelledby="delete-shelf-title"
                         data-state="shelf-delete-confirmation"
                     >
-                        <div className="dialog-kicker">Saved shelves</div>
-                        <h3 id="delete-shelf-title">Delete “{deleteShelf.name}”?</h3>
+                        <div className="dialog-kicker">{t("Saved shelves")}</div>
+                        <h3 id="delete-shelf-title">{t("Delete “")}{deleteShelf.name}”?</h3>
                         <p>
-                            Only this saved query will be removed. Matching stories and their
-                            managed archives will stay in your library.
-                        </p>
+                            {t("Only this saved query will be removed. Matching stories and their managed archives will stay in your library.")}</p>
                         {shelfDialogError && (
-                            <p className="dialog-error">{shelfDialogError}</p>
+                            <p className="dialog-error">{<OutcomeText text={shelfDialogError}/> }</p>
                         )}
                         <div className="dialog-actions">
                             <button
@@ -2946,15 +2937,14 @@ function App() {
                                 disabled={shelfBusy}
                                 onClick={() => setDeleteShelfID(null)}
                             >
-                                Cancel
-                            </button>
+                                {t("Cancel")}</button>
                             <button
                                 className="danger"
                                 type="button"
                                 disabled={shelfBusy}
                                 onClick={() => void confirmShelfDeletion()}
                             >
-                                {shelfBusy ? 'Deleting…' : 'Delete shelf'}
+                                {shelfBusy ? t("Deleting…") : t("Delete shelf")}
                             </button>
                         </div>
                     </section>

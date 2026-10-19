@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/01max/librairii/internal/database"
+	"github.com/01max/librairii/internal/preferences"
 )
 
 func TestStorageReadinessCreatesMigratedDatabase(t *testing.T) {
@@ -39,7 +40,15 @@ func TestStorageReadinessCreatesMigratedDatabase(t *testing.T) {
 }
 
 func TestStorageReadinessRefusesForeignDatabase(t *testing.T) {
-	t.Parallel()
+	for _, mode := range []string{"isolated", "configured", "configured-restart"} {
+		t.Run(mode, func(t *testing.T) {
+			testStorageReadinessRecoversForeignDatabase(t, mode)
+		})
+	}
+}
+
+func testStorageReadinessRecoversForeignDatabase(t *testing.T, mode string) {
+	t.Helper()
 
 	root := filepath.Join(t.TempDir(), "librairii")
 	databaseDirectory := filepath.Join(root, "db")
@@ -54,7 +63,11 @@ func TestStorageReadinessRefusesForeignDatabase(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	directory := t.TempDir()
 	readiness := NewStorageReadiness(root)
+	if mode != "isolated" {
+		readiness = NewConfiguredStorageReadiness(directory, root, "fr")
+	}
 	report, err := readiness.Check(context.Background())
 	if err != nil {
 		t.Fatalf("Check() error = %v", err)
@@ -76,6 +89,9 @@ func TestStorageReadinessRefusesForeignDatabase(t *testing.T) {
 		t.Fatalf("recovered database = %q, want legacy", recovered)
 	}
 
+	if mode == "configured-restart" {
+		readiness = NewConfiguredStorageReadiness(directory, root, "en")
+	}
 	report, err = readiness.Check(context.Background())
 	if err != nil {
 		t.Fatalf("Check(after recovery) error = %v", err)
@@ -88,6 +104,44 @@ func TestStorageReadinessRefusesForeignDatabase(t *testing.T) {
 		)
 	}
 	if err := readiness.Close(); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestConfiguredRecoveryPersistsReplacementProfile(t *testing.T) {
+	ctx := context.Background()
+	root := filepath.Join(t.TempDir(), "legacy")
+	directory := t.TempDir()
+	if err := os.MkdirAll(filepath.Dir(preferences.DatabasePath(root)), 0700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(preferences.DatabasePath(root), []byte("foreign"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	r := NewConfiguredStorageReadiness(directory, root, "fr")
+	if _, err := r.Check(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := r.RecoverSchemaConflict(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := r.Check(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if err := r.Close(); err != nil {
+		t.Fatal(err)
+	}
+	next := NewConfiguredStorageReadiness(directory, root, "en")
+	report, err := next.Check(ctx)
+	if err != nil || !report.MutationsAllowed {
+		t.Fatal(report, err)
+	}
+	defer next.Close()
+	p := next.Profile()
+	if !p.Complete || p.Recovering || p.Language != "fr" || p.Root != root {
+		t.Fatal(p)
+	}
+	if err := preferences.ValidateLibrary(ctx, p.Root, p.LibraryID); err != nil {
 		t.Fatal(err)
 	}
 }

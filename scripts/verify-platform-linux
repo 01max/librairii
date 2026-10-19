@@ -245,3 +245,6 @@ tar \
 
 printf 'Linux platform acceptance passed: build, render, SQLite, host-native dialogs, smoke\n'
 printf 'Linux artifact: %s\n' "$artifact"
+
+# A separate fresh production profile covers settings and relocation under GTK.
+timeout 60s dbus-run-session -- xvfb-run -a "$project_root/scripts/verify-settings-acceptance" "$binary"

@@ -3,16 +3,22 @@ package platform
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"path/filepath"
 	"sync"
 
 	coreapp "github.com/01max/librairii/internal/app"
 	"github.com/01max/librairii/internal/database"
+	"github.com/01max/librairii/internal/preferences"
 	"github.com/01max/librairii/internal/storage"
 )
 
 type StorageReadiness struct {
-	override string
+	override     string
+	profileStore *preferences.Store
+	legacyRoot   string
+	profile      preferences.Profile
+	bootstrapMu  sync.Mutex
 
 	mu     sync.RWMutex
 	layout storage.Layout
@@ -24,6 +30,8 @@ func NewStorageReadiness(override string) *StorageReadiness {
 }
 
 func (r *StorageReadiness) Check(ctx context.Context) (coreapp.ReadinessReport, error) {
+	r.bootstrapMu.Lock()
+	defer r.bootstrapMu.Unlock()
 	r.mu.RLock()
 	if r.db != nil {
 		r.mu.RUnlock()
@@ -31,6 +39,12 @@ func (r *StorageReadiness) Check(ctx context.Context) (coreapp.ReadinessReport, 
 	}
 	r.mu.RUnlock()
 
+	r.mu.Lock()
+	profileErr := r.prepareProfile(ctx)
+	r.mu.Unlock()
+	if profileErr != nil {
+		return coreapp.ReadinessReport{}, profileErr
+	}
 	root, err := storage.ResolveRoot(r.override)
 	if err != nil {
 		return coreapp.ReadinessReport{}, err
@@ -80,6 +94,8 @@ func (r *StorageReadiness) Check(ctx context.Context) (coreapp.ReadinessReport, 
 func (r *StorageReadiness) RecoverSchemaConflict(
 	ctx context.Context,
 ) (string, error) {
+	r.bootstrapMu.Lock()
+	defer r.bootstrapMu.Unlock()
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	if r.db != nil {
@@ -93,6 +109,29 @@ func (r *StorageReadiness) RecoverSchemaConflict(
 	layout, err := storage.Initialize(root)
 	if err != nil {
 		return "", err
+	}
+	if r.profileStore != nil {
+		identity, err := (database.SchemaProbe{}).Inspect(ctx, preferences.DatabasePath(root))
+		if err != nil {
+			return "", err
+		}
+		if identity != database.IdentityForeign {
+			return "", database.ErrNoSchemaConflict
+		}
+		id, err := preferences.EnsureIdentity(root)
+		if err != nil {
+			return "", err
+		}
+		pending, err := r.profileStore.Update(func(p *preferences.Profile) error {
+			p.Root, p.LibraryID = root, id
+			p.Language = r.profile.Language
+			p.Complete, p.Recovering = false, true
+			return nil
+		})
+		if err != nil {
+			return "", err
+		}
+		r.profile = pending
 	}
 	recoveryDirectory, err := database.RelocateSchemaConflict(
 		ctx,
@@ -137,7 +176,8 @@ func (r *StorageReadiness) Close() error {
 	if connection == nil {
 		return nil
 	}
-	return connection.Close()
+	_, checkpointErr := connection.Writer().Exec("PRAGMA wal_checkpoint(TRUNCATE)")
+	return errors.Join(checkpointErr, connection.Close())
 }
 
 type sqliteSchemaProbe struct{}
