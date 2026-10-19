@@ -184,6 +184,7 @@ func (s *Service) Inspect(ctx context.Context, collectionID int64) (Inspection, 
 		); err != nil {
 			return Inspection{}, fmt.Errorf("migrate saved collection query: %w", err)
 		}
+		collection.Revision++
 		collection.QueryVersion = migrated.Version
 		collection.QueryPayload = migrated.Payload
 	}
@@ -441,6 +442,7 @@ func finishAttentionInspection(
 		if err := requireCollectionMutation(result, err); err != nil {
 			return Inspection{}, fmt.Errorf("mark collection as needing attention: %w", err)
 		}
+		collection.Revision++
 		collection.Validity = ValidityNeedsAttention
 	}
 	if err := transaction.Commit(); err != nil {

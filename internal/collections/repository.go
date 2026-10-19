@@ -17,6 +17,7 @@ const (
 var ErrMissingDatabase = errors.New("collection database is required")
 
 type Collection struct {
+	Revision       int64    `json:"revision"`
 	ID             int64    `json:"id"`
 	Name           string   `json:"name"`
 	NormalizedName string   `json:"normalizedName"`
@@ -94,6 +95,7 @@ func insertCollection(
 		QueryVersion:   input.QueryVersion,
 		QueryPayload:   input.QueryPayload,
 		Validity:       validity,
+		Revision:       1,
 	}, nil
 }
 
@@ -124,7 +126,8 @@ func listCollections(ctx context.Context, queryer collectionQueryer) ([]Collecti
 			position,
 			query_version,
 			query_payload,
-			validity_state
+			validity_state,
+ revision
 		 FROM collections
 		 ORDER BY position, id`,
 	)
@@ -144,6 +147,7 @@ func listCollections(ctx context.Context, queryer collectionQueryer) ([]Collecti
 			&collection.QueryVersion,
 			&collection.QueryPayload,
 			&collection.Validity,
+			&collection.Revision,
 		); err != nil {
 			return nil, fmt.Errorf("scan collection: %w", err)
 		}
@@ -170,7 +174,8 @@ func readCollection(
 			position,
 			query_version,
 			query_payload,
-			validity_state
+			validity_state,
+ revision
 		 FROM collections
 		 WHERE id = ?`,
 		collectionID,
@@ -182,6 +187,7 @@ func readCollection(
 		&collection.QueryVersion,
 		&collection.QueryPayload,
 		&collection.Validity,
+		&collection.Revision,
 	)
 	if err != nil {
 		return Collection{}, err

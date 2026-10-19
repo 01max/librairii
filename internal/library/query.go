@@ -145,9 +145,22 @@ type OfficialProvider interface {
 }
 
 type Query struct {
-	database       *sql.DB
+	database       queryReader
 	official       OfficialProvider
 	officialLocale string
+}
+
+type queryReader interface {
+	QueryContext(context.Context, string, ...any) (*sql.Rows, error)
+	QueryRowContext(context.Context, string, ...any) *sql.Row
+}
+
+// WithTransaction keeps query matching on the same SQLite snapshot as Shelf
+// decisions, without reacquiring the serialized writer connection.
+func (q *Query) WithTransaction(tx *sql.Tx) *Query {
+	copy := *q
+	copy.database = tx
+	return &copy
 }
 
 func NewQuery(database *sql.DB, official OfficialProvider) *Query {
