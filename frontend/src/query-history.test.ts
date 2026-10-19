@@ -24,7 +24,7 @@ test('restores the same query when history is reconstructed like a reload', () =
     const reloaded = new CollectionQueryHistory(window, applicationDefault);
     expect(reloaded.current()).toEqual(pushed);
     expect(reloaded.currentShelfID()).toBe(7);
-    expect(reloaded.currentScope()).toBe('shelf');
+    expect(reloaded.currentScope()).toBe('collection');
 });
 
 test('restores back and forward query states', async () => {
@@ -42,13 +42,13 @@ test('restores back and forward query states', async () => {
     await waitFor(() => expect(listener).toHaveBeenLastCalledWith(
         dragon,
         7,
-        'shelf',
+        'collection',
     ));
     window.history.forward();
     await waitFor(() => expect(listener).toHaveBeenLastCalledWith(
         filtered,
         8,
-        'shelf',
+        'collection',
     ));
     unsubscribe();
 });

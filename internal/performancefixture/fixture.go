@@ -356,9 +356,7 @@ func seedShelves(
 				library.CompatibilityCompatible,
 			},
 		}},
-		{name: "Broken stories", query: library.StoryLibraryQuery{
-			BrokenVisibility: library.BrokenOnly,
-		}},
+		{name: "All stories", query: library.StoryLibraryQuery{}},
 		{name: "Calm stories", query: library.StoryLibraryQuery{
 			ChoiceFilters: []library.ChoiceFilter{{
 				DefinitionID: MoodDefinitionID,

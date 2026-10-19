@@ -107,6 +107,10 @@ func referencesFromPayload(payload Payload) (References, error) {
 }
 
 func referencesFromNode(payload Payload, remaining *int) (References, error) {
+	if (payload.BrokenVisibility != "" && payload.BrokenVisibility != "hide" && payload.BrokenVisibility != "include" && payload.BrokenVisibility != "only") ||
+		(payload.BrokenState != "" && payload.BrokenState != "ignored" && payload.BrokenState != "true" && payload.BrokenState != "false") {
+		return References{}, ErrInvalidPayload
+	}
 	*remaining--
 	if *remaining < 0 {
 		return References{}, ErrInvalidPayload

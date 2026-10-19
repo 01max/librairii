@@ -183,6 +183,9 @@ func DecodeStoryLibraryQuery(hash string, legacyBrokenID ...int64) (StoryLibrary
 	}
 	// Validate non-flag predicates before removing retired tag references, so
 	// malformed duplicate criteria cannot become valid through migration.
+	if !validLegacyFlagFields(query, 50) {
+		return StoryLibraryQuery{}, ErrInvalidStoryLibraryHash
+	}
 	if _, err := canonicalStoryLibraryQuery(WithoutBrokenRestrictions(query)); err != nil {
 		return StoryLibraryQuery{}, ErrInvalidStoryLibraryHash
 	}
@@ -359,4 +362,22 @@ func HasBrokenRestrictions(query StoryLibraryQuery) bool {
 		}
 	}
 	return false
+}
+
+func validLegacyFlagFields(q StoryLibraryQuery, remaining int) bool {
+	if remaining <= 0 {
+		return false
+	}
+	if q.BrokenVisibility != "" && q.BrokenVisibility != BrokenHide && q.BrokenVisibility != BrokenInclude && q.BrokenVisibility != BrokenOnly {
+		return false
+	}
+	if q.BrokenState != "" && q.BrokenState != BooleanIgnored && q.BrokenState != BooleanTrue && q.BrokenState != BooleanFalse {
+		return false
+	}
+	for _, b := range q.AnyOf {
+		if !validLegacyFlagFields(b, remaining-1) {
+			return false
+		}
+	}
+	return true
 }

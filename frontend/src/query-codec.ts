@@ -344,11 +344,16 @@ function translateLegacyBroken(query: CollectionQuery, legacyID: number): Collec
     };
 }
 
-function withoutBrokenRestrictions(query: CollectionQuery): CollectionQuery {
+function withoutBrokenRestrictions(query: CollectionQuery, remaining = 50): CollectionQuery {
+    if (remaining <= 0 || !query || typeof query !== 'object' ||
+        (query.brokenVisibility !== undefined && !['hide', 'include', 'only'].includes(query.brokenVisibility)) ||
+        (query.brokenState !== undefined && !isBooleanState(query.brokenState))) {
+        throw new InvalidCollectionQuery('Invalid historical broken criterion.');
+    }
     const clean = {...query};
     delete clean.includeBroken;
     delete clean.brokenVisibility;
     delete clean.brokenState;
-    if (clean.anyOf) clean.anyOf = clean.anyOf.map(withoutBrokenRestrictions);
+    if (clean.anyOf) clean.anyOf = clean.anyOf.map((branch) => withoutBrokenRestrictions(branch, remaining - 1));
     return clean;
 }

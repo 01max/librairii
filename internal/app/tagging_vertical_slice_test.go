@@ -174,8 +174,6 @@ func TestTaggingAndSharedQueryVerticalSlice(t *testing.T) {
 	filtered := application.QueryStories(
 		context.Background(),
 		library.StoryLibraryQuery{
-			BrokenVisibility: library.BrokenInclude,
-			BrokenState:      library.BooleanTrue,
 			ChoiceFilters: []library.ChoiceFilter{{
 				DefinitionID: mood.ID,
 				ValueIDs:     []int64{calm.ID},

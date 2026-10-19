@@ -18,12 +18,12 @@ import (
 	"time"
 
 	"github.com/01max/librairii/internal/artwork"
+	"github.com/01max/librairii/internal/collections"
 	"github.com/01max/librairii/internal/database"
 	"github.com/01max/librairii/internal/library"
 	"github.com/01max/librairii/internal/lunii"
 	"github.com/01max/librairii/internal/metadata"
 	"github.com/01max/librairii/internal/performancefixture"
-	"github.com/01max/librairii/internal/shelves"
 	"github.com/01max/librairii/internal/storage"
 )
 
@@ -110,11 +110,11 @@ func run(ctx context.Context, storyCount int, samples int) error {
 		return err
 	}
 	query := library.NewQuery(opened.SQL(), official)
-	shelfService, err := shelves.NewService(opened.SQL())
+	shelfService, err := collections.NewService(opened.SQL())
 	if err != nil {
 		return err
 	}
-	evaluator, err := shelves.NewEvaluator(shelfService, query)
+	evaluator, err := collections.NewEvaluator(shelfService, query)
 	if err != nil {
 		return err
 	}

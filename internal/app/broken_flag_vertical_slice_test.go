@@ -152,34 +152,34 @@ func TestMigratedBrokenLibraryThroughApplicationRestartRefreshAndExport(t *testi
 	defer func() { application.Stop(ctx); provider.db.Close() }()
 	assertQuery := func(mode library.BrokenVisibility, want int) {
 		t.Helper()
-		response := application.QueryStories(ctx, library.StoryLibraryQuery{BrokenVisibility: mode})
+		response := application.QueryStories(ctx, library.StoryLibraryQuery{})
 		if response.Error != nil || response.Page == nil || response.Page.TotalItems != want {
 			t.Fatalf("query %s=%#v", mode, response)
 		}
 	}
-	assertQuery(library.BrokenHide, 1)
+	assertQuery("", 2)
 	compatibility := application.LibraryCompatibility(ctx)
 	if compatibility.Error != nil || compatibility.Compatibility.LegacyBrokenTagID != 9 {
 		t.Fatalf("compatibility=%#v", compatibility)
 	}
-	shelf := application.OpenCollection(ctx, 7, library.ListRequest{BrokenVisibility: library.BrokenOnly})
-	if shelf.Error != nil || shelf.Evaluation == nil || shelf.Evaluation.Page.TotalItems != 1 || shelf.Evaluation.Page.Stories[0].ID != ids[0] {
+	shelf := application.OpenCollection(ctx, 7, library.ListRequest{})
+	if shelf.Error != nil || shelf.Evaluation == nil || shelf.Evaluation.Page.TotalItems != 2 || shelf.Evaluation.Page.Stories[0].ID != ids[0] {
 		t.Fatalf("migrated shelf=%#v", shelf)
 	}
 	set := application.SetStoriesBroken(ctx, ids[1:], true)
 	if set.Error != nil || set.Result == nil {
 		t.Fatalf("set=%#v", set)
 	}
-	assertQuery(library.BrokenHide, 0)
+	assertQuery("", 2)
 	if undo := application.RestoreStoryFlags(ctx, set.Result.Changes); undo.Error != nil {
 		t.Fatalf("undo=%#v", undo)
 	}
-	assertQuery(library.BrokenHide, 1)
+	assertQuery("", 2)
 	cleared := application.SetStoriesBroken(ctx, ids[:1], false)
 	if cleared.Error != nil || cleared.Result == nil {
 		t.Fatalf("clear=%#v", cleared)
 	}
-	assertQuery(library.BrokenOnly, 0)
+	assertQuery("", 2)
 	if undo := application.RestoreStoryFlags(ctx, cleared.Result.Changes); undo.Error != nil {
 		t.Fatalf("undo clear=%#v", undo)
 	}
@@ -192,7 +192,7 @@ func TestMigratedBrokenLibraryThroughApplicationRestartRefreshAndExport(t *testi
 		t.Fatal(err)
 	}
 	application, runtime, events = start()
-	assertQuery(library.BrokenOnly, 1)
+	assertQuery("", 2)
 	refresh := application.RefreshOfficialMetadata(ctx)
 	if refresh.Error != nil || refresh.Operation == nil {
 		t.Fatalf("refresh=%#v", refresh)

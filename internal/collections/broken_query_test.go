@@ -1,7 +1,6 @@
 package collections
 
 import (
-	"github.com/01max/librairii/internal/library"
 	"testing"
 )
 
@@ -12,14 +11,14 @@ func TestLegacyBrokenCollectionCriteriaPreserveNestedComposition(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if saved.BrokenVisibility != "" || saved.BrokenState != library.BooleanTrue || len(saved.BooleanFilters) != 0 || saved.AnyOf[0].BrokenState != library.BooleanFalse || saved.AnyOf[1].BrokenState != "" {
+		if saved.BrokenVisibility != "" || saved.BrokenState != "" || len(saved.BooleanFilters) != 0 || saved.AnyOf[0].BrokenState != "" || saved.AnyOf[1].BrokenState != "" {
 			t.Fatalf("saved=%#v", saved)
 		}
 		encoded, err := EncodeSavedLibraryQuery(saved.StoryLibraryQuery())
 		if err != nil {
 			t.Fatal(err)
 		}
-		if encoded.Version != 4 {
+		if encoded.Version != 5 {
 			t.Fatalf("version=%d", encoded.Version)
 		}
 	}

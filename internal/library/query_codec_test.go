@@ -66,7 +66,7 @@ func TestStoryLibraryQueryCodecCanonicalizesAndRejectsInvalidHashes(t *testing.T
 		t.Fatal(err)
 	}
 	if encoded !=
-		"#/library?bool=2%3Atrue&bool=8%3Afalse&choice=4%3A5%2C6&compatibility=compatible&compatibility=invalid&language=en-GB&language=fr-FR&v=2" {
+		"#/library?bool=2%3Atrue&bool=8%3Afalse&choice=4%3A5%2C6&compatibility=compatible&compatibility=invalid&language=en-GB&language=fr-FR&v=3" {
 		t.Fatalf("EncodeStoryLibraryQuery(canonical) = %q", encoded)
 	}
 

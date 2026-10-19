@@ -51,7 +51,7 @@ test('canonicalizes filter and value ordering', () => {
     })).toBe(
         '#/library?bool=2%3Atrue&bool=8%3Afalse&choice=4%3A5%2C6' +
         '&compatibility=compatible&compatibility=invalid' +
-        '&language=en-GB&language=fr-FR&v=2',
+        '&language=en-GB&language=fr-FR&v=3',
     );
 });
 
@@ -75,10 +75,10 @@ test.each(['[null]', '["all"]', '[{"selection":[1]}]', '[{"languages":1}]'])(
 test('translates only legacy Broken IDs and retains nested predicates', () => {
     const query = decodeCollectionQuery('#/library?v=1&includeBroken=true&bool=9:true&any=' +
         encodeURIComponent(JSON.stringify([{booleanFilters: [{definitionId: 9, state: 'false'}]}])), 9);
-    expect(query.brokenVisibility).toBe('include');
-    expect(query.brokenState).toBe('true');
+    expect(query.brokenVisibility).toBeUndefined();
+    expect(query.brokenState).toBeUndefined();
     expect(query.booleanFilters).toEqual([]);
-    expect(query.anyOf?.[0].brokenState).toBe('false');
+    expect(query.anyOf?.[0].brokenState).toBeUndefined();
     expect(decodeCollectionQuery('#/library?v=2&bool=9:true', 9).booleanFilters)
         .toEqual([{definitionId: 9, state: 'true'}]);
 });

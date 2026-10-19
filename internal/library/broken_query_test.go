@@ -18,14 +18,9 @@ func TestDedicatedBrokenQueryCompositionAndVisibility(t *testing.T) {
 		query StoryLibraryQuery
 		count int
 	}{
-		{"default", StoryLibraryQuery{}, 1},
-		{"include", StoryLibraryQuery{BrokenVisibility: BrokenInclude}, 2},
-		{"only", StoryLibraryQuery{BrokenVisibility: BrokenOnly}, 1},
-		{"contradiction", StoryLibraryQuery{BrokenState: BooleanTrue}, 0},
-		{"explicit false", StoryLibraryQuery{BrokenVisibility: BrokenInclude, BrokenState: BooleanFalse}, 1},
-		{"root hide over branches", StoryLibraryQuery{AnyOf: []StoryLibraryQuery{{BrokenState: BooleanTrue}, {BrokenState: BooleanFalse}}}, 1},
-		{"root only over branches", StoryLibraryQuery{BrokenVisibility: BrokenOnly, AnyOf: []StoryLibraryQuery{{Name: "dam"}, {Name: "healthy"}}}, 1},
-		{"nested contradiction", StoryLibraryQuery{BrokenVisibility: BrokenInclude, BrokenState: BooleanFalse, AnyOf: []StoryLibraryQuery{{BrokenState: BooleanTrue}}}, 0},
+		{"default", StoryLibraryQuery{}, 2},
+		{"name", StoryLibraryQuery{Name: "dam"}, 1},
+		{"alternatives", StoryLibraryQuery{AnyOf: []StoryLibraryQuery{{Name: "dam"}, {Name: "healthy"}}}, 2},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			test.query.PageSize = 1
@@ -55,11 +50,8 @@ func TestLegacyBrokenURLTranslation(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		expected := BooleanFilterState(state)
-		if state == "ignored" {
-			expected = ""
-		}
-		if query.BrokenState != expected || query.BrokenVisibility != BrokenInclude || len(query.BooleanFilters) != 0 {
+
+		if query.BrokenState != "" || query.BrokenVisibility != "" || len(query.BooleanFilters) != 0 {
 			t.Fatalf("query=%#v", query)
 		}
 	}
@@ -92,7 +84,7 @@ func TestRetiredBrokenIDIsOnlyTranslatedForLegacyVersions(t *testing.T) {
 		hash string
 		id   int64
 	}{
-		{"#/library?v=1&includeBroken=true&bool=9:true", flagged.ID},
+		{"#/library?v=1&includeBroken=true&bool=9:true&name=flag", flagged.ID},
 		{"#/library?v=2&brokenVisibility=include&bool=9:true", tagged.ID},
 	} {
 		request, err := DecodeStoryLibraryQuery(test.hash, info.LegacyBrokenTagID)
