@@ -47,5 +47,11 @@ export function useStoryFlags(
     const undo = useCallback(() => undoChanges.length
         ? execute(() => RestoreStoryFlags(undoChanges)) : Promise.resolve(), [execute, undoChanges]);
 
-    return {pending, error, notice, canUndo: undoChanges.length > 0, set, undo};
+    const dismissFeedback = useCallback(() => {
+        setNotice(null);
+        setError(null);
+        setUndoChanges([]);
+    }, []);
+
+    return {dismissFeedback, pending, error, notice, canUndo: undoChanges.length > 0, set, undo};
 }

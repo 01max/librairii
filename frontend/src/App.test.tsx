@@ -3813,7 +3813,7 @@ test('keeps inspected and rendered stories available after flagging', async () =
     await user.click(within(dialog).getByRole('switch', {name: 'Broken: Clockwork Forest'}));
     await waitFor(() => expect(screen.getAllByRole('button', {name: 'Clockwork Forest'}).length).toBeGreaterThan(0));
     expect(dialog).toBeInTheDocument();
-    expect(within(dialog).getByRole('region', {name: 'Story warning'})).toHaveTextContent('Broken');
+    expect(within(dialog).getByRole('switch', {name: 'Broken: Clockwork Forest'})).toBeChecked();
     await user.click(within(dialog).getByRole('switch', {name: 'Broken: Clockwork Forest'}));
     expect(await screen.findByRole('button', {name: 'Clockwork Forest'})).toBeInTheDocument();
     expect(SetStoriesBroken).toHaveBeenLastCalledWith([1], false);
@@ -3936,4 +3936,22 @@ test('adds the selected story UUID explicitly to an existing Shelf', async () =>
     expect(AddStoriesToShelf).not.toHaveBeenCalled();
     await user.click(screen.getByRole('button', {name: 'Add selected stories'}));
     await waitFor(() => expect(AddStoriesToShelf).toHaveBeenCalledWith(7, [stories[0].uuid]));
+});
+
+
+test('shows Broken feedback only after a toggle and clears it when details close', async () => {
+    installStoryFlagsFixture();
+    const user = userEvent.setup();
+    render(<App/>);
+    await user.click(await screen.findByRole('button', {name: 'Open details'}));
+    let dialog = await screen.findByRole('dialog', {name: 'Clockwork Forest'});
+    expect(within(dialog).queryByRole('status')).not.toBeInTheDocument();
+    expect(within(dialog).queryByText('Flag stories that may disrupt the Lunii device menu.')).not.toBeInTheDocument();
+    await user.click(within(dialog).getByRole('switch', {name: 'Broken: Clockwork Forest'}));
+    expect(await within(dialog).findByRole('status')).toHaveTextContent('1 of 1 stories updated.');
+    await user.click(within(dialog).getByRole('button', {name: 'Close'}));
+    await user.click(screen.getByRole('button', {name: 'Open details'}));
+    dialog = await screen.findByRole('dialog', {name: 'Clockwork Forest'});
+    expect(within(dialog).queryByRole('status')).not.toBeInTheDocument();
+    expect(within(dialog).getByRole('switch', {name: 'Broken: Clockwork Forest'})).toBeChecked();
 });

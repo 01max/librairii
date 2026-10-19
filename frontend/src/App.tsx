@@ -2842,6 +2842,7 @@ function App() {
                         setTagAssignmentOpen(true);
                     }}
                     onClose={() => {
+                        flags.dismissFeedback();
                         setDetailsOpen(false);
                         setInspectedStory(null);
                         setInspectedArchive(undefined);
