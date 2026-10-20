@@ -1,0 +1,135 @@
+//! Raw owned rows; no SQL value escapes its one transaction.
+use crate::Result;
+use librairii_app::ports::operations::{
+    OperationHeader, OperationItem, OperationSnapshot, SiblingCounts, TerminalView,
+};
+use librairii_core::operations::{
+    Counts, ItemState, Progress, RawOutcome, StoredExportScope, StoredItemIdentity,
+    StoredOperationIdentity, decode_kind, decode_state,
+};
+use rusqlite::{OptionalExtension, Row, Transaction, types::Type};
+
+const HEADER: &str = "SELECT id, kind, status, export_source_type,
+    export_source_shelf_ids, export_source_shelf_names, export_destination,
+    completed_items, total_items, total_bytes, cancel_requested,
+    error_code, error_message, created_at, started_at, finished_at
+    FROM file_operations WHERE id = ?";
+const ITEMS: &str = "SELECT operation_id, id, story_id, resolved_story_id, story_uuid,
+    story_title, source_name, output_name, archive_relative_path, archive_sha256,
+    export_skip_code, status, outcome_code, outcome_message, completed_bytes, total_bytes
+    FROM file_operation_items";
+
+fn codec(index: usize, error: librairii_core::operations::OperationCodecError) -> rusqlite::Error {
+    rusqlite::Error::FromSqlConversionFailure(index, Type::Text, Box::new(error))
+}
+
+fn header_row(row: &Row<'_>) -> rusqlite::Result<OperationHeader> {
+    let kind: String = row.get(1)?;
+    let state: String = row.get(2)?;
+    Ok(OperationHeader {
+        identity: StoredOperationIdentity {
+            id: row.get(0)?,
+            created_at: row.get(13)?,
+            started_at: row.get(14)?,
+            finished_at: row.get(15)?,
+        },
+        kind: decode_kind(&kind).map_err(|e| codec(1, e))?,
+        state: decode_state(&state).map_err(|e| codec(2, e))?,
+        export_scope: StoredExportScope {
+            discriminator: row.get(3)?,
+            group_ids: row.get(4)?,
+            group_names: row.get(5)?,
+        },
+        destination: row.get(6)?,
+        counts: Counts {
+            completed: row.get(7)?,
+            total: row.get(8)?,
+        },
+        total_bytes: row.get(9)?,
+        cancel_requested: row.get::<_, i64>(10)? == 1,
+        outcome: RawOutcome {
+            code: row.get(11)?,
+            message: row.get(12)?,
+        },
+    })
+}
+
+fn item_row(row: &Row<'_>) -> rusqlite::Result<OperationItem> {
+    let state: String = row.get(11)?;
+    Ok(OperationItem {
+        operation_id: row.get(0)?,
+        identity: StoredItemIdentity {
+            id: row.get(1)?,
+            story_id: row.get(2)?,
+            resolved_story_id: row.get(3)?,
+            story_uuid: row.get(4)?,
+        },
+        story_title: row.get(5)?,
+        source_name: row.get(6)?,
+        output_name: row.get(7)?,
+        archive_relative_path: row.get(8)?,
+        archive_sha256: row.get(9)?,
+        export_skip_code: row.get(10)?,
+        state: ItemState::from_persisted(&state).map_err(|e| codec(11, e))?,
+        outcome: RawOutcome {
+            code: row.get(12)?,
+            message: row.get(13)?,
+        },
+        progress: Progress {
+            completed: row.get(14)?,
+            total: row.get(15)?,
+        },
+    })
+}
+
+pub(super) fn header(tx: &Transaction<'_>, id: &str) -> Result<Option<OperationHeader>> {
+    Ok(tx.query_row(HEADER, [id], header_row).optional()?)
+}
+
+pub(super) fn snapshot(tx: &Transaction<'_>, id: &str) -> Result<Option<OperationSnapshot>> {
+    let Some(operation) = header(tx, id)? else {
+        return Ok(None);
+    };
+    let mut statement = tx.prepare(&format!("{ITEMS} WHERE operation_id = ? ORDER BY id"))?;
+    let items = statement
+        .query_map([id], item_row)?
+        .collect::<rusqlite::Result<Vec<_>>>()?;
+    Ok(Some(OperationSnapshot { operation, items }))
+}
+
+pub(super) fn view(
+    tx: &Transaction<'_>,
+    id: &str,
+    item: Option<i64>,
+) -> Result<Option<TerminalView>> {
+    let Some(operation) = header(tx, id)? else {
+        return Ok(None);
+    };
+    let item = match item {
+        Some(item) => tx
+            .query_row(
+                &format!("{ITEMS} WHERE operation_id = ? AND id = ?"),
+                rusqlite::params![id, item],
+                item_row,
+            )
+            .optional()?,
+        None => None,
+    };
+    let siblings = tx.query_row(
+        "SELECT count(*), COALESCE(sum(CASE WHEN status IN
+         ('succeeded','skipped','conflicted','failed','cancelled') THEN 1 ELSE 0 END),0)
+         FROM file_operation_items WHERE operation_id = ?",
+        [id],
+        |r| {
+            Ok(SiblingCounts {
+                items: r.get(0)?,
+                terminal: r.get(1)?,
+            })
+        },
+    )?;
+    Ok(Some(TerminalView {
+        operation,
+        item,
+        siblings,
+    }))
+}
