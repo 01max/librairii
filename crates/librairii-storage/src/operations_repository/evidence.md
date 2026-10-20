@@ -131,3 +131,15 @@ storage/base or an explicitly authorized visible topology, owner5's final UNION,
 and fresh exact-head checks/review/provider CI. No full 6.5/6.7/6.8/6.9 or section
 checkbox, real threaded jobs bridge, startup cleanup, NativeLibrary activation,
 history API, import/custody/reveal authority or PR merge is qualified here.
+
+## First actual composition compiler correction
+
+Actual temporary E/C `f5d8d08901d340dbbf517a4cf9dbd1a5c2177e96` attempted locked
+nextest discovery and exited 101 before JSON or any test execution. Four owned
+test helper calls borrowed a `Box<OperationSnapshot>` through `?` where the helper
+expected `OperationSnapshot` (E0308). The dedicated correction uses explicit
+`as_ref()` at those four calls; production SQL and policy remain unchanged.
+The full compiler log was read and SHA256 verified as
+`6d02e96f3c24a051e9c72cc00a05aef668fb7128ed5d59bb0ea2fd62540f5388`.
+No SQL regression RED, discovery pass or full check is inferred from that failed
+compilation or from this source correction. Actual updated C execution is pending.

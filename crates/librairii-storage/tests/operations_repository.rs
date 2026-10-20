@@ -323,7 +323,7 @@ fn terminal_sql_finish_and_interrupt_preserve_legacy_zero_totals() -> TestResult
     seed(&db, &id, 0)?;
     {
         let store = TerminalRepository::new(&db, GENERATION);
-        let command = interrupt(&snapshot(&store, &id)?);
+        let command = interrupt(snapshot(&store, &id)?.as_ref());
         assert!(matches!(
             store.interrupt(&command).disposition,
             AttemptDisposition::Committed { .. }
@@ -587,7 +587,7 @@ fn terminal_sql_writer_barrier_matches_unacknowledged_prior_commit_without_recou
     seed(&db, &id, 1)?;
     {
         let store = TerminalRepository::new(&db, GENERATION);
-        let command = complete(&snapshot(&store, &id)?, 0);
+        let command = complete(snapshot(&store, &id)?.as_ref(), 0);
         let fields = command.clone();
         let prior = db.repair_transaction(move |tx| {
             tx.execute(
@@ -639,7 +639,7 @@ fn terminal_sql_critical_refusal_retains_original_report_and_variable_command_by
     {
         let store = TerminalRepository::new(&db, GENERATION);
         let report = Report {
-            command: complete(&snapshot(&store, &id)?, 0),
+            command: complete(snapshot(&store, &id)?.as_ref(), 0),
             facts: vec!["real returned execution fact".into()],
         };
         let original = CommandWitness::CompleteItem(Box::new(report.command.clone()));
@@ -682,7 +682,7 @@ fn terminal_sql_proven_commit_survives_postcommit_snapshot_refusal_and_drains() 
     seed(&db, &id, 1)?;
     {
         let store = TerminalRepository::new(&db, GENERATION);
-        let command = interrupt(&snapshot(&store, &id)?);
+        let command = interrupt(snapshot(&store, &id)?.as_ref());
         db.stop_ordinary()?;
         let reply = store.interrupt(&command);
         assert!(matches!(
