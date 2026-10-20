@@ -47,6 +47,12 @@ pub enum StorageError {
     LibraryLeaseChanged,
     #[error("storage.legacy_lifetime_exclusion_unproven")]
     LegacyLifetimeExclusionUnproven,
+    #[error("storage.adoption_input_invalid")]
+    AdoptionInputInvalid,
+    #[error("storage.adoption_input_changed")]
+    AdoptionInputChanged,
+    #[error("storage.closed_snapshot_required")]
+    ClosedSnapshotRequired,
     #[error("storage.queue_full")]
     QueueFull,
     #[error("storage.intake_closed")]
@@ -147,6 +153,9 @@ impl StorageError {
             Self::LibraryInUse => "storage.library_in_use",
             Self::LibraryLeaseChanged => "storage.library_lease_changed",
             Self::LegacyLifetimeExclusionUnproven => "storage.legacy_lifetime_exclusion_unproven",
+            Self::AdoptionInputInvalid => "storage.adoption_input_invalid",
+            Self::AdoptionInputChanged => "storage.adoption_input_changed",
+            Self::ClosedSnapshotRequired => "storage.closed_snapshot_required",
             Self::QueueFull => "storage.queue_full",
             Self::IntakeClosed => "storage.intake_closed",
             Self::WorkerStopped => "storage.worker_stopped_outcome_unavailable",

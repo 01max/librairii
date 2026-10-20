@@ -20,7 +20,7 @@ evidence, not an additional checklist or acceptance of unfinished work.
 |4.1|Explicit fresh isolated root; exact layout, managed paths, raw identity; reject escape/invalid/nonfresh inputs without profile discovery|Implemented/host verified `9c37f56ffe83d73497129603c4ecfb8d25e4e087`. Setup `fcf467f41a39c3670a38db063a5304a60f6e93d1`|
 |4.2|Exact migrations001-018, schema identity and contiguous ledger|Implemented/host verified `ea8e60f415b5ea23fb50f8899594884ef13b6c8f`; probe hardening `bbf386bd4e681d3a7732fae28af750f173da6211`. Setup `e6e527af79a21149665670a36171ef5d701be05c`; owner5 graph `bf720718c4736e0ecf5f6ded947ccbce49f1ba16`|
 |4.3|One owned writer plus four reads, bounded jobs/transactions and close|Implemented/host verified `8baebc751ed51e917a3ae5b139ebf48fc5f0467b`|
-|4.4|All18 admitted populated prefixes, full schema/rows/query outcomes and actual Collection-open projection; no fixture-specific patches or eager DB-open rewrite|Private source/normalization `a125778200af8d28e8ff99c6c41f47a6ef5b69db`, Default language `d902658ad4e8dd33dc9540658ec4176a25fe9652`, strict codec `7350ddf1a87c0434efe1e7fac49c13db9906faf2`; explicit same-writer projection/all18 host proof in following commit. Other native/current cumulative/admission gates remain open|
+|4.4|All18 admitted populated prefixes, full schema/rows/query outcomes and actual Collection-open projection; no fixture-specific patches or eager DB-open rewrite|Private source/normalization `a125778200af8d28e8ff99c6c41f47a6ef5b69db`, Default language `d902658ad4e8dd33dc9540658ec4176a25fe9652`, strict codec `7350ddf1a87c0434efe1e7fac49c13db9906faf2`; explicit same-writer projection `c48f7db6e891a6583c1e6b99c3d497f7f3bf9f28`, original discovery `e9c559aa35a3df5c6f2b767baa17949b2b4f3a2a`. Finite independent19-DB verification passed on exacte9; other native/current cumulative/admission gates remain open|
 |4.5|Online WAL backup, integrity/FK, rollback and foreign DB+sidecars preservation|Implemented/host verified `abeb80ecd401f840e45a6a162998f5808cd9ebc1` on Unix; Windows directory durability remains pending4.9|
 |4.6|Strict64KiB v1 profiles, atomic serialized updates and isolated native namespace|Implemented/host verified `2751a04a4af6b9da8a21300a182ca2dd5231d8b8`. Stronger race capabilities and Windows effects remain4.8/4.9|
 |4.7|OS lease through close, refuse unproven legacy exclusion, verified independent adoption|Partial `2fb7c0126b7e1b10f46d5cd5326e6e0809b4d4cb`: fresh-root cooperative lease/refusal host verified. Verified independent clone/recovery/restart/relocation qualification remains pending|
@@ -701,3 +701,59 @@ proof is Unix-only while Windows durability4.9 is unimplemented. No compile or
 refusal branch is native filesystem qualification. Exact committed full
 cumulative/new-head provider gates and independent4.11 review remain pending;
 no full4.4 admission or PR43 review/merge authority follows from these passes.
+
+Exact committed e9 passed `cargo xtask check` on AppleARM1.99.1:125 nextest,
+zero skipped, four separate compile-fail docs, unchanged146-file corpus,
+strict15 Python and source19-record/both graph quality policies. Nextest run
+`c2c3d73c-2b7e-453c-bb23-3e92489a8cb0`. Original owner5 discovery e9 retains
+all121 prior identities/scopes/metadata and adds only the six actual projection
+identities. This closes the preceding host-check distinction; Windows89 remains
+required inventory until actual execution at the relevant head.
+
+Integration owner2 independently checked a clean exacte9 checkout with a
+temporary actual-API harness: all19 admitted DBs, full18 prefix snapshots and
+openedCollections, the24 separate schema-only vs explicit-open field effects,
+representative state/raw history, eight SQL-clock bounds and nine repeat/no-op
+checks. Separate source-composed cases exercise cancel/abort rollback, actual
+COMMIT uncertainty, fenced retry, fresh readback and reserved repair. All771
+tracked source hashes remained unchanged. The7582-byte report SHA256 is
+`254e6d3460b95e2dd5fd64c6f9acc6e38d18791a5d94ffa67b60a1d8ba06ed0c`;
+owner6 and root read/hash-verified the complete report. This finite implemented
+slice is not full4, final4.11 independent native review or merge admission.
+There is NO semantic nonmutating `InspectInTransaction` counterpart in storage:
+the explicit API mutates lazily; a generic fresh barrier read is only a mechanism.
+That distinct semantic seam remains explicit for a future owner5/domain handoff.
+
+### Partial 4.7: closed independent input verification, no activation authority
+
+`ClosedManifest` retains exact source bytes and rejects ambiguous relative paths,
+duplicate/unlisted or incomplete entries, invalid size/hash data and live SQLite
+sidecars. `ClosedLibraryInput` is a read-only retained Unix input witness, not an
+IsolatedLibrary, OS lease, source cleanup permission or profile commitment.
+Verification scans the complete tree through retained no-follow directory/file
+handles, checks lossless names, regular/nlink1 files and bounded streaming hashes,
+and probes known schema/integrity/FKs only on a NEW private database copy. The
+source database is never opened by SQLite, including read-only WAL/SHM access.
+The raw marker, profile bytes/UUID spelling, manifest, state/history and every
+archive remain untouched. A second complete scan and fresh revalidation detect
+change; these observations do not claim continuous exclusion of old Go.
+
+Directory enumeration uses independent safe-rustix cursors; file descriptors do
+not accumulate per manifest entry. Cancellation is checked before source I/O and
+during enumeration/hash/copy. Unlisted WAL, modified/missing entries, root
+replacement, aliases, profile spelling mismatch and self-consistently hashed
+FOREIGN SQLite all refuse without repair or cleanup. A compile-fail check proves
+the input witness cannot open a writable runtime. In-place legacy adoption still
+refuses before any I/O. No journal is replayed or rebound by input verification.
+
+Seven focused tests/zero skipped passed AppleARM, run
+`39bb9497-9b6f-442c-9c01-6bb1e4a9da9c`; all three storage compile-fail docs and
+all-target storage Clippy/fmt passed. The two manifest tests are all-target;
+the five descriptor/probe tests and new compile-fail are macOS/Linux only.
+Combined workspace132 nextest/zero skipped (run
+`cc60a3b7-577c-423f-a7d4-318692f69173`) and five separate workspace compile-fail
+docs pass on that host; additive discovery is serialized through owner5.
+Independent copy/backup, separately owned native namespace/profile/recovery,
+no-alias activation, crash/restart/relocation and later legacy-launch evidence
+remain REQUIRED and unfinished. No input tuple or successful probe grants those
+capabilities. Final cumulative/native4.7/4.11 gates stay open.

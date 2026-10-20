@@ -18,7 +18,10 @@ use std::{
     ffi::{OsStr, OsString},
     fs::File,
     io::{self, Read, Seek, SeekFrom, Write},
-    os::unix::{ffi::OsStrExt, fs::MetadataExt},
+    os::unix::{
+        ffi::{OsStrExt, OsStringExt},
+        fs::MetadataExt,
+    },
     path::{Component, Path},
     sync::atomic::{AtomicU64, Ordering},
 };
@@ -80,6 +83,13 @@ pub(crate) struct Directory {
     identity: FileIdentity,
 }
 impl Directory {
+    pub(crate) fn duplicate(&self) -> Result<Self> {
+        Self::from_file(
+            self.file
+                .try_clone()
+                .map_err(|e| StorageError::io("retain directory object", e))?,
+        )
+    }
     pub(crate) fn open(path: &Path) -> Result<Self> {
         let file: File = native::open(
             path,
@@ -101,7 +111,7 @@ impl Directory {
         let identity = FileIdentity::from_file(&file)?;
         Ok(Self { file, identity })
     }
-    fn child(&self, name: &OsStr) -> Result<Self> {
+    pub(crate) fn child(&self, name: &OsStr) -> Result<Self> {
         let file = native::openat(
             &self.file,
             name,
@@ -165,6 +175,36 @@ impl Directory {
             )),
             Ok(_) => self.open_regular(name, OFlags::RDONLY).map(Some),
         }
+    }
+
+    /// Enumerate this retained object with an independent directory cursor.
+    /// One unexpected entry is sufficient to refuse a closed-manifest proof;
+    /// input names remain lossless and never become cleanup authority.
+    pub(crate) fn entries(
+        &self,
+        limit: usize,
+        cancellation: &WorkCancellation,
+    ) -> Result<Vec<OsString>> {
+        let mut entries = Vec::new();
+        let directory = native::Dir::read_from(&self.file)
+            .map_err(|e| StorageError::io("enumerate anchored directory", e.into()))?;
+        for entry in directory {
+            if cancellation.is_cancelled() {
+                return Err(StorageError::Cancelled);
+            }
+            let entry =
+                entry.map_err(|e| StorageError::io("read anchored directory entry", e.into()))?;
+            let bytes = entry.file_name().to_bytes();
+            if matches!(bytes, b"." | b"..") {
+                continue;
+            }
+            if entries.len() >= limit {
+                return Err(StorageError::AdoptionInputChanged);
+            }
+            entries.push(OsString::from_vec(bytes.to_vec()));
+        }
+        entries.sort();
+        Ok(entries)
     }
 }
 
