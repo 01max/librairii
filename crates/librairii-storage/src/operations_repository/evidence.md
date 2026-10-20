@@ -159,3 +159,18 @@ errors must first be corrected in actual C. The positivity guard remains present
 in this regression-only contribution so an actual composed RED can establish the
 behavior before its separate scoped correction. No fixture, schema or generic
 storage source is changed.
+
+Actual temporary C2 `7bfb2af0379326a5a9762fc88c3020a709c5cf8a` (R regression
+input `dc3da601680465ad6127e93ac693dfb68f21aae3` plus retained D/S/E) ran exactly
+those two affected integration cases. Both explicit INSERTs succeeded; completion
+then returned `NotAdmitted(InvalidCommand)`. Result: 0 passed, 2 failed, 12 other
+cases intentionally filtered, exit 100; nextest run
+`e9636d77-1e0e-4676-b2e8-b841e30e7bc7`. The full 4,198-byte log was read and
+SHA256 verified as `ab1368d38eba61f52ffdece74497d507311999f7842faadca34418f8888ea157`.
+This is actual SQL RED, distinct from the earlier pre-test compiler failure.
+
+The dedicated production correction removes only the invented positive-item-ID
+guard. Exact signed item ID, operation, immutable input, typed terminal target,
+byte bounds and all atomic SQL/current-state/count guards remain unchanged.
+Both regression identities remain byte-identical. Updated composed GREEN and
+cumulative qualification are pending; no result is inferred from this fix alone.
