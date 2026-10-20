@@ -10,8 +10,8 @@ use std::{
 use windows_sys::Win32::Storage::FileSystem::{
     FILE_ATTRIBUTE_REPARSE_POINT, FILE_ATTRIBUTE_TAG_INFO, FILE_BASIC_INFO,
     FILE_FLAG_BACKUP_SEMANTICS, FILE_FLAG_OPEN_REPARSE_POINT, FILE_ID_128, FILE_ID_INFO,
-    FILE_READ_ATTRIBUTES, FILE_SHARE_READ, FILE_SHARE_WRITE, FILE_STANDARD_INFO,
-    FileAttributeTagInfo, FileBasicInfo, FileIdInfo, FileStandardInfo,
+    FILE_LIST_DIRECTORY, FILE_READ_ATTRIBUTES, FILE_READ_DATA, FILE_SHARE_READ, FILE_SHARE_WRITE,
+    FILE_STANDARD_INFO, FileAttributeTagInfo, FileBasicInfo, FileIdInfo, FileStandardInfo,
     GetFileInformationByHandleEx,
 };
 
@@ -191,12 +191,21 @@ pub(crate) fn query_identity(file: &File) -> Result<ObjectFacts> {
     })
 }
 
-/// Read-only terminal-object observation and no-delete-sharing pin, NOT a
+/// Readable terminal-object observation and no-delete-sharing pin, NOT a
 /// descriptor-relative ancestry/mutation capability. No reparse fallback.
+///
+/// Attribute-only access does not participate in Windows sharing checks. The
+/// data/list access is required to make the retained no-delete share effective;
+/// refusal to grant that access is an error, never a metadata-only fallback.
 pub(crate) fn metadata_witness(path: &Path, directory: bool) -> Result<(File, FileIdentity)> {
+    let read_access = if directory {
+        FILE_LIST_DIRECTORY
+    } else {
+        FILE_READ_DATA
+    };
     let file = OpenOptions::new()
         .read(true)
-        .access_mode(FILE_READ_ATTRIBUTES)
+        .access_mode(FILE_READ_ATTRIBUTES | read_access)
         .share_mode(FILE_SHARE_READ | FILE_SHARE_WRITE)
         .custom_flags(FILE_FLAG_OPEN_REPARSE_POINT | FILE_FLAG_BACKUP_SEMANTICS)
         .open(path)
@@ -212,7 +221,11 @@ pub(crate) fn metadata_witness(path: &Path, directory: bool) -> Result<(File, Fi
 mod tests {
     use super::*;
     use librairii_testkit::TestRoots;
-    use std::{error::Error, fs, io::Write};
+    use std::{
+        error::Error,
+        fs,
+        io::{Read, Write},
+    };
     type TestResult = std::result::Result<(), Box<dyn Error>>;
 
     #[test]
@@ -242,7 +255,26 @@ mod tests {
         let renamed = roots.library().join("renamed.bin");
         fs::write(&path, b"recoverable")?;
         let file = File::open(&path)?;
-        let (pin, identity) = metadata_witness(&path, false)?;
+        // The original attribute-only handle observes identity but does not
+        // establish a no-delete-sharing pin. Keep this control distinct from
+        // the actual readable pin and its unchanged exclusion assertions.
+        let attributes = OpenOptions::new()
+            .read(true)
+            .access_mode(FILE_READ_ATTRIBUTES)
+            .share_mode(FILE_SHARE_READ | FILE_SHARE_WRITE)
+            .custom_flags(FILE_FLAG_OPEN_REPARSE_POINT | FILE_FLAG_BACKUP_SEMANTICS)
+            .open(&path)?;
+        let original = query_identity(&attributes)?.identity;
+        fs::rename(&path, &renamed)?;
+        assert_eq!(query_identity(&attributes)?.identity, original);
+        fs::rename(&renamed, &path)?;
+        drop(attributes);
+
+        let (mut pin, identity) = metadata_witness(&path, false)?;
+        let mut bytes = [0; 11];
+        pin.read_exact(&mut bytes)?;
+        assert_eq!(&bytes, b"recoverable");
+        assert_eq!(identity, original);
         assert!(fs::rename(&path, &renamed).is_err());
         assert!(fs::remove_file(&path).is_err());
         assert_eq!(fs::read(&path)?, b"recoverable");
@@ -252,6 +284,18 @@ mod tests {
         fs::write(&path, b"replacement name")?;
         assert_ne!(metadata_witness(&path, false)?.1, identity);
         assert_eq!(fs::read(&renamed)?, b"recoverable");
+
+        let directory = roots.library().join("retained-directory");
+        let moved_directory = roots.library().join("moved-directory");
+        fs::create_dir(&directory)?;
+        let (pin, identity) = metadata_witness(&directory, true)?;
+        assert!(fs::rename(&directory, &moved_directory).is_err());
+        assert!(fs::remove_dir(&directory).is_err());
+        assert_eq!(query_identity(&pin)?.identity, identity);
+        drop(pin);
+        fs::rename(&directory, &moved_directory)?;
+        assert_eq!(metadata_witness(&moved_directory, true)?.1, identity);
+        fs::remove_dir(&moved_directory)?;
         Ok(())
     }
 

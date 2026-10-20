@@ -1047,3 +1047,36 @@ assertions and append this ledger. Directory durability, NtCreateFile child
 ownership/no-replace move, config replacement and full4.9 remain OPEN. No
 NtFlush substitute, unsupported WRITE_THROUGH claim, source/fixture change,
 physical Windows qualification, early4.11 review or merge is implied.
+
+### 4.9 correction: attribute-only access does not pin Windows names
+
+Actual published65ff native Windows job118909880578/run39504409923 compiled
+the four handle-query calls and ran97 nextest cases:96 passed, one failed,
+zero skipped. The retained-handle rename assertion at windows.rs246 failed:
+rename succeeded while the FILE_READ_ATTRIBUTES-only witness remained open.
+The other three new Windows identities passed, including reparse/hardlink and
+concurrent-query cases. This finite result does not qualify the failed pin or
+complete4.9. Original job log is retained at
+`/private/tmp/librairii-65ff-windows-native.log`, SHA256
+`2c1586047e36dde51197f3a20f94e1f15f06df965c329180244121f550b7c3b8`.
+
+The CreateFile contract exempts attribute-only access from sharing checks:
+https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-createfilew
+The safe std witness now requests READ_ATTRIBUTES plus READ_DATA for a file or
+LIST_DIRECTORY for a directory, retaining READ|WRITE sharing without DELETE.
+Denied data/list access refuses; there is no attribute-only fallback. No new
+FFI, graph edge, parent traversal, mutation or directory-flush claim is added.
+
+The existing native test keeps every rename/delete exclusion assertion. It now
+also contrasts an attribute-only handle that permits rename, reads exact bytes
+through the actual file pin, and checks directory rename/delete refusal until
+the actual list-directory handle is released. Its existing discovery identity
+is retained; no old assertion, test or target scope was removed. Original
+121be discovery-support ancestry is preserved. Corrected-head native Windows
+execution remains required; this AppleARM host cannot supply that evidence.
+
+Source-combined AppleARM cargo xtask check passed150 nextest/zero skips and six
+compile-fail docs, unchanged146 corpus/strict15/source19 and both graph/quality
+policies, run`85f9889b-746e-4f2a-8d64-fcb9c85a324c`; only this validation note
+was appended afterward. This host check excludes Windows-only source. It is
+not a green native rerun of the original failure or proof of directory durability.
