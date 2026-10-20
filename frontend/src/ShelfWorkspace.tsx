@@ -30,6 +30,12 @@ export default function ShelfWorkspace({catalog, id, revision, query, onQuery, c
     const [dialog, setDialog] = useState<'rename' | 'duplicate' | 'delete' | null>(null);
     const [name, setName] = useState('');
     const generation = useRef(0);
+    const shelfActions = useRef<HTMLDetailsElement>(null);
+    const closeShelfActions = () => {
+        if (!shelfActions.current) return;
+        shelfActions.current.open = false;
+        shelfActions.current.querySelector('summary')?.focus();
+    };
     const load = useCallback(async () => {
         const request = ++generation.current;
         try {
@@ -70,31 +76,49 @@ export default function ShelfWorkspace({catalog, id, revision, query, onQuery, c
     };
     if (!view) return <section><h2>{t('Shelf')}</h2>{error && <p role="alert"><OutcomeText text={error}/></p>}<button type="button" onClick={() => void load()}>{t('Retry')}</button></section>;
     return <section className="curated-workspace" aria-label={t('Curated Shelf')}>
-        <div className="heading"><div><h2>{view.shelf.name}</h2><p>{t('{0} approved stories · {1} unavailable', view.shelf.count, view.shelf.unavailableCount)}</p></div>
-            <div className="curated-actions">{(['rename', 'duplicate', 'delete'] as const).map((action) => <button key={action} type="button" disabled={busy}
-                onClick={() => {setName(action === 'rename' ? view.shelf.name : ''); setDialog(action);}}>{t(action === 'rename' ? 'Rename Shelf' : action === 'duplicate' ? 'Duplicate Shelf' : 'Delete Shelf')}</button>)}</div></div>
-        <div className="curated-actions"><button type="button" disabled={busy} onClick={() => setReviewOpen(true)}>{t('Review updates')}</button><button type="button" disabled={busy} onClick={() => setManageSources(true)}>{t('Manage sources')}</button></div>
-        <p>{t('Sources (any match): {0}', view.sources.filter((source) => source.active).map((source) => source.name).join(', ') || t('None'))}</p>
+        <header className="heading curated-heading">
+            <div><h2>{view.shelf.name}</h2>
+                <p>{t('{0} approved stories · {1} unavailable', view.shelf.count, view.shelf.unavailableCount)}</p>
+                <p className="curated-source-summary">{t('Sources (any match): {0}', view.sources.filter((source) => source.active).map((source) => source.name).join(', ') || t('None'))}</p>
+            </div>
+            <div className="curated-actions">
+                <button type="button" disabled={busy} onClick={() => setReviewOpen(true)}>{t('Review updates')}</button>
+                <button type="button" disabled={busy} onClick={() => setManageSources(true)}>{t('Manage sources')}</button>
+                <details className="curated-management" ref={shelfActions} onKeyDown={(event) => {
+                    if (event.key === 'Escape' && shelfActions.current?.open) {closeShelfActions();}
+                }} onBlur={(event) => {if (!event.currentTarget.contains(event.relatedTarget)) event.currentTarget.open = false;}}>
+                    <summary>{t('Shelf actions')}</summary>
+                    <div className="curated-management-menu">
+                        {(['rename', 'duplicate', 'delete'] as const).map((action) => <button key={action} type="button" disabled={busy}
+                            onClick={() => {setName(action === 'rename' ? view.shelf.name : ''); setDialog(action); closeShelfActions();}}>{t(action === 'rename' ? 'Rename Shelf' : action === 'duplicate' ? 'Duplicate Shelf' : 'Delete Shelf')}</button>)}
+                        <button type="button" disabled={busy} onClick={() => {setExclusionsOpen(true); closeShelfActions();}}>{t('Manage exclusions ({0})', view.exclusions.length)}</button>
+                    </div>
+                </details>
+            </div>
+        </header>
         {reviewOpen && <ShelfReview id={id} onClose={() => setReviewOpen(false)} onApplied={onMembershipChanged}/>}
         {manageSources && <ShelfSources id={id} sources={view.sources} collections={sourceOptions} onClose={() => setManageSources(false)} onChanged={onMembershipChanged}/>}
-        <div className="curated-actions">
-            <button type="button" disabled={exportBusy} onClick={() => onExport(new exporter.PreflightRequest({sourceType: 'curated_shelf', shelfIds: [id], query: {}}))}>{t('Export whole Shelf')}</button>
-            <button type="button" disabled={exportBusy} onClick={() => onExport(new exporter.PreflightRequest({sourceType: 'current_query', queryShelfId: id, query}))}>{t('Export current result')}</button>
-            <button type="button" disabled={exportBusy || !selected.length} onClick={() => onExport(new exporter.PreflightRequest({sourceType: 'selection', queryShelfId: id, shelfSelectionUuids: selected, query: {}}))}>{t('Export selection')}</button>
-            <button type="button" onClick={() => setExclusionsOpen(true)}>{t('Manage exclusions ({0})', view.exclusions.length)}</button>
+        <div className="curated-toolbar">
+            <div className="curated-actions">
+                <button type="button" disabled={exportBusy} onClick={() => onExport(new exporter.PreflightRequest({sourceType: 'curated_shelf', shelfIds: [id], query: {}}))}>{t('Export whole Shelf')}</button>
+                <button type="button" disabled={exportBusy} onClick={() => onExport(new exporter.PreflightRequest({sourceType: 'current_query', queryShelfId: id, query}))}>{t('Export current result')}</button>
+            </div>
+            <label className="curated-sort">{t('Sort stories')}<select value={manualOrder ? '' : query.sort} onChange={(event) => {onManualOrder?.(event.target.value === ''); if (event.target.value) onQuery({...query, sort: event.target.value as CollectionQuery['sort'], page: 1});}}>
+                <option value="">{t('Manual order')}</option><option value="name_asc">{t('Name A–Z')}</option><option value="imported_desc">{t('Newest imported')}</option></select></label>
         </div>
-        {flags.error && <p role="alert"><OutcomeText text={flags.error}/></p>}
-        {flags.notice && <p role="status">{flags.notice} {flags.canUndo && <button type="button" disabled={flags.pending} onClick={() => void flags.undo()}>{t('Undo')}</button>}</p>}
-        <BrokenToggle title={t('Selected stories')} disabled={flags.pending || !selectedStoryIDs.length}
-            broken={selectedStoryIDs.length > 0 && selectedStoryIDs.every((id) => Object.values(knownMembers).some((member) => member.story?.id === id && member.story.broken))}
-            onChange={(broken) => void flags.set(selectedStoryIDs, broken)}/>
         <div className="shelf-search"><label>{t('Refine this view')}<SearchInput value={query.name} onChange={(name) => onQuery({...query, name, page: 1})}/></label><TagSearchFilters catalog={catalog} query={query} onChange={onQuery}/></div>
-        <label>{t('Sort stories')}<select value={manualOrder ? '' : query.sort} onChange={(event) => {onManualOrder?.(event.target.value === ''); if (event.target.value) onQuery({...query, sort: event.target.value as CollectionQuery['sort'], page: 1});}}>
-            <option value="">{t('Manual order')}</option><option value="name_asc">{t('Name A–Z')}</option><option value="imported_desc">{t('Newest imported')}</option></select></label>
-        <p>{t('Refinements change this view only. Approved membership stays the same.')}</p>
+        <p className="curated-hint">{t('Refinements change this view only. Approved membership stays the same.')}</p>
+        {flags.error && <p className="flag-feedback dialog-error" role="alert"><OutcomeText text={flags.error}/></p>}
+        {flags.notice && <div className="flag-feedback" role="status"><span>{flags.notice}</span>{flags.canUndo && <button type="button" disabled={flags.pending} onClick={() => void flags.undo()}>{t('Undo')}</button>}</div>}
         {error && <p role="alert" className="dialog-error"><OutcomeText text={error}/></p>}
-        <div className="curated-actions"><button type="button" disabled={busy || !selected.length}
-            onClick={() => void act(async () => {const result = await RemoveStoriesFromShelf(id, selected); if (!result.error) setSelected([]); return result;})}>{t('Remove selected and exclude from suggestions')}</button></div>
+        {selected.length > 0 && <div className="curated-actions curated-selection" aria-label={t('Selected stories')}>
+            <button type="button" disabled={exportBusy} onClick={() => onExport(new exporter.PreflightRequest({sourceType: 'selection', queryShelfId: id, shelfSelectionUuids: selected, query: {}}))}>{t('Export selection')}</button>
+            <BrokenToggle title={t('Selected stories')} disabled={flags.pending || !selectedStoryIDs.length}
+                broken={selectedStoryIDs.length > 0 && selectedStoryIDs.every((id) => Object.values(knownMembers).some((member) => member.story?.id === id && member.story.broken))}
+                onChange={(broken) => void flags.set(selectedStoryIDs, broken)}/>
+            <button type="button" disabled={busy}
+                onClick={() => void act(async () => {const result = await RemoveStoriesFromShelf(id, selected); if (!result.error) setSelected([]); return result;})}>{t('Remove selected and exclude from suggestions')}</button>
+        </div>}
         <ul className={`curated-members curated-${viewMode}`}>{view.members.map((member) => <li key={member.uuid} className={member.story?.broken ? 'is-broken' : ''}>
             <div className="curated-member-info">
                 <label><input type="checkbox" checked={selected.includes(member.uuid)} disabled={busy} onChange={() => setSelected(selected.includes(member.uuid) ? selected.filter((uuid) => uuid !== member.uuid) : [...selected, member.uuid])}/><span>{member.story?.title ?? member.cachedTitle}</span></label>

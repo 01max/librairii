@@ -244,6 +244,7 @@ async function assertCuration(page, origin, viewport) {
     await page.getByRole('combobox', {name: 'Source story'}).waitFor();
     await check('source detachment');
     await page.keyboard.press('Escape');
+    await page.locator('.curated-management summary').click();
     await page.getByRole('button', {name: 'Manage exclusions (1)'}).click();
     await check('exclusions');
     await page.keyboard.press('Escape');

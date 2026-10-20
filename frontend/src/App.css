@@ -2823,6 +2823,26 @@ select:focus-visible {
 /* Curated membership extends the existing library panels. */
 .curated-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 12px 0; }
 .curated-workspace { max-width: 1100px; margin: auto; }
+.curated-workspace .curated-heading { align-items: center; gap: 12px; margin: 18px 0 12px; }
+.curated-heading h2 { font-size: 27px; letter-spacing: -.03em; }
+.curated-heading p { color: #59647a; font-size: 11px; line-height: 1.5; }
+.curated-heading .curated-source-summary { margin-top: 3px; }
+.curated-heading .curated-actions, .curated-toolbar .curated-actions { margin: 0; }
+.curated-toolbar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px 16px; margin-bottom: 12px; }
+.curated-workspace .curated-sort { margin: 0; font-size: 12px; }
+.curated-workspace .pagination { color: #59647a; }
+.curated-workspace .curated-hint { margin: 6px 0 12px; color: #59647a; font-size: 11px; }
+.curated-selection { padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--white); }
+.curated-workspace .curated-selection .broken-toggle { display: inline-flex; gap: 8px; margin: 0 8px; }
+.curated-management { position: relative; font-size: 13px; }
+.curated-management summary { display: flex; align-items: center; gap: 8px; min-height: 36px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--white); font-weight: 600; cursor: pointer; list-style: none; }
+.curated-management summary::-webkit-details-marker { display: none; }
+.curated-management summary::after { content: '⌄'; }
+.curated-management summary:hover { border-color: var(--blue); }
+.curated-management summary:focus-visible { outline: 3px solid var(--blue); outline-offset: 3px; }
+.curated-management-menu { position: absolute; right: 0; z-index: 20; display: grid; gap: 4px; min-width: 190px; max-width: calc(100vw - 48px); padding: 6px; margin-top: 6px; border: 1px solid var(--line); border-radius: 8px; background: var(--white); box-shadow: 0 8px 24px #17223d1a; }
+.curated-management-menu button { text-align: left; font-size: 13px; }
+@media (max-width: 600px) { .curated-heading .curated-actions { margin-top: 10px; } }
 .curated-workspace label, .curated-dialog label { display: flex; align-items: center; gap: 8px; margin: 10px 0; }
 .curated-workspace input[type=search], .curated-dialog input:not([type=checkbox]) { min-width: 0; max-width: 100%; padding: 8px; border: 1px solid #d9dce3; border-radius: 8px; }
 .curated-dialog { max-width: 760px; max-height: 85dvh; overflow: auto; }
@@ -2887,8 +2907,10 @@ select:focus-visible {
 .tag-filter-options select { margin-left: auto; padding: 6px; border: 1px solid var(--line); border-radius: 6px; background: white; color: var(--ink); }
 .tag-filter-options input { accent-color: var(--blue); }
 .tag-filter-actions { display: flex; justify-content: space-between; gap: 10px; }
-.shelf-search { display: flex; align-items: end; flex-wrap: wrap; gap: 12px; }
-.shelf-search > label { display: grid; flex: 1; gap: 6px; font-size: 13px; }
+.shelf-search { display: flex; align-items: end; flex-wrap: wrap; gap: 8px; }
+.curated-workspace .shelf-search > label { display: grid; flex: 1; min-width: 140px; gap: 4px; margin: 0; font-size: 12px; }
+.curated-workspace .shelf-search input { height: 36px; }
+.shelf-search .tag-filter-trigger { height: 36px; }
 @media (max-width: 560px) { .top { flex-wrap: wrap; } .top .search { flex-basis: 100%; } .tag-filter-panel { left: 0; right: auto; } }
 
 /* Shared action controls; navigation, covers and switches keep their own shape. */

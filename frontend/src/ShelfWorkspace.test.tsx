@@ -45,6 +45,7 @@ test('protection and exclusions change only through explicit controls', async ()
     const user = userEvent.setup(); mount();
     await user.click(await screen.findByRole('button', {name: 'Protect First'}));
     expect(SetShelfStoryProtected).toHaveBeenCalledWith(7, 'one', true);
+    await user.click(screen.getByText('Shelf actions', {exact: true}));
     await user.click(screen.getByRole('button', {name: 'Manage exclusions (1)'}));
     expect(ClearShelfExclusion).not.toHaveBeenCalled();
     await user.click(screen.getByRole('button', {name: 'Allow suggestions for Excluded story'}));
