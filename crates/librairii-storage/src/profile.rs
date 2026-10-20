@@ -671,6 +671,11 @@ impl NativeProfileStore {
     }
 }
 
+#[cfg(any(target_os = "macos", target_os = "linux"))]
+pub(crate) fn encoded_document(profile: &Profile) -> Result<ProfileDocument> {
+    ProfileDocument::decode(&encode(profile)?)
+}
+
 fn encode(profile: &Profile) -> Result<Vec<u8>> {
     let json = serde_json::to_string_pretty(profile).map_err(|_| StorageError::InvalidProfile)?;
     // Match encoding/json's default HTML/JavaScript-safe string spelling.

@@ -255,6 +255,7 @@ mod unix {
             .err()
             .ok_or("existing root must refuse")?;
         assert!(failed.retained_root().is_none());
+        assert_eq!(failed.attempted_target(), Some(occupied.as_path()));
         assert_eq!(
             fs::read(occupied.join("unowned"))?,
             b"never replace or purge"
@@ -265,6 +266,7 @@ mod unix {
             .err()
             .ok_or("source overlap must refuse")?;
         assert!(matches!(failed.storage_error(), StorageError::PathEscape));
+        assert!(failed.attempted_target().is_none());
         assert!(!nested.exists());
         let cancelled = WorkCancellation::default();
         cancelled.cancel();
@@ -275,6 +277,7 @@ mod unix {
             .ok_or("cancelled copy must refuse")?;
         assert!(matches!(failed.storage_error(), StorageError::Cancelled));
         assert!(failed.retained_root().is_none());
+        assert!(failed.attempted_target().is_none());
         assert!(!target.exists());
         assert_eq!(bytes(&root)?, before);
         fs::write(

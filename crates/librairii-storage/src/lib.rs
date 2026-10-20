@@ -9,6 +9,7 @@ pub mod identity;
 pub mod layout;
 pub mod migrations;
 pub mod platform;
+pub mod portability;
 pub mod profile;
 
 pub use error::{Result, StorageError};

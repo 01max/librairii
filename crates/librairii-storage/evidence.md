@@ -26,7 +26,7 @@ evidence, not an additional checklist or acceptance of unfinished work.
 |4.7|OS lease through close, refuse unproven legacy exclusion, verified independent adoption|Partial `2fb7c0126b7e1b10f46d5cd5326e6e0809b4d4cb`: fresh-root cooperative lease/refusal; closed-input verification `d8b39e0633a0d6a4a335343ce07a66a5ed20f8c4`; inactive independent-copy phase follows. Native profile/recovery activation and restart/relocation qualification remain pending|
 |4.8|Distinct no-clobber/config-replace/durable-flush effects and Unix races|Partial `b9148a770f896445b36233452bef7a59e84a60d6`: streaming; descriptor-relative Unix publication/config/flush mechanisms host verified `d6a966e90e14bd0898b49b8469133985d6cb1fee`. Other native qualification and complete reconciliation/adoption remain pending|
 |4.9|Windows effects/path/share-mode implementation plus actual-target evidence|Pending|
-|4.10|Portability preflight and identity-verified rebinding without foreign cleanup|Pending|
+|4.10|Portability preflight and identity-verified rebinding without foreign cleanup|Partial foreign profile inspection/proposed document rebinding follows; filename/collation/filesystem and recovery-path qualification remain pending|
 |4.11|Independent exact-head AO review, schema018 Go→Rust reopen/archive hashes, all cumulative/provider checks|Open gate|
 
 Fixture authority: admitted146-file PR39 corpus at
@@ -791,3 +791,41 @@ all-target Clippy/fmt pass. Additive owner5 discovery and current provider/nativ
 checks remain separate. Safe native profile/recovery rebinding and activation,
 crash/restart/relocation and unmodified legacy-launch evidence are still REQUIRED
 before independent adoption can be declared complete. Section17 stays separate.
+
+### Partial 4.10: foreign profile inspection and rebinding data
+
+`ForeignProfile` separately inspects explicit POSIX vs Windows drive/UNC root
+syntax in the strict64KiB version1 wire format. It retains original bytes and
+raw UUID/root spelling without path resolution, profile discovery, defaults,
+library opening or journal effects. Extended/device namespaces are refused for
+rebinding; ordinary absolute syntax alone is not native Windows path or FS
+qualification. Existing native-host `ProfileDocument` validation is unchanged.
+
+`prepare_rebinding` borrows an actual verified IndependentCopy/lease, revalidates
+its complete tree and EXACT raw UUID spelling, and prepares a distinct native-host
+profile DOCUMENT with the copied root. Language/version/complete/recovering and
+raw UUID are preserved; source bytes and source authority remain unchanged.
+An unrepresentable native byte root refuses instead of lossy conversion/renaming.
+There is no publish/runtime/cleanup method: actual native namespace/activation
+and copied journal rebinding/refusal remain separate requirements. No operation
+history/domain SQL is inspected or interpreted as cleanup authority.
+
+Two focused tests pass/zero skipped on AppleARM, run
+`4ff5e36e-a079-4436-a902-3ae755eb91bf`, and storage all-target Clippy/fmt pass.
+The all-target pure test covers explicit syntax, unknown/version/language/
+trailing/size refusal with original bytes retained. The Unix copy test verifies
+raw-ID case mismatch, cancellation, unchanged source state/history/profile,
+no created settings/recovery/journal and refusal after an unlisted candidate
+file appears; it preserves that unowned file. This does NOT qualify filenames,
+case/Unicode collisions, native Windows I/O, copied relocation cleanup or full4.10.
+Additive discovery/current combined/native/final4.11 gates remain open.
+
+Inactive-copy implementation is retained in
+`c4a3d0d914db88b4a2e18302f4eb907d51ca47c1`; the partial foreign-profile document
+work is `d19b113b497d2e18a5477dc4ca606adcbfb7858a`. Copy failure now separately
+retains the attempted target NAME even if mkdir succeeded but obtaining a child
+handle failed. Absence of a retained child/lease is never claimed as no-effect
+proof; observed names confer no cleanup/activation/retry authority. Existing
+collision, overlap, precancel and retained-lease failure tests assert those
+distinct facts (focused11 pass, run`cbcf591c-7046-403b-a0ea-ef5bd72ab164`,103
+tests intentionally filtered). Storage all-target Clippy/fmt pass unchanged.
