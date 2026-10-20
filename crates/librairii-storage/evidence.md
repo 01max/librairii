@@ -446,3 +446,73 @@ post-publication/trash flush uncertainty; retained actual witnesses; queued
 ordinary-write fencing plus critical readback/close; poisoned profile restart.
 Owner5 owns additive discovery scopes and any combined support checks. All
 canonical4 checkboxes and full4.11/native gates remain pending admission.
+
+### Windows exact-SQL failure investigation (4.2/4.5 follow-up)
+
+Original provider Windows d6a966e run39478703189/job118821563565 is retained
+FAIL:72 executed,67 passed,5 failed. The embedded-SQL byte comparison at
+tests/migrations.rs:25 reports CRLF versus the admitted LF corpus; the prefix
+inspection returns ForeignSchema. The three other observed RED assertions are
+pending-prefix open (expected DirectoryDurabilityUnavailable), foreign-key
+corruption (expected IntegrityFailed), and future/gapped ledger (expected
+MigrationConflict). Their original assertions did not print the actual error,
+so those three causes are not claimed independently established by that log.
+They now retain the exact expected variants and print the actual refusal when
+they fail. No SQL, schema comparator, expected outcome or target skip changed.
+
+At consumed a2a2f7791d24c9e479bcb0b9a998ab9f6ab18a43, both storage/migrations
+and internal/database/migrations SQL have unspecified text/eol attributes;
+preservation/** is already byte-preserving. Owner5 alone owns the narrowly
+scoped attribute/fresh-checkout repair. Each corrected Windows test result
+remains required; ARM observations cannot qualify the Windows refusal branch.
+
+### Partial 4.4: private frozen normalization translation
+
+Consumed ORIGINAL owner5 support d6a966e→4910704→c6bc745→a2a2f7791d24c9e479bcb0b9a998ab9f6ab18a43
+by fast-forward, retaining its source/notices checker, origin repinning and
+additive discovery. Diagnostic follow-up ade1a38b9d4587d7d3f9b2b5ef84177c9b4d1621
+keeps every Windows expectation unchanged and exposes actual refusal errors.
+
+Private migrations/compatibility/** translates the specifically approved
+Go1.26.5/xtext0.43.0 Unicode15 source/data: fixed UTF8 trie and decomposition
+tables, original-character stream-safe partition BEFORE CCC ordering, Hangul,
+the frozen1616 full-fold map, Mn-only removal and Go whitespace behavior. No
+modern Unicode crate/composed stream_safe approximation or fixture alias is
+used. The module is currently test-only; schema-only DatabaseOpen is unchanged.
+CLDR32 Default parsing, strict v1–v5 query migration and the SEPARATE explicit
+same-writer Collection Inspect/Open projection are still unfinished. This is
+not a claim that the24 SQL-only payload/version/revision differences are closed.
+
+The private source-manifest version1 records all9 actual derivative/glue/recipe
+files, precise original identities/header hashes, changed representations and
+required notices. Owner5's source policy passes. Product licensing is unchanged;
+no language/DNS/TLD data is included in this step. Authenticated index SHA256 is
+10ea8fe193c594ce153ae7a1734c41ab80c9d406cc7ea314c8c7c471b7a92a99;
+xtext ZIP b75131f628f6e2e4892fd638d33127e952a5027775e0162b94ba069cb4e13863.
+
+`verify_normalization.py` runs its authored qualification-only Go template in a
+NEW independent git archive of exact73a93303/treee797e9d, with authenticated
+487-member ZIP materialization, external modfile, pinned offline Go1.26.5 and
+private caches. Before/after hashes retain all436 original archive files and
+all487 module members; the frozen oracle, cache ZIP and selected Go sources
+are unchanged. It never changes preservation inputs or supplies runtime Go.
+Generated normalization-reference.json SHA256
+3d1dfc4461b491a275168dfa07f77842d03df29e74384492b4841344c571c37e
+retains actual tool/template/source identities and framed reference digests.
+
+All1,112,064 valid scalars match actual Go for fold/NFKD/final Normalize/CCC/Mn/
+Space. All147,228 sequences match input/NFKD/final Normalize digests, including
+57 CCC/Mn representatives around12 boundaries and all18,019 decomposing or
+backward-interacting scalars on both sides of29/30/31 nonstarters. The published
+surviving-Mc counterexample (report7c41d90d…e375) has an explicit final-key/raw-NFKD
+regression. These are scoped finite tests plus a source translation, not a proof
+for every arbitrary string, language parser, Collection result or native host.
+
+ARM focused final run1ae76f1c-57f8-41c4-99f3-3df99cfc45d7 passes all3 new
+normalization tests. Prior cumulative `cargo nextest run --workspace --all-targets
+--locked` run880ce876-948f-4408-a54e-9a42378709ee passed113/zero skipped (includes
+the3 benchmark checks and preceding39,114-sequence reference); final focused
+run expanded that reference to147,228. Four separate compile-fail docs, exact146
+preservation corpus, private-source policy, storage all-target Clippy and fmt
+pass. Owner5 retains additive test discovery, root files and any combined check
+support. Windows corrected-head execution and full4.11 remain open.

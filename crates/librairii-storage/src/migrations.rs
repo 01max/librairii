@@ -6,6 +6,12 @@
 use crate::{Result, StorageError};
 use rusqlite::{Connection, OptionalExtension};
 
+// The private compatibility implementation is qualified independently before
+// activation by the separate explicit Collection-open projection. Schema-only
+// open does not call it or rewrite legacy payloads.
+#[cfg(test)]
+mod compatibility;
+
 pub const SCHEMA_PRODUCT: &str = "librairii";
 pub const SCHEMA_FAMILY: &str = "wails-go-sqlite";
 pub const LATEST_VERSION: u32 = 18;

@@ -85,10 +85,13 @@ fn future_and_gapped_ledgers_are_not_relocated_or_replaced() -> TestResult {
         }
         drop(connection);
         let before = fs::read(library.layout().database())?;
-        assert!(matches!(
-            Database::open_isolated(&library),
-            Err(StorageError::MigrationConflict)
-        ));
+        let error = Database::open_isolated(&library)
+            .err()
+            .ok_or("a future/gapped ledger unexpectedly opened")?;
+        assert!(
+            matches!(&error, StorageError::MigrationConflict),
+            "future={future}: actual open refusal {error:?}"
+        );
         assert!(matches!(
             library.preserve_foreign_schema(),
             Err(StorageError::MigrationConflict)
@@ -238,10 +241,15 @@ fn compatible_prefix_upgrades_keep_verified_backup_and_archive_bytes() -> TestRe
         ); // main + one retained backup
     }
     #[cfg(not(unix))]
-    assert!(matches!(
-        Database::open_isolated(&library),
-        Err(StorageError::DirectoryDurabilityUnavailable)
-    ));
+    {
+        let error = Database::open_isolated(&library)
+            .err()
+            .ok_or("a pending prefix unexpectedly bypassed directory durability refusal")?;
+        assert!(
+            matches!(&error, StorageError::DirectoryDurabilityUnavailable),
+            "actual pending-prefix open refusal {error:?}"
+        );
+    }
     assert_eq!(fs::read(archive)?, b"original archive bytes\0\xff");
     Ok(())
 }
@@ -256,10 +264,13 @@ fn foreign_key_corruption_is_preserved_and_never_upgraded_or_relocated() -> Test
     connection.execute("UPDATE story_archives SET story_id=424242", [])?;
     drop(connection);
     let before = fs::read(library.layout().database())?;
-    assert!(matches!(
-        Database::open_isolated(&library),
-        Err(StorageError::IntegrityFailed)
-    ));
+    let error = Database::open_isolated(&library)
+        .err()
+        .ok_or("a foreign-key-corrupted database unexpectedly opened")?;
+    assert!(
+        matches!(&error, StorageError::IntegrityFailed),
+        "actual corrupt-database open refusal {error:?}"
+    );
     assert!(matches!(
         library.preserve_foreign_schema(),
         Err(StorageError::IntegrityFailed)
