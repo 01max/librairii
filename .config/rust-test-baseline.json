@@ -649,6 +649,26 @@
     {
       "suite": "librairii-storage",
       "name": "migrations::compatibility::language::tests::selected_default_cases_match_actual_go_and_dns_omission_reference"
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "migrations::compatibility::normalization::tests::frozen_json_key_lowercase_and_simple_orbits_preserve_distinct_rules"
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "migrations::collection_codec::tests::wire_keys_nulls_utf8_surrogates_and_integer_lexemes_are_go_compatible"
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "migrations::collection_codec::tests::strict_versions_references_and_retired_broken_order_prevent_broadening"
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "migrations::collection_codec::tests::canonical_wire_order_budgets_and_repeated_normalization_match_source"
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "migrations::collection_codec::tests::strict_codec_decode_and_migrate_match_actual_frozen_go_cases"
     }
   ]
 }
