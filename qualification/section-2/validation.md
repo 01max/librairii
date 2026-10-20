@@ -97,3 +97,39 @@ The addressed inline thread is resolved and partial code approval at558b2b4 is
 retained. New2.10 code needs another native review of the pushed final head.
 PR38 stays draft/unmerged; host/access, licensing, physical tests, clean-host
 packages, corpus admission/resource ceilings and toolkit selection remain open.
+
+## Admitted corpus and required toolchain correction
+
+This snapshot supersedes the provisional admission status above. PR39 final
+`1cd22443cae3b548bb7f9b3fb2435dcd73c3c65c` is admitted through integration merge
+`9a6c1c116d9df726a061ad6aac3955df4ed41263`, included here by preserved merge
+`e28e0e66ebb69dbcea4402d462e146bb52448ff8`. No section1 file was edited locally.
+
+Native review714ecc57 of87d6ecd required one wrapper correction. Dedicated fix
+`4a0002ac55243e134bd61c0e206f276be9c8468f` uses the channel read from the nested
+rust-toolchain.toml through explicit `rustup run`, with the same working directory
+for Cargo execution and Cargo/rustc provenance. A real-command Python regression
+sets the caller override to1.97.1 and verifies both pinned tools remain1.99.1.
+No fake compiler, global default change or new installation is used for that test.
+
+From the application checkout, the documented root invocation was run with normal
+Homebrew rustup proxies on PATH, the isolated Cargo cache, and no RUSTUP_TOOLCHAIN
+or RUSTUP_HOME override. Global `rustup show active-toolchain` stayed stable/default;
+`rustup run stable rustc --version` reported1.97.1 before and after. The report
+records actual Cargo1.99.1 and rustc1.99.1. Python3.11+ uses standard tomllib.
+
+Admitted-input consumer/evidence commit `d3a640c0cf794e3160ca5ff443c76f67e0013250`
+verifies all146 manifest file lengths/SHA256 and exports87 selected inputs to temp.
+Two full report runs are identical. All19 database before/online-backup snapshots
+and20 archive observations remain as recorded;24 SQL-only Collection fields and
+six independent Unicode filename discrepancies remain exact and exit2. The
+corrected representative database has a new verified byte hash and matching
+semantic snapshot. Profiles/relocation evidence is byte-verified, never replayed.
+
+Current-base cumulative validation:7/7 locked/offline nextest with GUI and7/7
+without defaults, separate GUI doctests (zero examples), five Python tests,
+rustfmt, all-target GUI Clippy warnings-denied, and debug/release controller plus
+actual-widget regressions all pass. No assertions were removed. Native review
+and provider CI must cover the next pushed final head. Mandatory physical,
+host/access, licensing, full codec/classification/resource and toolkit-selection
+gates remain open; PR38 stays partial/draft/unmerged.

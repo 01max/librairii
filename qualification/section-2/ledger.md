@@ -7,6 +7,8 @@ Branch `rust/rewrite-02-feasibility-toolkit`, targeting only
 `41267f6c09cb392371fdb17310914d9507a9d318` merged via `6668d0f54b8a8f03bb7e9ce36b263951db177cd7`.
 Original task SHAs are retained. Initial research commits without task trailers
 have dedicated task-trailed follow-ups; neither history nor evidence was rewritten.
+Admitted section1 integration `9a6c1c116d9df726a061ad6aac3955df4ed41263` is now
+included through merge `e28e0e66ebb69dbcea4402d462e146bb52448ff8`.
 
 No external OpenSpec checkbox was changed. These statuses describe evidence,
 not completed toolkit qualification. The separate local spec repository was not
@@ -24,15 +26,15 @@ the latter changes only arrive from the authorized integration merge.
 | 2.7 | Partial ARM normal/explicit CPU process smoke; no GPU failure | renderers.md |
 | 2.8 | Partial: public component/controller route passes ARM | regression.md |
 | 2.9 | Diagnostic subset only; retained budgets not all measured | performance.md |
-| 2.10 | Partial:7 Rust +4 comparison tests; provisional corpus retains24 SQL +6 filename differences | data-feasibility.md, corpus-observations.json, tests/, examples/ |
+| 2.10 | Partial:7 Rust +5 wrapper/comparison tests; admitted corpus retains24 SQL +6 filename differences | data-feasibility.md, corpus-observations.json, tests/, examples/ |
 | 2.11 | Local unsigned ARM DMG only; clean-host/other packages pending | packages.md, package-macos.py |
 | 2.12 | Conditional fallback not triggered; no established mandatory toolkit failure | fallback.md |
 | 2.13 | Partial implementation approved at558b2b4; new final-head review and mandatory qualification still pending | selection-gate.md |
 
-Task1 goldens are in PR39; its relocation-manifest correction and overall corpus
-admission remain pending. The2.10 experiment pins its provisional e7c771b input
-without admitting that contract. Empty SQL prefixes, populated snapshots and
-decoder capability results must not be relabelled full corpus parity.
+Task1 PR39 is admitted at1cd2244 and merged through9a6c1c1 with146 corrected corpus
+files. The2.10 consumer now pins that exact final input; its e7c771b observations
+remain in prior commit history. Empty SQL prefixes, populated snapshots and
+decoder capability results must not be relabelled domain or full corpus parity.
 Root Cargo/toolchain/CI owner librairii-5 received pins/results; this nested spike
 does not finalize that owner's graph or prevent eligible core/storage work.
 
@@ -59,6 +61,8 @@ does not finalize that owner's graph or prevent eligible core/storage work.
 | Research / integration | [`6668d0f54b8a`](https://github.com/01max/librairii/commit/6668d0f54b8a8f03bb7e9ce36b263951db177cd7) | chore(qualification): merge current integration CI support |
 | 2.10 | [`954a951ab51e`](https://github.com/01max/librairii/commit/954a951ab51e38eeac38ee67de0f288a4d135e5a) | style(qualification): format SQLite extension probe |
 | 2.10 | [`a3a74a3da408`](https://github.com/01max/librairii/commit/a3a74a3da408c572e9e6b3fdb91dc6c4fe53ee56) | test(qualification): compare provisional task 2.10 corpus; retain24 SQL +6 Unicode-name differences |
+| Research / integration | [`e28e0e66ebb6`](https://github.com/01max/librairii/commit/e28e0e66ebb69dbcea4402d462e146bb52448ff8) | chore(qualification): merge admitted section one contract |
+| 2.10 | [`d3a640c0cf79`](https://github.com/01max/librairii/commit/d3a640c0cf794e3160ca5ff443c76f67e0013250) | test(qualification): consume admitted task one corpus; verify146 file hashes, retain30 differences |
 
 Later ledger/validation-only commits can be found in PR history. Exact review-ready
 head is sent after pushing; it cannot be embedded as its own commit hash here.
@@ -69,3 +73,4 @@ Scoped review fixes must get new commits and be added below, never squash/rebase
 | Finding | Fix SHA | Evidence / status |
 | --- | --- | --- |
 | PR38 P2, comment4326316702, checkbox state after actual toggle/Apply | [`31ccd9e`](https://github.com/01max/librairii/commit/31ccd9e) | Writable two-way decision properties; actual widget Space→Apply→unchecked twice through public in-process events. Regression failed before correction and passes debug/release afterward. [Thread resolved with evidence](https://github.com/01max/librairii/pull/38#discussion_r4326422310); partial native code approval at558b2b4. New corpus code requires new final-head review; no toolkit qualification. |
+| PR38 P2, comment4326769282, wrapper compiler selection/provenance | [`4a0002ac5524`](https://github.com/01max/librairii/commit/4a0002ac55243e134bd61c0e206f276be9c8468f) | Same explicit nested rustup channel and cwd for execution/Cargo/rustc provenance. Real-tool regression with older caller override passes; root invocation under unchanged stable1.97.1 records1.99.1. Admitted corpus regenerated in d3a640c; final-head rerun required. |
