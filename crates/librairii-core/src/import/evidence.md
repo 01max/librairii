@@ -121,7 +121,39 @@ can transfer without holding custody exclusion through every report retry;
 needed generation/resources remain owned until actual runtime drain. No API
 implementing that protocol is supplied here.
 
-Original partial5.8 commit SHA is recorded in the next scoped evidence update.
-Trailer: `OpenSpec-Task: 5.8`. All full5.N/5.10 remain open. Final union discovery
+Original partial5.8 commit:
+`c5ef496d6203a11024b9a4075dbf0280ec9f01cd`
+(`feat(import): retain orthogonal reported facts and errors`,
+`OpenSpec-Task: 5.8`). All full5.N/5.10 remain open. Final union discovery
 must cover every actual new shipping test and all prior admitted IDs; the two
 independent temporary suffix comparisons are not shipping baseline entries.
+
+## Original implementation/support SHA index
+
+| Partial task / support | Original full SHA |
+|---|---|
+|5.1 supplied-fact dispatch/codes | `6ec300c6a5dfadfd295198d08618ad3ae5920c79` |
+|5-owned exact-SHA export/discovery support | `daef6c5d8d4ed8cc056a059630b7da2cc72f34a8` |
+|5.2 supplied entry/path/duplicate/accounting | `53dbf76711c5f7b53fa1d462573dfd023569fe49` |
+|5.3 raw/typed UUID and required entries | `2dba142d12066e8d47d35243e6ceb2076a6e1a47` |
+|5.8 reported facts and nested/independent errors | `c5ef496d6203a11024b9a4075dbf0280ec9f01cd` |
+
+All four implementation commits are Conventional Commits with their own
+OpenSpec-Task trailer. The required ledger-recording commit does not contain
+its own self-referential content hash. No implementation SHA is squashed,
+rebased away or replaced by later review/support/evidence commits.
+
+Current scoped source results:22 import tests passed,10 unrelated tests
+explicitly filtered, all-target core Clippy-Dwarnings passed and scoped
+rustfmt passed on1.99.1. Full mandatory runs must have no filtered/skipped
+required tests. Source-free startup PATH failures are not code/test results.
+
+Final readiness is STILL PENDING: reviewed/admitted foundation path repair
+and actual then-current global integration;5-owned UNION required-test IDs
+for all22 new tests plus all24 previously admitted assertions; final combined
+locked build/fmt/Clippy/nextest+separate doctests/146fixture+strictPython/both
+supply-chain graphs; cumulative make check/frontend release/build and provider
+Go/Linux/native/focused CI; independent native review of the exact ready head.
+Neither owner's daef28-test run nor the extra temporary suffix checks supplies
+these later-head gates. All full5.1–5.10 remain open; no task completion or
+merge authority is claimed.
