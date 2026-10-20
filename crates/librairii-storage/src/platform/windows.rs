@@ -125,7 +125,11 @@ pub(crate) fn open_read_child<'lease>(
         SecurityQualityOfService: std::ptr::null(),
     };
     let mut completion = IO_STATUS_BLOCK {
-        Anonymous: IO_STATUS_BLOCK_0 { Status: 0 },
+        // Initialize the full pointer-width union storage, including the bytes
+        // above its narrower NTSTATUS member on 64-bit Windows. No union read.
+        Anonymous: IO_STATUS_BLOCK_0 {
+            Pointer: std::ptr::null_mut(),
+        },
         Information: 0,
     };
     let mut handle = std::ptr::null_mut();

@@ -1206,3 +1206,9 @@ policies, run`17cef1d9-964f-4897-ae55-118d793a49ce`; only this validation note
 was appended afterward. Windows-only code/tests were excluded by that host;
 two new source-defined Windows identities still need additive discovery and
 actual native compilation/execution. No old native result is carried forward.
+
+Follow-up buffer review initializes IO_STATUS_BLOCK's union with its NULL
+pointer member, covering its full pointer width rather than only the narrower
+NTSTATUS member on x64. No union value is read in Rust, no API/control flow
+changes, and no new unsafe scope is introduced. The existing host run excludes
+this Windows-only refinement; actual native compilation/execution remains open.
