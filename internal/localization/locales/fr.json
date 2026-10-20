@@ -439,6 +439,7 @@
   "Create Shelf": "Créer une étagère",
   "Select Shelf {0} for export": "Sélectionner l’étagère {0} pour l’export",
   "Move Shelf {0} up": "Monter l’étagère {0}",
+  "Move Shelf {0} down": "Descendre l’étagère {0}",
   "Export selected Shelves": "Exporter les étagères sélectionnées",
   "Refine this view": "Affiner cette vue",
   "Library & filters": "Bibliothèque et filtres",

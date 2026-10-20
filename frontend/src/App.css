@@ -472,6 +472,8 @@ select:focus-visible {
     opacity: .55;
 }
 
+.curated-sidebar .saved:not(:empty) ~ button { margin-top: 9px; }
+
 .shelf-save {
     margin-top: 9px;
 }

@@ -1983,16 +1983,36 @@ function App() {
                         </div>
                     ))}
                 </nav>
-                <section aria-label={t('Shelves')}>
-                    <div className="caption">{t('Shelves')}</div><button type="button" className="manage" disabled={applicationState !== 'ready'} onClick={() => setCreateShelfUUIDs([])}>{t('Create Shelf')}</button>
-                    {curatedShelves.map((shelf, index) => <div key={shelf.id}><label><input type="checkbox" checked={selectedCuratedIDs.includes(shelf.id)} aria-label={t('Select Shelf {0} for export', shelf.name)} onChange={() => setSelectedCuratedIDs(selectedCuratedIDs.includes(shelf.id) ? selectedCuratedIDs.filter((id) => id !== shelf.id) : [...selectedCuratedIDs, shelf.id])}/><span className="sr-only">{shelf.name}</span></label><button className={`saved-picker${curatedShelfID === shelf.id ? ' active' : ''}`} type="button" key={shelf.id}
-                        aria-current={curatedShelfID === shelf.id ? 'page' : undefined}
-                        onClick={() => openCuratedShelf(shelf.id)}>{shelf.name}<span>{shelf.count}</span></button>
-                        <button type="button" disabled={collectionBusy || index === 0} aria-label={t('Move Shelf {0} up', shelf.name)} onClick={() => {
-                            const ids = curatedShelves.map((entry) => entry.id); [ids[index], ids[index - 1]] = [ids[index - 1], ids[index]];
-                            setCollectionBusy(true); void ReorderShelves(ids).then((response) => {if (response.error) setRequestError(response.error.message); else setShelfRevision((value) => value + 1);}).catch(() => setRequestError(t('Shelves could not be reordered.'))).finally(() => setCollectionBusy(false));
-                        }}>↑</button></div>)}
-                    {selectedCuratedIDs.length > 0 && <button type="button" disabled={exportPreparing} onClick={() => void preflightExport(new exporter.PreflightRequest({sourceType: selectedCuratedIDs.length === 1 ? 'curated_shelf' : 'curated_shelves', shelfIds: selectedCuratedIDs, query: {}}))}>{t('Export selected Shelves')}</button>}
+                <section className="curated-sidebar" aria-label={t('Shelves')}>
+                    <div className="caption">{t('Shelves')}</div>
+                    <div className="saved">
+                        {curatedShelves.map((shelf, index) => <div className="saved-entry" key={shelf.id}>
+                            <div className="saved-entry-row">
+                                <input className="shelf-selector" type="checkbox" checked={selectedCuratedIDs.includes(shelf.id)}
+                                    disabled={collectionBusy} aria-label={t('Select Shelf {0} for export', shelf.name)}
+                                    onChange={() => setSelectedCuratedIDs(selectedCuratedIDs.includes(shelf.id) ? selectedCuratedIDs.filter((id) => id !== shelf.id) : [...selectedCuratedIDs, shelf.id])}/>
+                                <button className={`saved-picker${curatedShelfID === shelf.id ? ' active' : ''}`} type="button"
+                                    disabled={collectionBusy} aria-current={curatedShelfID === shelf.id ? 'page' : undefined}
+                                    onClick={() => openCuratedShelf(shelf.id)}>
+                                    <i style={{'--c': savedCollectionColor(index)} as CSSProperties}/>
+                                    {shelf.name}<span>{shelf.count}</span>
+                                </button>
+                            </div>
+                            {curatedShelfID === shelf.id && <div className="saved-tools" aria-label={t('{0} actions', shelf.name)}>
+                                {([-1, 1] as const).map((delta) => <button key={delta} type="button"
+                                    disabled={collectionBusy || (delta < 0 ? index === 0 : index === curatedShelves.length - 1)}
+                                    aria-label={t(delta < 0 ? 'Move Shelf {0} up' : 'Move Shelf {0} down', shelf.name)} onClick={() => {
+                                        const ids = curatedShelves.map((entry) => entry.id);
+                                        [ids[index], ids[index + delta]] = [ids[index + delta], ids[index]];
+                                        setCollectionBusy(true);
+                                        void ReorderShelves(ids).then((response) => {if (response.error) setRequestError(response.error.message); else setShelfRevision((value) => value + 1);})
+                                            .catch(() => setRequestError(t('Shelves could not be reordered.'))).finally(() => setCollectionBusy(false));
+                                    }}>{delta < 0 ? '↑' : '↓'}</button>)}
+                            </div>}
+                        </div>)}
+                    </div>
+                    {selectedCuratedIDs.length > 0 && <button className="combined-export" type="button" disabled={exportPreparing} onClick={() => void preflightExport(new exporter.PreflightRequest({sourceType: selectedCuratedIDs.length === 1 ? 'curated_shelf' : 'curated_shelves', shelfIds: selectedCuratedIDs, query: {}}))}>{t('Export selected Shelves')}</button>}
+                    <button type="button" className="manage" disabled={applicationState !== 'ready'} onClick={() => setCreateShelfUUIDs([])}>{t('Create Shelf')}</button>
                 </section>
                 {selectedCollectionIDs.length > 0 && (
                     <section className="combined-shelves" aria-label={t("Combined collection preview")}>

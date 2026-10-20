@@ -439,6 +439,7 @@
   "Create Shelf": "Create Shelf",
   "Select Shelf {0} for export": "Select Shelf {0} for export",
   "Move Shelf {0} up": "Move Shelf {0} up",
+  "Move Shelf {0} down": "Move Shelf {0} down",
   "Export selected Shelves": "Export selected Shelves",
   "Refine this view": "Refine this view",
   "Library & filters": "Library & filters",
