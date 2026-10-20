@@ -21,6 +21,11 @@
       "subtask": "1.3",
       "sha": "553dbb8e6c2842ac2ecd85e061a027ceb8ef95e4",
       "subject": "docs(preservation): inventory application contracts and parity ownership"
+    },
+    {
+      "subtask": "1.5",
+      "sha": "652794d9ceb119081fb608e4c921b35d227fa53a",
+      "subject": "docs(preservation): retain approved native UI reference digests"
     }
   ],
   "subtasks": {
@@ -65,8 +70,15 @@
       "verification": "Go and TypeScript syntax-tree extraction plus complete source hash enumeration; every item maps P IDs, baseline owner and proposed Rust evidence"
     },
     "1.4": {
-      "status": "pending",
-      "evidence": []
+      "status": "implemented; independent conflict audit pending1.9",
+      "evidence": [
+        "spec-reconciliation/manifest.json",
+        "spec-reconciliation/canonical.patch",
+        "spec-reconciliation/effective-requirements.json",
+        "spec-reconciliation/decisions.md"
+      ],
+      "verification": "openspec validate rewrite-in-rust-native-desktop --strict; openspec validate --specs --strict:12 passed0 failed",
+      "canonical_update": "local separate repo only, no commit/push/archive"
     },
     "1.5": {
       "status": "implemented",
