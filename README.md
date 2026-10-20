@@ -106,7 +106,7 @@ to refresh them from the current application.
 | Platform | How to get Librairii |
 | :--- | :--- |
 | **macOS · Apple silicon** | Download the `.dmg` from the [latest release](https://github.com/01max/librairii/releases/latest), open it, and drag Librairii into Applications. |
-| **Linux · x64** | [Build from source](#development). The desktop runtime requires GTK 3 and WebKitGTK 4.1; the platform workflow produces a portable `tar.gz`. |
+| **Linux · x64** | Run `make linux` with Docker to generate the executable and a versioned `tar.gz`, including from macOS. The desktop runtime requires GTK 3 and WebKitGTK 4.1. |
 
 See the [release platform matrix](docs/release-platforms.md) for host requirements,
 artifact details, and platform verification.
@@ -167,6 +167,7 @@ database to configure.
 | Wails CLI | Installed by `make setup`, pinned in [`.wails-version`](.wails-version). |
 | Native platform dependencies | Follow the [Wails platform setup](https://wails.io/docs/gettingstarted/installation/#platform-specific-dependencies). Linux uses GTK 3 and WebKitGTK 4.1. |
 | Browser checks | Google Chrome or Chromium for `make check`. Set `LIBRAIRII_CHROME_PATH` if installed at a nonstandard location. |
+| Linux packaging from any host | Docker with Buildx (included in Docker Desktop), running with Linux containers. `make linux` installs its build tools inside the container. |
 
 If you use nvm, run `nvm install` and `nvm use` in the repository before setup.
 
@@ -182,6 +183,27 @@ make build
 
 The built application is placed in `build/bin/`. If the Wails pin changes,
 run `make setup-wails` to update your local CLI.
+
+### Generate a Linux package
+
+With Docker running, use this from the repository root on macOS or Linux:
+
+```sh
+make linux
+```
+
+This builds the current checkout for Linux x64 in Ubuntu 24.04 and writes the
+following files to `build/bin/` (using the version in `VERSION`):
+
+- `Librairii` — the Linux executable;
+- `Librairii-0.5.0-linux-amd64.tar.gz` — the distributable archive;
+- `Librairii-0.5.0-linux-amd64.tar.gz.sha256` — its verified checksum.
+
+The first run downloads the container images and build dependencies. Later runs
+reuse Docker's build cache. Host Go, Node, Wails, and frontend dependencies are
+not required for this command. The container checks the executable architecture,
+linked libraries, and archive checksum. Full desktop acceptance runs separately
+on Linux with `make verify-platform-linux`.
 
 <details>
 <summary><strong>Build on Linux with WebKitGTK 4.1</strong></summary>
@@ -206,6 +228,8 @@ For a verified portable archive, follow the host setup in
 | :--- | :--- |
 | `make check` | Check Go formatting, vet and test Go, type-check and lint TypeScript, run frontend tests and browser acceptance checks, and build the production frontend. |
 | `make build` | Build the desktop application with the pinned Wails CLI. |
+| `make dmg` | Build and verify the macOS installer on macOS. |
+| `make linux` | Build the Linux x64 executable, versioned archive, and checksum using Docker, including from macOS. |
 | `make smoke-first-story` | Exercise import, inspection, and removal with a synthetic, copyright-free archive. |
 | `make smoke-foundation` | Check a clean-environment macOS launch, SQLite reopen, and shutdown. |
 | `npm --prefix frontend run docs:screenshots` | Refresh documentation images from isolated frontend fixtures using Chrome or Chromium. |

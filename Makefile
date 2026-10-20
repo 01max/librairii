@@ -4,7 +4,7 @@ WAILS_VERSION := $(shell cat .wails-version)
 WAILS ?= $(shell go env GOPATH)/bin/wails
 GO_PACKAGES := . ./internal/... ./cmd/...
 
-.PHONY: setup setup-wails check-wails fmt fmt-check vet test-go typecheck lint-frontend test-frontend test-frontend-accessibility test-frontend-performance test-frontend-release test-frontend-responsive test-frontend-visual build-frontend check build dmg build-current-installer verify-current-installer verify-packaged-acceptance verify-platform-linux smoke-foundation smoke-first-story smoke-release
+.PHONY: setup setup-wails check-wails fmt fmt-check vet test-go typecheck lint-frontend test-frontend test-frontend-accessibility test-frontend-performance test-frontend-release test-frontend-responsive test-frontend-visual build-frontend check build dmg linux build-current-installer verify-current-installer verify-packaged-acceptance verify-platform-linux smoke-foundation smoke-first-story smoke-release
 
 setup: setup-wails
 	go mod download
@@ -69,6 +69,9 @@ build: check-wails build-frontend
 
 dmg: build-current-installer
 	$(MAKE) verify-current-installer
+
+linux:
+	scripts/build-linux
 
 build-current-installer: build-frontend
 	scripts/build-current-installer

@@ -1,0 +1,22 @@
+# Only application/build inputs enter the container context.
+**
+!*.go
+!go.mod
+!go.sum
+!VERSION
+!wails.json
+!.wails-version
+!internal/
+!internal/**
+!frontend/
+!frontend/**
+!build/
+!build/**
+frontend/node_modules
+frontend/dist
+frontend/coverage
+frontend/package.json.md5
+build/bin
+**/.DS_Store
+**/.git
+**/.env*

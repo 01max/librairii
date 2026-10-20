@@ -37,6 +37,27 @@ The Linux archive contains the Wails executable and expects the distribution
 to provide GTK 3 and WebKitGTK 4.1. It is intentionally not a generic package
 for every Linux ABI.
 
+## Build Linux artifacts from macOS or Linux
+
+Run `make linux` with a running Docker engine and the Buildx plugin. Docker
+Desktop includes both. The command builds the current local checkout for
+`linux/amd64` inside Ubuntu 24.04, using Go 1.26.5, the Node version in `.nvmrc`,
+and the Wails version in `.wails-version`. Host toolchains and `make setup` are
+not needed. Apple silicon hosts use Docker's amd64 emulation.
+
+The Docker build exports these files into `build/bin/`:
+
+- `Librairii`;
+- `Librairii-<VERSION>-linux-amd64.tar.gz`; and
+- `Librairii-<VERSION>-linux-amd64.tar.gz.sha256`.
+
+Build inputs exclude host dependencies, existing output, Git history, and local
+environment files. Compilation and generated bindings stay inside the container.
+The build verifies the ELF x64 architecture, resolves linked libraries in the
+Ubuntu build environment, and verifies the archive checksum. It does not run the
+native UI acceptance scenarios below; use `make verify-platform-linux` on its
+Linux verification host to qualify the release.
+
 The Linux gate runs the packaged scenario in one isolated D-Bus/Xvfb desktop
 session. It registers a verification-only `inode/directory` handler that
 delegates to PCManFM, then requires the live PCManFM process and its command
