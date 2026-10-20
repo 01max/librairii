@@ -20,11 +20,11 @@ evidence, not an additional checklist or acceptance of unfinished work.
 |4.1|Explicit fresh isolated root; exact layout, managed paths, raw identity; reject escape/invalid/nonfresh inputs without profile discovery|Implemented/host verified `9c37f56ffe83d73497129603c4ecfb8d25e4e087`. Setup `fcf467f41a39c3670a38db063a5304a60f6e93d1`|
 |4.2|Exact migrations001-018, schema identity and contiguous ledger|Implemented/host verified `ea8e60f415b5ea23fb50f8899594884ef13b6c8f`; probe hardening `bbf386bd4e681d3a7732fae28af750f173da6211`. Setup `e6e527af79a21149665670a36171ef5d701be05c`; owner5 graph `bf720718c4736e0ecf5f6ded947ccbce49f1ba16`|
 |4.3|One owned writer plus four reads, bounded jobs/transactions and close|Implemented/host verified `8baebc751ed51e917a3ae5b139ebf48fc5f0467b`|
-|4.4|All18 admitted populated prefixes, full schema/rows/query outcomes and actual Collection-open projection; no fixture-specific patches or eager DB-open rewrite|Pending real canonicalization dependency; placement accepted2/5, no later-feature deferral|
+|4.4|All18 admitted populated prefixes, full schema/rows/query outcomes and actual Collection-open projection; no fixture-specific patches or eager DB-open rewrite|Pending exact frozen Go Unicode15/CLDRDefault algorithm/data/notices handoff and explicit projection; private placement accepted2/5, no later-feature deferral|
 |4.5|Online WAL backup, integrity/FK, rollback and foreign DB+sidecars preservation|Implemented/host verified `abeb80ecd401f840e45a6a162998f5808cd9ebc1` on Unix; Windows directory durability remains pending4.9|
 |4.6|Strict64KiB v1 profiles, atomic serialized updates and isolated native namespace|Implemented/host verified `2751a04a4af6b9da8a21300a182ca2dd5231d8b8`. Stronger race capabilities and Windows effects remain4.8/4.9|
-|4.7|OS lease through close, refuse unproven legacy exclusion, verified independent adoption|Partial: fresh-root cooperative lease/refusal implemented/host verified; source SHA recorded in following commit. Verified independent clone/recovery/restart/relocation qualification remains pending|
-|4.8|Distinct no-clobber/config-replace/durable-flush effects and Unix races|Pending|
+|4.7|OS lease through close, refuse unproven legacy exclusion, verified independent adoption|Partial `2fb7c0126b7e1b10f46d5cd5326e6e0809b4d4cb`: fresh-root cooperative lease/refusal host verified. Verified independent clone/recovery/restart/relocation qualification remains pending|
+|4.8|Distinct no-clobber/config-replace/durable-flush effects and Unix races|Partial: bounded streaming measurement host verified; source SHA recorded in following commit. Descriptor-relative effects and their native race/durability proof remain pending|
 |4.9|Windows effects/path/share-mode implementation plus actual-target evidence|Pending|
 |4.10|Portability preflight and identity-verified rebinding without foreign cleanup|Pending|
 |4.11|Independent exact-head AO review, schema018 Go→Rust reopen/archive hashes, all cumulative/provider checks|Open gate|
@@ -300,3 +300,64 @@ identities apply to the native targets indicated by their cfg (six all-target,
 two Unix). These are macOS ARM observations only. Native Windows and other
 filesystem qualification, legacy-launch clone isolation/restart/relocation,
 all4.7 completion conditions and independent4.11 review remain open.
+
+4.7/4.8 dependency support and actual repair integration:
+
+- Owner6 manifest-only `ee6eba8eb86cb3750f4473feb7b988829623f730`
+  introduced all-target sha2 and cfg(unix) rustix workspace edges only.
+  Its native/focused provider checks failed before tests while workspace.sha2
+  was absent, including run39470908137/job118794702827. This is a concrete
+  composition failure, retained as failed evidence, not a baseline/environment
+  issue or test qualification. No old-head retry was requested.
+- Original owner5 direct descendant
+  `3db1a389fd62b57d34c23eb77b17f45d865951d6` was consumed by fast-forward.
+  It supplies exact sha2=0.11.1/no defaults/no extra features and Unix
+  rustix=1.1.5/no defaults/fs,std, locked source/policy/inventory and24 additive
+  profile/lease identities. Existing tempfile adds rustix default/alloc/std in
+  the actual Unix union. There is no Windows rustix edge or Unicode product
+  dependency. Owner6 authored no root manifest/lock/discovery changes.
+- Actual admitted preservation-wrapper repair
+  `4383373272ce1d3095199caf37dde7e5d0598213` was then merged without conflicts
+  as `320c693ec76d81546d36a1670616231222ac1364`, preserving parents3db+438.
+  Only the already reviewed repair's four shared files entered through that
+  merge; no manual shared-file resolution or speculative base was used.
+
+4.8 streaming measurement uses one64KiB stack buffer, checked size arithmetic,
+an explicit ceiling plus at most one overflow sentinel, and SHA-256 only after
+EOF. Cancellation/read errors/invalid reader counts return no partial digest.
+Interrupted reads resume with cancellation checks; other I/O causes remain
+available even if an independent cancellation arrives. It cannot interrupt an
+arbitrary blocking Read or bound decoder allocations/preceding-solid work.
+The typed Checksum/size measurement is data, not file/generation/custody,
+publication, compensation or cleanup authority. No whole-file read_to_end,
+source-path opening or destructive cleanup is performed by this mechanism.
+
+The combined source tree based on320c693 plus the streaming wrapper passed
+`cargo xtask check` on aarch64-apple-darwin1.99.1:92 nextest/zero skipped,
+all three compile-fail doctests, read-only146-file preservation, strict Python
+guard (including admitted special-checkout-path regression), root/fuzz
+deny+audit, inventory/notices, locked build, formatting and Clippy. Six new
+all-target source identities cover NIST empty/abc/million-a with fragmented
+reads crossing65536 bytes; exact limits/overflow; mid-stream read failure;
+cancel before/after a chunk; independent simultaneous error/cancel; and EINTR/
+invalid reader counts. The focused run is
+`da02e3aa-3ac9-46d4-a827-f995943dc148`. This was a working-tree check before
+the source commit, not an exact-head provider or other-native qualification.
+Owner5 owns additive pinning of the six new identities and final combined
+UNION checks. All filesystem effects/adoption/4.11 admission gates remain open.
+
+4.4 critical supplied evidence: owner2 independently read local pending
+`surviving-observations.json`,734599 bytes/SHA256
+`7c41d90dbaf3b9442d5c694647ba19eab494cec4b50ea43b97522bffe6dea375`.
+Of160 non-Mn/nonzero-CCC sequences, both tested final pipelines differ in120;
+full fold differs in0. Input a+U16FF0*29+U1715+U16FF0+Z preserves Go's
+29/U1715/1 mark partition, whereas the tested composition moves all30 U16FF0
+marks ahead of U1715. Both marks are Mc and survive Mn stripping. This is
+observable final-key failure, not merely a raw-intermediate difference; earlier
+15550/896 sample successes never established equivalence. These are supplied
+local observations, not an independently rerun/read or published-source review
+by owner6. No tested nfkd/stream_safe composition is implemented here. Retain
+the scoped actual-Go regression after source-evidence publication and use the
+accepted exact frozen algorithm/data/notices handoff; preserve all146 admitted
+inputs. No fixture-specific alias, Unicode dependency substitution or semantic
+waiver follows. Raw profile/UUID/path bytes remain independent of normalization.

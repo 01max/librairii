@@ -59,6 +59,8 @@ pub enum StorageError {
     SnapshotChanged,
     #[error("storage.backup_busy")]
     BackupBusy,
+    #[error("storage.hash_size_limit")]
+    HashSizeLimit,
     #[error("storage.backup_uncertain: backup={backup:?}: {cause}")]
     BackupUncertain {
         backup: Box<crate::backup::BackupReceipt>,
@@ -136,6 +138,7 @@ impl StorageError {
             Self::IntegrityFailed => "storage.integrity_failed",
             Self::SnapshotChanged => "storage.snapshot_changed",
             Self::BackupBusy => "storage.backup_busy",
+            Self::HashSizeLimit => "storage.hash_size_limit",
             Self::BackupUncertain { .. } => "storage.backup_uncertain",
             Self::DirectoryDurabilityUnavailable => "storage.directory_durability_unavailable",
             Self::NoSchemaConflict => "storage.no_schema_conflict",
