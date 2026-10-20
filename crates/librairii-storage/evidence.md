@@ -819,3 +819,13 @@ no created settings/recovery/journal and refusal after an unlisted candidate
 file appears; it preserves that unowned file. This does NOT qualify filenames,
 case/Unicode collisions, native Windows I/O, copied relocation cleanup or full4.10.
 Additive discovery/current combined/native/final4.11 gates remain open.
+
+Inactive-copy implementation is retained in
+`c4a3d0d914db88b4a2e18302f4eb907d51ca47c1`; the partial foreign-profile document
+work is `d19b113b497d2e18a5477dc4ca606adcbfb7858a`. Copy failure now separately
+retains the attempted target NAME even if mkdir succeeded but obtaining a child
+handle failed. Absence of a retained child/lease is never claimed as no-effect
+proof; observed names confer no cleanup/activation/retry authority. Existing
+collision, overlap, precancel and retained-lease failure tests assert those
+distinct facts (focused11 pass, run`cbcf591c-7046-403b-a0ea-ef5bd72ab164`,103
+tests intentionally filtered). Storage all-target Clippy/fmt pass unchanged.

@@ -284,6 +284,7 @@ mod closed {
             before_final_flush: impl FnOnce() -> Result<()>,
         ) -> std::result::Result<IndependentCopy, Box<IndependentCopyFailure>> {
             let mut retained = None;
+            let mut attempted_target = None;
             let result = (|| {
                 self.revalidate(cancellation)?;
                 if !target.is_absolute() {
@@ -309,6 +310,9 @@ mod closed {
                     return Err(StorageError::PathEscape);
                 }
                 let parent = Directory::open(&parent_path)?;
+                // mkdir may succeed even if obtaining/validating the child
+                // handle then fails. No retained child is NOT no-effect proof.
+                attempted_target = Some(root.clone());
                 let directory = parent.create_child(name.as_os_str())?;
                 retained = Some(CopyCandidate {
                     root,
@@ -415,10 +419,15 @@ mod closed {
                     identity: self.identity.clone(),
                     prefix: self.prefix,
                 }),
-                (Err(cause), retained) => Err(Box::new(IndependentCopyFailure { cause, retained })),
+                (Err(cause), retained) => Err(Box::new(IndependentCopyFailure {
+                    cause,
+                    retained,
+                    attempted_target,
+                })),
                 (Ok(()), None) => Err(Box::new(IndependentCopyFailure {
                     cause: StorageError::AdoptionInputInvalid,
                     retained: None,
+                    attempted_target,
                 })),
             }
         }
@@ -494,10 +503,17 @@ mod closed {
     pub struct IndependentCopyFailure {
         cause: StorageError,
         retained: Option<CopyCandidate>,
+        attempted_target: Option<PathBuf>,
     }
     impl IndependentCopyFailure {
         pub fn storage_error(&self) -> &StorageError {
             &self.cause
+        }
+        /// Creation was attempted at this last observed name; an empty
+        /// unqualified root MAY remain even if no child handle was obtained.
+        /// This is never no-effect, cleanup or retry authority.
+        pub fn attempted_target(&self) -> Option<&Path> {
+            self.attempted_target.as_deref()
         }
         /// Last observed name only. Substitution can make it point elsewhere;
         /// neither this path nor `retains_lease` authorizes cleanup/activation.
@@ -691,6 +707,7 @@ mod closed {
                 StorageError::DirectoryDurabilityUnavailable
             ));
             assert_eq!(failed.retained_root(), Some(target.as_path()));
+            assert_eq!(failed.attempted_target(), Some(target.as_path()));
             assert!(failed.retains_lease());
             assert_eq!(fs::read(target.join("db/librairii.sqlite3"))?, original);
             assert_eq!(fs::read(input.root.join("db/librairii.sqlite3"))?, original);
