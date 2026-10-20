@@ -804,6 +804,60 @@
     {
       "suite": "librairii-storage",
       "name": "database::closure_tests::poisoned_queue_close_joins_every_owner_and_keeps_failure_and_lease_explicit"
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "profile::tests::active_binding_post_replace_uncertainty_keeps_exclusion_after_guard_drop",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::native_library",
+      "name": "active_binding_excludes_root_raw_id_and_recovery_changes_but_allows_language",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::native_library",
+      "name": "binding_refuses_unrebound_recovery_or_wrong_namespace_and_retains_copy",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::native_library",
+      "name": "changed_copy_or_profile_fences_binding_until_real_namespace_restart",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::native_library",
+      "name": "concurrent_independent_bindings_keep_one_generation_and_the_losing_copy_owned",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::native_library",
+      "name": "native_binding_retains_real_copy_and_both_leases_without_sqlite_activation",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
     }
   ]
 }
