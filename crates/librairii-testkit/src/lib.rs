@@ -1,4 +1,5 @@
 //! Fresh owned synthetic roots and loopback-only networking. No profile discovery.
+#![forbid(unsafe_code)]
 use std::{
     fs, io,
     net::{IpAddr, Ipv4Addr, SocketAddr, TcpListener, TcpStream},

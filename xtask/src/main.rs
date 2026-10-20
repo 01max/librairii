@@ -1,3 +1,4 @@
+#![forbid(unsafe_code)]
 mod deep;
 mod policy;
 mod supply_chain;

@@ -42,8 +42,9 @@ No new repository/product license is set; distribution decisions remain pending.
 
 ## Lint policy
 
-Every member inherits compiler and Clippy lints. Safe Rust is enforced (`forbid`);
-future OS FFI needs its own deliberately reviewed policy change. Ordinary Clippy
+Every member inherits compiler and Clippy lints. Safe Rust is the workspace default (`deny`); core/application/UI/testkit/desktop/
+xtask additionally use crate-level `forbid`. Storage/adapters have the narrow
+reviewed FFI route documented below. Ordinary Clippy
 warnings are checked with `-D warnings`. Product/test code returns errors instead
 of unwrap, expect, panic, todo or unimplemented. Pedantic/restriction groups are
 not enabled wholesale. No generated/vendor exclusions or lint exceptions exist.
@@ -203,3 +204,29 @@ Native CI is in progress on draft PR41; no missing target is treated as passed.
 Task1 reviewed contract/corpus admission and final clean-checkout checks remain
 pending. Full desktop/assistive-tech/platform/package qualification remains
 outside this infrastructure section. Section3.9 is not complete.
+
+## Storage handoff seams
+
+LibraryId/StoryUuid/JobId Display produces canonical UUID text for diagnostics,
+not a persisted encoding. Storage must retain original legacy spelling/file bytes
+alongside typed identity and must never rewrite identities just because Display
+canonicalizes them. No serialization or migration codec is supplied by task3.
+Section4 owns product root authority, profiles, locks and database behavior;
+TestRoots only authorizes its own fresh synthetic directories for tests.
+Root Cargo.toml/Cargo.lock stays with task3 until integration; section4 must
+coordinate its exact rusqlite pin/feature addition and lock resolution rather
+than overwrite concurrent graph changes. Task2 candidate is rusqlite0.40.2 with
+bundled SQLite/backup; qualification remains provisional.
+
+Workspace unsafe_code=deny permits a deliberate isolated FFI implementation in
+storage/adapters platform modules. Core/application and other pure boundaries
+remain crate-level forbid. Prefer maintained safe OS wrappers first. Necessary
+unsafe requires a narrowly scoped `#[expect(unsafe_code, reason = "specific OS
+invariant and evidence reference")]` at the individual function/block boundary,
+SAFETY comments, public unsafe API safety docs, ownership/alias/lifetime/thread
+invariants, and positive/failure/race tests on the actual cfg target. Clippy denies
+undocumented unsafe blocks and missing safety docs. Never allow unsafe for a crate,
+whole platform module, unrelated logic or every lint. A new FFI change needs
+independent review of that target's code and evidence; there is no authored unsafe
+or exception in the current workspace. Proposed section4 paths are storage
+layout/identity/profile/lock/platform modules, pending direct owner confirmation.

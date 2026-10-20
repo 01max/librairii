@@ -4,6 +4,8 @@ use uuid::Uuid;
 
 macro_rules! uuid_identity {
     ($name:ident) => {
+        /// Typed UUID bytes. Display is canonical diagnostic text, not a persisted codec.
+        /// Storage must retain the original legacy representation alongside this value.
         #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
         pub struct $name(Uuid);
         impl $name {
