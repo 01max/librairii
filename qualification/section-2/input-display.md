@@ -14,8 +14,8 @@ app commit/hash and operator. Use only synthetic filenames such as
 * Select all, copy/cut/paste/undo/redo, caret movement, selection and clipboard
   roundtrip through the native editor. Pasting Unicode is not an IME test.
 * Long French labels; narrow 560 px / intermediate 850 and 1180 px / short windows;
-  independently scrolling areas and reachable navigation. Existing sidebar hiding
-  below 850 px without disclosure is an unfinished probe, not a passing layout.
+  independently scrolling areas and reachable navigation. The current spike keeps
+  desktop panels present; narrow disclosure is unfinished, not a passing layout.
 * 100/125/150/200% text/display scaling as applicable, real mixed-monitor moves,
   resizing during work and dialog ownership; record clipping and scale transitions.
 * High contrast, focus visibility, non-color identification and OS reduced motion.

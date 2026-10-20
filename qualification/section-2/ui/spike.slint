@@ -57,7 +57,7 @@ export component Spike inherits Window {
         }
         HorizontalBox {
             min-width: 0px;
-            if root.width > 850px: Rectangle {
+            Rectangle {
                 width: 180px; background: #e9e5dc;
                 VerticalBox {
                     Text { text: root.french ? "BIBLIOTHÈQUE" : "LIBRARY"; }
@@ -91,7 +91,7 @@ export component Spike inherits Window {
                     }
                 }
             }
-            if root.width > 1000px: Rectangle {
+            Rectangle {
                 width: 250px; background: #e9e5dc;
                 VerticalBox {
                     Text { text: root.french ? "HISTOIRE SÉLECTIONNÉE" : "STORY INSPECTOR"; }

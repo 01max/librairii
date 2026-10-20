@@ -44,7 +44,10 @@ probes must stay confined to a disposable fixture directory.
 2026-10-20, librairii-4: Rust 1.99.1, macOS 15.7.7 ARM/M4 Pro, SDK 26.2.
 `cargo build --locked --features gui` succeeded. An initial width/min-width
 compiler error and layout-binding-cycle warnings were fixed before this commit;
-the rebuilt UI emitted neither. `SLINT_BACKEND=winit-skia ... --smoke` exited 0,
+the immediate rebuild emitted neither. A later fresh Clippy configuration exposed
+the responsive binding cycle again; conditional desktop panels were removed in a
+separate fix, retaining narrow disclosure as an unfinished gate.
+`SLINT_BACKEND=winit-skia ... --smoke` exited 0,
 reporting model construction 160 ms. Native visual/AT inspection is separate.
 Two controller tests pass and doctests contain zero examples.
 
