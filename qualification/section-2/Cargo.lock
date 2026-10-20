@@ -2360,6 +2360,7 @@ version = "0.0.0"
 dependencies = [
  "rfd",
  "rusqlite",
+ "serde_json",
  "sevenz-rust2",
  "slint",
  "slint-build",

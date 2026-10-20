@@ -39,8 +39,8 @@ Zstd introduces native zstd-sys C; SQLite and Skia also retain C/C++ dependencie
 
 ## Open evidence
 
-2.10 remains **partial**: section1 populated migration/SQL/backup goldens and the
-full accepted/rejected codec/solid/password/encoding corpus are not frozen here.
+2.10 remains **partial**: the provisional populated corpus observations below do
+not admit the section1 contract or qualify the full codec/solid/password corpus.
 Need every accepted extension/content combination, required/unrelated payload CRC,
 solid-block preceding-data cost, actual-read/dictionary/allocation caps, unknown
 sizes/overflow and cancellation. `Read::take` bounds bytes delivered to this test;
@@ -49,3 +49,111 @@ Inspect decoder allocation controls and account preceding solid entries before
 untrusted-input qualification. Any baseline acceptance change requires its own
 reviewed hardening record, never relabeling an unexplained mismatch as a pass.
 Run matching native target tests before claiming I/L/W compatibility.
+
+## Provisional PR39 corpus comparison
+
+Observed 2026-10-20 by librairii-4 on the same ARM host. Input is exactly PR39
+commit [`e7c771b4218ef689dd6743fb485e4d9a52e23d43`](https://github.com/01max/librairii/commit/e7c771b4218ef689dd6743fb485e4d9a52e23d43),
+manifest SHA256 `91ccf4eb2dc9d707d429af3568e8703848aa213b9a6a94727442e7bbce044966`.
+**Provisional input only:** PR39's relocation-manifest review correction and
+overall corpus admission remain pending. No relocation/profile input is executed.
+Owner3 receives the reference and all mismatches; section2 does not edit its files.
+
+`probe-corpus.py` exports 87 selected Git blobs into a fresh temp directory,
+verifies every length/SHA256 against that pinned manifest, and checks those bytes
+again after probing. It never checks out the other branch or executes generators.
+The nested Rust example opens source databases read-only and uses SQLite online
+backup to create all writable copies. Its report, `corpus-observations.json`,
+retains every exact mismatch and raw oracle result alongside candidate evidence.
+The probe exits **2** for measured differences; that is not a passing parity gate.
+With the optional native codec experiment it records30 differences:24 SQL fields
+and six end-to-end Unicode filenames. No difference is normalized away.
+
+* All 18 populated prefixes and the representative schema018 database match their
+  complete before snapshots, including exact schema SQL, NULLs, row/array order,
+  identities and foreign-key/integrity results. All 19 online backups match too.
+* Applying only the unchanged SQL migrations matches `afterGoOpen` for prefixes
+  001–010. Prefixes011–018 each differ in three Collection fields: the SQL-only
+  `query_payload` retains Broken definitionId7, `query_version` stays1 rather than5,
+  and `revision` stays1 rather than2. **24 differences remain**. The Go fixture
+  producer also opens Collections through its service; this probe has no such
+  application adapter. No payload/version/revision exception or rewrite is added.
+* Fixture timestamp handling copies only the producer's explicit `fixTimes`
+  columns and fixed value, retaining NULLs. It does not sort rows or rewrite
+  queries, IDs, revision numbers, paths or schema text. Physical producer-byte
+  hashes identify inputs; complete semantic snapshots compare different engines.
+* All20 inspection cases are observed in frozen array order. Nineteen containers
+  decode completely; `invalid.zip` fails container parsing. The eight Go-accepted
+  inputs have matching diagnostic UUID candidates; all three expected artwork
+  payload hashes match. ZIP raw name bytes, member order/duplicates, method,
+  declared and computed CRC, sizes and path-safety signal remain visible.
+* The other eleven Go-rejected cases also decode: missing entries, disguised or
+  unsupported suffixes, unsafe paths, duplicate paths, nested archives, ratio and
+  link policies are **not implemented** by this decoder probe. The exact Go
+  rejection codes remain in the report. Decoder success cannot replace them.
+  Titles/descriptions, artwork validity/media type and full classifier precedence
+  are not compared. This is not eight product-acceptance passes.
+* All seven frozen 7z archives report solid blocks with LZMA2 coder ID `21`.
+  Entries are sequentially fully read with one decoder thread and a 1MiB total
+  delivered-byte ceiling; block sizes/properties and CRC observations are recorded.
+  This does not measure random-access preceding-data cost or cap decoder/header
+  allocations. The fixtures are trusted synthetic data, not an untrusted-input API.
+
+Run explicitly from the application checkout after fetching the pinned Git object
+(the script deliberately does not fetch or silently substitute a newer corpus):
+
+```sh
+git fetch origin e7c771b4218ef689dd6743fb485e4d9a52e23d43
+python3 -B qualification/section-2/probe-corpus.py --output /tmp/section2-observations.json
+python3 -B -m unittest discover -s qualification/section-2/tests -p 'test_*.py'
+```
+
+The four Python regression tests protect exact identity/order differences,
+missing-vs-NULL/type distinctions, Unicode forms, and rejected-suffix results
+remaining partial.
+The Rust example uses dev-only [serde_json1.0.154](https://docs.rs/crate/serde_json/1.0.154),
+already present in the lockfile, default `std`, MIT OR Apache-2.0, MSRV1.71;
+[pinned upstream manifest](https://github.com/serde-rs/json/blob/v1.0.154/Cargo.toml).
+This adds no GUI testing entitlement or production dependency selection.
+
+## Independent local codec/CRC experiment
+
+The optional `--bsdtar /usr/bin/bsdtar` adds native producer experiments to the
+same report. Host tool observed: bsdtar3.5.3 / libarchive3.7.4, zlib1.2.12,
+liblzma5.4.3, bz2lib1.0.8. No tool is installed or selected for product shipping.
+Two synthetic files have fixed timestamps, names, owner fields and exact payload
+hashes. The second name is Unicode; no OS IME/filename interaction is inferred.
+
+COPY, LZMA1, LZMA2, BZip2, Deflate and PPMd decode both exact payload hashes in
+order. **Each has a filename mismatch**: NFC `Été 日本語.bin` supplied through a
+deterministic synthetic PAX tar becomes decomposed `Été 日本語.bin`. The report
+retains both forms plus the native producer's own archive listing, to distinguish
+producer/reader stages. No filesystem extraction occurs. Five compressed variants
+report solid blocks; COPY is non-solid. This observation is not an admitted
+filename compatibility exception or a candidate failure attribution by itself.
+Mutating either the preceding or target COPY payload while retaining header CRCs
+causes `ChecksumVerificationFailed`. These checks do not exercise every Go CRC
+policy or establish cancellation/solid resource limits. The native producer
+rejects Zstd output as an unknown compression name; **no Zstd decoder verdict**
+is available. The report attributes this as a producer limitation.
+
+Still missing: corrected corpus admission; product classification/metadata and
+required-vs-unrelated payload error semantics; admitted non-LZMA2/solid/non-solid
+cases, Zstd/LZ4/Brotli, encryption/password policy, encoding/unknown-size/overflow,
+corrupt solid blocks and cancellation; actual-read/dictionary/allocation controls;
+production migration/backfill/rollback/recovery behavior and all other native OS
+execution. Those gaps stay open without a compatibility exception.
+
+Pinned-source control audit (not an adversarial allocation test):
+[reader.rs0.24.1](https://docs.rs/crate/sevenz-rust2/0.24.1/source/src/reader.rs)
+sets `MAX_MEM_LIMIT_KB = usize::MAX / 1024`, passes that constant to decoder
+construction, and offers thread-count control without a public per-reader memory
+budget in the inspected `ArchiveReader` API. `Archive::read` parses before the
+entry callback; header bytes are checked against actual input length before
+allocation, but declared file/coder counts also drive allocations. The pinned
+[decoder.rs](https://docs.rs/crate/sevenz-rust2/0.24.1/source/src/decoder.rs)
+checks LZMA2 and PPMd memory against that constant, while LZMA1 constructs its
+dictionary from coder properties. This is insufficient evidence for product
+dictionary/header/allocation ceilings. A bounded adapter/decoder strategy and
+adversarial tests remain independent engineering work; do not expose this
+trusted-fixture example as an untrusted-input API or call one thread a memory cap.

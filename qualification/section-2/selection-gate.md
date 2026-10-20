@@ -1,6 +1,6 @@
 # Independent selection gate (2.13)
 
-**PENDING AO NATIVE REVIEW. TOOLKIT NOT SELECTED.**
+**PENDING FINAL QUALIFICATION REVIEW. TOOLKIT NOT SELECTED.**
 Draft task PR38 targets `rewrite-in-rust-native-desktop` only. No merge authorized.
 Source research/builds/controller tests and a local unsigned ARM image are useful
 partial evidence, not completion. Exact supporting commits are in ledger.md.
@@ -30,3 +30,9 @@ physical evidence or authorize merging. Final2.13 review must assess the final
 head, exact locked/native graph, full evidence, licensing and all four actual
 targets after mandatory gates pass. Review fixes need separate commits and their
 threads resolved. Do not mark this gate or external task checkboxes complete.
+
+The implemented partial scope at `558b2b46af93bbdf1bfc7934166a270db6904e25`
+received AO native approval, including the actual-widget regression. Its inline
+thread is resolved with evidence. This supplies code review only. The subsequent
+2.10 corpus-probe code requires another review of the pushed final head; neither
+approval completes 2.13 or any physical, licensing or corpus-admission gate.

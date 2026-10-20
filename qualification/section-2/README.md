@@ -57,3 +57,7 @@ native adapters still need expansion/observations. Overlay presence is not proof
 of a modal accessibility tree or focus trap. No full feature UI may start.
 
 See `ADR.md`, `hosts.md`, the per-gate records and `ledger.md` for status/evidence.
+
+For explicit headless SQLite/archive comparisons against pinned provisional PR39
+fixtures, see `data-feasibility.md` and `probe-corpus.py`. The comparison retains
+24 SQL-only/Go-open differences and exits2. No full-corpus parity is claimed.
