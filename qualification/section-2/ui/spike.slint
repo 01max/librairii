@@ -29,6 +29,9 @@ export component Spike inherits Window {
     callback cancel-work();
     callback decide(int, bool);
     callback apply-review();
+    callback pick-files();
+    callback pick-folder();
+    callback reveal-fixture();
 
     MenuBar {
         Menu {
@@ -108,6 +111,11 @@ export component Spike inherits Window {
                 }
                 Button { text: (root.french ? "Appliquer " : "Apply ") + root.approvals; enabled: root.approvals > 0; clicked => { root.apply-review(); } }
             }
+        }
+        HorizontalBox {
+            Button { text: root.french ? "Choisir des fichiers" : "Choose files"; clicked => { root.pick-files(); } }
+            Button { text: root.french ? "Choisir un dossier" : "Choose folder"; clicked => { root.pick-folder(); } }
+            Button { text: root.french ? "Afficher le dossier" : "Reveal fixture"; clicked => { root.reveal-fixture(); } }
         }
         HorizontalBox {
             Button { text: root.french ? "Travail synthétique" : "Synthetic work"; enabled: !root.working; clicked => { root.start-work(); } }

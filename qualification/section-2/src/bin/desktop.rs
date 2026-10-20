@@ -34,6 +34,86 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let start = Instant::now();
     // No profile, library, network client or filesystem input exists in this spike.
     let ui = Spike::new()?;
+    let fixture = tempfile::Builder::new()
+        .prefix("librairii-qualification-")
+        .tempdir()?;
+    std::fs::write(
+        fixture.path().join("Été 日本語 故事.zip"),
+        b"synthetic picker fixture",
+    )?;
+    let root = fixture.path().canonicalize()?;
+    let weak = ui.as_weak();
+    let files_root = root.clone();
+    ui.on_pick_files(move || {
+        if let Some(ui) = weak.upgrade() {
+            let title = if ui.get_french() {
+                "Choisir des archives synthétiques"
+            } else {
+                "Choose synthetic archives"
+            };
+            let result = rfd::FileDialog::new()
+                .set_title(title)
+                .set_directory(&files_root)
+                .set_parent(&ui.window().window_handle())
+                .add_filter("Archives", &["pk", "zip", "7z"])
+                .pick_files();
+            let valid = result.as_ref().is_some_and(|paths| {
+                paths
+                    .iter()
+                    .all(|p| p.canonicalize().is_ok_and(|p| p.starts_with(&files_root)))
+            });
+            ui.set_status(
+                match result {
+                    None => "Cancelled",
+                    Some(_) if valid => "Synthetic files selected",
+                    _ => "Rejected outside fixture",
+                }
+                .into(),
+            );
+        }
+    });
+    let weak = ui.as_weak();
+    let folder_root = root.clone();
+    ui.on_pick_folder(move || {
+        if let Some(ui) = weak.upgrade() {
+            let result = rfd::FileDialog::new()
+                .set_directory(&folder_root)
+                .set_parent(&ui.window().window_handle())
+                .pick_folder();
+            ui.set_status(
+                match result {
+                    None => "Cancelled",
+                    Some(p) if p.canonicalize().is_ok_and(|p| p == folder_root) => {
+                        "Fixture folder selected"
+                    }
+                    _ => "Rejected outside fixture",
+                }
+                .into(),
+            );
+        }
+    });
+    let weak = ui.as_weak();
+    ui.on_reveal_fixture(move || {
+        if let Some(ui) = weak.upgrade() {
+            let valid = root.is_dir() && root.canonicalize().is_ok_and(|p| p == root);
+            let result = if valid {
+                reveal(&root)
+            } else {
+                Err(std::io::Error::other("fixture changed"))
+            };
+            ui.set_status(
+                if result.is_ok() {
+                    "Reveal requested; verify file manager"
+                } else {
+                    "Reveal failed"
+                }
+                .into(),
+            );
+        }
+    });
+    if std::env::args().any(|arg| arg == "--settings-early") {
+        ui.set_settings_visible(true);
+    }
     show_rows(&ui, "");
     let weak = ui.as_weak();
     ui.on_search(move |query| {
@@ -140,4 +220,20 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
     result?;
     Ok(())
+}
+
+fn reveal(root: &std::path::Path) -> std::io::Result<()> {
+    // Separate argv; no shell interpolation and only this run's owned fixture root.
+    #[cfg(target_os = "macos")]
+    let mut command = std::process::Command::new("/usr/bin/open");
+    #[cfg(target_os = "linux")]
+    let mut command = std::process::Command::new("xdg-open");
+    #[cfg(target_os = "windows")]
+    let mut command = std::process::Command::new("explorer.exe");
+    let status = command.arg(root).status()?;
+    if status.success() {
+        Ok(())
+    } else {
+        Err(std::io::Error::other("file manager rejected request"))
+    }
 }
