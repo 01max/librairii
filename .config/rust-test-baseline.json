@@ -800,6 +800,10 @@
         "x86_64-apple-darwin",
         "x86_64-unknown-linux-gnu"
       ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "database::closure_tests::poisoned_queue_close_joins_every_owner_and_keeps_failure_and_lease_explicit"
     }
   ]
 }
