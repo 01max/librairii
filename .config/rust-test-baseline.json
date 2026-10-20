@@ -166,6 +166,66 @@
         "aarch64-apple-darwin",
         "x86_64-apple-darwin"
       ]
+    },
+    {
+      "suite": "librairii-storage::migrations",
+      "name": "every_actual_prefix_has_the_unchanged_identity_and_contiguous_ledger"
+    },
+    {
+      "suite": "librairii-storage::migrations",
+      "name": "every_embedded_sql_byte_matches_the_admitted_corpus_and_go_source"
+    },
+    {
+      "suite": "librairii-storage::migrations",
+      "name": "foreign_empty_gapped_duplicate_unsorted_and_future_ledgers_fail_closed"
+    },
+    {
+      "suite": "librairii-storage::migrations",
+      "name": "forged_ledger_or_missing_trigger_is_rejected_without_schema_repair"
+    },
+    {
+      "suite": "librairii-storage::database_workers",
+      "name": "commit_error_is_uncertain_then_fresh_writer_readback_preserves_actual_truth"
+    },
+    {
+      "suite": "librairii-storage::database_workers",
+      "name": "completed_unacknowledged_reads_retain_bounded_result_ownership"
+    },
+    {
+      "suite": "librairii-storage::database_workers",
+      "name": "dropping_result_does_not_cancel_durable_repair_and_close_drains_it"
+    },
+    {
+      "suite": "librairii-storage::database_workers",
+      "name": "existing_foreign_database_and_sidecars_are_refused_before_sqlite_open"
+    },
+    {
+      "suite": "librairii-storage::database_workers",
+      "name": "five_owned_connections_have_actual_required_pragmas_and_close_before_reuse"
+    },
+    {
+      "suite": "librairii-storage::database_workers",
+      "name": "four_coherent_read_snapshots_run_concurrently_with_the_separate_writer"
+    },
+    {
+      "suite": "librairii-storage::database_workers",
+      "name": "injected_lost_commit_ack_preserves_committed_bytes_and_reports_uncertainty"
+    },
+    {
+      "suite": "librairii-storage::database_workers",
+      "name": "queued_work_cancel_is_proven_noncommit_without_cancelling_prior_critical_work"
+    },
+    {
+      "suite": "librairii-storage::database_workers",
+      "name": "saturated_ordinary_queue_keeps_bounded_fifo_repair_and_fresh_barrier_admission"
+    },
+    {
+      "suite": "librairii-storage::database_workers",
+      "name": "unexpected_worker_exit_wakes_queued_results_and_never_claims_closed"
+    },
+    {
+      "suite": "librairii-storage::database_workers",
+      "name": "work_cancellation_and_body_errors_rollback_but_late_cancel_preserves_commit"
     }
   ]
 }
