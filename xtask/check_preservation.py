@@ -30,10 +30,13 @@ def main():
     verify_pins(root, baseline)
     # -I preserves assertions despite PYTHONOPTIMIZE/PYTHONPATH. -B avoids source
     # writes; UTF-8 preserves Unicode witnesses on native Windows shells.
+    # The frozen checker constructs SQLite URIs literally. Keep the corpus
+    # relative to this checkout so drive letters and #/?/% in its absolute
+    # parent path never enter those URIs. Do not depend on the caller's cwd.
     result = subprocess.run(
-        [sys.executable, '-I', '-B', '-X', 'utf8', str(root / 'preservation/check.py'),
-         str(root / 'preservation/corpus')],
-        check=False, capture_output=True, encoding='utf-8',
+        [sys.executable, '-I', '-B', '-X', 'utf8', 'preservation/check.py',
+         'preservation/corpus'],
+        cwd=root, check=False, capture_output=True, encoding='utf-8',
     )
     if result.returncode != 0:
         raise RuntimeError(f'preservation checker failed ({result.returncode}):\n{result.stdout}\n{result.stderr}')

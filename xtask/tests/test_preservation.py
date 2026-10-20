@@ -4,6 +4,9 @@ import importlib.util
 import io
 import json
 from pathlib import Path
+import shutil
+import subprocess
+import sys
 import tempfile
 import unittest
 
@@ -35,6 +38,38 @@ class AdmissionPins(unittest.TestCase):
         before = {p: p.read_bytes() for p in [self.checker, self.manifest]}
         gate.verify_pins(self.root, self.baseline)
         self.assertEqual(before, {p: p.read_bytes() for p in before})
+
+    def test_metacharacter_checkout_runs_read_only_from_another_directory(self):
+        source = Path(__file__).resolve().parents[2]
+        checkout = self.root / 'checkout Été # %2F'
+        (checkout / 'xtask').mkdir(parents=True)
+        (checkout / '.config').mkdir()
+        shutil.copytree(source / 'preservation', checkout / 'preservation')
+        for relative in ['xtask/check_preservation.py', '.config/rust-preservation-baseline.json']:
+            shutil.copyfile(source / relative, checkout / relative)
+
+        def contents(root):
+            return {
+                path.relative_to(root).as_posix(): None if path.is_dir() else path.read_bytes()
+                for path in root.rglob('*')
+            }
+
+        source_before = contents(source / 'preservation')
+        parent_before = contents(self.root)
+        result = subprocess.run(
+            [sys.executable, '-I', '-B', '-X', 'utf8', str(checkout / 'xtask/check_preservation.py')],
+            cwd=self.root, capture_output=True, encoding='utf-8',
+        )
+        parent_after = contents(self.root)
+        self.assertEqual(result.returncode, 0, json.dumps({
+            'stderr': result.stderr,
+            'created_paths': sorted(parent_after.keys() - parent_before.keys()),
+        }, ensure_ascii=False))
+        report = json.loads(result.stdout)
+        self.assertEqual(report['oracle_commit'], '73a93303a9a44cf0a92eaf525331561ed8c04460')
+        self.assertEqual(report['hashed_files'], 146)
+        self.assertEqual(parent_after, parent_before)
+        self.assertEqual(contents(source / 'preservation'), source_before)
 
     def test_missing_or_changed_checker_and_manifest_fail(self):
         for path in [self.checker, self.manifest]:

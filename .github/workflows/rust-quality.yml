@@ -47,13 +47,13 @@ jobs:
         run: .github/scripts/ubuntu-apt build-essential pkg-config python3
       - name: Install exact stable toolchain
         run: rustup toolchain install 1.99.1 --profile minimal --component rustfmt --component clippy --component llvm-tools-preview
-      - name: Verify admitted bytes in a fresh Windows autocrlf checkout
+      - name: Verify admitted bytes in a fresh Windows special-path autocrlf checkout
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
           $source = git rev-parse HEAD
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          $fresh = Join-Path $env:RUNNER_TEMP ('librairii-preservation-' + [guid]::NewGuid())
+          $fresh = Join-Path $env:RUNNER_TEMP ('lp-Été #%2F-' + [guid]::NewGuid())
           git -c core.autocrlf=true clone --no-local --no-checkout . $fresh
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           git -C $fresh -c core.autocrlf=true checkout --detach $source
