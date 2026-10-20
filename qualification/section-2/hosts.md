@@ -53,3 +53,10 @@ missing VMs. Signing account/certificate access is a later release gate and does
 not block unsigned independent work or eligible sections 3–4.
 
 **2.2 remains incomplete:** hosts have not all been secured.
+
+Follow-up inventory: `xcrun --find notarytool` and `xcrun --find stapler` both
+resolve under CLT; `hdiutil`, `ditto`, `codesign` are present. Full Xcode is not
+required merely to attempt unsigned packaging here. No signing identity/keychain
+or secret value was queried. Computer Use rejected access to the distinct
+`dev.librairii.qualification` app; ARM keyboard/AX/visual observations need app
+access approval or an operator. These exact gaps were delivered to librairii-1.
