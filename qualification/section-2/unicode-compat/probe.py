@@ -3,11 +3,13 @@
 import argparse
 import base64
 import hashlib
+import io
 import json
 import os
 import platform
 from pathlib import Path
 import shutil
+import stat
 import subprocess
 import tempfile
 import time
@@ -69,24 +71,72 @@ def check_oracle(root, files):
     return identities(root, files)
 
 
-def verify_text(cache):
-    """Go HashZip/Hash1 format, independently recomputed without running Go."""
+def authenticated_text(cache):
+    """Authenticate one ZIP byte snapshot, never an expanded module-cache tree."""
     module_root = cache.parents[2]
     archive = module_root / "cache/download/golang.org/x/text/@v/v0.43.0.zip"
+    with archive.open("rb") as stream:
+        raw = stream.read((32 << 20) + 1)
+    require(len(raw) <= 32 << 20, "module source ZIP exceeds capture bound")
     summary = hashlib.sha256()
-    with zipfile.ZipFile(archive) as z:
-        names = sorted(n for n in z.namelist() if not n.endswith("/"))
-        for name in names:
-            require("\n" not in name, "invalid module ZIP name")
-            data = z.read(name)
-            summary.update(f"{digest(data)}  {name}\n".encode())
+    members = {}
+    with zipfile.ZipFile(io.BytesIO(raw)) as z:
+        entries = z.infolist()
+        require(len(entries) <= 2048 and len({i.filename for i in entries}) == len(entries),
+                "duplicate or excessive module ZIP entries")
+        require(sum(i.file_size for i in entries) <= 64 << 20,
+                "module source content exceeds capture bound")
+        for entry in sorted(entries, key=lambda i: i.filename):
+            name = entry.filename
+            require(not any(c in name for c in "\n\r\\\0"), "invalid module ZIP name")
             relative = name.removeprefix("golang.org/x/text@v0.43.0/")
-            require(relative != name and (cache / relative).read_bytes() == data,
-                    "module source cache differs from ZIP")
+            parts = relative.removesuffix("/").split("/")
+            require(relative != name and all(p not in ("", ".", "..") for p in parts),
+                    "unsafe module ZIP path")
+            kind = stat.S_IFMT(entry.external_attr >> 16)
+            if entry.is_dir():
+                require(kind in (0, stat.S_IFDIR), "non-directory module ZIP entry")
+                continue
+            require(kind in (0, stat.S_IFREG), "nonregular module ZIP member")
+            require(entry.file_size <= 16 << 20, "module source member exceeds capture bound")
+            data = z.read(entry)
+            summary.update(f"{digest(data)}  {name}\n".encode())
+            members[relative] = data
     actual = "h1:" + base64.b64encode(summary.digest()).decode()
     require(actual == TEXT_SUM, "x/text module checksum differs from frozen go.sum")
-    return {"module": "golang.org/x/text v0.43.0", "h1": actual,
-            "zipSha256": digest(archive.read_bytes()), "verifiedMembers": len(names)}
+    return members, {"module": "golang.org/x/text v0.43.0", "h1": actual,
+                     "zipSha256": digest(raw), "verifiedMembers": len(members)}
+
+
+def verify_text(cache):
+    return authenticated_text(cache)[1]
+
+
+def materialize_text(cache, target):
+    """Only authenticated regular members may reach the owned Go build."""
+    members, evidence = authenticated_text(cache)
+    require("go.mod" in members, "authenticated module go.mod missing")
+    target.mkdir(parents=True, exist_ok=False)
+    for relative, data in members.items():
+        destination = target / relative
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        destination.write_bytes(data)
+    actual = {}
+    for path in target.rglob("*"):
+        require(not path.is_symlink(), "symlink in materialized source")
+        if path.is_dir():
+            continue
+        require(path.is_file(), "nonregular materialized source")
+        actual[str(path.relative_to(target))] = path.read_bytes()
+    require(actual == members, "materialized module inventory/content differs from authenticated ZIP")
+    downloads = target.parents[2] / "cache/download/golang.org/x/text/@v"
+    downloads.mkdir(parents=True, exist_ok=False)
+    # Go's download metadata must not reintroduce unverified cache bytes either.
+    (downloads / "v0.43.0.mod").write_bytes(members["go.mod"])
+    (downloads / "v0.43.0.ziphash").write_text(evidence["h1"])
+    (downloads / "v0.43.0.info").write_text('{"Version":"v0.43.0"}\n')
+    return {**evidence, "materializedMembers": len(actual),
+            "materialization": "authenticated ZIP regular members only; exact owned-tree verification"}
 
 
 def corpus_inputs(directory):
@@ -249,12 +299,7 @@ def main():
             require(not (clone / ".git/objects/info/alternates").exists(), "oracle clone shares objects")
             module_cache = owned / "modules"
             target_cache = module_cache / "golang.org/x/text@v0.43.0"
-            shutil.copytree(args.text_cache, target_cache)
-            downloads = args.text_cache.resolve().parents[2] / "cache/download/golang.org/x/text/@v"
-            target_downloads = module_cache / "cache/download/golang.org/x/text/@v"
-            target_downloads.mkdir(parents=True)
-            for suffix in ["mod", "info", "ziphash"]:
-                shutil.copy2(downloads / f"v0.43.0.{suffix}", target_downloads)
+            report["textSource"] = materialize_text(args.text_cache.resolve(), target_cache)
             environment.update({"GOTOOLCHAIN": "local", "GOPROXY": "off", "GOSUMDB": "off", "GOENV": "off",
                                 "GOWORK": "off", "GOCACHE": str(owned / "go-cache"), "GOMODCACHE": str(module_cache),
                                 "CGO_ENABLED": "0", "CARGO_TARGET_DIR": str(owned / "rust-target")})
