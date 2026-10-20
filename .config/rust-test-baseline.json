@@ -669,6 +669,35 @@
     {
       "suite": "librairii-storage",
       "name": "migrations::collection_codec::tests::strict_codec_decode_and_migrate_match_actual_frozen_go_cases"
+    },
+    {
+      "suite": "librairii-storage::collection_compatibility",
+      "name": "inspection_is_lazy_idempotent_and_never_heals_existing_attention"
+    },
+    {
+      "suite": "librairii-storage::collection_compatibility",
+      "name": "invalid_codec_marks_attention_but_trigger_abort_cancel_and_not_found_never_fake_commit"
+    },
+    {
+      "suite": "librairii-storage::collection_compatibility",
+      "name": "missing_and_wrong_kind_or_value_criteria_are_distinct_from_sql_failure"
+    },
+    {
+      "suite": "librairii-storage::collection_compatibility",
+      "name": "actual_reference_kinds_value_owners_recursive_branches_and_retirement_remain_distinct"
+    },
+    {
+      "suite": "librairii-storage::collection_compatibility",
+      "name": "projection_commit_failure_is_uncertain_fences_retry_and_retains_fresh_writer_readback"
+    },
+    {
+      "suite": "librairii-storage::collection_compatibility",
+      "name": "schema_only_then_explicit_same_writer_projection_matches_all_eighteen_go_prefixes",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
     }
   ]
 }
