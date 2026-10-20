@@ -123,6 +123,12 @@ impl Directory {
         self.require_name(name, child.identity)?;
         Ok(child)
     }
+    pub(crate) fn create_child(&self, name: &OsStr) -> Result<Self> {
+        EntryName::parse(name)?;
+        native::mkdirat(&self.file, name, Mode::RWXU)
+            .map_err(|e| StorageError::io("create fresh anchored directory", e.into()))?;
+        self.child(name)
+    }
     fn require_name(&self, name: &OsStr, identity: FileIdentity) -> Result<()> {
         let stat = native::statat(&self.file, name, AtFlags::SYMLINK_NOFOLLOW)
             .map_err(|e| StorageError::io("revalidate owned entry", e.into()))?;
