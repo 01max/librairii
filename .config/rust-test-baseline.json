@@ -989,6 +989,152 @@
         "x86_64-apple-darwin",
         "x86_64-unknown-linux-gnu"
       ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "native::owned::tests::native_activation_uncertainty_keeps_real_owner_and_admits_no_sqlite_or_managed_mutation",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "native::owned::tests::native_closed_response_loss_occurs_only_after_settlement_and_retains_frozen_old_new_owners",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "native::owned::tests::native_exact_paths_refuse_non_utf8_without_lossy_state_or_profile_strings",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "native::state::tests::native_state_atomic_response_loss_retains_old_new_records_and_never_purges_prefix",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "native::state::tests::native_state_private_codec_rejects_duplicates_unknowns_types_limits_and_epoch_mismatch",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "platform::unix::tests::owned_control_creation_failure_keeps_actual_fd_name_and_partial_bytes",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::adoption_inputs",
+      "name": "closed_manifest_reserves_only_native_root_record_and_exact_atomic_control_prefix"
+    },
+    {
+      "suite": "librairii-storage::native_library",
+      "name": "native_active_abandonment_and_unsettled_trash_never_mint_clean_restart",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::native_library",
+      "name": "native_clean_close_reopens_next_epoch_without_rematching_historical_database_hash",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::native_library",
+      "name": "native_finalizer_busy_retains_owner_until_admitted_profile_update_really_settles",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::native_library",
+      "name": "native_forgotten_pending_retains_owned_slot_and_cannot_acknowledge_clean_database_close",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::native_library",
+      "name": "native_imported_orphan_never_publishes_profile_authority_or_retargets",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::native_library",
+      "name": "native_language_update_busy_before_first_open_keeps_record_imported_and_retryable",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::native_library",
+      "name": "native_language_update_busy_refuses_database_admission_without_poisoning_generation",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::native_library",
+      "name": "native_non_utf8_copy_root_is_retained_without_lossy_record_or_profile_publication",
+      "targets": [
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::native_library",
+      "name": "native_restart_refuses_corrupt_records_controls_sidecars_and_marker_aliases_without_cleanup",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::native_library",
+      "name": "native_unacknowledged_admitted_commit_cannot_be_hidden_by_database_close",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
     }
   ]
 }
