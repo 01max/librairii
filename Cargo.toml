@@ -17,3 +17,5 @@ librairii-adapters = { path = "crates/librairii-adapters" }
 librairii-ui = { path = "crates/librairii-ui" }
 librairii-desktop = { path = "crates/librairii-desktop" }
 librairii-testkit = { path = "crates/librairii-testkit" }
+uuid = { version = "=1.28.0", default-features = false, features = ["std"] }
+thiserror = "=2.0.21"

@@ -13,8 +13,9 @@ of the final head and clean-checkout checks; unavailable target evidence is inco
 
 | Subtask | Commit | Evidence |
 | --- | --- | --- |
-| 3.1 | Pending commit | Exact stable 1.99.1, edition 2024/resolver 3, locked workspace build |
-| 3.2–3.8 | Pending | Implementation follows the numbered OpenSpec tasks |
+| 3.1 | d289e5f | Exact stable 1.99.1, edition 2024/resolver 3, locked workspace build |
+| 3.2 | Pending commit | Typed identity bytes/ranges, distinct group scope, unapproved review default, typed errors and compile-fail boundary |
+| 3.3–3.8 | Pending | Implementation follows the numbered OpenSpec tasks |
 | 3.9 | Pending | Independent review and clean-checkout/native target evidence |
 
 ## Baseline pins and boundaries
@@ -30,3 +31,6 @@ the four outer boundaries. Testkit is synthetic support only. Core cannot import
 application, persistence, network or GUI types. Empty module boundaries implement
 no product behavior. The desktop executable deliberately exits unsuccessfully
 before any data access; it is not an application or packaging acceptance claim.
+
+Typed foundations are intentionally not persisted codecs or the reconciled product contract.
+No new repository/product license is set; distribution decisions remain pending.
