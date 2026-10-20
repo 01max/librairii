@@ -8,7 +8,7 @@
     },
     {
       "path": "generator/databases.go",
-      "sha256": "234f1ee70beb7529c5cd5c1fb3de96d9c240530321bef52b25ae1e49dcc02401"
+      "sha256": "1274068e5ae26f0cf830b5626a6f6af67e255b4dcf5b750e7df817f02e4b7c60"
     },
     {
       "path": "generator/extra.go",
@@ -21,6 +21,10 @@
     {
       "path": "generator/main.go",
       "sha256": "fa05d7bfabeeb1f410e6bfa3dc84d00d772ba4ee97de94739a964d49cb004ed6"
+    },
+    {
+      "path": "generator/relocations.go",
+      "sha256": "7e99be541886f2169bc4bae175f1b175a280e7aaceacfcd7ffb8a81ce1897611"
     }
   ],
   "files": [
@@ -387,7 +391,7 @@
     {
       "path": "libraries/schema018/db/librairii.sqlite3",
       "bytes": 364544,
-      "sha256": "dfb31d993b6236d17510f3b98ce5cbabcbcb8f7e0affa98fc16f0101bff82d4a"
+      "sha256": "9f5cf0b372215c4f5a68a11325cccde117cf22dc1d1eeee40d35aec69e52552a"
     },
     {
       "path": "libraries/schema018/history.json",
@@ -650,19 +654,34 @@
       "sha256": "834cd433d06fd88a5f237272511d3e149177bb5ce38b7f1d6f3eb06511413f72"
     },
     {
-      "path": "profiles/recovery-contract.json",
-      "bytes": 630,
-      "sha256": "601bc80cb65450e182eb3c0ab8bf2a2d6bb6e449b16d439dd7b6d1a9dca9facb"
+      "path": "profiles/library-manifest.json",
+      "bytes": 1699,
+      "sha256": "aaf0f9109a8cd5ddb9253d03903fe6e4d6002673cf5f11abafdac57bb8c7ade4"
     },
     {
-      "path": "profiles/relocation-published.json",
+      "path": "profiles/recovery-contract.json",
+      "bytes": 1160,
+      "sha256": "fd8659d9d89ab4cdbaa25980d7c9bdf6ae76393b77f31372dd68528be314278b"
+    },
+    {
+      "path": "profiles/recovery-outcomes.json",
+      "bytes": 12397,
+      "sha256": "e3732c17d7402656ba7986aad14be4cd19b1aef80c2bf04169e37f13ecc6e254"
+    },
+    {
+      "path": "profiles/relocation-incomplete-negative.json",
       "bytes": 371,
       "sha256": "a541ddde7dceef1d94e481cdfab0cb9c937cc6a646033ac5fccea69396e363ef"
     },
     {
+      "path": "profiles/relocation-published.json",
+      "bytes": 2027,
+      "sha256": "435667c7a30e914cb3de077f2c631eb102e827e484d36dd7599a0e2805b13a70"
+    },
+    {
       "path": "profiles/relocation-reserved.json",
-      "bytes": 370,
-      "sha256": "0601730181744ab145aa21f26a9f866834366f7b52891ecd3ef90abef0d40094"
+      "bytes": 2026,
+      "sha256": "f42ed5133c8d286a3f0d573a69d462da04a810bd8d19557a3b7eae5c134a1cc4"
     },
     {
       "path": "profiles/settings.json",

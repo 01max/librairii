@@ -68,7 +68,7 @@ if (root/'databases/provenance.json').exists():
     prefixes=read('databases/provenance.json')['prefixes']
     assert [r['prefix'] for r in prefixes]==list(range(1,19))
     for r in prefixes:
-        db=sqlite3.connect(f"file:{root/r['file']}?mode=ro",uri=True)
+        db=sqlite3.connect(f"file:{root/r['file']}?mode=ro&immutable=1",uri=True)
         assert [v[0] for v in db.execute('select version from schema_migrations order by version')]==list(range(1,r['prefix']+1))
         assert db.execute('pragma integrity_check').fetchone()[0]=='ok'
         assert not db.execute('pragma foreign_key_check').fetchall()
@@ -79,11 +79,40 @@ if (root/'databases/provenance.json').exists():
     assert len(representative['shelf_exclusions'])==1 and len(representative['shelf_stories'])==3
     assert len(representative['removal_intents'])==1
     assert {r['status'] for r in representative['file_operations']}=={'queued','running','succeeded'}
-    db=sqlite3.connect(f"file:{root/'libraries/schema018/db/librairii.sqlite3'}?mode=ro",uri=True)
+    db=sqlite3.connect(f"file:{root/'libraries/schema018/db/librairii.sqlite3'}?mode=ro&immutable=1",uri=True)
     for rel,checksum in db.execute('select managed_path,sha256 from story_archives order by id'):
         assert hashlib.sha256((root/'libraries/schema018'/rel).read_bytes()).hexdigest()==checksum
     assert not db.execute('pragma foreign_key_check').fetchall()
     db.close()
+if (root/'profiles/library-manifest.json').exists():
+    library=root/'libraries/schema018'
+    entries=read('profiles/library-manifest.json')
+    files={e['path']:e for e in entries if not e.get('directory')}
+    assert set(files)=={p.relative_to(library).as_posix() for p in library.rglob('*') if p.is_file()}
+    assert 'db/librairii.sqlite3' in files and len([p for p in files if p.startswith('archives/')])==5
+    for name,e in files.items():
+        assert (library/name).stat().st_size==e['size']
+        assert hashlib.sha256((library/name).read_bytes()).hexdigest()==e['sha256']
+    for name in ['relocation-reserved.json','relocation-published.json']:
+        assert read('profiles/'+name)['entries']==entries
+    assert [e['path'] for e in read('profiles/relocation-incomplete-negative.json')['entries']]==['.librairii-library']
+    recovery={r['case']:r for r in read('profiles/recovery-outcomes.json')}
+    positives=['reserved-copied-before-commit','published-before-profile-commit','published-after-profile-commit']
+    assert len(recovery)==5
+    for name in positives:
+        r=recovery[name]
+        assert r['copyVerifyError']==r['reconcileError']==r['secondReconcileError']==''
+        assert not r['workspaceExists'] and not r['journalExists']
+        committed=name=='published-after-profile-commit'
+        assert r['sourceExists'] is not committed and r['destinationExists'] is committed
+        assert r['destinationManifest' if committed else 'sourceManifest']==entries
+        assert not r['sourceManifest' if committed else 'destinationManifest']
+    assert recovery['incomplete-copy-negative']['verifyError']=='library_missing'
+    assert recovery['incomplete-copy-negative']['sourceUnchanged'] is True
+    pending=recovery['incomplete-cleanup-negative']
+    assert pending['reconcileError']==pending['secondReconcileError']=='cleanup_pending'
+    assert pending['sourceExists'] and pending['destinationExists'] and pending['journalExists']
+    assert pending['sourceManifest']==entries
 if (root/'limits/archive-headers.json').exists():
     boundaries={r['id']:r for r in read('limits/archive-headers.json')}
     assert boundaries['path-bytes-512']['error']=='' and boundaries['path-bytes-513']['error']=='unsafe_path'

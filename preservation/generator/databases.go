@@ -212,10 +212,6 @@ func representativeDatabase() {
 	profile := preferences.Profile{Version: 1, Language: "fr", Root: "/fixture/source", LibraryID: libraryID, Complete: true}
 	must(profile.Validate())
 	jsonFile("profiles/settings.json", profile)
-	for _, phase := range []string{"reserved", "published"} {
-		j := preferences.Journal{ID: "b0000000-0000-4000-8000-000000000001", LibraryID: libraryID, Source: "/fixture/source", Destination: "/fixture/destination", Phase: phase, Entries: []preferences.Entry{{Path: ".librairii-library", Size: int64(len(libraryID) + 1), SHA256: hash([]byte(libraryID + "\n"))}}}
-		must(j.Validate())
-		jsonFile("profiles/relocation-"+phase+".json", j)
-	}
-	jsonFile("profiles/recovery-contract.json", map[string]any{"libraryId": libraryID, "reserved": "source authoritative before durable profile commit", "published": "profile root decides authority; phase alone is insufficient", "absolutePaths": "deliberate non-live /fixture placeholders: do not replay; clone and identity-verify/rebind for target OS first", "pendingRemoval": "pre-move removal intent with managed bytes still present", "pendingOperations": "one running partial import and one queued skipped-unavailable Shelf export; normal restart must reconcile", "immutableFiles": "all managed files hashed in corpus manifest; no user data"})
+	relocationFixtures(filepath.Join(output, "libraries/schema018"), libraryID)
+	jsonFile("profiles/recovery-contract.json", map[string]any{"libraryId": libraryID, "reserved": "source authoritative before durable profile commit", "published": "profile root decides authority; phase alone is insufficient", "absolutePaths": "deliberate non-live /fixture placeholders: do not replay; clone and identity-verify/rebind for target OS first", "pendingRemoval": "pre-move removal intent with managed bytes still present", "pendingOperations": "one running partial import and one queued skipped-unavailable Shelf export; normal restart must reconcile", "immutableFiles": "all managed files hashed in corpus manifest; no user data", "manifest": "library-manifest.json captures every finalized file/directory through preferences.Manifest after real Go database open/close", "positiveReplays": "recovery-outcomes.json: copied/reserved, published before profile commit, published after profile commit; real CopyLibrary/VerifyCopy/Publish/Store/Reconcile plus idempotent repeat", "negativeReplays": "relocation-incomplete-negative.json: marker-only input fails copy verification or retains unlisted source files with cleanup_pending; never a positive fixture"})
 }

@@ -137,9 +137,12 @@
         "database-contract.md",
         "corpus/databases/provenance.json",
         "corpus/libraries/schema018/state.json",
-        "corpus/profiles/recovery-contract.json"
+        "corpus/profiles/recovery-contract.json",
+        "generator/relocations.go",
+        "corpus/profiles/library-manifest.json",
+        "corpus/profiles/recovery-outcomes.json"
       ],
-      "verification": "two independent113-file exports identical including all19 SQLite files; all18 prefix ledgers/integrity/FKs and actual Go upgrade to018 checked; representative managed hashes verified",
+      "verification": "Two146-file exports byte-identical including19 SQLite files; all18 prefix upgrades plus complete finalized relocation manifest and3 positive/2 negative real Go recovery replays pass.",
       "limitations": "synthetic future recovery input; placeholder absolute paths require identity-verified rebind; no Rust/foreign-schema/platform/rollback qualification claim"
     },
     "1.8": {
@@ -155,7 +158,7 @@
       "verification": "two143-file frozen-source exports byte-identical including19 databases; semantic limits/performance witnesses pass; real5000-story backend p95 budgets and5000-Shelf preview/apply gate pass on identified ARM host",
       "limits": "archive/query/operations/review/database/history/diagnostics/HTTP frozen with source refs; native extra budgets await section2",
       "coverage": {
-        "total_hashed_corpus_files": 143,
+        "total_hashed_corpus_files": 146,
         "performance_stories": 5000,
         "procedural_pngs": 24,
         "review_candidates": 5000,
@@ -166,17 +169,36 @@
       "unverified": "native startup/CPU/RSS/package-size ceilings and four-platform renderer/accessibility remain incomplete"
     },
     "1.9": {
-      "status": "pending",
+      "status": "pending independent audit approval; initial review requested changes",
       "evidence": []
     }
   },
   "independent_review": {
-    "status": "pending native review after1.1\u20131.8; final external AO/GitHub verdict is authority",
+    "status": "changes_requested at e7c771b; required relocation correction verified, awaiting rerun",
     "provider": "AO native review",
-    "approved_head": null
+    "reviewed_head": "e7c771b4218ef689dd6743fb485e4d9a52e23d43",
+    "approved_head": null,
+    "run": "f621cfb6-41a4-4ba0-a045-375ad066fd6a",
+    "required_finding": "https://github.com/01max/librairii/pull/39#discussion_r4326423344"
   },
   "limitations": [
     "All Rust parity and four-platform qualification remain unverified."
   ],
-  "pr": "https://github.com/01max/librairii/pull/39"
+  "pr": "https://github.com/01max/librairii/pull/39",
+  "review_corrections": [
+    {
+      "finding": "https://github.com/01max/librairii/pull/39#discussion_r4326423344",
+      "problem": "Marker-only relocation entries could not copy/verify the supplied library or finish source cleanup.",
+      "correction": "Actual preferences.Manifest of finalized closed library; complete CopyLibrary/VerifyCopy/Publish/Store/Reconcile replays; three positive and two explicitly incomplete negative cases.",
+      "evidence": [
+        "generator/relocations.go",
+        "corpus/profiles/library-manifest.json",
+        "corpus/profiles/recovery-outcomes.json",
+        "check.py",
+        "database-contract.md"
+      ],
+      "verification": "Two146-file exact-oracle exports byte-identical; repeated semantic checker leaves all finalized DBs unchanged; retained Go preferences relocation/restart/corruption tests pass.",
+      "status": "implemented; external rerun pending"
+    }
+  ]
 }
