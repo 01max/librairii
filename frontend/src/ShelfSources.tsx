@@ -13,10 +13,10 @@ export function AffectedMembers({plan, choices, onChange, busy}: {plan: shelves.
         <h4>{plan.shelfName} · {t('{0} affected stories', plan.affected.length)}</h4>
         {plan.incomplete && <p role="status">{t('Review incomplete. Removal is unavailable while source coverage is uncertain.')}</p>}
         <ReviewWarnings warnings={plan.warnings ?? []}/>
-        <p>{t('Keep protects membership. Remove also excludes future suggestions. Every affected story needs a decision.')}</p>
+        <p>{t('Keep leaves the story on this Shelf. Remove also excludes future suggestions. Every affected story needs a decision.')}</p>
         <ul className="curated-candidates">{plan.affected.slice(page * 25, (page + 1) * 25).map((item) => <li key={item.uuid}>
             <label>{item.title}<select disabled={busy} value={choices[item.uuid] ?? ''} onChange={(event) => onChange({...choices, [item.uuid]: event.target.value})}>
-                <option value="">{t('Not now')}</option><option value="keep">{t('Keep and protect')}</option>
+                <option value="">{t('Not now')}</option><option value="keep">{t('Keep')}</option>
                 <option value="remove" disabled={plan.incomplete || !item.story}>{t('Remove and exclude')}</option></select></label>
             <small>{t('Added from: {0}', (item.origins ?? []).map((origin) => origin.name).join(', ') || t('Manual selection'))}</small>
             {!item.story && <span>{t('Unavailable')}</span>}

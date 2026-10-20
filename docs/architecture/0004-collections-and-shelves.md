@@ -6,7 +6,9 @@ Existing saved Shelves migrate to Collections with their identity and non-Broken
 criteria preserved. Collections combine as a deduplicated OR union.
 
 Shelf membership changes only through explicit creation, manual curation, or
-review approval. Manual additions and explicitly kept stories are protected.
+review approval. All approved membership stays intact until explicit removal.
+Manual additions and explicitly kept stories are retained independently of source
+criteria; there is no user-facing protection flag or toggle.
 Exclusions persist until reversed; deferrals store no decision. Missing library
 stories retain their membership and resolve again when the same UUID returns.
 Historical acceptance origins remain distinct from current source matches.
@@ -14,7 +16,12 @@ Historical acceptance origins remain distinct from current source matches.
 Reviews are snapshots. Apply revalidates source definitions/results, availability,
 and Shelf decisions within a transaction. Invalid sources permit healthy-source
 additions but suspend inferred removals. Source detachment and Collection deletion
-require an explicit impact review; retained orphaned members become protected.
+require an explicit impact review; kept orphaned members become manual retention
+decisions. Opening a Shelf automatically previews source mismatches and prompts
+for Keep/Remove decisions about affected stories, with nothing approved by
+default. Suggested additions remain in the full Review updates dialog.
+Dismissing a prompt preserves membership and leaves the decisions available in
+Review updates. Rechecking the same pending mismatches does not reopen the prompt.
 
 The dedicated Broken flag, its independent storage, legacy tag migration, warning
 presentation, atomic mutation, and exact Undo remain from the completed Broken

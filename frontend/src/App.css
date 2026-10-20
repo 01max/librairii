@@ -2865,18 +2865,18 @@ select:focus-visible {
 .curated-member-info { min-width: 0; }
 .curated-broken { color: #684613; }
 .curated-members.curated-list { --control-height: 28px; --control-radius: 6px; --control-font-size: 11px; --control-padding: 4px 8px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 0; }
-.curated-members.curated-list > li { display: grid; grid-template-columns: minmax(0, 1fr) auto auto auto; align-items: center; gap: 6px 12px; padding: 8px 10px; border: 0; border-bottom: 1px solid var(--line); border-radius: 0; }
+.curated-members.curated-list > li { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 6px 12px; padding: 8px 10px; border: 0; border-bottom: 1px solid var(--line); border-radius: 0; }
 .curated-list .curated-member-info label { gap: 8px; margin: 0; font-size: 13px; font-weight: 600; }
 .curated-list .curated-member-info input { flex-shrink: 0; margin: 0; accent-color: var(--blue); }
 .curated-list .curated-member-info small { margin: 3px 0 0 21px; color: #59647a; font-size: 11px; line-height: 1.4; }
 .curated-list .curated-member-order { flex-wrap: nowrap; gap: 4px; margin: 0; }
-.curated-members.curated-list :is(.curated-cover, .curated-protection, .curated-member-order button) { width: auto; min-height: var(--control-height); padding: var(--control-padding); border: 1px solid var(--line); border-radius: var(--control-radius); background: var(--white); font-size: var(--control-font-size); line-height: 1.3; }
+.curated-members.curated-list :is(.curated-cover, .curated-member-order button) { width: auto; min-height: var(--control-height); padding: var(--control-padding); border: 1px solid var(--line); border-radius: var(--control-radius); background: var(--white); font-size: var(--control-font-size); line-height: 1.3; }
 .curated-list .curated-unavailable { margin: 0; color: #59647a; font-size: 11px; }
 .curated-list .curated-unavailable-id { display: none; }
 @media (max-width: 600px) {
-    .curated-members.curated-list > li { grid-template-columns: auto minmax(0, 1fr) auto; }
+    .curated-members.curated-list > li { grid-template-columns: minmax(0, 1fr) auto; }
     .curated-list .curated-member-info { grid-column: 1 / -1; }
-    .curated-list .curated-member-order { grid-column: 3; justify-content: end; }
+    .curated-list .curated-member-order { grid-column: 2; justify-content: end; }
 }
 .curated-members.curated-small { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
 .curated-members.curated-small .cover { height: 90px; }
@@ -2914,7 +2914,7 @@ select:focus-visible {
 
 /* Shared action controls; navigation, covers and switches keep their own shape. */
 :is(.dialog-actions, .drawer-actions, .curated-actions, .settings-panel, .flag-feedback, .tag-filter-actions, .history-actions, .history-header, .new-tag, .tag-edit, .tag-value, .new-value) button,
-.tag-filter-trigger, .curated-protection, .pagination button, .top button, .scope-export,
+.tag-filter-trigger, .pagination button, .top button, .scope-export,
 .collection-toolbar > button, .collection-state > button, .export-report > button, .lunii-sync > button:not(.notice-dismiss),
 .curated-management summary { min-height: var(--control-height); padding: var(--control-padding); border-radius: var(--control-radius); font-size: var(--control-font-size); font-weight: 600; line-height: 1.3; }
 .manage, .combined-export { min-height: 32px; padding: 7px 10px; border-radius: var(--control-radius); font-size: 11px; font-weight: 600; line-height: 1.3; }

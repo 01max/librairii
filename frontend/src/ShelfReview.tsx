@@ -7,8 +7,8 @@ import ReviewWarnings from './ReviewWarnings';
 import OutcomeText from './OutcomeText';
 import {t} from './i18n';
 
-export default function ShelfReview({id, onClose, onApplied}: {id: number; onClose: () => void; onApplied: (removed: string[]) => void}) {
-    const [review, setReview] = useState<shelves.Review | null>(null);
+export default function ShelfReview({id, initialReview, onClose, onApplied}: {id: number; initialReview?: shelves.Review | null; onClose: () => void; onApplied: (removed: string[]) => void}) {
+    const [review, setReview] = useState<shelves.Review | null>(initialReview ?? null);
     const [choices, setChoices] = useState<Record<string, string>>({});
     const [page, setPage] = useState(0), [busy, setBusy] = useState(false), [error, setError] = useState('');
     const [refreshRequired, setRefreshRequired] = useState(false);
@@ -21,8 +21,10 @@ export default function ShelfReview({id, onClose, onApplied}: {id: number; onClo
         } catch (error) {setError(error instanceof Error ? error.message : t('Review could not be loaded.'));}
         finally {setBusy(false);}
     }, [id]);
-    useEffect(() => {const timer = window.setTimeout(() => void preview(), 0); return () => window.clearTimeout(timer);}, [preview]);
-    const entries = [...(review?.additions ?? []).map((candidate) => ({candidate, kind: 'addition'})), ...(review?.removals ?? []).map((candidate) => ({candidate, kind: 'removal'}))];
+    useEffect(() => {if (initialReview) return; const timer = window.setTimeout(() => void preview(), 0); return () => window.clearTimeout(timer);}, [preview, initialReview]);
+    const additions = (review?.additions ?? []).map((candidate) => ({candidate, kind: 'addition'}));
+    const removals = (review?.removals ?? []).map((candidate) => ({candidate, kind: 'removal'}));
+    const entries = initialReview ? removals : [...removals, ...additions];
     const approved = Object.entries(choices).filter(([, action]) => action && action !== 'defer');
     const apply = async () => {
         if (!review) return; setBusy(true); setError('');
@@ -35,30 +37,32 @@ export default function ShelfReview({id, onClose, onApplied}: {id: number; onClo
     };
     const bulk = (kind: string, action: string) => setChoices((previous) => ({...previous, ...Object.fromEntries(entries.filter((entry) => entry.kind === kind).map(({candidate}) => [candidate.uuid, action]))}));
     return <ShelfDialog title={t('Review Shelf updates')} busy={busy} onClose={onClose}>
-        <p>{t('Suggestions match any linked Collection. Only approved decisions change this Shelf.')}</p>
+        <p>{initialReview
+            ? t('Some stories no longer match their Collections. Choose which to keep on this Shelf. Nothing is removed until you approve.')
+            : t('Suggestions match any linked Collection. Only approved decisions change this Shelf.')}</p>
         {review?.incomplete && <p role="status">{t('Review incomplete. Healthy sources can suggest additions; removals are suspended.')}</p>}
         {review?.upToDate && <p role="status">{t('Up to date')}</p>}
         <ReviewWarnings warnings={review?.warnings ?? []}/>
         {review && <>
-            <p>{t('{0} additions · {1} removals', review.additions.length, review.removals.length)}</p>
-            <div className="curated-actions"><button type="button" disabled={busy || !review.additions.length} onClick={() => bulk('addition', 'add')}>{t('Approve all additions')}</button>
-                <button type="button" disabled={busy || !review.additions.length} onClick={() => bulk('addition', 'exclude')}>{t('Exclude all additions')}</button>
+            {!initialReview && <p>{t('{0} additions · {1} removals', review.additions.length, review.removals.length)}</p>}
+            {(!initialReview || review.removals.length > 1) && <div className="curated-actions">{!initialReview && <><button type="button" disabled={busy || !review.additions.length} onClick={() => bulk('addition', 'add')}>{t('Approve all additions')}</button>
+                <button type="button" disabled={busy || !review.additions.length} onClick={() => bulk('addition', 'exclude')}>{t('Exclude all additions')}</button></>}
                 <button type="button" disabled={busy || !review.removals.length} onClick={() => bulk('removal', 'keep')}>{t('Keep all removals')}</button>
                 <button type="button" disabled={busy || !review.removals.length} onClick={() => bulk('removal', 'remove')}>{t('Approve all removals')}</button>
-                <button type="button" disabled={busy} onClick={() => setChoices({})}>{t('Defer all')}</button></div>
+                <button type="button" disabled={busy} onClick={() => setChoices({})}>{t('Defer all')}</button></div>}
             <ul className="curated-candidates">{entries.slice(page * 25, (page + 1) * 25).map(({candidate, kind}) => <li key={candidate.uuid}>
                 <strong>{kind === 'addition' ? t('Suggested addition') : t('Suggested removal')}</strong>
                 <label>{candidate.title}<select disabled={busy} aria-label={t('Decision for {0}', candidate.title)} value={choices[candidate.uuid] ?? 'defer'} onChange={(event) => setChoices({...choices, [candidate.uuid]: event.target.value})}>
                     <option value="defer">{t('Not now')}</option>
-                    {kind === 'addition' ? <><option value="add">{t('Add')}</option><option value="exclude">{t('Exclude from suggestions')}</option></> : <><option value="keep">{t('Keep and protect')}</option><option value="remove">{t('Remove and exclude')}</option></>}
+                    {kind === 'addition' ? <><option value="add">{t('Add')}</option><option value="exclude">{t('Exclude from suggestions')}</option></> : <><option value="keep">{t('Keep')}</option><option value="remove">{t('Remove and exclude')}</option></>}
                 </select></label>
                 {candidate.story && <div className="curated-preview"><StoryCover story={candidate.story}/></div>}
                 {candidate.story?.broken && <p>{t('Broken · excluded from exports')}</p>}
                 <p>{kind === 'addition' ? t('Currently matches: {0}', (candidate.sources ?? []).map((source) => source.name).join(', ')) : t('No longer matches any linked Collection.')}</p>
                 {!!candidate.origins?.length && <small>{t('Added from: {0}', candidate.origins.map((source) => source.name + (source.active ? '' : ` (${t('detached')})`)).join(', '))}</small>}
             </li>)}</ul>
-            <nav className="pagination" aria-label={t('Review pages')}><button type="button" disabled={page === 0} onClick={() => setPage(page - 1)}>{t('← Previous')}</button>
-                <span>{t('Page {0} of {1}', page + 1, Math.max(1, Math.ceil(entries.length / 25)))}</span><button type="button" disabled={(page + 1) * 25 >= entries.length} onClick={() => setPage(page + 1)}>{t('Next →')}</button></nav>
+            {(!initialReview || entries.length > 25) && <nav className="pagination" aria-label={t('Review pages')}><button type="button" disabled={page === 0} onClick={() => setPage(page - 1)}>{t('← Previous')}</button>
+                <span>{t('Page {0} of {1}', page + 1, Math.max(1, Math.ceil(entries.length / 25)))}</span><button type="button" disabled={(page + 1) * 25 >= entries.length} onClick={() => setPage(page + 1)}>{t('Next →')}</button></nav>}
             <p aria-live="polite">{t('Approved: {0} add · {1} exclude · {2} keep · {3} remove', ...['add', 'exclude', 'keep', 'remove'].map((action) => approved.filter(([, value]) => value === action).length))}</p>
             <button type="button" disabled={busy || !approved.length || refreshRequired} onClick={() => void apply()}>{t('Apply {0} approved changes', approved.length)}</button>
         </>}

@@ -1,7 +1,7 @@
 import TagSearchFilters from './TagSearchFilters';
 import SearchInput from './SearchInput';
 import {useCallback, useEffect, useRef, useState} from 'react';
-import {OpenShelf, RenameShelf, DuplicateShelf, DeleteShelf, RemoveStoriesFromShelf, ReorderShelfStories, SetShelfStoryProtected, ClearShelfExclusion} from '../wailsjs/go/main/App';
+import {OpenShelf, RenameShelf, DuplicateShelf, DeleteShelf, RemoveStoriesFromShelf, ReorderShelfStories, PreviewShelfUpdate, ClearShelfExclusion} from '../wailsjs/go/main/App';
 import {collections, exporter, library, shelves, tagging} from '../wailsjs/go/models';
 import {type CollectionQuery, DEFAULT_COLLECTION_QUERY} from './query-codec';
 import {t} from './i18n';
@@ -26,6 +26,11 @@ export default function ShelfWorkspace({catalog, id, revision, query, onQuery, c
     const [error, setError] = useState('');
     const [busy, setBusy] = useState(false);
     const [reviewOpen, setReviewOpen] = useState(false);
+    const [initialReview, setInitialReview] = useState<shelves.Review | null>(null);
+    const promptedRemovals = useRef(new Set<string>());
+    const reviewVisible = useRef(false);
+    const reviewButton = useRef<HTMLButtonElement>(null);
+    const loaded = view !== null;
     const [manageSources, setManageSources] = useState(false);
     const [dialog, setDialog] = useState<'rename' | 'duplicate' | 'delete' | null>(null);
     const [name, setName] = useState('');
@@ -46,6 +51,30 @@ export default function ShelfWorkspace({catalog, id, revision, query, onQuery, c
         } catch (error) { if (request === generation.current) setError(error instanceof Error ? error.message : t('Shelf could not be opened.')); }
     }, [id, query, manualOrder]);
     useEffect(() => { const pending = generation; const timer = window.setTimeout(() => void load(), 0); return () => {window.clearTimeout(timer); pending.current++;}; }, [load, revision]);
+    useEffect(() => {reviewVisible.current = reviewOpen;}, [reviewOpen]);
+    useEffect(() => {
+        if (!loaded) return;
+        let current = true;
+        const checkForMismatches = async () => {
+            try {
+                const response = await PreviewShelfUpdate(id);
+                if (!current) return;
+                if (!response.review) throw new Error(response.error?.message);
+                const removals = new Set(response.review.removals.map((candidate) => candidate.uuid));
+                const hasNewRemoval = [...removals].some((uuid) => !promptedRemovals.current.has(uuid));
+                promptedRemovals.current = removals;
+                if (hasNewRemoval && !reviewVisible.current) {
+                    reviewButton.current?.focus({preventScroll: true});
+                    setInitialReview(response.review);
+                    setReviewOpen(true);
+                }
+            } catch {
+                if (current) setError(t('Shelf updates could not be checked. Review updates to retry.'));
+            }
+        };
+        const timer = window.setTimeout(() => void checkForMismatches(), 0);
+        return () => {current = false; window.clearTimeout(timer);};
+    }, [id, revision, loaded]);
     const act = async (action: () => Promise<{error?: {message: string}}>) => {
         setBusy(true); setError('');
         try { const result = await action(); if (result.error) throw new Error(result.error.message); await load(); onChanged(); }
@@ -82,7 +111,7 @@ export default function ShelfWorkspace({catalog, id, revision, query, onQuery, c
                 <p className="curated-source-summary">{t('Sources (any match): {0}', view.sources.filter((source) => source.active).map((source) => source.name).join(', ') || t('None'))}</p>
             </div>
             <div className="curated-actions">
-                <button type="button" disabled={busy} onClick={() => setReviewOpen(true)}>{t('Review updates')}</button>
+                <button ref={reviewButton} type="button" disabled={busy} onClick={() => {setError(''); setInitialReview(null); setReviewOpen(true);}}>{t('Review updates')}</button>
                 <button type="button" disabled={busy} onClick={() => setManageSources(true)}>{t('Manage sources')}</button>
                 <details className="curated-management" ref={shelfActions} onKeyDown={(event) => {
                     if (event.key === 'Escape' && shelfActions.current?.open) {closeShelfActions();}
@@ -96,7 +125,7 @@ export default function ShelfWorkspace({catalog, id, revision, query, onQuery, c
                 </details>
             </div>
         </header>
-        {reviewOpen && <ShelfReview id={id} onClose={() => setReviewOpen(false)} onApplied={onMembershipChanged}/>}
+        {reviewOpen && <ShelfReview id={id} initialReview={initialReview} onClose={() => {setReviewOpen(false); setInitialReview(null);}} onApplied={onMembershipChanged}/>}
         {manageSources && <ShelfSources id={id} sources={view.sources} collections={sourceOptions} onClose={() => setManageSources(false)} onChanged={onMembershipChanged}/>}
         <div className="curated-toolbar">
             <div className="curated-actions">
@@ -122,11 +151,10 @@ export default function ShelfWorkspace({catalog, id, revision, query, onQuery, c
         <ul className={`curated-members curated-${viewMode}`}>{view.members.map((member) => <li key={member.uuid} className={member.story?.broken ? 'is-broken' : ''}>
             <div className="curated-member-info">
                 <label><input type="checkbox" checked={selected.includes(member.uuid)} disabled={busy} onChange={() => setSelected(selected.includes(member.uuid) ? selected.filter((uuid) => uuid !== member.uuid) : [...selected, member.uuid])}/><span>{member.story?.title ?? member.cachedTitle}</span></label>
-                <small>{member.protected ? t('Protected') : t('Source-derived')} · {t('Added from: {0}', (member.origins ?? []).map((origin) => origin.name + (origin.active ? '' : ` (${t('detached')})`)).join(', ') || t('Manual selection'))}
+                <small>{t('Added from: {0}', (member.origins ?? []).map((origin) => origin.name + (origin.active ? '' : ` (${t('detached')})`)).join(', ') || t('Manual selection'))}
                     {member.story?.broken && <> · <span className="curated-broken">{t('Broken · excluded from exports')}</span></>}</small>
             </div>
             {member.story ? <button type="button" className="curated-cover" onClick={() => onInspect(member.story!)} aria-label={t('Details for {0}', member.story.title)}>{viewMode === 'list' ? t('Open details') : <StoryCover story={member.story}/>}</button> : <p className="curated-unavailable" title={member.uuid}>{t('Unavailable')}<span className="curated-unavailable-id"> · {member.uuid}</span></p>}
-            <button className="curated-protection" type="button" disabled={busy || (!view.sources.some((source) => source.active) && member.protected)} onClick={() => void act(() => SetShelfStoryProtected(id, member.uuid, !member.protected))}>{member.protected ? t('Unprotect {0}', member.cachedTitle) : t('Protect {0}', member.cachedTitle)}</button>
             {manualOrder && !query.name && <div className="curated-actions curated-member-order"><button type="button" disabled={busy || member.position === 0} aria-label={t('Move {0} up', member.cachedTitle)} onClick={() => void act(() => reorder(member.uuid, -1))}>↑</button>
                 <button type="button" disabled={busy || member.position >= view.shelf.count - 1} aria-label={t('Move {0} down', member.cachedTitle)} onClick={() => void act(() => reorder(member.uuid, 1))}>↓</button></div>}
         </li>)}</ul>

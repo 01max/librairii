@@ -1,7 +1,7 @@
 export const CANONICAL_PROTOTYPE = {
     path: 'openspec/ui-prototypes/05-archive-shelves.html',
     snapshotPath: 'testdata/ui-prototypes/05-archive-shelves.html',
-    sha256: 'c9ac775c48b27f7b9ff18c42afd8fed40a81bbbbd3c4623e7818f54684295d14',
+    sha256: 'd519dd99e6e47dcdf8bead73e42dea2c43bb26b57f00f66d906375fc3a861860',
     normativeSelector: '.app',
     excludedSelector: '.back',
 } as const;

@@ -218,6 +218,9 @@ const historyOperations = [{
 
 export function installCollectionFixture() {
     const fixture = new URLSearchParams(window.location.search).get('fixture') ?? 'collection';
+    const promptShelfRemoval = new URLSearchParams(window.location.search).get('review') === 'removals';
+    let shelfMismatchReviewed = false;
+    const removedShelfMembers = new Set<string>();
     if (fixture === 'parity') {
         const query = {
             ...DEFAULT_COLLECTION_QUERY,
@@ -299,18 +302,25 @@ export function installCollectionFixture() {
         PackagedAcceptanceMode: async () => false,
         RecordPackagedAcceptance: async () => ({success: false}),
         RecoverStorage: async () => ({success: false}),
-        ListShelves: async () => ({shelves: fixture === 'curated' ? [{id: 1, name: 'Weekend Shelf', count: 3, unavailableCount: 1, sourceCount: 1}] : []}),
+        ListShelves: async () => ({shelves: fixture === 'curated' ? [{id: 1, name: 'Weekend Shelf', count: 3 - removedShelfMembers.size, unavailableCount: 1, sourceCount: 1}] : []}),
         OpenShelf: async (_id: number, query: {name?: string; page?: number; pageSize?: number}) => {
             const members = [
                 ...currentStories().slice(0, 2).map((story, index) => ({uuid: story.uuid, cachedTitle: story.title, position: index, protected: index === 0, story: {...story, broken: story.broken}, origins: [{id: 1, collectionId: 1, name: 'Favorites', active: true}]})),
                 {uuid: '00000000-0000-4000-8000-999999999999', cachedTitle: 'Unavailable story', position: 2, protected: true, origins: []},
-            ].filter((member) => !query.name || member.cachedTitle.toLowerCase().includes(query.name.toLowerCase()));
-            return {evaluation: {shelf: {id: 1, name: 'Weekend Shelf', count: 3, unavailableCount: 1, sourceCount: 1}, members, sources: [{id: 1, collectionId: 1, name: 'Favorites', active: true}], exclusions: [{uuid: 'excluded', title: 'Previously excluded story'}], page: 1, pageSize: 25, totalItems: members.length, totalPages: members.length ? 1 : 0}};
+            ].filter((member) => !removedShelfMembers.has(member.uuid) && (!query.name || member.cachedTitle.toLowerCase().includes(query.name.toLowerCase())));
+            return {evaluation: {shelf: {id: 1, name: 'Weekend Shelf', count: 3 - removedShelfMembers.size, unavailableCount: 1, sourceCount: 1}, members, sources: [{id: 1, collectionId: 1, name: 'Favorites', active: true}], exclusions: [{uuid: 'excluded', title: 'Previously excluded story'}], page: 1, pageSize: 25, totalItems: members.length, totalPages: members.length ? 1 : 0}};
         },
-        PreviewShelfUpdate: async () => ({review: {token: 'fixture-review', additions: Array.from({length: 300}, (_, index) => ({uuid: `candidate-${index}`, title: `Suggested story ${index + 1}`, sources: [{name: 'Favorites'}], origins: []})), removals: [], warnings: [], upToDate: false, incomplete: false}}),
+        PreviewShelfUpdate: async () => ({review: {token: 'fixture-review', additions: Array.from({length: 300}, (_, index) => ({uuid: `candidate-${index}`, title: `Suggested story ${index + 1}`, sources: [{name: 'Favorites'}], origins: []})), removals: promptShelfRemoval && !shelfMismatchReviewed ? [{uuid: currentStories()[1].uuid, title: currentStories()[1].title, story: currentStories()[1], origins: [{id: 1, collectionId: 1, name: 'Favorites', active: true}]}] : [], warnings: [], upToDate: false, incomplete: false}}),
         PreviewShelfSources: async () => ({review: {shelfId: 1, shelfName: 'Weekend Shelf', token: 'fixture-source-review', sources: [], detached: [{name: 'Favorites'}], affected: [{uuid: 'candidate', title: 'Source story', story: currentStories()[1], origins: [{name: 'Favorites'}]}], warnings: [], incomplete: false}}),
         PreviewShelfCreation: async () => ({review: {token: 'fixture-seed-review', additions: currentStories().slice(0, 2).map((story) => ({uuid: story.uuid, title: story.title, story, sources: [], origins: [], manual: true})), warnings: [], incomplete: false}}),
-        ApplyShelfUpdate: async () => ({shelf: {id: 1}}),
+        ApplyShelfUpdate: async (_id: number, _token: string, decisions: Array<{uuid: string; action: string}>) => {
+            for (const decision of decisions) {
+                if (decision.uuid !== currentStories()[1].uuid) continue;
+                if (decision.action === 'keep' || decision.action === 'remove') shelfMismatchReviewed = true;
+                if (decision.action === 'remove') removedShelfMembers.add(decision.uuid);
+            }
+            return {shelf: {id: 1}};
+        },
         ApplyShelfSources: async () => ({shelf: {id: 1}}),
         ClearShelfExclusion: async () => ({shelf: {id: 1}}),
         SetShelfStoryProtected: async () => ({shelf: {id: 1}}),

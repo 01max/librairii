@@ -24,5 +24,5 @@ test('detachment starts with no decisions and commits only explicit Keep all', a
 test('uncertain source coverage disables removal decisions', () => {
     render(<AffectedMembers plan={new shelves.SourceChangeReview({shelfName: 'Weekend', affected: [{uuid: 'one', title: 'Story', story: {}, origins: []}], warnings: [], incomplete: true})} choices={{}} onChange={vi.fn()} busy={false}/>);
     expect(screen.getByRole('option', {name: 'Remove and exclude'})).toBeDisabled();
-    expect(screen.getByRole('option', {name: 'Keep and protect'})).toBeEnabled();
+    expect(screen.getByRole('option', {name: 'Keep'})).toBeEnabled();
 });

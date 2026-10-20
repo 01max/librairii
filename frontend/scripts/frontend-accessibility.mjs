@@ -255,4 +255,32 @@ async function assertCuration(page, origin, viewport) {
     await page.getByRole('button', {name:'Create with 0 stories'}).waitFor();
     await check('creation confirmation');
     await page.keyboard.press('Escape');
+    for (const action of ['keep', 'remove']) {
+        await page.goto(`${origin}/?fixture=curated&review=removals`, {waitUntil: 'networkidle'});
+        if (viewport.width <= 850) await page.getByRole('button', {name: 'Library & filters', exact: true}).click();
+        await page.getByRole('button', {name: 'Weekend Shelf 3', exact: true}).click();
+        const mismatch = page.getByRole('dialog', {name: 'Review Shelf updates'});
+        const decision = mismatch.getByRole('combobox', {name: 'Decision for The Secret Forest'});
+        await decision.waitFor();
+        if (await mismatch.getByRole('combobox').count() !== 1) throw new Error('automatic mismatch prompt includes unrelated additions');
+        if (await decision.inputValue() !== 'defer') throw new Error('mismatch was preapproved');
+        if (await mismatch.getByRole('combobox').first().getAttribute('aria-label') !== 'Decision for The Secret Forest') throw new Error('mismatches were hidden behind additions');
+        await check('source mismatch decision');
+        await page.screenshot({path: join(tmpdir(), `librairii-mismatch-${viewport.width}.png`)});
+        if (action === 'keep') {
+            await page.keyboard.press('Escape');
+            if (await page.locator('.curated-members > li').count() !== 3) throw new Error('dismissal changed membership');
+            await page.getByRole('button', {name: 'Review updates', exact: true}).click();
+            await decision.waitFor();
+        }
+        await decision.selectOption(action);
+        await mismatch.getByRole('button', {name: 'Apply 1 approved changes', exact: true}).click();
+        await mismatch.waitFor({state: 'detached'});
+        const expected = action === 'keep' ? 3 : 2;
+        await page.waitForFunction((count) => document.querySelectorAll('.curated-members > li').length === count, expected);
+        if (await page.getByRole('button', {name: /protect/i}).count()) throw new Error('protection remains visible');
+        if (action === 'keep' && !await page.getByRole('checkbox', {name: 'The Secret Forest', exact: true}).isVisible()) throw new Error('Keep removed the story');
+        if (action === 'remove' && await page.getByRole('checkbox', {name: 'The Secret Forest', exact: true}).count()) throw new Error('approved removal retained the story');
+        await check(`explicit ${action} membership`);
+    }
 }

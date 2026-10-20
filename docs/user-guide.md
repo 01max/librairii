@@ -206,40 +206,46 @@ Shelves retain approved story UUIDs. **Create Shelf** opens an explicit initial
 preview; choose the stories and confirm **Create with N stories**. A new empty
 Shelf is valid. **Add to Shelf…** in the selected-story panel adds chosen stories
 to an existing Shelf or previews a new Shelf from the selection. Manual additions
-are protected and clear any prior exclusion for that UUID.
+stay on the Shelf until you explicitly remove them and clear any prior exclusion
+for that UUID. There is no protection setting: every approved story remains in
+place until you approve its removal.
 
 Shelf search, sidebar refinements, and sorting change the view only. They never
 replace approved membership or create source rules. Manual-order arrow buttons
 explicitly reorder members; Rename, Duplicate, and Delete operate on that Shelf.
-A duplicate retains approved membership, protection, exclusions, and source
-attribution independently; it accepts no fresh source matches.
+A duplicate retains approved membership, manual keep decisions, exclusions, and
+source attribution independently; it accepts no fresh source matches.
 
 **Manage sources** links Collections with the meaning “matches any of these
 Collections.” Linking never adds stories automatically. **Review updates** shows
 current additions and source-derived removals; every decision initially says
 **Not now**. **Add** approves membership, **Exclude from suggestions** records a
-persistent exclusion, **Keep and protect** prevents later source removal, and
+persistent exclusion, **Keep** retains a story as a manual choice, and
 **Remove and exclude** removes membership and suppresses future suggestions.
 Bulk actions are explicit too. Review the final action totals before applying.
 Deferring or cancelling changes nothing. Expired or stale reviews require a
 fresh preview and renewed decisions.
 
 Current matching sources explain additions; **Added from** records historical
-acceptance, including detached sources. Protected stories and unavailable UUIDs
-are never inferred removals. If any source needs attention or cannot evaluate,
-healthy sources may still suggest additions but all source removals pause.
+acceptance, including detached sources. Manually added or explicitly kept stories
+and unavailable UUIDs are never suggested for removal. If any source needs
+attention or cannot evaluate, healthy sources may still suggest additions but all source removals pause.
 The review says **Review incomplete** rather than **Up to date**.
 
-Unprotecting keeps a story in place but allows a later source review to suggest
-removal. A Shelf without sources keeps all members protected. **Manage exclusions**
-can allow suggestions again without adding the story. Removing selected stories
-from a Shelf also excludes their future suggestions; library archives remain.
+When you open a Shelf with source-derived stories that no longer match any linked
+Collection, a prompt opens for those stories. Choose **Keep**, **Remove and
+exclude**, or **Not now**, then apply the decisions you approved. Closing the
+review changes nothing; **Review updates** lets you return to deferred decisions.
+**Keep** makes retention a manual choice, so the same mismatch does not keep
+prompting. Manual-only Shelves do not receive source-removal prompts.
+**Shelf actions → Manage exclusions** can allow suggestions again without adding
+the story. Removing selected stories from a Shelf also excludes their future suggestions; library archives remain.
 
 Detaching sources previews affected members. Explicitly **Keep all and apply
 sources**, or decide Keep/Remove for every affected story before applying. Removal
 is disabled when source coverage is uncertain or a story is unavailable. Removing
-the last source protects every retained member. Deleting a linked Collection
-reviews all affected Shelves and commits their approved decisions together with
+the last source retains every kept member as a manual choice. Deleting a linked
+Collection reviews all affected Shelves and commits their approved decisions together with
 the deletion. Cancelling leaves both Collections and Shelves unchanged.
 
 Library removal leaves Shelf membership, exclusions, and acceptance origins

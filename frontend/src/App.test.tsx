@@ -63,6 +63,7 @@ vi.mock('../wailsjs/go/main/App', () => ({
     ListCollections: vi.fn(),
     ListShelves: vi.fn(async () => ({shelves: []})),
     OpenShelf: vi.fn(),
+    PreviewShelfUpdate: vi.fn(async () => ({review: {token: 'up-to-date', additions: [], removals: [], warnings: [], upToDate: true}})),
     AddStoriesToShelf: vi.fn(),
     OfficialMetadataStatus: vi.fn(),
     OpenCollection: vi.fn(),

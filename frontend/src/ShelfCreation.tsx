@@ -53,7 +53,7 @@ export default function ShelfCreation({collections: sources, manualUUIDs, onClos
             <ul className="curated-candidates">{review.additions.slice(page * 25, (page + 1) * 25).map((item) => <li key={item.uuid}>
                 <label><input type="checkbox" disabled={busy} checked={selected.includes(item.uuid)} onChange={() => setSelected(selected.includes(item.uuid) ? selected.filter((id) => id !== item.uuid) : [...selected, item.uuid])}/>
                     {item.title}{item.story?.broken ? ` · ${t('Broken')}` : ''}</label>
-                <small>{item.manual ? t('Manual selection · protected') : t('Matches: {0}', (item.sources ?? []).map((source) => source.name).join(', '))}</small>
+                <small>{item.manual ? t('Manual selection') : t('Matches: {0}', (item.sources ?? []).map((source) => source.name).join(', '))}</small>
             </li>)}</ul>
             <div className="curated-actions"><button type="button" disabled={page === 0} onClick={() => setPage(page - 1)}>{t('← Previous')}</button>
                 <span>{t('Page {0} of {1}', page + 1, Math.max(1, Math.ceil(review.additions.length / 25)))}</span>
