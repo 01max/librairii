@@ -698,6 +698,59 @@
         "x86_64-apple-darwin",
         "x86_64-unknown-linux-gnu"
       ]
+    },
+    {
+      "suite": "librairii-storage::adoption_inputs",
+      "name": "closed_manifest_refuses_sidecars_before_source_io"
+    },
+    {
+      "suite": "librairii-storage::adoption_inputs",
+      "name": "closed_manifest_retains_bytes_and_refuses_ambiguous_or_incomplete_inputs"
+    },
+    {
+      "suite": "librairii-storage::adoption_inputs",
+      "name": "self_consistent_hashes_cannot_qualify_foreign_sqlite_or_repair_it",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::adoption_inputs",
+      "name": "unix::cancelled_input_verification_does_not_probe_missing_source_or_create_roots",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::adoption_inputs",
+      "name": "unix::closed_input_refuses_aliases_and_raw_profile_identity_mismatch",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::adoption_inputs",
+      "name": "unix::closed_input_revalidation_detects_unlisted_changed_and_missing_entries",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::adoption_inputs",
+      "name": "unix::verified_input_uses_private_sqlite_probe_and_keeps_every_source_byte",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
     }
   ]
 }
