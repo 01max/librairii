@@ -20,8 +20,8 @@ of the final head and clean-checkout checks; unavailable target evidence is inco
 | 3.5 | 586ff2b16a322155fab2c2fa0551c47dac27f706 | Locked check facade, dependency direction and refusing desktop process test |
 | 3.6 | 3a385ea38986b1d3866395d5c5ca09030e580c88 | Native four-target CI definition; actual runs and release desktop evidence pending |
 | 3.7 | b0fa2b536b89cd7c0a483677ac5f8cf68a4fdcd3 | deny/audit pass; exact source/license/duplicate policy, expiry tests and four-target inventory with upstream notice files |
-| 3.8 | Pending commit | 18 nextest tests, independent fuzz lock/toolchain and bounded run, stable coverage and actual Criterion measurements |
-| 3.9 | Pending | Independent review and clean-checkout/native target evidence |
+| 3.8 | 1c0b6b65c40a2ebb7b5e39771a91589463fb43c0 | 18 nextest tests, independent fuzz lock/toolchain and bounded run, stable coverage and actual Criterion measurements |
+| 3.9 | Pending gate; separate evidence commit | Cumulative discovery guard and provisional clean-checkout evidence below; independent final review/native/corpus admission still required |
 
 ## Baseline pins and boundaries
 
@@ -230,3 +230,47 @@ whole platform module, unrelated logic or every lint. A new FFI change needs
 independent review of that target's code and evidence; there is no authored unsafe
 or exception in the current workspace. Proposed section4 paths are storage
 layout/identity/profile/lock/platform modules, pending direct owner confirmation.
+
+## Section 3.9: pending admission gate
+
+**PENDING.** This evidence commit records checks and enforces cumulative discovery;
+it does not complete independent review, task1 admission or missing native checks.
+No external OpenSpec checkbox is marked complete by this session.
+
+An independent `git clone --no-local --single-branch` at
+1c0b6b65c40a2ebb7b5e39771a91589463fb43c0 (tree49453e50ef362b4c02559a88644a26c6998182bc)
+ran cargo xtask check and make check successfully on macOS15.7.7 ARM/M4Pro/48GiB,
+with stable1.99.1, declared pinned helpers and Node24.15.0. The clone began without
+build outputs/node_modules; registry/tool/browser caches were available on the
+host, so this is clean-checkout evidence, not a clean-machine installation claim.
+Its tracked status remained clean. Rust ran18tests+onecompile-fail doctest at that
+head; make check ran207frontend tests plus responsive/visual/accessibility and
+performance as well as the full retained Go/vet/type/lint/build checks.
+Later safety fixes add one exact-selector test and one root-lifetime doctest;
+the discovery guard adds one negative test: current local20tests+2doctests pass.
+All earlier assertions remain. Native CI on the earlier head remains provisional;
+a changed head requires renewed exact-head CI/review and cumulative checks.
+
+`.config/rust-test-baseline.json` records the required foundation tests by suite
+and name. `xtask check` validates pinned nextest discovery before running the full
+workspace, rejects missing, ignored or filtered assertions, and saves discovery
+with CI evidence. Unix symlink tests apply only to the three Unix targets; Windows
+has19current tests and the Unix hosts20. This explicit cfg scope is not a Windows
+reparse/locking pass. Additions remain cumulative; replacing a scaffold behavior
+with its real port requires an independently reviewed baseline replacement proving
+the intended invariant. The separate doctest step remains mandatory.
+
+Remaining admission work: merge latest integration including independently reviewed
+task1 contract/corpus; wire task1's cross-platform read-only preservation/check.py
+integrity/semantic checks into ordinary xtask (no Windows Go desktop dependency);
+keep oracle regeneration/replay separate; rerun clean-checkout/current cumulative
+Go+Rust/fixture/native CI; resolve native AO review findings in separate commits;
+obtain independent approval on the exact final head and retain review/CI identities.
+Missing, skipped, failed or cancelled required checks are incomplete. No merge or
+production qualification is authorized by these local results.
+
+Additional focused commits:577f9755255411de3e1520c66eac3fc1e0106d29 bounds authorized
+root lifetimes and exact exception selectors;556d295ff674900f93e0b960c22ab464caef6952
+records raw UUID and narrow reviewed FFI seams. Original subtask/fix SHAs are never
+rewritten. The evidence commit's own SHA is available from its OpenSpec-Task3.9
+trailer and will be appended to this ledger by the next evidence update.

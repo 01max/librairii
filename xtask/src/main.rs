@@ -1,5 +1,6 @@
 #![forbid(unsafe_code)]
 mod deep;
+mod discovery;
 mod policy;
 mod supply_chain;
 use std::{
@@ -132,6 +133,7 @@ fn run() -> Result {
                     "warnings",
                 ],
             )?;
+            discovery::check(&target)?;
             command(
                 &cargo(),
                 &[

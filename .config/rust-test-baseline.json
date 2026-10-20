@@ -1,0 +1,90 @@
+{
+  "source": "PR41 section3 foundations; additions are cumulative; removals/replacements require review",
+  "required": [
+    {
+      "suite": "librairii-core",
+      "name": "identity::tests::checksum_rejects_nonhex_wrong_length_and_multibyte_text"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "identity::tests::group_ids_preserve_signed_database_range_and_reject_nonpositive_values"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "identity::tests::uuid_keeps_all_bytes_and_formats_canonically"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "vocabulary::tests::group_scope_cannot_conflate_collection_with_curated_shelf"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "vocabulary::tests::invalid_input_is_a_typed_message_without_the_input_payload"
+    },
+    {
+      "suite": "librairii-core::foundations",
+      "name": "checksum_acceptance_is_exactly_64_ascii_hex_bytes"
+    },
+    {
+      "suite": "librairii-core::foundations",
+      "name": "checksum_text_roundtrips_all_bytes"
+    },
+    {
+      "suite": "librairii-core::foundations",
+      "name": "group_ids_never_cross_scope_even_at_equal_numeric_identity"
+    },
+    {
+      "suite": "librairii-core::foundations",
+      "name": "stable_boundary_report_keeps_identity_and_refuses_default_approval"
+    },
+    {
+      "suite": "librairii-core::foundations",
+      "name": "uuid_text_roundtrips_all_identity_bytes"
+    },
+    {
+      "suite": "librairii-desktop::skeleton",
+      "name": "unimplemented_desktop_refuses_launch_without_touching_isolated_roots"
+    },
+    {
+      "suite": "librairii-testkit",
+      "name": "failure_tests::failed_write_preserves_source_and_exact_partial_destination_bytes"
+    },
+    {
+      "suite": "librairii-testkit",
+      "name": "tests::a_symlink_replacing_an_owned_directory_is_rejected",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-testkit",
+      "name": "tests::network_boundary_rejects_public_and_wildcard_addresses"
+    },
+    {
+      "suite": "librairii-testkit",
+      "name": "tests::only_exact_owned_roots_are_authorized_and_cleaned"
+    },
+    {
+      "suite": "librairii-testkit",
+      "name": "tests::synthetic_http_bytes_are_served_over_loopback"
+    },
+    {
+      "suite": "xtask::bin/xtask",
+      "name": "discovery::tests::removed_ignored_or_filtered_required_tests_cannot_pass_discovery"
+    },
+    {
+      "suite": "xtask::bin/xtask",
+      "name": "policy::tests::production_direction_rejects_toolkit_database_and_testkit_in_core"
+    },
+    {
+      "suite": "xtask::bin/xtask",
+      "name": "supply_chain::tests::exceptions_cannot_widen_into_version_ranges_or_arbitrary_advisory_ids"
+    },
+    {
+      "suite": "xtask::bin/xtask",
+      "name": "supply_chain::tests::unrecorded_suppressions_fail_and_expiry_is_not_optional"
+    }
+  ]
+}
