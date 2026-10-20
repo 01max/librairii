@@ -516,3 +516,75 @@ run expanded that reference to147,228. Four separate compile-fail docs, exact146
 preservation corpus, private-source policy, storage all-target Clippy and fmt
 pass. Owner5 retains additive test discovery, root files and any combined check
 support. Windows corrected-head execution and full4.11 remain open.
+
+### SQL checkout repair consumed; original Windows failures resolved in scope
+
+Private normalization source commit a125778200af8d28e8ff99c6c41f47a6ef5b69db
+passed its EXACT committed ARM `cargo xtask check`:110 nextest/zero skipped,
+four compile-fail docs,146 corpus, strict14 Python, both graph policies,
+source/notices, formatting/build/Clippy; run16161520-6594-48da-8b0a-8b56d24b3383.
+
+Consumed/published ORIGINAL5686c82a912da4ebf7e02f866de5311cff40158b by FF.
+This retains original16973ca2003b7d0a64135f3f25e3b137754aac85 and merge88a7eb4
+with a125; only6 owner5 root/tooling files differ from a125. No source SQL,
+comparison, expected outcome or byte pin changed. Independently read full6184B
+owner5 migration-byte support report SHA256
+71ce4d35034a4d370a24e627a9b2a14ac76c4a3c21af63b8b878d471b1c49ad5,
+stable before/after. It supplies all5 pre-fix ARM autocrlf reproductions and
+corrected fresh-checkout7 backup/5 migration passes,54 exact SQL triples and
+unchanged controlled-parent/Git bytes. This closes the previously unproven
+scoped conversion attribution with supplied reproductions, never normalization.
+
+Independently inspected CURRENT5686 completed native Windows job118840366387,
+run39483994204:75 passed,zero skipped. EACH original RED is individually PASS:
+compatible prefix17/75, foreign-key corruption18, future/gapped21, embedded
+bytes46, all-prefix recognition55. The fresh persistent-autocrlf special-path
+embedded assertion also passes19:32:35Z. Provider checkout1edd3d1b6fdffb10b01707539321b81387d5eb6f
+has verified parents438+5686 and tree d9ace6bd5ff9da2a0f6a43661cf7f9bad9472781,
+identical to published5686. Original d6 failure remains historical evidence.
+This is actual Windows retained/refusal-test execution; the pending-prefix
+DirectoryDurabilityUnavailable refusal is not an implemented4.9 capability.
+Intel/current full gates and future source heads are independently qualified.
+
+### Partial 4.4: private frozen Default-language translation without DNS
+
+The private test-only compatibility module now translates the bounded saved
+query language boundary, Go Default=Deprecated|Legacy grammar/aliases, known
+language/script/region/variant data, lazy scanner behavior, grandfathered tags,
+extensions and exact compact String round trip. It preserves original-to-
+derived mappings and existing unassigned product-license status. It never uses
+modern aliases, SuppressScript/Macro/CLDR defaults, parent/matcher heuristics,
+runtime Go, TLD APIs or the unapproved ccTLD flag. The literal region flags are
+masked ONLY at bit1/value2 before emission; all other bits are retained.
+
+Actual offline pinned Go1.26.5 execution in NEW independent exact73/archive+
+authenticated487-member inputs was compared with a SEPARATE owned module copy:
+mask359 region flags and remove BOTH public/internal Region.TLD methods. Only
+those3 selected members differ;484 remain byte-identical. Raw Default Parse
+Tag.String, exact Und equality, full returned error text AND required product
+canonical outcomes are identical on1,369,529 inputs. The original436 archive
+files,487 module members, source ZIP, selected Go files and tool remain unchanged.
+language-reference.json SHA256
+a687f58350d126addd110fb8b6aa6f88489ccfb05e4dc6cd401de92a99ce45b8
+records source/tool/probe/seed identities, precise counterfactual hashes and
+framed reference digests. Original/masked Go outputs are compared in full.
+
+Rust matches actual Go's product canonical/refusal outcomes and input digests:
+346,788 base/suffix cases (all2/3-letter bases),456,976 scripts,19,252 regions,
+523,900 compact-region overrides,12,544 variant pairs,10,000 deterministic
+grammar sequences and69 explicit edge cases. These include alias distinctions,
+duplicate keys/variants, transform truncation, private use, Und, compact bit
+widths and region override elision. The product rejects every parse error;
+private Rust exposes no partial error tag as a new public API. Source inspection
+and finite differential tests support this translation, not every possible
+string or full Collection behavior. No schema-open rewriting is activated.
+
+Focused ARM run8db2c061-6cbd-4871-a96a-a3fb11e384af passes all7 private
+normalization/language tests. Replaying the shared independent-input helper
+keeps normalization-reference.json byte-IDENTICAL at3d1dfc44…c37e, retaining
+all1,112,064 scalar and147,228 sequence checks. The version1 private manifest
+inventories16 exact files and their original headers/notices; source policy,
+storage all-target Clippy, fmt and unchanged146 corpus pass. Final committed
+cumulative/native checks follow separately. Strict saved-query v1–v5 decoding,
+atomic explicit same-writer Collection Inspect/Open and all24 projection
+assertions remain REQUIRED and unfinished;4.4/4.11 are not complete.

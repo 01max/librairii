@@ -44,7 +44,7 @@ def command(args, cwd, env=None, timeout=120):
                           stderr=subprocess.PIPE).stdout
 
 
-def main():
+def qualify(template_name="normalization_oracle.go.in", arguments=(), runner=None):
     directory = Path(__file__).resolve().parent
     repository = directory.parents[4]
     index_bytes = (repository / ".config/upstream-sources" / BUNDLE / "source-index.json").read_bytes()
@@ -110,7 +110,7 @@ def main():
 
         probe = checkout / "cmd/native-normalization-proof"
         probe.mkdir(parents=True)
-        template = directory / "normalization_oracle.go.in"
+        template = directory / template_name
         (probe / "main.go").write_bytes(template.read_bytes())
         modfile = temporary / "proof.mod"
         modfile.write_text("module github.com/01max/librairii\n\ngo 1.26.0\n"
@@ -124,7 +124,13 @@ def main():
         binary = temporary / "normalization-proof"
         command([str(go_tool), "build", "-mod=mod", "-modfile=" + str(modfile),
                  "-o", str(binary), "./cmd/native-normalization-proof"], checkout, env)
-        result = json.loads(command([str(binary)], checkout, env, timeout=120))
+        if runner is None:
+            result = json.loads(command([str(binary), *arguments], checkout, env, timeout=120))
+        else:
+            result = runner({"temporary": temporary, "checkout": checkout, "module": module,
+                             "binary": binary, "environment": env, "modfile": modfile,
+                             "go_tool": go_tool, "sources": source_by_name,
+                             "arguments": arguments, "module_inventory": xtext_before})
         frozen_after = inventory(checkout)
         probe_name = "cmd/native-normalization-proof/main.go"
         del frozen_after[probe_name]
@@ -142,15 +148,20 @@ def main():
             "templateSha256": sha(template.read_bytes()),
             "scope": "disposable independent archive + external modfile; offline pinned Go1.26.5, no original input writes",
         }
-        # Preserve the original source copyright lines on this generated
-        # reference. Its source-manifest record supplies the exact identities.
-        result["sourceCopyright"] = ["// Copyright 2011 The Go Authors. All rights reserved.",
-                                     "// Copyright 2016 The Go Authors. All rights reserved.",
-                                     "// Copyright 2009 The Go Authors. All rights reserved."]
-        output = directory / "normalization-reference.json"
-        output.write_text(json.dumps(result, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-        print(json.dumps({"reference": str(output), "sha256": sha(output.read_bytes()),
-                          "scalarCount": result["scalarCount"], "sequenceCount": result["sequenceCount"]}))
+        return result
+
+
+def main():
+    result = qualify()
+    # Preserve the original source copyright lines on this generated
+    # reference. Its source-manifest record supplies the exact identities.
+    result["sourceCopyright"] = ["// Copyright 2011 The Go Authors. All rights reserved.",
+                                 "// Copyright 2016 The Go Authors. All rights reserved.",
+                                 "// Copyright 2009 The Go Authors. All rights reserved."]
+    output = Path(__file__).resolve().parent / "normalization-reference.json"
+    output.write_text(json.dumps(result, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    print(json.dumps({"reference": str(output), "sha256": sha(output.read_bytes()),
+                      "scalarCount": result["scalarCount"], "sequenceCount": result["sequenceCount"]}))
 
 
 if __name__ == "__main__":

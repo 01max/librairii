@@ -36,6 +36,10 @@ fn is_space(character: char) -> bool {
     in_ranges(character, unicode::WHITE_SPACE)
 }
 
+pub(super) fn trim_space(value: &str) -> &str {
+    value.trim_matches(is_space)
+}
+
 fn folded(value: &str) -> Result<String> {
     let mut output = String::new();
     for character in value.chars() {
@@ -272,7 +276,7 @@ fn normalize(value: &str) -> Result<String> {
     if value.len() > MAX_INPUT_BYTES {
         return Err(NormalizeError::InputLimit);
     }
-    let folded = folded(value.trim_matches(is_space))?;
+    let folded = folded(trim_space(value))?;
     let decomposed = nfkd(&folded)?;
     let mut output = String::new();
     let mut pending_space = false;

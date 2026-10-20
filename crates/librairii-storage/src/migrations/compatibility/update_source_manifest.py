@@ -13,6 +13,7 @@ BUNDLE = "go-1.26.5-xtext-0.43.0-unicode15-cldr32"
 INDEX_SHA = "10ea8fe193c594ce153ae7a1734c41ab80c9d406cc7ea314c8c7c471b7a92a99"
 MODULE = "golang.org/x/text@v0.43.0/"
 NORMALIZATION_NOTICES = ["LICENSE-GO-BSD.txt", "PATENTS-GO.txt", "LICENSE-UNICODE-V3.txt"]
+LANGUAGE_NOTICES = ["LICENSE-GO-BSD.txt", "PATENTS-GO.txt", "LICENSE-CLDR32-UNICODE.txt", "LICENSE-CLDR32-APACHE.txt", "LICENSE-CC0.txt"]
 TABLES = [MODULE + "unicode/norm/tables15.0.0.go"]
 PROPERTIES = ["Go1.26.5/src/unicode/tables.go",
               "oracle73a93303/frontend/src/search-casefold.json"]
@@ -21,6 +22,12 @@ ALGORITHM = [MODULE + "unicode/norm/" + name for name in [
 ALGORITHM += [MODULE + "cases/fold.go", "Go1.26.5/src/unicode/graphic.go",
               "Go1.26.5/src/unicode/letter.go", "Go1.26.5/src/strings/strings.go",
               "internal/searchtext/searchtext.go"]
+LANGUAGE_TABLES = [MODULE + "internal/language/tables.go", MODULE + "internal/language/lookup.go",
+                   MODULE + "internal/language/compact/tables.go"]
+LANGUAGE_ALGORITHM = [MODULE + "internal/language/" + name for name in ["parse.go", "lookup.go", "language.go", "compact.go", "common.go"]]
+LANGUAGE_ALGORITHM += [MODULE + "internal/tag/tag.go", MODULE + "language/parse.go", MODULE + "language/language.go",
+                       MODULE + "internal/language/compact/compact.go", MODULE + "internal/language/compact/language.go",
+                       "oracle73a93303/internal/library/story_query.go"]
 
 
 def digest(data):
@@ -47,6 +54,13 @@ def main():
         "unicode_properties.rs": ("generated", recipe + "; retain Go15 Mn/White_Space ranges plus exact frozen1616 full-fold map, no current Unicode regeneration.", PROPERTIES),
         "normalization.rs": ("translated", "Hand translation of frozen full-fold→Go stream-safe NFKD→Mn-only removal→Go whitespace folding; original-character leading/trailing partition precedes stable CCC insertion. Safe checked UTF8 trie and fixed32-rune segment, Hangul decomposition; no modern composition or runtime Go.", TABLES + PROPERTIES + ALGORITHM),
         "normalization-reference.json": ("generated", "python3 verify_normalization.py; actual pinned Go1.26.5 frozen Normalize/cases.Fold/norm.NFKD/unicode APIs over all1112064 valid scalars and147228 boundary sequences. Includes57 CCC/Mn representatives and all18019 decomposing/backward-interacting scalars on both sides of overflow; exact framed SHA256 digests. Source/tool/ZIP/probe identities and before/after proof retained; not arbitrary-string or language qualification.", TABLES + PROPERTIES + ALGORITHM),
+        "extract_language.py": ("translated", "Hand-translate frozen getLangID finite two/three-letter lookup and compact bit decoding into literal extraction; verify selected bytes/headers; remove ONLY regionTypes ccTLD bit1/value2 before writing, retain other bits; never copy TLD APIs or regenerate current registries.", LANGUAGE_TABLES + [MODULE + "internal/language/compact.go"]),
+        "language_data.rs": ("generated", "python3 extract_language.py --source-root <authenticated49-materialization> --source-index <pinned-index>; cargo fmt -p librairii-storage. Literal frozen mappings, aliases, scripts, regions, variants, grandfathered data and compact core IDs; regionTypes bit1/value2 excluded before emission, other bits unchanged; no TLD APIs or current registry.", LANGUAGE_TABLES),
+        "language-cases.json": ("generated", "python3 extract_language.py: decode the773 frozen compact cores and2 special strings, retain112 variant names; append authored suffix/selected/random seed protocol. Qualification INPUTS only, never expected outputs, fixture-specific aliases or preservation corpus regeneration; no DNS data.", LANGUAGE_TABLES + [MODULE + "internal/language/compact.go"]),
+        "language.rs": ("translated", "Private product35-byte canonicalLanguage boundary; frozen Default=Deprecated|Legacy scanner/core/variant/extension and exact compact round trip. Lazy token validation preserves transform truncation; region override/compact bit widths remain observable; no SuppressScript/Macro/CLDR, parent/matcher approximation or TLD API. TrimSpace delegates the single private frozen Unicode primitive. Does not expose partial error tags that the product rejects.", LANGUAGE_TABLES + LANGUAGE_ALGORITHM),
+        "language_oracle.go.in": ("authored", "Qualification-only calls to actual frozen public Default parser/String/Und/error and product boundary; framed digest protocol, finite alphabets, compact region overrides and deterministic grammar sequences; no runtime Go.", []),
+        "verify_language.py": ("authored", "Reuse authenticated disposable source/tool materialization; compare original Go results with a separate owned copy masking exactly ccTLDbit2 and deleting BOTH TLD API functions. Verify exactly3 counterfactual members changed,484 unchanged and all original inputs unchanged. No preservation or production writes.", []),
+        "language-reference.json": ("generated", "python3 verify_language.py: actual pinned offline Go1.26.5 Default/String/Und/errors and35-byte product outcomes on1369529 inputs; counterfactual deletion of TLD APIs+masked bit2 gives identical raw/product digests. Retain exact original/modified hashes, source/probe/seed identities and framed results; not all possible strings, Collection SQL or native filesystem qualification.", LANGUAGE_TABLES + LANGUAGE_ALGORITHM),
     }
     actual = {p.relative_to(directory).as_posix() for p in directory.rglob("*")
               if p.is_file() and p.name != "source-manifest.json"}
@@ -61,13 +75,20 @@ def main():
         data = path.read_bytes()
         uses = []
         notices = set()
-        for original in originals:
+        for original in dict.fromkeys(originals):
             selected = sources[original]
-            selection = "product-boundary" if original == "internal/searchtext/searchtext.go" else "normalization"
+            if original.startswith((MODULE + "internal/language/", MODULE + "internal/tag/", MODULE + "language/")):
+                selection = "language-default-without-dns"
+            elif original.endswith(("internal/searchtext/searchtext.go", "internal/library/story_query.go")):
+                selection = "product-boundary"
+            else:
+                selection = "normalization"
             uses.append({"path": original, "sha256": selected["sha256"],
                          "header_sha256": selected["first12LinesSha256"], "selection": selection})
             if selection == "normalization":
                 notices.update(NORMALIZATION_NOTICES)
+            elif selection == "language-default-without-dns":
+                notices.update(LANGUAGE_NOTICES)
         result.append({"path": name, "bytes": len(data), "sha256": digest(data),
                        "kind": kind, "recipe": recipe, "sources": uses,
                        "notices": sorted(notices)})
