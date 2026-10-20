@@ -1,0 +1,149 @@
+// Qualification only. Copy into a verified disposable oracle clone before build.
+// This template is not a Go package in the maintained application checkout.
+package main
+
+import (
+	"bufio"
+	"encoding/hex"
+	"encoding/json"
+	"flag"
+	"fmt"
+	"os"
+	"runtime"
+	"runtime/debug"
+	"sort"
+	"strings"
+	"unicode"
+	"unicode/utf8"
+
+	"github.com/01max/librairii/internal/searchtext"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
+	"golang.org/x/text/unicode/norm"
+)
+
+type testCase struct {
+	Name     string  `json:"name"`
+	Input    string  `json:"input"`
+	Expected *string `json:"expectedNormalized,omitempty"`
+}
+
+func main() {
+	mode := flag.String("mode", "", "provenance, scalars, sequences, or source-cases")
+	path := flag.String("cases", "", "owned synthetic case JSON")
+	flag.Parse()
+	if runtime.Version() != "go1.26.5" || unicode.Version != "15.0.0" || norm.Version != "15.0.0" || cases.UnicodeVersion != "15.0.0" || language.CLDRVersion != "32" {
+		panic("wrong oracle toolchain or selected data version")
+	}
+	if *mode == "provenance" {
+		build, ok := debug.ReadBuildInfo()
+		if !ok {
+			panic("build provenance unavailable")
+		}
+		must(json.NewEncoder(os.Stdout).Encode(map[string]any{"go": runtime.Version(), "unicode": unicode.Version, "norm": norm.Version, "cases": cases.UnicodeVersion, "cldr": language.CLDRVersion, "build": build}))
+		return
+	}
+	if *mode == "source-cases" {
+		must(json.NewEncoder(os.Stdout).Encode(sourceCases()))
+		return
+	}
+	w := bufio.NewWriter(os.Stdout)
+	fold := cases.Fold()
+	count := 0
+	emit := func(s string, scalar bool) {
+		mn, space, ccc := "-", "-", "-"
+		if scalar {
+			r, _ := utf8.DecodeRuneInString(s)
+			mn = fmt.Sprint(unicode.Is(unicode.Mn, r))
+			space = fmt.Sprint(unicode.IsSpace(r))
+			ccc = fmt.Sprint(norm.NFKD.PropertiesString(s).CCC())
+		}
+		_, err := fmt.Fprintf(w, "%d\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n", count, hex.EncodeToString([]byte(s)), mn, space, ccc, hex.EncodeToString([]byte(norm.NFKD.String(s))), hex.EncodeToString([]byte(fold.String(s))), hex.EncodeToString([]byte(searchtext.Normalize(s))))
+		must(err)
+		count++
+	}
+	switch *mode {
+	case "scalars":
+		for r := rune(0); r <= utf8.MaxRune; r++ {
+			if r < 0xd800 || r > 0xdfff {
+				emit(string(r), true)
+			}
+		}
+	case "sequences":
+		b, err := os.ReadFile(*path)
+		must(err)
+		var inputs []testCase
+		must(json.Unmarshal(b, &inputs))
+		for _, c := range inputs {
+			emit(c.Input, false)
+		}
+	default:
+		panic("unknown qualification mode")
+	}
+	_, err := fmt.Fprintf(w, "END\t%d\n", count)
+	must(err)
+	must(w.Flush())
+}
+
+func must(err error) {
+	if err != nil {
+		panic(err)
+	}
+}
+
+// Representatives come from the actual selected tables, not a product whitelist.
+func sourceCases() []testCase {
+	var result []testCase
+	add := func(name, s string) { result = append(result, testCase{Name: name, Input: s}) }
+	representatives := map[string]rune{}
+	var spaces []rune
+	for r := rune(0); r <= utf8.MaxRune; r++ {
+		if r >= 0xd800 && r <= 0xdfff {
+			continue
+		}
+		if unicode.IsSpace(r) {
+			spaces = append(spaces, r)
+		}
+		ccc := norm.NFKD.PropertiesString(string(r)).CCC()
+		if ccc != 0 {
+			key := fmt.Sprintf("%03d/mn=%t", ccc, unicode.Is(unicode.Mn, r))
+			if _, ok := representatives[key]; !ok {
+				representatives[key] = r
+			}
+		}
+	}
+	keys := make([]string, 0, len(representatives))
+	for k := range representatives {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	for _, a := range keys {
+		r := representatives[a]
+		for _, n := range []int{0, 1, 29, 30, 31, 32, 59, 60, 61} {
+			add(fmt.Sprintf("nonstarter/%s/%d", a, n), "a"+strings.Repeat(string(r), n)+"Z")
+			add(fmt.Sprintf("CGJ/%s/%d", a, n), "a"+strings.Repeat(string(r), n)+"\u034f"+string(r)+"Z")
+		}
+		for _, b := range keys {
+			add("CCC-pair/"+a+"/"+b, "A"+string(r)+string(representatives[b])+"Z")
+		}
+	}
+	for l := rune(0x1100); l < 0x1113; l++ {
+		for v := rune(0x1161); v < 0x1176; v++ {
+			for t := rune(0); t < 28; t++ {
+				s := string(l) + string(v)
+				if t != 0 {
+					s += string(0x11a7 + t)
+				}
+				add(fmt.Sprintf("Hangul/L%X/V%X/T%X", l, v, t), s)
+			}
+		}
+	}
+	for _, r := range []rune{0x10ff, 0x1100, 0x1112, 0x1113, 0x1160, 0x1161, 0x1175, 0x1176, 0x11a7, 0x11a8, 0x11c2, 0x11c3, 0xabff, 0xac00, 0xd7a3, 0xd7a4} {
+		add(fmt.Sprintf("Hangul-boundary/%X", r), "A"+string(r)+"\u0301Z")
+	}
+	for _, r := range spaces {
+		add(fmt.Sprintf("whitespace/%X", r), string(r)+"É"+string(r)+string(r)+"TE"+string(r))
+		add(fmt.Sprintf("whitespace-mark/%X", r), "\u0301"+string(r)+"É"+string(r)+"\u0301")
+	}
+	return result
+}

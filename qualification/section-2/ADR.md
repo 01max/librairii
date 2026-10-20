@@ -87,3 +87,20 @@ metadata deliberately; rerun affected locked builds, corpus and platform gates.
 3. Execute and attribute each physical gate (2.4–2.9, 2.11); retain missing cases.
 4. Trigger fallback only for an established mandatory failure (2.12).
 5. Leave 2.13 pending AO native review and all mandatory physical results.
+
+## Unicode15 compatibility qualification follow-up
+
+The independently owned [Unicode experiment](unicode-compat/README.md) evaluates
+unicode-normalization=0.1.22 (defaults off,std) and
+unicode-general-category=0.6.0 (defaults off), with its own locked graph and
+upstream source/notices. Actual Rust1.99.1 ARM execution against Go1.26.5 in a
+verified disposable oracle clone covers all1,112,064 valid scalars and15,550
+source-derived/admitted text sequences. Raw NFKD retains570 CGJ differences;
+stream-safe NFKD and final pipelines match that tested set. These are candidate
+observations, not a production graph choice, all-string proof or2.1 completion.
+
+The exactDefault CLDR32 package/data/source closure is read-only and versioned;
+there is no qualified Rust language canonicalizer here. Root's accepted private
+compatibility/frozen-Go translation route still needs its own implementation,
+source-policy/notice decision and validation under owners5/6. Existing data,
+decoder, physical, product license and toolkit gates are unchanged.
