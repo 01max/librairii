@@ -213,6 +213,50 @@
     {
       "suite": "librairii-core::operations",
       "name": "op6_admitted_zero_item_operation_interrupts_and_finishes_without_rewriting_scope"
+    },
+    {
+      "suite": "librairii-app",
+      "name": "jobs::tests::j6_busy_returns_same_input_before_admission_and_uncertainty_retains_it"
+    },
+    {
+      "suite": "librairii-app",
+      "name": "jobs::tests::j6_created_record_survives_disconnected_reply_consumer_and_stop"
+    },
+    {
+      "suite": "librairii-app",
+      "name": "jobs::tests::j6_executor_callback_reentry_never_holds_queue_mutex"
+    },
+    {
+      "suite": "librairii-app",
+      "name": "jobs::tests::j6_finite_cursor_cycle_rotates_operations_and_keeps_each_offer_ordered"
+    },
+    {
+      "suite": "librairii-app",
+      "name": "jobs::tests::j6_full_pipeline_measures_handles_payload_and_all_blocked_call_owners"
+    },
+    {
+      "suite": "librairii-app",
+      "name": "jobs::tests::j6_import_picker_limit_does_not_truncate_export_or_clone_item_payloads"
+    },
+    {
+      "suite": "librairii-app",
+      "name": "jobs::tests::j6_one_metadata_reservation_lasts_until_report_acknowledgement"
+    },
+    {
+      "suite": "librairii-app",
+      "name": "jobs::tests::j6_proven_rejection_returns_owned_input_and_releases_metadata_reservation"
+    },
+    {
+      "suite": "librairii-app",
+      "name": "jobs::tests::j6_stop_is_independent_of_blocked_source_and_returns_unissued_start"
+    },
+    {
+      "suite": "librairii-app",
+      "name": "jobs::tests::j6_unacknowledged_reports_retain_worker_budget_until_explicit_readback"
+    },
+    {
+      "suite": "librairii-app",
+      "name": "jobs::tests::j6_worker_configuration_matches_frozen_limits"
     }
   ]
 }
