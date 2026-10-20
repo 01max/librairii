@@ -24,6 +24,12 @@ MEMORY = 128 << 20
 ADDRESS = 256 << 20
 
 
+def require(condition, message):
+    """Safety prerequisites must remain active with -O / PYTHONOPTIMIZE too."""
+    if not condition:
+        raise RuntimeError(message)
+
+
 def docker(*arguments, timeout=30):
     result = subprocess.run(["docker", *arguments], text=True, capture_output=True,
                             timeout=timeout, check=False)
@@ -54,14 +60,17 @@ def contained(binary, fixtures, mode, file=None, extra=(), wall=5):
                        "qualification-launcher", *command)
     try:
         settings = json.loads(docker("inspect", "--format", "{{json .HostConfig}}", container))
-        assert settings["Memory"] == MEMORY and settings["MemorySwap"] == MEMORY
-        assert settings["ReadonlyRootfs"] and settings["NetworkMode"] == "none"
-        assert settings["PidsLimit"] == 32
-        assert settings["NanoCpus"] == 1_000_000_000
-        assert settings["CapDrop"] == ["ALL"]
-        assert "no-new-privileges" in settings["SecurityOpt"]
+        require(settings["Memory"] == MEMORY and settings["MemorySwap"] == MEMORY,
+                "configured memory/swap boundary mismatch; child must not start")
+        require(settings["ReadonlyRootfs"] and settings["NetworkMode"] == "none",
+                "configured filesystem/network boundary mismatch; child must not start")
+        require(settings["PidsLimit"] == 32, "configured PID limit mismatch; child must not start")
+        require(settings["NanoCpus"] == 1_000_000_000, "configured CPU quota mismatch; child must not start")
+        require(settings["CapDrop"] == ["ALL"], "configured capabilities mismatch; child must not start")
+        require("no-new-privileges" in settings["SecurityOpt"],
+                "no-new-privileges missing; child must not start")
         limits = {row["Name"]: (row["Soft"], row["Hard"]) for row in settings["Ulimits"]}
-        assert limits["cpu"] == (2, 2)
+        require(limits["cpu"] == (2, 2), "configured CPU-time limit mismatch; child must not start")
         start = time.monotonic()
         timed_out = False
         try:
@@ -103,24 +112,30 @@ def contained(binary, fixtures, mode, file=None, extra=(), wall=5):
 def controls(binary, fixtures, result):
     smoke = contained(binary, fixtures, "smoke")
     result.append(smoke)
-    assert smoke["exitCode"] == 0 and smoke["records"][-1]["outcome"] == "smoke_ok", "tooling/startup failure; NO allocation probes allowed"
+    require(smoke["exitCode"] == 0 and smoke["records"] and smoke["records"][-1].get("outcome") == "smoke_ok",
+            "tooling/startup failure; NO allocation probes allowed")
     boot = smoke["records"][0]
-    assert boot["memoryMax"].strip() == str(MEMORY) and boot["swapMax"].strip() == "0"
-    assert re.search(rf"Max address space\s+{ADDRESS}\s+{ADDRESS}", boot["limits"])
-    assert re.search(r"Max cpu time\s+2\s+2", boot["limits"])
+    require(boot["memoryMax"].strip() == str(MEMORY) and boot["swapMax"].strip() == "0",
+            "effective cgroup memory/swap cap NOT proven")
+    require(re.search(rf"Max address space\s+{ADDRESS}\s+{ADDRESS}", boot["limits"]),
+            "effective address-space cap NOT proven")
+    require(re.search(r"Max cpu time\s+2\s+2", boot["limits"]), "effective CPU-time cap NOT proven")
     address = contained(binary, fixtures, "control-address")
     result.append(address)
-    assert address["exitCode"] != 0 and "memory allocation of 536870912 bytes failed" in address["stderr"], "address-space cap NOT proven"
+    require(address["exitCode"] != 0 and "memory allocation of 536870912 bytes failed" in address["stderr"],
+            "address-space cap NOT proven")
     memory = contained(binary, fixtures, "control-memory")
     result.append(memory)
-    assert memory["oomKilled"] and memory["exitCode"] == 137, "cgroup resident-memory cap NOT proven"
-    assert memory["memoryEventsAfter"] and memory["memoryEventsAfter"]["oom_kill"] > 0, "independent post-child memory.events missing"
+    require(memory["oomKilled"] and memory["exitCode"] == 137, "cgroup resident-memory cap NOT proven")
+    require(memory["memoryEventsAfter"] and memory["memoryEventsAfter"]["oom_kill"] > 0,
+            "independent post-child memory.events missing")
     wall = contained(binary, fixtures, "control-wall", wall=2)
     result.append(wall)
-    assert wall["wallWatchdog"] and not wall["oomKilled"] and wall["hostElapsedSeconds"] < 6, "wall watchdog NOT proven"
+    require(wall["wallWatchdog"] and not wall["oomKilled"] and wall["hostElapsedSeconds"] < 6,
+            "wall watchdog NOT proven")
     cpu = contained(binary, fixtures, "control-cpu", wall=8)
     result.append(cpu)
-    assert cpu["exitCode"] == 137 and not cpu["wallWatchdog"] and not cpu["oomKilled"], "CPU-time cap NOT proven"
+    require(cpu["exitCode"] == 137 and not cpu["wallWatchdog"] and not cpu["oomKilled"], "CPU-time cap NOT proven")
     return result
 
 
@@ -173,7 +188,8 @@ def main():
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     binary = args.binary.resolve()
-    assert binary.read_bytes().startswith(b"\x7fELF"), "toolchain/target failure: expected Linux ELF, not a native macOS binary"
+    require(binary.read_bytes().startswith(b"\x7fELF"),
+            "toolchain/target failure: expected Linux ELF, not a native macOS binary")
     report = {"scope":"qualification-only LinuxARM resource containment; not desktop/platform/product qualification",
               "image":IMAGE,"binarySha256":hashlib.sha256(binary.read_bytes()).hexdigest(),
               "limits":{"cgroupMemoryBytes":MEMORY,"swapBytes":0,"addressSpaceBytes":ADDRESS,"cpuSeconds":2,"wallSeconds":5},

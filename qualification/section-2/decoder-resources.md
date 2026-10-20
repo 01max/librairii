@@ -172,3 +172,30 @@ supervision and independent Zstd regeneration. Debug/release controller and actu
 widget Space→Apply→unchecked-twice smoke routes pass without an OS window/input.
 Release logs retain the previously observed rust-objcopy/libLLVM strip warning;
 processes exit0. These checks do not fill any physical/native-package gate.
+
+## Review correction: optimized Python prerequisites
+
+Native review805ba9d3 of5d352b7 found that Python removes `assert` under `-O` /
+`PYTHONOPTIMIZE` ([official language reference](https://docs.python.org/3.14/reference/simple_stmts.html#the-assert-statement)).
+The supervisor now uses explicit runtime validation for every HostConfig,
+smoke/address/memory/wall/CPU prerequisite and ELF check. A mismatch raises a
+tooling/control error; it cannot authorize hostile experiments or child startup.
+
+The new regression runs the actual `main`/`controls` code in separate optimized
+interpreters, once with `-O` and once with ambient `PYTHONOPTIMIZE=1`. It mocks
+container observations and the experiment function, supplies failed smoke evidence,
+and verifies one observation, zero experiment calls and a tooling-failure report.
+Both routes failed before correction because experiments were called. Another
+optimized-process regression supplies an invalid HostConfig to actual `contained`,
+verifies no child start, and checks create→inspect→remove cleanup. No Docker process,
+allocation control or hostile fixture executes in these regressions. All nine
+Python tests pass normally; all three supervision tests also pass under `-O` with
+`PYTHONOPTIMIZE=1`. No arbitrary coverage percentage replaces these failure checks.
+
+The original32-case `decoder-observations.json` remains byte-identical, SHA256
+`fdaa71643e37bfea17936139765d613dd006de311d00d027d846f72cc6a6a480`.
+Its source hashes identify the experiment implementation at published5d352b7,
+before this correction; they do not describe the corrected supervisor. No actual
+hostile experiment or frontend lane was repeated merely to update status. Original
+OOM/Zstd/corpus evidence remains historical observation, with no new resource,
+production-refusal, deployment, licensing or toolkit qualification inferred.
