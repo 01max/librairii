@@ -1,0 +1,376 @@
+{
+  "version": 1,
+  "bundle": "go-1.26.5-json-v1-studio",
+  "source_selection": "private fixed-shape studio JSONv1 import subset only",
+  "official_release": {
+    "url": "https://go.dev/dl/?mode=json&include=all",
+    "version": "go1.26.5",
+    "stable": true,
+    "file": {
+      "filename": "go1.26.5.src.tar.gz",
+      "os": "",
+      "arch": "",
+      "version": "go1.26.5",
+      "sha256": "495be4bc87176ac567392e5b4116abd98466d33d7b49d41e764ccc6976b2dc42",
+      "size": 34140216,
+      "kind": "source"
+    }
+  },
+  "archive_members": {
+    "count": 16667,
+    "regular": 15005,
+    "directories": 1662,
+    "nonregular": 0,
+    "duplicate_paths": 0,
+    "selected_regular_sources": 13,
+    "extraction": "selected regular members only; no extractall and no expanded SDK/cache input"
+  },
+  "sources": [
+    {
+      "path": "Go1.26.5/src/encoding/json/scanner.go",
+      "bytes": 16569,
+      "sha256": "2b16dd215274dfa8e0806b53cca144684d5b9c8a02319cf5ce10120c50e6eef2",
+      "header_sha256": "23047bbfe6a46c835452f0aba6c4218d3ac8a18abd1b580b4a365d3796624995",
+      "header_first_12_lines_hex": "2f2f20436f7079726967687420323031302054686520476f20417574686f72732e20416c6c207269676874732072657365727665642e0a2f2f20557365206f66207468697320736f7572636520636f646520697320676f7665726e65642062792061204253442d7374796c650a2f2f206c6963656e736520746861742063616e20626520666f756e6420696e20746865204c4943454e53452066696c652e0a0a2f2f676f3a6275696c642021676f6578706572696d656e742e6a736f6e76320a0a7061636b616765206a736f6e0a0a2f2f204a534f4e2076616c756520706172736572207374617465206d616368696e652e0a2f2f204a7573742061626f757420617420746865206c696d6974206f66207768617420697320726561736f6e61626c6520746f2077726974652062792068616e642e0a2f2f20536f6d652070617274732061726520612062697420746564696f75732c20627574206f766572616c6c206974206e6963656c7920666163746f7273206f7574207468650a2f2f206f746865727769736520636f6d6d6f6e20636f64652066726f6d20746865206d756c7469706c65207363616e6e696e672066756e6374696f6e730a",
+      "capture_path": "originals/go/src/encoding/json/scanner.go",
+      "selection": "json-v1-scanner",
+      "permission": "bounded-translation-reference",
+      "scope": "JSON token grammar, ASCII whitespace, complete first-value scan, maximum nesting 10000; no runtime/I-O translation",
+      "origin": {
+        "kind": "official-go-source-archive",
+        "member": "go/src/encoding/json/scanner.go",
+        "archive_sha256": "495be4bc87176ac567392e5b4116abd98466d33d7b49d41e764ccc6976b2dc42"
+      }
+    },
+    {
+      "path": "Go1.26.5/src/encoding/json/decode.go",
+      "bytes": 36010,
+      "sha256": "a91535f18f9a2c8380448b1c84c4c2017dbe3d530a10faf8babf03494042da48",
+      "header_sha256": "47c6ebe8449f5f9e86e7042141dcc9c2607daf76ec247c9e649fa9fc647df3da",
+      "header_first_12_lines_hex": "2f2f20436f7079726967687420323031302054686520476f20417574686f72732e20416c6c207269676874732072657365727665642e0a2f2f20557365206f66207468697320736f7572636520636f646520697320676f7665726e65642062792061204253442d7374796c650a2f2f206c6963656e736520746861742063616e20626520666f756e6420696e20746865204c4943454e53452066696c652e0a0a2f2f20526570726573656e7473204a534f4e206461746120737472756374757265207573696e67206e617469766520476f2074797065733a20626f6f6c65616e732c20666c6f6174732c0a2f2f20737472696e67732c206172726179732c20616e64206d6170732e0a0a2f2f676f3a6275696c642021676f6578706572696d656e742e6a736f6e76320a0a7061636b616765206a736f6e0a0a696d706f727420280a",
+      "capture_path": "originals/go/src/encoding/json/decode.go",
+      "selection": "json-v1-fixed-reducer",
+      "permission": "bounded-translation-reference",
+      "scope": "Go-v1 unquote, string/null/type-error/ordered-field/array-reuse rules only; no generic reflection, numeric destination, public JSON parser",
+      "origin": {
+        "kind": "official-go-source-archive",
+        "member": "go/src/encoding/json/decode.go",
+        "archive_sha256": "495be4bc87176ac567392e5b4116abd98466d33d7b49d41e764ccc6976b2dc42"
+      }
+    },
+    {
+      "path": "Go1.26.5/src/encoding/json/fold.go",
+      "bytes": 1122,
+      "sha256": "5b3c91bfbf6943e04d9aeb934031331a3f08a83b10079a0a7f0def3466b2f39e",
+      "header_sha256": "724c2b5626a7a6c08734842f6602294ee40f1e1aafbc8e752ce4d1cdb6b9d1c4",
+      "header_first_12_lines_hex": "2f2f20436f7079726967687420323031332054686520476f20417574686f72732e20416c6c207269676874732072657365727665642e0a2f2f20557365206f66207468697320736f7572636520636f646520697320676f7665726e65642062792061204253442d7374796c650a2f2f206c6963656e736520746861742063616e20626520666f756e6420696e20746865204c4943454e53452066696c652e0a0a2f2f676f3a6275696c642021676f6578706572696d656e742e6a736f6e76320a0a7061636b616765206a736f6e0a0a696d706f727420280a0922756e69636f6465220a0922756e69636f64652f75746638220a290a",
+      "capture_path": "originals/go/src/encoding/json/fold.go",
+      "selection": "json-v1-field-fold",
+      "permission": "bounded-translation-reference",
+      "scope": "foldName/foldRune semantics for fixed ASCII schema only; no search full fold/NFKD",
+      "origin": {
+        "kind": "official-go-source-archive",
+        "member": "go/src/encoding/json/fold.go",
+        "archive_sha256": "495be4bc87176ac567392e5b4116abd98466d33d7b49d41e764ccc6976b2dc42"
+      }
+    },
+    {
+      "path": "Go1.26.5/src/encoding/json/stream.go",
+      "bytes": 13258,
+      "sha256": "bb26b2442db6a686fc7f823ea9cc89babe26ac988ec7d8caf4a157aeb60d92f2",
+      "header_sha256": "78cca841388a8bdf39db8da07f304959864eca2a6c4676d245a1e6356e6ab0be",
+      "header_first_12_lines_hex": "2f2f20436f7079726967687420323031302054686520476f20417574686f72732e20416c6c207269676874732072657365727665642e0a2f2f20557365206f66207468697320736f7572636520636f646520697320676f7665726e65642062792061204253442d7374796c650a2f2f206c6963656e736520746861742063616e20626520666f756e6420696e20746865204c4943454e53452066696c652e0a0a2f2f676f3a6275696c642021676f6578706572696d656e742e6a736f6e76320a0a7061636b616765206a736f6e0a0a696d706f727420280a09226279746573220a09226572726f7273220a0922696f220a",
+      "capture_path": "originals/go/src/encoding/json/stream.go",
+      "selection": "json-v1-decoder-order",
+      "permission": "bounded-translation-reference",
+      "scope": "Decode/readValue ordering and successful-first-value trailing-input contract; no I-O buffering/runtime port",
+      "origin": {
+        "kind": "official-go-source-archive",
+        "member": "go/src/encoding/json/stream.go",
+        "archive_sha256": "495be4bc87176ac567392e5b4116abd98466d33d7b49d41e764ccc6976b2dc42"
+      }
+    },
+    {
+      "path": "Go1.26.5/src/unicode/letter.go",
+      "bytes": 10702,
+      "sha256": "b35a6d259313cef88d07e9e4027b8bd72c60ae140418f5be2c41a2ecea6074fe",
+      "header_sha256": "b1f8a48bd98929bacf4fe0520affc9eb02063542a76dd3cd25a71a6035014fec",
+      "header_first_12_lines_hex": "2f2f20436f7079726967687420323030392054686520476f20417574686f72732e20416c6c207269676874732072657365727665642e0a2f2f20557365206f66207468697320736f7572636520636f646520697320676f7665726e65642062792061204253442d7374796c650a2f2f206c6963656e736520746861742063616e20626520666f756e6420696e20746865204c4943454e53452066696c652e0a0a2f2f205061636b61676520756e69636f64652070726f7669646573206461746120616e642066756e6374696f6e7320746f207465737420736f6d652070726f70657274696573206f660a2f2f20556e69636f646520636f646520706f696e74732e0a7061636b61676520756e69636f64650a0a636f6e737420280a094d617852756e652020202020202020203d20275c55303031304646464627202f2f204d6178696d756d2076616c696420556e69636f646520636f646520706f696e742e0a095265706c6163656d656e7443686172203d20275c75464646442720202020202f2f20526570726573656e747320696e76616c696420636f646520706f696e74732e0a094d6178415343494920202020202020203d20275c75303037462720202020202f2f206d6178696d756d2041534349492076616c75652e0a",
+      "capture_path": "originals/go/src/unicode/letter.go",
+      "selection": "unicode15-simple-fold",
+      "permission": "bounded-translation-reference",
+      "scope": "SimpleFold/asciiFold/lookupCaseRange/convertCase algorithms only",
+      "origin": {
+        "kind": "official-go-source-archive",
+        "member": "go/src/unicode/letter.go",
+        "archive_sha256": "495be4bc87176ac567392e5b4116abd98466d33d7b49d41e764ccc6976b2dc42"
+      }
+    },
+    {
+      "path": "Go1.26.5/src/unicode/tables.go",
+      "bytes": 243953,
+      "sha256": "6a88d48746c4b2c471cc04ae40559694b734770212e6f5ea5f1962adb0c0bdb1",
+      "header_sha256": "ec9651df3b673e4e73deeeab3bd947b37e70bc0fbed401698cf27b3dfa0c0136",
+      "header_first_12_lines_hex": "2f2f20436f64652067656e6572617465642062792072756e6e696e672022676f2067656e65726174652220696e20676f6c616e672e6f72672f782f746578742e20444f204e4f5420454449542e0a0a7061636b61676520756e69636f64650a0a2f2f2056657273696f6e2069732074686520556e69636f64652065646974696f6e2066726f6d20776869636820746865207461626c65732061726520646572697665642e0a636f6e73742056657273696f6e203d202231352e302e30220a0a2f2f2043617465676f726965732069732074686520736574206f6620556e69636f64652063617465676f7279207461626c65732e0a7661722043617465676f72696573203d206d61705b737472696e675d2a52616e67655461626c657b0a092243223a2020432c0a09224363223a2043632c0a09224366223a2043662c0a",
+      "capture_path": "originals/go/src/unicode/tables.go",
+      "selection": "unicode15-simple-fold",
+      "permission": "bounded-translation-reference",
+      "scope": "Unicode15 caseOrbit/CaseRanges data needed for inverse SimpleFold of fixed schema only; no full normalization/language/data widening",
+      "origin": {
+        "kind": "official-go-source-archive",
+        "member": "go/src/unicode/tables.go",
+        "archive_sha256": "495be4bc87176ac567392e5b4116abd98466d33d7b49d41e764ccc6976b2dc42"
+      }
+    },
+    {
+      "path": "Go1.26.5/src/unicode/utf8/utf8.go",
+      "bytes": 17440,
+      "sha256": "3c145ee25fd7631ebbc670fd1236e8c163ca30ae8913c796489efbf3f267ad54",
+      "header_sha256": "5fa9c22df735fe95250fe5471f4760d6ca0b27d6751b4ecd82f8d1a322f0a18b",
+      "header_first_12_lines_hex": "2f2f20436f7079726967687420323030392054686520476f20417574686f72732e20416c6c207269676874732072657365727665642e0a2f2f20557365206f66207468697320736f7572636520636f646520697320676f7665726e65642062792061204253442d7374796c650a2f2f206c6963656e736520746861742063616e20626520666f756e6420696e20746865204c4943454e53452066696c652e0a0a2f2f205061636b616765207574663820696d706c656d656e74732066756e6374696f6e7320616e6420636f6e7374616e747320746f20737570706f7274207465787420656e636f64656420696e0a2f2f205554462d382e20497420696e636c756465732066756e6374696f6e7320746f207472616e736c617465206265747765656e2072756e657320616e64205554462d3820627974652073657175656e6365732e0a2f2f205365652068747470733a2f2f656e2e77696b6970656469612e6f72672f77696b692f5554462d380a7061636b61676520757466380a0a2f2f2054686520636f6e646974696f6e732052756e654572726f723d3d756e69636f64652e5265706c6163656d656e744368617220616e640a2f2f204d617852756e653d3d756e69636f64652e4d617852756e652061726520766572696669656420696e207468652074657374732e0a2f2f20446566696e696e67207468656d206c6f63616c6c792061766f6964732074686973207061636b61676520646570656e64696e67206f6e207061636b61676520756e69636f64652e0a",
+      "capture_path": "originals/go/src/unicode/utf8/utf8.go",
+      "selection": "go-json-utf8",
+      "permission": "bounded-translation-reference",
+      "scope": "DecodeRune/RuneError/RuneLen/UTF8 validity/replacement rules needed by scanner/unquote only",
+      "origin": {
+        "kind": "official-go-source-archive",
+        "member": "go/src/unicode/utf8/utf8.go",
+        "archive_sha256": "495be4bc87176ac567392e5b4116abd98466d33d7b49d41e764ccc6976b2dc42"
+      }
+    },
+    {
+      "path": "Go1.26.5/src/unicode/utf16/utf16.go",
+      "bytes": 4027,
+      "sha256": "6b8b3037015f41351d4a323513b57b8ac90caa69f69be31eaf02ca2a4632d0cd",
+      "header_sha256": "a6b3369a02c98317c004e8e506e404f3b75aec2f8e21c61f12c5e79dbcc051a2",
+      "header_first_12_lines_hex": "2f2f20436f7079726967687420323031302054686520476f20417574686f72732e20416c6c207269676874732072657365727665642e0a2f2f20557365206f66207468697320736f7572636520636f646520697320676f7665726e65642062792061204253442d7374796c650a2f2f206c6963656e736520746861742063616e20626520666f756e6420696e20746865204c4943454e53452066696c652e0a0a2f2f205061636b61676520757466313620696d706c656d656e747320656e636f64696e6720616e64206465636f64696e67206f66205554462d31362073657175656e6365732e0a7061636b6167652075746631360a0a2f2f2054686520636f6e646974696f6e73207265706c6163656d656e74436861723d3d756e69636f64652e5265706c6163656d656e744368617220616e640a2f2f206d617852756e653d3d756e69636f64652e4d617852756e652061726520766572696669656420696e207468652074657374732e0a2f2f20446566696e696e67207468656d206c6f63616c6c792061766f6964732074686973207061636b61676520646570656e64696e67206f6e207061636b61676520756e69636f64652e0a0a636f6e737420280a",
+      "capture_path": "originals/go/src/unicode/utf16/utf16.go",
+      "selection": "go-json-utf16",
+      "permission": "bounded-translation-reference",
+      "scope": "surrogate classification and DecodeRune rules needed by JSON unquote only",
+      "origin": {
+        "kind": "official-go-source-archive",
+        "member": "go/src/unicode/utf16/utf16.go",
+        "archive_sha256": "495be4bc87176ac567392e5b4116abd98466d33d7b49d41e764ccc6976b2dc42"
+      }
+    },
+    {
+      "path": "Go1.26.5/src/encoding/json/encode.go",
+      "bytes": 40037,
+      "sha256": "4012d78aa8236f3067a6330ddf2f719c7e59b262fcf4fff5e51b4abd1ccba235",
+      "header_sha256": "8310898733aaa9e429f23af37066927b6c80b6a835d86157a098c76863ccbdd0",
+      "header_first_12_lines_hex": "2f2f20436f7079726967687420323031302054686520476f20417574686f72732e20416c6c207269676874732072657365727665642e0a2f2f20557365206f66207468697320736f7572636520636f646520697320676f7665726e65642062792061204253442d7374796c650a2f2f206c6963656e736520746861742063616e20626520666f756e6420696e20746865204c4943454e53452066696c652e0a0a2f2f676f3a6275696c642021676f6578706572696d656e742e6a736f6e76320a0a2f2f205061636b616765206a736f6e20696d706c656d656e747320656e636f64696e6720616e64206465636f64696e67206f66204a534f4e20617320646566696e656420696e2052464320373135392e0a2f2f20546865206d617070696e67206265747765656e204a534f4e20616e6420476f2076616c7565732069732064657363726962656420696e2074686520646f63756d656e746174696f6e20666f720a2f2f20746865204d61727368616c20616e6420556e6d61727368616c2066756e6374696f6e732e0a2f2f0a2f2f2053656520224a534f4e20616e6420476f2220666f7220616e20696e74726f64756374696f6e20746f2074686973207061636b6167653a0a2f2f2068747470733a2f2f676f6c616e672e6f72672f646f632f61727469636c65732f6a736f6e5f616e645f676f2e68746d6c0a",
+      "capture_path": "originals/go/src/encoding/json/encode.go",
+      "selection": "reference-only",
+      "permission": "evidence-only-no-production-translation",
+      "scope": "typeFields/cachedTypeFields exact-name and first folded-name index construction; no encoder/reflection translation",
+      "origin": {
+        "kind": "official-go-source-archive",
+        "member": "go/src/encoding/json/encode.go",
+        "archive_sha256": "495be4bc87176ac567392e5b4116abd98466d33d7b49d41e764ccc6976b2dc42"
+      }
+    },
+    {
+      "path": "Go1.26.5/src/reflect/value.go",
+      "bytes": 118819,
+      "sha256": "7b93df76cdaa42211f5568780cea85b0f4a117ce177def008370da20e6d7b237",
+      "header_sha256": "68d48bd073f0556efe5df45962f1e747153c1e81382534ce5fbd77683cabb644",
+      "header_first_12_lines_hex": "2f2f20436f7079726967687420323030392054686520476f20417574686f72732e20416c6c207269676874732072657365727665642e0a2f2f20557365206f66207468697320736f7572636520636f646520697320676f7665726e65642062792061204253442d7374796c650a2f2f206c6963656e736520746861742063616e20626520666f756e6420696e20746865204c4943454e53452066696c652e0a0a7061636b616765207265666c6563740a0a696d706f727420280a09226572726f7273220a0922696e7465726e616c2f616269220a0922696e7465726e616c2f676f61726368220a0922696e7465726e616c2f737472636f6e76220a0922696e7465726e616c2f756e73616665686561646572220a",
+      "capture_path": "originals/go/src/reflect/value.go",
+      "selection": "reference-only",
+      "permission": "evidence-only-no-production-translation",
+      "scope": "Grow/grow evidence for hidden initialized backing cells; no reflection dependency",
+      "origin": {
+        "kind": "official-go-source-archive",
+        "member": "go/src/reflect/value.go",
+        "archive_sha256": "495be4bc87176ac567392e5b4116abd98466d33d7b49d41e764ccc6976b2dc42"
+      }
+    },
+    {
+      "path": "Go1.26.5/src/runtime/slice.go",
+      "bytes": 18985,
+      "sha256": "ac595f1a822620fdc52271ef84f06b19c1f0abc0e53c0eb049dbad90b86abdbd",
+      "header_sha256": "48d6b9892587102bb23aac56edc6bce31156575d1e841ed76bf7709af809d7fa",
+      "header_first_12_lines_hex": "2f2f20436f7079726967687420323030392054686520476f20417574686f72732e20416c6c207269676874732072657365727665642e0a2f2f20557365206f66207468697320736f7572636520636f646520697320676f7665726e65642062792061204253442d7374796c650a2f2f206c6963656e736520746861742063616e20626520666f756e6420696e20746865204c4943454e53452066696c652e0a0a7061636b6167652072756e74696d650a0a696d706f727420280a0922696e7465726e616c2f616269220a0922696e7465726e616c2f676f61726368220a0922696e7465726e616c2f676f6578706572696d656e74220a0922696e7465726e616c2f72756e74696d652f6d617468220a0922696e7465726e616c2f72756e74696d652f737973220a",
+      "capture_path": "originals/go/src/runtime/slice.go",
+      "selection": "reference-only",
+      "permission": "evidence-only-no-production-translation",
+      "scope": "reflect_growslice evidence for retained old-capacity cells; no runtime/allocation-rounding emulation",
+      "origin": {
+        "kind": "official-go-source-archive",
+        "member": "go/src/runtime/slice.go",
+        "archive_sha256": "495be4bc87176ac567392e5b4116abd98466d33d7b49d41e764ccc6976b2dc42"
+      }
+    },
+    {
+      "path": "Go1.26.5/src/encoding/json/decode_test.go",
+      "bytes": 77968,
+      "sha256": "72458e480fdbeeff97057aa3474fc7d4292744c94720baffb77b5292696d34f6",
+      "header_sha256": "2bc4913f7ee3364fb42780c904a8564e4e4be251ccad1b8005626f6b778c0c6d",
+      "header_first_12_lines_hex": "2f2f20436f7079726967687420323031302054686520476f20417574686f72732e20416c6c207269676874732072657365727665642e0a2f2f20557365206f66207468697320736f7572636520636f646520697320676f7665726e65642062792061204253442d7374796c650a2f2f206c6963656e736520746861742063616e20626520666f756e6420696e20746865204c4943454e53452066696c652e0a0a2f2f676f3a6275696c642021676f6578706572696d656e742e6a736f6e76320a0a7061636b616765206a736f6e0a0a696d706f727420280a09226279746573220a0922656e636f64696e67220a09226572726f7273220a",
+      "capture_path": "originals/go/src/encoding/json/decode_test.go",
+      "selection": "reference-only",
+      "permission": "evidence-only-no-production-translation",
+      "scope": "reference tests for decode/null/reuse/invalidUTF8/surrogates/depth; not proof of proposed implementation",
+      "origin": {
+        "kind": "official-go-source-archive",
+        "member": "go/src/encoding/json/decode_test.go",
+        "archive_sha256": "495be4bc87176ac567392e5b4116abd98466d33d7b49d41e764ccc6976b2dc42"
+      }
+    },
+    {
+      "path": "Go1.26.5/src/encoding/json/stream_test.go",
+      "bytes": 16496,
+      "sha256": "1ead5d8bef90aa0fcc3b62900f0dbaa31af5cf5cf3096dc6c2d868c7d88b9430",
+      "header_sha256": "aed9d568c0cc8f9f8a3c8c60c43ee54a09690d2fed6c266324d3c7229df07f63",
+      "header_first_12_lines_hex": "2f2f20436f7079726967687420323031302054686520476f20417574686f72732e20416c6c207269676874732072657365727665642e0a2f2f20557365206f66207468697320736f7572636520636f646520697320676f7665726e65642062792061204253442d7374796c650a2f2f206c6963656e736520746861742063616e20626520666f756e6420696e20746865204c4943454e53452066696c652e0a0a2f2f676f3a6275696c642021676f6578706572696d656e742e6a736f6e76320a0a7061636b616765206a736f6e0a0a696d706f727420280a09226279746573220a0922666d74220a0922696f220a",
+      "capture_path": "originals/go/src/encoding/json/stream_test.go",
+      "selection": "reference-only",
+      "permission": "evidence-only-no-production-translation",
+      "scope": "reference tests for Decoder first-value/trailing behavior; not production runtime scope",
+      "origin": {
+        "kind": "official-go-source-archive",
+        "member": "go/src/encoding/json/stream_test.go",
+        "archive_sha256": "495be4bc87176ac567392e5b4116abd98466d33d7b49d41e764ccc6976b2dc42"
+      }
+    },
+    {
+      "path": "oracle73a93303/internal/inspection/studio_zip.go",
+      "bytes": 3334,
+      "sha256": "14349c0b72c0bdadb2d43ae5e9ca24c34dc8d7453dda870e88d808888ea705fa",
+      "header_sha256": "4c601c190d2a4f46836bcf44152ef6ff69c66c015e9523932b97ce6c88e6fc06",
+      "header_first_12_lines_hex": "7061636b61676520696e7370656374696f6e0a0a696d706f727420280a0922636f6e74657874220a0922656e636f64696e672f6a736f6e220a0922696d6167652f706e67220a092270617468220a0922737472696e6773220a0a09226769746875622e636f6d2f30316d61782f6c69627261697269692f696e7465726e616c2f636174616c6f67220a09226769746875622e636f6d2f676f6f676c652f75756964220a290a",
+      "capture_path": "originals/oracle73a93303/internal/inspection/studio_zip.go",
+      "selection": "studio-product-boundary",
+      "permission": "product-contract-reference",
+      "scope": "studioStory/stageNode schema and Decode -> ensureJSONEnd -> existing validation order only; title/description remain known string fields; PNG/IO/title trimming excluded",
+      "origin": {
+        "kind": "frozen-git-blob",
+        "commit": "73a93303a9a44cf0a92eaf525331561ed8c04460",
+        "tree": "e797e9d59926d83b73fb7c02e5c3611073e89a16",
+        "path": "internal/inspection/studio_zip.go",
+        "git_blob": "5fb9a26a71fb35661848f25600d75ef45c1d5780"
+      }
+    },
+    {
+      "path": "oracle73a93303/internal/inspection/zip_inspector.go",
+      "bytes": 7156,
+      "sha256": "0a3031a22814d959dff0c1f99bfe96d50ca08df36b0434c6dbaa23747d97b1ba",
+      "header_sha256": "cf8e171a2727eda57b7321b040bf352d96f7858b9ef15c27001a17f432330d1b",
+      "header_first_12_lines_hex": "7061636b61676520696e7370656374696f6e0a0a696d706f727420280a09226279746573220a0922636f6e74657874220a0922656e636f64696e672f6a736f6e220a09226572726f7273220a0922666d74220a0922696d6167652f706e67220a0922696f220a092270617468220a0922737472696e6773220a",
+      "capture_path": "originals/oracle73a93303/internal/inspection/zip_inspector.go",
+      "selection": "studio-product-boundary",
+      "permission": "product-contract-reference",
+      "scope": "ensureJSONEnd and bytesReader reference only; no archive/IO/executor implementation",
+      "origin": {
+        "kind": "frozen-git-blob",
+        "commit": "73a93303a9a44cf0a92eaf525331561ed8c04460",
+        "tree": "e797e9d59926d83b73fb7c02e5c3611073e89a16",
+        "path": "internal/inspection/zip_inspector.go",
+        "git_blob": "4d947f02e597d884d0d77d5bbc6466a86a3f4b43"
+      }
+    },
+    {
+      "path": "oracle73a93303/internal/inspection/studio_zip_test.go",
+      "bytes": 5211,
+      "sha256": "846cac2a6ec6dac02f55dd0daebf4b3d468435802b8963a3e0a0b56f1a33e69f",
+      "header_sha256": "1c90817d1e99ae97ad18c5ba4f584539b33206f877e36fb4b9965a46f252ccf5",
+      "header_first_12_lines_hex": "7061636b61676520696e7370656374696f6e0a0a696d706f727420280a0922617263686976652f7a6970220a0922656e636f64696e672f6a736f6e220a092274657374696e67220a0a09226769746875622e636f6d2f30316d61782f6c69627261697269692f696e7465726e616c2f636174616c6f67220a09226769746875622e636f6d2f30316d61782f6c69627261697269692f696e7465726e616c2f696e7370656374696f6e2f7465737466697874757265220a290a0a66756e6320546573745a4950496e73706563746f725265636f676e697a657353747564696f417263686976652874202a74657374696e672e5429207b0a",
+      "capture_path": "originals/oracle73a93303/internal/inspection/studio_zip_test.go",
+      "selection": "reference-only",
+      "permission": "evidence-only-no-production-translation",
+      "scope": "frozen studio behavior tests/helpers; no test execution or new goldens",
+      "origin": {
+        "kind": "frozen-git-blob",
+        "commit": "73a93303a9a44cf0a92eaf525331561ed8c04460",
+        "tree": "e797e9d59926d83b73fb7c02e5c3611073e89a16",
+        "path": "internal/inspection/studio_zip_test.go",
+        "git_blob": "1f5eb0126d50a90c647c8c2e253f3417fc75ed5f"
+      }
+    },
+    {
+      "path": "oracle73a93303/internal/inspection/zip_inspector_test.go",
+      "bytes": 10140,
+      "sha256": "3047bd9bb84e01553a57d9326a8e5d81b5ea2b942a5e9ec903df63ffca5c8576",
+      "header_sha256": "adcc2c49617efdf2844b5a37e412496330ae36522bf45844e2051064796c561e",
+      "header_first_12_lines_hex": "7061636b61676520696e7370656374696f6e0a0a696d706f727420280a0922617263686976652f7a6970220a09226279746573220a0922636f6e74657874220a0922656e636f64696e672f6a736f6e220a09226572726f7273220a09226f73220a0922706174682f66696c6570617468220a0922737472696e6773220a092274657374696e67220a",
+      "capture_path": "originals/oracle73a93303/internal/inspection/zip_inspector_test.go",
+      "selection": "reference-only",
+      "permission": "evidence-only-no-production-translation",
+      "scope": "inspectFixture test helper; no test execution",
+      "origin": {
+        "kind": "frozen-git-blob",
+        "commit": "73a93303a9a44cf0a92eaf525331561ed8c04460",
+        "tree": "e797e9d59926d83b73fb7c02e5c3611073e89a16",
+        "path": "internal/inspection/zip_inspector_test.go",
+        "git_blob": "d4c1a15c2532ff2225a91e55b6d3d593a6abf291"
+      }
+    },
+    {
+      "path": "oracle73a93303/internal/inspection/testfixture/archive.go",
+      "bytes": 6552,
+      "sha256": "cca9d5f1a38b1813d1d3c26e94b86f5b081ebb7e076941cb21533a1a3dacb338",
+      "header_sha256": "1448c07442ffaf7299e654db2a535439330b4fc530cf8e479f083840ed7f573b",
+      "header_first_12_lines_hex": "2f2f205061636b616765207465737466697874757265206275696c64732064657465726d696e69737469632c20636f707972696768742d667265652073746f72792061726368697665732e0a7061636b6167652074657374666978747572650a0a696d706f727420280a0922617263686976652f7a6970220a09226279746573220a0922656e636f64696e672f686578220a0922656e636f64696e672f6a736f6e220a0922666d74220a0922696d616765220a0922696d6167652f636f6c6f72220a0922696d6167652f706e67220a",
+      "capture_path": "originals/oracle73a93303/internal/inspection/testfixture/archive.go",
+      "selection": "reference-only",
+      "permission": "evidence-only-no-production-translation",
+      "scope": "StudioZIP fixture constructors/constants/helpers; no generator/archive execution",
+      "origin": {
+        "kind": "frozen-git-blob",
+        "commit": "73a93303a9a44cf0a92eaf525331561ed8c04460",
+        "tree": "e797e9d59926d83b73fb7c02e5c3611073e89a16",
+        "path": "internal/inspection/testfixture/archive.go",
+        "git_blob": "f94ae8a0c8aa3f703f3e56d7d381e50e5f02f163"
+      }
+    }
+  ],
+  "notices": [
+    {
+      "path": "LICENSE-GO-BSD.txt",
+      "bytes": 1453,
+      "sha256": "911f8f5782931320f5b8d1160a76365b83aea6447ee6c04fa6d5591467db9dad",
+      "origin": {
+        "kind": "official-go-source-archive",
+        "member": "go/LICENSE",
+        "archive_sha256": "495be4bc87176ac567392e5b4116abd98466d33d7b49d41e764ccc6976b2dc42"
+      }
+    },
+    {
+      "path": "PATENTS-GO.txt",
+      "bytes": 1303,
+      "sha256": "96f408bfae65bf137fc2525d3ecb030271c50c1e90799f87abf8846d8dd505cc",
+      "origin": {
+        "kind": "official-go-source-archive",
+        "member": "go/PATENTS",
+        "archive_sha256": "495be4bc87176ac567392e5b4116abd98466d33d7b49d41e764ccc6976b2dc42"
+      }
+    },
+    {
+      "path": "LICENSE-UNICODE-V3.txt",
+      "bytes": 1995,
+      "sha256": "e7a93b009565cfce55919a381437ac4db883e9da2126fa28b91d12732bc53d96",
+      "origin": {
+        "kind": "existing-reviewed-current-notice-capture",
+        "url": "https://www.unicode.org/license.txt",
+        "capture_date": "2026-10-20",
+        "upstream_capture_path": "current/unicode-license.txt",
+        "qualification": "current 2026 V3, not claimed recovered original Unicode15 historical notice; no UCD regeneration"
+      }
+    }
+  ],
+  "go_version_member": {
+    "path": "go/VERSION",
+    "bytes": 35,
+    "sha256": "11b4fb14680701f98ca60fd8464a836ca4374f17896a125f4510ab6ae8cecc9b"
+  },
+  "oracle": {
+    "commit": "73a93303a9a44cf0a92eaf525331561ed8c04460",
+    "tree": "e797e9d59926d83b73fb7c02e5c3611073e89a16",
+    "tracked_files": 436,
+    "before_sha256": "e93eee2443211a25c99033f4539871363cd136cc620741f9ad907fa1814249fc",
+    "after_sha256": "e93eee2443211a25c99033f4539871363cd136cc620741f9ad907fa1814249fc",
+    "unchanged": true
+  },
+  "source_authentication_is_not_behavior_proof": true
+}

@@ -3,3 +3,9 @@ frontend/wailsjs/** -whitespace
 # Admitted oracle artifacts/checker/producers are hashed as exact bytes.
 # Preserve them even under Git for Windows core.autocrlf=true.
 preservation/** -text
+
+# Authenticated JSONv1 provenance and derivative manifests hash Git bytes.
+.config/upstream-sources.json -text
+.config/upstream-sources/go-1.26.5-json-v1-studio/** -text
+.config/upstream-notices/go-1.26.5-json-v1-studio/** -text
+crates/librairii-core/src/import/studio_json/** -text

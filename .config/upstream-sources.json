@@ -1,0 +1,118 @@
+{
+  "version": 1,
+  "product_license": null,
+  "bundles": [
+    {
+      "id": "go-1.26.5-json-v1-studio",
+      "scope": "private-core-import-studio-json-v1",
+      "source_index": ".config/upstream-sources/go-1.26.5-json-v1-studio/source-index.json",
+      "source_index_sha256": "d63835ff65b581d3e0be5855189f59ac2fa4924a65904956de1f65e79309a4f4",
+      "source_schema": ".config/upstream-sources/go-1.26.5-json-v1-studio/source-manifest.schema.json",
+      "source_schema_sha256": "a0d54e23c9150f99f849383133ca32068465c566f9102b1cdf4de98b9367d1f7",
+      "source_identities": 18,
+      "notices_root": ".config/upstream-notices/go-1.26.5-json-v1-studio",
+      "notices": [
+        {
+          "path": "LICENSE-GO-BSD.txt",
+          "bytes": 1453,
+          "sha256": "911f8f5782931320f5b8d1160a76365b83aea6447ee6c04fa6d5591467db9dad",
+          "origin": {
+            "kind": "official-go-source-archive",
+            "member": "go/LICENSE",
+            "archive_sha256": "495be4bc87176ac567392e5b4116abd98466d33d7b49d41e764ccc6976b2dc42"
+          }
+        },
+        {
+          "path": "PATENTS-GO.txt",
+          "bytes": 1303,
+          "sha256": "96f408bfae65bf137fc2525d3ecb030271c50c1e90799f87abf8846d8dd505cc",
+          "origin": {
+            "kind": "official-go-source-archive",
+            "member": "go/PATENTS",
+            "archive_sha256": "495be4bc87176ac567392e5b4116abd98466d33d7b49d41e764ccc6976b2dc42"
+          }
+        },
+        {
+          "path": "LICENSE-UNICODE-V3.txt",
+          "bytes": 1995,
+          "sha256": "e7a93b009565cfce55919a381437ac4db883e9da2126fa28b91d12732bc53d96",
+          "origin": {
+            "kind": "existing-reviewed-current-notice-capture",
+            "url": "https://www.unicode.org/license.txt",
+            "capture_date": "2026-10-20",
+            "upstream_capture_path": "current/unicode-license.txt",
+            "qualification": "current 2026 V3, not claimed recovered original Unicode15 historical notice; no UCD regeneration"
+          }
+        },
+        {
+          "path": "PROVENANCE.md",
+          "bytes": 3582,
+          "sha256": "1ed179e66e4fbdffac8f7f72deeee1011f9272326a7487e82fac5d1156ca6d83",
+          "origin": null
+        }
+      ],
+      "derivative_root": "crates/librairii-core/src/import/studio_json",
+      "derivative_manifest": "source-manifest.json",
+      "source_selections": {
+        "Go1.26.5/src/encoding/json/scanner.go": "json-v1-scanner",
+        "Go1.26.5/src/encoding/json/decode.go": "json-v1-fixed-reducer",
+        "Go1.26.5/src/encoding/json/fold.go": "json-v1-field-fold",
+        "Go1.26.5/src/encoding/json/stream.go": "json-v1-decoder-order",
+        "Go1.26.5/src/unicode/letter.go": "unicode15-simple-fold",
+        "Go1.26.5/src/unicode/tables.go": "unicode15-simple-fold",
+        "Go1.26.5/src/unicode/utf8/utf8.go": "go-json-utf8",
+        "Go1.26.5/src/unicode/utf16/utf16.go": "go-json-utf16",
+        "Go1.26.5/src/encoding/json/encode.go": "reference-only",
+        "Go1.26.5/src/reflect/value.go": "reference-only",
+        "Go1.26.5/src/runtime/slice.go": "reference-only",
+        "Go1.26.5/src/encoding/json/decode_test.go": "reference-only",
+        "Go1.26.5/src/encoding/json/stream_test.go": "reference-only",
+        "oracle73a93303/internal/inspection/studio_zip.go": "studio-product-boundary",
+        "oracle73a93303/internal/inspection/zip_inspector.go": "studio-product-boundary",
+        "oracle73a93303/internal/inspection/studio_zip_test.go": "reference-only",
+        "oracle73a93303/internal/inspection/zip_inspector_test.go": "reference-only",
+        "oracle73a93303/internal/inspection/testfixture/archive.go": "reference-only"
+      },
+      "selection_notices": {
+        "go-json-utf16": [
+          "LICENSE-GO-BSD.txt",
+          "PATENTS-GO.txt"
+        ],
+        "go-json-utf8": [
+          "LICENSE-GO-BSD.txt",
+          "PATENTS-GO.txt"
+        ],
+        "json-v1-decoder-order": [
+          "LICENSE-GO-BSD.txt",
+          "PATENTS-GO.txt"
+        ],
+        "json-v1-field-fold": [
+          "LICENSE-GO-BSD.txt",
+          "PATENTS-GO.txt",
+          "LICENSE-UNICODE-V3.txt"
+        ],
+        "json-v1-fixed-reducer": [
+          "LICENSE-GO-BSD.txt",
+          "PATENTS-GO.txt"
+        ],
+        "json-v1-scanner": [
+          "LICENSE-GO-BSD.txt",
+          "PATENTS-GO.txt"
+        ],
+        "unicode15-simple-fold": [
+          "LICENSE-GO-BSD.txt",
+          "PATENTS-GO.txt",
+          "LICENSE-UNICODE-V3.txt"
+        ],
+        "studio-product-boundary": []
+      },
+      "required_derivatives": {
+        "crates/librairii-core/src/import/studio_json/mod.rs": "translated",
+        "crates/librairii-core/src/import/studio_json/scanner.rs": "translated",
+        "crates/librairii-core/src/import/studio_json/strings.rs": "translated",
+        "crates/librairii-core/src/import/studio_json/tests.rs": "authored"
+      },
+      "qualification": "source inventory only; no behavior, resource, effect or platform qualification"
+    }
+  ]
+}

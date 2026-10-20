@@ -31,7 +31,7 @@ def run_suite(suite, required, stream=None):
 def main():
     root = Path(__file__).resolve().parent.parent
     baseline = json.loads((root / '.config/rust-python-test-baseline.json').read_text(encoding='utf-8'))
-    suite = unittest.defaultTestLoader.discover(str(root / 'xtask/tests'), pattern='test_preservation.py')
+    suite = unittest.defaultTestLoader.discover(str(root / 'xtask/tests'), pattern='test_*.py')
     run_suite(suite, baseline['required'])
 
 

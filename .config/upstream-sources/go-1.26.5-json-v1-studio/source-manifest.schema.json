@@ -1,0 +1,115 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Private fixed-shape JSONv1 original-to-derivative manifest v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version",
+    "bundle",
+    "files"
+  ],
+  "properties": {
+    "version": {
+      "const": 1
+    },
+    "bundle": {
+      "const": "go-1.26.5-json-v1-studio"
+    },
+    "files": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "path",
+          "bytes",
+          "sha256",
+          "kind",
+          "recipe",
+          "sources",
+          "notices"
+        ],
+        "properties": {
+          "path": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.?(?:/|$))(?!.*[\\\\:]).+$"
+          },
+          "bytes": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "kind": {
+            "enum": [
+              "authored",
+              "translated",
+              "generated"
+            ]
+          },
+          "recipe": {
+            "type": "string",
+            "minLength": 1
+          },
+          "sources": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "path",
+                "sha256",
+                "header_sha256",
+                "selection"
+              ],
+              "properties": {
+                "path": {
+                  "type": "string",
+                  "minLength": 1,
+                  "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.?(?:/|$))(?!.*[\\\\:]).+$"
+                },
+                "sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "header_sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "selection": {
+                  "enum": [
+                    "go-json-utf16",
+                    "go-json-utf8",
+                    "json-v1-decoder-order",
+                    "json-v1-field-fold",
+                    "json-v1-fixed-reducer",
+                    "json-v1-scanner",
+                    "studio-product-boundary",
+                    "unicode15-simple-fold"
+                  ]
+                }
+              }
+            },
+            "uniqueItems": true
+          },
+          "notices": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "enum": [
+                "LICENSE-GO-BSD.txt",
+                "PATENTS-GO.txt",
+                "LICENSE-UNICODE-V3.txt"
+              ]
+            }
+          }
+        }
+      }
+    }
+  },
+  "$comment": "Owner5 checker additionally requires exact file set and regular/no-alias paths; hashes/header hashes match admitted index; evidence-only originals cannot authorize translated/generated production files; authored glue has empty sources/notices; translated/generated sources nonempty with exact selection notice union and preserved copyright; no schema can prove behavior."
+}

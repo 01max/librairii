@@ -5,6 +5,14 @@
     "test_preservation.AdmissionPins.test_repinning_hash_alone_cannot_drop_or_change_oracle_inventory",
     "test_preservation.RunnerPolicy.test_missing_or_duplicate_identity_cannot_pass_discovery",
     "test_preservation.RunnerPolicy.test_skip_expected_failure_and_failure_are_rejected",
-    "test_preservation.AdmissionPins.test_metacharacter_checkout_runs_read_only_from_another_directory"
+    "test_preservation.AdmissionPins.test_metacharacter_checkout_runs_read_only_from_another_directory",
+    "test_import_sources.StudioSourcePolicy.test_registered_manifest_and_notices_are_read_only",
+    "test_import_sources.StudioSourcePolicy.test_index_schema_or_scope_repinning_cannot_widen_authority",
+    "test_import_sources.StudioSourcePolicy.test_missing_changed_extra_or_self_repinning_notices_fail",
+    "test_import_sources.StudioSourcePolicy.test_derivative_set_bytes_and_kinds_fail_closed",
+    "test_import_sources.StudioSourcePolicy.test_original_identity_headers_evidence_and_notice_union_fail_closed",
+    "test_import_sources.StudioSourcePolicy.test_path_alias_and_traversal_are_rejected",
+    "test_import_sources.StudioSourcePolicy.test_inventory_copies_exact_notices_and_observes_product_license",
+    "test_import_sources.StudioSourcePolicy.test_fresh_autocrlf_checkout_preserves_actual_source_policy_inputs"
   ]
 }
