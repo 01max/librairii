@@ -1357,6 +1357,7 @@ mod tests {
         Ok(())
     }
     #[test]
+    #[cfg(any(target_os = "macos", target_os = "linux"))]
     fn admitted_profile_update_owns_state_without_holding_mutex_or_admitting_peer()
     -> std::result::Result<(), Box<dyn Error>> {
         use std::sync::mpsc;

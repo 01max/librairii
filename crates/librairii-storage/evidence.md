@@ -1229,3 +1229,10 @@ PASS; storage all-target Clippy with warnings denied PASS. No native restart,
 state-record, clean finalizer or Windows qualification follows from this first
 prerequisite. ORIGINAL 9c17 discovery and d6ea minimal helper graph supports are
 preserved as direct ancestors; the helper remains a separate queued slice.
+
+4.6 scope correction: the new real profile-reservation race test is explicitly
+macOS/Linux, where native directory durability is implemented. Owner5's focused
+ARM execution PASS1/1 exposed the source-only Windows import/success-assumption
+gap before discovery publication. The test now follows the actual Unix route;
+Windows continues to require honest DirectoryDurabilityUnavailable refusal.
+No Windows compilation/execution or all-target test qualification is claimed.
