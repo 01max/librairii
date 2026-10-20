@@ -3,7 +3,7 @@
 Librairii keeps a private, local library of story archives. Importing creates a
 managed copy; it never edits, renames, moves, or deletes the source file you
 selected. This guide describes the current `main` implementation, whose version
-is recorded in [`VERSION`](../VERSION) (currently `0.4.0`).
+is recorded in [`VERSION`](../VERSION) (currently `0.5.0`).
 
 ![Library with Collections, Shelves, filters, and selected-story details](assets/library.png)
 
