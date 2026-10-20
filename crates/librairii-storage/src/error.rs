@@ -37,6 +37,12 @@ pub enum StorageError {
     Sqlite(#[from] rusqlite::Error),
     #[error("storage.runtime_in_use")]
     RuntimeInUse,
+    #[error("storage.library_in_use")]
+    LibraryInUse,
+    #[error("storage.library_lease_changed")]
+    LibraryLeaseChanged,
+    #[error("storage.legacy_lifetime_exclusion_unproven")]
+    LegacyLifetimeExclusionUnproven,
     #[error("storage.queue_full")]
     QueueFull,
     #[error("storage.intake_closed")]
@@ -119,6 +125,9 @@ impl StorageError {
             Self::MigrationConflict => "storage.migration_conflict",
             Self::Sqlite(_) => "storage.sqlite",
             Self::RuntimeInUse => "storage.runtime_in_use",
+            Self::LibraryInUse => "storage.library_in_use",
+            Self::LibraryLeaseChanged => "storage.library_lease_changed",
+            Self::LegacyLifetimeExclusionUnproven => "storage.legacy_lifetime_exclusion_unproven",
             Self::QueueFull => "storage.queue_full",
             Self::IntakeClosed => "storage.intake_closed",
             Self::WorkerStopped => "storage.worker_stopped_outcome_unavailable",

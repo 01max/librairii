@@ -22,8 +22,8 @@ evidence, not an additional checklist or acceptance of unfinished work.
 |4.3|One owned writer plus four reads, bounded jobs/transactions and close|Implemented/host verified `8baebc751ed51e917a3ae5b139ebf48fc5f0467b`|
 |4.4|All18 admitted populated prefixes, full schema/rows/query outcomes and actual Collection-open projection; no fixture-specific patches or eager DB-open rewrite|Pending real canonicalization dependency; placement accepted2/5, no later-feature deferral|
 |4.5|Online WAL backup, integrity/FK, rollback and foreign DB+sidecars preservation|Implemented/host verified `abeb80ecd401f840e45a6a162998f5808cd9ebc1` on Unix; Windows directory durability remains pending4.9|
-|4.6|Strict64KiB v1 profiles, atomic serialized updates and isolated native namespace|Implemented/host verified; source SHA recorded in following commit. Stronger race capabilities and Windows effects remain4.8/4.9|
-|4.7|OS lease through close, refuse unproven legacy exclusion, verified independent adoption|Pending|
+|4.6|Strict64KiB v1 profiles, atomic serialized updates and isolated native namespace|Implemented/host verified `2751a04a4af6b9da8a21300a182ca2dd5231d8b8`. Stronger race capabilities and Windows effects remain4.8/4.9|
+|4.7|OS lease through close, refuse unproven legacy exclusion, verified independent adoption|Partial: fresh-root cooperative lease/refusal implemented/host verified; source SHA recorded in following commit. Verified independent clone/recovery/restart/relocation qualification remains pending|
 |4.8|Distinct no-clobber/config-replace/durable-flush effects and Unix races|Pending|
 |4.9|Windows effects/path/share-mode implementation plus actual-target evidence|Pending|
 |4.10|Portability preflight and identity-verified rebinding without foreign cleanup|Pending|
@@ -266,3 +266,37 @@ not establish special-path coverage. No checker, fixture, pin or shared-tool fix
 was authored here. Consume the reviewed actual integration repair by preserving
 history after admission, union discovery support through5, and rerun combined
 current-base checks/review before any section4 admission.
+
+4.7 partial mechanism checkpoint (not completion or adoption admission):
+
+- A fresh root acquires `.librairii-library.lock` with safe std OS file locking
+  before creating identity/directories or opening SQLite. The library authority
+  owns the handle beyond DB/read/report drain and closure; a runtime borrows that
+  authority. Local runtime release does not prematurely release the OS lease.
+  The lock file is retained on close/crash; its existence/PID is not authority.
+  The filename is coordinated with5 as a future bridge seam, not an implemented
+  or assumed section17 bridge.
+- Runtime startup and admissions recheck the retained lock/root witnesses and
+  exact original identity bytes. Substitution fences ordinary intake and new
+  admissions without claiming prior work rolled back. Restoring the actual
+  retained object permits critical fresh readback while ordinary intake stays
+  stopped. Namespace/descriptor-race and Windows stable-ID proof remain4.8/4.9.
+- `open_legacy_in_place` refuses before I/O: no currently admitted mechanism
+  proves that later unmodified Go launches honor Rust/bridge locks. No PID scan,
+  installation flag or user assertion can grant that missing authority. Verified
+  whole-library/profile/recovery clone adoption remains required and unfinished;
+  its streaming SHA256/source policy is coordinated through4/5. No custom hash,
+  source alias, copied-journal cleanup or production library activation exists.
+- Real child processes verify cooperative exclusion through ordinary stop,
+  critical readback, DB close and library-authority drop. A separate held process
+  is killed; kernel lock release permits a new owner despite the stale file.
+  The fixture process is bounded and owned/joined. Changed identity is refused
+  before DB creation, and changed/aliased lock names cannot refresh old authority.
+
+Cumulative host validation passed86 nextest tests, zero skipped, run
+`d0d6aaf8-55be-4f88-844a-dcaa5adda026`, plus all three compile-fail doctests,
+formatting and storage all-target Clippy. Eight new source-defined lease/refusal
+identities apply to the native targets indicated by their cfg (six all-target,
+two Unix). These are macOS ARM observations only. Native Windows and other
+filesystem qualification, legacy-launch clone isolation/restart/relocation,
+all4.7 completion conditions and independent4.11 review remain open.

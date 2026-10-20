@@ -494,6 +494,11 @@ impl<'library> Database<'library> {
         if self.closed || self.close_failed {
             return Err(StorageError::IntakeClosed);
         }
+        if let Err(error) = self.authority.revalidate_ownership() {
+            self.fenced.store(true, Ordering::Release);
+            let _ = self.stop_ordinary();
+            return Err(error);
+        }
         let (sender, receiver) = mpsc::sync_channel(1);
         let admission = queue.submit(critical, work, sender)?;
         Ok(Pending {

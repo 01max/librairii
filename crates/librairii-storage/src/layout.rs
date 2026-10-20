@@ -135,6 +135,7 @@ pub struct IsolatedLibrary {
     layout: LibraryLayout,
     identity: LibraryIdentity,
     runtime_active: AtomicBool,
+    lease: crate::platform::lock::LibraryLease,
 }
 
 impl IsolatedLibrary {
@@ -175,6 +176,7 @@ impl IsolatedLibrary {
             Err(error) => return Err(StorageError::io("inspect isolated override", error)),
         }
         let layout = LibraryLayout::probe(root)?;
+        let lease = crate::platform::lock::LibraryLease::create_fresh(layout.root())?;
         let identity = LibraryIdentity::create_new(layout.root(), identity)?;
         for name in DIRECTORIES {
             create_private_dir(&layout.root.join(name))?;
@@ -183,6 +185,7 @@ impl IsolatedLibrary {
             layout,
             identity,
             runtime_active: AtomicBool::new(false),
+            lease,
         })
     }
     pub fn layout(&self) -> &LibraryLayout {
@@ -194,7 +197,20 @@ impl IsolatedLibrary {
     pub const fn relocation_allowed(&self) -> bool {
         false
     }
+    /// Cooperative OS ownership retained beyond runtime drain. It does not
+    /// prove exclusion of an unmodified legacy executable or authorize adoption.
+    pub fn lease(&self) -> &crate::platform::lock::LibraryLease {
+        &self.lease
+    }
+    pub fn revalidate_ownership(&self) -> Result<()> {
+        self.lease.revalidate()?;
+        if LibraryIdentity::probe(self.layout.root())?.as_ref() != Some(&self.identity) {
+            return Err(StorageError::IdentityMismatch);
+        }
+        Ok(())
+    }
     pub(crate) fn claim_runtime(&self) -> Result<()> {
+        self.revalidate_ownership()?;
         self.runtime_active
             .compare_exchange(false, true, Ordering::AcqRel, Ordering::Acquire)
             .map(|_| ())
