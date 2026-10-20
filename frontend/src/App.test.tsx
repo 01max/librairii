@@ -1169,7 +1169,9 @@ test('opens a dynamic saved collection and updates it from the current query', a
     expect(screen.getByRole('button', {name: /All stories/}))
         .not.toHaveAttribute('aria-current');
 
-    await user.click(screen.getByRole('button', {name: '↻ Update “Bedtime”'}));
+    const updateButton = screen.getByRole('button', {name: '↻ Update “Bedtime”'});
+    expect(updateButton.compareDocumentPosition(screen.getByRole('region', {name: 'Shelves'})) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    await user.click(updateButton);
     await waitFor(() => expect(replaceCollectionQuery).toHaveBeenCalledWith(
         7,
         expect.objectContaining({name: 'moon', page: 1}),
@@ -1278,6 +1280,7 @@ test('saves the current query as a named active collection with its live count',
     const search = await screen.findByRole('searchbox', {name: 'Search stories'});
     await user.type(search, 'moon');
     const saveOpener = screen.getByRole('button', {name: '＋ Save current query'});
+    expect(saveOpener.compareDocumentPosition(screen.getByRole('region', {name: 'Shelves'})) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     await user.click(saveOpener);
     expect(screen.getByRole('heading', {name: 'Save the current query'}))
         .toBeInTheDocument();
@@ -1772,6 +1775,7 @@ test('previews a multi-collection union with per-collection and overlap counts',
     await waitFor(() => expect(previewCollections).toHaveBeenLastCalledWith([7, 8]));
 
     const preview = await screen.findByRole('region', {name: "Combined collection preview"});
+    expect(preview.compareDocumentPosition(screen.getByRole('region', {name: 'Shelves'})) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(preview).toHaveTextContent('Moon2');
     expect(preview).toHaveTextContent('Forest2');
     expect(preview).toHaveTextContent('3 unique stories');

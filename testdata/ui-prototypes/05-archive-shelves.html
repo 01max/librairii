@@ -70,8 +70,8 @@ select:focus-visible { outline: 3px solid var(--yellow); outline-offset: 2px; }
 .saved-tools button { width: 24px; height: 22px; display: grid; place-items: center; padding: 0px; border: 1px solid var(--line); border-radius: 6px; color: rgb(101, 112, 135); background: white; font-size: 13px; font-weight: 600; }
 .saved-tools button:disabled, .saved-picker:disabled { cursor: default; opacity: 0.55; }
 .curated-sidebar .saved:not(:empty) ~ button { margin-top: 9px; }
-.shelf-save { margin-top: 9px; }
-.shelf-update { margin-top: 6px; border-style: solid; border-color: rgb(189, 198, 255); color: rgb(48, 72, 205); background: rgb(240, 242, 255); }
+.collection-save { margin-top: 9px; }
+.collection-update { margin-top: 6px; border-style: solid; border-color: rgb(189, 198, 255); color: rgb(48, 72, 205); background: rgb(240, 242, 255); }
 .facet { padding: 14px 0px; border-top: 1px solid var(--line); }
 .facet-title { width: 100%; display: flex; justify-content: space-between; padding: 0px; border: 0px; margin-bottom: 10px; color: inherit; background: transparent; text-align: left; font-size: 10px; font-weight: 800; }
 .facet-title b { color: rgb(150, 160, 178); }
@@ -491,6 +491,10 @@ select:focus-visible { outline: 3px solid var(--yellow); outline-offset: 2px; }
 .curated-workspace label, .curated-dialog label { display: flex; align-items: center; gap: 8px; margin: 10px 0px; }
 .curated-workspace input[type="search"], .curated-dialog input:not([type="checkbox"]) { min-width: 0px; max-width: 100%; padding: 8px; border: 1px solid rgb(217, 220, 227); border-radius: 8px; }
 .curated-dialog { max-width: 760px; max-height: 85dvh; overflow: auto; }
+.curated-dialog-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 16px; }
+.curated-dialog-heading > div { min-width: 0px; }
+.curated-dialog-heading h3 { margin: 4px 0px 0px; overflow-wrap: anywhere; }
+.curated-dialog-heading > button { flex-shrink: 0; min-height: var(--control-height); }
 .curated-members, .curated-candidates { list-style: none; margin: 16px 0px; padding: 0px; }
 .curated-members { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; }
 .curated-members > li, .curated-candidates > li { border: 1px solid rgb(217, 220, 227); border-radius: 12px; padding: 12px; overflow-wrap: anywhere; }

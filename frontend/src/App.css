@@ -498,11 +498,11 @@ select:focus-visible {
 
 .curated-sidebar .saved:not(:empty) ~ button { margin-top: 9px; }
 
-.shelf-save {
+.collection-save {
     margin-top: 9px;
 }
 
-.shelf-update {
+.collection-update {
     margin-top: 6px;
     border-style: solid;
     border-color: #bdc6ff;

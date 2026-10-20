@@ -9,7 +9,7 @@ describe('canonical parity fixture', () => {
         expect(CANONICAL_PROTOTYPE).toEqual({
             path: 'openspec/ui-prototypes/05-archive-shelves.html',
             snapshotPath: 'testdata/ui-prototypes/05-archive-shelves.html',
-            sha256: 'd519dd99e6e47dcdf8bead73e42dea2c43bb26b57f00f66d906375fc3a861860',
+            sha256: '1b6bb40b2ca411726d90e942d4ea0b3620a5a0ec77b0976093a20be0a625f75a',
             normativeSelector: '.app',
             excludedSelector: '.back',
         });
