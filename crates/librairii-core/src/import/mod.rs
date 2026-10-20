@@ -6,6 +6,7 @@
 mod dispatch;
 mod entries;
 mod limits;
+mod pack;
 
 pub use dispatch::{
     ArchivePlan, ContainerKind, ContentFacts, IntegrityRequirement, PackStructure, dispatch,
@@ -14,6 +15,10 @@ pub use entries::{
     CompressionAccounting, EntryRecord, Inventory, InventoryBuilder, validate_entry_name,
 };
 pub use limits::{Budget, BudgetUsage, EntryInfo, Limits};
+pub use pack::{
+    CandidateData, ImportIdentity, PackRoot, UuidSource, validate_plain_entries,
+    validate_uuid_root_entries,
+};
 
 macro_rules! codes {
     ($(#[$meta:meta])* pub enum $name:ident { $($variant:ident => $code:literal),+ $(,)? }) => {

@@ -1,6 +1,204 @@
 use super::*;
 
 #[test]
+fn import_uuid_retains_legacy_spelling_without_changing_shared_identity_parsing()
+-> Result<(), ValidationError> {
+    let canonical = "00112233-4455-4677-8899-aabbccddeeff";
+    for text in [
+        canonical,
+        "00112233445546778899AABBCCDDEEFF",
+        "{00112233-4455-4677-8899-AABBCCDDEEFF}",
+        "URN:UUID:00112233-4455-4677-8899-AABBCCDDEEFF",
+        "!00112233-4455-4677-8899-aabbccddeeff?",
+    ] {
+        let identity = ImportIdentity::parse_text(text.as_bytes())?;
+        assert_eq!(identity.canonical(), canonical);
+        assert_eq!(identity.raw(), &UuidSource::Text(text.as_bytes().to_vec()));
+    }
+    let raw = [b"\xff".as_slice(), canonical.as_bytes(), b"\xfe"].concat();
+    let identity = ImportIdentity::parse_text(&raw)?;
+    assert_eq!(identity.raw(), &UuidSource::Text(raw));
+    assert_eq!(identity.canonical(), canonical);
+    // This matches google/uuid Parse's middle36 rule. An archive entry must
+    // separately pass UTF8/path policy; no raw header/filename evidence implied.
+    assert_eq!(crate::StoryUuid::from_bytes([0; 16]).as_bytes(), &[0; 16]);
+    assert_eq!(
+        ImportIdentity::from_plain_bytes(&[0; 16]).map_err(|e| e.code),
+        Err(ValidationCode::InvalidUuid)
+    );
+    Ok(())
+}
+
+#[test]
+fn malformed_or_nil_uuid_forms_fail_at_import_boundary() {
+    for text in [
+        "",
+        "00112233445546778899aabbccddeef",
+        "00112233_4455-4677-8899-aabbccddeeff",
+        "00112233-4455-4677-8899-aabbccddeefg",
+        "xxx:uuid:00112233-4455-4677-8899-aabbccddeeff",
+        "00000000-0000-0000-0000-000000000000",
+        "00000000000000000000000000000000",
+        "{00000000-0000-0000-0000-000000000000}",
+        "urn:uuid:00000000-0000-0000-0000-000000000000",
+    ] {
+        assert_eq!(
+            ImportIdentity::parse_text(text.as_bytes()).map_err(|e| e.code),
+            Err(ValidationCode::InvalidUuid),
+            "{text}"
+        );
+    }
+    for length in [0, 15, 17] {
+        let data = vec![1; length];
+        assert_eq!(
+            ImportIdentity::from_plain_bytes(&data).map_err(|e| (e.code, e.entry)),
+            Err((ValidationCode::InvalidUuid, Some(b"uuid.bin".to_vec())))
+        );
+    }
+}
+
+fn inventory_with_files(names: &[String]) -> Result<Inventory, ValidationError> {
+    let mut builder = InventoryBuilder::new(Limits::default(), CompressionAccounting::ZipEntries)?;
+    for name in names {
+        builder.push(header(name.as_bytes(), 1, 1))?;
+    }
+    builder.finish()
+}
+
+#[test]
+fn plain_required_entry_order_assets_and_exact_uuid_payload_are_separate()
+-> Result<(), ValidationError> {
+    let names: Vec<String> = [
+        "uuid.bin", "ni", "li.plain", "ri.plain", "si.plain", "rf/sound", "sf/image",
+    ]
+    .into_iter()
+    .map(str::to_owned)
+    .collect();
+    validate_plain_entries(&inventory_with_files(&names)?)?;
+    for (removed, expected) in [
+        (0, "uuid.bin"),
+        (1, "ni"),
+        (2, "li.plain"),
+        (3, "ri.plain"),
+        (4, "si.plain"),
+        (5, "rf/"),
+        (6, "sf/"),
+    ] {
+        let selected: Vec<_> = names
+            .iter()
+            .enumerate()
+            .filter(|(i, _)| *i != removed)
+            .map(|(_, n)| n.clone())
+            .collect();
+        assert_eq!(
+            validate_plain_entries(&inventory_with_files(&selected)?)
+                .map_err(|e| (e.code, e.entry)),
+            Err((
+                ValidationCode::MissingEntry,
+                Some(expected.as_bytes().to_vec())
+            ))
+        );
+    }
+    let bytes = [
+        0, 17, 34, 51, 68, 85, 70, 119, 136, 153, 170, 187, 204, 221, 238, 255,
+    ];
+    let identity = ImportIdentity::from_plain_bytes(&bytes)?;
+    assert_eq!(identity.raw(), &UuidSource::PlainBytes(bytes));
+    assert_eq!(identity.canonical(), "00112233-4455-4677-8899-aabbccddeeff");
+    Ok(())
+}
+
+#[test]
+fn uuid_root_detection_uses_raw_root_count_before_required_entries() -> Result<(), ValidationError>
+{
+    let raw = "00112233445546778899AABBCCDDEEFF";
+    let names: Vec<_> = ["ni", "li", "ri", "si", "rf/sound", "sf/image"]
+        .into_iter()
+        .map(|n| format!("{raw}/{n}"))
+        .collect();
+    let root = validate_uuid_root_entries(&inventory_with_files(&names)?)?;
+    assert_eq!(root.raw_name, raw);
+    assert_eq!(
+        root.identity.raw(),
+        &UuidSource::Text(raw.as_bytes().to_vec())
+    );
+    assert_eq!(
+        root.identity.canonical(),
+        "00112233-4455-4677-8899-aabbccddeeff"
+    );
+    let two = [
+        format!("{raw}/ni"),
+        "00112233445546778899aabbccddeeff/ni".to_owned(),
+    ];
+    assert_eq!(
+        validate_uuid_root_entries(&inventory_with_files(&two)?).map_err(|e| e.code),
+        Err(ValidationCode::AmbiguousStructure)
+    );
+    let invalid = [
+        "no-uuid/ni".to_owned(),
+        "00000000000000000000000000000000/ni".to_owned(),
+    ];
+    assert_eq!(
+        validate_uuid_root_entries(&inventory_with_files(&invalid)?).map_err(|e| e.code),
+        Err(ValidationCode::InvalidUuid)
+    );
+    Ok(())
+}
+
+#[test]
+fn uuid_pack_missing_entries_and_assets_preserve_exact_root_spelling() -> Result<(), ValidationError>
+{
+    let raw = "URN:UUID:00112233-4455-4677-8899-AABBCCDDEEFF";
+    let leaves = ["ni", "li", "ri", "si", "rf/sound", "sf/image"];
+    for (removed, missing) in [
+        (0, "ni"),
+        (1, "li"),
+        (2, "ri"),
+        (3, "si"),
+        (4, "rf/"),
+        (5, "sf/"),
+    ] {
+        let names: Vec<_> = leaves
+            .iter()
+            .enumerate()
+            .filter(|(i, _)| *i != removed)
+            .map(|(_, n)| format!("{raw}/{n}"))
+            .collect();
+        assert_eq!(
+            validate_uuid_root_entries(&inventory_with_files(&names)?)
+                .map_err(|e| (e.code, e.entry)),
+            Err((
+                ValidationCode::MissingEntry,
+                Some(format!("{raw}/{missing}").into_bytes())
+            ))
+        );
+    }
+    Ok(())
+}
+
+#[test]
+fn candidate_bytes_preserve_source_name_uuid_and_absent_vs_empty_payload()
+-> Result<(), ValidationError> {
+    let raw = "{00112233-4455-4677-8899-AABBCCDDEEFF}";
+    let absent = CandidateData {
+        original_filename: b"\xfforiginal.PK".to_vec(),
+        identity: ImportIdentity::parse_text(raw.as_bytes())?,
+        format: ArchiveFormat::V1Pk,
+        metadata_payload: None,
+    };
+    let mut present = absent.clone();
+    present.metadata_payload = Some(Vec::new());
+    assert_ne!(absent, present);
+    assert_eq!(present.original_filename, b"\xfforiginal.PK");
+    assert_eq!(
+        present.identity.raw(),
+        &UuidSource::Text(raw.as_bytes().to_vec())
+    );
+    // No source hash, decoder proof, DB IDs, owned stage or receipt is minted.
+    Ok(())
+}
+
+#[test]
 fn dispatch_preserves_suffix_and_content_precedence() -> Result<(), ValidationError> {
     use ArchiveFormat::{GenericPk, PlainPk, StudioZip, V1Pk, V2Pk};
     use ContainerKind::Zip;

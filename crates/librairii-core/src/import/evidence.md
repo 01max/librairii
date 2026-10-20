@@ -59,5 +59,38 @@ Unsigned sizes above i64 and checked compressed/expanded/count overflow refuse
 without wrapping. Failed Budget updates are atomic; inventory failure is terminal
 so a rejected partial inventory cannot be presented as complete. These are pure
 caller-data properties, not actual decoder allocation/read/CPU/CRC enforcement.
-The original partial5.2 commit SHA is recorded by the following scoped commit.
-Task trailer: `OpenSpec-Task: 5.2`.
+Original partial5.2 commit: `53dbf76711c5f7b53fa1d462573dfd023569fe49`
+(`feat(import): add bounded entry accounting policy`, `OpenSpec-Task: 5.2`).
+
+## Partial5.3: supplied UUID and required-entry facts
+
+`pack.rs` ports pure required-entry ordering and raw-root precedence from frozen
+zip_inspector.go; UUID parsing matches pinned google/uuid v1.6.0 Parse forms
+(32/36/38/45 bytes) plus import-local nil rejection. In the documented legacy
+38-byte form only the middle36 bytes are examined; delimiter bytes are retained,
+not silently hardened. Shared StoryUuid parsing/BoundaryError are unchanged.
+
+Tests distinguish nil/malformed/text/binary UUID, raw spelling from canonical
+diagnostic text, two raw roots with equal typed UUID, missing files/assets in
+source order, and absent versus present-empty supplied metadata. CandidateData
+is supplied data only: no JSON/image/container is interpreted or CRC/custody
+authority established. Six additional tests bring scoped execution to17 passed
+(10 unrelated tests filtered). All-target core Clippy with -Dwarnings passed
+after fixing two local style diagnostics; scoped rustfmt passed. Final combined
+full checks remain separate. The next scoped ledger update records this
+original commit SHA. Trailer: `OpenSpec-Task: 5.3`.
+
+Integration independently verified suffix behavior on EXACT wireddaef6c5d,
+not later commits:1,112,064 actual frozen-Go1.26.5 scalars and2,224,128 public Rust
+comparisons plus seven actual filename-helper observations;2 temporary tests
+passed with0 skips/filters. Read/hash-verified nonshipping integration artifact:
+/Users/maxime/.ao/data/artifacts/librairii-2/section-05-pure-integration-verification.md
+SHA256 `fef686bff0d24cc4b0bb3b750651c2f362a17b480ce34ca5a8100812fccd943b`.
+This is independent suffix-policy evidence, not our reproduction, new shipping
+tests, raw7z names or later-head/UUID/decoder/resource/custody qualification.
+
+Root reports a separate admitted foundation special-path preservation-wrapper
+defect; owner5 exclusively repairs it on its own support PR. Ordinary-path
+passes do not qualify Unicode/space/#/%2F checkout behavior. No duplicate repro
+or root fix here. After reviewed admission, consume actual new global history,
+owner5 union-discovery support and rerun combined final-head checks/review.
