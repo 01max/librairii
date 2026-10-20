@@ -46,13 +46,3 @@ not enabled wholesale. No generated/vendor exclusions or lint exceptions exist.
 Any future exception must have a reason next to a narrow `#[expect(...)]`.
 Native matrix jobs compile their actual target-specific modules; a host-only pass
 never establishes the other targets. The current skeleton has no native FFI.
-
-## Runner environment repair (separate fix commit)
-
-Parent run 39438522463/job118682441352 failed before tests: the runner-provided
-Microsoft noble InRelease feed returned HTTP403 and apt exited100. Ubuntu mirrors
-succeeded. `.github/scripts/ubuntu-apt` scopes update/install to explicit official
-Ubuntu24.04 archive/security deb822 sources with the Ubuntu archive signing key.
-It neither changes global sources nor accepts unsigned metadata nor ignores apt
-failures. Wails and all package/desktop checks remain in place. Actual CI evidence
-is required; shell syntax validation alone does not establish the repair.
