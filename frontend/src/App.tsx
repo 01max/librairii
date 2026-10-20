@@ -597,7 +597,13 @@ function App() {
         void ListShelves().then((response) => {
             if (!active) return;
             if (response.error) setRequestError(response.error.message);
-            else setCuratedShelves(response.shelves ?? []);
+            else {
+                const nextShelves = response.shelves ?? [];
+                setCuratedShelves(nextShelves);
+                setSelectedCuratedIDs((current) => current.filter((id) => (
+                    nextShelves.some((shelf) => shelf.id === id)
+                )));
+            }
         }).catch(() => { if (active) setRequestError(t('Shelves could not be loaded.')); });
         return () => { active = false; };
     }, [applicationState, shelfRevision, settingsRevision]);

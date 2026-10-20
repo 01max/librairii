@@ -15,6 +15,7 @@ import {
     DuplicateCollection,
     ListCollections,
     ListShelves,
+    DeleteShelf,
     OpenShelf,
     AddStoriesToShelf,
     OfficialMetadataStatus,
@@ -62,6 +63,7 @@ vi.mock('../wailsjs/go/main/App', () => ({
     ApplyCollectionDeletion: vi.fn(),
     ListCollections: vi.fn(),
     ListShelves: vi.fn(async () => ({shelves: []})),
+    DeleteShelf: vi.fn(),
     OpenShelf: vi.fn(),
     PreviewShelfUpdate: vi.fn(async () => ({review: {token: 'up-to-date', additions: [], removals: [], warnings: [], upToDate: true}})),
     AddStoriesToShelf: vi.fn(),
@@ -3941,6 +3943,33 @@ test('adds the selected story UUID explicitly to an existing Shelf', async () =>
     expect(AddStoriesToShelf).not.toHaveBeenCalled();
     await user.click(screen.getByRole('button', {name: 'Add selected stories'}));
     await waitFor(() => expect(AddStoriesToShelf).toHaveBeenCalledWith(7, [stories[0].uuid]));
+});
+
+test.each([false, true])('reconciles export selection after deleting a Shelf with another selected Shelf: %s', async (keepSelection) => {
+    const deletedShelf = {id: 7, name: 'Weekend', count: 0};
+    const keptShelf = {id: 8, name: 'Favorites', count: 0};
+    let deleted = false;
+    vi.mocked(ListShelves).mockImplementation(async () => new app.ShelfListResponse({shelves: deleted ? [keptShelf] : [deletedShelf, keptShelf]}));
+    vi.mocked(OpenShelf).mockResolvedValue(new app.ShelfEvaluationResponse({evaluation: {shelf: deletedShelf, members: [], sources: [], exclusions: [], page: 1, totalPages: 0}}));
+    vi.mocked(DeleteShelf).mockImplementation(async () => {deleted = true; return new app.MutationResponse({success: true});});
+    selectAndPreflightExport.mockResolvedValue(new app.ExportPreflightResponse({cancelled: true}));
+    const user = userEvent.setup();
+    render(<App/>);
+    await user.click(await screen.findByRole('checkbox', {name: 'Select Shelf Weekend for export'}));
+    if (keepSelection) await user.click(screen.getByRole('checkbox', {name: 'Select Shelf Favorites for export'}));
+    await user.click(screen.getByRole('button', {name: /Weekend/}));
+    await user.click(await screen.findByText('Shelf actions'));
+    await user.click(screen.getByRole('button', {name: 'Delete Shelf'}));
+    await user.click(within(screen.getByRole('dialog', {name: 'Delete Shelf'})).getByRole('button', {name: 'Confirm'}));
+    await waitFor(() => expect(screen.queryByRole('checkbox', {name: 'Select Shelf Weekend for export'})).not.toBeInTheDocument());
+    expect(DeleteShelf).toHaveBeenCalledWith(7);
+    if (keepSelection) {
+        expect(screen.getByRole('checkbox', {name: 'Select Shelf Favorites for export'})).toBeChecked();
+        await user.click(screen.getByRole('button', {name: 'Export selected Shelves'}));
+        expect(selectAndPreflightExport).toHaveBeenCalledWith(expect.objectContaining({sourceType: 'curated_shelf', shelfIds: [8]}));
+    } else {
+        expect(screen.queryByRole('button', {name: 'Export selected Shelves'})).not.toBeInTheDocument();
+    }
 });
 
 
