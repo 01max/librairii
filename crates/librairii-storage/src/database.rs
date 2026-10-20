@@ -213,22 +213,33 @@ impl Queue {
         Ok(())
     }
     fn stop_all(&self) -> Result<()> {
-        let mut state = self.state.lock().map_err(|_| StorageError::RuntimeFenced)?;
+        // Poison is failure evidence, not permission to leave owners asleep.
+        // Recover only the stop/wake state; no queued SQL runs under this lock.
+        let (mut state, poisoned) = match self.state.lock() {
+            Ok(state) => (state, false),
+            Err(poison) => (poison.into_inner(), true),
+        };
         state.ordinary_open = false;
         state.stopping = true;
         self.ready.notify_all();
-        Ok(())
+        if poisoned {
+            Err(StorageError::RuntimeFenced)
+        } else {
+            Ok(())
+        }
     }
     fn abort(&self) {
-        let discarded = if let Ok(mut state) = self.state.lock() {
+        let discarded = {
+            let mut state = match self.state.lock() {
+                Ok(state) => state,
+                Err(poison) => poison.into_inner(),
+            };
             state.ordinary_open = false;
             state.stopping = true;
             state.ordinary = 0;
             state.critical = 0;
             self.ready.notify_all();
             std::mem::take(&mut state.entries)
-        } else {
-            VecDeque::new()
         };
         drop(discarded);
     }
@@ -536,15 +547,20 @@ impl<'library> Database<'library> {
         if self.close_failed {
             return Err(StorageError::RuntimeFenced);
         }
-        self.stop_ordinary()?;
-        self.readers.stop_all()?;
-        let mut failure = None;
+        let mut failure = self.stop_ordinary().err();
+        if let Err(error) = self.readers.stop_all() {
+            failure.get_or_insert(error);
+            self.readers.abort();
+        }
         for thread in self.read_threads.drain(..) {
             if let Err(error) = join(thread) {
                 failure.get_or_insert(error);
             }
         }
-        self.writer.stop_all()?;
+        if let Err(error) = self.writer.stop_all() {
+            failure.get_or_insert(error);
+            self.writer.abort();
+        }
         if let Some(thread) = self.writer_thread.take()
             && let Err(error) = join(thread)
         {
@@ -724,6 +740,77 @@ fn diagnostics(connection: &Connection, worker: &str) -> Result<ConnectionDiagno
         return Err(StorageError::RuntimeFenced);
     }
     Ok(diagnostic)
+}
+
+#[cfg(test)]
+mod closure_tests {
+    use super::*;
+    use librairii_testkit::TestRoots;
+
+    #[test]
+    #[expect(
+        clippy::panic,
+        reason = "A caught queue-mutex poison proves close still wakes and joins every actual SQLite owner before returning fenced failure"
+    )]
+    fn poisoned_queue_close_joins_every_owner_and_keeps_failure_and_lease_explicit()
+    -> std::result::Result<(), Box<dyn std::error::Error>> {
+        for poison_readers in [true, false] {
+            let roots = TestRoots::new()?;
+            let library = IsolatedLibrary::initialize_from_override(
+                Some(roots.library().as_os_str()),
+                "a0000000-0000-4000-8000-000000000001".parse()?,
+            )?;
+            let mut database = Database::open_isolated(&library)?;
+            let queue = if poison_readers {
+                database.readers.clone()
+            } else {
+                database.writer.clone()
+            };
+            let poisoned = thread::spawn(move || -> Result<()> {
+                let _state = queue
+                    .state
+                    .lock()
+                    .map_err(|_| StorageError::RuntimeFenced)?;
+                panic!("injected admission mutex poison");
+            })
+            .join();
+            assert!(poisoned.is_err());
+            assert!(matches!(database.close(), Err(StorageError::RuntimeFenced)));
+            assert!(
+                database.read_threads.is_empty(),
+                "close returned before joining readers"
+            );
+            assert!(
+                database.writer_thread.is_none(),
+                "close returned before joining writer"
+            );
+            assert!(database.close_failed);
+            assert!(!database.closed, "failed closure is never success");
+            assert!(matches!(database.close(), Err(StorageError::RuntimeFenced)));
+            let lock = OpenOptions::new().read(true).write(true).open(
+                library
+                    .layout()
+                    .root()
+                    .join(crate::platform::lock::LIBRARY_LOCK_FILE),
+            )?;
+            assert!(matches!(
+                lock.try_lock(),
+                Err(std::fs::TryLockError::WouldBlock)
+            ));
+            drop(database);
+            assert!(matches!(
+                lock.try_lock(),
+                Err(std::fs::TryLockError::WouldBlock)
+            ));
+            assert!(matches!(
+                Database::open_isolated(&library),
+                Err(StorageError::RuntimeInUse)
+            ));
+            drop(library);
+            lock.try_lock()?;
+        }
+        Ok(())
+    }
 }
 
 #[cfg(all(test, unix))]

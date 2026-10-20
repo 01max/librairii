@@ -19,7 +19,7 @@ evidence, not an additional checklist or acceptance of unfinished work.
 | --- | --- | --- |
 |4.1|Explicit fresh isolated root; exact layout, managed paths, raw identity; reject escape/invalid/nonfresh inputs without profile discovery|Implemented/host verified `9c37f56ffe83d73497129603c4ecfb8d25e4e087`. Setup `fcf467f41a39c3670a38db063a5304a60f6e93d1`|
 |4.2|Exact migrations001-018, schema identity and contiguous ledger|Implemented/host verified `ea8e60f415b5ea23fb50f8899594884ef13b6c8f`; probe hardening `bbf386bd4e681d3a7732fae28af750f173da6211`. Setup `e6e527af79a21149665670a36171ef5d701be05c`; owner5 graph `bf720718c4736e0ecf5f6ded947ccbce49f1ba16`|
-|4.3|One owned writer plus four reads, bounded jobs/transactions and close|Implemented/host verified `8baebc751ed51e917a3ae5b139ebf48fc5f0467b`|
+|4.3|One owned writer plus four reads, bounded jobs/transactions and close|Implemented/host verified `8baebc751ed51e917a3ae5b139ebf48fc5f0467b`; queue-stop failure closure correction follows, with separate poisoned-close RED/GREEN evidence|
 |4.4|All18 admitted populated prefixes, full schema/rows/query outcomes and actual Collection-open projection; no fixture-specific patches or eager DB-open rewrite|Private source/normalization `a125778200af8d28e8ff99c6c41f47a6ef5b69db`, Default language `d902658ad4e8dd33dc9540658ec4176a25fe9652`, strict codec `7350ddf1a87c0434efe1e7fac49c13db9906faf2`; explicit same-writer projection `c48f7db6e891a6583c1e6b99c3d497f7f3bf9f28`, original discovery `e9c559aa35a3df5c6f2b767baa17949b2b4f3a2a`. Finite independent19-DB verification passed on exacte9; other native/current cumulative/admission gates remain open|
 |4.5|Online WAL backup, integrity/FK, rollback and foreign DB+sidecars preservation|Implemented/host verified `abeb80ecd401f840e45a6a162998f5808cd9ebc1` on Unix; Windows directory durability remains pending4.9|
 |4.6|Strict64KiB v1 profiles, atomic serialized updates and isolated native namespace|Implemented/host verified `2751a04a4af6b9da8a21300a182ca2dd5231d8b8`. Stronger race capabilities and Windows effects remain4.8/4.9|
@@ -829,3 +829,38 @@ proof; observed names confer no cleanup/activation/retry authority. Existing
 collision, overlap, precancel and retained-lease failure tests assert those
 distinct facts (focused11 pass, run`cbcf591c-7046-403b-a0ea-ef5bd72ab164`,103
 tests intentionally filtered). Storage all-target Clippy/fmt pass unchanged.
+
+### 4.3 correction: failed queue stop must still join actual owners
+
+Consumed ORIGINAL owner5 support`37aaff34af486b710cd5e2e3918893b11e9450ab`
+by FF from0a, retaining01bc/4d71668/6426c2f/406829fe. Net change was ONLY
+baseline+102/-0: all127 prior entries/metadata/scopes preserved plus13 actual
+input/copy/portability identities (140 static entries). Own exacte37a ARM
+`cargo xtask check` passed138/zero skipped+five compile-fail docs/146 corpus,
+strict15/source19/both graph policies, run`5c589c1d-e537-4071-8015-04454dda60eb`.
+No manual root edit, recreated support, cherry-pick or bookkeeping push.
+
+A separate real isolated regression reproduced early return from `close` after
+admission-mutex poison: the original fallible queue-stop `?` left unjoined read
+and writer handles. RED run`0942f6ee-3e55-4d51-bbe6-c55a30b0e4ed` failed at
+"close returned before joining readers". This is NOT an old clean-close proof
+or a synthetic witness for the missing threaded jobs/resource bridge.
+
+Close now accumulates queue-stop errors, stops/wakes both lanes even with poison,
+and joins EVERY actual owner before returning fenced failure. Poison recovery
+only permits stop/wake and discarding queued callbacks outside the mutex; it
+does not execute suspect queued SQL, clear a fence or acknowledge their effects.
+Discarded senders yield unavailable results. No public API or domain SQL changed.
+The same regression exercises BOTH poisoned reader and writer lanes, verifies
+no retained join handles, explicit failed/not-closed state, refused runtime
+reopening and OS lease held beyond failed DB close until the library drops.
+It never labels close failure as successful durable settlement.
+
+Initial focused GREEN run`b0574597-c6e2-4b03-b1fa-9d921787778d` passed the reader
+case; final combined BOTH-lane check passes139 nextest/zero skipped, five separate
+compile-fail docs and unchanged146 corpus/strict15/source19/both graph/fmt/build/
+Clippy/discovery on AppleARM1.99.1, run`074890f8-0e66-40fe-b44c-0019dfc6153b`.
+One new all-target actual identity requires additive owner5 pinning. Other native
+checks and any dependent isolated failure/drain proof must consume this corrected
+head; no old result carries forward. The static owned jobs bridge, NativeLibrary
+activation, domain repositories and final4.11 gates remain separate and open.
