@@ -1,9 +1,9 @@
 //! Released NEXT6 headless scheduling slice, not product composition.
 //!
-//! All values and injected callbacks are private to this module. There is no
-//! library activation, storage/import/custody port or durable receipt here.
-//! Tests exercise actual owned threads and controlled responses. A successful
-//! injected response is not evidence of a real database commit.
+//! The original injected engine remains private. The `scoped` child adds a
+//! run-lifetime facade over the existing typed terminal-store port. There is no
+//! library activation, import/custody implementation or owned static bridge.
+//! Controlled tests are separate from actual storage composition evidence.
 #![cfg_attr(
     not(test),
     expect(
@@ -16,6 +16,9 @@ mod model;
 mod progress;
 mod runtime;
 mod terminal;
+
+/// Scoped terminal reporting over an explicitly borrowed synchronous store.
+pub mod scoped;
 
 #[cfg(test)]
 mod tests;
