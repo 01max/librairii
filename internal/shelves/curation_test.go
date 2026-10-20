@@ -74,8 +74,8 @@ func TestCurationIsAtomicProtectedIdempotentAndReversible(t *testing.T) {
 		t.Fatal(err)
 	}
 	exclusions, err := s.Exclusions(ctx, shelf.ID)
-	if err != nil || len(exclusions) != 1 || exclusions[0].UUID != first {
-		t.Fatalf("missing exclusion: %#v %v", exclusions, err)
+	if err != nil || len(exclusions) != 0 {
+		t.Fatalf("ordinary removal created an exclusion: %#v %v", exclusions, err)
 	}
 	if _, err := s.ClearExclusion(ctx, shelf.ID, first); err != nil {
 		t.Fatal(err)

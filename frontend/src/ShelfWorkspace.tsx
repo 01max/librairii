@@ -125,7 +125,7 @@ export default function ShelfWorkspace({catalog, id, revision, query, onQuery, c
                 </details>
             </div>
         </header>
-        {reviewOpen && <ShelfReview id={id} initialReview={initialReview} onClose={() => {setReviewOpen(false); setInitialReview(null);}} onApplied={onMembershipChanged}/>}
+        {reviewOpen && <ShelfReview id={id} initialReview={initialReview} excludedCount={view.exclusions.length} onManageExclusions={() => {setReviewOpen(false); setInitialReview(null); setExclusionsOpen(true);}} onClose={() => {setReviewOpen(false); setInitialReview(null);}} onApplied={onMembershipChanged}/>}
         {manageSources && <ShelfSources id={id} sources={view.sources} collections={sourceOptions} onClose={() => setManageSources(false)} onChanged={onMembershipChanged}/>}
         <div className="curated-toolbar">
             <div className="curated-actions">
@@ -146,7 +146,7 @@ export default function ShelfWorkspace({catalog, id, revision, query, onQuery, c
                 broken={selectedStoryIDs.length > 0 && selectedStoryIDs.every((id) => Object.values(knownMembers).some((member) => member.story?.id === id && member.story.broken))}
                 onChange={(broken) => void flags.set(selectedStoryIDs, broken)}/>
             <button type="button" disabled={busy}
-                onClick={() => void act(async () => {const result = await RemoveStoriesFromShelf(id, selected); if (!result.error) setSelected([]); return result;})}>{t('Remove selected and exclude from suggestions')}</button>
+                onClick={() => void act(async () => {const result = await RemoveStoriesFromShelf(id, selected); if (!result.error) setSelected([]); return result;})}>{t('Remove selected')}</button>
         </div>}
         <ul className={`curated-members curated-${viewMode}`}>{view.members.map((member) => <li key={member.uuid} className={member.story?.broken ? 'is-broken' : ''}>
             <div className="curated-member-info">

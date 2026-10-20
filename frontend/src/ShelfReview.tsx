@@ -7,7 +7,7 @@ import ReviewWarnings from './ReviewWarnings';
 import OutcomeText from './OutcomeText';
 import {t} from './i18n';
 
-export default function ShelfReview({id, initialReview, onClose, onApplied}: {id: number; initialReview?: shelves.Review | null; onClose: () => void; onApplied: (removed: string[]) => void}) {
+export default function ShelfReview({id, initialReview, excludedCount = 0, onManageExclusions, onClose, onApplied}: {id: number; initialReview?: shelves.Review | null; excludedCount?: number; onManageExclusions?: () => void; onClose: () => void; onApplied: (removed: string[]) => void}) {
     const [review, setReview] = useState<shelves.Review | null>(initialReview ?? null);
     const [choices, setChoices] = useState<Record<string, string>>({});
     const [page, setPage] = useState(0), [busy, setBusy] = useState(false), [error, setError] = useState('');
@@ -43,6 +43,8 @@ export default function ShelfReview({id, initialReview, onClose, onApplied}: {id
         {review?.incomplete && <p role="status">{t('Review incomplete. Healthy sources can suggest additions; removals are suspended.')}</p>}
         {review?.upToDate && <p role="status">{t('Up to date')}</p>}
         <ReviewWarnings warnings={review?.warnings ?? []}/>
+        {!initialReview && excludedCount > 0 && onManageExclusions && <p>{t('Excluded from suggestions: {0}', excludedCount)}{' '}
+            <button type="button" disabled={busy} onClick={onManageExclusions}>{t('Manage exclusions')}</button></p>}
         {review && <>
             {!initialReview && <p>{t('{0} additions · {1} removals', review.additions.length, review.removals.length)}</p>}
             {(!initialReview || review.removals.length > 1) && <div className="curated-actions">{!initialReview && <><button type="button" disabled={busy || !review.additions.length} onClick={() => bulk('addition', 'add')}>{t('Approve all additions')}</button>

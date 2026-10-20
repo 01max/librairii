@@ -351,7 +351,7 @@ func TestMigratedCollectionThroughShelfReviewRestartAndExport(t *testing.T) {
 	}
 	application, runtime, events = start()
 	persisted := application.OpenShelf(ctx, shelfID, library.StoryLibraryQuery{})
-	if persisted.Error != nil || len(persisted.Evaluation.Members) != 2 || len(persisted.Evaluation.Exclusions) != 1 || persisted.Evaluation.Shelf.BrokenCount != 1 {
+	if persisted.Error != nil || len(persisted.Evaluation.Members) != 2 || len(persisted.Evaluation.Exclusions) != 0 || persisted.Evaluation.Shelf.BrokenCount != 1 {
 		t.Fatalf("restart decisions=%#v", persisted)
 	}
 	final, err := runtime.PrepareExport(ctx, exporter.PreflightRequest{SourceType: operations.ExportSourceCuratedShelf, ShelfIDs: []int64{shelfID}}, t.TempDir())

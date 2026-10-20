@@ -9,7 +9,8 @@ Shelf membership changes only through explicit creation, manual curation, or
 review approval. All approved membership stays intact until explicit removal.
 Manual additions and explicitly kept stories are retained independently of source
 criteria; there is no user-facing protection flag or toggle.
-Exclusions persist until reversed; deferrals store no decision. Missing library
+Ordinary selected-story removal changes membership without creating an exclusion.
+Explicit review exclusions persist until reversed; deferrals store no decision. Missing library
 stories retain their membership and resolve again when the same UUID returns.
 Historical acceptance origins remain distinct from current source matches.
 

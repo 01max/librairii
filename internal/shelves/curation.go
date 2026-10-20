@@ -86,8 +86,12 @@ func exclude(ctx context.Context, tx *sql.Tx, id int64, storyUUID string) (bool,
 	return changed(tx.ExecContext(ctx, `INSERT INTO shelf_exclusions(shelf_id,story_uuid) VALUES(?,?) ON CONFLICT DO NOTHING`, id, storyUUID))
 }
 
+func deleteMember(ctx context.Context, tx *sql.Tx, id int64, storyUUID string) (bool, error) {
+	return changed(tx.ExecContext(ctx, `DELETE FROM shelf_stories WHERE shelf_id=? AND story_uuid=?`, id, storyUUID))
+}
+
 func removeMember(ctx context.Context, tx *sql.Tx, id int64, storyUUID string) (bool, error) {
-	removed, err := changed(tx.ExecContext(ctx, `DELETE FROM shelf_stories WHERE shelf_id=? AND story_uuid=?`, id, storyUUID))
+	removed, err := deleteMember(ctx, tx, id, storyUUID)
 	if err != nil {
 		return false, err
 	}
@@ -135,7 +139,7 @@ func (s *Service) RemoveStories(ctx context.Context, id int64, values []string) 
 			if known == 0 {
 				return false, ErrNotFound
 			}
-			removed, err := removeMember(ctx, tx, id, storyUUID)
+			removed, err := deleteMember(ctx, tx, id, storyUUID)
 			if err != nil {
 				return false, err
 			}

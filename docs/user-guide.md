@@ -239,7 +239,14 @@ review changes nothing; **Review updates** lets you return to deferred decisions
 **Keep** makes retention a manual choice, so the same mismatch does not keep
 prompting. Manual-only Shelves do not receive source-removal prompts.
 **Shelf actions → Manage exclusions** can allow suggestions again without adding
-the story. Removing selected stories from a Shelf also excludes their future suggestions; library archives remain.
+the story. **Remove selected** only removes approved membership; the story can
+appear in a later Collection diff and be added again. **Exclude from suggestions**
+and **Remove and exclude** are the separate choices that suppress suggestions.
+Library archives remain unchanged.
+
+Earlier removals may already have created exclusions. **Review updates** shows
+an excluded-story count with a direct **Manage exclusions** action. Choose
+**Allow suggestions for…** to make that story eligible for the next diff again.
 
 Detaching sources previews affected members. Explicitly **Keep all and apply
 sources**, or decide Keep/Remove for every affected story before applying. Removal

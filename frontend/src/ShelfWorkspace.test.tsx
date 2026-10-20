@@ -46,8 +46,9 @@ test('membership has no protection controls and exclusions require an explicit a
     await screen.findByRole('checkbox', {name: 'First'});
     expect(screen.queryByRole('button', {name: /protect/i})).not.toBeInTheDocument();
     expect(screen.queryByText('Protected', {exact: true})).not.toBeInTheDocument();
-    await user.click(screen.getByText('Shelf actions', {exact: true}));
-    await user.click(screen.getByRole('button', {name: 'Manage exclusions (1)'}));
+    await user.click(screen.getByRole('button', {name: 'Review updates'}));
+    await screen.findByText('Excluded from suggestions: 1');
+    await user.click(screen.getByRole('button', {name: 'Manage exclusions'}));
     expect(ClearShelfExclusion).not.toHaveBeenCalled();
     await user.click(screen.getByRole('button', {name: 'Allow suggestions for Excluded story'}));
     await waitFor(() => expect(ClearShelfExclusion).toHaveBeenCalledWith(7, 'excluded'));
@@ -89,7 +90,7 @@ test.each(['review', 'sources'])('%s removals discard removed selections and ret
     expect(screen.getByRole('checkbox', {name: 'Kept'})).toBeChecked();
     await user.click(screen.getByRole('button', {name: 'Export selection'}));
     expect(onExport).toHaveBeenLastCalledWith(expect.objectContaining({shelfSelectionUuids: ['kept']}));
-    await user.click(screen.getByRole('button', {name: 'Remove selected and exclude from suggestions'}));
+    await user.click(screen.getByRole('button', {name: 'Remove selected'}));
     expect(RemoveStoriesFromShelf).toHaveBeenCalledWith(7, ['kept']);
 });
 
