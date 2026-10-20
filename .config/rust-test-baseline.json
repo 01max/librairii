@@ -621,6 +621,18 @@
         "x86_64-apple-darwin",
         "x86_64-unknown-linux-gnu"
       ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "migrations::compatibility::normalization::tests::every_scalar_and_frozen_ccc_boundaries_match_actual_go_reference"
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "migrations::compatibility::normalization::tests::frozen_go_streamsafe_partition_preserves_surviving_mc_order"
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "migrations::compatibility::normalization::tests::frozen_unicode_folding_mn_space_and_hangul_keep_separate_semantics"
     }
   ]
 }
