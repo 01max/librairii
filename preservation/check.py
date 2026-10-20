@@ -57,4 +57,25 @@ assert skips and all(i['Item']['TotalBytes']==0 for i in skips)
 assert read('review-stale.json')['error']=='stale_review'
 assert read('review-invalid-decision.json')['error']=='invalid_shelf_input'
 assert read('review-deferred.json')['unchanged'] is True
+if (root/'databases/provenance.json').exists():
+    import sqlite3
+    prefixes=read('databases/provenance.json')['prefixes']
+    assert [r['prefix'] for r in prefixes]==list(range(1,19))
+    for r in prefixes:
+        db=sqlite3.connect(f"file:{root/r['file']}?mode=ro",uri=True)
+        assert [v[0] for v in db.execute('select version from schema_migrations order by version')]==list(range(1,r['prefix']+1))
+        assert db.execute('pragma integrity_check').fetchone()[0]=='ok'
+        assert not db.execute('pragma foreign_key_check').fetchall()
+        db.close()
+        expected=read(r['expected'])
+        assert len(expected['afterGoOpen']['tables']['schema_migrations'])==18
+    representative=read('libraries/schema018/state.json')['tables']
+    assert len(representative['shelf_exclusions'])==1 and len(representative['shelf_stories'])==3
+    assert len(representative['removal_intents'])==1
+    assert {r['status'] for r in representative['file_operations']}=={'queued','running','succeeded'}
+    db=sqlite3.connect(f"file:{root/'libraries/schema018/db/librairii.sqlite3'}?mode=ro",uri=True)
+    for rel,checksum in db.execute('select managed_path,sha256 from story_archives order by id'):
+        assert hashlib.sha256((root/'libraries/schema018'/rel).read_bytes()).hexdigest()==checksum
+    assert not db.execute('pragma foreign_key_check').fetchall()
+    db.close()
 print(f'verified {len(manifest["files"])} hashed corpus files and semantic witnesses'+(' with identical second export'if args.compare else ''))

@@ -31,6 +31,11 @@
       "subtask": "1.4",
       "sha": "853e6c52085c0fbc5bb5a20ba9b2140ca1d2fd65",
       "subject": "docs(preservation): reconcile effective Broken and Shelf contracts"
+    },
+    {
+      "subtask": "1.6",
+      "sha": "19be030ac3d959267422d0b031c9fb8cb26ff186",
+      "subject": "test(preservation): export language-neutral frozen Go golden outcomes"
     }
   ],
   "subtasks": {
@@ -116,8 +121,16 @@
       "limitations": "Representative portable corpus supplements retained source suites; no exhaustive race/platform/codec-hardening qualification claim"
     },
     "1.7": {
-      "status": "pending",
-      "evidence": []
+      "status": "implemented",
+      "evidence": [
+        "generator/databases.go",
+        "database-contract.md",
+        "corpus/databases/provenance.json",
+        "corpus/libraries/schema018/state.json",
+        "corpus/profiles/recovery-contract.json"
+      ],
+      "verification": "two independent113-file exports identical including all19 SQLite files; all18 prefix ledgers/integrity/FKs and actual Go upgrade to018 checked; representative managed hashes verified",
+      "limitations": "synthetic future recovery input; placeholder absolute paths require identity-verified rebind; no Rust/foreign-schema/platform/rollback qualification claim"
     },
     "1.8": {
       "status": "pending",

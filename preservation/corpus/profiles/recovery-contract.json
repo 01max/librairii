@@ -1,0 +1,9 @@
+{
+  "absolutePaths": "deliberate non-live /fixture placeholders: do not replay; clone and identity-verify/rebind for target OS first",
+  "immutableFiles": "all managed files hashed in corpus manifest; no user data",
+  "libraryId": "a0000000-0000-4000-8000-000000000001",
+  "pendingOperations": "one running partial import and one queued skipped-unavailable Shelf export; normal restart must reconcile",
+  "pendingRemoval": "pre-move removal intent with managed bytes still present",
+  "published": "profile root decides authority; phase alone is insufficient",
+  "reserved": "source authoritative before durable profile commit"
+}

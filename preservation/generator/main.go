@@ -265,23 +265,30 @@ func importGolden() {
 
 var ids = []string{"123e4567-e89b-42d3-a456-426614174000", "223e4567-e89b-42d3-a456-426614174000", "323e4567-e89b-42d3-a456-426614174000", "423e4567-e89b-42d3-a456-426614174000", "523e4567-e89b-42d3-a456-426614174000", "623e4567-e89b-42d3-a456-426614174000"}
 
+func syntheticStory(id string) []byte {
+	f := testfixture.GenericZIP()
+	old := strings.ReplaceAll(testfixture.StoryUUID, "-", "")
+	newID := strings.ReplaceAll(id, "-", "")
+	for j := range f.Entries {
+		f.Entries[j].Name = strings.ReplaceAll(strings.ReplaceAll(f.Entries[j].Name, testfixture.StoryUUID, id), old, newID)
+		if f.Entries[j].Name == "uuid.bin" {
+			f.Entries[j].Bytes = testfixture.UUIDBytes(id)
+		}
+	}
+	return take(testfixture.ZIPBytes(f))
+}
 func seedWorld(w *world) {
 	titles := []string{"Old ocean", "Moon still", "Manual ocean", "Moon forest", "Moon excluded"}
 	repo := catalog.NewRepository(w.db.Writer())
 	for i, title := range titles {
-		f := testfixture.GenericZIP()
-		old := strings.ReplaceAll(testfixture.StoryUUID, "-", "")
-		newID := strings.ReplaceAll(ids[i], "-", "")
-		for j := range f.Entries {
-			f.Entries[j].Name = strings.ReplaceAll(strings.ReplaceAll(f.Entries[j].Name, testfixture.StoryUUID, ids[i]), old, newID)
-			if f.Entries[j].Name == "uuid.bin" {
-				f.Entries[j].Bytes = testfixture.UUIDBytes(ids[i])
-			}
-		}
-		body := take(testfixture.ZIPBytes(f))
+		body := syntheticStory(ids[i])
 		sum := hash(body)
 		rel := "archives/" + sum + ".zip"
 		must(os.WriteFile(filepath.Join(w.dir, rel), body, 0600))
+		inspected := take(inspection.NewStoryInspector().Inspect(ctx, inspection.Candidate{Path: filepath.Join(w.dir, rel), OriginalFilename: fmt.Sprintf("story-%d.zip", i+1)}, inspection.DefaultLimits()))
+		if inspected.UUID != ids[i] {
+			panic("synthetic archive UUID mismatch")
+		}
 		_, _, err := repo.Create(ctx, catalog.CreateStory{UUID: ids[i], EmbeddedTitle: title, OriginalFilename: fmt.Sprintf("story-%d.zip", i+1), DetectedFormat: catalog.FormatZIP, SHA256: sum, ByteSize: int64(len(body)), ManagedPath: rel})
 		must(err)
 	}
