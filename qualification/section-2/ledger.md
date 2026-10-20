@@ -61,3 +61,9 @@ does not finalize that owner's graph or prevent eligible core/storage work.
 Later ledger/validation-only commits can be found in PR history. Exact review-ready
 head is sent after pushing; it cannot be embedded as its own commit hash here.
 Scoped review fixes must get new commits and be added below, never squash/rebase.
+
+## Required review fixes
+
+| Finding | Fix SHA | Evidence / status |
+| --- | --- | --- |
+| PR38 P2, comment4326316702, checkbox state after actual toggle/Apply | [`31ccd9e`](https://github.com/01max/librairii/commit/31ccd9e) | Writable two-way decision properties; actual widget Space→Apply→unchecked twice through public in-process events. Regression failed before correction and passes debug/release afterward; seven tests/fmt/Clippy/doctests pass. Final-head AO review requested after push; no toolkit qualification. |
