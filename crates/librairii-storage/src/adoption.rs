@@ -86,6 +86,9 @@ impl ClosedManifest {
     pub fn entry_count(&self) -> usize {
         self.entries.len()
     }
+    pub(crate) fn relative_paths(&self) -> impl Iterator<Item = &str> {
+        self.entries.iter().map(|entry| entry.path.as_str())
+    }
 }
 
 #[cfg(any(target_os = "macos", target_os = "linux"))]

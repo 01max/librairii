@@ -5,6 +5,107 @@ use librairii_storage::{
 use std::error::Error;
 type TestResult = Result<(), Box<dyn Error>>;
 
+fn declared_names(names: &[(&str, bool)]) -> Result<Vec<u8>, Box<dyn Error>> {
+    let mut entries: Vec<serde_json::Value> = serde_json::from_slice(include_bytes!(
+        "../../../preservation/corpus/profiles/library-manifest.json"
+    ))?;
+    for (path, directory) in names {
+        entries.push(if *directory {
+            serde_json::json!({"path": path, "directory": true})
+        } else {
+            serde_json::json!({"path": path, "size": 0, "sha256": "0".repeat(64)})
+        });
+    }
+    Ok(serde_json::to_vec(&entries)?)
+}
+
+#[test]
+fn windows_name_diagnostics_retain_device_control_and_directory_spelling() -> TestResult {
+    use librairii_storage::{
+        adoption::ClosedManifest,
+        portability::{WindowsNameProblems, windows_name_issues},
+    };
+    let names = [
+        ("archives/CON.zip", false),
+        ("archives/cOm¹.tar.gz", false),
+        ("archives/LpT²", false),
+        ("archives/COM³.txt ", false),
+        ("archives/NUL", true),
+        ("archives/NUL/unchanged.zip", false),
+        ("archives/contains\\slash:*.zip", false),
+        ("archives/control\u{1f}.zip.", false),
+    ];
+    let bytes = declared_names(&names)?;
+    let manifest = ClosedManifest::decode(&bytes)?;
+    let issues: Vec<_> = windows_name_issues(&manifest).collect();
+    assert_eq!(issues.len(), names.len());
+    for (issue, (path, _)) in issues.iter().zip(names) {
+        assert_eq!(issue.raw_relative_path, path);
+        assert_eq!(issue.component_index, 1);
+        assert_eq!(
+            issue.raw_component,
+            path.split('/').nth(1).ok_or("component")?
+        );
+    }
+    assert!(issues[..6].iter().all(|issue| issue.problems.device_name));
+    assert!(issues[3].problems.trailing_space_or_dot);
+    assert_eq!(
+        issues[6].problems,
+        WindowsNameProblems {
+            reserved_character: true,
+            ..WindowsNameProblems::default()
+        }
+    );
+    assert_eq!(
+        issues[7].problems,
+        WindowsNameProblems {
+            control_character: true,
+            trailing_space_or_dot: true,
+            ..WindowsNameProblems::default()
+        }
+    );
+    assert_eq!(manifest.original_bytes(), bytes);
+    // Declared data only: no source file or Windows constructor was needed,
+    // and the repeated stream retains the same borrowed literal components.
+    assert_eq!(windows_name_issues(&manifest).collect::<Vec<_>>(), issues);
+    Ok(())
+}
+
+#[test]
+fn filename_diagnostics_never_normalize_or_claim_filesystem_equivalence() -> TestResult {
+    use librairii_storage::{adoption::ClosedManifest, portability::windows_name_issues};
+    let bytes = declared_names(&[
+        ("archives/Éte.zip", false),
+        ("archives/E\u{301}te.zip", false),
+        ("archives/Story.zip", false),
+        ("archives/story.zip", false),
+        ("archives/# %2F .zip", false),
+        ("archives/COM0.zip", false),
+        ("archives/COM10.zip", false),
+        ("archives/COM¹¹.zip", false),
+        ("archives/NULish.zip", false),
+        ("archives/.hidden", false),
+        ("archives/界COM1.zip", false),
+        ("archives/🦀.zip", false),
+    ])?;
+    let manifest = ClosedManifest::decode(&bytes)?;
+    // These names have no issue in this documented lexical subset. In
+    // particular the case and decomposition pairs remain distinct DATA, not
+    // a declaration that both files can coexist on a target filesystem.
+    assert!(windows_name_issues(&manifest).next().is_none());
+    assert_eq!(manifest.original_bytes(), bytes);
+    let unchanged: Vec<serde_json::Value> = serde_json::from_slice(manifest.original_bytes())?;
+    assert!(unchanged.iter().any(|e| e["path"] == "archives/Éte.zip"));
+    assert!(
+        unchanged
+            .iter()
+            .any(|e| e["path"] == "archives/E\u{301}te.zip")
+    );
+    assert!(unchanged.iter().any(|e| e["path"] == "archives/Story.zip"));
+    assert!(unchanged.iter().any(|e| e["path"] == "archives/story.zip"));
+    Ok(())
+}
+
 #[test]
 fn foreign_profile_syntax_is_explicit_strict_and_retained_without_path_io() -> TestResult {
     let bytes = r#" {"version":1,"language":"fr","root":"Z:\\copied library\\Éte","libraryId":"A0000000-0000-4000-8000-000000000001","complete":true} "#.as_bytes();

@@ -1080,3 +1080,31 @@ compile-fail docs, unchanged146 corpus/strict15/source19 and both graph/quality
 policies, run`85f9889b-746e-4f2a-8d64-fcb9c85a324c`; only this validation note
 was appended afterward. This host check excludes Windows-only source. It is
 not a green native rerun of the original failure or proof of directory durability.
+
+### Partial 4.10: streamed original-name diagnostics, no target admission
+
+`portability::windows_name_issues` borrows the already bounded ClosedManifest
+and streams original path/component observations without a collected issue
+allocation or filesystem I/O. It reports documented reserved/control characters,
+device stems including superscript COM/LPT digits and extension forms, and
+trailing spaces/dots for both file and directory components. Raw strings and
+manifest bytes are unchanged; no shortening, replacement, Unicode normalization,
+casefold model, profile publication or journal interpretation occurs.
+Primary rule source inspected:
+https://learn.microsoft.com/en-us/windows/win32/fileio/naming-a-file
+
+The type has no adoption/cleanup/all-clear capability. Empty output proves only
+absence of the documented lexical issues detected here. Case/Unicode equivalence,
+path/component lengths and APIs, actual links/reparse points, network/removable/
+offline/read-only filesystem guarantees and recovery authority remain separate
+preflight obligations. Declared data cannot prove that a source object exists.
+Other absolute profile/history/journal strings remain unchanged historical data.
+
+Two all-target source-defined tests use synthetic in-memory additions to the
+unchanged admitted manifest. They retain exact device/control/directory spelling,
+compound issues, composed/decomposed Unicode and case pairs, embedded spaces,
+percent/hash characters and non-device lookalikes without claiming that any pair
+can coexist on a real target. Focused portability4/4 passed, zero skips, run
+`a8ade1af-9c4d-4acb-8731-53bc2fdc2a1d`; storage all-target Clippy with warnings
+denied passed on AppleARM. New discovery identities require owner5 additive
+support before final admission; this is not full4.10 or current all-target proof.
