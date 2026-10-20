@@ -411,3 +411,32 @@ comparison, provider CI and ONE native review of the ready exact head. Old904
 approval/186 comparisons are historical. Real LimitReader/heap/CRC/PNG/archive/
 decoder/cancel/runtime/SQL/custody/presentation, all full5.N/5.10 and merge stay
 OPEN. No optional artwork or title fallback behavior is implemented.
+
+### Original text/optional commits and actual new discovery
+
+| Contribution | Original full SHA |
+|---|---|
+|5.4 PARTIAL Studio supplied text|e3d4ff128b07b2af2897e35bc13de02f5250b7fc|
+|5.5 PARTIAL optional supplied metadata|25c9896766c4397244743bef2711ac74feda1159|
+
+Actual nextest JSON discovery found the following13 new unignored IDs in
+suite librairii-core (not yet pinned by owner5). All72 committed required
+baseline records/order/scopes and strict14 remain byte-unchanged. These
+discovery results are not the final mandatory-suite or Windows execution.
+
+- import::studio_json::optional::tests::optional_metadata_duplicates_null_folding_and_first_type_error_are_ordered
+- import::studio_json::optional::tests::optional_metadata_empty_uuid_is_allowed_without_changing_primary_identity
+- import::studio_json::optional::tests::optional_metadata_first_syntax_then_types_then_eof_then_uuid_priority
+- import::studio_json::optional::tests::optional_metadata_preserves_replacement_origins_and_boundary_only_text
+- import::studio_json::optional::tests::optional_metadata_selection_distinguishes_absence_directory_unselected_and_empty
+- import::studio_json::optional::tests::optional_metadata_supplied_original_byte_cap_and_depth_are_separate_from_heap_reads
+- import::studio_json::optional::tests::optional_metadata_three_field_shape_skips_studio_and_unknown_types
+- import::studio_json::optional::tests::optional_metadata_uuid_uses_untrimmed_legacy_forms_and_canonical_comparison
+- import::studio_json::tests::studio_text_frozen_whitespace_and_nonspace_boundaries
+- import::studio_json::tests::studio_text_known_duplicates_null_and_fold_keep_decoder_semantics
+- import::studio_json::tests::studio_text_projection_follows_uuid_refs_regular_thumbnail_presence
+- import::studio_json::tests::studio_text_projection_preserves_raw_identity_and_only_trims_boundaries
+- import::studio_json::tests::studio_text_replacement_origins_and_interior_composition_are_preserved
+
+No status-only source update will be made for later CI/native/independent
+results. Final exact-head readiness is reported through AO/PR metadata.
