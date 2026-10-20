@@ -78,4 +78,19 @@ if (root/'databases/provenance.json').exists():
         assert hashlib.sha256((root/'libraries/schema018'/rel).read_bytes()).hexdigest()==checksum
     assert not db.execute('pragma foreign_key_check').fetchall()
     db.close()
+if (root/'limits/archive-headers.json').exists():
+    boundaries={r['id']:r for r in read('limits/archive-headers.json')}
+    assert boundaries['path-bytes-512']['error']=='' and boundaries['path-bytes-513']['error']=='unsafe_path'
+    assert boundaries['entry-count-10000']['error']=='' and boundaries['entry-count-10001']['error']=='entry_limit'
+    assert boundaries['aggregate-ratio-200']['error']=='' and boundaries['aggregate-ratio-201']['error']=='compression_ratio_limit'
+    queries={r['id']:r for r in read('limits/queries.json')}
+    assert queries['search-runes-200']['error']=='' and queries['search-runes-201']['error']=='invalid_story_query'
+    assert queries['page-size-100']['error']=='' and queries['page-size-101']['error']=='invalid_story_query'
+    lines=(root/'performance/stories.jsonl').read_text().splitlines()
+    assert len(lines)==5000 and len({json.loads(r)['uuid'] for r in lines})==5000
+    large=read('performance/review5000.json')
+    assert len(large['initialAdditions'])==5000 and len({r['uuid'] for r in large['initialAdditions']})==5000
+    assert sum(r['broken'] for r in large['initialAdditions'])==1000
+    assert len(large['decisions'])==50 and large['remainingAdditions']==4950
+    assert large['approved']['count']==50
 print(f'verified {len(manifest["files"])} hashed corpus files and semantic witnesses'+(' with identical second export'if args.compare else ''))

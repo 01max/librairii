@@ -36,6 +36,11 @@
       "subtask": "1.6",
       "sha": "19be030ac3d959267422d0b031c9fb8cb26ff186",
       "subject": "test(preservation): export language-neutral frozen Go golden outcomes"
+    },
+    {
+      "subtask": "1.7",
+      "sha": "233f70dbbe53f58a2acb30e904daf7c60e7c2ff2",
+      "subject": "test(preservation): preserve synthetic migration and recovery libraries"
     }
   ],
   "subtasks": {
@@ -133,8 +138,27 @@
       "limitations": "synthetic future recovery input; placeholder absolute paths require identity-verified rebind; no Rust/foreign-schema/platform/rollback qualification claim"
     },
     "1.8": {
-      "status": "pending",
-      "evidence": []
+      "status": "implemented",
+      "evidence": [
+        "preservation-manifest.json",
+        "performance-contract.md",
+        "performance-observation.json",
+        "generator/limits_performance.go",
+        "corpus/limits/",
+        "corpus/performance/"
+      ],
+      "verification": "two143-file frozen-source exports byte-identical including19 databases; semantic limits/performance witnesses pass; real5000-story backend p95 budgets and5000-Shelf preview/apply gate pass on identified ARM host",
+      "limits": "archive/query/operations/review/database/history/diagnostics/HTTP frozen with source refs; native extra budgets await section2",
+      "coverage": {
+        "total_hashed_corpus_files": 143,
+        "performance_stories": 5000,
+        "procedural_pngs": 24,
+        "review_candidates": 5000,
+        "review_broken": 1000,
+        "applied_additions": 50,
+        "remaining_proposals": 4950
+      },
+      "unverified": "native startup/CPU/RSS/package-size ceilings and four-platform renderer/accessibility remain incomplete"
     },
     "1.9": {
       "status": "pending",

@@ -12,7 +12,11 @@
     },
     {
       "path": "generator/extra.go",
-      "sha256": "83e3e41703f402702963ad23cee113afbdfbad19c75bc467dcc95392a1b866ac"
+      "sha256": "b001b7abc814576419c289106964d1d2f0fed4ecd306acbb90542bcbbaae9b4e"
+    },
+    {
+      "path": "generator/limits_performance.go",
+      "sha256": "cfd1ce6dedb3a2cd0ad76b36bd295f247fc67746684b683e6e3c129a322e17a3"
     },
     {
       "path": "generator/main.go",
@@ -396,6 +400,21 @@
       "sha256": "a0671937ab1fbaf4c7ab1dbd9c6fa8666c8c5dc66d86c8fb35241856256db677"
     },
     {
+      "path": "limits/archive-headers.json",
+      "bytes": 12320,
+      "sha256": "09e6581da83c6ae23c079b6202ee844a2168af75162a00dd66cbed1d3554ca97"
+    },
+    {
+      "path": "limits/bounded-reads.json",
+      "bytes": 1385,
+      "sha256": "660a57b3161ea8ffd66f9a940ec5f269be3efe46e4f0bfc9099d2e2ed94b1202"
+    },
+    {
+      "path": "limits/queries.json",
+      "bytes": 17888,
+      "sha256": "fd6b102a377482bc3abb84adce698ae7339ed770bfeccdeb08e53e596b42b09d"
+    },
+    {
       "path": "membership-scenario.json",
       "bytes": 1613,
       "sha256": "83bb82b3577825ffa26d1849273445be376d3a30dfa9eafd7b9453f4a7d89a59"
@@ -494,6 +513,141 @@
       "path": "ordinary-removal.json",
       "bytes": 2197,
       "sha256": "e0f9a75a8299411d43b1d8c8a160dfb10569731df3f60288422555956b7aa402"
+    },
+    {
+      "path": "performance/catalog/embedded/performance-cover-01.png",
+      "bytes": 2687,
+      "sha256": "20d27aedc7d4876063ec6c1fbd565baeae8d69a7bb2711afb106180076aded2a"
+    },
+    {
+      "path": "performance/catalog/embedded/performance-cover-02.png",
+      "bytes": 2689,
+      "sha256": "cd9de4e8c27b9a071cf29b39449c474bbd49d2e4e9c5815d69c06356dbe75d0f"
+    },
+    {
+      "path": "performance/catalog/embedded/performance-cover-03.png",
+      "bytes": 2772,
+      "sha256": "15254e78a046c2d0e1079f13b1f8ddf4c438f31a401707b8ce1e510e74ad87f0"
+    },
+    {
+      "path": "performance/catalog/embedded/performance-cover-04.png",
+      "bytes": 2705,
+      "sha256": "d3a3b4f0cc6dfa84c857249bb2019123c11685e6dc426b9d15c86072bbab4427"
+    },
+    {
+      "path": "performance/catalog/embedded/performance-cover-05.png",
+      "bytes": 2748,
+      "sha256": "faa9c0b9adce6922c68c42daa2d14bc4bb20ac67087181a682ef42b8fa535a87"
+    },
+    {
+      "path": "performance/catalog/embedded/performance-cover-06.png",
+      "bytes": 2737,
+      "sha256": "818a9a88b975807e61c6a21103a621e721e8cdae5d997fbb5d48b22224ec9a98"
+    },
+    {
+      "path": "performance/catalog/embedded/performance-cover-07.png",
+      "bytes": 2711,
+      "sha256": "366551ef867f5629c4bee6d3e18a56e729b7514c4e39b606b2ef5b5e0b7e474e"
+    },
+    {
+      "path": "performance/catalog/embedded/performance-cover-08.png",
+      "bytes": 2699,
+      "sha256": "576878a83534db79b83c7d7eb17c0309566b80ee6b91534f6562d78507a70d64"
+    },
+    {
+      "path": "performance/catalog/embedded/performance-cover-09.png",
+      "bytes": 2739,
+      "sha256": "09d39cb7ee04c8b76b8b18f466cd883ebdc1dfb1afeea131a5310aac41e8dd61"
+    },
+    {
+      "path": "performance/catalog/embedded/performance-cover-10.png",
+      "bytes": 2757,
+      "sha256": "94d4d4f56c97d081219d98a54f9d3c5e38883ff7f899d12c205e5da3004b4bbe"
+    },
+    {
+      "path": "performance/catalog/embedded/performance-cover-11.png",
+      "bytes": 2710,
+      "sha256": "74f5b2aa898260c7ce0f8d4eaad016385f58dc56c0c0c9bfae6894d99de42d1e"
+    },
+    {
+      "path": "performance/catalog/embedded/performance-cover-12.png",
+      "bytes": 2726,
+      "sha256": "79a07d4dadce43070d0820448bd023e8c8cc03a86858aafe97285cdbb1ba8b8c"
+    },
+    {
+      "path": "performance/catalog/embedded/performance-cover-13.png",
+      "bytes": 2727,
+      "sha256": "325675ba408fa4f852feb495f4f1f68f790b159d670d562df41c73b3bea062b1"
+    },
+    {
+      "path": "performance/catalog/embedded/performance-cover-14.png",
+      "bytes": 2756,
+      "sha256": "beb4a917afacaa062476f35bc2af976816a3d8f3c8306323048db07fdc72cede"
+    },
+    {
+      "path": "performance/catalog/embedded/performance-cover-15.png",
+      "bytes": 2741,
+      "sha256": "da439374f690483deac7ed49e49e5dedca8a5e55299417100d0b823952bf443b"
+    },
+    {
+      "path": "performance/catalog/embedded/performance-cover-16.png",
+      "bytes": 2730,
+      "sha256": "dd984129ebe4ea8c823e5166dc06bdc1c25d93752507d57a789e94bbc0104438"
+    },
+    {
+      "path": "performance/catalog/embedded/performance-cover-17.png",
+      "bytes": 2719,
+      "sha256": "8cacad7a933e25143258e1bb719ebc1cd4876de22e8b7d6bc2e71ab321606ecb"
+    },
+    {
+      "path": "performance/catalog/embedded/performance-cover-18.png",
+      "bytes": 2724,
+      "sha256": "d03250459d32af341115fa8a087356ab8c0b7586a60306dba33766332dba8ff1"
+    },
+    {
+      "path": "performance/catalog/embedded/performance-cover-19.png",
+      "bytes": 2722,
+      "sha256": "2f2572c83f41bbe021a0ab8cf35743f3faefcfae860ec0cdc32b7aea7f7e70b0"
+    },
+    {
+      "path": "performance/catalog/embedded/performance-cover-20.png",
+      "bytes": 2687,
+      "sha256": "fbe6475932423bee1d10b5d43824babbf7814a4117b8c322d754a902b209e24e"
+    },
+    {
+      "path": "performance/catalog/embedded/performance-cover-21.png",
+      "bytes": 2741,
+      "sha256": "c9407553e58935a883a4c4cf765f439b0a9e1adc987d7d9fec9e9cd02bf44ee0"
+    },
+    {
+      "path": "performance/catalog/embedded/performance-cover-22.png",
+      "bytes": 2695,
+      "sha256": "20c6d308aa5e12d40be7a59086b039467eb41589c3b998a68a38064ab648bf8a"
+    },
+    {
+      "path": "performance/catalog/embedded/performance-cover-23.png",
+      "bytes": 2718,
+      "sha256": "f4e97160dc8b6bb347c05dc61567f1492b4c84ca4643e76ddf32d473fc200bea"
+    },
+    {
+      "path": "performance/catalog/embedded/performance-cover-24.png",
+      "bytes": 2726,
+      "sha256": "91c628966de0e12665433fe0b0bb84d798e7c8c3c7472b4473e22bad4854a8d5"
+    },
+    {
+      "path": "performance/distribution.json",
+      "bytes": 4014,
+      "sha256": "0e9aeef8dbe85009bb4cbcd71a518eb5c5cd51e8dda596627d20d565339978df"
+    },
+    {
+      "path": "performance/review5000.json",
+      "bytes": 941501,
+      "sha256": "26541c88b29479f56944c9c086e624bfd6266c12c2211ee4e71cdc142112cea0"
+    },
+    {
+      "path": "performance/stories.jsonl",
+      "bytes": 2199704,
+      "sha256": "834cd433d06fd88a5f237272511d3e149177bb5ce38b7f1d6f3eb06511413f72"
     },
     {
       "path": "profiles/recovery-contract.json",
