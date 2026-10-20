@@ -10,6 +10,9 @@
 
 mod scanner;
 mod strings;
+mod text;
+
+pub use text::MetadataText;
 
 use super::{
     ImportIdentity, Inventory, Limits, StageReferences, ValidationCode, ValidationError,
@@ -46,12 +49,18 @@ struct Node {
 #[derive(Debug, Default)]
 struct Story {
     uuid: String,
-    // Known fields participate in decoding even though their output/TrimSpace
-    // policy is not released. They must not be treated as unknown fields.
     title: String,
     description: String,
     cells: Vec<Node>,
     length: usize,
+}
+
+/// Policy/text observations over supplied data. Even regular thumbnail presence
+/// does not establish readable PNG bytes, accepted inspection or custody.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct StudioProjection {
+    pub identity: ImportIdentity,
+    pub text: MetadataText,
 }
 
 fn save_type(error: &mut Option<DecodeFailure>, field: &'static str) {
@@ -173,13 +182,23 @@ fn decode(input: &[u8]) -> Result<Story, DecodeFailure> {
 /// Validate already-materialized STUdio JSON bytes followed by supplied entry
 /// policy. This is downstream of dispatch; it does not open/read an archive.
 /// The byte-length refusal is not a stream limit, decoded-heap/CPU bound, CRC,
-/// PNG check, inspection receipt or custody/commit authority. Metadata output
-/// and title/description trimming are deliberately absent.
+/// PNG check, inspection receipt or custody/commit authority.
 pub fn validate_studio_json(
     inventory: &Inventory,
     metadata: &[u8],
     limits: Limits,
 ) -> Result<ImportIdentity, ValidationError> {
+    project_studio_json(inventory, metadata, limits).map(|projection| projection.identity)
+}
+
+/// Project bounded supplied STUdio bytes after mandatory UUID, ordered references
+/// and regular thumbnail PRESENCE policy. Text is boundary-trimmed with frozen
+/// Go Unicode15 rules; it has no title fallback or image/inspection authority.
+pub fn project_studio_json(
+    inventory: &Inventory,
+    metadata: &[u8],
+    limits: Limits,
+) -> Result<StudioProjection, ValidationError> {
     limits.validate()?;
     if i64::try_from(metadata.len()).map_or(true, |length| length > limits.max_metadata_bytes) {
         return Err(ValidationError::at(
@@ -198,7 +217,11 @@ pub fn validate_studio_json(
             audio: &node.audio,
         })
         .collect();
-    validate_studio_policy(inventory, &story.uuid, &references, limits)
+    let identity = validate_studio_policy(inventory, &story.uuid, &references, limits)?;
+    Ok(StudioProjection {
+        identity,
+        text: MetadataText::from_fields(&story.title, &story.description),
+    })
 }
 
 #[cfg(test)]

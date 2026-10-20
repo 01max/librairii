@@ -489,3 +489,160 @@ fn studio_json_decode_uuid_refs_and_thumbnail_preserve_pipeline_error_order() ->
     assert!(error.is_some_and(|e| e.code == ValidationCode::UnsafePath && e.cause.is_some()));
     Ok(())
 }
+
+#[test]
+fn studio_text_projection_preserves_raw_identity_and_only_trims_boundaries() -> TestResult {
+    let raw = "URN:UUID:00112233-4455-4677-8899-AABBCCDDEEFF";
+    let bytes = format!(
+        r#"{{"uuid":"{raw}","stageNodes":[{{"image":"assets/a"}}],"title":" \tÉté  日本語\r\n","description":"\u00a0E\u0301\n x\u3000"}}"#
+    );
+    let projected = project_studio_json(&supplied_files()?, bytes.as_bytes(), Limits::default())?;
+    assert_eq!(
+        projected.identity.raw(),
+        &UuidSource::Text(raw.as_bytes().to_vec())
+    );
+    assert_eq!(projected.identity.canonical(), UUID);
+    assert_eq!(projected.text.title, "Été  日本語");
+    assert_eq!(projected.text.description, "E\u{0301}\n x");
+    assert_eq!(
+        validate_studio_json(&supplied_files()?, bytes.as_bytes(), Limits::default())?,
+        projected.identity
+    );
+    // A supplied name and presence bit is sufficient for this policy API:
+    // no PNG bytes were supplied or verified.
+    Ok(())
+}
+
+#[test]
+fn studio_text_frozen_whitespace_and_nonspace_boundaries() -> TestResult {
+    let files = supplied_files()?;
+    let whitespace = [
+        0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x20, 0x85, 0xa0, 0x1680, 0x2000, 0x2001, 0x2002, 0x2003,
+        0x2004, 0x2005, 0x2006, 0x2007, 0x2008, 0x2009, 0x200a, 0x2028, 0x2029, 0x202f, 0x205f,
+        0x3000,
+    ];
+    for cp in whitespace {
+        let input = story(
+            r#"[{"image":"assets/a"}]"#,
+            &format!(
+                r#", "title":"\u{cp:04x}left\u{cp:04x}right\u{cp:04x}","description":"\u{cp:04x}\u{cp:04x}""#
+            ),
+        );
+        let text = project_studio_json(&files, &input, Limits::default())?.text;
+        assert_eq!(
+            text.title,
+            format!("left{}right", char::from_u32(cp).ok_or("scalar")?)
+        );
+        assert_eq!(text.description, "", "U+{cp:04X}");
+    }
+    for cp in [0, 0x08, 0x0e, 0x180e, 0x200b, 0xfeff] {
+        let input = story(
+            r#"[{"image":"assets/a"}]"#,
+            &format!(r#", "title":" \u{cp:04x} x \u{cp:04x} ","description":"\u{cp:04x}""#),
+        );
+        let text = project_studio_json(&files, &input, Limits::default())?.text;
+        let ch = char::from_u32(cp).ok_or("scalar")?;
+        assert_eq!(text.title, format!("{ch} x {ch}"));
+        assert_eq!(text.description, ch.to_string());
+    }
+    // VT/FF trim inside a decoded string but are not JSON whitespace.
+    for input in [b"\x0b{}".as_slice(), b"{}\x0c"] {
+        assert_eq!(
+            project_studio_json(&files, input, Limits::default()).map_err(|e| e.code),
+            Err(ValidationCode::MalformedMetadata)
+        );
+    }
+    Ok(())
+}
+
+#[test]
+fn studio_text_known_duplicates_null_and_fold_keep_decoder_semantics() -> TestResult {
+    let bytes = story(
+        r#"[{"image":"assets/a"}]"#,
+        r#", "title":" old ","TITLE":null,"title":" final ","description":" kept ","deſcription":null"#,
+    );
+    let projected = project_studio_json(&supplied_files()?, &bytes, Limits::default())?;
+    assert_eq!(projected.text.title, "final");
+    assert_eq!(projected.text.description, "kept");
+    let empty = story(r#"[{"image":"assets/a"}]"#, r#", "title":"\v""#);
+    assert_eq!(
+        project_studio_json(&supplied_files()?, &empty, Limits::default()).map_err(|e| e.code),
+        Err(ValidationCode::MalformedMetadata)
+    );
+    let bytes = story(
+        r#"[{"image":"assets/a"}]"#,
+        r#", "title":" \t ","description":null"#,
+    );
+    assert_eq!(
+        project_studio_json(&supplied_files()?, &bytes, Limits::default())?.text,
+        MetadataText::default()
+    );
+    for extra in [
+        r#", "title":17,"title":" repaired ""#,
+        r#", "description":false,"description":null"#,
+    ] {
+        let mut bytes = story(r#"[{"image":"assets/a"}]"#, extra);
+        bytes.extend_from_slice(b" trailing");
+        assert!(matches!(decode(&bytes), Err(DecodeFailure::Type { .. })));
+        assert_eq!(
+            project_studio_json(&supplied_files()?, &bytes, Limits::default()).map_err(|e| e.code),
+            Err(ValidationCode::MalformedMetadata)
+        );
+    }
+    Ok(())
+}
+
+#[test]
+fn studio_text_replacement_origins_and_interior_composition_are_preserved() -> TestResult {
+    let mut bytes = story(r#"[{"image":"assets/a"}]"#, "");
+    bytes.pop();
+    bytes.extend_from_slice(b",\"title\":\" \xed\xa0\x80 \",\"description\":\" \\uD800 \"}");
+    let text = project_studio_json(&supplied_files()?, &bytes, Limits::default())?.text;
+    assert_eq!(text.title, "\u{fffd}\u{fffd}\u{fffd}");
+    assert_eq!(text.description, "\u{fffd}");
+    let bytes = story(
+        r#"[{"image":"assets/a"}]"#,
+        r#", "title":" é e\u0301 ","description":"\uD83D\uDE00""#,
+    );
+    let text = project_studio_json(&supplied_files()?, &bytes, Limits::default())?.text;
+    assert_eq!(text.title, "é e\u{0301}");
+    assert_eq!(text.description, "😀");
+    Ok(())
+}
+
+#[test]
+fn studio_text_projection_follows_uuid_refs_regular_thumbnail_presence() -> TestResult {
+    let empty = inventory(&[])?;
+    for (bytes, code) in [
+        (b"null".to_vec(), ValidationCode::InvalidUuid),
+        (
+            story("[]", r#", "title":" good ""#),
+            ValidationCode::MissingAsset,
+        ),
+        (
+            story(r#"[{"image":"../bad"}]"#, ""),
+            ValidationCode::UnsafePath,
+        ),
+        (valid(), ValidationCode::MissingAsset),
+    ] {
+        assert_eq!(
+            project_studio_json(&empty, &bytes, Limits::default()).map_err(|e| e.code),
+            Err(code)
+        );
+    }
+    let mut builder = InventoryBuilder::new(Limits::default(), CompressionAccounting::ZipEntries)?;
+    for (name, is_directory) in [("assets/a", false), ("thumbnail.png", true)] {
+        builder.push(EntryInfo {
+            name: name.as_bytes(),
+            compressed_bytes: 1,
+            uncompressed_bytes: 1,
+            is_directory,
+            is_link: false,
+        })?;
+    }
+    assert_eq!(
+        project_studio_json(&builder.finish()?, &valid(), Limits::default()).map_err(|e| e.code),
+        Err(ValidationCode::MissingEntry)
+    );
+    Ok(())
+}

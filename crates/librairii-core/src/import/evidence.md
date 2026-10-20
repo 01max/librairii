@@ -313,3 +313,45 @@ discovery UNION retaining55/scopes/strict6/docs/146; history-preserving support
 consumption; current-base cumulative Rust/Go/frontend, affected independent Go
 comparison, one fresh native review and provider CI. No ancestor pass carryover,
 canonical progress/spec edit, full5.N completion or merge authority.
+
+## Partial5.4: accepted Studio supplied text (PURE5-TEXT-METADATA-904)
+
+This new bounded release begins at original9041803900148c3ce9a21b945dc1eb0de74f892b
+(admitted438 ancestor), preserving every earlier task/support SHA. The prior904
+slice completed own72/full make, independent186, native4935/GH5591542149 and all8
+provider checks. Those exact904 results do not qualify this text extension.
+
+Owner5 v2 handoff1f434b5d66f4ccf723177c60c6e0705ef79cf459c99a7ecacc8bcd4b074a1c23,
+index91ff9950bb9608b66cc1c8ce0cbd19fc11df80492d92fda5819897cf43b264cf,
+schemae7c2cd289d76f65950d4d15edf8a95b1f3089283218c0f0a43ac031272c6745c
+extend only the selected authenticated archive members/contract scopes. We
+checked20 captured original/12-line-header identities,3 exact notices and
+unchanged v1 packet hashes, without download or duplicate archive authentication.
+
+project_studio_json uses the SAME existing decoder and mandatory nonnil UUID,
+ordered references and regular thumbnail PRESENCE policy, then returns raw
+identity plus MetadataText observations. validate_studio_json retains its
+identity-only API through that route. This does not claim PNG success, accepted
+inspection or custody. Known title/description type/null/duplicate behavior is
+unchanged, including complete-first-syntax, saved-type-error-before-EOF priority.
+
+Private text.rs reduces only Go Unicode15 IsSpace/White_Space boundary membership
+and TrimSpace byte boundaries on well-formed decoded strings. All25 whitespace
+scalars, including VT/FF, are covered; JSON lexical whitespace stays separate.
+Interior whitespace, NFC/NFD/case/replacement bytes remain unchanged, with no
+fallback title, current Unicode policy or generic string API.
+
+Five new module-local source-derived regressions cover raw identity, complete
+frozen whitespace and adjacent nonspaces, duplicates/null/fold/error ordering,
+raw-invalid versus escaped-surrogate replacements, no normalization, and
+UUID/reference/regular-thumbnail prerequisite failures. Scoped wired nextest
+passed53 import tests;10 unrelated core tests explicitly filtered, not a full
+mandatory run. No actual-Go differential, new-head native/provider or full
+quality claim yet.
+
+The v2 derivative manifest maps actual files/bytes/headers/recipes/notices.
+The CURRENT committed v1 checker intentionally does not authorize v2: owner5
+must supply its original exact-first-SHA descendant registry/schema/checker/
+inventory/discovery support, preserving all72 prior IDs/scopes, strict14, docs
+and146 corpus. No bypass, root/dependency/shared API/storage edit or intermediate
+full qualification. Full5.4/5.10 and all resource/read/CRC/PNG/effect gates OPEN.

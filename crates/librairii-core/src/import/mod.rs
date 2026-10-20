@@ -27,7 +27,7 @@ pub use report::{
     ReportedProblem,
 };
 pub use studio::{StageReferences, validate_studio_policy};
-pub use studio_json::validate_studio_json;
+pub use studio_json::{MetadataText, StudioProjection, project_studio_json, validate_studio_json};
 
 macro_rules! codes {
     ($(#[$meta:meta])* pub enum $name:ident { $($variant:ident => $code:literal),+ $(,)? }) => {
