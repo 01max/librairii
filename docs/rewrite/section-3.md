@@ -16,8 +16,9 @@ of the final head and clean-checkout checks; unavailable target evidence is inco
 | 3.1 | d289e5f | Exact stable 1.99.1, edition 2024/resolver 3, locked workspace build |
 | 3.2 | 886b07b828663368f8fcf7cc2e5d990d41f92398 | Typed identity bytes/ranges, distinct group scope, unapproved review default, typed errors and compile-fail boundary |
 | 3.3 | ec318f5 | Stable rustfmt and Clippy, compiler warnings denied in checks |
-| 3.4 | Pending commit | Owned fresh roots, missing/external/swapped/symlink rejection, loopback HTTP bytes; nextest CI reports and separate doctests |
-| 3.5–3.8 | Pending | Implementation follows the numbered OpenSpec tasks |
+| 3.4 | f0c1921 | Owned fresh roots, missing/external/swapped/symlink rejection, loopback HTTP bytes; nextest CI reports and separate doctests |
+| 3.5 | Pending commit | Locked check facade, dependency direction and refusing desktop process test |
+| 3.6–3.8 | Pending | Implementation follows the numbered OpenSpec tasks |
 | 3.9 | Pending | Independent review and clean-checkout/native target evidence |
 
 ## Baseline pins and boundaries
@@ -59,3 +60,24 @@ Retries are disabled. Test roots must come from TestRoots and be explicitly
 validated; arbitrary production library/profile paths are never discovered or
 accepted. Helpers never mutate process-global environment. LocalEndpoint accepts
 only numeric loopback/nonzero-port addresses and performs no DNS resolution.
+
+## Contributor check and editor setup
+
+Use rustup with `rust-toolchain.toml`; install declared components, then
+`cargo xtask tools` for exact locked helper installs. Run `cargo xtask check`
+(or `make check-rust`). It fails on tool-version mismatch, reversed dependency
+direction, unlocked graphs, build, formatting, Clippy, nextest or doctest failure.
+`make check` remains the Go/React oracle suite and must also pass. Future product
+fixtures/UI state tests must be added cumulatively; current typed foundations
+and the refusing desktop process test do not claim those workflows exist.
+
+Rust Analyzer: open the repository root, use the pinned rustup compiler, enable
+`check.command = "clippy"`, and `cargo.allTargets = true`. Do not enable
+`cargo.allFeatures` or add a GUI renderer until qualification. No extension is
+required to build; `cargo fmt` provides save formatting. Editor-generated files
+are not checked in.
+
+`.config/rust-checks.toml` enumerates the four maintained native configurations,
+currently empty/default features for the foundations only. There are no shipping
+GUI combinations yet. Each native host runs all workspace tests/targets and
+separate doctests; do not relabel cross-compilation as native execution evidence.

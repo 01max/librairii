@@ -13,3 +13,6 @@ librairii-ui.workspace = true
 
 [lints]
 workspace = true
+
+[dev-dependencies]
+librairii-testkit.workspace = true
