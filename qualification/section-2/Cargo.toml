@@ -1,0 +1,25 @@
+[package]
+name = "librairii-qualification"
+version = "0.0.0"
+edition = "2024"
+rust-version = "1.99.1"
+publish = false
+
+# Separate spike workspace; section 3 owns the application workspace.
+[workspace]
+resolver = "3"
+
+[features]
+default = []
+gui = ["dep:slint", "dep:slint-build"]
+
+[dependencies]
+slint = { version = "=1.18.1", optional = true, default-features = false, features = ["std", "compat-1-18", "accessibility", "backend-winit-x11", "backend-winit-wayland", "renderer-skia"] }
+
+[build-dependencies]
+slint-build = { version = "=1.18.1", optional = true, default-features = false, features = ["compat-1-18"] }
+
+[[bin]]
+name = "qualification-desktop"
+path = "src/bin/desktop.rs"
+required-features = ["gui"]

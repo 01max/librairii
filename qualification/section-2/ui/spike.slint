@@ -1,0 +1,129 @@
+import { Button, LineEdit, VerticalBox, HorizontalBox, ListView, ProgressIndicator, CheckBox, AboutSlint } from "std-widgets.slint";
+
+export struct StoryRow { id: int, title: string, cover: image }
+
+export component Spike inherits Window {
+    title: "Librairii · qualification";
+    preferred-width: 1180px;
+    preferred-height: 760px;
+    min-width: 560px;
+    min-height: 400px;
+    background: #f5f3ee;
+    in-out property <bool> french: false;
+    in-out property <int> mode: 0;
+    in-out property <bool> review-visible: false;
+    in-out property <bool> about-visible: false;
+    in-out property <bool> settings-visible: false;
+    in-out property <bool> detail-visible: false;
+    in-out property <string> query;
+    in-out property <string> selected: "Étoiles — 日本語 — 故事";
+    in property <[StoryRow]> stories;
+    in property <[[StoryRow]]> grid;
+    in property <float> progress: 0;
+    in property <string> status;
+    in property <bool> working: false;
+    in property <int> approvals: 0;
+    callback search(string);
+    callback select-story(int);
+    callback start-work();
+    callback cancel-work();
+    callback decide(int, bool);
+    callback apply-review();
+
+    MenuBar {
+        Menu {
+            title: "Librairii";
+            MenuItem { title: root.french ? "Réglages…" : "Settings…"; activated => { root.settings-visible = true; } }
+            MenuItem { title: root.french ? "À propos…" : "About…"; activated => { root.about-visible = true; } }
+        }
+    }
+    VerticalBox {
+        min-width: 0px;
+        padding: 14px;
+        HorizontalBox {
+            Text { text: "librairii"; font-size: 24px; font-weight: 700; }
+            search-entry := LineEdit {
+                text <=> root.query;
+                placeholder-text: root.french ? "Rechercher des histoires" : "Search stories";
+                accessible-label: self.placeholder-text;
+                edited => { root.search(self.text); }
+            }
+            Button { text: root.french ? "English" : "Français"; clicked => { root.french = !root.french; } }
+            Button { text: root.french ? "Réglages" : "Settings"; clicked => { root.settings-visible = true; } }
+        }
+        HorizontalBox {
+            min-width: 0px;
+            if root.width > 850px: Rectangle {
+                width: 180px; background: #e9e5dc;
+                VerticalBox {
+                    Text { text: root.french ? "BIBLIOTHÈQUE" : "LIBRARY"; }
+                    Button { text: root.french ? "Toutes les histoires" : "All stories"; clicked => { root.review-visible = false; } }
+                    Text { text: "Collections"; font-weight: 700; }
+                    Button { text: root.french ? "Les favoris" : "Favourites"; clicked => { root.review-visible = false; } }
+                    Text { text: root.french ? "Étagères" : "Shelves"; font-weight: 700; }
+                    Button { text: root.french ? "Histoires approuvées" : "Approved members"; clicked => { root.review-visible = true; } }
+                    Rectangle { vertical-stretch: 1; }
+                }
+            }
+            VerticalBox {
+                HorizontalBox {
+                    Button { text: root.french ? "Liste" : "List"; clicked => { root.mode = 0; } }
+                    Button { text: root.french ? "Petites couvertures" : "Small covers"; clicked => { root.mode = 1; } }
+                    Button { text: root.french ? "Grandes couvertures" : "Large covers"; clicked => { root.mode = 2; } }
+                    Button { text: root.french ? "Membres / révision" : "Members / review"; clicked => { root.review-visible = !root.review-visible; } }
+                }
+                if root.mode == 0: ListView {
+                    for story in root.stories: Button {
+                        text: story.title;
+                        clicked => { root.select-story(story.id); }
+                    }
+                }
+                if root.mode != 0: ListView {
+                    for row in root.grid: HorizontalBox {
+                        for story in row: VerticalBox {
+                            Image { source: story.cover; height: root.mode == 1 ? 90px : 160px; image-fit: contain; }
+                            Button { text: story.title; clicked => { root.select-story(story.id); } }
+                        }
+                    }
+                }
+            }
+            if root.width > 1000px: Rectangle {
+                width: 250px; background: #e9e5dc;
+                VerticalBox {
+                    Text { text: root.french ? "HISTOIRE SÉLECTIONNÉE" : "STORY INSPECTOR"; }
+                    Text { text: root.selected; wrap: word-wrap; }
+                    Text { text: root.french ? "Français · 4–6 ans" : "French · Ages 4–6"; }
+                    Text { text: root.french ? "Avertissement : indisponible" : "Warning: unavailable"; wrap: word-wrap; }
+                    Button { text: root.french ? "Détails" : "Details"; clicked => { root.detail-visible = true; } }
+                    Rectangle { vertical-stretch: 1; }
+                }
+            }
+        }
+        if root.review-visible: VerticalBox {
+            Text { text: root.french ? "Révision séparée — aucune approbation implicite" : "Separate review — no implicit approvals"; }
+            HorizontalBox {
+                for index in 3: CheckBox {
+                    text: (root.french ? "Ajouter " : "Add ") + index;
+                    toggled => { root.decide(index, self.checked); }
+                }
+                Button { text: (root.french ? "Appliquer " : "Apply ") + root.approvals; enabled: root.approvals > 0; clicked => { root.apply-review(); } }
+            }
+        }
+        HorizontalBox {
+            Button { text: root.french ? "Travail synthétique" : "Synthetic work"; enabled: !root.working; clicked => { root.start-work(); } }
+            Button { text: root.french ? "Annuler" : "Cancel"; enabled: root.working; clicked => { root.cancel-work(); } }
+            ProgressIndicator { progress: root.progress; }
+            Text { text: root.status; }
+        }
+    }
+    if root.settings-visible || root.about-visible || root.detail-visible: Rectangle {
+        background: #ffffff; border-width: 2px; border-color: #264f49;
+        x: 40px; y: 60px; width: parent.width - 80px; height: parent.height - 120px;
+        VerticalBox {
+            if root.about-visible: AboutSlint { }
+            if root.settings-visible: Text { text: root.french ? "Réglages · Français / English" : "Settings · Français / English"; }
+            if root.detail-visible: Text { text: root.selected; wrap: word-wrap; }
+            Button { text: root.french ? "Fermer" : "Close"; clicked => { root.settings-visible = false; root.about-visible = false; root.detail-visible = false; search-entry.focus(); } }
+        }
+    }
+}
