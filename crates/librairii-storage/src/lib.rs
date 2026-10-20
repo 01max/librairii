@@ -7,6 +7,7 @@ pub mod error;
 pub mod identity;
 pub mod layout;
 pub mod migrations;
+pub mod profile;
 
 pub use error::{Result, StorageError};
 pub use identity::LibraryIdentity;

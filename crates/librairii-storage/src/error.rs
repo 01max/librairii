@@ -17,6 +17,16 @@ pub enum StorageError {
     PathEscape,
     #[error("settings.invalid")]
     InvalidIdentity,
+    #[error("settings.invalid")]
+    InvalidProfile,
+    #[error("settings.restart_required")]
+    ProfileRestartRequired,
+    #[error("settings.restart_required: {cause}")]
+    ProfilePublicationUncertain { cause: Box<StorageError> },
+    #[error("settings.profile_in_use")]
+    ProfileInUse,
+    #[error("settings.profile_changed")]
+    ProfileChanged,
     #[error("settings.library_missing")]
     IdentityMismatch,
     #[error("storage.foreign_schema")]
@@ -99,6 +109,11 @@ impl StorageError {
             Self::InvalidManagedPath => "storage.invalid_managed_path",
             Self::PathEscape => "storage.path_escape",
             Self::InvalidIdentity => "settings.invalid",
+            Self::InvalidProfile => "settings.invalid",
+            Self::ProfileRestartRequired => "settings.restart_required",
+            Self::ProfilePublicationUncertain { .. } => "settings.restart_required",
+            Self::ProfileInUse => "settings.profile_in_use",
+            Self::ProfileChanged => "settings.profile_changed",
             Self::IdentityMismatch => "settings.library_missing",
             Self::ForeignSchema => "storage.foreign_schema",
             Self::MigrationConflict => "storage.migration_conflict",

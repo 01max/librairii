@@ -21,8 +21,8 @@ evidence, not an additional checklist or acceptance of unfinished work.
 |4.2|Exact migrations001-018, schema identity and contiguous ledger|Implemented/host verified `ea8e60f415b5ea23fb50f8899594884ef13b6c8f`; probe hardening `bbf386bd4e681d3a7732fae28af750f173da6211`. Setup `e6e527af79a21149665670a36171ef5d701be05c`; owner5 graph `bf720718c4736e0ecf5f6ded947ccbce49f1ba16`|
 |4.3|One owned writer plus four reads, bounded jobs/transactions and close|Implemented/host verified `8baebc751ed51e917a3ae5b139ebf48fc5f0467b`|
 |4.4|All18 admitted populated prefixes, full schema/rows/query outcomes and actual Collection-open projection; no fixture-specific patches or eager DB-open rewrite|Pending real canonicalization dependency; placement accepted2/5, no later-feature deferral|
-|4.5|Online WAL backup, integrity/FK, rollback and foreign DB+sidecars preservation|Implemented/host verified on Unix; Windows directory durability remains pending4.9; source SHA recorded in following commit|
-|4.6|Strict64KiB v1 profiles, atomic serialized updates and isolated native namespace|Pending|
+|4.5|Online WAL backup, integrity/FK, rollback and foreign DB+sidecars preservation|Implemented/host verified `abeb80ecd401f840e45a6a162998f5808cd9ebc1` on Unix; Windows directory durability remains pending4.9|
+|4.6|Strict64KiB v1 profiles, atomic serialized updates and isolated native namespace|Implemented/host verified; source SHA recorded in following commit. Stronger race capabilities and Windows effects remain4.8/4.9|
 |4.7|OS lease through close, refuse unproven legacy exclusion, verified independent adoption|Pending|
 |4.8|Distinct no-clobber/config-replace/durable-flush effects and Unix races|Pending|
 |4.9|Windows effects/path/share-mode implementation plus actual-target evidence|Pending|
@@ -210,3 +210,59 @@ foreign-refusal checks, and thirteen new probe/backup/failure identities since
 owner5's last additive baseline. Pinning remains through5. Current-head native
 provider checks and independent4.11 review are still required; no full section4
 or Windows filesystem admission follows from these host checks.
+
+Owner5's original baseline-only descendant
+`0e078249b37b9451d3f9104c455c707835b5e0fa` was consumed by fast-forward;
+all13 actual backup/probe identities were added without changing earlier tests,
+storage source, the root graph, lockfile or corpus. Its full ARM xtask check
+passed63 nextest/zero skips and three compile-fail doctests on that committed
+tree; this result is not transferred to later source changes.
+
+4.6 implements profile data independently of library authority:
+
+- Explicit legacy reads retain exact source bytes and raw libraryId spelling;
+  unknown versions/fields, trailing values, malformed documents and documents
+  over64KiB are refused without repair or fallback to a new installation. Go's
+  scalar case-insensitive/last-assignment/null semantics are retained. Version1
+  validates en/fr, and completed/recovering native roots require an absolute
+  path and nonempty raw identity; a profile is never a library adoption proof.
+- Native updates require a fresh separately marked namespace and a retained
+  exclusive OS file lock using safe std APIs. Reopening checks the native
+  marker; legacy directories are never silently marked or converted. Ordinary
+  updates share one mutex through read/change/stage/file-sync/replace/dir-sync,
+  preserving overlapping language/root changes. Settings and namespace inode
+  witnesses are revalidated; changed/aliased files cannot grant replacement
+  authority merely because their bytes match a prior document.
+- The new document is cached only after durable replacement succeeds. A failed
+  post-replace directory flush or ownership recheck returns an uncertain
+  publication cause and poisons every cached load/update until the store is
+  closed and reopened. No success or old-root authority is fabricated from that
+  error. Staged pre-replace failure retains old bytes/cache and removes only its
+  owned temporary file. Serialization preserves Go field order and HTML escapes.
+- Pure explicit-context locations are macOS Preferences/io.github.librairii.native
+  and Application Support/LibrairiiNative; Linux config/data librairii-native;
+  Windows APPDATA/LibrairiiNative and LOCALAPPDATA/LibrairiiNative/Data. No helper
+  discovers a home, environment, profile or library. Native recovery lives in
+  the separate profile namespace; its path conveys no cleanup permission.
+- Native namespace constructors refuse on Windows until task4.9 supplies actual
+  directory durability/identity capabilities. The Windows location and refusal
+  assertions are target-native definitions, not host filesystem qualification.
+  Descriptor-relative ancestor-race proof and generic replace/no-clobber/flush
+  integration remain4.8/4.9; no production adoption is enabled by this step.
+
+4.6 host verification (aarch64-apple-darwin1.99.1): cumulative78 nextest tests,
+zero skips, run`0a91c60d-f33e-4e1d-ace7-88ecc4cd09c0`, and all three retained
+compile-fail doctests passed. Formatting and storage all-target Clippy passed.
+Fifteen new actual host identities cover strict wire limits, invalid legacy and
+native preservation, concurrent serialized updates, real second-process lock
+exclusion/reopen, identical-byte inode and namespace substitution, alias refusal,
+pre-replace staging failure and post-replace poison/restart recovery. The latter
+fault seams run at real staging/replace boundaries but do not claim physical
+disk-failure qualification. Additive discovery remains owner5's shared-file work.
+
+The newly reported foundation corpus-wrapper URI defect on checkout names with
+Unicode/space/#/%2F is owned solely by owner5. Ordinary-path prior successes do
+not establish special-path coverage. No checker, fixture, pin or shared-tool fix
+was authored here. Consume the reviewed actual integration repair by preserving
+history after admission, union discovery support through5, and rerun combined
+current-base checks/review before any section4 admission.
