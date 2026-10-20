@@ -211,7 +211,7 @@ def main():
     parser.add_argument("--text-cache", type=Path, required=True)
     parser.add_argument("--go", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
-    parser.add_argument("--suite", choices=["baseline", "mixed"], default="baseline")
+    parser.add_argument("--suite", choices=["baseline", "mixed", "surviving"], default="baseline")
     args = parser.parse_args()
     oracle_root = args.oracle.resolve()
     require(not args.output.resolve().is_relative_to(oracle_root), "output cannot touch immutable oracle")
@@ -271,7 +271,7 @@ def main():
             require(digest(fold.read_bytes()) == FOLD, "wrong full-fold input")
             report["foldSha256"] = FOLD
             report["inputFiles"] = corpus_inputs(owned)
-            mode = "source-cases" if args.suite == "baseline" else "mixed-cases"
+            mode = {"baseline": "source-cases", "mixed": "mixed-cases", "surviving": "surviving-cases"}[args.suite]
             rows = json.loads(command([go_binary, "-mode", mode], clone, environment))
             source_count = len(rows)
             if args.suite == "baseline":
@@ -288,7 +288,7 @@ def main():
                                         "sha256": digest(cases.read_bytes()), "categories": categories,
                                         "admittedCases": rows[source_count:],
                                         "producer": "oracle.go.in " + mode,
-                                        "cases": rows if args.suite == "mixed" else None}
+                                        "cases": rows if args.suite != "baseline" else None}
             if args.suite == "baseline":
                 report["scalars"] = paired(go_binary, rust_binary, fold, clone, environment)
             report["sequences"] = paired(go_binary, rust_binary, fold, clone, environment, cases)

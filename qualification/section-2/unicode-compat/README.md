@@ -61,6 +61,34 @@ follow-up case rather than a claimed final-pipeline proof. Reproduce with the
 same driver arguments plus `--suite mixed`. Each report has its own source map;
 the older report is not relabelled as an execution of subsequent source edits.
 
+### Surviving-mark counterexample
+
+`surviving-observations.json` closes that specific gap with one bounded
+investigation:160 cases from all ordered pairs of the five selected non-Mn,
+nonzero-CCC representatives at29/30/31/32, using the same tail/alternating shapes.
+All160 inputs and520 differences are retained:160 raw NFKD,120 stream-safe NFKD,
+120 raw final pipeline and120 stream-safe final pipeline. Full folding agrees.
+No scalar, archive or GUI experiment was repeated for either supplement.
+
+Case0 is `a + U+16FF0*29 + U+1715 + U+16FF0 + Z`. Actual Go properties give
+CCC6/9 and non-Mn for these representatives. Exact Go15 `unicode/tables.go`
+SHA2566a88d48746c4b2c471cc04ae40559694b734770212e6f5ea5f1962adb0c0bdb1
+also places both in Mc: `_Mc` lines3346/3401/3505 (all five representatives
+appear at3401/3427/3505–3507). The Go final result preserves
+`a + U+16FF0*29 + U+1715 + U+16FF0 + z`; both tested candidate routes yield
+`a + U+16FF0*30 + U+1715 + z`. Go inserts CGJ before segment reordering; removing
+that Mn afterwards leaves an observable different order of surviving Mc marks.
+This is an actual final-pipeline incompatibility of the tested composition,
+even though every scalar and the two earlier sequence sets matched their final
+pipelines. Reproduce only the supplement with `--suite surviving`.
+
+The candidate decomposition/category tables may still inform a reviewed adapter,
+but neither raw `.nfkd()` nor `.nfkd().stream_safe()` plus Mn removal is an exact
+replacement for frozen Go search normalization. The accepted fallback strategy
+remains versioned frozen algorithm/data translation with upstream provenance,
+not selection or implementation by this qualification work. No fixture or
+compatibility exception follows from the counterexample.
+
 ## Oracle and source integrity
 
 Before any execution the driver verifies immutable oracle commit73a93303/tree
