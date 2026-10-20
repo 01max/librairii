@@ -361,3 +361,13 @@ the scoped actual-Go regression after source-evidence publication and use the
 accepted exact frozen algorithm/data/notices handoff; preserve all146 admitted
 inputs. No fixture-specific alias, Unicode dependency substitution or semantic
 waiver follows. Raw profile/UUID/path bytes remain independent of normalization.
+
+Windows correctness checkpoint: PR43 sourceb9148a7 failed native provider run
+39473603371/job118804072905 at18:36:43Z before tests: warnings-denied
+`unused_mut` in layout's private directory builder and native-profile creation.
+Both builders now bind immutably on Windows and shadow mutably only on Unix,
+where `DirBuilderExt::mode` actually requires mutation. No lint allowance,
+assertion change or unchanged-head retry is introduced. The failure is retained;
+corrected-head native checks are required and not inferred from host success.
+Original additive support29537950c8b5d07799fd11a76a82dfe350a83186 was consumed
+by fast-forward; its six streaming identities and all prior entries are retained.

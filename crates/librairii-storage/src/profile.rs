@@ -219,7 +219,9 @@ impl NativeProfileStore {
                 }
             }
             Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
-                let mut builder = fs::DirBuilder::new();
+                let builder = fs::DirBuilder::new();
+                #[cfg(unix)]
+                let mut builder = builder;
                 #[cfg(unix)]
                 {
                     use std::os::unix::fs::DirBuilderExt;
