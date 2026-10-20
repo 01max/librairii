@@ -4,7 +4,7 @@
   "section": 1,
   "owner": "librairii-3",
   "integration_owner": "librairii-2",
-  "integration_base": "e30453c61e56eb14d5e6f3e581d5c3f5cb065970",
+  "integration_base": "41267f6c09cb392371fdb17310914d9507a9d318",
   "scope": "1.1\u20131.9 only; no Rust runtime or section 2",
   "ledger": [
     {
@@ -41,6 +41,11 @@
       "subtask": "1.7",
       "sha": "233f70dbbe53f58a2acb30e904daf7c60e7c2ff2",
       "subject": "test(preservation): preserve synthetic migration and recovery libraries"
+    },
+    {
+      "subtask": "1.8",
+      "sha": "a2d5222548751f457ced848683590a817084ef8e",
+      "subject": "test(preservation): freeze resource limits and performance workloads"
     }
   ],
   "subtasks": {
@@ -166,11 +171,12 @@
     }
   },
   "independent_review": {
-    "status": "pending",
+    "status": "pending native review after1.1\u20131.8; final external AO/GitHub verdict is authority",
     "provider": "AO native review",
     "approved_head": null
   },
   "limitations": [
     "All Rust parity and four-platform qualification remain unverified."
-  ]
+  ],
+  "pr": "https://github.com/01max/librairii/pull/39"
 }

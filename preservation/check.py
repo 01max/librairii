@@ -13,6 +13,12 @@ root=args.corpus
 read=lambda name:json.loads((root/name).read_text())
 manifest=read('manifest.json')
 assert manifest['oracle_commit']=='73a93303a9a44cf0a92eaf525331561ed8c04460'
+producer_root=Path(__file__).resolve().parent
+for producer in manifest['generator_files']:
+    target=producer_root/producer['path']
+    assert target.is_file() and not target.is_symlink()
+    assert hashlib.sha256(target.read_bytes()).hexdigest()==producer['sha256'],('stale producer',producer['path'])
+
 expected={e['path'] for e in manifest['files']}|{'manifest.json'}
 actual={p.relative_to(root).as_posix()for p in root.rglob('*')if p.is_file()}
 assert actual==expected,('file inventory mismatch',actual^expected)
