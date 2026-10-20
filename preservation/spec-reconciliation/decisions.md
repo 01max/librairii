@@ -17,4 +17,4 @@ Historical DOM/pixel parity and document-language wording continue to document t
 
 Research's shorter optional `cargo-audit` wording is subordinate to the normative quality spec and task3.7: both cargo-deny and cargo-audit remain required. No toolkit/license/platform feasibility claim follows from structural spec validation.
 
-Strict validation passed for the rewrite change and all 12 effective domain specs (12 passed, 0 failed). Requirement/scenario inventory maps every captured effective requirement to preserved P IDs. This is a self-check; independent1.9 stays open until the final corpus/inventory receives AO native review and actionable findings are closed.
+Strict validation passed for the rewrite change and all 12 effective domain specs (12 passed, 0 failed). Requirement/scenario inventory maps every captured effective requirement to preserved P IDs. The independent source/tests/docs, effective-spec and corpus audit subsequently passed after the relocation correction and P23 mapping; see [independent-review.md](../independent-review.md). The completion evidence commits require their own exact-head external review and checks before admission.
