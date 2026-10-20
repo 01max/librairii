@@ -1,9 +1,6 @@
 --- a/src/error.rs
 +++ b/src/error.rs
-@@ -3,6 +3,23 @@
- /// The error type of the crate.
- #[derive(Debug)]
- pub enum Error {
+@@ -5,0 +6,17 @@
 +    /// Qualification-only per-vector guard. Not an upstream/product policy.
 +    QualificationCountBudget {
 +        /// Target vector name.
@@ -21,15 +18,9 @@
 +        /// Explicit arithmetic/count/byte refusal reason.
 +        reason: &'static str,
 +    },
-     /// Invalid 7z signature found in file header.
-     BadSignature([u8; 6]),
-     /// Unsupported 7z format version.
 --- a/src/lib.rs
 +++ b/src/lib.rs
-@@ -190,3 +190,6 @@
-         self.0.as_mut().unwrap()
-     }
- }
+@@ -192,0 +193,3 @@
 +
 +/// Experimental count guards, only for the owned qualification fork.
 +pub mod qualification_count_budget;
@@ -88,10 +79,7 @@
 +}
 --- a/src/reader.rs
 +++ b/src/reader.rs
-@@ -518,7 +518,12 @@
-         archive: &mut Archive,
-         limit: usize,
-     ) -> Result<(), Error> {
+@@ -521 +521,6 @@
 -        let num_files = bounded_count(read_variable_u64(header)?, limit, "num files")?;
 +        let num_files = crate::qualification_count_budget::checked_count::<ArchiveEntry>(
 +            read_variable_u64(header)?,
@@ -99,13 +87,7 @@
 +            "num files",
 +            crate::qualification_count_budget::MAX_FILES,
 +        )?;
-         let mut files: Vec<ArchiveEntry> = vec![Default::default(); num_files];
- 
-         let mut is_empty_stream: Option<BitSet> = None;
-@@ -1032,7 +1037,12 @@
-     fn read_block<R: Read>(header: &mut R, limit: usize) -> Result<Block, Error> {
-         let mut block = Block::default();
- 
+@@ -1035 +1040,6 @@
 -        let num_coders = bounded_count(read_variable_u64(header)?, limit, "num coders")?;
 +        let num_coders = crate::qualification_count_budget::checked_count::<Coder>(
 +            read_variable_u64(header)?,
@@ -113,6 +95,3 @@
 +            "num coders",
 +            crate::qualification_count_budget::MAX_CODERS,
 +        )?;
-         let mut coders = Vec::with_capacity(num_coders);
-         let mut total_in_streams: u64 = 0;
-         let mut total_out_streams: u64 = 0;

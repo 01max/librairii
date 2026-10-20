@@ -912,7 +912,7 @@
       "selected": false
     }
   ],
-  "patchSha256": "0fc453b7c503c8d30eb684dd1d1441fcb533e4dde4913f4c84a8ec6cce663774",
+  "patchSha256": "2e6fa39067cda27fc793986c0f1ca4a0be7b00c2e468d6397c18ee97c436e695",
   "derivedFiles": [
     {
       "path": ".cargo_vcs_info.json",
