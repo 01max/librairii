@@ -1,0 +1,10 @@
+[package]
+name = "librairii-adapters"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[dependencies]
+librairii-app.workspace = true
+librairii-core.workspace = true
