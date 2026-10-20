@@ -787,6 +787,19 @@
         "x86_64-apple-darwin",
         "x86_64-unknown-linux-gnu"
       ]
+    },
+    {
+      "suite": "librairii-storage::portability",
+      "name": "foreign_profile_syntax_is_explicit_strict_and_retained_without_path_io"
+    },
+    {
+      "suite": "librairii-storage::portability",
+      "name": "profile_rebinding_borrows_verified_copy_keeps_raw_authority_and_never_replays_paths",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
     }
   ]
 }
