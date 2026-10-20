@@ -38,6 +38,7 @@ pub(super) struct Item {
     pub(super) payload: Vec<u8>,
     pub(super) generation: super::progress::Generation,
     pub(super) total_bytes: i64,
+    pub(super) cancel_requested: bool,
 }
 
 impl Item {
@@ -110,6 +111,29 @@ pub(super) enum StartReply {
     Rejected(StartInput),
 }
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(super) struct Control {
+    pub(super) job: JobId,
+    pub(super) generation: super::progress::Generation,
+}
+
+pub(super) struct UnacceptedControl {
+    pub(super) reason: Refusal,
+    pub(super) request: Control,
+}
+
+pub(super) enum ControlDecision {
+    Recorded,
+    Rejected(Control),
+    Uncertain(Control),
+}
+
+#[derive(Debug, Eq, PartialEq)]
+pub(super) enum ControlReply {
+    Recorded,
+    Rejected(Control),
+}
+
 #[derive(Clone, Debug, Default)]
 pub(super) struct Cursor {
     pub(super) after: Option<HistoryKey>,
@@ -155,10 +179,14 @@ pub(super) enum Report {
 
 pub(super) type Admit = Arc<dyn Fn(StartInput) -> Admission + Send + Sync>;
 pub(super) type Source = Arc<dyn Fn(SourceRequest) -> Page + Send + Sync>;
-pub(super) type Execute =
-    Arc<dyn Fn(Item, super::runtime::ProgressSink) -> Completed + Send + Sync>;
+pub(super) type Execute = Arc<
+    dyn Fn(Item, super::runtime::ProgressSink, super::runtime::WorkCancellation) -> Completed
+        + Send
+        + Sync,
+>;
 pub(super) type SaveProgress = Arc<dyn Fn(super::progress::Value) -> bool + Send + Sync>;
 pub(super) type Save = Arc<dyn Fn(Completed) -> Report + Send + Sync>;
+pub(super) type Cancel = Arc<dyn Fn(Control) -> ControlDecision + Send + Sync>;
 
 #[derive(Clone)]
 pub(super) struct CoordinatorCallbacks {
@@ -168,6 +196,8 @@ pub(super) struct CoordinatorCallbacks {
     /// Controlled guarded progress attempt. False is an unsaved observation,
     /// never a terminal acknowledgement or permission to erase a domain fact.
     pub(super) progress: SaveProgress,
+    pub(super) cancel: Cancel,
+    pub(super) readback_cancel: Cancel,
 }
 
 #[derive(Clone)]
@@ -196,4 +226,7 @@ pub(super) struct Measurements {
     pub(super) progress_wakes: usize,
     pub(super) progress_saves: usize,
     pub(super) unsaved_progress: usize,
+    pub(super) control: usize,
+    pub(super) control_bytes: usize,
+    pub(super) uncertain_controls: usize,
 }

@@ -16,6 +16,11 @@ struct PendingStart {
     reply: SyncSender<StartReply>,
 }
 
+struct PendingControl {
+    request: Control,
+    reply: SyncSender<ControlReply>,
+}
+
 struct Working {
     key: ItemKey,
     item_bytes: usize,
@@ -23,6 +28,7 @@ struct Working {
     call: bool,
     progress: Slot,
     export: bool,
+    cancelled: Arc<AtomicBool>,
 }
 
 struct State {
@@ -43,6 +49,8 @@ struct State {
     measured: Measurements,
     progress_wake: bool,
     progress_cursor: usize,
+    control: Option<PendingControl>,
+    control_occupied: bool,
 }
 
 impl State {
@@ -82,6 +90,14 @@ impl State {
             .dispatched_handles
             .max(self.queue.len() + running + fetched);
         self.measured.ingress_bytes = self.measured.ingress_bytes.max(self.ingress_bytes);
+        self.measured.control = self
+            .measured
+            .control
+            .max(usize::from(self.control_occupied));
+        self.measured.control_bytes = self
+            .measured
+            .control_bytes
+            .max(usize::from(self.control_occupied) * std::mem::size_of::<Control>());
         self.measured.item_bytes = self.measured.item_bytes.max(item_bytes);
         self.measured.result_bytes = self
             .measured
@@ -111,6 +127,20 @@ pub(super) struct ProgressSink {
     shared: Arc<Shared>,
     index: usize,
     stamp: Stamp,
+}
+
+/// Cooperative work cancellation only. Report/readback/drain never receives
+/// this signal, and it proves nothing about publication or commit effects.
+#[derive(Clone)]
+pub(super) struct WorkCancellation {
+    shared: Arc<Shared>,
+    requested: Arc<AtomicBool>,
+}
+
+impl WorkCancellation {
+    pub(super) fn is_requested(&self) -> bool {
+        self.requested.load(Ordering::Acquire) || self.shared.stopping.load(Ordering::Acquire)
+    }
 }
 
 impl ProgressSink {
@@ -152,6 +182,30 @@ pub(super) struct Handle {
 }
 
 impl Handle {
+    pub(super) fn try_cancel(
+        &self,
+        request: Control,
+    ) -> Result<Receiver<ControlReply>, UnacceptedControl> {
+        let mut state = lock(&self.shared.state);
+        let refusal = if self.shared.stopping.load(Ordering::Acquire) {
+            Some(Refusal::Closed)
+        } else if state.control_occupied {
+            Some(Refusal::Busy)
+        } else {
+            None
+        };
+        if let Some(reason) = refusal {
+            return Err(UnacceptedControl { reason, request });
+        }
+        let (reply, receiver) = sync_channel(1);
+        state.control = Some(PendingControl { request, reply });
+        state.control_occupied = true;
+        state.source_version = state.source_version.wrapping_add(1);
+        state.changed();
+        self.shared.changed.notify_all();
+        Ok(receiver)
+    }
+
     pub(super) fn try_start(&self, input: StartInput) -> Result<Receiver<StartReply>, Unaccepted> {
         let mut state = lock(&self.shared.state);
         let refusal = if self.shared.stopping.load(Ordering::Acquire) {
@@ -262,6 +316,8 @@ impl Engine {
                 measured: Measurements::default(),
                 progress_wake: false,
                 progress_cursor: 0,
+                control: None,
+                control_occupied: false,
             }),
             changed: Condvar::new(),
             stopping: AtomicBool::new(false),
@@ -458,12 +514,74 @@ fn admit(shared: &Arc<Shared>, callbacks: &CoordinatorCallbacks, pending: Pendin
     let _ = pending.reply.send(reply);
 }
 
+fn record_control(shared: &Arc<Shared>, callbacks: &CoordinatorCallbacks, pending: PendingControl) {
+    let mut seen = lock(&shared.state).repair_version;
+    let mut decision = {
+        let _call = Call::enter(shared, CallOwner::Coordinator);
+        (callbacks.cancel)(pending.request)
+    };
+    let reply = loop {
+        match decision {
+            ControlDecision::Recorded => {
+                let mut state = lock(&shared.state);
+                for item in &mut state.queue {
+                    if item.key.job == pending.request.job
+                        && item.generation == pending.request.generation
+                    {
+                        item.cancel_requested = true;
+                    }
+                }
+                if let Some(item) = &mut state.prefetch
+                    && item.key.job == pending.request.job
+                    && item.generation == pending.request.generation
+                {
+                    item.cancel_requested = true;
+                }
+                for worker in state.workers.iter().flatten() {
+                    if worker.key.job == pending.request.job
+                        && worker.progress.stamp.generation == pending.request.generation
+                    {
+                        worker.cancelled.store(true, Ordering::Release);
+                    }
+                }
+                break ControlReply::Recorded;
+            }
+            ControlDecision::Rejected(request) => break ControlReply::Rejected(request),
+            ControlDecision::Uncertain(request) => {
+                {
+                    let mut state = lock(&shared.state);
+                    state.measured.uncertain_controls += 1;
+                    state.changed();
+                }
+                wait_repair(shared, seen);
+                seen = lock(&shared.state).repair_version;
+                let _call = Call::enter(shared, CallOwner::Coordinator);
+                decision = (callbacks.readback_cancel)(request);
+            }
+        }
+    };
+    let mut state = lock(&shared.state);
+    state.control_occupied = false;
+    state.source_version = state.source_version.wrapping_add(1);
+    state.changed();
+    shared.changed.notify_all();
+    drop(state);
+    let _ = pending.reply.send(reply);
+}
+
 fn coordinator_loop(shared: &Arc<Shared>, callbacks: CoordinatorCallbacks) {
     let mut cursor = Cursor::default();
+    let mut progress_turn = true;
     loop {
         let mut state = lock(&shared.state);
         let source_version = state.source_version;
         if shared.stopping.load(Ordering::Acquire) {
+            if let Some(pending) = state.control.take() {
+                state.control_occupied = false;
+                drop(state);
+                let _ = pending.reply.send(ControlReply::Rejected(pending.request));
+                continue;
+            }
             if let Some(pending) = state.ingress.take() {
                 state.ingress_occupied = false;
                 state.ingress_bytes = 0;
@@ -487,6 +605,11 @@ fn coordinator_loop(shared: &Arc<Shared>, callbacks: CoordinatorCallbacks) {
             }
             return;
         }
+        if let Some(pending) = state.control.take() {
+            drop(state);
+            record_control(shared, &callbacks, pending);
+            continue;
+        }
         if let Some(pending) = state.ingress.take() {
             drop(state);
             admit(shared, &callbacks, pending);
@@ -495,6 +618,9 @@ fn coordinator_loop(shared: &Arc<Shared>, callbacks: CoordinatorCallbacks) {
         // Rotating bounded scalar mailboxes share the coordinator's sole call
         // owner. No callback is made under the queue mutex.
         let next = (0..shared.configuration.workers).find_map(|offset| {
+            if !progress_turn && state.queue.len() < shared.configuration.capacity() {
+                return None;
+            }
             let index = (state.progress_cursor + offset) % shared.configuration.workers;
             state.workers[index]
                 .as_ref()
@@ -502,6 +628,7 @@ fn coordinator_loop(shared: &Arc<Shared>, callbacks: CoordinatorCallbacks) {
                 .map(|w| (index, w.progress.latest))
         });
         if let Some((index, value)) = next {
+            progress_turn = false;
             if let Some(worker) = &mut state.workers[index] {
                 worker.progress.pending = false;
             }
@@ -531,6 +658,7 @@ fn coordinator_loop(shared: &Arc<Shared>, callbacks: CoordinatorCallbacks) {
             if state.queue.len() < shared.configuration.capacity() {
                 if let Some(item) = state.prefetch.take() {
                     state.queue.push_back(item);
+                    progress_turn = true;
                     state.changed();
                     shared.changed.notify_all();
                 }
@@ -550,6 +678,7 @@ fn coordinator_loop(shared: &Arc<Shared>, callbacks: CoordinatorCallbacks) {
                 excluded,
             })
         };
+        progress_turn = true;
         let had_cycle = cursor.upper.is_some();
         cursor = page.cursor;
         let mut state = lock(&shared.state);
@@ -568,12 +697,16 @@ fn coordinator_loop(shared: &Arc<Shared>, callbacks: CoordinatorCallbacks) {
         }
         // Call enter/exit updated the measurement version. A source-empty read
         // waits for an external mutation, not for its own measurement updates.
-        if state.ingress.is_some() || shared.stopping.load(Ordering::Acquire) {
+        if state.ingress.is_some()
+            || state.control.is_some()
+            || shared.stopping.load(Ordering::Acquire)
+        {
             continue;
         }
         while state.source_version == source_version
             && !shared.stopping.load(Ordering::Acquire)
             && state.ingress.is_none()
+            && state.control.is_none()
         {
             state = wait(shared, state);
         }
@@ -599,6 +732,7 @@ fn worker_loop(shared: Arc<Shared>, index: usize, callbacks: WorkerCallbacks) {
                             item.total_bytes,
                         ),
                         export: item.kind == librairii_core::OperationKind::Export,
+                        cancelled: Arc::new(AtomicBool::new(item.cancel_requested)),
                     });
                     state.source_version = state.source_version.wrapping_add(1);
                     state.changed();
@@ -612,6 +746,17 @@ fn worker_loop(shared: Arc<Shared>, index: usize, callbacks: WorkerCallbacks) {
             }
         };
         let kind = item.kind;
+        let cancelled = {
+            let state = lock(&shared.state);
+            // The current worker owns its slot until its report is settled.
+            let Some(worker) = &state.workers[index] else {
+                return;
+            };
+            WorkCancellation {
+                shared: Arc::clone(&shared),
+                requested: Arc::clone(&worker.cancelled),
+            }
+        };
         let sink = ProgressSink {
             shared: Arc::clone(&shared),
             index,
@@ -620,9 +765,15 @@ fn worker_loop(shared: Arc<Shared>, index: usize, callbacks: WorkerCallbacks) {
                 item: item.key,
             },
         };
-        let completed = {
+        let completed = if cancelled.is_requested() {
+            Completed {
+                item,
+                fact: "observed-cancelled-before-execution".into(),
+                errors: Vec::new(),
+            }
+        } else {
             let _call = Call::enter(&shared, CallOwner::Worker(index));
-            (callbacks.execute)(item, sink)
+            (callbacks.execute)(item, sink, cancelled)
         };
         {
             let mut state = lock(&shared.state);

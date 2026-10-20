@@ -80,6 +80,8 @@ struct Gates {
     start_readback: Arc<Gate>,
     report_readback: Arc<Gate>,
     progress: Arc<Gate>,
+    cancel: Arc<Gate>,
+    cancel_readback: Arc<Gate>,
 }
 
 impl Gates {
@@ -92,6 +94,8 @@ impl Gates {
             start_readback: Arc::new(Gate::new()),
             report_readback: Arc::new(Gate::new()),
             progress: Arc::new(Gate::new()),
+            cancel: Arc::new(Gate::new()),
+            cancel_readback: Arc::new(Gate::new()),
         }
     }
 
@@ -104,6 +108,8 @@ impl Gates {
             &self.start_readback,
             &self.report_readback,
             &self.progress,
+            &self.cancel,
+            &self.cancel_readback,
         ] {
             gate.open();
         }
@@ -118,6 +124,7 @@ struct Store {
     recorded: Vec<Completed>,
     max_exclusions: usize,
     progress: Vec<Value>,
+    cancelled: Vec<Control>,
 }
 
 impl Store {
@@ -150,7 +157,11 @@ impl Store {
             let index = items
                 .iter()
                 .position(|item| !request.excluded.contains(&item.key));
-            if let Some(item) = index.and_then(|index| items.remove(index)) {
+            if let Some(mut item) = index.and_then(|index| items.remove(index)) {
+                item.cancel_requested |= self.cancelled.contains(&Control {
+                    job: item.key.job,
+                    generation: item.generation,
+                });
                 self.offered.push((item.key.job, item.ordinal));
                 return Page {
                     cursor: Cursor {
@@ -198,6 +209,7 @@ fn input(number: u8, kind: OperationKind, count: usize, payload: usize) -> Start
             payload: vec![number; payload],
             generation: Generation(1),
             total_bytes: payload as i64,
+            cancel_requested: false,
         })
         .collect();
     StartInput::new(job, kind, items)
@@ -210,6 +222,13 @@ enum StartPolicy {
     Reject,
 }
 
+#[derive(Clone, Copy)]
+enum ControlPolicy {
+    Record,
+    Reject,
+    Uncertain,
+}
+
 struct Rig {
     engine: Option<Engine>,
     handle: Handle,
@@ -217,9 +236,10 @@ struct Rig {
     store: Arc<Mutex<Store>>,
     on_execute: Arc<Mutex<Option<Handle>>>,
     on_progress: Arc<Mutex<Option<ExecuteHook>>>,
+    control_policy: Arc<Mutex<ControlPolicy>>,
 }
 
-type ExecuteHook = Arc<dyn Fn(&Item, ProgressSink) + Send + Sync>;
+type ExecuteHook = Arc<dyn Fn(&Item, ProgressSink, WorkCancellation) + Send + Sync>;
 
 impl Rig {
     fn new(
@@ -244,6 +264,7 @@ impl Rig {
         uncertain_report: bool,
         store: Arc<Mutex<Store>>,
     ) -> io::Result<Self> {
+        let control_policy = Arc::new(Mutex::new(ControlPolicy::Record));
         let coordinator = CoordinatorCallbacks {
             admit: {
                 let gates = gates.clone();
@@ -285,6 +306,31 @@ impl Rig {
                     true
                 })
             },
+            cancel: {
+                let gate = Arc::clone(&gates.cancel);
+                let store = Arc::clone(&store);
+                let policy = Arc::clone(&control_policy);
+                Arc::new(move |request| {
+                    gate.pass();
+                    match *guard(&policy) {
+                        ControlPolicy::Record => {
+                            guard(&store).cancelled.push(request);
+                            ControlDecision::Recorded
+                        }
+                        ControlPolicy::Reject => ControlDecision::Rejected(request),
+                        ControlPolicy::Uncertain => ControlDecision::Uncertain(request),
+                    }
+                })
+            },
+            readback_cancel: {
+                let gate = Arc::clone(&gates.cancel_readback);
+                let store = Arc::clone(&store);
+                Arc::new(move |request| {
+                    gate.pass();
+                    guard(&store).cancelled.push(request);
+                    ControlDecision::Recorded
+                })
+            },
             source: {
                 let gate = Arc::clone(&gates.source);
                 let store = Arc::clone(&store);
@@ -301,11 +347,11 @@ impl Rig {
                 let gate = Arc::clone(&gates.execute);
                 let on_execute = Arc::clone(&on_execute);
                 let on_progress = Arc::clone(&on_progress);
-                Arc::new(move |item, progress| {
+                Arc::new(move |item, progress, cancelled| {
                     gate.pass();
                     let hook = guard(&on_progress).clone();
                     if let Some(hook) = hook {
-                        hook(&item, progress);
+                        hook(&item, progress, cancelled);
                     }
                     if let Some(handle) = guard(&on_execute).clone() {
                         handle.stop();
@@ -349,6 +395,7 @@ impl Rig {
             store,
             on_execute,
             on_progress,
+            control_policy,
         })
     }
 
@@ -615,7 +662,25 @@ fn j6_unacknowledged_reports_retain_worker_budget_until_explicit_readback() -> T
     })?;
     let m = joining.finish()?;
     assert!(m.calls <= 3 && m.workers <= 2 && m.joined);
-    assert!(guard(&rig.store).recorded.iter().all(|r| r.fact == "observed-success" && r.errors == ["independent-cleanup-diagnostic"]));
+    let store = guard(&rig.store);
+    assert_eq!(
+        store
+            .recorded
+            .iter()
+            .filter(
+                |r| r.fact == "observed-success" && r.errors == ["independent-cleanup-diagnostic"]
+            )
+            .count(),
+        2
+    );
+    assert_eq!(
+        store
+            .recorded
+            .iter()
+            .filter(|r| r.fact == "observed-cancelled-before-execution" && r.errors.is_empty())
+            .count(),
+        5
+    );
     Ok(())
 }
 
@@ -761,7 +826,7 @@ fn j6_progress_is_coalesced_with_one_scalar_per_worker_and_one_wake() -> TestRes
     let sinks = Arc::new(Mutex::new(Vec::<(ProgressSink, Value)>::new()));
     let hook_sinks = Arc::clone(&sinks);
     let report = Arc::clone(&gates.report);
-    *guard(&rig.on_progress) = Some(Arc::new(move |item, sink| {
+    *guard(&rig.on_progress) = Some(Arc::new(move |item, sink, _cancelled| {
         let stamp = Stamp {
             generation: item.generation,
             item: item.key,
@@ -1005,4 +1070,216 @@ fn j6_saved_terminal_and_generation_query_stamps_reject_stale_observations() {
         query: QueryRevision(3),
         ..saved
     }));
+}
+
+fn control(number: u8) -> Control {
+    Control {
+        job: JobId::from_bytes([number; 16]),
+        generation: Generation(1),
+    }
+}
+
+fn cancel(rig: &Rig, request: Control) -> Result<mpsc::Receiver<ControlReply>, Box<dyn Error>> {
+    rig.handle
+        .try_cancel(request)
+        .map_err(|e| format!("cancel refused: {:?}", e.reason).into())
+}
+
+#[test]
+fn j6_cancel_is_recorded_before_signal_and_queued_skip_preserves_returned_fact() -> TestResult {
+    let gates = Gates::new();
+    gates.cancel.close();
+    gates.report.close();
+    let rig = Rig::new(1, gates.clone(), StartPolicy::Create, false)?;
+    let signal = Arc::new(Mutex::new(None::<WorkCancellation>));
+    let seen = Arc::clone(&signal);
+    let gate = Arc::clone(&gates.report);
+    *guard(&rig.on_progress) = Some(Arc::new(move |_, _, work| {
+        *guard(&seen) = Some(work);
+        gate.pass(); // controlled executor remains active across cancellation
+    }));
+    rig.created(input(51, OperationKind::Export, 8, 37))?;
+    until(|| rig.handle.measurements().dispatched_handles == 4 && guard(&signal).is_some())?;
+    let reply = cancel(&rig, control(51))?;
+    until(|| gates.cancel.entries() == 1)?;
+    assert!(
+        !guard(&signal)
+            .as_ref()
+            .ok_or("missing signal")?
+            .is_requested()
+    );
+    let other = control(52);
+    match rig.handle.try_cancel(other) {
+        Err(value) => {
+            assert_eq!(value.reason, Refusal::Busy);
+            assert_eq!(value.request, other);
+        }
+        Ok(_) => return Err("second control accepted".into()),
+    }
+    let m = rig.handle.measurements();
+    assert_eq!((m.control, m.calls, m.dispatched_handles), (1, 2, 4));
+    assert_eq!(m.control_bytes, std::mem::size_of::<Control>());
+    assert!(guard(&rig.store).cancelled.is_empty());
+    gates.cancel.open();
+    assert_eq!(
+        reply.recv_timeout(Duration::from_secs(10))?,
+        ControlReply::Recorded
+    );
+    assert!(
+        guard(&signal)
+            .as_ref()
+            .ok_or("missing signal")?
+            .is_requested()
+    );
+    gates.report.open();
+    until(|| guard(&rig.store).recorded.len() == 8)?;
+    assert_eq!(gates.execute.entries(), 1); // queued and future source items skip executor
+    {
+        let store = guard(&rig.store);
+        assert_eq!(store.recorded[0].fact, "observed-success");
+        assert_eq!(store.recorded[0].errors, ["independent-cleanup-diagnostic"]);
+        assert!(
+            store.recorded[1..]
+                .iter()
+                .all(|v| v.fact == "observed-cancelled-before-execution")
+        );
+        assert_eq!(
+            store.offered.iter().map(|(_, n)| *n).collect::<Vec<_>>(),
+            (0..8).collect::<Vec<_>>()
+        );
+    }
+    rig.handle.stop();
+    match rig.handle.try_cancel(other) {
+        Err(value) => {
+            assert_eq!(value.reason, Refusal::Closed);
+            assert_eq!(value.request, other);
+        }
+        Ok(_) => return Err("control accepted after stop".into()),
+    }
+    assert!(rig.finish()?.joined);
+    Ok(())
+}
+
+#[test]
+fn j6_rejected_or_other_generation_control_does_not_cancel_running_work() -> TestResult {
+    let gates = Gates::new();
+    gates.report.close();
+    let rig = Rig::new(1, gates.clone(), StartPolicy::Create, false)?;
+    let signal = Arc::new(Mutex::new(None::<WorkCancellation>));
+    let seen = Arc::clone(&signal);
+    let gate = Arc::clone(&gates.report);
+    *guard(&rig.on_progress) = Some(Arc::new(move |_, _, work| {
+        *guard(&seen) = Some(work);
+        gate.pass();
+    }));
+    rig.created(input(61, OperationKind::Import, 1, 4))?;
+    until(|| guard(&signal).is_some())?;
+    *guard(&rig.control_policy) = ControlPolicy::Reject;
+    assert_eq!(
+        cancel(&rig, control(61))?.recv_timeout(Duration::from_secs(10))?,
+        ControlReply::Rejected(control(61))
+    );
+    assert!(
+        !guard(&signal)
+            .as_ref()
+            .ok_or("missing signal")?
+            .is_requested()
+    );
+    assert!(guard(&rig.store).cancelled.is_empty());
+    *guard(&rig.control_policy) = ControlPolicy::Record;
+    let foreign = Control {
+        generation: Generation(2),
+        ..control(61)
+    };
+    assert_eq!(
+        cancel(&rig, foreign)?.recv_timeout(Duration::from_secs(10))?,
+        ControlReply::Recorded
+    );
+    assert!(
+        !guard(&signal)
+            .as_ref()
+            .ok_or("missing signal")?
+            .is_requested()
+    );
+    gates.report.open();
+    until(|| rig.handle.measurements().recorded == 1)?;
+    assert_eq!(guard(&rig.store).recorded[0].fact, "observed-success");
+    assert!(rig.finish()?.joined);
+    Ok(())
+}
+
+#[test]
+fn j6_uncertain_control_and_symbolic_report_owner_survive_stop_until_actual_readback() -> TestResult
+{
+    let gates = Gates::new();
+    gates.cancel_readback.close();
+    gates.report_readback.close();
+    let mut rig = Rig::new(1, gates.clone(), StartPolicy::Create, true)?;
+    *guard(&rig.control_policy) = ControlPolicy::Uncertain;
+    let request = input(71, OperationKind::MetadataSync, 1, 32);
+    let allocation = request.items.front().map(|i| i.payload.as_ptr() as usize);
+    rig.created(request)?;
+    until(|| rig.handle.measurements().uncertain_reports == 1)?;
+    let reply = cancel(&rig, control(71))?;
+    until(|| rig.handle.measurements().uncertain_controls == 1)?;
+    assert!(matches!(reply.try_recv(), Err(mpsc::TryRecvError::Empty)));
+    assert!(guard(&rig.store).recorded.is_empty());
+    assert!(guard(&rig.store).cancelled.is_empty());
+    let joining = rig.joining()?;
+    assert!(matches!(
+        joining.receiver.try_recv(),
+        Err(mpsc::TryRecvError::Empty)
+    ));
+    rig.handle.wake_repair();
+    until(|| gates.cancel_readback.entries() == 1 && gates.report_readback.entries() == 1)?;
+    assert!(matches!(
+        joining.receiver.try_recv(),
+        Err(mpsc::TryRecvError::Empty)
+    ));
+    gates.cancel_readback.open();
+    assert_eq!(
+        reply.recv_timeout(Duration::from_secs(10))?,
+        ControlReply::Recorded
+    );
+    assert!(guard(&rig.store).recorded.is_empty());
+    // A mere queued/readback intent did not transfer this move-only result.
+    // The controlled backend now actually accepts the same allocation+facts.
+    gates.report_readback.open();
+    let measured = joining.finish()?;
+    assert!(measured.joined && measured.workers == 1 && measured.control == 1);
+    let store = guard(&rig.store);
+    assert_eq!(store.recorded.len(), 1);
+    assert_eq!(
+        Some(store.recorded[0].item.payload.as_ptr() as usize),
+        allocation
+    );
+    assert_eq!(store.recorded[0].fact, "observed-success");
+    assert_eq!(store.recorded[0].errors, ["independent-cleanup-diagnostic"]);
+    assert_eq!(gates.cancel.entries(), 1);
+    assert_eq!(gates.cancel_readback.entries(), 1);
+    Ok(())
+}
+
+#[test]
+fn j6_stop_returns_unissued_control_without_claiming_cancel_recorded() -> TestResult {
+    let gates = Gates::new();
+    gates.source.close();
+    let mut rig = Rig::new(1, gates.clone(), StartPolicy::Create, false)?;
+    until(|| gates.source.entries() == 1)?;
+    let request = control(81);
+    let reply = cancel(&rig, request)?;
+    let joining = rig.joining()?;
+    assert!(matches!(
+        joining.receiver.try_recv(),
+        Err(mpsc::TryRecvError::Empty)
+    ));
+    assert_eq!(gates.cancel.entries(), 0);
+    gates.source.open();
+    assert_eq!(
+        reply.recv_timeout(Duration::from_secs(10))?,
+        ControlReply::Rejected(request)
+    );
+    assert!(joining.finish()?.joined);
+    assert!(guard(&rig.store).cancelled.is_empty());
+    Ok(())
 }

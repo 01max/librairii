@@ -100,3 +100,44 @@ Preserved NEXT6 history before this numbered commit:
   eleven additive actual discovery entries, consumed by fast-forward unchanged.
   Owner5 reports 63 cumulative ARM tests, two docs and full quality/fixture gates
   on that support head; this does not qualify the later progress/cancel head.
+
+## Implemented partial 6.4
+
+One move-only, separately measured control intent shares the coordinator's sole
+call owner. Busy/closed returns the same unaccepted intent; stop remains a
+separate flag and wake. A controlled recorded cancellation precedes signalling
+matching generation/job workers and marking bounded queued/prefetched items.
+Later source items carry the backend's recorded cancel flag. No unbounded
+per-job cancellation map, caller waiter or helper task was added.
+
+Queued cancellation skips executor invocation and still performs required
+reporting. Running execution receives a cooperative work-only signal; the
+returned observation and its independent diagnostics are classified as returned,
+without a late-cancel rewrite. Required report/readback callbacks never receive
+work cancellation. An issued uncertain control remains owned until explicit
+readback even through stop or reply disconnection. Stop/control/admission are
+serviced before progress/source work; progress attempts rotate worker slots and
+share source opportunities when queue capacity is available.
+
+Actual app Cargo tests pass 18/18, zero ignored/filtered, and all-target Clippy
+passes with warnings denied. Four additional controlled tests prove:
+
+- recorded-before-signal ordering under a full pipeline, one control slot,
+  unchanged Busy/Closed intent, queued/future-source skipping and preservation
+  of the one running executor's returned fact plus independent diagnostic;
+- proven rejection and another generation do not cancel running work;
+- uncertain control plus an unacknowledged report remain bounded and keep join
+  pending until the controlled readback accepts the same owned allocation;
+- stop returns an unissued control without claiming cancellation was recorded.
+
+The earlier report-retention assertion still checks the two actually executed
+facts/diagnostics unchanged; its five queued owners now explicitly assert the
+new cancellation-before-execution observation instead of fabricated execution.
+The allocation-transfer test is a symbolic owned-data witness. It proves no
+real FD/guard/OS lease/custody handoff, compensation, SQL commit, postcommit
+import policy, durable recovery or native presentation. Those interfaces remain
+outside this released slice. Full 6.N, 6.8 and 6.9 stay open.
+
+Partial 6.3 commit: `1a6c3db82000cb119430ee08f97ba0cea4502d4c`.
+The separate partial 6.4 commit and final owner5 discovery/support SHA are
+recorded externally after creation. No self-referential completion SHA is used.
