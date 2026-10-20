@@ -29,6 +29,8 @@ pub enum StorageError {
     ProfileChanged,
     #[error("settings.active_library_binding")]
     ProfileBindingActive,
+    #[error("settings.update_in_progress")]
+    ProfileBusy,
     #[error("settings.recovery_binding_required")]
     RecoveryBindingRequired,
     #[error("settings.library_missing")]
@@ -148,6 +150,7 @@ impl StorageError {
             Self::ProfileInUse => "settings.profile_in_use",
             Self::ProfileChanged => "settings.profile_changed",
             Self::ProfileBindingActive => "settings.active_library_binding",
+            Self::ProfileBusy => "settings.update_in_progress",
             Self::RecoveryBindingRequired => "settings.recovery_binding_required",
             Self::IdentityMismatch => "settings.library_missing",
             Self::ForeignSchema => "storage.foreign_schema",

@@ -219,25 +219,35 @@ fn serialized_native_updates_keep_language_and_root_without_lost_snapshots() -> 
     let store = Arc::new(NativeProfileStore::create_fresh(
         &roots.profile().join("native"),
     )?);
+    let change = |index, profile: &mut Profile| {
+        if index % 2 == 0 {
+            profile.language = "fr".into();
+        } else {
+            profile.root = "/independently-verified-later".into();
+            profile.library_id = "Raw-ID".into();
+            profile.complete = true;
+        }
+        Ok(())
+    };
     let workers = (0..20)
         .map(|index| {
             let store = Arc::clone(&store);
-            thread::spawn(move || {
-                store.update(|profile| {
-                    if index % 2 == 0 {
-                        profile.language = "fr".into();
-                    } else {
-                        profile.root = "/independently-verified-later".into();
-                        profile.library_id = "Raw-ID".into();
-                        profile.complete = true;
-                    }
-                    Ok(())
-                })
-            })
+            thread::spawn(move || (index, store.update(|p| change(index, p))))
         })
         .collect::<Vec<_>>();
+    // Bounded refusal retains the caller's command. Once every racing caller
+    // has returned, the coordinator may explicitly resubmit each refused copy.
+    let mut refused = Vec::new();
     for worker in workers {
-        worker.join().map_err(|_| "update worker panicked")??;
+        let (index, result) = worker.join().map_err(|_| "update worker panicked")?;
+        match result {
+            Ok(_) => (),
+            Err(StorageError::ProfileBusy) => refused.push(index),
+            Err(error) => return Err(error.into()),
+        }
+    }
+    for index in refused {
+        store.update(|p| change(index, p))?;
     }
     let final_profile = store.load()?.ok_or("missing profile")?.profile().clone();
     assert_eq!(final_profile.language, "fr");

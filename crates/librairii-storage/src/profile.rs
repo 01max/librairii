@@ -216,6 +216,7 @@ struct BindingState {
     root: String,
     raw_id: String,
     fenced: Arc<AtomicBool>,
+    frozen: AtomicBool,
 }
 impl BindingState {
     fn matches(&self, profile: &Profile) -> bool {
@@ -242,11 +243,7 @@ impl ProfileBinding<'_> {
         self.state.fenced.clone()
     }
     pub(crate) fn revalidate(&self) -> Result<()> {
-        let mut state = self
-            .store
-            .state
-            .lock()
-            .map_err(|_| StorageError::ProfileRestartRequired)?;
+        let mut state = self.store.reserve()?;
         let result = (|| {
             self.store.load_locked(&mut state)?;
             self.store.revalidate_settings(&state)?;
@@ -277,7 +274,8 @@ impl Drop for ProfileBinding<'_> {
     fn drop(&mut self) {
         // An uncertain/poisoned generation remains excluded until restart. A
         // dropped data/receipt object must never clear that exclusion.
-        if let Ok(mut state) = self.store.state.lock()
+        if let Ok(mut slot) = self.store.state.lock()
+            && let Some(state) = slot.as_mut()
             && !state.poisoned
             && !self.state.fenced.load(Ordering::Acquire)
             && state
@@ -305,10 +303,52 @@ pub struct NativeProfileStore {
     marker_metadata: Metadata,
     #[cfg(any(target_os = "macos", target_os = "linux"))]
     namespace: Directory,
-    state: Mutex<State>,
+    // None means one bounded synchronous operation owns the actual state.
+    // The mutex protects admission/transfer only, never callbacks or I/O.
+    state: Mutex<Option<State>>,
+}
+
+struct StateReservation<'store> {
+    store: &'store NativeProfileStore,
+    state: State,
+}
+impl std::ops::Deref for StateReservation<'_> {
+    type Target = State;
+    fn deref(&self) -> &State {
+        &self.state
+    }
+}
+impl std::ops::DerefMut for StateReservation<'_> {
+    fn deref_mut(&mut self) -> &mut State {
+        &mut self.state
+    }
+}
+impl Drop for StateReservation<'_> {
+    fn drop(&mut self) {
+        if std::thread::panicking() {
+            self.state.poison();
+        }
+        let mut slot = match self.store.state.lock() {
+            Ok(slot) => slot,
+            Err(poison) => {
+                self.state.poison();
+                poison.into_inner()
+            }
+        };
+        *slot = Some(std::mem::take(&mut self.state));
+    }
 }
 
 impl NativeProfileStore {
+    fn reserve(&self) -> Result<StateReservation<'_>> {
+        let state = self
+            .state
+            .lock()
+            .map_err(|_| StorageError::ProfileRestartRequired)?
+            .take()
+            .ok_or(StorageError::ProfileBusy)?;
+        Ok(StateReservation { store: self, state })
+    }
     /// Initialize only a fresh explicit directory, never a legacy settings
     /// directory. Failure leaves any created namespace bytes for inspection.
     pub fn create_fresh(directory: &Path) -> Result<Self> {
@@ -439,7 +479,7 @@ impl NativeProfileStore {
             marker_metadata,
             #[cfg(any(target_os = "macos", target_os = "linux"))]
             namespace,
-            state: Mutex::new(State::default()),
+            state: Mutex::new(Some(State::default())),
         };
         store.revalidate_namespace()?;
         Ok(store)
@@ -453,10 +493,7 @@ impl NativeProfileStore {
     }
 
     pub fn load(&self) -> Result<Option<ProfileDocument>> {
-        let mut state = self
-            .state
-            .lock()
-            .map_err(|_| StorageError::ProfileRestartRequired)?;
+        let mut state = self.reserve()?;
         self.load_locked(&mut state)?;
         Ok(state.document.clone())
     }
@@ -496,10 +533,7 @@ impl NativeProfileStore {
     /// callback is run with this short profile-publication mutex held.
     #[cfg(any(target_os = "macos", target_os = "linux"))]
     pub(crate) fn bind_verified_copy(&self, proposed: &Profile) -> Result<ProfileBinding<'_>> {
-        let mut state = self
-            .state
-            .lock()
-            .map_err(|_| StorageError::ProfileRestartRequired)?;
+        let mut state = self.reserve()?;
         self.load_locked(&mut state)?;
         self.revalidate_settings(&state)?;
         if state.binding.is_some() {
@@ -537,6 +571,7 @@ impl NativeProfileStore {
             root: next.root,
             raw_id: next.library_id,
             fenced: Arc::new(AtomicBool::new(false)),
+            frozen: AtomicBool::new(false),
         });
         state.binding = Some(binding.clone());
         Ok(ProfileBinding {
@@ -580,10 +615,7 @@ impl NativeProfileStore {
         before_replace: impl FnOnce(&Path) -> Result<()>,
         flush: impl FnOnce(&Path) -> Result<()>,
     ) -> Result<Profile> {
-        let mut state = self
-            .state
-            .lock()
-            .map_err(|_| StorageError::ProfileRestartRequired)?;
+        let mut state = self.reserve()?;
         self.load_locked(&mut state)?;
         if let Err(error) = self.revalidate_settings(&state) {
             if state.binding.is_some() {
@@ -600,6 +632,9 @@ impl NativeProfileStore {
         if let Some(binding) = &state.binding {
             if binding.fenced.load(Ordering::Acquire) {
                 return Err(StorageError::ProfileRestartRequired);
+            }
+            if binding.frozen.load(Ordering::Acquire) {
+                return Err(StorageError::ProfileBusy);
             }
             if !binding.matches(&next) {
                 return Err(StorageError::ProfileBindingActive);
@@ -1060,10 +1095,11 @@ mod tests {
             Err(StorageError::ProfileRestartRequired)
         ));
         drop(binding);
-        let state = store.state.lock().map_err(|_| "test state poisoned")?;
+        let slot = store.state.lock().map_err(|_| "test state poisoned")?;
+        let state = slot.as_ref().ok_or("busy state")?;
         assert!(state.binding.is_some());
         assert!(state.poisoned);
-        drop(state);
+        drop(slot);
         assert!(matches!(
             store.update(|_| Ok(())),
             Err(StorageError::ProfileRestartRequired)
@@ -1201,6 +1237,8 @@ mod tests {
                 .state
                 .lock()
                 .map_err(|_| "poisoned test mutex")?
+                .as_ref()
+                .ok_or("busy state")?
                 .recovery_witnesses
                 .len(),
             2
@@ -1316,6 +1354,50 @@ mod tests {
         );
         profile.recovering = true;
         assert!(String::from_utf8(encode(&profile)?)?.ends_with("  \"recovering\": true\n}"));
+        Ok(())
+    }
+    #[test]
+    fn admitted_profile_update_owns_state_without_holding_mutex_or_admitting_peer()
+    -> std::result::Result<(), Box<dyn Error>> {
+        use std::sync::mpsc;
+        let roots = TestRoots::new()?;
+        let store = NativeProfileStore::create_fresh(&roots.profile().join("native"))?;
+        store.update(|_| Ok(()))?;
+        let (entered, observed) = mpsc::sync_channel(1);
+        let (resume, wait) = mpsc::sync_channel(1);
+        std::thread::scope(|scope| -> std::result::Result<(), Box<dyn Error>> {
+            let store = &store;
+            let update = scope.spawn(move || {
+                store.update(|profile| {
+                    // Callback execution owns the state, never its admission mutex.
+                    let slot = store
+                        .state
+                        .try_lock()
+                        .map_err(|_| StorageError::RuntimeFenced)?;
+                    if slot.is_some() {
+                        return Err(StorageError::CompatibilityInvariant);
+                    }
+                    drop(slot);
+                    entered.send(()).map_err(|_| StorageError::WorkerStopped)?;
+                    wait.recv().map_err(|_| StorageError::WorkerStopped)?;
+                    profile.language = "fr".into();
+                    Ok(())
+                })
+            });
+            observed.recv()?;
+            assert!(matches!(store.load(), Err(StorageError::ProfileBusy)));
+            assert!(matches!(
+                store.update(|_| Ok(())),
+                Err(StorageError::ProfileBusy)
+            ));
+            resume.send(())?;
+            assert_eq!(
+                update.join().map_err(|_| "update panicked")??.language,
+                "fr"
+            );
+            Ok(())
+        })?;
+        assert_eq!(store.load()?.ok_or("profile")?.profile().language, "fr");
         Ok(())
     }
 }

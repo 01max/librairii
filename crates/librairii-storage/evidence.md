@@ -1212,3 +1212,20 @@ pointer member, covering its full pointer width rather than only the narrower
 NTSTATUS member on x64. No union value is read in Rust, no API/control flow
 changes, and no new unsafe scope is introduced. The existing host run excludes
 this Windows-only refinement; actual native compilation/execution remains open.
+
+### 4.6 / native-state prerequisite — short-lock profile admission
+
+ROOT4-NATIVE-STATE-V1-757 requires real inflight ownership before freeze, rather
+than holding a profile mutex across callbacks or filesystem effects. A move-only
+StateReservation now takes the actual cached state under a short mutex and
+restores it after synchronous work; peers receive ProfileBusy without a second
+state owner or hidden retry. Unwinding poisons the retained generation. Existing
+concurrent update/binding tests retain all snapshot, single-winner and losing-copy
+ownership assertions and explicitly handle bounded refusal at the caller.
+
+Apple ARM: all eight profile unit tests PASS (including the new callback/peer
+admission race), all twelve profile integration tests and thirteen native tests
+PASS; storage all-target Clippy with warnings denied PASS. No native restart,
+state-record, clean finalizer or Windows qualification follows from this first
+prerequisite. ORIGINAL 9c17 discovery and d6ea minimal helper graph supports are
+preserved as direct ancestors; the helper remains a separate queued slice.

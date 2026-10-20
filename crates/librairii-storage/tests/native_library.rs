@@ -427,8 +427,21 @@ fn active_binding_excludes_root_raw_id_and_recovery_changes_but_allows_language(
                 Ok(())
             })
         });
-        native.revalidate(&WorkCancellation::default())?;
-        update.join().map_err(|_| "language updater panicked")??;
+        let observation = native.revalidate(&WorkCancellation::default());
+        assert!(matches!(
+            observation,
+            Ok(()) | Err(StorageError::ProfileBusy)
+        ));
+        match update.join().map_err(|_| "language updater panicked")? {
+            Ok(_) => (),
+            Err(StorageError::ProfileBusy) => {
+                store.update(|p| {
+                    p.language = "fr".into();
+                    Ok(())
+                })?;
+            }
+            Err(error) => return Err(error.into()),
+        }
         Ok(())
     })?;
     native.revalidate(&WorkCancellation::default())?;
@@ -676,7 +689,7 @@ fn concurrent_independent_bindings_keep_one_generation_and_the_losing_copy_owned
         };
         assert!(matches!(
             failed.storage_error(),
-            StorageError::ProfileBindingActive
+            StorageError::ProfileBindingActive | StorageError::ProfileBusy
         ));
         assert_ne!(native.layout().root(), failed.retained_copy().root());
         native.revalidate(&WorkCancellation::default())?;
