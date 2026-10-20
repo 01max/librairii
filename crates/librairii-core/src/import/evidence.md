@@ -2,6 +2,9 @@
 
 Release: PURE5-4ea2caf. Exact admitted base: `4ea2caf71bbe61ed996942daa9005de05b75f9da`.
 Frozen source: `73a93303a9a44cf0a92eaf525331561ed8c04460`.
+Additional bounded release: PURE5.4-M438, from prior validated candidate
+`b3cfb5cd966e587ad789cc1464fe34203818ef18` with admitted repair
+`4383373272ce1d3095199caf37dde7e5d0598213` retained in history.
 
 Only effect-free `core/src/import/**` is released. All full5.1–5.10 remain
 open. No inspection/decoder/classifier/CRC execution, storage/custody receipt,
@@ -157,17 +160,84 @@ OpenSpec-Task trailer. The required ledger-recording commit does not contain
 its own self-referential content hash. No implementation SHA is squashed,
 rebased away or replaced by later review/support/evidence commits.
 
-Current scoped source results:23 import tests passed,10 unrelated tests
+## Partial5.4: supplied STUdio stage/reference/thumbnail policy
+
+`studio.rs` maps frozen studio_zip.go:19–29/64–90/108–147 and the exact-key
+`has` behavior in zip_reader.go:60–94. Borrowed decoded UUID/image/audio strings
+and ordered nodes are supplied facts, not parsed JSON. `ImportIdentity` preserves
+raw accepted UUID spelling and import-local nil rejection; errors get story.json
+context without fabricating google/uuid parse-cause text, which remains unmodeled.
+
+After validating limits, policy order is UUID, each node's IMAGE then AUDIO,
+then regular thumbnail.png presence. Skip only empty strings; zero nodes or
+globally zero nonempty references give missing_asset(stageNodes). Repeated refs
+and empty individual nodes are allowed. A boolean tracks nonempty presence;
+there is no invented stage count, deduplication or asset extension restriction.
+
+Path failures preserve outer unsafe_path with its nested path error. A valid
+path outside the case-sensitive cleaned assets/ prefix has no invented inner
+cause. Critically, cleaned paths are for safety ONLY: lookup uses the ORIGINAL
+reference unchanged against Inventory's cleaned-key index. Thus an alias such
+as assets/./cover.png is safe but missing_asset even if assets/cover.png exists.
+Directories do not satisfy referenced files or required thumbnail presence.
+
+Eight new regressions cover raw UUID forms, image/audio/node/thumbnail error
+priority, empty/global reference rules, repetitions, nested versus prefix causes,
+raw dot/slash aliases, distinct Unicode forms, directory versus file and missing
+thumbnail, exact512-byte/16-depth edges, and10001 repeated supplied nodes over
+only3 inventory entries. These are synthetic source-derived policy cases, not
+newly generated goldens or actual archive/JSON/PNG observations. Inventory fields
+and identity output certify no actual bytes, decoding, inspection or custody.
+
+All31 import tests passed in the already-wired namespace, with10 unrelated
+core tests explicitly filtered; scoped fmt and all-target core Clippy-Dwarnings
+passed on1.99.1. This is a scoped run, not a final mandatory-suite result. The
+eight new IDs still require owner5's fresh actual UNION discovery support on the
+first published scoped SHA; all47 prior IDs/scopes and original supports remain
+unchanged. No shared root, dependency, manifest, testkit or preservation edit.
+
+JSON wire/type/presence/null/duplicate/trailing behavior, actual metadata/artwork
+read caps, image parsing/bytes, archive I/O/CRC/decoder/constructor/resource/cancel
+and all runtime/storage/SQL/custody remain UNRELEASED. Missing story.json still
+belongs to the existing dispatch/pack fallback, not a new STUdio missing-story
+rule. Title/description trimming is outside this narrow supplied-node policy.
+Full5.4 and5.10/all full5.N boxes remain OPEN. No new-head review or independent
+108-input pass is claimed from integration's preparation-only working inputs.
+
+## Prior complete candidate and current remaining gates
+
+Original cause correction: `31ca0adc101d10ad8c9f203e730e97f68eb79276`.
+History-preserving actual repair merge: `2b9a455849cb107a98c02bcf9e3afd38c7955d80`.
+Original final discovery support: `b3cfb5cd966e587ad789cc1464fe34203818ef18`.
+All initial implementation/support SHAs above remain ancestors, not replacements.
+
+On EXACT priorb3 (before this5.4 addition), own full native ARM xtask passed47
+tests/0 skips plus2 separate compile-fail docs,146 admitted corpus/strict6 Python,
+workspace+fuzz inventory/deny/audit/fmt/build/Clippy. Full make check build passed
+including Go/frontend release207 tests/responsive/visual/accessibility/performance
+and native Wails build. The initial settings-cleanup5s timeout remains distinct
+from subsequent unchanged focused4-case and full-chain passes. All8 exact-b3
+provider checks succeeded, last2026-10-20T18:59:58Z. Single AO native8ddbc420
+approved with no required findings (GitHub5589684509 COMMENTED, not independent
+account approval). This evidence qualifies ONLY the previous partial scope.
+
+Read/hash-verified integration2 artifact `section-05-pure-policy-integration-verification.md` SHA256 `2c2d353c3c04717931a8d12a5a765b23369c6753f2d637ac00190993c1525456`
+records5 temporary tests/666 bounded comparisons plus49 fact states/193 late-error
+invariants on exactb3; not our reproduction, exhaustive behavior, new shipping IDs
+or5.4 verification. The older2.2M suffix proof remains exactdaef only.
+
+Current scoped source results:31 import tests passed,10 unrelated tests
 explicitly filtered, all-target core Clippy-Dwarnings passed and scoped
 rustfmt passed on1.99.1. Full mandatory runs must have no filtered/skipped
 required tests. Source-free startup PATH failures are not code/test results.
 
-Final readiness is STILL PENDING: reviewed/admitted foundation path repair
-and actual then-current global integration;5-owned UNION required-test IDs
-for all23 new tests plus all24 previously admitted assertions; final combined
+Final NEW-HEAD readiness is PENDING: then-current admitted global ancestry;
+5-owned fresh UNION discovery for all31 import tests plus all prior assertions;
+final combined
 locked build/fmt/Clippy/nextest+separate doctests/146fixture+strictPython/both
 supply-chain graphs; cumulative make check/frontend release/build and provider
-Go/Linux/native/focused CI; independent native review of the exact ready head.
-Neither owner's daef28-test run nor the extra temporary suffix checks supplies
-these later-head gates. All full5.1–5.10 remain open; no task completion or
+Go/Linux/native/focused CI; independent affected reference-policy comparison and
+ONE fresh native review of the exact ready head. Neither priorb3/daef results nor
+prepared108 inputs supplies these later-head gates. All full5.1–5.10 remain open;
+no full task completion or
 merge authority is claimed.

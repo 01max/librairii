@@ -1,5 +1,361 @@
 use super::*;
 
+const STUDIO_UUID: &str = "00112233-4455-4677-8899-aabbccddeeff";
+
+fn studio_inventory(entries: &[(&str, bool)]) -> Result<Inventory, ValidationError> {
+    let mut builder = InventoryBuilder::new(Limits::default(), CompressionAccounting::ZipEntries)?;
+    for &(name, is_directory) in entries {
+        builder.push(EntryInfo {
+            is_directory,
+            ..header(name.as_bytes(), 1, 1)
+        })?;
+    }
+    builder.finish()
+}
+
+#[test]
+fn studio_policy_borrowed_refs_allow_repeats_empty_nodes_and_raw_uuid_forms()
+-> Result<(), ValidationError> {
+    let inventory = studio_inventory(&[
+        ("story.json", false),
+        ("thumbnail.png", false),
+        ("assets/cover.png", false),
+        ("assets/intro.mp3", false),
+    ])?;
+    let empty = StageReferences {
+        image: "",
+        audio: "",
+    };
+    let image = StageReferences {
+        image: "assets/cover.png",
+        audio: "",
+    };
+    let audio = StageReferences {
+        image: "",
+        audio: "assets/intro.mp3",
+    };
+    for raw in [
+        STUDIO_UUID,
+        "00112233445546778899AABBCCDDEEFF",
+        "{00112233-4455-4677-8899-AABBCCDDEEFF}",
+        "URN:UUID:00112233-4455-4677-8899-AABBCCDDEEFF",
+    ] {
+        for nodes in [
+            &[image][..],
+            &[audio][..],
+            &[empty, image, empty, audio, image][..],
+        ] {
+            let identity = validate_studio_policy(&inventory, raw, nodes, Limits::default())?;
+            assert_eq!(identity.raw(), &UuidSource::Text(raw.as_bytes().to_vec()));
+            assert_eq!(identity.canonical(), STUDIO_UUID);
+        }
+    }
+    // Inventory entries have supplied length1, not PNG/audio/JSON payloads.
+    // The result makes no assertion about their actual bytes or decoding.
+    Ok(())
+}
+
+#[test]
+fn studio_policy_zero_nodes_refs_and_nonempty_whitespace_have_distinct_errors()
+-> Result<(), ValidationError> {
+    let inventory = studio_inventory(&[])?;
+    let empty = StageReferences {
+        image: "",
+        audio: "",
+    };
+    for nodes in [&[][..], &[empty][..], &[empty, empty][..]] {
+        assert_eq!(
+            validate_studio_policy(&inventory, STUDIO_UUID, nodes, Limits::default()),
+            Err(ValidationError::at(
+                ValidationCode::MissingAsset,
+                b"stageNodes"
+            ))
+        );
+    }
+    assert_eq!(
+        validate_studio_policy(
+            &inventory,
+            STUDIO_UUID,
+            &[StageReferences {
+                image: " ",
+                audio: ""
+            }],
+            Limits::default()
+        ),
+        Err(ValidationError::at(ValidationCode::UnsafePath, b" "))
+    );
+    Ok(())
+}
+
+#[test]
+fn studio_policy_base_path_errors_keep_nested_causes_and_assets_prefix_is_literal()
+-> Result<(), ValidationError> {
+    let inventory = studio_inventory(&[])?;
+    for reference in [
+        "../outside",
+        "/assets/cover.png",
+        "C:assets/cover.png",
+        "assets\\cover.png",
+        "assets/\0cover.png",
+        ".",
+        "assets/../../outside",
+    ] {
+        let inner = ValidationError::at(ValidationCode::UnsafePath, reference);
+        assert_eq!(
+            validate_studio_policy(
+                &inventory,
+                STUDIO_UUID,
+                &[StageReferences {
+                    image: reference,
+                    audio: ""
+                }],
+                Limits::default()
+            ),
+            Err(ValidationError::at(ValidationCode::UnsafePath, reference)
+                .with_cause(FailureCause::Inspection(inner)))
+        );
+    }
+    for reference in [
+        "assets",
+        "Assets/cover.png",
+        "assets2/cover.png",
+        "outside.png",
+        "assets/../other",
+    ] {
+        assert_eq!(
+            validate_studio_policy(
+                &inventory,
+                STUDIO_UUID,
+                &[StageReferences {
+                    image: reference,
+                    audio: ""
+                }],
+                Limits::default()
+            ),
+            Err(ValidationError::at(ValidationCode::UnsafePath, reference))
+        );
+    }
+    Ok(())
+}
+
+#[test]
+fn studio_policy_looks_up_original_refs_without_cleaning_or_unicode_composition()
+-> Result<(), ValidationError> {
+    let inventory = studio_inventory(&[
+        ("story.json", false),
+        ("thumbnail.png", false),
+        ("assets/./cover.png", false),
+        ("assets/Été.bin", false),
+    ])?;
+    for reference in ["assets/cover.png", "assets/Été.bin"] {
+        validate_studio_policy(
+            &inventory,
+            STUDIO_UUID,
+            &[StageReferences {
+                image: reference,
+                audio: "",
+            }],
+            Limits::default(),
+        )?;
+    }
+    for reference in [
+        "assets/./cover.png",
+        "assets//cover.png",
+        "./assets/cover.png",
+        "assets/x/../cover.png",
+        "else/../assets/cover.png",
+        "assets/cover.png/",
+        "assets/E\u{301}te\u{301}.bin",
+    ] {
+        assert_eq!(
+            validate_studio_policy(
+                &inventory,
+                STUDIO_UUID,
+                &[StageReferences {
+                    image: reference,
+                    audio: ""
+                }],
+                Limits::default()
+            ),
+            Err(ValidationError::at(ValidationCode::MissingAsset, reference))
+        );
+    }
+    Ok(())
+}
+
+#[test]
+fn studio_policy_assets_and_required_thumbnail_must_be_regular_inventory_files()
+-> Result<(), ValidationError> {
+    for (asset_directory, thumbnail_directory, expected) in [
+        (
+            true,
+            false,
+            ValidationError::at(ValidationCode::MissingAsset, "assets/cover.png"),
+        ),
+        (
+            false,
+            true,
+            ValidationError::at(ValidationCode::MissingEntry, "thumbnail.png"),
+        ),
+    ] {
+        let inventory = studio_inventory(&[
+            ("story.json", false),
+            ("thumbnail.png", thumbnail_directory),
+            ("assets/cover.png", asset_directory),
+        ])?;
+        assert_eq!(
+            validate_studio_policy(
+                &inventory,
+                STUDIO_UUID,
+                &[StageReferences {
+                    image: "assets/cover.png",
+                    audio: ""
+                }],
+                Limits::default()
+            ),
+            Err(expected)
+        );
+    }
+    Ok(())
+}
+
+#[test]
+fn studio_policy_error_priority_is_uuid_then_node_image_audio_then_thumbnail()
+-> Result<(), ValidationError> {
+    let inventory = studio_inventory(&[("story.json", false), ("assets/cover.png", false)])?;
+    let empty = StageReferences {
+        image: "",
+        audio: "",
+    };
+    for uuid in ["not-a-uuid", "00000000-0000-0000-0000-000000000000"] {
+        assert_eq!(
+            validate_studio_policy(&inventory, uuid, &[], Limits::default()),
+            Err(ValidationError::at(
+                ValidationCode::InvalidUuid,
+                "story.json"
+            ))
+        );
+    }
+    for (nodes, expected) in [
+        (
+            [
+                StageReferences {
+                    image: "assets/missing",
+                    audio: "../outside",
+                },
+                empty,
+            ],
+            ValidationError::at(ValidationCode::MissingAsset, "assets/missing"),
+        ),
+        (
+            [
+                StageReferences {
+                    image: "outside",
+                    audio: "assets/missing",
+                },
+                empty,
+            ],
+            ValidationError::at(ValidationCode::UnsafePath, "outside"),
+        ),
+        (
+            [
+                StageReferences {
+                    image: "",
+                    audio: "assets/missing",
+                },
+                StageReferences {
+                    image: "outside",
+                    audio: "",
+                },
+            ],
+            ValidationError::at(ValidationCode::MissingAsset, "assets/missing"),
+        ),
+    ] {
+        assert_eq!(
+            validate_studio_policy(&inventory, STUDIO_UUID, &nodes, Limits::default()),
+            Err(expected)
+        );
+    }
+    assert_eq!(
+        validate_studio_policy(
+            &inventory,
+            STUDIO_UUID,
+            &[StageReferences {
+                image: "assets/cover.png",
+                audio: ""
+            }],
+            Limits::default()
+        ),
+        Err(ValidationError::at(
+            ValidationCode::MissingEntry,
+            "thumbnail.png"
+        ))
+    );
+    Ok(())
+}
+
+#[test]
+fn studio_policy_reference_byte_and_depth_boundaries_precede_missing_asset()
+-> Result<(), ValidationError> {
+    let bytes512 = format!("assets/{}x", "é".repeat(252));
+    assert_eq!(bytes512.len(), 512);
+    let depth16 = format!("assets{}", "/x".repeat(15));
+    let inventory = studio_inventory(&[
+        ("story.json", false),
+        ("thumbnail.png", false),
+        (&bytes512, false),
+        (&depth16, false),
+    ])?;
+    for reference in [&bytes512, &depth16] {
+        validate_studio_policy(
+            &inventory,
+            STUDIO_UUID,
+            &[StageReferences {
+                image: reference,
+                audio: "",
+            }],
+            Limits::default(),
+        )?;
+    }
+    for reference in [format!("{bytes512}x"), format!("{depth16}/x")] {
+        let expected = ValidationError::at(ValidationCode::UnsafePath, &reference).with_cause(
+            FailureCause::Inspection(ValidationError::at(ValidationCode::UnsafePath, &reference)),
+        );
+        assert_eq!(
+            validate_studio_policy(
+                &inventory,
+                STUDIO_UUID,
+                &[StageReferences {
+                    image: &reference,
+                    audio: ""
+                }],
+                Limits::default()
+            ),
+            Err(expected)
+        );
+    }
+    Ok(())
+}
+
+#[test]
+fn studio_policy_stage_count_is_not_the_inventory_entry_budget() -> Result<(), ValidationError> {
+    let inventory = studio_inventory(&[
+        ("story.json", false),
+        ("thumbnail.png", false),
+        ("assets/cover.png", false),
+    ])?;
+    let nodes = vec![
+        StageReferences {
+            image: "assets/cover.png",
+            audio: ""
+        };
+        10_001
+    ];
+    validate_studio_policy(&inventory, STUDIO_UUID, &nodes, Limits::default())?;
+    assert_eq!(inventory.usage().entries, 3);
+    Ok(())
+}
+
 #[test]
 fn validation_causes_retain_nested_joined_structure_and_standard_source() {
     let inner = FailureCause::Inspection(ValidationError::at(

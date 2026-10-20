@@ -8,6 +8,7 @@ mod entries;
 mod limits;
 mod pack;
 mod report;
+mod studio;
 
 pub use dispatch::{
     ArchivePlan, ContainerKind, ContentFacts, IntegrityRequirement, PackStructure, dispatch,
@@ -24,6 +25,7 @@ pub use report::{
     CommitObservation, FailureCause, ProblemPhase, ReportedExecution, ReportedOutcome,
     ReportedProblem,
 };
+pub use studio::{StageReferences, validate_studio_policy};
 
 macro_rules! codes {
     ($(#[$meta:meta])* pub enum $name:ident { $($variant:ident => $code:literal),+ $(,)? }) => {
