@@ -58,6 +58,14 @@ of a modal accessibility tree or focus trap. No full feature UI may start.
 
 See `ADR.md`, `hosts.md`, the per-gate records and `ledger.md` for status/evidence.
 
+The bounded `QUAL2.10-392-COUNT-BUDGET` follow-up is source-level partial work in
+[decoder-budget/](decoder-budget/README.md). Exact source/patch identities, safe
+checks and host setup failure chronology are in
+[count-budget-readiness.json](count-budget-readiness.json). Its new containment
+controls and retained two-negative/one-benign decoder experiment are **NOT RUN**:
+the shared Docker daemon stopped responding after ENOSPC. No new constructor
+refusal, general resource bound or production strategy is inferred.
+
 For explicit headless SQLite/archive comparisons against the pinned admitted PR39
 fixtures, see `data-feasibility.md` and `probe-corpus.py`. The comparison retains
 24 SQL-only/Go-open differences and exits2. No full-corpus parity is claimed.

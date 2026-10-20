@@ -199,3 +199,32 @@ before this correction; they do not describe the corrected supervisor. No actual
 hostile experiment or frontend lane was repeated merely to update status. Original
 OOM/Zstd/corpus evidence remains historical observation, with no new resource,
 production-refusal, deployment, licensing or toolkit qualification inferred.
+
+## QUAL2.10-392-COUNT-BUDGET: source-only follow-up, runtime pending
+
+The authorized follow-up starts from39267 with admitted438 ancestry. It adds an
+isolated authenticated derivative in decoder-budget/, with a human-reviewable
+patch and exact original/derived inventory. Checked count/size arithmetic precedes
+only the file-vector and coder-vector allocations. Experimental ceilings are
+10,000 files,64 coders per block and8MiB requested bytes per targeted vector.
+This is not an aggregate/header/dictionary allocation or CPU bound. See
+[the derivative recipe](decoder-budget/README.md) and
+[exact partial readiness evidence](count-budget-readiness.json).
+
+New containment controls and retained files-count-allocation,
+coders-count-allocation-larger and solid-ordered executions are **NOT RUN**.
+A trusted builder failed ENOSPC before any hostile constructor. Owned disposable
+Slint output reclamation recovered7GiB, but subsequent bounded Docker queries
+and socket ping timed out. Only own stalled CLI clients were terminated. No
+Docker restart/reset/prune, other-container cleanup, host decoder fallback or
+32-case rerun was attempted. The new supervisor must still prove all actual
+controls before any of these three archives can run. Source/unit checks supply
+no measured constructor refusal or production resource strategy.
+
+The full retained solid input is214 bytes; the earlier213-byte observations are
+actual compressed source bytes read, not its complete input length. Original
+reports, their source-map attribution and all SQL/filename/counterexample
+observations remain unchanged. Fresh native/current CI is required for the new
+published source head;39267 approval/checks are historical. PR38 stays draft and
+unmerged. Global-stop/multiblock/empty/solid/CRC/long-Read cancellation, general
+memory/dictionary bounds and every physical/license/toolkit gate remain open.

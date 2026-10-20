@@ -51,3 +51,11 @@ or selected here. The new head requires fresh partial native review and CI;
 abdb318 approval remains historical. Admitted wrapper repair4383373 is merged
 history-preservingly before combined validation. Every mandatory gate above stays
 open, and this PR remains draft/unmerged.
+
+The subsequent count-allocation derivative is qualification-only source work.
+Historical39267 partial approval (74ee1baa/GH5589862600) and eight successful
+checks remain attributed to39267. The new derivative/supervisor needs a fresh
+exact-head review and current CI. Safe source/arithmetic/fail-closed checks do
+not supply constructor execution evidence: new controls and the three retained
+cases are **NOT RUN/pending Docker availability**. No general resource bound,
+global cancellation, accepted-codec qualification or production decision follows.

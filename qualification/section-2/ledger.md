@@ -34,10 +34,10 @@ the latter changes only arrive from the authorized integration merge.
 | 2.7 | Partial ARM normal/explicit CPU process smoke; no GPU failure | renderers.md |
 | 2.8 | Partial: public component/controller route passes ARM | regression.md |
 | 2.9 | Diagnostic subset only; retained budgets not all measured | performance.md |
-| 2.10 | Partial:7 prior Rust +9 Python +2 child tests; original Zstd fixture;32 historical contained resource cases; optimized safety guards corrected; pre-callback OOM confirmed;24 SQL +6 filename differences retained | data-feasibility.md, corpus-observations.json, decoder-resources.md, decoder-observations.json, tests/, examples/ |
+| 2.10 | Partial:32 historical contained cases and24 SQL +6 filename observations retained; authenticated count-guard derivative has4 safe child tests and5 new Python regressions; NEW controls +two-negative/one-benign experiment NOT RUN/pending Docker | count-budget-readiness.json, decoder-budget/README.md, decoder-resources.md, decoder-observations.json, data-feasibility.md, tests/ |
 | 2.11 | Local unsigned ARM DMG only; clean-host/other packages pending | packages.md, package-macos.py |
 | 2.12 | Conditional fallback not triggered; no established mandatory toolkit failure | fallback.md |
-| 2.13 | Historical partial implementation approved atabdb318; new Unicode head needs fresh review/CI; mandatory qualification still pending | selection-gate.md |
+| 2.13 | Historical partial implementation approved/CI green at39267; new count-guard head needs fresh review/CI; mandatory qualification still pending | selection-gate.md |
 
 Task1 PR39 is admitted at1cd2244 and merged through9a6c1c1 with146 corrected corpus
 files. The2.10 consumer now pins that exact final input; its e7c771b observations
@@ -100,3 +100,32 @@ to that head; they do not approve these new commits. Current-base local evidence
 is in decoder-resources.md. Fresh native review and CI are required after push;
 PR38 stays draft/unmerged. Resource, full classifier/codec/domain, physical/AT,
 host, license, package and final toolkit-selection gates remain open.
+
+## QUAL2.10-392-COUNT-BUDGET — source-level partial
+
+| Task | SHA | Dedicated change / truthful evidence |
+| --- | --- | --- |
+| 2.10 | [`3778a25f0b3d`](https://github.com/01max/librairii/commit/3778a25f0b3d0aaf32c774df0289e37e3fb347aa) | Authenticated79-member pinned crate;32 selected original source/metadata/notice files +one new guard module; checked pre-vector file/coder counts; typed experimental refusal; strict three-input-only Stage1 supervisor;4 safe child tests and5 new Python regressions. **No new archive constructor execution.** |
+| 2.10 scoped correction | [`9887f1012a97`](https://github.com/01max/librairii/commit/9887f1012a97fbbaa70bdfff9b316ad8f9df05e5) | Zero-context derivative patch avoids whitespace-only context lines flagged by diff check. Exact33-file authenticated replay passes; derivative source bytes unchanged. Original implementation SHA retained. |
+
+The implementation commit command continued after its patch-file whitespace check
+failed; the dedicated correction above fixes that packaging issue without history
+rewrite. Safe source replay, child locked build/fmt/Clippy/4 nextest tests and new
+Python5 normal+5 optimized checks pass. Prior supervision3 normal+3 optimized
+checks pass. Exact nextest identities are in decoder-budget/nextest-identities.json;
+no ignored/filtered/skipped case. Binary-only child has no library doctest target.
+
+New runtime controls and files-count/coders-count/solid-control executions are
+**NOT RUN/pending**. The trusted LinuxARM build failed ENOSPC; after reclaiming
+only owned disposable Slint output, Data had7GiB free but Docker info and daemon
+ping timed out. Only own two stalled CLI clients were terminated. No shared
+restart/reset/prune, unrelated-container action or uncontained fallback occurred.
+Current container cleanup cannot be confirmed through the unavailable daemon.
+No experimental constructor refusal, resource ceiling or production choice is
+claimed. Details/source hashes and exact chronology: count-budget-readiness.json.
+
+All historical measurement reports remain byte-identical, including original
+32-case SHA256fdaa71643e37bfea17936139765d613dd006de311d00d027d846f72cc6a6a480.
+The five-control/three-case runtime gate, all broader resource/cancel/codec/platform
+and license/toolkit gates stay open. Final evidence-commit SHA/tree are reported
+externally after publication; new exact-head native/current CI is required.
