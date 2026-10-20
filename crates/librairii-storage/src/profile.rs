@@ -3,15 +3,20 @@
 //! Legacy settings are read-only inputs. Native updates require a fresh, separate
 //! namespace with its marker locked for the entire store lifetime. This lock does
 //! not exclude an unmodified Go library process or authorize library adoption.
+#[cfg(any(target_os = "macos", target_os = "linux"))]
+use crate::platform::unix::{ConfigTemp, Directory, durable_file_flush};
 use crate::{Result, StorageError, backup};
 use serde::{Deserialize, Serialize, de};
 use std::{
     fmt,
-    fs::{self, File, Metadata, OpenOptions},
+    fs::{self, File, Metadata},
     io::{Read, Write},
     path::{Path, PathBuf},
     sync::Mutex,
 };
+
+#[cfg(not(any(target_os = "macos", target_os = "linux")))]
+use std::fs::OpenOptions;
 
 pub const MAX_PROFILE_BYTES: usize = 64 * 1024;
 const SETTINGS: &str = "settings.json";
@@ -168,11 +173,15 @@ fn read_document_with_witness(path: &Path) -> Result<Option<(ProfileDocument, Me
             .metadata()
             .map_err(|e| StorageError::io("inspect open settings", e))?,
     )?;
+    decode_open_document(file, metadata).map(Some)
+}
+
+fn decode_open_document(file: File, metadata: Metadata) -> Result<(ProfileDocument, Metadata)> {
     let mut bytes = Vec::new();
     file.take((MAX_PROFILE_BYTES + 1) as u64)
         .read_to_end(&mut bytes)
         .map_err(|e| StorageError::io("read bounded settings", e))?;
-    Ok(Some((ProfileDocument::decode(&bytes)?, metadata)))
+    Ok((ProfileDocument::decode(&bytes)?, metadata))
 }
 
 #[derive(Debug, Default)]
@@ -181,20 +190,27 @@ struct State {
     document: Option<ProfileDocument>,
     settings_metadata: Option<Metadata>,
     poisoned: bool,
+    // Actual open-object witnesses survive a post-replace error through the
+    // poisoned store's lifetime. They are never purged by Drop/restart scanning.
+    #[cfg(any(target_os = "macos", target_os = "linux"))]
+    recovery_witnesses: Vec<ConfigTemp>,
 }
 
 /// Serialized updates in a separately initialized native namespace. The marker
 /// recognizes the namespace format, not trust in a copied library or journal.
 ///
-/// Namespace/file witnesses are checked before effects. Descriptor-relative
-/// mutation and adversarial ancestor races remain the distinct task4.8/4.9
-/// capability boundary; do not use this fresh-root API as production adoption.
+/// Native Unix effects are relative to the retained namespace directory. They
+/// require the marker OS lock and state mutex; replacement preserves displaced
+/// config bytes until their exact prior identity/content has been verified.
+/// This grants no production library adoption authority; Windows remains4.9.
 #[derive(Debug)]
 pub struct NativeProfileStore {
     directory: PathBuf,
     directory_metadata: Metadata,
     marker: File,
     marker_metadata: Metadata,
+    #[cfg(any(target_os = "macos", target_os = "linux"))]
+    namespace: Directory,
     state: Mutex<State>,
 }
 
@@ -206,7 +222,7 @@ impl NativeProfileStore {
         if !directory.is_absolute() {
             return Err(StorageError::RootNotAbsolute);
         }
-        match fs::symlink_metadata(directory) {
+        let initial_directory = match fs::symlink_metadata(directory) {
             Ok(metadata) => {
                 if !metadata.is_dir()
                     || metadata.file_type().is_symlink()
@@ -217,6 +233,7 @@ impl NativeProfileStore {
                 {
                     return Err(StorageError::RootNotFresh);
                 }
+                metadata
             }
             Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
                 let builder = fs::DirBuilder::new();
@@ -230,24 +247,46 @@ impl NativeProfileStore {
                 builder
                     .create(directory)
                     .map_err(|e| StorageError::io("create native profile namespace", e))?;
+                fs::symlink_metadata(directory)
+                    .map_err(|e| StorageError::io("retain fresh profile directory", e))?
             }
             Err(error) => return Err(StorageError::io("inspect profile namespace", error)),
+        };
+        if !initial_directory.is_dir() || initial_directory.file_type().is_symlink() {
+            return Err(StorageError::RootNotFresh);
         }
+        #[cfg(any(target_os = "macos", target_os = "linux"))]
+        let namespace = Directory::open(directory)?;
+        #[cfg(any(target_os = "macos", target_os = "linux"))]
+        namespace.matches_metadata(&initial_directory)?;
+        #[cfg(not(any(target_os = "macos", target_os = "linux")))]
         let mut options = OpenOptions::new();
+        #[cfg(not(any(target_os = "macos", target_os = "linux")))]
         options.write(true).create_new(true);
-        #[cfg(unix)]
+        #[cfg(all(unix, not(any(target_os = "macos", target_os = "linux"))))]
         {
             use std::os::unix::fs::OpenOptionsExt;
             options.mode(0o600);
         }
+        #[cfg(not(any(target_os = "macos", target_os = "linux")))]
         let mut marker = options
             .open(directory.join(MARKER))
             .map_err(|e| StorageError::io("create native profile marker", e))?;
+        #[cfg(any(target_os = "macos", target_os = "linux"))]
+        let mut marker = namespace.open_regular(
+            std::ffi::OsStr::new(MARKER),
+            rustix::fs::OFlags::RDWR | rustix::fs::OFlags::CREATE | rustix::fs::OFlags::EXCL,
+        )?;
         marker
             .write_all(MARKER_BYTES)
             .and_then(|()| marker.sync_all())
             .map_err(|e| StorageError::io("flush native profile marker", e))?;
         backup::sync_directory(directory)?;
+        #[cfg(any(target_os = "macos", target_os = "linux"))]
+        {
+            durable_file_flush(&marker)?;
+            namespace.flush()?;
+        }
         if let Some(parent) = directory.parent() {
             backup::sync_directory(parent)?;
         }
@@ -270,11 +309,19 @@ impl NativeProfileStore {
         let metadata = fs::symlink_metadata(&path)
             .map_err(|e| StorageError::io("inspect native profile marker", e))?;
         require_regular(&metadata)?;
+        #[cfg(any(target_os = "macos", target_os = "linux"))]
+        let namespace = Directory::open(directory)?;
+        #[cfg(any(target_os = "macos", target_os = "linux"))]
+        namespace.matches_metadata(&directory_metadata)?;
+        #[cfg(not(any(target_os = "macos", target_os = "linux")))]
         let mut marker = OpenOptions::new()
             .read(true)
             .write(true)
             .open(&path)
             .map_err(|e| StorageError::io("open native profile marker", e))?;
+        #[cfg(any(target_os = "macos", target_os = "linux"))]
+        let mut marker =
+            namespace.open_regular(std::ffi::OsStr::new(MARKER), rustix::fs::OFlags::RDWR)?;
         let marker_metadata = marker
             .metadata()
             .map_err(|e| StorageError::io("inspect open profile marker", e))?;
@@ -296,6 +343,8 @@ impl NativeProfileStore {
             directory_metadata,
             marker,
             marker_metadata,
+            #[cfg(any(target_os = "macos", target_os = "linux"))]
+            namespace,
             state: Mutex::new(State::default()),
         };
         store.revalidate_namespace()?;
@@ -322,6 +371,9 @@ impl NativeProfileStore {
     /// must not re-enter this store. A selected root still needs independent
     /// runtime adoption/identity/lease verification before any library effects.
     pub fn update(&self, change: impl FnOnce(&mut Profile) -> Result<()>) -> Result<Profile> {
+        #[cfg(any(target_os = "macos", target_os = "linux"))]
+        return self.update_with_flush(change, |_| Ok(()));
+        #[cfg(not(any(target_os = "macos", target_os = "linux")))]
         self.update_with_flush(change, backup::sync_directory)
     }
 
@@ -331,9 +383,7 @@ impl NativeProfileStore {
         }
         self.revalidate_namespace()?;
         if !state.loaded {
-            if let Some((document, metadata)) =
-                read_document_with_witness(&self.directory.join(SETTINGS))?
-            {
+            if let Some((document, metadata)) = self.read_native_document()? {
                 state.document = Some(document);
                 state.settings_metadata = Some(metadata);
             }
@@ -371,60 +421,62 @@ impl NativeProfileStore {
         change(&mut next)?;
         next.validate()?;
         let bytes = encode(&next)?;
-        let mut staged = tempfile::Builder::new()
-            .prefix(".settings-")
-            .tempfile_in(&self.directory)
-            .map_err(|e| StorageError::io("stage native settings", e))?;
-        #[cfg(unix)]
+        #[cfg(any(target_os = "macos", target_os = "linux"))]
+        return self.update_unix(&mut state, next, bytes, before_replace, flush);
+        #[cfg(not(any(target_os = "macos", target_os = "linux")))]
         {
-            use std::os::unix::fs::PermissionsExt;
+            let mut staged = tempfile::Builder::new()
+                .prefix(".settings-")
+                .tempfile_in(&self.directory)
+                .map_err(|e| StorageError::io("stage native settings", e))?;
+            #[cfg(unix)]
+            {
+                use std::os::unix::fs::PermissionsExt;
+                staged
+                    .as_file()
+                    .set_permissions(fs::Permissions::from_mode(0o600))
+                    .map_err(|e| StorageError::io("protect staged settings", e))?;
+            }
             staged
+                .write_all(&bytes)
+                .and_then(|()| staged.as_file().sync_all())
+                .map_err(|e| StorageError::io("flush staged settings", e))?;
+            let new_metadata = staged
                 .as_file()
-                .set_permissions(fs::Permissions::from_mode(0o600))
-                .map_err(|e| StorageError::io("protect staged settings", e))?;
-        }
-        staged
-            .write_all(&bytes)
-            .and_then(|()| staged.as_file().sync_all())
-            .map_err(|e| StorageError::io("flush staged settings", e))?;
-        let new_metadata = staged
-            .as_file()
-            .metadata()
-            .map_err(|e| StorageError::io("inspect staged settings", e))?;
-        before_replace(staged.path())?;
-        self.revalidate_namespace()?;
-        self.revalidate_settings(&state)?;
-        // This is replace-owned-config, never a no-clobber archive operation.
-        staged
-            .persist(self.directory.join(SETTINGS))
-            .map_err(|e| StorageError::io("replace native settings", e.error))?;
-        let durability = (|| {
-            flush(&self.directory)?;
+                .metadata()
+                .map_err(|e| StorageError::io("inspect staged settings", e))?;
+            before_replace(staged.path())?;
             self.revalidate_namespace()?;
-            let published = fs::symlink_metadata(self.directory.join(SETTINGS))
-                .map_err(|e| StorageError::io("inspect published settings", e))?;
-            require_regular(&published)?;
-            require_same(&new_metadata, &published)
-        })();
-        if let Err(cause) = durability {
-            state.poisoned = true;
-            return Err(StorageError::ProfilePublicationUncertain {
-                cause: Box::new(cause),
+            self.revalidate_settings(&state)?;
+            // This is replace-owned-config, never a no-clobber archive operation.
+            staged
+                .persist(self.directory.join(SETTINGS))
+                .map_err(|e| StorageError::io("replace native settings", e.error))?;
+            let durability = (|| {
+                flush(&self.directory)?;
+                self.revalidate_namespace()?;
+                let published = fs::symlink_metadata(self.directory.join(SETTINGS))
+                    .map_err(|e| StorageError::io("inspect published settings", e))?;
+                require_regular(&published)?;
+                require_same(&new_metadata, &published)
+            })();
+            if let Err(cause) = durability {
+                state.poisoned = true;
+                return Err(StorageError::ProfilePublicationUncertain {
+                    cause: Box::new(cause),
+                });
+            }
+            state.document = Some(ProfileDocument {
+                profile: next.clone(),
+                original: bytes,
             });
+            state.settings_metadata = Some(new_metadata);
+            Ok(next)
         }
-        state.document = Some(ProfileDocument {
-            profile: next.clone(),
-            original: bytes,
-        });
-        state.settings_metadata = Some(new_metadata);
-        Ok(next)
     }
 
     fn revalidate_settings(&self, state: &State) -> Result<()> {
-        match (
-            read_document_with_witness(&self.directory.join(SETTINGS))?,
-            &state.settings_metadata,
-        ) {
+        match (self.read_native_document()?, &state.settings_metadata) {
             (None, None) if state.document.is_none() => Ok(()),
             (Some((document, metadata)), Some(previous))
                 if Some(&document) == state.document.as_ref() =>
@@ -442,13 +494,27 @@ impl NativeProfileStore {
             return Err(StorageError::PathEscape);
         }
         require_same(&self.directory_metadata, &directory)?;
+        #[cfg(any(target_os = "macos", target_os = "linux"))]
+        self.namespace.matches_metadata(&directory)?;
         let marker = fs::symlink_metadata(self.directory.join(MARKER))
             .map_err(|e| StorageError::io("revalidate profile marker", e))?;
         require_regular(&marker)?;
         require_same(&self.marker_metadata, &marker)?;
         let mut bytes = Vec::new();
-        File::open(self.directory.join(MARKER))
-            .map_err(|e| StorageError::io("reopen profile marker witness", e))?
+        #[cfg(not(any(target_os = "macos", target_os = "linux")))]
+        let opened = File::open(self.directory.join(MARKER))
+            .map_err(|e| StorageError::io("reopen profile marker witness", e))?;
+        #[cfg(any(target_os = "macos", target_os = "linux"))]
+        let opened = self
+            .namespace
+            .open_regular(std::ffi::OsStr::new(MARKER), rustix::fs::OFlags::RDONLY)?;
+        require_same(
+            &self.marker_metadata,
+            &opened
+                .metadata()
+                .map_err(|e| StorageError::io("inspect anchored marker", e))?,
+        )?;
+        opened
             .take((MARKER_BYTES.len() + 1) as u64)
             .read_to_end(&mut bytes)
             .map_err(|e| StorageError::io("recheck profile marker bytes", e))?;
@@ -462,6 +528,146 @@ impl NativeProfileStore {
                 .metadata()
                 .map_err(|e| StorageError::io("revalidate retained marker", e))?,
         )
+    }
+
+    fn read_native_document(&self) -> Result<Option<(ProfileDocument, Metadata)>> {
+        #[cfg(any(target_os = "macos", target_os = "linux"))]
+        {
+            let Some(file) = self
+                .namespace
+                .read_regular(std::ffi::OsStr::new(SETTINGS))?
+            else {
+                return Ok(None);
+            };
+            let metadata = file
+                .metadata()
+                .map_err(|e| StorageError::io("inspect anchored settings", e))?;
+            decode_open_document(file, metadata).map(Some)
+        }
+        #[cfg(not(any(target_os = "macos", target_os = "linux")))]
+        read_document_with_witness(&self.directory.join(SETTINGS))
+    }
+
+    #[cfg(any(target_os = "macos", target_os = "linux"))]
+    fn update_unix(
+        &self,
+        state: &mut State,
+        next: Profile,
+        bytes: Vec<u8>,
+        before_replace: impl FnOnce(&Path) -> Result<()>,
+        flush: impl FnOnce(&Path) -> Result<()>,
+    ) -> Result<Profile> {
+        let mut staged = self.namespace.create_config_temp()?;
+        let before = (|| {
+            staged
+                .file
+                .write_all(&bytes)
+                .map_err(|e| StorageError::io("write anchored settings stage", e))?;
+            durable_file_flush(&staged.file)?;
+            before_replace(&self.directory.join(&staged.name))?;
+            self.revalidate_namespace()?;
+            self.revalidate_settings(state)
+        })();
+        if let Err(work) = before {
+            return match self.namespace.remove_config_temp(&staged) {
+                Ok(()) => Err(work),
+                Err(cleanup) => {
+                    state.poisoned = true;
+                    state.recovery_witnesses.push(staged);
+                    Err(StorageError::OwnedTempCleanupFailed {
+                        work: Box::new(work),
+                        cleanup: Box::new(cleanup),
+                    })
+                }
+            };
+        }
+        let (published, old) = match self.namespace.replace_owned_config(
+            staged,
+            std::ffi::OsStr::new(SETTINGS),
+            state.settings_metadata.as_ref(),
+        ) {
+            Ok(receipt) => receipt,
+            Err(failure) => {
+                let failure = *failure;
+                if failure.changed {
+                    state.poisoned = true;
+                    state.recovery_witnesses.push(failure.temporary);
+                    return Err(StorageError::ProfilePublicationUncertain {
+                        cause: Box::new(failure.cause),
+                    });
+                }
+                return match self.namespace.remove_config_temp(&failure.temporary) {
+                    Ok(()) => Err(failure.cause),
+                    Err(cleanup) => {
+                        state.poisoned = true;
+                        state.recovery_witnesses.push(failure.temporary);
+                        Err(StorageError::OwnedTempCleanupFailed {
+                            work: Box::new(failure.cause),
+                            cleanup: Box::new(cleanup),
+                        })
+                    }
+                };
+            }
+        };
+        let after = (|| {
+            // EXCHANGE preserved the prior object. Verify BOTH identity and raw
+            // bytes before removing its now-private temporary name.
+            if let Some(old) = &old {
+                let mut file = old
+                    .file
+                    .try_clone()
+                    .map_err(|e| StorageError::io("retain displaced config", e))?;
+                let mut prior = Vec::new();
+                (&mut file)
+                    .take((MAX_PROFILE_BYTES + 1) as u64)
+                    .read_to_end(&mut prior)
+                    .map_err(|e| StorageError::io("read displaced config", e))?;
+                if state.document.as_ref().map(ProfileDocument::original_bytes)
+                    != Some(prior.as_slice())
+                {
+                    return Err(StorageError::ProfileChanged);
+                }
+            }
+            self.namespace.flush()?;
+            flush(&self.directory)?;
+            self.revalidate_namespace()?;
+            let (actual, metadata) = self
+                .read_native_document()?
+                .ok_or(StorageError::ProfileChanged)?;
+            if actual.original_bytes() != bytes {
+                return Err(StorageError::ProfileChanged);
+            }
+            require_same(
+                &published
+                    .file
+                    .metadata()
+                    .map_err(|e| StorageError::io("inspect published config witness", e))?,
+                &metadata,
+            )?;
+            if let Some(old) = &old {
+                self.namespace.remove_config_temp(old)?;
+                self.namespace.flush()?;
+            }
+            Ok(metadata)
+        })();
+        match after {
+            Ok(metadata) => {
+                state.document = Some(ProfileDocument {
+                    profile: next.clone(),
+                    original: bytes,
+                });
+                state.settings_metadata = Some(metadata);
+                Ok(next)
+            }
+            Err(cause) => {
+                state.poisoned = true;
+                state.recovery_witnesses.push(published);
+                state.recovery_witnesses.extend(old);
+                Err(StorageError::ProfilePublicationUncertain {
+                    cause: Box::new(cause),
+                })
+            }
+        }
     }
 }
 
@@ -660,6 +866,180 @@ mod tests {
         assert_eq!(store.load()?.ok_or("missing profile")?.profile(), &before);
         assert_eq!(fs::read(directory.join(SETTINGS))?, bytes);
         assert_eq!(fs::read_dir(&directory)?.count(), 2);
+        Ok(())
+    }
+
+    #[test]
+    #[cfg(any(target_os = "macos", target_os = "linux"))]
+    fn profile_parent_race_cannot_redirect_staging_or_owned_temp_cleanup()
+    -> std::result::Result<(), Box<dyn Error>> {
+        let roots = TestRoots::new()?;
+        let directory = roots.profile().join("native");
+        let retained = roots.profile().join("retained-native");
+        let outside = roots.library();
+        fs::write(outside.join(SETTINGS), b"foreign untouched")?;
+        let store = NativeProfileStore::create_fresh(&directory)?;
+        let before = store.update(|_| Ok(()))?;
+        let result = store.update_with_checkpoints(
+            |p| {
+                p.language = "fr".into();
+                Ok(())
+            },
+            |_| {
+                fs::rename(&directory, &retained)
+                    .and_then(|()| std::os::unix::fs::symlink(outside, &directory))
+                    .map_err(|e| StorageError::io("inject native profile parent race", e))
+            },
+            |_| Ok(()),
+        );
+        assert!(matches!(result, Err(StorageError::PathEscape)));
+        assert_eq!(fs::read(outside.join(SETTINGS))?, b"foreign untouched");
+        assert_eq!(fs::read_dir(outside)?.count(), 1);
+        assert_eq!(fs::read_dir(&retained)?.count(), 2);
+        fs::remove_file(&directory)?;
+        fs::rename(&retained, &directory)?;
+        assert_eq!(
+            store.load()?.ok_or("missing unchanged profile")?.profile(),
+            &before
+        );
+        Ok(())
+    }
+
+    #[test]
+    #[cfg(any(target_os = "macos", target_os = "linux"))]
+    fn post_replace_parent_race_retains_actual_witnesses_and_poison_until_restart()
+    -> std::result::Result<(), Box<dyn Error>> {
+        let roots = TestRoots::new()?;
+        let directory = roots.profile().join("native");
+        let retained = roots.profile().join("retained-native");
+        let outside = roots.library();
+        fs::write(outside.join(SETTINGS), b"foreign untouched")?;
+        let store = NativeProfileStore::create_fresh(&directory)?;
+        store.update(|_| Ok(()))?;
+        let result = store.update_with_flush(
+            |p| {
+                p.language = "fr".into();
+                Ok(())
+            },
+            |_| {
+                fs::rename(&directory, &retained)
+                    .and_then(|()| std::os::unix::fs::symlink(outside, &directory))
+                    .map_err(|e| StorageError::io("inject post-replace parent race", e))
+            },
+        );
+        assert!(matches!(
+            result,
+            Err(StorageError::ProfilePublicationUncertain { .. })
+        ));
+        assert!(matches!(
+            store.load(),
+            Err(StorageError::ProfileRestartRequired)
+        ));
+        assert_eq!(
+            store
+                .state
+                .lock()
+                .map_err(|_| "poisoned test mutex")?
+                .recovery_witnesses
+                .len(),
+            2
+        );
+        assert_eq!(fs::read(outside.join(SETTINGS))?, b"foreign untouched");
+        assert_eq!(
+            read_legacy(&retained)?
+                .ok_or("missing actual published profile")?
+                .profile()
+                .language,
+            "fr"
+        );
+        fs::remove_file(&directory)?;
+        fs::rename(&retained, &directory)?;
+        assert!(matches!(
+            store.update(|_| Ok(())),
+            Err(StorageError::ProfileRestartRequired)
+        ));
+        drop(store);
+        assert_eq!(
+            NativeProfileStore::open_native(&directory)?
+                .load()?
+                .ok_or("missing restart profile")?
+                .profile()
+                .language,
+            "fr"
+        );
+        Ok(())
+    }
+
+    #[test]
+    #[cfg(any(target_os = "macos", target_os = "linux"))]
+    fn config_stage_cleanup_failure_keeps_primary_error_and_foreign_bytes()
+    -> std::result::Result<(), Box<dyn Error>> {
+        let roots = TestRoots::new()?;
+        let directory = roots.profile().join("native");
+        let retained = directory.join("retained-owned-temp");
+        let store = NativeProfileStore::create_fresh(&directory)?;
+        store.update(|_| Ok(()))?;
+        let result = store.update_with_checkpoints(
+            |p| {
+                p.language = "fr".into();
+                Ok(())
+            },
+            |path| {
+                fs::rename(path, &retained)
+                    .and_then(|()| fs::write(path, b"foreign stage substitution"))
+                    .map_err(|e| StorageError::io("inject stage substitution", e))?;
+                Err(StorageError::io(
+                    "primary publication refusal",
+                    std::io::Error::other("test primary"),
+                ))
+            },
+            |_| Ok(()),
+        );
+        let Err(StorageError::OwnedTempCleanupFailed { work, cleanup }) = result else {
+            return Err("missing independent work/cleanup error".into());
+        };
+        assert!(matches!(
+            *work,
+            StorageError::Io {
+                operation: "primary publication refusal",
+                ..
+            }
+        ));
+        assert!(matches!(*cleanup, StorageError::SnapshotChanged));
+        assert!(matches!(
+            store.load(),
+            Err(StorageError::ProfileRestartRequired)
+        ));
+        assert_eq!(
+            read_legacy(&directory)?
+                .ok_or("missing original")?
+                .profile()
+                .language,
+            "en"
+        );
+        assert_eq!(
+            ProfileDocument::decode(&fs::read(&retained)?)?
+                .profile()
+                .language,
+            "fr"
+        );
+        let foreign_before = fs::read_dir(&directory)?
+            .filter_map(std::result::Result::ok)
+            .filter_map(|entry| fs::read(entry.path()).ok())
+            .filter(|bytes| bytes == b"foreign stage substitution")
+            .count();
+        assert_eq!(foreign_before, 1);
+        drop(store);
+        let reopened = NativeProfileStore::open_native(&directory)?;
+        assert_eq!(
+            reopened
+                .load()?
+                .ok_or("missing restart profile")?
+                .profile()
+                .language,
+            "en"
+        );
+        assert_eq!(fs::read_dir(&directory)?.count(), 4);
         Ok(())
     }
 

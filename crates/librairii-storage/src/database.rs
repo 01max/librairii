@@ -471,8 +471,10 @@ impl<'library> Database<'library> {
         work: impl FnOnce(&Transaction<'_>) -> Result<T> + Send + 'static,
     ) -> Result<Pending<'_, TransactionOutcome<T>>> {
         let fence = self.fenced.clone();
+        let effect_fence = self.authority.custody_fenced.clone();
         self.enqueue(&self.writer, critical, move |connection| {
-            if !critical && fence.load(Ordering::Acquire) {
+            if !critical && (fence.load(Ordering::Acquire) || effect_fence.load(Ordering::Acquire))
+            {
                 return Ok(TransactionOutcome::ProvenNotCommitted(
                     StorageError::RuntimeFenced,
                 ));
@@ -494,7 +496,17 @@ impl<'library> Database<'library> {
         if self.closed || self.close_failed {
             return Err(StorageError::IntakeClosed);
         }
-        if let Err(error) = self.authority.revalidate_ownership() {
+        if !critical && self.authority.custody_fenced.load(Ordering::Acquire) {
+            self.fenced.store(true, Ordering::Release);
+            self.stop_ordinary()?;
+            return Err(StorageError::CustodyRecoveryRequired);
+        }
+        let ownership = if critical {
+            self.authority.revalidate_database_ownership()
+        } else {
+            self.authority.revalidate_ownership()
+        };
+        if let Err(error) = ownership {
             self.fenced.store(true, Ordering::Release);
             let _ = self.stop_ordinary();
             return Err(error);

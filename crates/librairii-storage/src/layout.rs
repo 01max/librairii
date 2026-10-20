@@ -5,7 +5,10 @@ use std::{
     ffi::{OsStr, OsString},
     fs,
     path::{Component, Path, PathBuf},
-    sync::atomic::{AtomicBool, Ordering},
+    sync::{
+        Arc,
+        atomic::{AtomicBool, Ordering},
+    },
 };
 
 pub const DATA_ROOT_OVERRIDE: &str = "LIBRAIRII_DATA_ROOT";
@@ -135,6 +138,11 @@ pub struct IsolatedLibrary {
     layout: LibraryLayout,
     identity: LibraryIdentity,
     runtime_active: AtomicBool,
+    #[cfg(any(target_os = "macos", target_os = "linux"))]
+    pub(crate) custody_active: AtomicBool,
+    pub(crate) custody_fenced: Arc<AtomicBool>,
+    #[cfg(any(target_os = "macos", target_os = "linux"))]
+    managed_metadata: Vec<fs::Metadata>,
     lease: crate::platform::lock::LibraryLease,
 }
 
@@ -178,13 +186,26 @@ impl IsolatedLibrary {
         let layout = LibraryLayout::probe(root)?;
         let lease = crate::platform::lock::LibraryLease::create_fresh(layout.root())?;
         let identity = LibraryIdentity::create_new(layout.root(), identity)?;
+        #[cfg(any(target_os = "macos", target_os = "linux"))]
+        let mut managed_metadata = Vec::with_capacity(DIRECTORIES.len());
         for name in DIRECTORIES {
             create_private_dir(&layout.root.join(name))?;
+            #[cfg(any(target_os = "macos", target_os = "linux"))]
+            managed_metadata.push(
+                fs::symlink_metadata(layout.root.join(name)).map_err(|e| {
+                    StorageError::io("retain initial managed directory identity", e)
+                })?,
+            );
         }
         Ok(Self {
             layout,
             identity,
             runtime_active: AtomicBool::new(false),
+            #[cfg(any(target_os = "macos", target_os = "linux"))]
+            custody_active: AtomicBool::new(false),
+            custody_fenced: Arc::new(AtomicBool::new(false)),
+            #[cfg(any(target_os = "macos", target_os = "linux"))]
+            managed_metadata,
             lease,
         })
     }
@@ -203,14 +224,48 @@ impl IsolatedLibrary {
         &self.lease
     }
     pub fn revalidate_ownership(&self) -> Result<()> {
+        self.revalidate_lease_identity()?;
+        #[cfg(any(target_os = "macos", target_os = "linux"))]
+        for (name, expected) in DIRECTORIES.iter().zip(&self.managed_metadata) {
+            self.require_managed_identity(name, expected)?;
+        }
+        Ok(())
+    }
+    fn revalidate_lease_identity(&self) -> Result<()> {
         self.lease.revalidate()?;
         if LibraryIdentity::probe(self.layout.root())?.as_ref() != Some(&self.identity) {
             return Err(StorageError::IdentityMismatch);
         }
         Ok(())
     }
+    /// Required DB-only reporting/readback remains possible when an archive or
+    /// staging name is uncertain. Root/identity/OS lease and the ORIGINAL db
+    /// directory still must validate; this cannot activate replacement roots.
+    pub(crate) fn revalidate_database_ownership(&self) -> Result<()> {
+        self.revalidate_lease_identity()?;
+        #[cfg(any(target_os = "macos", target_os = "linux"))]
+        self.require_managed_identity("db", &self.managed_metadata[0])?;
+        Ok(())
+    }
+    #[cfg(any(target_os = "macos", target_os = "linux"))]
+    fn require_managed_identity(&self, name: &str, expected: &fs::Metadata) -> Result<()> {
+        use std::os::unix::fs::MetadataExt;
+        let actual = fs::symlink_metadata(self.layout.root.join(name))
+            .map_err(|e| StorageError::io("revalidate original managed directory", e))?;
+        if !actual.is_dir()
+            || actual.file_type().is_symlink()
+            || actual.dev() != expected.dev()
+            || actual.ino() != expected.ino()
+        {
+            return Err(StorageError::SnapshotChanged);
+        }
+        Ok(())
+    }
     pub(crate) fn claim_runtime(&self) -> Result<()> {
         self.revalidate_ownership()?;
+        if self.custody_fenced.load(Ordering::Acquire) {
+            return Err(StorageError::CustodyRecoveryRequired);
+        }
         self.runtime_active
             .compare_exchange(false, true, Ordering::AcqRel, Ordering::Acquire)
             .map(|_| ())

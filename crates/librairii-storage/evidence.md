@@ -24,7 +24,7 @@ evidence, not an additional checklist or acceptance of unfinished work.
 |4.5|Online WAL backup, integrity/FK, rollback and foreign DB+sidecars preservation|Implemented/host verified `abeb80ecd401f840e45a6a162998f5808cd9ebc1` on Unix; Windows directory durability remains pending4.9|
 |4.6|Strict64KiB v1 profiles, atomic serialized updates and isolated native namespace|Implemented/host verified `2751a04a4af6b9da8a21300a182ca2dd5231d8b8`. Stronger race capabilities and Windows effects remain4.8/4.9|
 |4.7|OS lease through close, refuse unproven legacy exclusion, verified independent adoption|Partial `2fb7c0126b7e1b10f46d5cd5326e6e0809b4d4cb`: fresh-root cooperative lease/refusal host verified. Verified independent clone/recovery/restart/relocation qualification remains pending|
-|4.8|Distinct no-clobber/config-replace/durable-flush effects and Unix races|Partial: bounded streaming measurement host verified; source SHA recorded in following commit. Descriptor-relative effects and their native race/durability proof remain pending|
+|4.8|Distinct no-clobber/config-replace/durable-flush effects and Unix races|Partial `b9148a770f896445b36233452bef7a59e84a60d6`: streaming; descriptor-relative Unix publication/config/flush mechanisms host verified in the following source commit. Other native qualification and complete reconciliation/adoption remain pending|
 |4.9|Windows effects/path/share-mode implementation plus actual-target evidence|Pending|
 |4.10|Portability preflight and identity-verified rebinding without foreign cleanup|Pending|
 |4.11|Independent exact-head AO review, schema018 Go→Rust reopen/archive hashes, all cumulative/provider checks|Open gate|
@@ -371,3 +371,78 @@ assertion change or unchanged-head retry is introduced. The failure is retained;
 corrected-head native checks are required and not inferred from host success.
 Original additive support29537950c8b5d07799fd11a76a82dfe350a83186 was consumed
 by fast-forward; its six streaming identities and all prior entries are retained.
+
+
+4.8 Unix mechanism checkpoint (fresh isolated authority only):
+
+- ORIGINAL owner5 hash-discovery support29537950c8b5d07799fd11a76a82dfe350a83186
+  was consumed by fast-forward. The separate Windows correctness repair is
+  cab8252e24f45ac14c4974dc8382622297d38c0d. Its exact archived commit passed
+  storage all-target Clippy and23 retained layout/profile tests on ARM, zero
+  skipped (run194a2b83-d63a-4f58-a686-74b8fdba4066). No native Windows result
+  is inferred from that check; the original b914 native failure remains above.
+- LibraryFiles anchors root/staging/archive/catalog/trash directory descriptors;
+  effects never reopen an ambient destination path. Original managed-directory
+  inode witnesses are retained by the library authority, so reopening handles
+  cannot legitimize substituted directories. Stage creation uses mkdirat and
+  create-exclusive/no-follow0600 files in private0700 containers. Names remain
+  lossless OS components; bounded collisions never adopt an existing object.
+- All LibraryFiles instances for the SAME actual borrowed library generation
+  share one move-only custody exclusion. UUID equality cannot supply another
+  generation's authority. File/directory resources keep that generation/OS lease
+  borrowed until closure, enforced by a compile-fail example and drop checking.
+  No arbitrary path/TestRoots/serialized DTO constructs a production capability.
+- Publication uses native NOREPLACE (Linux RENAME_NOREPLACE/macOS RENAME_EXCL),
+  never plain replacing rename or a check-then-replace fallback. It rehashes the
+  actual retained source, validates single-link regular-file identity before and
+  after the atomic effect, and acknowledges NewOwned only after exact file and
+  directory durability/revalidation. An existing destination is ReusedExisting
+  only after complete matching hash/size and stable no-follow file identity.
+  Its receipt grants NO compensation/cleanup ownership. The unused owned stage
+  stays separate and may move without replacement to unique recoverable trash;
+  this is neither a purge nor published-file/import compensation.
+- Atomic publication/native acknowledgement failure and post-rename flush or
+  namespace substitution preserve files plus actual open-object witnesses.
+  The retained stage becomes read-only and custody is sticky-fenced; dropping
+  an error or guard never clears it. No blind republish, auto-Drop deletion or
+  claim of no effects follows. Queued ordinary DB writes observe that fence;
+  critical same-runtime writer-barrier readback, report/repair and drain remain
+  available when the original root/identity/lease and DB-directory witnesses still validate, even if an archive-directory name is substituted. A complete
+  guarded reconciliation/successor activation API remains a later concrete
+  owner2/5/3/7 handoff, not claimed by these fresh-root mechanisms.
+- Native profiles use their separately locked/serialized anchored namespace,
+  not the library custody guard. First config publication is NOREPLACE; later
+  replacement uses atomic EXCHANGE, preserving the displaced config in the
+  private temporary name. Exact prior inode AND raw bytes are verified before
+  owned-temp removal. A raced foreign config is retained rather than destroyed.
+  Native marker/settings reads are anchored/no-follow, and parent substitution
+  cannot redirect stage creation, replacement or cleanup. Work and cleanup
+  failures are separately retained. Post-effect uncertainty or unsafe cleanup
+  retains actual File witnesses in the poisoned store until restart; restart
+  does not scan/purge orphan names or fabricate cleanup authority.
+- File-data flush, parent-directory flush and atomic publication are separate
+  mechanisms. On macOS both file and directory fsync are followed by actual
+  F_FULLFSYNC via verified rustix safe wrappers; unsupported native guarantees
+  return errors, never a weaker fallback reported as durability. This host's
+  real operations succeeded. No authored unsafe or lint suppression is used.
+  Hardware power-loss behavior, hostile same-UID sandboxing, native Intel/Linux/
+  Windows execution and unsupported filesystem/provider behavior are NOT
+  qualified by these isolated ARM tests. Existing library activation still
+  requires4.7 independent-adoption authority, which is unfinished.
+
+Combined ARM working-tree `cargo xtask check` passed107 nextest/zero skipped,
+run69e0d40e-ddf1-44e6-8136-47fb2b779e2f, four compile-fail docs (three retained
+plus the new retained-file/lease example), unchanged146-file preservation,
+strict6 Python checks including admitted special-path wrapper regression,
+root/fuzz deny+audit/inventory, locked build, formatting and all-target Clippy.
+This final combined run includes fresh-profile identity retention, original
+managed-directory recognition and critical DB readback during an archive-name
+substitution. The preceding focused storage runff2cd654-1a80-4157-9709-dc1e39961092
+also passed83/zero skipped. Neither run replaces current-head provider checks.
+The15 new actual Unix definitions cover12 platform cases and3 profile cases:
+destination/source/parent races; exact reuse versus aliases/changed bytes;
+pre/post-effect cancellation; new/owned config races; cleanup substitution;
+post-publication/trash flush uncertainty; retained actual witnesses; queued
+ordinary-write fencing plus critical readback/close; poisoned profile restart.
+Owner5 owns additive discovery scopes and any combined support checks. All
+canonical4 checkboxes and full4.11/native gates remain pending admission.

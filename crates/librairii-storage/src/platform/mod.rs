@@ -1,5 +1,7 @@
 //! Storage-owned OS mechanisms; no domain repository or legacy-launch policy.
 pub mod lock;
+#[cfg(any(target_os = "macos", target_os = "linux"))]
+pub mod unix;
 
 use crate::{Result, StorageError, database::WorkCancellation};
 use librairii_core::Checksum;

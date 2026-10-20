@@ -61,6 +61,17 @@ pub enum StorageError {
     BackupBusy,
     #[error("storage.hash_size_limit")]
     HashSizeLimit,
+    #[error("storage.custody_busy")]
+    CustodyBusy,
+    #[error("storage.custody_recovery_required")]
+    CustodyRecoveryRequired,
+    #[error("storage.destination_collision")]
+    DestinationCollision,
+    #[error("storage.owned_temp_cleanup_failed: work={work}; cleanup={cleanup}")]
+    OwnedTempCleanupFailed {
+        work: Box<StorageError>,
+        cleanup: Box<StorageError>,
+    },
     #[error("storage.backup_uncertain: backup={backup:?}: {cause}")]
     BackupUncertain {
         backup: Box<crate::backup::BackupReceipt>,
@@ -139,6 +150,10 @@ impl StorageError {
             Self::SnapshotChanged => "storage.snapshot_changed",
             Self::BackupBusy => "storage.backup_busy",
             Self::HashSizeLimit => "storage.hash_size_limit",
+            Self::CustodyBusy => "storage.custody_busy",
+            Self::CustodyRecoveryRequired => "storage.custody_recovery_required",
+            Self::DestinationCollision => "storage.destination_collision",
+            Self::OwnedTempCleanupFailed { .. } => "storage.owned_temp_cleanup_failed",
             Self::BackupUncertain { .. } => "storage.backup_uncertain",
             Self::DirectoryDurabilityUnavailable => "storage.directory_durability_unavailable",
             Self::NoSchemaConflict => "storage.no_schema_conflict",
