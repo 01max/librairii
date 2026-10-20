@@ -209,6 +209,10 @@
     {
       "suite": "librairii-core::operations",
       "name": "op6_start_and_cancel_refuse_all_terminal_parents"
+    },
+    {
+      "suite": "librairii-core::operations",
+      "name": "op6_admitted_zero_item_operation_interrupts_and_finishes_without_rewriting_scope"
     }
   ]
 }
