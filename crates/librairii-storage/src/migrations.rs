@@ -6,16 +6,13 @@
 use crate::{Result, StorageError};
 use rusqlite::{Connection, OptionalExtension};
 
-// The private compatibility implementation is qualified independently before
-// activation by the separate explicit Collection-open projection. Schema-only
-// open does not call it or rewrite legacy payloads.
-#[cfg(test)]
+// Only the EXPLICIT same-writer Collection inspection below calls the private
+// compatibility implementation. Schema-only open never rewrites payloads.
 mod compatibility;
 
 // Transitional v1–v5 compatibility only. This remains private and separate
 // from schema opening; section7 will extract the single pure implementation
 // through the shared foundation owner. No evaluator or Collection CRUD here.
-#[cfg(test)]
 mod collection_codec {
     use super::compatibility::{self, LanguageError, NormalizeError};
     use serde::Serialize;
@@ -572,7 +569,7 @@ mod collection_codec {
         validate_references(&q, &mut remaining, true)?;
         Ok((payload(&q)?, q))
     }
-    fn payload(query: &Query) -> Result<String> {
+    pub(super) fn payload(query: &Query) -> Result<String> {
         let payload = serde_json::to_string(query)
             .map_err(|_| CodecError::FrozenData)?
             .replace('<', "\\u003c")
@@ -791,6 +788,205 @@ mod collection_codec {
             Ok(())
         }
     }
+}
+
+/// Storage-local transitional inspection result. Raw legacy text bytes are
+/// preserved; this is not a shared domain model or a persistence serialization.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct CompatibilityCollection {
+    pub id: i64,
+    pub name: Vec<u8>,
+    pub normalized_name: Vec<u8>,
+    pub position: i64,
+    pub query_version: i64,
+    pub query_payload: Vec<u8>,
+    pub validity: CollectionValidity,
+    pub revision: i64,
+}
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum CollectionValidity {
+    Valid,
+    NeedsAttention,
+}
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum CollectionAttention {
+    UnmigratableQuery,
+    MissingCriteria,
+}
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct CompatibilityInspection {
+    pub collection: CompatibilityCollection,
+    /// The canonical decoded query, present even if an already-attention
+    /// Collection remains unavailable. Missing/unmigratable criteria return no
+    /// evaluated query. This private wire representation will move with the
+    /// SINGLE pure codec when section7 receives its concrete shared handoff.
+    pub decoded_query_payload: Option<String>,
+    pub attention: Option<CollectionAttention>,
+}
+impl CompatibilityInspection {
+    /// Call AFTER a proven committed inspection acknowledgement. Go Open first
+    /// commits Inspect, then reports needs-attention; treating that domain
+    /// result as a transaction error would incorrectly roll back its mutation.
+    pub const fn is_openable(&self) -> bool {
+        matches!(self.collection.validity, CollectionValidity::Valid)
+    }
+}
+impl crate::database::Database<'_> {
+    /// Explicit lazy v1–v5 compatibility projection on THIS runtime's same
+    /// writer, using its ordinary admission/cancellation/commit-uncertainty
+    /// machinery. No migration or projection runs merely from Database::open.
+    /// The closure performs bounded DB/codec work only, without I/O callbacks.
+    pub fn inspect_collection_compatibility(
+        &self,
+        id: i64,
+        cancellation: crate::database::WorkCancellation,
+    ) -> Result<
+        crate::database::Pending<'_, crate::database::TransactionOutcome<CompatibilityInspection>>,
+    > {
+        self.transaction(cancellation, move |tx| inspect_collection(tx, id))
+    }
+}
+
+fn sql_bytes(row: &rusqlite::Row<'_>, index: usize) -> rusqlite::Result<Vec<u8>> {
+    match row.get_ref(index)? {
+        rusqlite::types::ValueRef::Text(bytes) | rusqlite::types::ValueRef::Blob(bytes) => {
+            Ok(bytes.to_vec())
+        }
+        _ => Err(rusqlite::Error::InvalidColumnType(
+            index,
+            "legacy text".into(),
+            row.get_ref(index)?.data_type(),
+        )),
+    }
+}
+fn read_compatibility_collection(
+    tx: &rusqlite::Transaction<'_>,
+    id: i64,
+) -> Result<CompatibilityCollection> {
+    let value = tx.query_row("SELECT id,name,normalized_name,position,query_version,query_payload,validity_state,revision FROM collections WHERE id=?", [id], |row| {
+        let validity: String = row.get(6)?;
+        let validity = match validity.as_str() {
+            "valid" => CollectionValidity::Valid,
+            "needs_attention" => CollectionValidity::NeedsAttention,
+            _ => return Err(rusqlite::Error::InvalidQuery),
+        };
+        Ok(CompatibilityCollection { id:row.get(0)?, name:sql_bytes(row,1)?, normalized_name:sql_bytes(row,2)?, position:row.get(3)?, query_version:row.get(4)?, query_payload:sql_bytes(row,5)?, validity, revision:row.get(7)? })
+    }).optional()?.ok_or(StorageError::CollectionNotFound)?;
+    Ok(value)
+}
+
+/// Missing/wrong-kind criteria are a DOMAIN result; statement, conversion or
+/// driver failures remain SQL errors and must roll back rather than marking
+/// attention. Visit branches first, matching the frozen criteria service.
+fn available_criteria(
+    tx: &rusqlite::Transaction<'_>,
+    query: &collection_codec::Query,
+) -> Result<bool> {
+    for branch in &query.any_of {
+        if !available_criteria(tx, branch)? {
+            return Ok(false);
+        }
+    }
+    for filter in &query.boolean_filters {
+        if !definition_kind(tx, filter.definition_id, b"boolean")? {
+            return Ok(false);
+        }
+    }
+    for filter in &query.choice_filters {
+        if !definition_kind(tx, filter.definition_id, b"choice")? {
+            return Ok(false);
+        }
+        for id in &filter.value_ids {
+            let owner = tx
+                .query_row(
+                    "SELECT definition_id FROM tag_values WHERE id=?",
+                    [id],
+                    |row| row.get::<_, i64>(0),
+                )
+                .optional()?;
+            if owner != Some(filter.definition_id) {
+                return Ok(false);
+            }
+        }
+    }
+    Ok(true)
+}
+fn definition_kind(tx: &rusqlite::Transaction<'_>, id: i64, expected: &[u8]) -> Result<bool> {
+    let kind = tx
+        .query_row("SELECT kind FROM tag_definitions WHERE id=?", [id], |row| {
+            sql_bytes(row, 0)
+        })
+        .optional()?;
+    Ok(kind.as_deref() == Some(expected))
+}
+fn attention_inspection(
+    tx: &rusqlite::Transaction<'_>,
+    mut collection: CompatibilityCollection,
+    reason: CollectionAttention,
+) -> Result<CompatibilityInspection> {
+    if collection.validity == CollectionValidity::Valid {
+        let changed = tx.execute("UPDATE collections SET validity_state='needs_attention',updated_at=CURRENT_TIMESTAMP WHERE id=? AND validity_state='valid'", [collection.id])?;
+        if changed != 1 {
+            return Err(StorageError::CollectionNotFound);
+        }
+        collection.validity = CollectionValidity::NeedsAttention;
+        // Go's returned int64 bookkeeping; the migration016 SQL trigger alone
+        // increments persisted revision. Never issue a second revision UPDATE.
+        collection.revision = collection.revision.wrapping_add(1);
+    }
+    Ok(CompatibilityInspection {
+        collection,
+        decoded_query_payload: None,
+        attention: Some(reason),
+    })
+}
+fn inspect_collection(tx: &rusqlite::Transaction<'_>, id: i64) -> Result<CompatibilityInspection> {
+    use collection_codec::CodecError;
+    let mut collection = read_compatibility_collection(tx, id)?;
+    let legacy_id = tx
+        .query_row(
+            "SELECT definition_id FROM legacy_broken_tag WHERE singleton=1",
+            [],
+            |row| row.get::<_, i64>(0),
+        )
+        .optional()?
+        .unwrap_or(0);
+    let (payload, _) = match collection_codec::migrate(
+        collection.query_version,
+        &collection.query_payload,
+        legacy_id,
+    ) {
+        Ok(value) => value,
+        Err(CodecError::Invalid | CodecError::UnsupportedVersion) => {
+            return attention_inspection(tx, collection, CollectionAttention::UnmigratableQuery);
+        }
+        Err(CodecError::FrozenData) => return Err(StorageError::CompatibilityInvariant),
+    };
+    let query = match collection_codec::decode(5, payload.as_bytes(), 0) {
+        Ok(value) => value,
+        Err(CodecError::Invalid | CodecError::UnsupportedVersion) => {
+            return attention_inspection(tx, collection, CollectionAttention::UnmigratableQuery);
+        }
+        Err(CodecError::FrozenData) => return Err(StorageError::CompatibilityInvariant),
+    };
+    if !available_criteria(tx, &query)? {
+        return attention_inspection(tx, collection, CollectionAttention::MissingCriteria);
+    }
+    let decoded_query_payload =
+        Some(collection_codec::payload(&query).map_err(|_| StorageError::CompatibilityInvariant)?);
+    if collection.query_version != 5 || collection.query_payload != payload.as_bytes() {
+        tx.execute("UPDATE collections SET query_version=?,query_payload=?,updated_at=CURRENT_TIMESTAMP WHERE id=?", rusqlite::params![5,payload,collection.id])?;
+        collection.query_version = 5;
+        collection.query_payload = payload.into_bytes();
+        collection.revision = collection.revision.wrapping_add(1);
+    }
+    let attention = (collection.validity == CollectionValidity::NeedsAttention)
+        .then_some(CollectionAttention::MissingCriteria);
+    Ok(CompatibilityInspection {
+        collection,
+        decoded_query_payload,
+        attention,
+    })
 }
 
 pub const SCHEMA_PRODUCT: &str = "librairii";

@@ -9,8 +9,8 @@ owner5's prepared initial storage-shell handoff. ActualM provider checks were
 pending at implementation start; owner2 subsequently confirmed all actualM CI
 green. This is foundation evidence, not native storage qualification.
 
-Implementation proceeds in numbered order with a dedicated Conventional Commit
-and `OpenSpec-Task: 4.N` trailer for each subtask; fixes remain separate. Exact
+Each numbered subtask retains a dedicated Conventional Commit
+and `OpenSpec-Task: 4.N` trailer; fixes and dependency-qualified slices remain separate. Exact
 completed SHAs are added in a following commit, so no commit claims its own SHA.
 Owner2 alone updates canonical OpenSpec checkboxes. This ledger is shipping
 evidence, not an additional checklist or acceptance of unfinished work.
@@ -20,11 +20,11 @@ evidence, not an additional checklist or acceptance of unfinished work.
 |4.1|Explicit fresh isolated root; exact layout, managed paths, raw identity; reject escape/invalid/nonfresh inputs without profile discovery|Implemented/host verified `9c37f56ffe83d73497129603c4ecfb8d25e4e087`. Setup `fcf467f41a39c3670a38db063a5304a60f6e93d1`|
 |4.2|Exact migrations001-018, schema identity and contiguous ledger|Implemented/host verified `ea8e60f415b5ea23fb50f8899594884ef13b6c8f`; probe hardening `bbf386bd4e681d3a7732fae28af750f173da6211`. Setup `e6e527af79a21149665670a36171ef5d701be05c`; owner5 graph `bf720718c4736e0ecf5f6ded947ccbce49f1ba16`|
 |4.3|One owned writer plus four reads, bounded jobs/transactions and close|Implemented/host verified `8baebc751ed51e917a3ae5b139ebf48fc5f0467b`|
-|4.4|All18 admitted populated prefixes, full schema/rows/query outcomes and actual Collection-open projection; no fixture-specific patches or eager DB-open rewrite|Pending exact frozen Go Unicode15/CLDRDefault algorithm/data/notices handoff and explicit projection; private placement accepted2/5, no later-feature deferral|
+|4.4|All18 admitted populated prefixes, full schema/rows/query outcomes and actual Collection-open projection; no fixture-specific patches or eager DB-open rewrite|Private source/normalization `a125778200af8d28e8ff99c6c41f47a6ef5b69db`, Default language `d902658ad4e8dd33dc9540658ec4176a25fe9652`, strict codec `7350ddf1a87c0434efe1e7fac49c13db9906faf2`; explicit same-writer projection/all18 host proof in following commit. Other native/current cumulative/admission gates remain open|
 |4.5|Online WAL backup, integrity/FK, rollback and foreign DB+sidecars preservation|Implemented/host verified `abeb80ecd401f840e45a6a162998f5808cd9ebc1` on Unix; Windows directory durability remains pending4.9|
 |4.6|Strict64KiB v1 profiles, atomic serialized updates and isolated native namespace|Implemented/host verified `2751a04a4af6b9da8a21300a182ca2dd5231d8b8`. Stronger race capabilities and Windows effects remain4.8/4.9|
 |4.7|OS lease through close, refuse unproven legacy exclusion, verified independent adoption|Partial `2fb7c0126b7e1b10f46d5cd5326e6e0809b4d4cb`: fresh-root cooperative lease/refusal host verified. Verified independent clone/recovery/restart/relocation qualification remains pending|
-|4.8|Distinct no-clobber/config-replace/durable-flush effects and Unix races|Partial `b9148a770f896445b36233452bef7a59e84a60d6`: streaming; descriptor-relative Unix publication/config/flush mechanisms host verified in the following source commit. Other native qualification and complete reconciliation/adoption remain pending|
+|4.8|Distinct no-clobber/config-replace/durable-flush effects and Unix races|Partial `b9148a770f896445b36233452bef7a59e84a60d6`: streaming; descriptor-relative Unix publication/config/flush mechanisms host verified `d6a966e90e14bd0898b49b8469133985d6cb1fee`. Other native qualification and complete reconciliation/adoption remain pending|
 |4.9|Windows effects/path/share-mode implementation plus actual-target evidence|Pending|
 |4.10|Portability preflight and identity-verified rebinding without foreign cleanup|Pending|
 |4.11|Independent exact-head AO review, schema018 Go→Rust reopen/archive hashes, all cumulative/provider checks|Open gate|
@@ -642,3 +642,62 @@ all-eight or current-head qualification.
 The combined WIP workspace check passes119 nextest/zero skipped, four separate
 compile-fail docs and unchanged146 corpus. This is ARM execution; exact committed
 checks and serialized discovery follow, not a four-target qualification.
+
+### 4.4: explicit same-writer Collection compatibility projection
+
+Consumed ORIGINAL6be041206d7f2af09f09c02fc75fe0639cef486d by FF, preserving
+all116 prior discovery identities/scopes/metadata and the five actual strict
+codec identities. Owner5 supplied exact-head ARM119/zero skipped+four docs,
+146 corpus/strict15/source/both graph policies. Windows84 is REQUIRED inventory,
+not local execution. No root policy, dependency, source notice or SQL byte edit
+was authored by this session.
+
+The separate `Database::inspect_collection_compatibility` uses THIS runtime's
+existing writer and transaction/cancellation/commit-uncertainty mechanisms.
+DatabaseOpen still performs schema-only upgrade with a verified backup, never
+lazy domain projection. An explicit inspection reads actual Collection+retired
+Broken identity, migrates/decodes with the single private codec, validates real
+recursive tag kinds and choice-value owners, then atomically updates exact
+payload/version OR attention. Unmigratable/missing-criteria domain outcomes are
+distinct from SQL/invariant failure. Existing needs_attention is never healed.
+Unchanged/repeat inspection is a no-op. The unchanged migration016 trigger alone
+increments PERSISTED revision; returned int64 bookkeeping is not another SQL
+update. Raw legacy text bytes stay beside the owned storage-local record. These
+transitional results are not new shared app DTOs or a frozen section7 API.
+
+On ALL18 independent owned copied prefix databases, actual DatabaseOpen+backup/
+upgrade schema, triggers, constraints and every non-Collection row match the
+admitted Go oracle. Schema-only preserves ORIGINAL query bytes/version and
+retains EXACTLY24 observed payload/version/revision differences across11–18.
+The SEPARATE explicit same-writer inspection closes ALL24; full snapshots and
+openedCollections domain/query outcomes equal the immutable JSON. No fixture
+payload branches, input changes, eager DatabaseOpen semantics or deferred
+Collection implementation were used. Test-only timestamp fixing follows EXACT
+existing generator/databases.go::fixTimes (the declared producer policy) AFTER
+checking real CURRENT_TIMESTAMP effects against current SQL clock bounds.
+Repeated inspection preserves the full first-result snapshot including time.
+Production always uses CURRENT_TIMESTAMP; payload/revision/domain comparison
+bytes are never normalized.
+
+All-target effect tests cover valid/canonical/repeated inspection; existing
+attention; missing/wrong-kind/foreign-owner recursive criteria; actual retired
+vs reused IDs; missing legacy-reference SQL; unsupported/invalid codecs; not
+found; pre-admission and late cancellation; AFTER UPDATE payload/revision AND
+attention/revision aborts. An actual deferred-FK COMMIT failure is
+CommitUncertain, fences ordinary retry, retains same-generation runtime/lease,
+and permits ONE fresh same-writer readback plus reserved uncancelled repair.
+Observed rollback comes from that authoritative view, never the error alone;
+readback/repair does not silently clear the fence or reactivate intake.
+
+ARM focused6 tests/zero skipped PASS, run
+ecf614a5-3a6f-47e3-ada1-ea9d238e9daf. Combined workspace125/zero skipped+four
+compile-fail docs+146 immutable corpus PASS before the additional attention-
+abort assertion; final focused6 includes that assertion. All-target storage
+Clippy/fmt and explicit source19-record policy pass. Source extraction replay
+from the authenticated49 materialization reproduces the new cfg(test)-only
+region-flag witness and retained non-DNS bits; no algorithm/data substitution.
+Five new effect identities are all-target; the actual all-prefix backup/open
+proof is Unix-only while Windows durability4.9 is unimplemented. No compile or
+refusal branch is native filesystem qualification. Exact committed full
+cumulative/new-head provider gates and independent4.11 review remain pending;
+no full4.4 admission or PR43 review/merge authority follows from these passes.

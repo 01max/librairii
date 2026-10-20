@@ -33,6 +33,10 @@ pub enum StorageError {
     ForeignSchema,
     #[error("storage.migration_conflict")]
     MigrationConflict,
+    #[error("collection.not_found")]
+    CollectionNotFound,
+    #[error("storage.frozen_compatibility_invariant")]
+    CompatibilityInvariant,
     #[error("storage.sqlite: {0}")]
     Sqlite(#[from] rusqlite::Error),
     #[error("storage.runtime_in_use")]
@@ -136,6 +140,8 @@ impl StorageError {
             Self::IdentityMismatch => "settings.library_missing",
             Self::ForeignSchema => "storage.foreign_schema",
             Self::MigrationConflict => "storage.migration_conflict",
+            Self::CollectionNotFound => "collection.not_found",
+            Self::CompatibilityInvariant => "storage.frozen_compatibility_invariant",
             Self::Sqlite(_) => "storage.sqlite",
             Self::RuntimeInUse => "storage.runtime_in_use",
             Self::LibraryInUse => "storage.library_in_use",

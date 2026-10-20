@@ -149,7 +149,7 @@ def main():
                      array("ALT_REGION_ISO3", list(string_value(tables, "altRegionISO3")), "u8"),
                      array("ALT_REGION_IDS", numbers(tables, "altRegionIDs", 11), "u16"),
                      array("REGION_M49", numbers(tables, "m49", 359), "u16"),
-                     array("REGION_TYPES_WITHOUT_TLD", region_flags, "u8")]
+                     "#[cfg(test)]\n" + array("REGION_TYPES_WITHOUT_TLD", region_flags, "u8")]
     m49_index = numbers(tables, "m49Index", 9)
     from_m49 = numbers(tables, "fromM49", 333)
     numeric = []

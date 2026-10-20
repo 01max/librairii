@@ -134,6 +134,7 @@ fn region_name(id: u16) -> Result<String> {
 }
 
 impl Core {
+    #[cfg(test)]
     fn render(self) -> Result<String> {
         let mut output = language_name(self.language)?;
         if self.script != 0 {
