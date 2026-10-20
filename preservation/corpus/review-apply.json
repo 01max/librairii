@@ -1,0 +1,59 @@
+{
+  "decisions": [
+    {
+      "action": "keep",
+      "uuid": "123e4567-e89b-42d3-a456-426614174000"
+    },
+    {
+      "action": "add",
+      "uuid": "423e4567-e89b-42d3-a456-426614174000"
+    }
+  ],
+  "members": [
+    {
+      "cachedTitle": "Old ocean",
+      "origins": null,
+      "position": 0,
+      "protected": true,
+      "uuid": "123e4567-e89b-42d3-a456-426614174000"
+    },
+    {
+      "cachedTitle": "Moon still",
+      "origins": null,
+      "position": 1,
+      "protected": false,
+      "uuid": "223e4567-e89b-42d3-a456-426614174000"
+    },
+    {
+      "cachedTitle": "Manual ocean",
+      "origins": null,
+      "position": 2,
+      "protected": true,
+      "uuid": "323e4567-e89b-42d3-a456-426614174000"
+    },
+    {
+      "cachedTitle": "Unavailable",
+      "origins": null,
+      "position": 3,
+      "protected": false,
+      "uuid": "623e4567-e89b-42d3-a456-426614174000"
+    },
+    {
+      "cachedTitle": "Moon forest",
+      "origins": null,
+      "position": 4,
+      "protected": false,
+      "uuid": "423e4567-e89b-42d3-a456-426614174000"
+    }
+  ],
+  "shelf": {
+    "brokenCount": 2,
+    "count": 5,
+    "id": 1,
+    "name": "Approved",
+    "position": 0,
+    "revision": 5,
+    "sourceCount": 2,
+    "unavailableCount": 1
+  }
+}

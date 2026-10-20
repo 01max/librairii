@@ -26,6 +26,11 @@
       "subtask": "1.5",
       "sha": "652794d9ceb119081fb608e4c921b35d227fa53a",
       "subject": "docs(preservation): retain approved native UI reference digests"
+    },
+    {
+      "subtask": "1.4",
+      "sha": "853e6c52085c0fbc5bb5a20ba9b2140ca1d2fd65",
+      "subject": "docs(preservation): reconcile effective Broken and Shelf contracts"
     }
   ],
   "subtasks": {
@@ -90,8 +95,25 @@
       "verification": "both approved HTML digests match manifest; historical prototype/checksum and 6 current browser screenshots pinned with dimensions; no native screenshot claim"
     },
     "1.6": {
-      "status": "pending",
-      "evidence": []
+      "status": "implemented",
+      "evidence": [
+        "generate.py",
+        "generator/main.go",
+        "corpus/manifest.json",
+        "golden-contract.md",
+        "check.py"
+      ],
+      "verification": "two independent exact-oracle exports identical:43 files; semantic witnesses pass",
+      "coverage": {
+        "synthetic_archives": 20,
+        "unicode_cases": 25,
+        "saved_queries": 18,
+        "url_queries": 23,
+        "import_outcomes": 4,
+        "export_plans": 9,
+        "groups_reviews": "union; approved/unavailable; creation; Keep/Add; replay/stale/invalid/deferred; ordinary removal/exclude/unexclude; incomplete; duplicate"
+      },
+      "limitations": "Representative portable corpus supplements retained source suites; no exhaustive race/platform/codec-hardening qualification claim"
     },
     "1.7": {
       "status": "pending",

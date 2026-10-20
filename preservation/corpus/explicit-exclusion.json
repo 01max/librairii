@@ -1,0 +1,58 @@
+{
+  "exclusions": [
+    {
+      "title": "Moon forest",
+      "uuid": "423e4567-e89b-42d3-a456-426614174000"
+    },
+    {
+      "title": "Moon excluded",
+      "uuid": "523e4567-e89b-42d3-a456-426614174000"
+    }
+  ],
+  "members": [
+    {
+      "cachedTitle": "Old ocean",
+      "origins": null,
+      "position": 0,
+      "protected": true,
+      "uuid": "123e4567-e89b-42d3-a456-426614174000"
+    },
+    {
+      "cachedTitle": "Moon still",
+      "origins": null,
+      "position": 1,
+      "protected": false,
+      "uuid": "223e4567-e89b-42d3-a456-426614174000"
+    },
+    {
+      "cachedTitle": "Manual ocean",
+      "origins": null,
+      "position": 2,
+      "protected": true,
+      "uuid": "323e4567-e89b-42d3-a456-426614174000"
+    },
+    {
+      "cachedTitle": "Unavailable",
+      "origins": null,
+      "position": 3,
+      "protected": false,
+      "uuid": "623e4567-e89b-42d3-a456-426614174000"
+    }
+  ],
+  "review": {
+    "additions": [],
+    "incomplete": false,
+    "removals": [],
+    "revision": 7,
+    "shelfId": 1,
+    "token": "\u003creview-ticket\u003e",
+    "upToDate": true,
+    "warnings": [
+      {
+        "code": "story_unavailable",
+        "message": "This approved story is unavailable in the library.",
+        "storyUuid": "623e4567-e89b-42d3-a456-426614174000"
+      }
+    ]
+  }
+}
