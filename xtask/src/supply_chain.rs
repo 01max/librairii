@@ -39,6 +39,45 @@ fn date_valid(date: &str) -> bool {
         _ => false,
     }
 }
+fn exact_selector(kind: &str, selector: &str) -> bool {
+    if kind == "advisory" {
+        let Some(id) = selector.strip_prefix("RUSTSEC-") else {
+            return false;
+        };
+        let Some((year, serial)) = id.split_once('-') else {
+            return false;
+        };
+        return year.len() == 4
+            && serial.len() == 4
+            && year
+                .bytes()
+                .chain(serial.bytes())
+                .all(|b| b.is_ascii_digit());
+    }
+    let Some((name, version)) = selector.split_once('@') else {
+        return false;
+    };
+    if name.is_empty()
+        || !name
+            .bytes()
+            .all(|b| b.is_ascii_alphanumeric() || b == b'-' || b == b'_')
+    {
+        return false;
+    }
+    let version = version.strip_prefix('=').unwrap_or(version);
+    if !version
+        .bytes()
+        .all(|b| b.is_ascii_alphanumeric() || matches!(b, b'.' | b'+' | b'-'))
+    {
+        return false;
+    }
+    let base = version.split(['+', '-']).next().unwrap_or("");
+    let parts: Vec<_> = base.split('.').collect();
+    parts.len() == 3
+        && parts
+            .iter()
+            .all(|p| !p.is_empty() && p.bytes().all(|b| b.is_ascii_digit()))
+}
 fn validate(
     exceptions: &Exceptions,
     today: &str,
@@ -47,7 +86,7 @@ fn validate(
     let mut records = BTreeSet::new();
     for entry in &exceptions.exceptions {
         if !matches!(entry.kind.as_str(), "advisory" | "duplicate" | "license")
-            || entry.selector.trim().is_empty()
+            || !exact_selector(&entry.kind, &entry.selector)
             || entry.owner.trim().is_empty()
             || entry.reason.trim().is_empty()
             || !entry.tracking.starts_with("https://")
@@ -284,6 +323,23 @@ fn inventory_graph(graph: &str, manifest: &str, lockfile: &str) -> Result {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn exceptions_cannot_widen_into_version_ranges_or_arbitrary_advisory_ids() {
+        for selector in [
+            "crate",
+            "crate@*",
+            "crate@>=1.2.3",
+            "crate@1",
+            "crate@^1.2.3",
+            "crate@1.2.3 || 2",
+        ] {
+            assert!(!exact_selector("duplicate", selector));
+        }
+        assert!(exact_selector("license", "crate@1.2.3"));
+        assert!(exact_selector("duplicate", "crate@=1.2.3+spec-1.0"));
+        assert!(!exact_selector("advisory", "anything"));
+        assert!(exact_selector("advisory", "RUSTSEC-2026-0000"));
+    }
     #[test]
     fn unrecorded_suppressions_fail_and_expiry_is_not_optional() {
         let mut suppressions = BTreeSet::new();

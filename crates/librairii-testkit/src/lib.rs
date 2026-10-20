@@ -13,17 +13,27 @@ pub struct TestRoots {
     library: PathBuf,
     profile: PathBuf,
 }
+/// Authorization cannot outlive the owner that cleans up its fresh directories.
+/// ```compile_fail
+/// use librairii_testkit::TestRoots;
+/// let authorized;
+/// {
+///     let owner = TestRoots::new().unwrap();
+///     authorized = owner.authorize(Some(owner.library()), Some(owner.profile())).unwrap();
+/// }
+/// let _ = authorized.library();
+/// ```
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct AuthorizedRoots {
-    library: PathBuf,
-    profile: PathBuf,
+pub struct AuthorizedRoots<'owner> {
+    library: &'owner Path,
+    profile: &'owner Path,
 }
-impl AuthorizedRoots {
+impl AuthorizedRoots<'_> {
     pub fn library(&self) -> &Path {
-        &self.library
+        self.library
     }
     pub fn profile(&self) -> &Path {
-        &self.profile
+        self.profile
     }
 }
 impl TestRoots {
@@ -54,7 +64,7 @@ impl TestRoots {
         &self,
         library: Option<&Path>,
         profile: Option<&Path>,
-    ) -> io::Result<AuthorizedRoots> {
+    ) -> io::Result<AuthorizedRoots<'_>> {
         let valid = |actual: Option<&Path>, expected: &Path| -> io::Result<()> {
             let actual = actual.ok_or_else(|| io::Error::other("explicit test root required"))?;
             if actual != expected
@@ -72,8 +82,8 @@ impl TestRoots {
         valid(library, &self.library)?;
         valid(profile, &self.profile)?;
         Ok(AuthorizedRoots {
-            library: self.library.clone(),
-            profile: self.profile.clone(),
+            library: &self.library,
+            profile: &self.profile,
         })
     }
 }
