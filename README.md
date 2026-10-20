@@ -4,10 +4,6 @@
 
 <h1 align="center">Librairii</h1>
 
-> [!IMPORTANT]
-> While I'm a professional software engineer, this project is an experiment in
-> vibe coding with 6.1 Sol and should be taken as such.
-
 <p align="center">
   <strong>Your stories, beautifully shelved.</strong><br>
   A local-first desktop library for your Lunii story archives.
@@ -35,6 +31,10 @@ approve. When you're ready, export your stories for use with Lunii.QT.
   <br>
   <sub>The Librairii interface with demo stories and generated placeholder covers. Click to enlarge.</sub>
 </p>
+
+> [!IMPORTANT]
+> While I'm a professional software engineer, this project is an experiment in
+> vibe coding with 6.1 Sol and should be taken as such.
 
 ## Features
 
