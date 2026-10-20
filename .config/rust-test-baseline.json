@@ -633,6 +633,22 @@
     {
       "suite": "librairii-storage",
       "name": "migrations::compatibility::normalization::tests::frozen_unicode_folding_mn_space_and_hangul_keep_separate_semantics"
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "migrations::compatibility::language::tests::bounded_default_grammar_matches_actual_go_without_dns"
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "migrations::compatibility::language::tests::frozen_default_aliases_are_distinct_from_suppress_macro_and_cldr"
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "migrations::compatibility::language::tests::frozen_language_lookup_retains_non_dns_region_bits_only"
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "migrations::compatibility::language::tests::selected_default_cases_match_actual_go_and_dns_omission_reference"
     }
   ]
 }
