@@ -189,4 +189,41 @@ mod tests {
         assert_eq!(observed["metricDifferences"]["fullFold"], 1);
         assert!(compare(format!("{good}END\t1\n").as_bytes(), &map, Some(&cases)).is_err());
     }
+
+    #[test]
+    fn measured_surviving_mc_counterexample_is_a_final_pipeline_rejection() {
+        // Actual Go1.26.5/xtext15 case0 in surviving-observations.json (5cd512b).
+        // Go inserts CGJ before reordering; these two Mc marks survive Mn removal.
+        let low = "\u{16ff0}";
+        let high = "\u{1715}";
+        let input = format!("a{}{high}{low}Z", low.repeat(29));
+        let go_nfkd = format!("a{}{high}\u{34f}{low}Z", low.repeat(29));
+        let go_pipeline = format!("a{}{high}{low}z", low.repeat(29));
+        let map = BTreeMap::from([('Z', "z".into())]);
+        let candidate = format!("a{}{high}z", low.repeat(30));
+        assert_eq!(normalize(&input, &map, false), candidate);
+        assert_eq!(normalize(&input, &map, true), candidate);
+        assert_ne!(candidate, go_pipeline);
+        let cases = vec![json!({"name":"observed-surviving-case0","input":input})];
+        let stream = format!(
+            "0\t{}\t-\t-\t-\t{}\t{}\t{}\nEND\t1\n",
+            hex(&input),
+            hex(&go_nfkd),
+            hex(&fold(&input, &map)),
+            hex(&go_pipeline),
+        );
+        let result = compare(stream.as_bytes(), &map, Some(&cases)).unwrap();
+        assert_eq!(result["status"], "DIFF");
+        for metric in [
+            "raw_NFKD",
+            "stream_safe_NFKD",
+            "pipeline_raw",
+            "pipeline_stream_safe",
+        ] {
+            assert_eq!(result["metricDifferences"][metric], 1, "{metric}");
+        }
+        assert_eq!(result["metricDifferences"]["fullFold"], 0);
+        assert_eq!(result["differenceCount"], 4);
+        assert_eq!(result["allDifferencesRecorded"], true);
+    }
 }
