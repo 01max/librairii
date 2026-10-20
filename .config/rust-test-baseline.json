@@ -751,6 +751,42 @@
         "x86_64-apple-darwin",
         "x86_64-unknown-linux-gnu"
       ]
+    },
+    {
+      "suite": "librairii-storage::adoption_inputs",
+      "name": "unix::copy_refuses_existing_overlapping_changed_and_cancelled_inputs_without_clobber",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::adoption_inputs",
+      "name": "unix::independent_copy_keeps_raw_bytes_has_no_aliases_and_holds_its_own_lease",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "adoption::closed::copy_failures::failed_copy_flush_retains_real_root_lease_and_every_recoverable_byte",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "adoption::closed::copy_failures::late_copy_cancel_and_root_substitution_never_activate_or_purge_bytes",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
     }
   ]
 }
