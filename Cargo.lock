@@ -380,6 +380,9 @@ version = "0.0.0"
 dependencies = [
  "librairii-app",
  "librairii-core",
+ "librairii-testkit",
+ "tempfile",
+ "thiserror",
 ]
 
 [[package]]
