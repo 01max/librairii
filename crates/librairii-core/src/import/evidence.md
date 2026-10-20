@@ -355,3 +355,59 @@ must supply its original exact-first-SHA descendant registry/schema/checker/
 inventory/discovery support, preserving all72 prior IDs/scopes, strict14, docs
 and146 corpus. No bypass, root/dependency/shared API/storage edit or intermediate
 full qualification. Full5.4/5.10 and all resource/read/CRC/PNG/effect gates OPEN.
+
+Original partial5.4 text task commit:
+e3d4ff128b07b2af2897e35bc13de02f5250b7fc
+(feat(import): project supplied Studio text; OpenSpec-Task: 5.4).
+Scoped all-target core Clippy-Dwarnings and fmt also PASS; full final checks
+await the serialized original v2 support.
+
+## Partial5.5: selected optional supplied metadata
+
+The SAME PURE5-TEXT-METADATA-904 release separately permits this5.5 contribution.
+Private optional.rs recognizes ONLY uuid/title/description, sharing lexical
+spans/unquote/fixed-key matching/string-null reduction and finish ordering.
+stageNodes/image/audio are unknown syntax-only skipped values: no Studio
+node types, hidden cells, references or asset policy is applied to them.
+
+project_optional_metadata takes supplied Inventory, Option materialized bytes,
+resolved nonnil ImportIdentity and Limits. Missing/directory _metadata.json or
+no selected payload returns None (not proof of a read or of entry absence).
+A selected regular entry with zero supplied bytes is malformed; root null/{}
+returns Some(empty text), so caller-owned prior text can distinguish absence
+from present empty projection. Optional UUID absent/null/empty skips comparison;
+nonempty is parsed WITHOUT trimming and canonically compared to the supplied
+primary, whose raw text/binary identity is never replaced. The frozen38-byte
+form still ignores its delimiter bytes; two ASCII boundary spaces can therefore
+be accepted by Parse even though no trimming occurs. Nil cannot match primary.
+
+Known-string duplicate/null/first-type-error behavior is shared: null preserves
+prior strings; empty overwrites; a prior type error survives later valid fields.
+Complete first syntax precedes typed reduction; saved type errors return before
+EOF; successful first Decode checks EOF before UUID consistency. Text uses only
+the frozen boundary trim from partial5.4. Exact Go diagnostic text/offset/concrete
+parse errors and second Decode causes remain unqualified.
+
+Eight new module-local tests cover absence/directory/case/unselected/empty/null
+selection; optional versus mandatory UUID, canonical legacy forms and raw
+primary preservation; unknown Studio fields; duplicates/null/folding/priority;
+replacement origins/non-normalization/VT-FF distinction; original-byte cap and
+depth10000/10001. Actual wired scoped nextest PASS61 import tests with10 unrelated
+core tests explicitly filtered. All-target core Clippy-Dwarnings and scoped fmt
+PASS on1.99.1. One initial non-ASCII Rust byte-literal test typo prevented test
+compilation; corrected before the successful61-test run, not a product failure.
+
+Actual v2 derivative closure now contains7 regular Rust files, mapped only to
+10 bounded Go algorithm/data selections and2 scoped product references. No
+evidence-only source grants production translation. No new dependency, public
+generic parser, root export/port, storage, Go or corpus edit. The intentionally
+narrow v1 root source checker has not been bypassed or called current-v2 proof.
+
+Next: original full-SHA ledger and first publication; owner5 ORIGINAL direct
+descendant v2 registry/schema/checker/notices/inventory/ACTUAL additive discovery
+retaining all72 old IDs/scopes/order, strict14, docs146; consume original support,
+then current-base full Rust/Go/frontend, affected independent NEW policy
+comparison, provider CI and ONE native review of the ready exact head. Old904
+approval/186 comparisons are historical. Real LimitReader/heap/CRC/PNG/archive/
+decoder/cancel/runtime/SQL/custody/presentation, all full5.N/5.10 and merge stay
+OPEN. No optional artwork or title fallback behavior is implemented.

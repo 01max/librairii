@@ -4,8 +4,8 @@
   "files": [
     {
       "path": "crates/librairii-core/src/import/studio_json/mod.rs",
-      "bytes": 7553,
-      "sha256": "00ad512414756b575f3c289210f37e202e7707c4d87bb8ed6546d7711fc76d62",
+      "bytes": 7784,
+      "sha256": "816ee4fb753dc438c873ad64d06f5e1ef996ef85d2beb9655c1097552243b086",
       "kind": "translated",
       "recipe": "Translate only ordered fixed studioStory/stageNode string/null/type-error/array-reuse behavior and Decode-first-value-before-reduction, saved-error-before-trailing order. Authored integration uses existing import-local UUID/reference/regular-thumbnail-presence policy before projecting accepted Title/Description through the separately mapped frozen boundary trim. No Go reflection/runtime, PNG or inspection proof.",
       "sources": [
@@ -154,6 +154,46 @@
         "LICENSE-UNICODE-V3.txt",
         "PATENTS-GO.txt"
       ]
+    },
+    {
+      "path": "crates/librairii-core/src/import/studio_json/optional.rs",
+      "bytes": 3989,
+      "sha256": "c9a7dae19dee46bf45138b57d4e8bb66f5b1f45ea49b829383f6a60ef0d42a3e",
+      "kind": "translated",
+      "recipe": "Translate only frozen readEmbeddedMetadata JSON-only literal three-string struct, ordered string/null/saved-type rules and first Decode then success-only ensureJSONEnd, with shared private scanner/unquote/fixed-schema fold and finish ordering. Authored supplied Inventory/Option-bytes selection and existing import-local canonical UUID comparison preserve absence versus present-empty; mandatory identity stays unchanged. stageNodes/image/audio are unknown syntax-only values. Boundary text delegates to separately mapped frozen trim. No archive read/has implementation, IO, image, reflection/runtime or inspection proof.",
+      "sources": [
+        {
+          "path": "Go1.26.5/src/encoding/json/decode.go",
+          "sha256": "a91535f18f9a2c8380448b1c84c4c2017dbe3d530a10faf8babf03494042da48",
+          "header_sha256": "47c6ebe8449f5f9e86e7042141dcc9c2607daf76ec247c9e649fa9fc647df3da",
+          "selection": "json-v1-fixed-reducer"
+        },
+        {
+          "path": "Go1.26.5/src/encoding/json/stream.go",
+          "sha256": "bb26b2442db6a686fc7f823ea9cc89babe26ac988ec7d8caf4a157aeb60d92f2",
+          "header_sha256": "78cca841388a8bdf39db8da07f304959864eca2a6c4676d245a1e6356e6ab0be",
+          "selection": "json-v1-decoder-order"
+        },
+        {
+          "path": "oracle73a93303/internal/inspection/zip_inspector.go",
+          "sha256": "0a3031a22814d959dff0c1f99bfe96d50ca08df36b0434c6dbaa23747d97b1ba",
+          "header_sha256": "cf8e171a2727eda57b7321b040bf352d96f7858b9ef15c27001a17f432330d1b",
+          "selection": "studio-text-and-optional-metadata-boundary"
+        }
+      ],
+      "notices": [
+        "LICENSE-GO-BSD.txt",
+        "PATENTS-GO.txt"
+      ]
+    },
+    {
+      "path": "crates/librairii-core/src/import/studio_json/optional/tests.rs",
+      "bytes": 10448,
+      "sha256": "fb177a22bab440e8ba327a845c1415bc032a2376eed09e8ac023d6feceb6d259",
+      "kind": "authored",
+      "recipe": "Authored synthetic supplied-data regression inputs/assertions for selection, optional versus mandatory UUID, raw primary preservation, known strings and unknown Studio fields, ordered error/duplicate/null semantics, exact trimming/replacements and byte/depth policy edges. No upstream test code, generated goldens, real archives/images/reads or effects.",
+      "sources": [],
+      "notices": []
     }
   ]
 }

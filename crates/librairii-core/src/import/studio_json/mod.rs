@@ -8,10 +8,12 @@
 
 //! Private supplied-byte JSONv1 decoder, not an archive or generic JSON API.
 
+mod optional;
 mod scanner;
 mod strings;
 mod text;
 
+pub use optional::project_optional_metadata;
 pub use text::MetadataText;
 
 use super::{
@@ -166,6 +168,15 @@ fn decode(input: &[u8]) -> Result<Story, DecodeFailure> {
         }
         _ => save_type(&mut error, "story"),
     }
+    finish_decode(input, end, error)?;
+    Ok(story)
+}
+
+fn finish_decode(
+    input: &[u8],
+    end: usize,
+    error: Option<DecodeFailure>,
+) -> Result<(), DecodeFailure> {
     if let Some(error) = error {
         return Err(error);
     }
@@ -176,7 +187,7 @@ fn decode(input: &[u8]) -> Result<Story, DecodeFailure> {
     if trailing != input.len() {
         return Err(DecodeFailure::Trailing { offset: trailing });
     }
-    Ok(story)
+    Ok(())
 }
 
 /// Validate already-materialized STUdio JSON bytes followed by supplied entry
