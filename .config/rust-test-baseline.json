@@ -903,6 +903,34 @@
         "x86_64-apple-darwin",
         "x86_64-unknown-linux-gnu"
       ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "platform::windows::tests::windows_metadata_handles_directory_kind_wrong_type_missing_and_concurrent_queries",
+      "targets": [
+        "x86_64-pc-windows-msvc"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "platform::windows::tests::windows_metadata_pins_block_delete_rename_until_actual_handle_release",
+      "targets": [
+        "x86_64-pc-windows-msvc"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "platform::windows::tests::windows_metadata_refuses_hardlink_and_reparse_aliases_without_following_them",
+      "targets": [
+        "x86_64-pc-windows-msvc"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "platform::windows::tests::windows_query_retains_volume_and_128bit_id_across_handles_and_content_changes",
+      "targets": [
+        "x86_64-pc-windows-msvc"
+      ]
     }
   ]
 }
