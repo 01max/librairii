@@ -17,8 +17,9 @@ of the final head and clean-checkout checks; unavailable target evidence is inco
 | 3.2 | 886b07b828663368f8fcf7cc2e5d990d41f92398 | Typed identity bytes/ranges, distinct group scope, unapproved review default, typed errors and compile-fail boundary |
 | 3.3 | ec318f5 | Stable rustfmt and Clippy, compiler warnings denied in checks |
 | 3.4 | f0c1921 | Owned fresh roots, missing/external/swapped/symlink rejection, loopback HTTP bytes; nextest CI reports and separate doctests |
-| 3.5 | Pending commit | Locked check facade, dependency direction and refusing desktop process test |
-| 3.6–3.8 | Pending | Implementation follows the numbered OpenSpec tasks |
+| 3.5 | 586ff2b16a322155fab2c2fa0551c47dac27f706 | Locked check facade, dependency direction and refusing desktop process test |
+| 3.6 | Pending commit | Native four-target CI definition; actual runs and release desktop evidence pending |
+| 3.7–3.8 | Pending | Implementation follows the numbered OpenSpec tasks |
 | 3.9 | Pending | Independent review and clean-checkout/native target evidence |
 
 ## Baseline pins and boundaries
@@ -81,3 +82,28 @@ are not checked in.
 currently empty/default features for the foundations only. There are no shipping
 GUI combinations yet. Each native host runs all workspace tests/targets and
 separate doctests; do not relabel cross-compilation as native execution evidence.
+
+## Native CI and prerequisites
+
+The additive Rust workflow always runs all workspace checks, including previous
+Rust tests, on the four configurations. No path filters or continue-on-error.
+A required aggregate refuses failed, cancelled and skipped matrix outcomes.
+Official [runner labels](https://docs.github.com/en/actions/reference/runners/github-hosted-runners)
+were checked on 2026-10-20: macos-15 is ARM, macos-15-intel is Intel,
+ubuntu-24.04 is x64, windows-2025 is x64. Each job asserts the actual rustc host.
+Standard hosted CI headless execution does not establish real desktop/Intel GUI,
+assistive technology, GPU/software, signing, installation or packaged workflows.
+Missing physical host evidence from section2 remains incomplete.
+
+Prerequisites: macOS15 Xcode/Command Line Tools SDK and linker (deployment15.0);
+Ubuntu24.04 gcc/binutils/glibc and pkg-config; Windows x64 MSVC Build Tools and
+Windows SDK. No GUI/native-library requirements exist in this graph yet. Toolkit,
+SQLite/archive and renderer prerequisites must be added after qualification.
+Ubuntu installs reuse support PR40's signed official archive helper once merged;
+until that ancestry is integrated, the Rust Ubuntu lane is deliberately incomplete.
+No paid runner/tool purchases are introduced.
+
+Action revisions: official actions/checkout3d3c42e5 (v7.0.1) and
+upload-artifactcf430e03 (v7.0.2), verified upstream signed commit metadata and
+Node24 action entry points on 2026-10-20. Checkout credentials are not persisted;
+workflow permissions are contents:read, no signing or deployment secrets.
