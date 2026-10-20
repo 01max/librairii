@@ -17,6 +17,17 @@ NOTICE_REQUIREMENTS = {
 }
 
 
+NOTICE_ORIGINS = {
+    'LICENSE-GO-BSD.txt': 'go-xtext-LICENSE.txt',
+    'PATENTS-GO.txt': 'go-xtext-PATENTS.txt',
+    'LICENSE-UNICODE-V3.txt': 'current/unicode-license.txt',
+    'LICENSE-CLDR32-UNICODE.txt': 'cldr32-unicode-license.txt',
+    'LICENSE-CLDR32-APACHE.txt': 'cldr32-apache-license.txt',
+    'LICENSE-CC0.txt': 'cc0-1.0-legalcode.txt',
+    'PROVENANCE.md': None,
+}
+
+
 def digest(data):
     return hashlib.sha256(data).hexdigest()
 
@@ -124,6 +135,9 @@ def check(root):
     if names != actual_names:
         raise ValueError('extra or missing notice files')
     for record in notice_records:
+        if (set(record) != {'path', 'bytes', 'sha256', 'upstream_path'}
+                or record['upstream_path'] != NOTICE_ORIGINS[record['path']]):
+            raise ValueError('unreviewed upstream notice origin')
         pinned(notice_root, record)
         if record['upstream_path'] is not None:
             original = next(r for r in index['noticePayloads'] if r['path'] == record['upstream_path'])

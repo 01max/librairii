@@ -90,6 +90,21 @@ class SourcePolicy(unittest.TestCase):
                 gate.check(self.root)
             path.unlink()
 
+        notice = self.bundle['notices'][0]
+        path = self.root / self.bundle['notices_root'] / notice['path']
+        original = path.read_bytes()
+        replacement = b'Forged upstream terms in an owned negative fixture.\n'
+        path.write_bytes(replacement)
+        changed = copy.deepcopy(self.registry)
+        changed_notice = changed['bundles'][0]['notices'][0]
+        changed_notice.update(bytes=len(replacement), sha256=gate.digest(replacement), upstream_path=None)
+        self.save_registry(changed)
+        with self.assertRaisesRegex(ValueError, 'notice origin'):
+            gate.check(self.root)
+        # A self-consistent re-pin cannot turn an upstream notice into authored policy.
+        path.write_bytes(original)
+        self.save_registry(self.registry)
+
     def test_alias_or_traversal_paths_are_rejected_before_reading(self):
         for relative in ['../outside', '/absolute', 'C:/absolute', 'a\\b', 'a//b', 'a/./b']:
             with self.subTest(path=relative), self.assertRaises(ValueError):
