@@ -2802,6 +2802,8 @@ select:focus-visible {
 }
 .library-location { overflow-wrap: anywhere; user-select: text; }
 
+.flag-feedback + .active-query { margin-top: 0; }
+
 .flag-feedback { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px; margin: 12px 0; border: 1px solid var(--line); border-radius: 8px; background: var(--white); }
 
 .story-card { position: relative; }
