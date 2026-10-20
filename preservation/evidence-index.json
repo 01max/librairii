@@ -198,6 +198,16 @@
         "database-contract.md"
       ],
       "verification": "Two146-file exact-oracle exports byte-identical; repeated semantic checker leaves all finalized DBs unchanged; retained Go preferences relocation/restart/corruption tests pass.",
+      "status": "implemented; external rerun pending",
+      "commit": "30efe66aea3afe76197bb44d1cfb43274058aed8"
+    },
+    {
+      "finding": "Optional P23 traceability suggestion in initial AO review",
+      "correction": "Map independent Broken mutation, guarded Undo and legacy migration requirements explicitly to P23 while retaining existing P17/P24/P46 links.",
+      "evidence": [
+        "spec-reconciliation/effective-requirements.json"
+      ],
+      "verification": "All4 affected requirement rows include P23; JSON parses; canonical specs are unchanged.",
       "status": "implemented; external rerun pending"
     }
   ]

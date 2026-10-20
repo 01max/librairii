@@ -1325,8 +1325,9 @@
         "User clears a flag on an invalid archive"
       ],
       "parity_ids": [
-        "P24",
         "P17",
+        "P23",
+        "P24",
         "P46"
       ],
       "source": "specs/story-broken-flag/spec.md",
@@ -1345,8 +1346,9 @@
         "Application is not ready for mutation"
       ],
       "parity_ids": [
-        "P24",
         "P17",
+        "P23",
+        "P24",
         "P46"
       ],
       "source": "specs/story-broken-flag/spec.md",
@@ -1399,8 +1401,9 @@
         "Flag write fails or changes nothing"
       ],
       "parity_ids": [
-        "P24",
         "P17",
+        "P23",
+        "P24",
         "P46"
       ],
       "source": "specs/story-broken-flag/spec.md",
@@ -1417,8 +1420,9 @@
         "Tag ID is reused after migration"
       ],
       "parity_ids": [
-        "P24",
         "P17",
+        "P23",
+        "P24",
         "P46"
       ],
       "source": "specs/story-broken-flag/spec.md",
