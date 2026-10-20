@@ -214,3 +214,29 @@ workaround or current-job cancellation was used. That historical evidence does
 not approve this changed 6.5 implementation; the separate commit and subsequent
 owner5 support receive fresh exact-head verification. All full 6.N, 6.8 and 6.9
 remain open, canonical/global-index bytes and preservation inputs unchanged.
+
+### Native correction: persistence fencing and running cancellation
+
+Native review `f0fdfbca` on `dd480756ed542dabdd1da43413fb78da529904d3`
+required separating temporary dispatch fencing from running-work cancellation.
+The initial implementation signalled running siblings on the first retriable
+nonapplication response. A two-worker regression failed on that head with
+`one transient failure cancelled the sibling`, reproducing the behavior change
+against frozen `manager.go:778–808`.
+
+Dispatch fencing still retains the bounded owner while retry/readback is pending.
+Running-work cancellation now has a separate sticky slot flag, set only when
+CompleteItem or Finish exhausts its three attempts and escalates to Interrupt.
+The regression holds one sibling inside its executor while the other persists:
+one transient failure followed by success at tick 10 leaves the sibling signal
+unset; failures at ticks 0/10/20 set it only on interruption escalation. Returned
+executor facts and independent errors remain unchanged in both cases. No thread,
+port, dependency or storage capability is added.
+
+All 29 app tests pass with zero ignored/filtered and all-target Clippy passes
+with warnings denied after the correction. The new assertion requires owner5's
+one additive actual discovery entry, preserving the 80 prior entries and scopes.
+The dedicated fix and original support receive fresh combined-head review and
+provider checks; the prior head's verdict is not carried forward. This remains
+controlled partial 6.5, with every full-section/effect/native-presentation gate
+open.

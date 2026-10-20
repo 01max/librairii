@@ -866,3 +866,82 @@ fn j65_saved_terminal_keeps_owned_result_until_actual_report_transfer_without_pe
     );
     Ok(())
 }
+
+#[test]
+fn j65_running_sibling_is_cancelled_only_after_persistence_retry_exhaustion() -> TestResult {
+    for exhaust in [false, true] {
+        let gates = Gates::new();
+        // Keep item 2 executing while item 1 enters persistence. These are
+        // existing harness gates, released by TerminalRig cleanup on failure.
+        gates.cancel.close();
+        gates.progress.close();
+        let steps = if exhaust {
+            vec![WriteStep::Fail, WriteStep::Fail, WriteStep::Fail]
+        } else {
+            vec![WriteStep::Fail]
+        };
+        let mut rig = TerminalRig::new(2, gates.clone(), &steps, &[])?;
+        let sibling = Arc::new(Mutex::new(None::<WorkCancellation>));
+        let observed = Arc::clone(&sibling);
+        let executing = gates.clone();
+        *guard(&rig.on_progress) = Some(Arc::new(move |item, _, work| {
+            if item.ordinal == 1 {
+                *guard(&observed) = Some(work);
+                executing.cancel.open();
+                executing.progress.pass();
+            } else {
+                executing.cancel.pass();
+            }
+        }));
+        rig.created(input(94, OperationKind::Import, 2, 37))?;
+        rig.due(10, Action::Write)?;
+        let is_cancelled = || {
+            guard(&sibling)
+                .as_ref()
+                .is_some_and(WorkCancellation::is_requested)
+        };
+        assert!(
+            !is_cancelled(),
+            "one transient failure cancelled the sibling"
+        );
+        assert_eq!(rig.handle.measurements().fences, 1);
+        rig.handle.advance_persistence_time(10)?;
+        if exhaust {
+            rig.due(20, Action::Write)?;
+            assert!(!is_cancelled(), "retry budget is not exhausted yet");
+            rig.handle.advance_persistence_time(20)?;
+        }
+        until(|| rig.handle.measurements().recorded == 1)?;
+        assert_eq!(is_cancelled(), exhaust);
+        {
+            let script = guard(&rig.script);
+            assert_eq!(
+                script
+                    .writes
+                    .iter()
+                    .filter(|(w, _)| matches!(w.command, Command::CompleteItem { .. }))
+                    .map(|(_, tick)| *tick)
+                    .collect::<Vec<_>>(),
+                if exhaust {
+                    vec![0, 10, 20]
+                } else {
+                    vec![0, 10]
+                }
+            );
+            assert_eq!(
+                script
+                    .writes
+                    .iter()
+                    .any(|(w, _)| matches!(w.command, Command::Interrupt { .. })),
+                exhaust
+            );
+        }
+        gates.progress.open();
+        until(|| rig.handle.measurements().recorded == 2)?;
+        assert!(guard(&rig.store).recorded.iter().all(|result| {
+            result.fact == "observed-success" && result.errors == ["independent-cleanup-diagnostic"]
+        }));
+        assert!(rig.finish()?.joined);
+    }
+    Ok(())
+}

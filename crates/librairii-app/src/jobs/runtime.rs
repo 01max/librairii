@@ -31,6 +31,7 @@ struct Working {
     export: bool,
     cancelled: Arc<AtomicBool>,
     fenced: bool,
+    persistence_cancelled: bool,
     witness_bytes: usize,
     diagnostic_bytes: usize,
     provisional: bool,
@@ -814,8 +815,17 @@ fn coordinator_loop(shared: &Arc<Shared>, callbacks: CoordinatorCallbacks) {
 fn sync_driver(shared: &Shared, index: usize, driver: &Driver) {
     let mut state = lock(&shared.state);
     let newly_fenced = state.workers[index].as_ref().is_some_and(|w| !w.fenced) && driver.fenced();
+    // Temporary dispatch exclusion is conservative while acknowledgement is
+    // unresolved. Running work follows Go's separate cancellation boundary:
+    // only escalation after the CompleteItem/Finish retry budget is exhausted.
+    let interrupting = matches!(driver.witness.command, terminal::Command::Interrupt { .. });
+    let newly_interrupting = state.workers[index]
+        .as_ref()
+        .is_some_and(|w| !w.persistence_cancelled)
+        && interrupting;
     if let Some(worker) = &mut state.workers[index] {
         worker.fenced |= driver.fenced();
+        worker.persistence_cancelled |= interrupting;
         worker.witness_bytes = driver.witness_bytes();
         worker.diagnostic_bytes = driver.diagnostic_bytes();
         worker.provisional = driver.provisional;
@@ -827,7 +837,7 @@ fn sync_driver(shared: &Shared, index: usize, driver: &Driver) {
             observed_tick: 0,
         });
     }
-    if newly_fenced {
+    if newly_interrupting {
         for worker in state.workers.iter().flatten() {
             if worker.key.job == driver.witness.stamp.item.job
                 && worker.progress.stamp.generation == driver.witness.stamp.generation
@@ -835,6 +845,8 @@ fn sync_driver(shared: &Shared, index: usize, driver: &Driver) {
                 worker.cancelled.store(true, Ordering::Release);
             }
         }
+    }
+    if newly_fenced {
         state.source_version = state.source_version.wrapping_add(1);
     }
     state.changed();
@@ -933,6 +945,7 @@ fn worker_loop(shared: Arc<Shared>, index: usize, callbacks: WorkerCallbacks) {
                         export: item.kind == librairii_core::OperationKind::Export,
                         cancelled: Arc::new(AtomicBool::new(item.cancel_requested)),
                         fenced: false,
+                        persistence_cancelled: false,
                         witness_bytes: 0,
                         diagnostic_bytes: 0,
                         provisional: false,
