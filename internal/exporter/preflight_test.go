@@ -5,15 +5,16 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"reflect"
 	"testing"
 
 	"github.com/01max/librairii/internal/catalog"
+	"github.com/01max/librairii/internal/collections"
 	"github.com/01max/librairii/internal/library"
 	"github.com/01max/librairii/internal/operations"
-	"github.com/01max/librairii/internal/shelves"
 	"github.com/01max/librairii/internal/storage"
 )
 
@@ -28,6 +29,7 @@ func TestPreflightReportsReadySkippedAndConflictedStories(t *testing.T) {
 	ready := writeManagedExportStory(t, layout, 1, "ready.zip", []byte("ready"))
 	missing := ready
 	missing.ID = 2
+	missing.UUID = fmt.Sprintf("00112233-4455-4677-8899-%012d", 2)
 	missing.Title = "Missing"
 	missing.OriginalFilename = "missing.zip"
 	missing.Verification = library.CompatibilityMissing
@@ -152,7 +154,7 @@ func TestPreflightBlocksEmptyInvalidShelfAndUnwritableDestination(t *testing.T) 
 	}
 	resolver, err := NewResolver(
 		libraryQuery,
-		failingShelfResolver{err: shelves.ErrShelfNeedsAttention},
+		failingShelfResolver{err: collections.ErrCollectionNeedsAttention},
 	)
 	if err != nil {
 		t.Fatal(err)
@@ -331,8 +333,8 @@ type failingShelfResolver struct {
 func (f failingShelfResolver) Open(
 	context.Context,
 	int64,
-) (shelves.OpenedShelf, error) {
-	return shelves.OpenedShelf{}, f.err
+) (collections.OpenedCollection, error) {
+	return collections.OpenedCollection{}, f.err
 }
 
 func writeManagedExportStory(
@@ -355,7 +357,7 @@ func writeManagedExportStory(
 	}
 	return library.ExportStory{
 		ID:                  id,
-		UUID:                "00112233-4455-4677-8899-aabbccddeeff",
+		UUID:                fmt.Sprintf("00112233-4455-4677-8899-%012d", id),
 		Title:               name,
 		OriginalFilename:    name,
 		DetectedFormat:      string(catalog.FormatZIP),

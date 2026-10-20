@@ -92,23 +92,20 @@ func TestBrokenVisibilityAppliesBeforePaginationCountingAndExport(t *testing.T) 
 	ctx := context.Background()
 	query, repository, connection := newLibraryQuery(t, nil)
 	damaged := createQueryableStory(t, repository, "00112233-4455-4677-8899-aabbccddeeff", "Damaged", "a")
-	healthy := createQueryableStory(t, repository, "11112222-3333-4444-8555-666677778888", "Healthy", "b")
+	createQueryableStory(t, repository, "11112222-3333-4444-8555-666677778888", "Healthy", "b")
 	flags := NewBrokenFlags(connection)
 	if _, err := flags.Set(ctx, []int64{damaged.ID}, true); err != nil {
 		t.Fatal(err)
 	}
-	for _, include := range []bool{false, true} {
-		request := StoryLibraryQuery{IncludeBroken: include, Page: 1, PageSize: 1}
+	for _, pageNumber := range []int{1, 2} {
+		request := StoryLibraryQuery{Page: pageNumber, PageSize: 1}
 		page, err := query.Search(ctx, request)
 		if err != nil {
 			t.Fatal(err)
 		}
-		expected := 1
-		if include {
-			expected = 2
-		}
+		expected := 2
 		if page.TotalItems != expected {
-			t.Fatalf("include=%t: total=%d", include, page.TotalItems)
+			t.Fatalf("page=%d: total=%d", pageNumber, page.TotalItems)
 		}
 		count, err := query.Count(ctx, request)
 		if err != nil || count != expected {
@@ -118,9 +115,7 @@ func TestBrokenVisibilityAppliesBeforePaginationCountingAndExport(t *testing.T) 
 		if err != nil || len(exports) != expected {
 			t.Fatalf("exports=%d, %v", len(exports), err)
 		}
-		if !include && (page.Stories[0].ID != healthy.ID || page.Stories[0].Broken) {
-			t.Fatalf("unexpected default result: %#v", page)
-		}
+
 	}
 	detail, err := query.Detail(ctx, damaged.ID)
 	if err != nil || !detail.Story.Broken {
@@ -285,7 +280,7 @@ func TestStoryLibraryQueryComposesBooleanAndChoiceGroups(t *testing.T) {
 	assertQueryStoryIDs(
 		t,
 		query,
-		StoryLibraryQuery{IncludeBroken: true, BooleanFilters: []BooleanFilter{{
+		StoryLibraryQuery{BooleanFilters: []BooleanFilter{{
 			DefinitionID: broken.ID,
 			State:        BooleanTrue,
 		}}},
@@ -294,7 +289,7 @@ func TestStoryLibraryQueryComposesBooleanAndChoiceGroups(t *testing.T) {
 	assertQueryStoryIDs(
 		t,
 		query,
-		StoryLibraryQuery{IncludeBroken: true, BooleanFilters: []BooleanFilter{{
+		StoryLibraryQuery{BooleanFilters: []BooleanFilter{{
 			DefinitionID: broken.ID,
 			State:        BooleanFalse,
 		}}},
@@ -304,7 +299,7 @@ func TestStoryLibraryQueryComposesBooleanAndChoiceGroups(t *testing.T) {
 	assertQueryStoryIDs(
 		t,
 		query,
-		StoryLibraryQuery{IncludeBroken: true,
+		StoryLibraryQuery{
 			ChoiceFilters: []ChoiceFilter{
 				{DefinitionID: mood.ID, ValueIDs: []int64{calm.ID, adventure.ID}},
 				{DefinitionID: theme.ID, ValueIDs: []int64{night.ID}},
@@ -316,7 +311,7 @@ func TestStoryLibraryQueryComposesBooleanAndChoiceGroups(t *testing.T) {
 	assertQueryStoryIDs(
 		t,
 		query,
-		StoryLibraryQuery{IncludeBroken: true,
+		StoryLibraryQuery{
 			BooleanFilters: []BooleanFilter{{
 				DefinitionID: broken.ID,
 				State:        BooleanFalse,
@@ -331,7 +326,7 @@ func TestStoryLibraryQueryComposesBooleanAndChoiceGroups(t *testing.T) {
 	assertQueryStoryIDs(
 		t,
 		query,
-		StoryLibraryQuery{IncludeBroken: true, BooleanFilters: []BooleanFilter{{
+		StoryLibraryQuery{BooleanFilters: []BooleanFilter{{
 			DefinitionID: broken.ID,
 			State:        BooleanIgnored,
 		}}},

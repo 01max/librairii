@@ -1,0 +1,39 @@
+import {type PropsWithChildren, useEffect, useRef} from 'react';
+import ModalBackdrop from './ModalBackdrop';
+import {useModalFocus} from './modal-focus';
+import {t} from './i18n';
+
+export default function ShelfDialog({title, busy, onClose, children}: PropsWithChildren<{
+    title: string; busy: boolean; onClose: () => void;
+}>) {
+    const panel = useRef<HTMLElement>(null);
+    const close = useRef<HTMLButtonElement>(null);
+    useEffect(() => {
+        const escape = (event: KeyboardEvent) => { if (event.key === 'Escape' && !busy) { event.stopImmediatePropagation(); onClose(); } };
+        document.addEventListener('keydown', escape, true);
+        return () => document.removeEventListener('keydown', escape, true);
+    }, [busy, onClose]);
+    useEffect(() => {
+        const changed: Array<[HTMLElement, boolean]> = [];
+        let ancestor: HTMLElement | null = panel.current?.parentElement ?? null;
+        while (ancestor && !ancestor.classList.contains('app')) {
+            const parent: HTMLElement | null = ancestor.parentElement;
+            if (!parent) break;
+            for (const sibling of parent.children) {
+                if (sibling !== ancestor && sibling instanceof HTMLElement) {changed.push([sibling, sibling.inert]); sibling.setAttribute('inert', '');}
+            }
+            ancestor = parent;
+        }
+        return () => {for (const [element, previous] of changed.reverse()) element.toggleAttribute('inert', previous);};
+    }, []);
+    useModalFocus(panel, close);
+    return <ModalBackdrop onDismiss={onClose} disabled={busy}>
+        <section ref={panel} className="detail-dialog curated-dialog" role="dialog" aria-modal="true" aria-label={title}>
+            <div className="curated-dialog-heading">
+                <div><div className="dialog-kicker">{t('Shelves')}</div><h3>{title}</h3></div>
+                <button ref={close} type="button" disabled={busy} onClick={onClose}>{t('Cancel')}</button>
+            </div>
+            {children}
+        </section>
+    </ModalBackdrop>;
+}

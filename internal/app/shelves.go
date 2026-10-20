@@ -3,116 +3,121 @@ package app
 import (
 	"context"
 	"errors"
-
 	"github.com/01max/librairii/internal/library"
 	"github.com/01max/librairii/internal/shelves"
 )
 
-func (a *Application) ListShelves(ctx context.Context, includeBroken ...library.BrokenVisibility) ShelfListResponse {
-	summaries, err := a.shelves.ListShelves(ctx, includeBroken...)
+type ShelfPort interface {
+	ListShelves(context.Context) ([]shelves.Shelf, error)
+	CreateShelf(context.Context, string, []string) (shelves.Shelf, error)
+	OpenShelf(context.Context, int64, library.StoryLibraryQuery) (shelves.Evaluation, error)
+	RenameShelf(context.Context, int64, string) (shelves.Shelf, error)
+	DuplicateShelf(context.Context, int64, string) (shelves.Shelf, error)
+	DeleteShelf(context.Context, int64) error
+	ReorderShelves(context.Context, []int64) error
+	AddStoriesToShelf(context.Context, int64, []string) (shelves.Shelf, error)
+	RemoveStoriesFromShelf(context.Context, int64, []string) (shelves.Shelf, error)
+	SetShelfStoryProtected(context.Context, int64, string, bool) (shelves.Shelf, error)
+	ReorderShelfStories(context.Context, int64, []string) (shelves.Shelf, error)
+	ListShelfExclusions(context.Context, int64) ([]shelves.Exclusion, error)
+	ClearShelfExclusion(context.Context, int64, string) (shelves.Shelf, error)
+	AttachShelfSources(context.Context, int64, []int64) (shelves.Shelf, error)
+	PreviewShelfUpdate(context.Context, int64) (shelves.Review, error)
+	ApplyShelfUpdate(context.Context, int64, string, []shelves.Decision) (shelves.Shelf, error)
+	PreviewShelfCreation(context.Context, shelves.CreationRequest) (shelves.Review, error)
+	CreateShelfFromReview(context.Context, string, []string) (shelves.Shelf, error)
+	PreviewShelfSources(context.Context, int64, []int64) (shelves.SourceChangeReview, error)
+	ApplyShelfSources(context.Context, int64, string, bool, []shelves.Decision) (shelves.Shelf, error)
+	PreviewCollectionDeletion(context.Context, int64) (shelves.CollectionDeletionReview, error)
+	ApplyCollectionDeletion(context.Context, string, bool, []shelves.ShelfDecisions) error
+}
+type ShelfListResponse struct {
+	Shelves []shelves.Shelf `json:"shelves"`
+	Error   *APIError       `json:"error,omitempty"`
+}
+type ShelfResponse struct {
+	Shelf *shelves.Shelf `json:"shelf,omitempty"`
+	Error *APIError      `json:"error,omitempty"`
+}
+type ShelfEvaluationResponse struct {
+	Evaluation *shelves.Evaluation `json:"evaluation,omitempty"`
+	Error      *APIError           `json:"error,omitempty"`
+}
+type ShelfExclusionsResponse struct {
+	Exclusions []shelves.Exclusion `json:"exclusions"`
+	Error      *APIError           `json:"error,omitempty"`
+}
+
+func shelfAPIError(err error) *APIError {
+	switch {
+	case errors.Is(err, ErrImportRuntimeNotReady):
+		return NewAPIError(ErrorNotReady, "Shelves are unavailable until storage is ready.")
+	case errors.Is(err, shelves.ErrInvalidInput), errors.Is(err, library.ErrInvalidStoryLibraryQuery):
+		return NewAPIError(ErrorInvalidInput, "The shelf request is invalid.")
+	case errors.Is(err, shelves.ErrNotFound), errors.Is(err, shelves.ErrConflict):
+		return NewAPIError(ErrorConflict, "The shelf changed. Refresh and try again.")
+	default:
+		return NewAPIError(ErrorInternal, "The shelf action could not be completed.")
+	}
+}
+func (a *Application) ListShelves(ctx context.Context) ShelfListResponse {
+	if a.shelves == nil {
+		return ShelfListResponse{Error: NewAPIError(ErrorNotReady, "Shelves are unavailable until storage is ready.")}
+	}
+	result, err := a.shelves.ListShelves(ctx)
 	if err != nil {
 		return ShelfListResponse{Error: shelfAPIError(err)}
 	}
-	return ShelfListResponse{Shelves: summaries}
+	return ShelfListResponse{Shelves: result}
 }
 
-func (a *Application) CreateShelf(
-	ctx context.Context,
-	name string,
-	query library.StoryLibraryQuery,
-) ShelfResponse {
-	if response := a.requireShelfMutation(); response != nil {
-		return *response
+func (a *Application) CreateShelf(ctx context.Context, name string, storyUUIDs []string) ShelfResponse {
+	if a.shelves == nil || !a.Status().MutationsAllowed {
+		return ShelfResponse{Error: NewAPIError(ErrorNotReady, "Shelves are unavailable until storage is ready.")}
 	}
-	shelf, err := a.shelves.CreateShelf(ctx, name, query)
+	result, err := a.shelves.CreateShelf(ctx, name, storyUUIDs)
 	if err != nil {
 		return ShelfResponse{Error: shelfAPIError(err)}
 	}
-	return ShelfResponse{Shelf: &shelf}
+	return ShelfResponse{Shelf: &result}
 }
 
-func (a *Application) OpenShelf(
-	ctx context.Context,
-	shelfID int64,
-	request library.ListRequest,
-) ShelfEvaluationResponse {
-	evaluation, err := a.shelves.OpenShelf(ctx, shelfID, request)
+func (a *Application) OpenShelf(ctx context.Context, shelfID int64, query library.StoryLibraryQuery) ShelfEvaluationResponse {
+	if a.shelves == nil {
+		return ShelfEvaluationResponse{Error: NewAPIError(ErrorNotReady, "Shelves are unavailable until storage is ready.")}
+	}
+	result, err := a.shelves.OpenShelf(ctx, shelfID, query)
 	if err != nil {
 		return ShelfEvaluationResponse{Error: shelfAPIError(err)}
 	}
-	return ShelfEvaluationResponse{Evaluation: &evaluation}
+	return ShelfEvaluationResponse{Evaluation: &result}
 }
 
-func (a *Application) RenameShelf(
-	ctx context.Context,
-	shelfID int64,
-	name string,
-) ShelfResponse {
-	if response := a.requireShelfMutation(); response != nil {
-		return *response
+func (a *Application) RenameShelf(ctx context.Context, shelfID int64, name string) ShelfResponse {
+	if a.shelves == nil || !a.Status().MutationsAllowed {
+		return ShelfResponse{Error: NewAPIError(ErrorNotReady, "Shelves are unavailable until storage is ready.")}
 	}
-	shelf, err := a.shelves.RenameShelf(ctx, shelfID, name)
+	result, err := a.shelves.RenameShelf(ctx, shelfID, name)
 	if err != nil {
 		return ShelfResponse{Error: shelfAPIError(err)}
 	}
-	return ShelfResponse{Shelf: &shelf}
+	return ShelfResponse{Shelf: &result}
 }
 
-func (a *Application) DuplicateShelf(
-	ctx context.Context,
-	shelfID int64,
-	name string,
-) ShelfResponse {
-	if response := a.requireShelfMutation(); response != nil {
-		return *response
+func (a *Application) DuplicateShelf(ctx context.Context, shelfID int64, name string) ShelfResponse {
+	if a.shelves == nil || !a.Status().MutationsAllowed {
+		return ShelfResponse{Error: NewAPIError(ErrorNotReady, "Shelves are unavailable until storage is ready.")}
 	}
-	shelf, err := a.shelves.DuplicateShelf(ctx, shelfID, name)
+	result, err := a.shelves.DuplicateShelf(ctx, shelfID, name)
 	if err != nil {
 		return ShelfResponse{Error: shelfAPIError(err)}
 	}
-	return ShelfResponse{Shelf: &shelf}
+	return ShelfResponse{Shelf: &result}
 }
 
-func (a *Application) ReplaceShelfQuery(
-	ctx context.Context,
-	shelfID int64,
-	query library.StoryLibraryQuery,
-) ShelfResponse {
-	if response := a.requireShelfMutation(); response != nil {
-		return *response
-	}
-	shelf, err := a.shelves.ReplaceShelfQuery(ctx, shelfID, query)
-	if err != nil {
-		return ShelfResponse{Error: shelfAPIError(err)}
-	}
-	return ShelfResponse{Shelf: &shelf}
-}
-
-func (a *Application) ReorderShelves(
-	ctx context.Context,
-	orderedIDs []int64,
-) ShelfListResponse {
-	if !a.Status().MutationsAllowed {
-		return ShelfListResponse{Error: NewAPIError(
-			ErrorNotReady,
-			"Saved shelves are unavailable until storage is ready.",
-		)}
-	}
-	if _, err := a.shelves.ReorderShelves(ctx, orderedIDs); err != nil {
-		return ShelfListResponse{Error: shelfAPIError(err)}
-	}
-	return a.ListShelves(ctx)
-}
-
-func (a *Application) DeleteShelf(
-	ctx context.Context,
-	shelfID int64,
-) MutationResponse {
-	if !a.Status().MutationsAllowed {
-		return MutationResponse{Error: NewAPIError(
-			ErrorNotReady,
-			"Saved shelves are unavailable until storage is ready.",
-		)}
+func (a *Application) DeleteShelf(ctx context.Context, shelfID int64) MutationResponse {
+	if a.shelves == nil || !a.Status().MutationsAllowed {
+		return MutationResponse{Error: NewAPIError(ErrorNotReady, "Shelves are unavailable until storage is ready.")}
 	}
 	if err := a.shelves.DeleteShelf(ctx, shelfID); err != nil {
 		return MutationResponse{Error: shelfAPIError(err)}
@@ -120,43 +125,184 @@ func (a *Application) DeleteShelf(
 	return MutationResponse{Success: true}
 }
 
-func (a *Application) PreviewShelves(
-	ctx context.Context,
-	shelfIDs []int64,
-	includeBroken ...library.BrokenVisibility,
-) ShelfSelectionPreviewResponse {
-	preview, err := a.shelves.PreviewShelves(ctx, shelfIDs, includeBroken...)
+func (a *Application) ReorderShelves(ctx context.Context, orderedIDs []int64) MutationResponse {
+	if a.shelves == nil || !a.Status().MutationsAllowed {
+		return MutationResponse{Error: NewAPIError(ErrorNotReady, "Shelves are unavailable until storage is ready.")}
+	}
+	if err := a.shelves.ReorderShelves(ctx, orderedIDs); err != nil {
+		return MutationResponse{Error: shelfAPIError(err)}
+	}
+	return MutationResponse{Success: true}
+}
+
+func (a *Application) AddStoriesToShelf(ctx context.Context, shelfID int64, storyUUIDs []string) ShelfResponse {
+	if a.shelves == nil || !a.Status().MutationsAllowed {
+		return ShelfResponse{Error: NewAPIError(ErrorNotReady, "Shelves are unavailable until storage is ready.")}
+	}
+	result, err := a.shelves.AddStoriesToShelf(ctx, shelfID, storyUUIDs)
 	if err != nil {
-		return ShelfSelectionPreviewResponse{Error: shelfAPIError(err)}
+		return ShelfResponse{Error: shelfAPIError(err)}
 	}
-	return ShelfSelectionPreviewResponse{Preview: &preview}
+	return ShelfResponse{Shelf: &result}
 }
 
-func (a *Application) requireShelfMutation() *ShelfResponse {
-	if a.Status().MutationsAllowed {
-		return nil
+func (a *Application) RemoveStoriesFromShelf(ctx context.Context, shelfID int64, storyUUIDs []string) ShelfResponse {
+	if a.shelves == nil || !a.Status().MutationsAllowed {
+		return ShelfResponse{Error: NewAPIError(ErrorNotReady, "Shelves are unavailable until storage is ready.")}
 	}
-	return &ShelfResponse{Error: NewAPIError(
-		ErrorNotReady,
-		"Saved shelves are unavailable until storage is ready.",
-	)}
+	result, err := a.shelves.RemoveStoriesFromShelf(ctx, shelfID, storyUUIDs)
+	if err != nil {
+		return ShelfResponse{Error: shelfAPIError(err)}
+	}
+	return ShelfResponse{Shelf: &result}
 }
 
-func shelfAPIError(err error) *APIError {
-	switch {
-	case errors.Is(err, shelves.ErrInvalidShelfName),
-		errors.Is(err, shelves.ErrDuplicateShelfName),
-		errors.Is(err, shelves.ErrInvalidShelfOrder),
-		errors.Is(err, shelves.ErrInvalidShelfSelection),
-		errors.Is(err, shelves.ErrShelfCriteriaUnavailable),
-		errors.Is(err, shelves.ErrInvalidSavedLibraryQuery),
-		errors.Is(err, shelves.ErrUnsupportedSavedQueryVersion):
-		return NewAPIError(ErrorInvalidInput, "The saved shelf could not be validated.")
-	case errors.Is(err, shelves.ErrShelfNotFound):
-		return NewAPIError(ErrorConflict, "The saved shelf no longer exists.")
-	case errors.Is(err, shelves.ErrShelfNeedsAttention):
-		return NewAPIError(ErrorConflict, "The saved shelf needs attention before it can be opened.")
-	default:
-		return NewAPIError(ErrorInternal, "The saved shelf action could not be completed.")
+func (a *Application) SetShelfStoryProtected(ctx context.Context, shelfID int64, storyUUID string, protected bool) ShelfResponse {
+	if a.shelves == nil || !a.Status().MutationsAllowed {
+		return ShelfResponse{Error: NewAPIError(ErrorNotReady, "Shelves are unavailable until storage is ready.")}
 	}
+	result, err := a.shelves.SetShelfStoryProtected(ctx, shelfID, storyUUID, protected)
+	if err != nil {
+		return ShelfResponse{Error: shelfAPIError(err)}
+	}
+	return ShelfResponse{Shelf: &result}
+}
+
+func (a *Application) ReorderShelfStories(ctx context.Context, shelfID int64, orderedUUIDs []string) ShelfResponse {
+	if a.shelves == nil || !a.Status().MutationsAllowed {
+		return ShelfResponse{Error: NewAPIError(ErrorNotReady, "Shelves are unavailable until storage is ready.")}
+	}
+	result, err := a.shelves.ReorderShelfStories(ctx, shelfID, orderedUUIDs)
+	if err != nil {
+		return ShelfResponse{Error: shelfAPIError(err)}
+	}
+	return ShelfResponse{Shelf: &result}
+}
+
+func (a *Application) ListShelfExclusions(ctx context.Context, shelfID int64) ShelfExclusionsResponse {
+	if a.shelves == nil {
+		return ShelfExclusionsResponse{Error: NewAPIError(ErrorNotReady, "Shelves are unavailable until storage is ready.")}
+	}
+	result, err := a.shelves.ListShelfExclusions(ctx, shelfID)
+	if err != nil {
+		return ShelfExclusionsResponse{Error: shelfAPIError(err)}
+	}
+	return ShelfExclusionsResponse{Exclusions: result}
+}
+
+func (a *Application) ClearShelfExclusion(ctx context.Context, shelfID int64, storyUUID string) ShelfResponse {
+	if a.shelves == nil || !a.Status().MutationsAllowed {
+		return ShelfResponse{Error: NewAPIError(ErrorNotReady, "Shelves are unavailable until storage is ready.")}
+	}
+	result, err := a.shelves.ClearShelfExclusion(ctx, shelfID, storyUUID)
+	if err != nil {
+		return ShelfResponse{Error: shelfAPIError(err)}
+	}
+	return ShelfResponse{Shelf: &result}
+}
+
+type ShelfReviewResponse struct {
+	Review *shelves.Review `json:"review,omitempty"`
+	Error  *APIError       `json:"error,omitempty"`
+}
+
+func (a *Application) AttachShelfSources(ctx context.Context, shelfID int64, collectionIDs []int64) ShelfResponse {
+	if a.shelves == nil || !a.Status().MutationsAllowed {
+		return ShelfResponse{Error: NewAPIError(ErrorNotReady, "Shelves are unavailable until storage is ready.")}
+	}
+	result, err := a.shelves.AttachShelfSources(ctx, shelfID, collectionIDs)
+	if err != nil {
+		return ShelfResponse{Error: shelfAPIError(err)}
+	}
+	return ShelfResponse{Shelf: &result}
+}
+func (a *Application) PreviewShelfUpdate(ctx context.Context, shelfID int64) ShelfReviewResponse {
+	if a.shelves == nil {
+		return ShelfReviewResponse{Error: NewAPIError(ErrorNotReady, "Shelves are unavailable until storage is ready.")}
+	}
+	result, err := a.shelves.PreviewShelfUpdate(ctx, shelfID)
+	if err != nil {
+		return ShelfReviewResponse{Error: shelfAPIError(err)}
+	}
+	return ShelfReviewResponse{Review: &result}
+}
+func (a *Application) ApplyShelfUpdate(ctx context.Context, shelfID int64, token string, decisions []shelves.Decision) ShelfResponse {
+	if a.shelves == nil || !a.Status().MutationsAllowed {
+		return ShelfResponse{Error: NewAPIError(ErrorNotReady, "Shelves are unavailable until storage is ready.")}
+	}
+	result, err := a.shelves.ApplyShelfUpdate(ctx, shelfID, token, decisions)
+	if err != nil {
+		return ShelfResponse{Error: shelfAPIError(err)}
+	}
+	return ShelfResponse{Shelf: &result}
+}
+
+func (a *Application) PreviewShelfCreation(ctx context.Context, request shelves.CreationRequest) ShelfReviewResponse {
+	if a.shelves == nil {
+		return ShelfReviewResponse{Error: NewAPIError(ErrorNotReady, "Shelves are unavailable until storage is ready.")}
+	}
+	result, err := a.shelves.PreviewShelfCreation(ctx, request)
+	if err != nil {
+		return ShelfReviewResponse{Error: shelfAPIError(err)}
+	}
+	return ShelfReviewResponse{Review: &result}
+}
+func (a *Application) CreateShelfFromReview(ctx context.Context, token string, selectedUUIDs []string) ShelfResponse {
+	if a.shelves == nil || !a.Status().MutationsAllowed {
+		return ShelfResponse{Error: NewAPIError(ErrorNotReady, "Shelves are unavailable until storage is ready.")}
+	}
+	result, err := a.shelves.CreateShelfFromReview(ctx, token, selectedUUIDs)
+	if err != nil {
+		return ShelfResponse{Error: shelfAPIError(err)}
+	}
+	return ShelfResponse{Shelf: &result}
+}
+
+type ShelfSourceReviewResponse struct {
+	Review *shelves.SourceChangeReview `json:"review,omitempty"`
+	Error  *APIError                   `json:"error,omitempty"`
+}
+type CollectionDeletionReviewResponse struct {
+	Review *shelves.CollectionDeletionReview `json:"review,omitempty"`
+	Error  *APIError                         `json:"error,omitempty"`
+}
+
+func (a *Application) PreviewShelfSources(ctx context.Context, shelfID int64, collectionIDs []int64) ShelfSourceReviewResponse {
+	if a.shelves == nil {
+		return ShelfSourceReviewResponse{Error: NewAPIError(ErrorNotReady, "Shelves are unavailable until storage is ready.")}
+	}
+	result, err := a.shelves.PreviewShelfSources(ctx, shelfID, collectionIDs)
+	if err != nil {
+		return ShelfSourceReviewResponse{Error: shelfAPIError(err)}
+	}
+	return ShelfSourceReviewResponse{Review: &result}
+}
+func (a *Application) ApplyShelfSources(ctx context.Context, shelfID int64, token string, keepAll bool, decisions []shelves.Decision) ShelfResponse {
+	if a.shelves == nil || !a.Status().MutationsAllowed {
+		return ShelfResponse{Error: NewAPIError(ErrorNotReady, "Shelves are unavailable until storage is ready.")}
+	}
+	result, err := a.shelves.ApplyShelfSources(ctx, shelfID, token, keepAll, decisions)
+	if err != nil {
+		return ShelfResponse{Error: shelfAPIError(err)}
+	}
+	return ShelfResponse{Shelf: &result}
+}
+func (a *Application) PreviewCollectionDeletion(ctx context.Context, collectionID int64) CollectionDeletionReviewResponse {
+	if a.shelves == nil {
+		return CollectionDeletionReviewResponse{Error: NewAPIError(ErrorNotReady, "Shelves are unavailable until storage is ready.")}
+	}
+	result, err := a.shelves.PreviewCollectionDeletion(ctx, collectionID)
+	if err != nil {
+		return CollectionDeletionReviewResponse{Error: shelfAPIError(err)}
+	}
+	return CollectionDeletionReviewResponse{Review: &result}
+}
+func (a *Application) ApplyCollectionDeletion(ctx context.Context, token string, keepAll bool, decisions []shelves.ShelfDecisions) MutationResponse {
+	if a.shelves == nil || !a.Status().MutationsAllowed {
+		return MutationResponse{Error: NewAPIError(ErrorNotReady, "Shelves are unavailable until storage is ready.")}
+	}
+	if err := a.shelves.ApplyCollectionDeletion(ctx, token, keepAll, decisions); err != nil {
+		return MutationResponse{Error: shelfAPIError(err)}
+	}
+	return MutationResponse{Success: true}
 }

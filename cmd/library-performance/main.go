@@ -18,12 +18,12 @@ import (
 	"time"
 
 	"github.com/01max/librairii/internal/artwork"
+	"github.com/01max/librairii/internal/collections"
 	"github.com/01max/librairii/internal/database"
 	"github.com/01max/librairii/internal/library"
 	"github.com/01max/librairii/internal/lunii"
 	"github.com/01max/librairii/internal/metadata"
 	"github.com/01max/librairii/internal/performancefixture"
-	"github.com/01max/librairii/internal/shelves"
 	"github.com/01max/librairii/internal/storage"
 )
 
@@ -42,7 +42,7 @@ type report struct {
 	OperatingSystem               string                  `json:"operatingSystem"`
 	Architecture                  string                  `json:"architecture"`
 	Stories                       int                     `json:"stories"`
-	Shelves                       int                     `json:"shelves"`
+	Collections                   int                     `json:"collections"`
 	Samples                       int                     `json:"samples"`
 	FixtureGenerationMilliseconds float64                 `json:"fixtureGenerationMilliseconds"`
 	Metrics                       map[string]metric       `json:"metrics"`
@@ -110,11 +110,11 @@ func run(ctx context.Context, storyCount int, samples int) error {
 		return err
 	}
 	query := library.NewQuery(opened.SQL(), official)
-	shelfService, err := shelves.NewService(opened.SQL())
+	collectionService, err := collections.NewService(opened.SQL())
 	if err != nil {
 		return err
 	}
-	evaluator, err := shelves.NewEvaluator(shelfService, query)
+	evaluator, err := collections.NewEvaluator(collectionService, query)
 	if err != nil {
 		return err
 	}
@@ -165,9 +165,9 @@ func run(ctx context.Context, storyCount int, samples int) error {
 			return page.TotalItems, err
 		},
 	)
-	metrics["shelfCounts"] = measure(
+	metrics["collectionCounts"] = measure(
 		samples,
-		mustBudget("shelfCounts"),
+		mustBudget("collectionCounts"),
 		func() (int, error) {
 			counts, err := evaluator.Counts(ctx)
 			if err != nil {
@@ -261,7 +261,7 @@ func run(ctx context.Context, storyCount int, samples int) error {
 		OperatingSystem:               runtime.GOOS,
 		Architecture:                  runtime.GOARCH,
 		Stories:                       fixture.StoryCount,
-		Shelves:                       len(fixture.ShelfIDs),
+		Collections:                   len(fixture.CollectionIDs),
 		Samples:                       samples,
 		FixtureGenerationMilliseconds: milliseconds(fixtureDuration),
 		Metrics:                       metrics,

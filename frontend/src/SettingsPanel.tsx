@@ -79,37 +79,37 @@ export default function SettingsPanel({onReady,onLocation}: {onReady: () => void
         <button type="button" className="settings-entry" onClick={() => { setOpen(true); if (nativeSettingsAvailable()) void update(Settings); }} aria-label={t('Settings')}>⚙</button>
         {open && <ModalBackdrop onDismiss={dismiss} disabled={working || moving || snapshot?.setupRequired} className="settings-backdrop">
             <section ref={dialog} className="detail-dialog settings-panel" role="dialog" aria-modal="true" aria-labelledby="settings-title">
-                <h2 id="settings-title">{t(snapshot?.setupRequired ? 'Welcome to Librairii' : 'Settings')}</h2>
+                <header className="settings-heading"><h2 id="settings-title">{t(snapshot?.setupRequired ? 'Welcome to Librairii' : 'Settings')}</h2></header>
  {snapshot?.setupRequired && <p>{t('Choose where to keep your library.')}</p>}
-                <label>{t('Interface language')}
-                    <select aria-label={t('Interface language')} value={snapshot?.language ?? 'en'} disabled={working || !snapshot}
+                <div className="settings-row"><label htmlFor="settings-language">{t('Interface language')}</label>
+                    <select id="settings-language" aria-label={t('Interface language')} value={snapshot?.language ?? 'en'} disabled={working || !snapshot}
                         onChange={(event) => { const next = event.currentTarget.value as Language; void update(() => SetUILanguage(next)); }}>
                         <option value="fr">Français</option><option value="en">English</option>
                     </select>
-                </label>
-                <h3>{t('Stories library')}</h3>
+                </div>
+                <section className="settings-library" aria-labelledby="settings-library-title"><h3 id="settings-library-title">{t('Stories library')}</h3>
                 <p className="library-location">{snapshot?.root || '—'}</p>
                 {snapshot?.isolated ? <p>{t('Location is controlled by LIBRAIRII_DATA_ROOT.')}</p> :
-                    <button type="button" disabled={working || moving || !snapshot} onClick={() => void update(SelectLibraryLocation)}>{t('Change location…')}</button>}
+                    <button type="button" disabled={working || moving || !snapshot} onClick={() => void update(SelectLibraryLocation)}>{t('Change location…')}</button>}</section>
                 {snapshot?.recovery && <div>
                     <p>{t('Library unavailable')}</p>
                     <button type="button" disabled={working} onClick={() => void update(async () => { const result=await RetryLibrary(); if (!result.recovery) {onReady();setOpen(false);}return result; })}>{t('Try again')}</button>
                     <button type="button" disabled={working} onClick={() => void update(async () => { const result=await LocateLibrary(); if (!result.recovery) {onReady();setOpen(false);}return result; })}>{t('Locate library…')}</button>
                 </div>}
-                {snapshot?.preparation && !moving && <div className="move-preview">
+                {snapshot?.preparation && !moving && <div className="move-preview settings-state">
                     <p>{t('All library files will be moved.')}</p>
                     <p>{snapshot.preparation.source} → {snapshot.preparation.destination}</p>
                     <p>{t('Total size')}: {number(snapshot.preparation.bytes)} B</p>
                     <button type="button" disabled={working} onClick={() => void update(() => StartLibraryMove(snapshot.preparation!.id))}>{t('Move library')}</button>
                 </div>}
-                {snapshot?.move && <div role="status" aria-live="polite">
+                {snapshot?.move && <div className="settings-state" role="status" aria-live="polite">
                     <p>{t(({copying:'Moving library…',verifying:'Verification',committing:'Moving library…',cleanup:'Moving library…',succeeded:'Library moved successfully.',failed:'settings.move_failed',cancelled:'Cancelled',cleanup_pending:'Previous location needs cleanup.'} as Record<string,string>)[snapshot.move.phase] ?? 'Moving library…')}</p>
                     {moving && <><progress max={Math.max(1,snapshot.move.total)} value={snapshot.move.copied}/><p>{number(snapshot.move.copied)} / {number(snapshot.move.total)} B</p></>}
                     {snapshot.move.cleanupPath && <p className="library-location">{snapshot.move.cleanupPath}</p>}
                     {snapshot.move.error && <p>{t(snapshot.move.error)}</p>}
                     {snapshot.move.cancelable && <button type="button" onClick={() => void update(CancelLibraryMove)}>{t('Cancel')}</button>}
                 </div>}
-                {error && <p role="alert">{t(error)}</p>}
+                {error && <p className="dialog-error" role="alert">{t(error)}</p>}
                 <div className="dialog-actions">
  {snapshot?.setupRequired && <button type="button" disabled={working} onClick={() => {
   setWorking(true); setError('');

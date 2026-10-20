@@ -9,21 +9,21 @@ describe('canonical parity fixture', () => {
         expect(CANONICAL_PROTOTYPE).toEqual({
             path: 'openspec/ui-prototypes/05-archive-shelves.html',
             snapshotPath: 'testdata/ui-prototypes/05-archive-shelves.html',
-            sha256: '4fe9cc8555095892e56195a4b4df9abdf676b229ac3b3961cab9dff727c2b8b1',
+            sha256: '1b6bb40b2ca411726d90e942d4ea0b3620a5a0ec77b0976093a20be0a625f75a',
             normativeSelector: '.app',
             excludedSelector: '.back',
         });
     });
 
     test('reproduces every visible sample value', () => {
-        expect(CANONICAL_PARITY_FIXTURE.savedShelves.map(
+        expect(CANONICAL_PARITY_FIXTURE.savedCollections.map(
             ({name, count}) => [name, count],
         )).toEqual([
             ['Bedtime', 12],
             ['Adventures', 16],
             ['Favorites', 9],
         ]);
-        expect(CANONICAL_PARITY_FIXTURE.mainShelves.map(
+        expect(CANONICAL_PARITY_FIXTURE.mainCollections.map(
             ({name, count}) => [name, count],
         )).toEqual([
             ['Bedtime', 9],

@@ -24,7 +24,7 @@ test('restores the same query when history is reconstructed like a reload', () =
     const reloaded = new CollectionQueryHistory(window, applicationDefault);
     expect(reloaded.current()).toEqual(pushed);
     expect(reloaded.currentShelfID()).toBe(7);
-    expect(reloaded.currentScope()).toBe('shelf');
+    expect(reloaded.currentScope()).toBe('collection');
 });
 
 test('restores back and forward query states', async () => {
@@ -42,13 +42,15 @@ test('restores back and forward query states', async () => {
     await waitFor(() => expect(listener).toHaveBeenLastCalledWith(
         dragon,
         7,
-        'shelf',
+        'collection',
+        null,
     ));
     window.history.forward();
     await waitFor(() => expect(listener).toHaveBeenLastCalledWith(
         filtered,
         8,
-        'shelf',
+        'collection',
+        null,
     ));
     unsubscribe();
 });
@@ -135,4 +137,29 @@ test('clears one criterion or all membership filters while retaining sort', () =
         choiceFilters: [],
     });
     expect(history.clearAll()).toEqual(canonicalCollectionQuery(applicationDefault));
+});
+
+
+test('keeps curated scope identities separate from legacy dynamic shelf ids on reload', () => {
+    const history = new CollectionQueryHistory(window, applicationDefault);
+    history.pushShelf(7, {...applicationDefault, name: 'night'});
+    const reloaded = new CollectionQueryHistory(window, applicationDefault);
+    expect(reloaded.currentCuratedShelfID()).toBe(7);
+    expect(reloaded.currentCollectionID()).toBeNull();
+    expect(reloaded.currentScope()).toBe('shelf');
+    expect(reloaded.current().name).toBe('night');
+    history.push(applicationDefault, 7);
+    expect(history.currentCollectionID()).toBe(7);
+    expect(history.currentCuratedShelfID()).toBeNull();
+});
+
+test('preserves manual versus view sorting within a curated scope across reloads and refinements', () => {
+    const history = new CollectionQueryHistory(window, applicationDefault);
+    history.pushShelf(7, applicationDefault, false);
+    const reloaded = new CollectionQueryHistory(window, applicationDefault);
+    expect(reloaded.currentShelfManualOrder()).toBe(false);
+    reloaded.pushShelf(7, {...applicationDefault, name: 'moon'});
+    expect(reloaded.currentShelfManualOrder()).toBe(false);
+    reloaded.pushShelf(7, applicationDefault, true);
+    expect(reloaded.currentShelfManualOrder()).toBe(true);
 });

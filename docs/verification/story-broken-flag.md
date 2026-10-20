@@ -1,5 +1,12 @@
 # Dedicated broken-story flag verification
 
+> Historical verification record for the original Broken change. Its hiding and
+> export policies were superseded by [Collections and curated Shelves](collections-and-shelves.md).
+> The integration test was extended and renamed to
+> `TestMigratedCollectionThroughShelfReviewRestartAndExport`; the current user guide
+> describes always-visible Broken stories and universal export skips.
+
+
 Change: `promote-broken-to-story-flag` (27 implementation subtasks).
 
 The product now stores Broken on the story and offers direct list/cover flag

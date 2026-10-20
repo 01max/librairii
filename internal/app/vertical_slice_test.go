@@ -38,15 +38,15 @@ func TestFirstStoryVerticalSliceThroughPickerAndApplication(t *testing.T) {
 	}
 	dialogs := &recordingDialogs{paths: []string{source}}
 	application, err := New(Dependencies{
-		Clock:      fixedClock{now: time.Now()},
-		Dialogs:    dialogs,
-		Events:     events,
-		Readiness:  fakeReadiness{report: ReadinessReport{MutationsAllowed: true}},
-		Operations: importRuntime,
-		Library:    importRuntime,
-		Removal:    importRuntime,
-		Tags:       importRuntime,
-		Shelves:    importRuntime,
+		Clock:       fixedClock{now: time.Now()},
+		Dialogs:     dialogs,
+		Events:      events,
+		Readiness:   fakeReadiness{report: ReadinessReport{MutationsAllowed: true}},
+		Operations:  importRuntime,
+		Library:     importRuntime,
+		Removal:     importRuntime,
+		Tags:        importRuntime,
+		Collections: importRuntime,
 	})
 	if err != nil {
 		t.Fatal(err)

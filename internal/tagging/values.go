@@ -42,10 +42,10 @@ type CreateValue struct {
 }
 
 type ValueDeletionPlan struct {
-	Value              Value   `json:"value"`
-	AssignmentCount    int     `json:"assignmentCount"`
-	AffectedShelfCount int     `json:"affectedShelfCount"`
-	AffectedShelfIDs   []int64 `json:"affectedShelfIds"`
+	Value                   Value   `json:"value"`
+	AssignmentCount         int     `json:"assignmentCount"`
+	AffectedCollectionCount int     `json:"affectedCollectionCount"`
+	AffectedCollectionIDs   []int64 `json:"affectedCollectionIds"`
 }
 
 func (s *Service) CreateValue(
@@ -260,11 +260,11 @@ func (s *Service) PlanValueDeletion(
 	).Scan(&plan.AssignmentCount); err != nil {
 		return ValueDeletionPlan{}, fmt.Errorf("plan tag value deletion: %w", err)
 	}
-	plan.AffectedShelfIDs, err = shelvesReferencingValue(ctx, s.database, value.ID)
+	plan.AffectedCollectionIDs, err = collectionsReferencingValue(ctx, s.database, value.ID)
 	if err != nil {
 		return ValueDeletionPlan{}, err
 	}
-	plan.AffectedShelfCount = len(plan.AffectedShelfIDs)
+	plan.AffectedCollectionCount = len(plan.AffectedCollectionIDs)
 	return plan, nil
 }
 
@@ -293,20 +293,20 @@ func (s *Service) DeleteValue(ctx context.Context, plan ValueDeletionPlan) error
 	).Scan(&assignmentCount); err != nil {
 		return fmt.Errorf("validate tag value deletion: %w", err)
 	}
-	affectedShelfIDs, err := shelvesReferencingValue(ctx, transaction, value.ID)
+	affectedCollectionIDs, err := collectionsReferencingValue(ctx, transaction, value.ID)
 	if err != nil {
 		return err
 	}
 	if value != plan.Value ||
 		assignmentCount != plan.AssignmentCount ||
-		len(affectedShelfIDs) != plan.AffectedShelfCount ||
-		!sameShelfReferenceIDs(affectedShelfIDs, plan.AffectedShelfIDs) {
+		len(affectedCollectionIDs) != plan.AffectedCollectionCount ||
+		!sameCollectionReferenceIDs(affectedCollectionIDs, plan.AffectedCollectionIDs) {
 		return ErrValueDeletePlanStale
 	}
-	if err := markShelvesNeedingAttention(
+	if err := markCollectionsNeedingAttention(
 		ctx,
 		transaction,
-		affectedShelfIDs,
+		affectedCollectionIDs,
 		ErrValueDeletePlanStale,
 	); err != nil {
 		return err

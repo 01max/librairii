@@ -48,15 +48,15 @@ func TestTaggingAndSharedQueryVerticalSlice(t *testing.T) {
 	}
 	dialogs := &recordingDialogs{paths: []string{firstSource, secondSource}}
 	application, err := New(Dependencies{
-		Clock:      fixedClock{now: time.Now()},
-		Dialogs:    dialogs,
-		Events:     events,
-		Readiness:  fakeReadiness{report: ReadinessReport{MutationsAllowed: true}},
-		Operations: importRuntime,
-		Library:    importRuntime,
-		Removal:    importRuntime,
-		Tags:       importRuntime,
-		Shelves:    importRuntime,
+		Clock:       fixedClock{now: time.Now()},
+		Dialogs:     dialogs,
+		Events:      events,
+		Readiness:   fakeReadiness{report: ReadinessReport{MutationsAllowed: true}},
+		Operations:  importRuntime,
+		Library:     importRuntime,
+		Removal:     importRuntime,
+		Tags:        importRuntime,
+		Collections: importRuntime,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -174,8 +174,6 @@ func TestTaggingAndSharedQueryVerticalSlice(t *testing.T) {
 	filtered := application.QueryStories(
 		context.Background(),
 		library.StoryLibraryQuery{
-			BrokenVisibility: library.BrokenInclude,
-			BrokenState:      library.BooleanTrue,
 			ChoiceFilters: []library.ChoiceFilter{{
 				DefinitionID: mood.ID,
 				ValueIDs:     []int64{calm.ID},

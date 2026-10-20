@@ -85,6 +85,7 @@ type StoryDetail struct {
 }
 
 type ExportStory struct {
+	Broken              bool
 	ID                  int64
 	UUID                string
 	Title               string
@@ -144,9 +145,22 @@ type OfficialProvider interface {
 }
 
 type Query struct {
-	database       *sql.DB
+	database       queryReader
 	official       OfficialProvider
 	officialLocale string
+}
+
+type queryReader interface {
+	QueryContext(context.Context, string, ...any) (*sql.Rows, error)
+	QueryRowContext(context.Context, string, ...any) *sql.Row
+}
+
+// WithTransaction keeps query matching on the same SQLite snapshot as Shelf
+// decisions, without reacquiring the serialized writer connection.
+func (q *Query) WithTransaction(tx *sql.Tx) *Query {
+	copy := *q
+	copy.database = tx
+	return &copy
 }
 
 func NewQuery(database *sql.DB, official OfficialProvider) *Query {
@@ -166,11 +180,9 @@ func (q *Query) List(ctx context.Context, request ListRequest) (Page, error) {
 		return Page{}, err
 	}
 	return q.Search(ctx, StoryLibraryQuery{
-		IncludeBroken:    request.IncludeBroken,
-		BrokenVisibility: request.BrokenVisibility,
-		Page:             request.Page,
-		PageSize:         request.PageSize,
-		Sort:             request.Sort,
+		Page:     request.Page,
+		PageSize: request.PageSize,
+		Sort:     request.Sort,
 	})
 }
 
@@ -303,6 +315,7 @@ func (q *Query) exportStoriesFromRecords(
 		summary := resolveSummary(record, official[record.uuid])
 		verification, _ := compatibility(record.validationState)
 		stories = append(stories, ExportStory{
+			Broken:              record.broken,
 			ID:                  record.id,
 			UUID:                record.uuid,
 			Title:               summary.Title,

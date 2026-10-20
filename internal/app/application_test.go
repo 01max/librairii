@@ -9,13 +9,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/01max/librairii/internal/collections"
 	"github.com/01max/librairii/internal/diagnostics"
 	"github.com/01max/librairii/internal/exporter"
 	"github.com/01max/librairii/internal/library"
 	"github.com/01max/librairii/internal/metadata"
 	"github.com/01max/librairii/internal/operations"
 	"github.com/01max/librairii/internal/removal"
-	"github.com/01max/librairii/internal/shelves"
 	"github.com/01max/librairii/internal/tagging"
 )
 
@@ -386,70 +386,70 @@ func (o *fakeOperations) SetBulkChoiceValue(
 	return tagging.AssignmentResult{}, o.err
 }
 
-func (o *fakeOperations) ListShelves(
+func (o *fakeOperations) ListCollections(
 	context.Context,
 	...library.BrokenVisibility,
-) ([]shelves.Summary, error) {
+) ([]collections.Summary, error) {
 	return nil, o.err
 }
 
-func (o *fakeOperations) CreateShelf(
+func (o *fakeOperations) CreateCollection(
 	context.Context,
 	string,
 	library.StoryLibraryQuery,
-) (shelves.Shelf, error) {
-	return shelves.Shelf{}, o.err
+) (collections.Collection, error) {
+	return collections.Collection{}, o.err
 }
 
-func (o *fakeOperations) OpenShelf(
+func (o *fakeOperations) OpenCollection(
 	context.Context,
 	int64,
 	library.ListRequest,
-) (shelves.Evaluation, error) {
-	return shelves.Evaluation{}, o.err
+) (collections.Evaluation, error) {
+	return collections.Evaluation{}, o.err
 }
 
-func (o *fakeOperations) RenameShelf(
+func (o *fakeOperations) RenameCollection(
 	context.Context,
 	int64,
 	string,
-) (shelves.Shelf, error) {
-	return shelves.Shelf{}, o.err
+) (collections.Collection, error) {
+	return collections.Collection{}, o.err
 }
 
-func (o *fakeOperations) DuplicateShelf(
+func (o *fakeOperations) DuplicateCollection(
 	context.Context,
 	int64,
 	string,
-) (shelves.Shelf, error) {
-	return shelves.Shelf{}, o.err
+) (collections.Collection, error) {
+	return collections.Collection{}, o.err
 }
 
-func (o *fakeOperations) ReplaceShelfQuery(
+func (o *fakeOperations) ReplaceCollectionQuery(
 	context.Context,
 	int64,
 	library.StoryLibraryQuery,
-) (shelves.Shelf, error) {
-	return shelves.Shelf{}, o.err
+) (collections.Collection, error) {
+	return collections.Collection{}, o.err
 }
 
-func (o *fakeOperations) ReorderShelves(
+func (o *fakeOperations) ReorderCollections(
 	context.Context,
 	[]int64,
-) ([]shelves.Shelf, error) {
+) ([]collections.Collection, error) {
 	return nil, o.err
 }
 
-func (o *fakeOperations) DeleteShelf(context.Context, int64) error {
+func (o *fakeOperations) DeleteCollection(context.Context, int64) error {
 	return o.err
 }
 
-func (o *fakeOperations) PreviewShelves(
+func (o *fakeOperations) PreviewCollections(
 	context.Context,
 	[]int64,
 	...library.BrokenVisibility,
-) (shelves.SelectionPreview, error) {
-	return shelves.SelectionPreview{}, o.err
+) (collections.SelectionPreview, error) {
+	return collections.SelectionPreview{}, o.err
 }
 
 func TestApplicationLifecycle(t *testing.T) {
@@ -460,16 +460,16 @@ func TestApplicationLifecycle(t *testing.T) {
 	resource := &fakeResource{}
 	operationPort := &fakeOperations{}
 	application, err := New(Dependencies{
-		Clock:      fixedClock{now: now},
-		Dialogs:    fakeDialogs{},
-		Events:     events,
-		Readiness:  fakeReadiness{report: ReadinessReport{MutationsAllowed: true}},
-		Operations: operationPort,
-		Library:    operationPort,
-		Removal:    operationPort,
-		Tags:       operationPort,
-		Shelves:    operationPort,
-		Resources:  []ResourcePort{resource},
+		Clock:       fixedClock{now: now},
+		Dialogs:     fakeDialogs{},
+		Events:      events,
+		Readiness:   fakeReadiness{report: ReadinessReport{MutationsAllowed: true}},
+		Operations:  operationPort,
+		Library:     operationPort,
+		Removal:     operationPort,
+		Tags:        operationPort,
+		Collections: operationPort,
+		Resources:   []ResourcePort{resource},
 	})
 	if err != nil {
 		t.Fatalf("New() error = %v", err)
@@ -516,14 +516,14 @@ func TestApplicationEntersRecoveryWhenStorageIsUnsafe(t *testing.T) {
 
 	operationPort := &fakeOperations{}
 	application, err := New(Dependencies{
-		Clock:      fixedClock{now: time.Now()},
-		Dialogs:    fakeDialogs{},
-		Events:     &fakeEvents{},
-		Operations: operationPort,
-		Library:    operationPort,
-		Removal:    operationPort,
-		Tags:       operationPort,
-		Shelves:    operationPort,
+		Clock:       fixedClock{now: time.Now()},
+		Dialogs:     fakeDialogs{},
+		Events:      &fakeEvents{},
+		Operations:  operationPort,
+		Library:     operationPort,
+		Removal:     operationPort,
+		Tags:        operationPort,
+		Collections: operationPort,
 		Readiness: fakeReadiness{report: ReadinessReport{
 			MutationsAllowed: false,
 			Issues:           []ReadinessIssue{{Code: "schema_mismatch"}},
@@ -556,15 +556,15 @@ func TestApplicationExplicitlyPreservesSchemaConflictBeforeOpeningFreshStorage(
 	readiness := &recoverableReadiness{}
 	operationPort := &fakeOperations{}
 	application, err := New(Dependencies{
-		Clock:      fixedClock{now: time.Now()},
-		Dialogs:    fakeDialogs{},
-		Events:     &fakeEvents{},
-		Operations: operationPort,
-		Library:    operationPort,
-		Removal:    operationPort,
-		Tags:       operationPort,
-		Shelves:    operationPort,
-		Readiness:  readiness,
+		Clock:       fixedClock{now: time.Now()},
+		Dialogs:     fakeDialogs{},
+		Events:      &fakeEvents{},
+		Operations:  operationPort,
+		Library:     operationPort,
+		Removal:     operationPort,
+		Tags:        operationPort,
+		Collections: operationPort,
+		Readiness:   readiness,
 	})
 	if err != nil {
 		t.Fatalf("New() error = %v", err)
@@ -644,15 +644,15 @@ func TestImportFacadeKeepsNativePathsInsideGo(t *testing.T) {
 		},
 	}
 	application, err := New(Dependencies{
-		Clock:      fixedClock{now: time.Now()},
-		Dialogs:    dialogs,
-		Events:     &fakeEvents{},
-		Readiness:  fakeReadiness{report: ReadinessReport{MutationsAllowed: true}},
-		Operations: operationPort,
-		Library:    operationPort,
-		Removal:    operationPort,
-		Tags:       operationPort,
-		Shelves:    operationPort,
+		Clock:       fixedClock{now: time.Now()},
+		Dialogs:     dialogs,
+		Events:      &fakeEvents{},
+		Readiness:   fakeReadiness{report: ReadinessReport{MutationsAllowed: true}},
+		Operations:  operationPort,
+		Library:     operationPort,
+		Removal:     operationPort,
+		Tags:        operationPort,
+		Collections: operationPort,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -694,15 +694,15 @@ func TestImportFacadeTreatsEmptySelectionAsCancellation(t *testing.T) {
 	dialogs := &recordingDialogs{}
 	operationPort := &fakeOperations{}
 	application, err := New(Dependencies{
-		Clock:      fixedClock{now: time.Now()},
-		Dialogs:    dialogs,
-		Events:     &fakeEvents{},
-		Readiness:  fakeReadiness{report: ReadinessReport{MutationsAllowed: true}},
-		Operations: operationPort,
-		Library:    operationPort,
-		Removal:    operationPort,
-		Tags:       operationPort,
-		Shelves:    operationPort,
+		Clock:       fixedClock{now: time.Now()},
+		Dialogs:     dialogs,
+		Events:      &fakeEvents{},
+		Readiness:   fakeReadiness{report: ReadinessReport{MutationsAllowed: true}},
+		Operations:  operationPort,
+		Library:     operationPort,
+		Removal:     operationPort,
+		Tags:        operationPort,
+		Collections: operationPort,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -741,15 +741,15 @@ func TestExportPreflightKeepsNativeDestinationInsideGo(t *testing.T) {
 		},
 	}
 	application, err := New(Dependencies{
-		Clock:      fixedClock{now: time.Now()},
-		Dialogs:    dialogs,
-		Events:     &fakeEvents{},
-		Readiness:  fakeReadiness{report: ReadinessReport{MutationsAllowed: true}},
-		Operations: operationPort,
-		Library:    operationPort,
-		Removal:    operationPort,
-		Tags:       operationPort,
-		Shelves:    operationPort,
+		Clock:       fixedClock{now: time.Now()},
+		Dialogs:     dialogs,
+		Events:      &fakeEvents{},
+		Readiness:   fakeReadiness{report: ReadinessReport{MutationsAllowed: true}},
+		Operations:  operationPort,
+		Library:     operationPort,
+		Removal:     operationPort,
+		Tags:        operationPort,
+		Collections: operationPort,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -840,7 +840,7 @@ func TestDiagnosticExportKeepsNativeDestinationInsideGo(t *testing.T) {
 		Library:     operationPort,
 		Removal:     operationPort,
 		Tags:        operationPort,
-		Shelves:     operationPort,
+		Collections: operationPort,
 		Diagnostics: diagnosticPort,
 	})
 	if err != nil {
@@ -874,15 +874,15 @@ func TestOperationFacadeReturnsActiveSnapshots(t *testing.T) {
 		}},
 	}
 	application, err := New(Dependencies{
-		Clock:      fixedClock{now: time.Now()},
-		Dialogs:    fakeDialogs{},
-		Events:     &fakeEvents{},
-		Readiness:  fakeReadiness{report: ReadinessReport{MutationsAllowed: true}},
-		Operations: operationPort,
-		Library:    operationPort,
-		Removal:    operationPort,
-		Tags:       operationPort,
-		Shelves:    operationPort,
+		Clock:       fixedClock{now: time.Now()},
+		Dialogs:     fakeDialogs{},
+		Events:      &fakeEvents{},
+		Readiness:   fakeReadiness{report: ReadinessReport{MutationsAllowed: true}},
+		Operations:  operationPort,
+		Library:     operationPort,
+		Removal:     operationPort,
+		Tags:        operationPort,
+		Collections: operationPort,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -913,15 +913,15 @@ func TestMetadataFacadeStartsRefreshAndReturnsFreshness(t *testing.T) {
 		},
 	}
 	application, err := New(Dependencies{
-		Clock:      fixedClock{now: time.Now()},
-		Dialogs:    fakeDialogs{},
-		Events:     &fakeEvents{},
-		Readiness:  fakeReadiness{report: ReadinessReport{MutationsAllowed: true}},
-		Operations: operationPort,
-		Library:    operationPort,
-		Removal:    operationPort,
-		Tags:       operationPort,
-		Shelves:    operationPort,
+		Clock:       fixedClock{now: time.Now()},
+		Dialogs:     fakeDialogs{},
+		Events:      &fakeEvents{},
+		Readiness:   fakeReadiness{report: ReadinessReport{MutationsAllowed: true}},
+		Operations:  operationPort,
+		Library:     operationPort,
+		Removal:     operationPort,
+		Tags:        operationPort,
+		Collections: operationPort,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -974,15 +974,15 @@ func TestLibraryFacadeReturnsTypedCollectionAndDetail(t *testing.T) {
 		},
 	}
 	application, err := New(Dependencies{
-		Clock:      fixedClock{now: time.Now()},
-		Dialogs:    fakeDialogs{},
-		Events:     &fakeEvents{},
-		Readiness:  fakeReadiness{report: ReadinessReport{MutationsAllowed: true}},
-		Operations: operationPort,
-		Library:    operationPort,
-		Removal:    operationPort,
-		Tags:       operationPort,
-		Shelves:    operationPort,
+		Clock:       fixedClock{now: time.Now()},
+		Dialogs:     fakeDialogs{},
+		Events:      &fakeEvents{},
+		Readiness:   fakeReadiness{report: ReadinessReport{MutationsAllowed: true}},
+		Operations:  operationPort,
+		Library:     operationPort,
+		Removal:     operationPort,
+		Tags:        operationPort,
+		Collections: operationPort,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -1019,15 +1019,15 @@ func TestRemovalFacadeRequiresReadyStorageAndReturnsStableResult(t *testing.T) {
 		},
 	}
 	application, err := New(Dependencies{
-		Clock:      fixedClock{now: time.Now()},
-		Dialogs:    fakeDialogs{},
-		Events:     &fakeEvents{},
-		Readiness:  fakeReadiness{report: ReadinessReport{MutationsAllowed: true}},
-		Operations: operationPort,
-		Library:    operationPort,
-		Removal:    operationPort,
-		Tags:       operationPort,
-		Shelves:    operationPort,
+		Clock:       fixedClock{now: time.Now()},
+		Dialogs:     fakeDialogs{},
+		Events:      &fakeEvents{},
+		Readiness:   fakeReadiness{report: ReadinessReport{MutationsAllowed: true}},
+		Operations:  operationPort,
+		Library:     operationPort,
+		Removal:     operationPort,
+		Tags:        operationPort,
+		Collections: operationPort,
 	})
 	if err != nil {
 		t.Fatal(err)

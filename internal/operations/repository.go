@@ -115,11 +115,11 @@ func (r *Repository) create(
 				ErrInvalidTransition,
 			)
 		}
-		ids, err := json.Marshal(nonNilInt64s(operation.ExportSource.ShelfIDs))
+		ids, err := json.Marshal(nonNilInt64s(operation.ExportSource.GroupIDs()))
 		if err != nil {
 			return Snapshot{}, fmt.Errorf("encode export shelf IDs: %w", err)
 		}
-		names, err := json.Marshal(nonNilStrings(operation.ExportSource.ShelfNames))
+		names, err := json.Marshal(nonNilStrings(operation.ExportSource.GroupNames()))
 		if err != nil {
 			return Snapshot{}, fmt.Errorf("encode export shelf names: %w", err)
 		}
@@ -183,10 +183,11 @@ func (r *Repository) create(
 				output_name,
 				archive_relative_path,
 				archive_sha256,
+ export_skip_code,
 				status,
 				total_bytes
 			) VALUES (?, ?, ?, NULLIF(?, ''), NULLIF(?, ''), ?, NULLIF(?, ''),
-				NULLIF(?, ''), NULLIF(?, ''), 'pending', ?)`,
+				NULLIF(?, ''), NULLIF(?, ''), NULLIF(?, ''), 'pending', ?)`,
 			id,
 			storyID,
 			storyID,
@@ -196,6 +197,7 @@ func (r *Repository) create(
 			item.OutputName,
 			item.ArchiveRelativePath,
 			item.ArchiveSHA256,
+			item.ExportSkipCode,
 			item.TotalBytes,
 		); err != nil {
 			return Snapshot{}, fmt.Errorf("insert operation item: %w", err)
@@ -210,6 +212,7 @@ func (r *Repository) create(
 func validateNewItems(kind Kind, items []NewItem) (int64, error) {
 	var totalBytes int64
 	storyIDs := make(map[int64]struct{}, len(items))
+	storyUUIDs := make(map[string]bool, len(items))
 	for _, item := range items {
 		if strings.TrimSpace(item.SourceName) == "" || item.TotalBytes < 0 {
 			return 0, fmt.Errorf(
@@ -225,6 +228,16 @@ func validateNewItems(kind Kind, items []NewItem) (int64, error) {
 		}
 		totalBytes += item.TotalBytes
 		if kind != KindExport {
+			continue
+		}
+		if _, err := uuid.Parse(item.StoryUUID); err != nil || strings.TrimSpace(item.StoryTitle) == "" || storyUUIDs[item.StoryUUID] {
+			return 0, ErrInvalidTransition
+		}
+		storyUUIDs[item.StoryUUID] = true
+		if item.ExportSkipCode != "" {
+			if (item.ExportSkipCode != "story_marked_broken" && item.ExportSkipCode != "story_unavailable") || item.TotalBytes != 0 || item.StoryID < 0 {
+				return 0, ErrInvalidTransition
+			}
 			continue
 		}
 		if item.StoryID <= 0 {
@@ -255,6 +268,16 @@ func validateNewItems(kind Kind, items []NewItem) (int64, error) {
 }
 
 func validateExportSource(source ExportSource) error {
+	if source.Type == ExportSourceCollection || source.Type == ExportSourceCollections {
+		if len(source.ShelfIDs) > 0 || len(source.ShelfNames) > 0 {
+			return ErrInvalidTransition
+		}
+		source.ShelfIDs = source.CollectionIDs
+		source.ShelfNames = source.CollectionNames
+	} else if len(source.CollectionIDs) > 0 || len(source.CollectionNames) > 0 {
+		return ErrInvalidTransition
+	}
+
 	if len(source.ShelfIDs) != len(source.ShelfNames) {
 		return fmt.Errorf(
 			"%w: export shelf identity mismatch",
@@ -269,14 +292,14 @@ func validateExportSource(source ExportSource) error {
 				ErrInvalidTransition,
 			)
 		}
-	case ExportSourceShelf:
+	case ExportSourceShelf, ExportSourceCollection, ExportSourceCuratedShelf:
 		if len(source.ShelfIDs) != 1 {
 			return fmt.Errorf(
 				"%w: single-shelf export identity is invalid",
 				ErrInvalidTransition,
 			)
 		}
-	case ExportSourceShelves:
+	case ExportSourceShelves, ExportSourceCollections, ExportSourceCuratedShelves:
 		if len(source.ShelfIDs) < 2 {
 			return fmt.Errorf(
 				"%w: multi-shelf export identity is invalid",
@@ -618,6 +641,10 @@ func (r *Repository) Snapshot(ctx context.Context, id string) (Snapshot, error) 
 		); err != nil {
 			return Snapshot{}, fmt.Errorf("decode export shelf names: %w", err)
 		}
+	}
+	if IsCollectionExport(snapshot.ExportSourceType) {
+		snapshot.SourceCollectionIDs = append([]int64(nil), snapshot.SourceShelfIDs...)
+		snapshot.SourceCollectionNames = append([]string(nil), snapshot.SourceShelfNames...)
 	}
 
 	rows, err := r.database.QueryContext(

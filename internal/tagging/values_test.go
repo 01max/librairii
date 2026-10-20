@@ -133,7 +133,7 @@ func TestServicePlansAndConfirmsChoiceValueDeletion(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if plan.AssignmentCount != 1 || plan.AffectedShelfCount != 0 {
+	if plan.AssignmentCount != 1 || plan.AffectedCollectionCount != 0 {
 		t.Fatalf("PlanValueDeletion() = %#v", plan)
 	}
 	secondStoryID := insertServiceStoryWithUUID(

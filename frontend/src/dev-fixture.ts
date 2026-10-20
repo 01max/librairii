@@ -204,7 +204,7 @@ const historyOperations = [{
     id: '00000000-0000-4000-8000-000000000901', kind: 'export', status: 'succeeded',
     completedItems: 1, totalItems: 1, totalBytes: 100, cancelRequested: false,
     createdAt: '2026-07-25T10:00:00Z', finishedAt: '2026-07-25T10:01:00Z',
-    destination: 'Lunii export', sourceShelfNames: ['Bedtime'],
+    destination: 'Lunii export', sourceCollectionNames: ['Bedtime'],
     items: [{id: 901, sourceName: 'moon.zip', storyTitle: 'Milo and the Moon',
         outputName: 'moon.zip', status: 'succeeded', outcomeMessage: 'Story archive exported.',
         completedBytes: 100, totalBytes: 100}],
@@ -218,6 +218,9 @@ const historyOperations = [{
 
 export function installCollectionFixture() {
     const fixture = new URLSearchParams(window.location.search).get('fixture') ?? 'collection';
+    const promptShelfRemoval = new URLSearchParams(window.location.search).get('review') === 'removals';
+    let shelfMismatchReviewed = false;
+    const removedShelfMembers = new Set<string>();
     if (fixture === 'parity') {
         const query = {
             ...DEFAULT_COLLECTION_QUERY,
@@ -229,7 +232,7 @@ export function installCollectionFixture() {
         window.history.replaceState({
             collectionQuery: {
                 hash,
-                shelfId: null,
+                collectionId: null,
                 scope: 'all',
             },
         }, '', `${window.location.pathname}${window.location.search}${hash}`);
@@ -247,8 +250,8 @@ export function installCollectionFixture() {
         ? 48
         : fixtureStories.length;
     const fixtureFlags = new Map(fixtureStories.map((story) => [story.id, 'broken' in story && !!story.broken]));
+    if (fixture === 'curated') fixtureFlags.set(fixtureStories[0].id, true);
     const currentStories = () => fixtureStories.map((story) => ({...story, broken: fixtureFlags.get(story.id) ?? false}));
-    const matchesVisibility = (broken: boolean, mode = 'hide') => mode === 'include' || (mode === 'only' ? broken : !broken);
     const fixtureSnapshot = fixtureOperation(fixture);
     const page = (
         pageNumber: number,
@@ -299,15 +302,39 @@ export function installCollectionFixture() {
         PackagedAcceptanceMode: async () => false,
         RecordPackagedAcceptance: async () => ({success: false}),
         RecoverStorage: async () => ({success: false}),
-        ListShelves: async () => ({
-            shelves: fixture === 'parity'
-                ? CANONICAL_PARITY_FIXTURE.savedShelves.map(
-                    (shelf, position) => ({
-                        id: shelf.id,
-                        name: shelf.name,
+        ListShelves: async () => ({shelves: fixture === 'curated' ? [{id: 1, name: 'Weekend Shelf', count: 3 - removedShelfMembers.size, unavailableCount: 1, sourceCount: 1}] : []}),
+        OpenShelf: async (_id: number, query: {name?: string; page?: number; pageSize?: number}) => {
+            const members = [
+                ...currentStories().slice(0, 2).map((story, index) => ({uuid: story.uuid, cachedTitle: story.title, position: index, protected: index === 0, story: {...story, broken: story.broken}, origins: [{id: 1, collectionId: 1, name: 'Favorites', active: true}]})),
+                {uuid: '00000000-0000-4000-8000-999999999999', cachedTitle: 'Unavailable story', position: 2, protected: true, origins: []},
+            ].filter((member) => !removedShelfMembers.has(member.uuid) && (!query.name || member.cachedTitle.toLowerCase().includes(query.name.toLowerCase())));
+            return {evaluation: {shelf: {id: 1, name: 'Weekend Shelf', count: 3 - removedShelfMembers.size, unavailableCount: 1, sourceCount: 1}, members, sources: [{id: 1, collectionId: 1, name: 'Favorites', active: true}], exclusions: [{uuid: 'excluded', title: 'Previously excluded story'}], page: 1, pageSize: 25, totalItems: members.length, totalPages: members.length ? 1 : 0}};
+        },
+        PreviewShelfUpdate: async () => ({review: {token: 'fixture-review', additions: Array.from({length: 300}, (_, index) => ({uuid: `candidate-${index}`, title: `Suggested story ${index + 1}`, sources: [{name: 'Favorites'}], origins: []})), removals: promptShelfRemoval && !shelfMismatchReviewed ? [{uuid: currentStories()[1].uuid, title: currentStories()[1].title, story: currentStories()[1], origins: [{id: 1, collectionId: 1, name: 'Favorites', active: true}]}] : [], warnings: [], upToDate: false, incomplete: false}}),
+        PreviewShelfSources: async () => ({review: {shelfId: 1, shelfName: 'Weekend Shelf', token: 'fixture-source-review', sources: [], detached: [{name: 'Favorites'}], affected: [{uuid: 'candidate', title: 'Source story', story: currentStories()[1], origins: [{name: 'Favorites'}]}], warnings: [], incomplete: false}}),
+        PreviewShelfCreation: async () => ({review: {token: 'fixture-seed-review', additions: currentStories().slice(0, 2).map((story) => ({uuid: story.uuid, title: story.title, story, sources: [], origins: [], manual: true})), warnings: [], incomplete: false}}),
+        ApplyShelfUpdate: async (_id: number, _token: string, decisions: Array<{uuid: string; action: string}>) => {
+            for (const decision of decisions) {
+                if (decision.uuid !== currentStories()[1].uuid) continue;
+                if (decision.action === 'keep' || decision.action === 'remove') shelfMismatchReviewed = true;
+                if (decision.action === 'remove') removedShelfMembers.add(decision.uuid);
+            }
+            return {shelf: {id: 1}};
+        },
+        ApplyShelfSources: async () => ({shelf: {id: 1}}),
+        ClearShelfExclusion: async () => ({shelf: {id: 1}}),
+        SetShelfStoryProtected: async () => ({shelf: {id: 1}}),
+        AddStoriesToShelf: async () => ({shelf: {id: 1}}),
+        ReorderShelves: async () => ({success: true}),
+        ListCollections: async () => ({
+            collections: fixture === 'parity'
+                ? CANONICAL_PARITY_FIXTURE.savedCollections.map(
+                    (collection, position) => ({
+                        id: collection.id,
+                        name: collection.name,
                         position,
-                        validity: shelf.id === 3 ? 'sidebar_only' : 'valid',
-                        count: shelf.count,
+                        validity: collection.id === 3 ? 'sidebar_only' : 'valid',
+                        count: collection.count,
                     }),
                 )
                 : [],
@@ -343,8 +370,7 @@ export function installCollectionFixture() {
                 : ageValueIDs.includes(102)
                     ? 18
                     : totalItems;
-            const visible = currentStories().filter((story) => matchesVisibility(story.broken, query.brokenVisibility) &&
-                (!query.brokenState || (query.brokenState === 'true' ? story.broken : !story.broken)));
+            const visible = currentStories();
             return {
                 page: page(
                     query.page,
@@ -355,20 +381,20 @@ export function installCollectionFixture() {
                 ),
             };
         },
-        OpenShelf: async (
-            shelfID: number,
+        OpenCollection: async (
+            collectionID: number,
             request: {page: number; pageSize: number; sort: string; brokenVisibility?: string},
         ) => {
-            const preview = CANONICAL_PARITY_FIXTURE.mainShelves.find(
-                (shelf) => shelf.sourceShelfID === shelfID,
+            const preview = CANONICAL_PARITY_FIXTURE.mainCollections.find(
+                (collection) => collection.sourceCollectionID === collectionID,
             );
-            const source = (preview?.stories ?? []).map((story) => ({...story, broken: fixtureFlags.get(story.id) ?? false})).filter((story) => matchesVisibility(story.broken, request.brokenVisibility));
+            const source = (preview?.stories ?? []).map((story) => ({...story, broken: fixtureFlags.get(story.id) ?? false}));
             return {
                 evaluation: {
-                    shelf: {
-                        id: shelfID,
+                    collection: {
+                        id: collectionID,
                         name: preview?.name ?? 'Favorites',
-                        position: shelfID - 1,
+                        position: collectionID - 1,
                         queryVersion: 1,
                         queryPayload: '{}',
                         validity: 'valid',
@@ -422,7 +448,7 @@ export function installCollectionFixture() {
         },
         TagCatalog: async () => ({
             catalog: {
-                definitions: [parityAgeDefinition],
+                definitions: fixture === 'parity' ? [parityAgeDefinition, ...parityAssignmentDefinitions.slice(1)] : [parityAgeDefinition],
             },
         }),
         TagAssignmentWorkspace: async (storyIDs: number[]) => ({

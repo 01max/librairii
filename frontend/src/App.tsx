@@ -1,4 +1,10 @@
+import TagSearchFilters from './TagSearchFilters';
+import SearchInput from './SearchInput';
 import {useStoryFlags} from './use-story-flags';
+import {CollectionDeletion} from './ShelfSources';
+import ShelfDialog from './ShelfDialog';
+import ShelfWorkspace from './ShelfWorkspace';
+import ShelfCreation from './ShelfCreation';
 import SettingsPanel from './SettingsPanel';
 import OutcomeText from './OutcomeText';
 import {isStoryTag, systemLabel, systemValue} from './system-label';
@@ -19,20 +25,22 @@ import {
     ApplicationStatus,
     LibraryCompatibility,
     CancelOperation,
-    CreateShelf,
-    DeleteShelf,
-    DuplicateShelf,
+    CreateCollection,
+    DuplicateCollection,
+    ListCollections,
     ListShelves,
+    ReorderShelves,
+    AddStoriesToShelf,
     OfficialMetadataStatus,
-    OpenShelf,
+    OpenCollection,
     OperationSnapshot,
-    PreviewShelves,
+    PreviewCollections,
     QueryStories,
     RecoverStorage,
     RevealExportDestination,
-    RenameShelf,
-    ReorderShelves,
-    ReplaceShelfQuery,
+    RenameCollection,
+    ReorderCollections,
+    ReplaceCollectionQuery,
     RefreshOfficialMetadata,
     RemoveStory,
     SelectAndImportStories,
@@ -48,6 +56,7 @@ import {
     library,
     metadata,
     operations,
+    collections,
     shelves,
     tagging,
 } from '../wailsjs/go/models';
@@ -62,8 +71,6 @@ import {
 } from './query-history';
 import {
     type CompatibilityFilter,
-    type BrokenVisibility,
-    type BooleanFilterState,
     type CollectionQuery,
     DEFAULT_COLLECTION_QUERY,
 } from './query-codec';
@@ -78,7 +85,7 @@ import OperationHistoryDialog from './OperationHistoryDialog';
 import ExportReport from './ExportReport';
 import LuniiSync from './LuniiSync';
 import StoryCover from './StoryCover';
-import StoryFlagButton from './StoryFlagButton';
+import BrokenToggle from './BrokenToggle';
 import TagAssignmentEditor from './TagAssignmentEditor';
 import {describeMetadataRefresh} from './metadata-state';
 import {useModalFocus} from './modal-focus';
@@ -100,7 +107,7 @@ const coverPalettes = [
     ['#579c85', '#f5c75a', '#315f53'],
 ] as const;
 
-const savedShelfColors = ['#ff705c', '#55b79a', '#f5bc41'] as const;
+const savedCollectionColors = ['#ff705c', '#55b79a', '#f5bc41'] as const;
 
 const collectionExpansionBatchSize = 50;
 
@@ -160,8 +167,8 @@ function metadataAttribution(story: library.StorySummary): string {
     return t("{0} · metadata synced {1}", author, sameDay ? t('today') : syncedAt.toLocaleDateString(currentLanguage()));
 }
 
-function savedShelfColor(index: number): string {
-    return savedShelfColors[index % savedShelfColors.length];
+function savedCollectionColor(index: number): string {
+    return savedCollectionColors[index % savedCollectionColors.length];
 }
 
 const initialCollectionQuery: CollectionQuery = {
@@ -170,14 +177,12 @@ const initialCollectionQuery: CollectionQuery = {
     sort: 'imported_desc',
 };
 
-function collectionQueryFromShelf(
-    saved: shelves.SavedLibraryQuery,
+function collectionQueryFromCollection(
+    saved: collections.SavedLibraryQuery,
     current: CollectionQuery,
 ): CollectionQuery {
     return {
-        ...(saved.anyOf?.length ? {anyOf: saved.anyOf.map((branch) => collectionQueryFromShelf(branch, current))} : {}),
-        brokenVisibility: (saved.brokenVisibility ?? (saved.includeBroken ? 'include' : 'hide')) as BrokenVisibility,
-        ...(saved.brokenState ? {brokenState: saved.brokenState as BooleanFilterState} : {}),
+        ...(saved.anyOf?.length ? {anyOf: saved.anyOf.map((branch) => collectionQueryFromCollection(branch, current))} : {}),
         name: saved.name ?? '',
         languages: [...(saved.languages ?? [])],
         compatibilities: [...(saved.compatibilities ?? [])] as CompatibilityFilter[],
@@ -195,8 +200,8 @@ function collectionQueryFromShelf(
     };
 }
 
-function savedShelfSource(
-    query: shelves.SavedLibraryQuery,
+function savedCollectionSource(
+    query: collections.SavedLibraryQuery,
     catalogs: Array<tagging.Catalog | null | undefined>,
 ): string {
     const definitions = new Map(catalogs.flatMap(
@@ -217,10 +222,10 @@ function savedShelfSource(
     if (definitionIDs.length > 0) {
         return t("Tag filters");
     }
-    return t("Saved shelf");
+    return t("Saved collection");
 }
 
-function shelfAttentionMessage(reason?: string): string {
+function collectionAttentionMessage(reason?: string): string {
     if (reason === 'unmigratable_query') {
         return t("This saved query uses an unsupported or damaged format and cannot be evaluated safely.");
     }
@@ -281,18 +286,18 @@ type CoverStyle = CSSProperties & {
     '--land': string;
 };
 
-type ShelfDialogMode = 'save' | 'rename' | 'duplicate';
-type CollectionShelfRow = {
+type CollectionDialogMode = 'save' | 'rename' | 'duplicate';
+type LibraryGroupRow = {
     key: string;
     name: string;
     storyCount: number;
     source: string;
     stories: library.StorySummary[];
-    shelfID?: number;
+    collectionID?: number;
     error?: string;
 };
 
-type SavedShelfPreviewDetails = {
+type SavedCollectionPreviewDetails = {
     name: string;
     count: number;
     source: string;
@@ -358,13 +363,26 @@ function App() {
     );
     const initialHistoryState = useMemo(() => {
         const query = queryHistory.current();
-        const shelfID = queryHistory.currentShelfID();
+        const collectionID = queryHistory.currentCollectionID();
         return {
             query,
-            shelfID,
+            collectionID,
             scope: queryHistory.currentScope(),
         };
     }, [queryHistory]);
+    const [curatedShelfID, setCuratedShelfID] = useState<number | null>(() => queryHistory.currentCuratedShelfID());
+    const [curatedShelves, setCuratedShelves] = useState<shelves.Shelf[]>([]);
+    const [shelfRevision, setShelfRevision] = useState(0);
+    const [createShelfUUIDs, setCreateShelfUUIDs] = useState<string[] | null>(null);
+    const [selectedCuratedIDs, setSelectedCuratedIDs] = useState<number[]>([]);
+    const [addShelfOpen, setAddShelfOpen] = useState(false);
+    const [addShelfID, setAddShelfID] = useState('');
+    const openCuratedShelf = (id: number) => {
+        setCollectionQuery(queryHistory.pushShelf(id));
+        activeCollectionIDRef.current = null; setActiveCollectionID(null); setCollectionScope('shelf');
+        setCuratedShelfID(id);
+        setSidebarOpen(false);
+    };
     const [applicationState, setApplicationState] = useState('initializing');
     const [applicationError, setApplicationError] = useState('');
     const [storageRecoveryAvailable, setStorageRecoveryAvailable] = useState(false);
@@ -372,10 +390,6 @@ function App() {
     const [collectionQuery, setCollectionQuery] = useState(
         initialHistoryState.query,
     );
-    const brokenVisibilityRef = useRef((collectionQuery.brokenVisibility ?? 'hide'));
-    useEffect(() => {
-        brokenVisibilityRef.current = (collectionQuery.brokenVisibility ?? 'hide');
-    }, [collectionQuery.brokenVisibility]);
     const [page, setPage] = useState<library.Page | null>(null);
     const [selectedID, setSelectedID] = useState<number | null>(null);
     const [selectedIDs, setSelectedIDs] = useState<number[]>([]);
@@ -416,30 +430,30 @@ function App() {
     const [tagCatalog, setTagCatalog] = useState<tagging.Catalog | null>(null);
     const [facetCounts, setFacetCounts] = useState<Record<number, number>>({});
     const [collectionRevision, setCollectionRevision] = useState(0);
-    const [savedShelves, setSavedShelves] = useState<shelves.Summary[]>([]);
-    const [savedShelfStories, setSavedShelfStories] =
+    const [savedCollections, setSavedCollections] = useState<collections.Summary[]>([]);
+    const [savedCollectionStories, setSavedCollectionStories] =
         useState<Record<number, library.StorySummary[]>>({});
-    const [savedShelfPreviewDetails, setSavedShelfPreviewDetails] =
-        useState<Record<number, SavedShelfPreviewDetails>>({});
-    const [savedShelfPreviewErrors, setSavedShelfPreviewErrors] =
+    const [savedCollectionPreviewDetails, setSavedCollectionPreviewDetails] =
+        useState<Record<number, SavedCollectionPreviewDetails>>({});
+    const [savedCollectionPreviewErrors, setSavedCollectionPreviewErrors] =
         useState<Record<number, string>>({});
-    const [activeShelfID, setActiveShelfID] = useState<number | null>(
-        initialHistoryState.shelfID,
+    const [activeCollectionID, setActiveCollectionID] = useState<number | null>(
+        initialHistoryState.collectionID,
     );
     const [collectionScope, setCollectionScope] = useState<CollectionScope>(
         initialHistoryState.scope,
     );
-    const [selectedShelfIDs, setSelectedShelfIDs] = useState<number[]>([]);
-    const [shelfSelectionPreview, setShelfSelectionPreview] =
-        useState<shelves.SelectionPreview | null>(null);
-    const [shelfSelectionBusy, setShelfSelectionBusy] = useState(false);
-    const [shelfSelectionError, setShelfSelectionError] = useState<string | null>(null);
-    const [shelfDialogMode, setShelfDialogMode] = useState<ShelfDialogMode | null>(null);
-    const [shelfDialogName, setShelfDialogName] = useState('');
-    const [shelfDialogError, setShelfDialogError] = useState<string | null>(null);
-    const [shelfBusy, setShelfBusy] = useState(false);
-    const [repairShelfID, setRepairShelfID] = useState<number | null>(null);
-    const [deleteShelfID, setDeleteShelfID] = useState<number | null>(null);
+    const [selectedCollectionIDs, setSelectedCollectionIDs] = useState<number[]>([]);
+    const [collectionSelectionPreview, setCollectionSelectionPreview] =
+        useState<collections.SelectionPreview | null>(null);
+    const [collectionSelectionBusy, setCollectionSelectionBusy] = useState(false);
+    const [collectionSelectionError, setCollectionSelectionError] = useState<string | null>(null);
+    const [collectionDialogMode, setCollectionDialogMode] = useState<CollectionDialogMode | null>(null);
+    const [collectionDialogName, setCollectionDialogName] = useState('');
+    const [collectionDialogError, setCollectionDialogError] = useState<string | null>(null);
+    const [collectionBusy, setCollectionBusy] = useState(false);
+    const [repairCollectionID, setRepairCollectionID] = useState<number | null>(null);
+    const [deleteCollectionID, setDeleteCollectionID] = useState<number | null>(null);
     const [exportPreflight, setExportPreflight] =
         useState<exporter.PreflightReport | null>(null);
     const [exportPreflightRequest, setExportPreflightRequest] =
@@ -447,44 +461,41 @@ function App() {
     const [exportPreparing, setExportPreparing] = useState(false);
     const [exportStarting, setExportStarting] = useState(false);
     const [exportStartError, setExportStartError] = useState<string | null>(null);
-    const activeShelfIDRef = useRef<number | null>(initialHistoryState.shelfID);
+    const activeCollectionIDRef = useRef<number | null>(initialHistoryState.collectionID);
     const refreshedOperations = useRef(new Set<string>());
     const searchInput = useRef<HTMLInputElement>(null);
     const openDetailsButton = useRef<HTMLButtonElement>(null);
     const collectionRequestGeneration = useRef(0);
-    const pendingFlagFocus = useRef<{trigger: Element; candidates: HTMLElement[]} | null>(null);
-    const shelfPreviewGeneration = useRef(0);
-    const shelfListRequestGeneration = useRef(0);
-    const shelfDialog = useRef<HTMLFormElement>(null);
-    const shelfDialogInitialFocus = useRef<HTMLInputElement>(null);
-    const repairShelfDialog = useRef<HTMLElement>(null);
-    const repairShelfInitialFocus = useRef<HTMLButtonElement>(null);
-    const deleteShelfDialog = useRef<HTMLElement>(null);
-    const deleteShelfInitialFocus = useRef<HTMLButtonElement>(null);
+    const collectionPreviewGeneration = useRef(0);
+    const collectionListRequestGeneration = useRef(0);
+    const collectionDialog = useRef<HTMLFormElement>(null);
+    const collectionDialogInitialFocus = useRef<HTMLInputElement>(null);
+    const repairCollectionDialog = useRef<HTMLElement>(null);
+    const repairCollectionInitialFocus = useRef<HTMLButtonElement>(null);
     const exportPreflightDialog = useRef<HTMLElement>(null);
     const exportPreflightInitialFocus = useRef<HTMLButtonElement>(null);
-    useModalFocus(shelfDialog, shelfDialogInitialFocus, shelfDialogMode !== null);
-    useModalFocus(repairShelfDialog, repairShelfInitialFocus, repairShelfID !== null);
-    useModalFocus(deleteShelfDialog, deleteShelfInitialFocus, deleteShelfID !== null);
+    useModalFocus(collectionDialog, collectionDialogInitialFocus, collectionDialogMode !== null);
+    useModalFocus(repairCollectionDialog, repairCollectionInitialFocus, repairCollectionID !== null);
     useModalFocus(
         exportPreflightDialog,
         exportPreflightInitialFocus,
         exportPreflight !== null,
     );
-    const activateShelf = useCallback((
-        shelfID: number | null,
+    const activateCollection = useCallback((
+        collectionID: number | null,
         scope: CollectionScope,
     ) => {
-        activeShelfIDRef.current = shelfID;
-        setActiveShelfID(shelfID);
+        setCuratedShelfID(null);
+        activeCollectionIDRef.current = collectionID;
+        setActiveCollectionID(collectionID);
         setCollectionScope(scope);
     }, []);
 
     useEffect(() => {
         if (
-            shelfDialogMode === null &&
-            repairShelfID === null &&
-            deleteShelfID === null &&
+            collectionDialogMode === null &&
+            repairCollectionID === null &&
+            deleteCollectionID === null &&
             exportPreflight === null
         ) {
             return;
@@ -492,7 +503,7 @@ function App() {
         const closeOnEscape = (event: KeyboardEvent) => {
             if (
                 event.key !== 'Escape' ||
-                shelfBusy ||
+                collectionBusy ||
                 exportPreparing ||
                 exportStarting
             ) {
@@ -500,27 +511,28 @@ function App() {
             }
             if (exportPreflight !== null) {
                 setExportPreflight(null);
-            } else if (deleteShelfID !== null) {
-                setDeleteShelfID(null);
-            } else if (repairShelfID !== null) {
-                setRepairShelfID(null);
+            } else if (deleteCollectionID !== null) {
+                setDeleteCollectionID(null);
+            } else if (repairCollectionID !== null) {
+                setRepairCollectionID(null);
             } else {
-                setShelfDialogMode(null);
+                setCollectionDialogMode(null);
             }
         };
         window.addEventListener('keydown', closeOnEscape);
         return () => window.removeEventListener('keydown', closeOnEscape);
     }, [
-        deleteShelfID,
+        deleteCollectionID,
         exportPreflight,
         exportPreparing,
         exportStarting,
-        repairShelfID,
-        shelfBusy,
-        shelfDialogMode,
+        repairCollectionID,
+        collectionBusy,
+        collectionDialogMode,
     ]);
 
     const loadCollection = useCallback(async () => {
+        if (curatedShelfID !== null) return;
         const generation = ++collectionRequestGeneration.current;
         try {
             const result = await QueryStories(new library.StoryLibraryQuery(collectionQuery));
@@ -535,7 +547,7 @@ function App() {
             }
             const lastPage = Math.max(1, result.page.totalPages);
             if (collectionQuery.page > lastPage) {
-                setCollectionQuery(queryHistory.replace({...collectionQuery, page: lastPage}, activeShelfIDRef.current));
+                setCollectionQuery(queryHistory.replace({...collectionQuery, page: lastPage}, activeCollectionIDRef.current));
                 return;
             }
             setRequestError(null);
@@ -547,7 +559,7 @@ function App() {
                 setRequestError(t("The story collection could not be loaded."));
             }
         }
-    }, [collectionQuery, queryHistory]);
+    }, [collectionQuery, queryHistory, curatedShelfID]);
     const loadCollectionRef = useRef(loadCollection);
     useEffect(() => {
         loadCollectionRef.current = loadCollection;
@@ -558,12 +570,13 @@ function App() {
     }, [collectionQuery]);
 
     useEffect(() => {
-        return queryHistory.subscribe((query, shelfID, scope) => {
+        return queryHistory.subscribe((query, collectionID, scope, shelfID) => {
             collectionRequestGeneration.current++;
-            activateShelf(shelfID, scope);
+            activateCollection(collectionID, scope);
+            setCuratedShelfID(shelfID);
             setCollectionQuery(query);
         });
-    }, [activateShelf, initialHistoryState.scope, queryHistory]);
+    }, [activateCollection, initialHistoryState.scope, queryHistory]);
 
     const refreshMetadataStatus = useCallback(async () => {
         try {
@@ -578,76 +591,69 @@ function App() {
         }
     }, []);
 
-    const loadSavedShelves = useCallback(async () => {
+    useEffect(() => {
+        if (applicationState !== 'ready') return;
+        let active = true;
+        void ListShelves().then((response) => {
+            if (!active) return;
+            if (response.error) setRequestError(response.error.message);
+            else {
+                const nextShelves = response.shelves ?? [];
+                setCuratedShelves(nextShelves);
+                setSelectedCuratedIDs((current) => current.filter((id) => (
+                    nextShelves.some((shelf) => shelf.id === id)
+                )));
+            }
+        }).catch(() => { if (active) setRequestError(t('Shelves could not be loaded.')); });
+        return () => { active = false; };
+    }, [applicationState, shelfRevision, settingsRevision]);
+
+    const loadSavedCollections = useCallback(async () => {
         try {
-            const generation = ++shelfListRequestGeneration.current;
-            const response = await ListShelves(brokenVisibilityRef.current);
-            if (generation !== shelfListRequestGeneration.current) return;
+            const generation = ++collectionListRequestGeneration.current;
+            const response = await ListCollections();
+            if (generation !== collectionListRequestGeneration.current) return;
             if (response.error) {
                 setRequestError(response.error.message);
                 return;
             }
-            const nextShelves = response.shelves ?? [];
-            setSavedShelves(nextShelves);
-            setSelectedShelfIDs((current) => current.filter((shelfID) => (
-                nextShelves.some((shelf) => shelf.id === shelfID)
+            const nextCollections = response.collections ?? [];
+            setSavedCollections(nextCollections);
+            setSelectedCollectionIDs((current) => current.filter((collectionID) => (
+                nextCollections.some((collection) => collection.id === collectionID)
             )));
-            const activeID = activeShelfIDRef.current;
-            const active = nextShelves.find((shelf) => shelf.id === activeID);
+            const activeID = activeCollectionIDRef.current;
+            const active = nextCollections.find((collection) => collection.id === activeID);
             if (activeID !== null && (!active || active.validity === 'needs_attention')) {
                 if (active?.validity === 'needs_attention') {
-                    setRepairShelfID(active.id);
+                    setRepairCollectionID(active.id);
                     setPage(null);
                 }
-                activateShelf(null, 'custom');
+                activateCollection(null, 'custom');
                 queryHistory.replace(queryHistory.current(), null);
             }
         } catch {
-            setRequestError(t("Saved shelves could not be loaded."));
+            setRequestError(t("Saved collections could not be loaded."));
         }
-    }, [activateShelf, queryHistory]);
-
-    const previousVisibility = useRef((collectionQuery.brokenVisibility ?? 'hide'));
-    useEffect(() => {
-        const visibility = (collectionQuery.brokenVisibility ?? 'hide');
-        if (visibility !== previousVisibility.current) {
-            previousVisibility.current = visibility;
-            if (applicationState === 'ready') void loadSavedShelves();
-        }
-    }, [collectionQuery.brokenVisibility, applicationState, loadSavedShelves]);
+    }, [activateCollection, queryHistory]);
 
     const invalidateCollection = useCallback(async () => {
         setCollectionRevision((current) => current + 1);
-        await Promise.all([loadCollectionRef.current(), loadSavedShelves()]);
-    }, [loadSavedShelves]);
+        await Promise.all([loadCollectionRef.current(), loadSavedCollections()]);
+    }, [loadSavedCollections]);
 
     const onFlagsChanged = useCallback(async (result: library.FlagResult) => {
         const changes = new Map(result.changes.map((change) => [change.storyId, change.current]));
-        const mode = collectionQuery.brokenVisibility ?? 'hide';
-        const remainsVisible = (story: library.StorySummary) => mode === 'include' || (mode === 'only' ? story.broken : !story.broken);
         const refreshStories = (stories: library.StorySummary[]) => stories.map((story) => changes.has(story.id)
-            ? new library.StorySummary({...story, broken: changes.get(story.id)}) : story).filter(remainsVisible);
-        setSavedShelfStories((current) => Object.fromEntries(Object.entries(current).map(([id, stories]) => [id, refreshStories(stories)])));
-        const trigger = document.activeElement;
-        const triggerStory = trigger?.closest('.story-card')?.querySelector<HTMLElement>('[data-story-id]');
-        const triggerID = Number(triggerStory?.dataset.storyId);
-        pendingFlagFocus.current = null;
-        if (trigger && triggerStory && changes.has(triggerID)) {
-            const candidates = Array.from(document.querySelectorAll<HTMLElement>('.story[data-story-id]'));
-            const index = candidates.indexOf(triggerStory);
-            pendingFlagFocus.current = {
-                trigger,
-                candidates: [...candidates.slice(index + 1), ...candidates.slice(0, index)]
-                    .filter((candidate) => !changes.has(Number(candidate.dataset.storyId))),
-            };
-        }
+            ? new library.StorySummary({...story, broken: changes.get(story.id)}) : story);
+        setSavedCollectionStories((current) => Object.fromEntries(Object.entries(current).map(([id, stories]) => [id, refreshStories(stories)])));
         setInspectedStory((current) => {
             const change = result.changes.find((item) => item.storyId === current?.id);
             return current && change ? new library.StorySummary({...current, broken: change.current}) : current;
         });
         await invalidateCollection();
-    }, [invalidateCollection, collectionQuery.brokenVisibility]);
-    const flags = useStoryFlags(onFlagsChanged, collectionQuery.brokenVisibility ?? 'hide');
+    }, [invalidateCollection]);
+    const flags = useStoryFlags(onFlagsChanged);
 
     const reconcileOperation = useCallback((snapshot: operations.Snapshot) => {
         setOperationSnapshots((current) => {
@@ -694,7 +700,7 @@ function App() {
                     if (compatibility.error) throw new Error(compatibility.error.message);
                     queryHistory.configureLegacyBrokenTagID(compatibility.compatibility.legacyBrokenTagId);
                     const migratedQuery = queryHistory.current();
-                    queryHistory.replace(migratedQuery, activeShelfIDRef.current, initialHistoryState.scope);
+                    if (queryHistory.currentCuratedShelfID() === null) queryHistory.replace(migratedQuery, activeCollectionIDRef.current, initialHistoryState.scope);
                     setCollectionQuery(migratedQuery);
                 }
                 setApplicationState(state);
@@ -705,28 +711,28 @@ function App() {
                     if (active) {
                         setTagCatalog(catalogResponse.catalog ?? null);
                     }
-                    const shelvesResponse = await ListShelves(brokenVisibilityRef.current);
+                    const collectionsResponse = await ListCollections();
                     if (!active) {
                         return;
                     }
-                    if (shelvesResponse.error) {
-                        setRequestError(shelvesResponse.error.message);
+                    if (collectionsResponse.error) {
+                        setRequestError(collectionsResponse.error.message);
                     } else {
-                        const nextShelves = shelvesResponse.shelves ?? [];
-                        setSavedShelves(nextShelves);
-                        const activeID = activeShelfIDRef.current;
-                        const active = nextShelves.find(
-                            (shelf) => shelf.id === activeID,
+                        const nextCollections = collectionsResponse.collections ?? [];
+                        setSavedCollections(nextCollections);
+                        const activeID = activeCollectionIDRef.current;
+                        const active = nextCollections.find(
+                            (collection) => collection.id === activeID,
                         );
                         if (
                             activeID !== null &&
                             (!active || active.validity === 'needs_attention')
                         ) {
                             if (active?.validity === 'needs_attention') {
-                                setRepairShelfID(active.id);
+                                setRepairCollectionID(active.id);
                                 setPage(null);
                             }
-                            activateShelf(null, 'custom');
+                            activateCollection(null, 'custom');
                             queryHistory.replace(queryHistory.current(), null);
                         }
                     }
@@ -763,7 +769,7 @@ function App() {
         return () => {
             active = false;
         };
-    }, [activateShelf, initialHistoryState.scope, queryHistory, reconcileOperation, settingsRevision]);
+    }, [activateCollection, initialHistoryState.scope, queryHistory, reconcileOperation, settingsRevision]);
 
     const recoverStorage = async () => {
         setStorageRecovering(true);
@@ -797,43 +803,43 @@ function App() {
     }, [applicationState]);
 
     useEffect(() => {
-        if (applicationState !== 'ready' || selectedShelfIDs.length === 0) {
+        if (applicationState !== 'ready' || selectedCollectionIDs.length === 0) {
             return;
         }
         let active = true;
         void (async () => {
-            setShelfSelectionBusy(true);
-            setShelfSelectionError(null);
+            setCollectionSelectionBusy(true);
+            setCollectionSelectionError(null);
             try {
-                const response = await PreviewShelves(selectedShelfIDs, (collectionQuery.brokenVisibility ?? 'hide'));
+                const response = await PreviewCollections(selectedCollectionIDs);
                 if (!active) {
                     return;
                 }
                 if (!response.preview) {
-                    setShelfSelectionPreview(null);
-                    setShelfSelectionError(
+                    setCollectionSelectionPreview(null);
+                    setCollectionSelectionError(
                         response.error?.message ??
-                        t("The shelf selection could not be previewed."),
+                        t("The collection selection could not be previewed."),
                     );
                     return;
                 }
-                setShelfSelectionPreview(response.preview);
+                setCollectionSelectionPreview(response.preview);
             } catch {
                 if (!active) {
                     return;
                 }
-                setShelfSelectionPreview(null);
-                setShelfSelectionError(t("The shelf selection could not be previewed."));
+                setCollectionSelectionPreview(null);
+                setCollectionSelectionError(t("The collection selection could not be previewed."));
             } finally {
                 if (active) {
-                    setShelfSelectionBusy(false);
+                    setCollectionSelectionBusy(false);
                 }
             }
         })();
         return () => {
             active = false;
         };
-    }, [applicationState, savedShelves, selectedShelfIDs, collectionQuery.brokenVisibility]);
+    }, [applicationState, savedCollections, selectedCollectionIDs]);
 
     useEffect(() => {
         const unsubscribe = EventsOn('operation:changed', (value: unknown) => {
@@ -922,23 +928,22 @@ function App() {
     }
 
     async function prepareExport(
-        sourceType: 'selection' | 'current_query' | 'shelf' | 'shelves',
+        sourceType: 'selection' | 'current_query' | 'collection' | 'collections',
     ) {
-        const shelfIDs = sourceType === 'shelf'
-            ? activeShelfID === null
-                ? selectedShelfIDs.slice(0, 1)
-                : [activeShelfID]
-            : sourceType === 'shelves'
-                ? selectedShelfIDs
+        const collectionIDs = sourceType === 'collection'
+            ? activeCollectionID === null
+                ? selectedCollectionIDs.slice(0, 1)
+                : [activeCollectionID]
+            : sourceType === 'collections'
+                ? selectedCollectionIDs
                 : [];
         await preflightExport(new exporter.PreflightRequest({
             sourceType,
-            brokenVisibility: (collectionQuery.brokenVisibility ?? 'hide'),
             storyIds: sourceType === 'selection' ? [...selectedIDs] : [],
             query: sourceType === 'current_query'
                 ? new library.StoryLibraryQuery(collectionQuery)
                 : new library.StoryLibraryQuery({}),
-            shelfIds: [...shelfIDs],
+            collectionIds: [...collectionIDs],
         }));
     }
 
@@ -1152,15 +1157,15 @@ function App() {
     const rows = useMemo(() => libraryView === 'large'
         ? chunkStories(stories)
         : stories.length ? [stories] : [], [libraryView, stories]);
-    const activeShelf = savedShelves.find((shelf) => shelf.id === activeShelfID) ?? null;
-    const allStoriesActive = activeShelfID === null &&
+    const activeCollection = savedCollections.find((collection) => collection.id === activeCollectionID) ?? null;
+    const allStoriesActive = curatedShelfID === null && activeCollectionID === null &&
         collectionScope === 'all';
-    const previewableShelves = useMemo(() => savedShelves.filter(
-        (shelf) => shelf.validity === 'valid',
-    ), [savedShelves]);
-    const showSavedShelfRows = allStoriesActive && previewableShelves.length > 0;
-    const repairShelf = savedShelves.find((shelf) => shelf.id === repairShelfID) ?? null;
-    const deleteShelf = savedShelves.find((shelf) => shelf.id === deleteShelfID) ?? null;
+    const previewableCollections = useMemo(() => savedCollections.filter(
+        (collection) => collection.validity === 'valid',
+    ), [savedCollections]);
+    const showSavedCollectionRows = allStoriesActive && previewableCollections.length > 0;
+    const repairCollection = savedCollections.find((collection) => collection.id === repairCollectionID) ?? null;
+    const deleteCollection = savedCollections.find((collection) => collection.id === deleteCollectionID) ?? null;
     const activeOperations = operationSnapshots.filter((snapshot) => (
         operationIsActive(snapshot)
     ));
@@ -1232,7 +1237,7 @@ function App() {
         ...(metadataStatus?.locale ? [metadataStatus.locale] : []),
         ...collectionQuery.languages,
     ])].sort();
-    const collectionRows = useMemo<CollectionShelfRow[]>(() => (
+    const collectionRows = useMemo<LibraryGroupRow[]>(() => (
         [
             ...rows.map((row, rowIndex) => ({
                 key: `collection-${rowIndex}`,
@@ -1241,23 +1246,23 @@ function App() {
                 source: "Local archive",
                 stories: row,
             })),
-            ...(showSavedShelfRows ? previewableShelves.map((shelf) => ({
-                key: `saved-shelf-${shelf.id}`,
-                name: savedShelfPreviewDetails[shelf.id]?.name ?? shelf.name,
-                storyCount: savedShelfPreviewDetails[shelf.id]?.count ?? shelf.count,
-                source: savedShelfPreviewDetails[shelf.id]?.source ?? t("Saved shelf"),
-                stories: savedShelfStories[shelf.id] ?? [],
-                shelfID: shelf.id,
-                error: savedShelfPreviewErrors[shelf.id],
+            ...(showSavedCollectionRows ? previewableCollections.map((collection) => ({
+                key: `saved-collection-${collection.id}`,
+                name: savedCollectionPreviewDetails[collection.id]?.name ?? collection.name,
+                storyCount: savedCollectionPreviewDetails[collection.id]?.count ?? collection.count,
+                source: savedCollectionPreviewDetails[collection.id]?.source ?? t("Saved collection"),
+                stories: savedCollectionStories[collection.id] ?? [],
+                collectionID: collection.id,
+                error: savedCollectionPreviewErrors[collection.id],
             })) : []),
         ]
     ), [
-        previewableShelves,
+        previewableCollections,
         rows,
-        savedShelfPreviewDetails,
-        savedShelfPreviewErrors,
-        savedShelfStories,
-        showSavedShelfRows,
+        savedCollectionPreviewDetails,
+        savedCollectionPreviewErrors,
+        savedCollectionStories,
+        showSavedCollectionRows,
     ]);
     const renderedStories = useMemo(
         () => collectionRows.flatMap((row) => row.stories),
@@ -1274,24 +1279,6 @@ function App() {
         setSelectedID(selectedID !== null && nextSelection.includes(selectedID)
             ? selectedID : nextSelection[0] ?? null);
     }
-    useEffect(() => {
-        const pending = pendingFlagFocus.current;
-        if (!pending || pending.trigger.isConnected) return;
-        pendingFlagFocus.current = null;
-        if (document.activeElement !== document.body) return;
-        const target = pending.candidates.find((candidate) => candidate.isConnected)
-            ?? document.querySelector<HTMLElement>('main');
-        target?.focus({preventScroll: true});
-    }, [renderedStories]);
-    useEffect(() => {
-        const cancelFlagFocus = (event: FocusEvent) => {
-            if (pendingFlagFocus.current && event.target !== pendingFlagFocus.current.trigger) {
-                pendingFlagFocus.current = null;
-            }
-        };
-        document.addEventListener('focusin', cancelFlagFocus);
-        return () => document.removeEventListener('focusin', cancelFlagFocus);
-    }, []);
     const selectedSummary = renderedStories.find(
         (story) => story.id === selectedID,
     ) ?? null;
@@ -1301,9 +1288,9 @@ function App() {
     const inspected = inspectedStory ?? selected;
     const selectedFlaggedCount = selectedIDs.filter((id) => renderedStories.some((story) => story.id === id && story.broken)).length;
     const selectedPalette = selected ? paletteFor(selected.id) : undefined;
-    const selectedShelfCount = selected
-        ? savedShelves.find((shelf) => (
-            savedShelfStories[shelf.id]?.some((story) => story.id === selected.id)
+    const selectedCollectionCount = selected
+        ? savedCollections.find((collection) => (
+            savedCollectionStories[collection.id]?.some((story) => story.id === selected.id)
         ))?.count
         : undefined;
     const empty = page !== null && page.totalItems === 0 && !importing;
@@ -1343,17 +1330,16 @@ function App() {
     }) ?? [];
 
     useEffect(() => {
-        const generation = ++shelfPreviewGeneration.current;
-        if (applicationState !== 'ready' || !showSavedShelfRows) {
+        const generation = ++collectionPreviewGeneration.current;
+        if (applicationState !== 'ready' || !showSavedCollectionRows) {
             return;
         }
         let active = true;
-        void Promise.all(previewableShelves.map(async (shelf) => {
+        void Promise.all(previewableCollections.map(async (collection) => {
             try {
-                const response = await OpenShelf(
-                    shelf.id,
+                const response = await OpenCollection(
+                    collection.id,
                     new library.ListRequest({
-                        brokenVisibility: (collectionQuery.brokenVisibility ?? 'hide'),
                         page: 1,
                         pageSize: 6,
                         sort: collectionQuery.sort,
@@ -1361,20 +1347,20 @@ function App() {
                 );
                 if (!response.evaluation) {
                     return {
-                        shelfID: shelf.id,
+                        collectionID: collection.id,
                         stories: [] as library.StorySummary[],
                         details: undefined,
                         error: response.error?.message ??
-                            t("{0} could not be previewed.", shelf.name),
+                            t("{0} could not be previewed.", collection.name),
                     };
                 }
                 return {
-                    shelfID: shelf.id,
+                    collectionID: collection.id,
                     stories: response.evaluation.page.stories,
                     details: {
-                        name: response.evaluation.shelf.name,
+                        name: response.evaluation.collection.name,
                         count: response.evaluation.page.totalItems,
-                        source: savedShelfSource(
+                        source: savedCollectionSource(
                             response.evaluation.query,
                             [tagCatalog, assignmentWorkspace?.catalog],
                         ),
@@ -1383,27 +1369,27 @@ function App() {
                 };
             } catch {
                 return {
-                    shelfID: shelf.id,
+                    collectionID: collection.id,
                     stories: [] as library.StorySummary[],
                     details: undefined,
-                    error: t("{0} could not be previewed.", shelf.name),
+                    error: t("{0} could not be previewed.", collection.name),
                 };
             }
         })).then((previews) => {
-            if (!active || generation !== shelfPreviewGeneration.current) {
+            if (!active || generation !== collectionPreviewGeneration.current) {
                 return;
             }
-            setSavedShelfStories(Object.fromEntries(previews.map((preview) => (
-                [preview.shelfID, preview.stories]
+            setSavedCollectionStories(Object.fromEntries(previews.map((preview) => (
+                [preview.collectionID, preview.stories]
             ))));
-            setSavedShelfPreviewDetails(Object.fromEntries(previews.flatMap(
+            setSavedCollectionPreviewDetails(Object.fromEntries(previews.flatMap(
                 (preview) => preview.details
-                    ? [[preview.shelfID, preview.details]]
+                    ? [[preview.collectionID, preview.details]]
                     : [],
             )));
-            setSavedShelfPreviewErrors(Object.fromEntries(previews.flatMap(
+            setSavedCollectionPreviewErrors(Object.fromEntries(previews.flatMap(
                 (preview) => preview.error
-                    ? [[preview.shelfID, preview.error]]
+                    ? [[preview.collectionID, preview.error]]
                     : [],
             )));
         });
@@ -1414,35 +1400,38 @@ function App() {
         applicationState,
         assignmentWorkspace?.catalog,
         collectionQuery.sort,
-        collectionQuery.brokenVisibility,
+        
         collectionRevision,
-        previewableShelves,
-        showSavedShelfRows,
+        previewableCollections,
+        showSavedCollectionRows,
         tagCatalog,
     ]);
 
     const updateQuery = useCallback((
         next: CollectionQuery,
-        shelfID?: number | null,
+        collectionID?: number | null,
     ) => {
-        setCollectionQuery(queryHistory.push(next, shelfID));
+        if (curatedShelfID !== null && collectionID === undefined) {
+            setCollectionQuery(queryHistory.pushShelf(curatedShelfID, next));
+            return;
+        }
+        setCollectionQuery(queryHistory.push(next, collectionID));
         setCollectionScope(queryHistory.currentScope());
-    }, [queryHistory]);
+    }, [queryHistory, curatedShelfID]);
 
-    function toggleShelfSelection(shelfID: number) {
-        setSelectedShelfIDs((current) => current.includes(shelfID)
-            ? current.filter((candidate) => candidate !== shelfID)
-            : [...current, shelfID]);
+    function toggleCollectionSelection(collectionID: number) {
+        setSelectedCollectionIDs((current) => current.includes(collectionID)
+            ? current.filter((candidate) => candidate !== collectionID)
+            : [...current, collectionID]);
     }
 
-    async function openSavedShelf(shelfID: number) {
-        setShelfBusy(true);
+    async function openSavedCollection(collectionID: number) {
+        setCollectionBusy(true);
         setRequestError(null);
         try {
-            const response = await OpenShelf(
-                shelfID,
+            const response = await OpenCollection(
+                collectionID,
                 new library.ListRequest({
-                    brokenVisibility: (collectionQuery.brokenVisibility ?? 'hide'),
                     page: 1,
                     pageSize: collectionQuery.pageSize,
                     sort: collectionQuery.sort,
@@ -1450,25 +1439,25 @@ function App() {
             );
             if (!response.evaluation) {
                 setRequestError(
-                    response.error?.message ?? t("The saved shelf could not be opened."),
+                    response.error?.message ?? t("The saved collection could not be opened."),
                 );
                 return;
             }
-            activateShelf(shelfID, 'shelf');
+            activateCollection(collectionID, 'collection');
             setPage(response.evaluation.page);
-            updateQuery(collectionQueryFromShelf(
+            updateQuery(collectionQueryFromCollection(
                 response.evaluation.query,
                 collectionQuery,
-            ), shelfID);
+            ), collectionID);
         } catch {
-            setRequestError(t("The saved shelf could not be opened."));
+            setRequestError(t("The saved collection could not be opened."));
         } finally {
-            setShelfBusy(false);
+            setCollectionBusy(false);
         }
     }
 
     function openAllStories() {
-        activateShelf(null, 'all');
+        activateCollection(null, 'all');
         updateQuery({
             ...collectionQuery,
             anyOf: undefined,
@@ -1482,186 +1471,152 @@ function App() {
         }, null);
     }
 
-    function showShelfDialog(mode: ShelfDialogMode) {
-        setShelfDialogMode(mode);
-        setShelfDialogError(null);
-        setShelfDialogName(mode === 'rename' ? activeShelf?.name ?? '' : '');
+    function showCollectionDialog(mode: CollectionDialogMode) {
+        setCollectionDialogMode(mode);
+        setCollectionDialogError(null);
+        setCollectionDialogName(mode === 'rename' ? activeCollection?.name ?? '' : '');
     }
 
-    async function submitShelfDialog() {
-        if (!shelfDialogMode) {
+    async function submitCollectionDialog() {
+        if (!collectionDialogMode) {
             return;
         }
-        setShelfBusy(true);
-        setShelfDialogError(null);
+        setCollectionBusy(true);
+        setCollectionDialogError(null);
         try {
             let queryToSave = collectionQuery;
-            if (shelfDialogMode === 'save' && selectedShelfIDs.length > 0) {
-                const selected = await Promise.all(selectedShelfIDs.map((id) => OpenShelf(
+            if (collectionDialogMode === 'save' && selectedCollectionIDs.length > 0) {
+                const selected = await Promise.all(selectedCollectionIDs.map((id) => OpenCollection(
                     id,
                     new library.ListRequest({
-                        brokenVisibility: (collectionQuery.brokenVisibility ?? 'hide'),
                         page: 1,
                         pageSize: 1,
                         sort: collectionQuery.sort,
                     }),
                 )));
                 if (selected.some((response) => !response.evaluation)) {
-                    setShelfDialogError(selected.find((response) => !response.evaluation)?.error?.message ?? t('The saved shelf could not be opened.'));
+                    setCollectionDialogError(selected.find((response) => !response.evaluation)?.error?.message ?? t('The saved collection could not be opened.'));
                     return;
                 }
                 queryToSave = {
                     ...initialCollectionQuery,
-                    brokenVisibility: collectionQuery.brokenVisibility,
                     sort: collectionQuery.sort,
                     pageSize: collectionQuery.pageSize,
-                    anyOf: selected.map((response) => collectionQueryFromShelf(response.evaluation!.query, collectionQuery)),
+                    anyOf: selected.map((response) => collectionQueryFromCollection(response.evaluation!.query, collectionQuery)),
                 };
             }
-            const response = shelfDialogMode === 'save'
-                ? await CreateShelf(
-                    shelfDialogName,
+            const response = collectionDialogMode === 'save'
+                ? await CreateCollection(
+                    collectionDialogName,
                     new library.StoryLibraryQuery(queryToSave),
                 )
-                : shelfDialogMode === 'rename' && activeShelf
-                    ? await RenameShelf(activeShelf.id, shelfDialogName)
-                    : shelfDialogMode === 'duplicate' && activeShelf
-                        ? await DuplicateShelf(activeShelf.id, shelfDialogName)
+                : collectionDialogMode === 'rename' && activeCollection
+                    ? await RenameCollection(activeCollection.id, collectionDialogName)
+                    : collectionDialogMode === 'duplicate' && activeCollection
+                        ? await DuplicateCollection(activeCollection.id, collectionDialogName)
                         : null;
-            if (!response?.shelf) {
-                setShelfDialogError(
-                    response?.error?.message ?? t("The saved shelf could not be changed."),
+            if (!response?.collection) {
+                setCollectionDialogError(
+                    response?.error?.message ?? t("The saved collection could not be changed."),
                 );
                 return;
             }
-            const changedShelf = response.shelf;
-            setShelfDialogMode(null);
-            setShelfDialogName('');
-            await loadSavedShelves();
-            if (shelfDialogMode === 'save') {
-                setCollectionQuery(queryHistory.replace(queryToSave, changedShelf.id));
+            const changedCollection = response.collection;
+            setCollectionDialogMode(null);
+            setCollectionDialogName('');
+            await loadSavedCollections();
+            if (collectionDialogMode === 'save') {
+                setCollectionQuery(queryHistory.replace(queryToSave, changedCollection.id));
                 setCollectionScope(queryHistory.currentScope());
-                activateShelf(changedShelf.id, 'shelf');
-            } else if (shelfDialogMode === 'duplicate') {
-                await openSavedShelf(changedShelf.id);
+                activateCollection(changedCollection.id, 'collection');
+            } else if (collectionDialogMode === 'duplicate') {
+                await openSavedCollection(changedCollection.id);
             }
         } catch {
-            setShelfDialogError(t("The saved shelf could not be changed."));
+            setCollectionDialogError(t("The saved collection could not be changed."));
         } finally {
-            setShelfBusy(false);
+            setCollectionBusy(false);
         }
     }
 
-    async function updateActiveShelf() {
-        if (!activeShelf) {
+    async function updateActiveCollection() {
+        if (!activeCollection) {
             return;
         }
-        setShelfBusy(true);
+        setCollectionBusy(true);
         setRequestError(null);
         try {
-            const response = await ReplaceShelfQuery(
-                activeShelf.id,
+            const response = await ReplaceCollectionQuery(
+                activeCollection.id,
                 new library.StoryLibraryQuery(collectionQuery),
             );
-            if (!response.shelf) {
+            if (!response.collection) {
                 setRequestError(
-                    response.error?.message ?? t("The saved shelf could not be updated."),
+                    response.error?.message ?? t("The saved collection could not be updated."),
                 );
                 return;
             }
-            await loadSavedShelves();
+            await loadSavedCollections();
         } catch {
-            setRequestError(t("The saved shelf could not be updated."));
+            setRequestError(t("The saved collection could not be updated."));
         } finally {
-            setShelfBusy(false);
+            setCollectionBusy(false);
         }
     }
 
-    async function moveShelf(shelfID: number, direction: -1 | 1) {
-        const index = savedShelves.findIndex((shelf) => shelf.id === shelfID);
+    async function moveCollection(collectionID: number, direction: -1 | 1) {
+        const index = savedCollections.findIndex((collection) => collection.id === collectionID);
         const target = index + direction;
-        if (index < 0 || target < 0 || target >= savedShelves.length) {
+        if (index < 0 || target < 0 || target >= savedCollections.length) {
             return;
         }
-        const ordered = [...savedShelves];
+        const ordered = [...savedCollections];
         [ordered[index], ordered[target]] = [ordered[target], ordered[index]];
-        setShelfBusy(true);
+        setCollectionBusy(true);
         try {
-            const response = await ReorderShelves(ordered.map((shelf) => shelf.id));
+            const response = await ReorderCollections(ordered.map((collection) => collection.id));
             if (response.error) {
                 setRequestError(response.error.message);
             } else {
                 // Reordering does not change membership; preserve current visibility counts.
-                const counts = new Map(savedShelves.map((shelf) => [shelf.id, shelf.count]));
-                setSavedShelves((response.shelves ?? []).map((shelf) => new shelves.Summary({
-                    ...shelf, count: counts.get(shelf.id) ?? shelf.count,
+                const counts = new Map(savedCollections.map((collection) => [collection.id, collection.count]));
+                setSavedCollections((response.collections ?? []).map((collection) => new collections.Summary({
+                    ...collection, count: counts.get(collection.id) ?? collection.count,
                 })));
             }
         } catch {
-            setRequestError(t("Saved shelves could not be reordered."));
+            setRequestError(t("Saved collections could not be reordered."));
         } finally {
-            setShelfBusy(false);
+            setCollectionBusy(false);
         }
     }
 
-    async function confirmShelfDeletion() {
-        if (!deleteShelf) {
-            return;
-        }
-        setShelfBusy(true);
-        setShelfDialogError(null);
-        try {
-            const response = await DeleteShelf(deleteShelf.id);
-            if (!response.success) {
-                setShelfDialogError(
-                    response.error?.message ?? t("The saved shelf could not be deleted."),
-                );
-                return;
-            }
-            setDeleteShelfID(null);
-            if (activeShelfID === deleteShelf.id) {
-                queryHistory.replace(collectionQuery, null);
-                activateShelf(null, 'custom');
-            }
-            if (repairShelfID === deleteShelf.id) {
-                setRepairShelfID(null);
-            }
-            setSelectedShelfIDs((current) => current.filter(
-                (shelfID) => shelfID !== deleteShelf.id,
-            ));
-            await loadSavedShelves();
-        } catch {
-            setShelfDialogError(t("The saved shelf could not be deleted."));
-        } finally {
-            setShelfBusy(false);
-        }
-    }
 
-    async function repairShelfWithCurrentQuery() {
-        if (!repairShelf || unavailableCriteria) {
+    async function repairCollectionWithCurrentQuery() {
+        if (!repairCollection || unavailableCriteria) {
             return;
         }
-        setShelfBusy(true);
-        setShelfDialogError(null);
+        setCollectionBusy(true);
+        setCollectionDialogError(null);
         try {
-            const response = await ReplaceShelfQuery(
-                repairShelf.id,
+            const response = await ReplaceCollectionQuery(
+                repairCollection.id,
                 new library.StoryLibraryQuery(collectionQuery),
             );
-            if (!response.shelf) {
-                setShelfDialogError(
-                    response.error?.message ?? t("The saved shelf could not be repaired."),
+            if (!response.collection) {
+                setCollectionDialogError(
+                    response.error?.message ?? t("The saved collection could not be repaired."),
                 );
                 return;
             }
-            setRepairShelfID(null);
-            queryHistory.replace(collectionQuery, repairShelf.id);
-            activateShelf(repairShelf.id, 'shelf');
-            await loadSavedShelves();
+            setRepairCollectionID(null);
+            queryHistory.replace(collectionQuery, repairCollection.id);
+            activateCollection(repairCollection.id, 'collection');
+            await loadSavedCollections();
         } catch {
-            setShelfDialogError(t("The saved shelf could not be repaired."));
+            setCollectionDialogError(t("The saved collection could not be repaired."));
         } finally {
-            setShelfBusy(false);
+            setCollectionBusy(false);
         }
     }
 
@@ -1741,22 +1696,7 @@ function App() {
     }
 
     const unavailableCriteria = hasUnavailableCriteria(collectionQuery, tagCatalog);
-    const flagCriteria = (query: CollectionQuery, path: number[] = []): Array<{path: number[]; state: BooleanFilterState}> => [
-        ...(query.brokenState && query.brokenState !== 'ignored' ? [{path, state: query.brokenState}] : []),
-        ...(query.anyOf?.flatMap((branch, index) => flagCriteria(branch, [...path, index])) ?? []),
-    ];
-    const removeFlagCriterion = (query: CollectionQuery, path: number[]): CollectionQuery => path.length === 0
-        ? {...query, brokenState: undefined}
-        : {...query, anyOf: query.anyOf?.map((branch, index) => index === path[0] ? removeFlagCriterion(branch, path.slice(1)) : branch)};
     const activeFilters = [
-        ...flagCriteria(collectionQuery).map((criterion) => {
-            const label = criterion.state === 'true' ? t('Broken flag: set') : t('Broken flag: clear');
-            return {
-                key: `flag-${criterion.path.join('-')}`,
-                label: criterion.path.length ? t('Alternative {0} · {1}', criterion.path.map((index) => index + 1).join('.'), label) : label,
-                remove: () => updateQuery({...removeFlagCriterion(collectionQuery, criterion.path), page: 1}),
-            };
-        }),
         ...(collectionQuery.name
             ? [{
                 key: 'name',
@@ -1919,126 +1859,127 @@ function App() {
                 </div>
                 <LibraryNavigation
                     libraryActive={allStoriesActive}
-                    disabled={applicationState !== 'ready' || shelfBusy}
+                    disabled={applicationState !== 'ready' || collectionBusy}
                     importing={importing}
                     exporting={exportPreparing}
                     onLibrary={openAllStories}
                     onTags={() => setTagManagerOpen(true)}
                     onImport={() => void startImport()}
-                    onExport={() => void prepareExport('current_query')}
+                    onExport={() => curatedShelfID === null ? void prepareExport('current_query') : void preflightExport(new exporter.PreflightRequest({sourceType: 'current_query', queryShelfId: curatedShelfID, query: collectionQuery}))}
                 />
             </aside>
 
             <LibrarySidebar open={sidebarOpen} onClose={closeSidebar} inert={historyOpen}
-                suspended={tagManagerOpen || tagAssignmentOpen || shelfDialogMode !== null ||
-                    repairShelfID !== null || deleteShelfID !== null || exportPreflight !== null || historyOpen}>
+                suspended={tagManagerOpen || tagAssignmentOpen || collectionDialogMode !== null ||
+                    repairCollectionID !== null || deleteCollectionID !== null || createShelfUUIDs !== null || exportPreflight !== null || historyOpen}>
                 <h1>Librairii</h1>
                 <div className="path">{libraryRoot}</div>
-                <div className="caption">{t("Saved shelves")}</div>
+                <div className="caption">{t("Library")}</div>
                 <nav className="saved">
                     <button
                         className={`saved-picker${allStoriesActive ? ' active' : ''}`}
                         type="button"
                         aria-current={allStoriesActive ? 'page' : undefined}
-                        disabled={shelfBusy}
+                        disabled={collectionBusy}
                         onClick={openAllStories}
                     >
                         <i style={{'--c': '#405cf5'} as CSSProperties}/>
                         {t("All stories")}<span>{allStoriesActive ? page?.totalItems ?? 0 : t("All")}</span>
                     </button>
-                    {savedShelves.map((shelf, index) => (
-                        <div className="saved-entry" key={shelf.id}>
+                    <div className="caption">{t("Collections")}</div>
+                    {savedCollections.map((collection, index) => (
+                        <div className="saved-entry" key={collection.id}>
                             <div className="saved-entry-row">
                                 <input
                                     className="shelf-selector"
                                     type="checkbox"
-                                    aria-label={t("Select {0} for combined shelf preview", shelf.name)}
-                                    checked={selectedShelfIDs.includes(shelf.id)}
+                                    aria-label={t("Select {0} for combined collection preview", collection.name)}
+                                    checked={selectedCollectionIDs.includes(collection.id)}
                                     disabled={
-                                        shelfBusy ||
+                                        collectionBusy ||
                                         (
-                                            shelf.validity === 'needs_attention' &&
-                                            !selectedShelfIDs.includes(shelf.id)
+                                            collection.validity === 'needs_attention' &&
+                                            !selectedCollectionIDs.includes(collection.id)
                                         )
                                     }
-                                    onChange={() => toggleShelfSelection(shelf.id)}
+                                    onChange={() => toggleCollectionSelection(collection.id)}
                                 />
                                 <button
                                     className={`saved-picker${
-                                        activeShelfID === shelf.id ? ' active' : ''
+                                        activeCollectionID === collection.id ? ' active' : ''
                                     }${
-                                        shelf.validity === 'needs_attention'
+                                        collection.validity === 'needs_attention'
                                             ? ' needs-attention'
                                             : ''
                                     }`}
                                     type="button"
                                     aria-current={
-                                        activeShelfID === shelf.id ? 'page' : undefined
+                                        activeCollectionID === collection.id ? 'page' : undefined
                                     }
-                                    aria-label={shelf.validity === 'needs_attention'
-                                        ? t("{0}, needs attention", shelf.name)
-                                        : `${shelf.name}, ${shelf.count} ${
-                                            shelf.count === 1 ? t("story") : t("stories")
+                                    aria-label={collection.validity === 'needs_attention'
+                                        ? t("{0}, needs attention", collection.name)
+                                        : `${collection.name}, ${collection.count} ${
+                                            collection.count === 1 ? t("story") : t("stories")
                                         }`}
-                                    disabled={shelfBusy}
-                                    onClick={() => shelf.validity === 'needs_attention'
-                                        ? setRepairShelfID(shelf.id)
-                                        : void openSavedShelf(shelf.id)}
+                                    disabled={collectionBusy}
+                                    onClick={() => collection.validity === 'needs_attention'
+                                        ? setRepairCollectionID(collection.id)
+                                        : void openSavedCollection(collection.id)}
                                 >
                                     <i
                                         style={{
-                                            '--c': savedShelfColor(index),
+                                            '--c': savedCollectionColor(index),
                                         } as CSSProperties}
                                     />
-                                    {shelf.name}
+                                    {collection.name}
                                     <span>
-                                        {shelf.validity === 'needs_attention'
+                                        {collection.validity === 'needs_attention'
                                             ? '!'
-                                            : shelf.count}
+                                            : collection.count}
                                     </span>
                                 </button>
                             </div>
-                            {activeShelfID === shelf.id && (
-                                <div className="saved-tools" aria-label={t("{0} actions", shelf.name)}>
+                            {activeCollectionID === collection.id && (
+                                <div className="saved-tools" aria-label={t("{0} actions", collection.name)}>
                                     <button
                                         type="button"
-                                        disabled={shelfBusy || index === 0}
-                                        aria-label={t("Move {0} up", shelf.name)}
-                                        onClick={() => void moveShelf(shelf.id, -1)}
+                                        disabled={collectionBusy || index === 0}
+                                        aria-label={t("Move {0} up", collection.name)}
+                                        onClick={() => void moveCollection(collection.id, -1)}
                                     >
                                         ↑
                                     </button>
                                     <button
                                         type="button"
-                                        disabled={shelfBusy || index === savedShelves.length - 1}
-                                        aria-label={t("Move {0} down", shelf.name)}
-                                        onClick={() => void moveShelf(shelf.id, 1)}
+                                        disabled={collectionBusy || index === savedCollections.length - 1}
+                                        aria-label={t("Move {0} down", collection.name)}
+                                        onClick={() => void moveCollection(collection.id, 1)}
                                     >
                                         ↓
                                     </button>
                                     <button
                                         type="button"
-                                        disabled={shelfBusy}
-                                        aria-label={t("Rename {0}", shelf.name)}
-                                        onClick={() => showShelfDialog('rename')}
+                                        disabled={collectionBusy}
+                                        aria-label={t("Rename {0}", collection.name)}
+                                        onClick={() => showCollectionDialog('rename')}
                                     >
                                         ✎
                                     </button>
                                     <button
                                         type="button"
-                                        disabled={shelfBusy}
-                                        aria-label={t("Duplicate {0}", shelf.name)}
-                                        onClick={() => showShelfDialog('duplicate')}
+                                        disabled={collectionBusy}
+                                        aria-label={t("Duplicate {0}", collection.name)}
+                                        onClick={() => showCollectionDialog('duplicate')}
                                     >
                                         ⧉
                                     </button>
                                     <button
                                         type="button"
-                                        disabled={shelfBusy}
-                                        aria-label={t("Delete {0}", shelf.name)}
+                                        disabled={collectionBusy}
+                                        aria-label={t("Delete {0}", collection.name)}
                                         onClick={() => {
-                                            setShelfDialogError(null);
-                                            setDeleteShelfID(shelf.id);
+                                            setCollectionDialogError(null);
+                                            setDeleteCollectionID(collection.id);
                                         }}
                                     >
                                         ×
@@ -2048,99 +1989,117 @@ function App() {
                         </div>
                     ))}
                 </nav>
-                <label className="broken-visibility">
-                    <span>{t('Broken stories')}</span>
-                    <select value={collectionQuery.brokenVisibility ?? 'hide'}
-                        onChange={(event) => {
-                            const next = {...collectionQuery, brokenVisibility: event.currentTarget.value as BrokenVisibility, page: 1};
-                            if (allStoriesActive) setCollectionQuery(queryHistory.push(next, null, 'all'));
-                            else updateQuery(next);
-                        }}>
-                        <option value="hide">{t('Hide broken stories')}</option>
-                        <option value="include">{t('Include broken stories')}</option>
-                        <option value="only">{t('Broken only')}</option>
-                    </select>
-                </label>
-                {selectedShelfIDs.length > 0 && (
-                    <section className="combined-shelves" aria-label={t("Combined shelf preview")}>
+                {selectedCollectionIDs.length > 0 && (
+                    <section className="combined-shelves" aria-label={t("Combined collection preview")}>
                         <div className="combined-shelves-title">
                             <b>{t("Combined preview")}</b>
-                            <span>{selectedShelfIDs.length} {' ' + t("selected")}</span>
+                            <span>{selectedCollectionIDs.length} {' ' + t("selected")}</span>
                         </div>
-                        {shelfSelectionBusy && <p>{t("Resolving current membership…")}</p>}
-                        {shelfSelectionError && (
-                            <p className="dialog-error">{<OutcomeText text={shelfSelectionError}/> }</p>
+                        {collectionSelectionBusy && <p>{t("Resolving current membership…")}</p>}
+                        {collectionSelectionError && (
+                            <p className="dialog-error">{<OutcomeText text={collectionSelectionError}/> }</p>
                         )}
-                        {shelfSelectionPreview && !shelfSelectionBusy && (
+                        {collectionSelectionPreview && !collectionSelectionBusy && (
                             <>
                                 <ul>
-                                    {shelfSelectionPreview.shelves.map((shelf) => (
-                                        <li key={shelf.id}>
-                                            <span>{shelf.name}</span>
-                                            <b>{shelf.count}</b>
+                                    {collectionSelectionPreview.collections.map((collection) => (
+                                        <li key={collection.id}>
+                                            <span>{collection.name}</span>
+                                            <b>{collection.count}</b>
                                         </li>
                                     ))}
                                 </ul>
                                 <strong>
-                                    {shelfSelectionPreview.uniqueStoryCount}{' '}
-                                    {t("unique")} {shelfSelectionPreview.uniqueStoryCount === 1
+                                    {collectionSelectionPreview.uniqueStoryCount}{' '}
+                                    {t("unique")} {collectionSelectionPreview.uniqueStoryCount === 1
                                         ? t("story")
                                         : t("stories")}
                                 </strong>
                                 <p>
-                                    {shelfSelectionPreview.overlapCount === 0
+                                    {collectionSelectionPreview.overlapCount === 0
                                         ? t("No overlapping memberships.")
-                                        : t("{0} overlapping {1} collapsed.", shelfSelectionPreview.overlapCount, shelfSelectionPreview.overlapCount === 1
+                                        : t("{0} overlapping {1} collapsed.", collectionSelectionPreview.overlapCount, collectionSelectionPreview.overlapCount === 1
                                                 ? 'membership'
                                                 : 'memberships')}
                                 </p>
                                 <small>
-                                    {t("Sources:")} {shelfSelectionPreview.sourceShelfNames.join(', ')}
+                                    {t("Sources:")} {collectionSelectionPreview.sourceCollectionNames.join(', ')}
                                 </small>
                                 <button
                                     className="combined-export"
                                     type="button"
                                     disabled={
                                         exportPreparing ||
-                                        shelfSelectionPreview.uniqueStoryCount === 0
+                                        collectionSelectionPreview.uniqueStoryCount === 0
                                     }
                                     onClick={() => void prepareExport(
-                                        selectedShelfIDs.length === 1
-                                            ? 'shelf'
-                                            : 'shelves',
+                                        selectedCollectionIDs.length === 1
+                                            ? 'collection'
+                                            : 'collections',
                                     )}
                                 >
                                     {exportPreparing
                                         ? t("Preparing…")
-                                        : selectedShelfIDs.length === 1
-                                            ? t("Export selected shelf")
-                                            : t("Export selected shelves")}
+                                        : selectedCollectionIDs.length === 1
+                                            ? t("Export selected collection")
+                                            : t("Export selected collections")}
                                 </button>
                             </>
                         )}
                     </section>
                 )}
 
-                {activeFilters.length > 0 && !showSavedShelfRows && (
+                {activeFilters.length > 0 && !showSavedCollectionRows && (
                     <button
-                        className="manage shelf-save"
+                        className="manage collection-save"
                         type="button"
-                        disabled={shelfBusy}
-                        onClick={() => showShelfDialog('save')}
+                        disabled={collectionBusy}
+                        onClick={() => showCollectionDialog('save')}
                     >
                         {t("＋ Save current query")}</button>
                 )}
-                {activeShelf && (
+                {activeCollection && (
                     <button
-                        className="manage shelf-update"
+                        className="manage collection-update"
                         type="button"
-                        disabled={shelfBusy}
-                        onClick={() => void updateActiveShelf()}
+                        disabled={collectionBusy}
+                        onClick={() => void updateActiveCollection()}
                     >
-                        {t("↻ Update “")}{activeShelf.name}”
+                        {t("↻ Update “")}{activeCollection.name}”
                     </button>
                 )}
-                <div className="caption">{t("Refine this shelf")}</div>
+                <section className="curated-sidebar" aria-label={t('Shelves')}>
+                    <div className="caption">{t('Shelves')}</div>
+                    <div className="saved">
+                        {curatedShelves.map((shelf, index) => <div className="saved-entry" key={shelf.id}>
+                            <div className="saved-entry-row">
+                                <input className="shelf-selector" type="checkbox" checked={selectedCuratedIDs.includes(shelf.id)}
+                                    disabled={collectionBusy} aria-label={t('Select Shelf {0} for export', shelf.name)}
+                                    onChange={() => setSelectedCuratedIDs(selectedCuratedIDs.includes(shelf.id) ? selectedCuratedIDs.filter((id) => id !== shelf.id) : [...selectedCuratedIDs, shelf.id])}/>
+                                <button className={`saved-picker${curatedShelfID === shelf.id ? ' active' : ''}`} type="button"
+                                    disabled={collectionBusy} aria-current={curatedShelfID === shelf.id ? 'page' : undefined}
+                                    onClick={() => openCuratedShelf(shelf.id)}>
+                                    <i style={{'--c': savedCollectionColor(index)} as CSSProperties}/>
+                                    {shelf.name}<span>{shelf.count}</span>
+                                </button>
+                            </div>
+                            {curatedShelfID === shelf.id && <div className="saved-tools" aria-label={t('{0} actions', shelf.name)}>
+                                {([-1, 1] as const).map((delta) => <button key={delta} type="button"
+                                    disabled={collectionBusy || (delta < 0 ? index === 0 : index === curatedShelves.length - 1)}
+                                    aria-label={t(delta < 0 ? 'Move Shelf {0} up' : 'Move Shelf {0} down', shelf.name)} onClick={() => {
+                                        const ids = curatedShelves.map((entry) => entry.id);
+                                        [ids[index], ids[index + delta]] = [ids[index + delta], ids[index]];
+                                        setCollectionBusy(true);
+                                        void ReorderShelves(ids).then((response) => {if (response.error) setRequestError(response.error.message); else setShelfRevision((value) => value + 1);})
+                                            .catch(() => setRequestError(t('Shelves could not be reordered.'))).finally(() => setCollectionBusy(false));
+                                    }}>{delta < 0 ? '↑' : '↓'}</button>)}
+                            </div>}
+                        </div>)}
+                    </div>
+                    {selectedCuratedIDs.length > 0 && <button className="combined-export" type="button" disabled={exportPreparing} onClick={() => void preflightExport(new exporter.PreflightRequest({sourceType: selectedCuratedIDs.length === 1 ? 'curated_shelf' : 'curated_shelves', shelfIds: selectedCuratedIDs, query: {}}))}>{t('Export selected Shelves')}</button>}
+                    <button type="button" className="manage" disabled={applicationState !== 'ready'} onClick={() => setCreateShelfUUIDs([])}>{t('Create Shelf')}</button>
+                </section>
+                <div className="caption">{t("Refine this view")}</div>
                 {derivedDefinitions.map(renderTagFacet)}
                 <div className="facet">
                     <button
@@ -2194,37 +2153,47 @@ function App() {
             </LibrarySidebar>
 
             <main tabIndex={-1} className="main" inert={sidebarOpen || historyOpen}>
+                {curatedShelfID !== null && <><button className="sidebar-toggle" type="button" onClick={() => setSidebarOpen(true)}>{t('Library & filters')}</button>
+                    <LibraryViewPicker view={libraryView} onChange={setLibraryView}/>
+                    {requestError && <p role="alert" className="dialog-error"><OutcomeText text={requestError}/></p>}
+                    <ShelfWorkspace catalog={tagCatalog} exportBusy={exportPreparing} viewMode={libraryView} key={curatedShelfID} id={curatedShelfID} revision={shelfRevision + collectionRevision + detailRevision}
+                        manualOrder={queryHistory.currentShelfManualOrder()} onManualOrder={(manual) => setCollectionQuery(queryHistory.pushShelf(curatedShelfID, collectionQuery, manual))} collections={savedCollections} query={collectionQuery} onQuery={(query) => setCollectionQuery(queryHistory.pushShelf(curatedShelfID, query))}
+                        onChanged={() => setShelfRevision((value) => value + 1)} onDeleted={openAllStories}
+                        onExport={(request) => void preflightExport(request)} onInspect={(story) => {setInspectedStory(story); setDetailsOpen(true);}}/>
+                </>}
+                <div hidden={curatedShelfID !== null}>
                 <div className="top">
                     <label className="search">
                         <span aria-hidden="true">⌕</span>
-                        <input
+                        <SearchInput
                             ref={searchInput}
                             type="search"
                             aria-label={t("Search stories")}
                             placeholder={t("Search {0} stories, authors, publishers…", page?.totalItems ?? 0)}
                             value={collectionQuery.name}
-                            onChange={(event) => updateQuery({
+                            onChange={(name) => updateQuery({
                                 ...collectionQuery,
-                                name: event.currentTarget.value,
+                                name,
                                 page: 1,
                             })}
                         />
                     </label>
+                    <TagSearchFilters catalog={tagCatalog} query={collectionQuery} onChange={updateQuery}/>
                 </div>
 
                 <div className="heading">
                     <div>
-                        <h2>{activeShelf?.name ?? t("My story shelves")}</h2>
+                        <h2>{activeCollection?.name ?? t("My story shelves")}</h2>
                         <p>
-                            {activeShelf
-                                ? t("Dynamic saved shelf")
+                            {activeCollection
+                                ? t("Dynamic saved collection")
                                 : t("Stories grouped by your tags")}
                             {' · '}
                             {page?.totalItems ?? 0} {' '}{t("archives")}</p>
                     </div>
                     <div className="heading-actions">
 
-                {activeFilters.length > 0 && !showSavedShelfRows && (
+                {activeFilters.length > 0 && !showSavedCollectionRows && (
                             <button
                                 className="scope-export"
                                 type="button"
@@ -2233,14 +2202,14 @@ function App() {
                             >
                                 {t("Export current result")}</button>
                         )}
-                        {activeShelf && (
+                        {activeCollection && (
                             <button
                                 className="scope-export"
                                 type="button"
                                 disabled={exportPreparing}
-                                onClick={() => void prepareExport('shelf')}
+                                onClick={() => void prepareExport('collection')}
                             >
-                                {t("Export shelf")}</button>
+                                {t("Export collection")}</button>
                         )}
                         <label className="sort">
                             <span className="sr-only">{t("Sort stories")}</span>
@@ -2263,7 +2232,7 @@ function App() {
                     <button className="sidebar-toggle" type="button"
                         aria-expanded={sidebarOpen} aria-controls="library-sidebar"
                         onClick={() => setSidebarOpen(true)}>
-                        {t("Shelves &amp; filters")}</button>
+                        {t("Library & filters")}</button>
                     <LibraryViewPicker view={libraryView} onChange={setLibraryView}/>
                     <button type="button" className="history-disclosure"
                         disabled={applicationState !== 'ready'} onClick={() => setHistoryOpen(true)}>
@@ -2284,7 +2253,7 @@ function App() {
                     {flags.canUndo && <button type="button" disabled={flags.pending} onClick={() => void flags.undo()}>{t('Undo')}</button>}
                 </div>}
 
-                {activeFilters.length > 0 && !showSavedShelfRows && (
+                {activeFilters.length > 0 && !showSavedCollectionRows && (
                     <section className="active-query" aria-label={t("Active filters")}>
                         <span>{page?.totalItems ?? 0} {' ' + t("matching stories")}</span>
                         {activeFilters.map((filter) => (
@@ -2516,16 +2485,16 @@ function App() {
                             <i/><i/><i/>
                         </div>
                         <h3>
-                            {activeShelf
-                                ? t("{0} is currently empty", activeShelf.name)
+                            {activeCollection
+                                ? t("{0} is currently empty", activeCollection.name)
                                 : t("Build your local story archive")}
                         </h3>
                         <p>
-                            {activeShelf
+                            {activeCollection
                                 ? t("This saved query remains valid and will fill automatically when stories start matching it.")
                                 : t("Import story packs you already own. Librairii validates and preserves each archive in managed local storage.")}
                         </p>
-                        {activeShelf && (
+                        {activeCollection && (
                             <button
                                 type="button"
                                 onClick={() => updateQuery({
@@ -2540,7 +2509,7 @@ function App() {
                                     page: 1,
                                 })}
                             >
-                                {t("Edit shelf query")}</button>
+                                {t("Edit collection query")}</button>
                         )}
                         <button
                             className="import"
@@ -2554,26 +2523,26 @@ function App() {
                 {collectionRows.map((row) => (
                     <section className="shelf" key={row.key}>
                         <div className="shelf-head">
-                            <h3>{row.shelfID === undefined ? t(row.name) : row.name}</h3>
+                            <h3>{row.collectionID === undefined ? t(row.name) : row.name}</h3>
                             <span>
                                 {row.storyCount} {
                                     row.storyCount === 1 ? t("story") : t("stories")
-                                } · {row.shelfID === undefined ? t(row.source) : row.source}
+                                } · {row.collectionID === undefined ? t(row.source) : row.source}
                             </span>
                             <button
                                 type="button"
-                                aria-label={row.shelfID === undefined
+                                aria-label={row.collectionID === undefined
                                     ? undefined
                                     : t("View all stories in {0}", row.name)}
-                                disabled={row.shelfID === undefined
+                                disabled={row.collectionID === undefined
                                     ? expandingCollection ||
                                         stories.length >= (page?.totalItems ?? 0)
-                                    : shelfBusy}
-                                onClick={() => row.shelfID === undefined
+                                    : collectionBusy}
+                                onClick={() => row.collectionID === undefined
                                     ? void loadAllStories()
-                                    : void openSavedShelf(row.shelfID)}
+                                    : void openSavedCollection(row.collectionID)}
                             >
-                                {row.shelfID !== undefined
+                                {row.collectionID !== undefined
                                     ? t("View all →")
                                     : stories.length >= (page?.totalItems ?? 0)
                                     ? t("All shown")
@@ -2585,7 +2554,7 @@ function App() {
                         {row.error && (
                             <p className="dialog-error" role="alert">{row.error}</p>
                         )}
-                        <div className={`story-row${row.shelfID === undefined ? '' : ' preview'}`}>
+                        <div className={`story-row${row.collectionID === undefined ? '' : ' preview'}`}>
                             {row.stories.map((story) => (
                                 <div className={`story-card${story.broken ? ' is-broken' : ''}`} key={story.id}>
                                     <button
@@ -2629,9 +2598,6 @@ function App() {
                                                 <span aria-hidden="true">⚠</span>{t("Broken")}</span>
                                         )}
                                     </button>
-                                    <StoryFlagButton title={story.title} broken={!!story.broken}
-                                        disabled={flags.pending || applicationState !== 'ready'}
-                                        onChange={(broken) => void flags.set([story.id], broken)}/>
                                     {libraryView !== 'list' && <p className="story-title">{story.title}</p>}
                                 </div>
                             ))}
@@ -2663,9 +2629,10 @@ function App() {
                             {t("Next →")}</button>
                     </nav>
                 )}
+                </div>
             </main>
 
-            {selected && (
+            {selected && curatedShelfID === null && (
                 <aside className="drawer" aria-label={t("{0} details", selected.title)} inert={sidebarOpen || historyOpen}>
                     <div
                         className={`drawer-art${selected.artworkId ? ' has-artwork' : ''}`}
@@ -2685,7 +2652,7 @@ function App() {
                         <div className="facts">
                             <div className="fact">
                                 <span>{t("Stories")}</span>
-                                <b>{selectedShelfCount ?? '—'}</b>
+                                <b>{selectedCollectionCount ?? '—'}</b>
                             </div>
                             <div className="fact">
                                 <span>{t("Duration")}</span>
@@ -2726,16 +2693,11 @@ function App() {
                         </div>
                     </div>
                     <div className="drawer-actions">
-                        {selectedIDs.length > 1 ? <>
-                            <span className="drawer-flag-count">{t('{0} selected · {1} flagged', selectedIDs.length, selectedFlaggedCount)}</span>
-                            <button type="button" disabled={flags.pending} onClick={() => void flags.set(selectedIDs, true)}>{t('Mark selected as broken')}</button>
-                            <button type="button" disabled={flags.pending} onClick={() => void flags.set(selectedIDs, false)}>{t('Clear broken flags')}</button>
-                        </> : <>
-                            {selected.broken && <span className="story-warning-label">⚠ {t('Broken')}</span>}
-                            <button type="button" disabled={flags.pending} onClick={() => void flags.set([selected.id], !selected.broken)}>
-                                {selected.broken ? t('Clear broken flag') : t('Mark as broken')}
-                            </button>
-                        </>}
+                        <button type="button" onClick={() => setAddShelfOpen(true)}>{t('Add to Shelf…')}</button>
+                        {selectedIDs.length > 1 && <span className="drawer-flag-count">{t('{0} selected · {1} flagged', selectedIDs.length, selectedFlaggedCount)}</span>}
+                        <BrokenToggle title={selectedIDs.length > 1 ? t('Selected stories') : selected.title}
+                            broken={selectedFlaggedCount === selectedIDs.length} disabled={flags.pending}
+                            onChange={(broken) => void flags.set(selectedIDs, broken)}/>
                         <button
                             ref={openDetailsButton}
                             type="button"
@@ -2908,6 +2870,7 @@ function App() {
                         setTagAssignmentOpen(true);
                     }}
                     onClose={() => {
+                        flags.dismissFeedback();
                         setDetailsOpen(false);
                         setInspectedStory(null);
                         setInspectedArchive(undefined);
@@ -2922,113 +2885,127 @@ function App() {
                     onReveal={revealExportDestination}/>
             )}
 
-            {shelfDialogMode && (
-                <ModalBackdrop onDismiss={() => setShelfDialogMode(null)} disabled={shelfBusy}>
+            {addShelfOpen && <ShelfDialog title={t('Add selection to Shelf')} busy={collectionBusy} onClose={() => setAddShelfOpen(false)}>
+                        <label>{t('Add selection to Shelf')}<select value={addShelfID} onChange={(event) => setAddShelfID(event.target.value)}><option value="">{t('Choose Shelf')}</option>
+                            {curatedShelves.map((shelf) => <option key={shelf.id} value={shelf.id}>{shelf.name}</option>)}</select></label>
+                        <button type="button" disabled={!addShelfID || collectionBusy} onClick={() => {
+                            setCollectionBusy(true);
+                            void AddStoriesToShelf(Number(addShelfID), renderedStories.filter((story) => selectedIDs.includes(story.id)).map((story) => story.uuid)).then((response) => {
+                                if (response.error) setRequestError(response.error.message); else {setShelfRevision((value) => value + 1); setAddShelfOpen(false);}
+                            }).catch(() => setRequestError(t('Shelf could not be changed.'))).finally(() => setCollectionBusy(false));
+                        }}>{t('Add selected stories')}</button>
+                        <button type="button" onClick={() => {setAddShelfOpen(false); setCreateShelfUUIDs(renderedStories.filter((story) => selectedIDs.includes(story.id)).map((story) => story.uuid));}}>{t('Create Shelf from selection')}</button>
+
+            </ShelfDialog>}
+            {createShelfUUIDs !== null && <ShelfCreation collections={savedCollections} manualUUIDs={createShelfUUIDs}
+                onClose={() => setCreateShelfUUIDs(null)} onCreated={(id) => {setCreateShelfUUIDs(null); setShelfRevision((value) => value + 1); openCuratedShelf(id);}}/>}
+            {collectionDialogMode && (
+                <ModalBackdrop onDismiss={() => setCollectionDialogMode(null)} disabled={collectionBusy}>
                     <form
-                        ref={shelfDialog}
-                        className="detail-dialog shelf-dialog"
+                        ref={collectionDialog}
+                        className="detail-dialog collection-dialog"
                         role="dialog"
                         aria-modal="true"
                         aria-labelledby="shelf-dialog-title"
                         onSubmit={(event) => {
                             event.preventDefault();
-                            void submitShelfDialog();
+                            void submitCollectionDialog();
                         }}
                     >
-                        <div className="dialog-kicker">{t("Saved shelves")}</div>
+                        <div className="dialog-kicker">{t("Saved collections")}</div>
                         <h3 id="shelf-dialog-title">
-                            {shelfDialogMode === 'save'
+                            {collectionDialogMode === 'save'
                                 ? t("Save the current query")
-                                : shelfDialogMode === 'rename'
-                                    ? t("Rename this shelf")
-                                    : t("Duplicate this shelf")}
+                                : collectionDialogMode === 'rename'
+                                    ? t("Rename this collection")
+                                    : t("Duplicate this collection")}
                         </h3>
                         <p>
-                            {shelfDialogMode === 'save'
+                            {collectionDialogMode === 'save'
                                 ? t("The name search and active filters will stay dynamic as your local library changes.")
-                                : t("Choose a unique name for this saved shelf.")}
+                                : t("Choose a unique name for this saved collection.")}
                         </p>
                         <label className="dialog-field">
-                            <span>{t("Shelf name")}</span>
+                            <span>{t("Collection name")}</span>
                             <input
-                                ref={shelfDialogInitialFocus}
+                                ref={collectionDialogInitialFocus}
                                 maxLength={80}
-                                value={shelfDialogName}
-                                onChange={(event) => setShelfDialogName(
+                                value={collectionDialogName}
+                                onChange={(event) => setCollectionDialogName(
                                     event.currentTarget.value,
                                 )}
                             />
                         </label>
-                        {shelfDialogError && (
-                            <p className="dialog-error">{<OutcomeText text={shelfDialogError}/> }</p>
+                        {collectionDialogError && (
+                            <p className="dialog-error">{<OutcomeText text={collectionDialogError}/> }</p>
                         )}
                         <div className="dialog-actions">
                             <button
                                 type="button"
-                                disabled={shelfBusy}
-                                onClick={() => setShelfDialogMode(null)}
+                                disabled={collectionBusy}
+                                onClick={() => setCollectionDialogMode(null)}
                             >
                                 {t("Cancel")}</button>
                             <button
                                 className="export"
                                 type="submit"
-                                disabled={shelfBusy || shelfDialogName.trim() === ''}
+                                disabled={collectionBusy || collectionDialogName.trim() === ''}
                             >
-                                {shelfBusy
+                                {collectionBusy
                                     ? t("Saving…")
-                                    : shelfDialogMode === 'rename'
-                                        ? t("Rename shelf")
-                                        : shelfDialogMode === 'duplicate'
-                                            ? t("Duplicate shelf")
-                                            : t("Save shelf")}
+                                    : collectionDialogMode === 'rename'
+                                        ? t("Rename collection")
+                                        : collectionDialogMode === 'duplicate'
+                                            ? t("Duplicate collection")
+                                            : t("Save collection")}
                             </button>
                         </div>
                     </form>
                 </ModalBackdrop>
             )}
-            {repairShelf && (
-                <ModalBackdrop onDismiss={() => setRepairShelfID(null)} disabled={shelfBusy}>
+            {repairCollection && (
+                <ModalBackdrop onDismiss={() => setRepairCollectionID(null)} disabled={collectionBusy}>
                     <section
-                        ref={repairShelfDialog}
-                        className="detail-dialog shelf-dialog"
+                        ref={repairCollectionDialog}
+                        className="detail-dialog collection-dialog"
                         role="dialog"
                         aria-modal="true"
                         aria-labelledby="repair-shelf-title"
                         data-state="shelf-repair"
                     >
-                        <div className="dialog-kicker">{t("Saved shelves")}</div>
-                        <h3 id="repair-shelf-title">{t("Repair “")}{repairShelf.name}”</h3>
-                        <p>{shelfAttentionMessage(repairShelf.attentionReason)}</p>
+                        <div className="dialog-kicker">{t("Saved collections")}</div>
+                        <h3 id="repair-shelf-title">{t("Repair “")}{repairCollection.name}”</h3>
+                        <p>{collectionAttentionMessage(repairCollection.attentionReason)}</p>
                         <div className="removal-confirmation">
                             <b>{t("Evaluation and export are blocked.")}</b>
                             <p>
                                 {t("Replacing the criteria is explicit and permanent. Stories and managed archives are never changed.")}</p>
                         </div>
-                        {shelfDialogError && (
-                            <p className="dialog-error">{<OutcomeText text={shelfDialogError}/> }</p>
+                        {collectionDialogError && (
+                            <p className="dialog-error">{<OutcomeText text={collectionDialogError}/> }</p>
                         )}
                         <div className="dialog-actions">
                             <button
-                                ref={repairShelfInitialFocus}
+                                ref={repairCollectionInitialFocus}
                                 type="button"
-                                disabled={shelfBusy}
-                                onClick={() => setRepairShelfID(null)}
+                                disabled={collectionBusy}
+                                onClick={() => setRepairCollectionID(null)}
                             >
                                 {t("Cancel")}</button>
                             <button
                                 className="danger"
                                 type="button"
-                                disabled={shelfBusy}
+                                disabled={collectionBusy}
                                 onClick={() => {
-                                    setRepairShelfID(null);
-                                    setDeleteShelfID(repairShelf.id);
+                                    setRepairCollectionID(null);
+                                    setDeleteCollectionID(repairCollection.id);
                                 }}
                             >
-                                {t("Delete shelf")}</button>
+                                {t("Delete collection")}</button>
                             {unavailableCriteria && (
                                 <button
                                     type="button"
-                                    disabled={shelfBusy || !tagCatalog}
+                                    disabled={collectionBusy || !tagCatalog}
                                     onClick={removeUnavailableCriteria}
                                 >
                                     {t("Remove unavailable criteria")}</button>
@@ -3036,52 +3013,17 @@ function App() {
                             <button
                                 className="export"
                                 type="button"
-                                disabled={shelfBusy || unavailableCriteria}
-                                onClick={() => void repairShelfWithCurrentQuery()}
+                                disabled={collectionBusy || unavailableCriteria}
+                                onClick={() => void repairCollectionWithCurrentQuery()}
                             >
-                                {shelfBusy ? t("Replacing…") : t("Replace with current query")}
+                                {collectionBusy ? t("Replacing…") : t("Replace with current query")}
                             </button>
                         </div>
                     </section>
                 </ModalBackdrop>
             )}
-            {deleteShelf && (
-                <ModalBackdrop onDismiss={() => setDeleteShelfID(null)} disabled={shelfBusy}>
-                    <section
-                        ref={deleteShelfDialog}
-                        className="detail-dialog shelf-dialog"
-                        role="dialog"
-                        aria-modal="true"
-                        aria-labelledby="delete-shelf-title"
-                        data-state="shelf-delete-confirmation"
-                    >
-                        <div className="dialog-kicker">{t("Saved shelves")}</div>
-                        <h3 id="delete-shelf-title">{t("Delete “")}{deleteShelf.name}”?</h3>
-                        <p>
-                            {t("Only this saved query will be removed. Matching stories and their managed archives will stay in your library.")}</p>
-                        {shelfDialogError && (
-                            <p className="dialog-error">{<OutcomeText text={shelfDialogError}/> }</p>
-                        )}
-                        <div className="dialog-actions">
-                            <button
-                                ref={deleteShelfInitialFocus}
-                                type="button"
-                                disabled={shelfBusy}
-                                onClick={() => setDeleteShelfID(null)}
-                            >
-                                {t("Cancel")}</button>
-                            <button
-                                className="danger"
-                                type="button"
-                                disabled={shelfBusy}
-                                onClick={() => void confirmShelfDeletion()}
-                            >
-                                {shelfBusy ? t("Deleting…") : t("Delete shelf")}
-                            </button>
-                        </div>
-                    </section>
-                </ModalBackdrop>
-            )}
+            {deleteCollection && <CollectionDeletion key={deleteCollection.id} id={deleteCollection.id} name={deleteCollection.name} onClose={() => setDeleteCollectionID(null)}
+                onDeleted={() => {setDeleteCollectionID(null); if (activeCollectionID === deleteCollection.id) {activateCollection(null, 'custom'); setCollectionQuery(queryHistory.replace(collectionQuery, null, 'custom'));} setShelfRevision((value) => value + 1); void loadSavedCollections();}}/>}
             {tagManagerOpen && (
                 <TagManager
                     onClose={() => setTagManagerOpen(false)}

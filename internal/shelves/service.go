@@ -4,8 +4,9 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"fmt"
 	"strings"
+	"sync"
+	"time"
 	"unicode"
 	"unicode/utf8"
 
@@ -13,500 +14,261 @@ import (
 	"github.com/01max/librairii/internal/searchtext"
 )
 
-const (
-	maxShelfNameRunes   = 80
-	reorderShelfPadding = 1
-)
-
 var (
-	ErrInvalidShelfName         = errors.New("shelf name is invalid")
-	ErrDuplicateShelfName       = errors.New("shelf name already exists")
-	ErrShelfNotFound            = errors.New("shelf does not exist")
-	ErrInvalidShelfOrder        = errors.New("shelf order is invalid")
-	ErrShelfNeedsAttention      = errors.New("shelf needs attention")
-	ErrShelfCriteriaUnavailable = errors.New("shelf criteria are unavailable")
+	ErrInvalidInput = errors.New("invalid shelf input")
+	ErrNotFound     = errors.New("shelf or member no longer exists")
+	ErrConflict     = errors.New("shelf state changed; refresh and try again")
 )
 
-type AttentionReason string
-
-const (
-	AttentionMissingCriteria   AttentionReason = "missing_criteria"
-	AttentionUnmigratableQuery AttentionReason = "unmigratable_query"
-)
-
-type OpenedShelf struct {
-	Shelf Shelf             `json:"shelf"`
-	Query SavedLibraryQuery `json:"query"`
+type Shelf struct {
+	ID               int64  `json:"id"`
+	Name             string `json:"name"`
+	Position         int    `json:"position"`
+	Revision         int64  `json:"revision"`
+	Count            int    `json:"count"`
+	BrokenCount      int    `json:"brokenCount"`
+	UnavailableCount int    `json:"unavailableCount"`
+	SourceCount      int    `json:"sourceCount"`
 }
 
-type Inspection struct {
-	Shelf           Shelf
-	Query           SavedLibraryQuery
-	AttentionReason AttentionReason
+type Member struct {
+	UUID        string                `json:"uuid"`
+	Position    int                   `json:"position"`
+	Protected   bool                  `json:"protected"`
+	CachedTitle string                `json:"cachedTitle"`
+	Story       *library.StorySummary `json:"story,omitempty"`
+	Origins     []Source              `json:"origins"`
 }
 
 type Service struct {
-	database *sql.DB
+	database  *sql.DB
+	library   *library.Query
+	reviewsMu sync.Mutex
+	reviews   map[string]reviewTicket
+	now       func() time.Time
 }
 
-func NewService(database *sql.DB) (*Service, error) {
-	if database == nil {
-		return nil, ErrMissingDatabase
+func NewService(database *sql.DB, query *library.Query) (*Service, error) {
+	if database == nil || query == nil {
+		return nil, ErrInvalidInput
 	}
-	return &Service{database: database}, nil
+	return &Service{database: database, library: query, now: time.Now, reviews: make(map[string]reviewTicket)}, nil
 }
 
-func (s *Service) Create(
-	ctx context.Context,
-	name string,
-	query library.StoryLibraryQuery,
-) (Shelf, error) {
-	name, normalizedName, err := normalizeShelfName(name)
-	if err != nil {
-		return Shelf{}, err
-	}
-	serialized, err := EncodeSavedLibraryQuery(query)
-	if err != nil {
-		return Shelf{}, err
-	}
-	transaction, err := s.database.BeginTx(ctx, nil)
-	if err != nil {
-		return Shelf{}, fmt.Errorf("begin shelf creation: %w", err)
-	}
-	defer transaction.Rollback()
-	savedQuery, err := DecodeSavedLibraryQuery(serialized.Version, serialized.Payload)
-	if err != nil {
-		return Shelf{}, err
-	}
-	if err := validateSavedCriteria(ctx, transaction, savedQuery); err != nil {
-		return Shelf{}, err
-	}
-
-	position, err := nextShelfPosition(ctx, transaction)
-	if err != nil {
-		return Shelf{}, err
-	}
-	shelf, err := insertShelf(ctx, transaction, NewShelf{
-		Name:           name,
-		NormalizedName: normalizedName,
-		Position:       position,
-		QueryVersion:   serialized.Version,
-		QueryPayload:   serialized.Payload,
-	})
-	if isDuplicateShelfName(err) {
-		return Shelf{}, ErrDuplicateShelfName
-	}
-	if err != nil {
-		return Shelf{}, err
-	}
-	if err := transaction.Commit(); err != nil {
-		return Shelf{}, fmt.Errorf("commit shelf creation: %w", err)
-	}
-	return shelf, nil
+type reader interface {
+	QueryContext(context.Context, string, ...any) (*sql.Rows, error)
+	QueryRowContext(context.Context, string, ...any) *sql.Row
 }
 
-func (s *Service) Open(ctx context.Context, shelfID int64) (OpenedShelf, error) {
-	inspection, err := s.Inspect(ctx, shelfID)
-	if err != nil {
-		return OpenedShelf{}, err
-	}
-	if inspection.Shelf.Validity != ValidityValid {
-		return OpenedShelf{}, ErrShelfNeedsAttention
-	}
-	return OpenedShelf{
-		Shelf: inspection.Shelf,
-		Query: inspection.Query,
-	}, nil
-}
+const shelfSelect = `SELECT s.id,s.name,s.position,s.revision,
+ (SELECT count(*) FROM shelf_stories m WHERE m.shelf_id=s.id),
+ (SELECT count(*) FROM shelf_stories m JOIN stories st ON st.uuid=m.story_uuid WHERE m.shelf_id=s.id AND st.is_broken=1),
+ (SELECT count(*) FROM shelf_stories m WHERE m.shelf_id=s.id AND NOT EXISTS
+   (SELECT 1 FROM stories st JOIN story_archives a ON a.story_id=st.id WHERE st.uuid=m.story_uuid)),
+ (SELECT count(*) FROM shelf_sources src WHERE src.shelf_id=s.id AND src.active=1)
+ FROM shelves s`
 
-func (s *Service) Inspect(ctx context.Context, shelfID int64) (Inspection, error) {
-	transaction, err := s.database.BeginTx(ctx, nil)
-	if err != nil {
-		return Inspection{}, fmt.Errorf("begin shelf inspection: %w", err)
-	}
-	defer transaction.Rollback()
-
-	shelf, err := readShelf(ctx, transaction, shelfID)
+func scanShelf(row interface{ Scan(...any) error }) (Shelf, error) {
+	var shelf Shelf
+	err := row.Scan(&shelf.ID, &shelf.Name, &shelf.Position, &shelf.Revision, &shelf.Count, &shelf.BrokenCount, &shelf.UnavailableCount, &shelf.SourceCount)
 	if errors.Is(err, sql.ErrNoRows) {
-		return Inspection{}, ErrShelfNotFound
+		return Shelf{}, ErrNotFound
 	}
-	if err != nil {
-		return Inspection{}, fmt.Errorf("read shelf for inspection: %w", err)
-	}
-	legacyID, err := library.ReadLegacyBrokenTagID(ctx, transaction)
-	if err != nil {
-		return Inspection{}, err
-	}
-	migrated, err := MigrateSavedLibraryQuery(
-		shelf.QueryVersion,
-		shelf.QueryPayload, legacyID,
-	)
-	if err != nil {
-		return finishAttentionInspection(
-			ctx,
-			transaction,
-			shelf,
-			AttentionUnmigratableQuery,
-		)
-	}
-	query, err := DecodeSavedLibraryQuery(migrated.Version, migrated.Payload)
-	if err != nil {
-		return finishAttentionInspection(
-			ctx,
-			transaction,
-			shelf,
-			AttentionUnmigratableQuery,
-		)
-	}
-	if err := validateSavedCriteria(ctx, transaction, query); err != nil {
-		if errors.Is(err, ErrShelfCriteriaUnavailable) {
-			return finishAttentionInspection(
-				ctx,
-				transaction,
-				shelf,
-				AttentionMissingCriteria,
-			)
-		}
-		return Inspection{}, err
-	}
-	if shelf.QueryVersion != migrated.Version ||
-		shelf.QueryPayload != migrated.Payload {
-		if _, err := transaction.ExecContext(
-			ctx,
-			`UPDATE shelves
-			 SET query_version = ?,
-			     query_payload = ?,
-			     updated_at = CURRENT_TIMESTAMP
-			 WHERE id = ?`,
-			migrated.Version,
-			migrated.Payload,
-			shelf.ID,
-		); err != nil {
-			return Inspection{}, fmt.Errorf("migrate saved shelf query: %w", err)
-		}
-		shelf.QueryVersion = migrated.Version
-		shelf.QueryPayload = migrated.Payload
-	}
-	if err := transaction.Commit(); err != nil {
-		return Inspection{}, fmt.Errorf("commit shelf inspection: %w", err)
-	}
-	if shelf.Validity != ValidityValid {
-		return Inspection{
-			Shelf:           shelf,
-			Query:           query,
-			AttentionReason: AttentionMissingCriteria,
-		}, nil
-	}
-	return Inspection{Shelf: shelf, Query: query}, nil
+	return shelf, err
 }
 
-func (s *Service) Rename(
-	ctx context.Context,
-	shelfID int64,
-	name string,
-) (Shelf, error) {
-	name, normalizedName, err := normalizeShelfName(name)
-	if err != nil {
-		return Shelf{}, err
+func readShelf(ctx context.Context, q reader, id int64) (Shelf, error) {
+	if id <= 0 {
+		return Shelf{}, ErrInvalidInput
 	}
-	transaction, err := s.database.BeginTx(ctx, nil)
-	if err != nil {
-		return Shelf{}, fmt.Errorf("begin shelf rename: %w", err)
-	}
-	defer transaction.Rollback()
-
-	result, err := transaction.ExecContext(
-		ctx,
-		`UPDATE shelves
-		 SET name = ?,
-		     normalized_name = ?,
-		     updated_at = CURRENT_TIMESTAMP
-		 WHERE id = ?`,
-		name,
-		normalizedName,
-		shelfID,
-	)
-	if isDuplicateShelfName(err) {
-		return Shelf{}, ErrDuplicateShelfName
-	}
-	if err := requireShelfMutation(result, err); err != nil {
-		return Shelf{}, err
-	}
-	shelf, err := readShelf(ctx, transaction, shelfID)
-	if err != nil {
-		return Shelf{}, fmt.Errorf("read renamed shelf: %w", err)
-	}
-	if err := transaction.Commit(); err != nil {
-		return Shelf{}, fmt.Errorf("commit shelf rename: %w", err)
-	}
-	return shelf, nil
+	return scanShelf(q.QueryRowContext(ctx, shelfSelect+` WHERE s.id=?`, id))
 }
 
-func (s *Service) Duplicate(
-	ctx context.Context,
-	shelfID int64,
-	name string,
-) (Shelf, error) {
-	name, normalizedName, err := normalizeShelfName(name)
-	if err != nil {
-		return Shelf{}, err
-	}
-	inspection, err := s.Inspect(ctx, shelfID)
-	if err != nil {
-		return Shelf{}, err
-	}
-	if inspection.Shelf.Validity != ValidityValid {
-		return Shelf{}, ErrShelfNeedsAttention
-	}
-	transaction, err := s.database.BeginTx(ctx, nil)
-	if err != nil {
-		return Shelf{}, fmt.Errorf("begin shelf duplication: %w", err)
-	}
-	defer transaction.Rollback()
-
-	source, err := readShelf(ctx, transaction, shelfID)
-	if errors.Is(err, sql.ErrNoRows) {
-		return Shelf{}, ErrShelfNotFound
-	}
-	if err != nil {
-		return Shelf{}, fmt.Errorf("read shelf to duplicate: %w", err)
-	}
-	if source.Validity != ValidityValid {
-		return Shelf{}, ErrShelfNeedsAttention
-	}
-	legacyID, err := library.ReadLegacyBrokenTagID(ctx, transaction)
-	if err != nil {
-		return Shelf{}, err
-	}
-	migrated, err := MigrateSavedLibraryQuery(
-		source.QueryVersion,
-		source.QueryPayload, legacyID,
-	)
-	if err != nil {
-		return Shelf{}, err
-	}
-	position, err := nextShelfPosition(ctx, transaction)
-	if err != nil {
-		return Shelf{}, err
-	}
-	duplicate, err := insertShelf(ctx, transaction, NewShelf{
-		Name:           name,
-		NormalizedName: normalizedName,
-		Position:       position,
-		QueryVersion:   migrated.Version,
-		QueryPayload:   migrated.Payload,
-		Validity:       source.Validity,
-	})
-	if isDuplicateShelfName(err) {
-		return Shelf{}, ErrDuplicateShelfName
-	}
-	if err != nil {
-		return Shelf{}, err
-	}
-	if err := transaction.Commit(); err != nil {
-		return Shelf{}, fmt.Errorf("commit shelf duplication: %w", err)
-	}
-	return duplicate, nil
-}
-
-func (s *Service) ReplaceQuery(
-	ctx context.Context,
-	shelfID int64,
-	query library.StoryLibraryQuery,
-) (Shelf, error) {
-	serialized, err := EncodeSavedLibraryQuery(query)
-	if err != nil {
-		return Shelf{}, err
-	}
-	transaction, err := s.database.BeginTx(ctx, nil)
-	if err != nil {
-		return Shelf{}, fmt.Errorf("begin shelf query replacement: %w", err)
-	}
-	defer transaction.Rollback()
-	savedQuery, err := DecodeSavedLibraryQuery(serialized.Version, serialized.Payload)
-	if err != nil {
-		return Shelf{}, err
-	}
-	if err := validateSavedCriteria(ctx, transaction, savedQuery); err != nil {
-		return Shelf{}, err
-	}
-
-	result, err := transaction.ExecContext(
-		ctx,
-		`UPDATE shelves
-		 SET query_version = ?,
-		     query_payload = ?,
-		     validity_state = 'valid',
-		     updated_at = CURRENT_TIMESTAMP
-		 WHERE id = ?`,
-		serialized.Version,
-		serialized.Payload,
-		shelfID,
-	)
-	if err := requireShelfMutation(result, err); err != nil {
-		return Shelf{}, err
-	}
-	shelf, err := readShelf(ctx, transaction, shelfID)
-	if err != nil {
-		return Shelf{}, fmt.Errorf("read updated shelf: %w", err)
-	}
-	if err := transaction.Commit(); err != nil {
-		return Shelf{}, fmt.Errorf("commit shelf query replacement: %w", err)
-	}
-	return shelf, nil
-}
-
-func (s *Service) Reorder(
-	ctx context.Context,
-	orderedIDs []int64,
-) ([]Shelf, error) {
-	transaction, err := s.database.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, fmt.Errorf("begin shelf reorder: %w", err)
-	}
-	defer transaction.Rollback()
-
-	current, err := listShelves(ctx, transaction)
-	if err != nil {
-		return nil, err
-	}
-	if !sameShelfIDs(current, orderedIDs) {
-		return nil, ErrInvalidShelfOrder
-	}
-	if len(orderedIDs) > 0 {
-		maxPosition := current[len(current)-1].Position
-		offset := maxPosition + len(orderedIDs) + reorderShelfPadding
-		if _, err := transaction.ExecContext(
-			ctx,
-			`UPDATE shelves
-			 SET position = position + ?,
-			     updated_at = CURRENT_TIMESTAMP`,
-			offset,
-		); err != nil {
-			return nil, fmt.Errorf("stage shelf reorder: %w", err)
-		}
-		for position, shelfID := range orderedIDs {
-			result, err := transaction.ExecContext(
-				ctx,
-				`UPDATE shelves
-				 SET position = ?,
-				     updated_at = CURRENT_TIMESTAMP
-				 WHERE id = ?`,
-				position,
-				shelfID,
-			)
-			if err := requireShelfMutation(result, err); err != nil {
-				return nil, fmt.Errorf("position shelf: %w", err)
-			}
-		}
-	}
-	reordered, err := listShelves(ctx, transaction)
-	if err != nil {
-		return nil, err
-	}
-	if err := transaction.Commit(); err != nil {
-		return nil, fmt.Errorf("commit shelf reorder: %w", err)
-	}
-	return reordered, nil
-}
-
-func (s *Service) Delete(ctx context.Context, shelfID int64) error {
-	result, err := s.database.ExecContext(
-		ctx,
-		"DELETE FROM shelves WHERE id = ?",
-		shelfID,
-	)
-	return requireShelfMutation(result, err)
+func (s *Service) Get(ctx context.Context, id int64) (Shelf, error) {
+	return readShelf(ctx, s.database, id)
 }
 
 func (s *Service) List(ctx context.Context) ([]Shelf, error) {
-	return listShelves(ctx, s.database)
-}
-
-func finishAttentionInspection(
-	ctx context.Context,
-	transaction *sql.Tx,
-	shelf Shelf,
-	reason AttentionReason,
-) (Inspection, error) {
-	if shelf.Validity == ValidityValid {
-		result, err := transaction.ExecContext(
-			ctx,
-			`UPDATE shelves
-			 SET validity_state = 'needs_attention',
-			     updated_at = CURRENT_TIMESTAMP
-			 WHERE id = ? AND validity_state = 'valid'`,
-			shelf.ID,
-		)
-		if err := requireShelfMutation(result, err); err != nil {
-			return Inspection{}, fmt.Errorf("mark shelf as needing attention: %w", err)
+	rows, err := s.database.QueryContext(ctx, shelfSelect+` ORDER BY s.position,s.id`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	result := make([]Shelf, 0)
+	for rows.Next() {
+		shelf, err := scanShelf(rows)
+		if err != nil {
+			return nil, err
 		}
-		shelf.Validity = ValidityNeedsAttention
+		result = append(result, shelf)
 	}
-	if err := transaction.Commit(); err != nil {
-		return Inspection{}, fmt.Errorf("commit shelf attention state: %w", err)
-	}
-	return Inspection{Shelf: shelf, AttentionReason: reason}, nil
+	return result, rows.Err()
 }
 
-func normalizeShelfName(value string) (string, string, error) {
+func normalizeName(value string) (string, string, error) {
 	if !utf8.ValidString(value) {
-		return "", "", ErrInvalidShelfName
+		return "", "", ErrInvalidInput
 	}
-	for _, character := range value {
-		if unicode.IsControl(character) && !unicode.IsSpace(character) {
-			return "", "", ErrInvalidShelfName
+	for _, r := range value {
+		if unicode.IsControl(r) && !unicode.IsSpace(r) {
+			return "", "", ErrInvalidInput
 		}
 	}
 	name := strings.Join(strings.Fields(value), " ")
 	normalized := searchtext.Normalize(name)
-	if name == "" ||
-		normalized == "" ||
-		utf8.RuneCountInString(name) > maxShelfNameRunes ||
-		utf8.RuneCountInString(normalized) > maxShelfNameRunes {
-		return "", "", ErrInvalidShelfName
+	if name == "" || normalized == "" || utf8.RuneCountInString(name) > 80 || utf8.RuneCountInString(normalized) > 80 {
+		return "", "", ErrInvalidInput
 	}
 	return name, normalized, nil
 }
 
-func nextShelfPosition(ctx context.Context, queryer shelfQueryer) (int, error) {
-	var position int
-	if err := queryer.QueryRowContext(
-		ctx,
-		"SELECT COALESCE(MAX(position), -1) + 1 FROM shelves",
-	).Scan(&position); err != nil {
-		return 0, fmt.Errorf("read next shelf position: %w", err)
-	}
-	return position, nil
-}
-
-func requireShelfMutation(result sql.Result, err error) error {
+func createShelf(ctx context.Context, tx *sql.Tx, name string) (int64, error) {
+	name, normalized, err := normalizeName(name)
 	if err != nil {
-		return err
+		return 0, err
 	}
-	affected, err := result.RowsAffected()
+	result, err := tx.ExecContext(ctx, `INSERT INTO shelves(name,normalized_name,position) VALUES(?,?,(SELECT coalesce(max(position),-1)+1 FROM shelves))`, name, normalized)
 	if err != nil {
-		return err
-	}
-	if affected != 1 {
-		return ErrShelfNotFound
-	}
-	return nil
-}
-
-func sameShelfIDs(shelves []Shelf, orderedIDs []int64) bool {
-	if len(shelves) != len(orderedIDs) {
-		return false
-	}
-	seen := make(map[int64]struct{}, len(orderedIDs))
-	for _, shelf := range shelves {
-		seen[shelf.ID] = struct{}{}
-	}
-	for _, shelfID := range orderedIDs {
-		if _, exists := seen[shelfID]; !exists {
-			return false
+		if strings.Contains(err.Error(), "shelves.normalized_name") {
+			return 0, ErrInvalidInput
 		}
-		delete(seen, shelfID)
+		return 0, err
 	}
-	return len(seen) == 0
+	return result.LastInsertId()
+}
+
+func (s *Service) Create(ctx context.Context, name string) (Shelf, error) {
+	return s.CreateManual(ctx, name, nil)
+}
+
+func (s *Service) mutate(ctx context.Context, id int64, fn func(*sql.Tx) (bool, error)) (Shelf, error) {
+	tx, err := s.database.BeginTx(ctx, nil)
+	if err != nil {
+		return Shelf{}, err
+	}
+	defer tx.Rollback()
+	if _, err = readShelf(ctx, tx, id); err != nil {
+		return Shelf{}, err
+	}
+	changed, err := fn(tx)
+	if err != nil {
+		return Shelf{}, err
+	}
+	if changed {
+		if _, err = tx.ExecContext(ctx, `UPDATE shelves SET revision=revision+1,updated_at=CURRENT_TIMESTAMP WHERE id=?`, id); err != nil {
+			return Shelf{}, err
+		}
+	}
+	result, err := readShelf(ctx, tx, id)
+	if err != nil {
+		return Shelf{}, err
+	}
+	return result, tx.Commit()
+}
+
+func (s *Service) Rename(ctx context.Context, id int64, name string) (Shelf, error) {
+	name, normalized, err := normalizeName(name)
+	if err != nil {
+		return Shelf{}, err
+	}
+	return s.mutate(ctx, id, func(tx *sql.Tx) (bool, error) {
+		result, err := tx.ExecContext(ctx, `UPDATE shelves SET name=?,normalized_name=? WHERE id=? AND name!=?`, name, normalized, id, name)
+		if err != nil {
+			if strings.Contains(err.Error(), "shelves.normalized_name") {
+				return false, ErrInvalidInput
+			}
+			return false, err
+		}
+		n, err := result.RowsAffected()
+		return n > 0, err
+	})
+}
+
+func (s *Service) Delete(ctx context.Context, id int64) error {
+	if id <= 0 {
+		return ErrInvalidInput
+	}
+	result, err := s.database.ExecContext(ctx, `DELETE FROM shelves WHERE id=?`, id)
+	if err != nil {
+		return err
+	}
+	n, err := result.RowsAffected()
+	if err == nil && n == 0 {
+		return ErrNotFound
+	}
+	return err
+}
+
+func readMembers(ctx context.Context, q reader, id int64) ([]Member, error) {
+	rows, err := q.QueryContext(ctx, `SELECT story_uuid,position,protected,cached_title FROM shelf_stories WHERE shelf_id=? ORDER BY position,story_uuid`, id)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	members := make([]Member, 0)
+	for rows.Next() {
+		var member Member
+		if err := rows.Scan(&member.UUID, &member.Position, &member.Protected, &member.CachedTitle); err != nil {
+			return nil, err
+		}
+		members = append(members, member)
+	}
+	return members, rows.Err()
+}
+
+func (s *Service) Members(ctx context.Context, id int64) ([]Member, error) {
+	if _, err := s.Get(ctx, id); err != nil {
+		return nil, err
+	}
+	return readMembers(ctx, s.database, id)
+}
+
+// Reorder requires the complete current identity set so stale lists cannot
+// silently drop or duplicate a group.
+func (s *Service) Reorder(ctx context.Context, ids []int64) error {
+	tx, err := s.database.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	rows, err := tx.QueryContext(ctx, `SELECT id FROM shelves`)
+	if err != nil {
+		return err
+	}
+	known := map[int64]bool{}
+	for rows.Next() {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
+			rows.Close()
+			return err
+		}
+		known[id] = true
+	}
+	err = rows.Err()
+	rows.Close()
+	if err != nil {
+		return err
+	}
+	if len(known) != len(ids) {
+		return ErrConflict
+	}
+	for _, id := range ids {
+		if !known[id] {
+			return ErrInvalidInput
+		}
+		delete(known, id)
+	}
+	var padding int
+	if err := tx.QueryRowContext(ctx, `SELECT coalesce(max(position),0)+1 FROM shelves`).Scan(&padding); err != nil {
+		return err
+	}
+	if _, err := tx.ExecContext(ctx, `UPDATE shelves SET position=position+?`, padding); err != nil {
+		return err
+	}
+	for i, id := range ids {
+		if _, err := tx.ExecContext(ctx, `UPDATE shelves SET position=? WHERE id=?`, i, id); err != nil {
+			return err
+		}
+	}
+	return tx.Commit()
 }

@@ -1,3 +1,4 @@
+import BrokenToggle from './BrokenToggle';
 import OutcomeText from './OutcomeText';
 import {isStoryTag, systemLabel, systemValue} from './system-label';
 import {t} from './i18n';
@@ -132,19 +133,14 @@ export default function StoryDetailsDialog({
                         </p>
                     </div>
                 </div>
-                <section className="story-detail-warning" aria-label={t('Story warning')}>
-                    <div>
-                        {story.broken && <strong className="story-warning-label">⚠ {t('Broken')}</strong>}
-                        <p>{t('Flag stories that may disrupt the Lunii device menu.')}</p>
-                    </div>
-                    <button type="button" disabled={flagging || removing} onClick={() => onFlagChange(!story.broken)}>
-                        {story.broken ? t('Clear broken flag') : t('Mark as broken')}
-                    </button>
-                    {flagError && <p role="alert"><OutcomeText text={flagError}/></p>}
-                    {flagNotice && <div role="status">{flagNotice}
-                        {canUndoFlag && <button type="button" disabled={flagging} onClick={onUndoFlag}>{t('Undo')}</button>}
-                    </div>}
-                </section>
+                <div className="story-broken-setting">
+                    <BrokenToggle title={story.title} broken={!!story.broken} disabled={flagging || removing} onChange={onFlagChange}/>
+                    {story.broken && <span>{t('Broken · excluded from exports')}</span>}
+                </div>
+                {flagError && <p className="flag-feedback dialog-error" role="alert"><OutcomeText text={flagError}/></p>}
+                {flagNotice && <div className="flag-feedback" role="status"><span>{flagNotice}</span>
+                    {canUndoFlag && <button type="button" disabled={flagging} onClick={onUndoFlag}>{t('Undo')}</button>}
+                </div>}
                 <section className="story-detail-tags" aria-label={t("Story tags")}>
                     <div className="story-detail-tags-heading">
                         <h4>{t("Tags")}</h4>

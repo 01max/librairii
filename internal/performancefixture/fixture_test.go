@@ -41,13 +41,13 @@ func TestGenerateBuildsCopyrightFreeFiveThousandStoryFixture(t *testing.T) {
 		t.Fatal(err)
 	}
 	if fixture.StoryCount != MinimumLargeLibraryStories ||
-		len(fixture.ShelfIDs) != 6 ||
+		len(fixture.CollectionIDs) != 6 ||
 		len(fixture.EmbeddedArtworkPaths) != SyntheticArtworkVariants {
 		t.Fatalf("Generate() = %#v", fixture)
 	}
 	var storyCount int
 	var officialCount int
-	var shelfCount int
+	var collectionCount int
 	var nonSyntheticCount int
 	if err := opened.SQL().QueryRow(
 		"SELECT COUNT(*) FROM stories",
@@ -60,8 +60,8 @@ func TestGenerateBuildsCopyrightFreeFiveThousandStoryFixture(t *testing.T) {
 		t.Fatal(err)
 	}
 	if err := opened.SQL().QueryRow(
-		"SELECT COUNT(*) FROM shelves",
-	).Scan(&shelfCount); err != nil {
+		"SELECT COUNT(*) FROM collections",
+	).Scan(&collectionCount); err != nil {
 		t.Fatal(err)
 	}
 	if err := opened.SQL().QueryRow(
@@ -74,13 +74,13 @@ func TestGenerateBuildsCopyrightFreeFiveThousandStoryFixture(t *testing.T) {
 	}
 	if storyCount != MinimumLargeLibraryStories ||
 		officialCount != MinimumLargeLibraryStories ||
-		shelfCount != len(fixture.ShelfIDs) ||
+		collectionCount != len(fixture.CollectionIDs) ||
 		nonSyntheticCount != 0 {
 		t.Fatalf(
-			"counts = stories:%d official:%d shelves:%d nonSynthetic:%d",
+			"counts = stories:%d official:%d collections:%d nonSynthetic:%d",
 			storyCount,
 			officialCount,
-			shelfCount,
+			collectionCount,
 			nonSyntheticCount,
 		)
 	}

@@ -11,10 +11,10 @@ type CollectionWindow = Pick<Window, 'addEventListener' | 'removeEventListener'>
     location: Pick<Location, 'hash' | 'pathname' | 'search'>;
 };
 
-export type CollectionScope = 'all' | 'shelf' | 'custom';
+export type CollectionScope = 'all' | 'collection' | 'shelf' | 'custom';
 
 function hasMembershipCriteria(query: CollectionQuery): boolean {
-    return !!query.brokenState || !!query.anyOf?.length || query.name !== '' ||
+    return !!query.anyOf?.length || query.name !== '' ||
         query.languages.length > 0 ||
         query.compatibilities.length > 0 ||
         query.booleanFilters.length > 0 ||
@@ -26,7 +26,6 @@ function sameMembershipCriteria(
     right: CollectionQuery,
 ): boolean {
     return JSON.stringify([
-        left.brokenVisibility ?? 'hide', left.brokenState,
         left.name,
         left.languages,
         left.compatibilities,
@@ -34,7 +33,6 @@ function sameMembershipCriteria(
         left.choiceFilters,
         left.anyOf,
     ]) === JSON.stringify([
-        right.brokenVisibility ?? 'hide', right.brokenState,
         right.name,
         right.languages,
         right.compatibilities,
@@ -47,8 +45,10 @@ function sameMembershipCriteria(
 type CollectionHistoryState = {
     collectionQuery?: {
         hash: string;
-        shelfId: number | null;
+        shelfId?: number | null;
+        collectionId?: number | null;
         scope?: CollectionScope;
+        group?: {kind: 'shelf'; id: number; manualOrder?: boolean};
     };
 };
 
@@ -78,26 +78,42 @@ export class CollectionQueryHistory {
         }
     }
 
-    currentShelfID(): number | null {
+    currentCollectionID(): number | null {
         const state = this.#target.history.state as CollectionHistoryState | null;
         const entry = state?.collectionQuery;
-        if (
-            !entry ||
-            entry.hash !== this.#target.location.hash ||
-            (
-                entry.shelfId !== null &&
-                (!Number.isSafeInteger(entry.shelfId) || entry.shelfId <= 0)
-            )
-        ) {
-            return null;
-        }
-        return entry.shelfId;
+        if (!entry || entry.hash !== this.#target.location.hash) return null;
+        if (entry.group?.kind === 'shelf') return null;
+        const id = entry.collectionId ?? entry.shelfId ?? null;
+        return id !== null && Number.isSafeInteger(id) && id > 0 ? id : null;
+    }
+
+    // Compatibility for callers being migrated from dynamic Shelf terminology.
+    currentShelfID(): number | null { return this.currentCollectionID(); }
+
+    currentCuratedShelfID(): number | null {
+        const entry = (this.#target.history.state as CollectionHistoryState | null)?.collectionQuery;
+        const id = entry?.hash === this.#target.location.hash && entry.group?.kind === 'shelf' ? entry.group.id : null;
+        return id !== null && Number.isSafeInteger(id) && id > 0 ? id : null;
+    }
+
+    currentShelfManualOrder(): boolean {
+        const entry = (this.#target.history.state as CollectionHistoryState | null)?.collectionQuery;
+        return entry?.hash === this.#target.location.hash && entry.group?.kind === 'shelf' ? entry.group.manualOrder !== false : true;
+    }
+
+    pushShelf(id: number, query: CollectionQuery = this.#fallback, manualOrder?: boolean): CollectionQuery {
+        const canonical = canonicalCollectionQuery(query);
+        const hash = encodeCollectionQuery(canonical);
+        this.#target.history.pushState({collectionQuery: {hash, group: {kind: 'shelf', id, manualOrder: manualOrder ?? (this.currentCuratedShelfID() === id ? this.currentShelfManualOrder() : true)}, scope: 'shelf'}}, '',
+            `${this.#target.location.pathname}${this.#target.location.search}${hash}`);
+        return canonical;
     }
 
     currentScope(): CollectionScope {
+        if (this.currentCuratedShelfID() !== null) return 'shelf';
         const shelfID = this.currentShelfID();
         if (shelfID !== null) {
-            return 'shelf';
+            return 'collection';
         }
         const state = this.#target.history.state as CollectionHistoryState | null;
         const entry = state?.collectionQuery;
@@ -168,12 +184,14 @@ export class CollectionQueryHistory {
             query: CollectionQuery,
             shelfId: number | null,
             scope: CollectionScope,
+            curatedShelfId: number | null,
         ) => void,
     ): () => void {
         const onHistory = () => listener(
             this.current(),
             this.currentShelfID(),
             this.currentScope(),
+            this.currentCuratedShelfID(),
         );
         this.#target.addEventListener('popstate', onHistory);
         return () => this.#target.removeEventListener('popstate', onHistory);
@@ -193,9 +211,9 @@ export class CollectionQueryHistory {
             ? this.currentShelfID()
             : shelfId;
         const resolvedScope = resolvedShelfID !== null
-            ? 'shelf'
+            ? 'collection'
             : scope ?? (
-                currentScope !== 'shelf' &&
+                currentScope !== 'collection' &&
                     sameMembershipCriteria(current, canonical)
                     ? currentScope
                     : hasMembershipCriteria(canonical) ? 'custom' : 'all'
@@ -205,7 +223,7 @@ export class CollectionQueryHistory {
         this.#target.history[method]({
             collectionQuery: {
                 hash,
-                shelfId: resolvedShelfID,
+                collectionId: resolvedShelfID,
                 scope: resolvedScope,
             },
         }, '', location);

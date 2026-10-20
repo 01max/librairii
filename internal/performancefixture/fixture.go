@@ -16,9 +16,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/01max/librairii/internal/collections"
 	"github.com/01max/librairii/internal/library"
 	"github.com/01max/librairii/internal/searchtext"
-	"github.com/01max/librairii/internal/shelves"
 	"github.com/01max/librairii/internal/storage"
 )
 
@@ -34,7 +34,7 @@ const (
 
 type Fixture struct {
 	StoryCount           int
-	ShelfIDs             []int64
+	CollectionIDs        []int64
 	EmbeddedArtworkPaths []string
 }
 
@@ -259,7 +259,7 @@ func Generate(
 	); err != nil {
 		return Fixture{}, err
 	}
-	shelfIDs, err := seedShelves(ctx, transaction)
+	collectionIDs, err := seedCollections(ctx, transaction)
 	if err != nil {
 		return Fixture{}, err
 	}
@@ -271,7 +271,7 @@ func Generate(
 	}
 	return Fixture{
 		StoryCount:           storyCount,
-		ShelfIDs:             shelfIDs,
+		CollectionIDs:        collectionIDs,
 		EmbeddedArtworkPaths: artworkPaths,
 	}, nil
 }
@@ -339,7 +339,7 @@ func seedCatalog(
 	return nil
 }
 
-func seedShelves(
+func seedCollections(
 	ctx context.Context,
 	transaction *sql.Tx,
 ) ([]int64, error) {
@@ -356,9 +356,7 @@ func seedShelves(
 				library.CompatibilityCompatible,
 			},
 		}},
-		{name: "Broken stories", query: library.StoryLibraryQuery{
-			BrokenVisibility: library.BrokenOnly,
-		}},
+		{name: "All stories", query: library.StoryLibraryQuery{}},
 		{name: "Calm stories", query: library.StoryLibraryQuery{
 			ChoiceFilters: []library.ChoiceFilter{{
 				DefinitionID: MoodDefinitionID,
@@ -369,7 +367,7 @@ func seedShelves(
 	}
 	statement, err := transaction.PrepareContext(
 		ctx,
-		`INSERT INTO shelves (
+		`INSERT INTO collections (
 			id,
 			name,
 			normalized_name,
@@ -385,7 +383,7 @@ func seedShelves(
 	defer statement.Close()
 	ids := make([]int64, 0, len(queries))
 	for index, candidate := range queries {
-		encoded, err := shelves.EncodeSavedLibraryQuery(candidate.query)
+		encoded, err := collections.EncodeSavedLibraryQuery(candidate.query)
 		if err != nil {
 			return nil, err
 		}
@@ -413,7 +411,6 @@ func CombinedQuery() library.StoryLibraryQuery {
 		Compatibilities: []library.Compatibility{
 			library.CompatibilityCompatible,
 		},
-		BrokenState: library.BooleanFalse,
 		ChoiceFilters: []library.ChoiceFilter{{
 			DefinitionID: MoodDefinitionID,
 			ValueIDs:     []int64{CalmValueID},

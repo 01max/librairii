@@ -29,6 +29,7 @@ type Application struct {
 	library     LibraryPort
 	removal     RemovalPort
 	tags        TaggingPort
+	collections CollectionPort
 	shelves     ShelfPort
 	diagnostics DiagnosticsPort
 	resources   []ResourcePort
@@ -48,7 +49,7 @@ func New(deps Dependencies) (*Application, error) {
 		deps.Library == nil ||
 		deps.Removal == nil ||
 		deps.Tags == nil ||
-		deps.Shelves == nil {
+		deps.Collections == nil {
 		return nil, ErrMissingDependency
 	}
 
@@ -63,6 +64,7 @@ func New(deps Dependencies) (*Application, error) {
 		library:     deps.Library,
 		removal:     deps.Removal,
 		tags:        deps.Tags,
+		collections: deps.Collections,
 		shelves:     deps.Shelves,
 		diagnostics: deps.Diagnostics,
 		resources:   resources,
@@ -508,6 +510,8 @@ func (a *Application) statusLocked() Status {
 
 func operationAPIError(err error) *APIError {
 	switch {
+	case errors.Is(err, exporter.ErrPreparedExportStale):
+		return NewAPIError(ErrorConflict, "Stories changed after the export preview. Refresh the preview and try again.")
 	case errors.Is(err, context.Canceled):
 		return NewAPIError(ErrorCancelled, "The operation was cancelled.")
 	case errors.Is(err, operations.ErrInvalidRequest):

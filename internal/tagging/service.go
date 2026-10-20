@@ -35,11 +35,11 @@ type CreateDefinition struct {
 }
 
 type DefinitionDeletionPlan struct {
-	Definition         Definition `json:"definition"`
-	ValueCount         int        `json:"valueCount"`
-	AssignmentCount    int        `json:"assignmentCount"`
-	AffectedShelfCount int        `json:"affectedShelfCount"`
-	AffectedShelfIDs   []int64    `json:"affectedShelfIds"`
+	Definition              Definition `json:"definition"`
+	ValueCount              int        `json:"valueCount"`
+	AssignmentCount         int        `json:"assignmentCount"`
+	AffectedCollectionCount int        `json:"affectedCollectionCount"`
+	AffectedCollectionIDs   []int64    `json:"affectedCollectionIds"`
 }
 
 type Service struct {
@@ -244,7 +244,7 @@ func (s *Service) PlanDefinitionDeletion(
 	).Scan(&plan.ValueCount, &plan.AssignmentCount); err != nil {
 		return DefinitionDeletionPlan{}, fmt.Errorf("plan tag definition deletion: %w", err)
 	}
-	plan.AffectedShelfIDs, err = shelvesReferencingDefinition(
+	plan.AffectedCollectionIDs, err = collectionsReferencingDefinition(
 		ctx,
 		s.database,
 		definitionID,
@@ -252,7 +252,7 @@ func (s *Service) PlanDefinitionDeletion(
 	if err != nil {
 		return DefinitionDeletionPlan{}, err
 	}
-	plan.AffectedShelfCount = len(plan.AffectedShelfIDs)
+	plan.AffectedCollectionCount = len(plan.AffectedCollectionIDs)
 	return plan, nil
 }
 
@@ -285,7 +285,7 @@ func (s *Service) DeleteDefinition(
 	).Scan(&valueCount, &assignmentCount); err != nil {
 		return fmt.Errorf("validate tag definition deletion: %w", err)
 	}
-	affectedShelfIDs, err := shelvesReferencingDefinition(
+	affectedCollectionIDs, err := collectionsReferencingDefinition(
 		ctx,
 		transaction,
 		definition.ID,
@@ -296,14 +296,14 @@ func (s *Service) DeleteDefinition(
 	if definition != plan.Definition ||
 		valueCount != plan.ValueCount ||
 		assignmentCount != plan.AssignmentCount ||
-		len(affectedShelfIDs) != plan.AffectedShelfCount ||
-		!sameShelfReferenceIDs(affectedShelfIDs, plan.AffectedShelfIDs) {
+		len(affectedCollectionIDs) != plan.AffectedCollectionCount ||
+		!sameCollectionReferenceIDs(affectedCollectionIDs, plan.AffectedCollectionIDs) {
 		return ErrDeletePlanStale
 	}
-	if err := markShelvesNeedingAttention(
+	if err := markCollectionsNeedingAttention(
 		ctx,
 		transaction,
-		affectedShelfIDs,
+		affectedCollectionIDs,
 		ErrDeletePlanStale,
 	); err != nil {
 		return err

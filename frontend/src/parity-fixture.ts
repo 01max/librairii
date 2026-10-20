@@ -1,7 +1,7 @@
 export const CANONICAL_PROTOTYPE = {
     path: 'openspec/ui-prototypes/05-archive-shelves.html',
     snapshotPath: 'testdata/ui-prototypes/05-archive-shelves.html',
-    sha256: '4fe9cc8555095892e56195a4b4df9abdf676b229ac3b3961cab9dff727c2b8b1',
+    sha256: '1b6bb40b2ca411726d90e942d4ea0b3620a5a0ec77b0976093a20be0a625f75a',
     normativeSelector: '.app',
     excludedSelector: '.back',
 } as const;
@@ -87,7 +87,7 @@ const stories: FixtureStory[] = sampleStories.map(
 
 export const CANONICAL_PARITY_FIXTURE = {
     totalArchives: 48,
-    savedShelves: [
+    savedCollections: [
         {id: 1, name: 'Bedtime', count: 12, color: '#ff705c'},
         {id: 2, name: 'Adventures', count: 16, color: '#55b79a'},
         {id: 3, name: 'Favorites', count: 9, color: '#f5bc41'},
@@ -99,16 +99,16 @@ export const CANONICAL_PARITY_FIXTURE = {
         ],
         collapsed: ['Language', 'Import status'],
     },
-    mainShelves: [
+    mainCollections: [
         {
-            sourceShelfID: 1,
+            sourceCollectionID: 1,
             name: 'Bedtime',
             count: 9,
             source: 'Mood tag',
             stories: stories.slice(0, 6),
         },
         {
-            sourceShelfID: 2,
+            sourceCollectionID: 2,
             name: 'Weekend adventures',
             count: 12,
             source: 'Mood tag',

@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	StoryLibraryQueryVersion = 2
+	StoryLibraryQueryVersion = 3
 	storyLibraryHashPath     = "#/library"
 )
 
@@ -32,12 +32,6 @@ func EncodeStoryLibraryQuery(query StoryLibraryQuery) (string, error) {
 		values.Set("any", string(data))
 	}
 	values.Set("v", strconv.Itoa(StoryLibraryQueryVersion))
-	if query.BrokenVisibility != BrokenHide {
-		values.Set("brokenVisibility", string(query.BrokenVisibility))
-	}
-	if query.BrokenState != "" {
-		values.Set("brokenState", string(query.BrokenState))
-	}
 	if query.Name != "" {
 		values.Set("name", query.Name)
 	}
@@ -107,7 +101,7 @@ func DecodeStoryLibraryQuery(hash string, legacyBrokenID ...int64) (StoryLibrary
 		}
 	}
 	version, err := oneQueryValue(values, "v", true)
-	if err != nil || (version != "1" && version != strconv.Itoa(StoryLibraryQueryVersion)) {
+	if err != nil || (version != "1" && version != "2" && version != strconv.Itoa(StoryLibraryQueryVersion)) {
 		return StoryLibraryQuery{}, ErrInvalidStoryLibraryHash
 	}
 	var query StoryLibraryQuery
@@ -187,12 +181,21 @@ func DecodeStoryLibraryQuery(hash string, legacyBrokenID ...int64) (StoryLibrary
 		}
 		query.ChoiceFilters = append(query.ChoiceFilters, filter)
 	}
-	query, err = canonicalStoryLibraryQuery(query)
-	if err != nil {
+	// Validate non-flag predicates before removing retired tag references, so
+	// malformed duplicate criteria cannot become valid through migration.
+	if !validLegacyFlagFields(query, 50) {
+		return StoryLibraryQuery{}, ErrInvalidStoryLibraryHash
+	}
+	if _, err := canonicalStoryLibraryQuery(WithoutBrokenRestrictions(query)); err != nil {
 		return StoryLibraryQuery{}, ErrInvalidStoryLibraryHash
 	}
 	if version == "1" && len(legacyBrokenID) > 0 {
 		query = TranslateLegacyBroken(query, legacyBrokenID[0])
+	}
+	if version != strconv.Itoa(StoryLibraryQueryVersion) {
+		query = WithoutBrokenRestrictions(query)
+	} else if HasBrokenRestrictions(query) {
+		return StoryLibraryQuery{}, ErrInvalidStoryLibraryHash
 	}
 	query, err = canonicalStoryLibraryQuery(query)
 	if err != nil {
@@ -331,4 +334,50 @@ func TranslateLegacyBroken(query StoryLibraryQuery, legacyID int64) StoryLibrary
 		query.AnyOf[i] = TranslateLegacyBroken(branch, legacyID)
 	}
 	return query
+}
+
+// WithoutBrokenRestrictions applies the intentional policy migration only at
+// legacy decoding boundaries. Ordinary user-tag predicates are left intact.
+func WithoutBrokenRestrictions(query StoryLibraryQuery) StoryLibraryQuery {
+	query.IncludeBroken = false
+	query.BrokenVisibility = ""
+	query.BrokenState = ""
+	if query.AnyOf != nil {
+		branches := make([]StoryLibraryQuery, len(query.AnyOf))
+		for i, branch := range query.AnyOf {
+			branches[i] = WithoutBrokenRestrictions(branch)
+		}
+		query.AnyOf = branches
+	}
+	return query
+}
+
+func HasBrokenRestrictions(query StoryLibraryQuery) bool {
+	if query.IncludeBroken || query.BrokenVisibility != "" || query.BrokenState != "" {
+		return true
+	}
+	for _, branch := range query.AnyOf {
+		if HasBrokenRestrictions(branch) {
+			return true
+		}
+	}
+	return false
+}
+
+func validLegacyFlagFields(q StoryLibraryQuery, remaining int) bool {
+	if remaining <= 0 {
+		return false
+	}
+	if q.BrokenVisibility != "" && q.BrokenVisibility != BrokenHide && q.BrokenVisibility != BrokenInclude && q.BrokenVisibility != BrokenOnly {
+		return false
+	}
+	if q.BrokenState != "" && q.BrokenState != BooleanIgnored && q.BrokenState != BooleanTrue && q.BrokenState != BooleanFalse {
+		return false
+	}
+	for _, b := range q.AnyOf {
+		if !validLegacyFlagFields(b, remaining-1) {
+			return false
+		}
+	}
+	return true
 }

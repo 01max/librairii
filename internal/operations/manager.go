@@ -90,16 +90,17 @@ type managerRepository interface {
 }
 
 type Dependencies struct {
-	Repository     managerRepository
-	Imports        ImportService
-	Exports        ExportService
-	ExportRecovery ExportRecovery
-	Metadata       MetadataRefreshService
-	Events         EventPort
-	Clock          Clock
-	StagingCleaner StagingCleaner
-	Workers        int
-	RecoveryDelay  time.Duration
+	Repository             managerRepository
+	Imports                ImportService
+	Exports                ExportService
+	ExportRecovery         ExportRecovery
+	Metadata               MetadataRefreshService
+	Events                 EventPort
+	Clock                  Clock
+	StagingCleaner         StagingCleaner
+	Workers                int
+	RecoveryDelay          time.Duration
+	CheckExportEligibility func(context.Context, NewItem) (string, string, error)
 }
 
 type Manager struct {
@@ -394,6 +395,9 @@ func (m *Manager) StartExport(
 			return Snapshot{}, ErrInvalidRequest
 		}
 		item := work.Item
+		if item.ExportSkipCode != "" && (work.PlannedStatus != ItemSkipped || item.ExportSkipCode != work.OutcomeCode) {
+			return Snapshot{}, ErrInvalidRequest
+		}
 		if work.PlannedStatus != ItemPending {
 			item.TotalBytes = 0
 		}
@@ -654,6 +658,26 @@ func (m *Manager) executeExport(job operationJob) {
 		return
 	}
 	m.emitSnapshot(job.run.id)
+
+	if check := m.deps.CheckExportEligibility; check != nil {
+		code, message, err := check(job.run.ctx, job.export.Item)
+		if err != nil {
+			if errors.Is(err, context.Canceled) {
+				m.complete(job.run, cancelledExportItem(job))
+			} else {
+				m.complete(job.run, exportFailedItem(job, "eligibility_check_failed", "The story's export eligibility could not be checked."))
+			}
+			return
+		}
+		if code != "" {
+			item := exportItemSnapshot(job)
+			item.Status = ItemSkipped
+			item.OutcomeCode = code
+			item.OutcomeMessage = message
+			m.complete(job.run, item)
+			return
+		}
+	}
 
 	var completedBytes int64
 	var persistedBytes int64

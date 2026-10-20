@@ -1,0 +1,42 @@
+# Collections and curated Shelves
+
+Collections are dynamic saved queries. Shelves retain explicitly approved story
+UUIDs, with optional Collections supplying human-reviewed update proposals.
+Existing saved Shelves migrate to Collections with their identity and non-Broken
+criteria preserved. Collections combine as a deduplicated OR union.
+
+Shelf membership changes only through explicit creation, manual curation, or
+review approval. All approved membership stays intact until explicit removal.
+Manual additions and explicitly kept stories are retained independently of source
+criteria; there is no user-facing protection flag or toggle.
+Ordinary selected-story removal changes membership without creating an exclusion.
+Explicit review exclusions persist until reversed; deferrals store no decision. Missing library
+stories retain their membership and resolve again when the same UUID returns.
+Historical acceptance origins remain distinct from current source matches.
+
+Reviews are snapshots. Apply revalidates source definitions/results, availability,
+and Shelf decisions within a transaction. Invalid sources permit healthy-source
+additions but suspend inferred removals. Source detachment and Collection deletion
+require an explicit impact review; kept orphaned members become manual retention
+decisions. Opening a Shelf automatically previews source mismatches and prompts
+for Keep/Remove decisions about affected stories, with nothing approved by
+default. Suggested additions remain in the full Review updates dialog.
+Dismissing a prompt preserves membership and leaves the decisions available in
+Review updates. Rechecking the same pending mismatches does not reopen the prompt.
+
+The dedicated Broken flag, its independent storage, legacy tag migration, warning
+presentation, atomic mutation, and exact Undo remain from the completed Broken
+feature. This change supersedes its visibility and export policies: flagged
+stories remain visible and counted, while every export skips them with a reason.
+Supported legacy queries lose built-in Broken restrictions recursively without
+losing unrelated predicates or ordinary user-tag semantics.
+
+Exports use current Collection results or approved Shelf UUIDs, without pending
+proposals. Prepared eligibility is revalidated, and queued copies check current
+flags before copying. Historical shelf/shelves exports retain their original
+dynamic-query meaning; new curated exports have distinct source discriminators.
+No filesystem synchronization or automatic membership updates are introduced.
+
+The implementation follows the `introduce-collections-and-curated-shelves`
+OpenSpec change. OpenSpec is maintained in its separate nested repository; this
+document records the application repository's behavioral contract.

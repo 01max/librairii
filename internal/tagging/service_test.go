@@ -130,7 +130,7 @@ func TestServicePlansAndConfirmsDefinitionDeletion(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if plan.ValueCount != 1 || plan.AssignmentCount != 1 || plan.AffectedShelfCount != 0 {
+	if plan.ValueCount != 1 || plan.AssignmentCount != 1 || plan.AffectedCollectionCount != 0 {
 		t.Fatalf("PlanDefinitionDeletion() = %#v", plan)
 	}
 	secondStoryID := insertServiceStoryWithUUID(
@@ -339,7 +339,7 @@ func TestRetiredBrokenShelfReferenceDoesNotBelongToReusedTag(t *testing.T) {
 	if _, err := db.Exec(`INSERT INTO legacy_broken_tag VALUES (1,9);
         INSERT INTO tag_definitions (id,key,normalized_key,label,color,kind,source,presentation,position,is_protected)
         VALUES (9,'broken','broken','My tag','#405CF5','boolean','user','default',0,0);
-        INSERT INTO shelves (id,name,normalized_name,position,query_version,query_payload)
+        INSERT INTO collections (id,name,normalized_name,position,query_version,query_payload)
         VALUES (1,'Old','old',0,3,'{"booleanFilters":[{"definitionId":9,"state":"true"}]}'),
           (2,'New','new',1,4,'{"booleanFilters":[{"definitionId":9,"state":"true"}]}');`); err != nil {
 		t.Fatal(err)
@@ -352,7 +352,7 @@ func TestRetiredBrokenShelfReferenceDoesNotBelongToReusedTag(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if plan.AffectedShelfCount != 1 || plan.AffectedShelfIDs[0] != 2 {
+	if plan.AffectedCollectionCount != 1 || plan.AffectedCollectionIDs[0] != 2 {
 		t.Fatalf("plan=%#v", plan)
 	}
 }

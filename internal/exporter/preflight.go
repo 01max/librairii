@@ -15,9 +15,9 @@ import (
 
 	"github.com/01max/librairii/internal/archive"
 	"github.com/01max/librairii/internal/catalog"
+	"github.com/01max/librairii/internal/collections"
 	"github.com/01max/librairii/internal/library"
 	"github.com/01max/librairii/internal/operations"
-	"github.com/01max/librairii/internal/shelves"
 	"github.com/01max/librairii/internal/storage"
 )
 
@@ -32,6 +32,8 @@ const (
 type PreflightIssueCode string
 
 const (
+	IssueStoryMarkedBroken      PreflightIssueCode = "story_marked_broken"
+	IssueStoryUnavailable       PreflightIssueCode = "story_unavailable"
 	IssueShelfNeedsAttention    PreflightIssueCode = "shelf_needs_attention"
 	IssueEmptyScope             PreflightIssueCode = "empty_scope"
 	IssueNoExportableStories    PreflightIssueCode = "no_exportable_stories"
@@ -80,13 +82,13 @@ type PreflightReport struct {
 }
 
 func (r PreflightReport) OperationItems() []operations.ExportWorkItem {
-	preflightByStoryID := make(map[int64]PreflightItem, len(r.Items))
+	preflightByStoryID := make(map[string]PreflightItem, len(r.Items))
 	for _, item := range r.Items {
-		preflightByStoryID[item.StoryID] = item
+		preflightByStoryID[item.StoryUUID] = item
 	}
 	items := make([]operations.ExportWorkItem, 0, len(r.Scope.Stories))
 	for _, story := range r.Scope.Stories {
-		preflight := preflightByStoryID[story.ID]
+		preflight := preflightByStoryID[story.UUID]
 		work := operations.ExportWorkItem{
 			Item: operations.NewItem{
 				StoryID:             story.ID,
@@ -100,12 +102,19 @@ func (r PreflightReport) OperationItems() []operations.ExportWorkItem {
 			},
 			PlannedStatus: operations.ItemPending,
 		}
+		if work.Item.SourceName == "" {
+			work.Item.SourceName = story.Title
+		}
 		if preflight.Disposition == DispositionSkipped {
 			work.PlannedStatus = operations.ItemSkipped
 		} else if preflight.Disposition == DispositionConflicted {
 			work.PlannedStatus = operations.ItemConflicted
 		}
 		if preflight.Issue != nil {
+			if preflight.Issue.Code == IssueStoryMarkedBroken || preflight.Issue.Code == IssueStoryUnavailable {
+				work.Item.ExportSkipCode = string(preflight.Issue.Code)
+				work.Item.TotalBytes = 0
+			}
 			work.OutcomeCode = string(preflight.Issue.Code)
 			work.OutcomeMessage = preflight.Issue.Message
 		}
@@ -115,12 +124,15 @@ func (r PreflightReport) OperationItems() []operations.ExportWorkItem {
 }
 
 type PreflightRequest struct {
-	BrokenVisibility library.BrokenVisibility    `json:"brokenVisibility,omitempty"`
-	IncludeBroken    bool                        `json:"includeBroken"`
-	SourceType       operations.ExportSourceType `json:"sourceType"`
-	StoryIDs         []int64                     `json:"storyIds,omitempty"`
-	Query            library.StoryLibraryQuery   `json:"query"`
-	ShelfIDs         []int64                     `json:"shelfIds,omitempty"`
+	BrokenVisibility    library.BrokenVisibility    `json:"brokenVisibility,omitempty"`
+	IncludeBroken       bool                        `json:"includeBroken"`
+	ShelfSelectionUUIDs []string                    `json:"shelfSelectionUuids,omitempty"`
+	QueryShelfID        int64                       `json:"queryShelfId,omitempty"`
+	SourceType          operations.ExportSourceType `json:"sourceType"`
+	StoryIDs            []int64                     `json:"storyIds,omitempty"`
+	Query               library.StoryLibraryQuery   `json:"query"`
+	CollectionIDs       []int64                     `json:"collectionIds,omitempty"`
+	ShelfIDs            []int64                     `json:"shelfIds,omitempty"`
 }
 
 type PreflightService struct {
@@ -153,11 +165,11 @@ func (s *PreflightService) Plan(
 	destination string,
 ) (PreflightReport, error) {
 	scope, err := s.resolve(ctx, request)
-	if errors.Is(err, shelves.ErrShelfNeedsAttention) ||
-		errors.Is(err, shelves.ErrShelfCriteriaUnavailable) {
+	if errors.Is(err, collections.ErrCollectionNeedsAttention) ||
+		errors.Is(err, collections.ErrCollectionCriteriaUnavailable) {
 		issue := blockingIssue(
 			IssueShelfNeedsAttention,
-			"A selected shelf needs attention before it can be exported.",
+			"A selected Collection needs attention before it can be exported.",
 		)
 		return PreflightReport{
 			Source:  sourceFromRequest(request),
@@ -177,16 +189,43 @@ func (s *PreflightService) resolve(
 ) (Scope, error) {
 	switch request.SourceType {
 	case operations.ExportSourceSelection:
+		if request.QueryShelfID > 0 {
+			if len(request.StoryIDs) > 0 {
+				return Scope{}, ErrInvalidScope
+			}
+			return s.resolver.ResolveShelfSelection(ctx, request.QueryShelfID, request.ShelfSelectionUUIDs)
+		}
+		if len(request.ShelfSelectionUUIDs) > 0 {
+			return Scope{}, ErrInvalidScope
+		}
 		return s.resolver.ResolveSelection(ctx, request.StoryIDs)
 	case operations.ExportSourceCurrentQuery:
+		if request.QueryShelfID > 0 {
+			return s.resolver.ResolveShelfResult(ctx, request.QueryShelfID, request.Query)
+		}
 		return s.resolver.ResolveCurrentQuery(ctx, request.Query)
-	case operations.ExportSourceShelf:
+	case operations.ExportSourceShelf, operations.ExportSourceCollection:
+		ids := request.CollectionIDs
+		if request.SourceType == operations.ExportSourceShelf {
+			ids = request.ShelfIDs
+		}
+		if len(ids) != 1 {
+			return Scope{}, ErrInvalidScope
+		}
+		return s.resolver.ResolveCollection(ctx, ids[0], library.Visibility(request.BrokenVisibility, request.IncludeBroken))
+	case operations.ExportSourceShelves, operations.ExportSourceCollections:
+		ids := request.CollectionIDs
+		if request.SourceType == operations.ExportSourceShelves {
+			ids = request.ShelfIDs
+		}
+		return s.resolver.ResolveCollections(ctx, ids, library.Visibility(request.BrokenVisibility, request.IncludeBroken))
+	case operations.ExportSourceCuratedShelf:
 		if len(request.ShelfIDs) != 1 {
 			return Scope{}, ErrInvalidScope
 		}
-		return s.resolver.ResolveShelf(ctx, request.ShelfIDs[0], library.Visibility(request.BrokenVisibility, request.IncludeBroken))
-	case operations.ExportSourceShelves:
-		return s.resolver.ResolveShelves(ctx, request.ShelfIDs, library.Visibility(request.BrokenVisibility, request.IncludeBroken))
+		return s.resolver.ResolveShelf(ctx, request.ShelfIDs[0])
+	case operations.ExportSourceCuratedShelves:
+		return s.resolver.ResolveShelves(ctx, request.ShelfIDs)
 	default:
 		return Scope{}, ErrInvalidScope
 	}
@@ -291,6 +330,13 @@ func (s *PreflightService) inspectStory(
 		ByteSize:       story.ByteSize,
 		Disposition:    DispositionReady,
 	}
+	if story.ID == 0 {
+		return skippedItem(item, IssueStoryUnavailable, "This approved story is unavailable in the library."), nil
+	}
+	if story.Broken {
+		return skippedItem(item, IssueStoryMarkedBroken, "This story is marked as broken."), nil
+	}
+
 	switch story.Verification {
 	case library.CompatibilityMissing:
 		return skippedItem(item, IssueArchiveMissing, "Managed archive bytes are missing."), nil
@@ -360,8 +406,9 @@ func (s *PreflightService) inspectStory(
 
 func sourceFromRequest(request PreflightRequest) operations.ExportSource {
 	return operations.ExportSource{
-		Type:     request.SourceType,
-		ShelfIDs: append([]int64(nil), request.ShelfIDs...),
+		Type:          request.SourceType,
+		ShelfIDs:      append([]int64(nil), request.ShelfIDs...),
+		CollectionIDs: append([]int64(nil), request.CollectionIDs...),
 	}
 }
 

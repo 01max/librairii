@@ -2,7 +2,9 @@ package exporter
 
 import (
 	"context"
+	"errors"
 	"github.com/01max/librairii/internal/catalog"
+	"github.com/01max/librairii/internal/collections"
 	"github.com/01max/librairii/internal/database"
 	"github.com/01max/librairii/internal/library"
 	"github.com/01max/librairii/internal/operations"
@@ -12,7 +14,7 @@ import (
 	"testing"
 )
 
-func TestBrokenFlagsPreserveExportScopesAndPreparedSelections(t *testing.T) {
+func TestBrokenStoriesAreSkippedInEveryExportMode(t *testing.T) {
 	ctx := context.Background()
 	layout, err := storage.Initialize(t.TempDir())
 	if err != nil {
@@ -39,7 +41,7 @@ func TestBrokenFlagsPreserveExportScopesAndPreparedSelections(t *testing.T) {
 	if _, err := flags.Set(ctx, ids[:1], true); err != nil {
 		t.Fatal(err)
 	}
-	shelfService, err := shelves.NewService(db)
+	shelfService, err := collections.NewService(db)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -48,49 +50,74 @@ func TestBrokenFlagsPreserveExportScopesAndPreparedSelections(t *testing.T) {
 		t.Fatal(err)
 	}
 	if _, err := db.Exec(`INSERT INTO legacy_broken_tag VALUES (1,9);
-        INSERT INTO shelves (id,name,normalized_name,position,query_version,query_payload)
+        INSERT INTO collections (id,name,normalized_name,position,query_version,query_payload)
         VALUES (20,'Legacy broken','legacy broken',1,3,'{"includeBroken":true,"anyOf":[{"booleanFilters":[{"definitionId":9,"state":"true"}]}]}');`); err != nil {
 		t.Fatal(err)
 	}
-	resolver, err := NewResolver(library.NewQuery(opened.SQL(), nil), shelfService)
+	query := library.NewQuery(opened.SQL(), nil)
+	manual, err := shelves.NewService(db, query)
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, test := range []struct {
-		mode                   library.BrokenVisibility
-		count, broken, overlap int
-	}{
-		{library.BrokenHide, 1, 0, 0}, {library.BrokenInclude, 2, 1, 1}, {library.BrokenOnly, 1, 1, 1},
-	} {
-		current, err := resolver.ResolveCurrentQuery(ctx, library.StoryLibraryQuery{BrokenVisibility: test.mode, PageSize: 1})
-		if err != nil || len(current.Stories) != test.count {
-			t.Fatalf("current %s: %#v, %v", test.mode, current, err)
-		}
-		single, err := resolver.ResolveShelf(ctx, all.ID, test.mode)
-		if err != nil || len(single.Stories) != test.count {
-			t.Fatalf("single %s: %#v, %v", test.mode, single, err)
-		}
-		migrated, err := resolver.ResolveShelf(ctx, 20, test.mode)
-		if err != nil || len(migrated.Stories) != test.broken {
-			t.Fatalf("migrated %s: %#v, %v", test.mode, migrated, err)
-		}
-		union, err := resolver.ResolveShelves(ctx, []int64{all.ID, 20}, test.mode)
-		if err != nil || len(union.Stories) != test.count || union.CollapsedOverlap != test.overlap {
-			t.Fatalf("union %s: %#v, %v", test.mode, union, err)
-		}
+	shelf, err := manual.CreateManual(ctx, "Approved", []string{"00112233-4455-4677-8899-aabbccddeeff", "11112222-3333-4444-8555-666677778888"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	copy, err := manual.Duplicate(ctx, shelf.ID, "Copy")
+	if err != nil {
+		t.Fatal(err)
+	}
+	resolver, err := NewResolver(query, shelfService, manual)
+	if err != nil {
+		t.Fatal(err)
 	}
 	preflight, err := NewPreflightService(resolver, layout)
 	if err != nil {
 		t.Fatal(err)
 	}
-	prepared, err := preflight.Plan(ctx, PreflightRequest{SourceType: operations.ExportSourceSelection, StoryIDs: ids[:1]}, t.TempDir())
-	if err != nil || !prepared.CanExport || prepared.ReadyCount != 1 || len(prepared.Issues) != 0 {
-		t.Fatalf("flagged selection preflight=%#v, %v", prepared, err)
+	requests := []PreflightRequest{
+		{SourceType: operations.ExportSourceSelection, StoryIDs: ids},
+		{SourceType: operations.ExportSourceCurrentQuery, Query: library.StoryLibraryQuery{PageSize: 1}},
+		{SourceType: operations.ExportSourceCollection, CollectionIDs: []int64{all.ID}},
+		{SourceType: operations.ExportSourceCollections, CollectionIDs: []int64{all.ID, 20}},
+		{SourceType: operations.ExportSourceCuratedShelf, ShelfIDs: []int64{shelf.ID}},
+		{SourceType: operations.ExportSourceCuratedShelves, ShelfIDs: []int64{shelf.ID, copy.ID}},
+		{SourceType: operations.ExportSourceShelf, ShelfIDs: []int64{all.ID}, IncludeBroken: true},
+	}
+	var prepared PreflightReport
+	for _, request := range requests {
+		report, err := preflight.Plan(ctx, request, t.TempDir())
+		if err != nil || !report.CanExport || report.ResolvedCount != 2 || report.ReadyCount != 1 {
+			t.Fatalf("%s: %#v %v", request.SourceType, report, err)
+		}
+		skipped := 0
+		for _, item := range report.Items {
+			if item.Disposition == DispositionSkipped && item.Issue != nil && item.Issue.Code == IssueStoryMarkedBroken {
+				skipped++
+			}
+		}
+		if skipped != 1 {
+			t.Fatalf("%s: flagged story was not skipped: %#v", request.SourceType, report.Items)
+		}
+		if request.SourceType == operations.ExportSourceSelection {
+			prepared = report
+		}
 	}
 	if _, err := flags.Set(ctx, ids, false); err != nil {
 		t.Fatal(err)
 	}
-	if len(prepared.Scope.Stories) != 1 || prepared.Scope.Stories[0].ID != ids[0] || len(prepared.OperationItems()) != 1 {
-		t.Fatal("flag change altered prepared snapshot")
+	if err := preflight.ValidatePrepared(ctx, prepared); !errors.Is(err, ErrPreparedExportStale) {
+		t.Fatalf("changed flags did not invalidate preparation: %v", err)
+	}
+	refreshed, err := preflight.Plan(ctx, requests[0], t.TempDir())
+	if err != nil || refreshed.ReadyCount != 2 {
+		t.Fatalf("unflagged eligibility: %#v %v", refreshed, err)
+	}
+	if _, err := flags.Set(ctx, ids, true); err != nil {
+		t.Fatal(err)
+	}
+	blocked, err := preflight.Plan(ctx, requests[0], t.TempDir())
+	if err != nil || blocked.CanExport || blocked.ReadyCount != 0 || !blocked.Blocked {
+		t.Fatalf("all-broken export enabled: %#v %v", blocked, err)
 	}
 }

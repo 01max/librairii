@@ -3,12 +3,13 @@ package exporter
 import (
 	"context"
 	"errors"
+	"fmt"
 	"reflect"
 	"testing"
 
+	"github.com/01max/librairii/internal/collections"
 	"github.com/01max/librairii/internal/library"
 	"github.com/01max/librairii/internal/operations"
-	"github.com/01max/librairii/internal/shelves"
 )
 
 func TestResolverSnapshotsEverySupportedScope(t *testing.T) {
@@ -76,28 +77,28 @@ func TestResolverSnapshotsEverySupportedScope(t *testing.T) {
 		t.Fatalf("current query exports = %#v", libraryQuery.exports)
 	}
 
-	single, err := resolver.ResolveShelf(ctx, 7)
+	single, err := resolver.ResolveCollection(ctx, 7)
 	if err != nil {
 		t.Fatal(err)
 	}
 	assertResolvedScope(
 		t,
 		single,
-		operations.ExportSourceShelf,
+		operations.ExportSourceCollection,
 		[]int64{1, 2},
 		[]int64{7},
 		[]string{"Bedtime"},
 		0,
 	)
 
-	multiple, err := resolver.ResolveShelves(ctx, []int64{7, 8})
+	multiple, err := resolver.ResolveCollections(ctx, []int64{7, 8})
 	if err != nil {
 		t.Fatal(err)
 	}
 	assertResolvedScope(
 		t,
 		multiple,
-		operations.ExportSourceShelves,
+		operations.ExportSourceCollections,
 		[]int64{1, 2, 3},
 		[]int64{7, 8},
 		[]string{"Bedtime", "Adventures"},
@@ -125,13 +126,13 @@ func TestResolverRejectsInvalidOrUnavailableScope(t *testing.T) {
 	); !errors.Is(err, ErrInvalidScope) {
 		t.Fatalf("ResolveSelection(invalid) error = %v", err)
 	}
-	if _, err := resolver.ResolveShelves(
+	if _, err := resolver.ResolveCollections(
 		context.Background(),
 		[]int64{7, 7},
 	); !errors.Is(err, ErrInvalidScope) {
 		t.Fatalf("ResolveShelves(duplicate) error = %v", err)
 	}
-	if _, err := resolver.ResolveShelf(
+	if _, err := resolver.ResolveCollection(
 		context.Background(),
 		7,
 	); !errors.Is(err, ErrStoryUnavailable) {
@@ -179,23 +180,23 @@ func (f *fakeLibraryResolver) ExportStories(
 	return stories, nil
 }
 
-type fakeShelfResolver map[int64]shelves.OpenedShelf
+type fakeShelfResolver map[int64]collections.OpenedCollection
 
 func (f fakeShelfResolver) Open(
 	_ context.Context,
 	shelfID int64,
-) (shelves.OpenedShelf, error) {
+) (collections.OpenedCollection, error) {
 	opened, found := f[shelfID]
 	if !found {
-		return shelves.OpenedShelf{}, shelves.ErrShelfNotFound
+		return collections.OpenedCollection{}, collections.ErrCollectionNotFound
 	}
 	return opened, nil
 }
 
-func openedShelf(id int64, name string, queryName string) shelves.OpenedShelf {
-	return shelves.OpenedShelf{
-		Shelf: shelves.Shelf{ID: id, Name: name},
-		Query: shelves.SavedLibraryQuery{Name: queryName},
+func openedShelf(id int64, name string, queryName string) collections.OpenedCollection {
+	return collections.OpenedCollection{
+		Collection: collections.Collection{ID: id, Name: name},
+		Query:      collections.SavedLibraryQuery{Name: queryName},
 	}
 }
 
@@ -204,7 +205,7 @@ func exportStories(ids ...int64) map[int64]library.ExportStory {
 	for _, id := range ids {
 		stories[id] = library.ExportStory{
 			ID:                  id,
-			UUID:                "00112233-4455-4677-8899-aabbccddeeff",
+			UUID:                fmt.Sprintf("00112233-4455-4677-8899-%012d", id),
 			Title:               "Story",
 			OriginalFilename:    "story.zip",
 			DetectedFormat:      "zip",
@@ -233,8 +234,8 @@ func assertResolvedScope(
 	}
 	if scope.Source.Type != sourceType ||
 		!reflect.DeepEqual(gotIDs, storyIDs) ||
-		!reflect.DeepEqual(scope.Source.ShelfIDs, shelfIDs) ||
-		!reflect.DeepEqual(scope.Source.ShelfNames, shelfNames) ||
+		!reflect.DeepEqual(scope.Source.GroupIDs(), shelfIDs) ||
+		!reflect.DeepEqual(scope.Source.GroupNames(), shelfNames) ||
 		scope.CollapsedOverlap != overlap {
 		t.Fatalf("resolved scope = %#v, story IDs = %#v", scope, gotIDs)
 	}

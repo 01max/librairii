@@ -92,14 +92,30 @@ try {
                 );
             }
             assertAccessibilityContract(viewport, contract);
+            await page.getByRole('button', {name: 'Filter by tags', exact: true}).click();
+            await page.getByRole('region', {name: 'Tag filters', exact: true}).waitFor();
+            const tagFiltersResult = await new AxeBuilder({page}).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze();
+            if (tagFiltersResult.violations.length) throw new Error(`tag search: ${JSON.stringify(tagFiltersResult.violations)}`);
+            await page.keyboard.press('Escape');
+            if (!await page.getByRole('button', {name: 'Filter by tags', exact: true}).evaluate((button) => button === document.activeElement)) throw new Error('tag search did not restore focus');
+            await page.getByRole('button', {name: 'Open details', exact: true}).click();
+            const storyDetails = page.getByRole('dialog', {name: 'The Little Prince', exact: true});
+            await storyDetails.waitFor();
+            if (await storyDetails.locator('.flag-feedback').count()) throw new Error('Broken notice appeared before a change');
+            await storyDetails.getByRole('switch', {name: 'Broken: The Little Prince', exact: true}).click();
+            await storyDetails.getByRole('button', {name: 'Undo', exact: true}).waitFor();
+            const toggleResult = await new AxeBuilder({page}).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze();
+            if (toggleResult.violations.length) throw new Error(`Broken toggle: ${JSON.stringify(toggleResult.violations)}`);
+            await storyDetails.getByRole('button', {name: 'Undo', exact: true}).click();
+            await storyDetails.getByRole('button', {name: 'Close', exact: true}).click();
             for (const view of ['List', 'Small covers']) {
                 await page.getByRole('group', {name: 'Story view'}).getByRole('button', {name: view, exact: true}).click();
                 const result = await new AxeBuilder({page}).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze();
                 if (result.violations.length) throw new Error(`${viewport.width}px ${view}: ${JSON.stringify(result.violations)}`);
             }
             if (viewport.width <= 850) {
-                await page.getByRole('button', {name: 'Shelves & filters', exact: true}).click();
-                await page.getByRole('dialog', {name: 'Saved shelves and refinements'}).waitFor();
+                await page.getByRole('button', {name: 'Library & filters', exact: true}).click();
+                await page.getByRole('dialog', {name: 'Saved collections and refinements'}).waitFor();
                 const result = await new AxeBuilder({page}).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze();
                 if (result.violations.length) throw new Error(`sidebar: ${JSON.stringify(result.violations)}`);
             }
@@ -118,6 +134,7 @@ try {
                 if (settingsResult.violations.length) throw new Error(`${fixture}: ${JSON.stringify(settingsResult.violations)}`);
                 if (await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth)) throw new Error(`${fixture}: horizontal overflow`);
             }
+            await assertCuration(page, `http://127.0.0.1:${address.port}`, viewport);
             results.push({
                 viewport,
                 axeViolations: violations.length,
@@ -196,4 +213,74 @@ function resolveChromeExecutable() {
         );
     }
     return executable;
+}
+
+
+async function assertCuration(page, origin, viewport) {
+    await page.goto(`${origin}/?fixture=curated`, {waitUntil: 'networkidle'});
+    if (viewport.width <= 850) await page.getByRole('button', {name: 'Library & filters', exact: true}).click();
+    await page.getByRole('button', {name: 'Weekend Shelf 3', exact: true}).click();
+    await page.getByRole('heading', {name: 'Weekend Shelf', exact: true}).waitFor();
+    const check = async (name) => {
+        const result = await new AxeBuilder({page}).withTags(['wcag2a','wcag2aa','wcag21a','wcag21aa']).analyze();
+        if (result.violations.length) throw new Error(`${viewport.width}px ${name}: ${JSON.stringify(result.violations)}`);
+        if (await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth)) {await page.screenshot({path: join(tmpdir(), 'librairii-overflow.png')}); throw new Error(`${viewport.width}px ${name}: horizontal overflow ${await page.evaluate(() => document.documentElement.scrollWidth)} ${JSON.stringify(await page.evaluate(() => [...document.querySelectorAll('.app *')].filter((e) => e.getBoundingClientRect().right > innerWidth + 1 && getComputedStyle(e).display !== 'none').slice(0, 8).map((e) => ({tag:e.tagName,cls:e.className,right:e.getBoundingClientRect().right,text:e.textContent.slice(0,60)}))))}`);}
+    };
+    await check('curated Shelf');
+    await page.screenshot({path: join(tmpdir(), `librairii-curated-${viewport.width}.png`)});
+    const reviewButton = page.getByRole('button', {name: 'Review updates', exact: true});
+    await reviewButton.click();
+    const review = page.getByRole('dialog', {name: 'Review Shelf updates'});
+    await review.getByRole('combobox').first().waitFor();
+    if (await review.getByRole('combobox').count() !== 25) throw new Error('review rendered more than one candidate page');
+    if (!await review.getByRole('button', {name: 'Apply 0 approved changes'}).isDisabled()) throw new Error('review preapproved candidates');
+    await check('update review');
+    await page.screenshot({path: join(tmpdir(), `librairii-review-${viewport.width}.png`)});
+    await page.keyboard.press('Escape');
+    await review.waitFor({state:'detached'});
+    if (!await reviewButton.evaluate((button) => button === document.activeElement)) throw new Error('review did not return focus');
+    await page.getByRole('button', {name: 'Manage sources', exact:true}).click();
+    await page.getByRole('button', {name: 'Preview source changes'}).click();
+    await page.getByRole('combobox', {name: 'Source story'}).waitFor();
+    await check('source detachment');
+    await page.keyboard.press('Escape');
+    await page.locator('.curated-management summary').click();
+    await page.getByRole('button', {name: 'Manage exclusions (1)'}).click();
+    await check('exclusions');
+    await page.keyboard.press('Escape');
+    if (viewport.width <= 850) await page.getByRole('button', {name:'Library & filters', exact:true}).click();
+    await page.getByRole('button', {name:'Create Shelf', exact:true}).click();
+    await page.getByRole('textbox', {name:'Shelf name'}).fill('New Shelf');
+    await page.getByRole('button', {name:'Preview initial stories'}).click();
+    await page.getByRole('button', {name:'Create with 0 stories'}).waitFor();
+    await check('creation confirmation');
+    await page.keyboard.press('Escape');
+    for (const action of ['keep', 'remove']) {
+        await page.goto(`${origin}/?fixture=curated&review=removals`, {waitUntil: 'networkidle'});
+        if (viewport.width <= 850) await page.getByRole('button', {name: 'Library & filters', exact: true}).click();
+        await page.getByRole('button', {name: 'Weekend Shelf 3', exact: true}).click();
+        const mismatch = page.getByRole('dialog', {name: 'Review Shelf updates'});
+        const decision = mismatch.getByRole('combobox', {name: 'Decision for The Secret Forest'});
+        await decision.waitFor();
+        if (await mismatch.getByRole('combobox').count() !== 1) throw new Error('automatic mismatch prompt includes unrelated additions');
+        if (await decision.inputValue() !== 'defer') throw new Error('mismatch was preapproved');
+        if (await mismatch.getByRole('combobox').first().getAttribute('aria-label') !== 'Decision for The Secret Forest') throw new Error('mismatches were hidden behind additions');
+        await check('source mismatch decision');
+        await page.screenshot({path: join(tmpdir(), `librairii-mismatch-${viewport.width}.png`)});
+        if (action === 'keep') {
+            await page.keyboard.press('Escape');
+            if (await page.locator('.curated-members > li').count() !== 3) throw new Error('dismissal changed membership');
+            await page.getByRole('button', {name: 'Review updates', exact: true}).click();
+            await decision.waitFor();
+        }
+        await decision.selectOption(action);
+        await mismatch.getByRole('button', {name: 'Apply 1 approved changes', exact: true}).click();
+        await mismatch.waitFor({state: 'detached'});
+        const expected = action === 'keep' ? 3 : 2;
+        await page.waitForFunction((count) => document.querySelectorAll('.curated-members > li').length === count, expected);
+        if (await page.getByRole('button', {name: /protect/i}).count()) throw new Error('protection remains visible');
+        if (action === 'keep' && !await page.getByRole('checkbox', {name: 'The Secret Forest', exact: true}).isVisible()) throw new Error('Keep removed the story');
+        if (action === 'remove' && await page.getByRole('checkbox', {name: 'The Secret Forest', exact: true}).count()) throw new Error('approved removal retained the story');
+        await check(`explicit ${action} membership`);
+    }
 }

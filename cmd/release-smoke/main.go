@@ -15,13 +15,13 @@ import (
 	"time"
 
 	coreapp "github.com/01max/librairii/internal/app"
+	"github.com/01max/librairii/internal/collections"
 	"github.com/01max/librairii/internal/exporter"
 	"github.com/01max/librairii/internal/inspection/testfixture"
 	"github.com/01max/librairii/internal/library"
 	"github.com/01max/librairii/internal/metadata"
 	"github.com/01max/librairii/internal/operations"
 	"github.com/01max/librairii/internal/platform"
-	"github.com/01max/librairii/internal/shelves"
 	"github.com/01max/librairii/internal/tagging"
 	"github.com/google/uuid"
 )
@@ -160,39 +160,45 @@ func runReleaseSmoke(
 		return smokeResult{}, err
 	}
 
+	// Flagging is exercised above; explicit clearing makes these byte-for-byte
+	// passthrough smoke scopes eligible under the universal Broken exclusion.
+	if response := composition.application.SetStoriesBroken(ctx, []int64{defaultStory.ID}, false); response.Error != nil {
+		return smokeResult{}, response.Error
+	}
+
 	exportRequests := []struct {
 		request exporter.PreflightRequest
 		count   int
 	}{
 		{
 			request: exporter.PreflightRequest{
-				IncludeBroken: true,
-				SourceType:    operations.ExportSourceSelection,
-				StoryIDs:      []int64{defaultStory.ID},
+
+				SourceType: operations.ExportSourceSelection,
+				StoryIDs:   []int64{defaultStory.ID},
 			},
 			count: 1,
 		},
 		{
 			request: exporter.PreflightRequest{
-				IncludeBroken: true,
-				SourceType:    operations.ExportSourceCurrentQuery,
-				Query:         officialQuery,
+
+				SourceType: operations.ExportSourceCurrentQuery,
+				Query:      officialQuery,
 			},
 			count: 1,
 		},
 		{
 			request: exporter.PreflightRequest{
-				IncludeBroken: true,
-				SourceType:    operations.ExportSourceShelf,
-				ShelfIDs:      []int64{calmShelf.ID},
+
+				SourceType:    operations.ExportSourceCollection,
+				CollectionIDs: []int64{calmShelf.ID},
 			},
 			count: 1,
 		},
 		{
 			request: exporter.PreflightRequest{
-				IncludeBroken: true,
-				SourceType:    operations.ExportSourceShelves,
-				ShelfIDs:      []int64{allShelf.ID, officialShelf.ID},
+
+				SourceType:    operations.ExportSourceCollections,
+				CollectionIDs: []int64{allShelf.ID, officialShelf.ID},
 			},
 			count: 2,
 		},
@@ -228,8 +234,8 @@ func runReleaseSmoke(
 	remaining := composition.application.QueryStories(
 		ctx,
 		library.StoryLibraryQuery{
-			IncludeBroken: true,
-			Page:          1, PageSize: 100, Sort: library.SortNameAscending,
+
+			Page: 1, PageSize: 100, Sort: library.SortNameAscending,
 		},
 	)
 	if remaining.Error != nil ||
@@ -409,8 +415,8 @@ func importAndInspect(
 		return nil, fmt.Errorf("release smoke import failed: %#v", terminal)
 	}
 	page := application.QueryStories(ctx, library.StoryLibraryQuery{
-		IncludeBroken: true,
-		Page:          1, PageSize: 100, Sort: library.SortNameAscending,
+
+		Page: 1, PageSize: 100, Sort: library.SortNameAscending,
 	})
 	if page.Error != nil || page.Page == nil || page.Page.TotalItems != 2 {
 		return nil, fmt.Errorf("query imported stories: %#v", page)
@@ -434,10 +440,10 @@ func tagSearchFilterAndSaveShelf(
 	ctx context.Context,
 	application *coreapp.Application,
 	storyID int64,
-) (library.StoryLibraryQuery, shelves.Shelf, error) {
+) (library.StoryLibraryQuery, collections.Collection, error) {
 	catalogResponse := application.TagCatalog(ctx)
 	if catalogResponse.Error != nil || catalogResponse.Catalog == nil {
-		return library.StoryLibraryQuery{}, shelves.Shelf{},
+		return library.StoryLibraryQuery{}, collections.Collection{},
 			fmt.Errorf("load tag catalog: %#v", catalogResponse)
 	}
 	moodResponse := application.CreateTagDefinition(ctx, tagging.CreateDefinition{
@@ -447,7 +453,7 @@ func tagSearchFilterAndSaveShelf(
 		Kind:  tagging.KindChoice,
 	})
 	if moodResponse.Error != nil || moodResponse.Definition == nil {
-		return library.StoryLibraryQuery{}, shelves.Shelf{},
+		return library.StoryLibraryQuery{}, collections.Collection{},
 			fmt.Errorf("create smoke tag: %#v", moodResponse)
 	}
 	calmResponse := application.CreateTagValue(ctx, tagging.CreateValue{
@@ -456,7 +462,7 @@ func tagSearchFilterAndSaveShelf(
 		Label:        "Calm",
 	})
 	if calmResponse.Error != nil || calmResponse.Value == nil {
-		return library.StoryLibraryQuery{}, shelves.Shelf{},
+		return library.StoryLibraryQuery{}, collections.Collection{},
 			fmt.Errorf("create smoke tag value: %#v", calmResponse)
 	}
 	if assigned := application.SetStoriesBroken(
@@ -464,7 +470,7 @@ func tagSearchFilterAndSaveShelf(
 		[]int64{storyID},
 		true,
 	); assigned.Error != nil {
-		return library.StoryLibraryQuery{}, shelves.Shelf{},
+		return library.StoryLibraryQuery{}, collections.Collection{},
 			fmt.Errorf("assign broken tag: %#v", assigned)
 	}
 	if assigned := application.SetChoiceTagValue(
@@ -474,25 +480,24 @@ func tagSearchFilterAndSaveShelf(
 		calmResponse.Value.ID,
 		true,
 	); assigned.Error != nil {
-		return library.StoryLibraryQuery{}, shelves.Shelf{},
+		return library.StoryLibraryQuery{}, collections.Collection{},
 			fmt.Errorf("assign smoke choice: %#v", assigned)
 	}
 
 	nameSearch := application.QueryStories(ctx, library.StoryLibraryQuery{
-		IncludeBroken: true,
-		Name:          "clockwork forest", Page: 1, PageSize: 100,
+
+		Name: "clockwork forest", Page: 1, PageSize: 100,
 		Sort: library.SortNameAscending,
 	})
 	if nameSearch.Error != nil ||
 		nameSearch.Page == nil ||
 		nameSearch.Page.TotalItems != 1 ||
 		nameSearch.Page.Stories[0].ID != storyID {
-		return library.StoryLibraryQuery{}, shelves.Shelf{},
+		return library.StoryLibraryQuery{}, collections.Collection{},
 			fmt.Errorf("name search smoke: %#v", nameSearch)
 	}
 	query := library.StoryLibraryQuery{
-		IncludeBroken: true,
-		BrokenState:   library.BooleanTrue,
+
 		ChoiceFilters: []library.ChoiceFilter{{
 			DefinitionID: moodResponse.Definition.ID,
 			ValueIDs:     []int64{calmResponse.Value.ID},
@@ -506,29 +511,29 @@ func tagSearchFilterAndSaveShelf(
 		filtered.Page == nil ||
 		filtered.Page.TotalItems != 1 ||
 		filtered.Page.Stories[0].ID != storyID {
-		return library.StoryLibraryQuery{}, shelves.Shelf{},
+		return library.StoryLibraryQuery{}, collections.Collection{},
 			fmt.Errorf("combined tag filter smoke: %#v", filtered)
 	}
-	shelfResponse := application.CreateShelf(ctx, "Calm and broken", query)
-	if shelfResponse.Error != nil || shelfResponse.Shelf == nil {
-		return library.StoryLibraryQuery{}, shelves.Shelf{},
+	shelfResponse := application.CreateCollection(ctx, "Calm and broken", query)
+	if shelfResponse.Error != nil || shelfResponse.Collection == nil {
+		return library.StoryLibraryQuery{}, collections.Collection{},
 			fmt.Errorf("save smoke shelf: %#v", shelfResponse)
 	}
-	opened := application.OpenShelf(
+	opened := application.OpenCollection(
 		ctx,
-		shelfResponse.Shelf.ID,
+		shelfResponse.Collection.ID,
 		library.ListRequest{
-			IncludeBroken: true,
-			Page:          1, PageSize: 100, Sort: library.SortNameAscending,
+
+			Page: 1, PageSize: 100, Sort: library.SortNameAscending,
 		},
 	)
 	if opened.Error != nil ||
 		opened.Evaluation == nil ||
 		opened.Evaluation.Page.TotalItems != 1 {
-		return library.StoryLibraryQuery{}, shelves.Shelf{},
+		return library.StoryLibraryQuery{}, collections.Collection{},
 			fmt.Errorf("evaluate smoke shelf: %#v", opened)
 	}
-	return query, *shelfResponse.Shelf, nil
+	return query, *shelfResponse.Collection, nil
 }
 
 func refreshAndFilterOfficialMetadata(
@@ -567,9 +572,9 @@ func refreshAndFilterOfficialMetadata(
 		return library.StoryLibraryQuery{}, errors.New("derived age value is missing")
 	}
 	query := library.StoryLibraryQuery{
-		IncludeBroken: true,
-		Name:          "clockwork mountain",
-		Languages:     []string{metadata.DefaultLocale},
+
+		Name:      "clockwork mountain",
+		Languages: []string{metadata.DefaultLocale},
 		ChoiceFilters: []library.ChoiceFilter{{
 			DefinitionID: age.ID,
 			ValueIDs:     []int64{ageValue.ID},
@@ -601,38 +606,38 @@ func createExportShelves(
 	ctx context.Context,
 	application *coreapp.Application,
 	officialQuery library.StoryLibraryQuery,
-) (shelves.Shelf, shelves.Shelf, error) {
-	allResponse := application.CreateShelf(
+) (collections.Collection, collections.Collection, error) {
+	allResponse := application.CreateCollection(
 		ctx,
 		"All smoke stories",
-		library.StoryLibraryQuery{IncludeBroken: true},
+		library.StoryLibraryQuery{},
 	)
-	if allResponse.Error != nil || allResponse.Shelf == nil {
-		return shelves.Shelf{}, shelves.Shelf{},
+	if allResponse.Error != nil || allResponse.Collection == nil {
+		return collections.Collection{}, collections.Collection{},
 			fmt.Errorf("create all-stories shelf: %#v", allResponse)
 	}
-	officialResponse := application.CreateShelf(
+	officialResponse := application.CreateCollection(
 		ctx,
 		"Official smoke story",
 		officialQuery,
 	)
-	if officialResponse.Error != nil || officialResponse.Shelf == nil {
-		return shelves.Shelf{}, shelves.Shelf{},
+	if officialResponse.Error != nil || officialResponse.Collection == nil {
+		return collections.Collection{}, collections.Collection{},
 			fmt.Errorf("create official shelf: %#v", officialResponse)
 	}
-	preview := application.PreviewShelves(
+	preview := application.PreviewCollections(
 		ctx,
-		[]int64{allResponse.Shelf.ID, officialResponse.Shelf.ID},
+		[]int64{allResponse.Collection.ID, officialResponse.Collection.ID},
 		library.BrokenInclude,
 	)
 	if preview.Error != nil ||
 		preview.Preview == nil ||
 		preview.Preview.UniqueStoryCount != 2 ||
 		preview.Preview.OverlapCount != 1 {
-		return shelves.Shelf{}, shelves.Shelf{},
+		return collections.Collection{}, collections.Collection{},
 			fmt.Errorf("preview overlapping smoke shelves: %#v", preview)
 	}
-	return *allResponse.Shelf, *officialResponse.Shelf, nil
+	return *allResponse.Collection, *officialResponse.Collection, nil
 }
 
 func runExportScope(
@@ -785,8 +790,8 @@ func verifyRecoveryAndOfflineRestart(
 		return fmt.Errorf("abandoned staging remains: %#v", stagingEntries)
 	}
 	page := composition.application.QueryStories(ctx, library.StoryLibraryQuery{
-		IncludeBroken: true,
-		Name:          "clockwork mountain", Page: 1, PageSize: 100,
+
+		Name: "clockwork mountain", Page: 1, PageSize: 100,
 		Sort: library.SortNameAscending,
 	})
 	if page.Error != nil ||
@@ -800,8 +805,8 @@ func verifyRecoveryAndOfflineRestart(
 	if tagged.Error != nil || tagged.Page == nil || tagged.Page.TotalItems != 0 {
 		return fmt.Errorf("dynamic shelf/tag state after removal: %#v", tagged)
 	}
-	shelfList := composition.application.ListShelves(ctx)
-	if shelfList.Error != nil || len(shelfList.Shelves) != 3 {
+	shelfList := composition.application.ListCollections(ctx)
+	if shelfList.Error != nil || len(shelfList.Collections) != 3 {
 		return fmt.Errorf("persisted shelves after restart: %#v", shelfList)
 	}
 
