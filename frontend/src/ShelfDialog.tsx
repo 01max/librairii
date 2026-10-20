@@ -29,8 +29,10 @@ export default function ShelfDialog({title, busy, onClose, children}: PropsWithC
     useModalFocus(panel, close);
     return <ModalBackdrop onDismiss={onClose} disabled={busy}>
         <section ref={panel} className="detail-dialog curated-dialog" role="dialog" aria-modal="true" aria-label={title}>
-            <div className="dialog-kicker">{t('Shelves')}</div><h3>{title}</h3>
-            <button ref={close} type="button" disabled={busy} onClick={onClose}>{t('Cancel')}</button>
+            <div className="curated-dialog-heading">
+                <div><div className="dialog-kicker">{t('Shelves')}</div><h3>{title}</h3></div>
+                <button ref={close} type="button" disabled={busy} onClick={onClose}>{t('Cancel')}</button>
+            </div>
             {children}
         </section>
     </ModalBackdrop>;
