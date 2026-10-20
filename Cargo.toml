@@ -10,13 +10,13 @@ rust-version = "1.99.1"
 publish = false
 
 [workspace.dependencies]
-librairii-core = { path = "crates/librairii-core" }
-librairii-app = { path = "crates/librairii-app" }
-librairii-storage = { path = "crates/librairii-storage" }
-librairii-adapters = { path = "crates/librairii-adapters" }
-librairii-ui = { path = "crates/librairii-ui" }
-librairii-desktop = { path = "crates/librairii-desktop" }
-librairii-testkit = { path = "crates/librairii-testkit" }
+librairii-core = { version = "=0.0.0", path = "crates/librairii-core" }
+librairii-app = { version = "=0.0.0", path = "crates/librairii-app" }
+librairii-storage = { version = "=0.0.0", path = "crates/librairii-storage" }
+librairii-adapters = { version = "=0.0.0", path = "crates/librairii-adapters" }
+librairii-ui = { version = "=0.0.0", path = "crates/librairii-ui" }
+librairii-desktop = { version = "=0.0.0", path = "crates/librairii-desktop" }
+librairii-testkit = { version = "=0.0.0", path = "crates/librairii-testkit" }
 uuid = { version = "=1.28.0", default-features = false, features = ["std"] }
 thiserror = "=2.0.21"
 

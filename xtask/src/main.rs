@@ -1,4 +1,5 @@
 mod policy;
+mod supply_chain;
 use std::{
     env,
     error::Error,
@@ -105,6 +106,7 @@ fn run() -> Result {
             eprintln!("Source {}", output("git", &["rev-parse", "HEAD"])?.trim());
             check_tool("cargo-nextest")?;
             policy::boundaries()?;
+            supply_chain::check()?;
             command(&cargo(), &["fmt", "--all", "--", "--check"])?;
             command(
                 &cargo(),
@@ -166,6 +168,7 @@ fn run() -> Result {
             }
             Ok(())
         }
-        _ => Err("usage: cargo xtask {check|tools}".into()),
+        [action] if action == "inventory" => supply_chain::inventory(),
+        _ => Err("usage: cargo xtask {check|tools|inventory}".into()),
     }
 }

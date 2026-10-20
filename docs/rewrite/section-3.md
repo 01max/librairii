@@ -18,8 +18,9 @@ of the final head and clean-checkout checks; unavailable target evidence is inco
 | 3.3 | ec318f5 | Stable rustfmt and Clippy, compiler warnings denied in checks |
 | 3.4 | f0c1921 | Owned fresh roots, missing/external/swapped/symlink rejection, loopback HTTP bytes; nextest CI reports and separate doctests |
 | 3.5 | 586ff2b16a322155fab2c2fa0551c47dac27f706 | Locked check facade, dependency direction and refusing desktop process test |
-| 3.6 | Pending commit | Native four-target CI definition; actual runs and release desktop evidence pending |
-| 3.7–3.8 | Pending | Implementation follows the numbered OpenSpec tasks |
+| 3.6 | 3a385ea | Native four-target CI definition; actual runs and release desktop evidence pending |
+| 3.7 | Pending commit | deny/audit pass; exact source/license/duplicate policy, expiry tests and four-target inventory with upstream notice files |
+| 3.8 | Pending | Focused advanced checks |
 | 3.9 | Pending | Independent review and clean-checkout/native target evidence |
 
 ## Baseline pins and boundaries
@@ -99,11 +100,44 @@ Prerequisites: macOS15 Xcode/Command Line Tools SDK and linker (deployment15.0);
 Ubuntu24.04 gcc/binutils/glibc and pkg-config; Windows x64 MSVC Build Tools and
 Windows SDK. No GUI/native-library requirements exist in this graph yet. Toolkit,
 SQLite/archive and renderer prerequisites must be added after qualification.
-Ubuntu installs reuse support PR40's signed official archive helper once merged;
-until that ancestry is integrated, the Rust Ubuntu lane is deliberately incomplete.
+Ubuntu installs reuse the signed official archive helper from merged support PR40
+through integration ancestry. Its exact head3438bd9 passed native AO review and
+Linux39439305675 plus macOS39439305577 CI; the runner-feed failure was intermittent
+environment availability, not an application regression.
 No paid runner/tool purchases are introduced.
 
 Action revisions: official actions/checkout3d3c42e5 (v7.0.1) and
 upload-artifactcf430e03 (v7.0.2), verified upstream signed commit metadata and
 Node24 action entry points on 2026-10-20. Checkout credentials are not persisted;
 workflow permissions are contents:read, no signing or deployment secrets.
+
+## Dependencies and notices
+
+`cargo xtask check` runs pinned cargo-deny0.20.2 plus cargo-audit0.22.2 with warnings
+denied. `deny.toml` enumerates all four target graphs, denies unknown git/registry
+sources, wildcard versions and duplicate releases, and allows only the currently
+needed upstream MIT/Apache-2.0/Unicode-3.0 licenses. No advisory/license/duplicate
+exceptions exist. Unpublished local crates are excluded only from license checks:
+the product license is undecided, not implicitly inherited from dependencies.
+All upstream development/benchmark dependencies remain checked.
+
+Every future suppression must exactly match a record in
+`.config/dependency-exceptions.toml`: kind, exact selector, owner, rationale,
+HTTPS review/issue and real UTC expiry. Missing/duplicate/expired records fail;
+expiry day fails. Broad subtree suppression is forbidden. Native libraries and
+assets require their own reviewed notice/license obligations; a permissive wrapper
+does not cover them. Toolkit/license selection remains gated.
+
+`cargo xtask inventory` emits target/quality/dependency-inventory.json with source,
+compiler, exact registry versions/checksums/features/dependency edges for all four
+resolved graphs. target/quality/notices contains copied upstream LICENSE/COPYING/
+NOTICE files and an index; missing upstream notice files fail generation. This is
+a dependency inventory, not a complete release SBOM or distribution clearance.
+Release packaging must include chosen toolkit/renderer/SQLite/assets/font terms
+and inventory for final shipped bytes. Helper binaries are tools installed from
+pinned upstream locked graphs, not linked into the desktop executable.
+
+Dependabot adds root and fuzz Cargo graph proposals alongside unchanged Go/npm/
+action updates. Review compiler/helper pins explicitly; archive/HTTP/SQLite/toolkit
+updates must rerun the retained corpus, feature/native and licensing gates. No
+auto-merge is enabled and no update is qualification by itself.
