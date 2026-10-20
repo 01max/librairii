@@ -1100,6 +1100,62 @@
     {
       "suite": "librairii-storage",
       "name": "database::closure_tests::poisoned_queue_close_joins_every_owner_and_keeps_failure_and_lease_explicit"
+    },
+    {
+      "suite": "librairii-storage::operations_repository",
+      "name": "terminal_sql_commit_error_is_unknown_then_reserved_fresh_readback_proves_state"
+    },
+    {
+      "suite": "librairii-storage::operations_repository",
+      "name": "terminal_sql_completion_is_atomic_exact_and_idempotent_across_siblings"
+    },
+    {
+      "suite": "librairii-storage::operations_repository",
+      "name": "terminal_sql_critical_refusal_retains_original_report_and_variable_command_bytes"
+    },
+    {
+      "suite": "librairii-storage::operations_repository",
+      "name": "terminal_sql_finish_and_interrupt_preserve_legacy_zero_totals"
+    },
+    {
+      "suite": "librairii-storage::operations_repository",
+      "name": "terminal_sql_finish_guard_rolls_back_and_invalid_commands_never_admit"
+    },
+    {
+      "suite": "librairii-storage::operations_repository",
+      "name": "terminal_sql_interrupt_preserves_terminal_items_and_all_bytes"
+    },
+    {
+      "suite": "librairii-storage::operations_repository",
+      "name": "terminal_sql_proven_commit_survives_postcommit_snapshot_refusal_and_drains"
+    },
+    {
+      "suite": "librairii-storage::operations_repository",
+      "name": "terminal_sql_raw_snapshot_preserves_non_uuid_null_scope_and_row_order"
+    },
+    {
+      "suite": "librairii-storage::operations_repository",
+      "name": "terminal_sql_second_guard_failure_rolls_back_first_item_mutation_and_trigger"
+    },
+    {
+      "suite": "librairii-storage::operations_repository",
+      "name": "terminal_sql_two_callers_complete_distinct_siblings_on_one_writer"
+    },
+    {
+      "suite": "librairii-storage::operations_repository",
+      "name": "terminal_sql_writer_barrier_matches_unacknowledged_prior_commit_without_recount"
+    },
+    {
+      "suite": "librairii-storage::operations_repository",
+      "name": "terminal_sql_wrong_scope_missing_and_contradictory_counts_never_ack"
+    },
+    {
+      "suite": "librairii-storage::operations_repository",
+      "name": "terminal_sql_explicit_negative_item_id_is_preserved_and_completed_once"
+    },
+    {
+      "suite": "librairii-storage::operations_repository",
+      "name": "terminal_sql_explicit_zero_item_id_is_preserved_and_completed_once"
     }
   ]
 }
