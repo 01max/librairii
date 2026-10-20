@@ -1985,7 +1985,7 @@ function App() {
                 </nav>
                 <section aria-label={t('Shelves')}>
                     <div className="caption">{t('Shelves')}</div><button type="button" className="manage" disabled={applicationState !== 'ready'} onClick={() => setCreateShelfUUIDs([])}>{t('Create Shelf')}</button>
-                    {curatedShelves.map((shelf, index) => <div key={shelf.id}><label><input type="checkbox" checked={selectedCuratedIDs.includes(shelf.id)} aria-label={t('Select Shelf {0} for export', shelf.name)} onChange={() => setSelectedCuratedIDs(selectedCuratedIDs.includes(shelf.id) ? selectedCuratedIDs.filter((id) => id !== shelf.id) : [...selectedCuratedIDs, shelf.id])}/><span className="sr-only">{shelf.name}</span></label><button className="saved-picker" type="button" key={shelf.id}
+                    {curatedShelves.map((shelf, index) => <div key={shelf.id}><label><input type="checkbox" checked={selectedCuratedIDs.includes(shelf.id)} aria-label={t('Select Shelf {0} for export', shelf.name)} onChange={() => setSelectedCuratedIDs(selectedCuratedIDs.includes(shelf.id) ? selectedCuratedIDs.filter((id) => id !== shelf.id) : [...selectedCuratedIDs, shelf.id])}/><span className="sr-only">{shelf.name}</span></label><button className={`saved-picker${curatedShelfID === shelf.id ? ' active' : ''}`} type="button" key={shelf.id}
                         aria-current={curatedShelfID === shelf.id ? 'page' : undefined}
                         onClick={() => openCuratedShelf(shelf.id)}>{shelf.name}<span>{shelf.count}</span></button>
                         <button type="button" disabled={collectionBusy || index === 0} aria-label={t('Move Shelf {0} up', shelf.name)} onClick={() => {
