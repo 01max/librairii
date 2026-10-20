@@ -23,7 +23,7 @@ evidence, not an additional checklist or acceptance of unfinished work.
 |4.4|All18 admitted populated prefixes, full schema/rows/query outcomes and actual Collection-open projection; no fixture-specific patches or eager DB-open rewrite|Private source/normalization `a125778200af8d28e8ff99c6c41f47a6ef5b69db`, Default language `d902658ad4e8dd33dc9540658ec4176a25fe9652`, strict codec `7350ddf1a87c0434efe1e7fac49c13db9906faf2`; explicit same-writer projection `c48f7db6e891a6583c1e6b99c3d497f7f3bf9f28`, original discovery `e9c559aa35a3df5c6f2b767baa17949b2b4f3a2a`. Finite independent19-DB verification passed on exacte9; other native/current cumulative/admission gates remain open|
 |4.5|Online WAL backup, integrity/FK, rollback and foreign DB+sidecars preservation|Implemented/host verified `abeb80ecd401f840e45a6a162998f5808cd9ebc1` on Unix; Windows directory durability remains pending4.9|
 |4.6|Strict64KiB v1 profiles, atomic serialized updates and isolated native namespace|Implemented/host verified `2751a04a4af6b9da8a21300a182ca2dd5231d8b8`. Stronger race capabilities and Windows effects remain4.8/4.9|
-|4.7|OS lease through close, refuse unproven legacy exclusion, verified independent adoption|Partial `2fb7c0126b7e1b10f46d5cd5326e6e0809b4d4cb`: fresh-root cooperative lease/refusal host verified. Verified independent clone/recovery/restart/relocation qualification remains pending|
+|4.7|OS lease through close, refuse unproven legacy exclusion, verified independent adoption|Partial `2fb7c0126b7e1b10f46d5cd5326e6e0809b4d4cb`: fresh-root cooperative lease/refusal; closed-input verification `d8b39e0633a0d6a4a335343ce07a66a5ed20f8c4`; inactive independent-copy phase follows. Native profile/recovery activation and restart/relocation qualification remain pending|
 |4.8|Distinct no-clobber/config-replace/durable-flush effects and Unix races|Partial `b9148a770f896445b36233452bef7a59e84a60d6`: streaming; descriptor-relative Unix publication/config/flush mechanisms host verified `d6a966e90e14bd0898b49b8469133985d6cb1fee`. Other native qualification and complete reconciliation/adoption remain pending|
 |4.9|Windows effects/path/share-mode implementation plus actual-target evidence|Pending|
 |4.10|Portability preflight and identity-verified rebinding without foreign cleanup|Pending|
@@ -757,3 +757,37 @@ Independent copy/backup, separately owned native namespace/profile/recovery,
 no-alias activation, crash/restart/relocation and later legacy-launch evidence
 remain REQUIRED and unfinished. No input tuple or successful probe grants those
 capabilities. Final cumulative/native4.7/4.11 gates stay open.
+
+### Partial 4.7: independently owned inactive copy
+
+`ClosedLibraryInput::copy_to_new_root` exclusively creates a NEW anchored target
+outside the source tree. Its own OS lease is acquired before library bytes are
+copied; the original directory handle creates that lock without writing through
+a substituted root name. All regular files use descriptor-relative CREATE/EXCL,
+bounded streaming and copy rehash, nlink1/identity checks and file durability.
+Complete source and copied tree/name/hash scans plus another private SQLite
+probe verify the declared snapshot. Child directories flush before their parent,
+then the root name flushes in its retained parent. No source identity, settings,
+DB, state, history, archive, recovery file or manifest is rewritten. Directories
+are0700 and new files0600, with distinct device/inode identities from the source.
+
+The returned `IndependentCopy` is INACTIVE, with no conversion to IsolatedLibrary
+or Database and no native profile commitment. Copied absolute recovery/history
+paths remain raw evidence, never cleanup authority. `IndependentCopyFailure`
+retains actual directory witnesses and the acquired lease alongside its error;
+no destructive Drop removes partial/uncertain bytes. Its last observed root path
+is explicitly untrusted after substitution, not a cleanup receipt. Abandoning an
+inactive copy releases handles while leaving all bytes; it cannot activate it.
+
+Four additional Unix identities verify exact copied bytes/independent inodes,
+source-only later activity, cooperative second-lock refusal/release, collision,
+source overlap/change, pre/late cancellation, a private final-flush fault seam and
+root substitution preserving BOTH original copied and unowned replacement bytes.
+These are synchronous real filesystem effects with a fault injected immediately
+before final directory acknowledgement, not physical power-loss qualification.
+All136 workspace nextest tests pass/zero skipped on AppleARM1.99.1, run
+`99ec6fd3-0364-4061-b6e9-dc8b2a691b19`; five compile-fail docs and storage
+all-target Clippy/fmt pass. Additive owner5 discovery and current provider/native
+checks remain separate. Safe native profile/recovery rebinding and activation,
+crash/restart/relocation and unmodified legacy-launch evidence are still REQUIRED
+before independent adoption can be declared complete. Section17 stays separate.

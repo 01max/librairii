@@ -169,6 +169,134 @@ mod unix {
         Ok(())
     }
     #[test]
+    fn independent_copy_keeps_raw_bytes_has_no_aliases_and_holds_its_own_lease() -> TestResult {
+        use std::os::unix::fs::{MetadataExt, PermissionsExt};
+        let roots = TestRoots::new()?;
+        let (root, profile) = source(&roots)?;
+        let before = bytes(&root)?;
+        let original_profile = profile.original_bytes().to_vec();
+        let input = ClosedLibraryInput::verify(
+            &root,
+            profile,
+            ClosedManifest::decode(MANIFEST)?,
+            &WorkCancellation::default(),
+        )?;
+        let target = roots.library().join("independent-inactive Éte # %2F");
+        let copy = input.copy_to_new_root(&target, &WorkCancellation::default())?;
+        assert_eq!(copy.prefix().version(), 18);
+        assert_eq!(copy.root(), fs::canonicalize(&target)?);
+        assert_eq!(
+            copy.identity().original_bytes(),
+            input.identity().original_bytes()
+        );
+        assert_eq!(copy.source_profile().original_bytes(), original_profile);
+        assert_eq!(
+            copy.source_profile().profile().root,
+            root.to_str().ok_or("root UTF8")?
+        );
+        let mut copied = bytes(&target)?;
+        assert_eq!(
+            copied.remove(Path::new(".librairii-library.lock")),
+            Some(Vec::new())
+        );
+        assert_eq!(copied, before);
+        assert_eq!(bytes(&root)?, before);
+        for path in before.keys() {
+            let source = fs::symlink_metadata(root.join(path))?;
+            let destination = fs::symlink_metadata(target.join(path))?;
+            assert_eq!(destination.nlink(), 1);
+            assert_ne!(
+                (source.dev(), source.ino()),
+                (destination.dev(), destination.ino())
+            );
+            assert_eq!(destination.permissions().mode() & 0o777, 0o600);
+        }
+        assert_eq!(fs::metadata(&target)?.permissions().mode() & 0o777, 0o700);
+        let lock = fs::OpenOptions::new()
+            .read(true)
+            .write(true)
+            .open(target.join(".librairii-library.lock"))?;
+        assert!(matches!(lock.try_lock(), Err(fs::TryLockError::WouldBlock)));
+        copy.revalidate(&WorkCancellation::default())?;
+        // Source edits cannot alias the copied immutable or mutable bytes.
+        fs::write(root.join("history.json"), b"source-only later activity")?;
+        assert_eq!(
+            fs::read(target.join("history.json"))?,
+            before[Path::new("history.json")]
+        );
+        copy.revalidate(&WorkCancellation::default())?;
+        fs::write(target.join("state.json"), b"candidate changed after proof")?;
+        assert!(copy.revalidate(&WorkCancellation::default()).is_err());
+        drop(copy);
+        lock.try_lock()?;
+        assert!(target.join(".librairii-library.lock").exists());
+        assert!(!target.join("settings.json").exists());
+        assert!(!target.join("recovery").exists());
+        Ok(())
+    }
+
+    #[test]
+    fn copy_refuses_existing_overlapping_changed_and_cancelled_inputs_without_clobber() -> TestResult
+    {
+        let roots = TestRoots::new()?;
+        let (root, profile) = source(&roots)?;
+        let before = bytes(&root)?;
+        let input = ClosedLibraryInput::verify(
+            &root,
+            profile,
+            ClosedManifest::decode(MANIFEST)?,
+            &WorkCancellation::default(),
+        )?;
+        let occupied = roots.library().join("occupied");
+        fs::create_dir(&occupied)?;
+        fs::write(occupied.join("unowned"), b"never replace or purge")?;
+        let failed = input
+            .copy_to_new_root(&occupied, &WorkCancellation::default())
+            .err()
+            .ok_or("existing root must refuse")?;
+        assert!(failed.retained_root().is_none());
+        assert_eq!(
+            fs::read(occupied.join("unowned"))?,
+            b"never replace or purge"
+        );
+        let nested = root.join("candidate");
+        let failed = input
+            .copy_to_new_root(&nested, &WorkCancellation::default())
+            .err()
+            .ok_or("source overlap must refuse")?;
+        assert!(matches!(failed.storage_error(), StorageError::PathEscape));
+        assert!(!nested.exists());
+        let cancelled = WorkCancellation::default();
+        cancelled.cancel();
+        let target = roots.library().join("new-target");
+        let failed = input
+            .copy_to_new_root(&target, &cancelled)
+            .err()
+            .ok_or("cancelled copy must refuse")?;
+        assert!(matches!(failed.storage_error(), StorageError::Cancelled));
+        assert!(failed.retained_root().is_none());
+        assert!(!target.exists());
+        assert_eq!(bytes(&root)?, before);
+        fs::write(
+            root.join("history.json"),
+            b"changed after closed verification",
+        )?;
+        let failed = input
+            .copy_to_new_root(&target, &WorkCancellation::default())
+            .err()
+            .ok_or("changed input must refuse")?;
+        assert!(matches!(
+            failed.storage_error(),
+            StorageError::AdoptionInputChanged
+        ));
+        assert!(!target.exists());
+        assert_eq!(
+            fs::read(root.join("history.json"))?,
+            b"changed after closed verification"
+        );
+        Ok(())
+    }
+    #[test]
     fn closed_input_revalidation_detects_unlisted_changed_and_missing_entries() -> TestResult {
         let roots = TestRoots::new()?;
         let (root, profile) = source(&roots)?;

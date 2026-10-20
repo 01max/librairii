@@ -7,12 +7,12 @@ const MAX_MANIFEST_BYTES: usize = 64 * 1024 * 1024;
 /// Facts from a declared closed export, not ownership or mutation authority.
 /// The original Go Manifest bytes remain unchanged; ambiguous/unsafe manifests
 /// are refused before any source effect. Complete tree verification is separate.
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct ClosedManifest {
     bytes: Vec<u8>,
     entries: Vec<ManifestEntry>,
 }
-#[derive(Debug, serde::Deserialize)]
+#[derive(Clone, Debug, serde::Deserialize)]
 #[serde(deny_unknown_fields)]
 struct ManifestEntry {
     path: String,
@@ -95,7 +95,11 @@ mod closed {
         LibraryIdentity, LibraryLayout,
         database::WorkCancellation,
         migrations::SchemaPrefix,
-        platform::{hash_stream, unix::Directory},
+        platform::{
+            hash_stream,
+            lock::{LIBRARY_LOCK_FILE, LibraryLease},
+            unix::{Directory, EntryName, durable_file_flush},
+        },
         profile::{MAX_PROFILE_BYTES, ProfileDocument},
     };
     use librairii_core::Checksum;
@@ -259,6 +263,260 @@ mod closed {
             )?;
             scan(&self.directory, &self.manifest, cancellation)
         }
+
+        /// Copy to a NEW explicit root with independent files and a retained
+        /// cooperative OS lease. The result is INACTIVE: source/profile/journal
+        /// authority is unchanged, and copied recovery paths grant no effects.
+        /// Native profile/recovery separation and activation are distinct gates.
+        /// Failure never recursively removes a root or the only partial copy.
+        pub fn copy_to_new_root(
+            &self,
+            target: &Path,
+            cancellation: &WorkCancellation,
+        ) -> std::result::Result<IndependentCopy, Box<IndependentCopyFailure>> {
+            self.copy_with_checkpoint(target, cancellation, || Ok(()))
+        }
+
+        fn copy_with_checkpoint(
+            &self,
+            target: &Path,
+            cancellation: &WorkCancellation,
+            before_final_flush: impl FnOnce() -> Result<()>,
+        ) -> std::result::Result<IndependentCopy, Box<IndependentCopyFailure>> {
+            let mut retained = None;
+            let result = (|| {
+                self.revalidate(cancellation)?;
+                if !target.is_absolute() {
+                    return Err(StorageError::RootNotAbsolute);
+                }
+                // The new lock is an owned runtime control object, not an old
+                // source file to replace. Such an input needs another route.
+                if self
+                    .manifest
+                    .entries
+                    .iter()
+                    .any(|e| e.path == LIBRARY_LOCK_FILE)
+                {
+                    return Err(StorageError::AdoptionInputInvalid);
+                }
+                let name =
+                    EntryName::parse(target.file_name().ok_or(StorageError::InvalidManagedPath)?)?;
+                let parent_path =
+                    fs::canonicalize(target.parent().ok_or(StorageError::RootNotAbsolute)?)
+                        .map_err(|e| StorageError::io("resolve independent copy parent", e))?;
+                let root = parent_path.join(name.as_os_str());
+                if root.starts_with(&self.root) || self.root.starts_with(&root) {
+                    return Err(StorageError::PathEscape);
+                }
+                let parent = Directory::open(&parent_path)?;
+                let directory = parent.create_child(name.as_os_str())?;
+                retained = Some(CopyCandidate {
+                    root,
+                    directory,
+                    parent,
+                    name,
+                    lease: None,
+                });
+                let candidate = retained
+                    .as_mut()
+                    .ok_or(StorageError::AdoptionInputInvalid)?;
+                candidate.revalidate()?;
+                candidate.lease = Some(LibraryLease::create_fresh_in(
+                    &candidate.root,
+                    &candidate.directory,
+                )?);
+                candidate.revalidate()?;
+
+                // Parents precede their children regardless of manifest order.
+                let mut directories: Vec<_> = self
+                    .manifest
+                    .entries
+                    .iter()
+                    .filter(|e| e.directory)
+                    .collect();
+                directories.sort_by_key(|e| e.path.split('/').count());
+                for entry in &directories {
+                    if cancellation.is_cancelled() {
+                        return Err(StorageError::Cancelled);
+                    }
+                    let (parent, name) = entry.path.rsplit_once('/').unwrap_or(("", &entry.path));
+                    directory_at(&candidate.directory, parent, cancellation)?
+                        .create_child(OsStr::new(name))?;
+                }
+                for entry in self.manifest.entries.iter().filter(|e| !e.directory) {
+                    if cancellation.is_cancelled() {
+                        return Err(StorageError::Cancelled);
+                    }
+                    let (parent, name) = entry.path.rsplit_once('/').unwrap_or(("", &entry.path));
+                    let source_parent = directory_at(&self.directory, parent, cancellation)?;
+                    let mut source = source_parent
+                        .read_regular(OsStr::new(name))?
+                        .ok_or(StorageError::AdoptionInputChanged)?;
+                    verify_file(&mut source, entry, cancellation)?;
+                    source
+                        .seek(SeekFrom::Start(0))
+                        .map_err(|e| StorageError::io("rewind independent copy source", e))?;
+                    let target_parent = directory_at(&candidate.directory, parent, cancellation)?;
+                    let mut output = target_parent.open_regular(
+                        OsStr::new(name),
+                        rustix::fs::OFlags::RDWR
+                            | rustix::fs::OFlags::CREATE
+                            | rustix::fs::OFlags::EXCL,
+                    )?;
+                    let mut reader = InputCopyReader {
+                        file: &mut source,
+                        cancellation,
+                        cancelled: false,
+                    };
+                    let limit = u64::try_from(entry.size)
+                        .map_err(|_| StorageError::AdoptionInputInvalid)?;
+                    match std::io::copy(&mut reader.by_ref().take(limit + 1), &mut output) {
+                        Ok(count) if count == limit => (),
+                        Ok(_) => return Err(StorageError::AdoptionInputChanged),
+                        Err(_) if reader.cancelled => return Err(StorageError::Cancelled),
+                        Err(error) => {
+                            return Err(StorageError::io("stream independent copy", error));
+                        }
+                    }
+                    output
+                        .seek(SeekFrom::Start(0))
+                        .map_err(|e| StorageError::io("rewind independent copy output", e))?;
+                    verify_file(&mut output, entry, cancellation)?;
+                    durable_file_flush(&output)?;
+                }
+                self.revalidate(cancellation)?;
+                scan_with_lock(&candidate.directory, &self.manifest, cancellation, true)?;
+                let scratch = tempfile::tempdir()
+                    .map_err(|e| StorageError::io("create copied database probe", e))?;
+                if crate::backup::probe_owned(
+                    &candidate.root.join("db/librairii.sqlite3"),
+                    scratch.path(),
+                )? != self.prefix
+                {
+                    return Err(StorageError::AdoptionInputChanged);
+                }
+                before_final_flush()?;
+                // Flush children before parents, then the NEW root's name in
+                // its retained parent. A failed acknowledgement retains both
+                // actual directory witnesses and the OS lease in the failure.
+                for entry in directories.iter().rev() {
+                    directory_at(&candidate.directory, &entry.path, cancellation)?.flush()?;
+                }
+                candidate.directory.flush()?;
+                candidate.parent.flush()?;
+                candidate.revalidate()?;
+                Ok(())
+            })();
+            match (result, retained) {
+                (Ok(()), Some(candidate)) => Ok(IndependentCopy {
+                    candidate,
+                    manifest: self.manifest.clone(),
+                    source_profile: self.profile.clone(),
+                    identity: self.identity.clone(),
+                    prefix: self.prefix,
+                }),
+                (Err(cause), retained) => Err(Box::new(IndependentCopyFailure { cause, retained })),
+                (Ok(()), None) => Err(Box::new(IndependentCopyFailure {
+                    cause: StorageError::AdoptionInputInvalid,
+                    retained: None,
+                })),
+            }
+        }
+    }
+
+    #[derive(Debug)]
+    struct CopyCandidate {
+        root: PathBuf,
+        directory: Directory,
+        parent: Directory,
+        name: EntryName,
+        // Last: the copy lease outlives every retained object/stream.
+        lease: Option<LibraryLease>,
+    }
+    impl CopyCandidate {
+        fn revalidate(&self) -> Result<()> {
+            self.directory.matches_metadata(
+                &fs::symlink_metadata(&self.root)
+                    .map_err(|e| StorageError::io("revalidate independent copy root", e))?,
+            )?;
+            let named = self.parent.child(self.name.as_os_str())?;
+            named.matches_metadata(
+                &fs::symlink_metadata(&self.root)
+                    .map_err(|e| StorageError::io("revalidate independent copy name", e))?,
+            )?;
+            if let Some(lease) = &self.lease {
+                lease.revalidate()?;
+            }
+            Ok(())
+        }
+    }
+
+    /// A verified independent byte copy, deliberately not an active library.
+    /// Raw source profile/recovery paths remain evidence, NEVER local cleanup
+    /// authority. No conversion to IsolatedLibrary or Database is provided.
+    #[derive(Debug)]
+    pub struct IndependentCopy {
+        manifest: ClosedManifest,
+        source_profile: ProfileDocument,
+        identity: LibraryIdentity,
+        prefix: SchemaPrefix,
+        candidate: CopyCandidate,
+    }
+    impl IndependentCopy {
+        pub fn root(&self) -> &Path {
+            &self.candidate.root
+        }
+        pub fn identity(&self) -> &LibraryIdentity {
+            &self.identity
+        }
+        pub fn source_profile(&self) -> &ProfileDocument {
+            &self.source_profile
+        }
+        pub const fn prefix(&self) -> SchemaPrefix {
+            self.prefix
+        }
+        pub fn revalidate(&self, cancellation: &WorkCancellation) -> Result<()> {
+            self.candidate.revalidate()?;
+            scan_with_lock(
+                &self.candidate.directory,
+                &self.manifest,
+                cancellation,
+                true,
+            )
+        }
+    }
+
+    /// Inactive partial bytes survive failure. If `retained_root` is present,
+    /// this object retains actual directory witnesses (and the lease once
+    /// acquired), not just a path receipt. It never deletes in Drop or activates
+    /// a copied profile/journal. Release/abandonment leaves all bytes in place.
+    #[derive(Debug)]
+    pub struct IndependentCopyFailure {
+        cause: StorageError,
+        retained: Option<CopyCandidate>,
+    }
+    impl IndependentCopyFailure {
+        pub fn storage_error(&self) -> &StorageError {
+            &self.cause
+        }
+        /// Last observed name only. Substitution can make it point elsewhere;
+        /// neither this path nor `retains_lease` authorizes cleanup/activation.
+        pub fn retained_root(&self) -> Option<&Path> {
+            self.retained.as_ref().map(|c| c.root.as_path())
+        }
+        pub fn retains_lease(&self) -> bool {
+            self.retained.as_ref().is_some_and(|c| c.lease.is_some())
+        }
+    }
+    impl std::fmt::Display for IndependentCopyFailure {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            write!(f, "inactive independent copy failed: {}", self.cause)
+        }
+    }
+    impl std::error::Error for IndependentCopyFailure {
+        fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+            Some(&self.cause)
+        }
     }
 
     struct InputCopyReader<'a> {
@@ -299,11 +557,25 @@ mod closed {
         manifest: &ClosedManifest,
         cancellation: &WorkCancellation,
     ) -> Result<()> {
+        scan_with_lock(root, manifest, cancellation, false)
+    }
+    fn scan_with_lock(
+        root: &Directory,
+        manifest: &ClosedManifest,
+        cancellation: &WorkCancellation,
+        owned_lock: bool,
+    ) -> Result<()> {
         if cancellation.is_cancelled() {
             return Err(StorageError::Cancelled);
         }
         let mut children: BTreeMap<&str, Vec<OsString>> = BTreeMap::new();
         children.insert("", Vec::new());
+        if owned_lock {
+            children
+                .get_mut("")
+                .ok_or(StorageError::AdoptionInputInvalid)?
+                .push(OsString::from(LIBRARY_LOCK_FILE));
+        }
         for entry in &manifest.entries {
             let (parent, name) = entry.path.rsplit_once('/').unwrap_or(("", &entry.path));
             children
@@ -371,9 +643,121 @@ mod closed {
         }
         Ok(())
     }
+
+    #[cfg(test)]
+    mod copy_failures {
+        use super::*;
+        use librairii_testkit::TestRoots;
+        use std::error::Error;
+
+        fn input(roots: &TestRoots) -> std::result::Result<ClosedLibraryInput, Box<dyn Error>> {
+            let root = roots.library().join("closed-input");
+            fs::create_dir(&root)?;
+            fs::create_dir(root.join("db"))?;
+            let corpus = Path::new(env!("CARGO_MANIFEST_DIR"))
+                .join("../../preservation/corpus/libraries/schema018");
+            let mut entries = vec![serde_json::json!({"path":"db","size":0,"directory":true})];
+            for name in [".librairii-library", "db/librairii.sqlite3"] {
+                fs::copy(corpus.join(name), root.join(name))?;
+                let mut file = File::open(root.join(name))?;
+                let size = file.metadata()?.len();
+                let digest = hash_stream(&mut file, size, &WorkCancellation::default())?;
+                entries.push(serde_json::json!({"path":name,"size":size,"sha256":digest.checksum().to_string()}));
+            }
+            let profile = serde_json::json!({"version":1,"language":"fr","root":root,"libraryId":"a0000000-0000-4000-8000-000000000001","complete":true});
+            Ok(ClosedLibraryInput::verify(
+                &root,
+                ProfileDocument::decode(&serde_json::to_vec(&profile)?)?,
+                ClosedManifest::decode(&serde_json::to_vec(&entries)?)?,
+                &WorkCancellation::default(),
+            )?)
+        }
+
+        #[test]
+        fn failed_copy_flush_retains_real_root_lease_and_every_recoverable_byte()
+        -> std::result::Result<(), Box<dyn Error>> {
+            let roots = TestRoots::new()?;
+            let input = input(&roots)?;
+            let original = fs::read(input.root.join("db/librairii.sqlite3"))?;
+            let target = roots.library().join("copy-unacknowledged");
+            let failed = input
+                .copy_with_checkpoint(&target, &WorkCancellation::default(), || {
+                    Err(StorageError::DirectoryDurabilityUnavailable)
+                })
+                .err()
+                .ok_or("injected final flush must fail")?;
+            assert!(matches!(
+                failed.storage_error(),
+                StorageError::DirectoryDurabilityUnavailable
+            ));
+            assert_eq!(failed.retained_root(), Some(target.as_path()));
+            assert!(failed.retains_lease());
+            assert_eq!(fs::read(target.join("db/librairii.sqlite3"))?, original);
+            assert_eq!(fs::read(input.root.join("db/librairii.sqlite3"))?, original);
+            let lock = fs::OpenOptions::new()
+                .read(true)
+                .write(true)
+                .open(target.join(LIBRARY_LOCK_FILE))?;
+            assert!(matches!(lock.try_lock(), Err(fs::TryLockError::WouldBlock)));
+            assert!(!input.root.join(LIBRARY_LOCK_FILE).exists());
+            assert!(!target.join("settings.json").exists());
+            assert!(!target.join("relocation.json").exists());
+            drop(failed);
+            lock.try_lock()?;
+            assert_eq!(fs::read(target.join("db/librairii.sqlite3"))?, original);
+            Ok(())
+        }
+
+        #[test]
+        fn late_copy_cancel_and_root_substitution_never_activate_or_purge_bytes()
+        -> std::result::Result<(), Box<dyn Error>> {
+            let roots = TestRoots::new()?;
+            let input = input(&roots)?;
+            let cancellation = WorkCancellation::default();
+            let cancelled = roots.library().join("late-cancel");
+            let failed = input
+                .copy_with_checkpoint(&cancelled, &cancellation, || {
+                    cancellation.cancel();
+                    Ok(())
+                })
+                .err()
+                .ok_or("late cancellation must fail")?;
+            assert!(matches!(failed.storage_error(), StorageError::Cancelled));
+            assert!(failed.retains_lease());
+            assert_eq!(
+                fs::read(cancelled.join("db/librairii.sqlite3"))?,
+                fs::read(input.root.join("db/librairii.sqlite3"))?
+            );
+            let target = roots.library().join("substituted");
+            let original = roots.library().join("owned-retained");
+            let substituted = input
+                .copy_with_checkpoint(&target, &WorkCancellation::default(), || {
+                    fs::rename(&target, &original)
+                        .map_err(|e| StorageError::io("inject copied root rename", e))?;
+                    fs::create_dir(&target)
+                        .map_err(|e| StorageError::io("inject replacement root", e))?;
+                    fs::write(target.join("unowned"), b"do not remove")
+                        .map_err(|e| StorageError::io("inject unowned file", e))
+                })
+                .err()
+                .ok_or("substitution must fail")?;
+            assert!(matches!(
+                substituted.storage_error(),
+                StorageError::SnapshotChanged
+            ));
+            assert!(substituted.retains_lease());
+            drop(substituted);
+            assert_eq!(fs::read(target.join("unowned"))?, b"do not remove");
+            assert_eq!(
+                fs::read(original.join("db/librairii.sqlite3"))?,
+                fs::read(input.root.join("db/librairii.sqlite3"))?
+            );
+            Ok(())
+        }
+    }
 }
 #[cfg(any(target_os = "macos", target_os = "linux"))]
-pub use closed::ClosedLibraryInput;
+pub use closed::{ClosedLibraryInput, IndependentCopy, IndependentCopyFailure};
 
 /// No currently admitted bridge/exclusion mechanism can stop a later
 /// unmodified Go launch through its retained root/profile/aliases. Therefore

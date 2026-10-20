@@ -1,8 +1,10 @@
 //! Cooperative OS lease. A legacy executable that ignores it remains excluded
 //! only by an independently qualified adoption route, never by this lock alone.
 use crate::{Result, StorageError};
+#[cfg(not(any(target_os = "macos", target_os = "linux")))]
+use std::fs::OpenOptions;
 use std::{
-    fs::{self, File, Metadata, OpenOptions},
+    fs::{self, File, Metadata},
     path::{Path, PathBuf},
 };
 
@@ -27,6 +29,20 @@ impl LibraryLease {
         Self::acquire(root, true)
     }
 
+    #[cfg(any(target_os = "macos", target_os = "linux"))]
+    pub(crate) fn create_fresh_in(root: &Path, directory: &super::unix::Directory) -> Result<Self> {
+        let root_metadata = fs::symlink_metadata(root)
+            .map_err(|e| StorageError::io("inspect retained copy lease root", e))?;
+        directory.matches_metadata(&root_metadata)?;
+        // Creation affects the original NEW directory even if its parent name
+        // is replaced after validation. Never create a lock in that substitute.
+        let file = directory.open_regular(
+            std::ffi::OsStr::new(LIBRARY_LOCK_FILE),
+            rustix::fs::OFlags::RDWR | rustix::fs::OFlags::CREATE | rustix::fs::OFlags::EXCL,
+        )?;
+        Self::finish_acquire(root, root_metadata, file, true)
+    }
+
     fn acquire(root: &Path, create_new: bool) -> Result<Self> {
         if !root.is_absolute() {
             return Err(StorageError::RootNotAbsolute);
@@ -43,16 +59,38 @@ impl LibraryLease {
                     .map_err(|e| StorageError::io("inspect existing library lock", e))?,
             )?;
         }
-        let mut options = OpenOptions::new();
-        options.read(true).write(true).create_new(create_new);
-        #[cfg(unix)]
-        {
-            use std::os::unix::fs::OpenOptionsExt;
-            options.mode(0o600);
-        }
-        let file = options
-            .open(&path)
-            .map_err(|e| StorageError::io("open library lock", e))?;
+        #[cfg(any(target_os = "macos", target_os = "linux"))]
+        let file = {
+            let root_directory = super::unix::Directory::open(root)?;
+            root_directory.matches_metadata(&root_metadata)?;
+            let mut flags = rustix::fs::OFlags::RDWR;
+            if create_new {
+                flags |= rustix::fs::OFlags::CREATE | rustix::fs::OFlags::EXCL;
+            }
+            root_directory.open_regular(std::ffi::OsStr::new(LIBRARY_LOCK_FILE), flags)?
+        };
+        #[cfg(not(any(target_os = "macos", target_os = "linux")))]
+        let file = {
+            let mut options = OpenOptions::new();
+            options.read(true).write(true).create_new(create_new);
+            #[cfg(unix)]
+            {
+                use std::os::unix::fs::OpenOptionsExt;
+                options.mode(0o600);
+            }
+            options
+                .open(&path)
+                .map_err(|e| StorageError::io("open library lock", e))?
+        };
+        Self::finish_acquire(root, root_metadata, file, create_new)
+    }
+
+    fn finish_acquire(
+        root: &Path,
+        root_metadata: Metadata,
+        file: File,
+        create_new: bool,
+    ) -> Result<Self> {
         let file_metadata = file
             .metadata()
             .map_err(|e| StorageError::io("inspect open library lock", e))?;
