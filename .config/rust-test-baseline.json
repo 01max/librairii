@@ -257,6 +257,34 @@
     {
       "suite": "librairii-app",
       "name": "jobs::tests::j6_worker_configuration_matches_frozen_limits"
+    },
+    {
+      "suite": "librairii-app",
+      "name": "jobs::tests::j6_cancel_is_recorded_before_signal_and_queued_skip_preserves_returned_fact"
+    },
+    {
+      "suite": "librairii-app",
+      "name": "jobs::tests::j6_progress_is_coalesced_with_one_scalar_per_worker_and_one_wake"
+    },
+    {
+      "suite": "librairii-app",
+      "name": "jobs::tests::j6_progress_rejects_wrong_identity_regression_and_preserves_export_threshold"
+    },
+    {
+      "suite": "librairii-app",
+      "name": "jobs::tests::j6_rejected_or_other_generation_control_does_not_cancel_running_work"
+    },
+    {
+      "suite": "librairii-app",
+      "name": "jobs::tests::j6_saved_terminal_and_generation_query_stamps_reject_stale_observations"
+    },
+    {
+      "suite": "librairii-app",
+      "name": "jobs::tests::j6_stop_returns_unissued_control_without_claiming_cancel_recorded"
+    },
+    {
+      "suite": "librairii-app",
+      "name": "jobs::tests::j6_uncertain_control_and_symbolic_report_owner_survive_stop_until_actual_readback"
     }
   ]
 }
