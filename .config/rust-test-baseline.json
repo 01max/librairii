@@ -980,6 +980,15 @@
       "targets": [
         "x86_64-pc-windows-msvc"
       ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "profile::tests::admitted_profile_update_owns_state_without_holding_mutex_or_admitting_peer",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
     }
   ]
 }
