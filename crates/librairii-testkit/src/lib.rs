@@ -192,3 +192,66 @@ mod tests {
         Ok(())
     }
 }
+
+/// Inject partial writes and a deterministic failure after observable bytes.
+/// Used around real temporary files by later custody/publication tests.
+#[derive(Debug)]
+pub struct FailAfter<W> {
+    inner: W,
+    remaining: usize,
+    chunk: usize,
+}
+impl<W> FailAfter<W> {
+    pub fn new(inner: W, remaining: usize, chunk: usize) -> io::Result<Self> {
+        if chunk == 0 {
+            return Err(io::Error::other("write chunk must be positive"));
+        }
+        Ok(Self {
+            inner,
+            remaining,
+            chunk,
+        })
+    }
+}
+impl<W: io::Write> io::Write for FailAfter<W> {
+    fn write(&mut self, bytes: &[u8]) -> io::Result<usize> {
+        if bytes.is_empty() {
+            return Ok(0);
+        }
+        if self.remaining == 0 {
+            return Err(io::Error::other("synthetic write failure"));
+        }
+        let count = self
+            .inner
+            .write(&bytes[..bytes.len().min(self.remaining).min(self.chunk)])?;
+        self.remaining -= count;
+        Ok(count)
+    }
+    fn flush(&mut self) -> io::Result<()> {
+        self.inner.flush()
+    }
+}
+#[cfg(test)]
+mod failure_tests {
+    use super::*;
+    use std::io::Write;
+    #[test]
+    fn failed_write_preserves_source_and_exact_partial_destination_bytes() -> io::Result<()> {
+        let roots = TestRoots::new()?;
+        let source = roots.library().join("synthetic-source");
+        let destination = roots.library().join("synthetic-partial");
+        fs::write(&source, b"synthetic fixture bytes")?;
+        let file = fs::OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(&destination)?;
+        let mut writer = FailAfter::new(file, 9, 2)?;
+        assert!(writer.write_all(&fs::read(&source)?).is_err());
+        writer.flush()?;
+        drop(writer);
+        assert_eq!(fs::read(&source)?, b"synthetic fixture bytes");
+        assert_eq!(fs::read(&destination)?, b"synthetic");
+        assert!(FailAfter::new(Vec::<u8>::new(), 5, 0).is_err());
+        Ok(())
+    }
+}

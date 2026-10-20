@@ -1,0 +1,58 @@
+name: Rust focused checks
+
+on:
+  pull_request:
+  push:
+    branches: [main, rewrite-in-rust-native-desktop]
+  workflow_dispatch:
+  schedule:
+    - cron: '23 4 * * 1'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rust-focused-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  focused:
+    name: Rust coverage benchmark fuzz
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install signed Ubuntu compiler prerequisites
+        run: .github/scripts/ubuntu-apt build-essential pkg-config clang
+      - name: Install exact stable and separate fuzz toolchains
+        run: |
+          rustup toolchain install 1.99.1 --profile minimal --component rustfmt --component clippy --component llvm-tools-preview
+          rustup toolchain install nightly-2026-10-19 --profile minimal --component rustfmt
+      - name: Install pinned tools
+        run: |
+          cargo xtask tools
+          cargo install --locked --version 0.9.1 cargo-llvm-cov
+          cargo install --locked --version 0.13.2 cargo-fuzz
+      - name: Capture coverage evidence
+        run: cargo xtask coverage
+      - name: Exercise benchmark harness
+        run: cargo xtask bench --smoke
+      - name: Measure diagnostic benchmarks
+        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+        run: |
+          export LIBRAIRII_BENCH_HARDWARE="GitHub ubuntu-24.04 $RUNNER_ARCH; $(lscpu | tr '\n' ';')"
+          cargo xtask bench
+      - name: Run bounded identity fuzzing
+        run: cargo xtask fuzz
+      - name: Retain evidence and minimized crash inputs
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: rust-focused-${{ github.sha }}
+          path: |
+            target/quality/
+            target/criterion/
+          if-no-files-found: error
+          retention-days: 30

@@ -1,3 +1,4 @@
+mod deep;
 mod policy;
 mod supply_chain;
 use std::{
@@ -110,6 +111,10 @@ fn run() -> Result {
             command(&cargo(), &["fmt", "--all", "--", "--check"])?;
             command(
                 &cargo(),
+                &["fmt", "--manifest-path", "fuzz/Cargo.toml", "--", "--check"],
+            )?;
+            command(
+                &cargo(),
                 &["build", "--workspace", "--locked", "--target", &target],
             )?;
             command(
@@ -169,6 +174,10 @@ fn run() -> Result {
             Ok(())
         }
         [action] if action == "inventory" => supply_chain::inventory(),
-        _ => Err("usage: cargo xtask {check|tools|inventory}".into()),
+        [action] if action == "coverage" => deep::coverage(),
+        [action] if action == "bench" => deep::bench(false),
+        [action, option] if action == "bench" && option == "--smoke" => deep::bench(true),
+        [action] if action == "fuzz" => deep::fuzz(),
+        _ => Err("usage: cargo xtask {check|tools|inventory|coverage|bench [--smoke]|fuzz}".into()),
     }
 }

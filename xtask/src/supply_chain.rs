@@ -115,6 +115,25 @@ pub fn check() -> Result {
         }
     }
     command(&cargo(), &args)?;
+    command(
+        &cargo(),
+        &[
+            "deny",
+            "--manifest-path",
+            "fuzz/Cargo.toml",
+            "--config",
+            "deny.toml",
+            "--locked",
+            "check",
+        ],
+    )?;
+    let mut fuzz_args = vec!["audit", "--file", "fuzz/Cargo.lock", "--deny", "warnings"];
+    for entry in &records.exceptions {
+        if entry.kind == "advisory" {
+            fuzz_args.extend(["--ignore", &entry.selector]);
+        }
+    }
+    command(&cargo(), &fuzz_args)?;
     inventory()
 }
 
@@ -145,6 +164,26 @@ fn write_notices(package: &Value, notices: &Path, text: &mut String) -> Result {
             count += 1;
         }
     }
+    {
+        let supplemental = root()
+            .join(".config/upstream-notices")
+            .join(format!("{name}-{version}"));
+        if supplemental.is_dir() {
+            for entry in fs::read_dir(supplemental)? {
+                let entry = entry?;
+                let filename = entry.file_name();
+                let upper = filename.to_string_lossy().to_ascii_uppercase();
+                if entry.file_type()?.is_file()
+                    && (upper.starts_with("LICENSE") || upper == "PROVENANCE.MD")
+                {
+                    fs::copy(entry.path(), directory.join(&filename))?;
+                    if upper.starts_with("LICENSE") {
+                        count += 1;
+                    }
+                }
+            }
+        }
+    }
     if count == 0 {
         return Err(format!("no upstream license/notice files collected for {name}@{version}; review before redistribution").into());
     }
@@ -155,10 +194,14 @@ fn write_notices(package: &Value, notices: &Path, text: &mut String) -> Result {
     Ok(())
 }
 pub fn inventory() -> Result {
+    inventory_graph("workspace", "Cargo.toml", "Cargo.lock")?;
+    inventory_graph("fuzz", "fuzz/Cargo.toml", "fuzz/Cargo.lock")
+}
+fn inventory_graph(graph: &str, manifest: &str, lockfile: &str) -> Result {
     let destination = root().join("target/quality");
     let notices = destination.join("notices");
     fs::create_dir_all(&notices)?;
-    let lock: toml::Value = toml::from_str(&fs::read_to_string(root().join("Cargo.lock"))?)?;
+    let lock: toml::Value = toml::from_str(&fs::read_to_string(root().join(lockfile))?)?;
     let targets: toml::Value = toml::from_str(&fs::read_to_string(
         root().join(".config/rust-checks.toml"),
     )?)?;
@@ -176,6 +219,8 @@ pub fn inventory() -> Result {
             &cargo(),
             &[
                 "metadata",
+                "--manifest-path",
+                manifest,
                 "--locked",
                 "--format-version",
                 "1",
@@ -222,14 +267,18 @@ pub fn inventory() -> Result {
         }
     }
     fs::write(
-        destination.join("dependency-inventory.json"),
+        destination.join(if graph == "workspace" {
+            "dependency-inventory.json"
+        } else {
+            "fuzz-dependency-inventory.json"
+        }),
         serde_json::to_vec_pretty(&json!({
             "schema":1,"source_commit":output("git", &["rev-parse","HEAD"] )?.trim(),
             "rustc":output("rustc", &["-vV"] )?,"scope":"resolved production and tooling graphs; not a release SBOM",
             "dependencies":inventory
         }))?,
     )?;
-    fs::write(notices.join("NOTICES.txt"), notice_text)?;
+    fs::write(notices.join(format!("NOTICES-{graph}.txt")), notice_text)?;
     Ok(())
 }
 #[cfg(test)]

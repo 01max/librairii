@@ -13,14 +13,14 @@ of the final head and clean-checkout checks; unavailable target evidence is inco
 
 | Subtask | Commit | Evidence |
 | --- | --- | --- |
-| 3.1 | d289e5f | Exact stable 1.99.1, edition 2024/resolver 3, locked workspace build |
+| 3.1 | d289e5fa28ecfba3dc697e86c0a120694a12e325 | Exact stable 1.99.1, edition 2024/resolver 3, locked workspace build |
 | 3.2 | 886b07b828663368f8fcf7cc2e5d990d41f92398 | Typed identity bytes/ranges, distinct group scope, unapproved review default, typed errors and compile-fail boundary |
-| 3.3 | ec318f5 | Stable rustfmt and Clippy, compiler warnings denied in checks |
-| 3.4 | f0c1921 | Owned fresh roots, missing/external/swapped/symlink rejection, loopback HTTP bytes; nextest CI reports and separate doctests |
+| 3.3 | ec318f5e95ed067ac5f089f89f95c0f7b7f62734 | Stable rustfmt and Clippy, compiler warnings denied in checks |
+| 3.4 | f0c19210b6efe57fe4824797cb24c894d9d44c53 | Owned fresh roots, missing/external/swapped/symlink rejection, loopback HTTP bytes; nextest CI reports and separate doctests |
 | 3.5 | 586ff2b16a322155fab2c2fa0551c47dac27f706 | Locked check facade, dependency direction and refusing desktop process test |
-| 3.6 | 3a385ea | Native four-target CI definition; actual runs and release desktop evidence pending |
-| 3.7 | Pending commit | deny/audit pass; exact source/license/duplicate policy, expiry tests and four-target inventory with upstream notice files |
-| 3.8 | Pending | Focused advanced checks |
+| 3.6 | 3a385ea38986b1d3866395d5c5ca09030e580c88 | Native four-target CI definition; actual runs and release desktop evidence pending |
+| 3.7 | b0fa2b536b89cd7c0a483677ac5f8cf68a4fdcd3 | deny/audit pass; exact source/license/duplicate policy, expiry tests and four-target inventory with upstream notice files |
+| 3.8 | Pending commit | 18 nextest tests, independent fuzz lock/toolchain and bounded run, stable coverage and actual Criterion measurements |
 | 3.9 | Pending | Independent review and clean-checkout/native target evidence |
 
 ## Baseline pins and boundaries
@@ -116,7 +116,7 @@ workflow permissions are contents:read, no signing or deployment secrets.
 `cargo xtask check` runs pinned cargo-deny0.20.2 plus cargo-audit0.22.2 with warnings
 denied. `deny.toml` enumerates all four target graphs, denies unknown git/registry
 sources, wildcard versions and duplicate releases, and allows only the currently
-needed upstream MIT/Apache-2.0/Unicode-3.0 licenses. No advisory/license/duplicate
+needed upstream MIT/Apache-2.0/Unicode-3.0 licenses, plus NCSA for the separate fuzz runtime. No advisory/license/duplicate
 exceptions exist. Unpublished local crates are excluded only from license checks:
 the product license is undecided, not implicitly inherited from dependencies.
 All upstream development/benchmark dependencies remain checked.
@@ -141,3 +141,65 @@ Dependabot adds root and fuzz Cargo graph proposals alongside unchanged Go/npm/
 action updates. Review compiler/helper pins explicitly; archive/HTTP/SQLite/toolkit
 updates must rerun the retained corpus, feature/native and licensing gates. No
 auto-merge is enabled and no update is qualification by itself.
+
+## Focused advanced checks (3.8)
+
+Pinned proptest1.12.0 runs 256 cases per property for identity round trips,
+exact checksum acceptance and distinct Collection/Shelf scope. Retain minimized
+proptest regression seeds beside the failing integration test when found. The
+reviewed inline insta1.49.0 snapshot is an internal boundary report, never an
+invented product golden. FailAfter injects deterministic partial writes into a
+real temporary destination; tests assert exact retained source/partial bytes.
+It is a helper, not an implementation of durable custody/recovery.
+
+The independent fuzz workspace has its own Cargo.lock, exact nightly2026-10-19
+(rustc1.101.0-nightly b6eeb93c9), libfuzzer-sys0.4.13 and cargo-fuzz0.13.2.
+`cargo xtask fuzz` copies the four retained synthetic seeds into a generated
+working corpus, resolves locked metadata, runs offline for30s/max128bytes/512MiB
+RSS with ASan, then rejects lock changes. Normal checks stay on stable1.99.1.
+The installed tool version was verified through official rustup metadata; no
+moving nightly channel is used. Initial ARM run completed30,206,540 executions
+in31s, no crash, unchanged lock. Future runs may discover new coverage/failures;
+minimize and retain crash seeds with a behavioral regression assertion.
+Archive/JSON/query parser fuzz cases remain unimplemented until the actual ports
+exist; these identity checks cannot qualify those failure classes.
+
+`cargo xtask coverage` uses pinned cargo-llvm-cov0.9.1 and llvm-tools-preview on
+stable, writes LCOV and an HTML report under target/quality, and records source/
+compiler/OS/architecture/fixture/hardware context. It runs the full nextest suite;
+doctests remain separately required by check. No blanket coverage threshold:
+initial report has identity100% line coverage and testkit96.86%, but tool CLI
+orchestration is exercised by real commands rather than its test binary. Remaining
+message mappings, helper error branches and Windows reparse behavior need explicit
+evidence; stable coverage does not claim nightly branch coverage or future
+custody/migration/recovery/cancellation coverage.
+
+`cargo xtask bench --smoke` exercises the Criterion0.8.2 harness; `cargo xtask
+bench` records100 measured samples after3s warmup for each fixed identity parser.
+Set LIBRAIRII_BENCH_HARDWARE to an actual machine description; absent identification
+is labelled diagnostic only. Initial macOS15.7.7 Apple M4 Pro/48GiB stable1.99.1
+measurements: valid checksum19.759–19.875ns, multibyte rejection1.408–1.416ns,
+canonical UUID6.487–6.910ns. These synthetic measurements are not the retained
+5,000-story query/archive/Shelf budgets or native UI performance qualification.
+The focused CI lane runs stable coverage, benchmark harness and bounded fuzzing;
+scheduled/manual runs additionally measure diagnostic benchmarks. All original
+native/Go/React suites remain cumulative and required independently.
+
+Both root and fuzz lockfiles receive deny/audit and per-target inventories.
+Bundled libFuzzer source headers differ from its README's short license label:
+the checked-in supplemental upstream LLVM/compiler-rt notices preserve the full
+Apache-with-LLVM-exception and historical text at the exact vendored revision.
+The benchmark-only anes package omits notices; its exact published VCS revision's
+MIT/Apache files are preserved with provenance. These are dependency notices,
+not a new product license; no fuzz/benchmark runtime is linked into the desktop.
+
+## Evidence status
+
+Local macOSARM: make check passed (all Go/vet/build/type/lint plus207frontend tests,
+responsive/visual/accessibility/performance); Rust foundation check passed18tests,
+zero skipped, separate compile-fail doctest, locked stable build/fmt/Clippy and
+both graph policies. Coverage, benchmark smoke/measured runs and bounded fuzz ran.
+Native CI is in progress on draft PR41; no missing target is treated as passed.
+Task1 reviewed contract/corpus admission and final clean-checkout checks remain
+pending. Full desktop/assistive-tech/platform/package qualification remains
+outside this infrastructure section. Section3.9 is not complete.
