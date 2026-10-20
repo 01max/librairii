@@ -8,6 +8,11 @@ publish.workspace = true
 [dependencies]
 librairii-app.workspace = true
 librairii-core.workspace = true
+thiserror.workspace = true
+
+[dev-dependencies]
+librairii-testkit.workspace = true
+tempfile.workspace = true
 
 [lints]
 workspace = true
