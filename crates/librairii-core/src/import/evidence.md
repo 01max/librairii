@@ -151,6 +151,7 @@ scoped rustfmt pass. No final combined mandatory-suite claim follows.
 
 | Partial task / support | Original full SHA |
 |---|---|
+|5.4 PARTIAL supplied-byte fixed-shape JSONv1 | c4e29524e37b86dfc2c026e2b7c72fa3c7f3f0fb |
 |5.1 supplied-fact dispatch/codes | `6ec300c6a5dfadfd295198d08618ad3ae5920c79` |
 |5-owned exact-SHA export/discovery support | `daef6c5d8d4ed8cc056a059630b7da2cc72f34a8` |
 |5.2 supplied entry/path/duplicate/accounting | `53dbf76711c5f7b53fa1d462573dfd023569fe49` |
