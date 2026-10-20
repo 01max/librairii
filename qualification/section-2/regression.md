@@ -29,3 +29,30 @@ events, roles and screenshots. Native interaction access is currently denied on
 the ARM test app; Linux/Windows/Intel interactive hosts are not secured. Any
 necessary commercial tool must have exact version/terms/cost/owner approval
 recorded before using it. No paid dependency is silently introduced.
+
+## Review P2: actual checkbox → Apply regression
+
+The review of9eef0a2 correctly found that direct `decide` callbacks missed the
+checkbox's own assignment replacing a one-way binding. Read the exact pinned
+[binding rule](https://github.com/slint-ui/slint/blob/v1.18.1/docs/astro/src/content/docs/reference/language/bindings.mdx)
+and [Cupertino CheckBox implementation](https://github.com/slint-ui/slint/blob/v1.18.1/internal/compiler/widgets/cupertino/checkbox.slint).
+The three probe decisions now have writable boolean properties linked with `<=>`;
+Apply resets those same properties. This keeps widget checked/accessibility state
+synchronized after its own toggle instead of relying on a replaceable expression.
+
+`qualification-desktop --widget-smoke` uses the public generated focus hooks and
+`Window::dispatch_event_with_result(WindowEvent::KeyPressed/KeyReleased)` to route
+Space through the actual CheckBox and Apply Button handlers. It asserts the
+widget's checked property (the property used by its accessibility state), approval
+count and backing decision, then repeats the entire cycle. It does not invoke
+`decide` or `apply-review` directly. The public state/focus hooks require retaining
+the tiny review controls as static instances; their container is hidden/zero-height
+when review is closed.
+
+Observed on the ARM host: the new widget-event regression failed on the old
+one-way binding with exit101, `actual widget must reset after Apply`; after the
+two-way correction it exits0 with `widget_smoke=passed`. The final regression
+does not call show/activate for an OS window and sends no OS input; events remain
+inside Slint. No denied Computer Use permission is bypassed, no private testing
+crate/commercial service is enabled, and no screen-reader/physical keyboard or
+visual observation is claimed. This remains local in-process regression evidence.

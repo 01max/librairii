@@ -139,9 +139,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
         if let Some(ui) = weak.upgrade() {
             ui.set_approvals(decisions.borrow().add.iter().filter(|&&a| a).count() as i32);
-            ui.set_decisions(ModelRc::new(VecModel::from(
-                decisions.borrow().add[..3].to_vec(),
-            )));
+            let decisions = decisions.borrow();
+            ui.set_first_added(decisions.add[0]);
+            ui.set_second_added(decisions.add[1]);
+            ui.set_third_added(decisions.add[2]);
         }
     });
     let weak = ui.as_weak();
@@ -149,7 +150,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         let applied = review.borrow_mut().apply();
         if let Some(ui) = weak.upgrade() {
             ui.set_approvals(0);
-            ui.set_decisions(ModelRc::new(VecModel::from(vec![false; 3])));
+            ui.set_first_added(false);
+            ui.set_second_added(false);
+            ui.set_third_added(false);
             ui.set_status(format!("{applied} synthetic decisions").into());
         }
     });
@@ -208,6 +211,32 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         },
     );
     let exit_timer = slint::Timer::default();
+    if std::env::args().any(|arg| arg == "--widget-smoke") {
+        // Feed Slint's public in-process event API. This does not send OS input
+        // or bypass the denied native Computer Use/accessibility permission.
+        ui.set_review_visible(true);
+        ui.window()
+            .dispatch_event_with_result(slint::platform::WindowEvent::WindowActiveChanged(true))?;
+        for _ in 0..2 {
+            ui.invoke_focus_first_decision();
+            press_space(ui.window())?;
+            assert!(
+                ui.get_first_decision_checked(),
+                "actual widget must be checked"
+            );
+            assert_eq!(ui.get_approvals(), 1, "widget toggled callback must run");
+            ui.invoke_focus_apply();
+            press_space(ui.window())?;
+            assert_eq!(ui.get_approvals(), 0, "actual Apply button must run");
+            assert!(!ui.get_first_added());
+            assert!(
+                !ui.get_first_decision_checked(),
+                "actual widget must reset after Apply"
+            );
+        }
+        eprintln!("widget_smoke=passed; in-process Space toggle -> Apply -> unchecked twice");
+        return Ok(());
+    }
     if std::env::args().any(|arg| arg == "--controller-smoke") {
         ui.invoke_search("0042".into());
         assert_eq!(ui.get_stories().row_count(), 1);
@@ -215,10 +244,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         assert!(ui.get_selected().starts_with("0042"));
         ui.invoke_decide(1, true);
         assert_eq!(ui.get_approvals(), 1);
-        assert_eq!(ui.get_decisions().row_data(1), Some(true));
+        assert!(ui.get_second_added());
         ui.invoke_apply_review();
         assert_eq!(ui.get_approvals(), 0);
-        assert_eq!(ui.get_decisions().row_data(1), Some(false));
+        assert!(!ui.get_second_added());
         eprintln!("controller_smoke=passed; public generated component APIs only");
         return Ok(());
     }
@@ -237,6 +266,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         worker.join().map_err(|_| "synthetic worker panicked")?;
     }
     result?;
+    Ok(())
+}
+
+fn press_space(window: &slint::Window) -> Result<(), slint::PlatformError> {
+    window.dispatch_event_with_result(slint::platform::WindowEvent::KeyPressed {
+        text: " ".into(),
+    })?;
+    window.dispatch_event_with_result(slint::platform::WindowEvent::KeyReleased {
+        text: " ".into(),
+    })?;
     Ok(())
 }
 

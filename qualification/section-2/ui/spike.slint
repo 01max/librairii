@@ -23,7 +23,10 @@ export component Spike inherits Window {
     in property <string> status;
     in property <bool> working: false;
     in property <int> approvals: 0;
-    in property <[bool]> decisions: [false, false, false];
+    in-out property <bool> first-added: false;
+    in-out property <bool> second-added: false;
+    in-out property <bool> third-added: false;
+    out property <bool> first-decision-checked: first-decision.checked;
     callback search(string);
     callback select-story(int);
     callback start-work();
@@ -33,6 +36,11 @@ export component Spike inherits Window {
     callback pick-files();
     callback pick-folder();
     callback reveal-fixture();
+    // Public focus hooks for in-process widget-event regression, not OS input.
+    callback focus-first-decision();
+    focus-first-decision => { first-decision.focus(); }
+    callback focus-apply();
+    focus-apply => { apply-button.focus(); }
 
     MenuBar {
         Menu {
@@ -103,15 +111,27 @@ export component Spike inherits Window {
                 }
             }
         }
-        if root.review-visible: VerticalBox {
+        VerticalBox {
+            visible: root.review-visible;
+            height: root.review-visible ? 90px : 0px;
             Text { text: root.french ? "Révision séparée — aucune approbation implicite" : "Separate review — no implicit approvals"; }
             HorizontalBox {
-                for index in 3: CheckBox {
-                    text: (root.french ? "Ajouter " : "Add ") + index;
-                    checked: root.decisions[index];
-                    toggled => { root.decide(index, self.checked); }
+                first-decision := CheckBox {
+                    text: (root.french ? "Ajouter " : "Add ") + "0";
+                    checked <=> root.first-added;
+                    toggled => { root.decide(0, self.checked); }
                 }
-                Button { text: (root.french ? "Appliquer " : "Apply ") + root.approvals; enabled: root.approvals > 0; clicked => { root.apply-review(); } }
+                CheckBox {
+                    text: (root.french ? "Ajouter " : "Add ") + "1";
+                    checked <=> root.second-added;
+                    toggled => { root.decide(1, self.checked); }
+                }
+                CheckBox {
+                    text: (root.french ? "Ajouter " : "Add ") + "2";
+                    checked <=> root.third-added;
+                    toggled => { root.decide(2, self.checked); }
+                }
+                apply-button := Button { text: (root.french ? "Appliquer " : "Apply ") + root.approvals; enabled: root.approvals > 0; clicked => { root.apply-review(); } }
             }
         }
         HorizontalBox {
