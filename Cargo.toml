@@ -30,6 +30,8 @@ proptest = { version = "=1.12.0", default-features = false, features = ["std"] }
 insta = { version = "=1.49.0", default-features = false, features = ["json"] }
 criterion = { version = "=0.8.2", default-features = false, features = ["cargo_bench_support"] }
 
+time = { version = "=0.3.55", default-features = false, features = ["std"] }
+
 [workspace.lints.rust]
 unsafe_code = "deny"
 missing_debug_implementations = "warn"

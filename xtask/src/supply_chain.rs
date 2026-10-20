@@ -19,6 +19,9 @@ struct Exception {
     expires: String,
 }
 
+fn utc_date(now: time::OffsetDateTime) -> String {
+    now.to_offset(time::UtcOffset::UTC).date().to_string()
+}
 fn date_valid(date: &str) -> bool {
     let parts: Vec<_> = date.split('-').collect();
     if parts.len() != 3
@@ -149,7 +152,7 @@ pub fn check() -> Result {
     }
     validate(
         &records,
-        output("date", &["-u", "+%Y-%m-%d"])?.trim(),
+        &utc_date(time::OffsetDateTime::now_utc()),
         &suppressions,
     )?;
     command(&cargo(), &["deny", "--locked", "check"])?;
@@ -329,6 +332,17 @@ fn inventory_graph(graph: &str, manifest: &str, lockfile: &str) -> Result {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn utc_date_uses_utc_midnight_even_for_an_offset_clock_value() -> Result {
+        let before = time::Date::from_calendar_date(2026, time::Month::October, 19)?
+            .with_hms(23, 59, 59)?
+            .assume_utc();
+        assert_eq!(utc_date(before), "2026-10-19");
+        assert_eq!(utc_date(before + time::Duration::seconds(1)), "2026-10-20");
+        let different_offset = before.to_offset(time::UtcOffset::from_hms(9, 0, 0)?);
+        assert_eq!(utc_date(different_offset), "2026-10-19");
+        Ok(())
+    }
     #[test]
     fn expiry_requires_canonical_ascii_and_real_calendar_boundaries() {
         for valid in [

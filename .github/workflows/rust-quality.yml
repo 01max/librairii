@@ -58,7 +58,18 @@ jobs:
       - name: Install pinned quality tools
         run: cargo xtask tools
       - name: Cumulative workspace check
+        if: runner.os != 'Windows'
         run: cargo xtask check
+      - name: Cumulative workspace check from native Windows PowerShell
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          # Match a normal native shell: remove directories supplying GNU date.
+          # Git's standard cmd directory and all Rust tools remain on PATH.
+          $env:PATH = ($env:PATH -split ';' | Where-Object { $_ -and -not (Test-Path -LiteralPath (Join-Path $_ 'date.exe')) }) -join ';'
+          if (Get-Command date.exe -ErrorAction SilentlyContinue) { throw 'GNU date must be absent for native-shell verification' }
+          cargo xtask check
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Retain native check evidence
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
