@@ -1,5 +1,183 @@
 use super::*;
 
+fn reported_outcome(code: OutcomeCode) -> ReportedOutcome {
+    ReportedOutcome {
+        code,
+        raw_uuid: b"{00112233-4455-4677-8899-AABBCCDDEEFF}".to_vec(),
+        story_id: Some(71),
+        archive_id: Some(89),
+        existing_story_id: Some(71),
+        checksum: Some(b"ABraw-checksum".to_vec()),
+    }
+}
+
+#[test]
+fn reported_import_and_failure_codes_match_frozen_source_without_unknown_fallback() {
+    assert_eq!(
+        OutcomeCode::ALL
+            .iter()
+            .map(|c| c.as_str())
+            .collect::<Vec<_>>(),
+        ["imported", "duplicate_checksum", "uuid_conflict"]
+    );
+    assert_eq!(
+        ImportErrorCode::ALL
+            .iter()
+            .map(|c| c.as_str())
+            .collect::<Vec<_>>(),
+        [
+            "stage_failed",
+            "lookup_failed",
+            "inspection_failed",
+            "publish_failed",
+            "artwork_failed",
+            "catalog_failed",
+            "compensation_failed",
+            "cleanup_failed",
+            "cancelled"
+        ]
+    );
+    for &code in OutcomeCode::ALL {
+        assert_eq!(OutcomeCode::from_code(code.as_str()), Some(code));
+    }
+    for &code in ImportErrorCode::ALL {
+        assert_eq!(ImportErrorCode::from_code(code.as_str()), Some(code));
+    }
+    assert_eq!(OutcomeCode::from_code("Imported"), None);
+    assert_eq!(ImportErrorCode::from_code("commit_uncertain"), None);
+}
+
+#[test]
+fn committed_facts_and_ids_survive_late_cancel_cleanup_and_reporting_errors() {
+    let outcome = reported_outcome(OutcomeCode::Imported);
+    let mut report = ReportedExecution::from_supplied_observations(
+        Some(outcome.clone()),
+        CommitObservation::Committed,
+    );
+    for (phase, code) in [
+        (ProblemPhase::Primary, ImportErrorCode::Cancelled),
+        (ProblemPhase::StagingCleanup, ImportErrorCode::Cleanup),
+        (ProblemPhase::Reporting, ImportErrorCode::Catalog),
+    ] {
+        report.record_problem(ReportedProblem {
+            phase,
+            cause: FailureCause::Import {
+                code,
+                cause: Some(Box::new(FailureCause::Message("later failure".to_owned()))),
+            },
+        });
+    }
+    assert_eq!(report.outcome(), Some(&outcome));
+    assert_eq!(report.commit(), CommitObservation::Committed);
+    assert_eq!(report.problems().len(), 3);
+    assert_eq!(report.problems()[2].phase, ProblemPhase::Reporting);
+    // Reporting data cannot release a real guard/lease or compensate bytes.
+}
+
+#[test]
+fn uncertain_report_does_not_invent_ids_or_noncommit_from_error() {
+    let mut report =
+        ReportedExecution::from_supplied_observations(None, CommitObservation::Uncertain);
+    report.record_problem(ReportedProblem {
+        phase: ProblemPhase::Primary,
+        cause: FailureCause::Import {
+            code: ImportErrorCode::Catalog,
+            cause: Some(Box::new(FailureCause::Message(
+                "commit acknowledgement lost".to_owned(),
+            ))),
+        },
+    });
+    report.record_problem(ReportedProblem {
+        phase: ProblemPhase::Reporting,
+        cause: FailureCause::Message("reporting failed independently".to_owned()),
+    });
+    assert_eq!(report.outcome(), None);
+    assert_eq!(report.commit(), CommitObservation::Uncertain);
+    assert_eq!(report.problems().len(), 2);
+    let absent =
+        ReportedExecution::from_supplied_observations(None, CommitObservation::NotReported);
+    let noncommit =
+        ReportedExecution::from_supplied_observations(None, CommitObservation::ProvenNotCommitted);
+    assert_ne!(absent, noncommit);
+    assert_ne!(absent.commit(), report.commit());
+}
+
+#[test]
+fn duplicate_conflict_facts_raw_fields_and_independent_compensation_error_remain_owned() {
+    for code in [OutcomeCode::DuplicateChecksum, OutcomeCode::UuidConflict] {
+        let fact = reported_outcome(code);
+        let mut report = ReportedExecution::from_supplied_observations(
+            Some(fact.clone()),
+            CommitObservation::NotReported,
+        );
+        report.record_problem(ReportedProblem {
+            phase: ProblemPhase::StagingCleanup,
+            cause: FailureCause::Import {
+                code: ImportErrorCode::Cleanup,
+                cause: None,
+            },
+        });
+        report.record_problem(ReportedProblem {
+            phase: ProblemPhase::Compensation,
+            cause: FailureCause::Message("independent reported recovery problem".to_owned()),
+        });
+        assert_eq!(report.outcome(), Some(&fact));
+        assert_eq!(report.commit(), CommitObservation::NotReported);
+        assert_eq!(report.problems().len(), 2);
+    }
+    // Presence stays explicit; this is unverified data, not positive-ID/hash validation.
+    let mut present = reported_outcome(OutcomeCode::Imported);
+    present.story_id = Some(0);
+    present.checksum = Some(Vec::new());
+    let mut absent = present.clone();
+    absent.story_id = None;
+    absent.checksum = None;
+    assert_ne!(present, absent);
+}
+
+#[test]
+fn nested_joined_causes_preserve_first_validation_order_and_optional_empty_data() {
+    let first = ValidationError::at(ValidationCode::UnsafePath, b"../raw").caused_by("");
+    let second = ValidationError::new(ValidationCode::MissingEntry);
+    let nested = FailureCause::Import {
+        code: ImportErrorCode::Inspection,
+        cause: Some(Box::new(FailureCause::Inspection(first.clone()))),
+    };
+    let joined = FailureCause::join([
+        None,
+        Some(nested.clone()),
+        Some(FailureCause::Inspection(second.clone())),
+        Some(FailureCause::Message(String::new())),
+    ]);
+    let expected = FailureCause::Joined(vec![
+        nested,
+        FailureCause::Inspection(second),
+        FailureCause::Message(String::new()),
+    ]);
+    assert_eq!(joined, Some(expected));
+    assert_eq!(
+        joined.as_ref().and_then(FailureCause::first_validation),
+        Some(&first)
+    );
+    assert_eq!(FailureCause::join([None, None]), None);
+    assert_eq!(
+        FailureCause::join([Some(FailureCause::Message(String::new()))]),
+        Some(FailureCause::Joined(vec![FailureCause::Message(
+            String::new()
+        )]))
+    );
+    assert_ne!(
+        FailureCause::Import {
+            code: ImportErrorCode::Cleanup,
+            cause: None
+        },
+        FailureCause::Import {
+            code: ImportErrorCode::Cleanup,
+            cause: Some(Box::new(FailureCause::Message(String::new())))
+        }
+    );
+}
+
 #[test]
 fn import_uuid_retains_legacy_spelling_without_changing_shared_identity_parsing()
 -> Result<(), ValidationError> {

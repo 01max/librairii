@@ -7,6 +7,7 @@ mod dispatch;
 mod entries;
 mod limits;
 mod pack;
+mod report;
 
 pub use dispatch::{
     ArchivePlan, ContainerKind, ContentFacts, IntegrityRequirement, PackStructure, dispatch,
@@ -18,6 +19,10 @@ pub use limits::{Budget, BudgetUsage, EntryInfo, Limits};
 pub use pack::{
     CandidateData, ImportIdentity, PackRoot, UuidSource, validate_plain_entries,
     validate_uuid_root_entries,
+};
+pub use report::{
+    CommitObservation, FailureCause, ProblemPhase, ReportedExecution, ReportedOutcome,
+    ReportedProblem,
 };
 
 macro_rules! codes {
@@ -74,6 +79,30 @@ codes! {
         MissingAsset => "missing_asset",
         InvalidUuid => "invalid_uuid",
         MalformedMetadata => "malformed_metadata",
+    }
+}
+
+codes! {
+    /// Frozen reported import labels, not evidence that their named effects ran.
+    pub enum OutcomeCode {
+        Imported => "imported",
+        DuplicateChecksum => "duplicate_checksum",
+        UuidConflict => "uuid_conflict",
+    }
+}
+
+codes! {
+    /// Frozen importer failure codes; runtime cancellation mapping is external.
+    pub enum ImportErrorCode {
+        Stage => "stage_failed",
+        Lookup => "lookup_failed",
+        Inspection => "inspection_failed",
+        Publish => "publish_failed",
+        Artwork => "artwork_failed",
+        Catalog => "catalog_failed",
+        Compensation => "compensation_failed",
+        Cleanup => "cleanup_failed",
+        Cancelled => "cancelled",
     }
 }
 

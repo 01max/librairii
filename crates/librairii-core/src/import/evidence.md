@@ -77,8 +77,10 @@ is supplied data only: no JSON/image/container is interpreted or CRC/custody
 authority established. Six additional tests bring scoped execution to17 passed
 (10 unrelated tests filtered). All-target core Clippy with -Dwarnings passed
 after fixing two local style diagnostics; scoped rustfmt passed. Final combined
-full checks remain separate. The next scoped ledger update records this
-original commit SHA. Trailer: `OpenSpec-Task: 5.3`.
+full checks remain separate. Original partial5.3 commit:
+`2dba142d12066e8d47d35243e6ceb2076a6e1a47`
+(`feat(import): preserve supplied pack identities and structure`,
+`OpenSpec-Task: 5.3`).
 
 Integration independently verified suffix behavior on EXACT wireddaef6c5d,
 not later commits:1,112,064 actual frozen-Go1.26.5 scalars and2,224,128 public Rust
@@ -94,3 +96,32 @@ defect; owner5 exclusively repairs it on its own support PR. Ordinary-path
 passes do not qualify Unicode/space/#/%2F checkout behavior. No duplicate repro
 or root fix here. After reviewed admission, consume actual new global history,
 owner5 union-discovery support and rerun combined final-head checks/review.
+
+## Partial5.8: orthogonal reported facts/errors only
+
+Report data retains frozen3 outcome/9 importer error labels, optional raw UUID/
+checksum/ID fields and first-inspection-error traversal through nested/joined
+causes. Absent and present-empty cause/data remain distinct. Captured outcome
+and commit observations cannot be overwritten by record_problem; independent
+primary/stage-cleanup/compensation/report problems retain order and owned data.
+These internal observations are NOT storage acknowledgements, receipt types,
+persisted operation states, runtime ports, authority or a new schema.
+
+Five added tests bring scoped execution to22 passed (10 unrelated tests filtered):
+late cancel/cleanup/report errors retain committed facts/IDs; uncertain errors
+invent neither IDs nor noncommit; duplicate/conflict observations retain raw
+fields despite independent errors; join traversal preserves first validation
+order and optional empty values. This is value-policy behavior, NOT real source/
+copy/hash/art/SQL/compensation fault injection, race, restart or cancellation
+execution. No row/file/lease/guard exists in this slice.
+
+Future effects require actual owner6-issued capabilities/revalidation and safe
+guarded unresolved-effect successor transfer. Proven committed receipt reporting
+can transfer without holding custody exclusion through every report retry;
+needed generation/resources remain owned until actual runtime drain. No API
+implementing that protocol is supplied here.
+
+Original partial5.8 commit SHA is recorded in the next scoped evidence update.
+Trailer: `OpenSpec-Task: 5.8`. All full5.N/5.10 remain open. Final union discovery
+must cover every actual new shipping test and all prior admitted IDs; the two
+independent temporary suffix comparisons are not shipping baseline entries.
