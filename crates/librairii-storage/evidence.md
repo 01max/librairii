@@ -446,3 +446,22 @@ post-publication/trash flush uncertainty; retained actual witnesses; queued
 ordinary-write fencing plus critical readback/close; poisoned profile restart.
 Owner5 owns additive discovery scopes and any combined support checks. All
 canonical4 checkboxes and full4.11/native gates remain pending admission.
+
+### Windows exact-SQL failure investigation (4.2/4.5 follow-up)
+
+Original provider Windows d6a966e run39478703189/job118821563565 is retained
+FAIL:72 executed,67 passed,5 failed. The embedded-SQL byte comparison at
+tests/migrations.rs:25 reports CRLF versus the admitted LF corpus; the prefix
+inspection returns ForeignSchema. The three other observed RED assertions are
+pending-prefix open (expected DirectoryDurabilityUnavailable), foreign-key
+corruption (expected IntegrityFailed), and future/gapped ledger (expected
+MigrationConflict). Their original assertions did not print the actual error,
+so those three causes are not claimed independently established by that log.
+They now retain the exact expected variants and print the actual refusal when
+they fail. No SQL, schema comparator, expected outcome or target skip changed.
+
+At consumed a2a2f7791d24c9e479bcb0b9a998ab9f6ab18a43, both storage/migrations
+and internal/database/migrations SQL have unspecified text/eol attributes;
+preservation/** is already byte-preserving. Owner5 alone owns the narrowly
+scoped attribute/fresh-checkout repair. Each corrected Windows test result
+remains required; ARM observations cannot qualify the Windows refusal branch.
