@@ -1357,3 +1357,14 @@ changed record, unchanged DB bytes, root lease and consuming failure owner.
 RED log SHA256 `dafde43bbff50a768cff930d23a9ecef2f8425e6d27ad44003a017022f4d1965`.
 This is distinct from current discovery/native/provider evidence; the regression
 commit deliberately retains the RED mechanism until its following correction.
+
+The following scoped correction retains regression
+`11c38cb9c701bd47b0fc817bd9f9fadbcda39ae0` unchanged. EVERY runtime claim now
+freshly validates the retained record before the managed-directory fast path;
+reuse additionally requires the in-memory phase Active. No epoch is reset or
+Closed/corrupt disk state rewritten. A mismatch fences the actual owner before
+SQLite/thread admission and retains the exact changed bytes/lease. The SAME
+one test then passed1/1,22 intentionally filtered, on AppleARM; GREEN log SHA256
+`6a40285f33d79fe7a1f750cb315789a66779441df771e93407e30c56e016f2fa`.
+No full/native-other-host/provider rerun was used for this narrow assay. Queued
+Windows helper source is excluded from these commits and this host execution.
