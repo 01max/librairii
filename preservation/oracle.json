@@ -1,0 +1,51 @@
+{
+  "version": 1,
+  "source_commit": "73a93303a9a44cf0a92eaf525331561ed8c04460",
+  "proposal_baseline_commit": "73a93303a9a44cf0a92eaf525331561ed8c04460",
+  "source_proposal_differences": [],
+  "agreement": {
+    "owner": "librairii-2",
+    "status": "agreed in published integration contract",
+    "evidence": "docs/rewrite/integration.md at 1419f1d7c5236016c0e330056c9eff45931ddf48"
+  },
+  "shared_readonly_checkout": "/private/tmp/librairii-go-oracle-73a93303",
+  "source_manifest": "oracle-source.json",
+  "tracked_status_at_capture": "clean",
+  "source_count": 436,
+  "source_repository": "https://github.com/01max/librairii",
+  "tools": {
+    "go": "go1.26.5 darwin/arm64",
+    "node_pin": "24.15.0",
+    "node_initial_host": "24.10.0",
+    "node_for_checks": "24.15.0 (isolated official binary)",
+    "npm_for_checks": "11.12.1 (Node 24.15.0 distribution)",
+    "wails": "v2.16.0",
+    "clang": "Apple clang 17.0.0 (clang-1700.6.3.2)",
+    "xcode": "full Xcode unavailable; CommandLineTools active"
+  },
+  "host": {
+    "os": "macOS 15.7.7",
+    "build": "24G720",
+    "architecture": "arm64",
+    "qualification": "Go baseline only; real desktop smoke pending"
+  },
+  "platforms": {
+    "macos_arm": "pending baseline checks",
+    "macos_intel": "unverified: real Intel host not available to this worker",
+    "linux_x64": "unverified: no identified Linux desktop supplied",
+    "windows_x64": "unverified: no identified Windows desktop supplied"
+  },
+  "recreate": [
+    "git clone --no-hardlinks <source-repository> <independent-oracle>",
+    "git -C <independent-oracle> checkout --detach 73a93303a9a44cf0a92eaf525331561ed8c04460",
+    "verify every oracle-source.json path SHA-256 and clean tracked status",
+    "make tracked oracle source read-only; run only disposable clones"
+  ],
+  "separate_spec_repo": {
+    "path": "/Users/maxime/Dev/librairii/openspec",
+    "initial_head": "816a932c02898b3bd73147083bf9501cc7eb763b",
+    "initial_status": "dirty prerequisite reconciliation; preserved, owned by integration owner",
+    "publication": "not part of application PR"
+  },
+  "oracle_tree": "e797e9d59926d83b73fb7c02e5c3611073e89a16"
+}
