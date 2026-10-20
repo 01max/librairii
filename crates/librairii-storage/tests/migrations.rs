@@ -36,7 +36,21 @@ fn every_actual_prefix_has_the_unchanged_identity_and_contiguous_ledger() -> Tes
         let before = fs::read(&path)?;
         // All admitted inputs are closed standalone snapshots, with no WAL.
         // immutable avoids creating SHM/WAL on these frozen read-only inputs.
-        let uri = format!("file:{}?immutable=1", path.display());
+        let native = path.to_str().ok_or_else(|| {
+            std::io::Error::other("fixture checkout path is not representable as a SQLite URI")
+        })?;
+        #[cfg(windows)]
+        let native = native.replace('\\', "/");
+        let mut uri = String::from("file:");
+        for byte in native.as_bytes() {
+            if byte.is_ascii_alphanumeric() || b"/:-_.~".contains(byte) {
+                uri.push(char::from(*byte));
+            } else {
+                use std::fmt::Write;
+                write!(uri, "%{byte:02X}")?;
+            }
+        }
+        uri.push_str("?immutable=1");
         let mut connection = Connection::open_with_flags(
             uri,
             OpenFlags::SQLITE_OPEN_READ_ONLY | OpenFlags::SQLITE_OPEN_URI,

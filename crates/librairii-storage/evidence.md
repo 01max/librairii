@@ -18,8 +18,8 @@ evidence, not an additional checklist or acceptance of unfinished work.
 | Task | Implementation/verification work | State / commit |
 | --- | --- | --- |
 |4.1|Explicit fresh isolated root; exact layout, managed paths, raw identity; reject escape/invalid/nonfresh inputs without profile discovery|Implemented/host verified `9c37f56ffe83d73497129603c4ecfb8d25e4e087`. Setup `fcf467f41a39c3670a38db063a5304a60f6e93d1`|
-|4.2|Exact migrations001-018, schema identity and contiguous ledger|Implemented/host verified; source SHA recorded in following commit. Setup `e6e527af79a21149665670a36171ef5d701be05c`; owner5 graph `bf720718c4736e0ecf5f6ded947ccbce49f1ba16`|
-|4.3|One owned writer plus four reads, bounded jobs/transactions and close|Pending|
+|4.2|Exact migrations001-018, schema identity and contiguous ledger|Implemented/host verified `ea8e60f415b5ea23fb50f8899594884ef13b6c8f`. Setup `e6e527af79a21149665670a36171ef5d701be05c`; owner5 graph `bf720718c4736e0ecf5f6ded947ccbce49f1ba16`|
+|4.3|One owned writer plus four reads, bounded jobs/transactions and close|Implemented/host verified; source SHA recorded in following commit|
 |4.4|All18 admitted populated prefixes, full schema/rows/query outcomes and actual Collection-open projection; no fixture-specific patches or eager DB-open rewrite|Pending|
 |4.5|Online WAL backup, integrity/FK, rollback and foreign DB+sidecars preservation|Pending|
 |4.6|Strict64KiB v1 profiles, atomic serialized updates and isolated native namespace|Pending|
@@ -88,3 +88,50 @@ consumed by fast-forward; owner6 authored none of those shared files.
   default structure without rewriting either; data and timestamps are retained.
 - This step recognizes supported states; it grants no existing-library adoption
   or migration authority. Workers, backup/rollback and locks remain later tasks.
+
+4.3 mechanisms (shared app/domain names and concrete cross-section handoffs
+remain coordinated with owner5/2; no feature SQL is added here):
+
+- Five dedicated owners create and close their connections on their own threads:
+  one writer plus four read-only/query-only readers, all WAL/FK/5000ms. Each
+  connection actually reports SQLite3.53.2, source ID
+  `2026-06-03 19:12:13 d6e03d8c777cfa2d35e3b60d8ec3e0187f3e9f99d8e2ee9cac695fd6fcdf1a24`.
+- Each queue has sixteen ordinary waiting slots. The writer has four reserved
+  report/repair slots in the SAME FIFO, so fresh barrier reads cross all earlier
+  admissions. Total ordinary ownership is bounded at17 writer/20 reader results
+  (including active work and unacknowledged results); repair ownership is4.
+  Execution and receiver jointly retain admission. Full admission returns an
+  explicit error; storage does not start blocked producers or hidden retries.
+- One synchronous DB-only closure forms a transaction. Queued/precommit work
+  cancellation or a body failure requires successful explicit rollback before
+  reporting proven noncommit. A commit error remains uncertain. Ordinary writes
+  are fenced; uncancelled repair/barrier readback remains possible. Repositories
+  own their matching predicates and runtime owns retry/repair scheduling.
+- Ordinary stop leaves repair usable. Close drains/joins readers, then drains
+  writer/checkpoints/joins/closes before releasing the local runtime claim.
+  Unexpected worker exit wakes queued receivers and permanently fences a failed
+  close; it never reports unavailable effects as rollback or closed success.
+  This claim is local coordination, not the later4.7 OS/legacy exclusion proof.
+- Existing DBs/sidecars are refused before SQLite open by this initial API;
+  compatible upgrades remain gated by4.5 backup and4.7 qualified authority.
+  The immutable fixture URI helper now losslessly encodes URI punctuation and
+  handles Windows separators without using lossy native-path display.
+
+4.3 host checks: eleven real SQLite worker tests passed (run
+`2abf07fa-6748-476f-afa0-833bf070cd96`); storage Clippy passed. Tests cover four
+simultaneous coherent read snapshots while the separate writer commits, queue
+saturation/reserved repair/FIFO barrier, unacknowledged-result capacity, queued
+and precommit cancellation, late cancellation, explicit rollback, deferred-FK
+commit failure, injected lost acknowledgement after real commit, readback,
+dropped-result durable drain, refused foreign DB+WAL/SHM and worker-unwind
+failure fencing. The acknowledgement-loss injection deliberately swallows a
+real successful COMMIT inside the test callback; production callbacks forbid
+transaction control. It does not claim physical I/O fault qualification.
+One compile-fail doctest proves a transaction cannot escape as an owned result;
+both prior compile-fail doctests remain passing. Full final cumulative/native
+checks and4.11 remain open.
+
+The final4.3 source tree passed cumulative50 nextest tests, zero skipped
+(`b8a54502-8d09-4c74-ab52-cc0f1df26963`), and all three compile-fail doctests
+on the host, retaining every admitted Rust test. Additive discovery pinning of
+the new4.2/4.3 identities remains serialized through owner5 before admission.

@@ -25,6 +25,25 @@ pub enum StorageError {
     MigrationConflict,
     #[error("storage.sqlite: {0}")]
     Sqlite(#[from] rusqlite::Error),
+    #[error("storage.runtime_in_use")]
+    RuntimeInUse,
+    #[error("storage.qualified_existing_open_required")]
+    QualifiedExistingOpenRequired,
+    #[error("storage.queue_full")]
+    QueueFull,
+    #[error("storage.intake_closed")]
+    IntakeClosed,
+    #[error("storage.worker_stopped_outcome_unavailable")]
+    WorkerStopped,
+    #[error("storage.runtime_fenced")]
+    RuntimeFenced,
+    #[error("storage.work_cancelled")]
+    Cancelled,
+    #[error("storage.rollback_uncertain: work={work}; rollback={rollback}")]
+    RollbackUncertain {
+        work: Box<StorageError>,
+        rollback: rusqlite::Error,
+    },
     #[error("{operation}: {source}")]
     Io {
         operation: &'static str,
@@ -50,6 +69,14 @@ impl StorageError {
             Self::ForeignSchema => "storage.foreign_schema",
             Self::MigrationConflict => "storage.migration_conflict",
             Self::Sqlite(_) => "storage.sqlite",
+            Self::RuntimeInUse => "storage.runtime_in_use",
+            Self::QualifiedExistingOpenRequired => "storage.qualified_existing_open_required",
+            Self::QueueFull => "storage.queue_full",
+            Self::IntakeClosed => "storage.intake_closed",
+            Self::WorkerStopped => "storage.worker_stopped_outcome_unavailable",
+            Self::RuntimeFenced => "storage.runtime_fenced",
+            Self::Cancelled => "storage.work_cancelled",
+            Self::RollbackUncertain { .. } => "storage.rollback_uncertain",
             Self::Io { .. } => "storage.io_failed",
         }
     }

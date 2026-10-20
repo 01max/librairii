@@ -5,6 +5,7 @@ use std::{
     ffi::{OsStr, OsString},
     fs,
     path::{Component, Path, PathBuf},
+    sync::atomic::{AtomicBool, Ordering},
 };
 
 pub const DATA_ROOT_OVERRIDE: &str = "LIBRAIRII_DATA_ROOT";
@@ -133,6 +134,7 @@ impl ManagedPath {
 pub struct IsolatedLibrary {
     layout: LibraryLayout,
     identity: LibraryIdentity,
+    runtime_active: AtomicBool,
 }
 
 impl IsolatedLibrary {
@@ -177,7 +179,11 @@ impl IsolatedLibrary {
         for name in DIRECTORIES {
             create_private_dir(&layout.root.join(name))?;
         }
-        Ok(Self { layout, identity })
+        Ok(Self {
+            layout,
+            identity,
+            runtime_active: AtomicBool::new(false),
+        })
     }
     pub fn layout(&self) -> &LibraryLayout {
         &self.layout
@@ -187,6 +193,15 @@ impl IsolatedLibrary {
     }
     pub const fn relocation_allowed(&self) -> bool {
         false
+    }
+    pub(crate) fn claim_runtime(&self) -> Result<()> {
+        self.runtime_active
+            .compare_exchange(false, true, Ordering::AcqRel, Ordering::Acquire)
+            .map(|_| ())
+            .map_err(|_| StorageError::RuntimeInUse)
+    }
+    pub(crate) fn release_runtime(&self) {
+        self.runtime_active.store(false, Ordering::Release);
     }
 }
 

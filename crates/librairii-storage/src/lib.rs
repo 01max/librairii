@@ -1,6 +1,7 @@
 //! Compatible library persistence and owned filesystem effects.
 //!
 //! Root selection is explicit. The isolated override never discovers a profile.
+pub mod database;
 pub mod error;
 pub mod identity;
 pub mod layout;
