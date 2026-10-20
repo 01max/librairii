@@ -6,7 +6,13 @@
   "integration_owner": "librairii-2",
   "integration_base": "1419f1d7c5236016c0e330056c9eff45931ddf48",
   "scope": "1.1\u20131.9 only; no Rust runtime or section 2",
-  "ledger": [],
+  "ledger": [
+    {
+      "subtask": "1.1",
+      "sha": "488d5f87ca2164b390c368e260bb1efa2d566ede",
+      "subject": "docs(preservation): freeze reproducible Go product oracle"
+    }
+  ],
   "subtasks": {
     "1.1": {
       "status": "implemented",
@@ -19,8 +25,11 @@
       "verification": "python3 preservation/tools/verify-source.py /private/tmp/librairii-go-oracle-73a93303: 436 files verified"
     },
     "1.2": {
-      "status": "pending",
-      "evidence": []
+      "status": "implemented",
+      "evidence": [
+        "baseline.json"
+      ],
+      "qualification": "Go/macOS ARM only; first full-check failure retained; complete rerun passes"
     },
     "1.3": {
       "status": "pending",

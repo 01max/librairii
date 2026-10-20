@@ -27,10 +27,10 @@
     "os": "macOS 15.7.7",
     "build": "24G720",
     "architecture": "arm64",
-    "qualification": "Go baseline only; real desktop smoke pending"
+    "qualification": "Go make check + actual locally built .app native picker/import/export/reveal smoke passed (baseline.json)"
   },
   "platforms": {
-    "macos_arm": "pending baseline checks",
+    "macos_arm": "Go baseline passed; Rust unimplemented/unverified",
     "macos_intel": "unverified: real Intel host not available to this worker",
     "linux_x64": "unverified: no identified Linux desktop supplied",
     "windows_x64": "unverified: no identified Windows desktop supplied"
