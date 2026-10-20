@@ -251,9 +251,10 @@ impl Drop for WorkerExit {
     }
 }
 
-/// The authority must outlive all worker joins. Initial4.3 opening accepts only
-/// an absent DB beneath a freshly authorized isolated root; qualified existing
-/// open/backup/adoption is added by the subsequent dedicated subtasks.
+/// The authority must outlive all worker joins. Opening stays inside an owned
+/// isolated root; existing files require an independent schema/integrity probe,
+/// with a verified durable backup before migration. Production adoption and
+/// OS-backed lifetime exclusion are separate later authority capabilities.
 #[derive(Debug)]
 pub struct Database<'library> {
     authority: &'library IsolatedLibrary,
@@ -288,6 +289,9 @@ impl<'library> Database<'library> {
         let queue = runtime.writer.clone();
         let fenced = runtime.fenced.clone();
         let writer_path = path.clone();
+        let staging = authority
+            .layout()
+            .resolve(&ManagedPath::parse("staging")?)?;
         runtime.writer_thread = Some(
             thread::Builder::new()
                 .name("librairii-db-writer".into())
@@ -297,10 +301,20 @@ impl<'library> Database<'library> {
                         fenced,
                         normal: false,
                     };
-                    let mut connection = match open_new_writer(&writer_path) {
+                    let mut connection = match open_writer(&writer_path, &staging) {
                         Ok(connection) => connection,
                         Err(error) => {
+                            let retain = matches!(
+                                &error,
+                                StorageError::MigrationFailed {
+                                    restored: false,
+                                    ..
+                                } | StorageError::InitializationFailed { cleared: false, .. }
+                            );
                             let _ = sender.send(Err(error));
+                            if retain {
+                                return Err(StorageError::RuntimeFenced);
+                            }
                             return Ok(());
                         }
                     };
@@ -368,6 +382,29 @@ impl<'library> Database<'library> {
 
     pub fn diagnostics(&self) -> &[ConnectionDiagnostics] {
         &self.diagnostics
+    }
+
+    /// Consistent standalone snapshot including committed WAL content. This is
+    /// an owned maintenance job, not an I/O callback inside a domain transaction.
+    pub fn backup(
+        &self,
+        cancellation: WorkCancellation,
+    ) -> Result<Pending<'_, crate::backup::BackupReceipt>> {
+        let directory = self
+            .authority
+            .layout()
+            .database()
+            .parent()
+            .ok_or(StorageError::InvalidManagedPath)?
+            .to_owned();
+        self.enqueue(&self.writer, true, move |connection| {
+            crate::backup::online(
+                connection,
+                &directory,
+                "librairii.online-backup-",
+                &cancellation,
+            )
+        })
     }
 
     /// Storage adapter-only SQL callback; the owned result cannot borrow SQL.
@@ -558,7 +595,7 @@ fn rollback<T>(transaction: Transaction<'_>, work: StorageError) -> TransactionO
     }
 }
 
-fn open_new_writer(path: &Path) -> Result<Connection> {
+fn open_writer(path: &Path, staging: &Path) -> Result<Connection> {
     let mut options = OpenOptions::new();
     options.write(true).create_new(true);
     #[cfg(unix)]
@@ -569,28 +606,75 @@ fn open_new_writer(path: &Path) -> Result<Connection> {
     match options.open(path) {
         Ok(reservation) => drop(reservation),
         Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => {
-            return Err(StorageError::QualifiedExistingOpenRequired);
+            return crate::backup::upgrade_owned(path, staging, &MIGRATIONS);
         }
         Err(error) => return Err(StorageError::io("reserve isolated database", error)),
     }
-    let mut connection = Connection::open_with_flags(
+    initialize_new(path, &MIGRATIONS)
+}
+
+fn initialize_new(path: &Path, plan: &[crate::migrations::Migration]) -> Result<Connection> {
+    let mut connection = match Connection::open_with_flags(
         path,
         OpenFlags::SQLITE_OPEN_READ_WRITE | OpenFlags::SQLITE_OPEN_NO_MUTEX,
-    )?;
+    ) {
+        Ok(connection) => connection,
+        Err(cause) => {
+            return Err(StorageError::InitializationFailed {
+                candidate: path.to_owned(),
+                cleared: false,
+                cause: Box::new(StorageError::Sqlite(cause)),
+            });
+        }
+    };
+    let initialized = (|| -> Result<()> {
+        configure_writer(&connection)?;
+        connection.execute_batch(LEDGER_SQL)?;
+        for migration in plan {
+            let transaction = connection.transaction()?;
+            transaction.execute_batch(migration.sql)?;
+            transaction.execute(
+                "INSERT INTO schema_migrations(version) VALUES(?)",
+                [migration.version],
+            )?;
+            transaction.commit()?;
+        }
+        crate::backup::verify_integrity(&connection)?;
+        crate::migrations::SchemaPrefix::inspect(&mut connection)?;
+        Ok(())
+    })();
+    if let Err(cause) = initialized {
+        if let Err((_connection, rollback)) = connection.close() {
+            return Err(StorageError::InitializationFailed {
+                candidate: path.to_owned(),
+                cleared: false,
+                cause: Box::new(StorageError::RollbackUncertain {
+                    work: Box::new(cause),
+                    rollback,
+                }),
+            });
+        }
+        return match crate::backup::preserve_candidate(path) {
+            Ok(candidate) => Err(StorageError::InitializationFailed {
+                candidate,
+                cleared: true,
+                cause: Box::new(cause),
+            }),
+            Err(error) => Err(StorageError::InitializationFailed {
+                candidate: path.to_owned(),
+                cleared: false,
+                cause: Box::new(error),
+            }),
+        };
+    }
+    Ok(connection)
+}
+
+pub(crate) fn configure_writer(connection: &Connection) -> Result<()> {
     connection.busy_timeout(BUSY_TIMEOUT)?;
     connection.pragma_update(None, "foreign_keys", true)?;
     connection.pragma_update(None, "journal_mode", "WAL")?;
-    connection.execute_batch(LEDGER_SQL)?;
-    for migration in MIGRATIONS {
-        let transaction = connection.transaction()?;
-        transaction.execute_batch(migration.sql)?;
-        transaction.execute(
-            "INSERT INTO schema_migrations(version) VALUES(?)",
-            [migration.version],
-        )?;
-        transaction.commit()?;
-    }
-    Ok(connection)
+    Ok(())
 }
 
 fn open_reader(path: &PathBuf) -> Result<Connection> {
@@ -623,4 +707,67 @@ fn diagnostics(connection: &Connection, worker: &str) -> Result<ConnectionDiagno
         return Err(StorageError::RuntimeFenced);
     }
     Ok(diagnostic)
+}
+
+#[cfg(all(test, unix))]
+mod initialization_tests {
+    use super::*;
+    #[test]
+    fn failed_fresh_initialization_preserves_candidate_and_restores_database_absence()
+    -> std::result::Result<(), Box<dyn std::error::Error>> {
+        let roots = librairii_testkit::TestRoots::new()?;
+        let library = IsolatedLibrary::initialize_from_override(
+            Some(roots.library().as_os_str()),
+            "A0000000-0000-4000-8000-000000000001".parse()?,
+        )?;
+        let path = library.layout().database();
+        std::fs::OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(&path)?;
+        let plan = [
+            MIGRATIONS[0],
+            crate::migrations::Migration {
+                version: 2,
+                filename: "002_injected_failure.sql",
+                sql: "CREATE TABLE failed_new_table(id INTEGER); SELECT * FROM missing_table",
+            },
+        ];
+        let error = initialize_new(&path, &plan)
+            .err()
+            .ok_or("missing initialization failure")?;
+        let StorageError::InitializationFailed {
+            candidate,
+            cleared,
+            cause: _,
+        } = error
+        else {
+            return Err("wrong initialization disposition".into());
+        };
+        assert!(cleared);
+        assert!(!path.exists());
+        let mut preserved = Connection::open_with_flags(
+            candidate.join("librairii.sqlite3"),
+            OpenFlags::SQLITE_OPEN_READ_ONLY,
+        )?;
+        assert_eq!(
+            crate::migrations::SchemaPrefix::inspect(&mut preserved)?.version(),
+            1
+        );
+        assert_eq!(
+            preserved.query_row(
+                "SELECT count(*) FROM sqlite_schema WHERE name='failed_new_table'",
+                [],
+                |row| row.get::<_, i64>(0)
+            )?,
+            0
+        );
+        drop(preserved);
+        // A new explicit attempt can initialize the now absent DB while the
+        // failed candidate remains independently recoverable, never deleted.
+        let mut runtime = Database::open_isolated(&library)?;
+        runtime.close()?;
+        assert!(candidate.join("librairii.sqlite3").is_file());
+        Ok(())
+    }
 }

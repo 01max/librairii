@@ -83,12 +83,10 @@ fn five_owned_connections_have_actual_required_pragmas_and_close_before_reuse() 
             .with_file_name("librairii.sqlite3-wal")
             .exists()
     );
-    // The first4.3 API deliberately refuses an existing DB until qualified open
-    // is added with4.5 backup; the local runtime claim has actually been freed.
-    assert!(matches!(
-        Database::open_isolated(&library),
-        Err(StorageError::QualifiedExistingOpenRequired)
-    ));
+    //4.5 qualified owned-root reopen verifies the schema through an independent
+    // probe. It confirms the old runtime claim was actually freed after close.
+    let mut reopened = Database::open_isolated(&library)?;
+    reopened.close()?;
     Ok(())
 }
 
@@ -386,7 +384,7 @@ fn existing_foreign_database_and_sidecars_are_refused_before_sqlite_open() -> Te
     fs::write(&shm, b"exact-SHM")?;
     assert!(matches!(
         Database::open_isolated(&library),
-        Err(StorageError::QualifiedExistingOpenRequired)
+        Err(StorageError::ForeignSchema)
     ));
     assert_eq!(fs::read(path)?, b"foreign-format\0preserved");
     assert_eq!(fs::read(wal)?, b"exact-WAL");

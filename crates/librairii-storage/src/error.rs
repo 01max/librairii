@@ -27,8 +27,6 @@ pub enum StorageError {
     Sqlite(#[from] rusqlite::Error),
     #[error("storage.runtime_in_use")]
     RuntimeInUse,
-    #[error("storage.qualified_existing_open_required")]
-    QualifiedExistingOpenRequired,
     #[error("storage.queue_full")]
     QueueFull,
     #[error("storage.intake_closed")]
@@ -39,6 +37,42 @@ pub enum StorageError {
     RuntimeFenced,
     #[error("storage.work_cancelled")]
     Cancelled,
+    #[error("storage.integrity_failed")]
+    IntegrityFailed,
+    #[error("storage.snapshot_changed")]
+    SnapshotChanged,
+    #[error("storage.backup_busy")]
+    BackupBusy,
+    #[error("storage.backup_uncertain: backup={backup:?}: {cause}")]
+    BackupUncertain {
+        backup: Box<crate::backup::BackupReceipt>,
+        cause: Box<StorageError>,
+    },
+    #[error("storage.directory_durability_unavailable")]
+    DirectoryDurabilityUnavailable,
+    #[error("storage.no_schema_conflict")]
+    NoSchemaConflict,
+    #[error("storage.preservation_failed: directory={directory:?}: {cause}")]
+    PreservationFailed {
+        directory: std::path::PathBuf,
+        cause: Box<StorageError>,
+    },
+    #[error(
+        "storage.migration_failed: version={version}, restored={restored}, backup={backup:?}, candidate={candidate:?}: {cause}"
+    )]
+    MigrationFailed {
+        version: u32,
+        backup: std::path::PathBuf,
+        candidate: std::path::PathBuf,
+        restored: bool,
+        cause: Box<StorageError>,
+    },
+    #[error("storage.initialization_failed: candidate={candidate:?}, cleared={cleared}: {cause}")]
+    InitializationFailed {
+        candidate: std::path::PathBuf,
+        cleared: bool,
+        cause: Box<StorageError>,
+    },
     #[error("storage.rollback_uncertain: work={work}; rollback={rollback}")]
     RollbackUncertain {
         work: Box<StorageError>,
@@ -70,12 +104,20 @@ impl StorageError {
             Self::MigrationConflict => "storage.migration_conflict",
             Self::Sqlite(_) => "storage.sqlite",
             Self::RuntimeInUse => "storage.runtime_in_use",
-            Self::QualifiedExistingOpenRequired => "storage.qualified_existing_open_required",
             Self::QueueFull => "storage.queue_full",
             Self::IntakeClosed => "storage.intake_closed",
             Self::WorkerStopped => "storage.worker_stopped_outcome_unavailable",
             Self::RuntimeFenced => "storage.runtime_fenced",
             Self::Cancelled => "storage.work_cancelled",
+            Self::IntegrityFailed => "storage.integrity_failed",
+            Self::SnapshotChanged => "storage.snapshot_changed",
+            Self::BackupBusy => "storage.backup_busy",
+            Self::BackupUncertain { .. } => "storage.backup_uncertain",
+            Self::DirectoryDurabilityUnavailable => "storage.directory_durability_unavailable",
+            Self::NoSchemaConflict => "storage.no_schema_conflict",
+            Self::PreservationFailed { .. } => "storage.preservation_failed",
+            Self::MigrationFailed { .. } => "storage.migration_failed",
+            Self::InitializationFailed { .. } => "storage.initialization_failed",
             Self::RollbackUncertain { .. } => "storage.rollback_uncertain",
             Self::Io { .. } => "storage.io_failed",
         }

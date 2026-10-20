@@ -18,10 +18,10 @@ evidence, not an additional checklist or acceptance of unfinished work.
 | Task | Implementation/verification work | State / commit |
 | --- | --- | --- |
 |4.1|Explicit fresh isolated root; exact layout, managed paths, raw identity; reject escape/invalid/nonfresh inputs without profile discovery|Implemented/host verified `9c37f56ffe83d73497129603c4ecfb8d25e4e087`. Setup `fcf467f41a39c3670a38db063a5304a60f6e93d1`|
-|4.2|Exact migrations001-018, schema identity and contiguous ledger|Implemented/host verified `ea8e60f415b5ea23fb50f8899594884ef13b6c8f`. Setup `e6e527af79a21149665670a36171ef5d701be05c`; owner5 graph `bf720718c4736e0ecf5f6ded947ccbce49f1ba16`|
-|4.3|One owned writer plus four reads, bounded jobs/transactions and close|Implemented/host verified; source SHA recorded in following commit|
-|4.4|All18 admitted populated prefixes, full schema/rows/query outcomes and actual Collection-open projection; no fixture-specific patches or eager DB-open rewrite|Pending|
-|4.5|Online WAL backup, integrity/FK, rollback and foreign DB+sidecars preservation|Pending|
+|4.2|Exact migrations001-018, schema identity and contiguous ledger|Implemented/host verified `ea8e60f415b5ea23fb50f8899594884ef13b6c8f`; probe hardening `bbf386bd4e681d3a7732fae28af750f173da6211`. Setup `e6e527af79a21149665670a36171ef5d701be05c`; owner5 graph `bf720718c4736e0ecf5f6ded947ccbce49f1ba16`|
+|4.3|One owned writer plus four reads, bounded jobs/transactions and close|Implemented/host verified `8baebc751ed51e917a3ae5b139ebf48fc5f0467b`|
+|4.4|All18 admitted populated prefixes, full schema/rows/query outcomes and actual Collection-open projection; no fixture-specific patches or eager DB-open rewrite|Pending real canonicalization dependency; placement accepted2/5, no later-feature deferral|
+|4.5|Online WAL backup, integrity/FK, rollback and foreign DB+sidecars preservation|Implemented/host verified on Unix; Windows directory durability remains pending4.9; source SHA recorded in following commit|
 |4.6|Strict64KiB v1 profiles, atomic serialized updates and isolated native namespace|Pending|
 |4.7|OS lease through close, refuse unproven legacy exclusion, verified independent adoption|Pending|
 |4.8|Distinct no-clobber/config-replace/durable-flush effects and Unix races|Pending|
@@ -134,4 +134,79 @@ checks and4.11 remain open.
 The final4.3 source tree passed cumulative50 nextest tests, zero skipped
 (`b8a54502-8d09-4c74-ab52-cc0f1df26963`), and all three compile-fail doctests
 on the host, retaining every admitted Rust test. Additive discovery pinning of
-the new4.2/4.3 identities remains serialized through owner5 before admission.
+the new4.2/4.3 identities was supplied by owner5's baseline-only descendant
+`deb1794d5cf8a14664697a21904d6e292acf8865`, consumed by fast-forward. Its parent
+`89ea703a1e32e7833f97e7380ed32d096e70842c` moves the existing tempfile3.27.0
+edge from dev to production; Cargo.lock remains byte-identical. Testkit stays
+development-only. New subsequent identities still require additive owner5 pins.
+
+Retained Go acceptance failure (not waived): PR43 head
+`89ea703a1e32e7833f97e7380ed32d096e70842c`, run39463039584/job118767461252,
+Linux release exited124 at17:11:35Z after frontend render17:10:40.861 and
+runtime_started/ready17:10:40.865; no checkpoints.log. Artifact API returned
+zero artifacts (the workflow uploads only after success; its EXIT trap removes
+the temporary acceptance root). The Go/frontend/scripts/workflow/Go module
+inputs have no diff from admittedM4ea to that head. This is an observed input
+comparison, not a cause or baseline attribution. Owner5 leads focused triage
+with2; owner6 performed read-only log/source inspection, no diagnostic rerun,
+timeout/assertion change or out-of-scope source fix. Final PR43 admission stays
+blocked on resolving the failure; native Rust Linux success is separate.
+
+Owner2 subsequently verified exactly one unchanged89ea diagnostic retry:
+run39463039584 attempt2/job118774649697 succeeded17:23:31Z. Original attempt1
+remains failed evidence; the retry does not establish a cause or waive future
+current-head checks. Owner5 retains triage ownership. No duplicate rerun or
+bookkeeping-only push was performed by owner6 during that observation.
+
+4.5 implementation and limitations:
+
+- Existing owned-root DBs are first copied with all present WAL/SHM into a
+  fresh private probe; only that independent copy is opened during schema/
+  integrity validation. Symlinks and Unix hard links are refused. Stability
+  stamps are rechecked but are not claimed as lifetime exclusion/file-handle
+  authority; production adoption and platform race-proof ownership remain4.7/8/9.
+- Probe hardening validates real identity/ledger DDL before row queries, so
+  foreign views/virtual tables cannot execute as identity/history. The complete
+  ledger DDL is compared ignoring only ASCII formatting whitespace, without
+  rewriting stored SQL; column/PK/default structure remains verified. Identity
+  reads are capped2 and ledger reads19 (first unsupported prefix), not unbounded.
+- Live snapshots use SQLite's online backup from one coherent source read view,
+  include WAL, compare semantic table counts, check full schema/integrity/FKs,
+  close and flush standalone output. The64-page loop checks cancellation and
+  monotone progress; Busy/Locked fails one attempt without hidden retry. Verified
+  snapshot bytes/receipts survive flush/keep/reporting failure; uncertainty is
+  explicit and does not authorize migration or destructive Drop.
+- Before pending migrations, retain a durable verified pre-upgrade backup.
+  Each unchanged SQL/ledger append is one transaction. Migration/post-verification
+  failure closes SQLite, preserves the newer failed candidate separately, then
+  restores/verifies the supported snapshot via no-clobber publication. Failures
+  retain backup/candidate paths and honest restoration evidence; failed closure/
+  restoration fences the runtime. Failed fresh initialization restores absence
+  only after preserving its candidate; it never deletes the only failed copy.
+- Normal foreign/future/gapped/corrupt open never relocates or replaces data.
+  Foreign relocation is an explicit owned-root action preserving main/WAL/SHM
+  in a unique recovery directory, with no automatic replacement. A partial move
+  retains precise recovery paths and fences authority. Current compatible
+  reopen creates no unnecessary pre-migration backup.
+- On Windows, directory durability is deliberately unavailable until4.9 supplies
+  and qualifies its actual capability; affected backup/upgrade/preservation
+  operations refuse, with native tests for refusal. This is unfinished Windows
+  implementation/evidence, not an admitted substitute or a physical qualification.
+
+Real failure tests cover mid-backup cancellation, backup reservation and final
+directory-flush failure, committed-WAL inclusion, missing/gapped/future schema,
+foreign-key corruption, Unix aliases/symlinks, fresh initialization failure,
+partially applied migration rollback and independent failed-candidate retention.
+All source fixture/archive bytes remain unchanged. Accepted4.4 projection needs
+Go Unicode15 full fold/NFKD/Mn and CLDR32 BCP47 behavior, identified in frozen
+source and requested through owner5/4. Serde alone is not asserted equivalent;
+no ASCII/fixture-specific query patch or eager Collection payload rewrite exists.
+
+4.5 host validation: cumulative63 nextest tests passed with zero skips, run
+`7ce78cad-a53b-4513-aefe-340a8ae52959`; all three compile-fail doctests,
+storage formatting and all-target Clippy passed on aarch64-apple-darwin1.99.1.
+This includes the unchanged prior assertions, strengthened existing reopen/
+foreign-refusal checks, and thirteen new probe/backup/failure identities since
+owner5's last additive baseline. Pinning remains through5. Current-head native
+provider checks and independent4.11 review are still required; no full section4
+or Windows filesystem admission follows from these host checks.
