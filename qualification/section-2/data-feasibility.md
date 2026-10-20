@@ -197,3 +197,8 @@ dictionary from coder properties. This is insufficient evidence for product
 dictionary/header/allocation ceilings. A bounded adapter/decoder strategy and
 adversarial tests remain independent engineering work; do not expose this
 trusted-fixture example as an untrusted-input API or call one thread a memory cap.
+
+The subsequent [contained resource experiment](decoder-resources.md) records
+actual pre-callback exhaustion, budget/decoder errors and OS kills separately.
+Its32 cases and five independent controls do not establish a production memory
+boundary or complete this gate. No physical, licensing or toolkit choice follows.

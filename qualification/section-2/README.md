@@ -61,3 +61,7 @@ See `ADR.md`, `hosts.md`, the per-gate records and `ledger.md` for status/eviden
 For explicit headless SQLite/archive comparisons against the pinned admitted PR39
 fixtures, see `data-feasibility.md` and `probe-corpus.py`. The comparison retains
 24 SQL-only/Go-open differences and exits2. No full-corpus parity is claimed.
+Independent codec experiments retain six additional filename differences and a
+reproducible original Zstd fixture. `decoder-resources.md` / `decoder-observations.json`
+record bounded LinuxARM experiments, including a pre-callback OOM; they do not
+implement product admission or qualify the candidate's production resource limits.
