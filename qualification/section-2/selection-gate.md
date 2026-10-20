@@ -35,4 +35,6 @@ The implemented partial scope at `558b2b46af93bbdf1bfc7934166a270db6904e25`
 received AO native approval, including the actual-widget regression. Its inline
 thread is resolved with evidence. This supplies code review only. The subsequent
 2.10 corpus-probe code requires another review of the pushed final head; neither
-approval completes 2.13 or any physical, licensing or corpus-admission gate.
+approval completes 2.13 or any physical, licensing or full-corpus qualification gate.
+Section1 corpus admission is now complete at1cd2244 through integration9a6c1c1;
+it supplies the frozen input, not section2 parity or decoder-resource proof.

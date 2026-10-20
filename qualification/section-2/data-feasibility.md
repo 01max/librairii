@@ -39,8 +39,8 @@ Zstd introduces native zstd-sys C; SQLite and Skia also retain C/C++ dependencie
 
 ## Open evidence
 
-2.10 remains **partial**: the provisional populated corpus observations below do
-not admit the section1 contract or qualify the full codec/solid/password corpus.
+2.10 remains **partial**: the populated corpus observations below do not qualify
+the full codec/solid/password corpus or implement the admitted domain contract.
 Need every accepted extension/content combination, required/unrelated payload CRC,
 solid-block preceding-data cost, actual-read/dictionary/allocation caps, unknown
 sizes/overflow and cancellation. `Read::take` bounds bytes delivered to this test;
@@ -50,18 +50,23 @@ untrusted-input qualification. Any baseline acceptance change requires its own
 reviewed hardening record, never relabeling an unexplained mismatch as a pass.
 Run matching native target tests before claiming I/L/W compatibility.
 
-## Provisional PR39 corpus comparison
+## Admitted PR39 corpus comparison
 
 Observed 2026-10-20 by librairii-4 on the same ARM host. Input is exactly PR39
-commit [`e7c771b4218ef689dd6743fb485e4d9a52e23d43`](https://github.com/01max/librairii/commit/e7c771b4218ef689dd6743fb485e4d9a52e23d43),
-manifest SHA256 `91ccf4eb2dc9d707d429af3568e8703848aa213b9a6a94727442e7bbce044966`.
-**Provisional input only:** PR39's relocation-manifest review correction and
-overall corpus admission remain pending. No relocation/profile input is executed.
-Owner3 receives the reference and all mismatches; section2 does not edit its files.
+commit [`1cd22443cae3b548bb7f9b3fb2435dcd73c3c65c`](https://github.com/01max/librairii/commit/1cd22443cae3b548bb7f9b3fb2435dcd73c3c65c),
+manifest SHA256 `a59f2194cf5c1ad317485a8714e703c12fe161bfad0190a67ba5816ea7f46e53`.
+Section1 admitted the corrected146-file corpus through integration merge
+`9a6c1c116d9df726a061ad6aac3955df4ed41263`. The earlier e7c771b report remains
+preserved in87d6ecd history. Corrected input changes the representative database
+byte hash/WAL header and relocation evidence; this rerun retains the same24 SQL
+and six Unicode differences. Domain semantics have not been ported or compared.
+No relocation/profile input is executed. Owner3 receives the reference and all
+mismatches; section2 does not edit its files.
 
-`probe-corpus.py` exports 87 selected Git blobs into a fresh temp directory,
-verifies every length/SHA256 against that pinned manifest, and checks those bytes
-again after probing. It never checks out the other branch or executes generators.
+`probe-corpus.py` verifies all146 corpus file lengths/SHA256 against the exact
+pinned manifest, exports87 selected Git blobs into a fresh temp directory, and
+checks those bytes again after probing. It never checks out the other branch or
+executes generators.
 The nested Rust example opens source databases read-only and uses SQLite online
 backup to create all writable copies. Its report, `corpus-observations.json`,
 retains every exact mismatch and raw oracle result alongside candidate evidence.
@@ -103,14 +108,22 @@ Run explicitly from the application checkout after fetching the pinned Git objec
 (the script deliberately does not fetch or silently substitute a newer corpus):
 
 ```sh
-git fetch origin e7c771b4218ef689dd6743fb485e4d9a52e23d43
+git fetch origin 1cd22443cae3b548bb7f9b3fb2435dcd73c3c65c
 python3 -B qualification/section-2/probe-corpus.py --output /tmp/section2-observations.json
 python3 -B -m unittest discover -s qualification/section-2/tests -p 'test_*.py'
 ```
 
-The four Python regression tests protect exact identity/order differences,
+Python3.11+ and rustup with the pinned toolchain installed are required. Both
+execution and Cargo/rustc provenance use `rustup run` with the channel read from
+this directory's rust-toolchain.toml and run from this directory. The caller's
+global default is not changed. On this Homebrew host the rustup proxies are in
+`/opt/homebrew/opt/rustup/bin`; they may need to be added to PATH.
+
+The five Python regression tests protect exact identity/order differences,
 missing-vs-NULL/type distinctions, Unicode forms, and rejected-suffix results
-remaining partial.
+remaining partial, plus actual pinned Cargo/rustc execution under an older caller
+toolchain override. The root invocation was also observed with global stable
+rustc1.97.1 before/after; report provenance records actual1.99.1.
 The Rust example uses dev-only [serde_json1.0.154](https://docs.rs/crate/serde_json/1.0.154),
 already present in the lockfile, default `std`, MIT OR Apache-2.0, MSRV1.71;
 [pinned upstream manifest](https://github.com/serde-rs/json/blob/v1.0.154/Cargo.toml).
@@ -137,7 +150,7 @@ policy or establish cancellation/solid resource limits. The native producer
 rejects Zstd output as an unknown compression name; **no Zstd decoder verdict**
 is available. The report attributes this as a producer limitation.
 
-Still missing: corrected corpus admission; product classification/metadata and
+Still missing: product classification/metadata and
 required-vs-unrelated payload error semantics; admitted non-LZMA2/solid/non-solid
 cases, Zstd/LZ4/Brotli, encryption/password policy, encoding/unknown-size/overflow,
 corrupt solid blocks and cancellation; actual-read/dictionary/allocation controls;

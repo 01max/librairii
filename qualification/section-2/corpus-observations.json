@@ -1,8 +1,9 @@
 {
-  "status": "partial; corpus admission and product classification not complete",
-  "fixtureCommit": "e7c771b4218ef689dd6743fb485e4d9a52e23d43",
+  "status": "partial; product classification and full qualification not complete",
+  "fixtureCommit": "1cd22443cae3b548bb7f9b3fb2435dcd73c3c65c",
   "oracleCommit": "73a93303a9a44cf0a92eaf525331561ed8c04460",
-  "manifestSha256": "91ccf4eb2dc9d707d429af3568e8703848aa213b9a6a94727442e7bbce044966",
+  "section1AdmissionMerge": "9a6c1c116d9df726a061ad6aac3955df4ed41263",
+  "manifestSha256": "a59f2194cf5c1ad317485a8714e703c12fe161bfad0190a67ba5816ea7f46e53",
   "sqliteVersion": "3.53.2",
   "databases": [
     {
@@ -2363,6 +2364,7 @@
     "session": "librairii-4",
     "date": "2026-10-20",
     "host": "macOS-15.7.7-arm64-arm-64bit-Mach-O",
+    "cargo": "cargo 1.99.1 (5f94df478 2026-08-27)",
     "rustc": "rustc 1.99.1 (58cf8f9c3 2026-10-13)"
   },
   "verifiedInputFiles": [
@@ -2699,7 +2701,7 @@
     {
       "path": "libraries/schema018/db/librairii.sqlite3",
       "bytes": 364544,
-      "sha256": "dfb31d993b6236d17510f3b98ce5cbabcbcb8f7e0affa98fc16f0101bff82d4a"
+      "sha256": "9f5cf0b372215c4f5a68a11325cccde117cf22dc1d1eeee40d35aec69e52552a"
     },
     {
       "path": "libraries/schema018/history.json",
@@ -2802,6 +2804,7 @@
       "sha256": "72910429d598b42932b172b490857559f25ff62cecaf017af32888fde19af048"
     }
   ],
+  "verifiedManifestFileCount": 146,
   "independentCodecs": [
     {
       "fixture": {

@@ -19,9 +19,10 @@ import tomllib
 import uuid
 import zlib
 
-COMMIT = "e7c771b4218ef689dd6743fb485e4d9a52e23d43"
+COMMIT = "1cd22443cae3b548bb7f9b3fb2435dcd73c3c65c"
 ORACLE = "73a93303a9a44cf0a92eaf525331561ed8c04460"
-MANIFEST_SHA256 = "91ccf4eb2dc9d707d429af3568e8703848aa213b9a6a94727442e7bbce044966"
+MANIFEST_SHA256 = "a59f2194cf5c1ad317485a8714e703c12fe161bfad0190a67ba5816ea7f46e53"
+ADMISSION_MERGE = "9a6c1c116d9df726a061ad6aac3955df4ed41263"
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parent.parent
 
@@ -151,8 +152,9 @@ def generate_codecs(root, bsdtar):
 
 
 def compare(root, observed):
-    report = {"status": "partial; corpus admission and product classification not complete",
+    report = {"status": "partial; product classification and full qualification not complete",
               "fixtureCommit": COMMIT, "oracleCommit": ORACLE,
+              "section1AdmissionMerge": ADMISSION_MERGE,
               "manifestSha256": MANIFEST_SHA256, "sqliteVersion": observed["sqliteVersion"],
               "databases": [], "archives": [], "measuredDifferenceCount": 0}
     for database in observed["databases"]:
@@ -209,14 +211,14 @@ def main():
         selected = []
         for item in manifest["files"]:
             name = item["path"]
-            # Exclude all relocation/profile files and all generator programs.
-            if not (name.startswith(("databases/", "archives/", "migrations/", "libraries/schema018/"))
-                    or name == "inspection.json"):
-                continue
             relative = PurePosixPath(name)
             assert not relative.is_absolute() and ".." not in relative.parts
             data = blob(name)
             assert len(data) == item["bytes"] and sha256(data) == item["sha256"], name
+            # Exclude all relocation/profile files and all generator programs.
+            if not (name.startswith(("databases/", "archives/", "migrations/", "libraries/schema018/"))
+                    or name == "inspection.json"):
+                continue
             path = root.joinpath(*relative.parts)
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_bytes(data)
@@ -233,6 +235,7 @@ def main():
                               "cargo": spike_output("cargo", "--version").decode().strip(),
                               "rustc": spike_output("rustc", "--version").decode().strip()}
         report["verifiedInputFiles"] = selected
+        report["verifiedManifestFileCount"] = len(manifest["files"])
         report["independentCodecs"] = []
         by_file = {c["file"]: c["observation"] for c in observed.get("independentCodecs", [])}
         for fixture in codecs:
@@ -256,7 +259,7 @@ def main():
     else:
         print(output, end="")
     print(f"Partial observations: {len(report['databases'])} databases, {len(report['archives'])} containers, "
-          f"{report['measuredDifferenceCount']} measured differences. Classification/admission remain open.",
+          f"{report['measuredDifferenceCount']} measured differences. Classification/full qualification remain open.",
           file=sys.stderr)
     return 2 if report["measuredDifferenceCount"] else 0
 
