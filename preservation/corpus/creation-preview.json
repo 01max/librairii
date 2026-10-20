@@ -1,0 +1,137 @@
+{
+  "request": {
+    "collectionIds": [
+      1
+    ],
+    "manualUuids": [
+      "123e4567-e89b-42d3-a456-426614174000"
+    ],
+    "name": "Seeded"
+  },
+  "review": {
+    "additions": [
+      {
+        "manual": true,
+        "origins": null,
+        "reason": "Selected manually.",
+        "sources": null,
+        "story": {
+          "broken": false,
+          "byteSize": 1292,
+          "compatibility": "compatible",
+          "detectedFormat": "zip",
+          "id": 1,
+          "importedAt": "2000-01-01T00:00:00Z",
+          "sources": {
+            "artwork": "fallback",
+            "author": "fallback",
+            "description": "fallback",
+            "title": "embedded"
+          },
+          "title": "Old ocean",
+          "uuid": "123e4567-e89b-42d3-a456-426614174000"
+        },
+        "title": "Old ocean",
+        "uuid": "123e4567-e89b-42d3-a456-426614174000"
+      },
+      {
+        "origins": null,
+        "reason": "Matches a linked Collection.",
+        "sources": [
+          {
+            "active": true,
+            "collectionId": 1,
+            "id": 0,
+            "name": "Moon"
+          }
+        ],
+        "story": {
+          "broken": false,
+          "byteSize": 1292,
+          "compatibility": "compatible",
+          "detectedFormat": "zip",
+          "id": 5,
+          "importedAt": "2000-01-01T00:00:00Z",
+          "sources": {
+            "artwork": "fallback",
+            "author": "fallback",
+            "description": "fallback",
+            "title": "embedded"
+          },
+          "title": "Moon excluded",
+          "uuid": "523e4567-e89b-42d3-a456-426614174000"
+        },
+        "title": "Moon excluded",
+        "uuid": "523e4567-e89b-42d3-a456-426614174000"
+      },
+      {
+        "origins": null,
+        "reason": "Matches a linked Collection.",
+        "sources": [
+          {
+            "active": true,
+            "collectionId": 1,
+            "id": 0,
+            "name": "Moon"
+          }
+        ],
+        "story": {
+          "broken": true,
+          "byteSize": 1292,
+          "compatibility": "compatible",
+          "detectedFormat": "zip",
+          "id": 4,
+          "importedAt": "2000-01-01T00:00:00Z",
+          "sources": {
+            "artwork": "fallback",
+            "author": "fallback",
+            "description": "fallback",
+            "title": "embedded"
+          },
+          "title": "Moon forest",
+          "uuid": "423e4567-e89b-42d3-a456-426614174000"
+        },
+        "title": "Moon forest",
+        "uuid": "423e4567-e89b-42d3-a456-426614174000"
+      },
+      {
+        "origins": null,
+        "reason": "Matches a linked Collection.",
+        "sources": [
+          {
+            "active": true,
+            "collectionId": 1,
+            "id": 0,
+            "name": "Moon"
+          }
+        ],
+        "story": {
+          "broken": false,
+          "byteSize": 1292,
+          "compatibility": "compatible",
+          "detectedFormat": "zip",
+          "id": 2,
+          "importedAt": "2000-01-01T00:00:00Z",
+          "sources": {
+            "artwork": "fallback",
+            "author": "fallback",
+            "description": "fallback",
+            "title": "embedded"
+          },
+          "title": "Moon still",
+          "uuid": "223e4567-e89b-42d3-a456-426614174000"
+        },
+        "title": "Moon still",
+        "uuid": "223e4567-e89b-42d3-a456-426614174000"
+      }
+    ],
+    "incomplete": false,
+    "removals": [],
+    "revision": 0,
+    "shelfId": 0,
+    "token": "\u003creview-ticket\u003e",
+    "upToDate": false,
+    "warnings": []
+  },
+  "shelvesAfterPreview": []
+}

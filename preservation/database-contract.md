@@ -1,0 +1,33 @@
+# Synthetic migration and schema018 libraries
+
+Every database is synthetic and generated from the frozen Go source with its unchanged SQL migrations 001–018 and `modernc.org/sqlite v1.60.1`. The corpus manifest hashes final database bytes, managed archives, expected schema/row JSON and the generator. `databases/provenance.json` records every original migration hash and each supported prefix's real Go open/upgrade result. `migrations/` preserves exact SQL for future independent consumers; do not renumber or rewrite it.
+
+`databases/prefix-001.sqlite3` through `prefix-018.sqlite3` represent each contiguous supported migration prefix. `absent.json` records fresh initialization: zero means no database file, not a foreign SQLite file without identity. Prefix companion JSON contains the full before schema/rows, full schema018 state after actually opening a disposable copy with `database.Open`, and canonical opened Collection definitions. Both integrity and foreign-key checks must pass. The file delivered at each prefix stays at that prefix; expected upgraded state comes from a separate copy.
+
+The ordered seed recipe follows available schema features:
+
+1. At 002, one real synthetic ZIP/story/archive row with a matching UUID and hash; `legacy-archive.zip` provides the matching managed bytes. Copy it into the row's recorded relative `archives/<sha>.zip` when materializing a test root.
+2. At 003, a pre-move removal intent while the managed copy still exists. At 004, a user boolean Favorite definition and manual assignment. At 005, the historical canonical built-in Broken identity/assignment (ID7).
+3. At 011, a legacy dynamic saved Shelf with v1 compound Broken/Favorite criteria. At 012, queued legacy `shelf` export history with an immutable `/fixture/export` destination. At 014, a customized historical Broken color.
+4. Migration015 genuinely converts the old assignment into the independent flag and retired identity, preserving Favorite. Migration016 retains the dynamic Shelf as a Collection. At017, a curated Shelf with the same numeric ID, source attribution, approved source-derived and unavailable manually retained UUIDs, origins and a persistent exclusion. Migration018 retains unambiguous old/new export discriminators.
+
+`libraries/schema018/` is a separate representative current library. It has five real validated ZIP archives with matching UUIDs/hashes, an independent Broken flag, user boolean/choice definitions and assignments, a dynamic Collection, explicitly approved source/manual membership, historical origins, an unavailable UUID and explicit exclusion. It includes a completed import history record, a partially progressed running import, a queued unavailable-member Shelf export, and a pre-move removal intent. `state.json` captures all tables/schema/integrity and `history.json` the actual repository view. This is test recovery input, not an assertion that a future Rust recovery implementation passed.
+
+Version1 settings and reserved/published relocation journals in `profiles/` are validated with the real Go profile/journal types. Their complete `library-manifest.json` comes from actual `preferences.Manifest` over the finalized closed synthetic library: identity, database, five managed archives, both evidence JSON files and directories. The standalone SQLite snapshot is first opened/closed through Go to establish the normal WAL header before byte capture. Their `/fixture/source`, `/fixture/destination` and `/fixture/export` paths are deliberately non-live placeholders. **Never replay them directly.** Materialize independent temporary roots, preserve/verify the library UUID, and explicitly rebind all root/journal/history authority before target-OS recovery. Journal phase alone does not decide authority; the durable profile root does. These files do not authorize cleanup of a source library.
+
+For determinism, fixture timestamps are explicitly fixed to `2000-01-01 00:00:00`; NULL transition timestamps stay NULL. All identities are deliberately seeded constants and are not scrubbed. `VACUUM INTO` produces a consistent standalone snapshot from a live database, including committed WAL content; no database is made by ignoring a live WAL/SHM pair. Final SQLite bytes must match across two exports on the recorded producer. Other SQLite builds may create different physical bytes: consumers compare the full semantic schema/rows and archive hashes, while producer-byte hashes identify the frozen inputs.
+
+No production profile/library or endpoint is used. These representative prefixes/libraries supplement retained migration, backup, WAL, rollback, constraint, removal, relocation and interrupted-operation tests. They do not qualify Rust upgrade/rollback, foreign-schema handling, lifetime writer exclusion, cross-OS recovery or GUI/platform gates.
+
+
+## Actual Go relocation recovery replays
+
+`generator/relocations.go` materializes independent temporary copies of the complete captured library and runs real `Reserve`, `CopyLibrary`, `VerifyCopy`, `Publish`, atomic profile persistence and `Reconcile`. `profiles/recovery-outcomes.json` preserves these executed outcomes:
+
+- Reserved/copy-verified before commitment: recovery retains the complete source, removes owned workspace/reservation/destination, clears the journal, and succeeds again idempotently.
+- Published before durable profile commitment: source remains authoritative despite published phase; recovery removes the owned destination without changing source bytes.
+- Published after durable profile commitment: destination remains authoritative, complete old-source cleanup succeeds, ownership marker/journal disappear, and every retained destination file matches the captured manifest.
+
+Each positive verifies the complete authoritative library through `VerifyCopy` and its real Go database open/close before comparing the closed durable manifest. Read-only schema probing can create empty WAL/SHM sidecars; actual writer closure drains those transient files. No filename/hash is scrubbed or excluded from the final durable comparison.
+
+The original marker-only input is now explicitly `relocation-incomplete-negative.json`, never a positive move. One negative replay copies it and observes `library_missing` verification. Another uses a genuinely complete destination but an incomplete cleanup journal: both initial/repeated reconciliation return `cleanup_pending`, retain the unlisted source bytes and preserve the journal. Root rebinding alone cannot repair that negative input. All three positive and two negative outcomes have independent semantic witnesses in `check.py` and are regenerated twice for byte determinism.

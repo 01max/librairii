@@ -1,0 +1,409 @@
+[
+  {
+    "canonicalHash": "#/library?v=3",
+    "error": "",
+    "id": "url-00",
+    "input": "",
+    "legacyBrokenId": 7,
+    "query": {
+      "name": "",
+      "languages": [],
+      "compatibilities": [],
+      "booleanFilters": [],
+      "choiceFilters": [],
+      "page": 1,
+      "pageSize": 24,
+      "sort": "name_asc"
+    }
+  },
+  {
+    "canonicalHash": "#/library?v=3",
+    "error": "",
+    "id": "url-01",
+    "input": "#/library?v=1",
+    "legacyBrokenId": 7,
+    "query": {
+      "name": "",
+      "languages": [],
+      "compatibilities": [],
+      "booleanFilters": [],
+      "choiceFilters": [],
+      "page": 1,
+      "pageSize": 24,
+      "sort": "name_asc"
+    }
+  },
+  {
+    "canonicalHash": "#/library?v=3",
+    "error": "",
+    "id": "url-02",
+    "input": "#/library?v=2",
+    "legacyBrokenId": 7,
+    "query": {
+      "name": "",
+      "languages": [],
+      "compatibilities": [],
+      "booleanFilters": [],
+      "choiceFilters": [],
+      "page": 1,
+      "pageSize": 24,
+      "sort": "name_asc"
+    }
+  },
+  {
+    "canonicalHash": "#/library?v=3",
+    "error": "",
+    "id": "url-03",
+    "input": "#/library?v=3",
+    "legacyBrokenId": 7,
+    "query": {
+      "name": "",
+      "languages": [],
+      "compatibilities": [],
+      "booleanFilters": [],
+      "choiceFilters": [],
+      "page": 1,
+      "pageSize": 24,
+      "sort": "name_asc"
+    }
+  },
+  {
+    "canonicalHash": "#/library?bool=8%3Afalse\u0026v=3",
+    "error": "",
+    "id": "url-04",
+    "input": "#/library?v=1\u0026includeBroken=true\u0026bool=7%3Atrue\u0026bool=8%3Afalse",
+    "legacyBrokenId": 7,
+    "query": {
+      "name": "",
+      "languages": [],
+      "compatibilities": [],
+      "booleanFilters": [
+        {
+          "definitionId": 8,
+          "state": "false"
+        }
+      ],
+      "choiceFilters": [],
+      "page": 1,
+      "pageSize": 24,
+      "sort": "name_asc"
+    }
+  },
+  {
+    "canonicalHash": "#/library?name=moon\u0026v=3",
+    "error": "",
+    "id": "url-05",
+    "input": "#/library?v=2\u0026brokenVisibility=only\u0026name=Moon",
+    "legacyBrokenId": 7,
+    "query": {
+      "name": "moon",
+      "languages": [],
+      "compatibilities": [],
+      "booleanFilters": [],
+      "choiceFilters": [],
+      "page": 1,
+      "pageSize": 24,
+      "sort": "name_asc"
+    }
+  },
+  {
+    "canonicalHash": "#/library?bool=7%3Atrue\u0026v=3",
+    "error": "",
+    "id": "url-06",
+    "input": "#/library?v=3\u0026bool=7%3Atrue",
+    "legacyBrokenId": 7,
+    "query": {
+      "name": "",
+      "languages": [],
+      "compatibilities": [],
+      "booleanFilters": [
+        {
+          "definitionId": 7,
+          "state": "true"
+        }
+      ],
+      "choiceFilters": [],
+      "page": 1,
+      "pageSize": 24,
+      "sort": "name_asc"
+    }
+  },
+  {
+    "error": "invalid_url_query",
+    "id": "url-07",
+    "input": "#/library?v=3\u0026brokenState=true",
+    "legacyBrokenId": 7
+  },
+  {
+    "canonicalHash": "#/library?name=ete+%25_\u0026page=2\u0026size=12\u0026sort=imported_desc\u0026v=3",
+    "error": "",
+    "id": "url-08",
+    "input": "#/library?v=3\u0026name=%C3%89T%C3%89+%25_\u0026page=2\u0026size=12\u0026sort=imported_desc",
+    "legacyBrokenId": 7,
+    "query": {
+      "name": "ete %_",
+      "languages": [],
+      "compatibilities": [],
+      "booleanFilters": [],
+      "choiceFilters": [],
+      "page": 2,
+      "pageSize": 12,
+      "sort": "imported_desc"
+    }
+  },
+  {
+    "error": "invalid_url_query",
+    "id": "url-09",
+    "input": "#/library?v=3\u0026v=3",
+    "legacyBrokenId": 7
+  },
+  {
+    "error": "invalid_url_query",
+    "id": "url-10",
+    "input": "#/library?v=99",
+    "legacyBrokenId": 7
+  },
+  {
+    "error": "invalid_url_query",
+    "id": "url-11",
+    "input": "#/library?v=3\u0026unknown=1",
+    "legacyBrokenId": 7
+  },
+  {
+    "canonicalHash": "#/library?v=3",
+    "error": "",
+    "id": "url-12",
+    "input": "#/library?v=3\u0026page=0",
+    "legacyBrokenId": 7,
+    "query": {
+      "name": "",
+      "languages": [],
+      "compatibilities": [],
+      "booleanFilters": [],
+      "choiceFilters": [],
+      "page": 1,
+      "pageSize": 24,
+      "sort": "name_asc"
+    }
+  },
+  {
+    "canonicalHash": "#/library?choice=9%3A11%2C12\u0026v=3",
+    "error": "",
+    "id": "url-13",
+    "input": "#/library?v=3\u0026choice=9%3A12%2C11",
+    "legacyBrokenId": 7,
+    "query": {
+      "name": "",
+      "languages": [],
+      "compatibilities": [],
+      "booleanFilters": [],
+      "choiceFilters": [
+        {
+          "definitionId": 9,
+          "valueIds": [
+            11,
+            12
+          ]
+        }
+      ],
+      "page": 1,
+      "pageSize": 24,
+      "sort": "name_asc"
+    }
+  },
+  {
+    "canonicalHash": "#/library?v=3",
+    "error": "",
+    "id": "url-14",
+    "input": "#/library?v=3",
+    "legacyBrokenId": 7,
+    "query": {
+      "name": "",
+      "languages": [],
+      "compatibilities": [],
+      "booleanFilters": [],
+      "choiceFilters": [],
+      "page": 1,
+      "pageSize": 24,
+      "sort": "name_asc"
+    }
+  },
+  {
+    "canonicalHash": "#/library?bool=7%3Afalse\u0026choice=9%3A11%2C12\u0026name=dragon\u0026page=2\u0026size=12\u0026sort=imported_desc\u0026v=3",
+    "error": "",
+    "id": "url-15",
+    "input": "#/library?bool=7%3Afalse\u0026choice=9%3A11%2C12\u0026name=dragon\u0026page=2\u0026size=12\u0026sort=imported_desc\u0026v=3",
+    "legacyBrokenId": 7,
+    "query": {
+      "name": "dragon",
+      "languages": [],
+      "compatibilities": [],
+      "booleanFilters": [
+        {
+          "definitionId": 7,
+          "state": "false"
+        }
+      ],
+      "choiceFilters": [
+        {
+          "definitionId": 9,
+          "valueIds": [
+            11,
+            12
+          ]
+        }
+      ],
+      "page": 2,
+      "pageSize": 12,
+      "sort": "imported_desc"
+    }
+  },
+  {
+    "canonicalHash": "#/library?name=ete+%25_\u0026v=3",
+    "error": "",
+    "id": "url-16",
+    "input": "#/library?name=ete+%25_\u0026v=3",
+    "legacyBrokenId": 7,
+    "query": {
+      "name": "ete %_",
+      "languages": [],
+      "compatibilities": [],
+      "booleanFilters": [],
+      "choiceFilters": [],
+      "page": 1,
+      "pageSize": 24,
+      "sort": "name_asc"
+    }
+  },
+  {
+    "canonicalHash": "#/library?bool=2%3Atrue\u0026bool=8%3Afalse\u0026choice=4%3A5%2C6\u0026choice=10%3A20\u0026v=3",
+    "error": "",
+    "id": "url-17",
+    "input": "#/library?bool=2%3Atrue\u0026bool=8%3Afalse\u0026choice=4%3A5%2C6\u0026choice=10%3A20\u0026v=3",
+    "legacyBrokenId": 7,
+    "query": {
+      "name": "",
+      "languages": [],
+      "compatibilities": [],
+      "booleanFilters": [
+        {
+          "definitionId": 2,
+          "state": "true"
+        },
+        {
+          "definitionId": 8,
+          "state": "false"
+        }
+      ],
+      "choiceFilters": [
+        {
+          "definitionId": 4,
+          "valueIds": [
+            5,
+            6
+          ]
+        },
+        {
+          "definitionId": 10,
+          "valueIds": [
+            20
+          ]
+        }
+      ],
+      "page": 1,
+      "pageSize": 24,
+      "sort": "name_asc"
+    }
+  },
+  {
+    "canonicalHash": "#/library?compatibility=compatible\u0026compatibility=missing\u0026language=en-GB\u0026language=fr-FR\u0026v=3",
+    "error": "",
+    "id": "url-18",
+    "input": "#/library?compatibility=compatible\u0026compatibility=missing\u0026language=en-GB\u0026language=fr-FR\u0026v=3",
+    "legacyBrokenId": 7,
+    "query": {
+      "name": "",
+      "languages": [
+        "en-GB",
+        "fr-FR"
+      ],
+      "compatibilities": [
+        "compatible",
+        "missing"
+      ],
+      "booleanFilters": [],
+      "choiceFilters": [],
+      "page": 1,
+      "pageSize": 24,
+      "sort": "name_asc"
+    }
+  },
+  {
+    "canonicalHash": "#/library?v=3",
+    "error": "",
+    "id": "url-19",
+    "input": "#/library?v=3",
+    "legacyBrokenId": 7,
+    "query": {
+      "name": "",
+      "languages": [],
+      "compatibilities": [],
+      "booleanFilters": [],
+      "choiceFilters": [],
+      "page": 1,
+      "pageSize": 24,
+      "sort": "name_asc"
+    }
+  },
+  {
+    "canonicalHash": "#/library?v=3",
+    "error": "",
+    "id": "url-20",
+    "input": "#/library?v=3",
+    "legacyBrokenId": 7,
+    "query": {
+      "name": "",
+      "languages": [],
+      "compatibilities": [],
+      "booleanFilters": [],
+      "choiceFilters": [],
+      "page": 1,
+      "pageSize": 24,
+      "sort": "name_asc"
+    }
+  },
+  {
+    "canonicalHash": "#/library?v=3",
+    "error": "",
+    "id": "url-21",
+    "input": "#/library?v=3",
+    "legacyBrokenId": 7,
+    "query": {
+      "name": "",
+      "languages": [],
+      "compatibilities": [],
+      "booleanFilters": [],
+      "choiceFilters": [],
+      "page": 1,
+      "pageSize": 24,
+      "sort": "name_asc"
+    }
+  },
+  {
+    "canonicalHash": "#/library?v=3",
+    "error": "",
+    "id": "url-22",
+    "input": "#/library?v=3",
+    "legacyBrokenId": 7,
+    "query": {
+      "name": "",
+      "languages": [],
+      "compatibilities": [],
+      "booleanFilters": [],
+      "choiceFilters": [],
+      "page": 1,
+      "pageSize": 24,
+      "sort": "name_asc"
+    }
+  }
+]

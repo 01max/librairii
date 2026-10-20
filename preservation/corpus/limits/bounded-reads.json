@@ -1,0 +1,52 @@
+[
+  {
+    "byteRecipe": "ASCII x repeated inputBytes times",
+    "error": "",
+    "inputBytes": 1048575,
+    "kind": "metadata",
+    "limit": 1048576,
+    "readBytes": 1048575,
+    "sha256": "f7ddf2723b5663ba2a2e2c642355c78ce5cfca89b5c21c5dde226334e31fb340"
+  },
+  {
+    "byteRecipe": "ASCII x repeated inputBytes times",
+    "error": "",
+    "inputBytes": 1048576,
+    "kind": "metadata",
+    "limit": 1048576,
+    "readBytes": 1048576,
+    "sha256": "8f990ba0b577b51cf009ea049368c16bbda1b21e1b93be07a824758bb253c39b"
+  },
+  {
+    "byteRecipe": "ASCII x repeated inputBytes times",
+    "error": "metadata_limit",
+    "inputBytes": 1048577,
+    "kind": "metadata",
+    "limit": 1048576
+  },
+  {
+    "byteRecipe": "ASCII x repeated inputBytes times",
+    "error": "",
+    "inputBytes": 10485759,
+    "kind": "artwork",
+    "limit": 10485760,
+    "readBytes": 10485759,
+    "sha256": "331f6a0f9c795a4db189eb1d090c02b5581cf991d388a112fc4a50e0ef86f778"
+  },
+  {
+    "byteRecipe": "ASCII x repeated inputBytes times",
+    "error": "",
+    "inputBytes": 10485760,
+    "kind": "artwork",
+    "limit": 10485760,
+    "readBytes": 10485760,
+    "sha256": "462a12a876c0364e4f1f3d12ed33dcae125f1198010ff78d8f4c3f4de0412d49"
+  },
+  {
+    "byteRecipe": "ASCII x repeated inputBytes times",
+    "error": "artwork_limit",
+    "inputBytes": 10485761,
+    "kind": "artwork",
+    "limit": 10485760
+  }
+]
