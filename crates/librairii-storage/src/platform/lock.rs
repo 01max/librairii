@@ -22,6 +22,14 @@ pub struct LibraryLease {
     root_metadata: Metadata,
     file: File,
     file_metadata: Metadata,
+    #[cfg(windows)]
+    file_identity: super::windows::FileIdentity,
+    #[cfg(windows)]
+    file_pin: File,
+    #[cfg(windows)]
+    root_identity: super::windows::FileIdentity,
+    #[cfg(windows)]
+    root_pin: File,
 }
 
 impl LibraryLease {
@@ -103,11 +111,28 @@ impl LibraryLease {
             file.sync_all()
                 .map_err(|e| StorageError::io("flush fresh library lock", e))?;
         }
+        #[cfg(windows)]
+        let (root_pin, root_identity) = super::windows::metadata_witness(root, true)?;
+        #[cfg(windows)]
+        let (file_pin, file_identity) =
+            super::windows::metadata_witness(&root.join(LIBRARY_LOCK_FILE), false)?;
+        #[cfg(windows)]
+        if super::windows::query_identity(&file)?.identity != file_identity {
+            return Err(StorageError::LibraryLeaseChanged);
+        }
         let lease = Self {
             root: root.to_path_buf(),
             root_metadata,
             file,
             file_metadata,
+            #[cfg(windows)]
+            root_identity,
+            #[cfg(windows)]
+            root_pin,
+            #[cfg(windows)]
+            file_identity,
+            #[cfg(windows)]
+            file_pin,
         };
         lease.revalidate()?;
         Ok(lease)
@@ -117,6 +142,20 @@ impl LibraryLease {
     /// effects/ancestor-race proof and Windows stable IDs remain4.8/4.9; this
     /// fresh-root capability does not qualify any legacy in-place adoption.
     pub fn revalidate(&self) -> Result<()> {
+        #[cfg(windows)]
+        {
+            use super::windows::{metadata_witness, query_identity};
+            let (_, root) = metadata_witness(&self.root, true)?;
+            let (_, file) = metadata_witness(&self.root.join(LIBRARY_LOCK_FILE), false)?;
+            if root != self.root_identity
+                || file != self.file_identity
+                || query_identity(&self.root_pin)?.identity != root
+                || query_identity(&self.file_pin)?.identity != file
+                || query_identity(&self.file)?.identity != file
+            {
+                return Err(StorageError::LibraryLeaseChanged);
+            }
+        }
         let root = fs::symlink_metadata(&self.root)
             .map_err(|e| StorageError::io("revalidate library lease root", e))?;
         if !root.is_dir() || root.file_type().is_symlink() {

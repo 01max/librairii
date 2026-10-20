@@ -2,6 +2,8 @@
 pub mod lock;
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 pub mod unix;
+#[cfg(windows)]
+pub(crate) mod windows;
 
 use crate::{Result, StorageError, database::WorkCancellation};
 use librairii_core::Checksum;
