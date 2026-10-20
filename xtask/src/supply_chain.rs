@@ -21,7 +21,13 @@ struct Exception {
 
 fn date_valid(date: &str) -> bool {
     let parts: Vec<_> = date.split('-').collect();
-    if parts.len() != 3 || date.len() != 10 {
+    if parts.len() != 3
+        || date.len() != 10
+        || parts.iter().map(|part| part.len()).ne([4, 2, 2])
+        || !parts
+            .iter()
+            .all(|part| part.bytes().all(|byte| byte.is_ascii_digit()))
+    {
         return false;
     }
     let parse = |index: usize| parts[index].parse::<u32>().ok();
@@ -323,6 +329,52 @@ fn inventory_graph(graph: &str, manifest: &str, lockfile: &str) -> Result {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn expiry_requires_canonical_ascii_and_real_calendar_boundaries() {
+        for valid in [
+            "2026-01-01",
+            "2026-12-31",
+            "2028-02-29",
+            "2100-02-28",
+            "2400-02-29",
+        ] {
+            assert!(date_valid(valid), "{valid}");
+        }
+        for invalid in [
+            "2026-9-001",
+            "2026-09-1",
+            "2026-+9-01",
+            "２０２６-09-01",
+            "2026-02-29",
+            "2100-02-29",
+            "2026-00-01",
+            "2026-13-01",
+            "2026-04-31",
+            "2026-01-00",
+        ] {
+            assert!(!date_valid(invalid), "{invalid}");
+        }
+    }
+    #[test]
+    fn noncanonical_expired_exception_cannot_bypass_expiry_comparison() {
+        let mut suppressions = BTreeSet::new();
+        suppressions.insert(("advisory".into(), "RUSTSEC-2026-0000".into()));
+        let mut records = Exceptions {
+            exceptions: vec![Exception {
+                kind: "advisory".into(),
+                selector: "RUSTSEC-2026-0000".into(),
+                owner: "synthetic owner".into(),
+                reason: "expiry bypass regression".into(),
+                tracking: "https://example.invalid/review".into(),
+                expires: "2026-9-001".into(),
+            }],
+        };
+        assert!(validate(&records, "2026-10-20", &suppressions).is_err());
+        records.exceptions[0].expires = "2026-10-20".into();
+        assert!(validate(&records, "2026-10-20", &suppressions).is_err());
+        records.exceptions[0].expires = "2026-10-21".into();
+        assert!(validate(&records, "2026-10-20", &suppressions).is_ok());
+    }
     #[test]
     fn exceptions_cannot_widen_into_version_ranges_or_arbitrary_advisory_ids() {
         for selector in [
