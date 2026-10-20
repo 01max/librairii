@@ -462,6 +462,30 @@
       "targets": [
         "x86_64-pc-windows-msvc"
       ]
+    },
+    {
+      "suite": "librairii-storage::streaming_hash",
+      "name": "complete_stream_hash_matches_nist_vectors_across_fixed_buffer_boundaries"
+    },
+    {
+      "suite": "librairii-storage::streaming_hash",
+      "name": "independent_read_error_is_not_erased_when_cancel_arrives_during_read"
+    },
+    {
+      "suite": "librairii-storage::streaming_hash",
+      "name": "interrupted_reads_resume_but_invalid_read_count_never_panics_or_yields_digest"
+    },
+    {
+      "suite": "librairii-storage::streaming_hash",
+      "name": "read_failure_after_real_chunks_returns_cause_without_partial_checksum"
+    },
+    {
+      "suite": "librairii-storage::streaming_hash",
+      "name": "stream_size_ceiling_is_exact_and_consumes_at_most_one_sentinel_byte"
+    },
+    {
+      "suite": "librairii-storage::streaming_hash",
+      "name": "streaming_cancel_stops_before_next_read_without_claiming_complete_digest"
     }
   ]
 }
