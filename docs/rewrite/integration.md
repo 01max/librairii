@@ -159,6 +159,10 @@ The integration owner must refuse admission unless **every** condition holds:
    Reject deleted, disabled or weakened prior assertions without an independently
    reviewed replacement proving the same invariant. Test discovery/count changes
    must be explained; merely obtaining green from a smaller suite is insufficient.
+   Each PR must show meaningful behavior coverage, including affected success,
+   failure, cancellation and restart/recovery transitions and any material gaps.
+   Use focused coverage reports to find missing assertions; no arbitrary blanket
+   coverage percentage can replace those scenario checks or qualify a PR.
    After section 3 establishes
    it, run `cargo xtask check` with locked builds, fmt, Clippy warnings denied,
    nextest, **separate doctests**, differential fixtures, native state checks,
@@ -187,6 +191,9 @@ The integration owner must refuse admission unless **every** condition holds:
    commit preservation. Verify original subtask/fix SHAs remain ancestors of the
    resulting global head, and record its SHA/tree and merge commit. Its tree must
    match qualified H; an unexpected conflict-resolution tree needs new review/tests.
+   Verify the actual resulting global head with applicable cumulative Go/Rust,
+   fixture and composition checks; retain its exact tested SHA and results rather
+   than relying only on an earlier task head or provider merge-ref status.
    Do not carry evidence across trees or manufacture a pass for an unavailable host.
 
 Each admission record must contain these fields (all currently **pending**):
