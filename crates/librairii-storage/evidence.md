@@ -1108,3 +1108,56 @@ can coexist on a real target. Focused portability4/4 passed, zero skips, run
 `a8ade1af-9c4d-4acb-8731-53bc2fdc2a1d`; storage all-target Clippy with warnings
 denied passed on AppleARM. New discovery identities require owner5 additive
 support before final admission; this is not full4.10 or current all-target proof.
+
+### Partial 4.8/4.7: native filesystem owners retain the actual SQLite borrow
+
+`LibraryFiles::open_native(&Database)` now requires the actual open-native DB
+variant and its sealed NativeLibrary. A private two-variant authority reuses
+the existing Unix descriptor-relative stage/hash/no-clobber/reuse/flush/temp-trash
+mechanisms. Native roots are duplicated from the original owned root FD, never
+reconstructed from a root/ID/profile DTO. No second pool, connection, public
+authority trait, shared app port, domain SQL, unsafe or static jobs bridge exists.
+
+Files AND the move-only Custody guard retain both actual NativeLibrary and SAME
+Database borrows. A guard may outlive its original Files instance without losing
+that DB borrow. Stages and all publication/reuse/uncertainty receipts borrow Files
+and keep its real directory/DB owners alive. Mutable DB close/join therefore
+cannot precede file-owner drain. Three new compile-fail cases cover an active
+stage, a guard after Files drop, and attempted Files drop with a publication
+result still alive. Successful synchronous integration cases separately compile
+and exercise the corresponding real ownership flow.
+
+All native instances share one custody bit on the real library. File uncertainty
+uses the SAME native profile/DB effect fence; guard Drop never clears it. Native
+DB/local worker failure refuses ordinary file effects. Closed/isolated DB modes
+refuse this constructor; no cast/reopen fallback exists. Short queue-state reads
+stop new Files/guard intake when ordinary DB intake stops. Existing guarded
+resolution and bounded same-writer readback/repair remain possible after intake
+stop; no mutex spans file/SQL work and no cancellation discards these owners.
+
+Three new Unix integration identities cover publish/exact reuse, a guard moved
+beyond Files, second-claim refusal, prepublish cancellation with retained bytes,
+uncancelled retirement of owned temporary bytes after intake stop, unchanged
+reused bytes, and real DB close only after file drain. Actual deferred-FK COMMIT
+uncertainty fences file writes but preserves readable retained bytes, fresh writer
+readback and repair; guard/Files/DB drop cannot activate a replacement generation.
+An original archive-directory substitution refuses before staging, preserves
+foreign bytes and retains DB-only readback. Source SQLite/archive bytes and
+native root/profile leases remain retained independently of ordinary work.
+
+Focused native13/13 passed (no skips), run
+`39ffd710-f24d-4cdc-8003-93d4bd91635f`. All seven storage compile-fail docs and
+storage all-target Clippy with warnings denied passed on AppleARM. Original
+baseline-onlyb3efed352fc192f308b03b65eb05d7a4746a0049 was consumed intact.
+New three Unix identities/doc locations require owner5 additive support. Full
+native/current-head gates, restart/recovery/relocation, an actual owned threaded
+resource-transfer bridge and domain policy/SQL stay separate; Windows directory
+durability/config mutation remain excluded. No compensation or import admission
+authority follows from these generic file observations.
+
+Full source-combined AppleARM cargo xtask check passed155 nextest/zero skips,
+nine separate compile-fail docs, unchanged146 corpus/strict15/source19 and both
+graph/fmt/build/Clippy/discovery policies, run
+`dc3432d0-e20c-4283-bd36-59248762ff10`. Only this validation note was appended
+afterward. This supplies no Windows execution, Native restart/recovery or full
+effect-handoff/4.11 qualification; corrected/current provider gates remain open.

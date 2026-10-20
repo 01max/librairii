@@ -9,10 +9,245 @@ use librairii_storage::{
     profile::{NativeProfileStore, Profile, ProfileDocument, ProfileLocations, read_legacy},
 };
 use librairii_testkit::TestRoots;
-use std::{error::Error, fs, path::Path};
+use std::{
+    error::Error,
+    fs,
+    io::{Read, Seek, Write},
+    path::Path,
+};
 type TestResult<T = ()> = Result<T, Box<dyn Error>>;
 const MANIFEST: &[u8] =
     include_bytes!("../../../preservation/corpus/profiles/library-manifest.json");
+
+#[test]
+fn native_files_retain_same_database_custody_and_drain_after_intake_stop() -> TestResult {
+    use librairii_storage::platform::unix::{EntryName, FileArea, LibraryFiles, Publication};
+    let roots = TestRoots::new()?;
+    let (copy, locations) = prepare(&roots, false)?;
+    let root = copy.root().to_owned();
+    let source = Path::new(&copy.source_profile().profile().root).to_owned();
+    let source_database = fs::read(source.join("db/librairii.sqlite3"))?;
+    let store = NativeProfileStore::create_fresh(&locations.native)?;
+    let native =
+        NativeLibrary::bind_independent(copy, &store, &locations, &WorkCancellation::default())
+            .map_err(|failure| failure.to_string())?;
+    let mut db = Database::open_native(&native)?;
+    {
+        // This actual guard outlives its original Files instance and still
+        // retains the same Database borrow and generation-wide exclusion.
+        let guard = {
+            let files = LibraryFiles::open_native(&db)?;
+            files.try_custody()?
+        };
+        let files = LibraryFiles::open_native(&db)?;
+        let peer = LibraryFiles::open_native(&db)?;
+        assert!(matches!(peer.try_custody(), Err(StorageError::CustodyBusy)));
+        let mut stage = files.create_stage(&guard)?;
+        stage.write_all(b"owned native payload")?;
+        let digest = stage.measure(20, &WorkCancellation::default())?;
+        let publication = stage
+            .publish_no_clobber(
+                &guard,
+                FileArea::Archives,
+                EntryName::parse("owned Éte # %2F.zip")?,
+                digest,
+                &WorkCancellation::default(),
+            )
+            .map_err(|failure| failure.cause)?;
+        let Publication::NewOwned(mut committed_file) = publication else {
+            return Err("new destination was not owned".into());
+        };
+        committed_file.revalidate(&guard, &WorkCancellation::default())?;
+        let mut other = peer.create_stage(&guard)?;
+        other.write_all(b"owned native payload")?;
+        let reused = other
+            .publish_no_clobber(
+                &guard,
+                FileArea::Archives,
+                EntryName::parse("owned Éte # %2F.zip")?,
+                digest,
+                &WorkCancellation::default(),
+            )
+            .map_err(|failure| failure.cause)?;
+        let Publication::ReusedExisting {
+            mut existing,
+            staged,
+        } = reused
+        else {
+            return Err("exact reuse acquired new ownership".into());
+        };
+        existing.revalidate(&guard, &WorkCancellation::default())?;
+        assert_eq!(existing.identity(), committed_file.identity());
+        let mut cancelled_stage = files.create_stage(&guard)?;
+        cancelled_stage.write_all(b"cancel keeps ownership")?;
+        let measured = cancelled_stage.measure(22, &WorkCancellation::default())?;
+        let cancelled = WorkCancellation::default();
+        cancelled.cancel();
+        let failure = cancelled_stage
+            .publish_no_clobber(
+                &guard,
+                FileArea::Archives,
+                EntryName::parse("cancelled.zip")?,
+                measured,
+                &cancelled,
+            )
+            .err()
+            .ok_or("cancelled publication admitted")?;
+        assert!(!failure.publish_uncertain);
+        assert!(matches!(failure.cause, StorageError::Cancelled));
+        assert!(!root.join("archives/cancelled.zip").exists());
+        db.stop_ordinary()?;
+        assert!(matches!(
+            LibraryFiles::open_native(&db),
+            Err(StorageError::IntakeClosed)
+        ));
+        assert!(matches!(
+            peer.try_custody(),
+            Err(StorageError::IntakeClosed)
+        ));
+        // Already-owned guarded resolution and SAME-writer readback survive
+        // intake stop. Retiring the separate stage never removes reused bytes.
+        staged
+            .retire_owned_temp(&guard)
+            .map_err(|failure| failure.cause)?;
+        failure
+            .staged
+            .retire_owned_temp(&guard)
+            .map_err(|failure| failure.cause)?;
+        committed_file.revalidate(&guard, &WorkCancellation::default())?;
+        assert_eq!(
+            db.barrier_read(|tx| Ok(tx.query_row("SELECT 1", [], |row| row.get::<_, i64>(0))?))?
+                .wait()?,
+            1
+        );
+        require_lock_held(&root)?;
+    }
+    db.close()?;
+    drop(db);
+    assert_eq!(
+        fs::read(root.join("archives/owned Éte # %2F.zip"))?,
+        b"owned native payload"
+    );
+    assert_eq!(
+        fs::read(source.join("db/librairii.sqlite3"))?,
+        source_database
+    );
+    require_lock_held(&root)?;
+    drop(native);
+
+    let path = roots.library().join("isolated-only");
+    let isolated = librairii_storage::IsolatedLibrary::initialize_from_override(
+        Some(path.as_os_str()),
+        "b0000000-0000-4000-8000-000000000001".parse()?,
+    )?;
+    let mut development = Database::open_isolated(&isolated)?;
+    assert!(matches!(
+        LibraryFiles::open_native(&development),
+        Err(StorageError::IdentityMismatch)
+    ));
+    development.close()?;
+    Ok(())
+}
+
+#[test]
+fn native_files_keep_owned_bytes_and_writer_repair_when_commit_becomes_uncertain() -> TestResult {
+    use librairii_storage::platform::unix::LibraryFiles;
+    let roots = TestRoots::new()?;
+    let (copy, locations) = prepare(&roots, false)?;
+    let root = copy.root().to_owned();
+    let store = NativeProfileStore::create_fresh(&locations.native)?;
+    let native =
+        NativeLibrary::bind_independent(copy, &store, &locations, &WorkCancellation::default())
+            .map_err(|failure| failure.to_string())?;
+    let mut db = Database::open_native(&native)?;
+    {
+        let files = LibraryFiles::open_native(&db)?;
+        let guard = files.try_custody()?;
+        let mut stage = files.create_stage(&guard)?;
+        stage.write_all(b"needs repair")?;
+        let outcome = db.transaction(WorkCancellation::default(), |tx| {
+            tx.execute_batch("CREATE TEMP TABLE files_parent(id INTEGER PRIMARY KEY); CREATE TEMP TABLE files_child(parent INTEGER REFERENCES files_parent(id) DEFERRABLE INITIALLY DEFERRED); INSERT INTO files_child VALUES (999);")?;
+            Ok(())
+        })?.wait()?;
+        assert!(matches!(outcome, TransactionOutcome::CommitUncertain(_)));
+        assert!(stage.write_all(b"not admitted").is_err());
+        assert!(matches!(
+            files.try_custody(),
+            Err(StorageError::CustodyRecoveryRequired)
+        ));
+        let mut actual = [0; 12];
+        stage.inspector().seek(std::io::SeekFrom::Start(0))?;
+        stage.inspector().read_exact(&mut actual)?;
+        assert_eq!(&actual, b"needs repair");
+        assert_eq!(
+            db.barrier_read(|tx| Ok(tx.query_row(
+                "SELECT COUNT(*) FROM sqlite_temp_master WHERE name='files_child'",
+                [],
+                |row| row.get::<_, i64>(0)
+            )?))?
+            .wait()?,
+            0
+        );
+        assert!(matches!(
+            db.repair_transaction(|_| Ok(()))?.wait()?,
+            TransactionOutcome::Committed(())
+        ));
+        // Neither inspection/readback nor actual guard/owner drops clear the
+        // native generation fence or authorize destructive temp compensation.
+    }
+    let directories: Vec<_> =
+        fs::read_dir(root.join("staging"))?.collect::<std::io::Result<_>>()?;
+    assert_eq!(directories.len(), 1);
+    assert_eq!(
+        fs::read(directories[0].path().join("payload"))?,
+        b"needs repair"
+    );
+    db.close()?;
+    drop(db);
+    assert!(Database::open_native(&native).is_err());
+    require_lock_held(&root)?;
+    Ok(())
+}
+
+#[test]
+fn native_files_refuse_substituted_directory_and_preserve_db_only_readback() -> TestResult {
+    use librairii_storage::platform::unix::LibraryFiles;
+    let roots = TestRoots::new()?;
+    let (copy, locations) = prepare(&roots, false)?;
+    let root = copy.root().to_owned();
+    let store = NativeProfileStore::create_fresh(&locations.native)?;
+    let native =
+        NativeLibrary::bind_independent(copy, &store, &locations, &WorkCancellation::default())
+            .map_err(|failure| failure.to_string())?;
+    let mut db = Database::open_native(&native)?;
+    {
+        let files = LibraryFiles::open_native(&db)?;
+        let guard = files.try_custody()?;
+        fs::rename(root.join("archives"), root.join("retained-archives"))?;
+        fs::create_dir(root.join("archives"))?;
+        fs::write(root.join("archives/foreign"), b"untouched foreign bytes")?;
+        assert!(files.create_stage(&guard).is_err());
+        assert!(matches!(
+            files.try_custody(),
+            Err(StorageError::CustodyRecoveryRequired)
+        ));
+        assert_eq!(
+            db.barrier_read(|tx| Ok(tx.query_row("SELECT 1", [], |row| row.get::<_, i64>(0))?))?
+                .wait()?,
+            1
+        );
+        assert_eq!(
+            fs::read(root.join("archives/foreign"))?,
+            b"untouched foreign bytes"
+        );
+        assert_eq!(fs::read_dir(root.join("staging"))?.count(), 0);
+    }
+    db.close()?;
+    drop(db);
+    assert!(Database::open_native(&native).is_err());
+    require_lock_held(&root)?;
+    Ok(())
+}
 
 fn prepare(roots: &TestRoots, recovering: bool) -> TestResult<(IndependentCopy, ProfileLocations)> {
     prepare_with_recovery_file(roots, recovering, None)

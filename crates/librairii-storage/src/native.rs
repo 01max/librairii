@@ -42,6 +42,7 @@ mod owned {
         database: Directory,
         managed: Mutex<Option<Vec<(&'static str, Directory)>>>,
         runtime_active: AtomicBool,
+        pub(crate) custody_active: AtomicBool,
         // Root objects/lease close before the profile-binding exclusion ends.
         copy: IndependentCopy,
         binding: ProfileBinding<'profile>,
@@ -98,6 +99,7 @@ mod owned {
                     database,
                     managed: Mutex::new(None),
                     runtime_active: AtomicBool::new(false),
+                    custody_active: AtomicBool::new(false),
                     copy,
                     binding,
                 }),
@@ -156,6 +158,13 @@ mod owned {
         }
         pub(crate) fn effect_fence(&self) -> Arc<AtomicBool> {
             self.binding.fence_signal()
+        }
+        pub(crate) fn retain_active_files_root(&self) -> Result<Directory> {
+            if !self.runtime_active.load(Ordering::Acquire) {
+                return Err(StorageError::IntakeClosed);
+            }
+            self.revalidate(&WorkCancellation::default())?;
+            self.root.duplicate()
         }
         pub(crate) fn fence(&self) {
             self.binding.fence();

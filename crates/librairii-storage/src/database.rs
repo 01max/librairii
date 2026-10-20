@@ -352,6 +352,40 @@ impl<'library> Database<'library> {
         Self::open_owned(Authority::Native(authority))
     }
 
+    /// Storage-private borrowed filesystem route. Its caller retains THIS
+    /// Database borrow through every file owner, preventing mutable close/join.
+    #[cfg(any(target_os = "macos", target_os = "linux"))]
+    pub(crate) fn native_file_owner(&self) -> Result<&crate::native::NativeLibrary<'_>> {
+        if self.closed || self.close_failed {
+            return Err(StorageError::IntakeClosed);
+        }
+        let Authority::Native(library) = self.authority else {
+            return Err(StorageError::IdentityMismatch);
+        };
+        if self.fenced.load(Ordering::Acquire) {
+            library.fence();
+            return Err(StorageError::RuntimeFenced);
+        }
+        Ok(library)
+    }
+
+    #[cfg(any(target_os = "macos", target_os = "linux"))]
+    pub(crate) fn require_native_file_intake(&self) -> Result<()> {
+        let library = self.native_file_owner()?;
+        // Only a short queue-state read; no filesystem/SQL callback or long
+        // effect runs under this lock. Existing guarded resolution may drain
+        // after stop_ordinary; this check is for NEW owner/guard admission.
+        let state = self.writer.state.lock().map_err(|_| {
+            self.fenced.store(true, Ordering::Release);
+            library.fence();
+            StorageError::RuntimeFenced
+        })?;
+        if !state.ordinary_open || state.stopping {
+            return Err(StorageError::IntakeClosed);
+        }
+        Ok(())
+    }
+
     fn open_owned(authority: Authority<'library>) -> Result<Self> {
         authority.claim_runtime()?;
         let mut runtime = Self {

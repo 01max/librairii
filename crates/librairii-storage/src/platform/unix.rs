@@ -1,4 +1,4 @@
-//! Descriptor-relative mechanisms for the explicit fresh library authority.
+//! Descriptor-relative mechanisms for actual development/native library owners.
 //!
 //! No public constructor accepts an arbitrary path as mutation authority. All
 //! claims through this module share the library's custody exclusion. Neither a
@@ -12,7 +12,11 @@
 //! never reported as proven-not-published. An unresolved failure cannot be
 //! cleared by dropping a guard, returning an error or enqueueing a DTO.
 use super::{StreamDigest, hash_stream};
-use crate::{IsolatedLibrary, Result, StorageError, database::WorkCancellation};
+use crate::{
+    IsolatedLibrary, Result, StorageError,
+    database::{Database, WorkCancellation},
+    native::NativeLibrary,
+};
 use rustix::fs::{self as native, AtFlags, Mode, OFlags, RenameFlags};
 use std::{
     ffi::{OsStr, OsString},
@@ -23,7 +27,7 @@ use std::{
         fs::MetadataExt,
     },
     path::{Component, Path},
-    sync::atomic::{AtomicU64, Ordering},
+    sync::atomic::{AtomicBool, AtomicU64, Ordering},
 };
 
 const PAYLOAD: &str = "payload";
@@ -406,6 +410,60 @@ pub enum FileArea {
     Catalog,
 }
 
+#[derive(Clone, Copy, Debug)]
+enum FilesAuthority<'library> {
+    Isolated(&'library IsolatedLibrary),
+    Native {
+        library: &'library NativeLibrary<'library>,
+        // Retain the SAME live DB borrow until files/guards/receipts close.
+        database: &'library Database<'library>,
+    },
+}
+impl<'library> FilesAuthority<'library> {
+    fn active(self) -> &'library AtomicBool {
+        match self {
+            Self::Isolated(library) => &library.custody_active,
+            Self::Native { library, .. } => &library.custody_active,
+        }
+    }
+    fn fenced(self) -> bool {
+        match self {
+            Self::Isolated(library) => library.custody_fenced.load(Ordering::Acquire),
+            Self::Native { library, .. } => library.effect_fence().load(Ordering::Acquire),
+        }
+    }
+    fn fence(self) {
+        match self {
+            Self::Isolated(library) => library.custody_fenced.store(true, Ordering::Release),
+            Self::Native { library, .. } => library.fence(),
+        }
+    }
+    fn same_generation(self, other: Self) -> bool {
+        match (self, other) {
+            (Self::Isolated(a), Self::Isolated(b)) => std::ptr::eq(a, b),
+            (Self::Native { library: a, .. }, Self::Native { library: b, .. }) => {
+                std::ptr::eq(a, b)
+            }
+            _ => false,
+        }
+    }
+    fn require_intake(self) -> Result<()> {
+        match self {
+            Self::Isolated(_) => Ok(()),
+            Self::Native { database, .. } => database.require_native_file_intake(),
+        }
+    }
+    fn revalidate(self) -> Result<()> {
+        match self {
+            Self::Isolated(library) => library.revalidate_ownership(),
+            Self::Native { library, database } => {
+                database.native_file_owner()?;
+                library.revalidate(&WorkCancellation::default())
+            }
+        }
+    }
+}
+
 /// Library generation is represented by an actual borrow of the authority, not
 /// its UUID. Multiple filesystem handles share the SAME all-claimant guard.
 ///
@@ -425,7 +483,7 @@ pub enum FileArea {
 /// ```
 #[derive(Debug)]
 pub struct LibraryFiles<'library> {
-    authority: &'library IsolatedLibrary,
+    authority: FilesAuthority<'library>,
     root: Directory,
     staging: Directory,
     archives: Directory,
@@ -442,13 +500,11 @@ impl Drop for LibraryFiles<'_> {
 /// resource handoff; there is no timeout/expiry or fabricated transfer by ID.
 #[derive(Debug)]
 pub struct Custody<'library> {
-    authority: &'library IsolatedLibrary,
+    authority: FilesAuthority<'library>,
 }
 impl Drop for Custody<'_> {
     fn drop(&mut self) {
-        self.authority
-            .custody_active
-            .store(false, Ordering::Release);
+        self.authority.active().store(false, Ordering::Release);
         // custody_fenced is deliberately NOT cleared here. No current route
         // activates an existing/recovery library without independent validation.
     }
@@ -470,6 +526,63 @@ impl<'library> LibraryFiles<'library> {
         {
             return Err(StorageError::LibraryLeaseChanged);
         }
+        Self::from_root(FilesAuthority::Isolated(authority), root)
+    }
+
+    /// Native file effects borrow the actual open-native Database, its sealed
+    /// independent library, profile binding and OS leases. No path/ID/DTO can
+    /// supply this authority, and a development Database is refused.
+    ///
+    /// Mutable close/join cannot precede the real file-owner drain:
+    /// ```compile_fail
+    /// use librairii_storage::{Result, database::Database, platform::unix::LibraryFiles};
+    /// fn close_early(db: &mut Database<'_>) -> Result<()> {
+    ///     let files = LibraryFiles::open_native(db)?;
+    ///     let guard = files.try_custody()?;
+    ///     let stage = files.create_stage(&guard)?;
+    ///     db.close()?;
+    ///     drop(stage);
+    ///     Ok(())
+    /// }
+    /// ```
+    /// A guard can outlive a Files instance, but cannot lose the DB borrow:
+    /// ```compile_fail
+    /// use librairii_storage::{Result, database::Database, platform::unix::LibraryFiles};
+    /// fn guard_after_files(db: &mut Database<'_>) -> Result<()> {
+    ///     let files = LibraryFiles::open_native(db)?;
+    ///     let guard = files.try_custody()?;
+    ///     drop(files);
+    ///     db.close()?;
+    ///     drop(guard);
+    ///     Ok(())
+    /// }
+    /// ```
+    /// Success, reuse and uncertainty receipts retain the Files owner too:
+    /// ```compile_fail
+    /// use librairii_storage::{Result, database::{Database, WorkCancellation},
+    ///     platform::unix::{LibraryFiles, EntryName, FileArea}};
+    /// fn receipt_after_files(db: &mut Database<'_>) -> Result<()> {
+    ///     let files = LibraryFiles::open_native(db)?;
+    ///     let guard = files.try_custody()?;
+    ///     let mut stage = files.create_stage(&guard)?;
+    ///     let cancel = WorkCancellation::default();
+    ///     let digest = stage.measure(0, &cancel)?;
+    ///     let receipt = stage.publish_no_clobber(&guard, FileArea::Archives,
+    ///         EntryName::parse("owned.bin")?, digest, &cancel);
+    ///     drop(files);
+    ///     db.close()?;
+    ///     drop(receipt);
+    ///     Ok(())
+    /// }
+    /// ```
+    pub fn open_native(database: &'library Database<'_>) -> Result<Self> {
+        database.require_native_file_intake()?;
+        let library = database.native_file_owner()?;
+        let root = library.retain_active_files_root()?;
+        Self::from_root(FilesAuthority::Native { library, database }, root)
+    }
+
+    fn from_root(authority: FilesAuthority<'library>, root: Directory) -> Result<Self> {
         let files = Self {
             staging: root.child(OsStr::new("staging"))?,
             archives: root.child(OsStr::new("archives"))?,
@@ -482,11 +595,12 @@ impl<'library> LibraryFiles<'library> {
         Ok(files)
     }
     pub fn try_custody(&self) -> Result<Custody<'library>> {
-        if self.authority.custody_fenced.load(Ordering::Acquire) {
+        if self.authority.fenced() {
             return Err(StorageError::CustodyRecoveryRequired);
         }
+        self.authority.require_intake()?;
         self.authority
-            .custody_active
+            .active()
             .compare_exchange(false, true, Ordering::AcqRel, Ordering::Acquire)
             .map_err(|_| StorageError::CustodyBusy)?;
         let guard = Custody {
@@ -496,16 +610,16 @@ impl<'library> LibraryFiles<'library> {
         Ok(guard)
     }
     fn check(&self, guard: &Custody<'_>) -> Result<()> {
-        if !std::ptr::eq(self.authority, guard.authority) {
+        if !self.authority.same_generation(guard.authority) {
             return Err(StorageError::IdentityMismatch);
         }
-        if self.authority.custody_fenced.load(Ordering::Acquire) {
+        if self.authority.fenced() {
             return Err(StorageError::CustodyRecoveryRequired);
         }
         self.revalidate()
     }
     fn revalidate(&self) -> Result<()> {
-        self.authority.revalidate_ownership()?;
+        self.authority.revalidate()?;
         for (name, directory) in [
             ("staging", &self.staging),
             ("archives", &self.archives),
@@ -521,7 +635,7 @@ impl<'library> LibraryFiles<'library> {
         Ok(())
     }
     fn fence(&self) {
-        self.authority.custody_fenced.store(true, Ordering::Release);
+        self.authority.fence();
     }
     fn area(&self, area: FileArea) -> &Directory {
         match area {
@@ -761,7 +875,7 @@ impl<'files, 'library> OwnedStage<'files, 'library> {
         self.revalidate_source()
     }
     fn revalidate_source(&self) -> Result<()> {
-        if self.published || self.files.authority.custody_fenced.load(Ordering::Acquire) {
+        if self.published || self.files.authority.fenced() {
             return Err(StorageError::CustodyRecoveryRequired);
         }
         self.files.revalidate()?;
