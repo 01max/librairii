@@ -85,6 +85,18 @@
     {
       "suite": "xtask::bin/xtask",
       "name": "supply_chain::tests::unrecorded_suppressions_fail_and_expiry_is_not_optional"
+    },
+    {
+      "suite": "xtask::bin/xtask",
+      "name": "supply_chain::tests::expiry_requires_canonical_ascii_and_real_calendar_boundaries"
+    },
+    {
+      "suite": "xtask::bin/xtask",
+      "name": "supply_chain::tests::noncanonical_expired_exception_cannot_bypass_expiry_comparison"
+    },
+    {
+      "suite": "xtask::bin/xtask",
+      "name": "supply_chain::tests::utc_date_uses_utc_midnight_even_for_an_offset_clock_value"
     }
   ]
 }
