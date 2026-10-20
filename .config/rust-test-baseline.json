@@ -329,6 +329,34 @@
     {
       "suite": "librairii-app",
       "name": "jobs::tests::terminal_tests::j65_running_sibling_is_cancelled_only_after_persistence_retry_exhaustion"
+    },
+    {
+      "suite": "librairii-core::operations",
+      "name": "op67_active_output_is_uncapped_then_appends_one_latest_terminal_export"
+    },
+    {
+      "suite": "librairii-core::operations",
+      "name": "op67_admitted_history_view_borrows_full_payload_without_snapshot_reencoding"
+    },
+    {
+      "suite": "librairii-core::operations",
+      "name": "op67_found_cursor_is_independent_and_concurrent_inserts_use_strict_raw_tuple"
+    },
+    {
+      "suite": "librairii-core::operations",
+      "name": "op67_history_boundaries_use_twenty_plus_one_borrowed_rows"
+    },
+    {
+      "suite": "librairii-core::operations",
+      "name": "op67_history_order_keeps_raw_time_case_unicode_and_non_uuid_identity"
+    },
+    {
+      "suite": "librairii-core::operations",
+      "name": "op67_latest_export_falls_back_for_null_only_and_uses_raw_id_ties"
+    },
+    {
+      "suite": "librairii-core::operations",
+      "name": "op67_reveal_eligibility_never_validates_a_directory_or_provisional_truth"
     }
   ]
 }
