@@ -169,10 +169,36 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         count: reads.clone(),
         ceiling: source_ceiling,
     };
+    emit(json!({"stage":"before_constructor","callbackCount":0,
+        "experimentalCountGuards":{"files":sevenz_rust2::qualification_count_budget::MAX_FILES,
+            "codersPerBlock":sevenz_rust2::qualification_count_budget::MAX_CODERS,
+            "perVectorBytes":sevenz_rust2::qualification_count_budget::MAX_VECTOR_BYTES}}));
     let mut reader = match sevenz_rust2::ArchiveReader::new(source, sevenz_rust2::Password::empty())
     {
         Ok(reader) => reader,
         Err(error) => {
+            if let sevenz_rust2::Error::QualificationCountBudget {
+                field,
+                count,
+                max_count,
+                element_bytes,
+                requested_bytes,
+                max_bytes,
+                reason,
+            } = &error
+            {
+                observation(
+                    "qualification_count_budget_refused",
+                    json!({"stage":"header_before_target_vector_allocation", "field":field,
+                        "count":count,"maxCount":max_count,"elementBytes":element_bytes,
+                        "requestedBytes":requested_bytes,"maxVectorBytes":max_bytes,
+                        "reason":reason,"callbackCount":0,
+                        "policy":"experimental per-vector guard; not frozen product policy or general memory bound"}),
+                    start,
+                    reads.get(),
+                );
+                return Ok(());
+            }
             observation(
                 "library_error",
                 json!({"stage":"header","error":error.to_string()}),
@@ -276,6 +302,71 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use sevenz_rust2::qualification_count_budget::{
+        MAX_CODERS, MAX_FILES, MAX_VECTOR_BYTES, checked_count,
+    };
+
+    #[test]
+    fn targeted_count_ceilings_and_zero_do_not_allocate() {
+        assert_eq!(
+            checked_count::<u64>(MAX_FILES, usize::MAX, "num files", MAX_FILES).unwrap(),
+            MAX_FILES as usize
+        );
+        assert_eq!(
+            checked_count::<u64>(0, 0, "num files", MAX_FILES).unwrap(),
+            0
+        );
+        assert_eq!(
+            checked_count::<u64>(MAX_CODERS, usize::MAX, "num coders", MAX_CODERS).unwrap(),
+            MAX_CODERS as usize
+        );
+        for (field, maximum) in [("num files", MAX_FILES), ("num coders", MAX_CODERS)] {
+            assert!(matches!(
+                checked_count::<u64>(maximum + 1, usize::MAX, field, maximum),
+                Err(sevenz_rust2::Error::QualificationCountBudget {
+                    reason: "count_ceiling",
+                    ..
+                })
+            ));
+        }
+        assert!(matches!(
+            checked_count::<u64>(10, 9, "num files", MAX_FILES),
+            Err(sevenz_rust2::Error::Other(_))
+        ));
+    }
+
+    #[test]
+    fn vector_size_overflow_and_byte_ceiling_refuse_without_reservation() {
+        assert!(matches!(
+            checked_count::<u64>(u64::MAX, usize::MAX, "test arithmetic", u64::MAX),
+            Err(sevenz_rust2::Error::QualificationCountBudget {
+                reason: "size_overflow" | "count_not_representable",
+                ..
+            })
+        ));
+        assert_eq!(
+            checked_count::<u8>(
+                MAX_VECTOR_BYTES as u64,
+                usize::MAX,
+                "test arithmetic",
+                u64::MAX
+            )
+            .unwrap(),
+            MAX_VECTOR_BYTES
+        );
+        assert!(matches!(
+            checked_count::<u8>(
+                (MAX_VECTOR_BYTES + 1) as u64,
+                usize::MAX,
+                "test arithmetic",
+                u64::MAX
+            ),
+            Err(sevenz_rust2::Error::QualificationCountBudget {
+                reason: "vector_byte_ceiling",
+                ..
+            })
+        ));
+    }
     #[test]
     fn frozen_metadata_boundaries_and_overflow_remain_explicit() {
         assert_eq!(metadata_refusal(10_000, Some(2 << 30), 11 << 20, &[]), None);

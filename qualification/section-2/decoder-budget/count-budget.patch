@@ -1,0 +1,118 @@
+--- a/src/error.rs
++++ b/src/error.rs
+@@ -3,6 +3,23 @@
+ /// The error type of the crate.
+ #[derive(Debug)]
+ pub enum Error {
++    /// Qualification-only per-vector guard. Not an upstream/product policy.
++    QualificationCountBudget {
++        /// Target vector name.
++        field: &'static str,
++        /// Untrusted declared count.
++        count: u64,
++        /// Experimental count ceiling.
++        max_count: u64,
++        /// Native element size.
++        element_bytes: usize,
++        /// Checked requested vector size; None means overflow.
++        requested_bytes: Option<usize>,
++        /// Experimental per-vector byte ceiling.
++        max_bytes: usize,
++        /// Explicit arithmetic/count/byte refusal reason.
++        reason: &'static str,
++    },
+     /// Invalid 7z signature found in file header.
+     BadSignature([u8; 6]),
+     /// Unsupported 7z format version.
+--- a/src/lib.rs
++++ b/src/lib.rs
+@@ -190,3 +190,6 @@
+         self.0.as_mut().unwrap()
+     }
+ }
++
++/// Experimental count guards, only for the owned qualification fork.
++pub mod qualification_count_budget;
+--- a/src/qualification_count_budget.rs
++++ b/src/qualification_count_budget.rs
+@@ -0,0 +1,50 @@
++//! QUAL2.10-392-COUNT-BUDGET: targeted experimental guards, NOT a RAM bound.
++//! Header allocation and every other decoder allocation/work path remain open.
++use crate::Error;
++
++/// Experimental file-vector count ceiling; not product qualification.
++pub const MAX_FILES: u64 = 10_000;
++/// Experimental per-block coder count ceiling; not accepted-codec policy.
++pub const MAX_CODERS: u64 = 64;
++/// Per-target-vector requested bytes only; no total memory guarantee.
++pub const MAX_VECTOR_BYTES: usize = 8 << 20;
++
++/// Checks all arithmetic before either targeted vector allocation. This function
++/// allocates nothing, including on refusal. Header-byte validity remains separate.
++pub fn checked_count<T>(
++    count: u64,
++    header_limit: usize,
++    field: &'static str,
++    max_count: u64,
++) -> Result<usize, Error> {
++    let converted = usize::try_from(count).ok();
++    let requested_bytes = converted.and_then(|n| n.checked_mul(size_of::<T>()));
++    let reason = if converted.is_none() {
++        Some("count_not_representable")
++    } else if requested_bytes.is_none() {
++        Some("size_overflow")
++    } else if count > max_count {
++        Some("count_ceiling")
++    } else if requested_bytes.is_some_and(|bytes| bytes > MAX_VECTOR_BYTES) {
++        Some("vector_byte_ceiling")
++    } else {
++        None
++    };
++    if let Some(reason) = reason {
++        return Err(Error::QualificationCountBudget {
++            field,
++            count,
++            max_count,
++            element_bytes: size_of::<T>(),
++            requested_bytes,
++            max_bytes: MAX_VECTOR_BYTES,
++            reason,
++        });
++    }
++    // The checked conversion above is also mandatory on 32-bit hosts.
++    let n = converted.expect("converted count validated above");
++    if n > header_limit {
++        return Err(Error::other("count exceeds header-byte bound"));
++    }
++    Ok(n)
++}
+--- a/src/reader.rs
++++ b/src/reader.rs
+@@ -518,7 +518,12 @@
+         archive: &mut Archive,
+         limit: usize,
+     ) -> Result<(), Error> {
+-        let num_files = bounded_count(read_variable_u64(header)?, limit, "num files")?;
++        let num_files = crate::qualification_count_budget::checked_count::<ArchiveEntry>(
++            read_variable_u64(header)?,
++            limit,
++            "num files",
++            crate::qualification_count_budget::MAX_FILES,
++        )?;
+         let mut files: Vec<ArchiveEntry> = vec![Default::default(); num_files];
+ 
+         let mut is_empty_stream: Option<BitSet> = None;
+@@ -1032,7 +1037,12 @@
+     fn read_block<R: Read>(header: &mut R, limit: usize) -> Result<Block, Error> {
+         let mut block = Block::default();
+ 
+-        let num_coders = bounded_count(read_variable_u64(header)?, limit, "num coders")?;
++        let num_coders = crate::qualification_count_budget::checked_count::<Coder>(
++            read_variable_u64(header)?,
++            limit,
++            "num coders",
++            crate::qualification_count_budget::MAX_CODERS,
++        )?;
+         let mut coders = Vec::with_capacity(num_coders);
+         let mut total_in_streams: u64 = 0;
+         let mut total_out_streams: u64 = 0;
