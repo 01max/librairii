@@ -357,6 +357,46 @@
     {
       "suite": "librairii-core::operations",
       "name": "op67_reveal_eligibility_never_validates_a_directory_or_provisional_truth"
+    },
+    {
+      "suite": "librairii-app",
+      "name": "ports::operations::tests::terminal_port_accepts_borrowed_synchronous_provider_and_owned_results"
+    },
+    {
+      "suite": "librairii-app",
+      "name": "ports::operations::tests::terminal_port_barrier_results_retain_actual_conflict_and_unknown_evidence"
+    },
+    {
+      "suite": "librairii-app",
+      "name": "ports::operations::tests::terminal_port_completion_null_rules_retain_raw_input_and_terminal_bytes"
+    },
+    {
+      "suite": "librairii-app",
+      "name": "ports::operations::tests::terminal_port_confirmed_commit_survives_missing_snapshot_and_owned_cause"
+    },
+    {
+      "suite": "librairii-app",
+      "name": "ports::operations::tests::terminal_port_finish_and_interrupt_have_distinct_null_and_time_rules"
+    },
+    {
+      "suite": "librairii-app",
+      "name": "ports::operations::tests::terminal_port_full_witness_keeps_generation_scope_and_exact_payload"
+    },
+    {
+      "suite": "librairii-app",
+      "name": "ports::operations::tests::terminal_port_immutable_scope_excludes_live_state_but_keeps_resolved_input"
+    },
+    {
+      "suite": "librairii-app",
+      "name": "ports::operations::tests::terminal_port_legacy_zero_item_view_has_no_new_work_count_guard"
+    },
+    {
+      "suite": "librairii-app",
+      "name": "ports::operations::tests::terminal_port_queue_refusal_retains_original_move_only_report"
+    },
+    {
+      "suite": "librairii-app",
+      "name": "ports::operations::tests::terminal_port_raw_snapshot_keeps_non_uuid_ids_nulls_and_scope_bytes"
     }
   ]
 }
