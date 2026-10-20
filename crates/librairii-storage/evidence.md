@@ -927,3 +927,69 @@ policies/fmt/build/all-target Clippy/discovery:
 Owner5 additive pinning of the six actual Unix test identities follows from the
 published source. Other native/current provider/exact-head review/full4.11
 admission remain open; no physical durability or full section4 claim follows.
+
+### Partial 4.7: explicit native SQLite ownership on the same workers
+
+The finite native binding commit is
+`e38f131919bddf065fdc2c3aa3dcb65e4f69421c`. Consumed ORIGINAL owner5
+`c4cce59fd07cd35e418239b902d38bbdc33bab66` by FF, baseline-only six Unix
+identities; all141 prior entries/order/scopes retained. It was not rebuilt or
+cherry-picked, and the distinct terminal-SQL temporary proof stays pinned to
+S=d710/a6 rather than silently consuming this later native branch.
+
+`Database::open_native` now borrows NativeLibrary through actual worker closure.
+A private two-variant authority enum dispatches to the SAME writer/four-reader
+code and queues; no public authority trait, second pool, lifetime cast, leaked
+owner or static/Arc jobs bridge was introduced. Native initialization checks the
+original root/parent/OS lease, exact marker bytes/raw ID and retained original DB
+directory, then opens/creates only the missing managed directories relative to
+the retained root FD. Their actual objects survive through close. File/directory
+flush errors or partial initialization retain the fenced owner; no recursive
+cleanup or blind reopen follows. No source database/profile is mutated.
+
+Native profile publication/identity uncertainty and uncertain COMMIT share the
+actual generation fence, checked again before queued ordinary writes execute.
+Required repair/barrier/backup uses the same bounded four reserved FIFO slots,
+retained root/marker/DB-directory ownership and ONE fresh writer transaction;
+it remains possible while settings/archive ordinary work is fenced. A successful
+DB close drains/joins/checkpoints actual connections. It does NOT clear native
+uncertainty. Failed close retains the generation fence and runtime claim, and
+NativeLibrary Drop cannot convert either into a settled replacement generation.
+Safe borrowing keeps root/profile leases alive beyond every DB join; ordinary
+work cancellation cannot discard those owners or cancel required repair.
+
+This integration also closes a concrete e38 authority gap: public ProfileLocations
+fields are data. They cannot relabel a fresh Go-discoverable settings directory
+as native. Both explicit and canonical native config/data basenames must match
+the accepted host namespace, with disjoint source/legacy locations. A source
+relocation journal is refused read-only, never followed or repaired by rebinding.
+The regression uses a fresh synthetic Go-named profile directory and verifies
+refusal; positive fixtures use actual for_host locations under synthetic roots.
+
+Five new Unix runtime integration identities exercise actual five-worker
+WAL/FK/5000 diagnostics, distinct native/development admission, clean close/reopen,
+source/marker/archive preservation, real deferred-FK COMMIT uncertainty and fresh
+writer readback, uncancelled repair, and persistent exclusion across close/drop.
+A real writer panic loses its acknowledgement and fails close honestly; all
+actual joins run before lease release, unlike a fabricated closed result. A
+retained-original DB-directory substitution refuses before SQLite touches the
+foreign bytes. A bounded test-only queue gate then proves that a profile change
+preserves an already committed fact, refuses the queued callback before SQL,
+and still permits same-generation readback/repair. Existing six binding tests
+remain cumulative; no count or assertion was removed.
+
+Focused10 native tests passed (zero skips), run
+`36603287-d46d-4617-9820-7b52f328d885`. Full source-combined AppleARM1.99.1
+cargo xtask check passed150 nextest/zero skips + six separate compile-fail docs,
+unchanged146 corpus/strict15/source19, both graph policies/fmt/build/Clippy/
+discovery, run`de0e3fe2-f88e-4439-8381-4e340ca7270a`. Only this ledger was added
+afterward. Owner5 will pin the five actual new Unix identities and updated doc
+locations from the published source; prior baselines remain intact.
+
+This is not full4.7: restart authority/recovery replay and relocation remain
+unfinished; a profile loaded after restart is still DATA, and no existing-root
+native reopen constructor exists. Native archive/artwork custody adapters,
+static jobs/resource transfer, operations/import SQL and full4.10 preflight are
+separate. No Windows wrapper or unsafe code was authored; directory durability
+and config mutation remain unqualified/excluded. Current provider/native/exact-
+head independent4.11 review and complete cumulative admission remain required.

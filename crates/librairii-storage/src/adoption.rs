@@ -486,6 +486,12 @@ mod closed {
         pub(crate) fn source_root(&self) -> &Path {
             &self.source_root
         }
+        pub(crate) fn retain_root(&self) -> Result<Directory> {
+            self.candidate.directory.duplicate()
+        }
+        pub(crate) fn revalidate_root_lease(&self) -> Result<()> {
+            self.candidate.revalidate()
+        }
         pub(crate) fn require_no_recovery_input(&self) -> Result<()> {
             if !self.source_profile.profile().complete
                 || self.source_profile.profile().recovering

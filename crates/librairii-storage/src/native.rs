@@ -1,9 +1,9 @@
 //! Native profile binding of an actually owned independent library copy.
 //!
-//! This phase retains the copy and both namespace/OS-lease lifetimes. It does
-//! not open SQLite, replay a journal or implement the owned threaded jobs
-//! bridge. Database::open_isolated cannot accept this authority. Native worker
-//! activation/drain is a separate integration step, never a TestRoots cast.
+//! The explicit native route borrows this owner through all SQLite joins. A
+//! separate native namespace and retained verified copy supply its authority,
+//! never TestRoots, profile DATA, a caller boolean or an in-place legacy lock.
+//! Recovery replay and the owned threaded jobs bridge remain separate.
 
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 mod owned {
@@ -11,9 +11,18 @@ mod owned {
         LibraryIdentity, LibraryLayout, Result, StorageError,
         adoption::IndependentCopy,
         database::WorkCancellation,
+        platform::unix::Directory,
         profile::{NativeProfileStore, ProfileBinding, ProfileLocations},
     };
-    use std::{fs, path::Path};
+    use std::{
+        ffi::OsStr,
+        fs,
+        path::Path,
+        sync::{
+            Arc, Mutex,
+            atomic::{AtomicBool, Ordering},
+        },
+    };
 
     /// A profile-bound independent copy. Construction consumes storage's actual
     /// retained root/parent handles and OS lease; paths, profile DATA, typed IDs
@@ -29,6 +38,10 @@ mod owned {
     #[derive(Debug)]
     pub struct NativeLibrary<'profile> {
         layout: LibraryLayout,
+        root: Directory,
+        database: Directory,
+        managed: Mutex<Option<Vec<(&'static str, Directory)>>>,
+        runtime_active: AtomicBool,
         // Root objects/lease close before the profile-binding exclusion ends.
         copy: IndependentCopy,
         binding: ProfileBinding<'profile>,
@@ -50,7 +63,7 @@ mod owned {
             locations: &ProfileLocations,
             cancellation: &WorkCancellation,
         ) -> std::result::Result<Self, Box<NativeBindingFailure<'profile>>> {
-            let prepare = || -> Result<LibraryLayout> {
+            let prepare = || -> Result<(LibraryLayout, Directory, Directory)> {
                 if cancellation.is_cancelled() {
                     return Err(StorageError::Cancelled);
                 }
@@ -58,12 +71,14 @@ mod owned {
                 copy.require_no_recovery_input()?;
                 require_locations(&copy, store, locations)?;
                 let layout = LibraryLayout::probe(copy.root())?;
+                let root = copy.retain_root()?;
+                let database = root.child(OsStr::new("db"))?;
                 if cancellation.is_cancelled() {
                     return Err(StorageError::Cancelled);
                 }
-                Ok(layout)
+                Ok((layout, root, database))
             };
-            let prepared = prepare().and_then(|layout| {
+            let prepared = prepare().and_then(|(layout, root, database)| {
                 let mut proposed = copy.source_profile().profile().clone();
                 proposed.root = copy
                     .root()
@@ -74,11 +89,15 @@ mod owned {
                 // The sole durable root publication is the existing atomic
                 // profile operation. No SQL/copy callback holds its mutex.
                 let binding = store.bind_verified_copy(&proposed)?;
-                Ok((layout, binding))
+                Ok((layout, root, database, binding))
             });
             match prepared {
-                Ok((layout, binding)) => Ok(Self {
+                Ok((layout, root, database, binding)) => Ok(Self {
                     layout,
+                    root,
+                    database,
+                    managed: Mutex::new(None),
+                    runtime_active: AtomicBool::new(false),
                     copy,
                     binding,
                 }),
@@ -91,11 +110,40 @@ mod owned {
         pub fn identity(&self) -> &LibraryIdentity {
             self.copy.identity()
         }
-        /// While this phase has no SQLite mutation API, verify the entire
-        /// closed copy AND the active raw root/ID/recovery binding afresh.
+        /// Before first runtime admission verify the full closed copy. After
+        /// SQLite starts, its DB bytes legitimately change; original root/marker,
+        /// managed directory objects and the profile generation must still match.
         pub fn revalidate(&self, cancellation: &WorkCancellation) -> Result<()> {
             self.binding.revalidate()?;
-            match self.copy.revalidate(cancellation) {
+            let result = (|| {
+                let managed = self
+                    .managed
+                    .lock()
+                    .map_err(|_| StorageError::RuntimeFenced)?;
+                self.revalidate_database_ownership()?;
+                match managed.as_ref() {
+                    None => self.copy.revalidate(cancellation),
+                    Some(directories) => {
+                        for (name, directory) in directories {
+                            if cancellation.is_cancelled() {
+                                return Err(StorageError::Cancelled);
+                            }
+                            directory.matches_metadata(
+                                &fs::symlink_metadata(self.layout.root().join(name)).map_err(
+                                    |error| {
+                                        StorageError::io(
+                                            "revalidate original native directory",
+                                            error,
+                                        )
+                                    },
+                                )?,
+                            )?;
+                        }
+                        Ok(())
+                    }
+                }
+            })();
+            match result {
                 Ok(()) => Ok(()),
                 // Work cancellation alone is not loss of ownership. A changed
                 // copy is: retain exclusion instead of silently reactivating.
@@ -106,6 +154,93 @@ mod owned {
                 }
             }
         }
+        pub(crate) fn effect_fence(&self) -> Arc<AtomicBool> {
+            self.binding.fence_signal()
+        }
+        pub(crate) fn fence(&self) {
+            self.binding.fence();
+        }
+        /// Required same-generation DB-only repair does not need a healthy
+        /// settings cache or archive directory. Actual root/marker/DB-directory
+        /// ownership still must hold; this cannot activate replacement names.
+        pub(crate) fn revalidate_database_ownership(&self) -> Result<()> {
+            self.copy.revalidate_root_lease()?;
+            if LibraryIdentity::probe(self.layout.root())?.as_ref() != Some(self.identity()) {
+                return Err(StorageError::IdentityMismatch);
+            }
+            self.database.matches_metadata(
+                &fs::symlink_metadata(self.layout.root().join("db")).map_err(|error| {
+                    StorageError::io("revalidate original native database directory", error)
+                })?,
+            )
+        }
+        pub(crate) fn claim_runtime(&self) -> Result<()> {
+            // Claim before initialization; a competing open must not mistake
+            // our own newly created directories for changed closed-copy input.
+            self.runtime_active
+                .compare_exchange(false, true, Ordering::AcqRel, Ordering::Acquire)
+                .map_err(|_| StorageError::RuntimeInUse)?;
+            let result = (|| {
+                self.binding.revalidate()?;
+                self.revalidate_database_ownership()?;
+                let mut managed = self
+                    .managed
+                    .lock()
+                    .map_err(|_| StorageError::RuntimeFenced)?;
+                if let Some(directories) = managed.as_ref() {
+                    for (name, directory) in directories {
+                        directory.matches_metadata(
+                            &fs::symlink_metadata(self.layout.root().join(name)).map_err(
+                                |error| {
+                                    StorageError::io("revalidate native runtime directory", error)
+                                },
+                            )?,
+                        )?;
+                    }
+                    return Ok(());
+                }
+                self.copy.revalidate(&WorkCancellation::default())?;
+                // Keep every opened/created object if initialization later
+                // fails; partial creation is not a clean failure or retry grant.
+                *managed = Some(Vec::new());
+                let directories = managed.as_mut().ok_or(StorageError::RuntimeFenced)?;
+                for name in ["db", "archives", "catalog", "staging", "trash", "logs"] {
+                    let directory = match self.root.child(OsStr::new(name)) {
+                        Ok(directory) => directory,
+                        Err(StorageError::Io { source, .. })
+                            if source.kind() == std::io::ErrorKind::NotFound =>
+                        {
+                            self.root.create_child(OsStr::new(name))?
+                        }
+                        Err(error) => return Err(error),
+                    };
+                    directories.push((name, directory));
+                }
+                for (_, directory) in directories.iter() {
+                    directory.flush()?;
+                }
+                self.root.flush()?;
+                self.revalidate_database_ownership()
+            })();
+            if result.is_err() {
+                self.fence();
+            }
+            result
+        }
+        pub(crate) fn release_runtime(&self) {
+            self.runtime_active.store(false, Ordering::Release);
+        }
+    }
+
+    impl Drop for NativeLibrary<'_> {
+        fn drop(&mut self) {
+            // A failed claim/close is not a settled replacement generation.
+            // Safe borrowing means every Database has already joined before
+            // this destructor can run; the profile exclusion still stays fenced.
+            if self.runtime_active.load(Ordering::Acquire) {
+                self.fence();
+            }
+        }
     }
 
     fn require_locations(
@@ -113,6 +248,25 @@ mod owned {
         store: &NativeProfileStore,
         locations: &ProfileLocations,
     ) -> Result<()> {
+        // ProfileLocations is DATA and its public fields are not authority.
+        // Enforce the selected native names independently; a caller cannot
+        // label an empty Go-discoverable config directory as "native".
+        #[cfg(target_os = "macos")]
+        let (native_name, data_name, legacy_name) = (
+            "io.github.librairii.native",
+            "LibrairiiNative",
+            "io.github.librairii.app",
+        );
+        #[cfg(target_os = "linux")]
+        let (native_name, data_name, legacy_name) =
+            ("librairii-native", "librairii-native", "librairii");
+        if locations.native.file_name() != Some(OsStr::new(native_name))
+            || locations.data.file_name() != Some(OsStr::new(data_name))
+            || locations.legacy.as_ref().and_then(|path| path.file_name())
+                != Some(OsStr::new(legacy_name))
+        {
+            return Err(StorageError::PathEscape);
+        }
         let resolve = |path: &Path| {
             if !path.is_absolute() {
                 return Err(StorageError::RootNotAbsolute);
@@ -125,6 +279,8 @@ mod owned {
         let data = resolve(&locations.data)?;
         let root = copy.root();
         if native != store_root
+            || native.file_name() != Some(OsStr::new(native_name))
+            || data.file_name() != Some(OsStr::new(data_name))
             || overlaps(&native, &data)
             || !root.starts_with(&data)
             || root == data
@@ -148,6 +304,16 @@ mod owned {
             };
             if overlaps(&legacy, &native) || overlaps(&legacy, &data) {
                 return Err(StorageError::PathEscape);
+            }
+            match fs::symlink_metadata(legacy.join("relocation.json")) {
+                Ok(_) => return Err(StorageError::RecoveryBindingRequired),
+                Err(error) if error.kind() == std::io::ErrorKind::NotFound => (),
+                Err(error) => {
+                    return Err(StorageError::io(
+                        "inspect explicit source recovery namespace",
+                        error,
+                    ));
+                }
             }
         }
         Ok(())

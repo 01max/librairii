@@ -262,13 +262,73 @@ impl Drop for WorkerExit {
     }
 }
 
-/// The authority must outlive all worker joins. Opening stays inside an owned
-/// isolated root; existing files require an independent schema/integrity probe,
-/// with a verified durable backup before migration. Production adoption and
-/// OS-backed lifetime exclusion are separate later authority capabilities.
+// Sealed dispatch over the TWO real storage authorities. No public trait or
+// path/data constructor can provide a third authority or substitute a pool.
+#[derive(Clone, Copy, Debug)]
+enum Authority<'library> {
+    Isolated(&'library IsolatedLibrary),
+    #[cfg(any(target_os = "macos", target_os = "linux"))]
+    Native(&'library crate::native::NativeLibrary<'library>),
+}
+impl<'library> Authority<'library> {
+    fn layout(self) -> &'library crate::LibraryLayout {
+        match self {
+            Self::Isolated(library) => library.layout(),
+            #[cfg(any(target_os = "macos", target_os = "linux"))]
+            Self::Native(library) => library.layout(),
+        }
+    }
+    fn claim_runtime(self) -> Result<()> {
+        match self {
+            Self::Isolated(library) => library.claim_runtime(),
+            #[cfg(any(target_os = "macos", target_os = "linux"))]
+            Self::Native(library) => library.claim_runtime(),
+        }
+    }
+    fn release_runtime(self) {
+        match self {
+            Self::Isolated(library) => library.release_runtime(),
+            #[cfg(any(target_os = "macos", target_os = "linux"))]
+            Self::Native(library) => library.release_runtime(),
+        }
+    }
+    fn effect_fence(self) -> Arc<AtomicBool> {
+        match self {
+            Self::Isolated(library) => library.custody_fenced.clone(),
+            #[cfg(any(target_os = "macos", target_os = "linux"))]
+            Self::Native(library) => library.effect_fence(),
+        }
+    }
+    fn persistent_uncertainty(self) -> Option<Arc<AtomicBool>> {
+        match self {
+            Self::Isolated(_) => None,
+            #[cfg(any(target_os = "macos", target_os = "linux"))]
+            Self::Native(library) => Some(library.effect_fence()),
+        }
+    }
+    fn revalidate(self, critical: bool) -> Result<()> {
+        match self {
+            Self::Isolated(library) if critical => library.revalidate_database_ownership(),
+            Self::Isolated(library) => library.revalidate_ownership(),
+            #[cfg(any(target_os = "macos", target_os = "linux"))]
+            Self::Native(library) if critical => library.revalidate_database_ownership(),
+            #[cfg(any(target_os = "macos", target_os = "linux"))]
+            Self::Native(library) => library.revalidate(&WorkCancellation::default()),
+        }
+    }
+    fn fence_failed_close(self) {
+        if let Some(fence) = self.persistent_uncertainty() {
+            fence.store(true, Ordering::Release);
+        }
+    }
+}
+
+/// The actual authority must outlive every worker join. Both explicit opening
+/// routes use the SAME writer/read implementation. Existing files require an
+/// independent schema/integrity probe and durable backup before migration.
 #[derive(Debug)]
 pub struct Database<'library> {
-    authority: &'library IsolatedLibrary,
+    authority: Authority<'library>,
     writer: Arc<Queue>,
     readers: Arc<Queue>,
     writer_thread: Option<JoinHandle<Result<()>>>,
@@ -281,6 +341,18 @@ pub struct Database<'library> {
 
 impl<'library> Database<'library> {
     pub fn open_isolated(authority: &'library IsolatedLibrary) -> Result<Self> {
+        Self::open_owned(Authority::Isolated(authority))
+    }
+
+    /// Only storage's verified independent native owner supplies this route.
+    /// Borrowing retains its root/profile leases through actual close/join; it
+    /// does not create the separately pending owned/static jobs bridge.
+    #[cfg(any(target_os = "macos", target_os = "linux"))]
+    pub fn open_native(authority: &'library crate::native::NativeLibrary<'_>) -> Result<Self> {
+        Self::open_owned(Authority::Native(authority))
+    }
+
+    fn open_owned(authority: Authority<'library>) -> Result<Self> {
         authority.claim_runtime()?;
         let mut runtime = Self {
             authority,
@@ -482,7 +554,8 @@ impl<'library> Database<'library> {
         work: impl FnOnce(&Transaction<'_>) -> Result<T> + Send + 'static,
     ) -> Result<Pending<'_, TransactionOutcome<T>>> {
         let fence = self.fenced.clone();
-        let effect_fence = self.authority.custody_fenced.clone();
+        let effect_fence = self.authority.effect_fence();
+        let persistent = self.authority.persistent_uncertainty();
         self.enqueue(&self.writer, critical, move |connection| {
             if !critical && (fence.load(Ordering::Acquire) || effect_fence.load(Ordering::Acquire))
             {
@@ -493,6 +566,9 @@ impl<'library> Database<'library> {
             let outcome = run_transaction(connection, cancellation, work);
             if matches!(outcome, TransactionOutcome::CommitUncertain(_)) {
                 fence.store(true, Ordering::Release);
+                if let Some(persistent) = persistent {
+                    persistent.store(true, Ordering::Release);
+                }
             }
             Ok(outcome)
         })
@@ -507,18 +583,15 @@ impl<'library> Database<'library> {
         if self.closed || self.close_failed {
             return Err(StorageError::IntakeClosed);
         }
-        if !critical && self.authority.custody_fenced.load(Ordering::Acquire) {
+        if !critical && self.authority.effect_fence().load(Ordering::Acquire) {
             self.fenced.store(true, Ordering::Release);
             self.stop_ordinary()?;
             return Err(StorageError::CustodyRecoveryRequired);
         }
-        let ownership = if critical {
-            self.authority.revalidate_database_ownership()
-        } else {
-            self.authority.revalidate_ownership()
-        };
+        let ownership = self.authority.revalidate(critical);
         if let Err(error) = ownership {
             self.fenced.store(true, Ordering::Release);
+            self.authority.fence_failed_close();
             let _ = self.stop_ordinary();
             return Err(error);
         }
@@ -568,6 +641,7 @@ impl<'library> Database<'library> {
         }
         if let Some(error) = failure {
             self.close_failed = true;
+            self.authority.fence_failed_close();
             return Err(error);
         }
         self.closed = true;

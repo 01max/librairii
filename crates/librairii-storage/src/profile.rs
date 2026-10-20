@@ -215,7 +215,7 @@ impl State {
 struct BindingState {
     root: String,
     raw_id: String,
-    fenced: AtomicBool,
+    fenced: Arc<AtomicBool>,
 }
 impl BindingState {
     fn matches(&self, profile: &Profile) -> bool {
@@ -237,6 +237,9 @@ pub(crate) struct ProfileBinding<'profile> {
 impl ProfileBinding<'_> {
     pub(crate) fn fence(&self) {
         self.state.fenced.store(true, Ordering::Release);
+    }
+    pub(crate) fn fence_signal(&self) -> Arc<AtomicBool> {
+        self.state.fenced.clone()
     }
     pub(crate) fn revalidate(&self) -> Result<()> {
         let mut state = self
@@ -533,7 +536,7 @@ impl NativeProfileStore {
         let binding = Arc::new(BindingState {
             root: next.root,
             raw_id: next.library_id,
-            fenced: AtomicBool::new(false),
+            fenced: Arc::new(AtomicBool::new(false)),
         });
         state.binding = Some(binding.clone());
         Ok(ProfileBinding {
