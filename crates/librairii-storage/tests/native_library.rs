@@ -1090,6 +1090,65 @@ fn native_clean_close_reopens_next_epoch_without_rematching_historical_database_
 }
 
 #[test]
+fn native_same_owner_database_reopen_revalidates_active_record_before_sqlite() -> TestResult {
+    let mut admitted = Vec::new();
+    for phase in ["closed", "corrupt"] {
+        let roots = TestRoots::new()?;
+        let (copy, locations) = prepare(&roots, false)?;
+        let root = copy.root().to_owned();
+        let store = NativeProfileStore::create_fresh(&locations.native)?;
+        let native =
+            NativeLibrary::bind_independent(copy, &store, &locations, &WorkCancellation::default())
+                .map_err(|f| f.to_string())?;
+        let mut db = Database::open_native(&native)?;
+        db.close()?;
+        drop(db);
+        let before = fs::read(root.join("db/librairii.sqlite3"))?;
+        let mut changed = native_state(&root)?;
+        assert_eq!(changed["state"], "active");
+        assert_eq!(changed["epoch"], 1);
+        let bytes = if phase == "closed" {
+            changed["state"] = serde_json::json!("closed");
+            serde_json::to_vec(&changed)?
+        } else {
+            b"corrupt retained native state".to_vec()
+        };
+        fs::write(root.join(NATIVE_STATE), &bytes)?;
+
+        match Database::open_native(&native) {
+            Ok(mut unexpected) => {
+                // RED evidence counts actual initialized connection owners,
+                // then explicitly drains them before finishing this case.
+                admitted.push((phase, unexpected.diagnostics().len()));
+                unexpected.close()?;
+            }
+            Err(_) => {
+                // No SQLite open/sidecar or ordinary callback is needed to
+                // notice the retained record no longer matches Active bytes.
+                for suffix in ["-wal", "-shm", "-journal"] {
+                    assert!(!root.join(format!("db/librairii.sqlite3{suffix}")).exists());
+                }
+                assert!(store.update(|_| Ok(())).is_err());
+            }
+        }
+        assert_eq!(fs::read(root.join(NATIVE_STATE))?, bytes);
+        assert_eq!(fs::read(root.join("db/librairii.sqlite3"))?, before);
+        require_lock_held(&root)?;
+        let retained = native
+            .finish()
+            .err()
+            .ok_or("tampered record became Closed")?;
+        assert_eq!(fs::read(root.join(NATIVE_STATE))?, bytes);
+        require_lock_held(retained.retained_library().layout().root())?;
+    }
+    assert!(
+        admitted.is_empty(),
+        "tampered record admitted SQLite owners: {admitted:?}"
+    );
+    Ok(())
+}
+
+#[test]
 fn native_active_abandonment_and_unsettled_trash_never_mint_clean_restart() -> TestResult {
     for artifact in [None, Some("staging"), Some("trash")] {
         let roots = TestRoots::new()?;

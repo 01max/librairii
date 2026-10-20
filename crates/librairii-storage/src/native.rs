@@ -882,7 +882,18 @@ mod owned {
                     .managed
                     .lock()
                     .map_err(|_| StorageError::RuntimeFenced)?;
+                // Every new runtime claim must freshly validate the retained
+                // state, including reuse after a successful DB close. Managed
+                // directory witnesses do not prove durable Active bytes.
+                let mut record = self
+                    .record
+                    .lock()
+                    .map_err(|_| StorageError::RuntimeFenced)?;
+                record.revalidate(&self.root)?;
                 if let Some(directories) = managed.as_ref() {
+                    if record.document.state != Phase::Active {
+                        return Err(StorageError::RecoveryBindingRequired);
+                    }
                     for (name, directory) in directories {
                         directory.matches_metadata(
                             &fs::symlink_metadata(self.layout.root().join(name)).map_err(|e| {
@@ -893,11 +904,6 @@ mod owned {
                     return Ok(());
                 }
                 self.owner.initial(&WorkCancellation::default())?;
-                let mut record = self
-                    .record
-                    .lock()
-                    .map_err(|_| StorageError::RuntimeFenced)?;
-                record.revalidate(&self.root)?;
                 let mut next = record.document.clone();
                 if next.state == Phase::Active {
                     return Err(StorageError::RecoveryBindingRequired);

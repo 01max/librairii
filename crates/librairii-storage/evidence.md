@@ -23,7 +23,7 @@ evidence, not an additional checklist or acceptance of unfinished work.
 |4.4|All18 admitted populated prefixes, full schema/rows/query outcomes and actual Collection-open projection; no fixture-specific patches or eager DB-open rewrite|Private source/normalization `a125778200af8d28e8ff99c6c41f47a6ef5b69db`, Default language `d902658ad4e8dd33dc9540658ec4176a25fe9652`, strict codec `7350ddf1a87c0434efe1e7fac49c13db9906faf2`; explicit same-writer projection `c48f7db6e891a6583c1e6b99c3d497f7f3bf9f28`, original discovery `e9c559aa35a3df5c6f2b767baa17949b2b4f3a2a`. Finite independent19-DB verification passed on exacte9; other native/current cumulative/admission gates remain open|
 |4.5|Online WAL backup, integrity/FK, rollback and foreign DB+sidecars preservation|Implemented/host verified `abeb80ecd401f840e45a6a162998f5808cd9ebc1` on Unix; Windows directory durability remains pending4.9|
 |4.6|Strict64KiB v1 profiles, atomic serialized updates and isolated native namespace|Implemented/host verified `2751a04a4af6b9da8a21300a182ca2dd5231d8b8`. Stronger race capabilities and Windows effects remain4.8/4.9|
-|4.7|OS lease through close, refuse unproven legacy exclusion, verified independent adoption|Partial `2fb7c0126b7e1b10f46d5cd5326e6e0809b4d4cb`: fresh-root cooperative lease/refusal; closed-input verification `d8b39e0633a0d6a4a335343ce07a66a5ed20f8c4`; inactive independent-copy phase follows. Native profile/recovery activation and restart/relocation qualification remain pending|
+|4.7|OS lease through close, refuse unproven legacy exclusion, verified independent adoption|Partial `2fb7c0126b7e1b10f46d5cd5326e6e0809b4d4cb`: fresh-root cooperative lease/refusal; closed-input verification `d8b39e0633a0d6a4a335343ce07a66a5ed20f8c4`; Unix native-state/clean restart slice `3f3591d0d7ac2db3a2a52cd5b1a1fc92fa2bb986`. Recovery/relocation and current/native qualification remain open|
 |4.8|Distinct no-clobber/config-replace/durable-flush effects and Unix races|Partial `b9148a770f896445b36233452bef7a59e84a60d6`: streaming; descriptor-relative Unix publication/config/flush mechanisms host verified `d6a966e90e14bd0898b49b8469133985d6cb1fee`. Other native qualification and complete reconciliation/adoption remain pending|
 |4.9|Windows effects/path/share-mode implementation plus actual-target evidence|Pending|
 |4.10|Portability preflight and identity-verified rebinding without foreign cleanup|Partial foreign profile inspection/proposed document rebinding follows; filename/collation/filesystem and recovery-path qualification remain pending|
@@ -1345,3 +1345,26 @@ SUCCESS. Native PowerShell/full quality/fresh autocrlf passed there. This closes
 that exact read-only Nt child ABI/behavior observation, preserves the old65ff
 sharing RED, and does not qualify the new native-state source or queued NTFS
 helper, Windows durability, full4 or independent review.
+
+4.7 reused-runtime regression: on actual3f source plus the new owned test,
+`cargo test -p librairii-storage --test native_library --locked
+native_same_owner_database_reopen_revalidates_active_record_before_sqlite
+-- --exact --nocapture` failed1/1 (22 intentionally filtered). After real first
+DB close/drop, BOTH an externally overwritten valid Closed(sameepoch) record and
+corrupt record bytes admitted five initialized SQLite connections on the same
+NativeLibrary. The test explicitly joined unexpected owners and retained the
+changed record, unchanged DB bytes, root lease and consuming failure owner.
+RED log SHA256 `dafde43bbff50a768cff930d23a9ecef2f8425e6d27ad44003a017022f4d1965`.
+This is distinct from current discovery/native/provider evidence; the regression
+commit deliberately retains the RED mechanism until its following correction.
+
+The following scoped correction retains regression
+`11c38cb9c701bd47b0fc817bd9f9fadbcda39ae0` unchanged. EVERY runtime claim now
+freshly validates the retained record before the managed-directory fast path;
+reuse additionally requires the in-memory phase Active. No epoch is reset or
+Closed/corrupt disk state rewritten. A mismatch fences the actual owner before
+SQLite/thread admission and retains the exact changed bytes/lease. The SAME
+one test then passed1/1,22 intentionally filtered, on AppleARM; GREEN log SHA256
+`6a40285f33d79fe7a1f750cb315789a66779441df771e93407e30c56e016f2fa`.
+No full/native-other-host/provider rerun was used for this narrow assay. Queued
+Windows helper source is excluded from these commits and this host execution.
