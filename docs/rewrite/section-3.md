@@ -15,8 +15,9 @@ of the final head and clean-checkout checks; unavailable target evidence is inco
 | --- | --- | --- |
 | 3.1 | d289e5f | Exact stable 1.99.1, edition 2024/resolver 3, locked workspace build |
 | 3.2 | 886b07b828663368f8fcf7cc2e5d990d41f92398 | Typed identity bytes/ranges, distinct group scope, unapproved review default, typed errors and compile-fail boundary |
-| 3.3 | Pending commit | Stable rustfmt and Clippy, compiler warnings denied in checks |
-| 3.4–3.8 | Pending | Implementation follows the numbered OpenSpec tasks |
+| 3.3 | ec318f5 | Stable rustfmt and Clippy, compiler warnings denied in checks |
+| 3.4 | Pending commit | Owned fresh roots, missing/external/swapped/symlink rejection, loopback HTTP bytes; nextest CI reports and separate doctests |
+| 3.5–3.8 | Pending | Implementation follows the numbered OpenSpec tasks |
 | 3.9 | Pending | Independent review and clean-checkout/native target evidence |
 
 ## Baseline pins and boundaries
@@ -46,3 +47,15 @@ not enabled wholesale. No generated/vendor exclusions or lint exceptions exist.
 Any future exception must have a reason next to a narrow `#[expect(...)]`.
 Native matrix jobs compile their actual target-specific modules; a host-only pass
 never establishes the other targets. The current skeleton has no native FFI.
+
+## Tests and pinned runner
+
+Install `cargo-nextest` with `cargo install --locked --version 0.9.148 cargo-nextest`.
+All helper versions live in `.config/rust-tools.toml`, verified against official
+crates.io releases and the section2 ADR; upgrades require review. Routine tests:
+`cargo nextest run --workspace --locked` (CI adds `--profile ci`), then separately
+`cargo test --workspace --doc --locked`. CI JUnit is `target/nextest/ci/junit.xml`.
+Retries are disabled. Test roots must come from TestRoots and be explicitly
+validated; arbitrary production library/profile paths are never discovered or
+accepted. Helpers never mutate process-global environment. LocalEndpoint accepts
+only numeric loopback/nonzero-port addresses and performs no DNS resolution.
