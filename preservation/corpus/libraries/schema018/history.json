@@ -1,0 +1,75 @@
+{
+  "operations": [
+    {
+      "cancelRequested": false,
+      "completedItems": 0,
+      "createdAt": "2000-01-01T00:00:00Z",
+      "destination": "export",
+      "exportSourceType": "curated_shelf",
+      "id": "90000000-0000-4000-8000-000000000003",
+      "items": [
+        {
+          "completedBytes": 0,
+          "id": 3,
+          "sourceName": "Unavailable",
+          "status": "pending",
+          "storyTitle": "Unavailable",
+          "storyUuid": "623e4567-e89b-42d3-a456-426614174000",
+          "totalBytes": 0
+        }
+      ],
+      "kind": "export",
+      "sourceShelfIds": [
+        1
+      ],
+      "sourceShelfNames": [
+        "Approved"
+      ],
+      "status": "queued",
+      "totalBytes": 0,
+      "totalItems": 1
+    },
+    {
+      "cancelRequested": false,
+      "completedItems": 0,
+      "createdAt": "2000-01-01T00:00:00Z",
+      "id": "90000000-0000-4000-8000-000000000002",
+      "items": [
+        {
+          "completedBytes": 25,
+          "id": 2,
+          "sourceName": "pending.zip",
+          "status": "running",
+          "totalBytes": 100
+        }
+      ],
+      "kind": "import",
+      "startedAt": "2000-01-01 00:00:00",
+      "status": "running",
+      "totalBytes": 0,
+      "totalItems": 1
+    },
+    {
+      "cancelRequested": false,
+      "completedItems": 1,
+      "createdAt": "2000-01-01T00:00:00Z",
+      "finishedAt": "2000-01-01 00:00:00",
+      "id": "90000000-0000-4000-8000-000000000001",
+      "items": [
+        {
+          "completedBytes": 1,
+          "id": 1,
+          "outcomeCode": "imported",
+          "sourceName": "story-1.zip",
+          "status": "succeeded",
+          "totalBytes": 1
+        }
+      ],
+      "kind": "import",
+      "startedAt": "2000-01-01 00:00:00",
+      "status": "succeeded",
+      "totalBytes": 0,
+      "totalItems": 1
+    }
+  ]
+}
