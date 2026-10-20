@@ -44,7 +44,7 @@ jobs:
           persist-credentials: false
       - name: Install Ubuntu compiler prerequisites from signed Ubuntu archives
         if: runner.os == 'Linux'
-        run: .github/scripts/ubuntu-apt build-essential pkg-config
+        run: .github/scripts/ubuntu-apt build-essential pkg-config python3
       - name: Install exact stable toolchain
         run: rustup toolchain install 1.99.1 --profile minimal --component rustfmt --component clippy --component llvm-tools-preview
       - name: Assert native architecture and record source/toolchain

@@ -2,6 +2,7 @@
 mod deep;
 mod discovery;
 mod policy;
+mod preservation;
 mod supply_chain;
 use std::{
     env,
@@ -109,6 +110,7 @@ fn run() -> Result {
             eprintln!("Source {}", output("git", &["rev-parse", "HEAD"])?.trim());
             check_tool("cargo-nextest")?;
             policy::boundaries()?;
+            preservation::check()?;
             supply_chain::check()?;
             command(&cargo(), &["fmt", "--all", "--", "--check"])?;
             command(
@@ -159,7 +161,7 @@ fn run() -> Result {
                 ],
             )?;
             eprintln!(
-                "Foundation checks passed on {target}. Product differential/UI/package qualification remains pending implementation and preservation admission."
+                "Foundation and admitted preservation checks passed on {target}. Rust product differential/UI/package qualification remains pending implementation."
             );
             Ok(())
         }

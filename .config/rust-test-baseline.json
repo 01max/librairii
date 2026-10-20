@@ -2,6 +2,10 @@
   "source": "PR41 section3 foundations; additions are cumulative; removals/replacements require review",
   "required": [
     {
+      "suite": "xtask::bin/xtask",
+      "name": "preservation::tests::admitted_fixture_pins_reject_missing_or_changed_inputs"
+    },
+    {
       "suite": "librairii-core",
       "name": "identity::tests::checksum_rejects_nonhex_wrong_length_and_multibyte_text"
     },

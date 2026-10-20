@@ -69,7 +69,8 @@ only numeric loopback/nonzero-port addresses and performs no DNS resolution.
 Use rustup with `rust-toolchain.toml`; install declared components, then
 `cargo xtask tools` for exact locked helper installs. Run `cargo xtask check`
 (or `make check-rust`). It fails on tool-version mismatch, reversed dependency
-direction, unlocked graphs, build, formatting, Clippy, nextest or doctest failure.
+direction, preservation integrity/witness failure, unlocked graphs, build,
+formatting, Clippy, nextest or doctest failure.
 `make check` remains the Go/React oracle suite and must also pass. Future product
 fixtures/UI state tests must be added cumulatively; current typed foundations
 and the refusing desktop process test do not claim those workflows exist.
@@ -101,11 +102,40 @@ Prerequisites: macOS15 Xcode/Command Line Tools SDK and linker (deployment15.0);
 Ubuntu24.04 gcc/binutils/glibc and pkg-config; Windows x64 MSVC Build Tools and
 Windows SDK. No GUI/native-library requirements exist in this graph yet. Toolkit,
 SQLite/archive and renderer prerequisites must be added after qualification.
+Every host also needs Python3 with its standard-library sqlite3 module (`python3`
+on Unix, `python` on Windows). The ordinary fixture checker runs from native
+PowerShell on Windows; it does not build Go/Wails there.
 Ubuntu installs reuse the signed official archive helper from merged support PR40
 through integration ancestry. Its exact head3438bd9 passed native AO review and
 Linux39439305675 plus macOS39439305577 CI; the runner-feed failure was intermittent
 environment availability, not an application regression.
 No paid runner/tool purchases are introduced.
+
+## Admitted preservation corpus
+
+Task1 PR39's reviewed head1cd22443cae3b548bb7f9b3fb2435dcd73c3c65c was admitted
+through integration merge9a6c1c116d9df726a061ad6aac3955df4ed41263. Ordinary
+`cargo xtask check` now requires its committed `preservation/check.py` and
+146-file hashed corpus (plus manifest), including actual Go-produced recovery
+outcomes for three positive and two negative cases. No task1 file is changed.
+The checker verifies exact bytes/inventory, producer hashes, read-only SQLite
+integrity and independent semantic witnesses for the retained behavior. These
+are Go-produced expectations, not implemented Rust product differential tests.
+
+`.config/rust-preservation-baseline.json` pins the admitted oracle, manifest and
+checker hashes. Missing, changed or silently reduced baseline inputs fail before
+execution; a later intentional corpus/checker update must update these pins under
+review while preserving prior assertions. Python runs with `-I -B -X utf8` so
+environment optimization cannot disable assertions, no bytecode is written, and
+native Windows preserves the Unicode witnesses. The generated report is
+`target/quality/preservation.json`, retained in every native CI artifact.
+Synthetic temporary-root regressions verify missing/changed inputs and wrong
+oracle/inventory fail. There is no if-present or platform skip for preservation.
+
+Oracle regeneration and byte-identical export/recovery replay remain separate
+task1 procedures. They use an independent disposable Go checkout and synthetic
+roots; ordinary native Rust checks never execute the generator, discover a user
+root, or contact product endpoints. This hook cannot qualify future Rust ports.
 
 Action revisions: official actions/checkout3d3c42e5 (v7.0.1) and
 upload-artifactcf430e03 (v7.0.2), verified upstream signed commit metadata and
