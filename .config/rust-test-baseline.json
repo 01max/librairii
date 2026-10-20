@@ -966,6 +966,20 @@
         "x86_64-apple-darwin",
         "x86_64-unknown-linux-gnu"
       ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "platform::windows::tests::windows_relative_read_refuses_unowned_paths_aliases_and_length_without_creation",
+      "targets": [
+        "x86_64-pc-windows-msvc"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "platform::windows::tests::windows_relative_read_retains_actual_lease_and_exact_native_name",
+      "targets": [
+        "x86_64-pc-windows-msvc"
+      ]
     }
   ]
 }
