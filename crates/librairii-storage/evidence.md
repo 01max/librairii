@@ -993,3 +993,57 @@ static jobs/resource transfer, operations/import SQL and full4.10 preflight are
 separate. No Windows wrapper or unsafe code was authored; directory durability
 and config mutation remain unqualified/excluded. Current provider/native/exact-
 head independent4.11 review and complete cumulative admission remain required.
+
+### Partial 4.9: private Windows handle identity observations, native gates pending
+
+The native same-worker implementation is
+`4507da6afff4896e21a4a1f2e17725fdc724fb08`. This next slice uses ONLY the already
+approved query_identity subset from the exact d710 graph. Independently hashed
+windows-sys0.61.2 archive:2517186 bytes,
+`ae137229bcbd6cdf0f7b80a31df61766145077ddf49416a728b02cb3921ff3fc`.
+No root/lock/features or external source selection changed.
+
+One PRIVATE safe function borrows a live std-owned File and synchronously queries
+GetFileInformationByHandleEx with exact initialized tag/128-bit-ID/basic/standard
+buffers. A function-local unsafe_code expect has a reason; EVERY unsafe call has
+its own SAFETY ownership/alias/lifetime/alignment/size/completion explanation.
+No unsafe fn, blanket lint suppression, raw-handle transfer or async pointer
+exists. The standard-information BOOLEAN receive fields use initialized u8
+repr(C) storage with actual-target size/alignment/offset assertions against the
+pinned SDK binding, avoiding Rust bool invalid representations. API failure
+captures last_os_error immediately; reparse/deletion/type/link observations are
+refusals, not cleanup authority. Volume+128-bit IDs describe retained live
+objects, never permanent identities after deletion or coherent content proofs.
+
+Primary contracts inspected for implementation:
+https://learn.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-getfileinformationbyhandleex
+https://learn.microsoft.com/en-us/windows/win32/api/winbase/ns-winbase-file_id_info
+https://learn.microsoft.com/en-us/windows/win32/api/winbase/ns-winbase-file_standard_info
+The initial fileapi URL returned404; the inspected authoritative function page
+is winbase above. No research-spike experiment or candidate/pin was duplicated.
+
+Fresh-root LibraryLease now retains additional read-only Windows root/lock-file
+metadata handles and compares their actual IDs with newly observed names and the
+real locked handle. Safe std open flags avoid following the terminal reparse
+object and deny delete-sharing for those pins; they do not grant handle-relative
+ancestor traversal, publication, mutation or directory flush. Older timestamp
+checks remain cumulative. Legacy lifetime exclusion is STILL unproven/refused.
+The NativeLibrary route is STILL unavailable on Windows.
+
+Four source-defined Windows-only tests require actual same-object/different-name
+IDs, content changes with retained identity, deletion/rename refusal through
+actual handle release, hardlinks, reparse refusal, wrong-kind/missing objects
+and bounded concurrent queries. The reparse test MUST fail if its synthetic link
+cannot be created; it never skips or converts that into a passing qualification.
+They have NOT been compiled or executed on this AppleARM host. Actual native
+Windows ABI/behavior/failure/race execution and independent review remain
+mandatory; a future corrected head needs its own provider evidence.
+
+Host cumulative cargo xtask check passed150/zero skips+six compile-fail docs,
+unchanged146 corpus/strict15/source19/both graph policies/fmt/build/Clippy. That
+run excludes cfg(windows) code and supplies NO Windows compilation/execution
+claim; subsequent changes only tighten Windows-only metadata checks/test
+assertions and append this ledger. Directory durability, NtCreateFile child
+ownership/no-replace move, config replacement and full4.9 remain OPEN. No
+NtFlush substitute, unsupported WRITE_THROUGH claim, source/fixture change,
+physical Windows qualification, early4.11 review or merge is implied.
