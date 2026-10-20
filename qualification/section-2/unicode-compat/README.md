@@ -46,6 +46,21 @@ and two-scalar CCC pairs do not exhaust mixed-CCC long sequences crossing stream
 boundaries. No production normalization adapter is selected from these results.
 The report intentionally exits2 for the570 observed intermediate differences.
 
+### Mixed-class supplement
+
+The baseline report and its exact measured source are preserved at commit
+1728a13. `mixed-observations.json` records a separate896-case experiment, without
+rerunning scalars or admitted inputs. For each selected CCC/Mn representative,
+it pairs minimum/maximum CCC representatives in tail and alternating runs at
+29/30/31/32. All896 inputs and1,568 difference records are retained:896 raw NFKD
+and672 stream-safe NFKD differences. Full folding and both final pipelines match
+on this set. Insertion/reordering around CGJ means `.nfkd().stream_safe()` is
+**not an exact Go NFKD adapter**. The earlier zero is limited to the baseline set.
+This supplement's pivots are Mn; mixed surviving non-Mn marks remain a specific
+follow-up case rather than a claimed final-pipeline proof. Reproduce with the
+same driver arguments plus `--suite mixed`. Each report has its own source map;
+the older report is not relabelled as an execution of subsequent source edits.
+
 ## Oracle and source integrity
 
 Before any execution the driver verifies immutable oracle commit73a93303/tree

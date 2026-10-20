@@ -211,6 +211,7 @@ def main():
     parser.add_argument("--text-cache", type=Path, required=True)
     parser.add_argument("--go", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--suite", choices=["baseline", "mixed"], default="baseline")
     args = parser.parse_args()
     oracle_root = args.oracle.resolve()
     require(not args.output.resolve().is_relative_to(oracle_root), "output cannot touch immutable oracle")
@@ -219,6 +220,7 @@ def main():
               "oracle": ORACLE, "tree": TREE, "corpus": CORPUS, "manifestSha256": MANIFEST,
               "host": {"platform": platform.platform(), "machine": platform.machine()},
               "status": "tooling incomplete"}
+    report["suite"] = args.suite
     try:
         report["immutableOracleVerifiedBefore"] = check_oracle(oracle_root, files)
         report["textSource"] = verify_text(args.text_cache.resolve())
@@ -269,9 +271,11 @@ def main():
             require(digest(fold.read_bytes()) == FOLD, "wrong full-fold input")
             report["foldSha256"] = FOLD
             report["inputFiles"] = corpus_inputs(owned)
-            rows = json.loads(command([go_binary, "-mode", "source-cases"], clone, environment))
+            mode = "source-cases" if args.suite == "baseline" else "mixed-cases"
+            rows = json.loads(command([go_binary, "-mode", mode], clone, environment))
             source_count = len(rows)
-            rows += admitted_cases(owned)
+            if args.suite == "baseline":
+                rows += admitted_cases(owned)
             bounded_cases(rows)
             cases = owned / "sequences.json"
             cases.write_text(json.dumps(rows, ensure_ascii=False) + "\n")
@@ -283,8 +287,10 @@ def main():
                                         "admittedTextCount": len(rows) - source_count,
                                         "sha256": digest(cases.read_bytes()), "categories": categories,
                                         "admittedCases": rows[source_count:],
-                                        "producer": "oracle.go.in source-cases plus probe.py admitted_cases"}
-            report["scalars"] = paired(go_binary, rust_binary, fold, clone, environment)
+                                        "producer": "oracle.go.in " + mode,
+                                        "cases": rows if args.suite == "mixed" else None}
+            if args.suite == "baseline":
+                report["scalars"] = paired(go_binary, rust_binary, fold, clone, environment)
             report["sequences"] = paired(go_binary, rust_binary, fold, clone, environment, cases)
             report["languageClosure"] = language_closure(args.go, clone, environment, module_cache)
             report["disposableOriginalFilesVerifiedAfter"] = identities(clone, files)
@@ -295,14 +301,14 @@ def main():
         report["sourceSha256"] = {str(p.relative_to(HERE)): digest(p.read_bytes()) for p in [
             HERE / "probe.py", HERE / "oracle.go.in", HERE / "Cargo.toml", HERE / "Cargo.lock",
             HERE / "src/lib.rs", HERE / "src/main.rs"]}
-        report["status"] = "DIFF" if any(report[k]["status"] == "DIFF" for k in ["scalars", "sequences"]) else "PASS"
+        report["status"] = "DIFF" if any(report[k]["status"] == "DIFF" for k in ["scalars", "sequences"] if k in report) else "PASS"
         report["qualification"] = "partial; observed ARM only; no language port, full string-space or toolkit qualification"
     except (RuntimeError, OSError, subprocess.TimeoutExpired) as error:
         report["toolingError"] = str(error)
         raise
     finally:
         args.output.write_text(json.dumps(report, indent=2, ensure_ascii=False) + "\n")
-    print(report["status"], "scalars", report["scalars"]["compared"], "sequences", report["sequences"]["compared"])
+    print(report["status"], "scalars", report.get("scalars", {}).get("compared", "not rerun"), "sequences", report["sequences"]["compared"])
     return 2 if report["status"] == "DIFF" else 0
 
 

@@ -29,7 +29,7 @@ type testCase struct {
 }
 
 func main() {
-	mode := flag.String("mode", "", "provenance, scalars, sequences, or source-cases")
+	mode := flag.String("mode", "", "provenance, scalars, sequences, source-cases, or mixed-cases")
 	path := flag.String("cases", "", "owned synthetic case JSON")
 	flag.Parse()
 	if runtime.Version() != "go1.26.5" || unicode.Version != "15.0.0" || norm.Version != "15.0.0" || cases.UnicodeVersion != "15.0.0" || language.CLDRVersion != "32" {
@@ -45,6 +45,10 @@ func main() {
 	}
 	if *mode == "source-cases" {
 		must(json.NewEncoder(os.Stdout).Encode(sourceCases()))
+		return
+	}
+	if *mode == "mixed-cases" {
+		must(json.NewEncoder(os.Stdout).Encode(mixedCases()))
 		return
 	}
 	w := bufio.NewWriter(os.Stdout)
@@ -144,6 +148,45 @@ func sourceCases() []testCase {
 	for _, r := range spaces {
 		add(fmt.Sprintf("whitespace/%X", r), string(r)+"É"+string(r)+string(r)+"TE"+string(r))
 		add(fmt.Sprintf("whitespace-mark/%X", r), "\u0301"+string(r)+"É"+string(r)+"\u0301")
+	}
+	return result
+}
+
+// Supplement the preserved baseline with mixed CCC runs spanning Go's
+// 30-nonstarter boundary. Representatives still come from the selected data.
+func mixedCases() []testCase {
+	representatives := map[string]rune{}
+	for r := rune(0); r <= utf8.MaxRune; r++ {
+		if r >= 0xd800 && r <= 0xdfff {
+			continue
+		}
+		ccc := norm.NFKD.PropertiesString(string(r)).CCC()
+		if ccc != 0 {
+			key := fmt.Sprintf("%03d/mn=%t", ccc, unicode.Is(unicode.Mn, r))
+			if _, ok := representatives[key]; !ok {
+				representatives[key] = r
+			}
+		}
+	}
+	keys := make([]string, 0, len(representatives))
+	for k := range representatives {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	var result []testCase
+	for _, a := range keys {
+		for _, b := range []string{keys[0], keys[len(keys)-1]} {
+			if a[:3] == b[:3] {
+				continue
+			}
+			left, right := string(representatives[a]), string(representatives[b])
+			for _, n := range []int{29, 30, 31, 32} {
+				name := fmt.Sprintf("mixed-CCC/%s/%s/%d", a, b, n)
+				result = append(result,
+					testCase{Name: name + "/tail", Input: "a" + strings.Repeat(left, n) + right + left + "Z"},
+					testCase{Name: name + "/alternating", Input: "a" + strings.Repeat(left+right, n) + "Z"})
+			}
+		}
 	}
 	return result
 }
