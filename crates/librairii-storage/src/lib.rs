@@ -9,6 +9,7 @@ pub mod identity;
 pub mod layout;
 pub mod migrations;
 pub mod native;
+pub mod operations_repository;
 pub mod platform;
 pub mod portability;
 pub mod profile;
