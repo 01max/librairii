@@ -47,7 +47,6 @@ pub(super) fn valid(witness: &CommandWitness) -> bool {
     match witness {
         CommandWitness::CompleteItem(c) => {
             c.state.is_terminal()
-                && c.item.id > 0
                 && c.item.operation_id == c.operation.identity.id
                 && c.completed_bytes >= 0
                 && c.completed_bytes <= c.item.total_bytes
