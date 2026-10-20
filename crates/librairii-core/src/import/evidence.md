@@ -154,8 +154,9 @@ scoped rustfmt pass. No final combined mandatory-suite claim follows.
 |5.2 supplied entry/path/duplicate/accounting | `53dbf76711c5f7b53fa1d462573dfd023569fe49` |
 |5.3 raw/typed UUID and required entries | `2dba142d12066e8d47d35243e6ceb2076a6e1a47` |
 |5.8 reported facts and nested/independent errors | `c5ef496d6203a11024b9a4075dbf0280ec9f01cd` |
+|5.4 PARTIAL supplied STUdio UUID/references/thumbnail presence | `5218d65c88696dc21211782508f1f32e6f7503a3` |
 
-All four implementation commits are Conventional Commits with their own
+All five implementation commits are Conventional Commits with their own
 OpenSpec-Task trailer. The required ledger-recording commit does not contain
 its own self-referential content hash. No implementation SHA is squashed,
 rebased away or replaced by later review/support/evidence commits.
