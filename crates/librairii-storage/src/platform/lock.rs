@@ -33,6 +33,19 @@ pub struct LibraryLease {
 }
 
 impl LibraryLease {
+    #[cfg(windows)]
+    pub(crate) fn read_child(
+        &self,
+        name: &std::ffi::OsStr,
+    ) -> Result<super::windows::ReadChild<'_>> {
+        super::windows::open_read_child(self, name)
+    }
+    #[cfg(windows)]
+    pub(in crate::platform) fn retained_windows_root(
+        &self,
+    ) -> (&File, super::windows::FileIdentity) {
+        (&self.root_pin, self.root_identity)
+    }
     pub(crate) fn create_fresh(root: &Path) -> Result<Self> {
         Self::acquire(root, true)
     }
@@ -146,7 +159,9 @@ impl LibraryLease {
         {
             use super::windows::{metadata_witness, query_identity};
             let (_, root) = metadata_witness(&self.root, true)?;
-            let (_, file) = metadata_witness(&self.root.join(LIBRARY_LOCK_FILE), false)?;
+            let file = self
+                .read_child(std::ffi::OsStr::new(LIBRARY_LOCK_FILE))?
+                .identity();
             if root != self.root_identity
                 || file != self.file_identity
                 || query_identity(&self.root_pin)?.identity != root

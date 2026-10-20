@@ -1161,3 +1161,48 @@ graph/fmt/build/Clippy/discovery policies, run
 `dc3432d0-e20c-4283-bd36-59248762ff10`. Only this validation note was appended
 afterward. This supplies no Windows execution, Native restart/recovery or full
 effect-handoff/4.11 qualification; corrected/current provider gates remain open.
+
+### Partial 4.9: read-only regular-child open relative to the real Windows lease
+
+The next private safe wrapper uses the already approved NtCreateFile subset
+solely with FILE_OPEN, NON_DIRECTORY_FILE, synchronous NONALERT/SYNCHRONIZE and
+OPEN_REPARSE_POINT/OBJ_DONT_REPARSE. It cannot create, overwrite, rename, replace
+or flush. One lossless UTF16 component has checked USHORT BYTE lengths and a
+bounded allocation; separators, drive colon, NUL and dot traversal refuse before
+lookup. The actual parent handle/ID comes only from the real LibraryLease, not
+from a separately supplied File/path/ID tuple. The returned read-only object has
+an explicit destructor retaining that lease through its actual File close.
+
+Function-local reasoned unsafe expectations and per-call SAFETY comments cover
+initialized/aligned exact SDK OBJECT_ATTRIBUTES/UNICODE_STRING/IO_STATUS_BLOCK,
+live stable local pointers, synchronous final completion, NTSTATUS handling and
+the sole successful raw-handle transfer into std File. No BOOL/GetLastError mix,
+overlapped/event/APC/pending-pointer escape, raw-handle duplication, blanket
+allowance or new feature/graph edge is introduced. Child type/link/reparse and
+actual volume/128-bit identity are checked with the existing query wrapper.
+The documented NtCreateFile contract provides final completion on return:
+https://learn.microsoft.com/en-us/windows/win32/api/winternl/nf-winternl-ntcreatefile
+https://learn.microsoft.com/en-us/windows/win32/api/ntdef/ns-ntdef-_object_attributes
+
+Windows lease revalidation now checks its known lock-file child through this
+same anchored regular-file open, retaining original root/file pin comparisons.
+It does not read through the actual held byte-range lock. Two new required
+Windows-only source identities cover readable pin lifetime, exact Unicode/space/
+percent names, actual lease revalidation, invalid/absolute/drive/traversal paths,
+UTF16 byte bounds and lossless surrogate encoding, missing/wrong-type objects,
+hardlink/reparse refusal and preserved foreign bytes. A missing name never creates
+a file; denied symlink creation is failure, never a skip. Native compilation,
+ABI/lifetime/success/failure/race execution and independent review remain pending.
+
+This uses no DIRECTORY_FILE flag combination and grants no directory capability,
+ancestry qualification, create-new/publication/config mutation, directory flush,
+NTFS/locality predicate, NativeWindows activation or full4.9 claim. Actual Windows
+execution is required; host tests exclude this target code. Original98bf additive
+NativeFiles discovery support is preserved in ancestry without recreation.
+
+Full host cargo xtask check passed155 nextest/zero skips, nine separate
+compile-fail docs, unchanged146 corpus/strict15/source19 and both graph/quality
+policies, run`17cef1d9-964f-4897-ae55-118d793a49ce`; only this validation note
+was appended afterward. Windows-only code/tests were excluded by that host;
+two new source-defined Windows identities still need additive discovery and
+actual native compilation/execution. No old native result is carried forward.
