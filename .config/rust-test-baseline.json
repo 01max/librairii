@@ -101,6 +101,22 @@
     {
       "suite": "xtask::bin/xtask",
       "name": "supply_chain::tests::utc_date_uses_utc_midnight_even_for_an_offset_clock_value"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::tests::dispatch_preserves_suffix_and_content_precedence"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::tests::frozen_codes_are_exact_and_errors_preserve_presence_and_raw_entry"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::tests::misleading_suffix_container_and_disguised_studio_fail_distinctly"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::tests::suffix_matching_is_simple_lower_not_search_folding_or_lossy_name_conversion"
     }
   ]
 }
