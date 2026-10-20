@@ -3332,6 +3332,87 @@
       "candidate": {
         "containerError": "Io(Custom { kind: Other, error: ChecksumVerificationFailed }, \"\")"
       }
+    },
+    {
+      "fixture": {
+        "file": "independent-codecs/zstd-independent.7z",
+        "methodRequested": "zstd-independent",
+        "bytes": 217,
+        "sha256": "54de17c1dcaef5862816409eda41ff4cc6e57a303ef98eb182b2aa2a42013d39",
+        "producer": {
+          "python": "3.14.7 (main, Aug  5 2026, 10:29:49) [Clang 17.0.0 (clang-1700.6.4.2)]",
+          "libzstd": "1.5.7",
+          "compressionLevel": 3,
+          "writer": "synthetic_7z.py",
+          "writerSha256": "3ec8d35ce9b40179bf9d085842770e0678d96a05786402ea5d9dd6f4653f0014",
+          "formatSource": "https://github.com/ip7z/7zip/blob/9128b80e3a471108678e2b3ec3c985861c8d7b0f/DOC/7zFormat.txt",
+          "compressionSource": "https://github.com/python/cpython/tree/v3.14.7/Lib/compression/zstd",
+          "licenseSources": [
+            "https://github.com/python/cpython/blob/v3.14.7/LICENSE",
+            "https://github.com/facebook/zstd/blob/v1.5.7/LICENSE",
+            "https://github.com/facebook/zstd/blob/v1.5.7/COPYING"
+          ],
+          "toolTerms": "CPython PSF-2.0 with historical notices; libzstd1.5.7 BSD or GPLv2 alternatives; no upstream fixture copied; no product license selected"
+        },
+        "expectedEntries": [
+          {
+            "name": "preceding.bin",
+            "size": 37000,
+            "sha256": "c85dadb5ce6664a59a9195f5e6e52202bff312b97f32dea5a44dd51b83929f75"
+          },
+          {
+            "name": "Été 日本語.bin",
+            "size": 1440,
+            "sha256": "95ee0511d9fa5a61138080ceaa203154e420e930f6de8929dcfa1a0a75a30053"
+          }
+        ]
+      },
+      "differences": [],
+      "scope": "independent synthetic decoder probe; no Go acceptance oracle",
+      "candidate": {
+        "blocks": [
+          {
+            "coders": [
+              {
+                "idHex": "04f71101",
+                "propertiesHex": ""
+              }
+            ],
+            "crc": 344269794,
+            "hasCrc": true,
+            "unpackSize": 38440
+          }
+        ],
+        "container": "7z",
+        "decodedBytes": 38440,
+        "entries": [
+          {
+            "antiItem": false,
+            "crc": 3377173824,
+            "directory": false,
+            "hasCrc": true,
+            "hasWindowsAttributes": false,
+            "name": "preceding.bin",
+            "size": 37000,
+            "windowsAttributes": 0,
+            "sha256": "c85dadb5ce6664a59a9195f5e6e52202bff312b97f32dea5a44dd51b83929f75",
+            "observedCrc32": 3377173824
+          },
+          {
+            "antiItem": false,
+            "crc": 2971439831,
+            "directory": false,
+            "hasCrc": true,
+            "hasWindowsAttributes": false,
+            "name": "Été 日本語.bin",
+            "size": 1440,
+            "windowsAttributes": 0,
+            "sha256": "95ee0511d9fa5a61138080ceaa203154e420e930f6de8929dcfa1a0a75a30053",
+            "observedCrc32": 2971439831
+          }
+        ],
+        "solid": true
+      }
     }
   ]
 }

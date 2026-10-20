@@ -146,13 +146,40 @@ report solid blocks; COPY is non-solid. This observation is not an admitted
 filename compatibility exception or a candidate failure attribution by itself.
 Mutating either the preceding or target COPY payload while retaining header CRCs
 causes `ChecksumVerificationFailed`. These checks do not exercise every Go CRC
-policy or establish cancellation/solid resource limits. The native producer
-rejects Zstd output as an unknown compression name; **no Zstd decoder verdict**
-is available. The report attributes this as a producer limitation.
+policy or establish cancellation/solid resource limits. The native bsdtar producer
+rejects Zstd output as an unknown compression name; that producer limitation stays
+in the report, separately from the independent Zstd experiment below.
+
+`synthetic_7z.py` is an original minimal writer based on the upstream
+[7z format reference at9128b80](https://github.com/ip7z/7zip/blob/9128b80e3a471108678e2b3ec3c985861c8d7b0f/DOC/7zFormat.txt),
+reference SHA256 `c5aba210bcc35e0506fa06bed771cf1807cbd0098dad8916b3b65ae819f5b077`.
+It uses existing CPython3.14.7 [compression.zstd](https://docs.python.org/3.14/library/compression.zstd.html)
+with libzstd1.5.7, level3, independently of the candidate decoder. No upstream
+fixture or writer implementation was copied. Tool terms are in the pinned
+[CPython LICENSE](https://github.com/python/cpython/blob/v3.14.7/LICENSE)
+(PSF license with historical notices) and libzstd
+[BSD license](https://github.com/facebook/zstd/blob/v1.5.7/LICENSE) /
+[GPLv2 alternative](https://github.com/facebook/zstd/blob/v1.5.7/COPYING).
+This is local producer attribution, not a product distribution-license decision.
+
+The retained original `fixtures/zstd-independent.7z` is217 bytes, SHA256
+`54de17c1dcaef5862816409eda41ff4cc6e57a303ef98eb182b2aa2a42013d39`.
+Repeated generation produces identical bytes on the recorded producer. Its solid
+block (`04f71101`) decodes two members in order with exact names and payloads:
+`preceding.bin`,37000 bytes, SHA256
+`c85dadb5ce6664a59a9195f5e6e52202bff312b97f32dea5a44dd51b83929f75`, CRC3377173824;
+`Été 日本語.bin`,1440 bytes, SHA256
+`95ee0511d9fa5a61138080ceaa203154e420e930f6de8929dcfa1a0a75a30053`, CRC2971439831.
+The public Rust example observes38440 delivered bytes and matching header CRCs;
+the producer regression independently verifies start/next-header CRCs and ordered
+payload hashes. This synthetic decoder capability supplies no Go acceptance oracle.
+Regeneration against the admitted146-file corpus retains **24 SQL +6 filename
+differences**, both COPY corruption errors, all19 backup matches and exact frozen
+classification/order evidence. It exits2 as before; no full parity pass is claimed.
 
 Still missing: product classification/metadata and
 required-vs-unrelated payload error semantics; admitted non-LZMA2/solid/non-solid
-cases, Zstd/LZ4/Brotli, encryption/password policy, encoding/unknown-size/overflow,
+cases, LZ4/Brotli and wider Zstd combinations, encryption/password policy, encoding/unknown-size/overflow,
 corrupt solid blocks and cancellation; actual-read/dictionary/allocation controls;
 production migration/backfill/rollback/recovery behavior and all other native OS
 execution. Those gaps stay open without a compatibility exception.

@@ -18,6 +18,7 @@ import tempfile
 import tomllib
 import uuid
 import zlib
+from synthetic_7z import zstd_fixture
 
 COMMIT = "1cd22443cae3b548bb7f9b3fb2435dcd73c3c65c"
 ORACLE = "73a93303a9a44cf0a92eaf525331561ed8c04460"
@@ -147,6 +148,11 @@ def generate_codecs(root, bsdtar):
         fixtures.append({"file": file, "methodRequested": "copy", "producer": version,
                          "mutatedEntry": name, "expectedContainerReadError": "ChecksumVerificationFailed",
                          "bytes": len(corrupt), "sha256": sha256(corrupt)})
+    try:
+        fixtures.append(zstd_fixture(root))
+    except ImportError as error:
+        fixtures.append({"file": "independent-codecs/zstd-independent.7z",
+                         "methodRequested": "zstd-independent", "producerError": str(error)})
     (root / "independent-codecs.json").write_text(json.dumps(fixtures))
     return fixtures
 
