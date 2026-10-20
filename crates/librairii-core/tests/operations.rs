@@ -1192,7 +1192,7 @@ fn op67_history_boundaries_use_twenty_plus_one_borrowed_rows() -> TestResult {
                 )
             })
             .collect();
-        let rows = history_rows(&cases);
+        let mut rows = history_rows(&cases);
         let page = history_window(&rows, HistoryCursor::Start)?;
         assert_eq!(page.operations.len(), count.min(20));
         let expected: Vec<_> = (1..=count)
@@ -1222,6 +1222,19 @@ fn op67_history_boundaries_use_twenty_plus_one_borrowed_rows() -> TestResult {
             assert_eq!(row.payload.outcome.code.as_deref(), Some("future_outcome"));
             assert_eq!(row.payload.outcome.message.as_deref(), Some(""));
         }
+        // Actual SQL candidates arrive descending; reversed/adversarial input
+        // must select the same window without collecting the full input.
+        rows.reverse();
+        let descending = history_window(&rows, HistoryCursor::Start)?;
+        assert_eq!(
+            descending
+                .operations
+                .iter()
+                .map(|r| &r.identity.id)
+                .collect::<Vec<_>>(),
+            expected.iter().collect::<Vec<_>>()
+        );
+        assert_eq!(descending.next_before, next.as_deref());
     }
     Ok(())
 }
