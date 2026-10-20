@@ -84,3 +84,29 @@ harness. Real W1/W2/W8 SQL/report/readback/drain proof and cumulative quality ar
 pending that composition. No SQL, full xtask, Go, corpus regeneration, native or
 provider check was run for H alone. Fixed C70/Sd710/E proof and held shipping
 PR42/e81 remain separate and unchanged. No full 6.N or merge claim.
+
+## R4 terminal-item conflict correction
+
+R4 `policy::inspect` returns Conflict when either the parent OR the exact target
+item is terminal, after immutable scope and ALL-sibling counter validation. H770
+incorrectly required a terminal parent. A source-grounded controlled regression
+uses an active Running parent, coherent 1/1 sibling counts and a terminal Failed
+target with different story ID, byte count and nullable outcome. It exercises
+both direct Attempt and unknown-ack Readback conflict responses. Actual saved
+item/header bytes remain intact; the requested Complete is not acknowledged,
+recounted or replayed, and no parent terminal state or Finish is invented.
+
+The single regression against unchanged H770 driver was executed RED:
+0 pass/1 fail/56 intentionally filtered, cargo exit101, assertion that the
+coherent item-only conflict must resolve to saved truth. Working log
+`/private/tmp/librairii-3-scoped-terminal-item-conflict-red.log`, SHA256
+`d4e96d35fbe50e9c647618a153b325751137b2e4a399f7e3d1a3dc95a5d1258c`.
+After the dedicated OR-terminal predicate correction, the SAME regression was
+GREEN: 1 pass/0 fail/56 intentionally filtered; log
+`/private/tmp/librairii-3-scoped-terminal-item-conflict-green.log`, SHA256
+`193992009833ebb740017cf2d7eec0036786f2e585467f0bb7902c976b5fa013`.
+App all-target Clippy with warnings denied and diff-check passed. This is one
+bounded model regression (now 18 scoped identities), not actual SQL execution,
+independent/native review or another owner56/full-quality campaign. The same
+TEMP C2 composition must consume the original correction history before its
+actual SQL host proof; R4/D/S2/E/E2 and held shipping remain unchanged.

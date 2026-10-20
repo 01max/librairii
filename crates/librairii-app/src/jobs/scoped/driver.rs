@@ -313,7 +313,16 @@ impl Driver {
     }
 
     fn conflict(&mut self, now: u64, view: Box<TerminalView>) {
-        if !scope_matches(&self.owner.witness, &view) || !is_terminal(view.operation.state) {
+        // R4 can observe a different terminal target while its parent remains
+        // active. Preserve that item truth without recounting or inventing a
+        // parent terminal result/Finish. Immutable scope and sibling coherence
+        // are still required for both forms of conflict.
+        let terminal = is_terminal(view.operation.state)
+            || view
+                .item
+                .as_ref()
+                .is_some_and(|item| item.state.is_terminal());
+        if !scope_matches(&self.owner.witness, &view) || !terminal {
             self.unknown(now, "conflict lacks coherent saved terminal truth", false);
             return;
         }
