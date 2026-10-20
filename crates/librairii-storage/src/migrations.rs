@@ -4,7 +4,7 @@
 //! library: the database owner must separately retain its library authority,
 //! establish a verified backup and provide the worker/transaction lifetime.
 use crate::{Result, StorageError};
-use rusqlite::Connection;
+use rusqlite::{Connection, OptionalExtension};
 
 pub const SCHEMA_PRODUCT: &str = "librairii";
 pub const SCHEMA_FAMILY: &str = "wails-go-sqlite";
@@ -68,8 +68,34 @@ impl SchemaPrefix {
     /// shared application/core ports.
     pub fn inspect(connection: &mut Connection) -> Result<Self> {
         let transaction = connection.transaction()?;
+        let expected = Connection::open_in_memory()?;
+        expected.execute_batch(LEDGER_SQL)?;
+        expected.execute_batch(MIGRATIONS[0].sql)?;
+        // Validate physical objects BEFORE selecting their rows. A foreign view
+        // or virtual table must not get to execute a query under an identity or
+        // ledger name. Ledger whitespace may differ between historical writers;
+        // compare the complete known DDL without changing its persisted bytes.
+        if table_sql(&transaction, "librairii_schema_identity")?
+            != table_sql(&expected, "librairii_schema_identity")?
+        {
+            return Err(StorageError::ForeignSchema);
+        }
+        let ledger = table_sql(&transaction, "schema_migrations")?;
+        let expected_ledger = table_sql(&expected, "schema_migrations")?;
+        let regular_ledger = match (ledger.as_deref(), expected_ledger.as_deref()) {
+            (Some(actual), Some(expected)) => actual
+                .chars()
+                .filter(|c| !c.is_ascii_whitespace())
+                .eq(expected.chars().filter(|c| !c.is_ascii_whitespace())),
+            _ => false,
+        };
+        if !regular_ledger {
+            return Err(StorageError::MigrationConflict);
+        }
         let identity = transaction
-            .prepare("SELECT singleton,product,schema_family FROM librairii_schema_identity")
+            .prepare(
+                "SELECT singleton,product,schema_family FROM librairii_schema_identity LIMIT 2",
+            )
             .and_then(|mut statement| {
                 statement
                     .query_map([], |row| {
@@ -86,7 +112,7 @@ impl SchemaPrefix {
             return Err(StorageError::ForeignSchema);
         };
         let versions = transaction
-            .prepare("SELECT version FROM schema_migrations ORDER BY version")
+            .prepare("SELECT version FROM schema_migrations ORDER BY version LIMIT 19")
             .and_then(|mut statement| {
                 statement
                     .query_map([], |row| row.get::<_, i64>(0))?
@@ -94,9 +120,7 @@ impl SchemaPrefix {
             })
             .map_err(|_| StorageError::MigrationConflict)?;
         let prefix = Self::recognize(product, family, &versions)?;
-        let expected = Connection::open_in_memory()?;
-        expected.execute_batch(LEDGER_SQL)?;
-        for migration in MIGRATIONS.iter().take(versions.len()) {
+        for migration in MIGRATIONS.iter().take(versions.len()).skip(1) {
             expected.execute_batch(migration.sql)?;
         }
         if schema(&transaction)? != schema(&expected)?
@@ -139,6 +163,16 @@ impl SchemaPrefix {
             .iter()
             .filter(move |migration| migration.version > self.0)
     }
+}
+
+fn table_sql(connection: &Connection, name: &str) -> Result<Option<String>> {
+    Ok(connection
+        .query_row(
+            "SELECT sql FROM sqlite_schema WHERE type='table' AND name=?",
+            [name],
+            |row| row.get(0),
+        )
+        .optional()?)
 }
 
 type SchemaEntry = (String, String, String, String);

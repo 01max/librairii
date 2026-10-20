@@ -150,3 +150,21 @@ fn foreign_empty_gapped_duplicate_unsorted_and_future_ledgers_fail_closed() {
         ));
     }
 }
+
+#[test]
+fn identity_and_ledger_views_are_rejected_before_their_queries_execute() -> TestResult {
+    let mut identity_view = Connection::open_in_memory()?;
+    identity_view.execute_batch("CREATE VIEW librairii_schema_identity AS SELECT 1 AS singleton,'librairii' AS product,'wails-go-sqlite' AS schema_family")?;
+    assert!(matches!(
+        SchemaPrefix::inspect(&mut identity_view),
+        Err(StorageError::ForeignSchema)
+    ));
+    let mut ledger_view = Connection::open_in_memory()?;
+    ledger_view.execute_batch(MIGRATIONS[0].sql)?;
+    ledger_view.execute_batch("CREATE VIEW schema_migrations AS SELECT 1 AS version")?;
+    assert!(matches!(
+        SchemaPrefix::inspect(&mut ledger_view),
+        Err(StorageError::MigrationConflict)
+    ));
+    Ok(())
+}
