@@ -1,5 +1,29 @@
 use super::*;
 
+#[test]
+fn validation_causes_retain_nested_joined_structure_and_standard_source() {
+    let inner = FailureCause::Inspection(ValidationError::at(
+        ValidationCode::UnsafePath,
+        b"../outside",
+    ));
+    let children = FailureCause::Joined(vec![inner, FailureCause::Message(String::new())]);
+    let outer = ValidationError::at(ValidationCode::UnsafePath, b"assets/../../outside")
+        .with_cause(children.clone());
+    assert_eq!(outer.cause.as_deref(), Some(&children));
+    assert!(std::error::Error::source(&outer).is_some());
+    let tree = FailureCause::Inspection(outer.clone());
+    assert_eq!(tree.first_validation(), Some(&outer));
+    assert_eq!(
+        std::error::Error::source(&tree).and_then(|e| e.downcast_ref::<ValidationError>()),
+        Some(&outer)
+    );
+    assert_eq!(tree.to_string(), "unsafe_path validation failed");
+    assert_eq!(
+        outer.entry.as_deref(),
+        Some(b"assets/../../outside".as_slice())
+    );
+}
+
 fn reported_outcome(code: OutcomeCode) -> ReportedOutcome {
     ReportedOutcome {
         code,
@@ -527,7 +551,10 @@ fn frozen_codes_are_exact_and_errors_preserve_presence_and_raw_entry() {
     let present = ValidationError::at(ValidationCode::UnsafePath, b"\xff\x00").caused_by("");
     assert_eq!(absent.entry, None);
     assert_eq!(present.entry.as_deref(), Some(b"\xff\x00".as_slice()));
-    assert_eq!(present.cause.as_deref(), Some(""));
+    assert_eq!(
+        present.cause.as_deref(),
+        Some(&FailureCause::Message(String::new()))
+    );
     assert_eq!(present.to_string(), "unsafe_path validation failed");
 }
 

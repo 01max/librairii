@@ -128,6 +128,20 @@ Original partial5.8 commit:
 must cover every actual new shipping test and all prior admitted IDs; the two
 independent temporary suffix comparisons are not shipping baseline entries.
 
+### Separate partial5.8 correction: structured validation causes
+
+The initial validation cause field could retain only a string, losing nested or
+joined causes allowed by frozen inspection/contracts.go:61–81 and importer
+service.go:244–277. ValidationError now owns an optional boxed FailureCause;
+present-empty messages remain distinct from absence. A separate regression
+retains all joined children, checks standard Error::source traversal and confirms
+the outer/first validation error wins without disclosing raw path bytes through
+Display. The standard single-source interface does not flatten joined children;
+the owned tree retains them. This is a separate corrective commit, not a change
+to shared errors or an effect/error port. Scoped nextest now passes23 tests
+(10 unrelated tests explicitly filtered); all-target core Clippy-Dwarnings and
+scoped rustfmt pass. No final combined mandatory-suite claim follows.
+
 ## Original implementation/support SHA index
 
 | Partial task / support | Original full SHA |
@@ -143,14 +157,14 @@ OpenSpec-Task trailer. The required ledger-recording commit does not contain
 its own self-referential content hash. No implementation SHA is squashed,
 rebased away or replaced by later review/support/evidence commits.
 
-Current scoped source results:22 import tests passed,10 unrelated tests
+Current scoped source results:23 import tests passed,10 unrelated tests
 explicitly filtered, all-target core Clippy-Dwarnings passed and scoped
 rustfmt passed on1.99.1. Full mandatory runs must have no filtered/skipped
 required tests. Source-free startup PATH failures are not code/test results.
 
 Final readiness is STILL PENDING: reviewed/admitted foundation path repair
 and actual then-current global integration;5-owned UNION required-test IDs
-for all22 new tests plus all24 previously admitted assertions; final combined
+for all23 new tests plus all24 previously admitted assertions; final combined
 locked build/fmt/Clippy/nextest+separate doctests/146fixture+strictPython/both
 supply-chain graphs; cumulative make check/frontend release/build and provider
 Go/Linux/native/focused CI; independent native review of the exact ready head.

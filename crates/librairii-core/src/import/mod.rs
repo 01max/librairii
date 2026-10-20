@@ -112,7 +112,7 @@ codes! {
 pub struct ValidationError {
     pub code: ValidationCode,
     pub entry: Option<Vec<u8>>,
-    pub cause: Option<String>,
+    pub cause: Option<Box<FailureCause>>,
 }
 impl ValidationError {
     pub const fn new(code: ValidationCode) -> Self {
@@ -130,7 +130,11 @@ impl ValidationError {
         }
     }
     pub fn caused_by(mut self, cause: impl Into<String>) -> Self {
-        self.cause = Some(cause.into());
+        self.cause = Some(Box::new(FailureCause::Message(cause.into())));
+        self
+    }
+    pub fn with_cause(mut self, cause: FailureCause) -> Self {
+        self.cause = Some(Box::new(cause));
         self
     }
 }
@@ -139,7 +143,13 @@ impl std::fmt::Display for ValidationError {
         write!(f, "{} validation failed", self.code)
     }
 }
-impl std::error::Error for ValidationError {}
+impl std::error::Error for ValidationError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        self.cause
+            .as_deref()
+            .map(|cause| cause as &dyn std::error::Error)
+    }
+}
 
 /// Match only an ASCII policy suffix under frozen Go Unicode15 simple-lower
 /// behavior. Besides ASCII capitals, U+0130 -> i and U+212A -> k can contribute

@@ -37,6 +37,30 @@ impl FailureCause {
     }
 }
 
+impl std::fmt::Display for FailureCause {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Message(_) => f.write_str("reported error"),
+            Self::Inspection(error) => error.fmt(f),
+            Self::Import { code, .. } => code.fmt(f),
+            Self::Joined(_) => f.write_str("reported joined errors"),
+        }
+    }
+}
+impl std::error::Error for FailureCause {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match self {
+            Self::Inspection(error) => Some(error),
+            Self::Import {
+                cause: Some(cause), ..
+            } => Some(cause.as_ref()),
+            // std::error::Error has one source, not Go's joined-source list.
+            // The owned Joined children and first_validation retain all branches.
+            Self::Message(_) | Self::Joined(_) | Self::Import { cause: None, .. } => None,
+        }
+    }
+}
+
 /// Raw reported facts. Optional values distinguish unreported from reported0/
 /// empty bytes. Consumers must validate the real storage-issued acknowledgement;
 /// constructing this struct or selecting Imported creates NO commitment proof,
