@@ -7,8 +7,10 @@ Additional bounded release: PURE5.4-M438, from prior validated candidate
 `4383373272ce1d3095199caf37dde7e5d0598213` retained in history.
 
 Only effect-free `core/src/import/**` is released. All full5.1–5.10 remain
-open. No inspection/decoder/classifier/CRC execution, storage/custody receipt,
-runtime/cancel/lifecycle port, image/JSON parser or effect is implemented here.
+open. The additional PURE5.4-JSONV1-e23 release permits the private supplied-byte
+STUdio JSON parser described below. No archive inspection/decoder/classifier/CRC,
+storage/custody receipt, runtime/cancel/lifecycle port, image parser or effect
+is implemented here. Earlier release/status rows are historical captures.
 Policy counters/plans and reported fields cannot establish actual decoder
 bounds/integrity, commitment or cleanup authority.
 
@@ -156,7 +158,7 @@ scoped rustfmt pass. No final combined mandatory-suite claim follows.
 |5.8 reported facts and nested/independent errors | `c5ef496d6203a11024b9a4075dbf0280ec9f01cd` |
 |5.4 PARTIAL supplied STUdio UUID/references/thumbnail presence | `5218d65c88696dc21211782508f1f32e6f7503a3` |
 
-All five implementation commits are Conventional Commits with their own
+All implementation commits above are Conventional Commits with their own
 OpenSpec-Task trailer. The required ledger-recording commit does not contain
 its own self-referential content hash. No implementation SHA is squashed,
 rebased away or replaced by later review/support/evidence commits.
@@ -242,3 +244,71 @@ ONE fresh native review of the exact ready head. Neither priorb3/daef results no
 prepared108 inputs supplies these later-head gates. All full5.1–5.10 remain open;
 no full task completion or
 merge authority is claimed.
+
+## Partial5.4: supplied-byte STUdio JSONv1
+
+Release PURE5.4-JSONV1-e23 starts at prior candidate
+e23e0d7eee4af97092fe6d622ecb485d04047c70, retaining admitted438 and every
+original task/support SHA. Prior e23 completed own55/full make, independent108,
+native421/GH5590668159 and all8 provider checks. These are historical exact-e23
+results, not new-parser proof. All full5.N/5.10 remain OPEN.
+
+Owner5 source/architecture handoff SHA256:
+85ee83627da398002e30ac08a7c3ad1e889c8240eae197a8579087b6e632069d;
+source index d63835ff65b581d3e0be5855189f59ac2fa4924a65904956de1f65e79309a4f4;
+derivative schema a0d54e23c9150f99f849383133ca32068465c566f9102b1cdf4de98b9367d1f7.
+The official Go1.26.5 source archive identity is
+495be4bc87176ac567392e5b4116abd98466d33d7b49d41e764ccc6976b2dc42.
+We verified all18 captured source/header identities,3 notices and VERSION
+against the index, with regular/nonsymlink paths. This was capture integrity,
+not another download/archive authentication. Owner4's packet inspection is
+static evidence. No expanded SDK/cache source is copied.
+
+The private studio_json/source-manifest.json maps exact derivative bytes to
+only8 bounded Go algorithm/data originals and2 product contract references.
+Go encode/reflection/runtime/tests remain evidence only, with no production
+translation authority. Retain Go BSD/PATENTS and conservative current Unicode V3
+notices, original copyright lines and changed-representation recipes. Owner5
+authors registry/notices/check/inventory support after our first scoped SHA.
+No production Cargo edge or4.4/storage source authority is inherited.
+
+Task-local validate_studio_json accepts supplied Inventory, materialized bytes
+and Limits. It checks original byte length, scans the COMPLETE FIRST value with
+an iterative grammar stack/raw spans, then reduces known fields in member order.
+Unknown values/numbers use syntax-only skipping, without a Value tree or float.
+Depth10000 includes unknown subtrees. JSON whitespace is ASCII-only; apostrophe
+escapes are invalid. Raw invalid UTF8 consumes one byte per replacement, distinct
+from escaped UTF16 pair/lone-surrogate replacement.
+
+All story UUID/title/description/stageNodes and node image/audio fields remain
+known typed fields. Preserve string/null no-ops, slice/null/empty-array resets,
+first saved type error and hidden initialized node cells with logical length.
+Exact names precede fixed-schema inverse Unicode15 SimpleFold: ASCII variants
+and long-s S orbit, with dotted/dotless I distinct. No modern Rust Unicode fold,
+NFKD/search normalization or general JSON/reflection/runtime is implemented.
+
+First-value syntax errors win before typed reduction. A saved type error
+returns BEFORE trailing inspection; only successful first Decode checks a
+second value/garbage before UUID/reference/regular-thumbnail presence policy.
+Local syntax/type/trailing diagnostics do not claim Go text/offset/second-Decode
+cause equivalence. Identity is policy data, never an inspection/custody receipt.
+Title/description OUTPUT/TrimSpace and optional metadata remain excluded.
+
+Seventeen new module-local tests cover syntax/type/trailing priority, known
+null/duplicates, hidden cells after shrink/re-expand and resets, field folding,
+raw invalid bytes/escaped surrogates and lookup, huge unknown numbers, malformed
+grammar, depth10000/10001, original-byte caps and10001 repeated references with
+no invented node cap. All48 import tests PASS in the wired namespace;10 unrelated
+core tests explicitly filtered. Scoped fmt and all-target core Clippy-Dwarnings
+PASS on1.99.1. No independent Go comparison or final mandatory-suite pass follows.
+
+The default1MiB supplied-byte check does not perform limit+1 reads or establish
+decoded heap/CPU, constructor/solid/dictionary bounds, CRC, PNG or cancellation.
+All IO/runtime/storage/SQL/custody/effect/platform claims remain separately gated.
+
+Remaining: original-SHA ledger and first publication; owner5 ORIGINAL fresh
+direct-descendant source registry/notices/check/inventory plus ACTUAL additive
+discovery UNION retaining55/scopes/strict6/docs/146; history-preserving support
+consumption; current-base cumulative Rust/Go/frontend, affected independent Go
+comparison, one fresh native review and provider CI. No ancestor pass carryover,
+canonical progress/spec edit, full5.N completion or merge authority.
