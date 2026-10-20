@@ -5,8 +5,9 @@ their reserved tests, root graph/shared ports and Go bridge17 are excluded.
 Release: `ROOT4-4ea2caf`; approved base
 `4ea2caf71bbe61ed996942daa9005de05b75f9da` (parents9a+reviewede60;
 tree `de6034c706dac0c5e8a1f3aa68a8a9fd565015fd`). Root's release activates
-owner5's prepared initial storage-shell handoff. ActualM provider checks are
-pending at implementation start; no all-green or native-storage claim follows.
+owner5's prepared initial storage-shell handoff. ActualM provider checks were
+pending at implementation start; owner2 subsequently confirmed all actualM CI
+green. This is foundation evidence, not native storage qualification.
 
 Implementation proceeds in numbered order with a dedicated Conventional Commit
 and `OpenSpec-Task: 4.N` trailer for each subtask; fixes remain separate. Exact
@@ -16,8 +17,8 @@ evidence, not an additional checklist or acceptance of unfinished work.
 
 | Task | Implementation/verification work | State / commit |
 | --- | --- | --- |
-|4.1|Explicit fresh isolated root; exact layout, managed paths, raw identity; reject escape/invalid/nonfresh inputs without profile discovery|Implemented/host verified; source SHA recorded in following commit. Setup `fcf467f41a39c3670a38db063a5304a60f6e93d1`|
-|4.2|Exact migrations001-018, schema identity and contiguous ledger|Pending|
+|4.1|Explicit fresh isolated root; exact layout, managed paths, raw identity; reject escape/invalid/nonfresh inputs without profile discovery|Implemented/host verified `9c37f56ffe83d73497129603c4ecfb8d25e4e087`. Setup `fcf467f41a39c3670a38db063a5304a60f6e93d1`|
+|4.2|Exact migrations001-018, schema identity and contiguous ledger|Implemented/host verified; source SHA recorded in following commit. Setup `e6e527af79a21149665670a36171ef5d701be05c`; owner5 graph `bf720718c4736e0ecf5f6ded947ccbce49f1ba16`|
 |4.3|One owned writer plus four reads, bounded jobs/transactions and close|Pending|
 |4.4|All18 admitted populated prefixes, full schema/rows/query outcomes and actual Collection-open projection; no fixture-specific patches or eager DB-open rewrite|Pending|
 |4.5|Online WAL backup, integrity/FK, rollback and foreign DB+sidecars preservation|Pending|
@@ -68,3 +69,22 @@ remains a separate requirement; no host-only portability qualification follows.
 These are headless host checks, not Intel/Linux/Windows filesystem qualification
 or final4.11 review. Full retained Go/React and final cumulative quality/provider
 checks remain required before section4 admission.
+
+4.2 host verification uses the separately resolved exact rusqlite0.40.2
+(`default-features=false`, `bundled,backup`) graph supplied by owner5. The
+root manifest, lockfile and additive4.1 discovery support in `bf720718` were
+consumed by fast-forward; owner6 authored none of those shared files.
+
+- Four migration tests passed, zero skipped, nextest run
+  `552a3d94-d1f9-4b64-bd29-5bf51475c61a`: exact18-file byte equality against
+  admitted corpus and frozen Go SQL; all18 real prefix identities/ledgers/full
+  schema structures; missing-trigger/schema forgery; foreign/empty/gapped/
+  duplicate/unsorted/future ledgers. All original DB bytes remained unchanged.
+- Closed admitted standalone DBs are inspected with `immutable=1`, not a live
+  WAL copy. The recognizer warns that arbitrary read-only WAL opens can touch
+  sidecars; production foreign-file probing remains the safe4.5 owner boundary.
+- DDL comparison is exact for all non-internal tables/indexes/triggers. The
+  two historical ledger whitespace spellings are accepted by equal column/PK/
+  default structure without rewriting either; data and timestamps are retained.
+- This step recognizes supported states; it grants no existing-library adoption
+  or migration authority. Workers, backup/rollback and locks remain later tasks.

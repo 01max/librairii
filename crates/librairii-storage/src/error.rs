@@ -19,6 +19,12 @@ pub enum StorageError {
     InvalidIdentity,
     #[error("settings.library_missing")]
     IdentityMismatch,
+    #[error("storage.foreign_schema")]
+    ForeignSchema,
+    #[error("storage.migration_conflict")]
+    MigrationConflict,
+    #[error("storage.sqlite: {0}")]
+    Sqlite(#[from] rusqlite::Error),
     #[error("{operation}: {source}")]
     Io {
         operation: &'static str,
@@ -41,6 +47,9 @@ impl StorageError {
             Self::PathEscape => "storage.path_escape",
             Self::InvalidIdentity => "settings.invalid",
             Self::IdentityMismatch => "settings.library_missing",
+            Self::ForeignSchema => "storage.foreign_schema",
+            Self::MigrationConflict => "storage.migration_conflict",
+            Self::Sqlite(_) => "storage.sqlite",
             Self::Io { .. } => "storage.io_failed",
         }
     }

@@ -4,6 +4,7 @@
 pub mod error;
 pub mod identity;
 pub mod layout;
+pub mod migrations;
 
 pub use error::{Result, StorageError};
 pub use identity::LibraryIdentity;
