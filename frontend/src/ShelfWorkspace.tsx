@@ -89,6 +89,10 @@ export default function ShelfWorkspace({catalog, id, revision, query, onQuery, c
     const onFlagsChanged = useCallback(async () => {await load(); onChanged();}, [load, onChanged]);
     const flags = useStoryFlags(onFlagsChanged);
     const selectedStoryIDs = selected.flatMap((uuid) => knownMembers[uuid]?.story ? [knownMembers[uuid].story!.id] : []);
+    const canReorder = manualOrder && !query.name && !query.languages.length &&
+        !query.compatibilities.length && !query.anyOf?.length &&
+        !query.booleanFilters.some((filter) => filter.state !== 'ignored') &&
+        !query.choiceFilters.some((filter) => filter.valueIds.length > 0);
     const reorder = async (uuid: string, delta: number) => {
         // Resolve the complete current manual order without rendering every member.
         const all: string[] = [];
@@ -155,7 +159,7 @@ export default function ShelfWorkspace({catalog, id, revision, query, onQuery, c
                     {member.story?.broken && <> · <span className="curated-broken">{t('Broken · excluded from exports')}</span></>}</small>
             </div>
             {member.story ? <button type="button" className="curated-cover" onClick={() => onInspect(member.story!)} aria-label={t('Details for {0}', member.story.title)}>{viewMode === 'list' ? t('Open details') : <StoryCover story={member.story}/>}</button> : <p className="curated-unavailable" title={member.uuid}>{t('Unavailable')}<span className="curated-unavailable-id"> · {member.uuid}</span></p>}
-            {manualOrder && !query.name && <div className="curated-actions curated-member-order"><button type="button" disabled={busy || member.position === 0} aria-label={t('Move {0} up', member.cachedTitle)} onClick={() => void act(() => reorder(member.uuid, -1))}>↑</button>
+            {canReorder && <div className="curated-actions curated-member-order"><button type="button" disabled={busy || member.position === 0} aria-label={t('Move {0} up', member.cachedTitle)} onClick={() => void act(() => reorder(member.uuid, -1))}>↑</button>
                 <button type="button" disabled={busy || member.position >= view.shelf.count - 1} aria-label={t('Move {0} down', member.cachedTitle)} onClick={() => void act(() => reorder(member.uuid, 1))}>↓</button></div>}
         </li>)}</ul>
         {!view.totalItems && <p>{t('No approved stories in this view.')}</p>}

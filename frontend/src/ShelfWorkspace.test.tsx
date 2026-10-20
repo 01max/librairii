@@ -4,7 +4,7 @@ import {beforeEach, expect, test, vi} from 'vitest';
 import {OpenShelf, ClearShelfExclusion, SetStoriesBroken, PreviewShelfUpdate, ApplyShelfUpdate, PreviewShelfSources, ApplyShelfSources, RemoveStoriesFromShelf, ReorderShelfStories} from '../wailsjs/go/main/App';
 import {app, library} from '../wailsjs/go/models';
 import ShelfWorkspace from './ShelfWorkspace';
-import {DEFAULT_COLLECTION_QUERY} from './query-codec';
+import {type CollectionQuery, DEFAULT_COLLECTION_QUERY} from './query-codec';
 vi.mock('../wailsjs/go/main/App', () => ({OpenShelf: vi.fn(), ClearShelfExclusion: vi.fn(), SetStoriesBroken: vi.fn(), RestoreStoryFlags: vi.fn(), PreviewShelfUpdate: vi.fn(), ApplyShelfUpdate: vi.fn(), PreviewShelfSources: vi.fn(), ApplyShelfSources: vi.fn(), RemoveStoriesFromShelf: vi.fn(), ReorderShelfStories: vi.fn()}));
 let broken = false;
 beforeEach(() => {
@@ -120,6 +120,25 @@ test.each([2, 1])('navigates from the returned page after membership shrinks to 
         await user.click(previous);
         expect(onQuery).toHaveBeenCalledWith(expect.objectContaining({page: 1}));
     }
+});
+
+test.each<[string, Partial<CollectionQuery>]>([
+    ['name', {name: 'First'}],
+    ['language', {languages: ['en-GB']}],
+    ['compatibility', {compatibilities: ['compatible']}],
+    ['tagged boolean', {booleanFilters: [{definitionId: 1, state: 'true'}]}],
+    ['untagged boolean', {booleanFilters: [{definitionId: 1, state: 'false'}]}],
+    ['choice tag', {choiceFilters: [{definitionId: 2, valueIds: [3]}]}],
+    ['combined query', {anyOf: [{...DEFAULT_COLLECTION_QUERY, name: 'First'}]}],
+])('hides reorder controls under a %s refinement and restores them when cleared', async (_name, refinement) => {
+    const props = {id: 7, collections: [], revision: 0, onQuery: vi.fn(), onChanged: vi.fn(), onDeleted: vi.fn(), onInspect: vi.fn(), onExport: vi.fn()};
+    const {rerender} = render(<ShelfWorkspace {...props} query={{...DEFAULT_COLLECTION_QUERY, ...refinement}}/>);
+    await screen.findByRole('checkbox', {name: 'First'});
+    expect(screen.queryByRole('button', {name: /^Move .* (up|down)$/})).not.toBeInTheDocument();
+    expect(ReorderShelfStories).not.toHaveBeenCalled();
+    rerender(<ShelfWorkspace {...props} query={DEFAULT_COLLECTION_QUERY}/>);
+    expect(await screen.findByRole('button', {name: 'Move First down'})).toBeEnabled();
+    expect(screen.getByRole('button', {name: 'Move Lost up'})).toBeEnabled();
 });
 
 test('reorders the full Shelf using valid pages even when it exceeds 100 members', async () => {
