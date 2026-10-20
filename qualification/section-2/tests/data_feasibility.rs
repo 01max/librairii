@@ -117,7 +117,11 @@ fn online_backup_includes_committed_wal_and_preserves_independent_snapshot() {
         .unwrap();
     assert_eq!(value, "before");
     let disabled = source_db
-        .query_row("SELECT load_extension('qualification-nonexistent')", [], |_| Ok(()))
+        .query_row(
+            "SELECT load_extension('qualification-nonexistent')",
+            [],
+            |_| Ok(()),
+        )
         .unwrap_err();
     assert!(disabled.to_string().contains("not authorized"));
     {
