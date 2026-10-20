@@ -27,6 +27,10 @@ pub enum StorageError {
     ProfileInUse,
     #[error("settings.profile_changed")]
     ProfileChanged,
+    #[error("settings.active_library_binding")]
+    ProfileBindingActive,
+    #[error("settings.recovery_binding_required")]
+    RecoveryBindingRequired,
     #[error("settings.library_missing")]
     IdentityMismatch,
     #[error("storage.foreign_schema")]
@@ -143,6 +147,8 @@ impl StorageError {
             Self::ProfilePublicationUncertain { .. } => "settings.restart_required",
             Self::ProfileInUse => "settings.profile_in_use",
             Self::ProfileChanged => "settings.profile_changed",
+            Self::ProfileBindingActive => "settings.active_library_binding",
+            Self::RecoveryBindingRequired => "settings.recovery_binding_required",
             Self::IdentityMismatch => "settings.library_missing",
             Self::ForeignSchema => "storage.foreign_schema",
             Self::MigrationConflict => "storage.migration_conflict",

@@ -416,6 +416,7 @@ mod closed {
                     candidate,
                     manifest: self.manifest.clone(),
                     source_profile: self.profile.clone(),
+                    source_root: self.root.clone(),
                     identity: self.identity.clone(),
                     prefix: self.prefix,
                 }),
@@ -467,6 +468,7 @@ mod closed {
     pub struct IndependentCopy {
         manifest: ClosedManifest,
         source_profile: ProfileDocument,
+        source_root: PathBuf,
         identity: LibraryIdentity,
         prefix: SchemaPrefix,
         candidate: CopyCandidate,
@@ -480,6 +482,22 @@ mod closed {
         }
         pub fn source_profile(&self) -> &ProfileDocument {
             &self.source_profile
+        }
+        pub(crate) fn source_root(&self) -> &Path {
+            &self.source_root
+        }
+        pub(crate) fn require_no_recovery_input(&self) -> Result<()> {
+            if !self.source_profile.profile().complete
+                || self.source_profile.profile().recovering
+                || self.manifest.entries.iter().any(|entry| {
+                    entry.path.split('/').any(|part| {
+                        part == "relocation.json" || part.starts_with(".librairii-move-")
+                    })
+                })
+            {
+                return Err(StorageError::RecoveryBindingRequired);
+            }
+            Ok(())
         }
         pub const fn prefix(&self) -> SchemaPrefix {
             self.prefix

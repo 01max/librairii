@@ -12,7 +12,10 @@ use std::{
     fs::{self, File, Metadata},
     io::{Read, Write},
     path::{Path, PathBuf},
-    sync::Mutex,
+    sync::{
+        Arc, Mutex,
+        atomic::{AtomicBool, Ordering},
+    },
 };
 
 #[cfg(not(any(target_os = "macos", target_os = "linux")))]
@@ -190,10 +193,98 @@ struct State {
     document: Option<ProfileDocument>,
     settings_metadata: Option<Metadata>,
     poisoned: bool,
+    binding: Option<Arc<BindingState>>,
     // Actual open-object witnesses survive a post-replace error through the
     // poisoned store's lifetime. They are never purged by Drop/restart scanning.
     #[cfg(any(target_os = "macos", target_os = "linux"))]
     recovery_witnesses: Vec<ConfigTemp>,
+}
+
+impl State {
+    fn poison(&mut self) {
+        self.poisoned = true;
+        if let Some(binding) = &self.binding {
+            binding.fenced.store(true, Ordering::Release);
+        }
+    }
+}
+
+/// Storage-private exclusion, not a public profile-data-to-authority cast.
+/// Its Arc identity distinguishes successive bindings without serialized IDs.
+#[derive(Debug)]
+struct BindingState {
+    root: String,
+    raw_id: String,
+    fenced: AtomicBool,
+}
+impl BindingState {
+    fn matches(&self, profile: &Profile) -> bool {
+        profile.root == self.root
+            && profile.library_id == self.raw_id
+            && profile.complete
+            && !profile.recovering
+    }
+}
+
+#[cfg(any(target_os = "macos", target_os = "linux"))]
+#[derive(Debug)]
+pub(crate) struct ProfileBinding<'profile> {
+    store: &'profile NativeProfileStore,
+    state: Arc<BindingState>,
+}
+
+#[cfg(any(target_os = "macos", target_os = "linux"))]
+impl ProfileBinding<'_> {
+    pub(crate) fn fence(&self) {
+        self.state.fenced.store(true, Ordering::Release);
+    }
+    pub(crate) fn revalidate(&self) -> Result<()> {
+        let mut state = self
+            .store
+            .state
+            .lock()
+            .map_err(|_| StorageError::ProfileRestartRequired)?;
+        let result = (|| {
+            self.store.load_locked(&mut state)?;
+            self.store.revalidate_settings(&state)?;
+            self.store.require_unrecovered_namespace()?;
+            if self.state.fenced.load(Ordering::Acquire)
+                || !state
+                    .binding
+                    .as_ref()
+                    .is_some_and(|active| Arc::ptr_eq(active, &self.state))
+                || !state
+                    .document
+                    .as_ref()
+                    .is_some_and(|document| self.state.matches(document.profile()))
+            {
+                return Err(StorageError::ProfileRestartRequired);
+            }
+            Ok(())
+        })();
+        if result.is_err() {
+            state.poison();
+        }
+        result
+    }
+}
+
+#[cfg(any(target_os = "macos", target_os = "linux"))]
+impl Drop for ProfileBinding<'_> {
+    fn drop(&mut self) {
+        // An uncertain/poisoned generation remains excluded until restart. A
+        // dropped data/receipt object must never clear that exclusion.
+        if let Ok(mut state) = self.store.state.lock()
+            && !state.poisoned
+            && !self.state.fenced.load(Ordering::Acquire)
+            && state
+                .binding
+                .as_ref()
+                .is_some_and(|active| Arc::ptr_eq(active, &self.state))
+        {
+            state.binding = None;
+        }
+    }
 }
 
 /// Serialized updates in a separately initialized native namespace. The marker
@@ -381,13 +472,91 @@ impl NativeProfileStore {
         if state.poisoned {
             return Err(StorageError::ProfileRestartRequired);
         }
-        self.revalidate_namespace()?;
+        if let Err(error) = self.revalidate_namespace() {
+            if state.binding.is_some() {
+                state.poison();
+            }
+            return Err(error);
+        }
         if !state.loaded {
             if let Some((document, metadata)) = self.read_native_document()? {
                 state.document = Some(document);
                 state.settings_metadata = Some(metadata);
             }
             state.loaded = true;
+        }
+        Ok(())
+    }
+
+    /// Only native.rs may invoke this after checking an owned independent copy
+    /// and the explicit native namespace. No filesystem/database copy or caller
+    /// callback is run with this short profile-publication mutex held.
+    #[cfg(any(target_os = "macos", target_os = "linux"))]
+    pub(crate) fn bind_verified_copy(&self, proposed: &Profile) -> Result<ProfileBinding<'_>> {
+        let mut state = self
+            .state
+            .lock()
+            .map_err(|_| StorageError::ProfileRestartRequired)?;
+        self.load_locked(&mut state)?;
+        self.revalidate_settings(&state)?;
+        if state.binding.is_some() {
+            return Err(StorageError::ProfileBindingActive);
+        }
+        // Serialize this short namespace observation with settings staging:
+        // another legitimate update's live temporary is not a foreign journal.
+        self.require_unrecovered_namespace()?;
+        let mut next = proposed.clone();
+        if let Some(document) = &state.document {
+            let current = document.profile();
+            if current.recovering {
+                return Err(StorageError::RecoveryBindingRequired);
+            }
+            let unbound =
+                !current.complete && current.root.is_empty() && current.library_id.is_empty();
+            let matching = current.complete
+                && current.root == proposed.root
+                && current.library_id == proposed.library_id;
+            if !unbound && !matching {
+                return Err(StorageError::ProfileChanged);
+            }
+            // An already chosen native language is newer independent authority.
+            next.language.clone_from(&current.language);
+        }
+        next.validate()?;
+        if !next.complete || next.recovering {
+            return Err(StorageError::RecoveryBindingRequired);
+        }
+        let bytes = encode(&next)?;
+        if state.document.as_ref().map(ProfileDocument::profile) != Some(&next) {
+            self.update_unix(&mut state, next.clone(), bytes, |_| Ok(()), |_| Ok(()))?;
+        }
+        let binding = Arc::new(BindingState {
+            root: next.root,
+            raw_id: next.library_id,
+            fenced: AtomicBool::new(false),
+        });
+        state.binding = Some(binding.clone());
+        Ok(ProfileBinding {
+            store: self,
+            state: binding,
+        })
+    }
+
+    #[cfg(any(target_os = "macos", target_os = "linux"))]
+    pub(crate) fn require_unrecovered_namespace(&self) -> Result<()> {
+        self.revalidate_namespace()?;
+        let entries = self
+            .namespace
+            .entries(2, &crate::database::WorkCancellation::default())
+            .map_err(|error| match error {
+                StorageError::AdoptionInputChanged => StorageError::RecoveryBindingRequired,
+                error => error,
+            })?;
+        if entries
+            .iter()
+            .any(|entry| entry != MARKER && entry != SETTINGS)
+        {
+            return Err(StorageError::RecoveryBindingRequired);
         }
         Ok(())
     }
@@ -413,13 +582,26 @@ impl NativeProfileStore {
             .lock()
             .map_err(|_| StorageError::ProfileRestartRequired)?;
         self.load_locked(&mut state)?;
-        self.revalidate_settings(&state)?;
+        if let Err(error) = self.revalidate_settings(&state) {
+            if state.binding.is_some() {
+                state.poison();
+            }
+            return Err(error);
+        }
         let mut next = state
             .document
             .as_ref()
             .map_or_else(Profile::setup, |d| d.profile.clone());
         change(&mut next)?;
         next.validate()?;
+        if let Some(binding) = &state.binding {
+            if binding.fenced.load(Ordering::Acquire) {
+                return Err(StorageError::ProfileRestartRequired);
+            }
+            if !binding.matches(&next) {
+                return Err(StorageError::ProfileBindingActive);
+            }
+        }
         let bytes = encode(&next)?;
         #[cfg(any(target_os = "macos", target_os = "linux"))]
         return self.update_unix(&mut state, next, bytes, before_replace, flush);
@@ -461,7 +643,7 @@ impl NativeProfileStore {
                 require_same(&new_metadata, &published)
             })();
             if let Err(cause) = durability {
-                state.poisoned = true;
+                state.poison();
                 return Err(StorageError::ProfilePublicationUncertain {
                     cause: Box::new(cause),
                 });
@@ -572,7 +754,7 @@ impl NativeProfileStore {
             return match self.namespace.remove_config_temp(&staged) {
                 Ok(()) => Err(work),
                 Err(cleanup) => {
-                    state.poisoned = true;
+                    state.poison();
                     state.recovery_witnesses.push(staged);
                     Err(StorageError::OwnedTempCleanupFailed {
                         work: Box::new(work),
@@ -590,7 +772,7 @@ impl NativeProfileStore {
             Err(failure) => {
                 let failure = *failure;
                 if failure.changed {
-                    state.poisoned = true;
+                    state.poison();
                     state.recovery_witnesses.push(failure.temporary);
                     return Err(StorageError::ProfilePublicationUncertain {
                         cause: Box::new(failure.cause),
@@ -599,7 +781,7 @@ impl NativeProfileStore {
                 return match self.namespace.remove_config_temp(&failure.temporary) {
                     Ok(()) => Err(failure.cause),
                     Err(cleanup) => {
-                        state.poisoned = true;
+                        state.poison();
                         state.recovery_witnesses.push(failure.temporary);
                         Err(StorageError::OwnedTempCleanupFailed {
                             work: Box::new(failure.cause),
@@ -660,7 +842,7 @@ impl NativeProfileStore {
                 Ok(next)
             }
             Err(cause) => {
-                state.poisoned = true;
+                state.poison();
                 state.recovery_witnesses.push(published);
                 state.recovery_witnesses.extend(old);
                 Err(StorageError::ProfilePublicationUncertain {
@@ -831,6 +1013,77 @@ mod tests {
                 .load()?
                 .ok_or("missing restart bytes")?,
             durable_observation
+        );
+        Ok(())
+    }
+
+    #[test]
+    #[cfg(any(target_os = "macos", target_os = "linux"))]
+    fn active_binding_post_replace_uncertainty_keeps_exclusion_after_guard_drop()
+    -> std::result::Result<(), Box<dyn Error>> {
+        let roots = TestRoots::new()?;
+        let directory = roots.profile().join("native");
+        let store = NativeProfileStore::create_fresh(&directory)?;
+        // Private binding mechanism test; this is not a runtime-authority or
+        // verified-copy constructor. The native integration tests use the real
+        // owned-copy route instead of this private profile-only fixture.
+        let proposed = Profile {
+            version: 1,
+            language: "en".into(),
+            root: roots.library().to_str().ok_or("root UTF8")?.into(),
+            library_id: "A0000000-0000-4000-8000-000000000001".into(),
+            complete: true,
+            recovering: false,
+        };
+        let binding = store.bind_verified_copy(&proposed)?;
+        let result = store.update_with_flush(
+            |profile| {
+                profile.language = "fr".into();
+                Ok(())
+            },
+            |_| {
+                Err(StorageError::io(
+                    "injected bound profile directory sync",
+                    std::io::Error::other("fault after real replace"),
+                ))
+            },
+        );
+        assert!(matches!(
+            result,
+            Err(StorageError::ProfilePublicationUncertain { .. })
+        ));
+        assert!(matches!(
+            binding.revalidate(),
+            Err(StorageError::ProfileRestartRequired)
+        ));
+        drop(binding);
+        let state = store.state.lock().map_err(|_| "test state poisoned")?;
+        assert!(state.binding.is_some());
+        assert!(state.poisoned);
+        drop(state);
+        assert!(matches!(
+            store.update(|_| Ok(())),
+            Err(StorageError::ProfileRestartRequired)
+        ));
+        assert!(matches!(
+            store.bind_verified_copy(&proposed),
+            Err(StorageError::ProfileRestartRequired)
+        ));
+        assert_eq!(
+            read_legacy(&directory)?
+                .ok_or("published settings")?
+                .profile()
+                .language,
+            "fr"
+        );
+        drop(store);
+        assert_eq!(
+            NativeProfileStore::open_native(&directory)?
+                .load()?
+                .ok_or("restart settings")?
+                .profile()
+                .language,
+            "fr"
         );
         Ok(())
     }

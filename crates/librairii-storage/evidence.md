@@ -864,3 +864,66 @@ One new all-target actual identity requires additive owner5 pinning. Other nativ
 checks and any dependent isolated failure/drain proof must consume this corrected
 head; no old result carries forward. The static owned jobs bridge, NativeLibrary
 activation, domain repositories and final4.11 gates remain separate and open.
+
+### Partial 4.7: owned native profile binding, no SQLite activation yet
+
+The preceding poison-close correction is `a6fd4677e3069cef0d59300da77ba17dc1ae6215`.
+Consumed ORIGINAL `44185b177603e1064eb05b05b41c18ac704e7bdc` by FF: only its
+one actual all-target poisoned-close identity was added; all prior entries and
+scopes survived. Published manifest-only `e731244d1a161337335f1a878929ad7ef73f7634`
+then consumed ORIGINAL owner5 direct-descendant
+`d710fd226c8c0cbd41a192f89d7f2917dccab202` by FF: ONLY root Cargo/lock+one line
+each, exact windows-sys0.61.2/defaultfalse/six approved features including
+Win32_Security; no version/source replacement. The intermediate e731 Linux
+job118898100415/run39500781805 failed BEFORE tests because workspace.windows-sys
+was absent. That concrete graph failure remains historical; no unchanged retry,
+waiver or prior-head native pass substitutes for the corrected combined graph.
+No Windows wrapper/unsafe, directory-flush contract or config mutation is
+implemented or qualified by this dependency synchronization.
+
+`native.rs` now consumes the ACTUAL IndependentCopy and retains its original
+root/parent handles and OS lease, together with a borrow of the marked native
+profile namespace/OS-lease owner. It requires disjoint explicit native config,
+native data and source/legacy contexts, and the copied root inside that native
+data namespace. Raw marker, UUID spelling and source profile/library bytes stay
+unchanged. A fresh native profile inherits the source language; a newer native
+language choice is retained. Matching current native settings are not rewritten.
+No ambient discovery, TestRoots cast, in-place legacy opening or profile-data
+boolean conveys this capability.
+
+The private binding's Arc identity excludes concurrent generations. Active root,
+raw ID, complete and recovering fields cannot change through update(&self);
+language can update under the short existing settings mutex. Complete copy
+verification/copy/SQL never runs under that mutex. Real post-replace uncertainty
+poisons the cache AND binding; changed copy/profile/root names or newly introduced
+unverified journals fence it. Dropping the binding cannot clear this fenced
+exclusion. All errors retain the actual copy and profile lifetime; no destructive
+Drop, fake rollback or path-based retry follows. Known copied journals/move-owner
+markers, recovering source/native data and extra native recovery artifacts are
+refused without reading/replaying/cleaning their foreign destinations.
+
+This finite phase does NOT open SQLite. Database::open_native, same-worker
+native runtime admission/repair/close integration, retained unresolved runtime
+exclusion after failed close, restart/relocation/recovery rebinding and the
+owned threaded jobs bridge remain unfinished. The new compile-fail assertion
+prevents passing NativeLibrary to open_isolated; it is not proof of those
+missing runtime mechanisms. Windows native binding is unavailable until the
+actual platform capabilities qualify. Domain3/7 namespaces stay inactive.
+
+Five actual Unix integration tests and one Unix profile-only fault test cover
+both real leases, raw bytes/no WAL side effects, root/ID/recovery exclusion with
+concurrent language updates, two competing bindings, retained losing copy,
+cancellation, exact refusal of copied/unrebound journals, root substitution,
+external profile changes and post-replace poison surviving guard drop. The
+first full check exposed an actual race: an unlocked namespace scan could
+mistake a concurrent binding's live settings temporary for foreign recovery.
+The short scan now runs INSIDE the settings mutex after active-binding refusal;
+no assertion was weakened. Focused corrected run
+`9c675d47-1694-4de1-a00e-9780b79cb276` passed5/zero skips.
+Final source-combined AppleARM1.99.1 cargo xtask check passed145/zero skipped,
+six separate compile-fail docs, unchanged146 corpus/strict15/source19, both graph
+policies/fmt/build/all-target Clippy/discovery:
+`9aa34c86-30b6-4189-a7fa-35953059d78e`. Only this ledger was added afterward.
+Owner5 additive pinning of the six actual Unix test identities follows from the
+published source. Other native/current provider/exact-head review/full4.11
+admission remain open; no physical durability or full section4 claim follows.

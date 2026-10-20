@@ -8,6 +8,7 @@ pub mod error;
 pub mod identity;
 pub mod layout;
 pub mod migrations;
+pub mod native;
 pub mod platform;
 pub mod portability;
 pub mod profile;
