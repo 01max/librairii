@@ -547,6 +547,7 @@ fn j6_full_pipeline_measures_handles_payload_and_all_blocked_call_owners() -> Te
         until(|| {
             let m = rig.handle.measurements();
             m.dispatched_handles == 3 * workers + 1
+                && m.item_bytes >= (3 * workers + 1) * 4096
         })?;
         until(|| gates.report.entries() == workers)?;
         gates.admit.close();
