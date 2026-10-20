@@ -30,11 +30,23 @@ pub struct Counts {
 }
 
 impl Counts {
+    /// Stored legacy operations may have no items. Creation of new work has a
+    /// separate positive-total guard; it must not restrict recovery/history.
     pub fn validate(self) -> Result<(), OperationPolicyError> {
-        if self.total <= 0 || self.completed < 0 || self.completed > self.total {
+        if self.total < 0 || self.completed < 0 || self.completed > self.total {
             return Err(OperationPolicyError::InvalidCounts);
         }
         Ok(())
+    }
+
+    pub fn for_new_work(total: i64) -> Result<Self, OperationPolicyError> {
+        if total <= 0 {
+            return Err(OperationPolicyError::InvalidCounts);
+        }
+        Ok(Self {
+            completed: 0,
+            total,
+        })
     }
 }
 
@@ -229,11 +241,7 @@ pub struct CompletionAggregate {
 
 impl CompletionAggregate {
     pub fn new(kind: OperationKind, total: i64) -> Result<Self, OperationPolicyError> {
-        let counts = Counts {
-            completed: 0,
-            total,
-        };
-        counts.validate()?;
+        let counts = Counts::for_new_work(total)?;
         Ok(Self {
             kind,
             counts,

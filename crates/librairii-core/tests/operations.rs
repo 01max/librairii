@@ -964,6 +964,116 @@ fn op6_admitted_history_keeps_typed_states_raw_time_and_curated_scope() -> TestR
     Ok(())
 }
 
+#[test]
+fn op6_admitted_zero_item_operation_interrupts_and_finishes_without_rewriting_scope() -> TestResult
+{
+    let fixture: serde_json::Value = serde_json::from_str(include_str!(
+        "../../../preservation/corpus/databases/prefix-012.json"
+    ))?;
+    for phase in ["before", "afterGoOpen"] {
+        let tables = &fixture[phase]["tables"];
+        let row = tables["file_operations"]
+            .as_array()
+            .and_then(|rows| rows.first())
+            .ok_or("missing admitted legacy operation")?;
+        let original = row.clone();
+        assert_eq!(row["id"], "80000000-0000-4000-8000-000000000001");
+        assert_eq!(row["kind"], "export");
+        let counts = Counts {
+            completed: row["completed_items"]
+                .as_i64()
+                .ok_or("missing completed count")?,
+            total: row["total_items"].as_i64().ok_or("missing total count")?,
+        };
+        assert_eq!(
+            counts,
+            Counts {
+                completed: 0,
+                total: 0
+            }
+        );
+        assert_eq!(tables["file_operation_items"], serde_json::json!([]));
+        counts.validate()?;
+        let scope = StoredExportScope {
+            discriminator: row["export_source_type"].as_str().map(str::to_owned),
+            group_ids: row["export_source_shelf_ids"].as_str().map(str::to_owned),
+            group_names: row["export_source_shelf_names"].as_str().map(str::to_owned),
+        };
+        assert_eq!(scope.source_type()?, Some(ExportSourceType::Shelf));
+        assert_eq!(scope.group_ids.as_deref(), Some("[1]"));
+        assert_eq!(scope.group_names.as_deref(), Some("[\"Legacy moon\"]"));
+        for parent in [OperationState::Queued, OperationState::Running] {
+            let repaired = interrupt(
+                parent,
+                counts,
+                &[],
+                &outcome("interrupted", "Operation was interrupted."),
+            )?;
+            assert_eq!(repaired.state, OperationState::Interrupted);
+            assert_eq!(repaired.counts, counts);
+            assert!(repaired.items.is_empty());
+            for target in [
+                OperationState::Succeeded,
+                OperationState::PartiallySucceeded,
+                OperationState::Failed,
+                OperationState::Cancelled,
+            ] {
+                assert_eq!(finish(parent, counts, target)?, target);
+            }
+            assert_eq!(
+                complete_item(parent, ItemState::Pending, counts, ItemState::Succeeded),
+                Err(OperationPolicyError::InvalidCounts)
+            );
+        }
+        assert_eq!(*row, original);
+        for key in ["started_at", "finished_at", "error_code", "error_message"] {
+            assert!(row[key].is_null());
+        }
+    }
+    for kind in [
+        OperationKind::Import,
+        OperationKind::MetadataSync,
+        OperationKind::Export,
+    ] {
+        for total in [0, -1] {
+            assert_eq!(
+                Counts::for_new_work(total),
+                Err(OperationPolicyError::InvalidCounts)
+            );
+            assert_eq!(
+                CompletionAggregate::new(kind, total),
+                Err(OperationPolicyError::InvalidCounts)
+            );
+        }
+    }
+    for total in [1, i64::MAX] {
+        assert_eq!(
+            Counts::for_new_work(total)?,
+            Counts {
+                completed: 0,
+                total
+            }
+        );
+    }
+    for counts in [
+        Counts {
+            completed: -1,
+            total: 0,
+        },
+        Counts {
+            completed: 1,
+            total: 0,
+        },
+        Counts {
+            completed: 0,
+            total: -1,
+        },
+    ] {
+        assert_eq!(counts.validate(), Err(OperationPolicyError::InvalidCounts));
+    }
+    Ok(())
+}
+
 proptest! {
     #![proptest_config(ProptestConfig::with_cases(256))]
     #[test]
