@@ -1,5 +1,5 @@
 use librairii_qualification::{Review, matching};
-use slint::{ComponentHandle, ModelRc, SharedPixelBuffer, VecModel};
+use slint::{ComponentHandle, Model, ModelRc, SharedPixelBuffer, VecModel};
 use std::cell::RefCell;
 use std::rc::Rc;
 use std::sync::Arc;
@@ -139,6 +139,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
         if let Some(ui) = weak.upgrade() {
             ui.set_approvals(decisions.borrow().add.iter().filter(|&&a| a).count() as i32);
+            ui.set_decisions(ModelRc::new(VecModel::from(
+                decisions.borrow().add[..3].to_vec(),
+            )));
         }
     });
     let weak = ui.as_weak();
@@ -146,6 +149,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         let applied = review.borrow_mut().apply();
         if let Some(ui) = weak.upgrade() {
             ui.set_approvals(0);
+            ui.set_decisions(ModelRc::new(VecModel::from(vec![false; 3])));
             ui.set_status(format!("{applied} synthetic decisions").into());
         }
     });
@@ -204,6 +208,20 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         },
     );
     let exit_timer = slint::Timer::default();
+    if std::env::args().any(|arg| arg == "--controller-smoke") {
+        ui.invoke_search("0042".into());
+        assert_eq!(ui.get_stories().row_count(), 1);
+        ui.invoke_select_story(42);
+        assert!(ui.get_selected().starts_with("0042"));
+        ui.invoke_decide(1, true);
+        assert_eq!(ui.get_approvals(), 1);
+        assert_eq!(ui.get_decisions().row_data(1), Some(true));
+        ui.invoke_apply_review();
+        assert_eq!(ui.get_approvals(), 0);
+        assert_eq!(ui.get_decisions().row_data(1), Some(false));
+        eprintln!("controller_smoke=passed; public generated component APIs only");
+        return Ok(());
+    }
     if std::env::args().any(|arg| arg == "--smoke") {
         exit_timer.start(slint::TimerMode::SingleShot, Duration::from_secs(3), || {
             let _ = slint::quit_event_loop();

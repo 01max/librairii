@@ -23,6 +23,7 @@ export component Spike inherits Window {
     in property <string> status;
     in property <bool> working: false;
     in property <int> approvals: 0;
+    in property <[bool]> decisions: [false, false, false];
     callback search(string);
     callback select-story(int);
     callback start-work();
@@ -107,6 +108,7 @@ export component Spike inherits Window {
             HorizontalBox {
                 for index in 3: CheckBox {
                     text: (root.french ? "Ajouter " : "Add ") + index;
+                    checked: root.decisions[index];
                     toggled => { root.decide(index, self.checked); }
                 }
                 Button { text: (root.french ? "Appliquer " : "Apply ") + root.approvals; enabled: root.approvals > 0; clicked => { root.apply-review(); } }
