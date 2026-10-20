@@ -12,7 +12,7 @@
     "originalFiles": 436,
     "scope": "disposable independent archive + external modfile; offline pinned Go1.26.5, no original input writes",
     "sourceIndexSha256": "10ea8fe193c594ce153ae7a1734c41ab80c9d406cc7ea314c8c7c471b7a92a99",
-    "templateSha256": "bb4a15136103532ce27521bbabb461e4ef54161580c6cd3e633a4a6c050c03d8",
+    "templateSha256": "2011455b23aad4701a11a086db7673d34d9899102f8841b4761cf35a0b20d455",
     "tree": "e797e9d59926d83b73fb7c02e5c3611073e89a16",
     "unchangedOriginalFiles": 436,
     "unchangedZipMembers": 487
@@ -20,8 +20,10 @@
   "representativeCount": 57,
   "scalarCount": 1112064,
   "scalarDigests": {
+    "asciiFieldFold": "10f8a186041aa579137e437fd6a72186eb06f8416009f2697d465586eaca7be8",
     "ccc": "e44c609116a8acb7b7fa4e7df6ac7ffc111dd7f2d301aa6d2fd04d9b27c99290",
     "fold": "59393122a997e3735183b895e6ee071c15078d668967d585dfb215e0922226f4",
+    "lower": "bb518bb265ad5b4eda19593744f63dcac8892d10c772d8d8e3016390de45449e",
     "mn": "6be869f12f926829e07627bc3e1ad68ea097f2574b4ba6afb416c4fd1a4c3f62",
     "nfkd": "e4ab08c453cc60a45b8bdff7b1232dd29d1bf656e7cc0f1872ceac2ecd5f480e",
     "normalize": "7635e9a34febaa44e28ac14ec95ed04843aa79b87fd7a4a75ac6797bad87e115",

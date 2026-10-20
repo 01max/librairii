@@ -17,7 +17,7 @@ const NON_STARTERS: u8 = 30;
 const CGJ: char = '\u{034f}';
 
 #[derive(Debug, thiserror::Error)]
-enum NormalizeError {
+pub(in crate::migrations) enum NormalizeError {
     #[error("saved query input exceeds the frozen wire limit")]
     InputLimit,
     #[error("frozen normalization data/algorithm invariant failed")]
@@ -36,8 +36,41 @@ fn is_space(character: char) -> bool {
     in_ranges(character, unicode::WHITE_SPACE)
 }
 
-pub(super) fn trim_space(value: &str) -> &str {
+pub(in crate::migrations) fn trim_space(value: &str) -> &str {
     value.trim_matches(is_space)
+}
+
+pub(in crate::migrations) fn lowercase_key(value: &str) -> Result<String> {
+    value
+        .chars()
+        .map(|character| {
+            match unicode::SIMPLE_LOWER
+                .binary_search_by_key(&u32::from(character), |&(rune, _)| rune)
+            {
+                Ok(i) => {
+                    char::from_u32(unicode::SIMPLE_LOWER[i].1).ok_or(NormalizeError::FrozenData)
+                }
+                Err(_) => Ok(character),
+            }
+        })
+        .collect()
+}
+
+/// Fold ONLY the Unicode15 simple-case orbits that reach ASCII field names.
+/// Full folding would incorrectly admit multi-rune ligatures as wire keys.
+pub(in crate::migrations) fn ascii_field_key(value: &str) -> Option<String> {
+    value
+        .chars()
+        .map(|character| {
+            match unicode::ASCII_SIMPLE_FOLD
+                .binary_search_by_key(&u32::from(character), |&(rune, _)| rune)
+            {
+                Ok(i) => Some(char::from(unicode::ASCII_SIMPLE_FOLD[i].1)),
+                Err(_) if character.is_ascii() => Some(character),
+                Err(_) => None,
+            }
+        })
+        .collect()
 }
 
 fn folded(value: &str) -> Result<String> {
@@ -272,7 +305,7 @@ fn nfkd(value: &str) -> Result<String> {
     Ok(output)
 }
 
-fn normalize(value: &str) -> Result<String> {
+pub(in crate::migrations) fn normalize(value: &str) -> Result<String> {
     if value.len() > MAX_INPUT_BYTES {
         return Err(NormalizeError::InputLimit);
     }
@@ -338,6 +371,8 @@ mod tests {
             ("ccc", Sha256::new()),
             ("mn", Sha256::new()),
             ("space", Sha256::new()),
+            ("lower", Sha256::new()),
+            ("asciiFieldFold", Sha256::new()),
         ]);
         let mut representatives = BTreeMap::new();
         let mut contextual_runes = Vec::new();
@@ -361,6 +396,16 @@ mod tests {
                 ("ccc", vec![ccc]),
                 ("mn", vec![u8::from(mn)]),
                 ("space", vec![u8::from(is_space(character))]),
+                ("lower", lowercase_key(&value)?.into_bytes()),
+                (
+                    "asciiFieldFold",
+                    vec![
+                        unicode::ASCII_SIMPLE_FOLD
+                            .binary_search_by_key(&code, |&(rune, _)| rune)
+                            .ok()
+                            .map_or(0, |i| unicode::ASCII_SIMPLE_FOLD[i].1),
+                    ],
+                ),
             ] {
                 frame(
                     scalar.get_mut(key).ok_or("missing hash metric")?,
@@ -452,6 +497,24 @@ mod tests {
             nfkd(&input)?,
             format!("a{}\u{1715}\u{034f}\u{16ff0}Z", "\u{16ff0}".repeat(29))
         );
+        Ok(())
+    }
+
+    #[test]
+    fn frozen_json_key_lowercase_and_simple_orbits_preserve_distinct_rules()
+    -> std::result::Result<(), Box<dyn Error>> {
+        assert_eq!(lowercase_key("BrokenState")?, "brokenstate");
+        assert_eq!(lowercase_key("Brokenſtate")?, "brokenſtate");
+        assert_eq!(lowercase_key("İIıi")?, "iiıi");
+        assert_eq!(ascii_field_key("BrokenState"), Some("BROKENSTATE".into()));
+        assert_eq!(ascii_field_key("Brokenſtate"), Some("BROKENSTATE".into()));
+        assert_eq!(
+            ascii_field_key("includeBroKen"),
+            Some("INCLUDEBROKEN".into())
+        );
+        assert_eq!(ascii_field_key("booleanﬁlters"), None);
+        assert_eq!(ascii_field_key("choıceFilters"), None);
+        assert_eq!(ascii_field_key("compatibİlities"), None);
         Ok(())
     }
 

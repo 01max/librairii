@@ -44,7 +44,7 @@ func bit(value bool) string { if value { return "\x01" }; return "\x00" }
 
 func main() {
     fold := cases.Fold()
-    scalar := newDigests("fold", "nfkd", "normalize", "ccc", "mn", "space")
+    scalar := newDigests("fold", "nfkd", "normalize", "ccc", "mn", "space", "lower", "asciiFieldFold")
     // First scalar per (original CCC, Mn membership), ordered by those keys.
     type key struct { ccc uint8; mn bool }
     representatives := make(map[key]rune)
@@ -63,6 +63,14 @@ func main() {
         scalar.frame("ccc", uint32(r), string([]byte{ccc}))
         scalar.frame("mn", uint32(r), bit(mn))
         scalar.frame("space", uint32(r), bit(unicode.IsSpace(r)))
+        scalar.frame("lower", uint32(r), strings.ToLower(value))
+        smallest := r
+        for next := unicode.SimpleFold(r); next != r; next = unicode.SimpleFold(next) {
+            if next < smallest { smallest = next }
+        }
+        ascii := byte(0)
+        if 'A' <= smallest && smallest <= 'Z' { ascii = byte(smallest) }
+        scalar.frame("asciiFieldFold", uint32(r), string([]byte{ascii}))
         count++
         if ccc != 0 { k := key{ccc, mn}; if _, ok := representatives[k]; !ok { representatives[k] = r } }
         if decomposed != value || !properties.BoundaryBefore() { contextualRunes = append(contextualRunes,r) }

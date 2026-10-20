@@ -11,7 +11,7 @@
 use super::{language_data as data, normalization::trim_space};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, thiserror::Error)]
-pub(super) enum LanguageError {
+pub(in crate::migrations) enum LanguageError {
     #[error("saved query language is invalid")]
     Invalid,
     #[error("frozen language data/algorithm invariant failed")]
@@ -530,7 +530,7 @@ fn parse_default(value: &str, grandfathered: bool) -> Result<String> {
     Ok(output)
 }
 
-pub(super) fn canonical(value: &str) -> Result<String> {
+pub(in crate::migrations) fn canonical(value: &str) -> Result<String> {
     let value = trim_space(value).replace('_', "-");
     if value.is_empty() || value.len() > 35 {
         return Err(LanguageError::Invalid);

@@ -588,3 +588,57 @@ storage all-target Clippy, fmt and unchanged146 corpus pass. Final committed
 cumulative/native checks follow separately. Strict saved-query v1–v5 decoding,
 atomic explicit same-writer Collection Inspect/Open and all24 projection
 assertions remain REQUIRED and unfinished;4.4/4.11 are not complete.
+
+### Partial 4.4: strict private v1–v5 saved-query wire codec
+
+The still test-only inline `migrations.rs::collection_codec` separates invalid
+payloads, unsupported versions and frozen-data invariant failures. Its bounded
+ordered wire parser retains duplicate fields and numeric lexemes, Go bytewise
+invalid-UTF8 replacement, unpaired-surrogate replacement, null assignments,
+unknown-field/trailing-document rejection and recursive limits. Frozen Go15
+simple lowercase (duplicate keys) remains DISTINCT from ASCII-reaching Unicode
+simple-fold orbits (struct fields); full search folding is never a wire-key rule.
+Validation precedes legacy Broken removal; v4 retains ordinary reused IDs, v5
+rejects built-in flag restrictions. Canonical payload field order, Go HTML/string
+escaping, raw array/group limits, exact CLDR32 language outcomes and the source's
+repeated recursive normalization passes are retained. No evaluator, Collection
+CRUD, shared API, eager DatabaseOpen or production projection is activated.
+
+Qualification runs actual Go1.26.5 DecodeSavedLibraryQuery AND
+MigrateSavedLibraryQuery, compiling a byte-IDENTICAL temporary standalone copy
+of frozen collections/query.go SHA256
+569189457f91d9f29980a51fa7d68040745b07d7bddbb2d71dfc03c8dc89b763.
+Original library/collectionquery/searchtext algorithms remain unchanged. On
+2,864 deterministic scoped cases Rust matches separate decoded/migrated bytes
+and invalid/unsupported outcomes;723 are accepted in each phase. Inputs cover
+all six current/unsupported versions, retirement authority0/7, null/scalar/array
+shapes, Unicode key aliases vs duplicates, integer boundaries/-0/exponents,
+invalid UTF8/surrogates, branch/filter/value/name ceilings, actual surviving-Mc
+counterexample and400 structured adversaries. The recorded recipe verifies all
+436 independent exact73 archive files and487 authenticated xtext ZIP members
+unchanged; no frozen oracle execution, downloaded module, production data or
+preservation generator/corpus writes. `codec-reference.json` SHA256
+b2fd01d9685133f295f1fbe23296d50971f07314ed94ed18d6a235903bca0d09.
+
+The actual Go scalar reference now additionally qualifies simple lowercase and
+ASCII-reaching simple-fold rules over all1,112,064 valid scalars; all six prior
+scalar metrics and147,228 sequence digests remain byte-identical. New reference
+SHA25661a5a904eae2e88d07aa667f5cd2e0d74dd83a7c2e247e87d46b621f427a2468.
+The explicit derivative manifest inventories19 files with original headers,
+recipes/hashes/notices; source policy, storage all-target Clippy and fmt pass.
+All95 storage nextest tests/zero skipped pass ARM, run
+13e2d196-dd8d-4be2-ba2f-f7b273390c25. Cumulative checks follow separately; five
+new actual all-target identities require additive owner5 discovery support.
+Finite differential evidence is not arbitrary-input, SQL projection or native
+filesystem qualification. Separate same-writer Inspect/Open, all18 phased
+prefix snapshots and all24 SQL-only payload/version/revision differences remain
+unfinished and REQUIRED for4.4; all4.11 admission gates remain open.
+
+Current9dd automatic workflows are scheduled/pending. Superseded5686 Rust
+quality workflow was CANCELLED after9dd; its individually completed Windows75
+and corrected five assertions remain exact-head historical evidence, never
+all-eight or current-head qualification.
+
+The combined WIP workspace check passes119 nextest/zero skipped, four separate
+compile-fail docs and unchanged146 corpus. This is ARM execution; exact committed
+checks and serialized discovery follow, not a four-target qualification.

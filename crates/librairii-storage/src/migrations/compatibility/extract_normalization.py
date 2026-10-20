@@ -4,6 +4,11 @@
 Inputs are the ROOT-approved authenticated source materialization. This is a
 private data translation recipe, not a preservation-corpus/fixture generator.
 Every selected byte/header is checked against the fixed source index first.
+
+The selected Go case-range/orbit algorithm is translated for strict wire keys:
+// Copyright 2009 The Go Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
 """
 import argparse
 import hashlib
@@ -118,6 +123,8 @@ def main():
 
     go_unicode = read("Go1.26.5/src/unicode/tables.go")
     properties = ["// Code generated from the approved Go1.26.5 Unicode15 source; PRIVATE DERIVATIVE.",
+                  "// Copyright 2009 The Go Authors. All rights reserved.",
+                  "// Use of this source code is governed by a BSD-style license in LICENSE-GO-BSD.txt.",
                   "/* Original upstream header (retained verbatim):"]
     properties += go_unicode.splitlines()[:12] + ["*/"]
     for name, rust_name in [("_Mn", "MN"), ("_White_Space", "WHITE_SPACE")]:
@@ -135,6 +142,57 @@ def main():
         raise ValueError("changed frozen full-fold map")
     properties += ["#[rustfmt::skip]", "pub(super) const FULL_FOLD: &[(u32, &str)] = &["]
     properties += [f"    ({hex(ord(k))}, {rust_string(v)})," for k, v in sorted(fold.items())]
+    properties.append("];\n")
+    # Go ToLower is a SINGLE-rune mapping. It differs from full folding and
+    # modern Rust Unicode lowercasing; duplicate-key validation uses it.
+    case_ranges = []
+    for lo, hi, deltas in re.findall(r"\{(0x[0-9A-Fa-f]+), (0x[0-9A-Fa-f]+), d\{([^}]+)\}\}",
+                                   body(go_unicode, "var _CaseRanges =")):
+        case_ranges.append((int(lo, 0), int(hi, 0), [0x110000 if v.strip() == "UpperLower"
+                            else int(v.strip(), 0) for v in deltas.split(",")]))
+    if not case_ranges or case_ranges != sorted(case_ranges):
+        raise ValueError("changed frozen case range representation")
+
+    def to_case(rune, case):
+        for lo, hi, deltas in case_ranges:
+            if lo <= rune <= hi:
+                delta = deltas[case]
+                return lo + (((rune - lo) & ~1) | (case & 1)) if delta > 0x10ffff else rune + delta
+        return rune
+
+    lower = [(r, to_case(r, 1)) for lo, hi, _ in case_ranges for r in range(lo, hi+1)
+             if to_case(r, 1) != r]
+    properties += ["#[rustfmt::skip]", "pub(super) const SIMPLE_LOWER: &[(u32, u32)] = &["]
+    properties += [f"    ({hex(r)}, {hex(mapped)})," for r, mapped in lower]
+    properties.append("];\n")
+    ascii_fold = numbers(go_unicode, "asciiFold")
+    if len(ascii_fold) != 128:
+        raise ValueError("changed Go ASCII fold width")
+    case_orbit = {int(a, 0): int(b, 0) for a, b in re.findall(r"\{(0x[0-9A-Fa-f]+), (0x[0-9A-Fa-f]+)\}",
+                  body(go_unicode, "var caseOrbit ="))}
+
+    def simple_fold(rune):
+        if rune < 128:
+            return ascii_fold[rune]
+        if rune in case_orbit:
+            return case_orbit[rune]
+        lower = to_case(rune, 1)
+        return lower if lower != rune else to_case(rune, 0)
+
+    ascii_orbits = {}
+    for capital in range(ord("A"), ord("Z")+1):
+        rune = capital
+        for _ in range(10):
+            if rune in ascii_orbits:
+                if rune != capital or ascii_orbits[rune] != capital:
+                    raise ValueError("overlapping/unclosed frozen ASCII fold orbit")
+                break
+            ascii_orbits[rune] = capital
+            rune = simple_fold(rune)
+        else:
+            raise ValueError("unclosed frozen ASCII fold orbit")
+    properties += ["#[rustfmt::skip]", "pub(super) const ASCII_SIMPLE_FOLD: &[(u32, u8)] = &["]
+    properties += [f"    ({hex(r)}, {hex(mapped)})," for r, mapped in sorted(ascii_orbits.items())]
     properties.append("];\n")
     (destination / "unicode_properties.rs").write_text("\n".join(properties), encoding="utf-8")
 

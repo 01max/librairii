@@ -44,7 +44,7 @@ def command(args, cwd, env=None, timeout=120):
                           stderr=subprocess.PIPE).stdout
 
 
-def qualify(template_name="normalization_oracle.go.in", arguments=(), runner=None):
+def qualify(template_name="normalization_oracle.go.in", arguments=(), runner=None, copies=()):
     directory = Path(__file__).resolve().parent
     repository = directory.parents[4]
     index_bytes = (repository / ".config/upstream-sources" / BUNDLE / "source-index.json").read_bytes()
@@ -83,6 +83,21 @@ def qualify(template_name="normalization_oracle.go.in", arguments=(), runner=Non
                     raise ValueError("nonregular frozen archive input")
             archive.extractall(checkout, filter="data")
         frozen_before = inventory(checkout)
+        # A qualification may compile an EXACT original Go file alone under a
+        # new internal package path, avoiding unrelated SQL-driver linkage. Its
+        # bytes/package/algorithms are unchanged; the original remains in place.
+        copied = {}
+        for original, destination in copies:
+            if original not in frozen_before or destination in frozen_before:
+                raise ValueError("invalid isolated source copy")
+            relative = PurePosixPath(destination)
+            if relative.is_absolute() or ".." in relative.parts:
+                raise ValueError("source copy escapes independent checkout")
+            output = checkout / destination
+            output.parent.mkdir(parents=True, exist_ok=True)
+            content = (checkout / original).read_bytes()
+            output.write_bytes(content)
+            copied[destination] = {"original": original, "sha256": sha(content)}
 
         module = temporary / "xtext"
         module.mkdir(mode=0o700)
@@ -134,6 +149,9 @@ def qualify(template_name="normalization_oracle.go.in", arguments=(), runner=Non
         frozen_after = inventory(checkout)
         probe_name = "cmd/native-normalization-proof/main.go"
         del frozen_after[probe_name]
+        for destination, record in copied.items():
+            if frozen_after.pop(destination) != record["sha256"]:
+                raise ValueError("qualification changed an exact source copy")
         if frozen_after != frozen_before or inventory(module) != xtext_before:
             raise ValueError("qualification changed an original independent input")
         if sha(ZIP.read_bytes()) != ZIP_SHA or sha(go_tool.read_bytes()) != go_tool_sha:
@@ -146,6 +164,7 @@ def qualify(template_name="normalization_oracle.go.in", arguments=(), runner=Non
             "authenticatedZipSha256": ZIP_SHA, "unchangedZipMembers": len(xtext_before),
             "sourceIndexSha256": INDEX_SHA, "goToolSha256": go_tool_sha,
             "templateSha256": sha(template.read_bytes()),
+            **({"exactSourceCopies": copied} if copied else {}),
             "scope": "disposable independent archive + external modfile; offline pinned Go1.26.5, no original input writes",
         }
         return result
