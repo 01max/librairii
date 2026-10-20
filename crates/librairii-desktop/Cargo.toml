@@ -1,0 +1,18 @@
+[package]
+name = "librairii-desktop"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[dependencies]
+librairii-app.workspace = true
+librairii-storage.workspace = true
+librairii-adapters.workspace = true
+librairii-ui.workspace = true
+
+[lints]
+workspace = true
+
+[dev-dependencies]
+librairii-testkit.workspace = true

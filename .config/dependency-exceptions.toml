@@ -1,0 +1,9 @@
+# No accepted exceptions. Each future suppression must have one matching record:
+# [[exceptions]]
+# kind = "advisory" # advisory, duplicate, or license
+# selector = "RUSTSEC-YYYY-NNNN" # exact cargo-deny advisory or crate@version selector
+# owner = "named owner"
+# reason = "bounded reason and impact"
+# tracking = "review/issue URL"
+# expires = "YYYY-MM-DD" # UTC; check fails on expiry (including that day)
+exceptions = []

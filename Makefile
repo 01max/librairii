@@ -93,3 +93,8 @@ smoke-first-story:
 
 smoke-release:
 	scripts/smoke-release
+
+# Additive Rust checks; the retained Go/React check target stays intact.
+.PHONY: check-rust
+check-rust:
+	cargo xtask check
