@@ -13,6 +13,7 @@
 )]
 
 mod model;
+mod progress;
 mod runtime;
 
 #[cfg(test)]

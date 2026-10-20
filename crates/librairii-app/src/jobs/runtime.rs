@@ -1,4 +1,5 @@
 use super::model::*;
+use super::progress::{Slot, Stamp, Value};
 use std::{
     collections::VecDeque,
     io,
@@ -20,6 +21,8 @@ struct Working {
     item_bytes: usize,
     result_bytes: usize,
     call: bool,
+    progress: Slot,
+    export: bool,
 }
 
 struct State {
@@ -38,6 +41,8 @@ struct State {
     source_version: u64,
     repair_version: u64,
     measured: Measurements,
+    progress_wake: bool,
+    progress_cursor: usize,
 }
 
 impl State {
@@ -67,6 +72,11 @@ impl State {
             .ingress
             .max(usize::from(self.ingress_occupied));
         self.measured.calls = self.measured.calls.max(calls);
+        self.measured.progress_slots = self.measured.progress_slots.max(running);
+        self.measured.progress_wakes = self
+            .measured
+            .progress_wakes
+            .max(usize::from(self.progress_wake));
         self.measured.dispatched_handles = self
             .measured
             .dispatched_handles
@@ -94,6 +104,30 @@ struct Shared {
     state: Mutex<State>,
     changed: Condvar,
     stopping: AtomicBool,
+}
+
+#[derive(Clone)]
+pub(super) struct ProgressSink {
+    shared: Arc<Shared>,
+    index: usize,
+    stamp: Stamp,
+}
+
+impl ProgressSink {
+    pub(super) fn publish(&self, value: Value) -> bool {
+        let mut state = lock(&self.shared.state);
+        let Some(worker) = &mut state.workers[self.index] else {
+            return false;
+        };
+        if self.stamp != worker.progress.stamp || !worker.progress.replace(value, worker.export) {
+            return false;
+        }
+        state.progress_wake = true;
+        state.source_version = state.source_version.wrapping_add(1);
+        state.changed();
+        self.shared.changed.notify_all();
+        true
+    }
 }
 
 // Callbacks never run with this mutex held. Recovering the guard lets owned
@@ -174,6 +208,24 @@ impl Handle {
     pub(super) fn measurements(&self) -> Measurements {
         lock(&self.shared.state).measured.clone()
     }
+
+    /// Notification loss/coalescing is intentional. The receiver owns this
+    /// bounded snapshot; terminal truth is fetched from the report backend.
+    pub(super) fn take_progress(&self) -> Option<Vec<Value>> {
+        let mut state = lock(&self.shared.state);
+        if !state.progress_wake {
+            return None;
+        }
+        state.progress_wake = false;
+        Some(
+            state
+                .workers
+                .iter()
+                .flatten()
+                .map(|w| w.progress.latest)
+                .collect(),
+        )
+    }
 }
 
 pub(super) struct Engine {
@@ -208,6 +260,8 @@ impl Engine {
                 source_version: 0,
                 repair_version: 0,
                 measured: Measurements::default(),
+                progress_wake: false,
+                progress_cursor: 0,
             }),
             changed: Condvar::new(),
             stopping: AtomicBool::new(false),
@@ -438,6 +492,41 @@ fn coordinator_loop(shared: &Arc<Shared>, callbacks: CoordinatorCallbacks) {
             admit(shared, &callbacks, pending);
             continue;
         }
+        // Rotating bounded scalar mailboxes share the coordinator's sole call
+        // owner. No callback is made under the queue mutex.
+        let next = (0..shared.configuration.workers).find_map(|offset| {
+            let index = (state.progress_cursor + offset) % shared.configuration.workers;
+            state.workers[index]
+                .as_ref()
+                .filter(|w| w.progress.pending)
+                .map(|w| (index, w.progress.latest))
+        });
+        if let Some((index, value)) = next {
+            if let Some(worker) = &mut state.workers[index] {
+                worker.progress.pending = false;
+            }
+            state.progress_cursor = (index + 1) % shared.configuration.workers;
+            drop(state);
+            let saved = {
+                let _call = Call::enter(shared, CallOwner::Coordinator);
+                (callbacks.progress)(value)
+            };
+            let mut state = lock(&shared.state);
+            if saved {
+                state.measured.progress_saves += 1;
+                if let Some(worker) = &mut state.workers[index]
+                    && worker.progress.stamp == value.stamp
+                {
+                    worker.progress.saved_bytes = value.completed;
+                    worker.progress.pending = worker.progress.latest.completed > value.completed
+                        && (worker.progress.latest.completed - value.completed >= 256 * 1024
+                            || worker.progress.latest.completed == worker.progress.latest.total);
+                }
+            } else {
+                state.measured.unsaved_progress += 1;
+            }
+            continue;
+        }
         if state.prefetch.is_some() {
             if state.queue.len() < shared.configuration.capacity() {
                 if let Some(item) = state.prefetch.take() {
@@ -502,6 +591,14 @@ fn worker_loop(shared: Arc<Shared>, index: usize, callbacks: WorkerCallbacks) {
                         item_bytes: item.bytes(),
                         result_bytes: 0,
                         call: false,
+                        progress: Slot::new(
+                            Stamp {
+                                generation: item.generation,
+                                item: item.key,
+                            },
+                            item.total_bytes,
+                        ),
+                        export: item.kind == librairii_core::OperationKind::Export,
                     });
                     state.source_version = state.source_version.wrapping_add(1);
                     state.changed();
@@ -515,13 +612,22 @@ fn worker_loop(shared: Arc<Shared>, index: usize, callbacks: WorkerCallbacks) {
             }
         };
         let kind = item.kind;
+        let sink = ProgressSink {
+            shared: Arc::clone(&shared),
+            index,
+            stamp: Stamp {
+                generation: item.generation,
+                item: item.key,
+            },
+        };
         let completed = {
             let _call = Call::enter(&shared, CallOwner::Worker(index));
-            (callbacks.execute)(item)
+            (callbacks.execute)(item, sink)
         };
         {
             let mut state = lock(&shared.state);
             if let Some(worker) = &mut state.workers[index] {
+                worker.progress.sealed = true;
                 worker.result_bytes = completed.bytes() - completed.item.bytes();
             }
             state.changed();

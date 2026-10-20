@@ -67,3 +67,36 @@ external PR/AO ledger; a commit cannot embed its own SHA. Subsequent numbered
 work and review fixes retain separate commits. Admitted repair integration is
 `4383373272ce1d3095199caf37dde7e5d0598213`; actual history consumption precedes
 final combined qualification. All preservation inputs remain unchanged.
+
+## Implemented partial 6.3
+
+The existing workers now each own one scalar latest-progress slot, with one
+coalesced presentation wake. Identity, generation, revision, monotone byte
+bounds and sealed execution lifetime are checked before replacement. The
+coordinator owns export progress persistence attempts using the frozen 256 KiB
+or completion threshold; callbacks never run under the queue mutex. Import
+has no invented byte callback. Unsaved progress is counted separately and does
+not erase the returned domain fact or independent diagnostics.
+
+A consumer-owned projection distinguishes library generation, query revision
+and job identity. Saved terminal observations outrank later running/provisional
+fallbacks. Terminal results remain fetchable from the controlled report backend
+after coalesced/dropped hints. This is not real SQL durability or UI qualification.
+
+Actual app Cargo tests pass 14/14 with zero ignored/filtered: all eleven prior
+controlled assertions plus bounded two-worker progress under a blocked save,
+identity/monotonicity/threshold checks, and reordered saved/provisional responses.
+The blocked save backend guards its terminal record rather than applying late
+progress after completion. Current cumulative nextest discovery needs owner5's
+additive union for the three new IDs; old eight-provider approval is historical.
+One ordinary Clippy collapsible-if finding was corrected before this commit;
+no warning was disabled.
+
+Preserved NEXT6 history before this numbered commit:
+
+- `ac25922388b533a8b7c52571979a4e4de65670b9` — partial 6.2 scheduler.
+- `84af2cadea26fbcff99a225b8abb10af93ac2f67` — actual admitted repair merge.
+- `a7c7f923444a6e55754072ab996bb3c41a8b2d82` — original owner5 app export and
+  eleven additive actual discovery entries, consumed by fast-forward unchanged.
+  Owner5 reports 63 cumulative ARM tests, two docs and full quality/fixture gates
+  on that support head; this does not qualify the later progress/cancel head.

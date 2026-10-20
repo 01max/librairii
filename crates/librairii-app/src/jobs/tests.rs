@@ -1,4 +1,4 @@
-use super::{model::*, runtime::*};
+use super::{model::*, progress::*, runtime::*};
 use librairii_core::{JobId, OperationKind, operations::HistoryKey};
 use std::{
     collections::{BTreeMap, VecDeque},
@@ -79,6 +79,7 @@ struct Gates {
     report: Arc<Gate>,
     start_readback: Arc<Gate>,
     report_readback: Arc<Gate>,
+    progress: Arc<Gate>,
 }
 
 impl Gates {
@@ -90,6 +91,7 @@ impl Gates {
             report: Arc::new(Gate::new()),
             start_readback: Arc::new(Gate::new()),
             report_readback: Arc::new(Gate::new()),
+            progress: Arc::new(Gate::new()),
         }
     }
 
@@ -101,6 +103,7 @@ impl Gates {
             &self.report,
             &self.start_readback,
             &self.report_readback,
+            &self.progress,
         ] {
             gate.open();
         }
@@ -114,6 +117,7 @@ struct Store {
     offered: Vec<(JobId, usize)>,
     recorded: Vec<Completed>,
     max_exclusions: usize,
+    progress: Vec<Value>,
 }
 
 impl Store {
@@ -192,6 +196,8 @@ fn input(number: u8, kind: OperationKind, count: usize, payload: usize) -> Start
             ordinal,
             kind,
             payload: vec![number; payload],
+            generation: Generation(1),
+            total_bytes: payload as i64,
         })
         .collect();
     StartInput::new(job, kind, items)
@@ -210,7 +216,10 @@ struct Rig {
     gates: Gates,
     store: Arc<Mutex<Store>>,
     on_execute: Arc<Mutex<Option<Handle>>>,
+    on_progress: Arc<Mutex<Option<ExecuteHook>>>,
 }
+
+type ExecuteHook = Arc<dyn Fn(&Item, ProgressSink) + Send + Sync>;
 
 impl Rig {
     fn new(
@@ -259,6 +268,23 @@ impl Rig {
                     guard(&store).create(input)
                 })
             },
+            progress: {
+                let gate = Arc::clone(&gates.progress);
+                let store = Arc::clone(&store);
+                Arc::new(move |value| {
+                    gate.pass();
+                    let mut store = guard(&store);
+                    if store
+                        .recorded
+                        .iter()
+                        .any(|r| r.item.key == value.stamp.item)
+                    {
+                        return false;
+                    }
+                    store.progress.push(value);
+                    true
+                })
+            },
             source: {
                 let gate = Arc::clone(&gates.source);
                 let store = Arc::clone(&store);
@@ -269,12 +295,18 @@ impl Rig {
             },
         };
         let on_execute = Arc::new(Mutex::new(None::<Handle>));
+        let on_progress = Arc::new(Mutex::new(None::<ExecuteHook>));
         let callbacks = WorkerCallbacks {
             execute: {
                 let gate = Arc::clone(&gates.execute);
                 let on_execute = Arc::clone(&on_execute);
-                Arc::new(move |item| {
+                let on_progress = Arc::clone(&on_progress);
+                Arc::new(move |item, progress| {
                     gate.pass();
+                    let hook = guard(&on_progress).clone();
+                    if let Some(hook) = hook {
+                        hook(&item, progress);
+                    }
                     if let Some(handle) = guard(&on_execute).clone() {
                         handle.stop();
                         let _ = handle.measurements();
@@ -316,6 +348,7 @@ impl Rig {
             gates,
             store,
             on_execute,
+            on_progress,
         })
     }
 
@@ -717,4 +750,259 @@ fn j6_executor_callback_reentry_never_holds_queue_mutex() -> TestResult {
     ));
     assert!(rig.finish()?.joined);
     Ok(())
+}
+
+#[test]
+fn j6_progress_is_coalesced_with_one_scalar_per_worker_and_one_wake() -> TestResult {
+    let gates = Gates::new();
+    gates.progress.close();
+    gates.report.close();
+    let rig = Rig::new(2, gates.clone(), StartPolicy::Create, false)?;
+    let sinks = Arc::new(Mutex::new(Vec::<(ProgressSink, Value)>::new()));
+    let hook_sinks = Arc::clone(&sinks);
+    let report = Arc::clone(&gates.report);
+    *guard(&rig.on_progress) = Some(Arc::new(move |item, sink| {
+        let stamp = Stamp {
+            generation: item.generation,
+            item: item.key,
+        };
+        for revision in 1..=10_000 {
+            assert!(sink.publish(Value {
+                stamp,
+                revision,
+                completed: revision as i64 * 100,
+                total: 1_000_000
+            }));
+        }
+        guard(&hook_sinks).push((
+            sink,
+            Value {
+                stamp,
+                revision: 10_001,
+                completed: 1_000_000,
+                total: 1_000_000,
+            },
+        ));
+        report.pass();
+    }));
+    let mut request = input(31, OperationKind::Export, 2, 17);
+    for item in &mut request.items {
+        item.total_bytes = 1_000_000;
+    }
+    rig.created(request)?;
+    until(|| gates.report.entries() == 2 && gates.progress.entries() == 1)?;
+    let values = rig.handle.take_progress().ok_or("missing wake")?;
+    assert_eq!(values.len(), 2);
+    assert!(
+        values
+            .iter()
+            .all(|v| v.completed == 1_000_000 && v.revision == 10_000)
+    );
+    assert!(rig.handle.take_progress().is_none());
+    let measured = rig.handle.measurements();
+    assert_eq!(measured.progress_slots, 2);
+    assert_eq!(measured.progress_wakes, 1);
+    assert_eq!(measured.calls, 3);
+    // Terminal reporting can finish while the earlier progress attempt remains
+    // blocked. The guarded backend refuses that late progress after release.
+    gates.report.open();
+    until(|| guard(&rig.store).recorded.len() == 2)?;
+    let store = Arc::clone(&rig.store);
+    let measured = rig.finish()?;
+    assert!(measured.joined);
+    assert_eq!(measured.unsaved_progress, 1);
+    assert!(guard(&store).progress.is_empty());
+    assert_eq!(guard(&store).recorded.len(), 2); // fetch survives lost/coalesced hints
+    for (sink, value) in guard(&sinks).iter() {
+        assert!(!sink.publish(*value));
+    }
+    Ok(())
+}
+
+#[test]
+fn j6_progress_rejects_wrong_identity_regression_and_preserves_export_threshold() {
+    let stamp = Stamp {
+        generation: Generation(7),
+        item: ItemKey {
+            job: JobId::from_bytes([7; 16]),
+            row: 1,
+        },
+    };
+    let mut slot = Slot::new(stamp, 600_000);
+    let first = Value {
+        stamp,
+        revision: 1,
+        completed: 262_143,
+        total: 600_000,
+    };
+    assert!(slot.replace(first, true));
+    assert!(!slot.pending);
+    assert!(!slot.replace(
+        Value {
+            revision: 2,
+            completed: -1,
+            ..first
+        },
+        true
+    ));
+    assert!(!slot.replace(
+        Value {
+            revision: 2,
+            completed: 262_142,
+            ..first
+        },
+        true
+    ));
+    assert!(!slot.replace(
+        Value {
+            revision: 2,
+            total: 600_001,
+            ..first
+        },
+        true
+    ));
+    let mut foreign = first;
+    foreign.stamp.generation = Generation(8);
+    foreign.revision = 2;
+    assert!(!slot.replace(foreign, true));
+    foreign.stamp = stamp;
+    foreign.stamp.item.row = 2;
+    assert!(!slot.replace(foreign, true));
+    assert!(!slot.replace(first, true));
+    assert!(slot.replace(
+        Value {
+            revision: 2,
+            completed: 262_144,
+            ..first
+        },
+        true
+    ));
+    assert!(slot.pending);
+    slot.pending = false;
+    slot.saved_bytes = 262_144;
+    assert!(slot.replace(
+        Value {
+            revision: 3,
+            completed: 524_287,
+            ..first
+        },
+        true
+    ));
+    assert!(!slot.pending);
+    assert!(slot.replace(
+        Value {
+            revision: 4,
+            completed: 600_000,
+            ..first
+        },
+        true
+    ));
+    assert!(slot.pending);
+    slot.sealed = true;
+    assert!(!slot.replace(
+        Value {
+            revision: 5,
+            completed: 600_000,
+            ..first
+        },
+        true
+    ));
+    let mut import = Slot::new(stamp, 10);
+    assert!(import.replace(
+        Value {
+            stamp,
+            revision: 1,
+            completed: 10,
+            total: 10
+        },
+        false
+    ));
+    assert!(!import.pending); // no fabricated import persistence callback
+}
+
+#[test]
+fn j6_saved_terminal_and_generation_query_stamps_reject_stale_observations() {
+    use librairii_core::{
+        OperationState,
+        operations::{ObservationKind, OperationObservation},
+    };
+    let job = JobId::from_bytes([44; 16]);
+    let mut view = Projection {
+        generation: Generation(9),
+        query: QueryRevision(2),
+        job,
+        current: None,
+    };
+    let running = Snapshot {
+        generation: Generation(9),
+        query: QueryRevision(2),
+        job,
+        revision: 1,
+        observation: OperationObservation {
+            state: OperationState::Running,
+            kind: ObservationKind::StoredSnapshot,
+        },
+    };
+    assert!(!view.apply(Snapshot {
+        generation: Generation(8),
+        ..running
+    }));
+    assert!(!view.apply(Snapshot {
+        query: QueryRevision(1),
+        ..running
+    }));
+    assert!(!view.apply(Snapshot {
+        job: JobId::from_bytes([45; 16]),
+        ..running
+    }));
+    assert!(view.apply(running));
+    let provisional = Snapshot {
+        revision: 100,
+        observation: OperationObservation {
+            state: OperationState::Interrupted,
+            kind: ObservationKind::ProvisionalPersistenceFailure,
+        },
+        ..running
+    };
+    assert!(view.apply(provisional));
+    assert_eq!(view.saved_terminal(), None);
+    let saved = Snapshot {
+        revision: 2,
+        observation: OperationObservation {
+            state: OperationState::Succeeded,
+            kind: ObservationKind::StoredSnapshot,
+        },
+        ..running
+    };
+    assert!(view.apply(saved)); // saved terminal wins over newer provisional fallback
+    assert!(!view.apply(Snapshot {
+        revision: 101,
+        ..running
+    }));
+    assert!(!view.apply(Snapshot {
+        revision: 102,
+        ..provisional
+    }));
+    assert!(!view.apply(Snapshot {
+        revision: 103,
+        observation: OperationObservation {
+            state: OperationState::Cancelled,
+            kind: ObservationKind::StoredSnapshot
+        },
+        ..saved
+    }));
+    assert_eq!(view.saved_terminal(), Some(OperationState::Succeeded));
+    view.query = QueryRevision(3);
+    view.current = None;
+    assert!(!view.apply(saved));
+    assert!(view.apply(Snapshot {
+        query: QueryRevision(3),
+        ..saved
+    }));
+    view.generation = Generation(10);
+    view.current = None;
+    assert!(!view.apply(Snapshot {
+        query: QueryRevision(3),
+        ..saved
+    }));
 }

@@ -36,6 +36,8 @@ pub(super) struct Item {
     pub(super) ordinal: usize,
     pub(super) kind: OperationKind,
     pub(super) payload: Vec<u8>,
+    pub(super) generation: super::progress::Generation,
+    pub(super) total_bytes: i64,
 }
 
 impl Item {
@@ -153,7 +155,9 @@ pub(super) enum Report {
 
 pub(super) type Admit = Arc<dyn Fn(StartInput) -> Admission + Send + Sync>;
 pub(super) type Source = Arc<dyn Fn(SourceRequest) -> Page + Send + Sync>;
-pub(super) type Execute = Arc<dyn Fn(Item) -> Completed + Send + Sync>;
+pub(super) type Execute =
+    Arc<dyn Fn(Item, super::runtime::ProgressSink) -> Completed + Send + Sync>;
+pub(super) type SaveProgress = Arc<dyn Fn(super::progress::Value) -> bool + Send + Sync>;
 pub(super) type Save = Arc<dyn Fn(Completed) -> Report + Send + Sync>;
 
 #[derive(Clone)]
@@ -161,6 +165,9 @@ pub(super) struct CoordinatorCallbacks {
     pub(super) admit: Admit,
     pub(super) readback_start: Admit,
     pub(super) source: Source,
+    /// Controlled guarded progress attempt. False is an unsaved observation,
+    /// never a terminal acknowledgement or permission to erase a domain fact.
+    pub(super) progress: SaveProgress,
 }
 
 #[derive(Clone)]
@@ -185,4 +192,8 @@ pub(super) struct Measurements {
     pub(super) uncertain_starts: usize,
     pub(super) uncertain_reports: usize,
     pub(super) joined: bool,
+    pub(super) progress_slots: usize,
+    pub(super) progress_wakes: usize,
+    pub(super) progress_saves: usize,
+    pub(super) unsaved_progress: usize,
 }
