@@ -133,6 +133,14 @@ native Windows preserves the Unicode witnesses. The generated report is
 Synthetic temporary-root regressions verify missing/changed inputs and wrong
 oracle/inventory fail. There is no if-present or platform skip for preservation.
 
+The root checkout rule `preservation/** -text` protects every admitted checker,
+producer, manifest and corpus byte from Git newline conversion, including under
+Windows `core.autocrlf=true`. Exact hashes stay unchanged; no normalization is
+performed by the gate. Native Windows CI additionally clones a fresh independent
+checkout with conversion explicitly enabled and runs the real preservation gate
+there before cumulative checks. Removing the protection makes that regression
+fail on the admitted LF text bytes. Its report joins the native CI artifact.
+
 Oracle regeneration and byte-identical export/recovery replay remain separate
 task1 procedures. They use an independent disposable Go checkout and synthetic
 roots; ordinary native Rust checks never execute the generator, discover a user

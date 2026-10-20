@@ -47,10 +47,24 @@ jobs:
         run: .github/scripts/ubuntu-apt build-essential pkg-config python3
       - name: Install exact stable toolchain
         run: rustup toolchain install 1.99.1 --profile minimal --component rustfmt --component clippy --component llvm-tools-preview
+      - name: Verify admitted bytes in a fresh Windows autocrlf checkout
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $source = git rev-parse HEAD
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $fresh = Join-Path $env:RUNNER_TEMP ('librairii-preservation-' + [guid]::NewGuid())
+          git -c core.autocrlf=true clone --no-local --no-checkout . $fresh
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          git -C $fresh -c core.autocrlf=true checkout --detach $source
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python -I -B -X utf8 (Join-Path $fresh 'xtask/check_preservation.py') > windows-autocrlf-preservation.json
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Assert native architecture and record source/toolchain
         run: |
           test "$(rustc -vV | sed -n 's/^host: //p')" = "$RUST_TARGET"
           mkdir -p target/quality
+          if test -f windows-autocrlf-preservation.json; then mv windows-autocrlf-preservation.json target/quality/; fi
           git rev-parse HEAD > target/quality/source.txt
           rustc -vV > target/quality/rustc.txt
           cargo --version > target/quality/cargo.txt
