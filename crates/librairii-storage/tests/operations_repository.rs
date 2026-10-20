@@ -742,3 +742,66 @@ fn terminal_sql_two_callers_complete_distinct_siblings_on_one_writer() -> TestRe
     db.close()?;
     Ok(())
 }
+
+fn persisted_integer_item_id(raw_item_id: i64) -> TestResult {
+    let (_roots, library) = owned_library()?;
+    let mut db = Database::open_isolated(&library)?;
+    let id = "Ab".repeat(18);
+    seed(&db, &id, 1)?;
+    let raw_operation_id = id.clone();
+    committed(
+        db.repair_transaction(move |tx| {
+            tx.execute(
+                "DELETE FROM file_operation_items WHERE operation_id=?",
+                [&raw_operation_id],
+            )?;
+            // An explicit integer, never NULL/automatic allocation. Migration002
+            // has INTEGER PRIMARY KEY without a positive-only CHECK.
+            tx.execute(
+                "INSERT INTO file_operation_items(id,operation_id,source_name,status,total_bytes)
+            VALUES(?,?,'raw persisted identity','pending',10)",
+                rusqlite::params![raw_item_id, raw_operation_id],
+            )?;
+            Ok(())
+        })?
+        .wait()?,
+    )?;
+    {
+        let store = TerminalRepository::new(&db, GENERATION);
+        let before = snapshot(&store, &id)?;
+        assert_eq!(before.items[0].identity.id, raw_item_id);
+        let command = complete(&before, 0);
+        let reply = store.complete_item(&command);
+        assert!(
+            matches!(&reply.disposition, AttemptDisposition::Committed { .. }),
+            "schema-valid raw item ID {raw_item_id} was rejected: {reply:?}"
+        );
+        assert_eq!(
+            reply.witness,
+            CommandWitness::CompleteItem(Box::new(command.clone()))
+        );
+        assert!(matches!(store.readback(&reply.witness).disposition,
+            ReadbackDisposition::MatchesApplied(ref v)
+            if v.item.as_ref().is_some_and(|item| item.identity.id==raw_item_id)
+                && v.operation.counts.completed==1));
+        assert!(matches!(
+            store.complete_item(&command).disposition,
+            AttemptDisposition::AlreadyMatching(_)
+        ));
+        let after = snapshot(&store, &id)?;
+        assert_eq!(after.items[0].identity.id, raw_item_id);
+        assert_eq!(after.operation.counts.completed, 1);
+    }
+    db.close()?;
+    Ok(())
+}
+
+#[test]
+fn terminal_sql_explicit_zero_item_id_is_preserved_and_completed_once() -> TestResult {
+    persisted_integer_item_id(0)
+}
+
+#[test]
+fn terminal_sql_explicit_negative_item_id_is_preserved_and_completed_once() -> TestResult {
+    persisted_integer_item_id(-7)
+}
