@@ -285,6 +285,46 @@
     {
       "suite": "librairii-app",
       "name": "jobs::tests::j6_uncertain_control_and_symbolic_report_owner_survive_stop_until_actual_readback"
+    },
+    {
+      "suite": "librairii-app",
+      "name": "jobs::tests::terminal_tests::j65_blocked_callback_and_tick_jump_schedule_from_observed_response_without_catchup"
+    },
+    {
+      "suite": "librairii-app",
+      "name": "jobs::tests::terminal_tests::j65_complete_retries_three_times_at_ten_ms_without_replaying_for_finish"
+    },
+    {
+      "suite": "librairii-app",
+      "name": "jobs::tests::terminal_tests::j65_finish_and_interrupt_have_separate_budgets_then_paced_reconciliation"
+    },
+    {
+      "suite": "librairii-app",
+      "name": "jobs::tests::terminal_tests::j65_full_command_payload_and_supplied_terminal_truth_are_checked_without_rewriting_raw_values"
+    },
+    {
+      "suite": "librairii-app",
+      "name": "jobs::tests::terminal_tests::j65_interrupt_commit_then_snapshot_error_is_unknown_until_matching_readback"
+    },
+    {
+      "suite": "librairii-app",
+      "name": "jobs::tests::terminal_tests::j65_lost_complete_or_finish_ack_uses_readback_without_second_write_or_count"
+    },
+    {
+      "suite": "librairii-app",
+      "name": "jobs::tests::terminal_tests::j65_saturated_stop_and_expired_wait_keep_all_required_owners_until_readback_accepts"
+    },
+    {
+      "suite": "librairii-app",
+      "name": "jobs::tests::terminal_tests::j65_saved_terminal_keeps_owned_result_until_actual_report_transfer_without_persist_replay"
+    },
+    {
+      "suite": "librairii-app",
+      "name": "jobs::tests::terminal_tests::j65_tick_regression_overflow_and_latest_diagnostics_are_bounded_without_losing_originals"
+    },
+    {
+      "suite": "librairii-app",
+      "name": "jobs::tests::terminal_tests::j65_unknown_ack_rejects_wrong_or_provisional_readback_and_keeps_terminal_conflict"
     }
   ]
 }
