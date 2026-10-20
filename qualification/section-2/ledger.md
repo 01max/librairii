@@ -13,6 +13,10 @@ Published section3 integration `4ea2caf71bbe61ed996942daa9005de05b75f9da` is inc
 through merge `48fc7860faf96773047509b235586fe9b61e6de9`, preserving task history.
 Ancestor `.cargo/config.toml` contains only the xtask alias; no concrete nested
 target/rustflags/runner/target-dir interaction was observed or edited.
+Admitted foundation wrapper repair `4383373272ce1d3095199caf37dde7e5d0598213`
+is included by merge `e4e110078921841301024101e4f32048c2d97667`.
+Only the integration merge brings root/shared changes; section2 makes no direct
+root edits. Current combined proof is in unicode-compat/validation.md.
 
 No external OpenSpec checkbox was changed. These statuses describe evidence,
 not completed toolkit qualification. The separate local spec repository was not
@@ -21,7 +25,7 @@ the latter changes only arrive from the authorized integration merge.
 
 | Task | Status | Evidence |
 | --- | --- | --- |
-| 2.1 | Candidate research/graph recorded; distribution decision pending | ADR.md, candidate-releases.json, Cargo.lock |
+| 2.1 | Candidate graphs/source/notices recorded; bounded Unicode comparison rejects tested final-pipeline compositions; distribution/production graph decisions pending | ADR.md, candidate-releases.json, Cargo.lock, unicode-compat/ |
 | 2.2 | Incomplete: hosts/access not secured | hosts.md |
 | 2.3 | Partial: compiled/running bounded synthetic ARM slice | README.md, ui/, src/; modal/responsive/complete fixture coverage open |
 | 2.4 | Not observed: keyboard/AT | accessibility.md; native app access denied |
@@ -33,7 +37,7 @@ the latter changes only arrive from the authorized integration merge.
 | 2.10 | Partial:7 prior Rust +9 Python +2 child tests; original Zstd fixture;32 historical contained resource cases; optimized safety guards corrected; pre-callback OOM confirmed;24 SQL +6 filename differences retained | data-feasibility.md, corpus-observations.json, decoder-resources.md, decoder-observations.json, tests/, examples/ |
 | 2.11 | Local unsigned ARM DMG only; clean-host/other packages pending | packages.md, package-macos.py |
 | 2.12 | Conditional fallback not triggered; no established mandatory toolkit failure | fallback.md |
-| 2.13 | Partial implementation approved at3131fb6; new resource/Zstd head needs fresh review; mandatory qualification still pending | selection-gate.md |
+| 2.13 | Historical partial implementation approved atabdb318; new Unicode head needs fresh review/CI; mandatory qualification still pending | selection-gate.md |
 
 Task1 PR39 is admitted at1cd2244 and merged through9a6c1c1 with146 corrected corpus
 files. The2.10 consumer now pins that exact final input; its e7c771b observations
@@ -70,6 +74,11 @@ does not finalize that owner's graph or prevent eligible core/storage work.
 | Research / integration | [`48fc7860faf9`](https://github.com/01max/librairii/commit/48fc7860faf96773047509b235586fe9b61e6de9) | Merge published4ea2caf root-tooling integration without rewriting section2 history |
 | 2.10 | [`db4153fa15b0`](https://github.com/01max/librairii/commit/db4153fa15b0b44223b63e4ebb10dfe2d98074a5) | test(qualification): add original independent Zstd producer, retained bytes/provenance and ordered payload/CRC comparisons; every prior corpus observation unchanged |
 | 2.10 | [`0f7eeae7fca3`](https://github.com/01max/librairii/commit/0f7eeae7fca3f36ad4a7a349f5774438d2f5d310) | test(qualification): verify independent controls before32 decoder cases; record pre-callback resource exhaustion, OS kills/refusals, five disproved hypotheses and unselected production strategy |
+| 2.1 | [`1728a13c85f9`](https://github.com/01max/librairii/commit/1728a13c85f9e9ac8721cdb4d90259ba35213001) | test(qualification): compare Unicode15 candidates with frozen Go; all1,112,064 scalars,15,550 sequences,570 retained raw differences, locked graph/notices and fail-closed protocol/supervision tests |
+| 2.1 | [`d5b339faa66f`](https://github.com/01max/librairii/commit/d5b339faa66f7047faba64e59baf8458b2e6304a) | test(qualification): expose mixed-class stream-safe differences;896 inputs retain896 raw/672 stream-safe differences; original baseline unchanged |
+| 2.1 | [`5cd512b31507`](https://github.com/01max/librairii/commit/5cd512b3150723474b6154e44d79e18250e0a1fc) | test(qualification): retain surviving-mark normalization counterexample;160 inputs retain160 raw/120 stream-safe and120 differences in each final route; tested final parity rejected |
+| 2.1 | [`a87c1e256661`](https://github.com/01max/librairii/commit/a87c1e2566613fd7192281afb3377b720375b600) | test(qualification): guard measured normalization rejection; actual Go case0 witness must remain DIFF in all four affected metrics; six current nextest identities |
+| Research / integration | [`e4e110078921`](https://github.com/01max/librairii/commit/e4e110078921841301024101e4f32048c2d97667) | chore(qualification): merge admitted corpus wrapper repair4383373, preserving every prior subtask SHA |
 
 Later ledger/validation-only commits can be found in PR history. Exact review-ready
 head is sent after pushing; it cannot be embedded as its own commit hash here.

@@ -41,3 +41,13 @@ nor the small payload/dictionary successes complete2.13, product admission,
 production isolation, physical, licensing or full-corpus qualification.
 Section1 corpus admission is now complete at1cd2244 through integration9a6c1c1;
 it supplies the frozen input, not section2 parity or decoder-resource proof.
+
+The subsequent Unicode15 follow-up is separate candidate research. All-scalar
+agreement and earlier bounded sequence agreement did not establish equivalence:
+the surviving-Mc investigation rejects both tested final search pipelines in120
+of160 cases. Reports, their measured source commits and the comparator regression
+are preserved in unicode-compat/. No production fallback algorithm was implemented
+or selected here. The new head requires fresh partial native review and CI;
+abdb318 approval remains historical. Admitted wrapper repair4383373 is merged
+history-preservingly before combined validation. Every mandatory gate above stays
+open, and this PR remains draft/unmerged.

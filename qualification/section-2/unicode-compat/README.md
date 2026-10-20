@@ -89,6 +89,21 @@ remains versioned frozen algorithm/data translation with upstream provenance,
 not selection or implementation by this qualification work. No fixture or
 compatibility exception follows from the counterexample.
 
+**Final parity of the tested compositions is REJECTED.** This does not reject a
+future separately implemented algorithm or choose the production graph.
+
+| Immutable measurement | SHA256 | Measured source commit |
+| --- | --- | --- |
+| `observations.json` | `92c40718e4ed7b73174cf47280935c228414a5b4ac9136dfee937eb272ff3912` | `1728a13c85f9e9ac8721cdb4d90259ba35213001` |
+| `mixed-observations.json` | `8a677954cdfb1bd9564b05d7bf012144c357c4f91799fa23c4ccb61346e34d6f` | `d5b339faa66f7047faba64e59baf8458b2e6304a` |
+| `surviving-observations.json` | `7c41d90dbaf3b9442d5c694647ba19eab494cec4b50ea43b97522bffe6dea375` | `5cd512b3150723474b6154e44d79e18250e0a1fc` |
+
+All six source hashes in each report match the corresponding commit. Later
+regression-only source changes do not imply a measurement rerun. The regression
+`measured_surviving_mc_counterexample_is_a_final_pipeline_rejection` feeds the
+actual case0 Go witness through the comparator and requires DIFF for both final
+routes and both decomposition stages; the observed mismatch cannot become PASS.
+
 ## Oracle and source integrity
 
 Before any execution the driver verifies immutable oracle commit73a93303/tree
@@ -136,7 +151,7 @@ compile or run this experiment. Rust root checks also exclude this workspace.
 No root CI success may substitute for running its tests. From this cwd, build,
 fmt, warnings-denied all-target Clippy, locked nextest with the root's explicit
 nextest config/ci profile, and separate doctests are required. Actual nextest
-identities are in `nextest-identities.json` (5 tests, none ignored). Safe Python
+identities are in `nextest-identities.json` (6 tests, none ignored). Safe Python
 supervision tests are `python3 -B -m unittest discover -s tests -p 'test_*.py'`.
 Those tests run no Go/oracle/build; malformed protocol, missing records, drift,
 escape, duplicate/oversized inputs and tooling failure must not become a pass.

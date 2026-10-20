@@ -99,6 +99,15 @@ source-derived/admitted text sequences. Raw NFKD retains570 CGJ differences;
 stream-safe NFKD and final pipelines match that tested set. These are candidate
 observations, not a production graph choice, all-string proof or2.1 completion.
 
+Subsequent bounded supplements retain896 raw/672 stream-safe intermediate
+differences in896 mixed-class cases, then160 raw/120 stream-safe and120 differences
+in **each final pipeline** among160 surviving-Mc cases. Final parity of both
+tested crate compositions is **REJECTED**. CGJ insertion before reordering leaves
+observable surviving-mark order after Mn removal. Earlier reports remain
+byte-identical and scoped to their measured commits; the regression retains the
+actual Go case0 witness. No compatibility exception or replacement golden is
+introduced, and no new composition/production graph is selected.
+
 The exactDefault CLDR32 package/data/source closure is read-only and versioned;
 there is no qualified Rust language canonicalizer here. Root's accepted private
 compatibility/frozen-Go translation route still needs its own implementation,
