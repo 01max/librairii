@@ -143,3 +143,19 @@ The full compiler log was read and SHA256 verified as
 `6d02e96f3c24a051e9c72cc00a05aef668fb7128ed5d59bb0ea2fd62540f5388`.
 No SQL regression RED, discovery pass or full check is inferred from that failed
 compilation or from this source correction. Actual updated C execution is pending.
+
+## Persisted integer item-ID regression input
+
+Integration source inspection found an unsupported `item.id > 0` restriction in
+R's command validation. Frozen migration002 declares `INTEGER PRIMARY KEY` with
+no positive CHECK; frozen CompleteItem guards exact ID/operation/current state,
+without requiring positivity. The raw application identity is signed `i64`.
+
+Two additional authored integration identities explicitly INSERT item ID zero
+and negative seven through the same isolated Database, then require exact raw
+identity preservation, actual completion, matching readback and no second count.
+They are a regression input, not an executed RED claim: the four E0308 compiler
+errors must first be corrected in actual C. The positivity guard remains present
+in this regression-only contribution so an actual composed RED can establish the
+behavior before its separate scoped correction. No fixture, schema or generic
+storage source is changed.
