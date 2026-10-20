@@ -10,7 +10,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: rust-quality-${{ github.ref }}
+  group: rust-quality-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
