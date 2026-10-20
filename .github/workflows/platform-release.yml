@@ -36,8 +36,7 @@ jobs:
 
       - name: Install Wails and virtual desktop dependencies
         run: |
-          sudo apt-get update
-          sudo apt-get install -y \
+          .github/scripts/ubuntu-apt \
             libgtk-3-dev \
             libwebkit2gtk-4.1-dev \
             xauth \
