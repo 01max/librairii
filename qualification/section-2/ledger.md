@@ -9,6 +9,10 @@ Original task SHAs are retained. Initial research commits without task trailers
 have dedicated task-trailed follow-ups; neither history nor evidence was rewritten.
 Admitted section1 integration `9a6c1c116d9df726a061ad6aac3955df4ed41263` is now
 included through merge `e28e0e66ebb69dbcea4402d462e146bb52448ff8`.
+Published section3 integration `4ea2caf71bbe61ed996942daa9005de05b75f9da` is included
+through merge `48fc7860faf96773047509b235586fe9b61e6de9`, preserving task history.
+Ancestor `.cargo/config.toml` contains only the xtask alias; no concrete nested
+target/rustflags/runner/target-dir interaction was observed or edited.
 
 No external OpenSpec checkbox was changed. These statuses describe evidence,
 not completed toolkit qualification. The separate local spec repository was not
@@ -26,10 +30,10 @@ the latter changes only arrive from the authorized integration merge.
 | 2.7 | Partial ARM normal/explicit CPU process smoke; no GPU failure | renderers.md |
 | 2.8 | Partial: public component/controller route passes ARM | regression.md |
 | 2.9 | Diagnostic subset only; retained budgets not all measured | performance.md |
-| 2.10 | Partial:7 Rust +5 wrapper/comparison tests; admitted corpus retains24 SQL +6 filename differences | data-feasibility.md, corpus-observations.json, tests/, examples/ |
+| 2.10 | Partial:7 prior Rust +7 Python +2 child tests; original Zstd fixture;32 contained resource cases; pre-callback OOM confirmed;24 SQL +6 filename differences retained | data-feasibility.md, corpus-observations.json, decoder-resources.md, decoder-observations.json, tests/, examples/ |
 | 2.11 | Local unsigned ARM DMG only; clean-host/other packages pending | packages.md, package-macos.py |
 | 2.12 | Conditional fallback not triggered; no established mandatory toolkit failure | fallback.md |
-| 2.13 | Partial implementation approved at558b2b4; new final-head review and mandatory qualification still pending | selection-gate.md |
+| 2.13 | Partial implementation approved at3131fb6; new resource/Zstd head needs fresh review; mandatory qualification still pending | selection-gate.md |
 
 Task1 PR39 is admitted at1cd2244 and merged through9a6c1c1 with146 corrected corpus
 files. The2.10 consumer now pins that exact final input; its e7c771b observations
@@ -63,6 +67,9 @@ does not finalize that owner's graph or prevent eligible core/storage work.
 | 2.10 | [`a3a74a3da408`](https://github.com/01max/librairii/commit/a3a74a3da408c572e9e6b3fdb91dc6c4fe53ee56) | test(qualification): compare provisional task 2.10 corpus; retain24 SQL +6 Unicode-name differences |
 | Research / integration | [`e28e0e66ebb6`](https://github.com/01max/librairii/commit/e28e0e66ebb69dbcea4402d462e146bb52448ff8) | chore(qualification): merge admitted section one contract |
 | 2.10 | [`d3a640c0cf79`](https://github.com/01max/librairii/commit/d3a640c0cf794e3160ca5ff443c76f67e0013250) | test(qualification): consume admitted task one corpus; verify146 file hashes, retain30 differences |
+| Research / integration | [`48fc7860faf9`](https://github.com/01max/librairii/commit/48fc7860faf96773047509b235586fe9b61e6de9) | Merge published4ea2caf root-tooling integration without rewriting section2 history |
+| 2.10 | [`db4153fa15b0`](https://github.com/01max/librairii/commit/db4153fa15b0b44223b63e4ebb10dfe2d98074a5) | test(qualification): add original independent Zstd producer, retained bytes/provenance and ordered payload/CRC comparisons; every prior corpus observation unchanged |
+| 2.10 | [`0f7eeae7fca3`](https://github.com/01max/librairii/commit/0f7eeae7fca3f36ad4a7a349f5774438d2f5d310) | test(qualification): verify independent controls before32 decoder cases; record pre-callback resource exhaustion, OS kills/refusals, five disproved hypotheses and unselected production strategy |
 
 Later ledger/validation-only commits can be found in PR history. Exact review-ready
 head is sent after pushing; it cannot be embedded as its own commit hash here.
@@ -74,3 +81,11 @@ Scoped review fixes must get new commits and be added below, never squash/rebase
 | --- | --- | --- |
 | PR38 P2, comment4326316702, checkbox state after actual toggle/Apply | [`31ccd9e`](https://github.com/01max/librairii/commit/31ccd9e) | Writable two-way decision properties; actual widget Space→Apply→unchecked twice through public in-process events. Regression failed before correction and passes debug/release afterward. [Thread resolved with evidence](https://github.com/01max/librairii/pull/38#discussion_r4326422310); partial native code approval at558b2b4. New corpus code requires new final-head review; no toolkit qualification. |
 | PR38 P2, comment4326769282, wrapper compiler selection/provenance | [`4a0002ac5524`](https://github.com/01max/librairii/commit/4a0002ac55243e134bd61c0e206f276be9c8468f) | Same explicit nested rustup channel and cwd for execution/Cargo/rustc provenance. Real-tool regression with older caller override passes; root invocation under unchanged stable1.97.1 records1.99.1. Admitted corpus regenerated in d3a640c; final-head rerun required. |
+
+The wrapper thread is resolved with [concrete evidence](https://github.com/01max/librairii/pull/38#discussion_r4326846323).
+Historical head3131fb68109a0f82caeba1af84500ef86f20e9e5 received partial AO approval
+in run ea416650 and both provider CI successes. Those outcomes remain attributed
+to that head; they do not approve these new commits. Current-base local evidence
+is in decoder-resources.md. Fresh native review and CI are required after push;
+PR38 stays draft/unmerged. Resource, full classifier/codec/domain, physical/AT,
+host, license, package and final toolkit-selection gates remain open.

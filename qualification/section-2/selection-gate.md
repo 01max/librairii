@@ -31,10 +31,13 @@ head, exact locked/native graph, full evidence, licensing and all four actual
 targets after mandatory gates pass. Review fixes need separate commits and their
 threads resolved. Do not mark this gate or external task checkboxes complete.
 
-The implemented partial scope at `558b2b46af93bbdf1bfc7934166a270db6904e25`
-received AO native approval, including the actual-widget regression. Its inline
-thread is resolved with evidence. This supplies code review only. The subsequent
-2.10 corpus-probe code requires another review of the pushed final head; neither
-approval completes 2.13 or any physical, licensing or full-corpus qualification gate.
+Historical implemented scope through `3131fb68109a0f82caeba1af84500ef86f20e9e5`
+received partial AO approval (ea416650), including the actual-widget and pinned
+wrapper fixes. Both inline threads are resolved with evidence. This supplies code
+review only. New independent Zstd/resource experiments require fresh final-head
+review and CI. The observed pre-callback OOM is an open decoder-resource gate;
+the container only bounds the qualification experiment. Neither code approval
+nor the small payload/dictionary successes complete2.13, product admission,
+production isolation, physical, licensing or full-corpus qualification.
 Section1 corpus admission is now complete at1cd2244 through integration9a6c1c1;
 it supplies the frozen input, not section2 parity or decoder-resource proof.
