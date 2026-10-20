@@ -13,6 +13,11 @@
     "test_import_sources.StudioSourcePolicy.test_original_identity_headers_evidence_and_notice_union_fail_closed",
     "test_import_sources.StudioSourcePolicy.test_path_alias_and_traversal_are_rejected",
     "test_import_sources.StudioSourcePolicy.test_inventory_copies_exact_notices_and_observes_product_license",
-    "test_import_sources.StudioSourcePolicy.test_fresh_autocrlf_checkout_preserves_actual_source_policy_inputs"
+    "test_import_sources.StudioSourcePolicy.test_fresh_autocrlf_checkout_preserves_actual_source_policy_inputs",
+    "test_import_sources.StudioSourcePolicy.test_hard_linked_policy_and_nested_derivatives_are_rejected_without_writes",
+    "test_import_sources.StudioSourcePolicy.test_inventory_refuses_hard_linked_output_without_clobbering_owned_peer",
+    "test_import_sources.StudioSourcePolicy.test_nested_derivative_inventory_rejects_extra_missing_and_directory_aliases",
+    "test_import_sources.StudioSourcePolicy.test_trim_scope_and_simple_fold_sources_are_not_interchangeable",
+    "test_import_sources.StudioSourcePolicy.test_widened_unicode_use_cannot_self_repin_notice_or_remove_origin"
   ]
 }

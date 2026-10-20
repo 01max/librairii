@@ -1,7 +1,7 @@
 {
-  "version": 1,
+  "version": 2,
   "bundle": "go-1.26.5-json-v1-studio",
-  "source_selection": "private fixed-shape studio JSONv1 import subset only",
+  "source_selection": "private fixed-shape Studio JSONv1 plus accepted title/description boundary trim and separate optional three-field metadata reducer",
   "official_release": {
     "url": "https://go.dev/dl/?mode=json&include=all",
     "version": "go1.26.5",
@@ -22,7 +22,7 @@
     "directories": 1662,
     "nonregular": 0,
     "duplicate_paths": 0,
-    "selected_regular_sources": 13,
+    "selected_regular_sources": 15,
     "extraction": "selected regular members only; no extractall and no expanded SDK/cache input"
   },
   "sources": [
@@ -97,9 +97,9 @@
       "header_sha256": "b1f8a48bd98929bacf4fe0520affc9eb02063542a76dd3cd25a71a6035014fec",
       "header_first_12_lines_hex": "2f2f20436f7079726967687420323030392054686520476f20417574686f72732e20416c6c207269676874732072657365727665642e0a2f2f20557365206f66207468697320736f7572636520636f646520697320676f7665726e65642062792061204253442d7374796c650a2f2f206c6963656e736520746861742063616e20626520666f756e6420696e20746865204c4943454e53452066696c652e0a0a2f2f205061636b61676520756e69636f64652070726f7669646573206461746120616e642066756e6374696f6e7320746f207465737420736f6d652070726f70657274696573206f660a2f2f20556e69636f646520636f646520706f696e74732e0a7061636b61676520756e69636f64650a0a636f6e737420280a094d617852756e652020202020202020203d20275c55303031304646464627202f2f204d6178696d756d2076616c696420556e69636f646520636f646520706f696e742e0a095265706c6163656d656e7443686172203d20275c75464646442720202020202f2f20526570726573656e747320696e76616c696420636f646520706f696e74732e0a094d6178415343494920202020202020203d20275c75303037462720202020202f2f206d6178696d756d2041534349492076616c75652e0a",
       "capture_path": "originals/go/src/unicode/letter.go",
-      "selection": "unicode15-simple-fold",
+      "selection": "unicode15-simple-fold-and-white-space",
       "permission": "bounded-translation-reference",
-      "scope": "SimpleFold/asciiFold/lookupCaseRange/convertCase algorithms only",
+      "scope": "Retain prior SimpleFold/asciiFold/lookupCaseRange/convertCase scope; additionally only isExcludingLatin170-181, is16 91-121, required Range16/RangeTable/LatinOffset/linearMax representations for exact frozen White_Space membership. No general Unicode property API.",
       "origin": {
         "kind": "official-go-source-archive",
         "member": "go/src/unicode/letter.go",
@@ -113,9 +113,9 @@
       "header_sha256": "ec9651df3b673e4e73deeeab3bd947b37e70bc0fbed401698cf27b3dfa0c0136",
       "header_first_12_lines_hex": "2f2f20436f64652067656e6572617465642062792072756e6e696e672022676f2067656e65726174652220696e20676f6c616e672e6f72672f782f746578742e20444f204e4f5420454449542e0a0a7061636b61676520756e69636f64650a0a2f2f2056657273696f6e2069732074686520556e69636f64652065646974696f6e2066726f6d20776869636820746865207461626c65732061726520646572697665642e0a636f6e73742056657273696f6e203d202231352e302e30220a0a2f2f2043617465676f726965732069732074686520736574206f6620556e69636f64652063617465676f7279207461626c65732e0a7661722043617465676f72696573203d206d61705b737472696e675d2a52616e67655461626c657b0a092243223a2020432c0a09224363223a2043632c0a09224366223a2043662c0a",
       "capture_path": "originals/go/src/unicode/tables.go",
-      "selection": "unicode15-simple-fold",
+      "selection": "unicode15-simple-fold-and-white-space",
       "permission": "bounded-translation-reference",
-      "scope": "Unicode15 caseOrbit/CaseRanges data needed for inverse SimpleFold of fixed schema only; no full normalization/language/data widening",
+      "scope": "Retain prior Unicode15 caseOrbit/CaseRanges inverse fixed-schema SimpleFold data; additionally only _White_Space8570-8581 and White_Space8619. Exact table has empty R32. No Mn/full fold/NFKD/language/category widening.",
       "origin": {
         "kind": "official-go-source-archive",
         "member": "go/src/unicode/tables.go",
@@ -129,9 +129,9 @@
       "header_sha256": "5fa9c22df735fe95250fe5471f4760d6ca0b27d6751b4ecd82f8d1a322f0a18b",
       "header_first_12_lines_hex": "2f2f20436f7079726967687420323030392054686520476f20417574686f72732e20416c6c207269676874732072657365727665642e0a2f2f20557365206f66207468697320736f7572636520636f646520697320676f7665726e65642062792061204253442d7374796c650a2f2f206c6963656e736520746861742063616e20626520666f756e6420696e20746865204c4943454e53452066696c652e0a0a2f2f205061636b616765207574663820696d706c656d656e74732066756e6374696f6e7320616e6420636f6e7374616e747320746f20737570706f7274207465787420656e636f64656420696e0a2f2f205554462d382e20497420696e636c756465732066756e6374696f6e7320746f207472616e736c617465206265747765656e2072756e657320616e64205554462d3820627974652073657175656e6365732e0a2f2f205365652068747470733a2f2f656e2e77696b6970656469612e6f72672f77696b692f5554462d380a7061636b61676520757466380a0a2f2f2054686520636f6e646974696f6e732052756e654572726f723d3d756e69636f64652e5265706c6163656d656e744368617220616e640a2f2f204d617852756e653d3d756e69636f64652e4d617852756e652061726520766572696669656420696e207468652074657374732e0a2f2f20446566696e696e67207468656d206c6f63616c6c792061766f6964732074686973207061636b61676520646570656e64696e67206f6e207061636b61676520756e69636f64652e0a",
       "capture_path": "originals/go/src/unicode/utf8/utf8.go",
-      "selection": "go-json-utf8",
+      "selection": "go-json-utf8-and-trim-boundary",
       "permission": "bounded-translation-reference",
-      "scope": "DecodeRune/RuneError/RuneLen/UTF8 validity/replacement rules needed by scanner/unquote only",
+      "scope": "Retain prior JSON DecodeRune/RuneError/RuneLen/validity/replacement scope; additionally DecodeRuneInString219+, DecodeLastRuneInString316-343 and RuneStart457 as boundary semantics reference for trimming decoded well-formed JSON strings. No generic invalid-Go-string API; boundary-equivalent valid-str implementation allowed with actual parity proof.",
       "origin": {
         "kind": "official-go-source-archive",
         "member": "go/src/unicode/utf8/utf8.go",
@@ -241,9 +241,9 @@
       "header_sha256": "4c601c190d2a4f46836bcf44152ef6ff69c66c015e9523932b97ce6c88e6fc06",
       "header_first_12_lines_hex": "7061636b61676520696e7370656374696f6e0a0a696d706f727420280a0922636f6e74657874220a0922656e636f64696e672f6a736f6e220a0922696d6167652f706e67220a092270617468220a0922737472696e6773220a0a09226769746875622e636f6d2f30316d61782f6c69627261697269692f696e7465726e616c2f636174616c6f67220a09226769746875622e636f6d2f676f6f676c652f75756964220a290a",
       "capture_path": "originals/oracle73a93303/internal/inspection/studio_zip.go",
-      "selection": "studio-product-boundary",
+      "selection": "studio-text-and-optional-metadata-boundary",
       "permission": "product-contract-reference",
-      "scope": "studioStory/stageNode schema and Decode -> ensureJSONEnd -> existing validation order only; title/description remain known string fields; PNG/IO/title trimming excluded",
+      "scope": "Retain prior fixed Studio schema/first Decode/ensureJSONEnd/mandatory UUID/stage-reference validation contract. Additionally accepted Title/Description TrimSpace outputs97-98 after existing mandatory validation; schema19-29 remains exact. PNG/archive IO and dispatch implementation excluded.",
       "origin": {
         "kind": "frozen-git-blob",
         "commit": "73a93303a9a44cf0a92eaf525331561ed8c04460",
@@ -259,9 +259,9 @@
       "header_sha256": "cf8e171a2727eda57b7321b040bf352d96f7858b9ef15c27001a17f432330d1b",
       "header_first_12_lines_hex": "7061636b61676520696e7370656374696f6e0a0a696d706f727420280a09226279746573220a0922636f6e74657874220a0922656e636f64696e672f6a736f6e220a09226572726f7273220a0922666d74220a0922696d6167652f706e67220a0922696f220a092270617468220a0922737472696e6773220a",
       "capture_path": "originals/oracle73a93303/internal/inspection/zip_inspector.go",
-      "selection": "studio-product-boundary",
+      "selection": "studio-text-and-optional-metadata-boundary",
       "permission": "product-contract-reference",
-      "scope": "ensureJSONEnd and bytesReader reference only; no archive/IO/executor implementation",
+      "scope": "Retain ensureJSONEnd254-262/bytesReader contract. Additionally readEmbeddedMetadata JSON-only branch148-191: separate literal uuid/title/description struct, optional entry/UUID behavior, canonical comparison with supplied resolved primary UUID, accepted TrimSpace outputs. Exclude archive read/has implementations, LimitReader resource proof, artwork branch193+, PNG and filesystem IO.",
       "origin": {
         "kind": "frozen-git-blob",
         "commit": "73a93303a9a44cf0a92eaf525331561ed8c04460",
@@ -297,7 +297,7 @@
       "capture_path": "originals/oracle73a93303/internal/inspection/zip_inspector_test.go",
       "selection": "reference-only",
       "permission": "evidence-only-no-production-translation",
-      "scope": "inspectFixture test helper; no test execution",
+      "scope": "Evidence only: existing TestZIPInspectorReadsPermittedPlainMetadata42-65 and TestZIPInspectorRejectsInvalidUUIDAndMetadata291-323 as frozen product expectations; no translated production test/helper dependency.",
       "origin": {
         "kind": "frozen-git-blob",
         "commit": "73a93303a9a44cf0a92eaf525331561ed8c04460",
@@ -322,6 +322,38 @@
         "tree": "e797e9d59926d83b73fb7c02e5c3611073e89a16",
         "path": "internal/inspection/testfixture/archive.go",
         "git_blob": "f94ae8a0c8aa3f703f3e56d7d381e50e5f02f163"
+      }
+    },
+    {
+      "path": "Go1.26.5/src/strings/strings.go",
+      "bytes": 33374,
+      "sha256": "ba9478be775d11b6956c828ebf870a8f8e7b7318ee382834f1e741f02d1336ef",
+      "header_sha256": "e66b8ccab4bb0d14764b2baa569347d537f1ced4107b95294dab8578bfc97ae0",
+      "header_first_12_lines_hex": "2f2f20436f7079726967687420323030392054686520476f20417574686f72732e20416c6c207269676874732072657365727665642e0a2f2f20557365206f66207468697320736f7572636520636f646520697320676f7665726e65642062792061204253442d7374796c650a2f2f206c6963656e736520746861742063616e20626520666f756e6420696e20746865204c4943454e53452066696c652e0a0a2f2f205061636b61676520737472696e677320696d706c656d656e74732073696d706c652066756e6374696f6e7320746f206d616e6970756c617465205554462d3820656e636f64656420737472696e67732e0a2f2f0a2f2f20466f7220696e666f726d6174696f6e2061626f7574205554462d3820737472696e677320696e20476f2c207365652068747470733a2f2f626c6f672e676f6c616e672e6f72672f737472696e67732e0a7061636b61676520737472696e67730a0a696d706f727420280a0922696e7465726e616c2f62797465616c67220a0922696e7465726e616c2f737472696e67736c697465220a",
+      "capture_path": "originals/go/src/strings/strings.go",
+      "selection": "go-trim-space",
+      "permission": "bounded-translation-reference",
+      "scope": "asciiSpace377; TrimLeftFunc887-893; TrimRightFunc897-906; TrimFunc910-912; indexFunc929-936; lastIndexFunc941-950; TrimSpace1091-1118. Boundary trimming of decoded strings only; no Fields/internal collapse/normalization/public generic strings API.",
+      "origin": {
+        "kind": "official-go-source-archive",
+        "member": "go/src/strings/strings.go",
+        "archive_sha256": "495be4bc87176ac567392e5b4116abd98466d33d7b49d41e764ccc6976b2dc42"
+      }
+    },
+    {
+      "path": "Go1.26.5/src/unicode/graphic.go",
+      "bytes": 4503,
+      "sha256": "46a43107a87c88cf17a05a557e00dbf6b0f4bb53ebcd7d3035e02f1e67c428be",
+      "header_sha256": "6845d75459e7366def56726e85d227de1c07312d79691c15e6d00ba5251dbca8",
+      "header_first_12_lines_hex": "2f2f20436f7079726967687420323031312054686520476f20417574686f72732e20416c6c207269676874732072657365727665642e0a2f2f20557365206f66207468697320736f7572636520636f646520697320676f7665726e65642062792061204253442d7374796c650a2f2f206c6963656e736520746861742063616e20626520666f756e6420696e20746865204c4943454e53452066696c652e0a0a7061636b61676520756e69636f64650a0a2f2f20426974206d61736b7320666f72206561636820636f646520706f696e7420756e64657220552b303130302c20666f722066617374206c6f6f6b75702e0a636f6e737420280a09704320202020203d2031203c3c20696f7461202f2f206120636f6e74726f6c206368617261637465722e0a09705020202020202020202020202020202020202f2f20612070756e6374756174696f6e206368617261637465722e0a09704e20202020202020202020202020202020202f2f2061206e756d6572616c2e0a09705320202020202020202020202020202020202f2f20612073796d626f6c6963206368617261637465722e0a",
+      "capture_path": "originals/go/src/unicode/graphic.go",
+      "selection": "unicode15-is-space",
+      "permission": "bounded-translation-reference",
+      "scope": "IsSpace128-138 Latin1 switch and exact frozen Unicode15 White_Space delegation only; no other graphic properties/categories or current Unicode substitution.",
+      "origin": {
+        "kind": "official-go-source-archive",
+        "member": "go/src/unicode/graphic.go",
+        "archive_sha256": "495be4bc87176ac567392e5b4116abd98466d33d7b49d41e764ccc6976b2dc42"
       }
     }
   ],
@@ -372,5 +404,16 @@
     "after_sha256": "e93eee2443211a25c99033f4539871363cd136cc620741f9ad907fa1814249fc",
     "unchanged": true
   },
-  "source_authentication_is_not_behavior_proof": true
+  "source_authentication_is_not_behavior_proof": true,
+  "extends": {
+    "source_index_sha256": "d63835ff65b581d3e0be5855189f59ac2fa4924a65904956de1f65e79309a4f4",
+    "manifest_schema_sha256": "a0d54e23c9150f99f849383133ca32068465c566f9102b1cdf4de98b9367d1f7",
+    "handoff_sha256": "85ee83627da398002e30ac08a7c3ad1e889c8240eae197a8579087b6e632069d",
+    "meaning": "Version1 bytes and permissions remain historical and unchanged; only this explicit version2 selection authorizes the listed text/optional-metadata references."
+  },
+  "authentication_reuse": {
+    "archive_path": "/private/tmp/librairii-json-v1-source-hzr8ekvv/go1.26.5.src.tar.gz",
+    "archive_sha256": "495be4bc87176ac567392e5b4116abd98466d33d7b49d41e764ccc6976b2dc42",
+    "method": "Reuse existing official release/archive authentication receipt; read only two additional regular members from that retained archive. No redownload, expanded SDK/cache input, whole-archive reauthentication, Go execution or generator run."
+  }
 }

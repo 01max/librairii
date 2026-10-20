@@ -293,6 +293,58 @@
     {
       "suite": "librairii-core",
       "name": "import::studio_json::tests::studio_json_unknown_subtrees_skip_huge_numbers_without_float_or_new_strictness"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::studio_json::optional::tests::optional_metadata_duplicates_null_folding_and_first_type_error_are_ordered"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::studio_json::optional::tests::optional_metadata_empty_uuid_is_allowed_without_changing_primary_identity"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::studio_json::optional::tests::optional_metadata_first_syntax_then_types_then_eof_then_uuid_priority"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::studio_json::optional::tests::optional_metadata_preserves_replacement_origins_and_boundary_only_text"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::studio_json::optional::tests::optional_metadata_selection_distinguishes_absence_directory_unselected_and_empty"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::studio_json::optional::tests::optional_metadata_supplied_original_byte_cap_and_depth_are_separate_from_heap_reads"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::studio_json::optional::tests::optional_metadata_three_field_shape_skips_studio_and_unknown_types"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::studio_json::optional::tests::optional_metadata_uuid_uses_untrimmed_legacy_forms_and_canonical_comparison"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::studio_json::tests::studio_text_frozen_whitespace_and_nonspace_boundaries"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::studio_json::tests::studio_text_known_duplicates_null_and_fold_keep_decoder_semantics"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::studio_json::tests::studio_text_projection_follows_uuid_refs_regular_thumbnail_presence"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::studio_json::tests::studio_text_projection_preserves_raw_identity_and_only_trims_boundaries"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::studio_json::tests::studio_text_replacement_origins_and_interior_composition_are_preserved"
     }
   ]
 }

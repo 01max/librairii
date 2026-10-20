@@ -3,17 +3,20 @@ import hashlib
 import json
 from pathlib import Path, PurePosixPath
 import shutil
+import stat
 import sys
 
 BUNDLE = 'go-1.26.5-json-v1-studio'
-INDEX_SHA = 'd63835ff65b581d3e0be5855189f59ac2fa4924a65904956de1f65e79309a4f4'
-SCHEMA_SHA = 'a0d54e23c9150f99f849383133ca32068465c566f9102b1cdf4de98b9367d1f7'
+INDEX_SHA = '91ff9950bb9608b66cc1c8ce0cbd19fc11df80492d92fda5819897cf43b264cf'
+SCHEMA_SHA = 'e7c2cd289d76f65950d4d15edf8a95b1f3089283218c0f0a43ac031272c6745c'
 METADATA = '.config/upstream-sources/' + BUNDLE
 NOTICES = '.config/upstream-notices/' + BUNDLE
 DERIVATIVES = 'crates/librairii-core/src/import/studio_json'
 KINDS = {DERIVATIVES + '/' + name: kind for name, kind in [
     ('mod.rs', 'translated'), ('scanner.rs', 'translated'),
-    ('strings.rs', 'translated'), ('tests.rs', 'authored')]}
+    ('strings.rs', 'translated'), ('tests.rs', 'authored'),
+    ('text.rs', 'translated'), ('optional.rs', 'translated'),
+    ('optional/tests.rs', 'authored')]}
 GO = 'Go1.26.5/src/'
 SOURCE_SETS = {
     DERIVATIVES + '/mod.rs': {GO + 'encoding/json/decode.go', GO + 'encoding/json/stream.go',
@@ -24,14 +27,24 @@ SOURCE_SETS = {
         'encoding/json/decode.go', 'encoding/json/fold.go', 'unicode/letter.go',
         'unicode/tables.go', 'unicode/utf8/utf8.go', 'unicode/utf16/utf16.go']},
     DERIVATIVES + '/tests.rs': set(),
+    DERIVATIVES + '/text.rs': {GO + name for name in [
+        'strings/strings.go', 'unicode/graphic.go', 'unicode/tables.go',
+        'unicode/utf8/utf8.go']},
+    DERIVATIVES + '/optional.rs': {GO + 'encoding/json/decode.go',
+        GO + 'encoding/json/stream.go',
+        'oracle73a93303/internal/inspection/zip_inspector.go'},
+    DERIVATIVES + '/optional/tests.rs': set(),
 }
 BASE_NOTICES = ['LICENSE-GO-BSD.txt', 'PATENTS-GO.txt']
 REQUIREMENTS = {selection: list(BASE_NOTICES) for selection in [
     'json-v1-scanner', 'json-v1-fixed-reducer', 'json-v1-field-fold',
-    'json-v1-decoder-order', 'unicode15-simple-fold', 'go-json-utf8', 'go-json-utf16']}
-for selection in ['json-v1-field-fold', 'unicode15-simple-fold']:
+    'json-v1-decoder-order', 'unicode15-simple-fold-and-white-space',
+    'go-json-utf8-and-trim-boundary', 'go-json-utf16', 'go-trim-space',
+    'unicode15-is-space']}
+for selection in ['json-v1-field-fold', 'unicode15-simple-fold-and-white-space',
+                  'unicode15-is-space']:
     REQUIREMENTS[selection].append('LICENSE-UNICODE-V3.txt')
-REQUIREMENTS['studio-product-boundary'] = []
+REQUIREMENTS['studio-text-and-optional-metadata-boundary'] = []
 
 
 def digest(data):
@@ -61,6 +74,8 @@ def relative(value):
 
 
 def safe(root, value):
+    if root.is_symlink() or getattr(root, 'is_junction', lambda: False)():
+        raise ValueError('aliased source-policy root')
     current = root
     for part in relative(value).split('/'):
         current = current / part
@@ -69,10 +84,21 @@ def safe(root, value):
     return current
 
 
+def regular(root, value):
+    path = safe(root, value)
+    try:
+        metadata = path.lstat()
+    except FileNotFoundError as error:
+        raise ValueError('missing source-policy file') from error
+    if not stat.S_ISREG(metadata.st_mode):
+        raise ValueError('nonregular source-policy file')
+    if metadata.st_nlink != 1:
+        raise ValueError('hard-linked source-policy file')
+    return path
+
+
 def pinned(root, record):
-    path = safe(root, record['path'])
-    if not path.is_file():
-        raise ValueError('missing source-policy file')
+    path = regular(root, record['path'])
     data = path.read_bytes()
     if (type(record['bytes']) is not int or len(data) != record['bytes']
             or digest(data) != record['sha256']):
@@ -82,18 +108,37 @@ def pinned(root, record):
 
 def exact_children(root, folder, expected):
     directory = safe(root, folder)
+    if not directory.is_dir():
+        raise ValueError('missing source-policy directory')
+    directories = set()
+    for value in expected:
+        relative(value)
+        if not value.startswith(folder + '/'):
+            raise ValueError('source-policy inventory outside selected directory')
+        parent = PurePosixPath(value).parent
+        while parent.as_posix() != folder:
+            directories.add(parent.as_posix())
+            parent = parent.parent
     actual = set()
-    for child in directory.iterdir():
-        path = folder + '/' + child.name
-        if not safe(root, path).is_file():
-            raise ValueError('nonregular or extra source-policy entry')
-        actual.add(path)
+    pending = [folder]
+    while pending:
+        current = pending.pop()
+        for child in safe(root, current).iterdir():
+            path = current + '/' + child.name
+            entry = safe(root, path)
+            if stat.S_ISDIR(entry.lstat().st_mode):
+                if path not in directories:
+                    raise ValueError('extra source-policy directory')
+                pending.append(path)
+            else:
+                regular(root, path)
+                actual.add(path)
     if actual != expected:
         raise ValueError('extra or missing source-policy file')
 
 
 def check(root):
-    registry = decode(safe(root, '.config/upstream-sources.json').read_bytes())
+    registry = decode(regular(root, '.config/upstream-sources.json').read_bytes())
     if (set(registry) != {'version', 'product_license', 'bundles'}
             or type(registry['version']) is not int or registry['version'] != 1
             or registry['product_license'] is not None
@@ -104,7 +149,7 @@ def check(root):
         'id': BUNDLE, 'scope': 'private-core-import-studio-json-v1',
         'source_index': METADATA + '/source-index.json', 'source_index_sha256': INDEX_SHA,
         'source_schema': METADATA + '/source-manifest.schema.json', 'source_schema_sha256': SCHEMA_SHA,
-        'source_identities': 18, 'notices_root': NOTICES, 'derivative_root': DERIVATIVES,
+        'source_identities': 20, 'notices_root': NOTICES, 'derivative_root': DERIVATIVES,
         'derivative_manifest': 'source-manifest.json', 'selection_notices': REQUIREMENTS,
         'required_derivatives': KINDS,
         'qualification': 'source inventory only; no behavior, resource, effect or platform qualification',
@@ -113,12 +158,14 @@ def check(root):
             or any(bundle[key] != value for key, value in expected.items())):
         raise ValueError('unreviewed source scope, identities or schema')
     exact_children(root, METADATA, {bundle['source_index'], bundle['source_schema']})
-    data = safe(root, bundle['source_index']).read_bytes()
-    if digest(data) != INDEX_SHA or digest(safe(root, bundle['source_schema']).read_bytes()) != SCHEMA_SHA:
+    data = regular(root, bundle['source_index']).read_bytes()
+    if digest(data) != INDEX_SHA or digest(regular(root, bundle['source_schema']).read_bytes()) != SCHEMA_SHA:
         raise ValueError('changed authenticated source index or manifest schema')
     index = decode(data)
     originals = {source['path']: source for source in index['sources']}
-    if (len(originals) != 18 or bundle['source_selections'] != {
+    if (type(index['version']) is not int or index['version'] != 2
+            or index['bundle'] != BUNDLE or len(originals) != 20
+            or bundle['source_selections'] != {
             path: source['selection'] for path, source in originals.items()}):
         raise ValueError('changed source selection')
     for source in originals.values():
@@ -141,9 +188,9 @@ def check(root):
             raise ValueError('changed upstream notice identity or origin')
         pinned(safe(root, NOTICES), notice)
     manifest_path = DERIVATIVES + '/source-manifest.json'
-    manifest = decode(safe(root, manifest_path).read_bytes())
+    manifest = decode(regular(root, manifest_path).read_bytes())
     if (set(manifest) != {'version', 'bundle', 'files'}
-            or type(manifest['version']) is not int or manifest['version'] != 1
+            or type(manifest['version']) is not int or manifest['version'] != 2
             or manifest['bundle'] != BUNDLE):
         raise ValueError('invalid private source manifest')
     records = manifest['files']
@@ -175,7 +222,7 @@ def check(root):
                     raise ValueError('dropped original source copyright header')
         if set(record['notices']) != required or len(record['notices']) != len(required):
             raise ValueError('incomplete derivative notice union')
-    return {'version': 1, 'bundle': BUNDLE, 'product_license': None,
+    return {'version': 2, 'bundle': BUNDLE, 'product_license': None,
         'source_index_sha256': INDEX_SHA, 'source_identities': index['sources'],
         'notices': notices, 'private_derivatives': records,
         'qualification': bundle['qualification']}
@@ -187,10 +234,15 @@ def inventory(root, report):
     destination.mkdir(parents=True, exist_ok=True)
     for notice in report['notices']:
         target = safe(root, folder + '/' + notice['path'])
-        shutil.copyfile(safe(root, NOTICES + '/' + notice['path']), target)
+        if target.exists():
+            regular(root, folder + '/' + notice['path'])
+        shutil.copyfile(regular(root, NOTICES + '/' + notice['path']), target)
         pinned(destination, notice)
-    safe(root, 'target/quality/notices/NOTICES-import-frozen-sources.txt').write_text(
-        'Private fixed-shape studio JSONv1 upstream notices. Product license remains undecided.\n'
+    summary = 'target/quality/notices/NOTICES-import-frozen-sources.txt'
+    if safe(root, summary).exists():
+        regular(root, summary)
+    safe(root, summary).write_text(
+        'Private fixed-shape studio JSONv1 text/optional metadata upstream notices. Product license remains undecided.\n'
         + BUNDLE + '\n' + report['qualification'] + '\nFiles: ' + BUNDLE + '/\n', encoding='utf-8')
 
 

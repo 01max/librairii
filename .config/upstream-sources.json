@@ -6,10 +6,10 @@
       "id": "go-1.26.5-json-v1-studio",
       "scope": "private-core-import-studio-json-v1",
       "source_index": ".config/upstream-sources/go-1.26.5-json-v1-studio/source-index.json",
-      "source_index_sha256": "d63835ff65b581d3e0be5855189f59ac2fa4924a65904956de1f65e79309a4f4",
+      "source_index_sha256": "91ff9950bb9608b66cc1c8ce0cbd19fc11df80492d92fda5819897cf43b264cf",
       "source_schema": ".config/upstream-sources/go-1.26.5-json-v1-studio/source-manifest.schema.json",
-      "source_schema_sha256": "a0d54e23c9150f99f849383133ca32068465c566f9102b1cdf4de98b9367d1f7",
-      "source_identities": 18,
+      "source_schema_sha256": "e7c2cd289d76f65950d4d15edf8a95b1f3089283218c0f0a43ac031272c6745c",
+      "source_identities": 20,
       "notices_root": ".config/upstream-notices/go-1.26.5-json-v1-studio",
       "notices": [
         {
@@ -46,8 +46,8 @@
         },
         {
           "path": "PROVENANCE.md",
-          "bytes": 3582,
-          "sha256": "1ed179e66e4fbdffac8f7f72deeee1011f9272326a7487e82fac5d1156ca6d83",
+          "bytes": 5493,
+          "sha256": "9103496501396469a04ea4431a76992a1c93a2443b24dcb79bdf418f6caef1a7",
           "origin": null
         }
       ],
@@ -58,27 +58,33 @@
         "Go1.26.5/src/encoding/json/decode.go": "json-v1-fixed-reducer",
         "Go1.26.5/src/encoding/json/fold.go": "json-v1-field-fold",
         "Go1.26.5/src/encoding/json/stream.go": "json-v1-decoder-order",
-        "Go1.26.5/src/unicode/letter.go": "unicode15-simple-fold",
-        "Go1.26.5/src/unicode/tables.go": "unicode15-simple-fold",
-        "Go1.26.5/src/unicode/utf8/utf8.go": "go-json-utf8",
+        "Go1.26.5/src/unicode/letter.go": "unicode15-simple-fold-and-white-space",
+        "Go1.26.5/src/unicode/tables.go": "unicode15-simple-fold-and-white-space",
+        "Go1.26.5/src/unicode/utf8/utf8.go": "go-json-utf8-and-trim-boundary",
         "Go1.26.5/src/unicode/utf16/utf16.go": "go-json-utf16",
         "Go1.26.5/src/encoding/json/encode.go": "reference-only",
         "Go1.26.5/src/reflect/value.go": "reference-only",
         "Go1.26.5/src/runtime/slice.go": "reference-only",
         "Go1.26.5/src/encoding/json/decode_test.go": "reference-only",
         "Go1.26.5/src/encoding/json/stream_test.go": "reference-only",
-        "oracle73a93303/internal/inspection/studio_zip.go": "studio-product-boundary",
-        "oracle73a93303/internal/inspection/zip_inspector.go": "studio-product-boundary",
+        "oracle73a93303/internal/inspection/studio_zip.go": "studio-text-and-optional-metadata-boundary",
+        "oracle73a93303/internal/inspection/zip_inspector.go": "studio-text-and-optional-metadata-boundary",
         "oracle73a93303/internal/inspection/studio_zip_test.go": "reference-only",
         "oracle73a93303/internal/inspection/zip_inspector_test.go": "reference-only",
-        "oracle73a93303/internal/inspection/testfixture/archive.go": "reference-only"
+        "oracle73a93303/internal/inspection/testfixture/archive.go": "reference-only",
+        "Go1.26.5/src/strings/strings.go": "go-trim-space",
+        "Go1.26.5/src/unicode/graphic.go": "unicode15-is-space"
       },
       "selection_notices": {
         "go-json-utf16": [
           "LICENSE-GO-BSD.txt",
           "PATENTS-GO.txt"
         ],
-        "go-json-utf8": [
+        "go-json-utf8-and-trim-boundary": [
+          "LICENSE-GO-BSD.txt",
+          "PATENTS-GO.txt"
+        ],
+        "go-trim-space": [
           "LICENSE-GO-BSD.txt",
           "PATENTS-GO.txt"
         ],
@@ -99,18 +105,26 @@
           "LICENSE-GO-BSD.txt",
           "PATENTS-GO.txt"
         ],
-        "unicode15-simple-fold": [
+        "studio-text-and-optional-metadata-boundary": [],
+        "unicode15-is-space": [
           "LICENSE-GO-BSD.txt",
           "PATENTS-GO.txt",
           "LICENSE-UNICODE-V3.txt"
         ],
-        "studio-product-boundary": []
+        "unicode15-simple-fold-and-white-space": [
+          "LICENSE-GO-BSD.txt",
+          "PATENTS-GO.txt",
+          "LICENSE-UNICODE-V3.txt"
+        ]
       },
       "required_derivatives": {
         "crates/librairii-core/src/import/studio_json/mod.rs": "translated",
         "crates/librairii-core/src/import/studio_json/scanner.rs": "translated",
         "crates/librairii-core/src/import/studio_json/strings.rs": "translated",
-        "crates/librairii-core/src/import/studio_json/tests.rs": "authored"
+        "crates/librairii-core/src/import/studio_json/tests.rs": "authored",
+        "crates/librairii-core/src/import/studio_json/text.rs": "translated",
+        "crates/librairii-core/src/import/studio_json/optional.rs": "translated",
+        "crates/librairii-core/src/import/studio_json/optional/tests.rs": "authored"
       },
       "qualification": "source inventory only; no behavior, resource, effect or platform qualification"
     }

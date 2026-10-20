@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "Private fixed-shape JSONv1 original-to-derivative manifest v1",
+  "title": "Private fixed-shape JSONv1 Studio text and optional metadata original-to-derivative manifest v2",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -10,7 +10,7 @@
   ],
   "properties": {
     "version": {
-      "const": 1
+      "const": 2
     },
     "bundle": {
       "const": "go-1.26.5-json-v1-studio"
@@ -83,13 +83,15 @@
                 "selection": {
                   "enum": [
                     "go-json-utf16",
-                    "go-json-utf8",
+                    "go-json-utf8-and-trim-boundary",
+                    "go-trim-space",
                     "json-v1-decoder-order",
                     "json-v1-field-fold",
                     "json-v1-fixed-reducer",
                     "json-v1-scanner",
-                    "studio-product-boundary",
-                    "unicode15-simple-fold"
+                    "studio-text-and-optional-metadata-boundary",
+                    "unicode15-is-space",
+                    "unicode15-simple-fold-and-white-space"
                   ]
                 }
               }
@@ -111,5 +113,5 @@
       }
     }
   },
-  "$comment": "Owner5 checker additionally requires exact file set and regular/no-alias paths; hashes/header hashes match admitted index; evidence-only originals cannot authorize translated/generated production files; authored glue has empty sources/notices; translated/generated sources nonempty with exact selection notice union and preserved copyright; no schema can prove behavior."
+  "$comment": "Owner5 checker additionally pins this exact version2 index/schema, exact actual released private-file set, repository-relative regular/no-alias paths, source/header identities and per-path selection scopes. Evidence-only inputs cannot authorize production derivatives. Authored glue/tests have empty sources/notices; translated/generated records have nonempty exact source uses, preserved original copyright lines, changed-representation recipe and complete selection notice union. Schema cannot prove semantics, resource bounds or effects."
 }

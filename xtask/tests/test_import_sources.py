@@ -47,8 +47,8 @@ class StudioSourcePolicy(unittest.TestCase):
         before = contents(self.parent)
         report = gate.check(self.root)
         self.assertEqual(report['product_license'], None)
-        self.assertEqual(len(report['source_identities']), 18)
-        self.assertEqual(len(report['private_derivatives']), 4)
+        self.assertEqual(len(report['source_identities']), 20)
+        self.assertEqual(len(report['private_derivatives']), 7)
         self.assertEqual(contents(self.parent), before)
 
     def test_index_schema_or_scope_repinning_cannot_widen_authority(self):
@@ -175,6 +175,123 @@ class StudioSourcePolicy(unittest.TestCase):
         with self.assertRaises(ValueError):
             gate.check(self.root)
 
+    def test_trim_scope_and_simple_fold_sources_are_not_interchangeable(self):
+        relative = gate.DERIVATIVES + '/source-manifest.json'
+        original = (self.root / relative).read_bytes()
+        index = self.load(gate.METADATA + '/source-index.json')
+        sources = {source['path']: source for source in index['sources']}
+        for derivative, removed, added in [
+            ('text.rs', 'Go1.26.5/src/unicode/graphic.go', 'Go1.26.5/src/encoding/json/fold.go'),
+            ('strings.rs', 'Go1.26.5/src/encoding/json/fold.go', 'Go1.26.5/src/unicode/graphic.go'),
+        ]:
+            with self.subTest(derivative=derivative):
+                manifest = json.loads(original)
+                record = next(row for row in manifest['files']
+                              if row['path'] == gate.DERIVATIVES + '/' + derivative)
+                record['sources'] = [use for use in record['sources'] if use['path'] != removed]
+                record['sources'].append({key: sources[added][key]
+                                          for key in ['path', 'sha256', 'header_sha256', 'selection']})
+                self.save(relative, manifest)
+                with self.assertRaises(ValueError):
+                    gate.check(self.root)
+        for change in ['old-simple-fold-scope', 'drop-unicode-notice']:
+            with self.subTest(change=change):
+                manifest = json.loads(original)
+                record = next(row for row in manifest['files']
+                              if row['path'] == gate.DERIVATIVES + '/text.rs')
+                if change == 'old-simple-fold-scope':
+                    use = next(use for use in record['sources']
+                               if use['path'] == 'Go1.26.5/src/unicode/tables.go')
+                    use['selection'] = 'unicode15-simple-fold'
+                else:
+                    record['notices'].remove('LICENSE-UNICODE-V3.txt')
+                self.save(relative, manifest)
+                with self.assertRaises(ValueError):
+                    gate.check(self.root)
+        (self.root / relative).write_bytes(original)
+        gate.check(self.root)
+
+    def test_nested_derivative_inventory_rejects_extra_missing_and_directory_aliases(self):
+        nested = self.root / gate.DERIVATIVES / 'optional'
+        required = nested / 'tests.rs'
+        original = required.read_bytes()
+        required.unlink()
+        with self.assertRaises(ValueError):
+            gate.check(self.root)
+        required.write_bytes(original)
+        for name in ['unselected.rs', 'unselected.txt']:
+            extra = nested / name
+            extra.write_bytes(b'// not in the released original-to-derived map')
+            with self.subTest(name=name), self.assertRaises(ValueError):
+                gate.check(self.root)
+            extra.unlink()
+        extra = nested / 'unselected-empty-directory'
+        extra.mkdir()
+        with self.assertRaises(ValueError):
+            gate.check(self.root)
+        extra.rmdir()
+        owned = self.parent / 'owned-optional-tests'
+        nested.rename(owned)
+        if os.name == 'nt':
+            subprocess.run(['cmd.exe', '/d', '/c', 'mklink', '/J', str(nested), str(owned)],
+                           check=True, capture_output=True)
+        else:
+            nested.symlink_to(owned, target_is_directory=True)
+        try:
+            with self.assertRaises(ValueError):
+                gate.check(self.root)
+        finally:
+            if os.name == 'nt':
+                os.rmdir(nested)
+            else:
+                nested.unlink()
+            owned.rename(nested)
+        gate.check(self.root)
+
+    def test_hard_linked_policy_and_nested_derivatives_are_rejected_without_writes(self):
+        for relative in ['.config/upstream-sources.json',
+                         gate.METADATA + '/source-index.json',
+                         gate.METADATA + '/source-manifest.schema.json',
+                         gate.NOTICES + '/LICENSE-UNICODE-V3.txt',
+                         gate.DERIVATIVES + '/source-manifest.json',
+                         gate.DERIVATIVES + '/optional/tests.rs']:
+            with self.subTest(relative=relative):
+                path = self.root / relative
+                original = path.read_bytes()
+                owned = self.parent / 'owned-hard-link-peer'
+                path.rename(owned)
+                os.link(owned, path)
+                try:
+                    before = contents(self.parent)
+                    with self.assertRaisesRegex(ValueError, 'hard-linked'):
+                        gate.check(self.root)
+                    self.assertEqual(contents(self.parent), before)
+                finally:
+                    path.unlink()
+                    owned.unlink()
+                    path.write_bytes(original)
+        gate.check(self.root)
+
+    def test_widened_unicode_use_cannot_self_repin_notice_or_remove_origin(self):
+        relative = '.config/upstream-sources.json'
+        registry_bytes = (self.root / relative).read_bytes()
+        path = self.root / gate.NOTICES / 'LICENSE-UNICODE-V3.txt'
+        original = path.read_bytes()
+        path.write_bytes(original + b'changed')
+        for origin in [None, {'kind': 'authored'}]:
+            with self.subTest(origin=origin):
+                registry = json.loads(registry_bytes)
+                notice = next(row for row in registry['bundles'][0]['notices']
+                              if row['path'] == 'LICENSE-UNICODE-V3.txt')
+                notice.update(bytes=path.stat().st_size, sha256=gate.digest(path.read_bytes()),
+                              origin=origin)
+                self.save(relative, registry)
+                with self.assertRaises(ValueError):
+                    gate.check(self.root)
+        path.write_bytes(original)
+        (self.root / relative).write_bytes(registry_bytes)
+        gate.check(self.root)
+
     def test_inventory_copies_exact_notices_and_observes_product_license(self):
         report = gate.check(self.root)
         gate.inventory(self.root, report)
@@ -185,6 +302,30 @@ class StudioSourcePolicy(unittest.TestCase):
         self.assertIn('no behavior, resource, effect or platform qualification',
                       (self.root / 'target/quality/notices/NOTICES-import-frozen-sources.txt')
                       .read_text(encoding='utf-8'))
+
+    def test_inventory_refuses_hard_linked_output_without_clobbering_owned_peer(self):
+        report = gate.check(self.root)
+        gate.inventory(self.root, report)
+        for relative in [
+            'target/quality/notices/' + gate.BUNDLE + '/LICENSE-GO-BSD.txt',
+            'target/quality/notices/NOTICES-import-frozen-sources.txt',
+        ]:
+            with self.subTest(relative=relative):
+                path = self.root / relative
+                original = path.read_bytes()
+                owned = self.parent / 'owned-inventory-peer'
+                owned.write_bytes(b'owned sibling must not be overwritten')
+                path.unlink()
+                os.link(owned, path)
+                try:
+                    before = contents(self.parent)
+                    with self.assertRaisesRegex(ValueError, 'hard-linked'):
+                        gate.inventory(self.root, report)
+                    self.assertEqual(contents(self.parent), before)
+                finally:
+                    path.unlink()
+                    owned.unlink()
+                    path.write_bytes(original)
 
     def test_fresh_autocrlf_checkout_preserves_actual_source_policy_inputs(self):
         hooks = self.parent / 'empty-hooks'
@@ -215,7 +356,7 @@ class StudioSourcePolicy(unittest.TestCase):
             self.assertEqual(contents(self.parent), before)
             if label == 'protected':
                 self.assertEqual(result.returncode, 0, result.stderr)
-                self.assertEqual(len(json.loads(result.stdout)['private_derivatives']), 4)
+                self.assertEqual(len(json.loads(result.stdout)['private_derivatives']), 7)
             else:
                 self.assertNotEqual(result.returncode, 0, label)
                 self.assertIn('changed', result.stderr)
