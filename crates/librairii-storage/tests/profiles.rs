@@ -243,17 +243,23 @@ fn serialized_native_updates_keep_language_and_root_without_lost_snapshots() -> 
         match result {
             Ok(_) => (),
             Err(StorageError::ProfileBusy) => refused.push(index),
+            Err(StorageError::ProfileBindingActive) if index % 2 != 0 => (),
             Err(error) => return Err(error.into()),
         }
     }
     for index in refused {
-        store.update(|p| change(index, p))?;
+        let result = store.update(|p| change(index, p));
+        if index % 2 == 0 {
+            result?;
+        } else {
+            assert!(matches!(result, Err(StorageError::ProfileBindingActive)));
+        }
     }
     let final_profile = store.load()?.ok_or("missing profile")?.profile().clone();
     assert_eq!(final_profile.language, "fr");
-    assert_eq!(final_profile.root, "/independently-verified-later");
-    assert_eq!(final_profile.library_id, "Raw-ID");
-    assert!(final_profile.complete);
+    assert_eq!(final_profile.root, "");
+    assert_eq!(final_profile.library_id, "");
+    assert!(!final_profile.complete);
     let directory = store.directory().to_path_buf();
     drop(store);
     assert_eq!(

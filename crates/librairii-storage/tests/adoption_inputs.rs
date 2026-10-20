@@ -488,3 +488,40 @@ fn self_consistent_hashes_cannot_qualify_foreign_sqlite_or_repair_it() -> TestRe
     assert!(!root.join(".librairii-library.lock").exists());
     Ok(())
 }
+
+#[test]
+fn closed_manifest_reserves_only_native_root_record_and_exact_atomic_control_prefix() -> TestResult
+{
+    for name in [
+        ".librairii-native-state.json",
+        ".librairii-native-state.json.tmp-",
+        ".librairii-native-state.json.tmp-foreign",
+    ] {
+        let mut value: serde_json::Value = serde_json::from_slice(MANIFEST)?;
+        value
+            .as_array_mut()
+            .ok_or("manifest")?
+            .push(serde_json::json!({"path":name,"size":0,"sha256":"0".repeat(64)}));
+        assert!(
+            matches!(
+                ClosedManifest::decode(&serde_json::to_vec(&value)?),
+                Err(StorageError::AdoptionInputInvalid)
+            ),
+            "{name}"
+        );
+    }
+    for name in [
+        ".librairii-native-state.json.other",
+        ".librairii-native-state.json.tmpx-",
+        "archives/.librairii-native-state.json",
+    ] {
+        let mut value: serde_json::Value = serde_json::from_slice(MANIFEST)?;
+        value
+            .as_array_mut()
+            .ok_or("manifest")?
+            .push(serde_json::json!({"path":name,"size":0,"sha256":"0".repeat(64)}));
+        ClosedManifest::decode(&serde_json::to_vec(&value)?)?;
+    }
+    assert_eq!(ClosedManifest::decode(MANIFEST)?.original_bytes(), MANIFEST);
+    Ok(())
+}

@@ -218,8 +218,8 @@ impl Directory {
     }
 }
 
-/// Private replace-owned-config capability. NativeProfileStore alone invokes
-/// it under its retained namespace OS lock and serialized state. It has no
+/// Private replace-owned-control capability. The profile and native state
+/// protocols invoke it under their actual namespace/root leases and owned state. It has no
 /// archive/custody publication API and accepts no arbitrary destination path.
 #[derive(Debug)]
 pub(crate) struct ConfigTemp {
@@ -235,37 +235,125 @@ pub(crate) struct ConfigReplaceFailure {
     pub(crate) cause: StorageError,
 }
 
+#[derive(Debug)]
+pub(crate) struct ControlAllocation {
+    pub(crate) file: Option<File>,
+    pub(crate) name: OsString,
+}
+#[derive(Debug)]
+pub(crate) struct ControlCreateFailure {
+    pub(crate) cause: StorageError,
+    pub(crate) allocation: ControlAllocation,
+}
+impl std::fmt::Display for ControlCreateFailure {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "control creation {:?}: {}",
+            self.allocation.name, self.cause
+        )
+    }
+}
+impl std::error::Error for ControlCreateFailure {}
+
 impl Directory {
-    pub(crate) fn create_config_temp(&self) -> Result<ConfigTemp> {
-        for _ in 0..64 {
-            let name = unique_name("settings");
-            match native::openat(
+    pub(crate) fn create_control_record(
+        &self,
+        name: &OsStr,
+    ) -> std::result::Result<ConfigTemp, Box<ControlCreateFailure>> {
+        self.create_control_with(name, |_| Ok(()))
+    }
+    fn create_control_with(
+        &self,
+        name: &OsStr,
+        after_open: impl FnOnce(&File) -> Result<()>,
+    ) -> std::result::Result<ConfigTemp, Box<ControlCreateFailure>> {
+        let mut allocation = ControlAllocation {
+            file: None,
+            name: name.to_os_string(),
+        };
+        let result = (|| {
+            EntryName::parse(name)?;
+            let fd = native::openat(
                 &self.file,
-                &name,
-                OFlags::RDWR | OFlags::CREATE | OFlags::EXCL | OFlags::NOFOLLOW | OFlags::CLOEXEC,
+                name,
+                OFlags::RDWR
+                    | OFlags::CREATE
+                    | OFlags::EXCL
+                    | OFlags::NOFOLLOW
+                    | OFlags::NONBLOCK
+                    | OFlags::CLOEXEC,
                 Mode::RUSR | Mode::WUSR,
-            ) {
-                Ok(fd) => {
-                    let file = File::from(fd);
-                    require_regular(&file)?;
-                    let identity = FileIdentity::from_file(&file)?;
-                    self.require_name(&name, identity)?;
-                    return Ok(ConfigTemp {
-                        file,
-                        name,
-                        identity,
-                    });
+            )
+            .map_err(|e| StorageError::io("create owned control file", e.into()))?;
+            allocation.file = Some(File::from(fd));
+            let file = allocation
+                .file
+                .as_ref()
+                .ok_or(StorageError::CompatibilityInvariant)?;
+            after_open(file)?;
+            require_regular(file)?;
+            let identity = FileIdentity::from_file(file)?;
+            self.require_name(name, identity)?;
+            Ok(identity)
+        })();
+        match result {
+            Ok(identity) => match allocation.file.take() {
+                Some(file) => Ok(ConfigTemp {
+                    file,
+                    name: allocation.name,
+                    identity,
+                }),
+                None => Err(Box::new(ControlCreateFailure {
+                    cause: StorageError::CompatibilityInvariant,
+                    allocation,
+                })),
+            },
+            Err(cause) => Err(Box::new(ControlCreateFailure { cause, allocation })),
+        }
+    }
+    pub(crate) fn read_config(&self, name: &OsStr) -> Result<ConfigTemp> {
+        let file = self.open_regular(name, OFlags::RDONLY)?;
+        Ok(ConfigTemp {
+            identity: FileIdentity::from_file(&file)?,
+            file,
+            name: name.to_os_string(),
+        })
+    }
+    pub(crate) fn create_config_temp(
+        &self,
+    ) -> std::result::Result<ConfigTemp, Box<ControlCreateFailure>> {
+        self.create_control_temp(".librairii-settings-")
+    }
+    pub(crate) fn create_control_temp(
+        &self,
+        prefix: &str,
+    ) -> std::result::Result<ConfigTemp, Box<ControlCreateFailure>> {
+        for _ in 0..64 {
+            let name = OsString::from(format!(
+                "{prefix}{}-{}",
+                std::process::id(),
+                NEXT_TEMP.fetch_add(1, Ordering::Relaxed)
+            ));
+            match self.create_control_record(&name) {
+                Ok(temporary) => return Ok(temporary),
+                Err(failure)
+                    if failure.allocation.file.is_none()
+                        && matches!(&failure.cause,
+                    StorageError::Io { source, .. } if source.kind() == io::ErrorKind::AlreadyExists) =>
+                {
+                    continue;
                 }
-                Err(error) if error == rustix::io::Errno::EXIST => continue,
-                Err(error) => {
-                    return Err(StorageError::io(
-                        "create owned config temporary",
-                        error.into(),
-                    ));
-                }
+                Err(failure) => return Err(failure),
             }
         }
-        Err(StorageError::DestinationCollision)
+        Err(Box::new(ControlCreateFailure {
+            cause: StorageError::DestinationCollision,
+            allocation: ControlAllocation {
+                file: None,
+                name: OsString::from(prefix),
+            },
+        }))
     }
     pub(crate) fn remove_config_temp(&self, temporary: &ConfigTemp) -> Result<()> {
         require_regular(&temporary.file)?;
@@ -1166,6 +1254,43 @@ mod tests {
             .map_err(|e| StorageError::io("write test stage", e))?;
         let measurement = stage.measure(bytes.len() as u64, &WorkCancellation::default())?;
         Ok((stage, measurement))
+    }
+
+    #[test]
+    fn owned_control_creation_failure_keeps_actual_fd_name_and_partial_bytes() -> TestResult {
+        let roots = TestRoots::new()?;
+        let directory = Directory::open(roots.library())?;
+        let name = OsStr::new(".librairii-native-state.json.tmp-owned-failure");
+        let failure = directory
+            .create_control_with(name, |file| {
+                let mut file = file;
+                file.write_all(b"partial owned control bytes")
+                    .map_err(|e| StorageError::io("write actual control prefix", e))?;
+                Err(StorageError::io(
+                    "injected post-open control validation",
+                    io::Error::other("retain actual fd"),
+                ))
+            })
+            .err()
+            .ok_or("post-open failure lost")?;
+        assert_eq!(failure.allocation.name, name);
+        let file = failure
+            .allocation
+            .file
+            .as_ref()
+            .ok_or("missing retained actual fd")?;
+        let expected = FileIdentity::from_file(file)?;
+        directory.require_name(name, expected)?;
+        assert_eq!(
+            std::fs::read(roots.library().join(name))?,
+            b"partial owned control bytes"
+        );
+        drop(failure);
+        assert_eq!(
+            std::fs::read(roots.library().join(name))?,
+            b"partial owned control bytes"
+        );
+        Ok(())
     }
 
     #[test]

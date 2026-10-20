@@ -58,13 +58,30 @@ pub struct Pending<'runtime, T> {
     receiver: Receiver<Result<T>>,
     _admission: Arc<Admission>,
     lifetime: PhantomData<&'runtime ()>,
+    native_fence: Option<Arc<AtomicBool>>,
+    acknowledged: bool,
 }
 impl<T> Pending<'_, T> {
     /// Disconnection means an unavailable outcome, never rollback proof.
-    pub fn wait(self) -> Result<T> {
-        self.receiver
+    pub fn wait(mut self) -> Result<T> {
+        let result = self
+            .receiver
             .recv()
-            .map_err(|_| StorageError::WorkerStopped)?
+            .map_err(|_| StorageError::WorkerStopped)?;
+        self.acknowledged = true;
+        result
+    }
+}
+
+impl<T> Drop for Pending<'_, T> {
+    fn drop(&mut self) {
+        if !self.acknowledged
+            && let Some(fence) = &self.native_fence
+        {
+            // An unobserved admitted result cannot establish native clean
+            // closure. The same-generation barrier/repair remains available.
+            fence.store(true, Ordering::Release);
+        }
     }
 }
 
@@ -285,11 +302,14 @@ impl<'library> Authority<'library> {
             Self::Native(library) => library.claim_runtime(),
         }
     }
-    fn release_runtime(self) {
+    fn release_runtime(self, fully_opened: bool) {
         match self {
-            Self::Isolated(library) => library.release_runtime(),
+            Self::Isolated(library) => {
+                let _ = fully_opened;
+                library.release_runtime()
+            }
             #[cfg(any(target_os = "macos", target_os = "linux"))]
-            Self::Native(library) => library.release_runtime(),
+            Self::Native(library) => library.release_runtime(fully_opened),
         }
     }
     fn effect_fence(self) -> Arc<AtomicBool> {
@@ -624,6 +644,15 @@ impl<'library> Database<'library> {
         }
         let ownership = self.authority.revalidate(critical);
         if let Err(error) = ownership {
+            if !critical
+                && matches!(error, StorageError::ProfileBusy)
+                && self.authority.persistent_uncertainty().is_some()
+            {
+                // A legitimate admitted profile update owns its state. This
+                // refusal is BEFORE queue admission/callback/SQL; no authority
+                // loss, commit uncertainty or finalizer fence is erased.
+                return Err(error);
+            }
             self.fenced.store(true, Ordering::Release);
             self.authority.fence_failed_close();
             let _ = self.stop_ordinary();
@@ -635,6 +664,8 @@ impl<'library> Database<'library> {
             receiver,
             _admission: admission,
             lifetime: PhantomData,
+            native_fence: self.authority.persistent_uncertainty(),
+            acknowledged: false,
         })
     }
 
@@ -673,13 +704,29 @@ impl<'library> Database<'library> {
         {
             failure.get_or_insert(error);
         }
+        if self.authority.persistent_uncertainty().is_some() {
+            // A forgotten/unacknowledged Pending still owns a bounded slot,
+            // even once all actual worker executions have joined.
+            for queue in [&self.readers, &self.writer] {
+                match queue.state.lock() {
+                    Ok(state) if state.ordinary_owned == 0 && state.critical_owned == 0 => (),
+                    _ => {
+                        failure.get_or_insert(StorageError::RuntimeFenced);
+                    }
+                }
+            }
+        }
         if let Some(error) = failure {
             self.close_failed = true;
             self.authority.fence_failed_close();
             return Err(error);
         }
         self.closed = true;
-        self.authority.release_runtime();
+        // Only actual successful handshakes from all five configured owners
+        // can certify native closure. A clean join during failed startup is
+        // not an initialized runtime's positive close/checkpoint evidence.
+        self.authority
+            .release_runtime(self.diagnostics.len() == READ_WORKERS + 1);
         Ok(())
     }
 }

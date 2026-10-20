@@ -4,7 +4,7 @@
 //! namespace with its marker locked for the entire store lifetime. This lock does
 //! not exclude an unmodified Go library process or authorize library adoption.
 #[cfg(any(target_os = "macos", target_os = "linux"))]
-use crate::platform::unix::{ConfigTemp, Directory, durable_file_flush};
+use crate::platform::unix::{ConfigTemp, ControlAllocation, Directory, durable_file_flush};
 use crate::{Result, StorageError, backup};
 use serde::{Deserialize, Serialize, de};
 use std::{
@@ -198,6 +198,8 @@ struct State {
     // poisoned store's lifetime. They are never purged by Drop/restart scanning.
     #[cfg(any(target_os = "macos", target_os = "linux"))]
     recovery_witnesses: Vec<ConfigTemp>,
+    #[cfg(any(target_os = "macos", target_os = "linux"))]
+    recovery_allocations: Vec<ControlAllocation>,
 }
 
 impl State {
@@ -232,6 +234,7 @@ impl BindingState {
 pub(crate) struct ProfileBinding<'profile> {
     store: &'profile NativeProfileStore,
     state: Arc<BindingState>,
+    released: bool,
 }
 
 #[cfg(any(target_os = "macos", target_os = "linux"))]
@@ -243,7 +246,10 @@ impl ProfileBinding<'_> {
         self.state.fenced.clone()
     }
     pub(crate) fn revalidate(&self) -> Result<()> {
-        let mut state = self.store.reserve()?;
+        if self.state.fenced.load(Ordering::Acquire) || self.state.frozen.load(Ordering::Acquire) {
+            return Err(StorageError::ProfileRestartRequired);
+        }
+        let mut state = self.store.reserve_inner(true)?;
         let result = (|| {
             self.store.load_locked(&mut state)?;
             self.store.revalidate_settings(&state)?;
@@ -272,19 +278,76 @@ impl ProfileBinding<'_> {
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 impl Drop for ProfileBinding<'_> {
     fn drop(&mut self) {
-        // An uncertain/poisoned generation remains excluded until restart. A
-        // dropped data/receipt object must never clear that exclusion.
-        if let Ok(mut slot) = self.store.state.lock()
-            && let Some(state) = slot.as_mut()
-            && !state.poisoned
-            && !self.state.fenced.load(Ordering::Acquire)
-            && state
-                .binding
-                .as_ref()
-                .is_some_and(|active| Arc::ptr_eq(active, &self.state))
-        {
-            state.binding = None;
+        // Dropping an owner is never clean-closure proof, even after DB close.
+        if !self.released {
+            self.fence();
         }
+    }
+}
+
+#[cfg(any(target_os = "macos", target_os = "linux"))]
+#[derive(Debug)]
+pub(crate) struct FrozenProfile<'profile> {
+    reservation: StateReservation<'profile>,
+}
+#[cfg(any(target_os = "macos", target_os = "linux"))]
+impl<'profile> ProfileBinding<'profile> {
+    pub(crate) fn freeze(&self) -> Result<FrozenProfile<'profile>> {
+        let reservation = self.store.reserve_inner(true)?;
+        if !reservation
+            .binding
+            .as_ref()
+            .is_some_and(|b| Arc::ptr_eq(b, &self.state))
+        {
+            return Err(StorageError::ProfileRestartRequired);
+        }
+        self.state.frozen.store(true, Ordering::Release);
+        Ok(FrozenProfile { reservation })
+    }
+}
+#[cfg(any(target_os = "macos", target_os = "linux"))]
+impl FrozenProfile<'_> {
+    pub(crate) fn revalidate(&self) -> Result<()> {
+        let store = self.reservation.store;
+        if self.reservation.poisoned {
+            return Err(StorageError::ProfileRestartRequired);
+        }
+        let binding = self
+            .reservation
+            .binding
+            .as_ref()
+            .ok_or(StorageError::ProfileRestartRequired)?;
+        if binding.fenced.load(Ordering::Acquire)
+            || !self
+                .reservation
+                .document
+                .as_ref()
+                .is_some_and(|d| binding.matches(d.profile()))
+        {
+            return Err(StorageError::ProfileRestartRequired);
+        }
+        store.revalidate_settings(&self.reservation)?;
+        store.require_unrecovered_namespace()
+    }
+    pub(crate) fn release(mut self, mut binding: ProfileBinding<'_>) {
+        // Only the consuming NativeLibrary finalizer calls this AFTER all root
+        // descriptors and the root lease close. This owned reservation excludes
+        // every admitted profile update through that ordering point.
+        self.reservation.binding = None;
+        binding.released = true;
+    }
+}
+
+#[cfg(any(target_os = "macos", target_os = "linux"))]
+pub(crate) struct BindingReservation<'profile> {
+    reservation: StateReservation<'profile>,
+}
+#[cfg(any(target_os = "macos", target_os = "linux"))]
+impl<'profile> BindingReservation<'profile> {
+    pub(crate) fn publish(mut self, proposed: &Profile) -> Result<ProfileBinding<'profile>> {
+        self.reservation
+            .store
+            .publish_binding(&mut self.reservation.state, proposed)
     }
 }
 
@@ -308,6 +371,7 @@ pub struct NativeProfileStore {
     state: Mutex<Option<State>>,
 }
 
+#[derive(Debug)]
 struct StateReservation<'store> {
     store: &'store NativeProfileStore,
     state: State,
@@ -341,12 +405,33 @@ impl Drop for StateReservation<'_> {
 
 impl NativeProfileStore {
     fn reserve(&self) -> Result<StateReservation<'_>> {
-        let state = self
+        self.reserve_inner(false)
+    }
+    fn reserve_inner(&self, frozen_allowed: bool) -> Result<StateReservation<'_>> {
+        let mut slot = self
             .state
             .lock()
-            .map_err(|_| StorageError::ProfileRestartRequired)?
-            .take()
-            .ok_or(StorageError::ProfileBusy)?;
+            .map_err(|_| StorageError::ProfileRestartRequired)?;
+        let state = slot.take().ok_or(StorageError::ProfileBusy)?;
+        if !frozen_allowed
+            && (state.poisoned
+                || state
+                    .binding
+                    .as_ref()
+                    .is_some_and(|b| b.fenced.load(Ordering::Acquire)))
+        {
+            *slot = Some(state);
+            return Err(StorageError::ProfileRestartRequired);
+        }
+        if !frozen_allowed
+            && state
+                .binding
+                .as_ref()
+                .is_some_and(|b| b.frozen.load(Ordering::Acquire))
+        {
+            *slot = Some(state);
+            return Err(StorageError::ProfileBusy);
+        }
         Ok(StateReservation { store: self, state })
     }
     /// Initialize only a fresh explicit directory, never a legacy settings
@@ -488,6 +573,15 @@ impl NativeProfileStore {
     pub fn directory(&self) -> &Path {
         &self.directory
     }
+    #[cfg(any(target_os = "macos", target_os = "linux"))]
+    pub(crate) fn marker_digest(&self) -> Result<String> {
+        use sha2::Digest;
+        self.revalidate_namespace()?;
+        Ok(
+            librairii_core::Checksum::from_bytes(sha2::Sha256::digest(MARKER_BYTES).into())
+                .to_string(),
+        )
+    }
     pub fn recovery_directory(&self) -> PathBuf {
         self.directory.join("recovery")
     }
@@ -498,9 +592,10 @@ impl NativeProfileStore {
         Ok(state.document.clone())
     }
 
-    /// The closure edits data only. It must be bounded and synchronous, and
-    /// must not re-enter this store. A selected root still needs independent
-    /// runtime adoption/identity/lease verification before any library effects.
+    /// Change language or retain the current authority fields. Root/raw-ID/
+    /// complete/recovering publication is reserved to the actual owned native
+    /// binding route, including when no binding is active. The callback must
+    /// be bounded and synchronous; a racing owner receives ProfileBusy.
     pub fn update(&self, change: impl FnOnce(&mut Profile) -> Result<()>) -> Result<Profile> {
         #[cfg(any(target_os = "macos", target_os = "linux"))]
         return self.update_with_flush(change, |_| Ok(()));
@@ -531,17 +626,36 @@ impl NativeProfileStore {
     /// Only native.rs may invoke this after checking an owned independent copy
     /// and the explicit native namespace. No filesystem/database copy or caller
     /// callback is run with this short profile-publication mutex held.
-    #[cfg(any(target_os = "macos", target_os = "linux"))]
+    #[cfg(all(test, any(target_os = "macos", target_os = "linux")))]
     pub(crate) fn bind_verified_copy(&self, proposed: &Profile) -> Result<ProfileBinding<'_>> {
+        self.begin_binding()?.publish(proposed)
+    }
+
+    #[cfg(any(target_os = "macos", target_os = "linux"))]
+    pub(crate) fn begin_binding(&self) -> Result<BindingReservation<'_>> {
         let mut state = self.reserve()?;
         self.load_locked(&mut state)?;
         self.revalidate_settings(&state)?;
         if state.binding.is_some() {
             return Err(StorageError::ProfileBindingActive);
         }
-        // Serialize this short namespace observation with settings staging:
-        // another legitimate update's live temporary is not a foreign journal.
         self.require_unrecovered_namespace()?;
+        if state
+            .document
+            .as_ref()
+            .is_some_and(|d| d.profile().recovering)
+        {
+            return Err(StorageError::RecoveryBindingRequired);
+        }
+        Ok(BindingReservation { reservation: state })
+    }
+
+    #[cfg(any(target_os = "macos", target_os = "linux"))]
+    fn publish_binding<'profile>(
+        &'profile self,
+        state: &mut State,
+        proposed: &Profile,
+    ) -> Result<ProfileBinding<'profile>> {
         let mut next = proposed.clone();
         if let Some(document) = &state.document {
             let current = document.profile();
@@ -565,7 +679,7 @@ impl NativeProfileStore {
         }
         let bytes = encode(&next)?;
         if state.document.as_ref().map(ProfileDocument::profile) != Some(&next) {
-            self.update_unix(&mut state, next.clone(), bytes, |_| Ok(()), |_| Ok(()))?;
+            self.update_unix(state, next.clone(), bytes, |_| Ok(()), |_| Ok(()))?;
         }
         let binding = Arc::new(BindingState {
             root: next.root,
@@ -577,6 +691,7 @@ impl NativeProfileStore {
         Ok(ProfileBinding {
             store: self,
             state: binding,
+            released: false,
         })
     }
 
@@ -640,7 +755,29 @@ impl NativeProfileStore {
                 return Err(StorageError::ProfileBindingActive);
             }
         }
+        let previous = state
+            .document
+            .as_ref()
+            .map_or_else(Profile::setup, |d| d.profile.clone());
         let bytes = encode(&next)?;
+        if (
+            next.root.as_str(),
+            next.library_id.as_str(),
+            next.complete,
+            next.recovering,
+        ) != (
+            previous.root.as_str(),
+            previous.library_id.as_str(),
+            previous.complete,
+            previous.recovering,
+        ) {
+            return Err(StorageError::ProfileBindingActive);
+        }
+        if previous.complete && state.binding.is_none() {
+            // Restarted profile DATA is not a current-generation language-write
+            // capability. First reacquire the actual existing native owner.
+            return Err(StorageError::RecoveryBindingRequired);
+        }
         #[cfg(any(target_os = "macos", target_os = "linux"))]
         return self.update_unix(&mut state, next, bytes, before_replace, flush);
         #[cfg(not(any(target_os = "macos", target_os = "linux")))]
@@ -777,7 +914,15 @@ impl NativeProfileStore {
         before_replace: impl FnOnce(&Path) -> Result<()>,
         flush: impl FnOnce(&Path) -> Result<()>,
     ) -> Result<Profile> {
-        let mut staged = self.namespace.create_config_temp()?;
+        let mut staged = match self.namespace.create_config_temp() {
+            Ok(staged) => staged,
+            Err(failure) => {
+                let failure = *failure;
+                state.poison();
+                state.recovery_allocations.push(failure.allocation);
+                return Err(failure.cause);
+            }
+        };
         let before = (|| {
             staged
                 .file

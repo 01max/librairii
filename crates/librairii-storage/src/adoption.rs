@@ -34,7 +34,12 @@ impl ClosedManifest {
         for entry in &entries {
             // A closed Manifest contains literal canonical relative paths, not
             // instructions to clean/normalize paths before claiming files.
-            if entry.path.is_empty()
+            if entry
+                .path
+                .split('/')
+                .next()
+                .is_some_and(crate::native::reserved_control_name)
+                || entry.path.is_empty()
                 || entry.path.contains('\0')
                 || entry.path.split('/').any(|p| matches!(p, "" | "." | ".."))
                 || entry.size < 0
@@ -422,6 +427,7 @@ mod closed {
                     source_root: self.root.clone(),
                     identity: self.identity.clone(),
                     prefix: self.prefix,
+                    native_record: None,
                 }),
                 (Err(cause), retained) => Err(Box::new(IndependentCopyFailure {
                     cause,
@@ -475,8 +481,19 @@ mod closed {
         identity: LibraryIdentity,
         prefix: SchemaPrefix,
         candidate: CopyCandidate,
+        native_record: Option<(File, Vec<u8>)>,
     }
     impl IndependentCopy {
+        pub(crate) fn attach_native_record(&mut self, file: File, bytes: Vec<u8>) -> Result<()> {
+            if self.native_record.is_some() || bytes.len() > MAX_PROFILE_BYTES {
+                return Err(StorageError::AdoptionInputChanged);
+            }
+            self.native_record = Some((file, bytes));
+            self.revalidate(&WorkCancellation::default())
+        }
+        pub(crate) fn manifest_digest(&self) -> String {
+            crate::native::digest(self.manifest.original_bytes())
+        }
         pub fn root(&self) -> &Path {
             &self.candidate.root
         }
@@ -513,11 +530,12 @@ mod closed {
         }
         pub fn revalidate(&self, cancellation: &WorkCancellation) -> Result<()> {
             self.candidate.revalidate()?;
-            scan_with_lock(
+            scan_owned_controls(
                 &self.candidate.directory,
                 &self.manifest,
                 cancellation,
                 true,
+                self.native_record.as_ref(),
             )
         }
     }
@@ -608,6 +626,15 @@ mod closed {
         cancellation: &WorkCancellation,
         owned_lock: bool,
     ) -> Result<()> {
+        scan_owned_controls(root, manifest, cancellation, owned_lock, None)
+    }
+    fn scan_owned_controls(
+        root: &Directory,
+        manifest: &ClosedManifest,
+        cancellation: &WorkCancellation,
+        owned_lock: bool,
+        record: Option<&(File, Vec<u8>)>,
+    ) -> Result<()> {
         if cancellation.is_cancelled() {
             return Err(StorageError::Cancelled);
         }
@@ -618,6 +645,37 @@ mod closed {
                 .get_mut("")
                 .ok_or(StorageError::AdoptionInputInvalid)?
                 .push(OsString::from(LIBRARY_LOCK_FILE));
+        }
+        if let Some((witness, bytes)) = record {
+            children
+                .get_mut("")
+                .ok_or(StorageError::AdoptionInputInvalid)?
+                .push(OsString::from(crate::native::NATIVE_STATE_FILE));
+            let mut file = root.open_regular(
+                OsStr::new(crate::native::NATIVE_STATE_FILE),
+                rustix::fs::OFlags::RDONLY,
+            )?;
+            let before = witness
+                .metadata()
+                .map_err(|e| StorageError::io("inspect copied native record witness", e))?;
+            let actual = file
+                .metadata()
+                .map_err(|e| StorageError::io("inspect copied native record name", e))?;
+            if before.nlink() != 1
+                || actual.nlink() != 1
+                || before.dev() != actual.dev()
+                || before.ino() != actual.ino()
+            {
+                return Err(StorageError::AdoptionInputChanged);
+            }
+            let mut found = Vec::new();
+            Read::by_ref(&mut file)
+                .take((MAX_PROFILE_BYTES + 1) as u64)
+                .read_to_end(&mut found)
+                .map_err(|e| StorageError::io("read copied native record", e))?;
+            if &found != bytes {
+                return Err(StorageError::AdoptionInputChanged);
+            }
         }
         for entry in &manifest.entries {
             let (parent, name) = entry.path.rsplit_once('/').unwrap_or(("", &entry.path));

@@ -1236,3 +1236,112 @@ ARM execution PASS1/1 exposed the source-only Windows import/success-assumption
 gap before discovery publication. The test now follows the actual Unix route;
 Windows continues to require honest DirectoryDurabilityUnavailable refusal.
 No Windows compilation/execution or all-target test qualification is claimed.
+
+### Partial 4.7: durable Unix activation and consuming clean closure
+
+Release `ROOT4-NATIVE-STATE-V1-757` authorizes this private macOS/Linux slice.
+Original profile-admission support `a8d79591ad025d69f6626ae1726879d4b0b9f917`
+and helper graph support `d6ea6c1fd96cc54106cf6738c7b434df31c56f7e` remain
+unchanged ancestors. No root/shared port, dependency, Go marker/profile-v1 wire,
+SQL, preservation input or domain repository changes are part of this slice.
+
+The one root-local `.librairii-native-state.json` records strict bounded private
+v1 data: format, phase, epoch, exact absolute UTF8 namespace/data/library/source
+paths, original library-ID spelling and lower-case marker/manifest SHA256s.
+Unknown/duplicate fields, types, trailing values, invalid phase/epoch, overflow
+and over64KiB refuse. ImportedClosed has epoch0; acknowledged activation uses
+the checked next positive epoch; clean closure retains that epoch. Source and
+initial manifest hashes remain historical provenance, never current DB hashes
+or persisted inode/cleanup authority. Incoming manifests reject the reserved
+record and exact `.librairii-native-state.json.tmp-` prefix before copying.
+Only an actual created record FD extends the physically owned copy witness.
+
+Binding owns a short-lock profile reservation through copy/record verification
+and publication, without a mutex across callbacks, filesystem or SQL. The record
+is create-new/no-follow/nlink1, retained, file-flushed, root-flushed and freshly
+checked before profile authority publication. Before SQLite open/init/migration
+or managed-directory mutation, next Active bytes must pass atomic replacement,
+file/root flush and fresh ID/byte readback. Partial control allocation errors
+retain the actual FD/name/partial bytes; every later transition failure retains
+old/new/displaced objects and uncertainty. No prefix scan, Drop cleanup or
+candidate-file-to-authority conversion exists.
+
+`NativeLibrary::reopen` reacquires an existing checked root lease and actual
+native namespace/binding, validates retained marker/record objects, raw ID,
+profile relationship, recognized DB family through a disposable private probe,
+sidecar absence, containment and source/data/native separation. ImportedClosed
+requires the already durable complete/nonrecovering profile with exact root and
+raw ID; an orphan cannot publish or retarget it. Active, corrupt/foreign records,
+recovery journals, control leftovers, aliases and unexpected entries refuse
+without cleanup. Closed candidates require all previously initialized managed
+directories. This conservative first route also requires the historical source
+path to remain materialized at its exact canonical location for separation;
+it does not replay or mutate that source. Legitimate DB/archive/catalog edits
+do not trigger comparison with the initial closed-copy DB hash.
+
+`NativeLibrary::finish` consumes the real owner after DB/file borrows end. It
+must own the actual frozen profile state, observe successful stop/drain/five
+connection handshakes/reader+writer joins/checkpoint/close, retain no unacknowledged
+bounded result slot or custody owner, and prove empty staging/trash plus no
+foreign recovery/control artifacts. Retired recoverable trash is not settlement.
+Already-admitted profile work returns Busy with the consuming owner, before
+freeze/Closed writes. Every non-control settlement predicate holds BEFORE the
+Active-to-Closed replacement, so possible late-persisted Closed bytes remain
+truthful after response loss. Failure returns the actual frozen/fenced library,
+namespace borrow and old/new record objects. No timeout, Drop, database reopen
+or error return clears generation exclusion. Success drops root/file/record
+resources and the root lease before releasing profile binding; the store's
+namespace lease can outlive them. Abandoned Active owners always fence binding.
+
+Required 4.3 acknowledgement tightening is included: a dropped native Pending
+cannot certify closure, and a forgotten Pending still owns its bounded slot even
+after worker execution joins. Repair/barrier remain available under the retained
+generation. Failed worker startup/close cannot mint the positive native close
+evidence. Generic isolated workers and their existing dropped-result behavior
+remain unchanged.
+
+The source-grounded ProfileBusy race was reproduced on the actual checkpoint:
+two tests failed because an admitted language update's known pre-admission Busy
+permanently fenced healthy binding. The same two passed after restricting the
+exception to that boundary before queue admission or first Active/SQLite effects;
+no callback ran. After the update actually settled, ordinary read/write and clean
+closure succeeded. Changed/poisoned/uncertain/finalizing binding still fences;
+critical readback is not a fence reset.
+
+Finite AppleARM verification on these source bytes:
+
+- `cargo test -p librairii-storage --test native_library --test profiles
+  --test adoption_inputs --test database_workers --locked`: native22, profile12,
+  adoption10 and worker11 PASS, zero skips/filters in the selected binaries.
+- `cargo test -p librairii-storage --lib native:: --locked`: five new native
+  codec/path/activation/Closed uncertainty cases PASS;43 intentionally filtered.
+  The separate actual post-open partial-control allocation case PASS1/1.
+- Eight storage compile-fail docs PASS, including consuming closure while a DB
+  borrow is alive; storage all-target Clippy with warnings denied, fmt and
+  diff-check PASS. Existing Files/guard/stage/receipt DB-borrow docs are retained.
+
+New source identities are one all-target manifest case, fifteen macOS/Linux
+native/control cases and one Linux-only actual invalid-UTF8 owned-copy case.
+The host filesystem refused materializing that invalid name before an owner
+could exist; this failed assumption is retained, not counted as a Mac copy test.
+A separate macOS/Linux pure path test proves lossless-string refusal. Strict
+record, real clean restart/next epoch, orphan refusal, profile-update/finalizer
+race, changed controls/sidecars/links, failed close, actual committed-but-unread
+result, abandoned Active, unsettled trash and boundary response-loss cases are
+separate observations. Abandonment/response-loss injection is not forced-kill or
+power-loss qualification. Actual other-host tests and source-defined discovery
+UNION/current full quality remain pending owner5 support.
+
+This supplies no domain settlement/recovery/import/jobs bridge, automatic Active
+recovery, Windows restart/directory flush/config replacement, physical durability,
+full4.7/4.11 or merge admission. Current-head native/provider/cumulative checks
+and independent exact-head review remain required.
+
+Finite historical provider evidence supplied independently by root at exact
+`e858da251f7653f2158a6e09169750b8a82a52e8`: all eight checks SUCCESS;
+Windows job118938962787/run39513095237 completed101 nextest/zero skips including
+both relative-read cases and all four sharing/query cases; Intel job118938963502
+SUCCESS. Native PowerShell/full quality/fresh autocrlf passed there. This closes
+that exact read-only Nt child ABI/behavior observation, preserves the old65ff
+sharing RED, and does not qualify the new native-state source or queued NTFS
+helper, Windows durability, full4 or independent review.

@@ -64,6 +64,21 @@ impl LibraryLease {
         Self::finish_acquire(root, root_metadata, file, true)
     }
 
+    #[cfg(any(target_os = "macos", target_os = "linux"))]
+    pub(crate) fn acquire_existing_in(
+        root: &Path,
+        directory: &super::unix::Directory,
+    ) -> Result<Self> {
+        let metadata = fs::symlink_metadata(root)
+            .map_err(|e| StorageError::io("inspect existing native lease root", e))?;
+        directory.matches_metadata(&metadata)?;
+        let file = directory.open_regular(
+            std::ffi::OsStr::new(LIBRARY_LOCK_FILE),
+            rustix::fs::OFlags::RDWR,
+        )?;
+        Self::finish_acquire(root, metadata, file, false)
+    }
+
     fn acquire(root: &Path, create_new: bool) -> Result<Self> {
         if !root.is_absolute() {
             return Err(StorageError::RootNotAbsolute);

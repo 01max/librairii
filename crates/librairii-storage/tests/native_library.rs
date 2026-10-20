@@ -447,10 +447,13 @@ fn active_binding_excludes_root_raw_id_and_recovery_changes_but_allows_language(
     native.revalidate(&WorkCancellation::default())?;
     assert_eq!(store.load()?.ok_or("profile")?.profile().language, "fr");
     drop(native);
-    store.update(|p| {
-        p.complete = false;
-        Ok(())
-    })?;
+    assert!(matches!(
+        store.update(|p| {
+            p.complete = false;
+            Ok(())
+        }),
+        Err(StorageError::ProfileRestartRequired)
+    ));
     Ok(())
 }
 
@@ -495,12 +498,17 @@ fn binding_refuses_unrebound_recovery_or_wrong_namespace_and_retains_copy() -> T
                 b"unrebound foreign bytes",
             )?,
             "native-recovering" => {
-                store.update(|p| {
-                    p.root = root.to_str().ok_or(StorageError::InvalidProfile)?.into();
-                    p.library_id = copy.identity().spelling().into();
-                    p.recovering = true;
-                    Ok(())
-                })?;
+                // Foreign profile DATA is seeded before first cache load;
+                // public update must no longer publish root/recovery authority.
+                fs::write(
+                    locations.native.join("settings.json"),
+                    serde_json::to_vec(&Profile {
+                        root: root.to_str().ok_or(StorageError::InvalidProfile)?.into(),
+                        library_id: copy.identity().spelling().into(),
+                        recovering: true,
+                        ..Profile::setup()
+                    })?,
+                )?;
             }
             "wrong-native" => {
                 locations.native = roots.profile().to_owned();
@@ -793,10 +801,13 @@ fn native_sqlite_uses_same_five_workers_and_releases_runtime_only_after_real_clo
         assert_eq!(fs::read(root.join("archives").join(name))?, bytes);
     }
     drop(native);
-    store.update(|p| {
-        p.complete = false;
-        Ok(())
-    })?;
+    assert!(matches!(
+        store.update(|p| {
+            p.complete = false;
+            Ok(())
+        }),
+        Err(StorageError::ProfileRestartRequired)
+    ));
     Ok(())
 }
 
@@ -887,7 +898,13 @@ fn native_worker_failure_joins_and_never_acknowledges_closed_replacement_generat
     drop(db);
     assert!(Database::open_native(&native).is_err());
     require_lock_held(&root)?;
-    drop(native);
+    let failure = native
+        .finish()
+        .err()
+        .ok_or("failed DB close minted Closed")?;
+    assert_eq!(native_state(&root)?["state"], "active");
+    require_lock_held(&root)?;
+    drop(failure);
     assert!(matches!(
         store.update(|_| Ok(())),
         Err(StorageError::ProfileRestartRequired)
@@ -1000,5 +1017,583 @@ fn poisoned_native_profile_fences_queued_work_but_retains_actual_commit_and_repa
         store.load(),
         Err(StorageError::ProfileRestartRequired)
     ));
+    Ok(())
+}
+
+const NATIVE_STATE: &str = ".librairii-native-state.json";
+fn native_state(root: &Path) -> TestResult<serde_json::Value> {
+    Ok(serde_json::from_slice(&fs::read(root.join(NATIVE_STATE))?)?)
+}
+
+#[test]
+fn native_clean_close_reopens_next_epoch_without_rematching_historical_database_hash() -> TestResult
+{
+    let roots = TestRoots::new()?;
+    let (copy, locations) = prepare(&roots, false)?;
+    let root = copy.root().to_owned();
+    let original_db = fs::read(root.join("db/librairii.sqlite3"))?;
+    let raw_id = copy.identity().spelling().to_owned();
+    let source = copy.source_profile().profile().root.clone();
+    let store = NativeProfileStore::create_fresh(&locations.native)?;
+    let native =
+        NativeLibrary::bind_independent(copy, &store, &locations, &WorkCancellation::default())
+            .map_err(|f| f.to_string())?;
+    assert_eq!(native_state(&root)?["state"], "imported_closed");
+    assert_eq!(native_state(&root)?["epoch"], 0);
+    let mut db = Database::open_native(&native)?;
+    assert_eq!(native_state(&root)?["state"], "active");
+    assert_eq!(native_state(&root)?["epoch"], 1);
+    assert_eq!(native_state(&root)?["library_id_raw"], raw_id);
+    assert!(matches!(db.transaction(WorkCancellation::default(), |tx| {
+        tx.execute("UPDATE stories SET embedded_description='native persisted Éte' WHERE id=(SELECT MIN(id) FROM stories)", [])?;
+        Ok(())
+    })?.wait()?, TransactionOutcome::Committed(())));
+    db.close()?;
+    drop(db);
+    require_lock_held(&root)?;
+    native.finish().map_err(|f| f.to_string())?;
+    let closed = native_state(&root)?;
+    assert_eq!(closed["state"], "closed");
+    assert_eq!(closed["epoch"], 1);
+    assert_ne!(fs::read(root.join("db/librairii.sqlite3"))?, original_db);
+    assert_eq!(
+        fs::read(Path::new(&source).join("db/librairii.sqlite3"))?,
+        original_db
+    );
+    let native = NativeLibrary::reopen(&store, &locations, &WorkCancellation::default())?;
+    let mut db = Database::open_native(&native)?;
+    assert_eq!(native_state(&root)?["epoch"], 2);
+    assert_eq!(native_state(&root)?["state"], "active");
+    assert_eq!(
+        db.read(|tx| Ok(tx.query_row(
+            "SELECT embedded_description FROM stories ORDER BY id LIMIT 1",
+            [],
+            |r| r.get::<_, String>(0)
+        )?))?
+        .wait()?,
+        "native persisted Éte"
+    );
+    assert_eq!(native.identity().spelling(), raw_id);
+    db.close()?;
+    drop(db);
+    native.finish().map_err(|f| f.to_string())?;
+    assert_eq!(native_state(&root)?["epoch"], 2);
+    assert_eq!(native_state(&root)?["state"], "closed");
+    assert!(matches!(
+        store.update(|p| {
+            p.root.push_str("/other");
+            Ok(())
+        }),
+        Err(StorageError::ProfileBindingActive)
+    ));
+    Ok(())
+}
+
+#[test]
+fn native_active_abandonment_and_unsettled_trash_never_mint_clean_restart() -> TestResult {
+    for artifact in [None, Some("staging"), Some("trash")] {
+        let roots = TestRoots::new()?;
+        let (copy, locations) = prepare(&roots, false)?;
+        let root = copy.root().to_owned();
+        let store = NativeProfileStore::create_fresh(&locations.native)?;
+        let native =
+            NativeLibrary::bind_independent(copy, &store, &locations, &WorkCancellation::default())
+                .map_err(|f| f.to_string())?;
+        let mut db = Database::open_native(&native)?;
+        db.close()?;
+        drop(db);
+        if let Some(area) = artifact {
+            fs::write(
+                root.join(area).join("unsettled-owner"),
+                b"retain recovery bytes",
+            )?;
+            let failure = native.finish().err().ok_or("unsettled root closed")?;
+            require_lock_held(&root)?;
+            assert_eq!(
+                fs::read(root.join(area).join("unsettled-owner"))?,
+                b"retain recovery bytes"
+            );
+            assert_eq!(native_state(&root)?["state"], "active");
+            assert!(matches!(
+                store.update(|_| Ok(())),
+                Err(StorageError::ProfileBusy)
+            ));
+            drop(failure);
+        } else {
+            drop(native);
+        }
+        assert_eq!(native_state(&root)?["state"], "active");
+        assert!(store.update(|_| Ok(())).is_err());
+        drop(store);
+        let store = NativeProfileStore::open_native(&locations.native)?;
+        assert!(matches!(
+            NativeLibrary::reopen(&store, &locations, &WorkCancellation::default()),
+            Err(StorageError::RecoveryBindingRequired)
+        ));
+        assert_eq!(native_state(&root)?["state"], "active");
+    }
+    Ok(())
+}
+
+#[test]
+fn native_finalizer_busy_retains_owner_until_admitted_profile_update_really_settles() -> TestResult
+{
+    use std::sync::mpsc;
+    let roots = TestRoots::new()?;
+    let (copy, locations) = prepare(&roots, false)?;
+    let root = copy.root().to_owned();
+    let store = NativeProfileStore::create_fresh(&locations.native)?;
+    let native =
+        NativeLibrary::bind_independent(copy, &store, &locations, &WorkCancellation::default())
+            .map_err(|f| f.to_string())?;
+    let mut db = Database::open_native(&native)?;
+    db.close()?;
+    drop(db);
+    let (entered, observed) = mpsc::sync_channel(1);
+    let (resume, wait) = mpsc::sync_channel(1);
+    std::thread::scope(|scope| -> TestResult {
+        let store = &store;
+        let update = scope.spawn(move || {
+            store.update(|p| {
+                entered.send(()).map_err(|_| StorageError::WorkerStopped)?;
+                wait.recv().map_err(|_| StorageError::WorkerStopped)?;
+                p.language = "fr".into();
+                Ok(())
+            })
+        });
+        observed.recv()?;
+        let failure = native
+            .finish()
+            .err()
+            .ok_or("inflight update was not owned")?;
+        assert!(matches!(failure.storage_error(), StorageError::ProfileBusy));
+        require_lock_held(&root)?;
+        assert_eq!(native_state(&root)?["state"], "active");
+        resume.send(())?;
+        update.join().map_err(|_| "updater panic")??;
+        failure.into_library().finish().map_err(|f| f.to_string())?;
+        Ok(())
+    })?;
+    assert_eq!(native_state(&root)?["state"], "closed");
+    assert_eq!(store.load()?.ok_or("profile")?.profile().language, "fr");
+    Ok(())
+}
+
+#[test]
+fn native_imported_orphan_never_publishes_profile_authority_or_retargets() -> TestResult {
+    let roots = TestRoots::new()?;
+    let (copy, locations) = prepare(&roots, false)?;
+    let root = copy.root().to_owned();
+    let store = NativeProfileStore::create_fresh(&locations.native)?;
+    let native =
+        NativeLibrary::bind_independent(copy, &store, &locations, &WorkCancellation::default())
+            .map_err(|f| f.to_string())?;
+    let profile = fs::read(locations.native.join("settings.json"))?;
+    drop(native);
+    drop(store);
+    let before = fs::read(root.join(NATIVE_STATE))?;
+    fs::write(
+        locations.native.join("settings.json"),
+        serde_json::to_vec(&Profile::setup())?,
+    )?;
+    let store = NativeProfileStore::open_native(&locations.native)?;
+    assert!(matches!(
+        NativeLibrary::reopen(&store, &locations, &WorkCancellation::default()),
+        Err(StorageError::RecoveryBindingRequired)
+    ));
+    assert!(matches!(
+        store.update(|p| {
+            p.root = root.to_str().ok_or(StorageError::InvalidProfile)?.into();
+            p.library_id = "a0000000-0000-4000-8000-000000000001".into();
+            p.complete = true;
+            Ok(())
+        }),
+        Err(StorageError::ProfileBindingActive)
+    ));
+    assert_eq!(fs::read(root.join(NATIVE_STATE))?, before);
+    drop(store);
+    fs::write(locations.native.join("settings.json"), profile)?;
+    let store = NativeProfileStore::open_native(&locations.native)?;
+    assert!(matches!(
+        store.update(|p| {
+            p.language = "en".into();
+            Ok(())
+        }),
+        Err(StorageError::RecoveryBindingRequired)
+    ));
+    let native = NativeLibrary::reopen(&store, &locations, &WorkCancellation::default())?;
+    store.update(|p| {
+        p.language = "en".into();
+        Ok(())
+    })?;
+    let mut db = Database::open_native(&native)?;
+    db.close()?;
+    drop(db);
+    native.finish().map_err(|f| f.to_string())?;
+    Ok(())
+}
+
+#[test]
+fn native_restart_refuses_corrupt_records_controls_sidecars_and_marker_aliases_without_cleanup()
+-> TestResult {
+    for scenario in [
+        "duplicate",
+        "unknown",
+        "epoch",
+        "hash",
+        "root",
+        "temp",
+        "journal",
+        "sidecar",
+        "marker-link",
+        "record-link",
+        "overflow",
+        "raw-id",
+        "profile-hash",
+        "foreign-db",
+        "managed-link",
+        "wal",
+        "shm",
+    ] {
+        let roots = TestRoots::new()?;
+        let (copy, locations) = prepare(&roots, false)?;
+        let root = copy.root().to_owned();
+        let store = NativeProfileStore::create_fresh(&locations.native)?;
+        let native =
+            NativeLibrary::bind_independent(copy, &store, &locations, &WorkCancellation::default())
+                .map_err(|f| f.to_string())?;
+        if scenario == "overflow" {
+            let mut db = Database::open_native(&native)?;
+            db.close()?;
+            drop(db);
+            native.finish().map_err(|f| f.to_string())?;
+        } else {
+            drop(native);
+        }
+        drop(store);
+        let mut record = native_state(&root)?;
+        match scenario {
+            "duplicate" => {
+                let bytes = fs::read_to_string(root.join(NATIVE_STATE))?;
+                fs::write(
+                    root.join(NATIVE_STATE),
+                    format!("{{\"version\":1,{}", &bytes[1..]),
+                )?;
+            }
+            "unknown" => {
+                record["extra"] = true.into();
+                fs::write(root.join(NATIVE_STATE), serde_json::to_vec(&record)?)?;
+            }
+            "epoch" => {
+                record["epoch"] = 1.into();
+                fs::write(root.join(NATIVE_STATE), serde_json::to_vec(&record)?)?;
+            }
+            "hash" => {
+                record["library_marker_sha256"] = "F".repeat(64).into();
+                fs::write(root.join(NATIVE_STATE), serde_json::to_vec(&record)?)?;
+            }
+            "root" => {
+                record["library_root"] = locations.data.to_str().ok_or("data")?.into();
+                fs::write(root.join(NATIVE_STATE), serde_json::to_vec(&record)?)?;
+            }
+            "temp" => fs::write(
+                root.join(".librairii-native-state.json.tmp-foreign"),
+                b"not cleanup authority",
+            )?,
+            "journal" => fs::write(root.join("relocation.json"), b"not replay authority")?,
+            "sidecar" => fs::write(
+                root.join("db/librairii.sqlite3-journal"),
+                b"foreign journal",
+            )?,
+            "marker-link" => fs::hard_link(
+                root.join(".librairii-library"),
+                roots.profile().join("marker-alias"),
+            )?,
+            "record-link" => fs::hard_link(
+                root.join(NATIVE_STATE),
+                roots.profile().join("record-alias"),
+            )?,
+            "raw-id" => {
+                record["library_id_raw"] = record["library_id_raw"]
+                    .as_str()
+                    .ok_or("raw id")?
+                    .to_ascii_uppercase()
+                    .into();
+                fs::write(root.join(NATIVE_STATE), serde_json::to_vec(&record)?)?;
+            }
+            "profile-hash" => {
+                record["profile_marker_sha256"] = "0".repeat(64).into();
+                fs::write(root.join(NATIVE_STATE), serde_json::to_vec(&record)?)?;
+            }
+            "foreign-db" => fs::write(
+                root.join("db/librairii.sqlite3"),
+                b"foreign schema bytes remain untouched",
+            )?,
+            "managed-link" => {
+                fs::rename(
+                    root.join("archives"),
+                    roots.profile().join("retained-archives"),
+                )?;
+                std::os::unix::fs::symlink(roots.profile(), root.join("archives"))?;
+            }
+            "wal" => fs::write(root.join("db/librairii.sqlite3-wal"), b"foreign wal")?,
+            "shm" => fs::write(root.join("db/librairii.sqlite3-shm"), b"foreign shm")?,
+            "overflow" => {
+                record["state"] = "closed".into();
+                record["epoch"] = u64::MAX.into();
+                fs::write(root.join(NATIVE_STATE), serde_json::to_vec(&record)?)?;
+            }
+            _ => return Err("scenario".into()),
+        }
+        let before = fs::read(root.join(NATIVE_STATE))?;
+        let before_db = fs::read(root.join("db/librairii.sqlite3"))?;
+        let store = NativeProfileStore::open_native(&locations.native)?;
+        if scenario == "overflow" {
+            let native = NativeLibrary::reopen(&store, &locations, &WorkCancellation::default())?;
+            assert!(Database::open_native(&native).is_err());
+        } else {
+            assert!(
+                NativeLibrary::reopen(&store, &locations, &WorkCancellation::default()).is_err(),
+                "{scenario}"
+            );
+        }
+        assert_eq!(fs::read(root.join(NATIVE_STATE))?, before, "{scenario}");
+        assert_eq!(
+            fs::read(root.join("db/librairii.sqlite3"))?,
+            before_db,
+            "{scenario}"
+        );
+        if scenario != "overflow" {
+            assert!(!root.join("staging").exists());
+            assert!(!root.join("catalog").exists());
+        } else {
+            assert_eq!(fs::read_dir(root.join("staging"))?.count(), 0);
+            assert_eq!(fs::read_dir(root.join("trash"))?.count(), 0);
+        }
+        if scenario == "temp" {
+            assert_eq!(
+                fs::read(root.join(".librairii-native-state.json.tmp-foreign"))?,
+                b"not cleanup authority"
+            );
+        }
+    }
+    Ok(())
+}
+
+#[test]
+fn native_unacknowledged_admitted_commit_cannot_be_hidden_by_database_close() -> TestResult {
+    use std::sync::mpsc;
+    let roots = TestRoots::new()?;
+    let (copy, locations) = prepare(&roots, false)?;
+    let root = copy.root().to_owned();
+    let store = NativeProfileStore::create_fresh(&locations.native)?;
+    let native =
+        NativeLibrary::bind_independent(copy, &store, &locations, &WorkCancellation::default())
+            .map_err(|f| f.to_string())?;
+    let mut db = Database::open_native(&native)?;
+    let (entered, observed) = mpsc::sync_channel(1);
+    let (resume, wait) = mpsc::sync_channel(1);
+    let pending = db.transaction(WorkCancellation::default(), move |tx| {
+        tx.execute("UPDATE stories SET embedded_description='committed without receiver' WHERE id=(SELECT MIN(id) FROM stories)", [])?;
+        entered.send(()).map_err(|_| StorageError::WorkerStopped)?;
+        wait.recv().map_err(|_| StorageError::WorkerStopped)?;
+        Ok(())
+    })?;
+    observed.recv()?;
+    drop(pending); // No cancellation or rollback fiction.
+    resume.send(())?;
+    assert_eq!(
+        db.barrier_read(|tx| Ok(tx.query_row(
+            "SELECT embedded_description FROM stories ORDER BY id LIMIT 1",
+            [],
+            |r| r.get::<_, String>(0)
+        )?))?
+        .wait()?,
+        "committed without receiver"
+    );
+    db.close()?;
+    drop(db);
+    let failure = native
+        .finish()
+        .err()
+        .ok_or("lost acknowledgment minted Closed")?;
+    require_lock_held(&root)?;
+    assert_eq!(native_state(&root)?["state"], "active");
+    assert!(
+        failure
+            .retained_library()
+            .revalidate(&WorkCancellation::default())
+            .is_err()
+    );
+    assert!(store.update(|_| Ok(())).is_err());
+    Ok(())
+}
+
+#[test]
+fn native_language_update_busy_before_first_open_keeps_record_imported_and_retryable() -> TestResult
+{
+    use std::sync::mpsc;
+    let roots = TestRoots::new()?;
+    let (copy, locations) = prepare(&roots, false)?;
+    let root = copy.root().to_owned();
+    let store = NativeProfileStore::create_fresh(&locations.native)?;
+    let native =
+        NativeLibrary::bind_independent(copy, &store, &locations, &WorkCancellation::default())
+            .map_err(|f| f.to_string())?;
+    let before = fs::read(root.join(NATIVE_STATE))?;
+    let (entered, observed) = mpsc::sync_channel(1);
+    let (resume, wait) = mpsc::sync_channel(1);
+    std::thread::scope(|scope| -> TestResult {
+        let store = &store;
+        let updater = scope.spawn(move || {
+            store.update(|p| {
+                entered.send(()).map_err(|_| StorageError::WorkerStopped)?;
+                wait.recv().map_err(|_| StorageError::WorkerStopped)?;
+                p.language = "fr".into();
+                Ok(())
+            })
+        });
+        observed.recv()?;
+        let attempt = Database::open_native(&native);
+        let unchanged =
+            fs::read(root.join(NATIVE_STATE))? == before && !root.join("staging").exists();
+        resume.send(())?;
+        updater.join().map_err(|_| "updater panic")??;
+        assert!(matches!(attempt, Err(StorageError::ProfileBusy)));
+        assert!(unchanged);
+        Ok(())
+    })?;
+    let mut db = Database::open_native(&native)?;
+    db.close()?;
+    drop(db);
+    native.finish().map_err(|f| f.to_string())?;
+    Ok(())
+}
+
+#[test]
+fn native_language_update_busy_refuses_database_admission_without_poisoning_generation()
+-> TestResult {
+    use std::sync::{
+        Arc,
+        atomic::{AtomicBool, Ordering},
+        mpsc,
+    };
+    let roots = TestRoots::new()?;
+    let (copy, locations) = prepare(&roots, false)?;
+    let store = NativeProfileStore::create_fresh(&locations.native)?;
+    let native =
+        NativeLibrary::bind_independent(copy, &store, &locations, &WorkCancellation::default())
+            .map_err(|f| f.to_string())?;
+    let mut db = Database::open_native(&native)?;
+    let ran = Arc::new(AtomicBool::new(false));
+    let (entered, observed) = mpsc::sync_channel(1);
+    let (resume, wait) = mpsc::sync_channel(1);
+    std::thread::scope(|scope| -> TestResult {
+        let store = &store;
+        let updater = scope.spawn(move || {
+            store.update(|p| {
+                entered.send(()).map_err(|_| StorageError::WorkerStopped)?;
+                wait.recv().map_err(|_| StorageError::WorkerStopped)?;
+                p.language = "fr".into();
+                Ok(())
+            })
+        });
+        observed.recv()?;
+        let read_ran = ran.clone();
+        let read = db.read(move |_| {
+            read_ran.store(true, Ordering::Release);
+            Ok(())
+        });
+        let write_ran = ran.clone();
+        let write = db.transaction(WorkCancellation::default(), move |_| {
+            write_ran.store(true, Ordering::Release);
+            Ok(())
+        });
+        resume.send(())?;
+        updater.join().map_err(|_| "updater panic")??;
+        assert!(matches!(read, Err(StorageError::ProfileBusy)));
+        assert!(matches!(write, Err(StorageError::ProfileBusy)));
+        assert!(!ran.load(Ordering::Acquire));
+        Ok(())
+    })?;
+    assert_eq!(
+        db.read(|tx| Ok(tx.query_row("SELECT 1", [], |r| r.get::<_, i64>(0))?))?
+            .wait()?,
+        1
+    );
+    assert!(matches!(
+        db.transaction(WorkCancellation::default(), |_| Ok(()))?
+            .wait()?,
+        TransactionOutcome::Committed(())
+    ));
+    db.close()?;
+    drop(db);
+    native.finish().map_err(|f| f.to_string())?;
+    Ok(())
+}
+
+#[test]
+fn native_forgotten_pending_retains_owned_slot_and_cannot_acknowledge_clean_database_close()
+-> TestResult {
+    let roots = TestRoots::new()?;
+    let (copy, locations) = prepare(&roots, false)?;
+    let root = copy.root().to_owned();
+    let store = NativeProfileStore::create_fresh(&locations.native)?;
+    let native =
+        NativeLibrary::bind_independent(copy, &store, &locations, &WorkCancellation::default())
+            .map_err(|f| f.to_string())?;
+    let mut db = Database::open_native(&native)?;
+    let pending = db.barrier_read(|_| Ok(()))?;
+    // Explicitly exercise safe Rust's destructor bypass. No live root/DB owner
+    // is leaked: the forgotten bounded result slot only owns its admission Arc.
+    std::mem::forget(pending);
+    db.barrier_read(|_| Ok(()))?.wait()?;
+    assert!(matches!(db.close(), Err(StorageError::RuntimeFenced)));
+    drop(db);
+    let failure = native
+        .finish()
+        .err()
+        .ok_or("unacknowledged slot minted Closed")?;
+    require_lock_held(&root)?;
+    assert_eq!(native_state(&root)?["state"], "active");
+    assert!(store.update(|_| Ok(())).is_err());
+    drop(failure);
+    Ok(())
+}
+
+#[test]
+#[cfg(target_os = "linux")]
+fn native_non_utf8_copy_root_is_retained_without_lossy_record_or_profile_publication() -> TestResult
+{
+    use std::{ffi::OsString, os::unix::ffi::OsStringExt};
+    let roots = TestRoots::new()?;
+    let (first_copy, locations) = prepare(&roots, false)?;
+    let source = Path::new(&first_copy.source_profile().profile().root);
+    let source_before = fs::read(source.join("db/librairii.sqlite3"))?;
+    let input = ClosedLibraryInput::verify(
+        source,
+        first_copy.source_profile().clone(),
+        ClosedManifest::decode(MANIFEST)?,
+        &WorkCancellation::default(),
+    )?;
+    let raw = OsString::from_vec(b"owned-invalid-utf8-\xff".to_vec());
+    let path = locations.data.join(&raw);
+    let copy = input.copy_to_new_root(&path, &WorkCancellation::default())?;
+    let store = NativeProfileStore::create_fresh(&locations.native)?;
+    let failure =
+        NativeLibrary::bind_independent(copy, &store, &locations, &WorkCancellation::default())
+            .err()
+            .ok_or("lossy root was published")?;
+    assert_eq!(
+        failure.retained_copy().root().file_name(),
+        Some(raw.as_os_str())
+    );
+    assert!(failure.retained_profile().load()?.is_none());
+    assert!(!path.join(NATIVE_STATE).exists());
+    require_lock_held(&path)?;
+    assert_eq!(
+        fs::read(source.join("db/librairii.sqlite3"))?,
+        source_before
+    );
     Ok(())
 }
