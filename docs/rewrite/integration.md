@@ -5,6 +5,7 @@ This index bootstraps `rewrite-in-rust-native-desktop`. No task section is quali
 no Rust behavior is established, and no task or global merge is recorded here.
 The external task list has **0/176** subtasks checked at intake (2026-10-20).
 Bootstrap documentation does not complete task 1.1 or any other numbered subtask.
+The global PR is [#37](https://github.com/01max/librairii/pull/37); auto-merge is off.
 
 ## Branch and review contract
 
@@ -27,7 +28,8 @@ Bootstrap documentation does not complete task 1.1 or any other numbered subtask
   addressed and its thread resolved. A clean earlier review is insufficient.
   AO approval does not substitute for required independent GitHub approvals.
 - No section/global merges are authorized during bootstrap. Later section merges
-  require all admission conditions below; release/runtime retirement stays gated.
+  require all admission conditions below and orchestrator authorization of the
+  concrete reviewed head; release/runtime retirement stays gated.
 
 ## Frozen Go oracle and source/proposal differences
 
@@ -90,11 +92,25 @@ Non-PR deliverables belong in each worker's AO artifacts directory; this owner's
 directory is `/Users/maxime/.ao/data/artifacts/librairii-2`. Retained CI/provider
 evidence must identify immutable runs and hashes rather than ephemeral terminal logs.
 
+Ownership: integration (`librairii-2`) alone edits this index and the separate
+OpenSpec checklist/reconciliation files locally. Section 1 (`librairii-3`) owns
+`preservation/` for contract inventory, generators, corpus, section evidence and
+its own subtask commit ledger; it sends precise Broken then Collections/Shelves
+reconciliation findings to integration rather than editing those specs in parallel.
+Section 2 (`librairii-4`) owns feasibility research and its separate evidence/commit
+ledger; `feasibility/` is proposed as its shipping namespace, pending confirmation.
+Non-PR research stays in that worker's AO artifacts directory. Contract reconciliation
+remains a gate for the bounded toolkit spike. After section 1 is reconciled and
+independently reviewed, sections 3–4 may proceed alongside that bounded section-2
+spike. Full feature UI still requires toolkit qualification; concurrency never
+waives applicable dependency/review gates.
+
 ## Section branch and PR slots
 
 01/02 branches were already present at intake; other names are reservations for
 coordination, not branches or PRs created by this bootstrap. All PR/evidence and
-qualification slots remain pending. Named owners are assigned by the orchestrator.
+qualification slots remain pending. Sections 1/2 are assigned above; remaining
+named owners are assigned by the orchestrator.
 
 | Section | Branch slot | Numbered subtasks | PR → global | Evidence / qualification |
 | --- | --- | --- | --- | --- |
@@ -138,32 +154,54 @@ The integration owner must refuse admission unless **every** condition holds:
    self-review, or approval of an earlier head cannot satisfy this condition.
 4. Run regression checks on H **including all prior integrated Rust work**, not
    just section tests or tests against the original oracle. Retain every previous
-   required suite/fixture plus the new section checks. After section 3 establishes
+   required suite/fixture plus the new section checks. Maintain an admitted-PR →
+   invariant/assertion/test → run-evidence ledger, covering **every prior Rust PR**.
+   Reject deleted, disabled or weakened prior assertions without an independently
+   reviewed replacement proving the same invariant. Test discovery/count changes
+   must be explained; merely obtaining green from a smaller suite is insufficient.
+   Each PR must show meaningful behavior coverage, including affected success,
+   failure, cancellation and restart/recovery transitions and any material gaps.
+   Use focused coverage reports to find missing assertions; no arbitrary blanket
+   coverage percentage can replace those scenario checks or qualify a PR.
+   After section 3 establishes
    it, run `cargo xtask check` with locked builds, fmt, Clippy warnings denied,
    nextest, **separate doctests**, differential fixtures, native state checks,
    dependency/license/source checks and both cargo-deny/cargo-audit. Record exact
    tool pins, target and shipping feature sets; do not blindly use all-features.
    Before this entry point exists, run all checks delivered by previous admitted
    sections explicitly; absence of Rust CI is not a green Rust result.
-5. Preserve applicable Go regression checks while Go is retained. Existing
-   `make check`/`make build` and Linux packaged CI do not cover Rust; a green Go
-   badge alone cannot admit Rust. Baseline failures require their oracle evidence,
+5. Preserve applicable Go regression checks while Go is retained: **`make check`
+   plus explicit unit, accessibility, responsive and visual lane results**. The
+   corresponding standalone commands are `make test-frontend`,
+   `make test-frontend-accessibility`, `make test-frontend-responsive` and
+   `make test-frontend-visual`. At the oracle, `make check` invokes `test:release`,
+   which already runs these four lanes transitively; capture each actual result
+   rather than assuming an umbrella command reached every lane after a failure.
+   Reuse complete evidenced runs; run missing/affected lanes separately as needed.
+   Retain applicable `make build` and Linux packaged CI as well. These checks do
+   not cover Rust; a green Go badge alone cannot admit Rust.
+   Baseline failures require their oracle evidence,
    explicit attribution and resolution/decision, never silently disabling a gate.
    Every applicable missing/failed/skipped target or dependent mandatory gate
    keeps the section pending. Partial commits/PRs are allowed without qualification.
 6. Re-read provider head/base and global ref immediately before any later merge.
    If B, H, spec inputs or required configuration changed, invalidate qualification
-   and rerun cumulative checks and independent final-head review. Merge only with
+   and rerun cumulative checks and independent final-head review. Record the
+   orchestrator's authorization for this exact reviewed H. Merge only with
    commit preservation. Verify original subtask/fix SHAs remain ancestors of the
    resulting global head, and record its SHA/tree and merge commit. Its tree must
    match qualified H; an unexpected conflict-resolution tree needs new review/tests.
+   Verify the actual resulting global head with applicable cumulative Go/Rust,
+   fixture and composition checks; retain its exact tested SHA and results rather
+   than relying only on an earlier task head or provider merge-ref status.
    Do not carry evidence across trees or manufacture a pass for an unavailable host.
 
 Each admission record must contain these fields (all currently **pending**):
 `section, PR, owner, B, H, tree, spec digests, subtask→commit/evidence mapping,
-parity/subcases, prior-suite inventory, commands/results, fixture hashes,
+parity/subcases, prior-PR regression assertion/suite inventory, commands/results, fixture hashes,
 OS/hardware/toolchain/renderer/features, A/I/L/W status, independent final review,
-resolved findings, provider checks, merge SHA, post-merge ancestry/tree validation`.
+resolved findings, provider checks, exact-head merge authorization, merge SHA,
+post-merge ancestry/tree validation`.
 Future automation/required checks must implement these predicates without weakening
 them. This bootstrap does not install Rust tooling, CI or repository protection.
 
@@ -184,6 +222,8 @@ production endpoints. Preserve exact original archive bytes and source hashes;
 only documented timestamps/random IDs/temp paths may be normalized in oracle diffs.
 Retain all numerical budgets in `parity-matrix.md`; missing hardware, credentials
 or comparable performance evidence stays incomplete rather than becoming a waiver.
+Compilation/cross-compilation proves only the recorded build result; it must never
+set a required runtime, desktop, accessibility or release-platform gate to passed.
 
 Bootstrap validation: OpenSpec change strict validation passed; all 12 effective
 specs passed structural strict validation; approved HTML source/export SHA-256
