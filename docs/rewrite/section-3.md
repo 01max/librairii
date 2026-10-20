@@ -132,6 +132,11 @@ native Windows preserves the Unicode witnesses. The generated report is
 `target/quality/preservation.json`, retained in every native CI artifact.
 Synthetic temporary-root regressions verify missing/changed inputs and wrong
 oracle/inventory fail. There is no if-present or platform skip for preservation.
+The Rust regression entry uses a strict Python runner with individually retained
+identities in `.config/rust-python-test-baseline.json`. It rejects removed or
+duplicate tests, skips, expected failures and incomplete execution. Behavioral
+runner regressions execute synthetic passing/skipped/xfail/failing suites and
+assert the actual accepted/rejected result; no outer required assertion is skipped.
 
 The root checkout rule `preservation/** -text` protects every admitted checker,
 producer, manifest and corpus byte from Git newline conversion, including under

@@ -1,6 +1,7 @@
 """Exercise the admission boundary only on fresh synthetic roots."""
 import hashlib
 import importlib.util
+import io
 import json
 from pathlib import Path
 import tempfile
@@ -9,6 +10,9 @@ import unittest
 spec = importlib.util.spec_from_file_location('preservation_gate', Path(__file__).resolve().parents[1] / 'check_preservation.py')
 gate = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(gate)
+runner_spec = importlib.util.spec_from_file_location('preservation_runner', Path(__file__).resolve().parents[1] / 'run_preservation_tests.py')
+runner = importlib.util.module_from_spec(runner_spec)
+runner_spec.loader.exec_module(runner)
 
 
 class AdmissionPins(unittest.TestCase):
@@ -50,3 +54,44 @@ class AdmissionPins(unittest.TestCase):
             with self.subTest(key=key):
                 with self.assertRaises(ValueError):
                     gate.verify_pins(self.root, {**self.baseline, key: value})
+
+
+class RunnerPolicy(unittest.TestCase):
+    def test_missing_or_duplicate_identity_cannot_pass_discovery(self):
+        executed = []
+
+        class Cases(unittest.TestCase):
+            def test_pass(self):
+                executed.append(self.id())
+
+        identity = Cases('test_pass').id()
+        for required in [[], [identity, identity], [identity, 'missing.required.test']]:
+            with self.subTest(required=required):
+                with self.assertRaises(ValueError):
+                    runner.run_suite(unittest.TestSuite([Cases('test_pass')]), required, io.StringIO())
+        with self.assertRaises(ValueError):
+            runner.run_suite(unittest.TestSuite([Cases('test_pass'), Cases('test_pass')]), [identity], io.StringIO())
+        self.assertEqual(executed, [])
+        result = runner.run_suite(unittest.TestSuite([Cases('test_pass')]), [identity], io.StringIO())
+        self.assertEqual(result.testsRun, 1)
+        self.assertEqual(result.skipped, [])
+        self.assertEqual(executed, [identity])
+
+    def test_skip_expected_failure_and_failure_are_rejected(self):
+        class Cases(unittest.TestCase):
+            @unittest.skip('synthetic skipped assertion must be rejected')
+            def test_skip(self):
+                self.fail('not executed')
+
+            @unittest.expectedFailure
+            def test_xfail(self):
+                self.fail('synthetic expected failure must be rejected')
+
+            def test_failure(self):
+                self.fail('synthetic failure must be rejected')
+
+        for name in ['test_skip', 'test_xfail', 'test_failure']:
+            with self.subTest(name=name):
+                case = Cases(name)
+                with self.assertRaises(ValueError):
+                    runner.run_suite(unittest.TestSuite([case]), [case.id()], io.StringIO())

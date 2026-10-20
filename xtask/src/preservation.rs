@@ -27,19 +27,7 @@ mod tests {
     fn admitted_fixture_pins_reject_missing_or_changed_inputs() -> Result {
         command(
             python(),
-            &[
-                "-I",
-                "-B",
-                "-X",
-                "utf8",
-                "-m",
-                "unittest",
-                "discover",
-                "-s",
-                "xtask/tests",
-                "-p",
-                "test_preservation.py",
-            ],
+            &["-I", "-B", "-X", "utf8", "xtask/run_preservation_tests.py"],
         )
     }
 }
