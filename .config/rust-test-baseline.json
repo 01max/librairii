@@ -486,6 +486,141 @@
     {
       "suite": "librairii-storage::streaming_hash",
       "name": "streaming_cancel_stops_before_next_read_without_claiming_complete_digest"
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "platform::unix::tests::descriptor_custody_is_shared_across_instances_and_bound_to_actual_generation",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "platform::unix::tests::native_no_clobber_reuses_exact_regular_bytes_without_gaining_cleanup_ownership",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "platform::unix::tests::destination_created_after_preflight_is_never_overwritten_by_publication",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "platform::unix::tests::destination_aliases_and_same_inode_changed_bytes_do_not_pass_receipt_checks",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "platform::unix::tests::anchored_destination_survives_parent_substitution_without_touching_outside_root",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "platform::unix::tests::publish_flush_failure_retains_witnesses_readonly_bytes_and_sticky_custody_fence",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "platform::unix::tests::cancellation_before_publish_has_no_effect_but_cancel_after_rename_retains_success",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "platform::unix::tests::changed_stage_or_cleanup_container_never_grants_substituted_file_ownership",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "platform::unix::tests::atomic_config_exchange_preserves_a_racing_foreign_config_instead_of_overwriting_it",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "platform::unix::tests::absent_config_uses_no_replace_and_owned_temp_cleanup_refuses_substituted_names",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "platform::unix::tests::source_substitution_after_hash_never_receives_an_owned_published_receipt",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "platform::unix::tests::unused_temp_trash_flush_failure_preserves_bytes_and_both_location_witnesses",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "profile::tests::profile_parent_race_cannot_redirect_staging_or_owned_temp_cleanup",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "profile::tests::post_replace_parent_race_retains_actual_witnesses_and_poison_until_restart",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "profile::tests::config_stage_cleanup_failure_keeps_primary_error_and_foreign_bytes",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
     }
   ]
 }
