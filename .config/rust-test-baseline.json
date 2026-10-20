@@ -931,6 +931,14 @@
       "targets": [
         "x86_64-pc-windows-msvc"
       ]
+    },
+    {
+      "suite": "librairii-storage::portability",
+      "name": "filename_diagnostics_never_normalize_or_claim_filesystem_equivalence"
+    },
+    {
+      "suite": "librairii-storage::portability",
+      "name": "windows_name_diagnostics_retain_device_control_and_directory_spelling"
     }
   ]
 }
