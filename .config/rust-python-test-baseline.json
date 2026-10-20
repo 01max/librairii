@@ -13,6 +13,7 @@
     "test_sources.SourcePolicy.test_private_derivatives_require_complete_source_and_content_records",
     "test_sources.SourcePolicy.test_registered_sources_and_notices_pass_without_writes",
     "test_sources.SourcePolicy.test_unlicensed_repository_and_scope_cannot_be_reassigned",
-    "test_sources.SourcePolicy.test_fresh_autocrlf_checkout_runs_actual_checker_and_rejects_unprotected_bytes"
+    "test_sources.SourcePolicy.test_fresh_autocrlf_checkout_runs_actual_checker_and_rejects_unprotected_bytes",
+    "test_migration_bytes.MigrationCheckout.test_fresh_autocrlf_preserves_storage_go_and_corpus_bytes"
   ]
 }

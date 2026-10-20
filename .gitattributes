@@ -10,3 +10,7 @@ preservation/** -text
 
 # Private derivatives are also inventoried as exact bytes.
 crates/librairii-storage/src/migrations/compatibility/** -text
+
+# Migration SQL is an exact persisted schema contract, compared to the corpus.
+crates/librairii-storage/migrations/*.sql -text
+internal/database/migrations/*.sql -text
