@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/01max/librairii/internal/database"
+	"github.com/01max/librairii/internal/library"
 )
 
 func seedStory(t *testing.T, db *database.Database, storyUUID, title string) int64 {
@@ -112,5 +113,71 @@ func TestFailedBulkWriteRollsBackEveryMemberAndRevision(t *testing.T) {
 	current, err := s.Get(ctx, shelf.ID)
 	if err != nil || current.Count != 0 || current.Revision != 1 {
 		t.Fatalf("partial write: %#v %v", current, err)
+	}
+}
+
+type shelfOfficialTitles map[string]library.OfficialMetadata
+
+func (p shelfOfficialTitles) FindByUUIDs(_ context.Context, ids []string) (map[string]library.OfficialMetadata, error) {
+	result := map[string]library.OfficialMetadata{}
+	for _, id := range ids {
+		if metadata, ok := p[id]; ok {
+			result[id] = metadata
+		}
+	}
+	return result, nil
+}
+
+func (shelfOfficialTitles) DisplayLocale() string { return "en-GB" }
+
+func TestManualMembersCacheResolvedTitlesForUnavailableStories(t *testing.T) {
+	for _, operation := range []string{"create", "add"} {
+		t.Run(operation, func(t *testing.T) {
+			s, db := newShelfService(t)
+			ctx := context.Background()
+			ids := []string{"123e4567-e89b-42d3-a456-426614174000", "223e4567-e89b-42d3-a456-426614174000", "323e4567-e89b-42d3-a456-426614174000", "423e4567-e89b-42d3-a456-426614174000"}
+			for i, id := range ids {
+				seedStory(t, db, id, []string{"", "Embedded", "", "Old embedded"}[i])
+			}
+			s.library = library.NewQuery(db.SQL(), shelfOfficialTitles{
+				ids[0]: {Title: "Official"},
+				ids[3]: {Title: "Official precedence"},
+			})
+			var shelf Shelf
+			var err error
+			if operation == "create" {
+				shelf, err = s.CreateManual(ctx, "Titles", ids)
+			} else {
+				shelf, err = s.Create(ctx, "Titles")
+				if err == nil {
+					shelf, err = s.AddStories(ctx, shelf.ID, ids)
+				}
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
+			titles := []string{"Official", "Embedded", "Story " + ids[2], "Official precedence"}
+			view, err := s.Open(ctx, shelf.ID, library.StoryLibraryQuery{})
+			if err != nil || len(view.Members) != len(ids) {
+				t.Fatalf("open available members: %#v %v", view, err)
+			}
+			for i, member := range view.Members {
+				if member.Story == nil || member.Story.Title != titles[i] || member.CachedTitle != titles[i] {
+					t.Fatalf("member %d does not cache its display title: %#v", i, member)
+				}
+			}
+			if _, err := db.Writer().Exec(`DELETE FROM story_archives`); err != nil {
+				t.Fatal(err)
+			}
+			view, err = s.Open(ctx, shelf.ID, library.StoryLibraryQuery{})
+			if err != nil || len(view.Members) != len(ids) || view.Shelf.UnavailableCount != len(ids) {
+				t.Fatalf("open unavailable members: %#v %v", view, err)
+			}
+			for i, member := range view.Members {
+				if member.Story != nil || member.CachedTitle != titles[i] {
+					t.Fatalf("unavailable member %d lost its title: %#v", i, member)
+				}
+			}
+		})
 	}
 }

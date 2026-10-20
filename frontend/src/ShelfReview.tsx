@@ -7,7 +7,7 @@ import ReviewWarnings from './ReviewWarnings';
 import OutcomeText from './OutcomeText';
 import {t} from './i18n';
 
-export default function ShelfReview({id, onClose, onApplied}: {id: number; onClose: () => void; onApplied: () => void}) {
+export default function ShelfReview({id, onClose, onApplied}: {id: number; onClose: () => void; onApplied: (removed: string[]) => void}) {
     const [review, setReview] = useState<shelves.Review | null>(null);
     const [choices, setChoices] = useState<Record<string, string>>({});
     const [page, setPage] = useState(0), [busy, setBusy] = useState(false), [error, setError] = useState('');
@@ -29,7 +29,7 @@ export default function ShelfReview({id, onClose, onApplied}: {id: number; onClo
         try {
             const response = await ApplyShelfUpdate(id, review.token, approved.map(([uuid, action]) => new shelves.Decision({uuid, action})));
             if (response.error) {setRefreshRequired(true); throw new Error(response.error.message);}
-            onApplied(); onClose();
+            onApplied(approved.filter(([, action]) => action === 'remove').map(([uuid]) => uuid)); onClose();
         } catch (error) {setError(error instanceof Error ? error.message : t('Review could not be applied.'));}
         finally {setBusy(false);}
     };

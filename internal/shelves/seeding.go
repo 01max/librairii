@@ -66,7 +66,7 @@ func (s *Service) CreateManual(ctx context.Context, name string, manualUUIDs []s
 		return Shelf{}, err
 	}
 	defer tx.Rollback()
-	titles, err := activeTitles(ctx, tx, uuids)
+	titles, err := s.manualTitles(ctx, tx, uuids)
 	if err != nil {
 		return Shelf{}, err
 	}

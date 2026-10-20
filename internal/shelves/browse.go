@@ -51,7 +51,9 @@ func (s *Service) Open(ctx context.Context, id int64, query library.StoryLibrary
 	if err != nil {
 		return Evaluation{}, err
 	}
-	for _, member := range members {
+	// Expose current manual ranks even when deleted rows left gaps in storage.
+	for position, member := range members {
+		member.Position = position
 		member.Story = byUUID[member.UUID]
 		member.Origins = origins[member.UUID]
 		if member.Story == nil && filtered {

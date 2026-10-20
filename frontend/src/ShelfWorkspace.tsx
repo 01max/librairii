@@ -46,6 +46,11 @@ export default function ShelfWorkspace({catalog, id, revision, query, onQuery, c
         catch (error) { setError(error instanceof Error ? error.message : t('Shelf could not be changed.')); }
         finally { setBusy(false); }
     };
+    const onMembershipChanged = (removed: string[]) => {
+        setSelected((previous) => previous.filter((uuid) => !removed.includes(uuid)));
+        setKnownMembers((previous) => Object.fromEntries(Object.entries(previous).filter(([uuid]) => !removed.includes(uuid))));
+        void load(); onChanged();
+    };
     const onFlagsChanged = useCallback(async () => {await load(); onChanged();}, [load, onChanged]);
     const flags = useStoryFlags(onFlagsChanged);
     const selectedStoryIDs = selected.flatMap((uuid) => knownMembers[uuid]?.story ? [knownMembers[uuid].story!.id] : []);
@@ -53,7 +58,7 @@ export default function ShelfWorkspace({catalog, id, revision, query, onQuery, c
         // Resolve the complete current manual order without rendering every member.
         const all: string[] = [];
         for (let page = 1; ; page++) {
-            const response = await OpenShelf(id, new library.StoryLibraryQuery({...DEFAULT_COLLECTION_QUERY, sort: '', page, pageSize: 200}));
+            const response = await OpenShelf(id, new library.StoryLibraryQuery({...DEFAULT_COLLECTION_QUERY, sort: '', page, pageSize: 100}));
             if (!response.evaluation) return {error: response.error ?? {message: t('Shelf could not be opened.')}};
             all.push(...response.evaluation.members.map((member) => member.uuid));
             if (page >= response.evaluation.totalPages) break;
@@ -70,8 +75,8 @@ export default function ShelfWorkspace({catalog, id, revision, query, onQuery, c
                 onClick={() => {setName(action === 'rename' ? view.shelf.name : ''); setDialog(action);}}>{t(action === 'rename' ? 'Rename Shelf' : action === 'duplicate' ? 'Duplicate Shelf' : 'Delete Shelf')}</button>)}</div></div>
         <div className="curated-actions"><button type="button" disabled={busy} onClick={() => setReviewOpen(true)}>{t('Review updates')}</button><button type="button" disabled={busy} onClick={() => setManageSources(true)}>{t('Manage sources')}</button></div>
         <p>{t('Sources (any match): {0}', view.sources.filter((source) => source.active).map((source) => source.name).join(', ') || t('None'))}</p>
-        {reviewOpen && <ShelfReview id={id} onClose={() => setReviewOpen(false)} onApplied={() => {void load(); onChanged();}}/>}
-        {manageSources && <ShelfSources id={id} sources={view.sources} collections={sourceOptions} onClose={() => setManageSources(false)} onChanged={() => {void load(); onChanged();}}/>}
+        {reviewOpen && <ShelfReview id={id} onClose={() => setReviewOpen(false)} onApplied={onMembershipChanged}/>}
+        {manageSources && <ShelfSources id={id} sources={view.sources} collections={sourceOptions} onClose={() => setManageSources(false)} onChanged={onMembershipChanged}/>}
         <div className="curated-actions">
             <button type="button" disabled={exportBusy} onClick={() => onExport(new exporter.PreflightRequest({sourceType: 'curated_shelf', shelfIds: [id], query: {}}))}>{t('Export whole Shelf')}</button>
             <button type="button" disabled={exportBusy} onClick={() => onExport(new exporter.PreflightRequest({sourceType: 'current_query', queryShelfId: id, query}))}>{t('Export current result')}</button>
@@ -100,8 +105,8 @@ export default function ShelfWorkspace({catalog, id, revision, query, onQuery, c
                 <button type="button" disabled={busy || member.position >= view.shelf.count - 1} aria-label={t('Move {0} down', member.cachedTitle)} onClick={() => void act(() => reorder(member.uuid, 1))}>↓</button></div>}
         </li>)}</ul>
         {!view.totalItems && <p>{t('No approved stories in this view.')}</p>}
-        <nav className="pagination" aria-label={t('Shelf pages')}><button type="button" disabled={query.page <= 1} onClick={() => onQuery({...query, page: query.page - 1})}>{t('← Previous')}</button>
-            <span>{t('Page {0} of {1}', view.page, Math.max(1, view.totalPages))}</span><button type="button" disabled={view.page >= view.totalPages} onClick={() => onQuery({...query, page: query.page + 1})}>{t('Next →')}</button></nav>
+        <nav className="pagination" aria-label={t('Shelf pages')}><button type="button" disabled={view.page <= 1} onClick={() => onQuery({...query, page: view.page - 1})}>{t('← Previous')}</button>
+            <span>{t('Page {0} of {1}', view.page, Math.max(1, view.totalPages))}</span><button type="button" disabled={view.page >= view.totalPages} onClick={() => onQuery({...query, page: view.page + 1})}>{t('Next →')}</button></nav>
         {exclusionsOpen && <ShelfDialog title={t('Manage exclusions')} busy={busy} onClose={() => setExclusionsOpen(false)}>
             <p>{t('Clearing an exclusion makes the story eligible for suggestions; it does not add membership.')}</p>
             <ul className="curated-candidates">{view.exclusions.slice(exclusionPage * 25, (exclusionPage + 1) * 25).map((item) => <li key={item.uuid}>{item.title || item.uuid}

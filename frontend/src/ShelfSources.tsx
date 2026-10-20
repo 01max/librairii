@@ -29,7 +29,7 @@ const decisions = (choices: Choices) => Object.entries(choices).filter(([, actio
 const complete = (plan: shelves.SourceChangeReview, choices: Choices) => plan.affected.every((item) => ['keep', 'remove'].includes(choices[item.uuid]));
 
 export default function ShelfSources({id, sources, collections: options, onClose, onChanged}: {
-    id: number; sources: shelves.Source[]; collections: collections.Summary[]; onClose: () => void; onChanged: () => void;
+    id: number; sources: shelves.Source[]; collections: collections.Summary[]; onClose: () => void; onChanged: (removed: string[]) => void;
 }) {
     const [ids, setIDs] = useState(sources.filter((source) => source.active).map((source) => source.collectionId));
     const [plan, setPlan] = useState<shelves.SourceChangeReview | null>(null);
@@ -42,7 +42,7 @@ export default function ShelfSources({id, sources, collections: options, onClose
     };
     const apply = async (keepAll: boolean) => {
         if (!plan) return; setBusy(true); setError('');
-        try {const response = await ApplyShelfSources(id, plan.token, keepAll, keepAll ? [] : decisions(choices)); if (response.error) throw new Error(response.error.message); onChanged(); onClose();}
+        try {const response = await ApplyShelfSources(id, plan.token, keepAll, keepAll ? [] : decisions(choices)); if (response.error) throw new Error(response.error.message); onChanged(keepAll ? [] : Object.keys(choices).filter((uuid) => choices[uuid] === 'remove')); onClose();}
         catch (error) {setError(error instanceof Error ? error.message : t('Sources could not be changed.'));} finally {setBusy(false);}
     };
     return <ShelfDialog title={t('Manage sources')} busy={busy} onClose={onClose}>

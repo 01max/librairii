@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 
+	"github.com/01max/librairii/internal/library"
 	"github.com/google/uuid"
 )
 
@@ -44,6 +45,18 @@ func activeTitles(ctx context.Context, q reader, uuids []string) (map[string]str
 		result[id] = title
 	}
 	return result, rows.Err()
+}
+
+func (s *Service) manualTitles(ctx context.Context, tx *sql.Tx, uuids []string) (map[string]string, error) {
+	stories, err := s.library.WithTransaction(tx).StoriesInScope(ctx, uuids, library.StoryLibraryQuery{})
+	if err != nil {
+		return nil, err
+	}
+	titles := make(map[string]string, len(stories))
+	for _, story := range stories {
+		titles[story.UUID] = story.Title
+	}
+	return titles, nil
 }
 
 func changed(result sql.Result, err error) (bool, error) {
@@ -88,7 +101,7 @@ func (s *Service) AddStories(ctx context.Context, id int64, values []string) (Sh
 		return Shelf{}, err
 	}
 	return s.mutate(ctx, id, func(tx *sql.Tx) (bool, error) {
-		titles, err := activeTitles(ctx, tx, uuids)
+		titles, err := s.manualTitles(ctx, tx, uuids)
 		if err != nil {
 			return false, err
 		}
