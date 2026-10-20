@@ -1,4 +1,4 @@
-//! PURE6 partial-6.1 assertions. No repository/runtime/effect qualification.
+//! PURE6 partial-6.1/6.7 assertions. No repository/runtime/effect qualification.
 use librairii_core::operations::*;
 use librairii_core::{BoundaryError, OperationKind, OperationState};
 use proptest::prelude::*;
@@ -1108,4 +1108,453 @@ proptest! {
         if wide > i128::from(i64::MAX) { prop_assert_eq!(result, Err(OperationPolicyError::ByteTotalOverflow)); }
         else { prop_assert_eq!(result, Ok(wide as i64)); }
     }
+}
+
+// This payload deliberately has no Clone implementation. View policy borrows
+// the original item/scope/outcome data rather than defining a snapshot codec.
+#[derive(Debug)]
+struct HistoryPayload {
+    items: Vec<(i64, Option<String>)>,
+    scope: StoredExportScope,
+    outcome: RawOutcome,
+    bytes: Vec<u8>,
+}
+
+struct HistoryCase {
+    identity: StoredOperationIdentity,
+    kind: OperationKind,
+    observation: OperationObservation,
+    payload: HistoryPayload,
+}
+
+fn history_case(
+    id: &str,
+    created: &str,
+    finished: Option<&str>,
+    kind: OperationKind,
+    state: OperationState,
+) -> HistoryCase {
+    HistoryCase {
+        identity: StoredOperationIdentity {
+            id: id.into(),
+            created_at: created.into(),
+            started_at: Some(String::new()),
+            finished_at: finished.map(str::to_owned),
+        },
+        kind,
+        observation: OperationObservation {
+            state,
+            kind: ObservationKind::StoredSnapshot,
+        },
+        payload: HistoryPayload {
+            items: vec![
+                (7, Some("AABBCCDD-1234-5678-9012-AABBCCDDEEFF".into())),
+                (11, None),
+            ],
+            scope: StoredExportScope {
+                discriminator: Some("shelves".into()),
+                group_ids: Some("[2, 1]".into()),
+                group_names: Some("[\"É\", \"É\"]".into()),
+            },
+            outcome: RawOutcome {
+                code: Some("future_outcome".into()),
+                message: Some(String::new()),
+            },
+            bytes: vec![0, 255, 3],
+        },
+    }
+}
+
+fn history_rows(cases: &[HistoryCase]) -> Vec<OperationViewRow<'_, HistoryPayload>> {
+    cases
+        .iter()
+        .map(|case| OperationViewRow {
+            identity: &case.identity,
+            kind: case.kind,
+            observation: case.observation,
+            payload: &case.payload,
+        })
+        .collect()
+}
+
+#[test]
+fn op67_history_boundaries_use_twenty_plus_one_borrowed_rows() -> TestResult {
+    assert_eq!((HISTORY_PAGE_SIZE, HISTORY_LOOKAHEAD), (20, 21));
+    for count in [0, 19, 20, 21, 22, 200] {
+        let cases: Vec<_> = (1..=count)
+            .map(|i| {
+                history_case(
+                    &format!("Raw-{i:04}"),
+                    "2000-01-01T00:00:00Z",
+                    None,
+                    OperationKind::Import,
+                    OperationState::Queued,
+                )
+            })
+            .collect();
+        let rows = history_rows(&cases);
+        let page = history_window(&rows, HistoryCursor::Start)?;
+        assert_eq!(page.operations.len(), count.min(20));
+        let expected: Vec<_> = (1..=count)
+            .rev()
+            .take(20)
+            .map(|i| format!("Raw-{i:04}"))
+            .collect();
+        assert_eq!(
+            page.operations
+                .iter()
+                .map(|r| &r.identity.id)
+                .collect::<Vec<_>>(),
+            expected.iter().collect::<Vec<_>>()
+        );
+        let next = (count > 20).then(|| format!("Raw-{:04}", count - 19));
+        assert_eq!(page.next_before, next.as_deref());
+        for row in page.operations {
+            let original = cases
+                .iter()
+                .find(|c| c.identity.id == row.identity.id)
+                .ok_or("selected foreign row")?;
+            assert!(std::ptr::eq(row.payload, &original.payload));
+            assert_eq!(row.payload.bytes, [0, 255, 3]);
+            assert_eq!(row.payload.items[0].0, 7);
+            assert_eq!(row.payload.items[1], (11, None));
+            assert_eq!(row.payload.scope.group_ids.as_deref(), Some("[2, 1]"));
+            assert_eq!(row.payload.outcome.code.as_deref(), Some("future_outcome"));
+            assert_eq!(row.payload.outcome.message.as_deref(), Some(""));
+        }
+    }
+    Ok(())
+}
+
+#[test]
+fn op67_found_cursor_is_independent_and_concurrent_inserts_use_strict_raw_tuple() -> TestResult {
+    let mut cases: Vec<_> = (1..=22)
+        .map(|i| {
+            history_case(
+                &format!("Raw-{i:04}"),
+                "same-raw-time",
+                None,
+                OperationKind::Import,
+                OperationState::Queued,
+            )
+        })
+        .collect();
+    let cursor = {
+        let rows = history_rows(&cases);
+        let first = history_window(&rows, HistoryCursor::Start)?;
+        assert_eq!(first.next_before, Some("Raw-0003"));
+        HistoryKey {
+            created_at: "same-raw-time".into(),
+            id: first.next_before.ok_or("missing cursor")?.into(),
+        }
+    };
+    // The separate successful lookup remains usable although its row is absent
+    // from this candidate window. Newer inserts cannot shift the older page.
+    cases.retain(|c| c.identity.id != cursor.id);
+    for (id, created) in [
+        ("Raw-9999", "same-raw-time"),
+        ("newest", "zzz"),
+        ("Raw-0002a", "same-raw-time"),
+        ("older-insert", "aaa"),
+    ] {
+        cases.push(history_case(
+            id,
+            created,
+            None,
+            OperationKind::Import,
+            OperationState::Queued,
+        ));
+    }
+    let rows = history_rows(&cases);
+    let page = history_window(&rows, HistoryCursor::Found(&cursor))?;
+    assert_eq!(
+        page.operations
+            .iter()
+            .map(|r| r.identity.id.as_str())
+            .collect::<Vec<_>>(),
+        ["Raw-0002a", "Raw-0002", "Raw-0001", "older-insert"]
+    );
+    assert_eq!(page.next_before, None);
+    assert_eq!(
+        history_window(&rows, HistoryCursor::Start)?.operations[0]
+            .identity
+            .id,
+        "newest"
+    );
+    assert!(matches!(
+        history_window(&rows, HistoryCursor::Missing),
+        Err(HistoryError::MissingCursor)
+    ));
+    assert!(matches!(
+        history_window::<HistoryPayload>(&[], HistoryCursor::Missing),
+        Err(HistoryError::MissingCursor)
+    ));
+    assert_eq!(
+        history_window::<HistoryPayload>(&[], HistoryCursor::Found(&cursor))?
+            .operations
+            .len(),
+        0
+    );
+    Ok(())
+}
+
+#[test]
+fn op67_history_order_keeps_raw_time_case_unicode_and_non_uuid_identity() -> TestResult {
+    let cases: Vec<_> = [
+        ("A", "2000-01-01T00:00:00Z"),
+        ("a", "2000-01-01T00:00:00Z"),
+        ("É", "2000-01-01T00:00:00Z"),
+        ("É", "2000-01-01T00:00:00Z"),
+        ("zz-non-UUID", "2000-01-01 00:00:00"),
+    ]
+    .into_iter()
+    .map(|(id, time)| {
+        history_case(
+            id,
+            time,
+            None,
+            OperationKind::Export,
+            OperationState::Interrupted,
+        )
+    })
+    .collect();
+    let rows = history_rows(&cases);
+    let page = history_window(&rows, HistoryCursor::Start)?;
+    assert_eq!(
+        page.operations
+            .iter()
+            .map(|r| r.identity.id.as_str())
+            .collect::<Vec<_>>(),
+        ["É", "a", "É", "A", "zz-non-UUID"]
+    );
+    let cursor = HistoryKey {
+        created_at: "2000-01-01T00:00:00Z".into(),
+        id: "a".into(),
+    };
+    assert_eq!(
+        history_window(&rows, HistoryCursor::Found(&cursor))?
+            .operations
+            .iter()
+            .map(|r| r.identity.id.as_str())
+            .collect::<Vec<_>>(),
+        ["É", "A", "zz-non-UUID"]
+    );
+    assert!(
+        page.operations
+            .iter()
+            .all(|r| r.identity.typed_id().is_err())
+    );
+    assert_eq!(cases[0].identity.started_at.as_deref(), Some(""));
+    assert_eq!(cases[0].identity.finished_at, None);
+    Ok(())
+}
+
+#[test]
+fn op67_active_output_is_uncapped_then_appends_one_latest_terminal_export() {
+    let mut cases: Vec<_> = (0..25)
+        .map(|i| {
+            history_case(
+                &format!("active-{i:02}"),
+                "2090",
+                None,
+                OperationKind::Import,
+                if i % 2 == 0 {
+                    OperationState::Queued
+                } else {
+                    OperationState::Running
+                },
+            )
+        })
+        .collect();
+    cases.push(history_case(
+        "old-export",
+        "2080",
+        Some("2081"),
+        OperationKind::Export,
+        OperationState::Succeeded,
+    ));
+    cases.push(history_case(
+        "latest-export",
+        "0000",
+        Some("2100"),
+        OperationKind::Export,
+        OperationState::Failed,
+    ));
+    cases.push(history_case(
+        "newer-import",
+        "9999",
+        Some("9999"),
+        OperationKind::Import,
+        OperationState::Succeeded,
+    ));
+    let mut provisional = history_case(
+        "provisional-export",
+        "9999",
+        Some("9999"),
+        OperationKind::Export,
+        OperationState::Interrupted,
+    );
+    provisional.observation.kind = ObservationKind::ProvisionalPersistenceFailure;
+    cases.push(provisional);
+    let rows = history_rows(&cases);
+    let selected = active_and_latest(&rows);
+    assert_eq!(selected.len(), 26);
+    assert_eq!(selected[0].identity.id, "active-24");
+    assert_eq!(selected[24].identity.id, "active-00");
+    assert_eq!(selected[25].identity.id, "latest-export");
+    assert!(
+        selected
+            .iter()
+            .all(|r| r.identity.id != "newer-import" && r.identity.id != "provisional-export")
+    );
+    for state in STATES.into_iter().filter(|s| is_terminal(*s)) {
+        let one = [history_case(
+            "terminal-export",
+            "raw",
+            None,
+            OperationKind::Export,
+            state,
+        )];
+        assert_eq!(active_and_latest(&history_rows(&one)).len(), 1);
+    }
+}
+
+#[test]
+fn op67_latest_export_falls_back_for_null_only_and_uses_raw_id_ties() {
+    let mut cases = vec![
+        history_case(
+            "N",
+            "2050",
+            None,
+            OperationKind::Export,
+            OperationState::Cancelled,
+        ),
+        history_case(
+            "empty-newer",
+            "9999",
+            Some(""),
+            OperationKind::Export,
+            OperationState::Succeeded,
+        ),
+    ];
+    assert_eq!(active_and_latest(&history_rows(&cases))[0].identity.id, "N");
+    cases.push(history_case(
+        "A",
+        "0000",
+        Some("2050"),
+        OperationKind::Export,
+        OperationState::Interrupted,
+    ));
+    cases.push(history_case(
+        "a",
+        "0000",
+        Some("2050"),
+        OperationKind::Export,
+        OperationState::PartiallySucceeded,
+    ));
+    cases.push(history_case(
+        "z",
+        "9999",
+        Some(" 2050"),
+        OperationKind::Export,
+        OperationState::Failed,
+    ));
+    assert_eq!(active_and_latest(&history_rows(&cases))[0].identity.id, "a");
+    assert_eq!(cases[1].identity.finished_at.as_deref(), Some(""));
+    assert_eq!(cases[0].identity.finished_at, None);
+    assert_eq!(cases[4].identity.finished_at.as_deref(), Some(" 2050"));
+    assert!(active_and_latest::<HistoryPayload>(&[]).is_empty());
+}
+
+#[test]
+fn op67_reveal_eligibility_never_validates_a_directory_or_provisional_truth() {
+    for kind in [
+        OperationKind::Import,
+        OperationKind::MetadataSync,
+        OperationKind::Export,
+    ] {
+        for state in STATES {
+            let stored = OperationObservation {
+                state,
+                kind: ObservationKind::StoredSnapshot,
+            };
+            for destination in [None, Some("")] {
+                assert!(!reveal_eligible(kind, stored, destination));
+            }
+            for destination in [
+                Some("/not-read"),
+                Some("relative"),
+                Some(" "),
+                Some("nul\0text"),
+            ] {
+                assert_eq!(
+                    reveal_eligible(kind, stored, destination),
+                    kind == OperationKind::Export && is_terminal(state)
+                );
+                assert!(!reveal_eligible(
+                    kind,
+                    OperationObservation {
+                        kind: ObservationKind::ProvisionalPersistenceFailure,
+                        ..stored
+                    },
+                    destination
+                ));
+            }
+        }
+    }
+}
+
+#[test]
+fn op67_admitted_history_view_borrows_full_payload_without_snapshot_reencoding() -> TestResult {
+    let fixture: serde_json::Value = serde_json::from_str(include_str!(
+        "../../../preservation/corpus/libraries/schema018/history.json"
+    ))?;
+    let original = fixture.to_string();
+    let records = fixture["operations"].as_array().ok_or("missing history")?;
+    let identities: Vec<_> = records
+        .iter()
+        .map(|r| {
+            Ok(StoredOperationIdentity {
+                id: r["id"].as_str().ok_or("missing ID")?.into(),
+                created_at: r["createdAt"].as_str().ok_or("missing createdAt")?.into(),
+                started_at: r["startedAt"].as_str().map(str::to_owned),
+                finished_at: r["finishedAt"].as_str().map(str::to_owned),
+            })
+        })
+        .collect::<Result<_, Box<dyn std::error::Error>>>()?;
+    let rows: Vec<_> = records
+        .iter()
+        .zip(&identities)
+        .map(|(r, identity)| {
+            Ok(OperationViewRow {
+                identity,
+                kind: decode_kind(r["kind"].as_str().ok_or("missing kind")?)?,
+                observation: OperationObservation {
+                    state: decode_state(r["status"].as_str().ok_or("missing state")?)?,
+                    kind: ObservationKind::StoredSnapshot,
+                },
+                payload: r,
+            })
+        })
+        .collect::<Result<_, Box<dyn std::error::Error>>>()?;
+    let page = history_window(&rows, HistoryCursor::Start)?;
+    assert_eq!(page.operations.len(), 3);
+    assert_eq!(page.next_before, None);
+    for (selected, raw) in page.operations.iter().zip(records) {
+        assert!(std::ptr::eq(selected.payload, raw));
+        assert_eq!(selected.payload["items"], raw["items"]);
+        assert_eq!(selected.identity.id, raw["id"]);
+    }
+    assert_eq!(
+        active_and_latest(&rows)
+            .iter()
+            .map(|r| r.identity.id.as_str())
+            .collect::<Vec<_>>(),
+        [
+            "90000000-0000-4000-8000-000000000003",
+            "90000000-0000-4000-8000-000000000002"
+        ]
+    );
+    assert_eq!(fixture.to_string(), original);
+    Ok(())
 }

@@ -1,4 +1,4 @@
-//! Partial task 6.1: legacy operation identities and effect-free policy.
+//! Partial tasks 6.1/6.7: legacy operation identities and effect-free policy.
 //!
 //! The string codecs follow the frozen Go `internal/operations/model.go`.
 //! Transition and aggregate policies follow `repository.go` and
@@ -9,6 +9,7 @@
 
 mod codec;
 mod data;
+mod history;
 mod policy;
 
 pub use codec::{
@@ -18,6 +19,10 @@ pub use codec::{
 pub use data::{
     ExportSource, HistoryKey, ObservationKind, OperationObservation, RawOutcome, StoredExportScope,
     StoredItemIdentity, StoredOperationIdentity,
+};
+pub use history::{
+    HISTORY_LOOKAHEAD, HISTORY_PAGE_SIZE, HistoryCursor, HistoryError, HistoryWindow,
+    OperationViewRow, active_and_latest, history_window, reveal_eligible,
 };
 pub use policy::{
     CompletionAggregate, CompletionCandidate, Counts, InterruptionCandidate, ItemRecord,

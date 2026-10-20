@@ -240,3 +240,52 @@ The dedicated fix and original support receive fresh combined-head review and
 provider checks; the prior head's verdict is not carried forward. This remains
 controlled partial 6.5, with every full-section/effect/native-presentation gate
 open.
+
+## Implemented partial 6.7 — pure borrowed History/view policy
+
+Release `PURE6.7-43f8` adds value-only selection inside the existing core
+`operations` namespace. Frozen `history.go:18–73` supplies the raw creation/ID
+tuple cursor and twenty-plus-one rule; `repository.go:699–769` and
+`manager.go:486–498` supply active creation ordering and the separately appended
+latest terminal export. Application reveal eligibility follows
+`application.go:363–388`; actual `exporter/destination.go:16` validation and
+desktop shell launch remain outside this pure slice.
+
+Operation rows borrow existing raw identities, kind/observation values and opaque
+payloads without a Clone requirement. Page selection retains at most 21 selected
+references and returns 20. That is not an all-input, payload, active-output or
+global memory bound. A separately resolved Found cursor remains usable when its
+row is absent from the candidate window; only an explicit Missing lookup fails.
+Newer rows cannot shift the older keyset, while newly inserted older rows may
+appear. No frozen-history watermark, UUID Display/time parsing, source-vector
+sorting or snapshot JSON codec is introduced.
+
+Active output has no History20 cap and appends one terminal export after all
+creation-ordered active rows, without globally resorting that export. Latest
+export uses raw `COALESCE(finished_at, created_at), id`: NULL alone falls back,
+whereas empty/space text stays literal. Supplied provisional observations do not
+become stored History/latest/reveal truth. Labels and constructors remain
+observations, not proof that any real database read or commit occurred.
+
+Reveal eligibility is only export + supplied saved terminal + nonempty stored
+destination. A whitespace, relative or NUL-containing value can satisfy this
+predicate while actual host validation must reject it. The helper creates no
+path, directory, activation, reveal or custody authority and performs no I/O.
+
+Scoped local verification passes all 35 core operation assertions, zero
+ignored/filtered, and all-target core Clippy with warnings denied. Seven new
+assertions cover page boundaries through 200 candidates, detached cursor lookup,
+same-time/newer/older inserts, raw Unicode/case/time/non-UUID ordering, uncapped
+25-active output, all terminal states, NULL-vs-empty latest ordering, provisional
+and reveal boundaries, and pointer-identical admitted corpus payloads. The
+unchanged admitted history fixture is borrowed through dev-only JSON values;
+production has no JSON/dependency addition or snapshot re-encoding.
+
+This local partial implementation must remain unpublished until the sole
+unchanged 43f8 Intel/aggregate retry outcome is successful. Its separate task
+commit and later ORIGINAL owner5 additive discovery support are recorded in the
+external PR/AO ledger after publication. New combined cumulative/provider/native
+and affected independent verification remain mandatory. Real operation-domain
+SQL, startup/staging cleanup, destination validation/reveal, full 6.7/6.8/6.9 and
+every complete-section checkbox stay open; no source or schema authority is
+inferred from the pure selectors.
