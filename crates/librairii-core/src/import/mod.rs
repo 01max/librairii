@@ -4,10 +4,16 @@
 //! integrity and storage authority. None of these values proves a committed import.
 
 mod dispatch;
+mod entries;
+mod limits;
 
 pub use dispatch::{
     ArchivePlan, ContainerKind, ContentFacts, IntegrityRequirement, PackStructure, dispatch,
 };
+pub use entries::{
+    CompressionAccounting, EntryRecord, Inventory, InventoryBuilder, validate_entry_name,
+};
+pub use limits::{Budget, BudgetUsage, EntryInfo, Limits};
 
 macro_rules! codes {
     ($(#[$meta:meta])* pub enum $name:ident { $($variant:ident => $code:literal),+ $(,)? }) => {

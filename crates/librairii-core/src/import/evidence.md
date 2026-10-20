@@ -19,19 +19,45 @@ requirements. `ContentFacts` are caller-supplied observations; a successful
 ASCII suffix matching additionally retains Go Unicode15 simple-lower mappings
 U+0130→i and U+212A→k; it performs no search folding or Unicode composition.
 
-First implementation commit SHA will be recorded in a subsequent scoped ledger
-commit (a commit cannot contain its own content hash). Dedicated task trailer:
-`OpenSpec-Task: 5.1`.
+Original partial5.1 commit: `6ec300c6a5dfadfd295198d08618ad3ae5920c79`
+(`feat(import): add pure format dispatch policy`, `OpenSpec-Task: 5.1`).
+
+Original owner5 additive wiring: `daef6c5d8d4ed8cc056a059630b7da2cc72f34a8`,
+direct parent6ec300c6; consumed by fast-forward. Its only changes are core lib.rs
+public import and four actual required test IDs; prior24 IDs remain retained.
 
 ## Verification status
 
-Module-local tests are authored but **NOT EXECUTED**: owner5 must first add
-the actual core export/discovery/assertions from the first published exact SHA.
-Formatting/source review is not a test pass. Final combined exact-head checks,
-native review and provider CI remain pending. No full5.N or5.10 completion.
+Initial6ec300c6 tests were NOT EXECUTED before wiring. After consuming original
+daef6c5d, the working-tree partial5.2 Rust sources passed scoped nextest:11 passed,
+10 existing tests filtered by `import::` (not a full-suite or mandatory-skip waiver).
+Command: `cargo nextest run --locked -p librairii-core import::`, using exact
+Rust1.99.1 toolchain bin and existing `/private/tmp/librairii-section3-tools/bin`
+on command-local PATH. Initial PATH-only startup failures executed no tests.
+Scoped rustfmt also passed. Final combined exact-head full discovery/checks,
+separate doctests, native review and provider CI remain pending; no full5.N/5.10
+completion or transferred ancestor check result.
 
 Future real admission still requires enforceable pre-constructor resource
 strategy, complete format/codec/CRC/failure/cancel proof, real storage and
 canonical hooks plus separately released effect paths. Owner4's six filenames
 are independent producer/reader string observations, not Go decoder goldens or
 captured raw7z name bytes. No fixture, baseline, shared root or Go17 change.
+
+## Partial5.2: supplied entry/name/size policy
+
+Maps frozen inspection limits.go, zip_reader.go and sevenzip_reader.go.
+All21 retained archive-header boundary inputs are consumed via include_str, with
+exact expected codes; no decoder or fixture generator executes. Additional
+source-grounded tests cover raw-invalid UTF8/NUL/backslash/absolute/drive names,
+Go lexical dot/parent aliases, terminal duplicates, directories versus files,
+link/negative-size error priority, nested suffixes and distinct ZIP/7z ratios.
+NFC/NFD are separate synthetic strings and are not composed or relabeled Go
+archive observations.
+
+Unsigned sizes above i64 and checked compressed/expanded/count overflow refuse
+without wrapping. Failed Budget updates are atomic; inventory failure is terminal
+so a rejected partial inventory cannot be presented as complete. These are pure
+caller-data properties, not actual decoder allocation/read/CPU/CRC enforcement.
+The original partial5.2 commit SHA is recorded by the following scoped commit.
+Task trailer: `OpenSpec-Task: 5.2`.
