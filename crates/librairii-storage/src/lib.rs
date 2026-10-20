@@ -1,1 +1,10 @@
-//! Persistence boundary. No database, profile or library activation implemented.
+//! Compatible library persistence and owned filesystem effects.
+//!
+//! Root selection is explicit. The isolated override never discovers a profile.
+pub mod error;
+pub mod identity;
+pub mod layout;
+
+pub use error::{Result, StorageError};
+pub use identity::LibraryIdentity;
+pub use layout::{DATA_ROOT_OVERRIDE, IsolatedLibrary, LibraryLayout, ManagedPath};
