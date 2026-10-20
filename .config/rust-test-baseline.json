@@ -939,6 +939,33 @@
     {
       "suite": "librairii-storage::portability",
       "name": "windows_name_diagnostics_retain_device_control_and_directory_spelling"
+    },
+    {
+      "suite": "librairii-storage::native_library",
+      "name": "native_files_keep_owned_bytes_and_writer_repair_when_commit_becomes_uncertain",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::native_library",
+      "name": "native_files_refuse_substituted_directory_and_preserve_db_only_readback",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::native_library",
+      "name": "native_files_retain_same_database_custody_and_drain_after_intake_stop",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
     }
   ]
 }
