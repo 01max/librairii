@@ -42,3 +42,30 @@ Existing abdb318 native approval and eight CI successes are historical. Fresh
 native review and current provider CI are required for the new published head.
 No frontend baseline rerun solely for this text scope, physical platform pass,
 language port, product graph/license/toolkit selection or merge is claimed.
+
+## Required module-source correction after fd3a975 review
+
+Native a8462328 requested correction4328610509. Separate fix52fc06d authenticates
+the ZIP snapshot and materializes only its regular members, then verifies the
+owned tree before build; download metadata is derived locally from authenticated
+bytes/version. The actual-main extra.go test failed before the correction in
+normal Python and `-O`, reaching the mocked Go-build boundary with an unverified
+source. Afterwards it passes in both modes; another safe test covers bad h1,
+symlink members and path traversal refusal before materialization. No actual
+cache/oracle is mutated by the regression and no runtime command executes in it.
+
+Focused verification:15 exact Python identities pass,0 skip/xfail/unexpected;
+Unicode6 and existing supervision3 also pass optimized. Rust6/6, separate
+doctests0, fmt and all-target Clippy warnings denied pass. Prior7/default+7/gui,
+child2 and root24+2 identities/assertions remain present; those unchanged code
+results above retain their original run attribution, not new final-head approval.
+`validation-identities.json` adds the two Python identities without removing any.
+
+`materialization-check.json` SHA256490227a1defe3d2815138904ccf5d074d03d910a9f8f22b9140197d3bc7cf305
+records a real frozen Go1.26.5 build/provenance-only check using487 authenticated
+ZIP members in a new independent disposable clone. All436 original files verify
+before/after in both clones; the only clone addition is the qualification template.
+No scalar/sequence/language outcome is remeasured; all three historical Unicode
+reports and prior corpus/decoder/Zstd inputs remain unchanged. No original cache
+poisoning is inferred. Review a8462328 applies to fd3a975 and requests this fix;
+fresh final-head native review and all current CI remain required.

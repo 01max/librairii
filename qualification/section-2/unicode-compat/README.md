@@ -114,11 +114,32 @@ clone receives the Go template and executes the oracle. The persistent oracle
 and all436 original clone files verify unchanged afterwards.
 
 Go uses local1.26.5, CGO disabled, isolated writable build/module caches, offline
-proxy/sumdb and readonly go.mod. The existing x/text ZIP's Go h1 checksum is
-independently recomputed and all487 members compared with cache bytes before
-copying sources. x/text0.43.0 selects Unicode15 tables under !go1.27; runtime
+proxy/sumdb and readonly go.mod. Historical drivers independently recomputed the
+x/text ZIP's Go h1 and compared487 listed cache members; they did not exclude
+unlisted cache files. The corrected authenticated materializer is described below.
+x/text0.43.0 selects Unicode15 tables under !go1.27; runtime
 provenance asserts Go/cases/norm15 and languageCLDR32. No current Go replacement,
 generator or production library/profile/endpoint is used.
+
+Required review a8462328 found that the historical listed-member checks did not
+exclude additional expanded-cache files before `copytree`. Dedicated correction
+52fc06de1f640c13f0cac2b19e1e7248db5236b0 authenticates one ZIP byte snapshot,
+materializes only its regular members, and checks the exact owned inventory and
+bytes before build. Symlinks/unsafe paths/unverified ZIPs refuse before writing
+source. No expanded-cache file is copied. The owned download `.mod` comes from
+the authenticated member, `.ziphash` from its checked h1, and `.info` contains
+only the known version; cache metadata cannot reintroduce source. Archive/member
+capture bounds are local source-tooling limits, not production archive budgets.
+
+The actual-main regression supplies an owned synthetic cache with authenticated
+files plus `extra.go`, mocks runtime commands at the Go-build boundary, and
+requires the extra file be absent there. It failed before correction in normal
+and optimized Python, then passes in both. `materialization-check.json` records a
+focused real Go1.26.5 build/provenance-only check from487 authenticated members in
+a verified disposable oracle clone; source436 checks pass before/after. There is
+no scalar/sequence/language comparison rerun. Original reports stay byte-identical
+and retain their original source identities; the fix does not retroactively prove
+an exact original cache inventory or imply that tampering occurred.
 
 The driver verifies every admitted146-file hash, then exports only unicode.json
 and saved-queries.json from exact1cd2244 into owned temp files. It does not replay

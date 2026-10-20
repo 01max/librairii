@@ -1,7 +1,7 @@
 {
   "scope": "local observed Python identities; root discovery does not include nested workspaces",
   "normal": {
-    "testsRun": 13,
+    "testsRun": 15,
     "skipped": 0,
     "expectedFailures": 0,
     "unexpectedSuccesses": 0,
@@ -52,11 +52,19 @@
       },
       {
         "source": "qualification/section-2/unicode-compat/tests/test_supervision.py",
+        "identity": "qualification_test_supervision.QualificationSafety.test_owned_module_excludes_unverified_extra_go_before_build"
+      },
+      {
+        "source": "qualification/section-2/unicode-compat/tests/test_supervision.py",
         "identity": "qualification_test_supervision.QualificationSafety.test_source_path_escape_is_refused_before_reading_outside_the_oracle"
       },
       {
         "source": "qualification/section-2/unicode-compat/tests/test_supervision.py",
         "identity": "qualification_test_supervision.QualificationSafety.test_tooling_failure_cannot_be_reported_as_a_compatibility_result"
+      },
+      {
+        "source": "qualification/section-2/unicode-compat/tests/test_supervision.py",
+        "identity": "qualification_test_supervision.QualificationSafety.test_untrusted_or_nonregular_zip_cannot_create_owned_sources"
       }
     ]
   },
@@ -187,5 +195,7 @@
         }
       ]
     }
-  ]
+  ],
+  "retainedRustListingHead": "fd3a97577bb59523ba6c8e0c1ff3a2610e47039a",
+  "reviewFix": "required P2 authenticated module materialization; two added Python tests, no removed Rust/Python identities"
 }
