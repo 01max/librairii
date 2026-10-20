@@ -8,8 +8,9 @@ The separate OpenSpec repository is read-only here and never nested into this tr
 
 Each implementation commit carries `OpenSpec-Task: 3.N`. Full original SHAs are
 retained here as subsequent subtasks land; use `git log --format=full` to verify.
-Review fixes are separate commits. Section 3.9 stays pending independent AO review
-of the final head and clean-checkout checks; unavailable target evidence is incomplete.
+Review fixes are separate commits. Admission requires independent AO review and
+all provider checks on the resulting final head; unavailable target evidence is
+incomplete. Local audit completion never substitutes for those external gates.
 
 | Subtask | Commit | Evidence |
 | --- | --- | --- |
@@ -18,10 +19,10 @@ of the final head and clean-checkout checks; unavailable target evidence is inco
 | 3.3 | ec318f5e95ed067ac5f089f89f95c0f7b7f62734 | Stable rustfmt and Clippy, compiler warnings denied in checks |
 | 3.4 | f0c19210b6efe57fe4824797cb24c894d9d44c53 | Owned fresh roots, missing/external/swapped/symlink rejection, loopback HTTP bytes; nextest CI reports and separate doctests |
 | 3.5 | 586ff2b16a322155fab2c2fa0551c47dac27f706 | Locked check facade, dependency direction and refusing desktop process test |
-| 3.6 | 3a385ea38986b1d3866395d5c5ca09030e580c88 | Native four-target CI definition; actual runs and release desktop evidence pending |
+| 3.6 | 3a385ea38986b1d3866395d5c5ca09030e580c88 | Four native foundation targets passed at952a923; changed final head requires fresh CI; release desktop evidence remains pending |
 | 3.7 | b0fa2b536b89cd7c0a483677ac5f8cf68a4fdcd3 | deny/audit pass; exact source/license/duplicate policy, expiry tests and four-target inventory with upstream notice files |
 | 3.8 | 1c0b6b65c40a2ebb7b5e39771a91589463fb43c0 | 18 nextest tests, independent fuzz lock/toolchain and bounded run, stable coverage and actual Criterion measurements |
-| 3.9 | Pending gate; separate evidence commit | Cumulative discovery guard and provisional clean-checkout evidence below; independent final review/native/corpus admission still required |
+| 3.9 | b9bfa1a04a35854097bb03e8a67c1869643e991d;13820ffb3ef3203c323f8a2e041926426a97f2bf | Cumulative discovery and admitted preservation gate; dedicated completion evidence below; final-head external admission remains required |
 
 ## Baseline pins and boundaries
 
@@ -224,17 +225,6 @@ The benchmark-only anes package omits notices; its exact published VCS revision'
 MIT/Apache files are preserved with provenance. These are dependency notices,
 not a new product license; no fuzz/benchmark runtime is linked into the desktop.
 
-## Evidence status
-
-Local macOSARM: make check passed (all Go/vet/build/type/lint plus207frontend tests,
-responsive/visual/accessibility/performance); Rust foundation check passed18tests,
-zero skipped, separate compile-fail doctest, locked stable build/fmt/Clippy and
-both graph policies. Coverage, benchmark smoke/measured runs and bounded fuzz ran.
-Native CI is in progress on draft PR41; no missing target is treated as passed.
-Task1 reviewed contract/corpus admission and final clean-checkout checks remain
-pending. Full desktop/assistive-tech/platform/package qualification remains
-outside this infrastructure section. Section3.9 is not complete.
-
 ## Storage handoff seams
 
 LibraryId/StoryUuid/JobId Display produces canonical UUID text for diagnostics,
@@ -245,8 +235,10 @@ Section4 owns product root authority, profiles, locks and database behavior;
 TestRoots only authorizes its own fresh synthetic directories for tests.
 Root Cargo.toml/Cargo.lock stays with task3 until integration; section4 must
 coordinate its exact rusqlite pin/feature addition and lock resolution rather
-than overwrite concurrent graph changes. Task2 candidate is rusqlite0.40.2 with
-bundled SQLite/backup; qualification remains provisional.
+than overwrite concurrent graph changes. The coordinated candidate is exact
+rusqlite `=0.40.2`, `default-features=false`, features `bundled,backup`. Actual
+bundled SQLite version and product behavior need observed evidence; qualification
+remains provisional. This infrastructure commit adds no SQLite dependency.
 
 Workspace unsafe_code=deny permits a deliberate isolated FFI implementation in
 storage/adapters platform modules. Core/application and other pure boundaries
@@ -258,49 +250,105 @@ invariants, and positive/failure/race tests on the actual cfg target. Clippy den
 undocumented unsafe blocks and missing safety docs. Never allow unsafe for a crate,
 whole platform module, unrelated logic or every lint. A new FFI change needs
 independent review of that target's code and evidence; there is no authored unsafe
-or exception in the current workspace. Proposed section4 paths are storage
-layout/identity/profile/lock/platform modules, pending direct owner confirmation.
+or exception in the current workspace.
 
-## Section 3.9: pending admission gate
+The final written path/interface agreement was sent to owners6 and2. Owner5 keeps
+root Cargo/lock/toolchain/lints/xtask/CI, shared core IDs/errors, app shared ports,
+testkit, non-storage crate roots/shells, and the initial storage Cargo.toml and
+src/lib.rs shells until an explicit later handoff. Only after orchestrator release
+and that handoff may owner6 implement this storage-only set:
 
-**PENDING.** This evidence commit records checks and enforces cumulative discovery;
-it does not complete independent review, task1 admission or missing native checks.
-No external OpenSpec checkbox is marked complete by this session.
+```
+crates/librairii-storage/Cargo.toml
+crates/librairii-storage/src/lib.rs
+crates/librairii-storage/src/{error,layout,identity,migrations,database,backup,profile,adoption,portability}.rs
+crates/librairii-storage/src/platform/{mod,unix,macos,linux,windows,lock}.rs
+crates/librairii-storage/migrations/001-018
+crates/librairii-storage/tests/**
+crates/librairii-storage/evidence.md
+```
+
+No adapters, generators/corpus, Go bridge17 or frozen index edits are included.
+Shared ports/errors/dependency/lock changes coordinate through owner5. This
+agreement and code readiness do not release section4; it remains read-only until
+explicit orchestration after final foundation admission.
+
+## Section 3.9: reproducibility and final admission
+
+The admitted corpus is now mandatory. The completion evidence commit follows
+the implementation commits and records this audit; its own SHA is retained in
+the AO admission report (a commit cannot embed its own hash). The separate
+OpenSpec checkout is not published or nested here. Final external admission
+remains conditional on exact resulting-head review and all current-head CI.
 
 An independent `git clone --no-local --single-branch` at
-1c0b6b65c40a2ebb7b5e39771a91589463fb43c0 (tree49453e50ef362b4c02559a88644a26c6998182bc)
-ran cargo xtask check and make check successfully on macOS15.7.7 ARM/M4Pro/48GiB,
-with stable1.99.1, declared pinned helpers and Node24.15.0. The clone began without
-build outputs/node_modules; registry/tool/browser caches were available on the
-host, so this is clean-checkout evidence, not a clean-machine installation claim.
-Its tracked status remained clean. Rust ran18tests+onecompile-fail doctest at that
-head; make check ran207frontend tests plus responsive/visual/accessibility and
-performance as well as the full retained Go/vet/type/lint/build checks.
-Later safety fixes add one exact-selector test and one root-lifetime doctest;
-the discovery guard adds one negative test: current local20tests+2doctests pass.
-All earlier assertions remain. Native CI on the earlier head remains provisional;
-a changed head requires renewed exact-head CI/review and cumulative checks.
+13820ffb3ef3203c323f8a2e041926426a97f2bf
+(tree a8c64aeba5b41ee51289e46c48c47dbe1f0f2323) includes integration9a6c1c1
+and the mandatory fixture hook. It began without build outputs/node_modules;
+registry/tool/browser caches were available, so this is a clean-checkout audit,
+not a clean-machine installation claim. Host: macOS15.7.7 ARM, AppleM4Pro/48GiB,
+stable1.99.1, pinned helpers, Node24.15.0, Python3.14.7. Checks:
+
+- `cargo xtask check`: locked workspace build, rustfmt, Clippy, deny/audit of
+  root/fuzz graphs, inventory/notices, all146 hashed corpus files and semantic
+  witnesses, 24 nextest tests with zero skipped, plus2 compile-fail doctests.
+- `GOMAXPROCS=2 make check`: every retained Go/vet/build/type/lint check,
+  207frontend tests, responsive/visual/accessibility and performance checks.
+  No production roots or endpoints were used. Tracked checkout status is clean.
+- A disposable copy of the actual admitted corpus accepts exact bytes, rejects
+  changed/missing Unicode fixture bytes, and leaves all source corpus bytes intact.
+
+The first default-parallel local make check failed existing settings-cleanup
+subtests at their5s subprocess timeout. Focused runs reproduced the same failure
+in the previously passing independent952a923 checkout. A bounded local Go process
+budget of2 passed all four unchanged cases, then the full clean-checkout suite.
+No test, assertion, timeout, application code or CI setting was weakened; this
+host execution sensitivity remains part of the evidence rather than a hidden pass.
+
+Prior independent clones at1c0b6b6 and952a923 also passed complete Rust and Go/React
+checks. Their results are provenance only and do not approve subsequent changes.
 
 `.config/rust-test-baseline.json` records the required foundation tests by suite
 and name. `xtask check` validates pinned nextest discovery before running the full
 workspace, rejects missing, ignored or filtered assertions, and saves discovery
 with CI evidence. Unix symlink tests apply only to the three Unix targets; Windows
-has19current tests and the Unix hosts20. This explicit cfg scope is not a Windows
+has23current tests and the Unix hosts24. This explicit cfg scope is not a Windows
 reparse/locking pass. Additions remain cumulative; replacing a scaffold behavior
 with its real port requires an independently reviewed baseline replacement proving
 the intended invariant. The separate doctest step remains mandatory.
 
-Remaining admission work: merge latest integration including independently reviewed
-task1 contract/corpus; wire task1's cross-platform read-only preservation/check.py
-integrity/semantic checks into ordinary xtask (no Windows Go desktop dependency);
-keep oracle regeneration/replay separate; rerun clean-checkout/current cumulative
-Go+Rust/fixture/native CI; resolve native AO review findings in separate commits;
-obtain independent approval on the exact final head and retain review/CI identities.
-Missing, skipped, failed or cancelled required checks are incomplete. No merge or
-production qualification is authorized by these local results.
+Native AO review approved952a923ffe4b6803b03deafb9c148ea9b184cf0f
+(review5587047882, run6d44930f-e1a7-409c-92a3-f4257ffd76c0). Required expiry
+canonicalization and portable UTC corrections, plus selected-nightly provenance,
+were accepted. Both inline findings are resolved. Actual952a923 provider evidence:
+
+| Check | Run / job | Result |
+| --- | --- | --- |
+| ARM native | 39444932520 /118704922879 | success |
+| Intel native | 39444932520 /118704922805 | success |
+| Linux native | 39444932520 /118704923129 | success |
+| Windows/MSVC native PowerShell without GNU date | 39444932520 /118704922558 | success; check completed2026-10-20T15:22:54Z |
+| Required native aggregate | 39444932520 /118716755501 | success |
+| Coverage/benchmark/fuzz | 39444932754 /118704201154 | success |
+| Retained Go/macOS | 39444932882 /118704202809 | success |
+| Retained Linux release/package | 39444932613 /118704200489 | success |
+
+Integration9a6c1c116d9df726a061ad6aac3955df4ed41263 also passed macOS39447665124
+and Linux39447665711. These exact heads precede the new fixture hook/completion
+commit: they cannot approve the changed final head. The AO final admission report
+and provider state must retain the resulting final SHA, native review identity
+and all fresh check identities. Missing, skipped, failed or cancelled required
+jobs are incomplete. OS-specific inapplicable steps do not replace required jobs.
+No physical Windows11/Intel GUI, assistive-tech, renderer, signing/packaging or
+full Rust workflow qualification is established. The worker never merges PR41
+or global PR37; owner2 checks final conditional admission.
 
 Additional focused commits:577f9755255411de3e1520c66eac3fc1e0106d29 bounds authorized
 root lifetimes and exact exception selectors;556d295ff674900f93e0b960c22ab464caef6952
-records raw UUID and narrow reviewed FFI seams. Original subtask/fix SHAs are never
-rewritten. The evidence commit's own SHA is available from its OpenSpec-Task3.9
-trailer and will be appended to this ledger by the next evidence update.
+records raw UUID and narrow reviewed FFI seams. Review corrections are
+f2942806affe44ad457185672588e52a4fd21832 (canonical expiry),
+411a29e77ad98d4a0365a6a6d0090a50ab970abb (in-process UTC/native shell),
+8ce01fbc2dd24cd91cc49496d60c444ecad8a62e (actual selected-nightly compiler), and
+952a923ffe4b6803b03deafb9c148ea9b184cf0f (cumulative review regressions).
+CI concurrency fix9f91d3b94b8ff6ec2a32a5c494c4d4fea8bc0be0 preserves distinct
+PR/ref checks. Original subtask/fix SHAs are never rewritten.
