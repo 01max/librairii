@@ -60,11 +60,14 @@ jobs:
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           python -I -B -X utf8 (Join-Path $fresh 'xtask/check_preservation.py') > windows-autocrlf-preservation.json
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python -I -B -X utf8 (Join-Path $fresh 'xtask/check_sources.py') > windows-autocrlf-sources.json
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Assert native architecture and record source/toolchain
         run: |
           test "$(rustc -vV | sed -n 's/^host: //p')" = "$RUST_TARGET"
           mkdir -p target/quality
           if test -f windows-autocrlf-preservation.json; then mv windows-autocrlf-preservation.json target/quality/; fi
+          if test -f windows-autocrlf-sources.json; then mv windows-autocrlf-sources.json target/quality/; fi
           git rev-parse HEAD > target/quality/source.txt
           rustc -vV > target/quality/rustc.txt
           cargo --version > target/quality/cargo.txt

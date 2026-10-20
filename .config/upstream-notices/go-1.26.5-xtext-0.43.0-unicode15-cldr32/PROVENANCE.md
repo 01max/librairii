@@ -1,0 +1,25 @@
+# Frozen private compatibility source policy
+
+This is an upstream-source decision for section 4.4 only. It assigns no repository or product license, selects no GUI toolkit, adds no Rust dependency, and proves no normalization, language, storage, or platform parity.
+
+The exact 49 reference identities (43 selected package files) are pinned in the adjacent source registry. They are translation references, not executable Go code in the workspace and not a replacement oracle. Source selection uses x/text v0.43.0 at ac40b0f06c159afb5bfca4d1860f8b4b60dbc160 from its authenticated 487-member ZIP, Go 1.26.5, and frozen repository commit 73a93303a9a44cf0a92eaf525331561ed8c04460. The source index retains original file sizes, hashes, generated markers and first-12-line header bytes/hashes. No expanded cache subtree, Unicode17 table, modern alias source or current registry regeneration is authorized.
+
+## Notices and applicability
+
+- LICENSE-GO-BSD.txt and PATENTS-GO.txt retain the exact Go/x-text source terms. Preserve original copyright lines in translated source and identify changed/generated representations and their recipe.
+- LICENSE-UNICODE-V3.txt is the CURRENT 2026 Unicode V3 payload, used with the current [Unicode data/software terms](https://www.unicode.org/copyright.html). It is not asserted to be a recovered historical 2022 notice. Preserve original Unicode15 copyright years, source markers and provenance. Current terms capture SHA256: 9f83fb0a046180c87d22c2678e79300475125611ac8dfc2da303db6c6b347251.
+- LICENSE-CLDR32-UNICODE.txt is the actual archive-specific 2017 Unicode data/software notice from [CLDR32 core.zip](https://www.unicode.org/Public/cldr/32/core.zip), archive SHA256 e561d24a93fac8ece726c3124e8ea5162b47da9b3caea58e0f78a896d33f5d1e. Its Unicode-DFS-2016 form is retained; current V3 does not replace it. LICENSE-CLDR32-APACHE.txt is also retained as an archive-supplied notice, without claiming every selected XML-derived datum is Apache licensed.
+- LICENSE-CC0.txt applies only to the covered IANA/IETF Protocol Registries, including language-subtag data, under the [2021 statement](https://www.iana.org/help/licensing-terms). Statement capture SHA256: 16887b36c23739ae51b44d02cfd4e909302ece8325f815a763287afcbd589ae3. It does NOT license the separate domains/root/db input, RFCs or linked website material. Website captures are reference hashes, not copied website content.
+- Frozen project searchtext, story-query and full-fold-map identities retain the repository's existing unassigned product-license status. These references do not assign a license to project code or canonicalize persisted identifiers.
+
+## Narrow unresolved DNS subset
+
+The ccTLD bit (bit1, value2) in internal/language/tables.go regionTypes originates from domains/root/db via internal/language/gen.go:919. Original DNS snapshot and general reproduction authority are unresolved. Whole-table copying with that bit and public/internal Region.TLD APIs is not approved. For the private Go Default=Deprecated|Legacy parser translation, omit the TLD APIs and exclude only that bit (retain the other region bits). Record this precise subset recipe. Source inspection shows the bit's read is the TLD API; this is not runtime proof. Owner6 must prove required Default.Parse/Tag.String/Und/errors remain exact without it. No blanket hold applies to other verified normalization/language translation or generic storage work.
+
+The missing historical raw IANA generator snapshot is explicit; the frozen published Go output is the selected authority. Do not substitute a current registry or describe the original generator inputs as reproduced.
+
+## Private derivative contract
+
+Only crates/librairii-storage/src/migrations/compatibility/** may hold this private translation. Its source-manifest.json version1 names this bundle and inventories every file in that directory except the manifest itself. Each file has path (relative to that directory), bytes, sha256, kind (authored/translated/generated), a nonempty recipe, sources, and notices. Each source record has path, sha256, header_sha256 and selection (normalization/language-default-without-dns/product-boundary). Each original hash/header hash must match the pinned index. Translated/generated files have at least one source, preserve its copyright lines, and list required notice filenames. Authored glue has no source/notice assertions. Extra, missing, aliased or changed files fail closed. This records provenance; it cannot mechanically prove a recipe or establish effect/commit authority.
+
+Owner6 owns derivatives, local generators and exact original-to-derived mappings; owner5 owns this registry, notice bundle, source check, root graph, shared wiring and test discovery. Normalization requires the actual-Go surviving-Mc/stream-safe/Hangul/space cases; language requires Go Default grammar/aliases/error/String behavior; all24 same-writer Collection Open projections remain mandatory. No source inventory is a parity pass. Future section7 canonical extraction needs its own release and reviewed owner6 delegation/removal; no permanent second parser, eager DBOpen or fake hook.
