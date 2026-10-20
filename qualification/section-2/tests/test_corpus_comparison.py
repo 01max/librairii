@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import patch
 
 spec = importlib.util.spec_from_file_location(
     "corpus_probe", Path(__file__).resolve().parents[1] / "probe-corpus.py"
@@ -13,6 +14,14 @@ spec.loader.exec_module(probe)
 
 
 class SemanticDifferences(unittest.TestCase):
+    def test_real_pinned_tools_override_the_callers_older_toolchain(self):
+        # Real public rustup execution: no fake Cargo and no global-default change.
+        with patch.dict("os.environ", {"RUSTUP_TOOLCHAIN": "1.97.1"}):
+            cargo = probe.spike_output("cargo", "--version").decode()
+            compiler = probe.spike_output("rustc", "--version").decode()
+        self.assertTrue(cargo.startswith("cargo 1.99.1 "), cargo)
+        self.assertTrue(compiler.startswith("rustc 1.99.1 "), compiler)
+
     def test_array_order_and_identity_changes_are_reported(self):
         differences = probe.differences(
             [{"id": 7, "position": 0}, {"id": 8, "position": 1}],

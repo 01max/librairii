@@ -15,6 +15,7 @@ import subprocess
 import sys
 import tarfile
 import tempfile
+import tomllib
 import uuid
 import zlib
 
@@ -23,6 +24,13 @@ ORACLE = "73a93303a9a44cf0a92eaf525331561ed8c04460"
 MANIFEST_SHA256 = "91ccf4eb2dc9d707d429af3568e8703848aa213b9a6a94727442e7bbce044966"
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parent.parent
+
+
+def spike_output(*arguments):
+    """Select the nested pin for both execution and provenance, regardless of caller."""
+    with (HERE / "rust-toolchain.toml").open("rb") as source:
+        channel = tomllib.load(source)["toolchain"]["channel"]
+    return subprocess.check_output(["rustup", "run", channel, *arguments], cwd=HERE)
 
 
 def blob(path):
@@ -215,14 +223,15 @@ def main():
             selected.append(item)
         before = {i["path"]: sha256((root / i["path"]).read_bytes()) for i in selected}
         codecs = generate_codecs(root, args.bsdtar) if args.bsdtar else []
-        result = subprocess.check_output(["cargo", "run", "--locked", "--offline", "--manifest-path",
-                                          str(HERE / "Cargo.toml"), "--example", "corpus-probe", "--", str(root)], cwd=REPO)
+        result = spike_output("cargo", "run", "--locked", "--offline", "--manifest-path",
+                              str(HERE / "Cargo.toml"), "--example", "corpus-probe", "--", str(root))
         assert before == {i["path"]: sha256((root / i["path"]).read_bytes()) for i in selected}, "fixture mutation"
         observed = json.loads(result)
         report = compare(root, observed)
         report["observer"] = {"session": "librairii-4", "date": "2026-10-20",
                               "host": platform.platform(),
-                              "rustc": subprocess.check_output(["rustc", "--version"], text=True).strip()}
+                              "cargo": spike_output("cargo", "--version").decode().strip(),
+                              "rustc": spike_output("rustc", "--version").decode().strip()}
         report["verifiedInputFiles"] = selected
         report["independentCodecs"] = []
         by_file = {c["file"]: c["observation"] for c in observed.get("independentCodecs", [])}
