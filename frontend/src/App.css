@@ -11,6 +11,10 @@
     --yellow: #ffe477;
     --mint: #55b79a;
     --sans: "Avenir Next", Avenir, "Segoe UI", sans-serif;
+    --control-height: 36px;
+    --control-radius: 8px;
+    --control-font-size: 13px;
+    --control-padding: 8px 12px;
 }
 
 * {
@@ -46,15 +50,35 @@ select {
 button {
     appearance: none;
     cursor: pointer;
-    padding: 8px 12px;
+    padding: var(--control-padding);
     border: 1px solid var(--line);
-    border-radius: 8px;
+    border-radius: var(--control-radius);
     background: var(--white);
     color: var(--ink);
+    font-size: var(--control-font-size);
     font-weight: 600;
     line-height: 1.3;
 }
-button:hover:not(:disabled) { border-color: var(--blue); }
+
+select {
+    appearance: none;
+    max-width: 100%;
+    min-height: var(--control-height);
+    padding: 8px 32px 8px 12px;
+    border: 1px solid var(--line);
+    border-radius: var(--control-radius);
+    color: var(--ink);
+    background-color: var(--white);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2359647a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-position: right 10px center;
+    background-repeat: no-repeat;
+    font-size: var(--control-font-size);
+    font-weight: 600;
+    line-height: 1.3;
+    cursor: pointer;
+}
+select:disabled { cursor: default; opacity: .5; }
+button:hover:not(:disabled), select:hover:not(:disabled) { border-color: var(--blue); }
 button:disabled { cursor: default; opacity: .5; }
 
 
@@ -594,7 +618,7 @@ select:focus-visible {
 }
 
 .top button {
-    height: 39px;
+    min-height: var(--control-height);
     padding: 0 13px;
     border: 1px solid var(--line);
     border-radius: 10px;
@@ -725,30 +749,7 @@ select:focus-visible {
     opacity: .6;
 }
 
-.sort {
-    position: relative;
-    padding-right: 12px;
-    color: #727d91;
-    font-size: 9px;
-    font-weight: 800;
-}
-
-.sort::after {
-    content: "⌄";
-    position: absolute;
-    top: 50%;
-    right: 0;
-    transform: translateY(-55%);
-    pointer-events: none;
-}
-
-.sort select {
-    appearance: none;
-    border: 0;
-    color: inherit;
-    background: transparent;
-    font: inherit;
-}
+.sort { color: #59647a; font-size: 13px; font-weight: 600; }
 
 .active-query {
     display: flex;
@@ -1975,7 +1976,6 @@ select:focus-visible {
 }
 
 .new-tag input,
-.new-tag select,
 .tag-edit input,
 .tag-value input,
 .new-value input {
@@ -2783,7 +2783,6 @@ select:focus-visible {
 .settings-heading h2 { margin: 0; font-size: 26px; line-height: 1.2; letter-spacing: -.03em; }
 .settings-row { display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 22px 0; }
 .settings-row label { font-weight: 600; }
-.settings-panel select { min-height: 40px; padding: 8px 32px 8px 12px; border: 1px solid var(--line); border-radius: 8px; background-color: var(--white); color: var(--ink); }
 .settings-library { border-top: 1px solid var(--line); padding: 22px 0; }
 .settings-library h3 { margin: 0 0 10px; font: 700 15px/1.4 var(--sans); letter-spacing: 0; }
 .settings-library .library-location { padding: 12px; margin: 0 0 14px; border: 1px solid var(--line); border-radius: 8px; background: var(--paper); font-size: 13px; }
@@ -2818,7 +2817,7 @@ select:focus-visible {
 .view-small .broken-badge { top: auto; bottom: 4px; left: 2px; font-size: 8px; padding: 3px; gap: 2px; }
 
 .broken-visibility { display: grid; gap: 7px; margin: 14px 0 20px; font-size: 12px; font-weight: 700; }
-.broken-visibility select { width: 100%; min-height: 36px; padding: 7px; border: 1px solid var(--line); border-radius: 6px; color: var(--ink); background: var(--white); font: inherit; }
+.broken-visibility select { width: 100%; }
 
 /* Curated membership extends the existing library panels. */
 .curated-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 12px 0; }
@@ -2865,13 +2864,13 @@ select:focus-visible {
 .curated-dialog .dialog-kicker { color: #525d72; }
 .curated-member-info { min-width: 0; }
 .curated-broken { color: #684613; }
-.curated-members.curated-list { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0; }
+.curated-members.curated-list { --control-height: 28px; --control-radius: 6px; --control-font-size: 11px; --control-padding: 4px 8px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 0; }
 .curated-members.curated-list > li { display: grid; grid-template-columns: minmax(0, 1fr) auto auto auto; align-items: center; gap: 6px 12px; padding: 8px 10px; border: 0; border-bottom: 1px solid var(--line); border-radius: 0; }
 .curated-list .curated-member-info label { gap: 8px; margin: 0; font-size: 13px; font-weight: 600; }
 .curated-list .curated-member-info input { flex-shrink: 0; margin: 0; accent-color: var(--blue); }
 .curated-list .curated-member-info small { margin: 3px 0 0 21px; color: #59647a; font-size: 11px; line-height: 1.4; }
 .curated-list .curated-member-order { flex-wrap: nowrap; gap: 4px; margin: 0; }
-.curated-members.curated-list :is(.curated-cover, .curated-protection, .curated-member-order button) { width: auto; min-height: 28px; padding: 4px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--white); font-size: 11px; line-height: 1.3; }
+.curated-members.curated-list :is(.curated-cover, .curated-protection, .curated-member-order button) { width: auto; min-height: var(--control-height); padding: var(--control-padding); border: 1px solid var(--line); border-radius: var(--control-radius); background: var(--white); font-size: var(--control-font-size); line-height: 1.3; }
 .curated-list .curated-unavailable { margin: 0; color: #59647a; font-size: 11px; }
 .curated-list .curated-unavailable-id { display: none; }
 @media (max-width: 600px) {
@@ -2904,7 +2903,7 @@ select:focus-visible {
 .tag-filter-options legend { display: flex; align-items: center; gap: 7px; padding: 0; font-weight: 700; }
 .tag-filter-options legend i { width: 7px; height: 7px; border-radius: 50%; background: var(--c); }
 .tag-filter-options label { display: flex; align-items: center; gap: 8px; margin: 8px 0; }
-.tag-filter-options select { margin-left: auto; padding: 6px; border: 1px solid var(--line); border-radius: 6px; background: white; color: var(--ink); }
+.tag-filter-options select { margin-left: auto; }
 .tag-filter-options input { accent-color: var(--blue); }
 .tag-filter-actions { display: flex; justify-content: space-between; gap: 10px; }
 .shelf-search { display: flex; align-items: end; flex-wrap: wrap; gap: 8px; }
@@ -2914,8 +2913,11 @@ select:focus-visible {
 @media (max-width: 560px) { .top { flex-wrap: wrap; } .top .search { flex-basis: 100%; } .tag-filter-panel { left: 0; right: auto; } }
 
 /* Shared action controls; navigation, covers and switches keep their own shape. */
-:where(.dialog-actions, .drawer-actions, .curated-actions, .settings-panel, .flag-feedback, .tag-filter-actions) button,
-.tag-filter-trigger { min-height: 36px; padding: 8px 12px; border-radius: 8px; font-size: 13px; font-weight: 600; line-height: 1.3; }
+:is(.dialog-actions, .drawer-actions, .curated-actions, .settings-panel, .flag-feedback, .tag-filter-actions, .history-actions, .history-header, .new-tag, .tag-edit, .tag-value, .new-value) button,
+.tag-filter-trigger, .curated-protection, .pagination button, .top button, .scope-export,
+.collection-toolbar > button, .collection-state > button, .export-report > button, .lunii-sync > button:not(.notice-dismiss),
+.curated-management summary { min-height: var(--control-height); padding: var(--control-padding); border-radius: var(--control-radius); font-size: var(--control-font-size); font-weight: 600; line-height: 1.3; }
+.manage, .combined-export { min-height: 32px; padding: 7px 10px; border-radius: var(--control-radius); font-size: 11px; font-weight: 600; line-height: 1.3; }
 .dialog-actions .danger { color: white; background: #b33d32; border-color: #b33d32; }
 .dialog-actions button:hover:not(:disabled), .drawer-actions button:hover:not(:disabled) { border-color: var(--blue); }
 .dialog-actions .danger:hover:not(:disabled) { border-color: #912c23; background: #912c23; }
