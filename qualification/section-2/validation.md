@@ -64,3 +64,36 @@ cached rust-objcopy warning described above. No new dependency/test license is u
 This supersedes the initial code snapshot for the checkbox behavior only. It does
 not establish actual native keyboard, accessibility, IME, visual or physical-host
 observations. All remaining qualification gates and final-head review stay open.
+
+## Provisional2.10 corpus experiment after558b2b4
+
+Code/evidence commit `a3a74a3da408c572e9e6b3fdb91dc6c4fe53ee56`; exact pinned
+PR39 input e7c771b and every selected input hash are in corpus-observations.json.
+The same full report was reproduced identically twice. Exit2 records30 measured
+differences:24 SQL-only Collection fields and six independent producer/candidate
+Unicode filenames. The decoder experiment is not a product-classification pass;
+corrected corpus admission and full2.10 remain pending. Details and exact commands
+are in data-feasibility.md.
+
+Cumulative local checks on the implementation above:
+
+* cargo-nextest0.9.148, `run --locked --offline --features gui`:7/7 pass,0 skipped.
+* The same locked nextest command with `--no-default-features`:7/7 pass,0 skipped.
+* Separate GUI-feature doctests:0 examples, harness passes.
+* All-target GUI-feature Clippy `-D warnings`, rustfmt check and diff check pass.
+* Four Python semantic comparison regressions pass.
+* Debug and optimized builds pass; both original public controller smoke and
+  actual-widget Space→Apply→unchecked-twice regression pass in each configuration.
+
+This uses the existing temporary nextest executable coordinated with tooling
+owner5; no root workspace, toolchain or CI file changed. Initial sandboxed native
+build-script downloads failed DNS; permitted network reruns passed using the
+official Skia cache. Cargo offline is still not hermetic for that native graph.
+The optimized build retains the historical cached rust-objcopy warning above.
+
+Integration origin remains41267f6 and is already merged through6668d0f. Provider
+CI at558b2b4 passed its existing Go/Wails lanes; it is not Rust platform evidence.
+The addressed inline thread is resolved and partial code approval at558b2b4 is
+retained. New2.10 code needs another native review of the pushed final head.
+PR38 stays draft/unmerged; host/access, licensing, physical tests, clean-host
+packages, corpus admission/resource ceilings and toolkit selection remain open.

@@ -24,14 +24,15 @@ the latter changes only arrive from the authorized integration merge.
 | 2.7 | Partial ARM normal/explicit CPU process smoke; no GPU failure | renderers.md |
 | 2.8 | Partial: public component/controller route passes ARM | regression.md |
 | 2.9 | Diagnostic subset only; retained budgets not all measured | performance.md |
-| 2.10 | Partial:7 passing synthetic tests; full corpus pending | data-feasibility.md, data-fixtures.json, tests/ |
+| 2.10 | Partial:7 Rust +4 comparison tests; provisional corpus retains24 SQL +6 filename differences | data-feasibility.md, corpus-observations.json, tests/, examples/ |
 | 2.11 | Local unsigned ARM DMG only; clean-host/other packages pending | packages.md, package-macos.py |
 | 2.12 | Conditional fallback not triggered; no established mandatory toolkit failure | fallback.md |
-| 2.13 | Pending AO native review and every mandatory gate; toolkit not selected | selection-gate.md |
+| 2.13 | Partial implementation approved at558b2b4; new final-head review and mandatory qualification still pending | selection-gate.md |
 
-Task1 goldens are in PR39 awaiting independent review; prefix fixtures are still
-underway. Extend data probes against that reviewed/frozen corpus later. Empty SQL
-prefix and decoder capability results must not be relabelled full corpus parity.
+Task1 goldens are in PR39; its relocation-manifest correction and overall corpus
+admission remain pending. The2.10 experiment pins its provisional e7c771b input
+without admitting that contract. Empty SQL prefixes, populated snapshots and
+decoder capability results must not be relabelled full corpus parity.
 Root Cargo/toolchain/CI owner librairii-5 received pins/results; this nested spike
 does not finalize that owner's graph or prevent eligible core/storage work.
 
@@ -57,6 +58,7 @@ does not finalize that owner's graph or prevent eligible core/storage work.
 | 2.3 | [`ea9ad3abb482`](https://github.com/01max/librairii/commit/ea9ad3abb482ec407527076d1e3a55767291f27f) | fix(qualification): remove unqualified responsive layout cycle |
 | Research / integration | [`6668d0f54b8a`](https://github.com/01max/librairii/commit/6668d0f54b8a8f03bb7e9ce36b263951db177cd7) | chore(qualification): merge current integration CI support |
 | 2.10 | [`954a951ab51e`](https://github.com/01max/librairii/commit/954a951ab51e38eeac38ee67de0f288a4d135e5a) | style(qualification): format SQLite extension probe |
+| 2.10 | [`a3a74a3da408`](https://github.com/01max/librairii/commit/a3a74a3da408c572e9e6b3fdb91dc6c4fe53ee56) | test(qualification): compare provisional task 2.10 corpus; retain24 SQL +6 Unicode-name differences |
 
 Later ledger/validation-only commits can be found in PR history. Exact review-ready
 head is sent after pushing; it cannot be embedded as its own commit hash here.
@@ -66,4 +68,4 @@ Scoped review fixes must get new commits and be added below, never squash/rebase
 
 | Finding | Fix SHA | Evidence / status |
 | --- | --- | --- |
-| PR38 P2, comment4326316702, checkbox state after actual toggle/Apply | [`31ccd9e`](https://github.com/01max/librairii/commit/31ccd9e) | Writable two-way decision properties; actual widget Space→Apply→unchecked twice through public in-process events. Regression failed before correction and passes debug/release afterward; seven tests/fmt/Clippy/doctests pass. Final-head AO review requested after push; no toolkit qualification. |
+| PR38 P2, comment4326316702, checkbox state after actual toggle/Apply | [`31ccd9e`](https://github.com/01max/librairii/commit/31ccd9e) | Writable two-way decision properties; actual widget Space→Apply→unchecked twice through public in-process events. Regression failed before correction and passes debug/release afterward. [Thread resolved with evidence](https://github.com/01max/librairii/pull/38#discussion_r4326422310); partial native code approval at558b2b4. New corpus code requires new final-head review; no toolkit qualification. |
