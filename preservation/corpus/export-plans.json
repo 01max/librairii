@@ -1,0 +1,1131 @@
+[
+  {
+    "operationItems": [
+      {
+        "Item": {
+          "ArchiveRelativePath": "archives/f6c1647ae18c7b94580a8805880ac3c236b27b68cf44129d41c5f4648ff08443.zip",
+          "ArchiveSHA256": "f6c1647ae18c7b94580a8805880ac3c236b27b68cf44129d41c5f4648ff08443",
+          "ExportSkipCode": "story_marked_broken",
+          "OutputName": "story-1.zip",
+          "SourceName": "story-1.zip",
+          "StoryID": 1,
+          "StoryTitle": "Old ocean",
+          "StoryUUID": "123e4567-e89b-42d3-a456-426614174000",
+          "TotalBytes": 0
+        },
+        "OutcomeCode": "story_marked_broken",
+        "OutcomeMessage": "This story is marked as broken.",
+        "PlannedStatus": "skipped"
+      },
+      {
+        "Item": {
+          "ArchiveRelativePath": "archives/f410b25cce10902651591b3b981f02322b7534b4838fbc12601572213d7e29a0.zip",
+          "ArchiveSHA256": "f410b25cce10902651591b3b981f02322b7534b4838fbc12601572213d7e29a0",
+          "ExportSkipCode": "",
+          "OutputName": "story-2.zip",
+          "SourceName": "story-2.zip",
+          "StoryID": 2,
+          "StoryTitle": "Moon still",
+          "StoryUUID": "223e4567-e89b-42d3-a456-426614174000",
+          "TotalBytes": 1292
+        },
+        "OutcomeCode": "filename_conflict",
+        "OutcomeMessage": "A file with this name already exists in the destination.",
+        "PlannedStatus": "conflicted"
+      },
+      {
+        "Item": {
+          "ArchiveRelativePath": "archives/ff62794cc6fc1bfb4f365d5f0f68bd93047eaac9168508503fd5d0721f04ee2d.zip",
+          "ArchiveSHA256": "ff62794cc6fc1bfb4f365d5f0f68bd93047eaac9168508503fd5d0721f04ee2d",
+          "ExportSkipCode": "story_marked_broken",
+          "OutputName": "story-4.zip",
+          "SourceName": "story-4.zip",
+          "StoryID": 4,
+          "StoryTitle": "Moon forest",
+          "StoryUUID": "423e4567-e89b-42d3-a456-426614174000",
+          "TotalBytes": 0
+        },
+        "OutcomeCode": "story_marked_broken",
+        "OutcomeMessage": "This story is marked as broken.",
+        "PlannedStatus": "skipped"
+      }
+    ],
+    "report": {
+      "blocked": true,
+      "canExport": false,
+      "collapsedOverlap": 0,
+      "destination": "\u003cexport-destination\u003e",
+      "detectedFormats": [
+        "zip"
+      ],
+      "issues": [
+        {
+          "blocks": true,
+          "code": "no_exportable_stories",
+          "message": "No stories in this scope are currently exportable. Review the story checks below for the reasons."
+        }
+      ],
+      "items": [
+        {
+          "byteSize": 1292,
+          "detectedFormat": "zip",
+          "disposition": "skipped",
+          "issue": {
+            "blocks": false,
+            "code": "story_marked_broken",
+            "message": "This story is marked as broken."
+          },
+          "outputName": "story-1.zip",
+          "storyId": 1,
+          "storyTitle": "Old ocean",
+          "storyUuid": "123e4567-e89b-42d3-a456-426614174000"
+        },
+        {
+          "byteSize": 1292,
+          "detectedFormat": "zip",
+          "disposition": "conflicted",
+          "issue": {
+            "blocks": false,
+            "code": "filename_conflict",
+            "message": "A file with this name already exists in the destination."
+          },
+          "outputName": "story-2.zip",
+          "storyId": 2,
+          "storyTitle": "Moon still",
+          "storyUuid": "223e4567-e89b-42d3-a456-426614174000"
+        },
+        {
+          "byteSize": 1292,
+          "detectedFormat": "zip",
+          "disposition": "skipped",
+          "issue": {
+            "blocks": false,
+            "code": "story_marked_broken",
+            "message": "This story is marked as broken."
+          },
+          "outputName": "story-4.zip",
+          "storyId": 4,
+          "storyTitle": "Moon forest",
+          "storyUuid": "423e4567-e89b-42d3-a456-426614174000"
+        }
+      ],
+      "partial": true,
+      "readyCount": 0,
+      "resolvedCount": 3,
+      "source": {
+        "type": "selection"
+      },
+      "totalBytes": 0
+    },
+    "request": {
+      "includeBroken": false,
+      "query": {
+        "booleanFilters": null,
+        "choiceFilters": null,
+        "compatibilities": null,
+        "languages": null,
+        "name": "",
+        "page": 0,
+        "pageSize": 0,
+        "sort": ""
+      },
+      "sourceType": "selection",
+      "storyIds": [
+        1,
+        2,
+        4
+      ]
+    }
+  },
+  {
+    "operationItems": [
+      {
+        "Item": {
+          "ArchiveRelativePath": "archives/f0b0371c3b9c9773085653f76f64d210396b2a7feb857aa17b124249c1b50baa.zip",
+          "ArchiveSHA256": "f0b0371c3b9c9773085653f76f64d210396b2a7feb857aa17b124249c1b50baa",
+          "ExportSkipCode": "",
+          "OutputName": "story-5.zip",
+          "SourceName": "story-5.zip",
+          "StoryID": 5,
+          "StoryTitle": "Moon excluded",
+          "StoryUUID": "523e4567-e89b-42d3-a456-426614174000",
+          "TotalBytes": 1292
+        },
+        "OutcomeCode": "",
+        "OutcomeMessage": "",
+        "PlannedStatus": "pending"
+      },
+      {
+        "Item": {
+          "ArchiveRelativePath": "archives/ff62794cc6fc1bfb4f365d5f0f68bd93047eaac9168508503fd5d0721f04ee2d.zip",
+          "ArchiveSHA256": "ff62794cc6fc1bfb4f365d5f0f68bd93047eaac9168508503fd5d0721f04ee2d",
+          "ExportSkipCode": "story_marked_broken",
+          "OutputName": "story-4.zip",
+          "SourceName": "story-4.zip",
+          "StoryID": 4,
+          "StoryTitle": "Moon forest",
+          "StoryUUID": "423e4567-e89b-42d3-a456-426614174000",
+          "TotalBytes": 0
+        },
+        "OutcomeCode": "story_marked_broken",
+        "OutcomeMessage": "This story is marked as broken.",
+        "PlannedStatus": "skipped"
+      },
+      {
+        "Item": {
+          "ArchiveRelativePath": "archives/f410b25cce10902651591b3b981f02322b7534b4838fbc12601572213d7e29a0.zip",
+          "ArchiveSHA256": "f410b25cce10902651591b3b981f02322b7534b4838fbc12601572213d7e29a0",
+          "ExportSkipCode": "",
+          "OutputName": "story-2.zip",
+          "SourceName": "story-2.zip",
+          "StoryID": 2,
+          "StoryTitle": "Moon still",
+          "StoryUUID": "223e4567-e89b-42d3-a456-426614174000",
+          "TotalBytes": 1292
+        },
+        "OutcomeCode": "filename_conflict",
+        "OutcomeMessage": "A file with this name already exists in the destination.",
+        "PlannedStatus": "conflicted"
+      }
+    ],
+    "report": {
+      "blocked": false,
+      "canExport": true,
+      "collapsedOverlap": 0,
+      "destination": "\u003cexport-destination\u003e",
+      "detectedFormats": [
+        "zip"
+      ],
+      "issues": null,
+      "items": [
+        {
+          "byteSize": 1292,
+          "detectedFormat": "zip",
+          "disposition": "ready",
+          "outputName": "story-5.zip",
+          "storyId": 5,
+          "storyTitle": "Moon excluded",
+          "storyUuid": "523e4567-e89b-42d3-a456-426614174000"
+        },
+        {
+          "byteSize": 1292,
+          "detectedFormat": "zip",
+          "disposition": "skipped",
+          "issue": {
+            "blocks": false,
+            "code": "story_marked_broken",
+            "message": "This story is marked as broken."
+          },
+          "outputName": "story-4.zip",
+          "storyId": 4,
+          "storyTitle": "Moon forest",
+          "storyUuid": "423e4567-e89b-42d3-a456-426614174000"
+        },
+        {
+          "byteSize": 1292,
+          "detectedFormat": "zip",
+          "disposition": "conflicted",
+          "issue": {
+            "blocks": false,
+            "code": "filename_conflict",
+            "message": "A file with this name already exists in the destination."
+          },
+          "outputName": "story-2.zip",
+          "storyId": 2,
+          "storyTitle": "Moon still",
+          "storyUuid": "223e4567-e89b-42d3-a456-426614174000"
+        }
+      ],
+      "partial": true,
+      "readyCount": 1,
+      "resolvedCount": 3,
+      "source": {
+        "type": "current_query"
+      },
+      "totalBytes": 1292
+    },
+    "request": {
+      "includeBroken": false,
+      "query": {
+        "booleanFilters": null,
+        "choiceFilters": null,
+        "compatibilities": null,
+        "languages": null,
+        "name": "moon",
+        "page": 0,
+        "pageSize": 0,
+        "sort": ""
+      },
+      "sourceType": "current_query"
+    }
+  },
+  {
+    "operationItems": [
+      {
+        "Item": {
+          "ArchiveRelativePath": "archives/f0b0371c3b9c9773085653f76f64d210396b2a7feb857aa17b124249c1b50baa.zip",
+          "ArchiveSHA256": "f0b0371c3b9c9773085653f76f64d210396b2a7feb857aa17b124249c1b50baa",
+          "ExportSkipCode": "",
+          "OutputName": "story-5.zip",
+          "SourceName": "story-5.zip",
+          "StoryID": 5,
+          "StoryTitle": "Moon excluded",
+          "StoryUUID": "523e4567-e89b-42d3-a456-426614174000",
+          "TotalBytes": 1292
+        },
+        "OutcomeCode": "",
+        "OutcomeMessage": "",
+        "PlannedStatus": "pending"
+      },
+      {
+        "Item": {
+          "ArchiveRelativePath": "archives/ff62794cc6fc1bfb4f365d5f0f68bd93047eaac9168508503fd5d0721f04ee2d.zip",
+          "ArchiveSHA256": "ff62794cc6fc1bfb4f365d5f0f68bd93047eaac9168508503fd5d0721f04ee2d",
+          "ExportSkipCode": "story_marked_broken",
+          "OutputName": "story-4.zip",
+          "SourceName": "story-4.zip",
+          "StoryID": 4,
+          "StoryTitle": "Moon forest",
+          "StoryUUID": "423e4567-e89b-42d3-a456-426614174000",
+          "TotalBytes": 0
+        },
+        "OutcomeCode": "story_marked_broken",
+        "OutcomeMessage": "This story is marked as broken.",
+        "PlannedStatus": "skipped"
+      },
+      {
+        "Item": {
+          "ArchiveRelativePath": "archives/f410b25cce10902651591b3b981f02322b7534b4838fbc12601572213d7e29a0.zip",
+          "ArchiveSHA256": "f410b25cce10902651591b3b981f02322b7534b4838fbc12601572213d7e29a0",
+          "ExportSkipCode": "",
+          "OutputName": "story-2.zip",
+          "SourceName": "story-2.zip",
+          "StoryID": 2,
+          "StoryTitle": "Moon still",
+          "StoryUUID": "223e4567-e89b-42d3-a456-426614174000",
+          "TotalBytes": 1292
+        },
+        "OutcomeCode": "filename_conflict",
+        "OutcomeMessage": "A file with this name already exists in the destination.",
+        "PlannedStatus": "conflicted"
+      }
+    ],
+    "report": {
+      "blocked": false,
+      "canExport": true,
+      "collapsedOverlap": 0,
+      "destination": "\u003cexport-destination\u003e",
+      "detectedFormats": [
+        "zip"
+      ],
+      "issues": null,
+      "items": [
+        {
+          "byteSize": 1292,
+          "detectedFormat": "zip",
+          "disposition": "ready",
+          "outputName": "story-5.zip",
+          "storyId": 5,
+          "storyTitle": "Moon excluded",
+          "storyUuid": "523e4567-e89b-42d3-a456-426614174000"
+        },
+        {
+          "byteSize": 1292,
+          "detectedFormat": "zip",
+          "disposition": "skipped",
+          "issue": {
+            "blocks": false,
+            "code": "story_marked_broken",
+            "message": "This story is marked as broken."
+          },
+          "outputName": "story-4.zip",
+          "storyId": 4,
+          "storyTitle": "Moon forest",
+          "storyUuid": "423e4567-e89b-42d3-a456-426614174000"
+        },
+        {
+          "byteSize": 1292,
+          "detectedFormat": "zip",
+          "disposition": "conflicted",
+          "issue": {
+            "blocks": false,
+            "code": "filename_conflict",
+            "message": "A file with this name already exists in the destination."
+          },
+          "outputName": "story-2.zip",
+          "storyId": 2,
+          "storyTitle": "Moon still",
+          "storyUuid": "223e4567-e89b-42d3-a456-426614174000"
+        }
+      ],
+      "partial": true,
+      "readyCount": 1,
+      "resolvedCount": 3,
+      "source": {
+        "collectionIds": [
+          1
+        ],
+        "collectionNames": [
+          "Moon"
+        ],
+        "type": "collection"
+      },
+      "totalBytes": 1292
+    },
+    "request": {
+      "collectionIds": [
+        1
+      ],
+      "includeBroken": false,
+      "query": {
+        "booleanFilters": null,
+        "choiceFilters": null,
+        "compatibilities": null,
+        "languages": null,
+        "name": "",
+        "page": 0,
+        "pageSize": 0,
+        "sort": ""
+      },
+      "sourceType": "collection"
+    }
+  },
+  {
+    "operationItems": [
+      {
+        "Item": {
+          "ArchiveRelativePath": "archives/f0b0371c3b9c9773085653f76f64d210396b2a7feb857aa17b124249c1b50baa.zip",
+          "ArchiveSHA256": "f0b0371c3b9c9773085653f76f64d210396b2a7feb857aa17b124249c1b50baa",
+          "ExportSkipCode": "",
+          "OutputName": "story-5.zip",
+          "SourceName": "story-5.zip",
+          "StoryID": 5,
+          "StoryTitle": "Moon excluded",
+          "StoryUUID": "523e4567-e89b-42d3-a456-426614174000",
+          "TotalBytes": 1292
+        },
+        "OutcomeCode": "",
+        "OutcomeMessage": "",
+        "PlannedStatus": "pending"
+      },
+      {
+        "Item": {
+          "ArchiveRelativePath": "archives/ff62794cc6fc1bfb4f365d5f0f68bd93047eaac9168508503fd5d0721f04ee2d.zip",
+          "ArchiveSHA256": "ff62794cc6fc1bfb4f365d5f0f68bd93047eaac9168508503fd5d0721f04ee2d",
+          "ExportSkipCode": "story_marked_broken",
+          "OutputName": "story-4.zip",
+          "SourceName": "story-4.zip",
+          "StoryID": 4,
+          "StoryTitle": "Moon forest",
+          "StoryUUID": "423e4567-e89b-42d3-a456-426614174000",
+          "TotalBytes": 0
+        },
+        "OutcomeCode": "story_marked_broken",
+        "OutcomeMessage": "This story is marked as broken.",
+        "PlannedStatus": "skipped"
+      },
+      {
+        "Item": {
+          "ArchiveRelativePath": "archives/f410b25cce10902651591b3b981f02322b7534b4838fbc12601572213d7e29a0.zip",
+          "ArchiveSHA256": "f410b25cce10902651591b3b981f02322b7534b4838fbc12601572213d7e29a0",
+          "ExportSkipCode": "",
+          "OutputName": "story-2.zip",
+          "SourceName": "story-2.zip",
+          "StoryID": 2,
+          "StoryTitle": "Moon still",
+          "StoryUUID": "223e4567-e89b-42d3-a456-426614174000",
+          "TotalBytes": 1292
+        },
+        "OutcomeCode": "filename_conflict",
+        "OutcomeMessage": "A file with this name already exists in the destination.",
+        "PlannedStatus": "conflicted"
+      }
+    ],
+    "report": {
+      "blocked": false,
+      "canExport": true,
+      "collapsedOverlap": 1,
+      "destination": "\u003cexport-destination\u003e",
+      "detectedFormats": [
+        "zip"
+      ],
+      "issues": null,
+      "items": [
+        {
+          "byteSize": 1292,
+          "detectedFormat": "zip",
+          "disposition": "ready",
+          "outputName": "story-5.zip",
+          "storyId": 5,
+          "storyTitle": "Moon excluded",
+          "storyUuid": "523e4567-e89b-42d3-a456-426614174000"
+        },
+        {
+          "byteSize": 1292,
+          "detectedFormat": "zip",
+          "disposition": "skipped",
+          "issue": {
+            "blocks": false,
+            "code": "story_marked_broken",
+            "message": "This story is marked as broken."
+          },
+          "outputName": "story-4.zip",
+          "storyId": 4,
+          "storyTitle": "Moon forest",
+          "storyUuid": "423e4567-e89b-42d3-a456-426614174000"
+        },
+        {
+          "byteSize": 1292,
+          "detectedFormat": "zip",
+          "disposition": "conflicted",
+          "issue": {
+            "blocks": false,
+            "code": "filename_conflict",
+            "message": "A file with this name already exists in the destination."
+          },
+          "outputName": "story-2.zip",
+          "storyId": 2,
+          "storyTitle": "Moon still",
+          "storyUuid": "223e4567-e89b-42d3-a456-426614174000"
+        }
+      ],
+      "partial": true,
+      "readyCount": 1,
+      "resolvedCount": 3,
+      "source": {
+        "collectionIds": [
+          1,
+          2
+        ],
+        "collectionNames": [
+          "Moon",
+          "Forest"
+        ],
+        "type": "collections"
+      },
+      "totalBytes": 1292
+    },
+    "request": {
+      "collectionIds": [
+        1,
+        2
+      ],
+      "includeBroken": false,
+      "query": {
+        "booleanFilters": null,
+        "choiceFilters": null,
+        "compatibilities": null,
+        "languages": null,
+        "name": "",
+        "page": 0,
+        "pageSize": 0,
+        "sort": ""
+      },
+      "sourceType": "collections"
+    }
+  },
+  {
+    "operationItems": [
+      {
+        "Item": {
+          "ArchiveRelativePath": "archives/f6c1647ae18c7b94580a8805880ac3c236b27b68cf44129d41c5f4648ff08443.zip",
+          "ArchiveSHA256": "f6c1647ae18c7b94580a8805880ac3c236b27b68cf44129d41c5f4648ff08443",
+          "ExportSkipCode": "story_marked_broken",
+          "OutputName": "story-1.zip",
+          "SourceName": "story-1.zip",
+          "StoryID": 1,
+          "StoryTitle": "Old ocean",
+          "StoryUUID": "123e4567-e89b-42d3-a456-426614174000",
+          "TotalBytes": 0
+        },
+        "OutcomeCode": "story_marked_broken",
+        "OutcomeMessage": "This story is marked as broken.",
+        "PlannedStatus": "skipped"
+      },
+      {
+        "Item": {
+          "ArchiveRelativePath": "archives/f410b25cce10902651591b3b981f02322b7534b4838fbc12601572213d7e29a0.zip",
+          "ArchiveSHA256": "f410b25cce10902651591b3b981f02322b7534b4838fbc12601572213d7e29a0",
+          "ExportSkipCode": "",
+          "OutputName": "story-2.zip",
+          "SourceName": "story-2.zip",
+          "StoryID": 2,
+          "StoryTitle": "Moon still",
+          "StoryUUID": "223e4567-e89b-42d3-a456-426614174000",
+          "TotalBytes": 1292
+        },
+        "OutcomeCode": "filename_conflict",
+        "OutcomeMessage": "A file with this name already exists in the destination.",
+        "PlannedStatus": "conflicted"
+      },
+      {
+        "Item": {
+          "ArchiveRelativePath": "archives/8d81e28a0e11786c91b6f804ee3a3b1c166507be676d629b9abb554e78afffae.zip",
+          "ArchiveSHA256": "8d81e28a0e11786c91b6f804ee3a3b1c166507be676d629b9abb554e78afffae",
+          "ExportSkipCode": "",
+          "OutputName": "story-3.zip",
+          "SourceName": "story-3.zip",
+          "StoryID": 3,
+          "StoryTitle": "Manual ocean",
+          "StoryUUID": "323e4567-e89b-42d3-a456-426614174000",
+          "TotalBytes": 1292
+        },
+        "OutcomeCode": "",
+        "OutcomeMessage": "",
+        "PlannedStatus": "pending"
+      },
+      {
+        "Item": {
+          "ArchiveRelativePath": "",
+          "ArchiveSHA256": "",
+          "ExportSkipCode": "story_unavailable",
+          "OutputName": "",
+          "SourceName": "Unavailable",
+          "StoryID": 0,
+          "StoryTitle": "Unavailable",
+          "StoryUUID": "623e4567-e89b-42d3-a456-426614174000",
+          "TotalBytes": 0
+        },
+        "OutcomeCode": "story_unavailable",
+        "OutcomeMessage": "This approved story is unavailable in the library.",
+        "PlannedStatus": "skipped"
+      }
+    ],
+    "report": {
+      "blocked": false,
+      "canExport": true,
+      "collapsedOverlap": 0,
+      "destination": "\u003cexport-destination\u003e",
+      "detectedFormats": [
+        "",
+        "zip"
+      ],
+      "issues": null,
+      "items": [
+        {
+          "byteSize": 1292,
+          "detectedFormat": "zip",
+          "disposition": "skipped",
+          "issue": {
+            "blocks": false,
+            "code": "story_marked_broken",
+            "message": "This story is marked as broken."
+          },
+          "outputName": "story-1.zip",
+          "storyId": 1,
+          "storyTitle": "Old ocean",
+          "storyUuid": "123e4567-e89b-42d3-a456-426614174000"
+        },
+        {
+          "byteSize": 1292,
+          "detectedFormat": "zip",
+          "disposition": "conflicted",
+          "issue": {
+            "blocks": false,
+            "code": "filename_conflict",
+            "message": "A file with this name already exists in the destination."
+          },
+          "outputName": "story-2.zip",
+          "storyId": 2,
+          "storyTitle": "Moon still",
+          "storyUuid": "223e4567-e89b-42d3-a456-426614174000"
+        },
+        {
+          "byteSize": 1292,
+          "detectedFormat": "zip",
+          "disposition": "ready",
+          "outputName": "story-3.zip",
+          "storyId": 3,
+          "storyTitle": "Manual ocean",
+          "storyUuid": "323e4567-e89b-42d3-a456-426614174000"
+        },
+        {
+          "byteSize": 0,
+          "detectedFormat": "",
+          "disposition": "skipped",
+          "issue": {
+            "blocks": false,
+            "code": "story_unavailable",
+            "message": "This approved story is unavailable in the library."
+          },
+          "outputName": "",
+          "storyId": 0,
+          "storyTitle": "Unavailable",
+          "storyUuid": "623e4567-e89b-42d3-a456-426614174000"
+        }
+      ],
+      "partial": true,
+      "readyCount": 1,
+      "resolvedCount": 4,
+      "source": {
+        "shelfIds": [
+          1
+        ],
+        "shelfNames": [
+          "Approved"
+        ],
+        "type": "curated_shelf"
+      },
+      "totalBytes": 1292
+    },
+    "request": {
+      "includeBroken": false,
+      "query": {
+        "booleanFilters": null,
+        "choiceFilters": null,
+        "compatibilities": null,
+        "languages": null,
+        "name": "",
+        "page": 0,
+        "pageSize": 0,
+        "sort": ""
+      },
+      "shelfIds": [
+        1
+      ],
+      "sourceType": "curated_shelf"
+    }
+  },
+  {
+    "operationItems": [
+      {
+        "Item": {
+          "ArchiveRelativePath": "archives/f6c1647ae18c7b94580a8805880ac3c236b27b68cf44129d41c5f4648ff08443.zip",
+          "ArchiveSHA256": "f6c1647ae18c7b94580a8805880ac3c236b27b68cf44129d41c5f4648ff08443",
+          "ExportSkipCode": "story_marked_broken",
+          "OutputName": "story-1.zip",
+          "SourceName": "story-1.zip",
+          "StoryID": 1,
+          "StoryTitle": "Old ocean",
+          "StoryUUID": "123e4567-e89b-42d3-a456-426614174000",
+          "TotalBytes": 0
+        },
+        "OutcomeCode": "story_marked_broken",
+        "OutcomeMessage": "This story is marked as broken.",
+        "PlannedStatus": "skipped"
+      },
+      {
+        "Item": {
+          "ArchiveRelativePath": "archives/f410b25cce10902651591b3b981f02322b7534b4838fbc12601572213d7e29a0.zip",
+          "ArchiveSHA256": "f410b25cce10902651591b3b981f02322b7534b4838fbc12601572213d7e29a0",
+          "ExportSkipCode": "",
+          "OutputName": "story-2.zip",
+          "SourceName": "story-2.zip",
+          "StoryID": 2,
+          "StoryTitle": "Moon still",
+          "StoryUUID": "223e4567-e89b-42d3-a456-426614174000",
+          "TotalBytes": 1292
+        },
+        "OutcomeCode": "filename_conflict",
+        "OutcomeMessage": "A file with this name already exists in the destination.",
+        "PlannedStatus": "conflicted"
+      },
+      {
+        "Item": {
+          "ArchiveRelativePath": "archives/8d81e28a0e11786c91b6f804ee3a3b1c166507be676d629b9abb554e78afffae.zip",
+          "ArchiveSHA256": "8d81e28a0e11786c91b6f804ee3a3b1c166507be676d629b9abb554e78afffae",
+          "ExportSkipCode": "",
+          "OutputName": "story-3.zip",
+          "SourceName": "story-3.zip",
+          "StoryID": 3,
+          "StoryTitle": "Manual ocean",
+          "StoryUUID": "323e4567-e89b-42d3-a456-426614174000",
+          "TotalBytes": 1292
+        },
+        "OutcomeCode": "",
+        "OutcomeMessage": "",
+        "PlannedStatus": "pending"
+      },
+      {
+        "Item": {
+          "ArchiveRelativePath": "",
+          "ArchiveSHA256": "",
+          "ExportSkipCode": "story_unavailable",
+          "OutputName": "",
+          "SourceName": "Unavailable",
+          "StoryID": 0,
+          "StoryTitle": "Unavailable",
+          "StoryUUID": "623e4567-e89b-42d3-a456-426614174000",
+          "TotalBytes": 0
+        },
+        "OutcomeCode": "story_unavailable",
+        "OutcomeMessage": "This approved story is unavailable in the library.",
+        "PlannedStatus": "skipped"
+      }
+    ],
+    "report": {
+      "blocked": false,
+      "canExport": true,
+      "collapsedOverlap": 4,
+      "destination": "\u003cexport-destination\u003e",
+      "detectedFormats": [
+        "",
+        "zip"
+      ],
+      "issues": null,
+      "items": [
+        {
+          "byteSize": 1292,
+          "detectedFormat": "zip",
+          "disposition": "skipped",
+          "issue": {
+            "blocks": false,
+            "code": "story_marked_broken",
+            "message": "This story is marked as broken."
+          },
+          "outputName": "story-1.zip",
+          "storyId": 1,
+          "storyTitle": "Old ocean",
+          "storyUuid": "123e4567-e89b-42d3-a456-426614174000"
+        },
+        {
+          "byteSize": 1292,
+          "detectedFormat": "zip",
+          "disposition": "conflicted",
+          "issue": {
+            "blocks": false,
+            "code": "filename_conflict",
+            "message": "A file with this name already exists in the destination."
+          },
+          "outputName": "story-2.zip",
+          "storyId": 2,
+          "storyTitle": "Moon still",
+          "storyUuid": "223e4567-e89b-42d3-a456-426614174000"
+        },
+        {
+          "byteSize": 1292,
+          "detectedFormat": "zip",
+          "disposition": "ready",
+          "outputName": "story-3.zip",
+          "storyId": 3,
+          "storyTitle": "Manual ocean",
+          "storyUuid": "323e4567-e89b-42d3-a456-426614174000"
+        },
+        {
+          "byteSize": 0,
+          "detectedFormat": "",
+          "disposition": "skipped",
+          "issue": {
+            "blocks": false,
+            "code": "story_unavailable",
+            "message": "This approved story is unavailable in the library."
+          },
+          "outputName": "",
+          "storyId": 0,
+          "storyTitle": "Unavailable",
+          "storyUuid": "623e4567-e89b-42d3-a456-426614174000"
+        }
+      ],
+      "partial": true,
+      "readyCount": 1,
+      "resolvedCount": 4,
+      "source": {
+        "shelfIds": [
+          1,
+          2
+        ],
+        "shelfNames": [
+          "Approved",
+          "Independent copy"
+        ],
+        "type": "curated_shelves"
+      },
+      "totalBytes": 1292
+    },
+    "request": {
+      "includeBroken": false,
+      "query": {
+        "booleanFilters": null,
+        "choiceFilters": null,
+        "compatibilities": null,
+        "languages": null,
+        "name": "",
+        "page": 0,
+        "pageSize": 0,
+        "sort": ""
+      },
+      "shelfIds": [
+        1,
+        2
+      ],
+      "sourceType": "curated_shelves"
+    }
+  },
+  {
+    "operationItems": [
+      {
+        "Item": {
+          "ArchiveRelativePath": "archives/f6c1647ae18c7b94580a8805880ac3c236b27b68cf44129d41c5f4648ff08443.zip",
+          "ArchiveSHA256": "f6c1647ae18c7b94580a8805880ac3c236b27b68cf44129d41c5f4648ff08443",
+          "ExportSkipCode": "story_marked_broken",
+          "OutputName": "story-1.zip",
+          "SourceName": "story-1.zip",
+          "StoryID": 1,
+          "StoryTitle": "Old ocean",
+          "StoryUUID": "123e4567-e89b-42d3-a456-426614174000",
+          "TotalBytes": 0
+        },
+        "OutcomeCode": "story_marked_broken",
+        "OutcomeMessage": "This story is marked as broken.",
+        "PlannedStatus": "skipped"
+      },
+      {
+        "Item": {
+          "ArchiveRelativePath": "archives/8d81e28a0e11786c91b6f804ee3a3b1c166507be676d629b9abb554e78afffae.zip",
+          "ArchiveSHA256": "8d81e28a0e11786c91b6f804ee3a3b1c166507be676d629b9abb554e78afffae",
+          "ExportSkipCode": "",
+          "OutputName": "story-3.zip",
+          "SourceName": "story-3.zip",
+          "StoryID": 3,
+          "StoryTitle": "Manual ocean",
+          "StoryUUID": "323e4567-e89b-42d3-a456-426614174000",
+          "TotalBytes": 1292
+        },
+        "OutcomeCode": "",
+        "OutcomeMessage": "",
+        "PlannedStatus": "pending"
+      }
+    ],
+    "report": {
+      "blocked": false,
+      "canExport": true,
+      "collapsedOverlap": 0,
+      "destination": "\u003cexport-destination\u003e",
+      "detectedFormats": [
+        "zip"
+      ],
+      "issues": null,
+      "items": [
+        {
+          "byteSize": 1292,
+          "detectedFormat": "zip",
+          "disposition": "skipped",
+          "issue": {
+            "blocks": false,
+            "code": "story_marked_broken",
+            "message": "This story is marked as broken."
+          },
+          "outputName": "story-1.zip",
+          "storyId": 1,
+          "storyTitle": "Old ocean",
+          "storyUuid": "123e4567-e89b-42d3-a456-426614174000"
+        },
+        {
+          "byteSize": 1292,
+          "detectedFormat": "zip",
+          "disposition": "ready",
+          "outputName": "story-3.zip",
+          "storyId": 3,
+          "storyTitle": "Manual ocean",
+          "storyUuid": "323e4567-e89b-42d3-a456-426614174000"
+        }
+      ],
+      "partial": true,
+      "readyCount": 1,
+      "resolvedCount": 2,
+      "source": {
+        "type": "current_query"
+      },
+      "totalBytes": 1292
+    },
+    "request": {
+      "includeBroken": false,
+      "query": {
+        "booleanFilters": null,
+        "choiceFilters": null,
+        "compatibilities": null,
+        "languages": null,
+        "name": "ocean",
+        "page": 0,
+        "pageSize": 0,
+        "sort": ""
+      },
+      "queryShelfId": 1,
+      "sourceType": "current_query"
+    }
+  },
+  {
+    "operationItems": [
+      {
+        "Item": {
+          "ArchiveRelativePath": "",
+          "ArchiveSHA256": "",
+          "ExportSkipCode": "story_unavailable",
+          "OutputName": "",
+          "SourceName": "Unavailable",
+          "StoryID": 0,
+          "StoryTitle": "Unavailable",
+          "StoryUUID": "623e4567-e89b-42d3-a456-426614174000",
+          "TotalBytes": 0
+        },
+        "OutcomeCode": "story_unavailable",
+        "OutcomeMessage": "This approved story is unavailable in the library.",
+        "PlannedStatus": "skipped"
+      }
+    ],
+    "report": {
+      "blocked": true,
+      "canExport": false,
+      "collapsedOverlap": 0,
+      "destination": "\u003cexport-destination\u003e",
+      "detectedFormats": [
+        ""
+      ],
+      "issues": [
+        {
+          "blocks": true,
+          "code": "no_exportable_stories",
+          "message": "No stories in this scope are currently exportable. Review the story checks below for the reasons."
+        }
+      ],
+      "items": [
+        {
+          "byteSize": 0,
+          "detectedFormat": "",
+          "disposition": "skipped",
+          "issue": {
+            "blocks": false,
+            "code": "story_unavailable",
+            "message": "This approved story is unavailable in the library."
+          },
+          "outputName": "",
+          "storyId": 0,
+          "storyTitle": "Unavailable",
+          "storyUuid": "623e4567-e89b-42d3-a456-426614174000"
+        }
+      ],
+      "partial": true,
+      "readyCount": 0,
+      "resolvedCount": 1,
+      "source": {
+        "type": "selection"
+      },
+      "totalBytes": 0
+    },
+    "request": {
+      "includeBroken": false,
+      "query": {
+        "booleanFilters": null,
+        "choiceFilters": null,
+        "compatibilities": null,
+        "languages": null,
+        "name": "",
+        "page": 0,
+        "pageSize": 0,
+        "sort": ""
+      },
+      "queryShelfId": 1,
+      "shelfSelectionUuids": [
+        "623e4567-e89b-42d3-a456-426614174000"
+      ],
+      "sourceType": "selection"
+    }
+  },
+  {
+    "operationItems": [
+      {
+        "Item": {
+          "ArchiveRelativePath": "archives/f6c1647ae18c7b94580a8805880ac3c236b27b68cf44129d41c5f4648ff08443.zip",
+          "ArchiveSHA256": "f6c1647ae18c7b94580a8805880ac3c236b27b68cf44129d41c5f4648ff08443",
+          "ExportSkipCode": "story_marked_broken",
+          "OutputName": "story-1.zip",
+          "SourceName": "story-1.zip",
+          "StoryID": 1,
+          "StoryTitle": "Old ocean",
+          "StoryUUID": "123e4567-e89b-42d3-a456-426614174000",
+          "TotalBytes": 0
+        },
+        "OutcomeCode": "story_marked_broken",
+        "OutcomeMessage": "This story is marked as broken.",
+        "PlannedStatus": "skipped"
+      },
+      {
+        "Item": {
+          "ArchiveRelativePath": "archives/ff62794cc6fc1bfb4f365d5f0f68bd93047eaac9168508503fd5d0721f04ee2d.zip",
+          "ArchiveSHA256": "ff62794cc6fc1bfb4f365d5f0f68bd93047eaac9168508503fd5d0721f04ee2d",
+          "ExportSkipCode": "story_marked_broken",
+          "OutputName": "story-4.zip",
+          "SourceName": "story-4.zip",
+          "StoryID": 4,
+          "StoryTitle": "Moon forest",
+          "StoryUUID": "423e4567-e89b-42d3-a456-426614174000",
+          "TotalBytes": 0
+        },
+        "OutcomeCode": "story_marked_broken",
+        "OutcomeMessage": "This story is marked as broken.",
+        "PlannedStatus": "skipped"
+      }
+    ],
+    "report": {
+      "blocked": true,
+      "canExport": false,
+      "collapsedOverlap": 0,
+      "destination": "\u003cexport-destination\u003e",
+      "detectedFormats": [
+        "zip"
+      ],
+      "issues": [
+        {
+          "blocks": true,
+          "code": "no_exportable_stories",
+          "message": "No stories in this scope are currently exportable. Review the story checks below for the reasons."
+        }
+      ],
+      "items": [
+        {
+          "byteSize": 1292,
+          "detectedFormat": "zip",
+          "disposition": "skipped",
+          "issue": {
+            "blocks": false,
+            "code": "story_marked_broken",
+            "message": "This story is marked as broken."
+          },
+          "outputName": "story-1.zip",
+          "storyId": 1,
+          "storyTitle": "Old ocean",
+          "storyUuid": "123e4567-e89b-42d3-a456-426614174000"
+        },
+        {
+          "byteSize": 1292,
+          "detectedFormat": "zip",
+          "disposition": "skipped",
+          "issue": {
+            "blocks": false,
+            "code": "story_marked_broken",
+            "message": "This story is marked as broken."
+          },
+          "outputName": "story-4.zip",
+          "storyId": 4,
+          "storyTitle": "Moon forest",
+          "storyUuid": "423e4567-e89b-42d3-a456-426614174000"
+        }
+      ],
+      "partial": true,
+      "readyCount": 0,
+      "resolvedCount": 2,
+      "source": {
+        "type": "selection"
+      },
+      "totalBytes": 0
+    },
+    "request": {
+      "includeBroken": false,
+      "query": {
+        "booleanFilters": null,
+        "choiceFilters": null,
+        "compatibilities": null,
+        "languages": null,
+        "name": "",
+        "page": 0,
+        "pageSize": 0,
+        "sort": ""
+      },
+      "sourceType": "selection",
+      "storyIds": [
+        1,
+        4
+      ]
+    }
+  }
+]

@@ -1,0 +1,223 @@
+--- before/specs/curated-shelves/spec.md
++++ after/specs/curated-shelves/spec.md
+@@ -26,7 +26,7 @@
+ - **THEN** only that Shelf and its membership/source/decision records are removed
+ 
+ ### Requirement: Explicit initial seeding
+-The system SHALL permit Shelf creation from manually selected stories, one or more Collection sources, or both, and SHALL display the deduplicated proposed initial members before a deliberate Create with N stories action. Linking a source alone SHALL NOT insert its matches. Manual seeds SHALL be protected; accepted source-only seeds SHALL retain source attribution. Overlapping manual/source seeds SHALL remain protected.
++The system SHALL permit Shelf creation from manually selected stories, one or more Collection sources, or both, and SHALL display the deduplicated proposed initial members before a deliberate Create with N stories action. Linking a source alone SHALL NOT insert its matches. Manual seeds SHALL be retained independently of source matching; accepted source-only seeds SHALL retain source attribution. Overlapping manual/source seeds SHALL retain their manual-retention decision.
+ 
+ #### Scenario: Collection-backed Shelf is created
+ - **WHEN** the user previews sources, selects initial members, and confirms Create with N stories
+@@ -40,35 +40,39 @@
+ - **WHEN** a user confirms a new Collection source without approving initial additions
+ - **THEN** the source is attached and membership is unchanged
+ 
+-### Requirement: Manual curation and protection
+-The system SHALL support explicit single/bulk manual additions, removals, protection changes, and member reordering. Manual addition SHALL protect the story, including an existing source-derived member, and clear an existing exclusion. New members SHALL append in stable approved order. View-only filtering/sorting SHALL NOT persist membership changes. Source-less Shelves SHALL retain protected membership.
++### Requirement: Manual curation and retention
++The system SHALL support explicit single/bulk manual additions, removals and member reordering without a user-facing protection flag or toggle. Manual addition SHALL record independent retention, including for an existing source-derived member, and clear an existing exclusion. Every approved story SHALL remain until explicit removal. New members SHALL append in stable approved order. View-only filtering/sorting SHALL NOT persist membership changes. Source-less Shelves SHALL retain their approved membership. Historical protection fields SHALL remain lossless internal compatibility data.
+ 
+ #### Scenario: User adds a story already supplied by a source
+ - **WHEN** the user explicitly adds an existing source-derived member manually
+-- **THEN** its existing membership becomes protected without duplication
++- **THEN** its existing membership acquires manual retention without duplication
+ 
+ #### Scenario: User keeps a removal candidate
+ - **WHEN** the user applies Keep for a proposed removal
+-- **THEN** the story remains and becomes protected against future source-based removal proposals
++- **THEN** the story remains with a manual Keep decision against future source-based removal proposals
+ 
+-#### Scenario: User removes protection
+-- **WHEN** the user unprotects a member on a sourced Shelf
+-- **THEN** it remains a member and becomes eligible for subsequent source-based review
++#### Scenario: User inspects membership actions
++- **WHEN** the user opens approved membership actions
++- **THEN** no protection or unprotect setting is exposed, and removal and exclusion remain explicit separate decisions
+ 
+ #### Scenario: User refines or reorders the view
+ - **WHEN** a user searches, filters, or sorts within a Shelf, or explicitly reorders its members
+ - **THEN** view refinements leave stored contents/order unchanged, while an explicit member reorder changes only the approved order
+ 
+ ### Requirement: Persistent exclusions and reversible decisions
+-The system SHALL store Shelf-level UUID exclusions separately from membership. Manual and approved review removals SHALL create exclusions by default with explicit Remove and exclude from suggestions wording. Exclusions SHALL suppress proposals across every source until explicitly cleared. Clearing an exclusion SHALL NOT add membership; deferring SHALL persist neither exclusion nor protection.
++The system SHALL store Shelf-level UUID exclusions separately from membership. Ordinary Remove selected SHALL remove membership only and SHALL NOT create an exclusion. Exclude from suggestions and review Remove and exclude SHALL be separate explicit actions. Historical exclusions SHALL persist until explicitly reversed. Exclusions SHALL suppress proposals across every source until explicitly cleared. Clearing an exclusion SHALL NOT add membership; deferring SHALL persist neither exclusion nor manual retention.
+ 
+ #### Scenario: User rejects an addition permanently
+ - **WHEN** the user applies Exclude for a proposed addition
+ - **THEN** the UUID is excluded and later source matches do not propose it again
+ 
+-#### Scenario: User removes a matching member
++#### Scenario: User removes a matching member ordinarily
++- **WHEN** the user confirms Remove selected
++- **THEN** the UUID leaves membership without a new exclusion and may be suggested and accepted again
++
++#### Scenario: User explicitly removes and excludes a matching member
+ - **WHEN** the user confirms Remove and exclude from suggestions
+-- **THEN** the UUID leaves the Shelf and does not immediately return as a source suggestion
++- **THEN** the UUID leaves membership and future source suggestions are suppressed until the exclusion is reversed
+ 
+ #### Scenario: User reverses an exclusion
+ - **WHEN** the user clears an exclusion
+--- before/specs/lunii-metadata-sync/spec.md
++++ after/specs/lunii-metadata-sync/spec.md
+@@ -7,7 +7,7 @@
+ ## Requirements
+ 
+ ### Requirement: Explicit official catalog refresh
+-The system SHALL refresh official metadata only when requested by the user or by a separately configurable schedule, using an isolated client with bounded timeouts and no personal Lunii credentials.
++The system SHALL refresh official metadata only when explicitly requested by the user; no scheduled catalog refresh is provided, using an isolated client with bounded timeouts and no personal Lunii credentials.
+ 
+ #### Scenario: User refreshes successfully
+ - **WHEN** the user requests a refresh and the guest-token and pack-catalog responses are valid
+--- before/specs/shelf-update-reviews/spec.md
++++ after/specs/shelf-update-reviews/spec.md
+@@ -18,7 +18,7 @@
+ - **THEN** the original acceptance attribution remains and current matching sources are evaluated independently
+ 
+ ### Requirement: Nonmutating update evaluation
+-The system SHALL evaluate the deduplicated union of active source results without mutating Shelf membership, protection, exclusions, or origins. It SHALL propose source matches absent from both membership and exclusions as additions, and resolvable unprotected members matching no active source as removals. Broken flags SHALL affect neither set. A Shelf with no sources SHALL produce neither set.
++The system SHALL evaluate the deduplicated union of active source results without mutating Shelf membership, internal manual retention, exclusions, or origins. It SHALL propose source matches absent from both membership and exclusions as additions, and resolvable source-derived members without manual retention matching no active source as removals. Broken flags SHALL affect neither set. A Shelf with no sources SHALL produce neither set.
+ 
+ #### Scenario: Newly matching story is reviewed
+ - **WHEN** a linked Collection matches an unexcluded story absent from the Shelf
+@@ -29,12 +29,12 @@
+ - **THEN** it is not proposed for removal
+ 
+ #### Scenario: No source still matches
+-- **WHEN** a resolvable unprotected member stops matching every active source
++- **WHEN** a resolvable source-derived member without manual retention stops matching every active source
+ - **THEN** it is proposed for removal but remains on the Shelf until approval
+ 
+-#### Scenario: Protected, unavailable, or broken story is reviewed
+-- **WHEN** a story is protected, unavailable, or merely has its broken flag changed
+-- **THEN** protection prevents source removal, unavailability is a separate warning, and the flag alone produces no membership proposal, respectively
++#### Scenario: Manually retained, unavailable, or broken story is reviewed
++- **WHEN** a story is manually retained, unavailable, or merely has its broken flag changed
++- **THEN** manual retention prevents source removal, unavailability is a separate warning, and the flag alone produces no membership proposal, respectively
+ 
+ #### Scenario: Valid review has no candidates
+ - **WHEN** all sources evaluate successfully and both proposal sets are empty
+@@ -52,7 +52,7 @@
+ - **THEN** a fresh review can compute both additions and removals using the complete current union
+ 
+ ### Requirement: Explicit atomic review decisions
+-The system SHALL provide per-item and bulk Add, Exclude, Not now, Remove and exclude, and Keep decisions as applicable, followed by a deliberate Apply approved changes action. No addition/removal SHALL be preapproved by default. It SHALL validate all decisions before atomically applying membership and persistent decisions. Keeping SHALL protect; accepted additions SHALL retain source origins; deferrals SHALL write nothing.
++The system SHALL provide per-item and bulk Add, Exclude, Not now, Remove and exclude, and Keep decisions as applicable, followed by a deliberate Apply approved changes action. No addition/removal SHALL be preapproved by default. It SHALL validate all decisions before atomically applying membership and persistent decisions. Keeping SHALL record manual retention; accepted additions SHALL retain source origins; deferrals SHALL write nothing.
+ 
+ #### Scenario: Mixed decisions are applied
+ - **WHEN** a valid review approves additions, removals, exclusions, keeps, and deferrals
+@@ -74,7 +74,7 @@
+ - **THEN** the old decisions cannot commit and the user is directed to refresh the review
+ 
+ #### Scenario: Concurrent Shelf decision changes
+-- **WHEN** membership, protection, exclusions, or source links change after preview
++- **WHEN** membership, manual retention, exclusions, or source links change after preview
+ - **THEN** applying the old token is rejected without overwriting the newer decision
+ 
+ #### Scenario: Only a broken flag changes
+@@ -82,15 +82,15 @@
+ - **THEN** that flag change alone does not invalidate a membership review or change its candidates
+ 
+ ### Requirement: Reviewed source detachment and Collection deletion
+-The system SHALL preview affected Shelf members before source detachment or linked Collection deletion and SHALL offer Keep all or Review affected stories. Retained stories losing source coverage SHALL become protected through the explicit confirmation; removals SHALL require per-item or bulk approval and create exclusions. Stories still covered by another healthy source SHALL remain source-derived. Uncertain source coverage SHALL prevent inferred removals. Deletion across multiple linked Shelves SHALL apply the reviewed plans and Collection deletion atomically.
++The system SHALL preview affected Shelf members before source detachment or linked Collection deletion and SHALL offer Keep all or Review affected stories. Retained stories losing source coverage SHALL become manually retained through the explicit confirmation; removals SHALL require per-item or bulk approval and create exclusions. Stories still covered by another healthy source SHALL remain source-derived. Uncertain source coverage SHALL prevent inferred removals. Deletion across multiple linked Shelves SHALL apply the reviewed plans and Collection deletion atomically.
+ 
+ #### Scenario: User keeps all while detaching
+ - **WHEN** the user confirms Keep all on a fresh detach plan
+-- **THEN** the link is retired, stories losing coverage are protected, and no approved member is removed
++- **THEN** the link is retired, stories losing coverage acquire manual retention, and no approved member is removed
+ 
+ #### Scenario: Last source is detached
+ - **WHEN** the user confirms a reviewed last-source detachment
+-- **THEN** explicitly removed members are excluded and all remaining members are protected on the resulting manual Shelf
++- **THEN** explicitly removed members are excluded and all remaining members acquire manual retention on the resulting manual Shelf
+ 
+ #### Scenario: Detachment is cancelled or deferred
+ - **WHEN** the user cancels or leaves an affected-member decision deferred
+@@ -102,10 +102,10 @@
+ 
+ #### Scenario: Remaining source is invalid
+ - **WHEN** detachment cannot determine remaining coverage
+-- **THEN** Keep all protects affected members conservatively and coverage-based removal choices remain unavailable
++- **THEN** Keep all records conservative manual retention for affected members and coverage-based removal choices remain unavailable
+ 
+ ### Requirement: On-demand review presentation
+-The system SHALL expose separate additions and removals, story previews, source explanations, warnings, protected/excluded management, and an apply summary. It SHALL distinguish approved member counts from suggestions and SHALL NOT display unevaluated or stale pending counts as current. Initial delivery SHALL evaluate reviews on demand without background membership mutation.
++The system SHALL expose separate additions and removals, story previews, source explanations, warnings, explicit Keep decisions, exclusion management, and an apply summary without a protection toggle. It SHALL distinguish approved member counts from suggestions and SHALL NOT display unevaluated or stale pending counts as current. Initial delivery SHALL evaluate reviews on demand without background membership mutation.
+ 
+ #### Scenario: User opens a Shelf without evaluation
+ - **WHEN** the user browses a Shelf before reviewing current source results
+--- before/specs/story-broken-flag/spec.md
++++ after/specs/story-broken-flag/spec.md
+@@ -53,20 +53,20 @@
+ - **THEN** the operation is rejected without changes and the interface explains why it is unavailable
+ 
+ ### Requirement: Direct flag controls throughout story views
+-The system SHALL offer Mark as broken / Clear broken flag directly on stories in list, small-cover, and large-cover index views, including Collection and curated Shelf previews. A card action SHALL affect only its own story and SHALL be separate from the story selection control. Cover actions SHALL be revealed on hover and keyboard focus, SHALL remain visible for flagged stories, and SHALL always be exposed for non-hover inputs. The selected-story panel SHALL provide single-story actions and explicit bulk actions with selection and flagged counts. Details SHALL provide a separate story warning section with the same single-story actions.
++The system SHALL provide an independent Broken switch in the selected-story panel and details, with bulk selection and flagged counts. The switch SHALL apply to the selected available story or frozen bulk targets. Story cards in List, Small covers and Large covers, including Collection and Shelf previews, SHALL retain warning-only presentation without extra flag action buttons. Details SHALL place the switch outside tag editing. Available Shelf members SHALL expose details and a bulk switch through selection.
+ 
+-#### Scenario: User flags a story from any index view
+-- **WHEN** the user activates Mark as broken on a story in list, small-cover, large-cover, or shelf-preview presentation
+-- **THEN** only that story is flagged without opening details or the tag editor
++#### Scenario: User flags a selected story
++- **WHEN** the user toggles Broken in the selected-story panel or details while using List, Small covers, Large covers or a Shelf view
++- **THEN** only the explicit single-story or selected bulk targets are changed independently of tag editing
+ 
+-#### Scenario: Card action is used during multi-selection
+-- **WHEN** multiple stories are selected and the user activates one card's flag action
+-- **THEN** only the card's story is targeted and the action does not itself replace or expand the selection
++#### Scenario: Bulk switch is used during multi-selection
++- **WHEN** multiple stories are selected and the user toggles the selection's Broken switch
++- **THEN** the explicit selected targets are changed atomically
+ - **AND** flagging alone preserves visible results, membership counts, and selection
+ 
+ #### Scenario: User navigates without hover
+-- **WHEN** the user reaches a cover card with a keyboard or uses a touch/non-hover input
+-- **THEN** its flag action is discoverable and operable with a story-specific accessible name and visible keyboard focus
++- **WHEN** the user selects a story and reaches the panel or details with the keyboard or touch
++- **THEN** the Broken switch has a story-specific accessible name, current state and visible keyboard focus without requiring hover
+ 
+ #### Scenario: User inspects a mixed selection
+ - **WHEN** the selected-story panel represents flagged and unflagged stories
+@@ -92,7 +92,7 @@
+ 
+ #### Scenario: Story is marked or cleared in a view
+ - **WHEN** the user marks or clears a story's broken flag without another membership change
+-- **THEN** its card remains in place, selected state and counts remain stable, and feedback announces the flag change with Undo
++- **THEN** its card remains in place, selected state and counts remain stable, and feedback announces an actual flag change with Undo; closing details clears its local notice
+ 
+ #### Scenario: Story appears in multiple group rows
+ - **WHEN** a visible story's flag changes
+@@ -128,4 +128,4 @@
+ 
+ #### Scenario: Tag ID is reused after migration
+ - **WHEN** a new user tag receives the retired definition's numeric ID
+-- **THEN** supported legacy query versions still interpret the retired reference as a flag criterion and current query versions interpret the new tag reference normally
++- **THEN** supported legacy decoding recognizes and recursively removes retired built-in restrictions without losing unrelated predicates or AND/OR alternatives, while current query versions interpret the new tag reference normally
+--- before/specs/story-tagging/spec.md
++++ after/specs/story-tagging/spec.md
+@@ -68,7 +68,7 @@
+ - **THEN** the system respectively creates or removes the valueless manual assignment for that definition
+ 
+ ### Requirement: Derived system facets are protected
+-The system SHALL display derived tag definitions and values alongside other tags while preventing direct edits, deletion, or manual assignment of derived data.
++The system SHALL display derived tag definitions and values alongside other tags while preventing identity/value edits, deletion, or manual assignment of derived data. Every definition, including protected derived definitions, SHALL permit color changes without changing protected identity or assignment rules. Age SHALL default to green and customized colors SHALL survive seeding and metadata refresh.
+ 
+ #### Scenario: User inspects a derived age value
+ - **WHEN** a story has a metadata-derived age value
+@@ -76,7 +76,7 @@
+ 
+ #### Scenario: User attempts to manage a derived definition
+ - **WHEN** the user opens tag management for a derived definition
+-- **THEN** create, rename, recolor, delete, and manual assignment controls are unavailable for that definition
++- **THEN** create, rename, delete, and manual assignment controls are unavailable while recoloring remains available for that definition
+ 
+ ### Requirement: Destructive tag changes require informed confirmation
+ The system SHALL show the number of affected assignments and saved Collections before deleting a user-defined definition or allowed value, SHALL perform the cascading deletion only after confirmation, and SHALL never offer deletion for a protected derived definition.
+@@ -95,4 +95,4 @@
+ 
+ #### Scenario: Invalidated Collection supplies a curated Shelf
+ - **WHEN** deleting a confirmed tag/value invalidates a linked Collection
+-- **THEN** approved Shelf membership, protection, and exclusions remain unchanged, and subsequent source review follows incomplete-source safeguards
++- **THEN** approved Shelf membership, internal manual-retention state, and exclusions remain unchanged, and subsequent source review follows incomplete-source safeguards

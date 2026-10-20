@@ -1,0 +1,64 @@
+{
+  "id": "b0000000-0000-4000-8000-000000000001",
+  "libraryId": "a0000000-0000-4000-8000-000000000001",
+  "source": "/fixture/source",
+  "destination": "/fixture/destination",
+  "phase": "published",
+  "entries": [
+    {
+      "path": ".librairii-library",
+      "size": 37,
+      "sha256": "757b719cee4ba6b983cb34050a87201e01018ff4d13fca4aecb81d800e1f1753"
+    },
+    {
+      "path": "archives",
+      "size": 0,
+      "directory": true
+    },
+    {
+      "path": "archives/8d81e28a0e11786c91b6f804ee3a3b1c166507be676d629b9abb554e78afffae.zip",
+      "size": 1292,
+      "sha256": "8d81e28a0e11786c91b6f804ee3a3b1c166507be676d629b9abb554e78afffae"
+    },
+    {
+      "path": "archives/f0b0371c3b9c9773085653f76f64d210396b2a7feb857aa17b124249c1b50baa.zip",
+      "size": 1292,
+      "sha256": "f0b0371c3b9c9773085653f76f64d210396b2a7feb857aa17b124249c1b50baa"
+    },
+    {
+      "path": "archives/f410b25cce10902651591b3b981f02322b7534b4838fbc12601572213d7e29a0.zip",
+      "size": 1292,
+      "sha256": "f410b25cce10902651591b3b981f02322b7534b4838fbc12601572213d7e29a0"
+    },
+    {
+      "path": "archives/f6c1647ae18c7b94580a8805880ac3c236b27b68cf44129d41c5f4648ff08443.zip",
+      "size": 1292,
+      "sha256": "f6c1647ae18c7b94580a8805880ac3c236b27b68cf44129d41c5f4648ff08443"
+    },
+    {
+      "path": "archives/ff62794cc6fc1bfb4f365d5f0f68bd93047eaac9168508503fd5d0721f04ee2d.zip",
+      "size": 1292,
+      "sha256": "ff62794cc6fc1bfb4f365d5f0f68bd93047eaac9168508503fd5d0721f04ee2d"
+    },
+    {
+      "path": "db",
+      "size": 0,
+      "directory": true
+    },
+    {
+      "path": "db/librairii.sqlite3",
+      "size": 364544,
+      "sha256": "9f5cf0b372215c4f5a68a11325cccde117cf22dc1d1eeee40d35aec69e52552a"
+    },
+    {
+      "path": "history.json",
+      "size": 1837,
+      "sha256": "c63ab4fdae32e4ef4b7556613eeae77384e16ef0d06dcf91e96ecaeb8e3cd34c"
+    },
+    {
+      "path": "state.json",
+      "size": 54261,
+      "sha256": "a0671937ab1fbaf4c7ab1dbd9c6fa8666c8c5dc66d86c8fb35241856256db677"
+    }
+  ]
+}
