@@ -101,6 +101,71 @@
     {
       "suite": "xtask::bin/xtask",
       "name": "supply_chain::tests::utc_date_uses_utc_midnight_even_for_an_offset_clock_value"
+    },
+    {
+      "suite": "librairii-storage::layout_identity",
+      "name": "a_root_replaced_by_a_symlink_does_not_redirect_old_layout_paths",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::layout_identity",
+      "name": "absent_or_invalid_identity_is_never_silently_replaced"
+    },
+    {
+      "suite": "librairii-storage::layout_identity",
+      "name": "concurrent_initializers_never_replace_the_winning_identity"
+    },
+    {
+      "suite": "librairii-storage::layout_identity",
+      "name": "explicit_override_creates_exact_private_layout_without_profile_access"
+    },
+    {
+      "suite": "librairii-storage::layout_identity",
+      "name": "failed_or_repeated_initialization_keeps_existing_identity_and_bytes"
+    },
+    {
+      "suite": "librairii-storage::layout_identity",
+      "name": "identity_probe_preserves_raw_uuid_spelling_and_file_bytes"
+    },
+    {
+      "suite": "librairii-storage::layout_identity",
+      "name": "isolated_root_keeps_non_utf8_native_path_bytes",
+      "targets": [
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::layout_identity",
+      "name": "managed_paths_retain_go_text_and_resolve_only_contained_components"
+    },
+    {
+      "suite": "librairii-storage::layout_identity",
+      "name": "missing_relative_and_nonfresh_overrides_fail_without_mutation"
+    },
+    {
+      "suite": "librairii-storage::layout_identity",
+      "name": "probing_never_initializes_an_absent_directory"
+    },
+    {
+      "suite": "librairii-storage::layout_identity",
+      "name": "symlinked_root_identity_and_managed_ancestors_are_refused",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::layout_identity",
+      "name": "unrepresentable_native_root_bytes_fail_without_lossy_replacement",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin"
+      ]
     }
   ]
 }

@@ -19,6 +19,7 @@ librairii-desktop = { version = "=0.0.0", path = "crates/librairii-desktop" }
 librairii-testkit = { version = "=0.0.0", path = "crates/librairii-testkit" }
 uuid = { version = "=1.28.0", default-features = false, features = ["std"] }
 thiserror = "=2.0.21"
+rusqlite = { version = "=0.40.2", default-features = false, features = ["bundled", "backup"] }
 
 tempfile = "=3.27.0"
 
