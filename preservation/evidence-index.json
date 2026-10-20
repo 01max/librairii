@@ -4,7 +4,7 @@
   "section": 1,
   "owner": "librairii-3",
   "integration_owner": "librairii-2",
-  "integration_base": "1419f1d7c5236016c0e330056c9eff45931ddf48",
+  "integration_base": "e30453c61e56eb14d5e6f3e581d5c3f5cb065970",
   "scope": "1.1\u20131.9 only; no Rust runtime or section 2",
   "ledger": [
     {
@@ -16,6 +16,11 @@
       "subtask": "1.2",
       "sha": "86c29a7755c770323e60ab9ecac395bd20af0a00",
       "subject": "test(preservation): record Go checks and isolated native app smoke"
+    },
+    {
+      "subtask": "1.3",
+      "sha": "553dbb8e6c2842ac2ecd85e061a027ceb8ef95e4",
+      "subject": "docs(preservation): inventory application contracts and parity ownership"
     }
   ],
   "subtasks": {
@@ -64,8 +69,13 @@
       "evidence": []
     },
     "1.5": {
-      "status": "pending",
-      "evidence": []
+      "status": "implemented",
+      "evidence": [
+        "ui/reference-manifest.json",
+        "ui/native-rendering-contract.md",
+        "ui/approved/manifest.json"
+      ],
+      "verification": "both approved HTML digests match manifest; historical prototype/checksum and 6 current browser screenshots pinned with dimensions; no native screenshot claim"
     },
     "1.6": {
       "status": "pending",
