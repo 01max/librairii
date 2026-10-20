@@ -961,3 +961,96 @@ fn sh_invalid_supplied_scope_returns_original_without_work_or_db_admission() {
     assert!(!outcome.unresolved[0].unknown);
     assert_eq!(store.writes.load(Ordering::Acquire), 0);
 }
+
+#[test]
+fn sh_active_parent_target_terminal_conflict_keeps_actual_item_without_recount_or_finish() {
+    struct ItemConflict<'a> {
+        saved: &'a TerminalView,
+        via_readback: bool,
+        attempts: AtomicUsize,
+        reads: AtomicUsize,
+    }
+    impl OperationTerminalStore for ItemConflict<'_> {
+        fn snapshot(&self, _: &str) -> SnapshotReply {
+            panic!("no pooled snapshot")
+        }
+        fn complete_item(&self, command: &CompleteItemCommand) -> AttemptReply {
+            self.attempts.fetch_add(1, Ordering::AcqRel);
+            AttemptReply {
+                witness: CommandWitness::CompleteItem(Box::new(command.clone())),
+                diagnostic: None,
+                disposition: if self.via_readback {
+                    AttemptDisposition::Unknown(UnknownOutcome::AcknowledgementLost)
+                } else {
+                    AttemptDisposition::TerminalConflict(Box::new(self.saved.clone()))
+                },
+            }
+        }
+        fn finish(&self, _: &FinishCommand) -> AttemptReply {
+            panic!("item conflict is not a Finish plan")
+        }
+        fn interrupt(&self, _: &InterruptCommand) -> AttemptReply {
+            panic!("saved target must not be overwritten")
+        }
+        fn readback(&self, witness: &CommandWitness) -> ReadbackReply {
+            self.reads.fetch_add(1, Ordering::AcqRel);
+            ReadbackReply {
+                witness: witness.clone(),
+                diagnostic: None,
+                disposition: ReadbackDisposition::TerminalConflict(Box::new(self.saved.clone())),
+            }
+        }
+    }
+    // R4 policy::inspect returns Conflict for terminal target OR terminal
+    // parent, after checking immutable inputs and ALL-sibling coherence.
+    for via_readback in [false, true] {
+        let request = request(-7, true);
+        let mut saved = initial(&request);
+        saved.operation.counts.completed = 1;
+        saved.siblings.terminal = 1;
+        let item = saved.item.as_mut().unwrap();
+        item.state = ItemState::Failed;
+        item.identity.story_id = Some(321);
+        item.progress.completed = 6;
+        item.outcome = RawOutcome {
+            code: Some("actual_saved_item".into()),
+            message: Some(String::new()),
+        };
+        let store = ItemConflict {
+            saved: &saved,
+            via_readback,
+            attempts: AtomicUsize::new(0),
+            reads: AtomicUsize::new(0),
+        };
+        let control = RunControl::default();
+        let mut driver = Driver::new(request, 0);
+        driver.accept_work(Ok(completed(&driver.owner.request, &control)), 0);
+        driver.step(&store, &control);
+        if via_readback {
+            driver.step(&store, &control);
+        }
+        assert!(
+            driver.delivery(),
+            "coherent item-only terminal conflict must resolve to actual saved truth"
+        );
+        assert!(!driver.owner.unknown);
+        assert!(!driver.owner.complete_acknowledged);
+        assert!(driver.owner.different_terminal);
+        assert_eq!(driver.owner.view.as_deref(), Some(&saved));
+        assert_eq!(saved.operation.state, OperationState::Running);
+        assert_eq!(saved.operation.identity.finished_at, None);
+        assert!(matches!(
+            driver.owner.witness,
+            CommandWitness::CompleteItem(_)
+        ));
+        assert_eq!(
+            driver.owner.execution.as_ref().unwrap().state,
+            ItemState::Succeeded
+        );
+        assert_eq!(store.attempts.load(Ordering::Acquire), 1);
+        assert_eq!(
+            store.reads.load(Ordering::Acquire),
+            usize::from(via_readback)
+        );
+    }
+}
