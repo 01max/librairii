@@ -2,7 +2,13 @@
 
 Librairii keeps a private, local library of story archives. Importing creates a
 managed copy; it never edits, renames, moves, or deletes the source file you
-selected. This guide describes the behavior of release `0.1.x`.
+selected. This guide describes the current `main` implementation, whose version
+is recorded in [`VERSION`](../VERSION) (currently `0.4.0`).
+
+![Library with Collections, Shelves, filters, and selected-story details](assets/library.png)
+
+Screenshots use synthetic frontend fixtures and generated placeholder artwork.
+See [how to refresh them](assets/README.md).
 
 ## Supported imports
 
@@ -170,6 +176,11 @@ notices hidden. Use Close, Escape, or click outside to return to the collection.
 
 ## Search, Collections, and Shelves
 
+| Organize with… | Membership | Export contents |
+| --- | --- | --- |
+| **Collection** | Current matches for a saved search and filters | Current matches, with ineligible stories skipped |
+| **Shelf** | Stories you explicitly approve | Approved members, with ineligible stories skipped; pending suggestions are excluded |
+
 Name search is a literal, case-insensitive, accent-insensitive substring match
 against the displayed title. `%` and `_` have no wildcard meaning. Name,
 language, archive compatibility, boolean tags, choice tags, and supported
@@ -210,6 +221,8 @@ stay on the Shelf until you explicitly remove them and clear any prior exclusion
 for that UUID. There is no protection setting: every approved story remains in
 place until you approve its removal.
 
+![Curated Shelf in List view with approved, Broken, and unavailable members](assets/curated-shelf.png)
+
 Shelf search, sidebar refinements, and sorting change the view only. They never
 replace approved membership or create source rules. Manual-order arrow buttons
 explicitly reorder members; Rename, Duplicate, and Delete operate on that Shelf.
@@ -225,6 +238,8 @@ persistent exclusion, **Keep** retains a story as a manual choice, and
 Bulk actions are explicit too. Review the final action totals before applying.
 Deferring or cancelling changes nothing. Expired or stale reviews require a
 fresh preview and renewed decisions.
+
+![Shelf source-mismatch review with its decision deferred and no approved changes](assets/shelf-review.png)
 
 Current matching sources explain additions; **Added from** records historical
 acceptance, including detached sources. Manually added or explicitly kept stories
@@ -374,6 +389,8 @@ Open **Librairii → Settings…** (or **⌘,**) on macOS. On Linux use the
 application menu or the gear button in the app. The settings panel is also
 available when the library needs recovery.
 
+![Settings with interface language and library location controls](assets/settings.png)
+
 Choose **Français** or **English** for the interface. Your explicit choice is
 remembered and applies immediately. On first launch, French is selected for a
 French system language; other system languages default to English. This setting
@@ -390,7 +407,7 @@ place automatically.
 To move the library, choose **Change location…**, select an empty folder, review
 the destination and total size, and choose **Move library**. Wait for imports,
 exports, and syncs to finish before starting a move. The move includes the
-database, story archives, tags, shelves, history, covers, catalog snapshots,
+database, story archives, tags, Collections, Shelves, history, covers, catalog snapshots,
 staging, trash, diagnostic logs, and database recovery files. Original source
 archives and previously exported files outside the library remain in place.
 Another library or a nonempty destination cannot be merged or overwritten.

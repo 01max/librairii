@@ -31,12 +31,16 @@ and verifies that the selected source bytes remain unchanged.
 3. Choose **Import stories** and select
    `internal/inspection/testfixture/testdata/generic.7z`.
 4. Observe the nonblocking import state and the new selected cover on the
-   collection shelf.
-5. Choose **Open details** to inspect its UUID, detected format, verification,
-   filename, and checksum.
-6. Choose **Cancel** and verify the story remains.
-7. Open details again, choose **Move to trash**, and verify the collection
-   returns to its empty state.
+   Library view.
+5. Choose **Open details**, then **Show technical details** to inspect its UUID,
+   detected format, verification, filename, and checksum.
+6. Choose **Remove from library…**, then **Keep story** and verify it remains.
+7. Choose **Remove from library…** again, confirm **Move to trash**, and verify
+   the Library returns to its empty state.
+
+The isolated root bypasses first-run setup and leaves your normal library and
+Settings profile untouched. For the current Collection/Shelf workflows, see
+the [user guide](../user-guide.md#search-collections-and-shelves).
 
 The checked-in `generic.7z` fixture is deterministic and synthetic. Import and
 removal never modify it; Librairii operates on its managed copy, and confirmed

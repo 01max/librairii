@@ -1,6 +1,7 @@
 # Release platform matrix
 
-Status date: 2026-07-27
+Workflow reviewed: 2026-10-20. Platform evidence below is recorded separately
+from this documentation review; it is not a new qualification run.
 
 Librairii supports macOS and Linux desktop distributions.
 
@@ -23,7 +24,7 @@ destination, and reveal evidence before domain work may continue.
 
 | Distribution target | Verification host | Artifact | Command | Status |
 | --- | --- | --- | --- | --- |
-| macOS 15, arm64 | macOS 15.7.7 arm64 | versioned DMG | `make verify-packaged-acceptance` | Passed on the current host |
+| macOS 15, arm64 | macOS 15.7.7 arm64 | versioned DMG | `make verify-packaged-acceptance` | Previously passed locally; rerun for each release |
 | Linux x64 with WebKitGTK 4.1 | GitHub-hosted Ubuntu 24.04 x64 under Xvfb | versioned portable `tar.gz` | `make verify-platform-linux` | Host-native CI gate |
 
 The macOS artifact is a signed application bundle in a DMG with an
@@ -53,7 +54,9 @@ artifacts:
    and validate their installed payload.
 5. Launch the installed or packaged executable and require a committed React
    render, a clean lifecycle, and no external sidecar.
-6. Reopen the same SQLite database and require the smoke story and shelves.
+6. Reopen the same SQLite database and require the smoke story and saved
+   Collections (`foundation-smoke` retains the legacy `-expect-shelves` option
+   name for this count).
 7. Run native multi-file, directory, and reveal-adapter acceptance.
 8. Run the complete headless composition and root release contracts.
 9. Remove temporary installed application files without deleting user-owned
@@ -67,3 +70,12 @@ The qualification implementation is:
 - CI orchestration: `.github/workflows/platform-release.yml`.
 
 Failed or cancelled jobs publish no artifact.
+
+## Settings and library relocation
+
+Both packaged verification scripts also run `scripts/verify-settings-acceptance`
+against their platform's application. This covers first-run confirmation,
+English/French Settings menus and accelerators, native folder selection,
+library relocation, and export after a move. macOS evidence and the Linux
+host limitation are recorded in
+[Settings and library location verification](verification/settings-and-library-location.md).

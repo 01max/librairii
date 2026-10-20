@@ -9,10 +9,11 @@
 
 Change: `promote-broken-to-story-flag` (27 implementation subtasks).
 
-The product now stores Broken on the story and offers direct list/cover flag
-actions, separate panel/details warnings, bulk setting/clearing, and guarded
-Undo. Hidden-by-default visibility, Include broken stories, and Broken only
-apply before counts and pagination. Export scope behavior is preserved.
+The original implementation stored Broken on the story and offered direct
+list/cover flag actions, separate panel/details warnings, bulk setting/clearing,
+and guarded Undo. At that stage, hidden-by-default visibility, Include broken
+stories, and Broken only applied before counts and pagination; export scope
+behavior was preserved. These visibility and export policies are historical.
 
 ## Automated behavior coverage
 

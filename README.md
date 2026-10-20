@@ -4,6 +4,10 @@
 
 <h1 align="center">Librairii</h1>
 
+> [!IMPORTANT]
+> While I'm a professional software engineer, this project is an experiment in
+> vibe coding with 6.1 Sol and should be taken as such.
+
 <p align="center">
   <strong>Your stories, beautifully shelved.</strong><br>
   A local-first desktop library for your Lunii story archives.
@@ -23,11 +27,11 @@
 </p>
 
 Bring your story collection together in one place. Inspect archives, find the
-right story, and organize favorites into shelves that update as your library
-grows. When you're ready, export your stories for use with Lunii.QT.
+right story, save dynamic Collections, and curate Shelves whose contents you
+approve. When you're ready, export your stories for use with Lunii.QT.
 
 <p align="center">
-  <a href="docs/assets/library.png"><img src="docs/assets/library.png" width="1000" alt="Librairii library with colorful story covers, saved shelves, age filters, and the selected story's details"></a>
+  <a href="docs/assets/library.png"><img src="docs/assets/library.png" width="1000" alt="Librairii library with colorful story covers, separate Collections and Shelves sections, age filters, and selected-story details"></a>
   <br>
   <sub>The Librairii interface with demo stories and generated placeholder covers. Click to enlarge.</sub>
 </p>
@@ -39,12 +43,28 @@ grows. When you're ready, export your stories for use with Lunii.QT.
 | **Browse your collection** | Explore story covers and open details for descriptions, tags, and archive information. |
 | **Find the right story** | Search titles without worrying about accents or capitalization. Refine by age, language, compatibility, and tags. |
 | **Make it your own** | Create boolean or choice tags, assign them to stories, and choose their colors. |
-| **Save a shelf** | Turn a search and its filters into a dynamic shelf for bedtime, adventures, or family favorites. Membership updates with your library. |
+| **Save a Collection** | Keep a search and its filters as a dynamic Collection. Matches update as your library changes. |
+| **Curate a Shelf** | Choose which stories belong. Link Collections for suggestions, then explicitly approve additions and removals in **Review updates**. |
 | **Bring stories to life** | Choose **Sync with Lunii** to fetch official descriptions and cover images for matching stories. |
-| **Export what you need** | Copy the current view, a saved shelf, several shelves, or a selection of multiple stories. Overlapping shelves export each story once. |
+| **Export what you need** | Copy the current view, Collections, approved Shelf members, or selected stories. Unions deduplicate stories; Broken and unavailable stories are skipped with a reason. |
+| **Choose your setup** | Switch the interface between English and French, choose your library folder, and move the complete library from Settings. |
 
 <details>
-<summary><strong>Take a closer look: story details and tag management</strong></summary>
+<summary><strong>Take a closer look: curated Shelves, story details, tags, and settings</strong></summary>
+
+### Shelves you control
+
+Collections find stories automatically; Shelves keep the stories you approve.
+Review linked Collection suggestions when you choose. Every decision starts at
+**Not now**, and pending suggestions stay out of exports.
+
+<p align="center">
+  <img src="docs/assets/curated-shelf.png" width="1000" alt="A curated Shelf in List view showing approved, Broken, and unavailable members with separate export actions">
+</p>
+
+<p align="center">
+  <img src="docs/assets/shelf-review.png" width="520" alt="Shelf source-mismatch review with Not now selected and zero approved changes">
+</p>
 
 ### Everything about a story, in one place
 
@@ -58,14 +78,26 @@ need the UUID, archive filename, verification status, or checksum.
 ### A library organized your way
 
 Define reusable tags and colors. Derived tags keep their protected names and
-values while letting you choose their colors. Flag troublesome stories directly
-from a list or cover, and undo flag changes without opening the tag editor.
+values while letting you choose their colors. Use the **Broken** switch in the
+selected-story panel or details to flag troublesome stories, with bulk actions
+and Undo. Flagged stories stay visible and are skipped by every export.
 
 <p align="center">
   <img src="docs/assets/tag-manager.png" width="850" alt="Tag manager with controls for creating a tag and changing the derived Age tag's color">
 </p>
 
-These screenshots use the frontend's deterministic `?fixture=parity` demo data.
+### A local library that moves with you
+
+Choose English or French and manage the complete library location in Settings.
+Moving copies and verifies the library before switching to the new folder.
+
+<p align="center">
+  <img src="docs/assets/settings.png" width="720" alt="Settings showing interface language and the stories library location with a Change location action">
+</p>
+
+These screenshots use deterministic frontend demo data, including generated
+placeholder covers. See the [screenshot capture instructions](docs/assets/README.md)
+to refresh them from the current application.
 
 </details>
 
@@ -81,14 +113,18 @@ artifact details, and platform verification.
 
 ### Your first shelf
 
-1. **Import stories.** Choose your local archives. Librairii inspects each file
+1. **Choose your library folder.** Confirm the proposed location on first launch,
+   or choose another empty folder. Settings lets you change it later.
+2. **Import stories.** Choose your local archives. Librairii inspects each file
    and adds a managed copy to your library.
-2. **Explore and organize.** Search, filter, and tag your stories. Optionally
+3. **Explore and organize.** Search, filter, and tag your stories. Optionally
    sync with Lunii for official covers and descriptions.
-3. **Save a shelf.** Keep a useful search and its filters so matching stories
-   appear there automatically.
-4. **Export when ready.** Choose the current view or a shelf, then a destination
-   folder. Import the exported archives through Lunii.QT's supported workflow.
+4. **Save a Collection or create a Shelf.** Collections keep a useful query;
+   Shelves keep approved stories. Use **Add to Shelf…** for selected stories,
+   or **Create Shelf** to preview initial membership.
+5. **Export when ready.** Choose the current view, a Collection, or a Shelf,
+   then a destination folder. Review any skipped stories and import the exported
+   archives through Lunii.QT's supported workflow.
 
 **Accepted file extensions:** `.plain.pk`, `.v1.pk`, `.v2.pk`, `.pk`, `.zip`, `.7z`.
 Librairii inspects archive contents; a supported extension alone does not make a
@@ -172,6 +208,7 @@ For a verified portable archive, follow the host setup in
 | `make build` | Build the desktop application with the pinned Wails CLI. |
 | `make smoke-first-story` | Exercise import, inspection, and removal with a synthetic, copyright-free archive. |
 | `make smoke-foundation` | Check a clean-environment macOS launch, SQLite reopen, and shutdown. |
+| `npm --prefix frontend run docs:screenshots` | Refresh documentation images from isolated frontend fixtures using Chrome or Chromium. |
 
 The [first-story walkthrough](docs/demos/first-story-vertical-slice.md) also
 shows how to try the synthetic archive in the packaged app with an isolated
@@ -209,6 +246,9 @@ requirements and evidence contract.
 | A safe demo without a device or Lunii account | [First-story walkthrough](docs/demos/first-story-vertical-slice.md) |
 | Packaging and platform qualification | [Release platform matrix](docs/release-platforms.md) |
 | The application architecture | [Wails rebuild baseline](docs/architecture/0001-wails-rebuild-baseline.md) |
+| Collections, curated membership, and reviewed updates | [Collections and Shelves](docs/architecture/0004-collections-and-shelves.md) · [Verification](docs/verification/collections-and-shelves.md) |
+| Language settings and moving a library | [Settings and library location](docs/user-guide.md#settings-interface-language-and-library-location) · [Architecture](docs/architecture/0003-settings-and-library-location.md) |
+| Refreshing documentation screenshots | [Capture instructions](docs/assets/README.md) |
 | Large-library performance and budgets | [Performance guide](docs/performance/large-library.md) |
 | The Lunii catalog integration boundary | [Interoperability decision](docs/architecture/0002-lunii-catalog-interoperability.md) |
 
