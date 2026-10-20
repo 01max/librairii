@@ -325,6 +325,10 @@
     {
       "suite": "librairii-app",
       "name": "jobs::tests::terminal_tests::j65_unknown_ack_rejects_wrong_or_provisional_readback_and_keeps_terminal_conflict"
+    },
+    {
+      "suite": "librairii-app",
+      "name": "jobs::tests::terminal_tests::j65_running_sibling_is_cancelled_only_after_persistence_retry_exhaustion"
     }
   ]
 }
