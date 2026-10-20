@@ -1,4 +1,4 @@
-use super::{model::*, progress::*, runtime::*};
+use super::{model::*, progress::*, runtime::*, terminal};
 use librairii_core::{JobId, OperationKind, operations::HistoryKey};
 use std::{
     collections::{BTreeMap, VecDeque},
@@ -82,6 +82,8 @@ struct Gates {
     progress: Arc<Gate>,
     cancel: Arc<Gate>,
     cancel_readback: Arc<Gate>,
+    terminal_attempt: Arc<Gate>,
+    terminal_readback: Arc<Gate>,
 }
 
 impl Gates {
@@ -96,6 +98,8 @@ impl Gates {
             progress: Arc::new(Gate::new()),
             cancel: Arc::new(Gate::new()),
             cancel_readback: Arc::new(Gate::new()),
+            terminal_attempt: Arc::new(Gate::new()),
+            terminal_readback: Arc::new(Gate::new()),
         }
     }
 
@@ -110,6 +114,8 @@ impl Gates {
             &self.progress,
             &self.cancel,
             &self.cancel_readback,
+            &self.terminal_attempt,
+            &self.terminal_readback,
         ] {
             gate.open();
         }
@@ -124,6 +130,8 @@ struct Store {
     recorded: Vec<Completed>,
     max_exclusions: usize,
     progress: Vec<Value>,
+    terminal_truth: Vec<terminal::Resolution>,
+    max_fences: usize,
     cancelled: Vec<Control>,
 }
 
@@ -139,12 +147,21 @@ impl Store {
     }
 
     fn source(&mut self, request: SourceRequest) -> Page {
+        self.max_fences = self.max_fences.max(request.fenced.len());
         self.max_exclusions = self.max_exclusions.max(request.excluded.len());
         let upper = request
             .cursor
             .upper
             .or_else(|| self.jobs.keys().next_back().cloned());
         for (key, items) in &mut self.jobs {
+            if items.front().is_some_and(|item| {
+                request.fenced.contains(&Control {
+                    job: item.key.job,
+                    generation: item.generation,
+                })
+            }) {
+                continue;
+            }
             if request
                 .cursor
                 .after
@@ -183,13 +200,18 @@ impl Store {
         }
     }
 
-    fn save(&mut self, completed: Completed) -> Report {
+    fn save(&mut self, completed: Completed, saved: Option<terminal::Resolution>) -> Report {
+        if let Some(truth) = saved {
+            self.terminal_truth.push(truth);
+        }
         self.recorded.push(completed);
         Report::Recorded {
-            terminal_operation: true,
+            terminal_operation: saved.is_none_or(|s| s.observation.is_saved_terminal()),
         }
     }
 }
+
+mod terminal_tests;
 
 fn input(number: u8, kind: OperationKind, count: usize, payload: usize) -> StartInput {
     let job = JobId::from_bytes([number; 16]);
@@ -263,6 +285,17 @@ impl Rig {
         start_policy: StartPolicy,
         uncertain_report: bool,
         store: Arc<Mutex<Store>>,
+    ) -> io::Result<Self> {
+        Self::with_terminal(workers, gates, start_policy, uncertain_report, store, None)
+    }
+
+    fn with_terminal(
+        workers: usize,
+        gates: Gates,
+        start_policy: StartPolicy,
+        uncertain_report: bool,
+        store: Arc<Mutex<Store>>,
+        terminal: Option<terminal::Callbacks>,
     ) -> io::Result<Self> {
         let control_policy = Arc::new(Mutex::new(ControlPolicy::Record));
         let coordinator = CoordinatorCallbacks {
@@ -343,6 +376,7 @@ impl Rig {
         let on_execute = Arc::new(Mutex::new(None::<Handle>));
         let on_progress = Arc::new(Mutex::new(None::<ExecuteHook>));
         let callbacks = WorkerCallbacks {
+            terminal,
             execute: {
                 let gate = Arc::clone(&gates.execute);
                 let on_execute = Arc::clone(&on_execute);
@@ -367,21 +401,21 @@ impl Rig {
             report: {
                 let gate = Arc::clone(&gates.report);
                 let store = Arc::clone(&store);
-                Arc::new(move |completed| {
+                Arc::new(move |completed, saved| {
                     gate.pass();
                     if uncertain_report {
                         Report::Uncertain(completed)
                     } else {
-                        guard(&store).save(completed)
+                        guard(&store).save(completed, saved)
                     }
                 })
             },
             readback_report: {
                 let gate = Arc::clone(&gates.report_readback);
                 let store = Arc::clone(&store);
-                Arc::new(move |completed| {
+                Arc::new(move |completed, saved| {
                     gate.pass();
-                    guard(&store).save(completed)
+                    guard(&store).save(completed, saved)
                 })
             },
         };
@@ -546,8 +580,7 @@ fn j6_full_pipeline_measures_handles_payload_and_all_blocked_call_owners() -> Te
         rig.created(input(1, OperationKind::Export, 100, 4096))?;
         until(|| {
             let m = rig.handle.measurements();
-            m.dispatched_handles == 3 * workers + 1
-                && m.item_bytes >= (3 * workers + 1) * 4096
+            m.dispatched_handles == 3 * workers + 1 && m.item_bytes >= (3 * workers + 1) * 4096
         })?;
         until(|| gates.report.entries() == workers)?;
         gates.admit.close();

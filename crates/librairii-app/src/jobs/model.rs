@@ -144,6 +144,7 @@ pub(super) struct Cursor {
 pub(super) struct SourceRequest {
     pub(super) cursor: Cursor,
     pub(super) excluded: Vec<ItemKey>,
+    pub(super) fenced: Vec<Control>,
 }
 
 #[derive(Debug)]
@@ -185,7 +186,8 @@ pub(super) type Execute = Arc<
         + Sync,
 >;
 pub(super) type SaveProgress = Arc<dyn Fn(super::progress::Value) -> bool + Send + Sync>;
-pub(super) type Save = Arc<dyn Fn(Completed) -> Report + Send + Sync>;
+pub(super) type Save =
+    Arc<dyn Fn(Completed, Option<super::terminal::Resolution>) -> Report + Send + Sync>;
 pub(super) type Cancel = Arc<dyn Fn(Control) -> ControlDecision + Send + Sync>;
 
 #[derive(Clone)]
@@ -205,6 +207,7 @@ pub(super) struct WorkerCallbacks {
     pub(super) execute: Execute,
     pub(super) report: Save,
     pub(super) readback_report: Save,
+    pub(super) terminal: Option<super::terminal::Callbacks>,
 }
 
 #[derive(Clone, Debug, Default)]
@@ -229,4 +232,11 @@ pub(super) struct Measurements {
     pub(super) control: usize,
     pub(super) control_bytes: usize,
     pub(super) uncertain_controls: usize,
+    pub(super) repair_owners: usize,
+    pub(super) fences: usize,
+    pub(super) witness_bytes: usize,
+    pub(super) retry_diagnostic_bytes: usize,
+    pub(super) persistence_writes: usize,
+    pub(super) persistence_readbacks: usize,
+    pub(super) provisional: usize,
 }

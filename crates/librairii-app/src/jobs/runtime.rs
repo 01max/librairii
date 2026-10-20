@@ -1,5 +1,6 @@
 use super::model::*;
 use super::progress::{Slot, Stamp, Value};
+use super::terminal::{self, Action, Driver, PaceError, Resolution};
 use std::{
     collections::VecDeque,
     io,
@@ -29,6 +30,12 @@ struct Working {
     progress: Slot,
     export: bool,
     cancelled: Arc<AtomicBool>,
+    fenced: bool,
+    witness_bytes: usize,
+    diagnostic_bytes: usize,
+    provisional: bool,
+    saved: Option<Resolution>,
+    terminal_status: Option<terminal::Status>,
 }
 
 struct State {
@@ -51,6 +58,7 @@ struct State {
     progress_cursor: usize,
     control: Option<PendingControl>,
     control_occupied: bool,
+    persistence_tick: u64,
 }
 
 impl State {
@@ -103,6 +111,29 @@ impl State {
             .measured
             .result_bytes
             .max(self.workers.iter().flatten().map(|w| w.result_bytes).sum());
+        self.measured.repair_owners = self
+            .measured
+            .repair_owners
+            .max(self.workers.iter().flatten().filter(|w| w.fenced).count());
+        self.measured.fences = self.measured.fences.max(self.fences().len());
+        self.measured.witness_bytes = self
+            .measured
+            .witness_bytes
+            .max(self.workers.iter().flatten().map(|w| w.witness_bytes).sum());
+        self.measured.retry_diagnostic_bytes = self.measured.retry_diagnostic_bytes.max(
+            self.workers
+                .iter()
+                .flatten()
+                .map(|w| w.diagnostic_bytes)
+                .sum(),
+        );
+        self.measured.provisional = self.measured.provisional.max(
+            self.workers
+                .iter()
+                .flatten()
+                .filter(|w| w.provisional)
+                .count(),
+        );
     }
 
     fn exclusions(&self) -> Vec<ItemKey> {
@@ -112,6 +143,20 @@ impl State {
             .chain(self.prefetch.iter().map(|item| item.key))
             .chain(self.workers.iter().flatten().map(|worker| worker.key))
             .collect()
+    }
+
+    fn fences(&self) -> Vec<Control> {
+        let mut fences = Vec::with_capacity(self.workers.len());
+        for worker in self.workers.iter().flatten().filter(|w| w.fenced) {
+            let control = Control {
+                job: worker.key.job,
+                generation: worker.progress.stamp.generation,
+            };
+            if !fences.contains(&control) {
+                fences.push(control);
+            }
+        }
+        fences
     }
 }
 
@@ -182,6 +227,56 @@ pub(super) struct Handle {
 }
 
 impl Handle {
+    /// A controlled virtual clock, not a production timer or storage timestamp.
+    /// Invalid advances leave both the clock and all retained owners unchanged.
+    pub(super) fn advance_persistence_time(&self, next: u64) -> Result<(), PaceError> {
+        let mut state = lock(&self.shared.state);
+        state.persistence_tick = terminal::checked_tick(state.persistence_tick, next)?;
+        state.changed();
+        self.shared.changed.notify_all();
+        Ok(())
+    }
+
+    pub(super) fn persistence_time(&self) -> u64 {
+        lock(&self.shared.state).persistence_tick
+    }
+
+    pub(super) fn persistence_status(&self) -> Vec<terminal::Status> {
+        lock(&self.shared.state)
+            .workers
+            .iter()
+            .flatten()
+            .filter_map(|w| w.terminal_status)
+            .collect()
+    }
+
+    pub(super) fn terminal_observations(
+        &self,
+    ) -> Vec<(Stamp, librairii_core::operations::OperationObservation)> {
+        use librairii_core::{
+            OperationState,
+            operations::{ObservationKind, OperationObservation},
+        };
+        lock(&self.shared.state)
+            .workers
+            .iter()
+            .flatten()
+            .filter_map(|w| {
+                w.saved
+                    .map(|saved| (saved.stamp, saved.observation))
+                    .or_else(|| {
+                        w.provisional.then_some((
+                            w.progress.stamp,
+                            OperationObservation {
+                                state: OperationState::Interrupted,
+                                kind: ObservationKind::ProvisionalPersistenceFailure,
+                            },
+                        ))
+                    })
+            })
+            .collect()
+    }
+
     pub(super) fn try_cancel(
         &self,
         request: Control,
@@ -318,6 +413,7 @@ impl Engine {
                 progress_cursor: 0,
                 control: None,
                 control_occupied: false,
+                persistence_tick: 0,
             }),
             changed: Condvar::new(),
             stopping: AtomicBool::new(false),
@@ -669,6 +765,7 @@ fn coordinator_loop(shared: &Arc<Shared>, callbacks: CoordinatorCallbacks) {
         }
         state.source_reserved = true;
         let excluded = state.exclusions();
+        let fenced = state.fences();
         state.changed();
         drop(state);
         let page = {
@@ -676,6 +773,7 @@ fn coordinator_loop(shared: &Arc<Shared>, callbacks: CoordinatorCallbacks) {
             (callbacks.source)(SourceRequest {
                 cursor: cursor.clone(),
                 excluded,
+                fenced,
             })
         };
         progress_turn = true;
@@ -713,12 +811,113 @@ fn coordinator_loop(shared: &Arc<Shared>, callbacks: CoordinatorCallbacks) {
     }
 }
 
+fn sync_driver(shared: &Shared, index: usize, driver: &Driver) {
+    let mut state = lock(&shared.state);
+    let newly_fenced = state.workers[index].as_ref().is_some_and(|w| !w.fenced) && driver.fenced();
+    if let Some(worker) = &mut state.workers[index] {
+        worker.fenced |= driver.fenced();
+        worker.witness_bytes = driver.witness_bytes();
+        worker.diagnostic_bytes = driver.diagnostic_bytes();
+        worker.provisional = driver.provisional;
+        worker.saved = driver.resolution;
+        worker.terminal_status = Some(terminal::Status {
+            due: driver.due,
+            action: driver.action,
+            attempts: driver.attempts,
+            observed_tick: 0,
+        });
+    }
+    if newly_fenced {
+        for worker in state.workers.iter().flatten() {
+            if worker.key.job == driver.witness.stamp.item.job
+                && worker.progress.stamp.generation == driver.witness.stamp.generation
+            {
+                worker.cancelled.store(true, Ordering::Release);
+            }
+        }
+        state.source_version = state.source_version.wrapping_add(1);
+    }
+    state.changed();
+    shared.changed.notify_all();
+}
+
+fn drive_terminal(
+    shared: &Arc<Shared>,
+    index: usize,
+    callbacks: &terminal::Callbacks,
+    completed: &Completed,
+) -> Resolution {
+    let mut driver = Driver::new(completed, lock(&shared.state).persistence_tick);
+    loop {
+        sync_driver(shared, index, &driver);
+        if let Some(saved) = driver.resolution {
+            return saved;
+        }
+        let action = {
+            let mut state = lock(&shared.state);
+            loop {
+                let now = state.persistence_tick;
+                if let Some(worker) = &mut state.workers[index]
+                    && let Some(status) = &mut worker.terminal_status
+                {
+                    status.observed_tick = now;
+                }
+                if let Some(action) = driver.ready(state.persistence_tick) {
+                    break action;
+                }
+                // Work cancellation/stop cannot satisfy required persistence or
+                // fabricate a joined result. The same owner waits, even closed.
+                state = wait(shared, state);
+            }
+        };
+        match action {
+            Action::Write => {
+                driver.before_write();
+                {
+                    let mut state = lock(&shared.state);
+                    state.measured.persistence_writes =
+                        state.measured.persistence_writes.saturating_add(1);
+                }
+                let response = {
+                    let _call = Call::enter(shared, CallOwner::Worker(index));
+                    (callbacks.attempt)(&driver.witness, completed)
+                };
+                // Observe time AFTER a possibly blocked callback. A tick jump
+                // never releases catch-up writes based on an obsolete deadline.
+                let now = lock(&shared.state).persistence_tick;
+                driver.accept_attempt(now, response);
+            }
+            Action::Readback => {
+                {
+                    let mut state = lock(&shared.state);
+                    state.measured.persistence_readbacks =
+                        state.measured.persistence_readbacks.saturating_add(1);
+                }
+                let response = {
+                    let _call = Call::enter(shared, CallOwner::Worker(index));
+                    (callbacks.readback)(&driver.witness)
+                };
+                let now = lock(&shared.state).persistence_tick;
+                driver.accept_readback(now, response);
+            }
+            Action::ClockBlocked => unreachable!("blocked clock has no ready action"),
+        }
+    }
+}
+
 fn worker_loop(shared: Arc<Shared>, index: usize, callbacks: WorkerCallbacks) {
     loop {
         let item = {
             let mut state = lock(&shared.state);
             loop {
-                if let Some(item) = state.queue.pop_front() {
+                let fences = state.fences();
+                let eligible = state.queue.iter().position(|item| {
+                    !fences.contains(&Control {
+                        job: item.key.job,
+                        generation: item.generation,
+                    })
+                });
+                if let Some(item) = eligible.and_then(|position| state.queue.remove(position)) {
                     state.workers[index] = Some(Working {
                         key: item.key,
                         item_bytes: item.bytes(),
@@ -733,6 +932,12 @@ fn worker_loop(shared: Arc<Shared>, index: usize, callbacks: WorkerCallbacks) {
                         ),
                         export: item.kind == librairii_core::OperationKind::Export,
                         cancelled: Arc::new(AtomicBool::new(item.cancel_requested)),
+                        fenced: false,
+                        witness_bytes: 0,
+                        diagnostic_bytes: 0,
+                        provisional: false,
+                        saved: None,
+                        terminal_status: None,
                     });
                     state.source_version = state.source_version.wrapping_add(1);
                     state.changed();
@@ -783,15 +988,36 @@ fn worker_loop(shared: Arc<Shared>, index: usize, callbacks: WorkerCallbacks) {
             }
             state.changed();
         }
+        let saved = callbacks
+            .terminal
+            .as_ref()
+            .map(|callbacks| drive_terminal(&shared, index, callbacks, &completed));
         let mut seen = lock(&shared.state).repair_version;
         let mut response = {
             let _call = Call::enter(&shared, CallOwner::Worker(index));
-            (callbacks.report)(completed)
+            (callbacks.report)(completed, saved)
         };
         loop {
             response = match response {
                 Report::Recorded { terminal_operation } => {
                     let mut state = lock(&shared.state);
+                    if let Some(saved) = saved
+                        && saved.observation.is_saved_terminal()
+                    {
+                        for item in &mut state.queue {
+                            if item.key.job == saved.stamp.item.job
+                                && item.generation == saved.stamp.generation
+                            {
+                                item.cancel_requested = true;
+                            }
+                        }
+                        if let Some(item) = &mut state.prefetch
+                            && item.key.job == saved.stamp.item.job
+                            && item.generation == saved.stamp.generation
+                        {
+                            item.cancel_requested = true;
+                        }
+                    }
                     if terminal_operation && kind == librairii_core::OperationKind::MetadataSync {
                         state.metadata_active = false;
                     }
@@ -812,7 +1038,7 @@ fn worker_loop(shared: Arc<Shared>, index: usize, callbacks: WorkerCallbacks) {
                     wait_repair(&shared, seen);
                     seen = lock(&shared.state).repair_version;
                     let _call = Call::enter(&shared, CallOwner::Worker(index));
-                    (callbacks.readback_report)(completed)
+                    (callbacks.readback_report)(completed, saved)
                 }
             };
         }

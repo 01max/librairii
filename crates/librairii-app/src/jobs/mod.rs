@@ -15,6 +15,7 @@
 mod model;
 mod progress;
 mod runtime;
+mod terminal;
 
 #[cfg(test)]
 mod tests;

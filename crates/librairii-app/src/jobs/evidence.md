@@ -141,3 +141,76 @@ outside this released slice. Full 6.N, 6.8 and 6.9 stay open.
 Partial 6.3 commit: `1a6c3db82000cb119430ee08f97ba0cea4502d4c`.
 The separate partial 6.4 commit and final owner5 discovery/support SHA are
 recorded externally after creation. No self-referential completion SHA is used.
+
+## Implemented partial 6.5 — controlled terminal driver
+
+Release `NEXT6.5-M438-CONTROLLED` extends only this private injected engine.
+Each existing occupied worker can retain one move-only executor result and one
+terminal driver. No extra worker, reconciler, timer thread, dependency, shared
+production declaration or actual storage/custody capability is introduced.
+
+The driver distinguishes supplied application, reported known nonapplication
+and unknown acknowledgement. Readback must match the immutable generation,
+job, item and complete modeled command payload. Finish payloads retain raw
+nullable outcome/time values and exact counts. Unknown acknowledgement enters
+readback before any further write; a matching application cannot repeat an
+item count. An acknowledged CompleteItem is sticky, including when a malformed
+Finish intent requires readback. A different supplied saved terminal result is
+retained as actual truth/conflict, without replacing the executor fact/errors.
+These response labels and public constructors are observations, not proof that
+SQL, a fresh view/barrier, file custody or durable commitment exists.
+
+Each initial CompleteItem, Finish and Interrupt command has three total writes
+with virtual 10 ms spacing. After the initial Interrupt budget, reconciliation
+has at most one guarded step per virtual 1000 ms, with readback after failed or
+uncertain interruption. It does not restart three-write bursts. Due ticks derive
+from the time observed after a callback returns; large tick jumps and blocked
+calls do not produce catch-up retries. Tick regression/overflow is rejected and
+deadline arithmetic is checked. There is no production clock, real-time pacing
+or timer responsiveness qualification.
+
+A failed owner derives at most one operation fence from its existing slot;
+unique source exclusions are bounded by W and queued matching work stays fenced.
+One latest retry cause and one latest readback cause replace earlier diagnostics.
+Each retains at most 1024 UTF-8 bytes plus explicit original-length/truncation
+metadata; original execution facts/errors remain intact and separately measured.
+Witness and diagnostic capacity are measured separately from item/result bytes.
+No per-cycle diagnostic collection or operation-to-reconciler map is retained.
+
+A provisional interruption observation neither counts as a saved terminal
+snapshot nor clears the metadata reservation or releases its owner. Stop,
+cooperative cancellation and an expired observer wait cannot satisfy required
+persistence/report transfer or joins. A supplied saved result can still remain
+owned while actual controlled report acceptance is blocked; no already
+acknowledged command is replayed during that final transfer.
+
+Local pinned-ARM verification: all 28 app tests pass, zero ignored/filtered,
+including all 18 prior identities and ten new driver assertions. All-target
+Clippy passes with warnings denied. Coverage includes exact retry budgets,
+continued failure then supplied saved interruption, Complete/Finish response
+loss, Interrupt commit-then-Snapshot failure, wrong identity/provenance,
+terminal conflicts, raw payload equality, tick jump/blocked callback timing,
+checked arithmetic, 500 bounded diagnostic replacement cycles, saturated
+shutdown/expired wait and actual same-allocation result acceptance. This is
+controlled execution evidence, not real durable 6.5 or full-section completion.
+Owner5 must pin actual additive discovery; final combined checks/native/provider
+proof and an affected independent controlled proof remain separate gates.
+
+Expanded concurrent execution exposed an existing saturation-test observation
+race: a source reservation can fill the handle budget before its payload arrives.
+Dedicated correction `3dcc7c5c1748bf4e38643ac024972fb20cdca2ec` waits for the
+existing byte peak before sampling; every bound assertion remains. One ordinary
+Clippy type-complexity finding was fixed with private callback aliases, with no
+lint exception. The initial failed test and its correction are retained as
+verification history rather than silently presented as an uninterrupted pass.
+
+Historical controlled 6.2–6.4 head `f49d070dcb9d19dcb4eec17f1925e03b93591d59`
+completed all eight provider gates and native review `109c4eb3` with zero required
+findings. Its Intel attempt 1 failed before product build/tests when
+`cargo xtask tools` could not resolve static.crates.io for powerfmt 0.2.1. Exactly
+one unchanged-head retry was issued: native run `39476677836` attempt 2,
+Intel job `118826483464` and aggregate `118838260408` succeeded. No source/pin/cache
+workaround or current-job cancellation was used. That historical evidence does
+not approve this changed 6.5 implementation; the separate commit and subsequent
+owner5 support receive fresh exact-head verification. All full 6.N, 6.8 and 6.9
+remain open, canonical/global-index bytes and preservation inputs unchanged.
