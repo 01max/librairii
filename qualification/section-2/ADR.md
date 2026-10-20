@@ -13,6 +13,13 @@ prerequisite for behavioral parity. Full feature UI is gated on 2.13.
 repositories, registry checksums, available features and primary API URLs.
 These are direct candidate pins, not an assertion about a resolved lockfile.
 
+The nested spike now resolves Slint1.18.1, Winit0.30.13, skia-safe0.153.3,
+AccessKit0.24.1/accesskit_winit0.33.2 and Slint's own muda0.19.3. The separately
+considered muda0.21.2 is not added directly. Rust1.99.1 is installed only in this
+session's temporary rustup/cache; no project-root pin or global toolchain changed.
+`Cargo.lock` fixes this experimental graph; it does not select the product graph.
+Candidate pins were sent to root-workspace owner librairii-5.
+
 | Component | Candidate | Explicit intent / terms |
 | --- | --- | --- |
 | Rust / Cargo / rustfmt / Clippy | 1.99.1 | Stable 2024 edition; isolated toolchain, no global update. [Release](https://blog.rust-lang.org/2026/10/15/Rust-1.99.1/) |
