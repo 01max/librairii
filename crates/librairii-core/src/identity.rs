@@ -71,7 +71,7 @@ impl FromStr for Checksum {
             return Err(BoundaryError::InvalidChecksum);
         }
         let mut bytes = [0; 32];
-        for (output, pair) in bytes.iter_mut().zip(value.as_bytes().chunks_exact(2)) {
+        for (output, pair) in bytes.iter_mut().zip(value.as_bytes().as_chunks::<2>().0) {
             let high = (pair[0] as char)
                 .to_digit(16)
                 .ok_or(BoundaryError::InvalidChecksum)?;

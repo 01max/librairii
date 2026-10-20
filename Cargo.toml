@@ -19,3 +19,17 @@ librairii-desktop = { path = "crates/librairii-desktop" }
 librairii-testkit = { path = "crates/librairii-testkit" }
 uuid = { version = "=1.28.0", default-features = false, features = ["std"] }
 thiserror = "=2.0.21"
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+missing_debug_implementations = "warn"
+unused_must_use = "deny"
+
+[workspace.lints.clippy]
+all = { level = "warn", priority = -1 }
+unwrap_used = "deny"
+expect_used = "deny"
+panic = "deny"
+todo = "deny"
+unimplemented = "deny"
+dbg_macro = "deny"

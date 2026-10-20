@@ -10,3 +10,6 @@ librairii-app.workspace = true
 librairii-storage.workspace = true
 librairii-adapters.workspace = true
 librairii-ui.workspace = true
+
+[lints]
+workspace = true

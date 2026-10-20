@@ -8,3 +8,6 @@ publish.workspace = true
 [dependencies]
 librairii-app.workspace = true
 librairii-core.workspace = true
+
+[lints]
+workspace = true

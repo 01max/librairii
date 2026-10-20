@@ -14,8 +14,9 @@ of the final head and clean-checkout checks; unavailable target evidence is inco
 | Subtask | Commit | Evidence |
 | --- | --- | --- |
 | 3.1 | d289e5f | Exact stable 1.99.1, edition 2024/resolver 3, locked workspace build |
-| 3.2 | Pending commit | Typed identity bytes/ranges, distinct group scope, unapproved review default, typed errors and compile-fail boundary |
-| 3.3–3.8 | Pending | Implementation follows the numbered OpenSpec tasks |
+| 3.2 | 886b07b828663368f8fcf7cc2e5d990d41f92398 | Typed identity bytes/ranges, distinct group scope, unapproved review default, typed errors and compile-fail boundary |
+| 3.3 | Pending commit | Stable rustfmt and Clippy, compiler warnings denied in checks |
+| 3.4–3.8 | Pending | Implementation follows the numbered OpenSpec tasks |
 | 3.9 | Pending | Independent review and clean-checkout/native target evidence |
 
 ## Baseline pins and boundaries
@@ -34,3 +35,14 @@ before any data access; it is not an application or packaging acceptance claim.
 
 Typed foundations are intentionally not persisted codecs or the reconciled product contract.
 No new repository/product license is set; distribution decisions remain pending.
+
+## Lint policy
+
+Every member inherits compiler and Clippy lints. Safe Rust is enforced (`forbid`);
+future OS FFI needs its own deliberately reviewed policy change. Ordinary Clippy
+warnings are checked with `-D warnings`. Product/test code returns errors instead
+of unwrap, expect, panic, todo or unimplemented. Pedantic/restriction groups are
+not enabled wholesale. No generated/vendor exclusions or lint exceptions exist.
+Any future exception must have a reason next to a narrow `#[expect(...)]`.
+Native matrix jobs compile their actual target-specific modules; a host-only pass
+never establishes the other targets. The current skeleton has no native FFI.
