@@ -108,6 +108,61 @@ fn identity_probe_preserves_raw_uuid_spelling_and_file_bytes() -> TestResult {
 }
 
 #[test]
+fn identity_probe_keeps_go_uuid_middle_bytes_and_exact_wrapper_spelling() -> TestResult {
+    // Frozen preferences.Identity trims before google/uuid v1.6.0 Parse.
+    // That parser accepts any outer bytes in its 38-byte form; the original
+    // spelling remains the profile comparison key, not canonical Display.
+    let roots = TestRoots::new()?;
+    let authority = roots.authorize(Some(roots.library()), Some(roots.profile()))?;
+    let uuid = "A0000000-0000-4000-8000-000000000001";
+    let forms = [
+        uuid.to_owned(),
+        uuid.replace('-', ""),
+        format!("URN:UUID:{uuid}"),
+        format!("{{{uuid}}}"),
+        format!("x{uuid}y"),
+        format!("){uuid}("),
+        format!("\0{uuid}\0"),
+    ];
+    for raw in forms {
+        let original = format!("\u{2003}\t {raw}\r\n").into_bytes();
+        fs::write(authority.library().join(".librairii-library"), &original)?;
+        let observed = LibraryIdentity::probe(authority.library())?.ok_or("identity absent")?;
+        assert_eq!(observed.typed(), identity()?, "{raw:?}");
+        assert_eq!(observed.spelling(), raw);
+        assert_eq!(observed.original_bytes(), original);
+        observed.require_spelling(&raw)?;
+        assert!(matches!(
+            observed.require_spelling(&observed.typed().to_string()),
+            Err(StorageError::IdentityMismatch)
+        ));
+        assert_eq!(
+            fs::read(authority.library().join(".librairii-library"))?,
+            original
+        );
+    }
+    // This storage codec does not broaden the shared/core string grammar.
+    assert!(format!("x{uuid}y").parse::<LibraryId>().is_err());
+    for invalid in [
+        format!("x{}y", uuid.replacen('A', "G", 1)),
+        format!("xy{uuid}z"),
+        format!("é{uuid}"),
+        format!("{uuid}é"),
+    ] {
+        fs::write(authority.library().join(".librairii-library"), &invalid)?;
+        assert!(matches!(
+            LibraryIdentity::probe(authority.library()),
+            Err(StorageError::InvalidIdentity)
+        ));
+        assert_eq!(
+            fs::read(authority.library().join(".librairii-library"))?,
+            invalid.as_bytes()
+        );
+    }
+    Ok(())
+}
+
+#[test]
 fn absent_or_invalid_identity_is_never_silently_replaced() -> TestResult {
     let roots = TestRoots::new()?;
     let authority = roots.authorize(Some(roots.library()), Some(roots.profile()))?;

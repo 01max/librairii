@@ -364,6 +364,10 @@ mod state {
                 text.replace("\"epoch\":0", "\"epoch\":18446744073709551616"),
                 text.replace("imported_closed", "active"),
                 text.replace("imported_closed", "unknown"),
+                text.replace(
+                    "A0000000-0000-4000-8000-000000000001",
+                    " A0000000-0000-4000-8000-000000000001 ",
+                ),
                 text.replacen("\"format\":", "\"extra\":true,\"format\":", 1),
                 text.replace(&"a".repeat(64), &"A".repeat(64)),
                 " ".repeat(MAX_PROFILE_BYTES + 1),
@@ -375,6 +379,17 @@ mod state {
                     ),
                     "{bad}"
                 );
+            }
+            for raw in [
+                "xA0000000-0000-4000-8000-000000000001y",
+                "\0A0000000-0000-4000-8000-000000000001\0",
+            ] {
+                let mut original = document(Path::new("/explicit/data/copy"));
+                original.library_id_raw = raw.into();
+                let encoded = original.bytes()?;
+                let decoded = Document::decode(&encoded)?;
+                assert_eq!(decoded.library_id_raw, raw);
+                assert_eq!(decoded.bytes()?, encoded);
             }
             Ok(())
         }

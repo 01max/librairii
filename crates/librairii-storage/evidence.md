@@ -1509,3 +1509,23 @@ claimed. Current source-defined test identities require owner5 additive support;
 current native/provider/cumulative/review and full4.7/4.10/4.11 gates remain open.
 The distinct proposed Native terminal proof stays pinned to1e954 and the import
 proof to44; neither is silently updated by these tests.
+
+### 4.1 correction: Go UUID wrapper spelling regression
+
+Frozen `preferences.Identity` trims the marker text before google/uuid v1.6.0
+`Parse`. Its 38-byte form validates the middle36 UUID bytes without requiring
+braces. The pinned shared Rust UUID parser requires braces in that form. Upper
+URN casing already agrees and is not a defect. This regression retains exact
+UTF-8 marker bytes/spelling and the unchanged shared-core grammar; it also
+extends the existing private native-record codec test with exact wrapper
+roundtrips. No upstream implementation/data, dependency, fixture, shared type,
+format field or notice is copied or changed.
+
+Actual AppleARM RED on the unchanged production implementation: the new marker
+probe case fails `InvalidIdentity`; the existing native-codec case extended with
+the same accepted spelling fails `RecoveryBindingRequired`. Nextest run
+`2e6ec78e-426d-4ccc-9f9f-1d2ab0f41239`: two selected cases, zero passed/two
+failed,155 intentionally filtered. This is an actual storage-boundary failure,
+not a new Go campaign or a parser-parity/native-admission claim. Existing supplied
+frozen-Go optional/text observations are supporting evidence only. Native N3
+input1e954 and import input44 remain unchanged; no temporary proof is shipped.
