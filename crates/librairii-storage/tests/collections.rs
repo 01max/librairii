@@ -299,3 +299,87 @@ fn seed_stories_extra_unfiltered(db: &Database<'_>) -> TestResult {
     })?.wait()?)?;
     Ok(())
 }
+
+#[test]
+fn explicit_repair_retains_invalid_bytes_rejects_stale_plans_and_rolls_back_writes() -> TestResult {
+    let roots = TestRoots::new()?;
+    let library = IsolatedLibrary::initialize_from_override(
+        Some(roots.library().as_os_str()),
+        "a0000000-0000-4000-8000-000000000001".parse()?,
+    )?;
+    let mut db = Database::open_isolated(&library)?;
+    committed(db.transaction(WorkCancellation::default(),|tx|{
+        tx.execute("INSERT INTO collections(id,name,normalized_name,position,query_version,query_payload) VALUES(88,'Legacy','legacy',0,99,CAST(X'7B226E616D65223A22FF227D' AS TEXT))",[])?;Ok(())
+    })?.wait()?)?;
+    let Response::Inspection(i) = edit(&db, Command::Inspect { id: 88 })? else {
+        return Err("inspect".into());
+    };
+    assert_eq!(
+        i.collection.query_payload,
+        [br#"{"name":""#.as_slice(), &[255], br#""}"#.as_slice()].concat()
+    );
+    assert_eq!(i.collection.validity, Validity::NeedsAttention);
+    let plan = db
+        .collection_replacement_plan(88, Query::default())?
+        .wait()?;
+    edit(
+        &db,
+        Command::Rename {
+            id: 88,
+            name: "Renamed".into(),
+        },
+    )?;
+    assert!(matches!(
+        committed(
+            db.replace_collection(plan, WorkCancellation::default())?
+                .wait()?
+        ),
+        Err(StorageError::Collection(CollectionError::StalePreview))
+    ));
+    let before = db.collections()?.wait()?;
+    let cancelled = WorkCancellation::default();
+    let in_writer = cancelled.clone();
+    let outcome = db
+        .transaction(cancelled, move |tx| {
+            librairii_storage::collections::execute(
+                tx,
+                Command::Rename {
+                    id: 88,
+                    name: "Must roll back".into(),
+                },
+            )?;
+            in_writer.cancel();
+            Ok(())
+        })?
+        .wait()?;
+    assert!(matches!(
+        outcome,
+        TransactionOutcome::ProvenNotCommitted(StorageError::Cancelled)
+    ));
+    assert_eq!(db.collections()?.wait()?, before);
+    let plan = db
+        .collection_replacement_plan(88, Query::default())?
+        .wait()?;
+    let repaired = committed(
+        db.replace_collection(plan, WorkCancellation::default())?
+            .wait()?,
+    )?;
+    assert_eq!(repaired.id, 88);
+    assert_eq!(repaired.name, b"Renamed");
+    assert_eq!(repaired.query_payload, b"{}");
+    assert_eq!(repaired.validity, Validity::Valid);
+    assert_eq!(repaired.revision, before[0].revision + 1);
+    let empty = db
+        .collection_replacement_plan(88, Query::default())?
+        .wait()?;
+    assert_eq!(
+        committed(
+            db.replace_collection(empty, WorkCancellation::default())?
+                .wait()?
+        )?
+        .revision,
+        repaired.revision
+    );
+    db.close()?;
+    Ok(())
+}

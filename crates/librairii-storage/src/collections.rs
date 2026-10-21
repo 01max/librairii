@@ -419,3 +419,65 @@ impl Database<'_> {
         self.transaction(cancellation, move |tx| save_combined(tx, &ids, &name))
     }
 }
+
+/// Opaque before/after definition snapshot; no automatic predicate dropping.
+/// Applying it checks both this runtime and the complete current stored row.
+#[derive(Clone, Debug)]
+pub struct ReplacementPlan {
+    before: Collection,
+    payload: String,
+    identity: crate::database::SnapshotIdentity,
+}
+impl ReplacementPlan {
+    pub fn before(&self) -> &Collection {
+        &self.before
+    }
+    pub fn replacement_payload(&self) -> &str {
+        &self.payload
+    }
+}
+impl Database<'_> {
+    /// Read-only: even unmigratable bytes can be inspected and explicitly
+    /// replaced without opening them or losing their original repair evidence.
+    pub fn collection_replacement_plan(
+        &self,
+        id: i64,
+        criteria: Query,
+    ) -> Result<Pending<'_, ReplacementPlan>> {
+        let identity = self.snapshot_identity();
+        self.read(move |tx| {
+            Ok(ReplacementPlan {
+                before: read(tx, id)?,
+                payload: canonical(tx, criteria)?,
+                identity,
+            })
+        })
+    }
+    pub fn replace_collection(
+        &self,
+        plan: ReplacementPlan,
+        cancellation: WorkCancellation,
+    ) -> Result<Pending<'_, TransactionOutcome<Collection>>> {
+        if self.snapshot_identity() != plan.identity {
+            return Err(CollectionError::StalePreview.into());
+        }
+        self.transaction(cancellation, move |tx| replace(tx, plan))
+    }
+}
+fn replace(tx: &Transaction<'_>, plan: ReplacementPlan) -> Result<Collection> {
+    let current = read(tx, plan.before.id).map_err(|e| match e {
+        StorageError::CollectionNotFound => CollectionError::StalePreview.into(),
+        other => other,
+    })?;
+    if current != plan.before {
+        return Err(CollectionError::StalePreview.into());
+    }
+    // Revalidate the exact saved bytes against current kinds and value owners;
+    // do not encode a second time or trust the preview's live references.
+    let q = collection_codec::decode(5, plan.payload.as_bytes(), 0).map_err(codec)?;
+    if !migrations::available_criteria(tx, &q)? {
+        return Err(CollectionError::CriteriaUnavailable.into());
+    }
+    tx.execute("UPDATE collections SET query_version=5,query_payload=?,validity_state='valid',updated_at=CURRENT_TIMESTAMP WHERE id=?",params![plan.payload,current.id])?;
+    read(tx, current.id)
+}

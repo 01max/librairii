@@ -359,6 +359,22 @@ pub struct Database<'library> {
     close_failed: bool,
 }
 
+/// Process-local identity of this writer generation. Snapshot data may be shown
+/// outside a transaction, but cannot be replayed into another database runtime.
+#[derive(Clone, Debug)]
+pub(crate) struct SnapshotIdentity(Weak<Queue>);
+impl PartialEq for SnapshotIdentity {
+    fn eq(&self, other: &Self) -> bool {
+        self.0.ptr_eq(&other.0)
+    }
+}
+impl Eq for SnapshotIdentity {}
+impl Database<'_> {
+    pub(crate) fn snapshot_identity(&self) -> SnapshotIdentity {
+        SnapshotIdentity(Arc::downgrade(&self.writer))
+    }
+}
+
 impl<'library> Database<'library> {
     pub fn open_isolated(authority: &'library IsolatedLibrary) -> Result<Self> {
         Self::open_owned(Authority::Isolated(authority))
