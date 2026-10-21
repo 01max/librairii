@@ -2235,6 +2235,15 @@
         "x86_64-apple-darwin",
         "x86_64-unknown-linux-gnu"
       ]
+    },
+    {
+      "suite": "librairii-storage::shelves",
+      "name": "uuid_reimport_reconnects_new_numeric_id_without_rewriting_approved_state",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
     }
   ]
 }

@@ -2890,6 +2890,19 @@
           ]
         },
         "reason": "Additive observed Task 10 discovery; original integration identities retain exact order and target scope."
+      },
+      {
+        "position": 392,
+        "identity": {
+          "suite": "librairii-storage::shelves",
+          "name": "uuid_reimport_reconnects_new_numeric_id_without_rewriting_approved_state",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive observed Task 10 discovery; original integration identities retain exact order and target scope."
       }
     ],
     "python": [

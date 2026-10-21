@@ -181,3 +181,52 @@ fn manual_curation_retention_exclusions_order_and_noops_are_explicit() -> TestRe
     db.close()?;
     Ok(())
 }
+#[test]
+fn uuid_reimport_reconnects_new_numeric_id_without_rewriting_approved_state() -> TestResult {
+    use shelves::Curation::*;
+    let roots = TestRoots::new()?;
+    let lib = library(&roots)?;
+    let mut db = Database::open_isolated(&lib)?;
+    seed(&db, 2)?;
+    let s = create(&db, "Durable")?;
+    curate(&db, s.id, Add(vec![uuid(1), uuid(2)]))?;
+    let id = s.id;
+    let c = collection(&db, "All", Query::default())?;
+    committed(db.transaction(WorkCancellation::default(),move|tx|{
+        tx.execute("INSERT INTO shelf_sources(shelf_id,collection_id,collection_name) VALUES(?,?,'Accepted from All')",rusqlite::params![id,c])?;let src=tx.last_insert_rowid();
+        tx.execute("INSERT INTO shelf_story_origins(shelf_id,story_uuid,source_id) VALUES(?,?,?)",rusqlite::params![id,uuid(1),src])?;
+        tx.execute("UPDATE shelf_stories SET protected=0 WHERE shelf_id=? AND story_uuid=?",rusqlite::params![id,uuid(1)])?;
+        tx.execute("INSERT INTO shelf_exclusions(shelf_id,story_uuid) VALUES(?,?)",rusqlite::params![id,uuid(9)])?;Ok(())
+    })?.wait()?)?;
+    let before = db.shelf_members(id)?.wait()?;
+    committed(
+        db.transaction(WorkCancellation::default(), |tx| {
+            tx.execute("DELETE FROM stories WHERE id=1", [])?;
+            Ok(())
+        })?
+        .wait()?,
+    )?;
+    let p = db
+        .shelf_page(id, Default::default(), "fr-FR".into())?
+        .wait()?;
+    assert_eq!(p.total, 2);
+    assert!(p.members[0].story.is_none());
+    assert!(!p.members[0].member.cached_title.is_empty());
+    assert_eq!(p.shelf.unavailable_count, 1);
+    assert_eq!(db.shelf_members(id)?.wait()?, before);
+    committed(db.transaction(WorkCancellation::default(),|tx|{
+        tx.execute("INSERT INTO stories(id,uuid,display_name_normalized) VALUES(99,?,'reimported')",[uuid(1)])?;
+        tx.execute("INSERT INTO story_archives(story_id,original_filename,detected_format,sha256,byte_size,managed_path,validation_state) VALUES(99,'new.zip','zip',printf('%064d',99),1,'archives/99','valid')",[])?;Ok(())
+    })?.wait()?)?;
+    let p = db
+        .shelf_page(id, Default::default(), "fr-FR".into())?
+        .wait()?;
+    assert_eq!(p.members[0].story.as_ref().map(|s| s.id), Some(99));
+    assert_eq!(p.shelf.unavailable_count, 0);
+    assert_eq!(db.shelf_members(id)?.wait()?, before);
+    db.close()?;
+    let mut db = Database::open_isolated(&lib)?;
+    assert_eq!(db.shelf_members(id)?.wait()?, before);
+    db.close()?;
+    Ok(())
+}
