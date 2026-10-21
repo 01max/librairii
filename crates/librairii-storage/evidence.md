@@ -1816,3 +1816,31 @@ refuse, and both Active bytes and the recovery refusal remain unchanged. It was
 RED with RecoveryBindingRequired before the guard correction, then GREEN.
 Actual ARM crash regression1/1 and profile integration12/12 PASS; storage
 all-target Clippy-Dwarnings/fmt/diff PASS. No new test identity or recovery replay.
+
+### Review5595434525 P2: bounded ownership-safe independent copy
+
+The internal keep-all-names-before-payload strategy is replaced by one depth-first
+traversal. Live target descriptors cover current ancestors and ONE exclusive-create
+payload, plus fixed root/lease/read/validation overhead; they do not accumulate
+with sibling/file count. A completed member is released only after its bytes,
+name/identity and file/parent durability checks. Completed files are never reopened
+for writing. Current ancestors and current SAME File remain physically retained
+on failure, including substitution/unlink; no saved inode grants write authority.
+All literal-name/hash/closed-schema/root/durability checks finish before the
+inactive result can enter native binding. No rename/truncation/normalization,
+new product cutoff, recovery replay or partial-root cleanup is introduced.
+
+The existing copy test now owns one exact child with Bash-verified soft FD limit64,
+192 distinct raw-named payloads, actual closed-input verification and successful
+copy/revalidation of every payload with source bytes unchanged. The parent owns
+bounded output, a30s deadline and true wait/reap (kill+wait fallback); late/error/
+timeout cannot pass. No parent/hard limit, privilege or retry/tuning change.
+This was RED with actual EMFILE24 on the keep-all implementation and GREEN with
+the SAME fixed fixture/budget after traversal correction. Existing in-flight
+unlink/substitution and late cancellation/refusal checks remain required; an
+all-names-before-any-payload assertion is not a product compatibility requirement.
+
+Actual ARM copy unit2/2 (including the child), adoption integration10/10 and
+portability4/4 PASS; storage all-target Clippy-Dwarnings/fmt/diff PASS. Descriptor
+usage still reflects ancestry depth and fixed working handles, not a claim about
+arbitrary deep paths or graceful OOM. Original test identities/scopes retained.
