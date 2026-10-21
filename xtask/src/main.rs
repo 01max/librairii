@@ -3,6 +3,7 @@ mod deep;
 mod discovery;
 mod policy;
 mod preservation;
+mod sources;
 mod supply_chain;
 use std::{
     env,

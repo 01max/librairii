@@ -54,17 +54,32 @@ jobs:
           $source = git rev-parse HEAD
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           $fresh = Join-Path $env:RUNNER_TEMP ('lp-Été #%2F-' + [guid]::NewGuid())
-          git -c core.autocrlf=true clone --no-local --no-checkout . $fresh
+          git clone --config core.autocrlf=true --no-local --no-checkout . $fresh
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          git -C $fresh -c core.autocrlf=true checkout --detach $source
+          git -C $fresh checkout --detach $source
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          if ((git -C $fresh config --get core.autocrlf) -ne 'true') { throw 'Fresh checkout must persist core.autocrlf=true' }
           python -I -B -X utf8 (Join-Path $fresh 'xtask/check_preservation.py') > windows-autocrlf-preservation.json
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python -I -B -X utf8 (Join-Path $fresh 'xtask/check_sources.py') > windows-autocrlf-sources.json
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $evidence = Join-Path $env:GITHUB_WORKSPACE 'target/quality'
+          New-Item -ItemType Directory -Force $evidence | Out-Null
+          python -I -B -X utf8 (Join-Path $fresh 'xtask/check_migration_bytes.py') > (Join-Path $evidence 'windows-autocrlf-migration-hashes.json')
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          Push-Location $fresh
+          try {
+            cargo test --locked --package librairii-storage --test migrations --target $env:RUST_TARGET every_embedded_sql_byte_matches_the_admitted_corpus_and_go_source -- --exact 2>&1 | Tee-Object -FilePath (Join-Path $evidence 'windows-autocrlf-embedded-migrations.log')
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          } finally {
+            Pop-Location
+          }
       - name: Assert native architecture and record source/toolchain
         run: |
           test "$(rustc -vV | sed -n 's/^host: //p')" = "$RUST_TARGET"
           mkdir -p target/quality
           if test -f windows-autocrlf-preservation.json; then mv windows-autocrlf-preservation.json target/quality/; fi
+          if test -f windows-autocrlf-sources.json; then mv windows-autocrlf-sources.json target/quality/; fi
           git rev-parse HEAD > target/quality/source.txt
           rustc -vV > target/quality/rustc.txt
           cargo --version > target/quality/cargo.txt
