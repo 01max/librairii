@@ -135,10 +135,10 @@ fn curated(
         Ok(())
     })?;
     for member in members {
-        if let Some(wanted) = &mut wanted {
-            if !wanted.remove(&member.uuid) {
-                continue;
-            }
+        if let Some(wanted) = &mut wanted
+            && !wanted.remove(&member.uuid)
+        {
+            continue;
         }
         if let Some(story) = available.remove(&member.uuid) {
             out.append(story)?;
