@@ -1846,6 +1846,57 @@ fn native_actual_process_crash_keeps_active_and_releases_only_os_locks() -> Test
         NativeLibrary::reopen(&store, &locations, &WorkCancellation::default()),
         Err(StorageError::RecoveryBindingRequired)
     ));
+    // Independent UI preferences remain writable after actual process death.
+    // This must not grant a new library binding or clear persisted Active.
+    let before = store
+        .load()?
+        .ok_or("crashed profile missing")?
+        .profile()
+        .clone();
+    let changed = store.update(|profile| {
+        profile.language = if profile.language == "en" { "fr" } else { "en" }.into();
+        Ok(())
+    })?;
+    assert_ne!(changed.language, before.language);
+    assert_eq!(
+        (
+            &changed.root,
+            &changed.library_id,
+            changed.complete,
+            changed.recovering
+        ),
+        (
+            &before.root,
+            &before.library_id,
+            before.complete,
+            before.recovering
+        )
+    );
+    for field in ["root", "raw_id", "complete", "recovering"] {
+        assert!(
+            matches!(
+                store.update(|profile| {
+                    match field {
+                        "root" => profile.root.push_str("-unverified"),
+                        "raw_id" => profile.library_id.make_ascii_uppercase(),
+                        "complete" => profile.complete = !profile.complete,
+                        _ => profile.recovering = !profile.recovering,
+                    }
+                    Ok(())
+                }),
+                Err(StorageError::ProfileBindingActive)
+            ),
+            "{field}"
+        );
+    }
+    assert_eq!(
+        store.load()?.ok_or("updated profile missing")?.profile(),
+        &changed
+    );
+    assert!(matches!(
+        NativeLibrary::reopen(&store, &locations, &WorkCancellation::default()),
+        Err(StorageError::RecoveryBindingRequired)
+    ));
     assert_eq!(fs::read(root.join(NATIVE_STATE))?, active);
     assert_eq!(fs::read(source.join("db/librairii.sqlite3"))?, source_db);
     assert_eq!(fs::read(legacy.join("settings.json"))?, legacy_profile);

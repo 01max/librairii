@@ -773,11 +773,10 @@ impl NativeProfileStore {
         ) {
             return Err(StorageError::ProfileBindingActive);
         }
-        if previous.complete && state.binding.is_none() {
-            // Restarted profile DATA is not a current-generation language-write
-            // capability. First reacquire the actual existing native owner.
-            return Err(StorageError::RecoveryBindingRequired);
-        }
+        // The profile namespace/OS lease owns independent language settings
+        // even when an interrupted library cannot be rebound. Authority fields
+        // are unchanged above; this never clears the library's persisted Active
+        // state or grants runtime/recovery permission.
         #[cfg(any(target_os = "macos", target_os = "linux"))]
         return self.update_unix(&mut state, next, bytes, before_replace, flush);
         #[cfg(not(any(target_os = "macos", target_os = "linux")))]

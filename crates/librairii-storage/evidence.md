@@ -1801,3 +1801,18 @@ and GREEN after correction. Recovery/source bytes and failure fencing are checke
 no physical power-loss experiment is claimed. Actual ARM backup unit4/4 and
 integration7/7 PASS, storage all-target Clippy-Dwarnings/fmt/diff PASS. Original
 assertions/test identities are retained; no old CI retry or extra review run.
+
+### Review5595434525 P2: independent language updates during recovery
+
+Language-only updates now use the actual native profile namespace/OS lease even
+without a library binding after interruption. The existing exact comparison of
+root/rawID/complete/recovering remains mandatory; fenced/frozen live bindings and
+poisoned/changed namespaces retain their existing refusal rules. Updating language
+does not touch or clear the root's persisted Active record or admit a runtime.
+
+The actual process-crash regression was extended: after kill+true wait/reap and
+failed native reopen, language publication succeeds, all four authority changes
+refuse, and both Active bytes and the recovery refusal remain unchanged. It was
+RED with RecoveryBindingRequired before the guard correction, then GREEN.
+Actual ARM crash regression1/1 and profile integration12/12 PASS; storage
+all-target Clippy-Dwarnings/fmt/diff PASS. No new test identity or recovery replay.
