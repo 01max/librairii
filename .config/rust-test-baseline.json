@@ -1958,6 +1958,40 @@
     {
       "suite": "librairii-core::query_urls",
       "name": "url_shared_current_and_legacy_fixtures_preserve_non_broken_criteria"
+    },
+    {
+      "suite": "librairii-core::navigation",
+      "name": "navigation_branching_bounds_and_invalid_selection_preserve_the_prior_state"
+    },
+    {
+      "suite": "librairii-core::navigation",
+      "name": "navigation_restores_scope_refinement_selection_page_and_independent_presentation"
+    },
+    {
+      "suite": "librairii-core::navigation",
+      "name": "reopen_preserves_one_pass_unicode_and_refuses_foreign_future_or_corrupt_documents"
+    },
+    {
+      "suite": "librairii-core::navigation",
+      "name": "stale_query_and_library_generation_stamps_cannot_apply_results"
+    },
+    {
+      "suite": "librairii-storage::query_preferences",
+      "name": "navigation_preferences_refuse_symlink_substitution_and_preserve_external_bytes",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::query_preferences",
+      "name": "navigation_preferences_reopen_outside_the_library_and_preserve_unknown_versions",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
     }
   ]
 }

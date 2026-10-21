@@ -5,6 +5,8 @@ pub type Result<T> = std::result::Result<T, StorageError>;
 
 #[derive(Debug, thiserror::Error)]
 pub enum StorageError {
+    #[error("navigation.invalid_state")]
+    InvalidNavigation,
     #[error("{0}")]
     QueryInput(#[from] librairii_core::query::QueryInputError),
     #[error("storage.explicit_override_required")]
@@ -140,6 +142,7 @@ impl StorageError {
 
     pub const fn code(&self) -> &'static str {
         match self {
+            Self::InvalidNavigation => "navigation.invalid_state",
             Self::QueryInput(librairii_core::query::QueryInputError::InvalidQuery) => {
                 "library.invalid_query"
             }

@@ -4,6 +4,8 @@
 //! namespace with its marker locked for the entire store lifetime. This lock does
 //! not exclude an unmodified Go library process or authorize library adoption.
 #[cfg(any(target_os = "macos", target_os = "linux"))]
+mod navigation;
+#[cfg(any(target_os = "macos", target_os = "linux"))]
 use crate::platform::unix::{ConfigTemp, ControlAllocation, Directory, durable_file_flush};
 use crate::{Result, StorageError, backup};
 use serde::{Deserialize, Serialize, de};
@@ -700,16 +702,25 @@ impl NativeProfileStore {
         self.revalidate_namespace()?;
         let entries = self
             .namespace
-            .entries(2, &crate::database::WorkCancellation::default())
+            .entries(3, &crate::database::WorkCancellation::default())
             .map_err(|error| match error {
                 StorageError::AdoptionInputChanged => StorageError::RecoveryBindingRequired,
                 error => error,
             })?;
         if entries
             .iter()
-            .any(|entry| entry != MARKER && entry != SETTINGS)
+            .any(|entry| entry != MARKER && entry != SETTINGS && entry != "navigation.json")
         {
             return Err(StorageError::RecoveryBindingRequired);
+        }
+        if entries.iter().any(|entry| entry == "navigation.json") {
+            // Independent UI preferences grant no binding/recovery authority.
+            // Refuse links/special files; malformed bytes are reported only by
+            // the UI preference reader and never authorize cleanup or replay.
+            self.namespace.open_regular(
+                std::ffi::OsStr::new("navigation.json"),
+                rustix::fs::OFlags::RDONLY,
+            )?;
         }
         Ok(())
     }

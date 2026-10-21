@@ -13,7 +13,7 @@ PREVIOUS_QUERY_INDEX_SHA = '13dfd314abfda9a9553d152a1d8a5586f8bd1205a08c177af9bb
 INDEX_SHA = 'cd8fcdac9ccdd46f1f06294f27bc07e9f8ed40f79d16cdab4d39c7c0cd837d78'
 SOURCE_COUNT = 63
 QUERY_MAP = '.config/query-codec-source-map.json'
-QUERY_MAP_SHA = 'af3458ade145733c30f8f7489eca943998815e0be15893da0515aa5bed518c6d'
+QUERY_MAP_SHA = '6332597e7bd886e6b7d583b4beca3a21dde862c09d64a60d3d5cb2aac5582cf4'
 HISTORICAL_MANIFEST_SHA = '2f8bd6db37191346b6719d7345a46a0b4d3163be745d5fae6b7f8ebf429a0409'
 BUNDLE = 'go-1.26.5-xtext-0.43.0-unicode15-cldr32'
 APPROVED_BUNDLES = {BUNDLE, 'go-1.26.5-json-v1-studio'}
@@ -581,7 +581,7 @@ def check_url_map(root, value):
             or value['oracle'] != '73a93303a9a44cf0a92eaf525331561ed8c04460'
             or value['origin'] != {'path': 'internal/library/query_codec.go', 'bytes': 12015,
                 'sha256': 'ac644cb802938cfc2ce23bdb80d334f47f3d20e4376a4f2c6df8d2fe79bb4389'}
-            or value['scope'] != 'bounded URL v1-v3 decoding and typed browser-history handover; no system URL protocol or live authority'
+            or value['scope'] != 'bounded URL v1-v3 decoding, native request persistence and typed browser-history handover; no system URL protocol or live authority'
             or set(value['leaf']) != {'path', 'bytes', 'sha256'}
             or value['leaf']['path'] != 'crates/librairii-core/src/collection_codec/url.rs'):
         raise ValueError('unreviewed URL origin, scope or leaf')

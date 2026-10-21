@@ -296,3 +296,31 @@ fn fallback(q: &Query) -> Scope {
         Scope::Library
     }
 }
+
+/// Native persistence retains request text verbatim. Validation runs on a
+/// disposable copy: reopening must not add another Unicode normalization pass.
+pub fn restore_request(bytes: &[u8]) -> Result<QueryRequest> {
+    if bytes.len() > 262_144 {
+        return Err(InvalidHash);
+    }
+    let mut parser = Parser { bytes, offset: 0 };
+    let value = parser.value(0).map_err(|_| InvalidHash)?;
+    parser.space();
+    if parser.offset != bytes.len() {
+        return Err(InvalidHash);
+    }
+    let request = node(value, &mut 50)?;
+    normalize_request(request.clone()).map_err(|_| InvalidHash)?;
+    Ok(request)
+}
+
+pub fn request_bytes(request: &QueryRequest) -> Result<Vec<u8>> {
+    let mut value = serde_json::to_value(&request.criteria).map_err(|_| InvalidHash)?;
+    let fields = value.as_object_mut().ok_or(InvalidHash)?;
+    fields.insert("page".into(), request.page.into());
+    fields.insert("pageSize".into(), request.page_size.into());
+    fields.insert("sort".into(), request.sort.clone().into());
+    let bytes = serde_json::to_vec(&value).map_err(|_| InvalidHash)?;
+    restore_request(&bytes)?;
+    Ok(bytes)
+}
