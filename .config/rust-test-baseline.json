@@ -1217,6 +1217,28 @@
       "targets": [
         "x86_64-pc-windows-msvc"
       ]
+    },
+    {
+      "suite": "librairii-storage::native_library",
+      "name": "native_actual_process_crash_keeps_active_and_releases_only_os_locks",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::native_library",
+      "name": "native_closed_root_relocation_refuses_unverified_retarget_without_rewriting_data",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::layout_identity",
+      "name": "identity_probe_keeps_go_uuid_middle_bytes_and_exact_wrapper_spelling"
     }
   ]
 }
