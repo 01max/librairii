@@ -13,13 +13,13 @@ PREVIOUS_QUERY_INDEX_SHA = '13dfd314abfda9a9553d152a1d8a5586f8bd1205a08c177af9bb
 INDEX_SHA = 'cd8fcdac9ccdd46f1f06294f27bc07e9f8ed40f79d16cdab4d39c7c0cd837d78'
 SOURCE_COUNT = 63
 QUERY_MAP = '.config/query-codec-source-map.json'
-QUERY_MAP_SHA = '8c3f01c716f127445ff60681693bf0b5f12d6cd7f252ac8d5d1a69d45d9406be'
+QUERY_MAP_SHA = 'c906471f67a29c47e8dc96334110ba1077a01d449a5c2d953cc505442edbbde1'
 HISTORICAL_MANIFEST_SHA = '2f8bd6db37191346b6719d7345a46a0b4d3163be745d5fae6b7f8ebf429a0409'
 BUNDLE = 'go-1.26.5-xtext-0.43.0-unicode15-cldr32'
 APPROVED_BUNDLES = {BUNDLE, 'go-1.26.5-json-v1-studio'}
 DERIVATIVES = 'crates/librairii-core/src/collection_codec/compatibility'
 # Actual ORIGINAL8471 closure delivered onto current94b; source bytes only.
-SELECTED_MANIFEST_SHA = '0688b9e0bd00eb8bb46a8c4966669d4fe9d2dcf05b168573f90a669a6be032f1'
+SELECTED_MANIFEST_SHA = '24ae18f62f084e54eea79ba625dc3665598ad86bd00cc5d9c81d8c5ea70c2318'
 SELECTED_KINDS = {
     'codec-reference.json': 'generated',
     'codec_oracle.go.in': 'authored',

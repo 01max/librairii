@@ -46,7 +46,7 @@ class SourcePolicy(unittest.TestCase):
         self.core_path = self.root / gate.CORE_PATH
         self.core_path.parent.mkdir(parents=True)
         shutil.copyfile(source / gate.CORE_PATH, self.core_path)
-        for name in (*gate.RUNTIME_LEAVES, 'crates/librairii-core/src/collection_codec/url.rs'):
+        for name in (*gate.RUNTIME_LEAVES, 'crates/librairii-core/src/collection_codec/url.rs', 'crates/librairii-core/src/tagging/unicode15.rs'):
             destination = self.root / name
             destination.parent.mkdir(parents=True, exist_ok=True)
             shutil.copyfile(source / name, destination)

@@ -104,7 +104,8 @@ pub(in crate::collection_codec) fn lowercase_key(value: &str) -> Result<String> 
 
 /// Frozen tag identity uses simple lowercase followed by NFKD (never full fold).
 pub(crate) fn tag_key_decomposition(value: &str) -> Result<String> {
-    nfkd_with_bounds(&lowercase_key(value)?, BufferBounds::SAVED)
+    let bounds = BufferBounds::runtime(value.len()).map_err(|_| NormalizeError::InputLimit)?;
+    nfkd_with_bounds(&lowercase_key(value)?, bounds)
 }
 pub(crate) fn tag_is_mark(character: char) -> bool {
     in_ranges(character, unicode::MN)

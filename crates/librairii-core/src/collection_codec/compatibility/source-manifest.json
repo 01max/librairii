@@ -461,8 +461,8 @@
     },
     {
       "path": "normalization.rs",
-      "bytes": 23342,
-      "sha256": "7800693f8abefacf5cee1f7a1207ceb0b5ec7d25969276a4f50695436aa4e390",
+      "bytes": 23423,
+      "sha256": "4ecb186d7071380d9cd36c0666237ba26617a1f057630e86c670ba478813874f",
       "kind": "translated",
       "recipe": "Hand translation of frozen full-fold\u2192Go stream-safe NFKD\u2192Mn-only removal\u2192Go whitespace folding; original-character leading/trailing partition precedes stable CCC insertion. Safe checked UTF8 trie and fixed32-rune segment, Hangul decomposition; no modern composition or runtime Go.",
       "sources": [

@@ -28,3 +28,7 @@ crates/librairii-core/src/query/** -text
 
 # Retained synthetic query-reference captures are hashed as exact bytes.
 crates/librairii-storage/tests/fixtures/query/*.json -text
+
+# Frozen tag category data and reference captures retain exact byte provenance.
+crates/librairii-core/src/tagging/unicode15.rs -text
+crates/librairii-storage/tests/fixtures/tags/** -text

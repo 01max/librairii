@@ -1006,8 +1006,8 @@
     },
     {
       "path": "normalization.rs",
-      "bytes": 23342,
-      "sha256": "7800693f8abefacf5cee1f7a1207ceb0b5ec7d25969276a4f50695436aa4e390",
+      "bytes": 23423,
+      "sha256": "4ecb186d7071380d9cd36c0666237ba26617a1f057630e86c670ba478813874f",
       "reason": "Task 8 reuses the frozen lowercase/NFKD/Mn/whitespace algorithm for tag identity; saved/runtime data and references retain original bytes."
     },
     {
@@ -2666,6 +2666,14 @@
             "x86_64-apple-darwin",
             "x86_64-unknown-linux-gnu"
           ]
+        },
+        "reason": "Additive observed Task 7/8 discovery; original integration identities retain exact order and target scope."
+      },
+      {
+        "position": 373,
+        "identity": {
+          "suite": "librairii-core::tag_identity",
+          "name": "long_mark_input_has_no_saved_query_wire_limit_for_tag_identity"
         },
         "reason": "Additive observed Task 7/8 discovery; original integration identities retain exact order and target scope."
       }

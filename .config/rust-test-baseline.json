@@ -2089,6 +2089,10 @@
         "x86_64-apple-darwin",
         "x86_64-unknown-linux-gnu"
       ]
+    },
+    {
+      "suite": "librairii-core::tag_identity",
+      "name": "long_mark_input_has_no_saved_query_wire_limit_for_tag_identity"
     }
   ]
 }
