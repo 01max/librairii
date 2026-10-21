@@ -675,9 +675,14 @@ fn j65_saturated_stop_and_expired_wait_keep_all_required_owners_until_readback_a
         &[ReadStep::Match, ReadStep::Match],
     )?;
     rig.created(input(89, OperationKind::Export, 100, 53))?;
+    // Bytes include retained metadata, and the peak can reserve an empty call.
+    // Require seven actual offers before blocking the coordinator or stopping.
     until(|| {
         let m = rig.handle.measurements();
-        m.dispatched_handles == 7 && m.item_bytes >= 7 * 53 && gates.terminal_attempt.entries() == 2
+        m.dispatched_handles == 7
+            && m.item_bytes >= 7 * 53
+            && gates.terminal_attempt.entries() == 2
+            && guard(&rig.store).offered.len() == 7
     })?;
     gates.admit.close();
     let pending = rig.start(input(90, OperationKind::Import, 1, 17))?;
