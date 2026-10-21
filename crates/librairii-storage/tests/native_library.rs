@@ -2157,10 +2157,10 @@ fn native_job_session_borrows_actual_database_and_file_owner_until_durable_settl
                 handle.try_start(start).map_err(|_| "intake")?;
                 let end = Instant::now() + Duration::from_secs(10);
                 loop {
-                    if let Some(admission) = handle.take_admission() {
-                        if !admission.accepted {
-                            return Err("native start rejected".into());
-                        }
+                    if let Some(admission) = handle.take_admission()
+                        && !admission.accepted
+                    {
+                        return Err("native start rejected".into());
                     }
                     if let Some(snapshot) = db.operation_snapshot(id.clone())?.wait()? {
                         if snapshot.operation.state == OperationState::Succeeded {
