@@ -383,3 +383,107 @@ fn explicit_repair_retains_invalid_bytes_rejects_stale_plans_and_rolls_back_writ
     db.close()?;
     Ok(())
 }
+
+#[test]
+fn deletion_reports_links_preserves_approved_history_and_transitions_only_committed_active_view()
+-> TestResult {
+    use librairii_core::{
+        CollectionId,
+        collection_codec::url::{Location, Scope},
+        navigation::{Navigation, Presentation},
+        query::QueryRequest,
+    };
+    let roots = TestRoots::new()?;
+    let library = IsolatedLibrary::initialize_from_override(
+        Some(roots.library().as_os_str()),
+        "a0000000-0000-4000-8000-000000000001".parse()?,
+    )?;
+    let mut db = Database::open_isolated(&library)?;
+    let c = created(&db, "Linked", Query::default())?;
+    let mut request = QueryRequest {
+        page: 4,
+        page_size: 10,
+        sort: "imported_desc".into(),
+        ..Default::default()
+    };
+    request.criteria.name = "current refinement".into();
+    let mut nav = Navigation::new(
+        library.identity().typed(),
+        1,
+        Location {
+            scope: Scope::Collection(CollectionId::new(c.id)?),
+            request,
+        },
+    )?;
+    nav.select(vec![9, 3])?;
+    nav.set_presentation(Presentation::LargeCovers);
+    let stamp = nav.stamp();
+    let frame = nav.current().clone();
+    let stale = db.collection_deletion_plan(c.id)?.wait()?;
+    committed(db.transaction(WorkCancellation::default(),move|tx|{
+        tx.execute_batch("INSERT INTO shelves(id,name,normalized_name,position) VALUES(1,'Approved','approved',0); INSERT INTO shelf_stories(shelf_id,story_uuid,position,cached_title) VALUES(1,'10000000-0000-4000-8000-000000000001',0,'Unavailable'); INSERT INTO shelf_exclusions(shelf_id,story_uuid) VALUES(1,'10000000-0000-4000-8000-000000000002');")?;
+        tx.execute("INSERT INTO shelf_sources(id,shelf_id,collection_id,collection_name) VALUES(1,1,?,'Linked')",[c.id])?;
+        tx.execute_batch("INSERT INTO shelf_story_origins(shelf_id,story_uuid,source_id) VALUES(1,'10000000-0000-4000-8000-000000000001',1);")?;Ok(())
+    })?.wait()?)?;
+    assert!(matches!(
+        committed(
+            db.delete_collection(stale, WorkCancellation::default())?
+                .wait()?
+        ),
+        Err(StorageError::Collection(CollectionError::StalePreview))
+    ));
+    let plan = db.collection_deletion_plan(c.id)?.wait()?;
+    let source = &plan.impact().sources[0];
+    assert!(source.active);
+    assert_eq!(source.approved_members, 1);
+    assert_eq!(source.accepted_origins, 1);
+    assert_eq!(source.exclusions, 1);
+    assert!(matches!(
+        committed(
+            db.delete_collection(plan, WorkCancellation::default())?
+                .wait()?
+        ),
+        Err(StorageError::Collection(CollectionError::InUse))
+    ));
+    assert_eq!(nav.current(), &frame);
+    committed(
+        db.transaction(WorkCancellation::default(), |tx| {
+            tx.execute("UPDATE shelf_sources SET active=0 WHERE id=1", [])?;
+            Ok(())
+        })?
+        .wait()?,
+    )?;
+    let plan = db.collection_deletion_plan(c.id)?.wait()?;
+    let receipt = committed(
+        db.delete_collection(plan, WorkCancellation::default())?
+            .wait()?,
+    )?;
+    assert!(receipt.apply_navigation(&mut nav, &stamp)?);
+    assert_eq!(nav.current().location.scope, Scope::Custom);
+    assert_eq!(nav.current().location.request, frame.location.request);
+    assert_eq!(nav.current().selection, vec![9, 3]);
+    assert_eq!(nav.presentation(), Presentation::LargeCovers);
+    let kept = db
+        .read(|tx| {
+            Ok((
+                tx.query_row(
+                    "SELECT collection_id FROM shelf_sources WHERE id=1",
+                    [],
+                    |r| r.get::<_, Option<i64>>(0),
+                )?,
+                tx.query_row("SELECT COUNT(*) FROM shelf_story_origins", [], |r| {
+                    r.get::<_, i64>(0)
+                })?,
+                tx.query_row("SELECT COUNT(*) FROM shelf_stories", [], |r| {
+                    r.get::<_, i64>(0)
+                })?,
+                tx.query_row("SELECT COUNT(*) FROM shelf_exclusions", [], |r| {
+                    r.get::<_, i64>(0)
+                })?,
+            ))
+        })?
+        .wait()?;
+    assert_eq!(kept, (None, 1, 1, 1));
+    db.close()?;
+    Ok(())
+}

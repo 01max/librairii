@@ -370,6 +370,13 @@ impl PartialEq for SnapshotIdentity {
 }
 impl Eq for SnapshotIdentity {}
 impl Database<'_> {
+    pub(crate) fn library_id(&self) -> librairii_core::LibraryId {
+        match self.authority {
+            Authority::Isolated(library) => library.identity().typed(),
+            #[cfg(any(target_os = "macos", target_os = "linux"))]
+            Authority::Native(library) => library.identity().typed(),
+        }
+    }
     pub(crate) fn snapshot_identity(&self) -> SnapshotIdentity {
         SnapshotIdentity(Arc::downgrade(&self.writer))
     }

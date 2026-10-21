@@ -481,3 +481,131 @@ fn replace(tx: &Transaction<'_>, plan: ReplacementPlan) -> Result<Collection> {
     tx.execute("UPDATE collections SET query_version=5,query_payload=?,validity_state='valid',updated_at=CURRENT_TIMESTAMP WHERE id=?",params![plan.payload,current.id])?;
     read(tx, current.id)
 }
+
+/// Current source links, including inactive history. This is impact data for
+/// Task 10's same-transaction reviewed detachment participant, not permission
+/// to remove approved members or bypass linked-deletion review.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct SourceImpact {
+    pub source_id: i64,
+    pub shelf_id: i64,
+    pub shelf_name: Vec<u8>,
+    pub shelf_revision: i64,
+    pub source_name: Vec<u8>,
+    pub active: bool,
+    pub approved_members: i64,
+    pub accepted_origins: i64,
+    pub exclusions: i64,
+}
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct DeletionImpact {
+    pub collection: Collection,
+    pub sources: Vec<SourceImpact>,
+}
+pub fn deletion_impact(tx: &Transaction<'_>, id: i64) -> Result<DeletionImpact> {
+    let collection = read(tx, id)?;
+    let mut stmt=tx.prepare("SELECT src.id,src.shelf_id,CAST(s.name AS BLOB),s.revision,CAST(src.collection_name AS BLOB),src.active,(SELECT COUNT(*) FROM shelf_stories m WHERE m.shelf_id=s.id),(SELECT COUNT(*) FROM shelf_story_origins o WHERE o.source_id=src.id),(SELECT COUNT(*) FROM shelf_exclusions e WHERE e.shelf_id=s.id) FROM shelf_sources src JOIN shelves s ON s.id=src.shelf_id WHERE src.collection_id=? ORDER BY src.shelf_id,src.id")?;
+    let sources = stmt
+        .query_map([id], |r| {
+            Ok(SourceImpact {
+                source_id: r.get(0)?,
+                shelf_id: r.get(1)?,
+                shelf_name: r.get(2)?,
+                shelf_revision: r.get(3)?,
+                source_name: r.get(4)?,
+                active: r.get(5)?,
+                approved_members: r.get(6)?,
+                accepted_origins: r.get(7)?,
+                exclusions: r.get(8)?,
+            })
+        })?
+        .collect::<rusqlite::Result<Vec<_>>>()?;
+    Ok(DeletionImpact {
+        collection,
+        sources,
+    })
+}
+#[derive(Clone, Debug)]
+pub struct DeletionPlan {
+    impact: DeletionImpact,
+    identity: crate::database::SnapshotIdentity,
+}
+impl DeletionPlan {
+    pub fn impact(&self) -> &DeletionImpact {
+        &self.impact
+    }
+}
+/// Only a committed TransactionOutcome exposes this value to callers. Failed
+/// or uncertain commits contain no receipt and cannot drive navigation changes.
+#[derive(Debug)]
+pub struct DeletedCollection {
+    id: i64,
+    library: librairii_core::LibraryId,
+}
+impl DeletedCollection {
+    pub fn id(&self) -> i64 {
+        self.id
+    }
+    /// Preserve the active effective query, navigation and selection as custom.
+    /// Stale results or results from another library never move the current view.
+    pub fn apply_navigation(
+        self,
+        nav: &mut librairii_core::navigation::Navigation,
+        stamp: &librairii_core::navigation::QueryStamp,
+    ) -> Result<bool> {
+        use librairii_core::collection_codec::url::Scope;
+        if nav.library() != self.library
+            || !nav.accepts(stamp)
+            || !matches!(nav.current().location.scope,Scope::Collection(id) if id.get()==self.id)
+        {
+            return Ok(false);
+        }
+        let mut frame = nav.current().clone();
+        frame.location.scope = Scope::Custom;
+        nav.replace(frame)
+            .map_err(|_| StorageError::InvalidNavigation)?;
+        Ok(true)
+    }
+}
+impl Database<'_> {
+    pub fn collection_deletion_plan(&self, id: i64) -> Result<Pending<'_, DeletionPlan>> {
+        let identity = self.snapshot_identity();
+        self.read(move |tx| {
+            Ok(DeletionPlan {
+                impact: deletion_impact(tx, id)?,
+                identity,
+            })
+        })
+    }
+    pub fn delete_collection(
+        &self,
+        plan: DeletionPlan,
+        cancellation: WorkCancellation,
+    ) -> Result<Pending<'_, TransactionOutcome<DeletedCollection>>> {
+        if self.snapshot_identity() != plan.identity {
+            return Err(CollectionError::StalePreview.into());
+        }
+        let library = self.library_id();
+        self.transaction(cancellation, move |tx| {
+            let current = deletion_impact(tx, plan.impact.collection.id).map_err(|e| match e {
+                StorageError::CollectionNotFound => CollectionError::StalePreview.into(),
+                other => other,
+            })?;
+            if current != plan.impact {
+                return Err(CollectionError::StalePreview.into());
+            }
+            // Linked Collections require Task 10's reviewed, atomic detachment.
+            // The CRUD participant refuses active links and retains all history.
+            execute(
+                tx,
+                Command::Delete {
+                    id: current.collection.id,
+                },
+            )?;
+            Ok(DeletedCollection {
+                id: current.collection.id,
+                library,
+            })
+        })
+    }
+}

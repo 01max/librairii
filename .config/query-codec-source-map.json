@@ -2791,6 +2791,19 @@
           ]
         },
         "reason": "Additive observed Task 9 discovery; original integration identities retain exact order and target scope."
+      },
+      {
+        "position": 384,
+        "identity": {
+          "suite": "librairii-storage::collections",
+          "name": "deletion_reports_links_preserves_approved_history_and_transitions_only_committed_active_view",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive observed Task 9 discovery; original integration identities retain exact order and target scope."
       }
     ],
     "python": [
