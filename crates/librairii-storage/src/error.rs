@@ -8,6 +8,8 @@ pub enum StorageError {
     #[error("{0}")]
     OperationInput(#[from] librairii_app::ports::creation::InputError),
     #[error("{0}")]
+    Export(#[from] librairii_core::export::ExportError),
+    #[error("{0}")]
     Metadata(#[from] librairii_core::metadata::MetadataError),
     #[error("{0}")]
     Shelf(#[from] librairii_core::shelves::ShelfError),
@@ -160,6 +162,7 @@ impl StorageError {
             Self::OperationInput(librairii_app::ports::creation::InputError::ResourceLimit) => {
                 "operations.resource_limit"
             }
+            Self::Export(error) => error.code(),
             Self::Metadata(error) => error.code(),
             Self::Collection(error) => error.code(),
             Self::Shelf(error) => error.code(),

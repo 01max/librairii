@@ -4,6 +4,7 @@ pub mod broken;
 pub mod browsing;
 pub mod collection_codec;
 pub mod collections;
+pub mod export;
 mod identity;
 pub mod import;
 pub mod metadata;

@@ -3167,6 +3167,15 @@
     {
       "suite": "librairii-adapters",
       "name": "archives::tests::patched_header_graph_and_brotli_support_fragmented_source_reads_and_strict_windows"
+    },
+    {
+      "suite": "librairii-storage::exports",
+      "name": "full_query_selection_collection_and_approved_shelf_unions_keep_identity_order_and_overlap",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
     }
   ]
 }
