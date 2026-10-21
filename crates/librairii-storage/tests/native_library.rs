@@ -1,5 +1,8 @@
 #![cfg(any(target_os = "macos", target_os = "linux"))]
 
+#[path = "support/runtime.rs"]
+mod runtime_support;
+
 use librairii_storage::{
     StorageError,
     adoption::{ClosedLibraryInput, ClosedManifest, IndependentCopy},
@@ -2164,7 +2167,7 @@ fn native_job_session_borrows_actual_database_and_file_owner_until_durable_settl
             &source,
             Configuration::default(),
             |handle| -> TestResult {
-                handle.try_start(start).map_err(|_| "intake")?;
+                runtime_support::offer(&handle, start)?;
                 let end = Instant::now() + Duration::from_secs(10);
                 loop {
                     if let Some(admission) = handle.take_admission()

@@ -1,6 +1,6 @@
 use super::*;
 use crate::ports::{
-    jobs::{JobStore, StoreResult},
+    jobs::{JobStore, StartObservation, StoreResult},
     operations::*,
 };
 use std::{
@@ -58,6 +58,7 @@ pub(super) struct Shared {
     progress: Vec<Arc<Mutex<super::progress::Slot>>>,
     dirty: Arc<AtomicBool>,
     revision: std::sync::atomic::AtomicU64,
+    metadata_owner: AtomicBool,
 }
 /// Handles can outlive a session, but then return Closed. A new session has a
 /// different Arc identity and cannot be reached through a stale handle.
@@ -223,14 +224,15 @@ fn admit(store: &impl JobStore, input: &NewOperation) -> bool {
         pause();
     }
 }
-fn start(store: &impl JobStore, work: &WorkItem) {
+fn start(store: &impl JobStore, work: &WorkItem) -> bool {
     let at = now();
     let mut unknown = false;
     loop {
         if unknown {
             match store.start_readback(work) {
-                StoreResult::Known(true) => return,
-                StoreResult::Known(false) => unknown = false,
+                StoreResult::Known(StartObservation::Running) => return true,
+                StoreResult::Known(StartObservation::Pending) => unknown = false,
+                StoreResult::Known(StartObservation::Interrupted) => return false,
                 _ => {
                     pause();
                     continue;
@@ -238,41 +240,152 @@ fn start(store: &impl JobStore, work: &WorkItem) {
             }
         }
         match store.start_item(work, &at) {
-            StoreResult::Known(()) => return,
-            StoreResult::Unknown => unknown = true,
-            _ => {}
+            StoreResult::Known(()) => return true,
+            StoreResult::Unknown | StoreResult::Rejected => unknown = true,
+            StoreResult::Retry => {}
         }
         pause();
     }
 }
-/// Retains the exact command through refusal/unknown readback. Required reporting
-/// never observes the work cancellation token.
-fn persist(store: &impl JobStore, command: &CommandWitness) {
+fn attempt(store: &impl JobStore, command: &CommandWitness) -> AttemptDisposition {
+    match command {
+        CommandWitness::CompleteItem(c) => store.complete_item(c).disposition,
+        CommandWitness::Finish(c) => store.finish(c).disposition,
+        CommandWitness::Interrupt(c) => store.interrupt(c).disposition,
+    }
+}
+fn command_scope(command: &CommandWitness) -> &OperationScope {
+    match command {
+        CommandWitness::CompleteItem(c) => &c.operation,
+        CommandWitness::Finish(c) => &c.operation,
+        CommandWitness::Interrupt(c) => &c.operation,
+    }
+}
+fn interrupted(view: Box<TerminalView>) -> Option<OperationHeader> {
+    (view.operation.state == librairii_core::OperationState::Interrupted).then_some(view.operation)
+}
+/// Three attempts, 10 ms apart. Unknown outcomes require fresh SAME-writer
+/// readback before another original write. The original command and resource
+/// owner remain live when escalation changes the reporting intent.
+fn persist(
+    store: &impl JobStore,
+    command: &CommandWitness,
+    shared: &Shared,
+    progress: Option<&ProgressSink>,
+) -> Option<OperationHeader> {
     let mut unknown = false;
+    let mut writes = 0;
+    let mut reads = 0;
     loop {
         if unknown {
             match store.readback(command).disposition {
-                ReadbackDisposition::MatchesApplied(_) => return,
+                ReadbackDisposition::MatchesApplied(_) => return None,
                 ReadbackDisposition::ProvenNotApplied(_) => unknown = false,
-                _ => {
-                    pause();
-                    continue;
+                ReadbackDisposition::TerminalConflict(view) => {
+                    if let Some(header) = interrupted(view) {
+                        return Some(header);
+                    }
                 }
+                _ => {}
+            }
+            if unknown {
+                reads += 1;
+                if reads >= 3 {
+                    break;
+                }
+                pause();
+                continue;
             }
         }
-        let disposition = match command {
-            CommandWitness::CompleteItem(c) => store.complete_item(c).disposition,
-            CommandWitness::Finish(c) => store.finish(c).disposition,
-            CommandWitness::Interrupt(c) => store.interrupt(c).disposition,
-        };
-        match disposition {
-            AttemptDisposition::Committed { .. } | AttemptDisposition::AlreadyMatching(_) => return,
+        writes += 1;
+        match attempt(store, command) {
+            AttemptDisposition::Committed { .. } | AttemptDisposition::AlreadyMatching(_) => {
+                return None;
+            }
+            AttemptDisposition::TerminalConflict(view) => {
+                if let Some(header) = interrupted(view) {
+                    return Some(header);
+                }
+            }
             AttemptDisposition::Unknown(_) => unknown = true,
             _ => {}
         }
+        if writes >= 3 {
+            break;
+        }
         pause();
     }
+    let scope = command_scope(command);
+    {
+        let s = shared.state.lock().unwrap_or_else(|e| e.into_inner());
+        for (_, id, token) in &s.inflight {
+            if *id == scope.identity.id {
+                token.cancel();
+            }
+        }
+    }
+    if let Some(progress) = progress {
+        progress.owned_phase(Phase::Reconciling);
+    }
+    shared.dirty.store(true, Ordering::Release);
+    let command = CommandWitness::Interrupt(Box::new(InterruptCommand {
+        generation: store.generation(),
+        operation: scope.clone(),
+        code: "persistence_failed".into(),
+        message: "Operation progress could not be saved.".into(),
+        finished_at: now(),
+    }));
+    reconcile_interrupt(store, &command)
 }
+fn reconcile_interrupt(store: &impl JobStore, command: &CommandWitness) -> Option<OperationHeader> {
+    let mut unknown = false;
+    let mut attempts = 0;
+    loop {
+        if unknown {
+            match store.readback(command).disposition {
+                ReadbackDisposition::MatchesApplied(view) => return Some(view.operation),
+                ReadbackDisposition::ProvenNotApplied(_) => unknown = false,
+                ReadbackDisposition::TerminalConflict(view) => {
+                    if let Some(header) = interrupted(view) {
+                        return Some(header);
+                    }
+                }
+                _ => {}
+            }
+        }
+        if !unknown {
+            match attempt(store, command) {
+                AttemptDisposition::Committed { view: Some(view) }
+                | AttemptDisposition::AlreadyMatching(view) => return Some(view.operation),
+                AttemptDisposition::Committed { view: None } | AttemptDisposition::Unknown(_) => {
+                    unknown = true
+                }
+                AttemptDisposition::TerminalConflict(view) => {
+                    if let Some(header) = interrupted(view) {
+                        return Some(header);
+                    }
+                }
+                _ => {}
+            }
+        }
+        attempts += 1;
+        thread::sleep(if attempts < 3 {
+            TICK
+        } else {
+            Duration::from_secs(1)
+        });
+    }
+}
+fn release(shared: &Shared, work: &WorkItem) {
+    if work.operation.kind == librairii_core::OperationKind::MetadataSync {
+        shared.metadata_owner.store(false, Ordering::Release);
+    }
+    let mut s = shared.state.lock().unwrap_or_else(|e| e.into_inner());
+    s.inflight.retain(|(id, _, _)| *id != work.item.identity.id);
+    s.running -= 1;
+    shared.changed.notify_all();
+}
+
 fn worker(store: &impl JobStore, executor: &impl Executor, shared: &Shared, index: usize) {
     loop {
         let (work, token) = {
@@ -304,7 +417,10 @@ fn worker(store: &impl JobStore, executor: &impl Executor, shared: &Shared, inde
                 s = shared.changed.wait(s).unwrap_or_else(|e| e.into_inner());
             }
         };
-        start(store, &work);
+        if !start(store, &work) {
+            release(shared, &work);
+            continue;
+        }
         let progress = ProgressSink::bind(
             shared.progress[index].clone(),
             shared.generation.clone(),
@@ -348,10 +464,21 @@ fn worker(store: &impl JobStore, executor: &impl Executor, shared: &Shared, inde
             completed_bytes: execution.report.completed_bytes,
             outcome: execution.report.outcome,
         };
-        persist(store, &CommandWitness::CompleteItem(Box::new(c.clone())));
+        let interruption = persist(
+            store,
+            &CommandWitness::CompleteItem(Box::new(c.clone())),
+            shared,
+            Some(&progress),
+        );
         progress.owned_phase(Phase::Settling);
         while let Some(resources) = execution.resources.take() {
-            match executor.settle(resources, &DurableReport { command: &c }) {
+            match executor.settle(
+                resources,
+                &DurableReport {
+                    command: &c,
+                    interrupted: interruption.as_ref(),
+                },
+            ) {
                 Ok(()) => {}
                 Err(resources) => {
                     execution.resources = Some(resources);
@@ -360,10 +487,7 @@ fn worker(store: &impl JobStore, executor: &impl Executor, shared: &Shared, inde
             }
         }
         shared.dirty.store(true, Ordering::Release);
-        let mut s = shared.state.lock().unwrap_or_else(|e| e.into_inner());
-        s.inflight.retain(|(id, _, _)| *id != work.item.identity.id);
-        s.running -= 1;
-        shared.changed.notify_all();
+        release(shared, &work);
     }
 }
 fn coordinator(store: &impl JobStore, shared: &Shared) {
@@ -380,7 +504,13 @@ fn coordinator(store: &impl JobStore, shared: &Shared) {
             (ingress, s.cancel.take(), s.stopping)
         };
         if let Some(start) = ingress {
-            let accepted = admit(store, &start.input);
+            let accepted = if start.input.kind == librairii_core::OperationKind::MetadataSync
+                && shared.metadata_owner.load(Ordering::Acquire)
+            {
+                false
+            } else {
+                admit(store, &start.input)
+            };
             let mut s = shared.state.lock().unwrap_or_else(|e| e.into_inner());
             s.admitting = false;
             shared.dirty.store(true, Ordering::Release);
@@ -455,6 +585,9 @@ fn coordinator(store: &impl JobStore, shared: &Shared) {
         if let Some(excluded) = excluded {
             match store.next_pending(&excluded) {
                 StoreResult::Known(Some(work)) => {
+                    if work.operation.kind == librairii_core::OperationKind::MetadataSync {
+                        shared.metadata_owner.store(true, Ordering::Release);
+                    }
                     let token = Cancellation::default();
                     if stopping
                         || matches!(
@@ -498,7 +631,12 @@ fn coordinator(store: &impl JobStore, shared: &Shared) {
                         },
                         finished_at: now(),
                     };
-                    persist(store, &CommandWitness::Finish(Box::new(command)));
+                    persist(
+                        store,
+                        &CommandWitness::Finish(Box::new(command)),
+                        shared,
+                        None,
+                    );
                     shared.dirty.store(true, Ordering::Release);
                     continue;
                 }
@@ -544,6 +682,7 @@ pub fn with_runtime<S: JobStore, E: Executor, T>(
             .collect(),
         dirty: Arc::new(AtomicBool::new(false)),
         revision: std::sync::atomic::AtomicU64::new(1),
+        metadata_owner: AtomicBool::new(false),
     });
     thread::scope(|scope| {
         let mut workers = Vec::with_capacity(config.workers());

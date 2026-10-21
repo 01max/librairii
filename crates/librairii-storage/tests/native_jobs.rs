@@ -1,4 +1,7 @@
 #![cfg(any(target_os = "macos", target_os = "linux"))]
+#[path = "support/runtime.rs"]
+mod runtime_support;
+
 use librairii_app::{
     native_jobs::*,
     ports::{
@@ -115,7 +118,7 @@ fn actual_sql_source_bounds_queue_workers_and_keeps_borrow_through_settlement() 
     let request = input(OperationKind::Import, 30, 1);
     let id = request.id.clone();
     let stale = with_runtime(&store, &effect, Configuration::default(), |handle| {
-        assert!(handle.try_start(must(Start::new(request))).is_ok());
+        must(runtime_support::offer(&handle, must(Start::new(request))));
         wait(|| handle.take_admission().is_some_and(|v| v.accepted));
         wait(|| handle.status().running == 2 && handle.status().queued == 4);
         assert_eq!(effect.maximum.load(Ordering::SeqCst), 2);
@@ -271,7 +274,7 @@ fn progress_coalesces_persists_and_rejects_late_producers_and_stale_responses() 
         sink: Mutex::new(None),
     };
     let stale = with_runtime(&store, &effect, Configuration::default(), |handle| {
-        assert!(handle.try_start(must(Start::new(request))).is_ok());
+        must(runtime_support::offer(&handle, must(Start::new(request))));
         wait(|| handle.take_admission().is_some_and(|v| v.accepted));
         wait(|| {
             must(must(db.operation_snapshot(id.clone())).wait())
@@ -388,6 +391,12 @@ fn queued_cancel_committed_result_and_required_compensation_keep_distinct_bounda
             Ok(())
         }
     }
+    struct Restore<'a>(&'a AtomicBool);
+    impl Drop for Restore<'_> {
+        fn drop(&mut self) {
+            self.0.store(true, Ordering::Release);
+        }
+    }
     for (index, boundary) in [
         Boundary::BeforeCommit,
         Boundary::Committed,
@@ -424,9 +433,10 @@ fn queued_cancel_committed_result_and_required_compensation_keep_distinct_bounda
             &effect,
             must(Configuration::new(1).ok_or("workers")),
             |handle| {
-                assert!(handle.try_start(must(Start::new(request))).is_ok());
+                let _restore = Restore(&effect.restore);
+                must(runtime_support::offer(&handle, must(Start::new(request))));
                 wait(|| effect.entered.load(Ordering::Acquire) && handle.status().queued == 2);
-                assert!(handle.cancel(id.clone()).is_ok());
+                must(cancel(&handle, id.clone()));
                 if boundary == Boundary::Compensating {
                     wait(|| effect.attempts.load(Ordering::SeqCst) >= 2);
                     let snapshot = must(must(db.operation_snapshot(id.clone())).wait())
@@ -470,4 +480,18 @@ fn queued_cancel_committed_result_and_required_compensation_keep_distinct_bounda
         db.close()?;
     }
     Ok(())
+}
+
+pub fn cancel(handle: &Handle, mut id: String) -> Result<(), Box<dyn Error>> {
+    let end = Instant::now() + Duration::from_secs(10);
+    loop {
+        match handle.cancel(id) {
+            Ok(()) => return Ok(()),
+            Err((Refusal::Busy, original)) if Instant::now() < end => {
+                id = original;
+                thread::sleep(Duration::from_millis(1));
+            }
+            Err(_) => return Err("runtime cancellation unavailable".into()),
+        }
+    }
 }

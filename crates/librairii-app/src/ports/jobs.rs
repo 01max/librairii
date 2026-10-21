@@ -13,6 +13,12 @@ pub enum StoreResult<T> {
     /// Invalid/conflicting immutable input. No effect was admitted.
     Rejected,
 }
+#[derive(Debug)]
+pub enum StartObservation {
+    Pending,
+    Running,
+    Interrupted,
+}
 #[derive(Clone, Debug)]
 pub struct WorkItem {
     pub operation: OperationScope,
@@ -26,7 +32,7 @@ pub trait JobStore: OperationTerminalStore + Sync {
     fn creation_readback(&self, input: &NewOperation, at: &str) -> StoreResult<bool>;
     fn next_pending(&self, excluded: &[i64]) -> StoreResult<Option<WorkItem>>;
     fn start_item(&self, work: &WorkItem, at: &str) -> StoreResult<()>;
-    fn start_readback(&self, work: &WorkItem) -> StoreResult<bool>;
+    fn start_readback(&self, work: &WorkItem) -> StoreResult<StartObservation>;
     fn ready_to_finish(&self) -> StoreResult<Option<(OperationScope, TerminalResult)>>;
     fn save_progress(&self, item: i64, completed: i64, total: i64) -> StoreResult<()>;
     fn cancelled(&self, id: &str) -> StoreResult<bool>;

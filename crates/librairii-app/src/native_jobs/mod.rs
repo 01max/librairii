@@ -117,6 +117,7 @@ pub enum Phase {
     Committing,
     Compensating,
     Reporting,
+    Reconciling,
     Settling,
 }
 /// The effect adapter owns actual file/metadata/removal resources throughout
@@ -133,8 +134,15 @@ pub struct Execution<R> {
 #[derive(Debug)]
 pub struct DurableReport<'a> {
     command: &'a CompleteItemCommand,
+    interrupted: Option<&'a crate::ports::operations::OperationHeader>,
 }
 impl DurableReport<'_> {
+    /// A durable interruption is distinct from acknowledgement of this item.
+    /// The original committed effect/report stays available to settlement.
+    pub fn interrupted(&self) -> Option<&crate::ports::operations::OperationHeader> {
+        self.interrupted
+    }
+
     pub fn command(&self) -> &CompleteItemCommand {
         self.command
     }

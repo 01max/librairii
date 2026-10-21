@@ -6,7 +6,7 @@ use crate::{
 };
 use librairii_app::ports::{
     creation::NewOperation,
-    jobs::{JobStore, StoreResult, WorkItem},
+    jobs::{JobStore, StartObservation, StoreResult, WorkItem},
 };
 use librairii_core::operations::{CompletionAggregate, ItemState, RawOutcome};
 use rusqlite::{OptionalExtension, params};
@@ -91,7 +91,7 @@ impl JobStore for TerminalRepository<'_, '_> {
             if tx.execute("UPDATE file_operation_items SET status='running' WHERE id=? AND operation_id=? AND status='pending'",params![work.item.identity.id,work.operation.identity.id])?!=1{return Err(invalid());}Ok(())
         }))
     }
-    fn start_readback(&self, work: &WorkItem) -> StoreResult<bool> {
+    fn start_readback(&self, work: &WorkItem) -> StoreResult<StartObservation> {
         let work = work.clone();
         read(self.database.barrier_read(move |tx| {
             let v = rows::view(tx, &work.operation.identity.id, Some(work.item.identity.id))?
@@ -102,9 +102,12 @@ impl JobStore for TerminalRepository<'_, '_> {
             {
                 return Err(invalid());
             }
+            if v.operation.state == librairii_core::OperationState::Interrupted {
+                return Ok(StartObservation::Interrupted);
+            }
             match item.state {
-                ItemState::Running => Ok(true),
-                ItemState::Pending => Ok(false),
+                ItemState::Running => Ok(StartObservation::Running),
+                ItemState::Pending => Ok(StartObservation::Pending),
                 _ => Err(invalid()),
             }
         }))

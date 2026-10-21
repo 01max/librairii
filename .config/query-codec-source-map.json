@@ -3792,6 +3792,32 @@
           ]
         },
         "reason": "Additive Task 6 durable operation/runtime/recovery assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 471,
+        "identity": {
+          "suite": "librairii-storage::runtime_failures",
+          "name": "lost_real_commit_ack_then_barrier_refusal_cannot_erase_unknown_or_repeat_completion",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive Task 6 durable operation/runtime/recovery assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 472,
+        "identity": {
+          "suite": "librairii-storage::runtime_failures",
+          "name": "three_real_failed_writes_then_continued_interruption_retains_owner_and_metadata_reservation",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive Task 6 durable operation/runtime/recovery assertions; all admitted identities retain exact order and target scope."
       }
     ],
     "python": [

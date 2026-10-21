@@ -104,3 +104,27 @@ The test performs real file writes/restoration, holds compensation unavailable
 across multiple attempts, verifies SQLite remains running until restoration,
 and proves cancellation preserves the committed first item while queued items
 are cancelled. Queued cancellation uses the frozen kind-specific outcome text.
+
+## 6.5 — Terminal retries and continued reconciliation
+
+Terminal reporting makes three attempts separated by 10 ms. An unknown result
+requires fresh reserved same-writer readback before another original write.
+Three failed attempts/readbacks cancel matching work and change the durable
+reporting intent to `persistence_failed` interruption. Interruption gets its own
+three quick attempts, then continues at one-second intervals without a shutdown
+or cancellation deadline. Original reports and actual resources remain owned.
+
+An interrupted acknowledgement explicitly differs from acknowledgement of the
+original item result. Settlement receives both the original effect fact and the
+actual durable interrupted header; it cannot infer rollback or delete a completed
+export from the history status. The SQL interruption preserves already terminal
+items. Queued observations whose parent was interrupted never execute effects.
+Metadata remains reserved while its original owner is still settling, even after
+the interrupted SQL state releases the schema's active-operation unique index.
+
+Tests use actual SQLite abort triggers and timed attempt observations to hold
+completion/interruption unavailable, then restore interruption and verify the
+saved result and retained metadata reservation. A second test conservatively
+loses a real commit acknowledgement, refuses two readbacks, and finally crosses
+the real writer barrier: the counter increments once and completion is not
+repeated. Busy intake tests retain and retry the same move-only command.
