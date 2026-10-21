@@ -128,3 +128,13 @@ fn url_bounds_and_non_idempotent_unicode_are_validated_without_extra_output_pass
     assert!(url::decode(&format!("#/library?v=3&any={child}"), 0).is_err());
     Ok(())
 }
+
+#[test]
+fn percent_escapes_require_two_hex_digits_and_never_turn_malformed_input_into_empty_success() {
+    for encoded in ["%+A", "%+0", "% A", "%-1", "%G0", "%0G", "%0", "%"] {
+        assert!(
+            url::decode(&format!("#/library?v=3&name={encoded}"), 0).is_err(),
+            "{encoded}"
+        );
+    }
+}

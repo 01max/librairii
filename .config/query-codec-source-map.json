@@ -2558,6 +2558,14 @@
           ]
         },
         "reason": "Task 7 additive observed discovery; integration-base identities retain their exact order and scope."
+      },
+      {
+        "position": 363,
+        "identity": {
+          "suite": "librairii-core::query_urls",
+          "name": "percent_escapes_require_two_hex_digits_and_never_turn_malformed_input_into_empty_success"
+        },
+        "reason": "Task 7 additive observed discovery; integration-base identities retain their exact order and scope."
       }
     ],
     "python": [
@@ -2598,8 +2606,8 @@
     "scope": "bounded URL v1-v3 decoding, native request persistence and typed browser-history handover; no system URL protocol or live authority",
     "leaf": {
       "path": "crates/librairii-core/src/collection_codec/url.rs",
-      "bytes": 11449,
-      "sha256": "87cbf5cff353363bab8ef821f88fb1685be3fa93da0f1ecd2f6c79b88b419a4d"
+      "bytes": 11573,
+      "sha256": "6a6d073f574b5abaeed762328ce23d5993a24503bee2bad55bbb6fde74001a14"
     }
   }
 }

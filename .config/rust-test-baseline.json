@@ -2019,6 +2019,10 @@
         "x86_64-apple-darwin",
         "x86_64-unknown-linux-gnu"
       ]
+    },
+    {
+      "suite": "librairii-core::query_urls",
+      "name": "percent_escapes_require_two_hex_digits_and_never_turn_malformed_input_into_empty_success"
     }
   ]
 }

@@ -37,6 +37,9 @@ fn percent_decode(input: &str) -> Result<String> {
             b'+' => result.push(b' '),
             b'%' => {
                 let part = bytes.get(i + 1..i + 3).ok_or(InvalidHash)?;
+                if !part.iter().all(u8::is_ascii_hexdigit) {
+                    return Err(InvalidHash);
+                }
                 let hex = std::str::from_utf8(part).map_err(|_| InvalidHash)?;
                 result.push(u8::from_str_radix(hex, 16).map_err(|_| InvalidHash)?);
                 i += 2;
