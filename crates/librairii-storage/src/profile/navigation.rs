@@ -13,10 +13,10 @@ use std::{
 const NAME: &str = "navigation.json";
 
 impl NativeProfileStore {
-    fn navigation_bytes(&self) -> Result<Option<(Vec<u8>, File, Metadata)>> {
+    fn ui_bytes(&self, name: &'static str) -> Result<Option<(Vec<u8>, File, Metadata)>> {
         let file = match self
             .namespace
-            .open_regular(OsStr::new(NAME), rustix::fs::OFlags::RDONLY)
+            .open_regular(OsStr::new(name), rustix::fs::OFlags::RDONLY)
         {
             Ok(file) => file,
             Err(StorageError::Io { source, .. })
@@ -50,7 +50,7 @@ impl NativeProfileStore {
     ) -> Result<Option<Navigation>> {
         let _state = self.reserve()?;
         self.revalidate_namespace()?;
-        self.navigation_bytes()?
+        self.ui_bytes(NAME)?
             .map(|(bytes, _, _)| {
                 Navigation::decode(&bytes, library, generation)
                     .map_err(|_| StorageError::InvalidNavigation)
@@ -62,13 +62,50 @@ impl NativeProfileStore {
         let bytes = navigation
             .encode()
             .map_err(|_| StorageError::InvalidNavigation)?;
+        self.save_ui_document(NAME, &bytes, |prior| {
+            Navigation::decode(prior, navigation.library(), 1)
+                .map(|_| ())
+                .map_err(|_| StorageError::InvalidNavigation)
+        })
+    }
+
+    pub fn load_shelf_warnings(
+        &self,
+        library: LibraryId,
+    ) -> Result<Option<librairii_core::shelves::WarningAcknowledgements>> {
+        let _state = self.reserve()?;
+        self.revalidate_namespace()?;
+        self.ui_bytes("shelf-warnings.json")?
+            .map(|(bytes, _, _)| {
+                Ok(librairii_core::shelves::WarningAcknowledgements::decode(
+                    &bytes, library,
+                )?)
+            })
+            .transpose()
+    }
+    pub fn save_shelf_warnings(
+        &self,
+        warnings: &librairii_core::shelves::WarningAcknowledgements,
+    ) -> Result<()> {
+        let bytes = warnings.encode()?;
+        self.save_ui_document("shelf-warnings.json", &bytes, |prior| {
+            librairii_core::shelves::WarningAcknowledgements::decode(prior, warnings.library())
+                .map(|_| ())
+                .map_err(Into::into)
+        })
+    }
+    fn save_ui_document(
+        &self,
+        name: &'static str,
+        bytes: &[u8],
+        validate: impl Fn(&[u8]) -> Result<()>,
+    ) -> Result<()> {
         let mut state = self.reserve()?;
         self.revalidate_namespace()?;
-        let previous = self.navigation_bytes()?;
+        let previous = self.ui_bytes(name)?;
         // Preserve invalid/future documents rather than overwriting them.
         if let Some((prior, _, _)) = &previous {
-            Navigation::decode(prior, navigation.library(), 1)
-                .map_err(|_| StorageError::InvalidNavigation)?;
+            validate(prior)?;
         }
         let mut staged = match self.namespace.create_config_temp() {
             Ok(stage) => stage,
@@ -82,11 +119,11 @@ impl NativeProfileStore {
         let before = (|| {
             staged
                 .file
-                .write_all(&bytes)
+                .write_all(bytes)
                 .map_err(|e| StorageError::io("write navigation preferences", e))?;
             durable_file_flush(&staged.file)?;
             self.revalidate_namespace()?;
-            match (&previous, self.navigation_bytes()?) {
+            match (&previous, self.ui_bytes(name)?) {
                 (None, None) => Ok(()),
                 (Some((prior, _retained, metadata)), Some((actual, _current_file, current)))
                     if prior == &actual =>
@@ -111,7 +148,7 @@ impl NativeProfileStore {
         }
         let (published, old) = match self.namespace.replace_owned_config(
             staged,
-            OsStr::new(NAME),
+            OsStr::new(name),
             previous.as_ref().map(|(_, _, m)| m),
         ) {
             Ok(receipt) => receipt,
@@ -141,7 +178,7 @@ impl NativeProfileStore {
             self.namespace.flush()?;
             self.revalidate_namespace()?;
             let (actual, _file, metadata) = self
-                .navigation_bytes()?
+                .ui_bytes(name)?
                 .ok_or(StorageError::ProfileChanged)?;
             if actual != bytes {
                 return Err(StorageError::ProfileChanged);

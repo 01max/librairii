@@ -256,6 +256,10 @@ pub struct UpdatePlan {
     locale: String,
 }
 impl UpdatePlan {
+    pub fn mismatch_key(&self) -> Option<librairii_core::shelves::WarningKey> {
+        (!self.preview.removals.is_empty())
+            .then(|| librairii_core::shelves::WarningKey::from_snapshot(self.fingerprint))
+    }
     pub fn preview(&self) -> &UpdatePreview {
         &self.preview
     }

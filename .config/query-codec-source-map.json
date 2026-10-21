@@ -2976,6 +2976,32 @@
           ]
         },
         "reason": "Additive observed Task 10 discovery; original integration identities retain exact order and target scope."
+      },
+      {
+        "position": 399,
+        "identity": {
+          "suite": "librairii-storage::shelves",
+          "name": "detachment_requires_complete_decisions_preserves_overlap_and_retains_unavailable",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive observed Task 10 discovery; original integration identities retain exact order and target scope."
+      },
+      {
+        "position": 400,
+        "identity": {
+          "suite": "librairii-storage::shelves",
+          "name": "warning_acknowledgements_persist_without_decisions_and_renew_on_coverage_changes",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive observed Task 10 discovery; original integration identities retain exact order and target scope."
       }
     ],
     "python": [

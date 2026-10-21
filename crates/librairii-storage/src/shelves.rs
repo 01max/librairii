@@ -205,3 +205,6 @@ pub use review::{Action, Decision, UpdatePlan, UpdatePreview};
 pub use review::{Candidate, CreationPlan, CreationPreview, CreationRequest, Warning};
 
 pub(crate) mod tickets;
+
+mod source_change;
+pub use source_change::{SourceChangePlan, SourceChangePreview};

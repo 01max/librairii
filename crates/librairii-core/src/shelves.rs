@@ -68,3 +68,5 @@ pub fn unique_uuids(values: &[String]) -> Result<Vec<String>, ShelfError> {
     }
     Ok(out)
 }
+mod warnings;
+pub use warnings::{WarningAcknowledgements, WarningKey};

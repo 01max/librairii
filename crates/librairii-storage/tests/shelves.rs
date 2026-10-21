@@ -546,3 +546,181 @@ fn ticket_limit_is_shared_across_kinds_and_two_queued_applies_cannot_replay() ->
     db.close()?;
     Ok(())
 }
+fn sourced(
+    db: &Database<'_>,
+    name: &str,
+    collections: Vec<i64>,
+    selected: Vec<String>,
+) -> Result<Shelf> {
+    let p = db
+        .shelf_creation_preview(
+            shelves::CreationRequest {
+                name: name.into(),
+                collection_ids: collections,
+                ..Default::default()
+            },
+            "fr-FR".into(),
+        )?
+        .wait()?;
+    committed(
+        db.create_shelf_reviewed(p, selected, WorkCancellation::default())?
+            .wait()?,
+    )
+}
+#[test]
+fn detachment_requires_complete_decisions_preserves_overlap_and_retains_unavailable() -> TestResult
+{
+    let roots = TestRoots::new()?;
+    let lib = library(&roots)?;
+    let mut db = Database::open_isolated(&lib)?;
+    seed(&db, 3)?;
+    let a = collection(&db, "All", Query::default())?;
+    let mut q = Query::default();
+    q.name = "different".into();
+    let b = collection(&db, "Other", q)?;
+    let s = sourced(&db, "Detach", vec![a, b], vec![uuid(1), uuid(2)])?;
+    committed(
+        db.transaction(WorkCancellation::default(), |tx| {
+            tx.execute(
+                "UPDATE stories SET display_name_normalized='different' WHERE id=1",
+                [],
+            )?;
+            tx.execute("DELETE FROM stories WHERE id=2", [])?;
+            Ok(())
+        })?
+        .wait()?,
+    )?;
+    let p = db
+        .shelf_source_change_preview(s.id, vec![b], "fr-FR".into())?
+        .wait()?;
+    assert_eq!(p.preview().affected.len(), 1);
+    assert_eq!(p.preview().affected[0].uuid, uuid(2));
+    assert!(p.preview().affected[0].story.is_none());
+    let before = db.shelves()?.wait()?;
+    assert!(
+        committed(
+            db.change_shelf_sources(
+                p,
+                false,
+                vec![decision(2, shelves::Action::RemoveAndExclude)],
+                WorkCancellation::default()
+            )?
+            .wait()?
+        )
+        .is_err()
+    );
+    assert_eq!(db.shelves()?.wait()?, before);
+    let p = db
+        .shelf_source_change_preview(s.id, vec![b], "fr-FR".into())?
+        .wait()?;
+    committed(
+        db.change_shelf_sources(p, true, vec![], WorkCancellation::default())?
+            .wait()?,
+    )?;
+    let m = db.shelf_members(s.id)?.wait()?;
+    assert!(!m[0].manually_retained);
+    assert!(m[1].manually_retained);
+    assert!(!m[0].origins[0].active);
+    committed(
+        db.attach_shelf_sources(s.id, vec![a], WorkCancellation::default())?
+            .wait()?,
+    )?;
+    assert!(db.shelf_members(s.id)?.wait()?[1].manually_retained);
+    let p = db
+        .shelf_source_change_preview(s.id, vec![], "fr-FR".into())?
+        .wait()?;
+    assert!(
+        committed(
+            db.change_shelf_sources(
+                p,
+                false,
+                vec![decision(1, shelves::Action::NotNow)],
+                WorkCancellation::default()
+            )?
+            .wait()?
+        )
+        .is_err()
+    );
+    let p = db
+        .shelf_source_change_preview(s.id, vec![], "fr-FR".into())?
+        .wait()?;
+    committed(
+        db.change_shelf_sources(p, true, vec![], WorkCancellation::default())?
+            .wait()?,
+    )?;
+    assert!(
+        db.shelf_members(s.id)?
+            .wait()?
+            .iter()
+            .all(|m| m.manually_retained)
+    );
+    assert!(preview(&db, s.id)?.preview().up_to_date);
+    db.close()?;
+    Ok(())
+}
+#[test]
+fn warning_acknowledgements_persist_without_decisions_and_renew_on_coverage_changes() -> TestResult
+{
+    use librairii_core::shelves::WarningAcknowledgements;
+    use librairii_storage::profile::NativeProfileStore;
+    let roots = TestRoots::new()?;
+    let lib = library(&roots)?;
+    let mut db = Database::open_isolated(&lib)?;
+    seed(&db, 2)?;
+    let a = collection(&db, "All", Query::default())?;
+    let s = sourced(&db, "Warnings", vec![a], vec![uuid(1), uuid(2)])?;
+    committed(
+        db.transaction(WorkCancellation::default(), |tx| {
+            tx.execute(
+                "UPDATE collections SET query_payload='{\"name\":\"nothing\"}'",
+                [],
+            )?;
+            Ok(())
+        })?
+        .wait()?,
+    )?;
+    let p = preview(&db, s.id)?;
+    let key = p.mismatch_key().ok_or("mismatch key")?;
+    let before = db.shelf_members(s.id)?.wait()?;
+    let mut acknowledgements = WarningAcknowledgements::new(lib.identity().typed());
+    assert!(acknowledgements.needs_prompt(s.id, key));
+    acknowledgements.acknowledge(s.id, key)?;
+    let store = NativeProfileStore::create_fresh(roots.profile())?;
+    store.save_shelf_warnings(&acknowledgements)?;
+    drop(store);
+    let store = NativeProfileStore::open_native(roots.profile())?;
+    let restored = store
+        .load_shelf_warnings(lib.identity().typed())?
+        .ok_or("preferences")?;
+    assert!(!restored.needs_prompt(s.id, key));
+    assert_eq!(db.shelf_members(s.id)?.wait()?, before);
+    committed(
+        db.transaction(WorkCancellation::default(), |tx| {
+            tx.execute("UPDATE stories SET is_broken=1", [])?;
+            Ok(())
+        })?
+        .wait()?,
+    )?;
+    assert_eq!(preview(&db, s.id)?.mismatch_key(), Some(key));
+    committed(
+        db.transaction(WorkCancellation::default(), |tx| {
+            tx.execute("DELETE FROM stories WHERE id=2", [])?;
+            Ok(())
+        })?
+        .wait()?,
+    )?;
+    let renewed = preview(&db, s.id)?
+        .mismatch_key()
+        .ok_or("new mismatch key")?;
+    assert!(restored.needs_prompt(s.id, renewed));
+    let path = roots.profile().join("shelf-warnings.json");
+    let mut wire: serde_json::Value = serde_json::from_slice(&std::fs::read(&path)?)?;
+    wire["version"] = 99.into();
+    let bytes = serde_json::to_vec(&wire)?;
+    std::fs::write(&path, &bytes)?;
+    assert!(store.load_shelf_warnings(lib.identity().typed()).is_err());
+    assert!(store.save_shelf_warnings(&acknowledgements).is_err());
+    assert_eq!(std::fs::read(path)?, bytes);
+    db.close()?;
+    Ok(())
+}

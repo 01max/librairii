@@ -2293,6 +2293,24 @@
         "x86_64-apple-darwin",
         "x86_64-unknown-linux-gnu"
       ]
+    },
+    {
+      "suite": "librairii-storage::shelves",
+      "name": "detachment_requires_complete_decisions_preserves_overlap_and_retains_unavailable",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::shelves",
+      "name": "warning_acknowledgements_persist_without_decisions_and_renew_on_coverage_changes",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
     }
   ]
 }
