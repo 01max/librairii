@@ -20,6 +20,9 @@ use std::{
     io::{self, Read, Seek, SeekFrom, Write},
 };
 
+mod stage_creation;
+pub use stage_creation::{CreationFailure, CreationOutcome, copy_created_stage};
+
 /// An optional limit for explicitly bounded qualification inputs. This is NOT
 /// a product source-size policy or the expanded archive budget.
 #[derive(Clone, Copy, Debug, Default)]
@@ -108,16 +111,16 @@ pub enum StageOutcome<'files, 'library> {
 /// acknowledged guarded handoff; returning/enqueueing a DTO is not settlement.
 ///
 /// The actual Database cannot close before the returned owners drain:
-/// ```compile_fail
-/// use librairii_adapters::archive::custody::{copy_to_stage, QualificationEnvelope};
+/// ```compile_fail,E0502
+/// use librairii_adapters::archive::custody::{copy_created_stage, QualificationEnvelope};
 /// use librairii_storage::{Result, database::{Database, WorkCancellation},
 ///     platform::unix::{LibraryFiles, EntryName, FileArea}};
 /// fn close_before_outcome(database: &mut Database<'_>) -> Result<()> {
 ///     let files = LibraryFiles::open_native(database)?;
 ///     let guard = files.try_custody()?;
 ///     let source = files.open_read_source(FileArea::Archives, EntryName::parse("owned")?)?;
-///     let stage = files.create_stage(&guard)?;
-///     let outcome = copy_to_stage(source, stage, guard, QualificationEnvelope::default(),
+///     let creation = files.create_stage(&guard);
+///     let outcome = copy_created_stage(source, creation, guard, QualificationEnvelope::default(),
 ///         &WorkCancellation::default());
 ///     database.close()?;
 ///     drop(outcome);
@@ -125,16 +128,16 @@ pub enum StageOutcome<'files, 'library> {
 /// }
 /// ```
 /// A path/ID observation cannot replace the actual borrowed Files owner:
-/// ```compile_fail
-/// use librairii_adapters::archive::custody::{copy_to_stage, QualificationEnvelope};
+/// ```compile_fail,E0505
+/// use librairii_adapters::archive::custody::{copy_created_stage, QualificationEnvelope};
 /// use librairii_storage::{Result, database::{Database, WorkCancellation},
 ///     platform::unix::{LibraryFiles, EntryName, FileArea}};
 /// fn discard_files(database: &mut Database<'_>) -> Result<()> {
 ///     let files = LibraryFiles::open_native(database)?;
 ///     let guard = files.try_custody()?;
 ///     let source = files.open_read_source(FileArea::Archives, EntryName::parse("owned")?)?;
-///     let stage = files.create_stage(&guard)?;
-///     let outcome = copy_to_stage(source, stage, guard, QualificationEnvelope::default(),
+///     let creation = files.create_stage(&guard);
+///     let outcome = copy_created_stage(source, creation, guard, QualificationEnvelope::default(),
 ///         &WorkCancellation::default());
 ///     drop(files);
 ///     drop(outcome);

@@ -3,7 +3,7 @@ use librairii_storage::{
     adoption::{ClosedLibraryInput, ClosedManifest, IndependentCopy},
     database::Database,
     native::NativeLibrary,
-    platform::unix::{EntryName, FileArea, LibraryFiles},
+    platform::unix::{EntryName, FileArea, LibraryFiles, StageCreateDisposition},
     profile::{NativeProfileStore, ProfileDocument, ProfileLocations},
 };
 use librairii_testkit::TestRoots;
@@ -155,7 +155,14 @@ fn issued<'files, 'library>(
     let source =
         files.open_read_source(FileArea::Archives, EntryName::parse(selected_name(root)?)?)?;
     // Only the actually successful constructor enters the mechanism proof.
-    let stage = files.create_stage(&guard)?;
+    let creation = files.create_stage(&guard);
+    // Positive fixture setup is not a production error-erasing adapter. An
+    // unexpected failure fails this test BEFORE destructuring, never converts
+    // a borrowed StageCreateFailure to a static Error/StorageError/string.
+    assert!(creation.is_ok(), "positive stage fixture: {creation:?}");
+    let Ok(stage) = creation else {
+        return Err("positive stage fixture assertion did not hold".into());
+    };
     Ok((source, stage, guard))
 }
 
@@ -908,4 +915,165 @@ fn prepublication_checked_counter_overflow_preserves_prior_observation() {
         Err(CopyError::CounterOverflow)
     ));
     assert_eq!(bytes, u64::MAX);
+}
+
+#[test]
+fn prepublication_creation_success_delegates_copy_with_exact_bytes_and_source() -> TestResult {
+    with_native(b"actual created stage bytes", |files, _database, root| {
+        let guard = files.try_custody()?;
+        let source =
+            files.open_read_source(FileArea::Archives, EntryName::parse(selected_name(root)?)?)?;
+        let initial = source.initial();
+        let raw_name = source.name().clone();
+        let creation = files.create_stage(&guard);
+        assert!(creation.is_ok(), "positive creation fixture: {creation:?}");
+        let outcome = copy_created_stage(
+            source,
+            creation,
+            guard,
+            QualificationEnvelope::default(),
+            &WorkCancellation::default(),
+        );
+        let CreationOutcome::CopyAttempt(mut copied) = outcome else {
+            return Err("success did not delegate".into());
+        };
+        assert!(copied.error.is_none(), "{:?}", copied.error);
+        assert_eq!(copied.source.name(), &raw_name);
+        assert_eq!(copied.source.revalidate()?, initial);
+        assert_eq!(
+            physical_prefix(&mut copied, root)?,
+            b"actual created stage bytes"
+        );
+        assert!(matches!(copied.stage, StageOutcome::Measured { .. }));
+        assert!(matches!(
+            files.try_custody(),
+            Err(StorageError::CustodyBusy)
+        ));
+        assert_eq!(
+            fs::read(root.join("archives").join(raw_name.as_os_str()))?,
+            b"actual created stage bytes"
+        );
+        Ok(())
+    })
+}
+
+#[test]
+fn prepublication_creation_noallocation_retains_whole_box_prior_stage_and_cancel_truth()
+-> TestResult {
+    for cancelled in [false, true] {
+        with_native(b"original readonly source", |files, database, root| {
+            let guard = files.try_custody()?;
+            let source = files
+                .open_read_source(FileArea::Archives, EntryName::parse(selected_name(root)?)?)?;
+            let raw_name = source.name().clone();
+            let initial = source.initial();
+            // Keep an earlier actual owned allocation. This later NoAllocation
+            // call cannot settle, retire or remove it. This is not a prior-
+            // uncertainty/fence injection; those cuts remain owner6 evidence.
+            let earlier_creation = files.create_stage(&guard);
+            assert!(
+                earlier_creation.is_ok(),
+                "positive prior fixture: {earlier_creation:?}"
+            );
+            let Ok(mut earlier_stage) = earlier_creation else {
+                return Err("prior fixture assertion did not hold".into());
+            };
+            earlier_stage.write_all(b"earlier unsettled owned bytes")?;
+            let before_entries = fs::read_dir(root.join("staging"))?.count();
+            database.stop_ordinary()?;
+            let creation = files.create_stage(&guard);
+            let expected_box = creation
+                .as_ref()
+                .err()
+                .map(|failure| std::ptr::from_ref(failure.as_ref()))
+                .ok_or("intake stop did not refuse allocation")?;
+            let cancel = WorkCancellation::default();
+            if cancelled {
+                cancel.cancel();
+            }
+            // A zero qualification envelope would refuse this source if copy
+            // were entered. The real factory cause must survive unchanged.
+            let outcome = copy_created_stage(
+                source,
+                creation,
+                guard,
+                QualificationEnvelope {
+                    source_bytes: Some(0),
+                },
+                &cancel,
+            );
+            let CreationOutcome::CreationFailed(mut owned) = outcome else {
+                return Err("failed creation entered copy".into());
+            };
+            assert!(std::ptr::eq(expected_box, owned.failure.as_ref()));
+            assert!(matches!(owned.failure.cause(), StorageError::IntakeClosed));
+            assert_eq!(
+                owned.failure.disposition(),
+                StageCreateDisposition::NoAllocation
+            );
+            assert!(owned.failure.retained_allocation().is_none());
+            assert_eq!(owned.cancellation_requested, cancelled);
+            assert_eq!(owned.source.name(), &raw_name);
+            assert_eq!(owned.source.revalidate()?, initial);
+            owned.source.rewind()?;
+            let mut actual_source = Vec::new();
+            owned.source.read_to_end(&mut actual_source)?;
+            assert_eq!(actual_source, b"original readonly source");
+            let mut earlier_bytes = Vec::new();
+            earlier_stage.inspector().rewind()?;
+            earlier_stage.inspector().read_to_end(&mut earlier_bytes)?;
+            assert_eq!(earlier_bytes, b"earlier unsettled owned bytes");
+            assert_eq!(fs::read_dir(root.join("staging"))?.count(), before_entries);
+            assert_eq!(fs::read_dir(root.join("trash"))?.count(), 0);
+            assert_eq!(
+                fs::read(root.join("archives").join(raw_name.as_os_str()))?,
+                b"original readonly source"
+            );
+            // Close this separate earlier owner while the actual guard remains
+            // in owned. Bytes are preserved; no clean finalization is claimed.
+            drop(earlier_stage);
+            Ok(())
+        })?;
+    }
+    Ok(())
+}
+
+#[test]
+fn prepublication_creation_success_with_cancel_keeps_existing_retirement_contract() -> TestResult {
+    with_native(b"original readonly source", |files, _database, root| {
+        let guard = files.try_custody()?;
+        let source =
+            files.open_read_source(FileArea::Archives, EntryName::parse(selected_name(root)?)?)?;
+        let creation = files.create_stage(&guard);
+        assert!(creation.is_ok(), "positive creation fixture: {creation:?}");
+        let cancel = WorkCancellation::default();
+        cancel.cancel();
+        let outcome = copy_created_stage(
+            source,
+            creation,
+            guard,
+            QualificationEnvelope::default(),
+            &cancel,
+        );
+        let CreationOutcome::CopyAttempt(mut copied) = outcome else {
+            return Err("success did not delegate".into());
+        };
+        assert!(matches!(
+            copied.error,
+            Some(CopyError::Cancelled(CopyPhase::Input))
+        ));
+        assert!(copied.cancellation_requested);
+        assert_eq!(copied.progress, CopyProgress::default());
+        assert_eq!(physical_prefix(&mut copied, root)?, b"");
+        assert!(matches!(copied.stage, StageOutcome::Retired(_)));
+        assert!(matches!(
+            files.try_custody(),
+            Err(StorageError::CustodyBusy)
+        ));
+        assert_eq!(
+            fs::read(root.join("archives").join(SOURCE_NAME))?,
+            b"original readonly source"
+        );
+        Ok(())
+    })
 }

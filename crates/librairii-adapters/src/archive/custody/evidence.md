@@ -132,3 +132,73 @@ No serde/JSON/crypto/decoder or other external dependency is requested.
 - `archive::custody::tests::prepublication_retirement_failure_keeps_actual_stage_source_guard_and_foreign_bytes`
 - `archive::custody::tests::prepublication_already_owned_work_can_finish_after_ordinary_intake_stop`
 - `archive::custody::tests::prepublication_checked_counter_overflow_preserves_prior_observation`
+
+## G2 PARTIAL5.8: actual retained stage-creation result routing
+
+Release `IMPORT-G2-RETAINED-CREATE-e0c` starts a NEW source sibling from original
+Gca330. It does not change shipping44=662, original G, C_G479 or fixedS_G44.
+The selected new API input is EXACT
+`feda9132a20817f8e31882a24d28a228f383c186` (original stage failure fix
+`e0cde94e62f5f3db79a0dc211d8008df2add1567` plus frontend7ba5). Explicit future
+generic discovery support input is ORIGINAL
+`954934f44ed29b78e0bf220a749319a682681730`, directfeda. These pins are NOT merged
+into the source-only G2 branch. Owner5 owns a NEW distinct composition preserving
+both ORIGINAL C_G479 and B954 histories, their source closures and parent test
+objects/order/scopes. No parent export/graph/dependency/source-policy edit by7.
+
+Local copy_created_stage consumes the actual
+Result<OwnedStage, Box<StageCreateFailure>>, original readonly source and SAME
+Custody in the caller-held Files/DB/Native/profile frame. Ok delegates the OLD
+copy_to_stage algorithm unchanged and stores its whole outcome as CopyAttempt;
+that name does not imply successful copying, accepted inspection or commit.
+Err moves the WHOLE original box into CreationFailure, with original source and
+guard. Failure/source fields precede guard in field-drop order. The structured
+cause/disposition/allocation remain borrowed through the storage API; no Error,
+From, bare-cause/string conversion or fake owner constructor is introduced.
+Cancellation is an independent observation. No partial digest, retirement,
+cleanup, retry, fence clearance or claimed source admission occurs on creation
+failure. NoAllocation concerns THIS call only and settles no earlier owner or
+uncertainty. RetainedUnresolved remains physically held by the actual caller.
+
+The positive existing issued fixture now binds create_stage's result, asserts
+successful fixture setup BEFORE destructuring, and never uses borrowed-error
+`?`/From. An unexpected creation failure is a failed test assertion, not a
+production error route that claims resolution. Two existing borrow examples
+bind the real result and pass it through the new wrapper; no conversion-related
+E0277 is needed. Intended failure diagnostics are E0502 (mutable DB close) and
+E0505 (Files move while outcome lives). Two paired no_run compile-pass examples
+exercise the actual public result shape and borrowed cause reporting. Their
+compilation/diagnostics are NOT executed or qualified on source-only G2; target
+annotations alone are not claimed as a captured diagnostic pass.
+
+Three new authored tests use real Native constructors/managed-source issuance:
+successful creation delegates exact bytes and retains source/guard; successful
+creation plus work cancellation delegates the old uncancelled retirement; real
+NoAllocation after ordinary intake stops retains the identical Box address,
+original source and guard, without copying, erasing the cause or touching an
+earlier owned stage. Cancellation true/false and a deliberately refusing copy
+envelope distinguish factory failure from copy-policy execution. Prior-stage
+bytes and source bytes remain actual observations, not substitute capabilities.
+
+There is NO manufactured or locally executed RetainedUnresolved allocation
+case. Its actual post-mutation failpoints/optional FDs/identities/fence and native
+finalization cases are generic owner6 tests, attributed separately. The public
+wrapper has no private storage checkpoint or fake failure constructor. The same
+Err arm retains every supplied actual failure box, but the NoAllocation case
+must not be presented as dynamically exercising retained partial allocation or
+an earlier native fence. Partial allocation resolution stays unimplemented and
+unqualified. No ignored/pending test is used as a pass surrogate.
+
+G2 remains UNWIRED/UNCOMPILED: only scoped Rust1.99.1 rustfmt and Git diff checks
+are run before publication. No nextest discovery/test/compile-pass/diagnostic,
+cargo, Go, provider/native review or current combined quality claim. The three
+candidate additions below are source declarations only, not an observed UNION:
+
+- `archive::custody::tests::prepublication_creation_success_delegates_copy_with_exact_bytes_and_source`
+- `archive::custody::tests::prepublication_creation_noallocation_retains_whole_box_prior_stage_and_cancel_truth`
+- `archive::custody::tests::prepublication_creation_success_with_cancel_keeps_existing_retirement_contract`
+
+All17 original G assertion declarations remain present. Owner5 derives actual
+discovery after exact wiring/serialized lane. No new root/port/pool/runtime,
+allocation-failure cleanup, publication/SQL/PNG/CRC/decoder/resource/accepted
+inspection, recovery/settlement/nativeClosed or full5.N/5.10 claim is made.
