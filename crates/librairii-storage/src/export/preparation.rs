@@ -384,7 +384,7 @@ pub(super) fn inspect(
                 std::io::ErrorKind::NotFound
                     | std::io::ErrorKind::InvalidInput
                     | std::io::ErrorKind::NotADirectory
-            ) =>
+            ) || source.raw_os_error() == Some(rustix::io::Errno::LOOP.raw_os_error()) =>
         {
             return Ok(Some(Issue::ArchiveMissing));
         }
