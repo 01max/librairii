@@ -20,8 +20,8 @@ pub struct SourceEvaluation {
 impl Database<'_> {
     pub fn attach_shelf_sources(
         &self,
-        id: i64,
-        ids: Vec<i64>,
+        id: ShelfId,
+        ids: Vec<CollectionId>,
         cancellation: WorkCancellation,
     ) -> Result<Pending<'_, TransactionOutcome<Shelf>>> {
         self.transaction(cancellation, move |tx| {
@@ -32,7 +32,7 @@ impl Database<'_> {
     }
     pub fn shelf_source_evaluation(
         &self,
-        id: i64,
+        id: ShelfId,
         locale: String,
     ) -> Result<Pending<'_, SourceEvaluation>> {
         self.read(move |tx| {
@@ -41,24 +41,21 @@ impl Database<'_> {
         })
     }
 }
-pub(super) fn unique_ids(ids: &[i64]) -> Result<Vec<i64>> {
+pub(super) fn unique_ids(ids: &[CollectionId]) -> Result<Vec<CollectionId>> {
     let mut seen = BTreeSet::new();
     let mut out = Vec::new();
     for id in ids {
-        if *id <= 0 {
-            return Err(ShelfError::InvalidInput.into());
-        }
         if seen.insert(*id) {
             out.push(*id);
         }
     }
     Ok(out)
 }
-pub(super) fn potential(tx: &Transaction<'_>, ids: &[i64]) -> Result<Vec<Source>> {
+pub(super) fn potential(tx: &Transaction<'_>, ids: &[CollectionId]) -> Result<Vec<Source>> {
     unique_ids(ids)?
         .into_iter()
         .map(|id| {
-            let c = crate::collections::read(tx, id)?;
+            let c = crate::collections::read(tx, id.get())?;
             let name =
                 String::from_utf8(c.name).map_err(|_| StorageError::CompatibilityInvariant)?;
             Ok(Source {
@@ -70,11 +67,11 @@ pub(super) fn potential(tx: &Transaction<'_>, ids: &[i64]) -> Result<Vec<Source>
         })
         .collect()
 }
-pub(super) fn attach(tx: &Transaction<'_>, id: i64, ids: &[i64]) -> Result<bool> {
+pub(super) fn attach(tx: &Transaction<'_>, id: ShelfId, ids: &[CollectionId]) -> Result<bool> {
     let desired = potential(tx, ids)?;
     let mut changed = false;
     for source in desired {
-        changed|=tx.execute("INSERT INTO shelf_sources(shelf_id,collection_id,collection_name) VALUES(?,?,?) ON CONFLICT DO NOTHING",params![id,source.collection_id,source.name])?!=0;
+        changed|=tx.execute("INSERT INTO shelf_sources(shelf_id,collection_id,collection_name) VALUES(?,?,?) ON CONFLICT DO NOTHING",params![id.get(),source.collection_id.map(CollectionId::get),source.name])?!=0;
     }
     Ok(changed)
 }
@@ -108,13 +105,13 @@ pub(super) fn evaluate(
             warning: None,
         };
         // Invalid definitions remain exact evidence; reads never migrate or heal.
-        state.definition = match crate::collections::read(tx, id) {
+        state.definition = match crate::collections::read(tx, id.get()) {
             Ok(c) => Some(c),
             Err(StorageError::CollectionNotFound) => None,
             Err(e) => return Err(e),
         };
         let evaluated = (|| {
-            let (_, criteria) = crate::collections::source(tx, id)?;
+            let (_, criteria) = crate::collections::source(tx, id.get())?;
             crate::query::visit_scope(
                 tx,
                 QueryRequest {
@@ -150,13 +147,13 @@ pub(super) fn evaluate(
 }
 pub(super) fn origins(
     tx: &Transaction<'_>,
-    id: i64,
+    id: ShelfId,
     uuid: &str,
     sources: &[Source],
 ) -> Result<bool> {
     let mut changed = false;
     for source in sources {
-        changed|=tx.execute("INSERT INTO shelf_story_origins(shelf_id,story_uuid,source_id) VALUES(?,?,?) ON CONFLICT DO NOTHING",params![id,uuid,source.id])?!=0;
+        changed|=tx.execute("INSERT INTO shelf_story_origins(shelf_id,story_uuid,source_id) VALUES(?,?,?) ON CONFLICT DO NOTHING",params![id.get(),uuid,source.id])?!=0;
     }
     Ok(changed)
 }

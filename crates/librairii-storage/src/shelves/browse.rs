@@ -23,7 +23,7 @@ impl Database<'_> {
     /// cached titles; a later import reconnects without rewriting any decisions.
     pub fn shelf_page(
         &self,
-        id: i64,
+        id: ShelfId,
         request: QueryRequest,
         locale: String,
     ) -> Result<Pending<'_, MemberPage>> {
@@ -32,7 +32,7 @@ impl Database<'_> {
 }
 pub fn page(
     tx: &Transaction<'_>,
-    id: i64,
+    id: ShelfId,
     request: QueryRequest,
     locale: &str,
 ) -> Result<MemberPage> {

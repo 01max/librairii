@@ -70,3 +70,15 @@ review and final-head receipts are recorded in the PR. This section supplies
 headless domain/storage ports; Task 15 still owns native Shelf screens and focus/
 keyboard behavior. It does not complete earlier deferred foundations, metadata
 transport (Task 11), import/trash execution or the GUI/package cutover.
+
+Independent review at `737a6a0`: Spec reported no actionable gaps. Standards
+identified one P2: domain/command identities used raw integers and strings despite
+the design requiring newtypes. The correction uses ShelfId/CollectionId in
+records and command ports, StoryUuid in curation/creation/review decisions, and
+explicit SQL-boundary conversion. Read projections retain lossless stored UUID
+spelling with a parsed identity accessor. Compile-fail examples reject a
+CollectionId passed to a Shelf command and arbitrary strings used as UUID commands.
+All sixteen Shelf tests still match the frozen reference after this correction.
+Standards also suggested an optional private authority-record extraction (P3);
+the four current plan paths consistently check the same invariants, so that
+refinement is deferred without weakening their checks.

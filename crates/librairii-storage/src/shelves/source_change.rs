@@ -3,7 +3,7 @@ use crate::database::SnapshotIdentity;
 use std::{collections::BTreeMap, sync::Arc};
 #[derive(Clone, Debug)]
 pub struct SourceChangePreview {
-    pub shelf_id: i64,
+    pub shelf_id: ShelfId,
     pub shelf_name: String,
     pub sources: Vec<Source>,
     pub detached: Vec<Source>,
@@ -13,8 +13,8 @@ pub struct SourceChangePreview {
 }
 #[derive(Clone, Debug)]
 pub struct SourceChangePlan {
-    id: i64,
-    desired: Vec<i64>,
+    id: ShelfId,
+    desired: Vec<CollectionId>,
     preview: SourceChangePreview,
     fingerprint: [u8; 32],
     identity: SnapshotIdentity,
@@ -28,13 +28,13 @@ impl SourceChangePlan {
 }
 pub(super) struct ChangeEvaluation {
     pub preview: SourceChangePreview,
-    pub desired: Vec<i64>,
+    pub desired: Vec<CollectionId>,
     pub fingerprint: [u8; 32],
 }
 pub(super) fn evaluate(
     tx: &Transaction<'_>,
-    id: i64,
-    desired: &[i64],
+    id: ShelfId,
+    desired: &[CollectionId],
     locale: &str,
 ) -> Result<ChangeEvaluation> {
     let desired = sources::unique_ids(desired)?;
@@ -130,11 +130,13 @@ pub(super) fn validate(
         .collect::<BTreeMap<_, _>>();
     let mut result = BTreeMap::new();
     for d in decisions {
-        let candidate = known.get(d.uuid.as_str()).ok_or(ShelfError::InvalidInput)?;
+        let candidate = known
+            .get(d.uuid.to_string().as_str())
+            .ok_or(ShelfError::InvalidInput)?;
         if !matches!(d.action, Action::Keep | Action::RemoveAndExclude)
             || (d.action == Action::RemoveAndExclude
                 && (preview.incomplete || candidate.story.is_none()))
-            || result.insert(d.uuid.clone(), d.action).is_some()
+            || result.insert(d.uuid.to_string(), d.action).is_some()
         {
             return Err(ShelfError::InvalidInput.into());
         }
@@ -152,7 +154,7 @@ pub(super) fn apply(
     let id = e.preview.shelf_id;
     let mut changed = sources::attach(tx, id, &e.desired)?;
     for source in &e.preview.detached {
-        changed|=tx.execute("UPDATE shelf_sources SET active=0,collection_name=? WHERE id=? AND shelf_id=? AND active=1",params![source.name,source.id,id])?!=0;
+        changed|=tx.execute("UPDATE shelf_sources SET active=0,collection_name=? WHERE id=? AND shelf_id=? AND active=1",params![source.name,source.id,id.get()])?!=0;
     }
     for c in &e.preview.affected {
         match actions.get(&c.uuid) {
@@ -170,7 +172,7 @@ pub(super) fn apply(
         // The resulting manual Shelf retains every survivor, including unavailable UUIDs.
         changed |= tx.execute(
             "UPDATE shelf_stories SET protected=1 WHERE shelf_id=? AND protected=0",
-            [id],
+            [id.get()],
         )? != 0;
     }
     bump(tx, id, changed)
@@ -178,8 +180,8 @@ pub(super) fn apply(
 impl Database<'_> {
     pub fn shelf_source_change_preview(
         &self,
-        id: i64,
-        desired: Vec<i64>,
+        id: ShelfId,
+        desired: Vec<CollectionId>,
         locale: String,
     ) -> Result<Pending<'_, SourceChangePlan>> {
         let identity = self.snapshot_identity();
@@ -192,7 +194,7 @@ impl Database<'_> {
                 preview: e.preview,
                 fingerprint: e.fingerprint,
                 identity,
-                ticket: tickets::issue(&registry, tickets::Kind::Sources, id)?,
+                ticket: tickets::issue(&registry, tickets::Kind::Sources, id.get())?,
                 locale,
             })
         })
@@ -208,7 +210,7 @@ impl Database<'_> {
             return Err(ShelfError::StaleReview.into());
         }
         self.transaction(cancellation, move |tx| {
-            plan.ticket.claim(tickets::Kind::Sources, plan.id)?;
+            plan.ticket.claim(tickets::Kind::Sources, plan.id.get())?;
             let fresh = evaluate(tx, plan.id, &plan.desired, &plan.locale)?;
             if fresh.fingerprint != plan.fingerprint {
                 return Err(ShelfError::StaleReview.into());
@@ -239,13 +241,14 @@ impl SourceChangePreview {
         {
             return Err(ShelfError::InvalidInput.into());
         }
-        Ok(self
-            .affected
+        self.affected
             .iter()
-            .map(|c| Decision {
-                uuid: c.uuid.clone(),
-                action,
+            .map(|c| {
+                Ok(Decision {
+                    uuid: c.uuid.parse().map_err(|_| ShelfError::InvalidInput)?,
+                    action,
+                })
             })
-            .collect())
+            .collect()
     }
 }

@@ -4,15 +4,22 @@ use crate::{
     database::{Database, Pending, TransactionOutcome, WorkCancellation},
 };
 use librairii_core::shelves::{Member, Shelf, ShelfError, Source, normalize_name};
+use librairii_core::{CollectionId, ShelfId, StoryUuid};
 use rusqlite::{OptionalExtension, Transaction, params};
 
+/// Shelf and Collection identities cannot cross command scopes.
+/// ```compile_fail
+/// use librairii_core::CollectionId;
+/// use librairii_storage::shelves::Command;
+/// fn wrong(id: CollectionId) { let _ = Command::Delete { id }; }
+/// ```
 #[derive(Debug)]
 pub enum Command {
     Create { name: String },
-    Rename { id: i64, name: String },
-    Duplicate { id: i64, name: String },
-    Reorder(Vec<i64>),
-    Delete { id: i64 },
+    Rename { id: ShelfId, name: String },
+    Duplicate { id: ShelfId, name: String },
+    Reorder(Vec<ShelfId>),
+    Delete { id: ShelfId },
 }
 #[derive(Debug)]
 pub enum Response {
@@ -31,14 +38,14 @@ impl Database<'_> {
     pub fn shelves(&self) -> Result<Pending<'_, Vec<Shelf>>> {
         self.read(list)
     }
-    pub fn shelf_members(&self, id: i64) -> Result<Pending<'_, Vec<Member>>> {
+    pub fn shelf_members(&self, id: ShelfId) -> Result<Pending<'_, Vec<Member>>> {
         self.read(move |tx| members(tx, id))
     }
 }
 const SELECT: &str = "SELECT s.id,s.name,s.position,s.revision,(SELECT COUNT(*) FROM shelf_stories m WHERE m.shelf_id=s.id),(SELECT COUNT(*) FROM shelf_stories m JOIN stories st ON st.uuid=m.story_uuid WHERE m.shelf_id=s.id AND st.is_broken=1),(SELECT COUNT(*) FROM shelf_stories m WHERE m.shelf_id=s.id AND NOT EXISTS(SELECT 1 FROM stories st JOIN story_archives a ON a.story_id=st.id WHERE st.uuid=m.story_uuid)),(SELECT COUNT(*) FROM shelf_sources src WHERE src.shelf_id=s.id AND src.active=1) FROM shelves s";
 fn row(r: &rusqlite::Row<'_>) -> rusqlite::Result<Shelf> {
     Ok(Shelf {
-        id: r.get(0)?,
+        id: shelf_id(r.get(0)?)?,
         name: r.get(1)?,
         position: r.get(2)?,
         revision: r.get(3)?,
@@ -48,12 +55,9 @@ fn row(r: &rusqlite::Row<'_>) -> rusqlite::Result<Shelf> {
         source_count: r.get(7)?,
     })
 }
-pub fn read(tx: &Transaction<'_>, id: i64) -> Result<Shelf> {
-    if id <= 0 {
-        return Err(ShelfError::InvalidInput.into());
-    }
+pub fn read(tx: &Transaction<'_>, id: ShelfId) -> Result<Shelf> {
     Ok(tx
-        .query_row(&format!("{SELECT} WHERE s.id=?"), [id], row)
+        .query_row(&format!("{SELECT} WHERE s.id=?"), [id.get()], row)
         .optional()?
         .ok_or(ShelfError::NotFound)?)
 }
@@ -63,24 +67,24 @@ pub fn list(tx: &Transaction<'_>) -> Result<Vec<Shelf>> {
         .query_map([], row)?
         .collect::<rusqlite::Result<_>>()?)
 }
-pub fn sources(tx: &Transaction<'_>, id: i64, active_only: bool) -> Result<Vec<Source>> {
+pub fn sources(tx: &Transaction<'_>, id: ShelfId, active_only: bool) -> Result<Vec<Source>> {
     let mut stmt=tx.prepare("SELECT src.id,src.collection_id,CASE WHEN src.active=1 THEN COALESCE(c.name,src.collection_name) ELSE src.collection_name END,src.active FROM shelf_sources src LEFT JOIN collections c ON c.id=src.collection_id WHERE src.shelf_id=? AND (?=0 OR src.active=1) ORDER BY src.id")?;
     Ok(stmt
-        .query_map(params![id, active_only], |r| {
+        .query_map(params![id.get(), active_only], |r| {
             Ok(Source {
                 id: r.get(0)?,
-                collection_id: r.get(1)?,
+                collection_id: r.get::<_, Option<i64>>(1)?.map(collection_id).transpose()?,
                 name: r.get(2)?,
                 active: r.get(3)?,
             })
         })?
         .collect::<rusqlite::Result<_>>()?)
 }
-pub fn members(tx: &Transaction<'_>, id: i64) -> Result<Vec<Member>> {
+pub fn members(tx: &Transaction<'_>, id: ShelfId) -> Result<Vec<Member>> {
     read(tx, id)?;
     let mut stmt=tx.prepare("SELECT story_uuid,position,protected,cached_title FROM shelf_stories WHERE shelf_id=? ORDER BY position,story_uuid")?;
     let mut result = stmt
-        .query_map([id], |r| {
+        .query_map([id.get()], |r| {
             Ok(Member {
                 uuid: r.get(0)?,
                 position: r.get(1)?,
@@ -93,10 +97,10 @@ pub fn members(tx: &Transaction<'_>, id: i64) -> Result<Vec<Member>> {
     let mut stmt=tx.prepare("SELECT src.id,src.collection_id,src.collection_name,src.active FROM shelf_story_origins o JOIN shelf_sources src ON src.id=o.source_id AND src.shelf_id=o.shelf_id WHERE o.shelf_id=? AND o.story_uuid=? ORDER BY src.id")?;
     for m in &mut result {
         m.origins = stmt
-            .query_map(params![id, m.uuid], |r| {
+            .query_map(params![id.get(), m.uuid], |r| {
                 Ok(Source {
                     id: r.get(0)?,
-                    collection_id: r.get(1)?,
+                    collection_id: r.get::<_, Option<i64>>(1)?.map(collection_id).transpose()?,
                     name: r.get(2)?,
                     active: r.get(3)?,
                 })
@@ -116,13 +120,16 @@ fn duplicate_name(e: rusqlite::Error) -> StorageError {
 fn insert(tx: &Transaction<'_>, name: &str) -> Result<Shelf> {
     let (name, normalized) = normalize_name(name)?;
     tx.execute("INSERT INTO shelves(name,normalized_name,position) VALUES(?,?,(SELECT COALESCE(MAX(position),-1)+1 FROM shelves))",params![name,normalized]).map_err(duplicate_name)?;
-    read(tx, tx.last_insert_rowid())
+    read(
+        tx,
+        ShelfId::new(tx.last_insert_rowid()).map_err(|_| ShelfError::InvalidInput)?,
+    )
 }
-fn bump(tx: &Transaction<'_>, id: i64, changed: bool) -> Result<Shelf> {
+fn bump(tx: &Transaction<'_>, id: ShelfId, changed: bool) -> Result<Shelf> {
     if changed {
         tx.execute(
             "UPDATE shelves SET revision=revision+1,updated_at=CURRENT_TIMESTAMP WHERE id=?",
-            [id],
+            [id.get()],
         )?;
     }
     read(tx, id)
@@ -136,14 +143,14 @@ pub fn execute(tx: &Transaction<'_>, command: Command) -> Result<Response> {
             let changed = tx
                 .execute(
                     "UPDATE shelves SET name=?,normalized_name=? WHERE id=? AND name!=?",
-                    params![name, normalized, id, name],
+                    params![name, normalized, id.get(), name],
                 )
                 .map_err(duplicate_name)?;
             Ok(Response::Shelf(bump(tx, id, changed != 0)?))
         }
         Command::Delete { id } => {
             read(tx, id)?;
-            tx.execute("DELETE FROM shelves WHERE id=?", [id])?;
+            tx.execute("DELETE FROM shelves WHERE id=?", [id.get()])?;
             Ok(Response::Deleted)
         }
         Command::Reorder(ids) => {
@@ -174,7 +181,7 @@ pub fn execute(tx: &Transaction<'_>, command: Command) -> Result<Response> {
             for (p, id) in ids.iter().enumerate() {
                 tx.execute(
                     "UPDATE shelves SET position=? WHERE id=?",
-                    params![p as i64, id],
+                    params![p as i64, id.get()],
                 )?;
             }
             Ok(Response::Shelves(list(tx)?))
@@ -182,12 +189,12 @@ pub fn execute(tx: &Transaction<'_>, command: Command) -> Result<Response> {
         Command::Duplicate { id, name } => {
             read(tx, id)?;
             let copy = insert(tx, &name)?;
-            tx.execute("INSERT INTO shelf_stories(shelf_id,story_uuid,position,protected,cached_title,added_at) SELECT ?,story_uuid,position,protected,cached_title,added_at FROM shelf_stories WHERE shelf_id=?",params![copy.id,id])?;
-            tx.execute("INSERT INTO shelf_exclusions(shelf_id,story_uuid,created_at) SELECT ?,story_uuid,created_at FROM shelf_exclusions WHERE shelf_id=?",params![copy.id,id])?;
+            tx.execute("INSERT INTO shelf_stories(shelf_id,story_uuid,position,protected,cached_title,added_at) SELECT ?,story_uuid,position,protected,cached_title,added_at FROM shelf_stories WHERE shelf_id=?",params![copy.id.get(),id.get()])?;
+            tx.execute("INSERT INTO shelf_exclusions(shelf_id,story_uuid,created_at) SELECT ?,story_uuid,created_at FROM shelf_exclusions WHERE shelf_id=?",params![copy.id.get(),id.get()])?;
             for source in sources(tx, id, false)? {
-                tx.execute("INSERT INTO shelf_sources(shelf_id,collection_id,collection_name,active,created_at) SELECT ?,collection_id,collection_name,active,created_at FROM shelf_sources WHERE id=?",params![copy.id,source.id])?;
+                tx.execute("INSERT INTO shelf_sources(shelf_id,collection_id,collection_name,active,created_at) SELECT ?,collection_id,collection_name,active,created_at FROM shelf_sources WHERE id=?",params![copy.id.get(),source.id])?;
                 let new_id = tx.last_insert_rowid();
-                tx.execute("INSERT INTO shelf_story_origins(shelf_id,story_uuid,source_id,accepted_at) SELECT ?,story_uuid,?,accepted_at FROM shelf_story_origins WHERE shelf_id=? AND source_id=?",params![copy.id,new_id,id,source.id])?;
+                tx.execute("INSERT INTO shelf_story_origins(shelf_id,story_uuid,source_id,accepted_at) SELECT ?,story_uuid,?,accepted_at FROM shelf_story_origins WHERE shelf_id=? AND source_id=?",params![copy.id.get(),new_id,id.get(),source.id])?;
             }
             Ok(Response::Shelf(read(tx, copy.id)?))
         }
@@ -218,3 +225,18 @@ fn rows<T>(values: &[T], page: usize) -> &[T] {
     &values[start..start.saturating_add(25).min(values.len())]
 }
 pub use curation::{Exclusion, ExclusionPage};
+
+fn shelf_id(raw: i64) -> rusqlite::Result<ShelfId> {
+    ShelfId::new(raw).map_err(|_| rusqlite::Error::InvalidQuery)
+}
+fn collection_id(raw: i64) -> rusqlite::Result<CollectionId> {
+    CollectionId::new(raw).map_err(|_| rusqlite::Error::InvalidQuery)
+}
+fn uuid_strings(values: &[StoryUuid]) -> Vec<String> {
+    let mut seen = std::collections::BTreeSet::new();
+    values
+        .iter()
+        .filter(|u| seen.insert(**u))
+        .map(ToString::to_string)
+        .collect()
+}

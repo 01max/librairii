@@ -12,7 +12,7 @@ pub struct CollectionDeletionPreview {
 }
 #[derive(Clone, Debug)]
 pub struct CollectionDeletionPlan {
-    id: i64,
+    id: CollectionId,
     preview: CollectionDeletionPreview,
     fingerprint: [u8; 32],
     identity: SnapshotIdentity,
@@ -26,7 +26,7 @@ impl CollectionDeletionPlan {
 }
 #[derive(Clone, Debug)]
 pub struct ShelfDecisions {
-    pub shelf_id: i64,
+    pub shelf_id: ShelfId,
     pub decisions: Vec<Decision>,
 }
 struct DeletionEvaluation {
@@ -34,9 +34,9 @@ struct DeletionEvaluation {
     changes: Vec<source_change::ChangeEvaluation>,
     fingerprint: [u8; 32],
 }
-fn evaluate(tx: &Transaction<'_>, id: i64, locale: &str) -> Result<DeletionEvaluation> {
-    let collection = crate::collections::read(tx, id)?;
-    let ids=tx.prepare("SELECT DISTINCT shelf_id FROM shelf_sources WHERE collection_id=? AND active=1 ORDER BY shelf_id")?.query_map([id],|r|r.get::<_,i64>(0))?.collect::<rusqlite::Result<Vec<_>>>()?;
+fn evaluate(tx: &Transaction<'_>, id: CollectionId, locale: &str) -> Result<DeletionEvaluation> {
+    let collection = crate::collections::read(tx, id.get())?;
+    let ids=tx.prepare("SELECT DISTINCT shelf_id FROM shelf_sources WHERE collection_id=? AND active=1 ORDER BY shelf_id")?.query_map([id.get()],|r|shelf_id(r.get(0)?))?.collect::<rusqlite::Result<Vec<_>>>()?;
     let mut changes = Vec::new();
     for shelf in ids {
         let desired = sources(tx, shelf, true)?
@@ -60,7 +60,7 @@ fn evaluate(tx: &Transaction<'_>, id: i64, locale: &str) -> Result<DeletionEvalu
 impl Database<'_> {
     pub fn linked_collection_deletion_preview(
         &self,
-        id: i64,
+        id: CollectionId,
         locale: String,
     ) -> Result<Pending<'_, CollectionDeletionPlan>> {
         let identity = self.snapshot_identity();
@@ -72,7 +72,7 @@ impl Database<'_> {
                 preview: e.preview,
                 fingerprint: e.fingerprint,
                 identity,
-                ticket: tickets::issue(&registry, tickets::Kind::DeleteCollection, id)?,
+                ticket: tickets::issue(&registry, tickets::Kind::DeleteCollection, id.get())?,
                 locale,
             })
         })
@@ -90,7 +90,7 @@ impl Database<'_> {
         let library = self.library_id();
         self.transaction(cancellation, move |tx| {
             plan.ticket
-                .claim(tickets::Kind::DeleteCollection, plan.id)?;
+                .claim(tickets::Kind::DeleteCollection, plan.id.get())?;
             let fresh = evaluate(tx, plan.id, &plan.locale)?;
             if fresh.fingerprint != plan.fingerprint {
                 return Err(ShelfError::StaleReview.into());
@@ -126,8 +126,14 @@ impl Database<'_> {
             }
             // The guarded Task 9 participant clears only inactive foreign keys.
             // It still refuses any active link missed by this transaction.
-            crate::collections::execute(tx, crate::collections::Command::Delete { id: plan.id })?;
-            Ok(DeletedCollection::after_reviewed_delete(plan.id, library))
+            crate::collections::execute(
+                tx,
+                crate::collections::Command::Delete { id: plan.id.get() },
+            )?;
+            Ok(DeletedCollection::after_reviewed_delete(
+                plan.id.get(),
+                library,
+            ))
         })
     }
 }

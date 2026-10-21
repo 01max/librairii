@@ -1,6 +1,6 @@
 use super::*;
 use crate::database::SnapshotIdentity;
-use librairii_core::{browsing::StorySummary, query::QueryRequest, shelves::unique_uuids};
+use librairii_core::{browsing::StorySummary, query::QueryRequest};
 use sha2::{Digest, Sha256};
 use std::{
     collections::{BTreeMap, BTreeSet},
@@ -22,11 +22,16 @@ pub struct Warning {
     pub uuid: Option<String>,
     pub code: &'static str,
 }
+/// Native commands accept typed UUID identities after canonical text admission.
+/// ```compile_fail
+/// use librairii_storage::shelves::CreationRequest;
+/// let _ = CreationRequest { manual_uuids: vec!["arbitrary text".to_owned()], ..Default::default() };
+/// ```
 #[derive(Clone, Debug, Default)]
 pub struct CreationRequest {
     pub name: String,
-    pub manual_uuids: Vec<String>,
-    pub collection_ids: Vec<i64>,
+    pub manual_uuids: Vec<StoryUuid>,
+    pub collection_ids: Vec<CollectionId>,
 }
 #[derive(Clone, Debug)]
 pub struct CreationPreview {
@@ -95,7 +100,7 @@ fn creation(
     locale: &str,
 ) -> Result<(CreationPreview, [u8; 32])> {
     let (name, normalized) = normalize_name(&request.name)?;
-    let manual = unique_uuids(&request.manual_uuids)?;
+    let manual = uuid_strings(&request.manual_uuids);
     let evaluated =
         sources::evaluate(tx, sources::potential(tx, &request.collection_ids)?, locale)?;
     let ids: Vec<_> = manual
@@ -182,7 +187,7 @@ impl Database<'_> {
     pub fn create_shelf_reviewed(
         &self,
         plan: CreationPlan,
-        selected: Vec<String>,
+        selected: Vec<StoryUuid>,
         cancellation: WorkCancellation,
     ) -> Result<Pending<'_, TransactionOutcome<Shelf>>> {
         if self.snapshot_identity() != plan.identity {
@@ -194,9 +199,7 @@ impl Database<'_> {
             if fingerprint != plan.fingerprint {
                 return Err(ShelfError::StaleReview.into());
             }
-            let selected = unique_uuids(&selected)?
-                .into_iter()
-                .collect::<BTreeSet<_>>();
+            let selected = uuid_strings(&selected).into_iter().collect::<BTreeSet<_>>();
             let known = fresh
                 .candidates
                 .iter()
@@ -234,12 +237,12 @@ pub enum Action {
 }
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Decision {
-    pub uuid: String,
+    pub uuid: StoryUuid,
     pub action: Action,
 }
 #[derive(Clone, Debug)]
 pub struct UpdatePreview {
-    pub shelf_id: i64,
+    pub shelf_id: ShelfId,
     pub revision: i64,
     pub(super) additions: Vec<Candidate>,
     pub(super) removals: Vec<Candidate>,
@@ -249,7 +252,7 @@ pub struct UpdatePreview {
 }
 #[derive(Clone, Debug)]
 pub struct UpdatePlan {
-    id: i64,
+    id: ShelfId,
     preview: UpdatePreview,
     fingerprint: [u8; 32],
     identity: SnapshotIdentity,
@@ -271,7 +274,7 @@ pub(super) struct Evaluation {
 }
 pub(super) fn evaluation(
     tx: &Transaction<'_>,
-    id: i64,
+    id: ShelfId,
     locale: &str,
     override_sources: Option<Vec<Source>>,
 ) -> Result<Evaluation> {
@@ -386,9 +389,9 @@ fn actions(preview: &UpdatePreview, decisions: &[Decision]) -> Result<BTreeMap<S
         .collect::<BTreeSet<_>>();
     let mut result = BTreeMap::new();
     for d in decisions {
-        let allowed = if additions.contains(d.uuid.as_str()) {
+        let allowed = if additions.contains(d.uuid.to_string().as_str()) {
             matches!(d.action, Action::Add | Action::Exclude | Action::NotNow)
-        } else if removals.contains(d.uuid.as_str()) {
+        } else if removals.contains(d.uuid.to_string().as_str()) {
             matches!(
                 d.action,
                 Action::Keep | Action::RemoveAndExclude | Action::NotNow
@@ -396,20 +399,24 @@ fn actions(preview: &UpdatePreview, decisions: &[Decision]) -> Result<BTreeMap<S
         } else {
             false
         };
-        if !allowed || result.insert(d.uuid.clone(), d.action).is_some() {
+        if !allowed || result.insert(d.uuid.to_string(), d.action).is_some() {
             return Err(ShelfError::InvalidInput.into());
         }
     }
     Ok(result)
 }
-pub(super) fn keep(tx: &Transaction<'_>, id: i64, uuid: &str) -> Result<bool> {
+pub(super) fn keep(tx: &Transaction<'_>, id: ShelfId, uuid: &str) -> Result<bool> {
     Ok(tx.execute(
         "UPDATE shelf_stories SET protected=1 WHERE shelf_id=? AND story_uuid=? AND protected=0",
-        params![id, uuid],
+        params![id.get(), uuid],
     )? != 0)
 }
 impl Database<'_> {
-    pub fn shelf_update_preview(&self, id: i64, locale: String) -> Result<Pending<'_, UpdatePlan>> {
+    pub fn shelf_update_preview(
+        &self,
+        id: ShelfId,
+        locale: String,
+    ) -> Result<Pending<'_, UpdatePlan>> {
         let identity = self.snapshot_identity();
         let registry = self.shelf_tickets.clone();
         self.read(move |tx| {
@@ -419,7 +426,7 @@ impl Database<'_> {
                 preview: e.preview,
                 fingerprint: e.fingerprint,
                 identity,
-                ticket: super::tickets::issue(&registry, super::tickets::Kind::Update, id)?,
+                ticket: super::tickets::issue(&registry, super::tickets::Kind::Update, id.get())?,
                 locale,
             })
         })
@@ -434,7 +441,8 @@ impl Database<'_> {
             return Err(ShelfError::StaleReview.into());
         }
         self.transaction(cancellation, move |tx| {
-            plan.ticket.claim(super::tickets::Kind::Update, plan.id)?;
+            plan.ticket
+                .claim(super::tickets::Kind::Update, plan.id.get())?;
             let fresh = evaluation(tx, plan.id, &plan.locale, None)?;
             if fresh.fingerprint != plan.fingerprint {
                 return Err(ShelfError::StaleReview.into());
@@ -477,8 +485,14 @@ impl CreationPreview {
     pub fn candidates_page(&self, page: usize) -> &[Candidate] {
         super::rows(&self.candidates, page)
     }
-    pub fn all_uuids(&self) -> Vec<String> {
-        self.candidates.iter().map(|c| c.uuid.clone()).collect()
+    pub fn all_uuids(&self) -> Result<Vec<StoryUuid>> {
+        Ok(librairii_core::shelves::parse_uuids(
+            &self
+                .candidates
+                .iter()
+                .map(|c| c.uuid.clone())
+                .collect::<Vec<_>>(),
+        )?)
     }
     pub fn warning_count(&self) -> usize {
         self.warnings.len()
@@ -507,16 +521,18 @@ impl UpdatePreview {
         super::rows(&self.warnings, page)
     }
     /// Called only after an explicit bulk choice; previews default to Not now.
-    pub fn bulk_decisions(&self, action: Action) -> Vec<Decision> {
+    pub fn bulk_decisions(&self, action: Action) -> Result<Vec<Decision>> {
         let candidates: Box<dyn Iterator<Item = &Candidate>> = match action {
             Action::Add | Action::Exclude => Box::new(self.additions.iter()),
             Action::Keep | Action::RemoveAndExclude => Box::new(self.removals.iter()),
             Action::NotNow => Box::new(self.additions.iter().chain(&self.removals)),
         };
         candidates
-            .map(|c| Decision {
-                uuid: c.uuid.clone(),
-                action,
+            .map(|c| {
+                Ok(Decision {
+                    uuid: c.uuid.parse().map_err(|_| ShelfError::InvalidInput)?,
+                    action,
+                })
             })
             .collect()
     }

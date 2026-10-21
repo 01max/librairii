@@ -42,20 +42,22 @@ impl WarningAcknowledgements {
     pub fn library(&self) -> LibraryId {
         self.library
     }
-    pub fn needs_prompt(&self, shelf_id: i64, key: WarningKey) -> bool {
-        self.entries.get(&shelf_id) != Some(&key)
+    pub fn needs_prompt(&self, shelf_id: crate::ShelfId, key: WarningKey) -> bool {
+        self.entries.get(&shelf_id.get()) != Some(&key)
     }
-    pub fn acknowledge(&mut self, shelf_id: i64, key: WarningKey) -> Result<(), ShelfError> {
-        if shelf_id <= 0
-            || (!self.entries.contains_key(&shelf_id) && self.entries.len() >= MAX_ENTRIES)
-        {
+    pub fn acknowledge(
+        &mut self,
+        shelf_id: crate::ShelfId,
+        key: WarningKey,
+    ) -> Result<(), ShelfError> {
+        if !self.entries.contains_key(&shelf_id.get()) && self.entries.len() >= MAX_ENTRIES {
             return Err(ShelfError::InvalidInput);
         }
-        self.entries.insert(shelf_id, key);
+        self.entries.insert(shelf_id.get(), key);
         Ok(())
     }
-    pub fn forget(&mut self, shelf_id: i64) {
-        self.entries.remove(&shelf_id);
+    pub fn forget(&mut self, shelf_id: crate::ShelfId) {
+        self.entries.remove(&shelf_id.get());
     }
     pub fn encode(&self) -> Result<Vec<u8>, ShelfError> {
         let bytes = serde_json::to_vec(&Wire {

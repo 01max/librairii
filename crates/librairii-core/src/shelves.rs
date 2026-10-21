@@ -25,7 +25,7 @@ impl ShelfError {
 }
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Shelf {
-    pub id: i64,
+    pub id: crate::ShelfId,
     pub name: String,
     pub position: i64,
     pub revision: i64,
@@ -37,12 +37,13 @@ pub struct Shelf {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Source {
     pub id: i64,
-    pub collection_id: Option<i64>,
+    pub collection_id: Option<crate::CollectionId>,
     pub name: String,
     pub active: bool,
 }
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Member {
+    /// Lossless stored spelling, independently of its parsed domain identity.
     pub uuid: String,
     pub position: i64,
     /// Historical protection is lossless internal retention data, never a setting.
@@ -70,3 +71,16 @@ pub fn unique_uuids(values: &[String]) -> Result<Vec<String>, ShelfError> {
 }
 mod warnings;
 pub use warnings::{WarningAcknowledgements, WarningKey};
+
+impl Member {
+    pub fn identity(&self) -> Result<crate::StoryUuid, ShelfError> {
+        self.uuid.parse().map_err(|_| ShelfError::InvalidInput)
+    }
+}
+/// Admission for text-based/native inputs, before constructing typed commands.
+pub fn parse_uuids(values: &[String]) -> Result<Vec<crate::StoryUuid>, ShelfError> {
+    unique_uuids(values)?
+        .iter()
+        .map(|u| u.parse().map_err(|_| ShelfError::InvalidInput))
+        .collect()
+}
