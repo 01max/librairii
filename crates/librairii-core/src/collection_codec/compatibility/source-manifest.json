@@ -366,8 +366,8 @@
     },
     {
       "path": "mod.rs",
-      "bytes": 705,
-      "sha256": "ab5a3bc667fd93a812ff9c81017da2bff181ac18ff7d81477000c26d6d3bfdcb",
+      "bytes": 753,
+      "sha256": "fafb062daf5989de79366fd22499c263a7d51e7eb02d428d393354e4d2091df8",
       "kind": "authored",
       "recipe": "Private module wiring only; no source algorithm.",
       "sources": [],
@@ -461,8 +461,8 @@
     },
     {
       "path": "normalization.rs",
-      "bytes": 23423,
-      "sha256": "4ecb186d7071380d9cd36c0666237ba26617a1f057630e86c670ba478813874f",
+      "bytes": 24363,
+      "sha256": "abbbde9d182ca19466f5fc721b6220240993aa1291a234c712f29a940d67885d",
       "kind": "translated",
       "recipe": "Hand translation of frozen full-fold\u2192Go stream-safe NFKD\u2192Mn-only removal\u2192Go whitespace folding; original-character leading/trailing partition precedes stable CCC insertion. Safe checked UTF8 trie and fixed32-rune segment, Hangul decomposition; no modern composition or runtime Go.",
       "sources": [

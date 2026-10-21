@@ -79,7 +79,7 @@ fn sql_bytes(row: &rusqlite::Row<'_>, index: usize) -> rusqlite::Result<Vec<u8>>
         )),
     }
 }
-fn read_compatibility_collection(
+pub(crate) fn read_compatibility_collection(
     tx: &rusqlite::Transaction<'_>,
     id: i64,
 ) -> Result<CompatibilityCollection> {
@@ -98,7 +98,7 @@ fn read_compatibility_collection(
 /// Missing/wrong-kind criteria are a DOMAIN result; statement, conversion or
 /// driver failures remain SQL errors and must roll back rather than marking
 /// attention. Visit branches first, matching the frozen criteria service.
-fn available_criteria(
+pub(crate) fn available_criteria(
     tx: &rusqlite::Transaction<'_>,
     query: &collection_codec::Query,
 ) -> Result<bool> {
@@ -161,6 +161,12 @@ fn attention_inspection(
     })
 }
 fn inspect_collection(tx: &rusqlite::Transaction<'_>, id: i64) -> Result<CompatibilityInspection> {
+    inspect_collection_with_query(tx, id).map(|(inspection, _)| inspection)
+}
+pub(crate) fn inspect_collection_with_query(
+    tx: &rusqlite::Transaction<'_>,
+    id: i64,
+) -> Result<(CompatibilityInspection, Option<collection_codec::Query>)> {
     use collection_codec::CodecError;
     let mut collection = read_compatibility_collection(tx, id)?;
     let legacy_id = tx
@@ -178,19 +184,22 @@ fn inspect_collection(tx: &rusqlite::Transaction<'_>, id: i64) -> Result<Compati
     ) {
         Ok(value) => value,
         Err(CodecError::Invalid | CodecError::UnsupportedVersion) => {
-            return attention_inspection(tx, collection, CollectionAttention::UnmigratableQuery);
+            return attention_inspection(tx, collection, CollectionAttention::UnmigratableQuery)
+                .map(|i| (i, None));
         }
         Err(CodecError::FrozenData) => return Err(StorageError::CompatibilityInvariant),
     };
     let query = match collection_codec::decode(5, payload.as_bytes(), 0) {
         Ok(value) => value,
         Err(CodecError::Invalid | CodecError::UnsupportedVersion) => {
-            return attention_inspection(tx, collection, CollectionAttention::UnmigratableQuery);
+            return attention_inspection(tx, collection, CollectionAttention::UnmigratableQuery)
+                .map(|i| (i, None));
         }
         Err(CodecError::FrozenData) => return Err(StorageError::CompatibilityInvariant),
     };
     if !available_criteria(tx, &query)? {
-        return attention_inspection(tx, collection, CollectionAttention::MissingCriteria);
+        return attention_inspection(tx, collection, CollectionAttention::MissingCriteria)
+            .map(|i| (i, None));
     }
     let decoded_query_payload =
         Some(collection_codec::payload(&query).map_err(|_| StorageError::CompatibilityInvariant)?);
@@ -202,11 +211,14 @@ fn inspect_collection(tx: &rusqlite::Transaction<'_>, id: i64) -> Result<Compati
     }
     let attention = (collection.validity == CollectionValidity::NeedsAttention)
         .then_some(CollectionAttention::MissingCriteria);
-    Ok(CompatibilityInspection {
-        collection,
-        decoded_query_payload,
-        attention,
-    })
+    Ok((
+        CompatibilityInspection {
+            collection,
+            decoded_query_payload,
+            attention,
+        },
+        Some(query),
+    ))
 }
 
 pub const SCHEMA_PRODUCT: &str = "librairii";

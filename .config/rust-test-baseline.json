@@ -2132,6 +2132,15 @@
         "x86_64-apple-darwin",
         "x86_64-unknown-linux-gnu"
       ]
+    },
+    {
+      "suite": "librairii-storage::collections",
+      "name": "collection_crud_preserves_ids_namespace_query_bytes_revisions_and_atomic_order",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
     }
   ]
 }

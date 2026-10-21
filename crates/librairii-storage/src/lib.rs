@@ -4,6 +4,7 @@
 pub mod adoption;
 pub mod backup;
 pub mod broken;
+pub mod collections;
 pub mod database;
 pub mod error;
 pub mod identity;
