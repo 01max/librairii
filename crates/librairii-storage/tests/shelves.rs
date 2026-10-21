@@ -6,7 +6,7 @@ use librairii_core::{
 use librairii_storage::{
     IsolatedLibrary, Result, StorageError,
     database::{Database, TransactionOutcome, WorkCancellation},
-    shelves::{Command, Response},
+    shelves::{self, Command, Response},
 };
 use librairii_testkit::TestRoots;
 use std::error::Error;
@@ -112,6 +112,72 @@ fn crud_namespace_order_unavailable_duplicate_and_restart_are_independent() -> T
     let mut db = Database::open_isolated(&lib)?;
     assert_eq!(db.shelf_members(copy.id)?.wait()?, b);
     assert_eq!(db.collections()?.wait()?.len(), 1);
+    db.close()?;
+    Ok(())
+}
+
+fn seed(db: &Database<'_>, count: i64) -> Result<()> {
+    committed(db.transaction(WorkCancellation::default(),move|tx|{for id in 1..=count {
+        tx.execute("INSERT INTO stories(id,uuid,display_name_normalized) VALUES(?1,printf('10000000-0000-4000-8000-%012d',?1),'story')",[id])?;
+        tx.execute("INSERT INTO story_archives(story_id,original_filename,detected_format,sha256,byte_size,managed_path,validation_state) VALUES(?1,'story.zip','zip',printf('%064d',?1),1,'archives/'||?1,'valid')",[id])?;
+    }Ok(())})?.wait()?)
+}
+
+fn curate(db: &Database<'_>, id: i64, action: shelves::Curation) -> Result<Shelf> {
+    committed(
+        db.curate_shelf(id, action, "fr-FR".into(), WorkCancellation::default())?
+            .wait()?,
+    )
+}
+#[test]
+fn manual_curation_retention_exclusions_order_and_noops_are_explicit() -> TestResult {
+    use shelves::Curation::*;
+    let roots = TestRoots::new()?;
+    let lib = library(&roots)?;
+    let mut db = Database::open_isolated(&lib)?;
+    seed(&db, 3)?;
+    let s = create(&db, "Manual")?;
+    let s = curate(&db, s.id, Add(vec![uuid(2), uuid(1), uuid(2)]))?;
+    assert_eq!(s.count, 2);
+    assert_eq!(s.revision, 2);
+    let unchanged = curate(&db, s.id, Add(vec![uuid(1)]))?;
+    assert_eq!(s, unchanged);
+    curate(&db, s.id, Reorder(vec![uuid(1), uuid(2)]))?;
+    assert!(curate(&db, s.id, Reorder(vec![uuid(1), uuid(1)])).is_err());
+    curate(&db, s.id, Remove(vec![uuid(1)]))?;
+    let id = s.id;
+    assert!(
+        db.read(move |tx| shelves::exclusions(tx, id))?
+            .wait()?
+            .is_empty()
+    );
+    curate(&db, s.id, RemoveAndExclude(vec![uuid(2)]))?;
+    let cleared = curate(&db, s.id, ClearExclusion(uuid(2)))?;
+    assert_eq!(cleared.count, 0);
+    curate(&db, s.id, Exclude(vec![uuid(3)]))?;
+    curate(&db, s.id, Add(vec![uuid(3), uuid(2)]))?;
+    let m = db.shelf_members(s.id)?.wait()?;
+    assert_eq!(
+        m.iter().map(|m| m.uuid.clone()).collect::<Vec<_>>(),
+        vec![uuid(3), uuid(2)]
+    );
+    assert!(m.iter().all(|m| m.manually_retained));
+    assert!(
+        db.read(move |tx| shelves::exclusions(tx, id))?
+            .wait()?
+            .is_empty()
+    );
+    let before = db.shelf_members(s.id)?.wait()?;
+    assert!(curate(&db, s.id, Add(vec![uuid(1), uuid(999)])).is_err());
+    assert_eq!(db.shelf_members(s.id)?.wait()?, before);
+    assert!(
+        curate(
+            &db,
+            s.id,
+            Add(vec!["10000000000040008000000000000001".into()])
+        )
+        .is_err()
+    );
     db.close()?;
     Ok(())
 }

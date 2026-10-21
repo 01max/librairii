@@ -2877,6 +2877,19 @@
           ]
         },
         "reason": "Additive observed Task 10 discovery; original integration identities retain exact order and target scope."
+      },
+      {
+        "position": 391,
+        "identity": {
+          "suite": "librairii-storage::shelves",
+          "name": "manual_curation_retention_exclusions_order_and_noops_are_explicit",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive observed Task 10 discovery; original integration identities retain exact order and target scope."
       }
     ],
     "python": [
