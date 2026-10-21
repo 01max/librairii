@@ -25,3 +25,6 @@ crates/librairii-core/src/import/studio_json/** -text
 .config/query-codec-source-map.json -text
 crates/librairii-storage/src/migrations.rs -text
 crates/librairii-core/src/query/** -text
+
+# Retained synthetic query-reference captures are hashed as exact bytes.
+crates/librairii-storage/tests/fixtures/query/*.json -text

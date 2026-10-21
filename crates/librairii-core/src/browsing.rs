@@ -67,3 +67,23 @@ pub struct Page {
     pub total_pages: i64,
     pub sort: String,
 }
+
+/// Snapshot data for later export planning, without custody or eligibility
+/// authority. A copier must revalidate against its actual source and library.
+#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "PascalCase")]
+pub struct ExportStory {
+    pub broken: bool,
+    #[serde(rename = "ID")]
+    pub id: i64,
+    #[serde(rename = "UUID")]
+    pub uuid: String,
+    pub title: String,
+    pub original_filename: String,
+    pub detected_format: String,
+    #[serde(rename = "SHA256")]
+    pub sha256: String,
+    pub byte_size: i64,
+    pub managed_relative_path: String,
+    pub verification: String,
+}

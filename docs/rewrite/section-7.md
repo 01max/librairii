@@ -15,7 +15,7 @@ This document records shipped scope and verification; pending rows are not passe
 | 7.3 | Bounded saved membership and live-reference validation | Reuses frozen v1–v5 decode/migrate; adds current canonical encoding and same-transaction validation. ARM query suite 7/7, zero skips; UUID `bef9d2df-fcd7-4390-bcd4-a1bdaad6e2d2`. Nested invalid references refuse whole queries; retired IDs/current ordinary reuse and node limits covered. Core/storage all-target Clippy passed after correcting a local const-reference warning. |
 | 7.4 | Current/legacy URL and typed scope decoding | ARM URL suite 4/4, zero skips; UUID `7816ea58-1529-4ebe-b974-8993cbe6964d`. All nine shared fixtures, nested retired references, current tag reuse, malformed/versioned/duplicate input, node/byte bounds and matching-hash Collection/Shelf identity are covered. Core all-target Clippy passed. |
 | 7.5 | Semantic navigation and native preference persistence | ARM: 6/6, zero skips; UUID `def35ea3-27d6-46f7-95bd-bed773680f2e`. Back/forward/branching, typed Shelf/manual order, selection/refinement/page/sort, independent presentation, raw text/one-pass reopen, stale stamps, profile restart, unknown versions and symlink preservation pass. Core/storage all-target Clippy passed. |
-| 7.6 | Full-scope snapshot resolution and differential references | Pending |
+| 7.6 | Full-scope snapshot resolution and differential references | ARM: 10/10 query/differential tests, zero skips; UUID `8024f40a-ea38-4146-b26d-4dbbd8718217`. All 24 frozen cases exercise Count/Search/full-scope (72 API outcomes), comparing every successful field without normalization and requiring q24 refusal. Controlled writer commit proves one validation/count/page/metadata/scope snapshot. Streaming 1,001 rows ignores navigation/picker limits and stops on callback failure. |
 | 7.7 | Independent review and edge/stale-response verification | Pending |
 
 The 7.1 merge preserves all 329 integration-base Rust discovery objects and all
@@ -38,3 +38,10 @@ protocol, retaining prior/new readable witnesses and fencing uncertain results.
 Unknown/future preferences are preserved; no preference file grants activation,
 recovery or mutation authority. Selection/presentation changes retain the query
 stamp; semantic navigation invalidates it, including Back to an earlier view.
+
+Full-scope resolution uses one ordered SQL cursor inside the caller's transaction.
+The visitor must perform bounded DB-only work; storage retains one row at a time,
+and callers explicitly own any retained output bytes. The implementation makes
+no aggregate heap/OOM or export-custody guarantee. Callback failure returns no
+complete scope. Frozen references are copied byte-for-byte into the query test
+fixtures with their original digests; no golden or oracle campaign was rerun.

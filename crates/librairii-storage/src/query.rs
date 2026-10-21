@@ -8,7 +8,7 @@ use crate::{
     database::{Database, Pending},
 };
 use librairii_core::{
-    browsing::{DisplaySources, OfficialInfo, Page, StorySummary},
+    browsing::{DisplaySources, ExportStory, OfficialInfo, Page, StorySummary},
     collection_codec::Query,
     query::{QueryInputError, QueryRequest, normalize_request},
 };
@@ -206,6 +206,9 @@ struct Record {
     description: String,
     artwork: String,
     created: String,
+    filename: String,
+    checksum: String,
+    path: String,
     format: String,
     bytes: i64,
     validation: String,
@@ -220,6 +223,9 @@ impl Record {
             description: r.get(3)?,
             artwork: r.get(4)?,
             created: r.get(5)?,
+            filename: r.get(6)?,
+            checksum: r.get(8)?,
+            path: r.get(10)?,
             format: r.get(7)?,
             bytes: r.get(9)?,
             validation: r.get(11)?,
@@ -340,4 +346,45 @@ pub fn saved_membership(
         payload,
         criteria,
     })
+}
+
+/// Resolve the complete ordered result in this one SQLite transaction, ignoring
+/// navigation limits. The callback must do bounded synchronous, DB-only work;
+/// it must not queue work or perform filesystem/network I/O under the snapshot.
+///
+/// Storage retains one row at a time, without building an uncapped full-scope
+/// Vec or replaying page offsets. The caller owns any retained output bytes and
+/// must account for them. A callback error stops immediately; no complete result
+/// or mutation authority is returned for partial consumption.
+pub fn visit_scope(
+    tx: &Transaction<'_>,
+    request: QueryRequest,
+    locale: &str,
+    mut consume: impl FnMut(ExportStory) -> Result<()>,
+) -> Result<u64> {
+    let (request, from, mut args) = matching(tx, request, locale)?;
+    let order = ordering(&request, locale, &mut args);
+    let mut statement = tx.prepare(&format!("{RECORD}{from}{order}"))?;
+    let mut rows = statement.query(params_from_iter(args))?;
+    let mut count = 0_u64;
+    while let Some(row) = rows.next()? {
+        let record = Record::read(row)?;
+        let display = summary(tx, &record, locale)?;
+        consume(ExportStory {
+            broken: record.broken,
+            id: record.id,
+            uuid: record.uuid,
+            title: display.title,
+            original_filename: record.filename,
+            detected_format: record.format,
+            sha256: record.checksum,
+            byte_size: record.bytes,
+            managed_relative_path: record.path,
+            verification: display.compatibility,
+        })?;
+        count = count
+            .checked_add(1)
+            .ok_or(QueryInputError::ResourceOverflow)?;
+    }
+    Ok(count)
 }

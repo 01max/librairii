@@ -298,3 +298,53 @@ fn invalid_nested_saved_reference_never_broadens_membership_or_changes_database(
     db.close()?;
     Ok(())
 }
+
+#[test]
+fn validation_count_page_enrichment_and_scope_share_one_snapshot_during_a_writer_commit()
+-> TestResult {
+    use std::{sync::mpsc, time::Duration};
+    let roots = TestRoots::new()?;
+    let library = library(&roots)?;
+    let mut db = Database::open_isolated(&library)?;
+    seed(&db)?;
+    let (entered, wait_entered) = mpsc::sync_channel(1);
+    let (committed_signal, wait_committed) = mpsc::sync_channel(1);
+    let pending = db.read(move |tx| {
+        assert_eq!(query::count(tx, named("ete"), "fr-FR")?, 1);
+        entered.send(()).map_err(|e| StorageError::Io {
+            operation: "signal query snapshot",
+            source: std::io::Error::other(e),
+        })?;
+        wait_committed
+            .recv_timeout(Duration::from_secs(30))
+            .map_err(|e| StorageError::Io {
+                operation: "await controlled writer",
+                source: std::io::Error::other(e),
+            })?;
+        let page = query::search(tx, named("ete"), "fr-FR")?;
+        assert_eq!(page.total_items, 1);
+        assert_eq!(page.stories[0].title, "Été");
+        assert_eq!(page.stories[0].sources.title, "embedded");
+        let count = query::visit_scope(tx, named("ete"), "fr-FR", |row| {
+            assert_eq!(row.title, "Été");
+            Ok(())
+        })?;
+        assert_eq!(count, 1);
+        Ok(())
+    })?;
+    wait_entered.recv_timeout(Duration::from_secs(30))?;
+    committed(db.transaction(WorkCancellation::default(),|tx| {
+        tx.execute("UPDATE stories SET embedded_title='Winter',display_name_normalized='winter' WHERE id=4",[])?;
+        tx.execute_batch("INSERT INTO catalog_syncs(id,locale,status,started_at) VALUES('20000000-0000-4000-8000-000000000001','fr-FR','running','2000'); INSERT INTO catalog_snapshots(id,sync_id,locale,raw_path,raw_sha256,byte_size,record_count,fetched_at) VALUES(1,'20000000-0000-4000-8000-000000000001','fr-FR','catalog/new',printf('%064d',1),1,1,'2000'); INSERT INTO official_story_metadata(snapshot_id,story_uuid,locale,title,title_normalized,provenance) VALUES(1,'10000000-0000-4000-8000-000000000004','fr-FR','Neige','neige','lunii_catalog'); UPDATE catalog_snapshots SET status='active',activated_at='2001' WHERE id=1;")?;
+        Ok(())
+    })?.wait()?)?;
+    committed_signal.send(())?;
+    pending.wait()?;
+    assert_eq!(db.count(named("ete"), "fr-FR".into())?.wait()?, 0);
+    assert_eq!(
+        db.search(named("neige"), "fr-FR".into())?.wait()?.stories[0].title,
+        "Neige"
+    );
+    db.close()?;
+    Ok(())
+}

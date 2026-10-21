@@ -1992,6 +1992,33 @@
         "x86_64-apple-darwin",
         "x86_64-unknown-linux-gnu"
       ]
+    },
+    {
+      "suite": "librairii-storage::queries",
+      "name": "validation_count_page_enrichment_and_scope_share_one_snapshot_during_a_writer_commit",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::query_differential",
+      "name": "all_twenty_four_frozen_count_page_and_full_scope_returns_match_without_normalization",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::query_differential",
+      "name": "streaming_scope_exceeds_picker_and_page_limits_and_stops_on_callback_failure",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
     }
   ]
 }
