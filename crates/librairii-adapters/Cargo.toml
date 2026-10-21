@@ -14,6 +14,7 @@ rustls.workspace = true
 rustls-platform-verifier.workspace = true
 tokio.workspace = true
 mime.workspace = true
+image.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 

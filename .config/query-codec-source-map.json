@@ -3251,6 +3251,43 @@
           ]
         },
         "reason": "Additive observed Task 11 discovery; original integration identities retain exact order and target scope."
+      },
+      {
+        "position": 424,
+        "identity": {
+          "suite": "librairii-adapters",
+          "name": "thumbnails::tests::invalidation_rejects_old_work_and_fallback_is_official_then_embedded_then_placeholder"
+        },
+        "reason": "Additive observed Task 11 discovery; original integration identities retain exact order and target scope."
+      },
+      {
+        "position": 425,
+        "identity": {
+          "suite": "librairii-adapters",
+          "name": "thumbnails::tests::thumbnail_lru_evicts_old_results_at_the_entry_budget"
+        },
+        "reason": "Additive observed Task 11 discovery; original integration identities retain exact order and target scope."
+      },
+      {
+        "position": 426,
+        "identity": {
+          "suite": "librairii-adapters",
+          "name": "thumbnails::tests::thumbnails_decode_all_formats_reuse_lru_and_bound_pixels_and_output"
+        },
+        "reason": "Additive observed Task 11 discovery; original integration identities retain exact order and target scope."
+      },
+      {
+        "position": 427,
+        "identity": {
+          "suite": "librairii-storage::metadata",
+          "name": "embedded_legacy_cover_reads_are_bounded_and_do_not_accept_arbitrary_paths",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive observed Task 11 discovery; original integration identities retain exact order and target scope."
       }
     ],
     "python": [

@@ -6,3 +6,11 @@ owner = "01max"
 reason = "Task 11 pins ring 0.17.14, whose getrandom 0.2 API cannot unify with existing tempfile/proptest getrandom 0.4.3. Reassess when ring updates; no broad subtree suppression."
 tracking = "https://github.com/01max/librairii/blob/codex/rewrite-11-metadata-artwork/docs/rewrite/section-11.md"
 expires = "2027-01-21"
+
+[[exceptions]]
+kind = "duplicate"
+selector = "miniz_oxide@0.8.9"
+owner = "01max"
+reason = "Task 11 pins image 0.25.10 with png 0.18.1 (miniz_oxide 0.8), while flate2 1.1.10 uses miniz_oxide 0.9.1. Reassess on png update; no subtree suppression."
+tracking = "https://github.com/01max/librairii/blob/codex/rewrite-11-metadata-artwork/docs/rewrite/section-11.md"
+expires = "2027-01-21"

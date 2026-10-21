@@ -20,7 +20,7 @@ ignore = true
 [bans]
 multiple-versions = "deny"
 wildcards = "deny"
-skip = ["getrandom@0.2.17"]
+skip = ["getrandom@0.2.17", "miniz_oxide@0.8.9"]
 skip-tree = []
 
 [sources]

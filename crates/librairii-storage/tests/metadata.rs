@@ -358,3 +358,34 @@ fn registered_artwork_cache_is_hashed_offline_and_refuses_corruption_or_aliases(
     reopened.close()?;
     Ok(())
 }
+#[test]
+fn embedded_legacy_cover_reads_are_bounded_and_do_not_accept_arbitrary_paths()
+-> std::result::Result<(), Box<dyn std::error::Error>> {
+    let roots = TestRoots::new()?;
+    let library = IsolatedLibrary::initialize_from_override(
+        Some(roots.library().as_os_str()),
+        "a0000000-0000-4000-8000-000000000001".parse()?,
+    )?;
+    let mut db = Database::open_isolated(&library)?;
+    let dir = roots
+        .library()
+        .join("catalog/embedded/123e4567-e89b-42d3-a456-426614174000");
+    std::fs::create_dir_all(&dir)?;
+    let image = include_bytes!("../../librairii-adapters/tests/fixtures/artwork/cover.png");
+    let hash = librairii_app::metadata::digest(image);
+    std::fs::write(dir.join(format!("{hash}.png")), image)?;
+    let path = format!("catalog/embedded/123e4567-e89b-42d3-a456-426614174000/{hash}.png");
+    committed(db.transaction(WorkCancellation::default(),move|tx|{tx.execute("INSERT INTO stories(id,uuid,display_name_normalized,embedded_artwork_path) VALUES(1,'123e4567-e89b-42d3-a456-426614174000','test',?)",[path])?;Ok(())})?.wait()?)?;
+    assert_eq!(
+        db.read_embedded_artwork(1)?
+            .ok_or("embedded")?
+            .bytes
+            .as_ref(),
+        image
+    );
+    committed(db.transaction(WorkCancellation::default(),|tx|{tx.execute("UPDATE stories SET embedded_artwork_path='catalog/official/elsewhere.png' WHERE id=1",[])?;Ok(())})?.wait()?)?;
+    assert!(db.read_embedded_artwork(1).is_err());
+    assert!(db.read_embedded_artwork(999)?.is_none());
+    db.close()?;
+    Ok(())
+}

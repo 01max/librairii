@@ -122,3 +122,32 @@ impl ArtworkRepository for Database<'_> {
             .map_err(|_| MetadataError::InvalidArtwork)
     }
 }
+impl Database<'_> {
+    /// Opaque local story ID lookup: a UI-supplied pathname is never accepted.
+    pub fn read_embedded_artwork(&self, story: i64) -> Result<Option<ArtworkAsset>> {
+        if story <= 0 {
+            return Err(MetadataError::ArtworkNotFound.into());
+        }
+        let path = self
+            .read(move |tx| {
+                Ok(tx
+                    .query_row(
+                        "SELECT embedded_artwork_path FROM stories WHERE id=?",
+                        [story],
+                        |r| r.get::<_, Option<String>>(0),
+                    )
+                    .optional()?
+                    .flatten())
+            })?
+            .wait()?;
+        let Some(path) = path.filter(|p| !p.is_empty()) else {
+            return Ok(None);
+        };
+        if !path.starts_with("catalog/embedded/") || !path.ends_with(".png") {
+            return Err(MetadataError::InvalidArtwork.into());
+        }
+        let files = self.metadata_files()?;
+        let bytes = files.read_catalog(&path, MAX_ARTWORK_BYTES)?;
+        Ok(Some(ArtworkAsset::checked(bytes, MediaType::Png)?))
+    }
+}

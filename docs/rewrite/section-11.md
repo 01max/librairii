@@ -100,3 +100,27 @@ directory descriptors, reject links/substitutions and verify recorded length,
 MIME signature and content hash. Failed/uncertain outcomes preserve recoverable
 bytes. Tests cover coalesced fetches, allowlist escapes, chunked overflow, MIME
 mismatch, registration, offline reopen, corruption and symlink refusal.
+
+## 11.6 — Decoded artwork and model epochs
+
+Image 0.25.10 is selected with only PNG, JPEG and WebP features. Decoding runs
+synchronously on a blocking worker, with at most two admitted decoders. Headers
+are checked before raster allocation: dimensions at most 8192, at most 16 Mi
+pixels and at most 128 MiB decoder output. The decoder's 128 MiB allocation limit
+also constrains intermediates where supported (upstream documents this allocation
+limit as best-effort; it is not a process RSS guarantee). Thumbnails are at most
+256×256 RGBA, held in an LRU capped at 128 entries / 32 MiB.
+
+Opaque per-cache generation tokens prevent old work from repopulating or
+publishing after invalidation. The native composition must invalidate on the
+successful refresh report and before root relocation; the Task 15 UI integration
+will own those events. Cache instances belong to one open library. Resolution
+tries official then embedded PNG, otherwise a placeholder. Offline cached bytes
+and legacy embedded paths are read without HTTP. Tests cover all three decoders,
+malformed/compressed dimension bombs, admission, LRU eviction, fallback and stale
+results after generation replacement.
+
+The image graph needs a second exact duplicate exception: png 0.18.1 directly
+uses miniz_oxide 0.8.9 while flate2 1.1.10 uses 0.9.1. Its owned exception expires
+2027-01-21 and must be reconsidered when png changes. No advisory suppression or
+new license allowance is needed; cargo-deny passes with retained upstream notices.
