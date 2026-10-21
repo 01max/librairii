@@ -972,8 +972,8 @@
   },
   "core_leaf": {
     "path": "crates/librairii-core/src/collection_codec/mod.rs",
-    "bytes": 31754,
-    "sha256": "1302bfa919f15fffd814f4c45f9334b34b91e49c7bce8f52b8160a3ca81d38b9",
+    "bytes": 31878,
+    "sha256": "2507156310ab7e055a3ea30282432bd0d63ae93d692dbc2cd2ea270df2b04d4b",
     "kind": "translated",
     "header_bytes": 379,
     "header_sha256": "84c790465b5688b1423350f07c1422d56e174de8117d978de4f39448ac75e807",
@@ -4354,6 +4354,32 @@
           "name": "archives::tests::patched_header_graph_and_brotli_support_fragmented_source_reads_and_strict_windows"
         },
         "reason": "Additive Task 5 archive inspection/custody assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 525,
+        "identity": {
+          "suite": "librairii-storage::exports",
+          "name": "full_query_selection_collection_and_approved_shelf_unions_keep_identity_order_and_overlap",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive Task 12 export/custody/diagnostics assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 526,
+        "identity": {
+          "suite": "librairii-storage::exports",
+          "name": "preflight_verifies_bytes_and_names_without_reserving_skipped_output_names",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive Task 12 export/custody/diagnostics assertions; all admitted identities retain exact order and target scope."
       }
     ],
     "python": [

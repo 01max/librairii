@@ -634,6 +634,9 @@ pub fn payload(query: &Query) -> Result<String> {
 
 pub(crate) use compatibility::collection_name;
 pub(crate) use compatibility::{tag_is_mark, tag_key_decomposition, tag_trim};
+pub(crate) fn filename_lower(value: &str) -> Result<String> {
+    compatibility::lowercase_key(value).map_err(Into::into)
+}
 
 /// Shared frozen locale spelling for official metadata, without live authority.
 pub(crate) fn metadata_locale(

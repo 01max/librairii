@@ -144,3 +144,118 @@ fn full_query_selection_collection_and_approved_shelf_unions_keep_identity_order
     db.close()?;
     Ok(())
 }
+
+#[test]
+fn preflight_verifies_bytes_and_names_without_reserving_skipped_output_names() -> TestResult {
+    use librairii_core::export::{Disposition, Issue};
+    use sha2::{Digest, Sha256};
+    let roots = TestRoots::new()?;
+    let library = IsolatedLibrary::initialize_from_override(
+        Some(roots.library().as_os_str()),
+        "a0000000-0000-4000-8000-000000000001".parse()?,
+    )?;
+    let mut db = Database::open_isolated(&library)?;
+    seed(&db, 5)?;
+    for id in 1..=5 {
+        std::fs::write(
+            library.layout().archives().join(id.to_string()),
+            id.to_string().as_bytes(),
+        )?;
+    }
+    committed(db.transaction(WorkCancellation::default(),move|tx|{
+        for id in 1..=5 {
+            let digest=librairii_core::Checksum::from_bytes(Sha256::digest(id.to_string().as_bytes()).into()).to_string();
+            tx.execute("UPDATE story_archives SET sha256=? WHERE story_id=?",rusqlite::params![digest,id])?;
+        }
+        tx.execute_batch("UPDATE story_archives SET original_filename='same.zip' WHERE story_id IN (1,2,3); UPDATE story_archives SET original_filename='bad.pk' WHERE story_id=4; UPDATE story_archives SET sha256=printf('%064d',0) WHERE story_id=5;")?;Ok(())
+    })?.wait()?)?;
+    let destination = tempfile::tempdir()?;
+    let mut exports = librairii_storage::export::Exports::new(&db);
+    let report = exports.prepare(
+        Scope::Selection(vec![2, 1, 3, 4, 5]),
+        destination.path(),
+        "fr-FR".into(),
+        &WorkCancellation::default(),
+    )?;
+    assert_eq!(
+        report
+            .items
+            .iter()
+            .map(|i| i.disposition)
+            .collect::<Vec<_>>(),
+        [
+            Disposition::Skipped(Issue::StoryMarkedBroken),
+            Disposition::Ready,
+            Disposition::Conflicted,
+            Disposition::Skipped(Issue::UnsupportedExtension),
+            Disposition::Skipped(Issue::ArchiveChanged)
+        ]
+    );
+    assert_eq!(report.ready, 1);
+    assert_eq!(report.bytes, 1);
+    assert!(report.can_export());
+    assert!(report.preparation.is_some());
+    assert_eq!(std::fs::read_dir(destination.path())?.count(), 0);
+    std::fs::create_dir(library.layout().archives().join("nested"))?;
+    std::fs::rename(
+        library.layout().archives().join("1"),
+        library.layout().archives().join("nested/one"),
+    )?;
+    committed(db.transaction(WorkCancellation::default(),|tx|{
+        tx.execute_batch("UPDATE story_archives SET managed_path='archives/nested/one',original_filename='İ.ZIP' WHERE story_id=1; UPDATE story_archives SET original_filename='i.zip' WHERE story_id=3;")?;Ok(())
+    })?.wait()?)?;
+    let unicode = exports.prepare(
+        Scope::Selection(vec![1, 3]),
+        destination.path(),
+        "fr-FR".into(),
+        &WorkCancellation::default(),
+    )?;
+    assert_eq!(unicode.items[0].output_name, "İ.ZIP");
+    assert_eq!(unicode.items[0].disposition, Disposition::Ready);
+    assert_eq!(unicode.items[1].disposition, Disposition::Conflicted);
+    committed(
+        db.transaction(WorkCancellation::default(), |tx| {
+            tx.execute(
+                "UPDATE story_archives SET original_filename='same.zip' WHERE story_id=1",
+                [],
+            )?;
+            Ok(())
+        })?
+        .wait()?,
+    )?;
+    std::fs::write(destination.path().join("same.zip"), b"existing")?;
+    let conflict = exports.prepare(
+        Scope::Selection(vec![1]),
+        destination.path(),
+        "fr-FR".into(),
+        &WorkCancellation::default(),
+    )?;
+    assert_eq!(conflict.items[0].disposition, Disposition::Conflicted);
+    assert!(!conflict.can_export());
+    assert!(conflict.preparation.is_none());
+    assert!(
+        exports
+            .prepare(
+                Scope::Selection(vec![1]),
+                &library.layout().archives(),
+                "fr-FR".into(),
+                &WorkCancellation::default()
+            )
+            .is_err()
+    );
+    let cancel = WorkCancellation::default();
+    cancel.cancel();
+    assert!(
+        exports
+            .prepare(
+                Scope::Selection(vec![1]),
+                destination.path(),
+                "fr-FR".into(),
+                &cancel
+            )
+            .is_err()
+    );
+    drop(exports);
+    db.close()?;
+    Ok(())
+}

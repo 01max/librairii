@@ -12,6 +12,7 @@
 //! never reported as proven-not-published. An unresolved failure cannot be
 //! cleared by dropping a guard, returning an error or enqueueing a DTO.
 use super::{StreamDigest, hash_stream};
+pub(crate) mod transfer;
 use crate::{
     IsolatedLibrary, Result, StorageError,
     database::{Database, WorkCancellation},

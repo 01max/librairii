@@ -386,6 +386,9 @@ impl Database<'_> {
     pub(crate) fn native_import_registration(&self) -> bool {
         matches!(self.authority, Authority::Native(_))
     }
+    pub(crate) fn library_layout(&self) -> &crate::LibraryLayout {
+        self.authority.layout()
+    }
     pub(crate) fn library_id(&self) -> librairii_core::LibraryId {
         match self.authority {
             Authority::Isolated(library) => library.identity().typed(),
