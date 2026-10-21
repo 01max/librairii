@@ -362,3 +362,69 @@ fn prepared_ids_evict_consume_invalidate_and_recheck_each_queued_eligibility_bou
     db.close()?;
     Ok(())
 }
+
+#[test]
+fn passthrough_exports_all_seven_frozen_formats_with_exact_original_names_and_bytes() -> TestResult
+{
+    use librairii_core::{Checksum, export::CopyStatus};
+    use sha2::{Digest, Sha256};
+    let fixture_root =
+        std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../preservation/corpus/archives");
+    let cases = [
+        ("clockwork-forest.plain.pk", "plain_pk"),
+        ("00112233445546778899aabbccddeeff.v1.pk", "v1_pk"),
+        ("00112233445546778899aabbccddeeff.v2.pk", "v2_pk"),
+        ("clockwork-forest.pk", "generic_pk"),
+        ("clockwork-forest.zip", "zip"),
+        ("clockwork-forest-studio.zip", "studio_zip"),
+        ("generic.7z", "seven_zip"),
+    ];
+    let destination = tempfile::tempdir()?;
+    let cancel = WorkCancellation::default();
+    for (name, format) in cases {
+        // Some frozen suffix variants intentionally contain identical ZIP bytes;
+        // independent libraries preserve the unique-checksum import invariant.
+        let roots = TestRoots::new()?;
+        let library = IsolatedLibrary::initialize_from_override(
+            Some(roots.library().as_os_str()),
+            "a0000000-0000-4000-8000-000000000001".parse()?,
+        )?;
+        let mut db = Database::open_isolated(&library)?;
+        let bytes = std::fs::read(fixture_root.join(name))?;
+        let hash = Checksum::from_bytes(Sha256::digest(&bytes).into()).to_string();
+        let managed = format!("archives/{hash}");
+        std::fs::write(library.layout().root().join(&managed), &bytes)?;
+        let size = bytes.len() as i64;
+        committed(db.transaction(WorkCancellation::default(),move|tx|{
+            tx.execute("INSERT INTO stories(id,uuid,embedded_title,display_name_normalized) VALUES(1,'10000000-0000-4000-8000-000000000001','Synthetic','synthetic')",[])?;
+            tx.execute("INSERT INTO story_archives(story_id,original_filename,detected_format,sha256,byte_size,managed_path,validation_state) VALUES(1,?,?,?,?,?,'valid')",rusqlite::params![name,format,hash,size,managed])?;Ok(())
+        })?.wait()?)?;
+        let mut exports = librairii_storage::export::Exports::new(&db);
+        let preview = exports.prepare(
+            Scope::Selection(vec![1]),
+            destination.path(),
+            "fr-FR".into(),
+            &cancel,
+        )?;
+        assert_eq!(preview.ready, 1);
+        let id = preview.preparation.ok_or("id")?;
+        let mut running = exports.start(&id, &cancel)?;
+        let mut progress = 0;
+        let item = running
+            .copy_next(&cancel, |value| progress = value)?
+            .ok_or("item")?;
+        assert_eq!(item.status, CopyStatus::Exported);
+        assert_eq!(item.output_name, name);
+        assert_eq!(item.bytes, bytes.len() as u64);
+        assert_eq!(progress, bytes.len() as u64);
+        assert_eq!(std::fs::read(destination.path().join(name))?, bytes);
+        assert_eq!(std::fs::read(fixture_root.join(name))?, bytes);
+        assert!(running.copy_next(&cancel, |_| {})?.is_none());
+        drop(running);
+        assert_eq!(exports.retained_outputs(), 0);
+        drop(exports);
+        db.close()?;
+    }
+    assert_eq!(std::fs::read_dir(destination.path())?.count(), 7);
+    Ok(())
+}

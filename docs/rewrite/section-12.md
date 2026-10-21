@@ -56,3 +56,24 @@ promote. `invalidate` discards preparations before a future library transition.
 Tests cover eviction, forged/foreign/replayed IDs, stale flags, original skips,
 and a queued ready item becoming Broken. Scheduling/terminal persistence remains
 the separately incomplete Task 6 composition rather than an inferred job port.
+
+## 12.4 — Exact destination-local passthrough
+
+The running owner copies one queued ready item at a time, outside SQL, through
+a create-new destination-local temporary with 64 KiB buffers and cooperative
+cancellation. It compares the source stream and read-back output hash/size,
+revalidates retained source/parent/name witnesses and requests file/device flush
+before atomic `NOREPLACE` publication and destination-directory durability.
+An existing final name is never replaced. Non-collision publication failures or
+lost post-publication acknowledgements retain the real file/directory plus both
+attempted names and prevent more copying; they are not reported as proven failure
+or compensated through guessed paths. Successful rows return stable copy data;
+the Task 6 operation owner still supplies durable reports and scheduling.
+
+The seven admitted synthetic format fixtures (plain/v1/v2/generic PK, ZIP,
+STUdio ZIP and 7z) export with exact original names and bytes and no extra output
+files. The corpus/preservation hashes remain unchanged. Some suffix variants
+share identical ZIP bytes, so tests use independent libraries rather than
+violating unique-checksum import identity. This proves passthrough preservation
+of Go-qualified synthetic input, not a new archive-inspection port or an actual
+Lunii.QT GUI execution.

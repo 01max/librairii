@@ -146,3 +146,19 @@ pub fn supported_name(name: &str, format: &str) -> bool {
 pub fn filename_key(name: &str) -> Result<String, crate::collection_codec::CodecError> {
     crate::collection_codec::filename_lower(name)
 }
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum CopyStatus {
+    Exported,
+    Skipped(Issue),
+    Conflicted,
+    Cancelled,
+    Failed,
+}
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct CopyItem {
+    pub uuid: String,
+    pub output_name: String,
+    pub status: CopyStatus,
+    pub bytes: u64,
+    pub reason: Option<&'static str>,
+}

@@ -36,6 +36,7 @@ pub const MAX_PREPARED_BYTES: usize = 64 * 1024 * 1024;
 pub struct Running<'run, 'db, 'library> {
     pub(super) owner: &'run mut Exports<'db, 'library>,
     pub(super) plan: Prepared,
+    cursor: usize,
 }
 impl<'db, 'library> Exports<'db, 'library> {
     pub fn preview(&self, id: &PreparationId) -> Result<Preview> {
@@ -100,7 +101,11 @@ impl<'db, 'library> Exports<'db, 'library> {
                 if current!=(id,broken) { return Err(ExportError::Stale.into()); }
             }Ok(())
         })?.wait()?;
-        Ok(Running { owner: self, plan })
+        Ok(Running {
+            owner: self,
+            plan,
+            cursor: 0,
+        })
     }
     pub fn prepare(
         &mut self,
@@ -223,6 +228,104 @@ impl<'db, 'library> Exports<'db, 'library> {
     }
 }
 impl Running<'_, '_, '_> {
+    /// One blocking copy at a time. Returned rows contain no file/destination
+    /// authority. Durable operation reporting/scheduling is owned by Task 6.
+    pub fn copy_next(
+        &mut self,
+        cancel: &WorkCancellation,
+        progress: impl FnMut(u64),
+    ) -> Result<Option<librairii_core::export::CopyItem>> {
+        use librairii_core::export::{CopyItem, CopyStatus};
+        if !self.owner.retained.is_empty() {
+            return Err(StorageError::CustodyRecoveryRequired);
+        }
+        let Some(story) = self.plan.scope.stories.get(self.cursor) else {
+            return Ok(None);
+        };
+        let story = story.clone();
+        let mut result = CopyItem {
+            uuid: story.uuid.clone(),
+            output_name: story.original_filename.clone(),
+            status: CopyStatus::Failed,
+            bytes: 0,
+            reason: None,
+        };
+        let disposition = self.check_item(self.cursor)?;
+        self.cursor += 1;
+        result.status = match disposition {
+            Disposition::Skipped(i) => CopyStatus::Skipped(i),
+            Disposition::Conflicted => CopyStatus::Conflicted,
+            Disposition::Ready => CopyStatus::Failed,
+        };
+        if disposition != Disposition::Ready {
+            return Ok(Some(result));
+        }
+        if cancel.is_cancelled() {
+            result.status = CopyStatus::Cancelled;
+            return Ok(Some(result));
+        }
+        self.plan.destination.revalidate()?;
+        let files = self.owner.database.metadata_files()?;
+        let mut source = match ArchiveSource::open(&files, &story.managed_relative_path) {
+            Ok(source) => source,
+            Err(e) => {
+                result.reason = Some(e.code());
+                return Ok(Some(result));
+            }
+        };
+        let mut output = match self.plan.destination.create_output() {
+            Ok(out) => out,
+            Err(f) => {
+                let f = *f;
+                if let Some(out) = f.output {
+                    self.owner.retained.push(out);
+                }
+                return Err(f.cause);
+            }
+        };
+        let copied = (|| {
+            let hash = story
+                .sha256
+                .parse()
+                .map_err(|_| StorageError::CompatibilityInvariant)?;
+            let bytes = story
+                .byte_size
+                .try_into()
+                .map_err(|_| StorageError::CompatibilityInvariant)?;
+            if source.bytes() != bytes {
+                return Err(StorageError::SnapshotChanged);
+            }
+            output.stream(&mut source, hash, bytes, cancel, progress)?;
+            source.validate()?;
+            if cancel.is_cancelled() {
+                return Err(StorageError::Cancelled);
+            }
+            output.publish(&story.original_filename)
+        })();
+        match copied {
+            Ok(()) => {
+                result.status = CopyStatus::Exported;
+                result.bytes = story.byte_size as u64;
+            }
+            Err(cause) => {
+                if output.published || output.uncertain {
+                    self.owner.retained.push(output);
+                    return Err(cause);
+                }
+                if let Err(cleanup) = output.cleanup() {
+                    self.owner.retained.push(output);
+                    return Err(cleanup);
+                }
+                result.reason = Some(cause.code());
+                result.status = match cause {
+                    StorageError::Cancelled => CopyStatus::Cancelled,
+                    StorageError::DestinationCollision => CopyStatus::Conflicted,
+                    _ => CopyStatus::Failed,
+                };
+            }
+        }
+        Ok(Some(result))
+    }
     pub fn preview(&self) -> &Preview {
         &self.plan.preview
     }

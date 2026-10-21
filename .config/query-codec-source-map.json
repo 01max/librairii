@@ -4393,6 +4393,19 @@
           ]
         },
         "reason": "Additive Task 12 export/custody/diagnostics assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 528,
+        "identity": {
+          "suite": "librairii-storage::exports",
+          "name": "passthrough_exports_all_seven_frozen_formats_with_exact_original_names_and_bytes",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive Task 12 export/custody/diagnostics assertions; all admitted identities retain exact order and target scope."
       }
     ],
     "python": [

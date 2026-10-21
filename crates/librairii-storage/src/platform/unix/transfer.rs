@@ -59,6 +59,7 @@ pub(crate) struct Output {
     identity: Option<FileIdentity>,
     pub(crate) published: bool,
     pub(crate) uncertain: bool,
+    attempted: Option<OsString>,
 }
 #[derive(Debug)]
 pub(crate) struct OutputFailure {
@@ -86,6 +87,7 @@ impl Destination {
             identity: None,
             published: false,
             uncertain: false,
+            attempted: None,
         };
         let result = (|| {
             self.revalidate()?;
@@ -121,6 +123,90 @@ impl Destination {
     }
 }
 impl Output {
+    pub(crate) fn stream(
+        &mut self,
+        source: &mut impl Read,
+        expected: librairii_core::Checksum,
+        bytes: u64,
+        cancel: &WorkCancellation,
+        mut progress: impl FnMut(u64),
+    ) -> Result<()> {
+        self.validate()?;
+        struct CopyReader<'a, R, F> {
+            source: &'a mut R,
+            file: &'a mut File,
+            progress: F,
+            bytes: u64,
+        }
+        impl<R: Read, F: FnMut(u64)> Read for CopyReader<'_, R, F> {
+            fn read(&mut self, buffer: &mut [u8]) -> io::Result<usize> {
+                let count = self.source.read(buffer)?;
+                self.file.write_all(&buffer[..count])?;
+                self.bytes += count as u64;
+                (self.progress)(self.bytes);
+                Ok(count)
+            }
+        }
+        {
+            let file = self
+                .file
+                .as_mut()
+                .ok_or(StorageError::CustodyRecoveryRequired)?;
+            let actual = hash_stream(
+                &mut CopyReader {
+                    source,
+                    file,
+                    progress: &mut progress,
+                    bytes: 0,
+                },
+                bytes,
+                cancel,
+            )?;
+            if actual.bytes() != bytes || actual.checksum() != expected {
+                return Err(StorageError::SnapshotChanged);
+            }
+            durable_file_flush(file)?;
+            file.rewind()
+                .map_err(|e| StorageError::io("rewind copied output", e))?;
+            let readback = hash_stream(file, bytes, cancel)?;
+            if readback != actual {
+                return Err(StorageError::SnapshotChanged);
+            }
+        }
+        self.validate()
+    }
+    pub(crate) fn publish(&mut self, name: &str) -> Result<()> {
+        self.validate()?;
+        let name = EntryName::parse(name)?;
+        self.attempted = Some(name.as_os_str().to_owned());
+        self.uncertain = true;
+        match native::renameat_with(
+            &self.directory.file,
+            &self.name,
+            &self.directory.file,
+            name.as_os_str(),
+            RenameFlags::NOREPLACE,
+        ) {
+            Ok(()) => {
+                self.name = name.as_os_str().to_owned();
+                self.published = true;
+            }
+            Err(e) if e == rustix::io::Errno::EXIST => {
+                self.uncertain = false;
+                return Err(StorageError::DestinationCollision);
+            }
+            Err(e) => {
+                return Err(StorageError::io(
+                    "publish output without replacement",
+                    e.into(),
+                ));
+            }
+        }
+        self.validate()?;
+        self.directory.flush()?;
+        self.uncertain = false;
+        Ok(())
+    }
     fn validate(&self) -> Result<()> {
         self.directory.matches_metadata(
             &std::fs::symlink_metadata(&self.path)
