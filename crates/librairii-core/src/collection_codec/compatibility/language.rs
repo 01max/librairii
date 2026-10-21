@@ -11,7 +11,7 @@
 use super::{language_data as data, normalization::trim_space};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, thiserror::Error)]
-pub(in crate::migrations) enum LanguageError {
+pub(in crate::collection_codec) enum LanguageError {
     #[error("saved query language is invalid")]
     Invalid,
     #[error("frozen language data/algorithm invariant failed")]
@@ -531,7 +531,7 @@ fn parse_default(value: &str, grandfathered: bool) -> Result<String> {
     Ok(output)
 }
 
-pub(in crate::migrations) fn canonical(value: &str) -> Result<String> {
+pub(in crate::collection_codec) fn canonical(value: &str) -> Result<String> {
     let value = trim_space(value).replace('_', "-");
     if value.is_empty() || value.len() > 35 {
         return Err(LanguageError::Invalid);
@@ -558,7 +558,7 @@ mod tests {
         Ok(())
     }
     fn hexadecimal(hash: Sha256) -> String {
-        librairii_core::Checksum::from_bytes(hash.finalize().into()).to_string()
+        crate::Checksum::from_bytes(hash.finalize().into()).to_string()
     }
     fn product_outcome(input: &str) -> TestResult<String> {
         match canonical(input) {

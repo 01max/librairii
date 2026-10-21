@@ -16,7 +16,9 @@ import json
 from pathlib import Path
 import re
 
-INDEX_HASH = "10ea8fe193c594ce153ae7a1734c41ab80c9d406cc7ea314c8c7c471b7a92a99"
+# Future lookups use the admitted superset; existing reference provenance is historical.
+HISTORICAL_INDEX_SHA = "10ea8fe193c594ce153ae7a1734c41ab80c9d406cc7ea314c8c7c471b7a92a99"
+INDEX_HASH = "13dfd314abfda9a9553d152a1d8a5586f8bd1205a08c177af9bbec57a51ae822"
 MODULE = "golang.org/x/text@v0.43.0/"
 
 

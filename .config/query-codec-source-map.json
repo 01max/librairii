@@ -1,0 +1,2180 @@
+{
+  "version": 2,
+  "bundle": "go-1.26.5-xtext-0.43.0-unicode15-cldr32",
+  "scope": "single-materialized-core-query-codec",
+  "lookup_index_sha256": "13dfd314abfda9a9553d152a1d8a5586f8bd1205a08c177af9bbec57a51ae822",
+  "historical_index_sha256": "10ea8fe193c594ce153ae7a1734c41ab80c9d406cc7ea314c8c7c471b7a92a99",
+  "historical_manifest_sha256": "2f8bd6db37191346b6719d7345a46a0b4d3163be745d5fae6b7f8ebf429a0409",
+  "historical_derivatives": {
+    "version": 1,
+    "bundle": "go-1.26.5-xtext-0.43.0-unicode15-cldr32",
+    "files": [
+      {
+        "path": "codec-reference.json",
+        "bytes": 1546282,
+        "sha256": "b2fd01d9685133f295f1fbe23296d50971f07314ed94ed18d6a235903bca0d09",
+        "kind": "generated",
+        "recipe": "python3 verify_codec.py; actual pinned offline Go1.26.5 DecodeSavedLibraryQuery and MigrateSavedLibraryQuery on2864 scoped cases, separate canonical bytes/refusal classifications. Retain input/source/probe/recipe/tool/archive hashes and exact standalone source-copy identity, no production source copying or arbitrary-input/domain/SQL qualification. This indexed product-boundary source supplies the membership normalization; the additional exact query.go identity is recorded by archive/copy hashes in reference provenance.",
+        "sources": [
+          {
+            "path": "oracle73a93303/internal/library/story_query.go",
+            "sha256": "5ea334a20dda303b81f2d559defcc21a4f06b03542922263a1ed71ebcd602bc7",
+            "header_sha256": "068c99d6f702e7c295838419b97e53cb0972f9082315ce5c30f28f2cb2ebd3b0",
+            "selection": "product-boundary"
+          }
+        ],
+        "notices": []
+      },
+      {
+        "path": "codec_oracle.go.in",
+        "bytes": 2024,
+        "sha256": "5f4e782a32237508763159909d4222df3eb1d7056b5894c463d883bd0130590a",
+        "kind": "authored",
+        "recipe": "Qualification-only actual frozen collections/query.go Decode/Migrate calls. A byte-IDENTICAL copy is compiled alone under a new private internal path, avoiding unrelated SQL linkage; original library/collectionquery/searchtext remain unmodified. No product implementation or corpus generator.",
+        "sources": [],
+        "notices": []
+      },
+      {
+        "path": "extract_language.py",
+        "bytes": 12933,
+        "sha256": "7565ca5982ebfc90423ce0d839ebb4ad0845a054cb9306b2318ab0a0442ea4aa",
+        "kind": "translated",
+        "recipe": "Hand-translate frozen getLangID finite two/three-letter lookup and compact bit decoding into literal extraction; verify selected bytes/headers; remove ONLY regionTypes ccTLD bit1/value2 before writing, retain other bits; never copy TLD APIs or regenerate current registries.",
+        "sources": [
+          {
+            "path": "golang.org/x/text@v0.43.0/internal/language/tables.go",
+            "sha256": "876a73fb8b8fffd239efa592ffdf903c25757b4d17b715fc80d7aee8db2b985e",
+            "header_sha256": "8b677ec913c4566323b03c86ab9fc3d6caf0d6c4539faadaf0a54edb31fca3f8",
+            "selection": "language-default-without-dns"
+          },
+          {
+            "path": "golang.org/x/text@v0.43.0/internal/language/lookup.go",
+            "sha256": "8f0ac8780f89d5c2b29b98fd599269b445d7bb612a7948c9e97d425424b5ea38",
+            "header_sha256": "935e0ce82233cbc759045f0b5cec9278a4cf4ec8390fa52da364e99351b27c2e",
+            "selection": "language-default-without-dns"
+          },
+          {
+            "path": "golang.org/x/text@v0.43.0/internal/language/compact/tables.go",
+            "sha256": "99415fb6642ebd291f825497d32e70ae32da8569815d8f4ef587664c6c5ce7d5",
+            "header_sha256": "560ac6950b60bf8f1ac1b726c6e4b6cc762c4ae416a8b8ccdc504277f8ddd58b",
+            "selection": "language-default-without-dns"
+          },
+          {
+            "path": "golang.org/x/text@v0.43.0/internal/language/compact.go",
+            "sha256": "2d121c703729c5fbd5f3f13fd568af142ca8fde0f01a07e1874df22dbaadde98",
+            "header_sha256": "95b588b661b3deaab5460dab9ecd953034f149cfea585a8168c2714598178066",
+            "selection": "language-default-without-dns"
+          }
+        ],
+        "notices": [
+          "LICENSE-CC0.txt",
+          "LICENSE-CLDR32-APACHE.txt",
+          "LICENSE-CLDR32-UNICODE.txt",
+          "LICENSE-GO-BSD.txt",
+          "PATENTS-GO.txt"
+        ]
+      },
+      {
+        "path": "extract_normalization.py",
+        "bytes": 10072,
+        "sha256": "86e1cd15f81f6957d172a17b19ecbbb5484eb51dd0b84374b0d4a9ce06630a99",
+        "kind": "translated",
+        "recipe": "Extract literal fixed source arrays and the frozen full-fold map, verifying hashes/headers. Translate Go15 CaseRanges conversion and SimpleFold ASCII orbit closure for strict wire keys; no upstream execution or regeneration from current data.",
+        "sources": [
+          {
+            "path": "Go1.26.5/src/unicode/tables.go",
+            "sha256": "6a88d48746c4b2c471cc04ae40559694b734770212e6f5ea5f1962adb0c0bdb1",
+            "header_sha256": "ec9651df3b673e4e73deeeab3bd947b37e70bc0fbed401698cf27b3dfa0c0136",
+            "selection": "normalization"
+          },
+          {
+            "path": "Go1.26.5/src/unicode/letter.go",
+            "sha256": "b35a6d259313cef88d07e9e4027b8bd72c60ae140418f5be2c41a2ecea6074fe",
+            "header_sha256": "b1f8a48bd98929bacf4fe0520affc9eb02063542a76dd3cd25a71a6035014fec",
+            "selection": "normalization"
+          }
+        ],
+        "notices": [
+          "LICENSE-GO-BSD.txt",
+          "LICENSE-UNICODE-V3.txt",
+          "PATENTS-GO.txt"
+        ]
+      },
+      {
+        "path": "language-cases.json",
+        "bytes": 13727,
+        "sha256": "43e2b7563d57294410da9d6d06693954b347cce9bc00b3fef923338f77755957",
+        "kind": "generated",
+        "recipe": "python3 extract_language.py: decode the773 frozen compact cores and2 special strings, retain112 variant names; append authored suffix/selected/random seed protocol. Qualification INPUTS only, never expected outputs, fixture-specific aliases or preservation corpus regeneration; no DNS data.",
+        "sources": [
+          {
+            "path": "golang.org/x/text@v0.43.0/internal/language/tables.go",
+            "sha256": "876a73fb8b8fffd239efa592ffdf903c25757b4d17b715fc80d7aee8db2b985e",
+            "header_sha256": "8b677ec913c4566323b03c86ab9fc3d6caf0d6c4539faadaf0a54edb31fca3f8",
+            "selection": "language-default-without-dns"
+          },
+          {
+            "path": "golang.org/x/text@v0.43.0/internal/language/lookup.go",
+            "sha256": "8f0ac8780f89d5c2b29b98fd599269b445d7bb612a7948c9e97d425424b5ea38",
+            "header_sha256": "935e0ce82233cbc759045f0b5cec9278a4cf4ec8390fa52da364e99351b27c2e",
+            "selection": "language-default-without-dns"
+          },
+          {
+            "path": "golang.org/x/text@v0.43.0/internal/language/compact/tables.go",
+            "sha256": "99415fb6642ebd291f825497d32e70ae32da8569815d8f4ef587664c6c5ce7d5",
+            "header_sha256": "560ac6950b60bf8f1ac1b726c6e4b6cc762c4ae416a8b8ccdc504277f8ddd58b",
+            "selection": "language-default-without-dns"
+          },
+          {
+            "path": "golang.org/x/text@v0.43.0/internal/language/compact.go",
+            "sha256": "2d121c703729c5fbd5f3f13fd568af142ca8fde0f01a07e1874df22dbaadde98",
+            "header_sha256": "95b588b661b3deaab5460dab9ecd953034f149cfea585a8168c2714598178066",
+            "selection": "language-default-without-dns"
+          }
+        ],
+        "notices": [
+          "LICENSE-CC0.txt",
+          "LICENSE-CLDR32-APACHE.txt",
+          "LICENSE-CLDR32-UNICODE.txt",
+          "LICENSE-GO-BSD.txt",
+          "PATENTS-GO.txt"
+        ]
+      },
+      {
+        "path": "language-reference.json",
+        "bytes": 15081,
+        "sha256": "a687f58350d126addd110fb8b6aa6f88489ccfb05e4dc6cd401de92a99ce45b8",
+        "kind": "generated",
+        "recipe": "python3 verify_language.py: actual pinned offline Go1.26.5 Default/String/Und/errors and35-byte product outcomes on1369529 inputs; counterfactual deletion of TLD APIs+masked bit2 gives identical raw/product digests. Retain exact original/modified hashes, source/probe/seed identities and framed results; not all possible strings, Collection SQL or native filesystem qualification.",
+        "sources": [
+          {
+            "path": "golang.org/x/text@v0.43.0/internal/language/tables.go",
+            "sha256": "876a73fb8b8fffd239efa592ffdf903c25757b4d17b715fc80d7aee8db2b985e",
+            "header_sha256": "8b677ec913c4566323b03c86ab9fc3d6caf0d6c4539faadaf0a54edb31fca3f8",
+            "selection": "language-default-without-dns"
+          },
+          {
+            "path": "golang.org/x/text@v0.43.0/internal/language/lookup.go",
+            "sha256": "8f0ac8780f89d5c2b29b98fd599269b445d7bb612a7948c9e97d425424b5ea38",
+            "header_sha256": "935e0ce82233cbc759045f0b5cec9278a4cf4ec8390fa52da364e99351b27c2e",
+            "selection": "language-default-without-dns"
+          },
+          {
+            "path": "golang.org/x/text@v0.43.0/internal/language/compact/tables.go",
+            "sha256": "99415fb6642ebd291f825497d32e70ae32da8569815d8f4ef587664c6c5ce7d5",
+            "header_sha256": "560ac6950b60bf8f1ac1b726c6e4b6cc762c4ae416a8b8ccdc504277f8ddd58b",
+            "selection": "language-default-without-dns"
+          },
+          {
+            "path": "golang.org/x/text@v0.43.0/internal/language/parse.go",
+            "sha256": "0c884b51bb83d3633a51f16e90c7dbaf45c301a449e366df591eda11a3000972",
+            "header_sha256": "d4f940e8d017445b1c498ae7059e239d32a1b587637da9575bde53cce976f39c",
+            "selection": "language-default-without-dns"
+          },
+          {
+            "path": "golang.org/x/text@v0.43.0/internal/language/language.go",
+            "sha256": "19a0ccf7635fd3dbad3766d953996df5d1c24a367e44c49200ab6ec3023fc871",
+            "header_sha256": "1af9c42d5f5e97e0a01c3f139247e1b0fb5b6b1b8f1cda838752c312acbcd647",
+            "selection": "language-default-without-dns"
+          },
+          {
+            "path": "golang.org/x/text@v0.43.0/internal/language/compact.go",
+            "sha256": "2d121c703729c5fbd5f3f13fd568af142ca8fde0f01a07e1874df22dbaadde98",
+            "header_sha256": "95b588b661b3deaab5460dab9ecd953034f149cfea585a8168c2714598178066",
+            "selection": "language-default-without-dns"
+          },
+          {
+            "path": "golang.org/x/text@v0.43.0/internal/language/common.go",
+            "sha256": "68089abad3eed7b2559bb97510355e900a6ef2e1fac7ff89364bda9c50a2acba",
+            "header_sha256": "5fad59e6ddf9e9c908c8be95d2a14eebe7d016cb95519a452689457cee7761e7",
+            "selection": "language-default-without-dns"
+          },
+          {
+            "path": "golang.org/x/text@v0.43.0/internal/tag/tag.go",
+            "sha256": "97a27a6bfdd26d872e07d051fc27e622e1cd764943350e8bfa9cf0e2e13cc474",
+            "header_sha256": "1686d76e9009c87ae2ff0779d3c0f7cfe900a3b20d1542985f1d6ff5e042f8c6",
+            "selection": "language-default-without-dns"
+          },
+          {
+            "path": "golang.org/x/text@v0.43.0/language/parse.go",
+            "sha256": "3552f8fba45f310216182d167ba1da8e0c02212ad1896eeb66b194dd546b7bc2",
+            "header_sha256": "2e37b8573f92a4eafcf056282feec7474a2301437a74bfe69f3ae5b5f92e97f4",
+            "selection": "language-default-without-dns"
+          },
+          {
+            "path": "golang.org/x/text@v0.43.0/language/language.go",
+            "sha256": "3f2032f0367d83fb14772384d47119d27c2c427b277aa0a02913db59abe32bb0",
+            "header_sha256": "9b985a1a56e135fdc020f3a56bcdb360fa86595606c561003809ddc5170a7d6c",
+            "selection": "language-default-without-dns"
+          },
+          {
+            "path": "golang.org/x/text@v0.43.0/internal/language/compact/compact.go",
+            "sha256": "e154aa511d328fd47a9c9fc1115d9c92be2d385e885ae65c5e348ec1d5844ead",
+            "header_sha256": "e5b40da46c643c9fbb7c573f4c36c352df676a97781930d1f9b46b67b76585ed",
+            "selection": "language-default-without-dns"
+          },
+          {
+            "path": "golang.org/x/text@v0.43.0/internal/language/compact/language.go",
+            "sha256": "1d49845ec8c93b000391718e3127c0979c054186570805fce27f7fe167ad2c5d",
+            "header_sha256": "600c17b37c9b6265457f05c5811a9141b5071c9be50cf6026b810c3c9e97aa8b",
+            "selection": "language-default-without-dns"
+          },
+          {
+            "path": "oracle73a93303/internal/library/story_query.go",
+            "sha256": "5ea334a20dda303b81f2d559defcc21a4f06b03542922263a1ed71ebcd602bc7",
+            "header_sha256": "068c99d6f702e7c295838419b97e53cb0972f9082315ce5c30f28f2cb2ebd3b0",
+            "selection": "product-boundary"
+          }
+        ],
+        "notices": [
+          "LICENSE-CC0.txt",
+          "LICENSE-CLDR32-APACHE.txt",
+          "LICENSE-CLDR32-UNICODE.txt",
+          "LICENSE-GO-BSD.txt",
+          "PATENTS-GO.txt"
+        ]
+      },
+      {
+        "path": "language.rs",
+        "bytes": 26505,
+        "sha256": "e8a182c35519516016384d4996cdb1cfe5433e227a1a9b46f55e94014409ae66",
+        "kind": "translated",
+        "recipe": "Private product35-byte canonicalLanguage boundary; frozen Default=Deprecated|Legacy scanner/core/variant/extension and exact compact round trip. Lazy token validation preserves transform truncation; region override/compact bit widths remain observable; no SuppressScript/Macro/CLDR, parent/matcher approximation or TLD API. TrimSpace delegates the single private frozen Unicode primitive. Does not expose partial error tags that the product rejects.",
+        "sources": [
+          {
+            "path": "golang.org/x/text@v0.43.0/internal/language/tables.go",
+            "sha256": "876a73fb8b8fffd239efa592ffdf903c25757b4d17b715fc80d7aee8db2b985e",
+            "header_sha256": "8b677ec913c4566323b03c86ab9fc3d6caf0d6c4539faadaf0a54edb31fca3f8",
+            "selection": "language-default-without-dns"
+          },
+          {
+            "path": "golang.org/x/text@v0.43.0/internal/language/lookup.go",
+            "sha256": "8f0ac8780f89d5c2b29b98fd599269b445d7bb612a7948c9e97d425424b5ea38",
+            "header_sha256": "935e0ce82233cbc759045f0b5cec9278a4cf4ec8390fa52da364e99351b27c2e",
+            "selection": "language-default-without-dns"
+          },
+          {
+            "path": "golang.org/x/text@v0.43.0/internal/language/compact/tables.go",
+            "sha256": "99415fb6642ebd291f825497d32e70ae32da8569815d8f4ef587664c6c5ce7d5",
+            "header_sha256": "560ac6950b60bf8f1ac1b726c6e4b6cc762c4ae416a8b8ccdc504277f8ddd58b",
+            "selection": "language-default-without-dns"
+          },
+          {
+            "path": "golang.org/x/text@v0.43.0/internal/language/parse.go",
+            "sha256": "0c884b51bb83d3633a51f16e90c7dbaf45c301a449e366df591eda11a3000972",
+            "header_sha256": "d4f940e8d017445b1c498ae7059e239d32a1b587637da9575bde53cce976f39c",
+            "selection": "language-default-without-dns"
+          },
+          {
+            "path": "golang.org/x/text@v0.43.0/internal/language/language.go",
+            "sha256": "19a0ccf7635fd3dbad3766d953996df5d1c24a367e44c49200ab6ec3023fc871",
+            "header_sha256": "1af9c42d5f5e97e0a01c3f139247e1b0fb5b6b1b8f1cda838752c312acbcd647",
+            "selection": "language-default-without-dns"
+          },
+          {
+            "path": "golang.org/x/text@v0.43.0/internal/language/compact.go",
+            "sha256": "2d121c703729c5fbd5f3f13fd568af142ca8fde0f01a07e1874df22dbaadde98",
+            "header_sha256": "95b588b661b3deaab5460dab9ecd953034f149cfea585a8168c2714598178066",
+            "selection": "language-default-without-dns"
+          },
+          {
+            "path": "golang.org/x/text@v0.43.0/internal/language/common.go",
+            "sha256": "68089abad3eed7b2559bb97510355e900a6ef2e1fac7ff89364bda9c50a2acba",
+            "header_sha256": "5fad59e6ddf9e9c908c8be95d2a14eebe7d016cb95519a452689457cee7761e7",
+            "selection": "language-default-without-dns"
+          },
+          {
+            "path": "golang.org/x/text@v0.43.0/internal/tag/tag.go",
+            "sha256": "97a27a6bfdd26d872e07d051fc27e622e1cd764943350e8bfa9cf0e2e13cc474",
+            "header_sha256": "1686d76e9009c87ae2ff0779d3c0f7cfe900a3b20d1542985f1d6ff5e042f8c6",
+            "selection": "language-default-without-dns"
+          },
+          {
+            "path": "golang.org/x/text@v0.43.0/language/parse.go",
+            "sha256": "3552f8fba45f310216182d167ba1da8e0c02212ad1896eeb66b194dd546b7bc2",
+            "header_sha256": "2e37b8573f92a4eafcf056282feec7474a2301437a74bfe69f3ae5b5f92e97f4",
+            "selection": "language-default-without-dns"
+          },
+          {
+            "path": "golang.org/x/text@v0.43.0/language/language.go",
+            "sha256": "3f2032f0367d83fb14772384d47119d27c2c427b277aa0a02913db59abe32bb0",
+            "header_sha256": "9b985a1a56e135fdc020f3a56bcdb360fa86595606c561003809ddc5170a7d6c",
+            "selection": "language-default-without-dns"
+          },
+          {
+            "path": "golang.org/x/text@v0.43.0/internal/language/compact/compact.go",
+            "sha256": "e154aa511d328fd47a9c9fc1115d9c92be2d385e885ae65c5e348ec1d5844ead",
+            "header_sha256": "e5b40da46c643c9fbb7c573f4c36c352df676a97781930d1f9b46b67b76585ed",
+            "selection": "language-default-without-dns"
+          },
+          {
+            "path": "golang.org/x/text@v0.43.0/internal/language/compact/language.go",
+            "sha256": "1d49845ec8c93b000391718e3127c0979c054186570805fce27f7fe167ad2c5d",
+            "header_sha256": "600c17b37c9b6265457f05c5811a9141b5071c9be50cf6026b810c3c9e97aa8b",
+            "selection": "language-default-without-dns"
+          },
+          {
+            "path": "oracle73a93303/internal/library/story_query.go",
+            "sha256": "5ea334a20dda303b81f2d559defcc21a4f06b03542922263a1ed71ebcd602bc7",
+            "header_sha256": "068c99d6f702e7c295838419b97e53cb0972f9082315ce5c30f28f2cb2ebd3b0",
+            "selection": "product-boundary"
+          }
+        ],
+        "notices": [
+          "LICENSE-CC0.txt",
+          "LICENSE-CLDR32-APACHE.txt",
+          "LICENSE-CLDR32-UNICODE.txt",
+          "LICENSE-GO-BSD.txt",
+          "PATENTS-GO.txt"
+        ]
+      },
+      {
+        "path": "language_data.rs",
+        "bytes": 249065,
+        "sha256": "538696302fdd3c0e776c1c70f1632d5a12e7c08e953b90e7eb01bc336487066c",
+        "kind": "generated",
+        "recipe": "python3 extract_language.py --source-root <authenticated49-materialization> --source-index <pinned-index>; cargo fmt -p librairii-storage. Literal frozen mappings, aliases, scripts, regions, variants, grandfathered data and compact core IDs; regionTypes bit1/value2 excluded before emission, other bits unchanged; no TLD APIs or current registry.",
+        "sources": [
+          {
+            "path": "golang.org/x/text@v0.43.0/internal/language/tables.go",
+            "sha256": "876a73fb8b8fffd239efa592ffdf903c25757b4d17b715fc80d7aee8db2b985e",
+            "header_sha256": "8b677ec913c4566323b03c86ab9fc3d6caf0d6c4539faadaf0a54edb31fca3f8",
+            "selection": "language-default-without-dns"
+          },
+          {
+            "path": "golang.org/x/text@v0.43.0/internal/language/lookup.go",
+            "sha256": "8f0ac8780f89d5c2b29b98fd599269b445d7bb612a7948c9e97d425424b5ea38",
+            "header_sha256": "935e0ce82233cbc759045f0b5cec9278a4cf4ec8390fa52da364e99351b27c2e",
+            "selection": "language-default-without-dns"
+          },
+          {
+            "path": "golang.org/x/text@v0.43.0/internal/language/compact/tables.go",
+            "sha256": "99415fb6642ebd291f825497d32e70ae32da8569815d8f4ef587664c6c5ce7d5",
+            "header_sha256": "560ac6950b60bf8f1ac1b726c6e4b6cc762c4ae416a8b8ccdc504277f8ddd58b",
+            "selection": "language-default-without-dns"
+          }
+        ],
+        "notices": [
+          "LICENSE-CC0.txt",
+          "LICENSE-CLDR32-APACHE.txt",
+          "LICENSE-CLDR32-UNICODE.txt",
+          "LICENSE-GO-BSD.txt",
+          "PATENTS-GO.txt"
+        ]
+      },
+      {
+        "path": "language_oracle.go.in",
+        "bytes": 4568,
+        "sha256": "0e00e209ca02790c23611eb7fa19409639ef52f0029cb5ae28d6efc5ba3ffc67",
+        "kind": "authored",
+        "recipe": "Qualification-only calls to actual frozen public Default parser/String/Und/error and product boundary; framed digest protocol, finite alphabets, compact region overrides and deterministic grammar sequences; no runtime Go.",
+        "sources": [],
+        "notices": []
+      },
+      {
+        "path": "mod.rs",
+        "bytes": 643,
+        "sha256": "04f2d4d6acf8665c4967237bdd1207aefa3acdfecb0fb3af8dcedd4c13a740de",
+        "kind": "authored",
+        "recipe": "Private module wiring only; no source algorithm.",
+        "sources": [],
+        "notices": []
+      },
+      {
+        "path": "normalization-reference.json",
+        "bytes": 2401,
+        "sha256": "61a5a904eae2e88d07aa667f5cd2e0d74dd83a7c2e247e87d46b621f427a2468",
+        "kind": "generated",
+        "recipe": "python3 verify_normalization.py; actual pinned Go1.26.5 frozen Normalize/cases.Fold/norm.NFKD/unicode APIs over all1112064 valid scalars (including separate JSON-key simple lowercase/ASCII-reaching simple-fold metrics) and147228 boundary sequences. Includes57 CCC/Mn representatives and all18019 decomposing/backward-interacting scalars on both sides of overflow; exact framed SHA256 digests. Source/tool/ZIP/probe identities and before/after proof retained; not arbitrary-string or language qualification.",
+        "sources": [
+          {
+            "path": "golang.org/x/text@v0.43.0/unicode/norm/tables15.0.0.go",
+            "sha256": "9e29fbffef687d6d2191c999c466729dff2f394d8dcbec377a2fc14336f33cdb",
+            "header_sha256": "1fa8a0bff101dcf4e771378d869ef6f730054412bcafcc8039328230387bea58",
+            "selection": "normalization"
+          },
+          {
+            "path": "Go1.26.5/src/unicode/tables.go",
+            "sha256": "6a88d48746c4b2c471cc04ae40559694b734770212e6f5ea5f1962adb0c0bdb1",
+            "header_sha256": "ec9651df3b673e4e73deeeab3bd947b37e70bc0fbed401698cf27b3dfa0c0136",
+            "selection": "normalization"
+          },
+          {
+            "path": "oracle73a93303/frontend/src/search-casefold.json",
+            "sha256": "547a5aeae46f102d6a5310dcc5125988c6233d45125e96ffd712847a9c07b5de",
+            "header_sha256": "576879310fc9051d7c17f542e6bd8512135c430cde5458ea29f6be021800a85d",
+            "selection": "normalization"
+          },
+          {
+            "path": "Go1.26.5/src/unicode/letter.go",
+            "sha256": "b35a6d259313cef88d07e9e4027b8bd72c60ae140418f5be2c41a2ecea6074fe",
+            "header_sha256": "b1f8a48bd98929bacf4fe0520affc9eb02063542a76dd3cd25a71a6035014fec",
+            "selection": "normalization"
+          },
+          {
+            "path": "golang.org/x/text@v0.43.0/unicode/norm/composition.go",
+            "sha256": "326e91fea709726d884e475db9b7a61ad17829e32d795f182cdcfcfdf64d9bf6",
+            "header_sha256": "a2e12721634cd63e9a4a8cb2abbb925686c5d2f223764f937bc0fc7d577f801c",
+            "selection": "normalization"
+          },
+          {
+            "path": "golang.org/x/text@v0.43.0/unicode/norm/forminfo.go",
+            "sha256": "b53ecff9ab5a83fd45598f54dfc9ea03849a3bcf4617ef02cf43225c71acc1e3",
+            "header_sha256": "271f868ad8b22dd4a00cbe723f58a2551f13bb4ee9d39ad40db223161fd25698",
+            "selection": "normalization"
+          },
+          {
+            "path": "golang.org/x/text@v0.43.0/unicode/norm/normalize.go",
+            "sha256": "f1363700e71a35f9c966492f10dc6f3405cd824f2cc03b08ee64b24503d56f39",
+            "header_sha256": "625e25f79feaf321c015337395f98d73d7c62681a0f7d4066f9e837245129670",
+            "selection": "normalization"
+          },
+          {
+            "path": "golang.org/x/text@v0.43.0/unicode/norm/trie.go",
+            "sha256": "d87793d558251ee8824954f0b7bc5564803e4c9d59a8c4eebb4c3c5cfbd19492",
+            "header_sha256": "10ddbcfb05753ed54f6b5c95dbf71c09e297017ed4d99cbb2e051ac51456cadb",
+            "selection": "normalization"
+          },
+          {
+            "path": "golang.org/x/text@v0.43.0/cases/fold.go",
+            "sha256": "14ff03fda441587198ce6f3e59e6dde979fc21b2db9e248c15b43da497c594ac",
+            "header_sha256": "8d862084959e793269ab88e442c64bbf72cb03592bd652ef3ff0cbe122f415ff",
+            "selection": "normalization"
+          },
+          {
+            "path": "Go1.26.5/src/unicode/graphic.go",
+            "sha256": "46a43107a87c88cf17a05a557e00dbf6b0f4bb53ebcd7d3035e02f1e67c428be",
+            "header_sha256": "6845d75459e7366def56726e85d227de1c07312d79691c15e6d00ba5251dbca8",
+            "selection": "normalization"
+          },
+          {
+            "path": "Go1.26.5/src/strings/strings.go",
+            "sha256": "ba9478be775d11b6956c828ebf870a8f8e7b7318ee382834f1e741f02d1336ef",
+            "header_sha256": "e66b8ccab4bb0d14764b2baa569347d537f1ced4107b95294dab8578bfc97ae0",
+            "selection": "normalization"
+          },
+          {
+            "path": "internal/searchtext/searchtext.go",
+            "sha256": "0bf676dbaadeabe17130cb1c7be22a42205b7d7b87baaf652df4f25da02d52dc",
+            "header_sha256": "8bbc5eece8d52504c194976dfbbf30c32cc139a5183166b1bdf98aae910a50bb",
+            "selection": "product-boundary"
+          }
+        ],
+        "notices": [
+          "LICENSE-GO-BSD.txt",
+          "LICENSE-UNICODE-V3.txt",
+          "PATENTS-GO.txt"
+        ]
+      },
+      {
+        "path": "normalization.rs",
+        "bytes": 19643,
+        "sha256": "ab4b1c10137332c5cdbe4430edead212054e38219fb025daef2ba753d6b0502f",
+        "kind": "translated",
+        "recipe": "Hand translation of frozen full-fold\u2192Go stream-safe NFKD\u2192Mn-only removal\u2192Go whitespace folding; original-character leading/trailing partition precedes stable CCC insertion. Safe checked UTF8 trie and fixed32-rune segment, Hangul decomposition; no modern composition or runtime Go.",
+        "sources": [
+          {
+            "path": "golang.org/x/text@v0.43.0/unicode/norm/tables15.0.0.go",
+            "sha256": "9e29fbffef687d6d2191c999c466729dff2f394d8dcbec377a2fc14336f33cdb",
+            "header_sha256": "1fa8a0bff101dcf4e771378d869ef6f730054412bcafcc8039328230387bea58",
+            "selection": "normalization"
+          },
+          {
+            "path": "Go1.26.5/src/unicode/tables.go",
+            "sha256": "6a88d48746c4b2c471cc04ae40559694b734770212e6f5ea5f1962adb0c0bdb1",
+            "header_sha256": "ec9651df3b673e4e73deeeab3bd947b37e70bc0fbed401698cf27b3dfa0c0136",
+            "selection": "normalization"
+          },
+          {
+            "path": "oracle73a93303/frontend/src/search-casefold.json",
+            "sha256": "547a5aeae46f102d6a5310dcc5125988c6233d45125e96ffd712847a9c07b5de",
+            "header_sha256": "576879310fc9051d7c17f542e6bd8512135c430cde5458ea29f6be021800a85d",
+            "selection": "normalization"
+          },
+          {
+            "path": "Go1.26.5/src/unicode/letter.go",
+            "sha256": "b35a6d259313cef88d07e9e4027b8bd72c60ae140418f5be2c41a2ecea6074fe",
+            "header_sha256": "b1f8a48bd98929bacf4fe0520affc9eb02063542a76dd3cd25a71a6035014fec",
+            "selection": "normalization"
+          },
+          {
+            "path": "golang.org/x/text@v0.43.0/unicode/norm/composition.go",
+            "sha256": "326e91fea709726d884e475db9b7a61ad17829e32d795f182cdcfcfdf64d9bf6",
+            "header_sha256": "a2e12721634cd63e9a4a8cb2abbb925686c5d2f223764f937bc0fc7d577f801c",
+            "selection": "normalization"
+          },
+          {
+            "path": "golang.org/x/text@v0.43.0/unicode/norm/forminfo.go",
+            "sha256": "b53ecff9ab5a83fd45598f54dfc9ea03849a3bcf4617ef02cf43225c71acc1e3",
+            "header_sha256": "271f868ad8b22dd4a00cbe723f58a2551f13bb4ee9d39ad40db223161fd25698",
+            "selection": "normalization"
+          },
+          {
+            "path": "golang.org/x/text@v0.43.0/unicode/norm/normalize.go",
+            "sha256": "f1363700e71a35f9c966492f10dc6f3405cd824f2cc03b08ee64b24503d56f39",
+            "header_sha256": "625e25f79feaf321c015337395f98d73d7c62681a0f7d4066f9e837245129670",
+            "selection": "normalization"
+          },
+          {
+            "path": "golang.org/x/text@v0.43.0/unicode/norm/trie.go",
+            "sha256": "d87793d558251ee8824954f0b7bc5564803e4c9d59a8c4eebb4c3c5cfbd19492",
+            "header_sha256": "10ddbcfb05753ed54f6b5c95dbf71c09e297017ed4d99cbb2e051ac51456cadb",
+            "selection": "normalization"
+          },
+          {
+            "path": "golang.org/x/text@v0.43.0/cases/fold.go",
+            "sha256": "14ff03fda441587198ce6f3e59e6dde979fc21b2db9e248c15b43da497c594ac",
+            "header_sha256": "8d862084959e793269ab88e442c64bbf72cb03592bd652ef3ff0cbe122f415ff",
+            "selection": "normalization"
+          },
+          {
+            "path": "Go1.26.5/src/unicode/graphic.go",
+            "sha256": "46a43107a87c88cf17a05a557e00dbf6b0f4bb53ebcd7d3035e02f1e67c428be",
+            "header_sha256": "6845d75459e7366def56726e85d227de1c07312d79691c15e6d00ba5251dbca8",
+            "selection": "normalization"
+          },
+          {
+            "path": "Go1.26.5/src/strings/strings.go",
+            "sha256": "ba9478be775d11b6956c828ebf870a8f8e7b7318ee382834f1e741f02d1336ef",
+            "header_sha256": "e66b8ccab4bb0d14764b2baa569347d537f1ced4107b95294dab8578bfc97ae0",
+            "selection": "normalization"
+          },
+          {
+            "path": "internal/searchtext/searchtext.go",
+            "sha256": "0bf676dbaadeabe17130cb1c7be22a42205b7d7b87baaf652df4f25da02d52dc",
+            "header_sha256": "8bbc5eece8d52504c194976dfbbf30c32cc139a5183166b1bdf98aae910a50bb",
+            "selection": "product-boundary"
+          }
+        ],
+        "notices": [
+          "LICENSE-GO-BSD.txt",
+          "LICENSE-UNICODE-V3.txt",
+          "PATENTS-GO.txt"
+        ]
+      },
+      {
+        "path": "normalization_data.rs",
+        "bytes": 201487,
+        "sha256": "e35838b2a934ea6e9db2892fc82fad076d0ec19f9702805fc491f1f4957758bb",
+        "kind": "generated",
+        "recipe": "python3 extract_normalization.py --source-root <authenticated49-materialization> --source-index <pinned-index>; cargo fmt -p librairii-storage; retain only NFKC trie/decomposition/CCC data used by NFKD, no recomposition data or modern source.",
+        "sources": [
+          {
+            "path": "golang.org/x/text@v0.43.0/unicode/norm/tables15.0.0.go",
+            "sha256": "9e29fbffef687d6d2191c999c466729dff2f394d8dcbec377a2fc14336f33cdb",
+            "header_sha256": "1fa8a0bff101dcf4e771378d869ef6f730054412bcafcc8039328230387bea58",
+            "selection": "normalization"
+          }
+        ],
+        "notices": [
+          "LICENSE-GO-BSD.txt",
+          "LICENSE-UNICODE-V3.txt",
+          "PATENTS-GO.txt"
+        ]
+      },
+      {
+        "path": "normalization_oracle.go.in",
+        "bytes": 5226,
+        "sha256": "2011455b23aad4701a11a086db7673d34d9899102f8841b4761cf35a0b20d455",
+        "kind": "authored",
+        "recipe": "Qualification glue calling actual frozen Go APIs; fixed scalar/framing/sequence program, executed only by verify_normalization.py in independent inputs.",
+        "sources": [],
+        "notices": []
+      },
+      {
+        "path": "unicode_properties.rs",
+        "bytes": 83440,
+        "sha256": "10c6968997b7d29981dd5a5719492ad802c800947c7946e9632e851313c101ee",
+        "kind": "generated",
+        "recipe": "python3 extract_normalization.py --source-root <authenticated49-materialization> --source-index <pinned-index>; cargo fmt -p librairii-storage; retain Go15 Mn/White_Space ranges, exact frozen1616 full-fold map, simple lowercase mappings and complete ASCII-reaching simple-fold orbits. Key rules are distinct from search folding; no current Unicode regeneration.",
+        "sources": [
+          {
+            "path": "Go1.26.5/src/unicode/tables.go",
+            "sha256": "6a88d48746c4b2c471cc04ae40559694b734770212e6f5ea5f1962adb0c0bdb1",
+            "header_sha256": "ec9651df3b673e4e73deeeab3bd947b37e70bc0fbed401698cf27b3dfa0c0136",
+            "selection": "normalization"
+          },
+          {
+            "path": "oracle73a93303/frontend/src/search-casefold.json",
+            "sha256": "547a5aeae46f102d6a5310dcc5125988c6233d45125e96ffd712847a9c07b5de",
+            "header_sha256": "576879310fc9051d7c17f542e6bd8512135c430cde5458ea29f6be021800a85d",
+            "selection": "normalization"
+          },
+          {
+            "path": "Go1.26.5/src/unicode/letter.go",
+            "sha256": "b35a6d259313cef88d07e9e4027b8bd72c60ae140418f5be2c41a2ecea6074fe",
+            "header_sha256": "b1f8a48bd98929bacf4fe0520affc9eb02063542a76dd3cd25a71a6035014fec",
+            "selection": "normalization"
+          }
+        ],
+        "notices": [
+          "LICENSE-GO-BSD.txt",
+          "LICENSE-UNICODE-V3.txt",
+          "PATENTS-GO.txt"
+        ]
+      },
+      {
+        "path": "update_source_manifest.py",
+        "bytes": 11244,
+        "sha256": "79a796337df68eb3adce9e10f4739aaa9e32b20c2acedb265a0a447144b38b88",
+        "kind": "authored",
+        "recipe": "Explicit private file map; hash actual post-format bytes and retain pinned original identities, selections and notice names.",
+        "sources": [],
+        "notices": []
+      },
+      {
+        "path": "verify_codec.py",
+        "bytes": 7115,
+        "sha256": "bd3674d526da14aa1d6943588a836ae8c92eb8746d0bb0cd60ea99ded691393d",
+        "kind": "authored",
+        "recipe": "Deterministic strict-wire/versions/retired-reference/limit/JSON lexical adversarial inputs; reuse pinned offline disposable qualification, exact original query.go copy and unchanged436+487 proof. Inputs never supply expected outputs; no runtime Go or preservation changes.",
+        "sources": [],
+        "notices": []
+      },
+      {
+        "path": "verify_language.py",
+        "bytes": 5210,
+        "sha256": "e7239d706442423bbfca4aa48789aa98a58aae322634aa8a1c91ee33d626177b",
+        "kind": "authored",
+        "recipe": "Reuse authenticated disposable source/tool materialization; compare original Go results with a separate owned copy masking exactly ccTLDbit2 and deleting BOTH TLD API functions. Verify exactly3 counterfactual members changed,484 unchanged and all original inputs unchanged. No preservation or production writes.",
+        "sources": [],
+        "notices": []
+      },
+      {
+        "path": "verify_normalization.py",
+        "bytes": 9783,
+        "sha256": "7e0f09eec485805be8eeb1725b94d5c9076e3a95c676fbca25e7c9308cb65d68",
+        "kind": "authored",
+        "recipe": "Offline disposable exact73 archive/authenticated487-member ZIP/pinnedGo qualification with before/after original-file verification; never a product runtime or corpus generator.",
+        "sources": [],
+        "notices": []
+      }
+    ]
+  },
+  "origins": [
+    {
+      "path": "Go1.26.5/src/encoding/json/scanner.go",
+      "sha256": "2b16dd215274dfa8e0806b53cca144684d5b9c8a02319cf5ce10120c50e6eef2",
+      "header_sha256": "23047bbfe6a46c835452f0aba6c4218d3ac8a18abd1b580b4a365d3796624995",
+      "selection": "query-json-wire"
+    },
+    {
+      "path": "Go1.26.5/src/encoding/json/decode.go",
+      "sha256": "a91535f18f9a2c8380448b1c84c4c2017dbe3d530a10faf8babf03494042da48",
+      "header_sha256": "47c6ebe8449f5f9e86e7042141dcc9c2607daf76ec247c9e649fa9fc647df3da",
+      "selection": "query-json-wire"
+    },
+    {
+      "path": "Go1.26.5/src/encoding/json/fold.go",
+      "sha256": "5b3c91bfbf6943e04d9aeb934031331a3f08a83b10079a0a7f0def3466b2f39e",
+      "header_sha256": "724c2b5626a7a6c08734842f6602294ee40f1e1aafbc8e752ce4d1cdb6b9d1c4",
+      "selection": "query-json-wire"
+    },
+    {
+      "path": "Go1.26.5/src/encoding/json/stream.go",
+      "sha256": "bb26b2442db6a686fc7f823ea9cc89babe26ac988ec7d8caf4a157aeb60d92f2",
+      "header_sha256": "78cca841388a8bdf39db8da07f304959864eca2a6c4676d245a1e6356e6ab0be",
+      "selection": "query-json-wire"
+    },
+    {
+      "path": "Go1.26.5/src/unicode/utf8/utf8.go",
+      "sha256": "3c145ee25fd7631ebbc670fd1236e8c163ca30ae8913c796489efbf3f267ad54",
+      "header_sha256": "5fa9c22df735fe95250fe5471f4760d6ca0b27d6751b4ecd82f8d1a322f0a18b",
+      "selection": "query-json-wire"
+    },
+    {
+      "path": "Go1.26.5/src/unicode/utf16/utf16.go",
+      "sha256": "6b8b3037015f41351d4a323513b57b8ac90caa69f69be31eaf02ca2a4632d0cd",
+      "header_sha256": "a6b3369a02c98317c004e8e506e404f3b75aec2f8e21c61f12c5e79dbcc051a2",
+      "selection": "query-json-wire"
+    },
+    {
+      "path": "Go1.26.5/src/encoding/json/encode.go",
+      "sha256": "4012d78aa8236f3067a6330ddf2f719c7e59b262fcf4fff5e51b4abd1ccba235",
+      "header_sha256": "8310898733aaa9e429f23af37066927b6c80b6a835d86157a098c76863ccbdd0",
+      "selection": "query-json-output"
+    },
+    {
+      "path": "Go1.26.5/src/encoding/json/tables.go",
+      "sha256": "74f7f392e1cc22890b72959647b9e5facda591a890c81f8167b532d31adc561e",
+      "header_sha256": "22b4c1cded9dd6c89902a4a519ad3f2fde2e40eea08e2bfb7b88bbd5371be3e0",
+      "selection": "query-json-output"
+    },
+    {
+      "path": "Go1.26.5/src/strconv/number.go",
+      "sha256": "dda43e8c91d95f9dea0c46b2fec6637e5520cae099e40c5965dca0e41bbaab9e",
+      "header_sha256": "152100314e297cb012b7a5adcf23a6c053e88f5e1ad50883d38890802d21cabc",
+      "selection": "query-json-i64"
+    },
+    {
+      "path": "Go1.26.5/src/internal/strconv/atoi.go",
+      "sha256": "eb5ad640903abe9e8c8b7fbce8dd3487176dbeb43e8b8b4efa6e73ecb5207ddc",
+      "header_sha256": "b399124b9ffc5779c4c67a451e47dab3c5bf56b59db399d9179f1055c08b655c",
+      "selection": "query-json-i64"
+    },
+    {
+      "path": "oracle73a93303/internal/collections/query.go",
+      "sha256": "569189457f91d9f29980a51fa7d68040745b07d7bddbb2d71dfc03c8dc89b763",
+      "header_sha256": "8728666f51dacc7465dd18d9dfadaf4dcd8216ad8c64b80d62bb04abe69810b1",
+      "selection": "query-product"
+    },
+    {
+      "path": "oracle73a93303/internal/collectionquery/references.go",
+      "sha256": "b3e72f4a3fb6f67ed3ee934c9db148d75d0f1ee82ab6d25ce21ea0eda1481828",
+      "header_sha256": "dad4bf4b23d4b110cfa8a92695ec2762d8d62de45fd1e4d835b3cb24b10892a5",
+      "selection": "query-product"
+    },
+    {
+      "path": "oracle73a93303/internal/collectionquery/unique_keys.go",
+      "sha256": "f4ba4045ba5fbd2c98ba78bec21cb7334430b4fe24eea00f90a842683c0f6f24",
+      "header_sha256": "3b3da419942ba0426399040d8e8a9ffeac5416ccf39f69e7ecd08e996cc70d82",
+      "selection": "query-product"
+    }
+  ],
+  "notices": [
+    "LICENSE-GO-BSD.txt",
+    "PATENTS-GO.txt"
+  ],
+  "recipe": "Move the ONE existing codec and frozen compatibility implementation into core; preserve algorithms, canonical passes, assertion bodies, data and reference bytes. Only attribution, imports, includes, necessary visibility and qualification path bindings adapt. Public payload serializes/Go-escapes/checks output bytes only; arbitrary Query construction is not validation or live validity. Historical inline/reference/index records remain historical, not a new execution. Complete core closure and absence of old storage implementation are required after separately-owned storage delegation. Separate authored follow-up adds only two borrowed read-only slice observations for existing private languages/compatibilities data; no copying, setters, validation, normalization or extra canonical pass.",
+  "lookup_bindings": [
+    {
+      "path": "crates/librairii-core/src/collection_codec/compatibility/extract_normalization.py",
+      "constant": "INDEX_HASH",
+      "lookup_index_sha256": "13dfd314abfda9a9553d152a1d8a5586f8bd1205a08c177af9bbec57a51ae822",
+      "historical_index_sha256": "10ea8fe193c594ce153ae7a1734c41ab80c9d406cc7ea314c8c7c471b7a92a99"
+    },
+    {
+      "path": "crates/librairii-core/src/collection_codec/compatibility/extract_language.py",
+      "constant": "INDEX_HASH",
+      "lookup_index_sha256": "13dfd314abfda9a9553d152a1d8a5586f8bd1205a08c177af9bbec57a51ae822",
+      "historical_index_sha256": "10ea8fe193c594ce153ae7a1734c41ab80c9d406cc7ea314c8c7c471b7a92a99"
+    },
+    {
+      "path": "crates/librairii-core/src/collection_codec/compatibility/update_source_manifest.py",
+      "constant": "INDEX_SHA",
+      "lookup_index_sha256": "13dfd314abfda9a9553d152a1d8a5586f8bd1205a08c177af9bbec57a51ae822",
+      "historical_index_sha256": "10ea8fe193c594ce153ae7a1734c41ab80c9d406cc7ea314c8c7c471b7a92a99"
+    },
+    {
+      "path": "crates/librairii-core/src/collection_codec/compatibility/verify_normalization.py",
+      "constant": "INDEX_SHA",
+      "lookup_index_sha256": "13dfd314abfda9a9553d152a1d8a5586f8bd1205a08c177af9bbec57a51ae822",
+      "historical_index_sha256": "10ea8fe193c594ce153ae7a1734c41ab80c9d406cc7ea314c8c7c471b7a92a99"
+    }
+  ],
+  "fixed_references": [
+    {
+      "path": "codec-reference.json",
+      "bytes": 1546282,
+      "sha256": "b2fd01d9685133f295f1fbe23296d50971f07314ed94ed18d6a235903bca0d09",
+      "kind": "generated",
+      "recipe": "python3 verify_codec.py; actual pinned offline Go1.26.5 DecodeSavedLibraryQuery and MigrateSavedLibraryQuery on2864 scoped cases, separate canonical bytes/refusal classifications. Retain input/source/probe/recipe/tool/archive hashes and exact standalone source-copy identity, no production source copying or arbitrary-input/domain/SQL qualification. This indexed product-boundary source supplies the membership normalization; the additional exact query.go identity is recorded by archive/copy hashes in reference provenance.",
+      "sources": [
+        {
+          "path": "oracle73a93303/internal/library/story_query.go",
+          "sha256": "5ea334a20dda303b81f2d559defcc21a4f06b03542922263a1ed71ebcd602bc7",
+          "header_sha256": "068c99d6f702e7c295838419b97e53cb0972f9082315ce5c30f28f2cb2ebd3b0",
+          "selection": "product-boundary"
+        }
+      ],
+      "notices": []
+    },
+    {
+      "path": "language-reference.json",
+      "bytes": 15081,
+      "sha256": "a687f58350d126addd110fb8b6aa6f88489ccfb05e4dc6cd401de92a99ce45b8",
+      "kind": "generated",
+      "recipe": "python3 verify_language.py: actual pinned offline Go1.26.5 Default/String/Und/errors and35-byte product outcomes on1369529 inputs; counterfactual deletion of TLD APIs+masked bit2 gives identical raw/product digests. Retain exact original/modified hashes, source/probe/seed identities and framed results; not all possible strings, Collection SQL or native filesystem qualification.",
+      "sources": [
+        {
+          "path": "golang.org/x/text@v0.43.0/internal/language/tables.go",
+          "sha256": "876a73fb8b8fffd239efa592ffdf903c25757b4d17b715fc80d7aee8db2b985e",
+          "header_sha256": "8b677ec913c4566323b03c86ab9fc3d6caf0d6c4539faadaf0a54edb31fca3f8",
+          "selection": "language-default-without-dns"
+        },
+        {
+          "path": "golang.org/x/text@v0.43.0/internal/language/lookup.go",
+          "sha256": "8f0ac8780f89d5c2b29b98fd599269b445d7bb612a7948c9e97d425424b5ea38",
+          "header_sha256": "935e0ce82233cbc759045f0b5cec9278a4cf4ec8390fa52da364e99351b27c2e",
+          "selection": "language-default-without-dns"
+        },
+        {
+          "path": "golang.org/x/text@v0.43.0/internal/language/compact/tables.go",
+          "sha256": "99415fb6642ebd291f825497d32e70ae32da8569815d8f4ef587664c6c5ce7d5",
+          "header_sha256": "560ac6950b60bf8f1ac1b726c6e4b6cc762c4ae416a8b8ccdc504277f8ddd58b",
+          "selection": "language-default-without-dns"
+        },
+        {
+          "path": "golang.org/x/text@v0.43.0/internal/language/parse.go",
+          "sha256": "0c884b51bb83d3633a51f16e90c7dbaf45c301a449e366df591eda11a3000972",
+          "header_sha256": "d4f940e8d017445b1c498ae7059e239d32a1b587637da9575bde53cce976f39c",
+          "selection": "language-default-without-dns"
+        },
+        {
+          "path": "golang.org/x/text@v0.43.0/internal/language/language.go",
+          "sha256": "19a0ccf7635fd3dbad3766d953996df5d1c24a367e44c49200ab6ec3023fc871",
+          "header_sha256": "1af9c42d5f5e97e0a01c3f139247e1b0fb5b6b1b8f1cda838752c312acbcd647",
+          "selection": "language-default-without-dns"
+        },
+        {
+          "path": "golang.org/x/text@v0.43.0/internal/language/compact.go",
+          "sha256": "2d121c703729c5fbd5f3f13fd568af142ca8fde0f01a07e1874df22dbaadde98",
+          "header_sha256": "95b588b661b3deaab5460dab9ecd953034f149cfea585a8168c2714598178066",
+          "selection": "language-default-without-dns"
+        },
+        {
+          "path": "golang.org/x/text@v0.43.0/internal/language/common.go",
+          "sha256": "68089abad3eed7b2559bb97510355e900a6ef2e1fac7ff89364bda9c50a2acba",
+          "header_sha256": "5fad59e6ddf9e9c908c8be95d2a14eebe7d016cb95519a452689457cee7761e7",
+          "selection": "language-default-without-dns"
+        },
+        {
+          "path": "golang.org/x/text@v0.43.0/internal/tag/tag.go",
+          "sha256": "97a27a6bfdd26d872e07d051fc27e622e1cd764943350e8bfa9cf0e2e13cc474",
+          "header_sha256": "1686d76e9009c87ae2ff0779d3c0f7cfe900a3b20d1542985f1d6ff5e042f8c6",
+          "selection": "language-default-without-dns"
+        },
+        {
+          "path": "golang.org/x/text@v0.43.0/language/parse.go",
+          "sha256": "3552f8fba45f310216182d167ba1da8e0c02212ad1896eeb66b194dd546b7bc2",
+          "header_sha256": "2e37b8573f92a4eafcf056282feec7474a2301437a74bfe69f3ae5b5f92e97f4",
+          "selection": "language-default-without-dns"
+        },
+        {
+          "path": "golang.org/x/text@v0.43.0/language/language.go",
+          "sha256": "3f2032f0367d83fb14772384d47119d27c2c427b277aa0a02913db59abe32bb0",
+          "header_sha256": "9b985a1a56e135fdc020f3a56bcdb360fa86595606c561003809ddc5170a7d6c",
+          "selection": "language-default-without-dns"
+        },
+        {
+          "path": "golang.org/x/text@v0.43.0/internal/language/compact/compact.go",
+          "sha256": "e154aa511d328fd47a9c9fc1115d9c92be2d385e885ae65c5e348ec1d5844ead",
+          "header_sha256": "e5b40da46c643c9fbb7c573f4c36c352df676a97781930d1f9b46b67b76585ed",
+          "selection": "language-default-without-dns"
+        },
+        {
+          "path": "golang.org/x/text@v0.43.0/internal/language/compact/language.go",
+          "sha256": "1d49845ec8c93b000391718e3127c0979c054186570805fce27f7fe167ad2c5d",
+          "header_sha256": "600c17b37c9b6265457f05c5811a9141b5071c9be50cf6026b810c3c9e97aa8b",
+          "selection": "language-default-without-dns"
+        },
+        {
+          "path": "oracle73a93303/internal/library/story_query.go",
+          "sha256": "5ea334a20dda303b81f2d559defcc21a4f06b03542922263a1ed71ebcd602bc7",
+          "header_sha256": "068c99d6f702e7c295838419b97e53cb0972f9082315ce5c30f28f2cb2ebd3b0",
+          "selection": "product-boundary"
+        }
+      ],
+      "notices": [
+        "LICENSE-CC0.txt",
+        "LICENSE-CLDR32-APACHE.txt",
+        "LICENSE-CLDR32-UNICODE.txt",
+        "LICENSE-GO-BSD.txt",
+        "PATENTS-GO.txt"
+      ]
+    },
+    {
+      "path": "normalization-reference.json",
+      "bytes": 2401,
+      "sha256": "61a5a904eae2e88d07aa667f5cd2e0d74dd83a7c2e247e87d46b621f427a2468",
+      "kind": "generated",
+      "recipe": "python3 verify_normalization.py; actual pinned Go1.26.5 frozen Normalize/cases.Fold/norm.NFKD/unicode APIs over all1112064 valid scalars (including separate JSON-key simple lowercase/ASCII-reaching simple-fold metrics) and147228 boundary sequences. Includes57 CCC/Mn representatives and all18019 decomposing/backward-interacting scalars on both sides of overflow; exact framed SHA256 digests. Source/tool/ZIP/probe identities and before/after proof retained; not arbitrary-string or language qualification.",
+      "sources": [
+        {
+          "path": "golang.org/x/text@v0.43.0/unicode/norm/tables15.0.0.go",
+          "sha256": "9e29fbffef687d6d2191c999c466729dff2f394d8dcbec377a2fc14336f33cdb",
+          "header_sha256": "1fa8a0bff101dcf4e771378d869ef6f730054412bcafcc8039328230387bea58",
+          "selection": "normalization"
+        },
+        {
+          "path": "Go1.26.5/src/unicode/tables.go",
+          "sha256": "6a88d48746c4b2c471cc04ae40559694b734770212e6f5ea5f1962adb0c0bdb1",
+          "header_sha256": "ec9651df3b673e4e73deeeab3bd947b37e70bc0fbed401698cf27b3dfa0c0136",
+          "selection": "normalization"
+        },
+        {
+          "path": "oracle73a93303/frontend/src/search-casefold.json",
+          "sha256": "547a5aeae46f102d6a5310dcc5125988c6233d45125e96ffd712847a9c07b5de",
+          "header_sha256": "576879310fc9051d7c17f542e6bd8512135c430cde5458ea29f6be021800a85d",
+          "selection": "normalization"
+        },
+        {
+          "path": "Go1.26.5/src/unicode/letter.go",
+          "sha256": "b35a6d259313cef88d07e9e4027b8bd72c60ae140418f5be2c41a2ecea6074fe",
+          "header_sha256": "b1f8a48bd98929bacf4fe0520affc9eb02063542a76dd3cd25a71a6035014fec",
+          "selection": "normalization"
+        },
+        {
+          "path": "golang.org/x/text@v0.43.0/unicode/norm/composition.go",
+          "sha256": "326e91fea709726d884e475db9b7a61ad17829e32d795f182cdcfcfdf64d9bf6",
+          "header_sha256": "a2e12721634cd63e9a4a8cb2abbb925686c5d2f223764f937bc0fc7d577f801c",
+          "selection": "normalization"
+        },
+        {
+          "path": "golang.org/x/text@v0.43.0/unicode/norm/forminfo.go",
+          "sha256": "b53ecff9ab5a83fd45598f54dfc9ea03849a3bcf4617ef02cf43225c71acc1e3",
+          "header_sha256": "271f868ad8b22dd4a00cbe723f58a2551f13bb4ee9d39ad40db223161fd25698",
+          "selection": "normalization"
+        },
+        {
+          "path": "golang.org/x/text@v0.43.0/unicode/norm/normalize.go",
+          "sha256": "f1363700e71a35f9c966492f10dc6f3405cd824f2cc03b08ee64b24503d56f39",
+          "header_sha256": "625e25f79feaf321c015337395f98d73d7c62681a0f7d4066f9e837245129670",
+          "selection": "normalization"
+        },
+        {
+          "path": "golang.org/x/text@v0.43.0/unicode/norm/trie.go",
+          "sha256": "d87793d558251ee8824954f0b7bc5564803e4c9d59a8c4eebb4c3c5cfbd19492",
+          "header_sha256": "10ddbcfb05753ed54f6b5c95dbf71c09e297017ed4d99cbb2e051ac51456cadb",
+          "selection": "normalization"
+        },
+        {
+          "path": "golang.org/x/text@v0.43.0/cases/fold.go",
+          "sha256": "14ff03fda441587198ce6f3e59e6dde979fc21b2db9e248c15b43da497c594ac",
+          "header_sha256": "8d862084959e793269ab88e442c64bbf72cb03592bd652ef3ff0cbe122f415ff",
+          "selection": "normalization"
+        },
+        {
+          "path": "Go1.26.5/src/unicode/graphic.go",
+          "sha256": "46a43107a87c88cf17a05a557e00dbf6b0f4bb53ebcd7d3035e02f1e67c428be",
+          "header_sha256": "6845d75459e7366def56726e85d227de1c07312d79691c15e6d00ba5251dbca8",
+          "selection": "normalization"
+        },
+        {
+          "path": "Go1.26.5/src/strings/strings.go",
+          "sha256": "ba9478be775d11b6956c828ebf870a8f8e7b7318ee382834f1e741f02d1336ef",
+          "header_sha256": "e66b8ccab4bb0d14764b2baa569347d537f1ced4107b95294dab8578bfc97ae0",
+          "selection": "normalization"
+        },
+        {
+          "path": "internal/searchtext/searchtext.go",
+          "sha256": "0bf676dbaadeabe17130cb1c7be22a42205b7d7b87baaf652df4f25da02d52dc",
+          "header_sha256": "8bbc5eece8d52504c194976dfbbf30c32cc139a5183166b1bdf98aae910a50bb",
+          "selection": "product-boundary"
+        }
+      ],
+      "notices": [
+        "LICENSE-GO-BSD.txt",
+        "LICENSE-UNICODE-V3.txt",
+        "PATENTS-GO.txt"
+      ]
+    }
+  ],
+  "historical_inline": {
+    "path": "crates/librairii-storage/src/migrations.rs",
+    "bytes": 48784,
+    "sha256": "c01e805177d99b33e1f0bd5f5c4b0e5463b2190f185b53906558e80dffe2ff59",
+    "begin": "mod collection_codec {\n",
+    "end": "\n/// Storage-local transitional inspection result.",
+    "fragment_bytes": 31508,
+    "fragment_sha256": "fc8ff89fa3425cbc0ed8baff6082b3c80c27a3447f7563d5c05b95d8106f3b4f",
+    "materialization": "existing-storage-inline-reference-map; final translated core leaf and its retained headers are not materialized"
+  },
+  "core_leaf": {
+    "path": "crates/librairii-core/src/collection_codec/mod.rs",
+    "bytes": 29502,
+    "sha256": "9bb4959fe7b1cbbd838e50c000f9632eb2ed0cecf4fdbbd7fc5a230f7785922b",
+    "kind": "translated",
+    "header_bytes": 379,
+    "header_sha256": "84c790465b5688b1423350f07c1422d56e174de8117d978de4f39448ac75e807",
+    "materialization": "single actual core codec; no SQL, live-reference or effect authority"
+  },
+  "current_derivative_changes": [
+    {
+      "path": "extract_language.py",
+      "bytes": 13112,
+      "sha256": "1432e1c3feb3c3f677b4915df2f8e87661f58a4ed3053b997393296ea185f432",
+      "reason": "Actual lookup-index, module visibility/import/documentation or future formatter path adaptation only; no data/reference or algorithm regeneration."
+    },
+    {
+      "path": "extract_normalization.py",
+      "bytes": 10251,
+      "sha256": "cec28f978a3f75dd5f1b4311a7cd4490c0337c5acea6c5810555a072906d5130",
+      "reason": "Actual lookup-index, module visibility/import/documentation or future formatter path adaptation only; no data/reference or algorithm regeneration."
+    },
+    {
+      "path": "language.rs",
+      "bytes": 26508,
+      "sha256": "2cf2dd6bed4a45f75a11a10387048fcb3c5799e0c67e98f6be08be0f6537b9f1",
+      "reason": "Actual lookup-index, module visibility/import/documentation or future formatter path adaptation only; no data/reference or algorithm regeneration."
+    },
+    {
+      "path": "mod.rs",
+      "bytes": 552,
+      "sha256": "02517f433a0d12aa158c4d019183a0f175e425de809efe95a9944990c6548801",
+      "reason": "Actual lookup-index, module visibility/import/documentation or future formatter path adaptation only; no data/reference or algorithm regeneration."
+    },
+    {
+      "path": "normalization.rs",
+      "bytes": 19655,
+      "sha256": "001fde9e7232d3b3d0904852edeca6771a273f5eeabfa2475c11c9b76d5129ee",
+      "reason": "Actual lookup-index, module visibility/import/documentation or future formatter path adaptation only; no data/reference or algorithm regeneration."
+    },
+    {
+      "path": "update_source_manifest.py",
+      "bytes": 11417,
+      "sha256": "fa88fc3465ab4b27322aa584f99cd767f2d2fa8573c528fdb0ea74e3c8cb34b3",
+      "reason": "Actual lookup-index, module visibility/import/documentation or future formatter path adaptation only; no data/reference or algorithm regeneration."
+    },
+    {
+      "path": "verify_normalization.py",
+      "bytes": 9962,
+      "sha256": "540cbf302c6fe759931d82d4c43e5a94b3bd94748d748bcbb39a261624f81590",
+      "reason": "Actual lookup-index, module visibility/import/documentation or future formatter path adaptation only; no data/reference or algorithm regeneration."
+    }
+  ],
+  "identity_migrations": {
+    "rust": [
+      {
+        "position": 109,
+        "old": {
+          "suite": "librairii-storage",
+          "name": "migrations::compatibility::normalization::tests::every_scalar_and_frozen_ccc_boundaries_match_actual_go_reference"
+        },
+        "new": {
+          "suite": "librairii-core",
+          "name": "collection_codec::compatibility::normalization::tests::every_scalar_and_frozen_ccc_boundaries_match_actual_go_reference"
+        },
+        "reason": "Same assertion body/reference inputs, observed compiled core namespace relocation only."
+      },
+      {
+        "position": 110,
+        "old": {
+          "suite": "librairii-storage",
+          "name": "migrations::compatibility::normalization::tests::frozen_go_streamsafe_partition_preserves_surviving_mc_order"
+        },
+        "new": {
+          "suite": "librairii-core",
+          "name": "collection_codec::compatibility::normalization::tests::frozen_go_streamsafe_partition_preserves_surviving_mc_order"
+        },
+        "reason": "Same assertion body/reference inputs, observed compiled core namespace relocation only."
+      },
+      {
+        "position": 111,
+        "old": {
+          "suite": "librairii-storage",
+          "name": "migrations::compatibility::normalization::tests::frozen_unicode_folding_mn_space_and_hangul_keep_separate_semantics"
+        },
+        "new": {
+          "suite": "librairii-core",
+          "name": "collection_codec::compatibility::normalization::tests::frozen_unicode_folding_mn_space_and_hangul_keep_separate_semantics"
+        },
+        "reason": "Same assertion body/reference inputs, observed compiled core namespace relocation only."
+      },
+      {
+        "position": 112,
+        "old": {
+          "suite": "librairii-storage",
+          "name": "migrations::compatibility::language::tests::bounded_default_grammar_matches_actual_go_without_dns"
+        },
+        "new": {
+          "suite": "librairii-core",
+          "name": "collection_codec::compatibility::language::tests::bounded_default_grammar_matches_actual_go_without_dns"
+        },
+        "reason": "Same assertion body/reference inputs, observed compiled core namespace relocation only."
+      },
+      {
+        "position": 113,
+        "old": {
+          "suite": "librairii-storage",
+          "name": "migrations::compatibility::language::tests::frozen_default_aliases_are_distinct_from_suppress_macro_and_cldr"
+        },
+        "new": {
+          "suite": "librairii-core",
+          "name": "collection_codec::compatibility::language::tests::frozen_default_aliases_are_distinct_from_suppress_macro_and_cldr"
+        },
+        "reason": "Same assertion body/reference inputs, observed compiled core namespace relocation only."
+      },
+      {
+        "position": 114,
+        "old": {
+          "suite": "librairii-storage",
+          "name": "migrations::compatibility::language::tests::frozen_language_lookup_retains_non_dns_region_bits_only"
+        },
+        "new": {
+          "suite": "librairii-core",
+          "name": "collection_codec::compatibility::language::tests::frozen_language_lookup_retains_non_dns_region_bits_only"
+        },
+        "reason": "Same assertion body/reference inputs, observed compiled core namespace relocation only."
+      },
+      {
+        "position": 115,
+        "old": {
+          "suite": "librairii-storage",
+          "name": "migrations::compatibility::language::tests::selected_default_cases_match_actual_go_and_dns_omission_reference"
+        },
+        "new": {
+          "suite": "librairii-core",
+          "name": "collection_codec::compatibility::language::tests::selected_default_cases_match_actual_go_and_dns_omission_reference"
+        },
+        "reason": "Same assertion body/reference inputs, observed compiled core namespace relocation only."
+      },
+      {
+        "position": 116,
+        "old": {
+          "suite": "librairii-storage",
+          "name": "migrations::compatibility::normalization::tests::frozen_json_key_lowercase_and_simple_orbits_preserve_distinct_rules"
+        },
+        "new": {
+          "suite": "librairii-core",
+          "name": "collection_codec::compatibility::normalization::tests::frozen_json_key_lowercase_and_simple_orbits_preserve_distinct_rules"
+        },
+        "reason": "Same assertion body/reference inputs, observed compiled core namespace relocation only."
+      },
+      {
+        "position": 117,
+        "old": {
+          "suite": "librairii-storage",
+          "name": "migrations::collection_codec::tests::wire_keys_nulls_utf8_surrogates_and_integer_lexemes_are_go_compatible"
+        },
+        "new": {
+          "suite": "librairii-core",
+          "name": "collection_codec::tests::wire_keys_nulls_utf8_surrogates_and_integer_lexemes_are_go_compatible"
+        },
+        "reason": "Same assertion body/reference inputs, observed compiled core namespace relocation only."
+      },
+      {
+        "position": 118,
+        "old": {
+          "suite": "librairii-storage",
+          "name": "migrations::collection_codec::tests::strict_versions_references_and_retired_broken_order_prevent_broadening"
+        },
+        "new": {
+          "suite": "librairii-core",
+          "name": "collection_codec::tests::strict_versions_references_and_retired_broken_order_prevent_broadening"
+        },
+        "reason": "Same assertion body/reference inputs, observed compiled core namespace relocation only."
+      },
+      {
+        "position": 119,
+        "old": {
+          "suite": "librairii-storage",
+          "name": "migrations::collection_codec::tests::canonical_wire_order_budgets_and_repeated_normalization_match_source"
+        },
+        "new": {
+          "suite": "librairii-core",
+          "name": "collection_codec::tests::canonical_wire_order_budgets_and_repeated_normalization_match_source"
+        },
+        "reason": "Same assertion body/reference inputs, observed compiled core namespace relocation only."
+      },
+      {
+        "position": 120,
+        "old": {
+          "suite": "librairii-storage",
+          "name": "migrations::collection_codec::tests::strict_codec_decode_and_migrate_match_actual_frozen_go_cases"
+        },
+        "new": {
+          "suite": "librairii-core",
+          "name": "collection_codec::tests::strict_codec_decode_and_migrate_match_actual_frozen_go_cases"
+        },
+        "reason": "Same assertion body/reference inputs, observed compiled core namespace relocation only."
+      }
+    ],
+    "python": [
+      {
+        "position": 15,
+        "old": "test_sources.SourcePolicy.test_inline_query_map_and_current_source_are_mandatory",
+        "new": "test_sources.SourcePolicy.test_materialized_core_query_map_and_current_source_are_mandatory",
+        "reason": "Superseded inline-only/unmaterialized assertion now checks actual core/header materialization and rejects old storage duplicates."
+      },
+      {
+        "position": 20,
+        "old": "test_sources.SourcePolicy.test_inline_query_fragment_hash_and_materialization_cannot_be_fabricated",
+        "new": "test_sources.SourcePolicy.test_historical_inline_identity_and_materialized_core_leaf_cannot_be_fabricated",
+        "reason": "Superseded inline-only/unmaterialized assertion now checks actual core/header materialization and rejects old storage duplicates."
+      },
+      {
+        "position": 21,
+        "old": "test_sources.SourcePolicy.test_future_core_leaf_remains_unmaterialized_and_unapproved",
+        "new": "test_sources.SourcePolicy.test_materialized_core_headers_and_removed_storage_duplicates_are_enforced",
+        "reason": "Superseded inline-only/unmaterialized assertion now checks actual core/header materialization and rejects old storage duplicates."
+      }
+    ],
+    "observed_core_discovery_sha256": "28b0151f7c977a4204d9fcd0ee36305a93fe213fc01577bf4d62451374ab026f",
+    "qualification": "Core discovery only at this intermediate move; storage caller delegation and full workspace validation remain separate."
+  },
+  "historical_rust_baseline_sha256": "33e43537409dd3d5dc07fac28572fe23d3df0b038d33fc7883fab79d3ef28b68",
+  "historical_python_baseline_sha256": "3deb3eabe0e6b31170f26629c042214da2371b023235d1adf5cf2429664fa836",
+  "delivery_lineage": {
+    "base_commit": "94b2807e2e23275e574fb030e74fb31223a5497f",
+    "codec_commit": "8471bc2b38aa9efce931c3e5fb520116418672a8",
+    "base_rust_baseline_sha256": "b0ed4de7f6d7348f44c96d9d3b03518bc18f30dcd82de74e013294b184227ab6",
+    "base_python_baseline_sha256": "134d96e0ee9281a89bfc36d1159bdb58a8914d73da2a0ae72fb5389a9647e3af",
+    "codec_rust_baseline_sha256": "d6a9f409abcb1e0264ee75b0b89d452bdc062e6abb4c161deee84a21464504a0",
+    "codec_python_baseline_sha256": "9b2f8529cfaf8d90108c9c11a0477c7766968328b80efe619421282c7ded7b9c",
+    "retained_rust_additions": [
+      {
+        "position": 204,
+        "identity": {
+          "suite": "librairii-core::operations",
+          "name": "op6_admitted_history_keeps_typed_states_raw_time_and_curated_scope"
+        }
+      },
+      {
+        "position": 205,
+        "identity": {
+          "suite": "librairii-core::operations",
+          "name": "op6_aggregate_exact_kind_precedence_matches_go_manager"
+        }
+      },
+      {
+        "position": 206,
+        "identity": {
+          "suite": "librairii-core::operations",
+          "name": "op6_aggregate_failure_code_sentinel_and_message_fallback_are_independent"
+        }
+      },
+      {
+        "position": 207,
+        "identity": {
+          "suite": "librairii-core::operations",
+          "name": "op6_aggregate_first_failure_follows_ack_order_not_item_sort_order"
+        }
+      },
+      {
+        "position": 208,
+        "identity": {
+          "suite": "librairii-core::operations",
+          "name": "op6_aggregate_rejects_unfinished_and_extra_items_without_partial_mutation"
+        }
+      },
+      {
+        "position": 209,
+        "identity": {
+          "suite": "librairii-core::operations",
+          "name": "op6_all_eight_sources_keep_literal_tags_and_historical_meaning"
+        }
+      },
+      {
+        "position": 210,
+        "identity": {
+          "suite": "librairii-core::operations",
+          "name": "op6_byte_total_matches_wide_sum_or_returns_overflow"
+        }
+      },
+      {
+        "position": 211,
+        "identity": {
+          "suite": "librairii-core::operations",
+          "name": "op6_closed_tags_reject_aliases_case_whitespace_and_embedded_nul"
+        }
+      },
+      {
+        "position": 212,
+        "identity": {
+          "suite": "librairii-core::operations",
+          "name": "op6_completion_candidate_increments_once_and_rejects_repeated_terminal_item"
+        }
+      },
+      {
+        "position": 213,
+        "identity": {
+          "suite": "librairii-core::operations",
+          "name": "op6_completion_rejects_inactive_parent_nonterminal_result_and_bad_counts"
+        }
+      },
+      {
+        "position": 214,
+        "identity": {
+          "suite": "librairii-core::operations",
+          "name": "op6_finish_requires_all_items_and_preserves_existing_terminal_truth"
+        }
+      },
+      {
+        "position": 215,
+        "identity": {
+          "suite": "librairii-core::operations",
+          "name": "op6_history_key_uses_raw_time_and_id_tuple_order"
+        }
+      },
+      {
+        "position": 216,
+        "identity": {
+          "suite": "librairii-core::operations",
+          "name": "op6_interruption_preserves_terminal_payload_ids_and_partial_bytes"
+        }
+      },
+      {
+        "position": 217,
+        "identity": {
+          "suite": "librairii-core::operations",
+          "name": "op6_interruption_rejects_missing_reason_inconsistent_scope_and_terminal_parent"
+        }
+      },
+      {
+        "position": 218,
+        "identity": {
+          "suite": "librairii-core::operations",
+          "name": "op6_item_identity_retains_null_empty_uuid_and_resolved_story_after_removal"
+        }
+      },
+      {
+        "position": 219,
+        "identity": {
+          "suite": "librairii-core::operations",
+          "name": "op6_item_tags_are_seven_distinct_legacy_states"
+        }
+      },
+      {
+        "position": 220,
+        "identity": {
+          "suite": "librairii-core::operations",
+          "name": "op6_kind_and_operation_state_tags_match_frozen_go"
+        }
+      },
+      {
+        "position": 221,
+        "identity": {
+          "suite": "librairii-core::operations",
+          "name": "op6_progress_acceptance_is_exactly_running_monotone_in_bounds"
+        }
+      },
+      {
+        "position": 222,
+        "identity": {
+          "suite": "librairii-core::operations",
+          "name": "op6_progress_is_running_only_monotone_and_within_total"
+        }
+      },
+      {
+        "position": 223,
+        "identity": {
+          "suite": "librairii-core::operations",
+          "name": "op6_provisional_interruption_is_not_a_saved_terminal_snapshot"
+        }
+      },
+      {
+        "position": 224,
+        "identity": {
+          "suite": "librairii-core::operations",
+          "name": "op6_raw_carriers_preserve_arbitrary_text_and_nullness"
+        }
+      },
+      {
+        "position": 225,
+        "identity": {
+          "suite": "librairii-core::operations",
+          "name": "op6_raw_operation_identity_keeps_spelling_and_non_uuid_history"
+        }
+      },
+      {
+        "position": 226,
+        "identity": {
+          "suite": "librairii-core::operations",
+          "name": "op6_raw_scope_and_open_outcomes_are_not_normalized"
+        }
+      },
+      {
+        "position": 227,
+        "identity": {
+          "suite": "librairii-core::operations",
+          "name": "op6_signed_byte_totals_reject_negative_and_overflow_without_wrapping"
+        }
+      },
+      {
+        "position": 228,
+        "identity": {
+          "suite": "librairii-core::operations",
+          "name": "op6_source_rejects_mixed_domains_cardinality_duplicates_and_blank_names"
+        }
+      },
+      {
+        "position": 229,
+        "identity": {
+          "suite": "librairii-core::operations",
+          "name": "op6_source_validation_preserves_order_and_separates_equal_group_ids"
+        }
+      },
+      {
+        "position": 230,
+        "identity": {
+          "suite": "librairii-core::operations",
+          "name": "op6_start_and_cancel_refuse_all_terminal_parents"
+        }
+      },
+      {
+        "position": 231,
+        "identity": {
+          "suite": "librairii-core::operations",
+          "name": "op6_admitted_zero_item_operation_interrupts_and_finishes_without_rewriting_scope"
+        }
+      },
+      {
+        "position": 232,
+        "identity": {
+          "suite": "librairii-app",
+          "name": "jobs::tests::j6_busy_returns_same_input_before_admission_and_uncertainty_retains_it"
+        }
+      },
+      {
+        "position": 233,
+        "identity": {
+          "suite": "librairii-app",
+          "name": "jobs::tests::j6_created_record_survives_disconnected_reply_consumer_and_stop"
+        }
+      },
+      {
+        "position": 234,
+        "identity": {
+          "suite": "librairii-app",
+          "name": "jobs::tests::j6_executor_callback_reentry_never_holds_queue_mutex"
+        }
+      },
+      {
+        "position": 235,
+        "identity": {
+          "suite": "librairii-app",
+          "name": "jobs::tests::j6_finite_cursor_cycle_rotates_operations_and_keeps_each_offer_ordered"
+        }
+      },
+      {
+        "position": 236,
+        "identity": {
+          "suite": "librairii-app",
+          "name": "jobs::tests::j6_full_pipeline_measures_handles_payload_and_all_blocked_call_owners"
+        }
+      },
+      {
+        "position": 237,
+        "identity": {
+          "suite": "librairii-app",
+          "name": "jobs::tests::j6_import_picker_limit_does_not_truncate_export_or_clone_item_payloads"
+        }
+      },
+      {
+        "position": 238,
+        "identity": {
+          "suite": "librairii-app",
+          "name": "jobs::tests::j6_one_metadata_reservation_lasts_until_report_acknowledgement"
+        }
+      },
+      {
+        "position": 239,
+        "identity": {
+          "suite": "librairii-app",
+          "name": "jobs::tests::j6_proven_rejection_returns_owned_input_and_releases_metadata_reservation"
+        }
+      },
+      {
+        "position": 240,
+        "identity": {
+          "suite": "librairii-app",
+          "name": "jobs::tests::j6_stop_is_independent_of_blocked_source_and_returns_unissued_start"
+        }
+      },
+      {
+        "position": 241,
+        "identity": {
+          "suite": "librairii-app",
+          "name": "jobs::tests::j6_unacknowledged_reports_retain_worker_budget_until_explicit_readback"
+        }
+      },
+      {
+        "position": 242,
+        "identity": {
+          "suite": "librairii-app",
+          "name": "jobs::tests::j6_worker_configuration_matches_frozen_limits"
+        }
+      },
+      {
+        "position": 243,
+        "identity": {
+          "suite": "librairii-app",
+          "name": "jobs::tests::j6_cancel_is_recorded_before_signal_and_queued_skip_preserves_returned_fact"
+        }
+      },
+      {
+        "position": 244,
+        "identity": {
+          "suite": "librairii-app",
+          "name": "jobs::tests::j6_progress_is_coalesced_with_one_scalar_per_worker_and_one_wake"
+        }
+      },
+      {
+        "position": 245,
+        "identity": {
+          "suite": "librairii-app",
+          "name": "jobs::tests::j6_progress_rejects_wrong_identity_regression_and_preserves_export_threshold"
+        }
+      },
+      {
+        "position": 246,
+        "identity": {
+          "suite": "librairii-app",
+          "name": "jobs::tests::j6_rejected_or_other_generation_control_does_not_cancel_running_work"
+        }
+      },
+      {
+        "position": 247,
+        "identity": {
+          "suite": "librairii-app",
+          "name": "jobs::tests::j6_saved_terminal_and_generation_query_stamps_reject_stale_observations"
+        }
+      },
+      {
+        "position": 248,
+        "identity": {
+          "suite": "librairii-app",
+          "name": "jobs::tests::j6_stop_returns_unissued_control_without_claiming_cancel_recorded"
+        }
+      },
+      {
+        "position": 249,
+        "identity": {
+          "suite": "librairii-app",
+          "name": "jobs::tests::j6_uncertain_control_and_symbolic_report_owner_survive_stop_until_actual_readback"
+        }
+      },
+      {
+        "position": 250,
+        "identity": {
+          "suite": "librairii-app",
+          "name": "jobs::tests::terminal_tests::j65_blocked_callback_and_tick_jump_schedule_from_observed_response_without_catchup"
+        }
+      },
+      {
+        "position": 251,
+        "identity": {
+          "suite": "librairii-app",
+          "name": "jobs::tests::terminal_tests::j65_complete_retries_three_times_at_ten_ms_without_replaying_for_finish"
+        }
+      },
+      {
+        "position": 252,
+        "identity": {
+          "suite": "librairii-app",
+          "name": "jobs::tests::terminal_tests::j65_finish_and_interrupt_have_separate_budgets_then_paced_reconciliation"
+        }
+      },
+      {
+        "position": 253,
+        "identity": {
+          "suite": "librairii-app",
+          "name": "jobs::tests::terminal_tests::j65_full_command_payload_and_supplied_terminal_truth_are_checked_without_rewriting_raw_values"
+        }
+      },
+      {
+        "position": 254,
+        "identity": {
+          "suite": "librairii-app",
+          "name": "jobs::tests::terminal_tests::j65_interrupt_commit_then_snapshot_error_is_unknown_until_matching_readback"
+        }
+      },
+      {
+        "position": 255,
+        "identity": {
+          "suite": "librairii-app",
+          "name": "jobs::tests::terminal_tests::j65_lost_complete_or_finish_ack_uses_readback_without_second_write_or_count"
+        }
+      },
+      {
+        "position": 256,
+        "identity": {
+          "suite": "librairii-app",
+          "name": "jobs::tests::terminal_tests::j65_saturated_stop_and_expired_wait_keep_all_required_owners_until_readback_accepts"
+        }
+      },
+      {
+        "position": 257,
+        "identity": {
+          "suite": "librairii-app",
+          "name": "jobs::tests::terminal_tests::j65_saved_terminal_keeps_owned_result_until_actual_report_transfer_without_persist_replay"
+        }
+      },
+      {
+        "position": 258,
+        "identity": {
+          "suite": "librairii-app",
+          "name": "jobs::tests::terminal_tests::j65_tick_regression_overflow_and_latest_diagnostics_are_bounded_without_losing_originals"
+        }
+      },
+      {
+        "position": 259,
+        "identity": {
+          "suite": "librairii-app",
+          "name": "jobs::tests::terminal_tests::j65_unknown_ack_rejects_wrong_or_provisional_readback_and_keeps_terminal_conflict"
+        }
+      },
+      {
+        "position": 260,
+        "identity": {
+          "suite": "librairii-app",
+          "name": "jobs::tests::terminal_tests::j65_running_sibling_is_cancelled_only_after_persistence_retry_exhaustion"
+        }
+      },
+      {
+        "position": 261,
+        "identity": {
+          "suite": "librairii-core::operations",
+          "name": "op67_active_output_is_uncapped_then_appends_one_latest_terminal_export"
+        }
+      },
+      {
+        "position": 262,
+        "identity": {
+          "suite": "librairii-core::operations",
+          "name": "op67_admitted_history_view_borrows_full_payload_without_snapshot_reencoding"
+        }
+      },
+      {
+        "position": 263,
+        "identity": {
+          "suite": "librairii-core::operations",
+          "name": "op67_found_cursor_is_independent_and_concurrent_inserts_use_strict_raw_tuple"
+        }
+      },
+      {
+        "position": 264,
+        "identity": {
+          "suite": "librairii-core::operations",
+          "name": "op67_history_boundaries_use_twenty_plus_one_borrowed_rows"
+        }
+      },
+      {
+        "position": 265,
+        "identity": {
+          "suite": "librairii-core::operations",
+          "name": "op67_history_order_keeps_raw_time_case_unicode_and_non_uuid_identity"
+        }
+      },
+      {
+        "position": 266,
+        "identity": {
+          "suite": "librairii-core::operations",
+          "name": "op67_latest_export_falls_back_for_null_only_and_uses_raw_id_ties"
+        }
+      },
+      {
+        "position": 267,
+        "identity": {
+          "suite": "librairii-core::operations",
+          "name": "op67_reveal_eligibility_never_validates_a_directory_or_provisional_truth"
+        }
+      },
+      {
+        "position": 268,
+        "identity": {
+          "suite": "librairii-core",
+          "name": "import::tests::dispatch_preserves_suffix_and_content_precedence"
+        }
+      },
+      {
+        "position": 269,
+        "identity": {
+          "suite": "librairii-core",
+          "name": "import::tests::frozen_codes_are_exact_and_errors_preserve_presence_and_raw_entry"
+        }
+      },
+      {
+        "position": 270,
+        "identity": {
+          "suite": "librairii-core",
+          "name": "import::tests::misleading_suffix_container_and_disguised_studio_fail_distinctly"
+        }
+      },
+      {
+        "position": 271,
+        "identity": {
+          "suite": "librairii-core",
+          "name": "import::tests::suffix_matching_is_simple_lower_not_search_folding_or_lossy_name_conversion"
+        }
+      },
+      {
+        "position": 272,
+        "identity": {
+          "suite": "librairii-core",
+          "name": "import::tests::candidate_bytes_preserve_source_name_uuid_and_absent_vs_empty_payload"
+        }
+      },
+      {
+        "position": 273,
+        "identity": {
+          "suite": "librairii-core",
+          "name": "import::tests::committed_facts_and_ids_survive_late_cancel_cleanup_and_reporting_errors"
+        }
+      },
+      {
+        "position": 274,
+        "identity": {
+          "suite": "librairii-core",
+          "name": "import::tests::directories_count_but_do_not_satisfy_files_or_assets"
+        }
+      },
+      {
+        "position": 275,
+        "identity": {
+          "suite": "librairii-core",
+          "name": "import::tests::duplicate_conflict_facts_raw_fields_and_independent_compensation_error_remain_owned"
+        }
+      },
+      {
+        "position": 276,
+        "identity": {
+          "suite": "librairii-core",
+          "name": "import::tests::duplicate_lexical_aliases_are_terminal_and_not_unicode_composed"
+        }
+      },
+      {
+        "position": 277,
+        "identity": {
+          "suite": "librairii-core",
+          "name": "import::tests::import_uuid_retains_legacy_spelling_without_changing_shared_identity_parsing"
+        }
+      },
+      {
+        "position": 278,
+        "identity": {
+          "suite": "librairii-core",
+          "name": "import::tests::invalid_limits_and_unsigned_or_aggregate_overflow_refuse_without_wrapping"
+        }
+      },
+      {
+        "position": 279,
+        "identity": {
+          "suite": "librairii-core",
+          "name": "import::tests::malformed_or_nil_uuid_forms_fail_at_import_boundary"
+        }
+      },
+      {
+        "position": 280,
+        "identity": {
+          "suite": "librairii-core",
+          "name": "import::tests::nested_joined_causes_preserve_first_validation_order_and_optional_empty_data"
+        }
+      },
+      {
+        "position": 281,
+        "identity": {
+          "suite": "librairii-core",
+          "name": "import::tests::paths_use_go_lexical_keys_preserving_raw_bytes_and_unicode_forms"
+        }
+      },
+      {
+        "position": 282,
+        "identity": {
+          "suite": "librairii-core",
+          "name": "import::tests::plain_required_entry_order_assets_and_exact_uuid_payload_are_separate"
+        }
+      },
+      {
+        "position": 283,
+        "identity": {
+          "suite": "librairii-core",
+          "name": "import::tests::reported_import_and_failure_codes_match_frozen_source_without_unknown_fallback"
+        }
+      },
+      {
+        "position": 284,
+        "identity": {
+          "suite": "librairii-core",
+          "name": "import::tests::retained_header_limits_match_all_frozen_expected_codes"
+        }
+      },
+      {
+        "position": 285,
+        "identity": {
+          "suite": "librairii-core",
+          "name": "import::tests::uncertain_report_does_not_invent_ids_or_noncommit_from_error"
+        }
+      },
+      {
+        "position": 286,
+        "identity": {
+          "suite": "librairii-core",
+          "name": "import::tests::unsafe_link_negative_duplicate_and_nested_checks_keep_source_priority"
+        }
+      },
+      {
+        "position": 287,
+        "identity": {
+          "suite": "librairii-core",
+          "name": "import::tests::uuid_pack_missing_entries_and_assets_preserve_exact_root_spelling"
+        }
+      },
+      {
+        "position": 288,
+        "identity": {
+          "suite": "librairii-core",
+          "name": "import::tests::uuid_root_detection_uses_raw_root_count_before_required_entries"
+        }
+      },
+      {
+        "position": 289,
+        "identity": {
+          "suite": "librairii-core",
+          "name": "import::tests::validation_causes_retain_nested_joined_structure_and_standard_source"
+        }
+      },
+      {
+        "position": 290,
+        "identity": {
+          "suite": "librairii-core",
+          "name": "import::tests::zip_entry_and_sevenzip_whole_container_ratios_are_distinct"
+        }
+      },
+      {
+        "position": 291,
+        "identity": {
+          "suite": "librairii-core",
+          "name": "import::tests::studio_policy_assets_and_required_thumbnail_must_be_regular_inventory_files"
+        }
+      },
+      {
+        "position": 292,
+        "identity": {
+          "suite": "librairii-core",
+          "name": "import::tests::studio_policy_base_path_errors_keep_nested_causes_and_assets_prefix_is_literal"
+        }
+      },
+      {
+        "position": 293,
+        "identity": {
+          "suite": "librairii-core",
+          "name": "import::tests::studio_policy_borrowed_refs_allow_repeats_empty_nodes_and_raw_uuid_forms"
+        }
+      },
+      {
+        "position": 294,
+        "identity": {
+          "suite": "librairii-core",
+          "name": "import::tests::studio_policy_error_priority_is_uuid_then_node_image_audio_then_thumbnail"
+        }
+      },
+      {
+        "position": 295,
+        "identity": {
+          "suite": "librairii-core",
+          "name": "import::tests::studio_policy_looks_up_original_refs_without_cleaning_or_unicode_composition"
+        }
+      },
+      {
+        "position": 296,
+        "identity": {
+          "suite": "librairii-core",
+          "name": "import::tests::studio_policy_reference_byte_and_depth_boundaries_precede_missing_asset"
+        }
+      },
+      {
+        "position": 297,
+        "identity": {
+          "suite": "librairii-core",
+          "name": "import::tests::studio_policy_stage_count_is_not_the_inventory_entry_budget"
+        }
+      },
+      {
+        "position": 298,
+        "identity": {
+          "suite": "librairii-core",
+          "name": "import::tests::studio_policy_zero_nodes_refs_and_nonempty_whitespace_have_distinct_errors"
+        }
+      },
+      {
+        "position": 299,
+        "identity": {
+          "suite": "librairii-core",
+          "name": "import::studio_json::tests::studio_json_decode_uuid_refs_and_thumbnail_preserve_pipeline_error_order"
+        }
+      },
+      {
+        "position": 300,
+        "identity": {
+          "suite": "librairii-core",
+          "name": "import::studio_json::tests::studio_json_depth_10000_is_iterative_including_ignored_subtrees"
+        }
+      },
+      {
+        "position": 301,
+        "identity": {
+          "suite": "librairii-core",
+          "name": "import::studio_json::tests::studio_json_duplicate_arrays_reuse_hidden_backing_cells_after_shrink_and_growth"
+        }
+      },
+      {
+        "position": 302,
+        "identity": {
+          "suite": "librairii-core",
+          "name": "import::studio_json::tests::studio_json_first_value_syntax_outranks_types_but_types_precede_trailing"
+        }
+      },
+      {
+        "position": 303,
+        "identity": {
+          "suite": "librairii-core",
+          "name": "import::studio_json::tests::studio_json_grammar_accepts_unknown_valid_scalars_escapes_and_ascii_whitespace"
+        }
+      },
+      {
+        "position": 304,
+        "identity": {
+          "suite": "librairii-core",
+          "name": "import::studio_json::tests::studio_json_grammar_rejects_controls_bad_escapes_and_container_number_errors"
+        }
+      },
+      {
+        "position": 305,
+        "identity": {
+          "suite": "librairii-core",
+          "name": "import::studio_json::tests::studio_json_image_audio_and_node_type_errors_keep_input_order"
+        }
+      },
+      {
+        "position": 306,
+        "identity": {
+          "suite": "librairii-core",
+          "name": "import::studio_json::tests::studio_json_known_string_null_duplicates_and_saved_first_type_error"
+        }
+      },
+      {
+        "position": 307,
+        "identity": {
+          "suite": "librairii-core",
+          "name": "import::studio_json::tests::studio_json_null_and_empty_array_reset_cells_but_null_nodes_and_fields_do_not"
+        }
+      },
+      {
+        "position": 308,
+        "identity": {
+          "suite": "librairii-core",
+          "name": "import::studio_json::tests::studio_json_raw_invalid_utf8_and_escaped_surrogates_have_distinct_replacements"
+        }
+      },
+      {
+        "position": 309,
+        "identity": {
+          "suite": "librairii-core",
+          "name": "import::studio_json::tests::studio_json_reference_count_is_not_the_archive_entry_limit"
+        }
+      },
+      {
+        "position": 310,
+        "identity": {
+          "suite": "librairii-core",
+          "name": "import::studio_json::tests::studio_json_replacement_and_escape_decoded_references_use_exact_inventory_keys"
+        }
+      },
+      {
+        "position": 311,
+        "identity": {
+          "suite": "librairii-core",
+          "name": "import::studio_json::tests::studio_json_schema_casefold_uses_long_s_but_not_dotted_or_dotless_i"
+        }
+      },
+      {
+        "position": 312,
+        "identity": {
+          "suite": "librairii-core",
+          "name": "import::studio_json::tests::studio_json_successful_decode_checks_eof_before_uuid_or_assets"
+        }
+      },
+      {
+        "position": 313,
+        "identity": {
+          "suite": "librairii-core",
+          "name": "import::studio_json::tests::studio_json_supplied_byte_limits_count_original_bytes_not_replacement_output"
+        }
+      },
+      {
+        "position": 314,
+        "identity": {
+          "suite": "librairii-core",
+          "name": "import::studio_json::tests::studio_json_supplied_bytes_decode_then_existing_policy_preserve_identity"
+        }
+      },
+      {
+        "position": 315,
+        "identity": {
+          "suite": "librairii-core",
+          "name": "import::studio_json::tests::studio_json_unknown_subtrees_skip_huge_numbers_without_float_or_new_strictness"
+        }
+      },
+      {
+        "position": 316,
+        "identity": {
+          "suite": "librairii-core",
+          "name": "import::studio_json::optional::tests::optional_metadata_duplicates_null_folding_and_first_type_error_are_ordered"
+        }
+      },
+      {
+        "position": 317,
+        "identity": {
+          "suite": "librairii-core",
+          "name": "import::studio_json::optional::tests::optional_metadata_empty_uuid_is_allowed_without_changing_primary_identity"
+        }
+      },
+      {
+        "position": 318,
+        "identity": {
+          "suite": "librairii-core",
+          "name": "import::studio_json::optional::tests::optional_metadata_first_syntax_then_types_then_eof_then_uuid_priority"
+        }
+      },
+      {
+        "position": 319,
+        "identity": {
+          "suite": "librairii-core",
+          "name": "import::studio_json::optional::tests::optional_metadata_preserves_replacement_origins_and_boundary_only_text"
+        }
+      },
+      {
+        "position": 320,
+        "identity": {
+          "suite": "librairii-core",
+          "name": "import::studio_json::optional::tests::optional_metadata_selection_distinguishes_absence_directory_unselected_and_empty"
+        }
+      },
+      {
+        "position": 321,
+        "identity": {
+          "suite": "librairii-core",
+          "name": "import::studio_json::optional::tests::optional_metadata_supplied_original_byte_cap_and_depth_are_separate_from_heap_reads"
+        }
+      },
+      {
+        "position": 322,
+        "identity": {
+          "suite": "librairii-core",
+          "name": "import::studio_json::optional::tests::optional_metadata_three_field_shape_skips_studio_and_unknown_types"
+        }
+      },
+      {
+        "position": 323,
+        "identity": {
+          "suite": "librairii-core",
+          "name": "import::studio_json::optional::tests::optional_metadata_uuid_uses_untrimmed_legacy_forms_and_canonical_comparison"
+        }
+      },
+      {
+        "position": 324,
+        "identity": {
+          "suite": "librairii-core",
+          "name": "import::studio_json::tests::studio_text_frozen_whitespace_and_nonspace_boundaries"
+        }
+      },
+      {
+        "position": 325,
+        "identity": {
+          "suite": "librairii-core",
+          "name": "import::studio_json::tests::studio_text_known_duplicates_null_and_fold_keep_decoder_semantics"
+        }
+      },
+      {
+        "position": 326,
+        "identity": {
+          "suite": "librairii-core",
+          "name": "import::studio_json::tests::studio_text_projection_follows_uuid_refs_regular_thumbnail_presence"
+        }
+      },
+      {
+        "position": 327,
+        "identity": {
+          "suite": "librairii-core",
+          "name": "import::studio_json::tests::studio_text_projection_preserves_raw_identity_and_only_trims_boundaries"
+        }
+      },
+      {
+        "position": 328,
+        "identity": {
+          "suite": "librairii-core",
+          "name": "import::studio_json::tests::studio_text_replacement_origins_and_interior_composition_are_preserved"
+        }
+      }
+    ],
+    "retained_studio_python_additions": [
+      {
+        "position": 15,
+        "identity": "test_import_sources.StudioSourcePolicy.test_registered_manifest_and_notices_are_read_only"
+      },
+      {
+        "position": 16,
+        "identity": "test_import_sources.StudioSourcePolicy.test_index_schema_or_scope_repinning_cannot_widen_authority"
+      },
+      {
+        "position": 17,
+        "identity": "test_import_sources.StudioSourcePolicy.test_missing_changed_extra_or_self_repinning_notices_fail"
+      },
+      {
+        "position": 18,
+        "identity": "test_import_sources.StudioSourcePolicy.test_derivative_set_bytes_and_kinds_fail_closed"
+      },
+      {
+        "position": 19,
+        "identity": "test_import_sources.StudioSourcePolicy.test_original_identity_headers_evidence_and_notice_union_fail_closed"
+      },
+      {
+        "position": 20,
+        "identity": "test_import_sources.StudioSourcePolicy.test_path_alias_and_traversal_are_rejected"
+      },
+      {
+        "position": 21,
+        "identity": "test_import_sources.StudioSourcePolicy.test_inventory_copies_exact_notices_and_observes_product_license"
+      },
+      {
+        "position": 22,
+        "identity": "test_import_sources.StudioSourcePolicy.test_fresh_autocrlf_checkout_preserves_actual_source_policy_inputs"
+      },
+      {
+        "position": 23,
+        "identity": "test_import_sources.StudioSourcePolicy.test_hard_linked_policy_and_nested_derivatives_are_rejected_without_writes"
+      },
+      {
+        "position": 24,
+        "identity": "test_import_sources.StudioSourcePolicy.test_inventory_refuses_hard_linked_output_without_clobbering_owned_peer"
+      },
+      {
+        "position": 25,
+        "identity": "test_import_sources.StudioSourcePolicy.test_nested_derivative_inventory_rejects_extra_missing_and_directory_aliases"
+      },
+      {
+        "position": 26,
+        "identity": "test_import_sources.StudioSourcePolicy.test_trim_scope_and_simple_fold_sources_are_not_interchangeable"
+      },
+      {
+        "position": 27,
+        "identity": "test_import_sources.StudioSourcePolicy.test_widened_unicode_use_cannot_self_repin_notice_or_remove_origin"
+      }
+    ],
+    "codec_python_additions": [
+      {
+        "position": 28,
+        "identity": "test_sources.SourcePolicy.test_materialized_core_query_map_and_current_source_are_mandatory"
+      },
+      {
+        "position": 29,
+        "identity": "test_sources.SourcePolicy.test_duplicate_query_map_fields_are_rejected"
+      },
+      {
+        "position": 30,
+        "identity": "test_sources.SourcePolicy.test_query_lookup_preserves_all_original_49_source_identities_and_historical_index_bytes"
+      },
+      {
+        "position": 31,
+        "identity": "test_sources.SourcePolicy.test_query_origins_require_exact_set_and_bounded_selection"
+      },
+      {
+        "position": 32,
+        "identity": "test_sources.SourcePolicy.test_query_origin_source_and_header_hashes_cannot_be_repinned"
+      },
+      {
+        "position": 33,
+        "identity": "test_sources.SourcePolicy.test_historical_inline_identity_and_materialized_core_leaf_cannot_be_fabricated"
+      },
+      {
+        "position": 34,
+        "identity": "test_sources.SourcePolicy.test_materialized_core_headers_and_removed_storage_duplicates_are_enforced"
+      },
+      {
+        "position": 35,
+        "identity": "test_sources.SourcePolicy.test_query_map_binds_lookup_and_historical_index_separately"
+      },
+      {
+        "position": 36,
+        "identity": "test_sources.SourcePolicy.test_lookup_helper_bindings_cannot_restore_historical_or_fabricated_constants"
+      },
+      {
+        "position": 37,
+        "identity": "test_sources.SourcePolicy.test_historical_reference_bytes_and_original_manifest_records_remain_fixed"
+      }
+    ],
+    "qualification": "Existing current-base assertions and original codec lineage only; no runtime191, new source selection or execution claim."
+  }
+}

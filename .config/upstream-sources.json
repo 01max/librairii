@@ -4,10 +4,10 @@
   "bundles": [
     {
       "id": "go-1.26.5-xtext-0.43.0-unicode15-cldr32",
-      "scope": "private-storage-4.4",
+      "scope": "single-core-query-codec",
       "source_index": ".config/upstream-sources/go-1.26.5-xtext-0.43.0-unicode15-cldr32/source-index.json",
-      "source_index_sha256": "10ea8fe193c594ce153ae7a1734c41ab80c9d406cc7ea314c8c7c471b7a92a99",
-      "source_identities": 49,
+      "source_index_sha256": "13dfd314abfda9a9553d152a1d8a5586f8bd1205a08c177af9bbec57a51ae822",
+      "source_identities": 62,
       "package_files": 43,
       "notices_root": ".config/upstream-notices/go-1.26.5-xtext-0.43.0-unicode15-cldr32",
       "notices": [
@@ -49,12 +49,12 @@
         },
         {
           "path": "PROVENANCE.md",
-          "bytes": 5144,
-          "sha256": "c41be547ca01e91ff3f0c7910772fe442da281519de373010b92c1173f868f5f",
+          "bytes": 7916,
+          "sha256": "90726c9be554f621e2ce32cd3acb09b3ac628ce4fbfa660b988916208a23be55",
           "upstream_path": null
         }
       ],
-      "derivative_root": "crates/librairii-storage/src/migrations/compatibility",
+      "derivative_root": "crates/librairii-core/src/collection_codec/compatibility",
       "derivative_manifest": "source-manifest.json",
       "source_selections": {
         "golang.org/x/text@v0.43.0/internal/tag/tag.go": [
@@ -203,6 +203,45 @@
         ],
         "oracle73a93303/internal/library/story_query.go": [
           "product-boundary"
+        ],
+        "Go1.26.5/src/encoding/json/scanner.go": [
+          "query-json-wire"
+        ],
+        "Go1.26.5/src/encoding/json/decode.go": [
+          "query-json-wire"
+        ],
+        "Go1.26.5/src/encoding/json/fold.go": [
+          "query-json-wire"
+        ],
+        "Go1.26.5/src/encoding/json/stream.go": [
+          "query-json-wire"
+        ],
+        "Go1.26.5/src/unicode/utf8/utf8.go": [
+          "query-json-wire"
+        ],
+        "Go1.26.5/src/unicode/utf16/utf16.go": [
+          "query-json-wire"
+        ],
+        "Go1.26.5/src/encoding/json/encode.go": [
+          "query-json-output"
+        ],
+        "Go1.26.5/src/encoding/json/tables.go": [
+          "query-json-output"
+        ],
+        "Go1.26.5/src/strconv/number.go": [
+          "query-json-i64"
+        ],
+        "Go1.26.5/src/internal/strconv/atoi.go": [
+          "query-json-i64"
+        ],
+        "oracle73a93303/internal/collections/query.go": [
+          "query-product"
+        ],
+        "oracle73a93303/internal/collectionquery/references.go": [
+          "query-product"
+        ],
+        "oracle73a93303/internal/collectionquery/unique_keys.go": [
+          "query-product"
         ]
       },
       "selection_notices": {
@@ -218,14 +257,39 @@
           "LICENSE-CLDR32-APACHE.txt",
           "LICENSE-CC0.txt"
         ],
-        "product-boundary": []
+        "product-boundary": [],
+        "query-product": [],
+        "query-json-wire": [
+          "LICENSE-GO-BSD.txt",
+          "PATENTS-GO.txt"
+        ],
+        "query-json-i64": [
+          "LICENSE-GO-BSD.txt",
+          "PATENTS-GO.txt"
+        ],
+        "query-json-output": [
+          "LICENSE-GO-BSD.txt",
+          "PATENTS-GO.txt"
+        ]
       },
       "excluded": [
         "regionTypes.ccTLD-bit1-value2",
         "internal/language.Region.TLD",
         "language.Region.TLD"
       ],
-      "qualification": "source admission only; private implementation and parity pending"
+      "qualification": "source admission only; private implementation and parity pending",
+      "query_selection_scopes": {
+        "query-product": "ONLY frozen v1-v5 saved-query payload/reference/unique-key validation and canonical membership conversion; no CRUD, SQL, source/revision authority or new query semantics.",
+        "query-json-wire": "ONLY scanner single-complete-document grammar, ordered duplicate/key/null/type handling, unquote and per-byte UTF8/UTF16 replacement plus fixed ASCII schema matching. stream.go is ordering reference, never trailing-document admission; no generic reflection decoder.",
+        "query-json-i64": "ONLY public strconv/number.go ParseInt delegation/error projection and internal/strconv/atoi.go ParseInt plus ParseUint dependency for signed base10 bitSize64 JSON integer lexemes. No generic strconv, float coercion or wider integer grammar.",
+        "query-json-output": "ONLY fixed Query serialization order/omission and string escaping references including HTML <>& and U+2028/U+2029 from encode.go/tables.go; no generic encoder/reflection/API."
+      },
+      "query_codec": {
+        "map_path": ".config/query-codec-source-map.json",
+        "map_sha256": "fbd3eb75eeb0838911740a9ea42a3cb68bbd8510d84bfbff3b5a14b9838bcb1e",
+        "scope": "single-materialized-core-query-codec",
+        "core_leaf": "crates/librairii-core/src/collection_codec/mod.rs"
+      }
     },
     {
       "id": "go-1.26.5-json-v1-studio",

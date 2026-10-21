@@ -1,4 +1,6 @@
 """Read-only frozen-source/derivative policy; no Go execution or parity claim."""
+import ast
+import copy
 import hashlib
 import json
 from pathlib import Path, PurePosixPath
@@ -6,13 +8,17 @@ import shutil
 import stat
 import sys
 
-INDEX_SHA = '10ea8fe193c594ce153ae7a1734c41ab80c9d406cc7ea314c8c7c471b7a92a99'
+HISTORICAL_INDEX_SHA = '10ea8fe193c594ce153ae7a1734c41ab80c9d406cc7ea314c8c7c471b7a92a99'
+INDEX_SHA = '13dfd314abfda9a9553d152a1d8a5586f8bd1205a08c177af9bbec57a51ae822'
+SOURCE_COUNT = 62
+QUERY_MAP = '.config/query-codec-source-map.json'
+QUERY_MAP_SHA = 'fbd3eb75eeb0838911740a9ea42a3cb68bbd8510d84bfbff3b5a14b9838bcb1e'
+HISTORICAL_MANIFEST_SHA = '2f8bd6db37191346b6719d7345a46a0b4d3163be745d5fae6b7f8ebf429a0409'
 BUNDLE = 'go-1.26.5-xtext-0.43.0-unicode15-cldr32'
 APPROVED_BUNDLES = {BUNDLE, 'go-1.26.5-json-v1-studio'}
-DERIVATIVES = 'crates/librairii-storage/src/migrations/compatibility'
-# Exact selected BB7=bb7c3ecd6c1c77557aa52d99068d19ce4b9e7446.
-# Source bytes only; this gate does not establish parity or native qualification.
-SELECTED_MANIFEST_SHA = '2f8bd6db37191346b6719d7345a46a0b4d3163be745d5fae6b7f8ebf429a0409'
+DERIVATIVES = 'crates/librairii-core/src/collection_codec/compatibility'
+# Actual ORIGINAL8471 closure delivered onto current94b; source bytes only.
+SELECTED_MANIFEST_SHA = '026a9dcbd53f03857561c8f3e3b1d47519053a80dde1fada11a2fa52e46cfe3a'
 SELECTED_KINDS = {
     'codec-reference.json': 'generated',
     'codec_oracle.go.in': 'authored',
@@ -40,8 +46,57 @@ NOTICE_REQUIREMENTS = {
     'language-default-without-dns': ['LICENSE-GO-BSD.txt', 'PATENTS-GO.txt',
         'LICENSE-CLDR32-UNICODE.txt', 'LICENSE-CLDR32-APACHE.txt', 'LICENSE-CC0.txt'],
     'product-boundary': [],
+    'query-product': [],
+    'query-json-wire': ['LICENSE-GO-BSD.txt', 'PATENTS-GO.txt'],
+    'query-json-i64': ['LICENSE-GO-BSD.txt', 'PATENTS-GO.txt'],
+    'query-json-output': ['LICENSE-GO-BSD.txt', 'PATENTS-GO.txt'],
 }
 
+QUERY_SELECTIONS = {'Go1.26.5/src/encoding/json/scanner.go': 'query-json-wire',
+ 'Go1.26.5/src/encoding/json/decode.go': 'query-json-wire',
+ 'Go1.26.5/src/encoding/json/fold.go': 'query-json-wire',
+ 'Go1.26.5/src/encoding/json/stream.go': 'query-json-wire',
+ 'Go1.26.5/src/unicode/utf8/utf8.go': 'query-json-wire',
+ 'Go1.26.5/src/unicode/utf16/utf16.go': 'query-json-wire',
+ 'Go1.26.5/src/encoding/json/encode.go': 'query-json-output',
+ 'Go1.26.5/src/encoding/json/tables.go': 'query-json-output',
+ 'Go1.26.5/src/strconv/number.go': 'query-json-i64',
+ 'Go1.26.5/src/internal/strconv/atoi.go': 'query-json-i64',
+ 'oracle73a93303/internal/collections/query.go': 'query-product',
+ 'oracle73a93303/internal/collectionquery/references.go': 'query-product',
+ 'oracle73a93303/internal/collectionquery/unique_keys.go': 'query-product'}
+QUERY_SCOPES = {'query-product': 'ONLY frozen v1-v5 saved-query payload/reference/unique-key validation and '
+                  'canonical membership conversion; no CRUD, SQL, source/revision authority or new '
+                  'query semantics.',
+ 'query-json-wire': 'ONLY scanner single-complete-document grammar, ordered '
+                    'duplicate/key/null/type handling, unquote and per-byte UTF8/UTF16 replacement '
+                    'plus fixed ASCII schema matching. stream.go is ordering reference, never '
+                    'trailing-document admission; no generic reflection decoder.',
+ 'query-json-i64': 'ONLY public strconv/number.go ParseInt delegation/error projection and '
+                   'internal/strconv/atoi.go ParseInt plus ParseUint dependency for signed base10 '
+                   'bitSize64 JSON integer lexemes. No generic strconv, float coercion or wider '
+                   'integer grammar.',
+ 'query-json-output': 'ONLY fixed Query serialization order/omission and string escaping '
+                      'references including HTML <>& and U+2028/U+2029 from encode.go/tables.go; '
+                      'no generic encoder/reflection/API.'}
+LOOKUP_BINDINGS = {'crates/librairii-core/src/collection_codec/compatibility/extract_normalization.py': 'INDEX_HASH',
+ 'crates/librairii-core/src/collection_codec/compatibility/extract_language.py': 'INDEX_HASH',
+ 'crates/librairii-core/src/collection_codec/compatibility/update_source_manifest.py': 'INDEX_SHA',
+ 'crates/librairii-core/src/collection_codec/compatibility/verify_normalization.py': 'INDEX_SHA'}
+CORE_PATH = 'crates/librairii-core/src/collection_codec/mod.rs'
+OLD_DERIVATIVES = 'crates/librairii-storage/src/migrations/compatibility'
+STORAGE_CALLER = 'crates/librairii-storage/src/migrations.rs'
+HISTORICAL_INLINE = {'path': 'crates/librairii-storage/src/migrations.rs',
+ 'bytes': 48784,
+ 'sha256': 'c01e805177d99b33e1f0bd5f5c4b0e5463b2190f185b53906558e80dffe2ff59',
+ 'begin': 'mod collection_codec {\n',
+ 'end': '\n/// Storage-local transitional inspection result.',
+ 'fragment_bytes': 31508,
+ 'fragment_sha256': 'fc8ff89fa3425cbc0ed8baff6082b3c80c27a3447f7563d5c05b95d8106f3b4f',
+ 'materialization': 'existing-storage-inline-reference-map; final translated core leaf and its '
+                    'retained headers are not materialized'}
+HISTORICAL_RUST_BASELINE_SHA = '33e43537409dd3d5dc07fac28572fe23d3df0b038d33fc7883fab79d3ef28b68'
+HISTORICAL_PYTHON_BASELINE_SHA = '3deb3eabe0e6b31170f26629c042214da2371b023235d1adf5cf2429664fa836'
 
 NOTICE_ORIGINS = {
     'LICENSE-GO-BSD.txt': 'go-xtext-LICENSE.txt',
@@ -102,10 +157,9 @@ def regular(root, value):
     return path
 
 
+
 def pinned(root, record):
-    path = safe(root, record['path'])
-    if not path.is_file():
-        raise ValueError('missing source-policy file')
+    path = regular(root, record['path'])
     data = path.read_bytes()
     if len(data) != record['bytes'] or digest(data) != record['sha256']:
         raise ValueError('changed source-policy file')
@@ -113,6 +167,8 @@ def pinned(root, record):
 
 
 def selection(path):
+    if path in QUERY_SELECTIONS:
+        return [QUERY_SELECTIONS[path]]
     if path.startswith(('golang.org/x/text@v0.43.0/internal/language/',
                         'golang.org/x/text@v0.43.0/internal/tag/',
                         'golang.org/x/text@v0.43.0/language/')):
@@ -134,15 +190,18 @@ def check(root):
             or {bundle['id'] for bundle in registry['bundles']} != APPROVED_BUNDLES):
         raise ValueError('source registry must not assign a product license or widen scope')
     bundle = next(bundle for bundle in registry['bundles'] if bundle['id'] == BUNDLE)
-    if (bundle['id'] != BUNDLE or bundle['scope'] != 'private-storage-4.4'
+    if (bundle['id'] != BUNDLE or bundle['scope'] != 'single-core-query-codec'
             or bundle['source_index'] != '.config/upstream-sources/' + BUNDLE + '/source-index.json'
             or bundle['notices_root'] != '.config/upstream-notices/' + BUNDLE
             or bundle['source_index_sha256'] != INDEX_SHA
-            or bundle['source_identities'] != 49 or bundle['package_files'] != 43
+            or bundle['source_identities'] != SOURCE_COUNT or bundle['package_files'] != 43
             or bundle['derivative_root'] != DERIVATIVES
             or bundle['derivative_manifest'] != 'source-manifest.json'
             or bundle['excluded'] != EXCLUDED
-            or bundle['selection_notices'] != NOTICE_REQUIREMENTS):
+            or bundle['selection_notices'] != NOTICE_REQUIREMENTS
+            or bundle.get('query_selection_scopes') != QUERY_SCOPES
+            or bundle.get('query_codec') != {'map_path': QUERY_MAP, 'map_sha256': QUERY_MAP_SHA,
+                'scope': 'single-materialized-core-query-codec', 'core_leaf': CORE_PATH}):
         raise ValueError('unreviewed source selection, scope or DNS policy')
     index_path = safe(root, bundle['source_index'])
     data = index_path.read_bytes()
@@ -151,12 +210,24 @@ def check(root):
     if {p.relative_to(index_path.parent).as_posix() for p in index_path.parent.rglob('*')} != {'source-index.json'}:
         raise ValueError('extra files beside authenticated source index')
     index = decode(data)
+    historical = {k: v for k, v in index.items()
+                  if k not in ('querySourceFiles', 'querySourceProvenance')}
+    if digest((json.dumps(historical, indent=2) + '\n').encode()) != HISTORICAL_INDEX_SHA:
+        raise ValueError('changed historical49 source identities or provenance')
+    query_sources = index.get('querySourceFiles', [])
+    if (len(query_sources) != len(QUERY_SELECTIONS)
+            or {r['path'] for r in query_sources} != set(QUERY_SELECTIONS)
+            or index.get('querySourceProvenance', {}).get('historicalSourceIndexSha256') != HISTORICAL_INDEX_SHA):
+        raise ValueError('missing extra or duplicate query origins')
     sources = [f for package in index['packages'] for f in package['files']]
     if len(sources) != 43:
         raise ValueError('changed package-source set')
     sources += index['supplementalSourceFiles']
+    if len(sources) != 49:
+        raise ValueError('changed historical49 source set')
+    sources += query_sources
     by_path = {f['path']: f for f in sources}
-    if len(sources) != 49 or len(by_path) != 49:
+    if len(sources) != SOURCE_COUNT or len(by_path) != SOURCE_COUNT:
         raise ValueError('changed or duplicate source identities')
     if bundle['source_selections'] != {p: selection(p) for p in by_path}:
         raise ValueError('unreviewed source subset')
@@ -235,22 +306,199 @@ def check(root):
                     raise ValueError('incomplete derivative notice attribution')
             else:
                 raise ValueError('invalid derivative kind or missing original sources')
+    query_map = check_query_map(root, bundle, by_path, records)
     return {
         'version': 1, 'bundle': BUNDLE, 'product_license': None,
         'source_index_sha256': INDEX_SHA, 'source_identities': sources,
         'notices': notice_records, 'private_derivatives': records,
+        'query_codec': query_map,
         'state': 'private-provenance-recorded' if records else 'awaiting-private-implementation',
         'excluded': EXCLUDED,
         'qualification': 'source inventory only; no algorithm, parity, effect or platform qualification',
     }
 
 
+def check_query_map(root, bundle, by_path, records):
+    data = safe(root, QUERY_MAP).read_bytes()
+    if digest(data) != QUERY_MAP_SHA:
+        raise ValueError('changed query source map')
+    value = decode(data)
+    keys = {'version', 'bundle', 'scope', 'lookup_index_sha256', 'historical_index_sha256',
+            'historical_manifest_sha256', 'historical_derivatives', 'historical_inline',
+            'core_leaf', 'origins', 'notices', 'recipe', 'lookup_bindings', 'fixed_references',
+            'current_derivative_changes', 'identity_migrations', 'historical_rust_baseline_sha256',
+            'historical_python_baseline_sha256', 'delivery_lineage'}
+    if (set(value) != keys or value['version'] != 2 or value['bundle'] != BUNDLE
+            or value['scope'] != 'single-materialized-core-query-codec'
+            or value['lookup_index_sha256'] != INDEX_SHA
+            or value['historical_index_sha256'] != HISTORICAL_INDEX_SHA
+            or value['historical_manifest_sha256'] != HISTORICAL_MANIFEST_SHA
+            or value['historical_inline'] != HISTORICAL_INLINE):
+        raise ValueError('invalid materialized core map or historical inline identity')
+    historical = value['historical_derivatives']
+    if digest((json.dumps(historical, indent=2) + '\n').encode()) != HISTORICAL_MANIFEST_SHA:
+        raise ValueError('changed historical19 derivative lineage')
+    originals = historical['files']
+    if len(originals) != 19:
+        raise ValueError('changed historical19 derivative set')
+    current = {r['path']: r for r in records}
+    adaptations = {'extract_normalization.py', 'extract_language.py', 'update_source_manifest.py',
+                   'verify_normalization.py', 'mod.rs', 'language.rs', 'normalization.rs'}
+    differences = []
+    for original in originals:
+        now = current.get(original['path'])
+        if now is None:
+            raise ValueError('missing historical derivative')
+        ignored = {'bytes', 'sha256'} if original['path'] in adaptations else set()
+        if ({k: v for k, v in now.items() if k not in ignored}
+                != {k: v for k, v in original.items() if k not in ignored}):
+            raise ValueError('changed historical derivative lineage or fixed bytes')
+        if now != original:
+            differences.append({k: now[k] for k in ('path', 'bytes', 'sha256')})
+    changes = value['current_derivative_changes']
+    if (len(changes) != len(differences)
+            or [{k: x[k] for k in ('path', 'bytes', 'sha256')} for x in changes] != differences
+            or any(not isinstance(x.get('reason'), str) or not x['reason'].strip() for x in changes)):
+        raise ValueError('unrecorded current derivative adaptation')
+    expected = [{'path': p, 'sha256': by_path[p]['sha256'],
+                 'header_sha256': by_path[p]['first12LinesSha256'], 'selection': role}
+                for p, role in QUERY_SELECTIONS.items()]
+    if value['origins'] != expected:
+        raise ValueError('unapproved query origin header or selection')
+    if value['notices'] != ['LICENSE-GO-BSD.txt', 'PATENTS-GO.txt']:
+        raise ValueError('incomplete query notice attribution')
+    if not isinstance(value['recipe'], str) or not value['recipe'].strip():
+        raise ValueError('missing query recipe')
+    leaf = value['core_leaf']
+    if (set(leaf) != {'path', 'bytes', 'sha256', 'kind', 'header_bytes', 'header_sha256', 'materialization'}
+            or leaf['path'] != CORE_PATH or leaf['kind'] != 'translated'
+            or leaf['materialization'] != 'single actual core codec; no SQL, live-reference or effect authority'):
+        raise ValueError('invalid materialized core codec claim')
+    content = pinned(root, leaf)
+    header = content[:leaf['header_bytes']]
+    if digest(header) != leaf['header_sha256']:
+        raise ValueError('changed materialized core header identity')
+    for origin in expected:
+        original_header = bytes.fromhex(by_path[origin['path']]['headerFirst12LinesHex'])
+        for line in original_header.splitlines():
+            if line.startswith(b'// Copyright') and line not in header:
+                raise ValueError('dropped original core copyright header')
+    complete = {'mod.rs', 'compatibility/source-manifest.json'} | {
+        'compatibility/' + x['path'] for x in records}
+    directory = safe(root, CORE_PATH).parent
+    actual = set()
+    for path in directory.rglob('*'):
+        name = path.relative_to(directory).as_posix()
+        safe(directory, name)
+        if path.is_file():
+            actual.add(name)
+    if actual != complete:
+        raise ValueError('incomplete or extra materialized core closure')
+    if safe(root, OLD_DERIVATIVES).exists():
+        raise ValueError('old storage compatibility duplicate remains')
+    caller = safe(root, STORAGE_CALLER).read_bytes()
+    if b'mod collection_codec {' in caller or b'mod compatibility;' in caller:
+        raise ValueError('old storage inline codec duplicate remains')
+    if b'use librairii_core::collection_codec;' not in caller:
+        raise ValueError('storage caller does not delegate to core codec')
+    expected_bindings = [{'path': path, 'constant': name, 'lookup_index_sha256': INDEX_SHA,
+                          'historical_index_sha256': HISTORICAL_INDEX_SHA}
+                         for path, name in LOOKUP_BINDINGS.items()]
+    if value['lookup_bindings'] != expected_bindings:
+        raise ValueError('untruthful query lookup helper binding')
+    for path, name in LOOKUP_BINDINGS.items():
+        tree = ast.parse(safe(root, path).read_bytes())
+        constants = {target.id: node.value.value
+                     for node in tree.body if isinstance(node, ast.Assign)
+                     and isinstance(node.value, ast.Constant)
+                     for target in node.targets if isinstance(target, ast.Name)}
+        if constants.get(name) != INDEX_SHA or constants.get('HISTORICAL_INDEX_SHA') != HISTORICAL_INDEX_SHA:
+            raise ValueError('changed lookup versus historical helper index')
+    expected_refs = [r for r in originals if r['path'] in
+                     ('codec-reference.json', 'normalization-reference.json', 'language-reference.json')]
+    if value['fixed_references'] != expected_refs:
+        raise ValueError('changed historical reference provenance')
+    for record in expected_refs:
+        pinned(safe(root, DERIVATIVES), record)
+    delivered = check_delivery_lineage(root, value)
+    for kind, path, expected_sha, count in [
+            ('rust', '.config/rust-test-baseline.json', HISTORICAL_RUST_BASELINE_SHA, 12),
+            ('python', '.config/rust-python-test-baseline.json', HISTORICAL_PYTHON_BASELINE_SHA, 3)]:
+        if value['historical_' + kind + '_baseline_sha256'] != expected_sha:
+            raise ValueError('changed historical discovery baseline identity')
+        baseline = delivered[kind]
+        moves = value['identity_migrations'][kind]
+        if len(moves) != count or len({x['position'] for x in moves}) != count:
+            raise ValueError('incomplete explicit discovery migration')
+        for move in moves:
+            position = move['position']
+            if baseline['required'][position] != move['new'] or not move['reason'].strip():
+                raise ValueError('unobserved or misplaced discovery migration')
+            baseline['required'][position] = move['old']
+        if digest((json.dumps(baseline, indent=2) + '\n').encode()) != expected_sha:
+            raise ValueError('unrelated discovery identities changed')
+    return value
+
+
+def check_delivery_lineage(root, value):
+    """Retain current-base assertions while checking original codec history."""
+    delivery = value['delivery_lineage']
+    pins = {
+        'base_commit': '94b2807e2e23275e574fb030e74fb31223a5497f',
+        'codec_commit': '8471bc2b38aa9efce931c3e5fb520116418672a8',
+        'base_rust_baseline_sha256': 'b0ed4de7f6d7348f44c96d9d3b03518bc18f30dcd82de74e013294b184227ab6',
+        'base_python_baseline_sha256': '134d96e0ee9281a89bfc36d1159bdb58a8914d73da2a0ae72fb5389a9647e3af',
+        'codec_rust_baseline_sha256': 'd6a9f409abcb1e0264ee75b0b89d452bdc062e6abb4c161deee84a21464504a0',
+        'codec_python_baseline_sha256': '9b2f8529cfaf8d90108c9c11a0477c7766968328b80efe619421282c7ded7b9c',
+    }
+    if (set(delivery) != set(pins) | {'retained_rust_additions',
+            'retained_studio_python_additions', 'codec_python_additions', 'qualification'}
+            or any(delivery[key] != expected for key, expected in pins.items())):
+        raise ValueError('changed current-base or original-codec discovery identity')
+
+    def remove(baseline, additions):
+        if (not isinstance(additions, list)
+                or len({item['position'] for item in additions}) != len(additions)):
+            raise ValueError('invalid retained discovery additions')
+        for item in sorted(additions, key=lambda item: item['position'], reverse=True):
+            if (set(item) != {'position', 'identity'} or type(item['position']) is not int
+                    or item['position'] < 0 or item['position'] >= len(baseline['required'])
+                    or baseline['required'][item['position']] != item['identity']):
+                raise ValueError('changed retained discovery addition')
+            del baseline['required'][item['position']]
+
+    def encoded(baseline):
+        return digest((json.dumps(baseline, indent=2) + '\n').encode())
+
+    originals = {}
+    for kind, path in [('rust', '.config/rust-test-baseline.json'),
+                       ('python', '.config/rust-python-test-baseline.json')]:
+        baseline = decode(safe(root, path).read_bytes())
+        base = copy.deepcopy(baseline)
+        if kind == 'rust':
+            for move in value['identity_migrations']['rust']:
+                if base['required'][move['position']] != move['new']:
+                    raise ValueError('changed current-base codec discovery move')
+                base['required'][move['position']] = move['old']
+            remove(baseline, delivery['retained_rust_additions'])
+        else:
+            remove(base, delivery['codec_python_additions'])
+            remove(baseline, delivery['retained_studio_python_additions'])
+        if encoded(base) != pins['base_' + kind + '_baseline_sha256']:
+            raise ValueError('unrelated current-base discovery identities changed')
+        if encoded(baseline) != pins['codec_' + kind + '_baseline_sha256']:
+            raise ValueError('original codec discovery lineage changed')
+        originals[kind] = baseline
+    return originals
+
+
 def check_selected(root):
     """Require the actual selected nineteen-file closure on the CLI path.
 
-    check() remains usable for the existing synthetic provenance regressions;
-    it deliberately does not establish that the selected implementation exists.
-    The pinned manifest binds every selected path, byte hash, kind and recipe.
+    check() also validates the materialized core map and permits the extra
+    owned synthetic derivative used by existing provenance regressions. The
+    CLI additionally requires the exact selected nineteen-record manifest;
+    it binds every selected path, byte hash, kind and recipe.
     """
     directory = safe(root, DERIVATIVES)
     manifest_path = regular(directory, 'source-manifest.json')
@@ -269,7 +517,9 @@ def check_selected(root):
         actual.add(path.name)
     if actual != expected:
         raise ValueError('extra or missing selected source-policy file')
+    regular(root, CORE_PATH)
     return check(root)
+
 
 
 def inventory(root, report):

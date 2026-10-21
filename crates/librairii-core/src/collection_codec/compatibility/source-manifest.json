@@ -29,8 +29,8 @@
     },
     {
       "path": "extract_language.py",
-      "bytes": 12933,
-      "sha256": "7565ca5982ebfc90423ce0d839ebb4ad0845a054cb9306b2318ab0a0442ea4aa",
+      "bytes": 13112,
+      "sha256": "1432e1c3feb3c3f677b4915df2f8e87661f58a4ed3053b997393296ea185f432",
       "kind": "translated",
       "recipe": "Hand-translate frozen getLangID finite two/three-letter lookup and compact bit decoding into literal extraction; verify selected bytes/headers; remove ONLY regionTypes ccTLD bit1/value2 before writing, retain other bits; never copy TLD APIs or regenerate current registries.",
       "sources": [
@@ -69,8 +69,8 @@
     },
     {
       "path": "extract_normalization.py",
-      "bytes": 10072,
-      "sha256": "86e1cd15f81f6957d172a17b19ecbbb5484eb51dd0b84374b0d4a9ce06630a99",
+      "bytes": 10251,
+      "sha256": "cec28f978a3f75dd5f1b4311a7cd4490c0337c5acea6c5810555a072906d5130",
       "kind": "translated",
       "recipe": "Extract literal fixed source arrays and the frozen full-fold map, verifying hashes/headers. Translate Go15 CaseRanges conversion and SimpleFold ASCII orbit closure for strict wire keys; no upstream execution or regeneration from current data.",
       "sources": [
@@ -229,8 +229,8 @@
     },
     {
       "path": "language.rs",
-      "bytes": 26505,
-      "sha256": "e8a182c35519516016384d4996cdb1cfe5433e227a1a9b46f55e94014409ae66",
+      "bytes": 26508,
+      "sha256": "2cf2dd6bed4a45f75a11a10387048fcb3c5799e0c67e98f6be08be0f6537b9f1",
       "kind": "translated",
       "recipe": "Private product35-byte canonicalLanguage boundary; frozen Default=Deprecated|Legacy scanner/core/variant/extension and exact compact round trip. Lazy token validation preserves transform truncation; region override/compact bit widths remain observable; no SuppressScript/Macro/CLDR, parent/matcher approximation or TLD API. TrimSpace delegates the single private frozen Unicode primitive. Does not expose partial error tags that the product rejects.",
       "sources": [
@@ -366,8 +366,8 @@
     },
     {
       "path": "mod.rs",
-      "bytes": 643,
-      "sha256": "04f2d4d6acf8665c4967237bdd1207aefa3acdfecb0fb3af8dcedd4c13a740de",
+      "bytes": 552,
+      "sha256": "02517f433a0d12aa158c4d019183a0f175e425de809efe95a9944990c6548801",
       "kind": "authored",
       "recipe": "Private module wiring only; no source algorithm.",
       "sources": [],
@@ -461,8 +461,8 @@
     },
     {
       "path": "normalization.rs",
-      "bytes": 19643,
-      "sha256": "ab4b1c10137332c5cdbe4430edead212054e38219fb025daef2ba753d6b0502f",
+      "bytes": 19655,
+      "sha256": "001fde9e7232d3b3d0904852edeca6771a273f5eeabfa2475c11c9b76d5129ee",
       "kind": "translated",
       "recipe": "Hand translation of frozen full-fold\u2192Go stream-safe NFKD\u2192Mn-only removal\u2192Go whitespace folding; original-character leading/trailing partition precedes stable CCC insertion. Safe checked UTF8 trie and fixed32-rune segment, Hangul decomposition; no modern composition or runtime Go.",
       "sources": [
@@ -608,8 +608,8 @@
     },
     {
       "path": "update_source_manifest.py",
-      "bytes": 11244,
-      "sha256": "79a796337df68eb3adce9e10f4739aaa9e32b20c2acedb265a0a447144b38b88",
+      "bytes": 11417,
+      "sha256": "fa88fc3465ab4b27322aa584f99cd767f2d2fa8573c528fdb0ea74e3c8cb34b3",
       "kind": "authored",
       "recipe": "Explicit private file map; hash actual post-format bytes and retain pinned original identities, selections and notice names.",
       "sources": [],
@@ -635,8 +635,8 @@
     },
     {
       "path": "verify_normalization.py",
-      "bytes": 9783,
-      "sha256": "7e0f09eec485805be8eeb1725b94d5c9076e3a95c676fbca25e7c9308cb65d68",
+      "bytes": 9962,
+      "sha256": "540cbf302c6fe759931d82d4c43e5a94b3bd94748d748bcbb39a261624f81590",
       "kind": "authored",
       "recipe": "Offline disposable exact73 archive/authenticated487-member ZIP/pinnedGo qualification with before/after original-file verification; never a product runtime or corpus generator.",
       "sources": [],
