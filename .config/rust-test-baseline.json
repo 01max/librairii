@@ -1942,6 +1942,22 @@
         "x86_64-apple-darwin",
         "x86_64-unknown-linux-gnu"
       ]
+    },
+    {
+      "suite": "librairii-core::query_urls",
+      "name": "history_hash_binding_and_typed_ids_distinguish_dynamic_and_curated_shelves"
+    },
+    {
+      "suite": "librairii-core::query_urls",
+      "name": "legacy_flags_retire_recursively_while_current_tag_reuse_survives"
+    },
+    {
+      "suite": "librairii-core::query_urls",
+      "name": "url_bounds_and_non_idempotent_unicode_are_validated_without_extra_output_passes"
+    },
+    {
+      "suite": "librairii-core::query_urls",
+      "name": "url_shared_current_and_legacy_fixtures_preserve_non_broken_criteria"
     }
   ]
 }

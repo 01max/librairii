@@ -972,8 +972,8 @@
   },
   "core_leaf": {
     "path": "crates/librairii-core/src/collection_codec/mod.rs",
-    "bytes": 29879,
-    "sha256": "f00889a7492ebad93d0deb24ca6848f96f69f92a28ae266e764ac9a7e144a4d8",
+    "bytes": 29892,
+    "sha256": "a4212d2c4455499496489b9cdf298d61c7d65f9c749b2aaebb9991b6d7541d6e",
     "kind": "translated",
     "header_bytes": 379,
     "header_sha256": "84c790465b5688b1423350f07c1422d56e174de8117d978de4f39448ac75e807",
@@ -2429,6 +2429,38 @@
           ]
         },
         "reason": "Task 7 additive observed discovery; integration-base identities retain their exact order and scope."
+      },
+      {
+        "position": 350,
+        "identity": {
+          "suite": "librairii-core::query_urls",
+          "name": "history_hash_binding_and_typed_ids_distinguish_dynamic_and_curated_shelves"
+        },
+        "reason": "Task 7 additive observed discovery; integration-base identities retain their exact order and scope."
+      },
+      {
+        "position": 351,
+        "identity": {
+          "suite": "librairii-core::query_urls",
+          "name": "legacy_flags_retire_recursively_while_current_tag_reuse_survives"
+        },
+        "reason": "Task 7 additive observed discovery; integration-base identities retain their exact order and scope."
+      },
+      {
+        "position": 352,
+        "identity": {
+          "suite": "librairii-core::query_urls",
+          "name": "url_bounds_and_non_idempotent_unicode_are_validated_without_extra_output_passes"
+        },
+        "reason": "Task 7 additive observed discovery; integration-base identities retain their exact order and scope."
+      },
+      {
+        "position": 353,
+        "identity": {
+          "suite": "librairii-core::query_urls",
+          "name": "url_shared_current_and_legacy_fixtures_preserve_non_broken_criteria"
+        },
+        "reason": "Task 7 additive observed discovery; integration-base identities retain their exact order and scope."
       }
     ],
     "python": [
@@ -2451,7 +2483,26 @@
         "position": 41,
         "identity": "test_sources.SourcePolicy.test_runtime_query_binding_does_not_relax_saved_derivatives_or_notice_guards",
         "reason": "Task 7 additive observed discovery; integration-base identities retain their exact order and scope."
+      },
+      {
+        "position": 42,
+        "identity": "test_sources.SourcePolicy.test_url_handover_requires_exact_origin_scope_and_materialized_leaf",
+        "reason": "Task 7 additive observed discovery; integration-base identities retain their exact order and scope."
       }
     ]
+  },
+  "url_codec": {
+    "oracle": "73a93303a9a44cf0a92eaf525331561ed8c04460",
+    "origin": {
+      "path": "internal/library/query_codec.go",
+      "bytes": 12015,
+      "sha256": "ac644cb802938cfc2ce23bdb80d334f47f3d20e4376a4f2c6df8d2fe79bb4389"
+    },
+    "scope": "bounded URL v1-v3 decoding and typed browser-history handover; no system URL protocol or live authority",
+    "leaf": {
+      "path": "crates/librairii-core/src/collection_codec/url.rs",
+      "bytes": 10317,
+      "sha256": "8256ce6f32b9b9c97c8551bfac4756646ae5735b021a5cb10868131a1afb7db9"
+    }
   }
 }

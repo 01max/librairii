@@ -46,7 +46,7 @@ class SourcePolicy(unittest.TestCase):
         self.core_path = self.root / gate.CORE_PATH
         self.core_path.parent.mkdir(parents=True)
         shutil.copyfile(source / gate.CORE_PATH, self.core_path)
-        for name in gate.RUNTIME_LEAVES:
+        for name in (*gate.RUNTIME_LEAVES, 'crates/librairii-core/src/collection_codec/url.rs'):
             destination = self.root / name
             destination.parent.mkdir(parents=True, exist_ok=True)
             shutil.copyfile(source / name, destination)
@@ -731,3 +731,18 @@ class SourcePolicy(unittest.TestCase):
                     self.assertIn('changed source-policy file', result.stderr)
                     converted = fresh / gate.DERIVATIVES / 'normalization.rs'
                 self.assertIn(b'\r\n', converted.read_bytes())
+
+    def test_url_handover_requires_exact_origin_scope_and_materialized_leaf(self):
+        for field in ('origin', 'oracle', 'scope'):
+            changed = copy.deepcopy(self.query_map)
+            changed['url_codec'][field] = 'unapproved'
+            self.assert_query_map_rejected(changed)
+        leaf = self.root / self.query_map['url_codec']['leaf']['path']
+        original = leaf.read_bytes()
+        try:
+            leaf.write_bytes(original + b'// changed URL decoder\n')
+            with self.assertRaises(ValueError):
+                gate.check(self.root)
+        finally:
+            leaf.write_bytes(original)
+        gate.check(self.root)

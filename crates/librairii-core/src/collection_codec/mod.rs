@@ -15,6 +15,7 @@
 
 mod compatibility;
 pub(crate) mod runtime;
+pub mod url;
 
 use self::compatibility::{LanguageError, NormalizeError};
 use serde::Serialize;

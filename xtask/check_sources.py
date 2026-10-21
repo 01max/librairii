@@ -13,7 +13,7 @@ PREVIOUS_QUERY_INDEX_SHA = '13dfd314abfda9a9553d152a1d8a5586f8bd1205a08c177af9bb
 INDEX_SHA = 'cd8fcdac9ccdd46f1f06294f27bc07e9f8ed40f79d16cdab4d39c7c0cd837d78'
 SOURCE_COUNT = 63
 QUERY_MAP = '.config/query-codec-source-map.json'
-QUERY_MAP_SHA = '17f9650d0073211ff12fe5a62a5d087e8e5729cbe7f1879f637d659799af841b'
+QUERY_MAP_SHA = 'af3458ade145733c30f8f7489eca943998815e0be15893da0515aa5bed518c6d'
 HISTORICAL_MANIFEST_SHA = '2f8bd6db37191346b6719d7345a46a0b4d3163be745d5fae6b7f8ebf429a0409'
 BUNDLE = 'go-1.26.5-xtext-0.43.0-unicode15-cldr32'
 APPROVED_BUNDLES = {BUNDLE, 'go-1.26.5-json-v1-studio'}
@@ -366,7 +366,7 @@ def check_query_map(root, bundle, by_path, records):
             'historical_manifest_sha256', 'historical_derivatives', 'historical_inline',
             'core_leaf', 'origins', 'notices', 'recipe', 'lookup_bindings', 'fixed_references',
             'current_derivative_changes', 'identity_migrations', 'historical_rust_baseline_sha256',
-            'historical_python_baseline_sha256', 'delivery_lineage', 'previous_query_index_sha256', 'runtime', 'identity_additions'}
+            'historical_python_baseline_sha256', 'delivery_lineage', 'previous_query_index_sha256', 'runtime', 'identity_additions', 'url_codec'}
     if (set(value) != keys or value['version'] != 2 or value['bundle'] != BUNDLE
             or value['scope'] != 'single-materialized-core-query-codec'
             or value['lookup_index_sha256'] != INDEX_SHA
@@ -424,7 +424,8 @@ def check_query_map(root, bundle, by_path, records):
             if line.startswith(b'// Copyright') and line not in header:
                 raise ValueError('dropped original core copyright header')
     check_runtime_map(root, value['runtime'], by_path)
-    complete = {'mod.rs', 'runtime.rs', 'compatibility/source-manifest.json'} | {
+    check_url_map(root, value['url_codec'])
+    complete = {'mod.rs', 'runtime.rs', 'url.rs', 'compatibility/source-manifest.json'} | {
         'compatibility/' + x['path'] for x in records}
     directory = safe(root, CORE_PATH).parent
     actual = set()
@@ -573,6 +574,18 @@ def check_selected(root):
     regular(root, CORE_PATH)
     return check(root)
 
+
+
+def check_url_map(root, value):
+    if (set(value) != {'oracle', 'origin', 'scope', 'leaf'}
+            or value['oracle'] != '73a93303a9a44cf0a92eaf525331561ed8c04460'
+            or value['origin'] != {'path': 'internal/library/query_codec.go', 'bytes': 12015,
+                'sha256': 'ac644cb802938cfc2ce23bdb80d334f47f3d20e4376a4f2c6df8d2fe79bb4389'}
+            or value['scope'] != 'bounded URL v1-v3 decoding and typed browser-history handover; no system URL protocol or live authority'
+            or set(value['leaf']) != {'path', 'bytes', 'sha256'}
+            or value['leaf']['path'] != 'crates/librairii-core/src/collection_codec/url.rs'):
+        raise ValueError('unreviewed URL origin, scope or leaf')
+    pinned(root, value['leaf'])
 
 
 def check_runtime_map(root, value, by_path):

@@ -41,6 +41,7 @@
     "test_sources.SourcePolicy.test_runtime_query_index_retains_all_prior_62_identities_and_prior_lookup_bytes",
     "test_sources.SourcePolicy.test_runtime_query_leaves_require_materialized_exact_bytes_and_headers",
     "test_sources.SourcePolicy.test_runtime_query_origins_and_scope_cannot_expand_to_sql_or_saved_conversion",
-    "test_sources.SourcePolicy.test_runtime_query_binding_does_not_relax_saved_derivatives_or_notice_guards"
+    "test_sources.SourcePolicy.test_runtime_query_binding_does_not_relax_saved_derivatives_or_notice_guards",
+    "test_sources.SourcePolicy.test_url_handover_requires_exact_origin_scope_and_materialized_leaf"
   ]
 }
