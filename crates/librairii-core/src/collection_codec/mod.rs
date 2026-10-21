@@ -87,6 +87,18 @@ pub struct Query {
     pub choice_filters: Vec<ChoiceFilter>,
 }
 
+impl Query {
+    /// Borrow saved language data without a live-validity or snapshot guarantee.
+    pub fn languages(&self) -> &[String] {
+        &self.languages
+    }
+
+    /// Borrow saved compatibility data without validating the supplied value.
+    pub fn compatibilities(&self) -> &[String] {
+        &self.compatibilities
+    }
+}
+
 // The wire tree retains ordered keys and NUMBER LEXEMES. A serde Value
 // map would erase duplicate fields, and float coercion would incorrectly
 // admit 1.0/1e0 or reject the Go integer spelling -0. Input is bounded before
