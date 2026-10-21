@@ -101,3 +101,23 @@ Go archive fixtures used in 12.4 do not establish that missing Rust import port.
 Next prerequisite: Task 6's production operation store, retained effect ownership
 and startup recovery, in its own PR. Resume this same Task 12 PR afterwards;
 do not check off its remaining tasks from the partial implementation or CI result.
+
+## Independent partial-slice review corrections
+
+The Standards review of `8c7935f` found two P2 issues: a registry-local uncertainty
+fence could be bypassed by a replacement registry, and preparation accounting
+omitted source snapshots. The Spec review found the same accounting issue plus
+Unicode suffix drift and whole-preview failure on unsafe source links.
+
+Separate fix commits retain frozen Unicode suffix semantics, report file/parent
+link refusals per item, account source IDs/raw names/vector/preview/path capacities,
+and funnel every actual output retention into a sticky Database/native generation
+fence. The generation continues joining its real workers on close but cannot
+acknowledge clean closure with an unresolved external effect. Partial acquisition,
+cleanup flush and post-publication flush tests verify actual retained file/directory
+ownership; replacing or dropping the registry cannot clear the fence. Regression
+tests were observed failing before their respective semantic fixes and passing
+afterwards. The first cumulative gate also caught two narrow Clippy layout/style
+corrections, committed separately from initial subtasks. Full final-head checks
+and provider results are recorded on the draft PR; this review does not satisfy
+the still-open 12.9 acceptance gate.
