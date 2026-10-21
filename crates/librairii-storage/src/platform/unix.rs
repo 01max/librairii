@@ -712,7 +712,7 @@ impl<'library> FilesAuthority<'library> {
 /// fn release_early(library: IsolatedLibrary) -> Result<()> {
 ///     let files = LibraryFiles::open(&library)?;
 ///     let guard = files.try_custody()?;
-///     let staged = files.create_stage(&guard)?;
+///     let staged = files.create_stage(&guard);
 ///     drop(guard);
 ///     drop(files); // the retained stage still borrows the directory owners
 ///     drop(library);
@@ -778,7 +778,7 @@ impl<'library> LibraryFiles<'library> {
     /// fn close_early(db: &mut Database<'_>) -> Result<()> {
     ///     let files = LibraryFiles::open_native(db)?;
     ///     let guard = files.try_custody()?;
-    ///     let stage = files.create_stage(&guard)?;
+    ///     let stage = files.create_stage(&guard);
     ///     db.close()?;
     ///     drop(stage);
     ///     Ok(())
@@ -803,7 +803,11 @@ impl<'library> LibraryFiles<'library> {
     /// fn receipt_after_files(db: &mut Database<'_>) -> Result<()> {
     ///     let files = LibraryFiles::open_native(db)?;
     ///     let guard = files.try_custody()?;
-    ///     let mut stage = files.create_stage(&guard)?;
+    ///     let mut stage = {
+    ///         let creation = files.create_stage(&guard);
+    ///         assert!(creation.is_ok(), "successful-stage fixture required");
+    ///         match creation { Ok(stage) => stage, Err(_retained) => return Ok(()) }
+    ///     };
     ///     let cancel = WorkCancellation::default();
     ///     let digest = stage.measure(0, &cancel)?;
     ///     let receipt = stage.publish_no_clobber(&guard, FileArea::Archives,
@@ -925,39 +929,420 @@ impl<'library> LibraryFiles<'library> {
         }
         Ok(source)
     }
-    pub fn create_stage(&self, guard: &Custody<'_>) -> Result<OwnedStage<'_, 'library>> {
-        self.check(guard)?;
+    /// The boxed failure retains the SAME Files and Database borrow even after
+    /// the Files variable's last ordinary use. This fails for the actual owner
+    /// borrow, without any `?`/error conversion on stage creation:
+    /// ```compile_fail
+    /// use librairii_storage::{Result, database::Database, platform::unix::LibraryFiles};
+    /// fn failed_creation(db: &mut Database<'_>) -> Result<()> {
+    ///     let files = LibraryFiles::open_native(db)?;
+    ///     let guard = files.try_custody()?;
+    ///     let retained = match files.create_stage(&guard) {
+    ///         Err(retained) => retained,
+    ///         Ok(_stage) => return Ok(()),
+    ///     };
+    ///     drop(files);
+    ///     db.close()?;
+    ///     drop(retained);
+    ///     Ok(())
+    /// }
+    /// ```
+    /// Compile-pass control: both returned variants can retain the owner and
+    /// allow exclusive close ONLY after their actual borrows end. This example
+    /// is type checking, not settlement/cleanup qualification of a failure:
+    /// ```
+    /// use librairii_storage::{Result, database::Database, platform::unix::LibraryFiles};
+    /// fn owner_order(db: &mut Database<'_>) -> Result<()> {
+    ///     let files = LibraryFiles::open_native(db)?;
+    ///     let guard = files.try_custody()?;
+    ///     let creation = files.create_stage(&guard);
+    ///     drop(creation);
+    ///     drop(guard);
+    ///     drop(files);
+    ///     db.close()?;
+    ///     Ok(())
+    /// }
+    /// ```
+    /// Success fixture control for the publication-receipt lifetime example:
+    /// ```
+    /// use librairii_storage::{Result, database::{Database, WorkCancellation},
+    ///     platform::unix::{LibraryFiles, EntryName, FileArea}};
+    /// fn receipt_owner_order(db: &mut Database<'_>) -> Result<()> {
+    ///     let files = LibraryFiles::open_native(db)?;
+    ///     let guard = files.try_custody()?;
+    ///     let mut stage = {
+    ///         let creation = files.create_stage(&guard);
+    ///         assert!(creation.is_ok(), "successful-stage fixture required");
+    ///         match creation { Ok(stage) => stage, Err(_retained) => return Ok(()) }
+    ///     };
+    ///     let cancel = WorkCancellation::default();
+    ///     let digest = stage.measure(0, &cancel)?;
+    ///     let receipt = stage.publish_no_clobber(&guard, FileArea::Archives,
+    ///         EntryName::parse("owned.bin")?, digest, &cancel);
+    ///     drop(receipt);
+    ///     drop(guard);
+    ///     drop(files);
+    ///     db.close()?;
+    ///     Ok(())
+    /// }
+    /// ```
+    /// Create an owned stage or return the actual retained creation failure.
+    /// A partial attempt has no cleanup/publication capability. Keep it and the
+    /// original custody owner until a separately qualified resolution exists.
+    /// No conversion erases its Files/Database/lease borrow into StorageError.
+    pub fn create_stage<'files>(
+        &'files self,
+        guard: &Custody<'_>,
+    ) -> std::result::Result<OwnedStage<'files, 'library>, Box<StageCreateFailure<'files, 'library>>>
+    {
+        self.create_stage_with(guard, || unique_name("stage"), |_, _| Ok(()))
+    }
+
+    fn create_stage_with<'files>(
+        &'files self,
+        guard: &Custody<'_>,
+        mut next_name: impl FnMut() -> OsString,
+        mut checkpoint: impl FnMut(StageCreatePoint, &StageAllocation<'files, 'library>) -> Result<()>,
+    ) -> std::result::Result<OwnedStage<'files, 'library>, Box<StageCreateFailure<'files, 'library>>>
+    {
+        self.check(guard)
+            .and_then(|()| self.authority.require_intake())
+            .map_err(StageCreateFailure::no_allocation)?;
         for _ in 0..64 {
-            let name = unique_name("stage");
-            match native::mkdirat(&self.staging.file, &name, Mode::RWXU) {
-                Ok(()) => {
-                    let directory = self.staging.child(&name)?;
-                    let file = directory.open_regular(
-                        OsStr::new(PAYLOAD),
-                        OFlags::RDWR | OFlags::CREATE | OFlags::EXCL,
-                    )?;
-                    let identity = FileIdentity::from_file(&file)?;
-                    self.check(guard)?;
+            // All original parent/name witnesses exist BEFORE the first effect.
+            let mut allocation = StageAllocation {
+                files: self,
+                directory_name: next_name(),
+                payload_name: OsString::from(PAYLOAD),
+                directory: None,
+                payload: None,
+                directory_identity: None,
+                payload_identity: None,
+                mkdir_attempted: false,
+                directory_created: false,
+                payload_open_attempted: false,
+                payload_created: false,
+                known_no_create: false,
+            };
+            if let Err(cause) = allocation.acquire(guard, &mut checkpoint) {
+                if allocation.known_no_create {
+                    // EEXIST owns NO colliding/replacement object. No retry
+                    // after any successful or ambiguous allocation is allowed.
+                    continue;
+                }
+                if !allocation.mkdir_attempted {
+                    return Err(StageCreateFailure::no_allocation(cause));
+                }
+                self.fence();
+                return Err(Box::new(StageCreateFailure {
+                    cause,
+                    allocation: Some(allocation),
+                }));
+            }
+            // All four actual acquisitions/observations were checked above.
+            // Retain every available field even on an internal invariant error.
+            match (
+                allocation.directory.take(),
+                allocation.directory_identity,
+                allocation.payload.take(),
+                allocation.payload_identity,
+            ) {
+                (Some(directory), Some(directory_identity), Some(file), Some(identity)) => {
                     return Ok(OwnedStage {
                         files: self,
-                        directory,
-                        directory_name: name,
+                        directory: Directory {
+                            file: directory,
+                            identity: directory_identity,
+                        },
+                        directory_name: allocation.directory_name.clone(),
                         file,
                         identity,
                         published: false,
                     });
                 }
-                Err(error) if error == rustix::io::Errno::EXIST => continue,
-                Err(error) => {
-                    return Err(StorageError::io(
-                        "create exclusive stage directory",
-                        error.into(),
-                    ));
+                (directory, _, payload, _) => {
+                    allocation.directory = directory;
+                    allocation.payload = payload;
+                    self.fence();
+                    return Err(Box::new(StageCreateFailure {
+                        cause: StorageError::CompatibilityInvariant,
+                        allocation: Some(allocation),
+                    }));
                 }
             }
         }
-        Err(StorageError::DestinationCollision)
+        Err(StageCreateFailure::no_allocation(
+            StorageError::DestinationCollision,
+        ))
     }
+
+    #[cfg(test)]
+    fn create_stage_after_open(
+        &self,
+        guard: &Custody<'_>,
+        mut after_open: impl FnMut(&OsStr, &File) -> Result<()>,
+    ) -> std::result::Result<OwnedStage<'_, 'library>, Box<StageCreateFailure<'_, 'library>>> {
+        self.create_stage_with(
+            guard,
+            || unique_name("stage"),
+            |point, allocation| {
+                if point == StageCreatePoint::PayloadAcquired {
+                    after_open(&allocation.directory_name, allocation.payload_file()?)?;
+                }
+                Ok(())
+            },
+        )
+    }
+}
+
+/// A positively no-allocation result concerns THIS call only. It neither
+/// clears earlier uncertainty/fences nor owns any colliding object's bytes.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum StageCreateDisposition {
+    NoAllocation,
+    RetainedUnresolved,
+}
+
+/// The original structured cause and actual partial owner are independent.
+/// There is deliberately no Error/From conversion to a bare storage error.
+/// Dropping this value closes handles, preserves bytes and NEVER clears fences.
+#[derive(Debug)]
+pub struct StageCreateFailure<'files, 'library> {
+    cause: StorageError,
+    allocation: Option<StageAllocation<'files, 'library>>,
+}
+impl<'files, 'library> StageCreateFailure<'files, 'library> {
+    fn no_allocation(cause: StorageError) -> Box<Self> {
+        Box::new(Self {
+            cause,
+            allocation: None,
+        })
+    }
+    pub fn cause(&self) -> &StorageError {
+        &self.cause
+    }
+    pub fn disposition(&self) -> StageCreateDisposition {
+        if self.allocation.is_some() {
+            StageCreateDisposition::RetainedUnresolved
+        } else {
+            StageCreateDisposition::NoAllocation
+        }
+    }
+    pub fn retained_allocation(&self) -> Option<&StageAllocation<'files, 'library>> {
+        self.allocation.as_ref()
+    }
+}
+
+/// Opaque, unresolved attempted creation. Actual optional raw handles are held
+/// before ANY fallible metadata/type/name validation. Missing observations stay
+/// None. Names/IDs are observations, never authority over substituted objects.
+/// No public write/cleanup/raw-handle extraction or partial retirement exists.
+#[derive(Debug)]
+pub struct StageAllocation<'files, 'library> {
+    files: &'files LibraryFiles<'library>,
+    directory_name: OsString,
+    payload_name: OsString,
+    directory: Option<File>,
+    payload: Option<File>,
+    directory_identity: Option<FileIdentity>,
+    payload_identity: Option<FileIdentity>,
+    mkdir_attempted: bool,
+    directory_created: bool,
+    payload_open_attempted: bool,
+    payload_created: bool,
+    known_no_create: bool,
+}
+// Keep the actual Files/DB/Native/lease borrow until retained descriptors close.
+// This performs NO filesystem effects or resolution.
+impl Drop for StageAllocation<'_, '_> {
+    fn drop(&mut self) {}
+}
+impl StageAllocation<'_, '_> {
+    pub fn parent_identity(&self) -> FileIdentity {
+        self.files.staging.identity
+    }
+    pub fn directory_name(&self) -> &OsStr {
+        &self.directory_name
+    }
+    pub fn payload_name(&self) -> &OsStr {
+        &self.payload_name
+    }
+    pub fn mkdir_attempted(&self) -> bool {
+        self.mkdir_attempted
+    }
+    /// Positive mkdir success. False after an attempt is UNKNOWN, not proof
+    /// of no allocation; the owning failure's disposition remains unresolved.
+    pub fn directory_created(&self) -> bool {
+        self.directory_created
+    }
+    pub fn payload_open_attempted(&self) -> bool {
+        self.payload_open_attempted
+    }
+    /// Positive returned creation handle. False after open was attempted does
+    /// not certify no effects and never grants ownership of a collision.
+    pub fn payload_created(&self) -> bool {
+        self.payload_created
+    }
+    pub fn directory_acquired(&self) -> bool {
+        self.directory.is_some()
+    }
+    pub fn payload_acquired(&self) -> bool {
+        self.payload.is_some()
+    }
+    pub fn directory_identity(&self) -> Option<FileIdentity> {
+        self.directory_identity
+    }
+    pub fn payload_identity(&self) -> Option<FileIdentity> {
+        self.payload_identity
+    }
+
+    fn directory_file(&self) -> Result<&File> {
+        self.directory
+            .as_ref()
+            .ok_or(StorageError::CompatibilityInvariant)
+    }
+    fn payload_file(&self) -> Result<&File> {
+        self.payload
+            .as_ref()
+            .ok_or(StorageError::CompatibilityInvariant)
+    }
+    fn acquire(
+        &mut self,
+        guard: &Custody<'_>,
+        checkpoint: &mut impl FnMut(StageCreatePoint, &Self) -> Result<()>,
+    ) -> Result<()> {
+        EntryName::parse(self.directory_name.clone())?;
+        EntryName::parse(self.payload_name.clone())?;
+        // A no-create collision never grants a later attempt permission to
+        // ignore a concurrently established generation/intake fence.
+        self.files.check(guard)?;
+        self.files.authority.require_intake()?;
+        checkpoint(StageCreatePoint::BeforeMkdir, self)?;
+        self.mkdir_attempted = true;
+        match native::mkdirat(&self.files.staging.file, &self.directory_name, Mode::RWXU) {
+            Ok(()) => self.directory_created = true,
+            Err(error) => {
+                self.known_no_create = error == rustix::io::Errno::EXIST;
+                return Err(StorageError::io(
+                    "create exclusive stage directory",
+                    error.into(),
+                ));
+            }
+        }
+        checkpoint(StageCreatePoint::AfterMkdir, self)?;
+        // Do not use bare-error Directory::child/from_file: capture FIRST.
+        self.directory = Some(
+            native::openat(
+                &self.files.staging.file,
+                &self.directory_name,
+                OFlags::RDONLY | OFlags::DIRECTORY | OFlags::NOFOLLOW | OFlags::CLOEXEC,
+                Mode::empty(),
+            )
+            .map_err(|e| StorageError::io("anchor created stage directory", e.into()))?
+            .into(),
+        );
+        checkpoint(StageCreatePoint::DirectoryAcquired, self)?;
+        let metadata = self
+            .directory_file()?
+            .metadata()
+            .map_err(|e| StorageError::io("inspect created stage directory", e))?;
+        checkpoint(StageCreatePoint::DirectoryType, self)?;
+        if !metadata.is_dir() {
+            return Err(StorageError::PathEscape);
+        }
+        checkpoint(StageCreatePoint::DirectoryIdentity, self)?;
+        self.directory_identity = Some(FileIdentity::from_file(self.directory_file()?)?);
+        checkpoint(StageCreatePoint::DirectoryName, self)?;
+        self.files.staging.require_name(
+            &self.directory_name,
+            self.directory_identity
+                .ok_or(StorageError::CompatibilityInvariant)?,
+        )?;
+        checkpoint(StageCreatePoint::BeforePayloadOpen, self)?;
+        self.payload_open_attempted = true;
+        // Capture the returned raw FD before require_regular/fstat/name checks.
+        self.payload = Some(
+            native::openat(
+                self.directory_file()?,
+                &self.payload_name,
+                OFlags::RDWR
+                    | OFlags::CREATE
+                    | OFlags::EXCL
+                    | OFlags::NOFOLLOW
+                    | OFlags::NONBLOCK
+                    | OFlags::CLOEXEC,
+                Mode::RUSR | Mode::WUSR,
+            )
+            .map_err(|e| StorageError::io("create exclusive stage payload", e.into()))?
+            .into(),
+        );
+        self.payload_created = true;
+        checkpoint(StageCreatePoint::PayloadAcquired, self)?;
+        let metadata = self
+            .payload_file()?
+            .metadata()
+            .map_err(|e| StorageError::io("inspect created stage payload", e))?;
+        checkpoint(StageCreatePoint::PayloadType, self)?;
+        if !metadata.is_file() {
+            return Err(StorageError::PathEscape);
+        }
+        checkpoint(StageCreatePoint::PayloadLinks, self)?;
+        if metadata.nlink() != 1 {
+            return Err(StorageError::PathEscape);
+        }
+        checkpoint(StageCreatePoint::PayloadIdentity, self)?;
+        self.payload_identity = Some(FileIdentity::from_file(self.payload_file()?)?);
+        checkpoint(StageCreatePoint::PayloadName, self)?;
+        let stat = native::statat(
+            self.directory_file()?,
+            &self.payload_name,
+            AtFlags::SYMLINK_NOFOLLOW,
+        )
+        .map_err(|e| StorageError::io("revalidate created stage payload", e.into()))?;
+        if Some(FileIdentity::from_stat(&stat)) != self.payload_identity {
+            return Err(StorageError::SnapshotChanged);
+        }
+        checkpoint(StageCreatePoint::FinalCheck, self)?;
+        // Revalidate both the original parent/name and the payload after all
+        // callbacks/checks. Never follow a replacement directory for effects.
+        self.files.staging.require_name(
+            &self.directory_name,
+            self.directory_identity
+                .ok_or(StorageError::CompatibilityInvariant)?,
+        )?;
+        let payload_identity = self
+            .payload_identity
+            .ok_or(StorageError::CompatibilityInvariant)?;
+        require_regular(self.payload_file()?)?;
+        let payload = native::statat(
+            self.directory_file()?,
+            &self.payload_name,
+            AtFlags::SYMLINK_NOFOLLOW,
+        )
+        .map_err(|e| StorageError::io("final created stage payload check", e.into()))?;
+        if FileIdentity::from_stat(&payload) != payload_identity {
+            return Err(StorageError::SnapshotChanged);
+        }
+        self.files.check(guard)?;
+        self.files.authority.require_intake()
+    }
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+enum StageCreatePoint {
+    BeforeMkdir,
+    AfterMkdir,
+    DirectoryAcquired,
+    DirectoryType,
+    DirectoryIdentity,
+    DirectoryName,
+    BeforePayloadOpen,
+    PayloadAcquired,
+    PayloadType,
+    PayloadLinks,
+    PayloadIdentity,
+    PayloadName,
+    FinalCheck,
 }
 
 /// This handle owns an exclusively created regular file and private directory.
@@ -1442,12 +1827,582 @@ mod tests {
         guard: &Custody<'_>,
         bytes: &[u8],
     ) -> Result<(OwnedStage<'files, 'library>, StreamDigest)> {
-        let mut stage = files.create_stage(guard)?;
+        let creation = files.create_stage(guard);
+        assert!(creation.is_ok(), "successful-stage fixture: {creation:?}");
+        let Ok(mut stage) = creation else {
+            return Err(StorageError::CompatibilityInvariant);
+        };
         stage
             .write_all(bytes)
             .map_err(|e| StorageError::io("write test stage", e))?;
         let measurement = stage.measure(bytes.len() as u64, &WorkCancellation::default())?;
         Ok((stage, measurement))
+    }
+
+    #[test]
+    fn stage_creation_post_open_failure_preserves_bytes_and_fences_generation() -> TestResult {
+        let roots = TestRoots::new()?;
+        let library = isolated(roots.library())?;
+        let files = LibraryFiles::open(&library)?;
+        let guard = files.try_custody()?;
+        let mut observed = None;
+        let creation = files.create_stage_after_open(&guard, |name, file| {
+            let mut writer = file;
+            writer
+                .write_all(b"actual partial stage bytes")
+                .map_err(|e| StorageError::io("write injected partial stage", e))?;
+            observed = Some((name.to_owned(), FileIdentity::from_file(file)?));
+            Err(StorageError::io(
+                "inject stage creation failure after payload acquisition",
+                io::Error::other("actual acquired descriptor"),
+            ))
+        });
+        assert!(creation.is_err());
+        let (name, identity) = observed.ok_or("payload was not actually acquired")?;
+        let path = library.layout().staging().join(name).join(PAYLOAD);
+        assert_eq!(fs::read(&path)?, b"actual partial stage bytes");
+        let metadata = fs::metadata(&path)?;
+        assert_eq!(metadata.dev(), identity.device);
+        assert_eq!(metadata.ino(), identity.inode);
+        assert!(
+            library.custody_fenced.load(Ordering::Acquire),
+            "post-acquisition failure lost its unresolved generation fence"
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn stage_creation_validation_faults_keep_every_acquired_handle_and_optional_identity()
+    -> TestResult {
+        for point in [
+            StageCreatePoint::AfterMkdir,
+            StageCreatePoint::DirectoryAcquired,
+            StageCreatePoint::DirectoryType,
+            StageCreatePoint::DirectoryIdentity,
+            StageCreatePoint::DirectoryName,
+            StageCreatePoint::BeforePayloadOpen,
+            StageCreatePoint::PayloadAcquired,
+            StageCreatePoint::PayloadType,
+            StageCreatePoint::PayloadLinks,
+            StageCreatePoint::PayloadIdentity,
+            StageCreatePoint::PayloadName,
+            StageCreatePoint::FinalCheck,
+        ] {
+            let roots = TestRoots::new()?;
+            let library = isolated(roots.library())?;
+            let files = LibraryFiles::open(&library)?;
+            let guard = files.try_custody()?;
+            let mut actual_directory = None;
+            let mut actual_payload = None;
+            let failure = files
+                .create_stage_with(
+                    &guard,
+                    || unique_name("stage"),
+                    |at, state| {
+                        if at != point {
+                            return Ok(());
+                        }
+                        actual_directory = state
+                            .directory
+                            .as_ref()
+                            .map(FileIdentity::from_file)
+                            .transpose()?;
+                        if let Some(file) = state.payload.as_ref() {
+                            let mut writer = file;
+                            writer
+                                .write_all(b"retained validation prefix")
+                                .map_err(|e| StorageError::io("write fault prefix", e))?;
+                            actual_payload = Some(FileIdentity::from_file(file)?);
+                        }
+                        Err(StorageError::io(
+                            "stage validation fault",
+                            io::Error::other("owned failure"),
+                        ))
+                    },
+                )
+                .err()
+                .ok_or("fault did not return retained creation")?;
+            assert_eq!(
+                failure.disposition(),
+                StageCreateDisposition::RetainedUnresolved
+            );
+            assert!(matches!(failure.cause(), StorageError::Io { .. }));
+            let state = failure
+                .retained_allocation()
+                .ok_or("missing partial owner")?;
+            assert!(std::ptr::eq(state.files, &files));
+            assert_eq!(state.parent_identity(), files.staging.identity);
+            assert!(state.mkdir_attempted());
+            assert!(state.directory_created());
+            assert_eq!(state.directory_acquired(), actual_directory.is_some());
+            assert_eq!(state.payload_acquired(), actual_payload.is_some());
+            assert_eq!(state.payload_created(), actual_payload.is_some());
+            assert_eq!(state.payload_open_attempted(), actual_payload.is_some());
+            assert_eq!(
+                state
+                    .directory
+                    .as_ref()
+                    .map(FileIdentity::from_file)
+                    .transpose()?,
+                actual_directory
+            );
+            assert_eq!(
+                state
+                    .payload
+                    .as_ref()
+                    .map(FileIdentity::from_file)
+                    .transpose()?,
+                actual_payload
+            );
+            let directory_observed = !matches!(
+                point,
+                StageCreatePoint::AfterMkdir
+                    | StageCreatePoint::DirectoryAcquired
+                    | StageCreatePoint::DirectoryType
+                    | StageCreatePoint::DirectoryIdentity
+            );
+            let payload_observed = matches!(
+                point,
+                StageCreatePoint::PayloadName | StageCreatePoint::FinalCheck
+            );
+            assert_eq!(
+                state.directory_identity(),
+                if directory_observed {
+                    actual_directory
+                } else {
+                    None
+                }
+            );
+            assert_eq!(
+                state.payload_identity(),
+                if payload_observed {
+                    actual_payload
+                } else {
+                    None
+                }
+            );
+            let path = library.layout().staging().join(state.directory_name());
+            assert!(path.is_dir());
+            if state.payload_acquired() {
+                let mut bytes = Vec::new();
+                let mut reader = state.payload_file()?;
+                reader.rewind()?;
+                reader.read_to_end(&mut bytes)?;
+                assert_eq!(bytes, b"retained validation prefix");
+                assert_eq!(fs::read(path.join(state.payload_name()))?, bytes);
+            }
+            assert!(library.custody_fenced.load(Ordering::Acquire));
+            // A later pre-effect refusal cannot acknowledge/clear this attempt.
+            let later = files
+                .create_stage(&guard)
+                .err()
+                .ok_or("earlier fence cleared")?;
+            assert_eq!(later.disposition(), StageCreateDisposition::NoAllocation);
+            assert!(matches!(
+                later.cause(),
+                StorageError::CustodyRecoveryRequired
+            ));
+            assert!(later.retained_allocation().is_none());
+            assert!(library.custody_fenced.load(Ordering::Acquire));
+            // No production cleanup occurs when negative test owners end.
+            drop(later);
+            drop(failure);
+            assert!(path.is_dir());
+            assert!(library.custody_fenced.load(Ordering::Acquire));
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn stage_creation_no_allocation_and_collisions_never_own_existing_bytes() -> TestResult {
+        let roots = TestRoots::new()?;
+        let library = isolated(roots.library())?;
+        let files = LibraryFiles::open(&library)?;
+        let guard = files.try_custody()?;
+        let pre = files
+            .create_stage_with(
+                &guard,
+                || unique_name("stage"),
+                |at, _| {
+                    assert_eq!(at, StageCreatePoint::BeforeMkdir);
+                    Err(StorageError::Cancelled)
+                },
+            )
+            .err()
+            .ok_or("pre-effect refusal missing")?;
+        assert_eq!(pre.disposition(), StageCreateDisposition::NoAllocation);
+        assert!(matches!(pre.cause(), StorageError::Cancelled));
+        assert!(pre.retained_allocation().is_none());
+        assert_eq!(fs::read_dir(library.layout().staging())?.count(), 0);
+        assert!(!library.custody_fenced.load(Ordering::Acquire));
+        let occupied = library.layout().staging().join("occupied");
+        fs::create_dir(&occupied)?;
+        fs::write(occupied.join(PAYLOAD), b"foreign collision bytes")?;
+        let mut attempts = 0;
+        let collision = files
+            .create_stage_with(
+                &guard,
+                || {
+                    attempts += 1;
+                    OsString::from("occupied")
+                },
+                |_, _| Ok(()),
+            )
+            .err()
+            .ok_or("collision adopted existing stage")?;
+        assert_eq!(attempts, 64);
+        assert_eq!(
+            collision.disposition(),
+            StageCreateDisposition::NoAllocation
+        );
+        assert!(matches!(
+            collision.cause(),
+            StorageError::DestinationCollision
+        ));
+        assert!(collision.retained_allocation().is_none());
+        assert!(!library.custody_fenced.load(Ordering::Acquire));
+        assert_eq!(
+            fs::read(occupied.join(PAYLOAD))?,
+            b"foreign collision bytes"
+        );
+        assert_eq!(fs::read_dir(library.layout().staging())?.count(), 1);
+        // Invalid single components refuse before mutation too.
+        let invalid = files
+            .create_stage_with(&guard, || OsString::from("../escape"), |_, _| Ok(()))
+            .err()
+            .ok_or("invalid component admitted")?;
+        assert_eq!(invalid.disposition(), StageCreateDisposition::NoAllocation);
+        assert!(matches!(invalid.cause(), StorageError::InvalidManagedPath));
+        Ok(())
+    }
+
+    #[test]
+    fn stage_creation_substitution_retains_original_handles_without_replacement_authority()
+    -> TestResult {
+        for target in [
+            StageCreatePoint::DirectoryName,
+            StageCreatePoint::PayloadName,
+        ] {
+            let roots = TestRoots::new()?;
+            let library = isolated(roots.library())?;
+            let files = LibraryFiles::open(&library)?;
+            let guard = files.try_custody()?;
+            let mut original = None;
+            let mut replaced = false;
+            let failure = files
+                .create_stage_with(
+                    &guard,
+                    || unique_name("stage"),
+                    |at, state| {
+                        if at != target || replaced {
+                            return Ok(());
+                        }
+                        replaced = true;
+                        let path = library.layout().staging().join(state.directory_name());
+                        if at == StageCreatePoint::DirectoryName {
+                            original = Some(FileIdentity::from_file(state.directory_file()?)?);
+                            fs::rename(&path, library.layout().staging().join("original-held"))
+                                .map_err(|e| StorageError::io("test substitute directory", e))?;
+                            fs::create_dir(&path)
+                                .map_err(|e| StorageError::io("test replacement directory", e))?;
+                            fs::write(path.join(PAYLOAD), b"replacement must survive")
+                                .map_err(|e| StorageError::io("test replacement bytes", e))?;
+                        } else {
+                            original = Some(FileIdentity::from_file(state.payload_file()?)?);
+                            let mut writer = state.payload_file()?;
+                            writer
+                                .write_all(b"original retained bytes")
+                                .map_err(|e| StorageError::io("test original bytes", e))?;
+                            fs::rename(path.join(PAYLOAD), path.join("original-held"))
+                                .map_err(|e| StorageError::io("test substitute payload", e))?;
+                            fs::write(path.join(PAYLOAD), b"replacement must survive")
+                                .map_err(|e| StorageError::io("test replacement payload", e))?;
+                        }
+                        Ok(())
+                    },
+                )
+                .err()
+                .ok_or("substitution was accepted")?;
+            assert!(matches!(failure.cause(), StorageError::SnapshotChanged));
+            let state = failure
+                .retained_allocation()
+                .ok_or("substitution dropped partial owner")?;
+            let retained_file = if target == StageCreatePoint::DirectoryName {
+                state.directory_file()?
+            } else {
+                state.payload_file()?
+            };
+            assert_eq!(Some(FileIdentity::from_file(retained_file)?), original);
+            let path = library.layout().staging().join(state.directory_name());
+            assert_eq!(fs::read(path.join(PAYLOAD))?, b"replacement must survive");
+            if target == StageCreatePoint::PayloadName {
+                let mut reader = state.payload_file()?;
+                reader.rewind()?;
+                let mut bytes = Vec::new();
+                reader.read_to_end(&mut bytes)?;
+                assert_eq!(bytes, b"original retained bytes");
+            } else {
+                assert!(!state.payload_acquired());
+            }
+            assert!(library.custody_fenced.load(Ordering::Acquire));
+            drop(failure);
+            assert_eq!(fs::read(path.join(PAYLOAD))?, b"replacement must survive");
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn stage_creation_payload_link_change_after_metadata_never_returns_complete_authority()
+    -> TestResult {
+        let roots = TestRoots::new()?;
+        let library = isolated(roots.library())?;
+        let files = LibraryFiles::open(&library)?;
+        let guard = files.try_custody()?;
+        let failure = files
+            .create_stage_with(
+                &guard,
+                || unique_name("stage"),
+                |at, state| {
+                    if at == StageCreatePoint::PayloadLinks {
+                        let mut file = state.payload_file()?;
+                        file.write_all(b"retained link-change bytes")
+                            .map_err(|e| StorageError::io("test link-change bytes", e))?;
+                        let path = library.layout().staging().join(state.directory_name());
+                        fs::hard_link(path.join(state.payload_name()), path.join("extra-link"))
+                            .map_err(|e| StorageError::io("test payload link change", e))?;
+                    }
+                    Ok(())
+                },
+            )
+            .err()
+            .ok_or("stale metadata granted complete stage authority")?;
+        assert!(matches!(failure.cause(), StorageError::PathEscape));
+        let state = failure
+            .retained_allocation()
+            .ok_or("hardlink failure lost owner")?;
+        assert!(state.payload_created());
+        assert_eq!(state.payload_file()?.metadata()?.nlink(), 2);
+        assert_eq!(
+            Some(FileIdentity::from_file(state.payload_file()?)?),
+            state.payload_identity()
+        );
+        let path = library.layout().staging().join(state.directory_name());
+        assert_eq!(
+            fs::read(path.join("extra-link"))?,
+            b"retained link-change bytes"
+        );
+        assert_eq!(
+            fs::read(path.join(state.payload_name()))?,
+            b"retained link-change bytes"
+        );
+        assert!(library.custody_fenced.load(Ordering::Acquire));
+        Ok(())
+    }
+
+    #[test]
+    fn stage_creation_syscall_errors_keep_attempt_truth_and_missing_handles() -> TestResult {
+        for target in [
+            StageCreatePoint::BeforeMkdir,
+            StageCreatePoint::AfterMkdir,
+            StageCreatePoint::BeforePayloadOpen,
+        ] {
+            let roots = TestRoots::new()?;
+            let library = isolated(roots.library())?;
+            let files = LibraryFiles::open(&library)?;
+            let guard = files.try_custody()?;
+            let foreign = library.layout().archives().join("unrelated");
+            fs::create_dir(&foreign)?;
+            fs::write(foreign.join(PAYLOAD), b"never adopt foreign bytes")?;
+            let mut injected = false;
+            let failure = files
+                .create_stage_with(
+                    &guard,
+                    || unique_name("stage"),
+                    |at, state| {
+                        if at != target || injected {
+                            return Ok(());
+                        }
+                        injected = true;
+                        let path = library.layout().staging().join(state.directory_name());
+                        match at {
+                            StageCreatePoint::BeforeMkdir => {
+                                fs::remove_dir(library.layout().staging())
+                            }
+                            StageCreatePoint::AfterMkdir => {
+                                fs::remove_dir(&path).map_err(|e| {
+                                    StorageError::io("test remove created directory", e)
+                                })?;
+                                symlink(&foreign, &path)
+                            }
+                            StageCreatePoint::BeforePayloadOpen => {
+                                fs::write(path.join(PAYLOAD), b"never adopt collision bytes")
+                            }
+                            _ => return Err(StorageError::CompatibilityInvariant),
+                        }
+                        .map_err(|e| StorageError::io("test actual syscall failure", e))
+                    },
+                )
+                .err()
+                .ok_or("actual syscall refusal missing")?;
+            assert_eq!(
+                failure.disposition(),
+                StageCreateDisposition::RetainedUnresolved
+            );
+            let state = failure
+                .retained_allocation()
+                .ok_or("attempt state missing")?;
+            assert!(state.mkdir_attempted());
+            assert_eq!(
+                state.directory_created(),
+                target != StageCreatePoint::BeforeMkdir
+            );
+            assert_eq!(
+                state.directory_acquired(),
+                target == StageCreatePoint::BeforePayloadOpen
+            );
+            assert_eq!(
+                state.payload_open_attempted(),
+                target == StageCreatePoint::BeforePayloadOpen
+            );
+            assert!(!state.payload_acquired());
+            assert!(!state.payload_created());
+            assert!(state.payload_identity().is_none());
+            assert_eq!(
+                fs::read(foreign.join(PAYLOAD))?,
+                b"never adopt foreign bytes"
+            );
+            if target == StageCreatePoint::BeforePayloadOpen {
+                assert_eq!(
+                    fs::read(
+                        library
+                            .layout()
+                            .staging()
+                            .join(state.directory_name())
+                            .join(PAYLOAD)
+                    )?,
+                    b"never adopt collision bytes"
+                );
+            }
+            assert!(library.custody_fenced.load(Ordering::Acquire));
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn stage_creation_partial_native_owner_fences_finalization_and_preserves_active() -> TestResult
+    {
+        use crate::{
+            adoption::{ClosedLibraryInput, ClosedManifest},
+            platform::lock::LIBRARY_LOCK_FILE,
+            profile::{NativeProfileStore, Profile, ProfileDocument, ProfileLocations},
+        };
+        let roots = TestRoots::new()?;
+        let source = roots.library().join("closed-source");
+        fs::create_dir(&source)?;
+        let manifest_bytes =
+            include_bytes!("../../../../preservation/corpus/profiles/library-manifest.json");
+        let manifest: serde_json::Value = serde_json::from_slice(manifest_bytes)?;
+        let corpus = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../preservation/corpus/libraries/schema018");
+        for entry in manifest.as_array().ok_or("manifest array")? {
+            let name = entry["path"].as_str().ok_or("manifest path")?;
+            if entry["directory"].as_bool() == Some(true) {
+                fs::create_dir(source.join(name))?;
+            } else {
+                fs::copy(corpus.join(name), source.join(name))?;
+            }
+        }
+        let profile = Profile {
+            version: 1,
+            language: "fr".into(),
+            root: source.to_str().ok_or("source UTF8")?.into(),
+            library_id: "a0000000-0000-4000-8000-000000000001".into(),
+            complete: true,
+            recovering: false,
+        };
+        let cancel = WorkCancellation::default();
+        let input = ClosedLibraryInput::verify(
+            &source,
+            ProfileDocument::decode(&serde_json::to_vec(&profile)?)?,
+            ClosedManifest::decode(manifest_bytes)?,
+            &cancel,
+        )?;
+        let locations = ProfileLocations::for_host(
+            &roots.profile().join("home"),
+            Some(&roots.profile().join("config")),
+            Some(&roots.library().join("data")),
+        )?;
+        fs::create_dir_all(&locations.data)?;
+        fs::create_dir_all(locations.native.parent().ok_or("native parent")?)?;
+        let copy = input.copy_to_new_root(&locations.data.join("actual-copy"), &cancel)?;
+        let root = copy.root().to_owned();
+        let store = NativeProfileStore::create_fresh(&locations.native)?;
+        let native = NativeLibrary::bind_independent(copy, &store, &locations, &cancel)
+            .map_err(|failure| failure.to_string())?;
+        let mut db = Database::open_native(&native)?;
+        let partial_path;
+        {
+            let files = LibraryFiles::open_native(&db)?;
+            let guard = files.try_custody()?;
+            let retained = files
+                .create_stage_after_open(&guard, |_, file| {
+                    let mut writer = file;
+                    writer
+                        .write_all(b"native unresolved allocation")
+                        .map_err(|e| StorageError::io("write native partial bytes", e))?;
+                    Err(StorageError::io(
+                        "injected native creation validation",
+                        io::Error::other("keep owners"),
+                    ))
+                })
+                .err()
+                .ok_or("native failure lost")?;
+            let state = retained
+                .retained_allocation()
+                .ok_or("native partial owner absent")?;
+            partial_path = root
+                .join("staging")
+                .join(state.directory_name())
+                .join(state.payload_name());
+            assert_eq!(fs::read(&partial_path)?, b"native unresolved allocation");
+            assert!(files.try_custody().is_err());
+            // Mandatory SAME-writer observation survives the generation fence.
+            assert_eq!(
+                db.barrier_read(
+                    |tx| Ok(tx.query_row("SELECT 1", [], |row| row.get::<_, i64>(0))?)
+                )?
+                .wait()?,
+                1
+            );
+            // This negative fixture ends borrows; it does NOT resolve bytes or
+            // grant settlement. The native fence must survive these drops.
+            drop(retained);
+        }
+        db.close()?;
+        drop(db);
+        let retained_native = native
+            .finish()
+            .err()
+            .ok_or("partial allocation minted Closed")?;
+        assert_eq!(fs::read(&partial_path)?, b"native unresolved allocation");
+        let record: serde_json::Value =
+            serde_json::from_slice(&fs::read(root.join(crate::native::NATIVE_STATE_FILE))?)?;
+        assert_eq!(record["state"], "active");
+        assert!(store.update(|_| Ok(())).is_err());
+        let probe = fs::OpenOptions::new()
+            .read(true)
+            .write(true)
+            .open(root.join(LIBRARY_LOCK_FILE))?;
+        assert!(matches!(
+            probe.try_lock(),
+            Err(fs::TryLockError::WouldBlock)
+        ));
+        assert!(matches!(
+            NativeProfileStore::open_native(&locations.native),
+            Err(StorageError::ProfileInUse)
+        ));
+        assert_eq!(retained_native.retained_library().layout().root(), root);
+        Ok(())
     }
 
     #[test]
@@ -1675,10 +2630,18 @@ mod tests {
         let other_files = LibraryFiles::open(&other)?;
         let guard = files.try_custody()?;
         assert!(matches!(peer.try_custody(), Err(StorageError::CustodyBusy)));
+        let wrong_generation = other_files
+            .create_stage(&guard)
+            .err()
+            .ok_or("foreign generation admitted")?;
         assert!(matches!(
-            other_files.create_stage(&guard),
-            Err(StorageError::IdentityMismatch)
+            wrong_generation.cause(),
+            StorageError::IdentityMismatch
         ));
+        assert_eq!(
+            wrong_generation.disposition(),
+            StageCreateDisposition::NoAllocation
+        );
         drop(guard);
         drop(peer.try_custody()?);
         for name in ["", ".", "..", "a/b", "a\0b", "/abs"] {

@@ -3247,8 +3247,10 @@ test('restores, displays, and polls every concurrent active import', async () =>
 
     expect(await screen.findAllByRole('heading', {name: 'Importing 1 story'}))
         .toHaveLength(2);
-    expect(operationSnapshot).toHaveBeenCalledWith(first.id);
-    expect(operationSnapshot).toHaveBeenCalledWith(second.id);
+    await waitFor(() => {
+        expect(operationSnapshot).toHaveBeenCalledWith(first.id);
+        expect(operationSnapshot).toHaveBeenCalledWith(second.id);
+    });
     expect(screen.getAllByRole('button', {name: 'Cancel import'})).toHaveLength(2);
 });
 

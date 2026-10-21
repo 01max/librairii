@@ -1461,3 +1461,167 @@ both-parent rename persistence or power-loss durability. No directory flush,
 NtFlush, ReplaceFileW/POSIX mutation, restart, activation or full4.9 grant follows.
 The independently verified Unix read-source issuer is separately committed as
 `34dc8e0ab2691f7bda0b49f8bb0fe65746da019a` and adds no Windows authority.
+
+Original nine-identity support
+`44c2416ab5d79c5513dd039f02e3f866972b8067` was fast-forward consumed and
+published, retaining all prior objects/scopes and issuer34dc/helper8223 source.
+ONE exact44 worker6 full quality run passed178 nextest/zero skips and thirteen
+workspace compile-fail docs (eleven storage), unchanged146/strict15/source19,
+both graph policies, discovery/fmt/build/Clippy. The launcher explicitly reported
+Source44 and the actual worker6 root. Log SHA256
+`e6e741698e4f38a58a06776a1a256caae325e56c8095c4ee0e8efaadbb7bdd9b`.
+This historical AppleARM source-combined result does not qualify Windows helper
+execution or the subsequently added process tests.
+
+### Partial 4.7: actual process death and relocation refusal
+
+Two macOS/Linux integration cases add finite lifecycle evidence without changing
+any production mechanism, format, API, dependency or cross-section input pin.
+The process case uses one actual child test process and explicit private owned
+fixture locations. The child independently verifies the admitted closed source,
+creates its OWN new copy and marked native profile through actual constructors,
+and opens the actual five-connection Native Database before readiness. No parent
+copy receipt, path/ID tuple or TestRoots boolean is cast into child runtime
+authority. The readiness file is test synchronization data outside native
+namespaces, never activation/closure authority.
+
+The parent verifies both kernel locks are held, forcibly kills and truly waits
+for the child, then verifies the root/profile locks become available. That OS
+release does NOT permit mutable restart: actual checked reopen refuses persisted
+Active, preserves exact record bytes, source DB, legacy settings and all managed
+archive bytes. No child Drop/finalizer/clean flag executes and no journal/sidecar
+cleanup or Active recovery is attempted. A readiness deadline fails the test and
+the owning host fallback kills/WAITS rather than inventing a closed/durable pass.
+This is process-death evidence, not physical power-loss durability.
+
+The relocation case first positively closes/drains/finishes the actual native
+owner, moves its now-Closed root inside the owned data namespace, and verifies
+old profile authority cannot reopen or be publicly retargeted from data. Exact
+profile, marker and record bytes remain unchanged and no old path is recreated.
+It proves refusal/preservation, NOT successful verified cross-OS rebinding or
+automatic relocation repair.
+
+AppleARM scoped execution: each new exact case passed1/1 with25 other native
+tests intentionally filtered; storage all-target Clippy with warnings denied,
+rustfmt and diff-check passed. No fabricated executed RED, full178 repeat,
+Go/export/scalar/C2 campaign, actual Linux/Windows or provider qualification is
+claimed. Current source-defined test identities require owner5 additive support;
+current native/provider/cumulative/review and full4.7/4.10/4.11 gates remain open.
+The distinct proposed Native terminal proof stays pinned to1e954 and the import
+proof to44; neither is silently updated by these tests.
+
+### 4.1 correction: Go UUID wrapper spelling regression
+
+Frozen `preferences.Identity` trims the marker text before google/uuid v1.6.0
+`Parse`. Its 38-byte form validates the middle36 UUID bytes without requiring
+braces. The pinned shared Rust UUID parser requires braces in that form. Upper
+URN casing already agrees and is not a defect. This regression retains exact
+UTF-8 marker bytes/spelling and the unchanged shared-core grammar; it also
+extends the existing private native-record codec test with exact wrapper
+roundtrips. No upstream implementation/data, dependency, fixture, shared type,
+format field or notice is copied or changed.
+
+Actual AppleARM RED on the unchanged production implementation: the new marker
+probe case fails `InvalidIdentity`; the existing native-codec case extended with
+the same accepted spelling fails `RecoveryBindingRequired`. Nextest run
+`2e6ec78e-426d-4ccc-9f9f-1d2ab0f41239`: two selected cases, zero passed/two
+failed,155 intentionally filtered. This is an actual storage-boundary failure,
+not a new Go campaign or a parser-parity/native-admission claim. Existing supplied
+frozen-Go optional/text observations are supporting evidence only. Native N3
+input1e954 and import input44 remain unchanged; no temporary proof is shipped.
+
+The original failing regression is
+`ce69e4b2e1927de878be30257cde42717aebe522`. The correction uses a private
+already-trimmed storage spelling adapter: for byte length38 it checks the UTF-8
+slice boundary and delegates the middle36 to the existing LibraryId parser;
+other supported shapes still delegate unchanged. Both marker parsing and the
+private native record use this one adapter. Raw spelling, exact marker bytes,
+profile equality, canonical diagnostics and shared/core string parsing remain
+separate. Surrounding native-record whitespace and malformed lengths/UUIDs still
+refuse. The existing UTF-8 marker domain is unchanged; no broad arbitrary-byte
+Go parser claim is made.
+
+Actual AppleARM GREEN: SAME two selected cases pass,155 intentionally filtered,
+run `4c8ae107-91b9-46e1-b21c-841b00fd0ce3`. The marker table now completes all
+seven supported spelling cases including arbitrary and NUL wrappers, followed by
+non-destructive malformed-middle/length/multibyte-boundary checks. The native
+codec roundtrips exact wrapper strings while retaining all strict invalid-input
+checks. Storage all-target Clippy with warnings denied, rustfmt and diff-check
+pass. RED log SHA256
+`280489cef1d6f4e21fa2775a5f6f9bfa1fda481856925da136ef9813b5db35f0`;
+GREEN `734f985d7d704b255ffa528d1ff2022c25717cdaf3815953b0a19e0a17b27adc`.
+No Go, full workspace, native-other-host, whole Native restart campaign or fixed
+temporary proof was rerun. Owner5 actual additive discovery/current combined
+quality and final provider/review/admission remain required.
+
+### 4.8 correction: retain partial stage creation
+
+The current stage factory can create a private directory/payload and then
+return a bare error after a descriptor has been acquired. The original focused
+regression injects an error after opening the actual payload, writes and verifies
+its retained inode and bytes, and requires the unresolved generation fence.
+Actual AppleARM RED: run `c744a2f2-e029-437c-b64d-2d21f4d99da5`, one selected
+case failed because the fence was absent;157 other tests were intentionally
+filtered. This is an executed post-acquisition failure, not a claim that every
+acquisition/validation branch or partial-allocation cleanup is qualified.
+
+The bounded correction replaces the bare-error stage factory with an owning
+failure result; partial allocation resolution remains outside this slice. The
+fixed successful-stage-input import proof and native/scoped terminal proofs are
+unchanged. The separately assigned current-head frontend failure remains open;
+no retry or frontend changes are part of this correction.
+
+The ORIGINAL RED is `79a7c54` (log SHA256
+`c7e35754865ca524bb3e299be36be8c9d8da32c31d53da4822e03b5dc49428f9`).
+The correction REPLACES `LibraryFiles::create_stage`, in the existing public
+Unix namespace, with
+`Result<OwnedStage<'files, 'library>, Box<StageCreateFailure<'files, 'library>>>`.
+There is no legacy bare-error adapter, `From` conversion, owned-cause extractor
+or standard-error conversion on this borrowed failure. `cause()` borrows the
+original structured error; `disposition()` distinguishes this call's positively
+`NoAllocation` from `RetainedUnresolved`; `retained_allocation()` borrows its
+opaque actual partial owner. Optional identities remain absent until observed.
+Positive creation flags never turn a failed/unknown call into no-effects proof.
+
+Every attempted allocation starts with the SAME Files borrow/original staging
+parent and exact validated single components. Every returned directory/payload
+FD is installed into that state before metadata, type, link, identity, name or
+root/guard validation. This path does not use the bare-error child/open helpers.
+Intake/generation checks precede each attempt and complete authority is issued
+only after fresh final parent/name/link/root checks. EEXIST collisions confer no
+ownership and are bounded to64; generic syscall failures remain retained and
+fenced. No partial cleanup, retry, path scan, destructive Drop, new graph/export,
+unsafe code or domain implementation is added. Only fully validated OwnedStage
+can use existing retirement. Existing successful fixtures explicitly assert
+success; negative cases retain the actual failure, with their source/guard
+owners remaining outside the factory.
+
+Actual AppleARM final focused run `202349fb-66d4-43b4-acd3-993d34af1848`:
+20PASS/0skip,144 intentionally filtered. Seven new creation cases cover the
+original RED,12 post-effect/acquisition/pre-validation checkpoints, known
+pre-effect/no-create/collision controls, missing-FD syscall failures, actual
+directory/payload substitution, a hardlink change after metadata, and the actual
+Native close/finalizer boundary. Retained FDs/IDs and prefix bytes are checked;
+later NoAllocation and owner drops preserve the prior sticky fence. The Native
+case uses a verified corpus copy and SAME Database, performs mandatory writer
+readback, drains/closes/drops DB, then retains actual NativeCloseFailure with
+Active record/root lock/profile exclusion and unchanged partial bytes. Ending
+negative fixture borrows is explicitly not cleanup or settlement. Existing
+affected publication/reuse/retirement/cancellation/native-file cases pass too.
+
+Storage doctests14PASS:12 compile-fail lifetime cases plus two compile-pass
+controls. Direct rustc diagnostic checks on the actual boxed-failure example
+produce E0505+E0502 (Files/DB) and E0502 (DB-only), with no E0277 conversion error.
+The publication compile-pass control consumes the fixture Result before testing
+receipt drain, so a leftover Result cannot masquerade as receipt lifetime proof.
+Storage all-target Clippy with warnings denied, rustfmt and diff-check pass.
+The first new Native negative fixture reached its final lock assertion but
+looked for the library-lock filename in the profile namespace; that fixture-only
+NotFound failure is retained separately and corrected to the actual public
+ProfileInUse check. No product RED is invented from that setup error.
+
+These seven test identities are Mac/Linux scoped. No Linux/Windows execution,
+current whole-workspace/provider/admission, full4.8/4.11, partial-allocation
+resolution, fixed-G/N3/C2/C70 replay or new Go/normalization campaign is claimed.
+Owner5 actual additive discovery and then current combined quality remain next;
+the independent current-head frontend failure remains separately unresolved.
