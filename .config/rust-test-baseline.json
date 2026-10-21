@@ -1461,6 +1461,159 @@
       "targets": [
         "x86_64-pc-windows-msvc"
       ]
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "archive::custody::tests::prepublication_acknowledged_partial_write_error_keeps_exact_bytes",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "archive::custody::tests::prepublication_already_owned_work_can_finish_after_ordinary_intake_stop",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "archive::custody::tests::prepublication_cancellation_between_read_and_write_or_short_writes_is_observed",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "archive::custody::tests::prepublication_cancellation_phase_matrix_retains_owners_without_partial_digest",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "archive::custody::tests::prepublication_changed_source_or_actual_stage_is_never_measured_success",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "archive::custody::tests::prepublication_checked_counter_overflow_preserves_prior_observation",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "archive::custody::tests::prepublication_copy_retains_real_native_owners_raw_name_and_exact_eof_bytes",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "archive::custody::tests::prepublication_empty_source_requires_actual_eof_and_empty_stage_digest",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "archive::custody::tests::prepublication_growth_sentinel_is_read_but_never_written_past_bound",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "archive::custody::tests::prepublication_hash_read_error_or_short_eof_produces_no_digest",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "archive::custody::tests::prepublication_nonempty_stage_is_refused_without_appending_source",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "archive::custody::tests::prepublication_qualification_envelope_is_not_a_product_or_expanded_limit",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "archive::custody::tests::prepublication_real_borrowed_read_error_preserves_prefix_and_uncancelled_retirement",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "archive::custody::tests::prepublication_retirement_failure_keeps_actual_stage_source_guard_and_foreign_bytes",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "archive::custody::tests::prepublication_short_copy_eof_retires_only_actual_owned_prefix",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "archive::custody::tests::prepublication_short_writes_and_interrupted_read_still_measure_real_eof",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "archive::custody::tests::prepublication_unacknowledged_write_prefix_and_cancel_never_erase_io_cause",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
     }
   ]
 }

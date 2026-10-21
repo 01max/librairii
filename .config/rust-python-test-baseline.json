@@ -27,6 +27,11 @@
     "test_sources.SourcePolicy.test_registered_sources_and_notices_pass_without_writes",
     "test_sources.SourcePolicy.test_unlicensed_repository_and_scope_cannot_be_reassigned",
     "test_sources.SourcePolicy.test_fresh_autocrlf_checkout_runs_actual_checker_and_rejects_unprotected_bytes",
-    "test_migration_bytes.MigrationCheckout.test_fresh_autocrlf_preserves_storage_go_and_corpus_bytes"
+    "test_migration_bytes.MigrationCheckout.test_fresh_autocrlf_preserves_storage_go_and_corpus_bytes",
+    "test_import_sources.StudioSourcePolicy.test_two_bundle_registry_rejects_missing_extra_and_duplicate_ids_without_writes",
+    "test_sources.SourcePolicy.test_selected_storage_closure_is_required_and_read_only",
+    "test_sources.SourcePolicy.test_selected_storage_closure_rejects_changed_and_self_repinned_content_without_writes",
+    "test_sources.SourcePolicy.test_selected_storage_closure_rejects_extra_entries_and_hard_links_without_writes",
+    "test_sources.SourcePolicy.test_two_bundle_registry_rejects_missing_extra_and_duplicate_ids_without_writes"
   ]
 }
