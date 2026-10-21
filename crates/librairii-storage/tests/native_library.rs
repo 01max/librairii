@@ -20,6 +20,71 @@ const MANIFEST: &[u8] =
     include_bytes!("../../../preservation/corpus/profiles/library-manifest.json");
 
 #[test]
+fn native_owned_read_source_retains_database_and_reads_after_stop_or_uncertainty() -> TestResult {
+    use librairii_storage::platform::{
+        hash_stream,
+        unix::{EntryName, FileArea, LibraryFiles},
+    };
+    let roots = TestRoots::new()?;
+    let (copy, locations) = prepare(&roots, false)?;
+    let root = copy.root().to_owned();
+    let entry = fs::read_dir(root.join("archives"))?
+        .next()
+        .ok_or("owned copied archive absent")??;
+    let name = EntryName::parse(entry.file_name())?;
+    let original = fs::read(entry.path())?;
+    let store = NativeProfileStore::create_fresh(&locations.native)?;
+    let native =
+        NativeLibrary::bind_independent(copy, &store, &locations, &WorkCancellation::default())
+            .map_err(|f| f.to_string())?;
+    let mut db = Database::open_native(&native)?;
+    {
+        let files = LibraryFiles::open_native(&db)?;
+        let mut source = files.open_read_source(FileArea::Archives, name.clone())?;
+        let initial = source.initial();
+        let cancel = WorkCancellation::default();
+        let before = hash_stream(&mut source, initial.bytes(), &cancel)?;
+        db.stop_ordinary()?;
+        assert!(matches!(
+            files.open_read_source(FileArea::Archives, name.clone()),
+            Err(StorageError::IntakeClosed)
+        ));
+        source.rewind()?;
+        assert_eq!(hash_stream(&mut source, initial.bytes(), &cancel)?, before);
+        assert!(matches!(db.repair_transaction(|tx| {
+            tx.execute_batch("CREATE TEMP TABLE read_source_parent(id INTEGER PRIMARY KEY); CREATE TEMP TABLE read_source_child(parent INTEGER REFERENCES read_source_parent(id) DEFERRABLE INITIALLY DEFERRED); INSERT INTO read_source_child VALUES (999);")?;
+            Ok(())
+        })?.wait()?, TransactionOutcome::CommitUncertain(_)));
+        assert!(matches!(
+            files.open_read_source(FileArea::Archives, name),
+            Err(StorageError::CustodyRecoveryRequired)
+        ));
+        assert_eq!(source.revalidate()?, initial);
+        source.rewind()?;
+        assert_eq!(hash_stream(&mut source, initial.bytes(), &cancel)?, before);
+        assert_eq!(
+            db.barrier_read(|tx| Ok(tx.query_row(
+                "SELECT COUNT(*) FROM sqlite_temp_master WHERE name='read_source_child'",
+                [],
+                |row| row.get::<_, i64>(0)
+            )?))?
+            .wait()?,
+            0
+        );
+    }
+    db.close()?;
+    drop(db);
+    assert_eq!(fs::read(entry.path())?, original);
+    let retained = native
+        .finish()
+        .err()
+        .ok_or("read observation cleared fence")?;
+    require_lock_held(retained.retained_library().layout().root())?;
+    assert_eq!(native_state(&root)?["state"], "active");
+    Ok(())
+}
+
+#[test]
 fn native_files_retain_same_database_custody_and_drain_after_intake_stop() -> TestResult {
     use librairii_storage::platform::unix::{EntryName, FileArea, LibraryFiles, Publication};
     let roots = TestRoots::new()?;

@@ -498,6 +498,157 @@ pub enum FileArea {
     Catalog,
 }
 
+/// Owned-handle observations only: equality cannot prove an adversarial
+/// source snapshot or exclusion. No observation creates a file capability.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct ReadSourceObservation {
+    parent: FileIdentity,
+    file: FileIdentity,
+    bytes: u64,
+    links: u64,
+    modified: (i64, i64),
+    changed: (i64, i64),
+}
+impl ReadSourceObservation {
+    pub const fn parent_identity(self) -> FileIdentity {
+        self.parent
+    }
+    pub const fn identity(self) -> FileIdentity {
+        self.file
+    }
+    /// Observed current size, NOT a trusted immutable size or product limit.
+    pub const fn bytes(self) -> u64 {
+        self.bytes
+    }
+    pub const fn links(self) -> u64 {
+        self.links
+    }
+}
+
+/// A read-only regular source issued by an actual retained managed-parent
+/// owner. It is NOT general external-picker permission, source write/cleanup,
+/// an immutable snapshot, a stage or a custody/publication capability.
+///
+/// The actual Files/Database/library leases cannot close before this owner:
+/// ```compile_fail
+/// use librairii_storage::{Result, database::Database,
+///     platform::unix::{LibraryFiles, FileArea, EntryName}};
+/// fn close_before_source(db: &mut Database<'_>) -> Result<()> {
+///     let files = LibraryFiles::open_native(db)?;
+///     let source = files.open_read_source(FileArea::Archives, EntryName::parse("owned")?)?;
+///     db.close()?;
+///     drop(source);
+///     Ok(())
+/// }
+/// ```
+/// A source also cannot discard its Files owner and keep only an extracted
+/// root/path/ID as a substitute for the real database borrow:
+/// ```compile_fail
+/// use librairii_storage::{Result, database::Database,
+///     platform::unix::{LibraryFiles, FileArea, EntryName}};
+/// fn source_after_files(db: &mut Database<'_>) -> Result<()> {
+///     let files = LibraryFiles::open_native(db)?;
+///     let source = files.open_read_source(FileArea::Archives, EntryName::parse("owned")?)?;
+///     drop(files);
+///     db.close()?;
+///     drop(source);
+///     Ok(())
+/// }
+/// ```
+/// No public write implementation or writable File extraction is supplied:
+/// ```compile_fail
+/// use std::io::Write;
+/// use librairii_storage::platform::unix::OwnedReadSource;
+/// fn cannot_write(source: &mut OwnedReadSource<'_, '_>) {
+///     let _ = source.write_all(b"not a writable source");
+/// }
+/// ```
+#[derive(Debug)]
+pub struct OwnedReadSource<'files, 'library> {
+    file: File,
+    parent: Directory,
+    files: &'files LibraryFiles<'library>,
+    area: FileArea,
+    name: EntryName,
+    initial: ReadSourceObservation,
+}
+// Keep the real Files/DB/library borrow through actual FD/parent close. No
+// filesystem effect, cancellation, compensation or fence reset occurs here.
+impl Drop for OwnedReadSource<'_, '_> {
+    fn drop(&mut self) {}
+}
+impl OwnedReadSource<'_, '_> {
+    pub fn name(&self) -> &EntryName {
+        &self.name
+    }
+    pub const fn initial(&self) -> ReadSourceObservation {
+        self.initial
+    }
+    /// Re-observe the SAME retained source and parent/name relationship. This
+    /// readonly observation remains possible for drain after intake stops or
+    /// a generation fences; it neither clears the fence nor grants new effects.
+    pub fn observe(&self) -> Result<ReadSourceObservation> {
+        match self.files.authority {
+            FilesAuthority::Isolated(library) => library.revalidate_database_ownership()?,
+            FilesAuthority::Native { library, .. } => library.revalidate_database_ownership()?,
+        }
+        let area_name = match self.area {
+            FileArea::Archives => OsStr::new("archives"),
+            FileArea::Catalog => OsStr::new("catalog"),
+        };
+        self.files
+            .root
+            .require_name(area_name, self.parent.identity)?;
+        if FileIdentity::from_file(&self.parent.file)? != self.parent.identity {
+            return Err(StorageError::SnapshotChanged);
+        }
+        let stat = self
+            .file
+            .metadata()
+            .map_err(|e| StorageError::io("observe retained read source", e))?;
+        if !stat.is_file() || stat.nlink() != 1 {
+            return Err(StorageError::PathEscape);
+        }
+        let file = FileIdentity {
+            device: stat.dev(),
+            inode: stat.ino(),
+        };
+        if file != self.initial.file {
+            return Err(StorageError::SnapshotChanged);
+        }
+        self.parent.require_name(self.name.as_os_str(), file)?;
+        Ok(ReadSourceObservation {
+            parent: self.parent.identity,
+            file,
+            bytes: stat.len(),
+            links: stat.nlink(),
+            modified: (stat.mtime(), stat.mtime_nsec()),
+            changed: (stat.ctime(), stat.ctime_nsec()),
+        })
+    }
+    /// Compare cooperative before/after metadata observations. An in-place
+    /// writer may evade such checks; no adversarial immutability is claimed.
+    pub fn revalidate(&self) -> Result<ReadSourceObservation> {
+        let current = self.observe()?;
+        if current != self.initial {
+            return Err(StorageError::SnapshotChanged);
+        }
+        Ok(current)
+    }
+}
+impl Read for OwnedReadSource<'_, '_> {
+    fn read(&mut self, bytes: &mut [u8]) -> io::Result<usize> {
+        self.revalidate().map_err(io::Error::other)?;
+        self.file.read(bytes)
+    }
+}
+impl Seek for OwnedReadSource<'_, '_> {
+    fn seek(&mut self, position: SeekFrom) -> io::Result<u64> {
+        self.revalidate().map_err(io::Error::other)?;
+        self.file.seek(position)
+    }
+}
+
 #[derive(Clone, Copy, Debug)]
 enum FilesAuthority<'library> {
     Isolated(&'library IsolatedLibrary),
@@ -730,6 +881,49 @@ impl<'library> LibraryFiles<'library> {
             FileArea::Archives => &self.archives,
             FileArea::Catalog => &self.catalog,
         }
+    }
+    /// Issue only from an actual storage-owned managed-area descriptor and one
+    /// validated lossless component. No arbitrary Path/File/metadata/TestRoots
+    /// constructor or general external-picker authority is provided.
+    pub fn open_read_source(
+        &self,
+        area: FileArea,
+        name: EntryName,
+    ) -> Result<OwnedReadSource<'_, 'library>> {
+        if self.authority.fenced() {
+            return Err(StorageError::CustodyRecoveryRequired);
+        }
+        self.authority.require_intake()?;
+        self.revalidate()?;
+        let parent = self.area(area).duplicate()?;
+        // The existing safe descriptor-relative route fixes O_RDONLY plus
+        // NOFOLLOW|NONBLOCK|CLOEXEC; regular/nlink1 and name-to-FD are checked.
+        let file = parent.open_regular(name.as_os_str(), OFlags::RDONLY)?;
+        let stat = file
+            .metadata()
+            .map_err(|e| StorageError::io("observe initial read source", e))?;
+        let initial = ReadSourceObservation {
+            parent: parent.identity,
+            file: FileIdentity::from_file(&file)?,
+            bytes: stat.len(),
+            links: stat.nlink(),
+            modified: (stat.mtime(), stat.mtime_nsec()),
+            changed: (stat.ctime(), stat.ctime_nsec()),
+        };
+        let source = OwnedReadSource {
+            file,
+            parent,
+            files: self,
+            area,
+            name,
+            initial,
+        };
+        source.revalidate()?;
+        self.authority.require_intake()?;
+        if self.authority.fenced() {
+            return Err(StorageError::CustodyRecoveryRequired);
+        }
+        Ok(source)
     }
     pub fn create_stage(&self, guard: &Custody<'_>) -> Result<OwnedStage<'_, 'library>> {
         self.check(guard)?;
@@ -1254,6 +1448,181 @@ mod tests {
             .map_err(|e| StorageError::io("write test stage", e))?;
         let measurement = stage.measure(bytes.len() as u64, &WorkCancellation::default())?;
         Ok((stage, measurement))
+    }
+
+    #[test]
+    fn owned_read_source_retains_readonly_fd_raw_name_and_cooperative_observations() -> TestResult {
+        let roots = TestRoots::new()?;
+        let library = isolated(roots.library())?;
+        let name = EntryName::parse("Éte # %2F retained.bin")?;
+        let path = library.layout().archives().join(name.as_os_str());
+        std::fs::write(&path, b"stable source bytes")?;
+        let files = LibraryFiles::open(&library)?;
+        let mut source = files.open_read_source(FileArea::Archives, name.clone())?;
+        assert_eq!(source.name(), &name);
+        assert_eq!(source.initial().bytes(), 19);
+        assert_eq!(source.initial().links(), 1);
+        assert_eq!(source.observe()?, source.initial());
+        assert_eq!(source.revalidate()?, source.initial());
+        assert_eq!(
+            native::fcntl_getfl(&source.file)? & OFlags::ACCMODE,
+            OFlags::RDONLY
+        );
+        let mut attempted_write = &source.file;
+        assert!(attempted_write.write_all(b"must not write").is_err());
+        let cancel = WorkCancellation::default();
+        let limit = source.initial().bytes();
+        let before = hash_stream(&mut source, limit, &cancel)?;
+        source.rewind()?;
+        assert_eq!(hash_stream(&mut source, limit, &cancel)?, before);
+        assert_eq!(source.revalidate()?, source.initial());
+        library.custody_fenced.store(true, Ordering::Release);
+        assert!(matches!(
+            files.open_read_source(FileArea::Archives, name),
+            Err(StorageError::CustodyRecoveryRequired)
+        ));
+        // Retained readonly observations do not require new effect admission,
+        // and do not clear the sticky fence.
+        source.rewind()?;
+        assert_eq!(hash_stream(&mut source, limit, &cancel)?, before);
+        assert!(library.custody_fenced.load(Ordering::Acquire));
+        assert_eq!(std::fs::read(&path)?, b"stable source bytes");
+        Ok(())
+    }
+
+    #[test]
+    fn owned_read_source_refuses_aliases_replaced_names_and_partial_components() -> TestResult {
+        use std::os::unix::fs::symlink;
+        let roots = TestRoots::new()?;
+        let library = isolated(roots.library())?;
+        let archives = library.layout().archives();
+        let path = archives.join("owned");
+        std::fs::write(&path, b"original readonly bytes")?;
+        let files = LibraryFiles::open(&library)?;
+        for raw in ["", ".", "..", "a/b", "/absolute", "nul\0tail"] {
+            assert!(EntryName::parse(raw).is_err());
+        }
+        assert!(
+            files
+                .open_read_source(FileArea::Archives, EntryName::parse("missing")?)
+                .is_err()
+        );
+        assert!(!archives.join("missing").exists());
+        std::fs::create_dir(archives.join("directory"))?;
+        assert!(
+            files
+                .open_read_source(FileArea::Archives, EntryName::parse("directory")?)
+                .is_err()
+        );
+        let alias = archives.join("alias");
+        std::fs::hard_link(&path, &alias)?;
+        assert!(matches!(
+            files.open_read_source(FileArea::Archives, EntryName::parse("alias")?),
+            Err(StorageError::PathEscape)
+        ));
+        std::fs::remove_file(&alias)?;
+        let outside = roots.profile().join("foreign");
+        std::fs::write(&outside, b"foreign unchanged")?;
+        symlink(&outside, &alias)?;
+        assert!(
+            files
+                .open_read_source(FileArea::Archives, EntryName::parse("alias")?)
+                .is_err()
+        );
+        let mut source = files.open_read_source(FileArea::Archives, EntryName::parse("owned")?)?;
+        std::fs::rename(&path, archives.join("displaced"))?;
+        std::fs::write(&path, b"replacement unchanged")?;
+        assert!(source.observe().is_err());
+        assert!(source.read(&mut [0]).is_err());
+        // The real old FD survives detected substitution; no cleanup/reopen
+        // capability is exposed to the consumer or inferred from a pathname.
+        let mut retained = Vec::new();
+        source.file.read_to_end(&mut retained)?;
+        assert_eq!(retained, b"original readonly bytes");
+        assert_eq!(std::fs::read(&path)?, b"replacement unchanged");
+        assert_eq!(std::fs::read(&outside)?, b"foreign unchanged");
+        Ok(())
+    }
+
+    #[test]
+    fn owned_read_source_detects_parent_substitution_and_keeps_actual_owner() -> TestResult {
+        use std::os::unix::fs::symlink;
+        for alias_parent in [false, true] {
+            let roots = TestRoots::new()?;
+            let library = isolated(roots.library())?;
+            let archives = library.layout().archives();
+            std::fs::write(archives.join("owned"), b"retained original")?;
+            let files = LibraryFiles::open(&library)?;
+            let mut source =
+                files.open_read_source(FileArea::Archives, EntryName::parse("owned")?)?;
+            let original_parent = roots.library().join("displaced-archives");
+            std::fs::rename(&archives, &original_parent)?;
+            if alias_parent {
+                symlink(&original_parent, &archives)?;
+            } else {
+                std::fs::create_dir(&archives)?;
+                std::fs::write(archives.join("owned"), b"foreign replacement")?;
+            }
+            assert!(source.revalidate().is_err());
+            assert!(source.seek(SeekFrom::Start(0)).is_err());
+            assert!(
+                files
+                    .open_read_source(FileArea::Archives, EntryName::parse("owned")?)
+                    .is_err()
+            );
+            let mut retained = Vec::new();
+            source.file.read_to_end(&mut retained)?;
+            assert_eq!(retained, b"retained original");
+            assert_eq!(
+                std::fs::read(original_parent.join("owned"))?,
+                b"retained original"
+            );
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn owned_read_source_reports_size_changes_and_never_claims_snapshot_exclusion() -> TestResult {
+        let roots = TestRoots::new()?;
+        let library = isolated(roots.library())?;
+        let path = library.layout().catalog().join("source");
+        std::fs::write(&path, b"initial")?;
+        let files = LibraryFiles::open(&library)?;
+        let mut source = files.open_read_source(FileArea::Catalog, EntryName::parse("source")?)?;
+        std::fs::write(&path, b"cooperatively observed changed bytes")?;
+        let observed = source.observe()?;
+        assert_eq!(observed.identity(), source.initial().identity());
+        assert_ne!(observed.bytes(), source.initial().bytes());
+        assert!(matches!(
+            source.revalidate(),
+            Err(StorageError::SnapshotChanged)
+        ));
+        assert!(source.read(&mut [0; 4]).is_err());
+        assert_eq!(
+            std::fs::read(&path)?,
+            b"cooperatively observed changed bytes"
+        );
+        Ok(())
+    }
+
+    #[test]
+    #[cfg(target_os = "linux")]
+    fn owned_read_source_retains_non_utf8_native_basename_without_reencoding() -> TestResult {
+        let roots = TestRoots::new()?;
+        let library = isolated(roots.library())?;
+        let raw = OsString::from_vec(b"raw-\xff-#-%2F.bin".to_vec());
+        let name = EntryName::parse(raw.clone())?;
+        let path = library.layout().archives().join(&raw);
+        std::fs::write(&path, b"lossless native source")?;
+        let files = LibraryFiles::open(&library)?;
+        let mut source = files.open_read_source(FileArea::Archives, name)?;
+        assert_eq!(source.name().as_os_str().as_bytes(), raw.as_bytes());
+        let mut bytes = Vec::new();
+        source.read_to_end(&mut bytes)?;
+        assert_eq!(bytes, b"lossless native source");
+        assert_eq!(source.revalidate()?, source.initial());
+        assert_eq!(std::fs::read(&path)?, b"lossless native source");
+        Ok(())
     }
 
     #[test]

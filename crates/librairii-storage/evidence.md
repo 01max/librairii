@@ -1368,3 +1368,59 @@ one test then passed1/1,22 intentionally filtered, on AppleARM; GREEN log SHA256
 `6a40285f33d79fe7a1f750cb315789a66779441df771e93407e30c56e016f2fa`.
 No full/native-other-host/provider rerun was used for this narrow assay. Queued
 Windows helper source is excluded from these commits and this host execution.
+
+Original aligned discovery support
+`1e954664d06e225a76510e246a667333c0fa7bcb` is consumed by fast-forward. It
+preserves original17-entry `d04d388e4826777059f8a8af1379fe8e5b727e67`,
+RED11c38cb and correctionc787cb through the original owner5 merge. Net source
+delta versus correctionc787 is baseline-only. Owner5's actual corrected-root
+full quality PASS173/zero skips +10 workspace compile-fail docs (8storage),
+146/strict15/source19 and both graphs is finite AppleARM evidence at1e954.
+The prior cached xtask invocation used the unrelated C2 compile-time root and
+stopped before native tests; that launcher/cache failure is retained separately.
+Rebuilding only that owned cached package supplied the correct source root;
+no product/policy/dependency waiver or C2 source substitution occurred.
+
+### Partial 4.8: a readonly source from the actual retained managed parent
+
+`SOURCE6-READ-ISSUER-QUAL` adds
+`LibraryFiles::open_read_source(FileArea, EntryName) -> OwnedReadSource` on
+macOS/Linux. It derives Archives/Catalog from actual retained managed descriptors;
+there is no arbitrary Path/File/metadata/TestRoots constructor or general external
+picker permission. The owner retains readonly File + parent FD + exact raw name,
+original file/parent identity, nlink1, size and mtime/ctime observations. The
+existing safe openat route fixes RDONLY/NOFOLLOW/NONBLOCK/CLOEXEC and checks the
+regular object and name-to-FD identity. No new dependency, unsafe, shared port,
+crate wiring or cleanup/publication/activation conversion is introduced.
+
+Read/Seek use the SAME FD. Revalidation detects substituted parents/names, aliases
+and observed size/change differences while preserving the actual owner. New
+issuance requires ordinary intake and a healthy generation. Already-retained
+readonly identity/name observations can drain after intake stop or uncertainty;
+they never clear exclusion or authorize new effects. These cooperative metadata
+and EOF/hash observations do NOT establish adversarial source immutability or
+snapshot exclusion. An initial size is data, not an immutable/product byte cap.
+
+The source physically borrows Files, which retains the actual SAME Database,
+NativeLibrary/profile/root leases or the actual isolated library. Three new
+compile-fail cases cover DB close, Files drop followed by close, and the absence
+of Write/writable File extraction. No nominal ID/path can replace those borrows.
+
+Actual scoped AppleARM: four `owned_read_source` unit cases PASS (48 intentionally
+filtered); the exact native source-after-stop/real-COMMIT-uncertainty integration
+PASS1/1 (23 intentionally filtered). It reuses the admitted copied archive bytes,
+retains fresh writer readback and an actual fenced consuming finalizer failure.
+All eleven storage compile-fail docs and storage all-target Clippy with warnings
+denied PASS; rustfmt/diff-check PASS. Readonly FD access, exact Unicode/raw name,
+alias/parent/name substitution, observed growth and retained bytes are separate
+checks. A sixth source-defined Linux-only actual non-UTF8 basename case is not
+executed on this host. No skip, actual Linux/Windows, full workspace quality or
+current provider qualification is inferred.
+
+This read-only constructor does NOT repair or qualify create_stage allocation
+failures: its bare Err may still leave partial private bytes. The first future
+copy proof starts with an actually successful stage/guard and the source owner.
+No section5 code/API handoff, external-picker permission, import inspection/SQL,
+resource-budget decision, source cleanup, custody transfer or production bridge
+is released by this mechanism. Owner5 additive discovery/current quality and
+actual target evidence remain required.
