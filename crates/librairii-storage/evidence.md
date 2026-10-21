@@ -1784,3 +1784,20 @@ binding/retarget regressions2/2 with24 intentionally filtered (nextest
 22600a14-9aae-4936-9f3b-79ebe2e2e1ba), storage all-target Clippy-Dwarnings,
 owned-file rustfmt and diff checks. No old CI retry/cancel, Windows assay,
 Go/corpus campaign, new test identity or root policy change.
+
+### Review5595434525 P1: publish durable recovery names before unlink
+
+Both foreign-schema preservation and failed-migration preservation now share
+one ordered helper: link ALL main/WAL/SHM members and sync their files; sync the
+recovery directory; sync its parent to publish the new directory name; only then
+unlink originals and sync their parent. Publication failures leave every original
+in place. Late removal-ack failures retain the already published recovery family
+and return PreservationFailed; foreign preservation keeps its runtime exclusion.
+
+The existing migration-failure regression now checks both callers with real
+directory syncs, successful ordering and injected failures at each of the three
+directory boundaries. The test was RED with the prior unlink-before-flush order
+and GREEN after correction. Recovery/source bytes and failure fencing are checked;
+no physical power-loss experiment is claimed. Actual ARM backup unit4/4 and
+integration7/7 PASS, storage all-target Clippy-Dwarnings/fmt/diff PASS. Original
+assertions/test identities are retained; no old CI retry or extra review run.

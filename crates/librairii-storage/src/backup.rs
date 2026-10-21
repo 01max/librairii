@@ -52,6 +52,12 @@ impl crate::IsolatedLibrary {
     /// initializes a replacement. A partial move fences this authority until
     /// recovery/restart, retaining its precise recovery directory in the error.
     pub fn preserve_foreign_schema(&self) -> Result<PreservedSchema> {
+        self.preserve_foreign_schema_with_flush(sync_directory)
+    }
+    fn preserve_foreign_schema_with_flush(
+        &self,
+        flush: impl FnMut(&Path) -> Result<()>,
+    ) -> Result<PreservedSchema> {
         self.claim_runtime()?;
         let mut may_have_moved = false;
         let result = (|| {
@@ -77,11 +83,7 @@ impl crate::IsolatedLibrary {
                 .map_err(|e| StorageError::io("reserve foreign schema recovery", e))?
                 .keep();
             may_have_moved = true;
-            let moved = (|| {
-                preserve_files(&database, &directory)?;
-                sync_directory(&directory)?;
-                sync_directory(parent)
-            })();
+            let moved = preserve_files(&database, &directory, flush);
             if let Err(cause) = moved {
                 return Err(StorageError::PreservationFailed {
                     directory,
@@ -408,20 +410,24 @@ pub(crate) fn sync_directory(path: &Path) -> Result<()> {
 
 /// Move only into a fresh private recovery directory. Hard-link creation is an
 /// atomic no-clobber namespace operation on a regular file; the original name
-/// is unlinked only after its independent recovery name exists. Any partial
+/// is unlinked only after all recovery links and their directory/parent have
+/// acknowledged durability. Original removals are then persisted. Any partial
 /// failure retains all remaining names, never overwrites or fabricates success.
 pub(crate) fn preserve_candidate(path: &Path) -> Result<PathBuf> {
+    preserve_candidate_with_flush(path, sync_directory)
+}
+fn preserve_candidate_with_flush(
+    path: &Path,
+    flush: impl FnMut(&Path) -> Result<()>,
+) -> Result<PathBuf> {
+    require_directory_durability()?;
     let parent = path.parent().ok_or(StorageError::InvalidManagedPath)?;
     let directory = tempfile::Builder::new()
         .prefix("migration-failed-")
         .tempdir_in(parent)
         .map_err(|e| StorageError::io("reserve failed migration recovery", e))?
         .keep();
-    let preserved = (|| {
-        preserve_files(path, &directory)?;
-        sync_directory(&directory)?;
-        sync_directory(parent)
-    })();
+    let preserved = preserve_files(path, &directory, flush);
     if let Err(cause) = preserved {
         return Err(StorageError::PreservationFailed {
             directory,
@@ -430,7 +436,13 @@ pub(crate) fn preserve_candidate(path: &Path) -> Result<PathBuf> {
     }
     Ok(directory)
 }
-fn preserve_files(path: &Path, directory: &Path) -> Result<()> {
+fn preserve_files(
+    path: &Path,
+    directory: &Path,
+    mut flush: impl FnMut(&Path) -> Result<()>,
+) -> Result<()> {
+    require_directory_durability()?;
+    let mut linked = Vec::new();
     for source in paths(path) {
         if path_stamp(&source)?.is_none() {
             continue;
@@ -439,13 +451,22 @@ fn preserve_files(path: &Path, directory: &Path) -> Result<()> {
             directory.join(source.file_name().ok_or(StorageError::InvalidManagedPath)?);
         fs::hard_link(&source, &destination)
             .map_err(|e| StorageError::io("preserve candidate without clobber", e))?;
-        File::open(&source)
-            .and_then(|file| file.sync_all())
+        let file =
+            File::open(&source).map_err(|e| StorageError::io("retain preserved candidate", e))?;
+        file.sync_all()
             .map_err(|e| StorageError::io("flush preserved candidate bytes", e))?;
-        fs::remove_file(&source)
+        linked.push((source, file));
+    }
+    // A file sync alone cannot persist the recovery directory entries. Both
+    // links and the fresh recovery directory's name must be durable BEFORE
+    // deleting ANY original member of the main/WAL/SHM family.
+    flush(directory)?;
+    flush(directory.parent().ok_or(StorageError::InvalidManagedPath)?)?;
+    for (source, _held) in &linked {
+        fs::remove_file(source)
             .map_err(|e| StorageError::io("unlink preserved candidate name", e))?;
     }
-    Ok(())
+    flush(path.parent().ok_or(StorageError::InvalidManagedPath)?)
 }
 
 fn restore(backup: &BackupReceipt, path: &Path) -> Result<()> {
@@ -582,6 +603,7 @@ mod tests {
     #[cfg(unix)]
     #[test]
     fn migration_failure_restores_supported_prefix_and_preserves_newer_candidate() -> TestResult {
+        recovery_publication_precedes_unlink_and_failures_retain_names()?;
         let roots = TestRoots::new()?;
         let library = crate::IsolatedLibrary::initialize_from_override(
             Some(roots.library().as_os_str()),
@@ -655,6 +677,94 @@ mod tests {
             0
         );
         assert_eq!(fs::read(archive)?, b"exact immutable archive\0\xff");
+        Ok(())
+    }
+
+    #[cfg(unix)]
+    fn recovery_publication_precedes_unlink_and_failures_retain_names() -> TestResult {
+        for foreign in [false, true] {
+            for fail_at in [None, Some(0), Some(1), Some(2)] {
+                let roots = TestRoots::new()?;
+                let library = crate::IsolatedLibrary::initialize_from_override(
+                    Some(roots.library().as_os_str()),
+                    "A0000000-0000-4000-8000-000000000001".parse()?,
+                )?;
+                let main = library.layout().database();
+                let family = paths(&main);
+                let bytes = [b"foreign\0\xff".as_slice(), b"exactWAL", b"exactSHM"];
+                for (path, bytes) in family.iter().zip(bytes) {
+                    fs::write(path, bytes)?;
+                }
+                let mut observed = Vec::new();
+                let flush = |directory: &Path| {
+                    let phase = observed.len();
+                    observed.push(directory.to_owned());
+                    for (path, bytes) in family.iter().zip(bytes) {
+                        if phase < 2 {
+                            assert_eq!(
+                                fs::read(path).map_err(|e| StorageError::io(
+                                    "test original before publication",
+                                    e
+                                ))?,
+                                bytes,
+                                "original removed before recovery directory AND parent acknowledgements"
+                            );
+                        } else {
+                            assert!(!path.exists());
+                        }
+                    }
+                    if fail_at == Some(phase) {
+                        return Err(StorageError::DirectoryDurabilityUnavailable);
+                    }
+                    sync_directory(directory)
+                };
+                let result = if foreign {
+                    library
+                        .preserve_foreign_schema_with_flush(flush)
+                        .map(|p| p.directory)
+                } else {
+                    preserve_candidate_with_flush(&main, flush)
+                };
+                let recovery = match result {
+                    Ok(directory) => {
+                        assert!(fail_at.is_none());
+                        directory
+                    }
+                    Err(StorageError::PreservationFailed { directory, cause }) => {
+                        assert!(fail_at.is_some());
+                        assert!(matches!(
+                            *cause,
+                            StorageError::DirectoryDurabilityUnavailable
+                        ));
+                        directory
+                    }
+                    Err(error) => return Err(error.into()),
+                };
+                let expected = [
+                    recovery.clone(),
+                    main.parent().ok_or("parent")?.to_owned(),
+                    main.parent().ok_or("parent")?.to_owned(),
+                ];
+                assert_eq!(observed, expected[..fail_at.map_or(3, |phase| phase + 1)]);
+                for (path, bytes) in family.iter().zip(bytes) {
+                    assert_eq!(
+                        fs::read(recovery.join(path.file_name().ok_or("name")?))?,
+                        bytes
+                    );
+                    if fail_at.is_some_and(|phase| phase < 2) {
+                        assert_eq!(fs::read(path)?, bytes);
+                    } else {
+                        assert!(!path.exists());
+                    }
+                }
+                if foreign && fail_at.is_some() {
+                    assert!(matches!(
+                        library.claim_runtime(),
+                        Err(StorageError::RuntimeInUse)
+                    ));
+                }
+            }
+        }
         Ok(())
     }
 
