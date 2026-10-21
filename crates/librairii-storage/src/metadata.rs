@@ -176,3 +176,89 @@ fn stage_rows(
     }
     Ok(snapshot)
 }
+
+use librairii_app::metadata::{CatalogRepository, RefreshCode, RefreshReport, RepositoryFailure};
+fn acknowledge<T>(
+    result: Result<Pending<'_, TransactionOutcome<T>>>,
+) -> std::result::Result<T, RepositoryFailure> {
+    let pending = result.map_err(|_| RepositoryFailure::Proven)?;
+    match pending.wait() {
+        Ok(TransactionOutcome::Committed(v)) => Ok(v),
+        Ok(TransactionOutcome::ProvenNotCommitted(_)) => Err(RepositoryFailure::Proven),
+        Ok(TransactionOutcome::CommitUncertain(_)) | Err(_) => Err(RepositoryFailure::Uncertain),
+    }
+}
+impl CatalogRepository for Database<'_> {
+    fn begin(
+        &self,
+        id: JobId,
+        locale: Locale,
+        at: &str,
+    ) -> std::result::Result<(), RepositoryFailure> {
+        acknowledge(self.begin_catalog_sync(id, locale, at.into(), WorkCancellation::default()))
+    }
+    fn stage(
+        &self,
+        id: JobId,
+        catalog: NormalizedCatalog,
+        at: &str,
+    ) -> std::result::Result<CatalogSnapshotId, RepositoryFailure> {
+        match self.stage_catalog(id, catalog, at.into(), WorkCancellation::default()) {
+            Ok(TransactionOutcome::Committed(v)) => Ok(v),
+            Ok(TransactionOutcome::ProvenNotCommitted(_)) => Err(RepositoryFailure::Proven),
+            Err(StorageError::WorkerStopped) | Ok(TransactionOutcome::CommitUncertain(_)) => {
+                Err(RepositoryFailure::Uncertain)
+            }
+            Err(_) => Err(RepositoryFailure::Proven),
+        }
+    }
+    fn activate(
+        &self,
+        id: CatalogSnapshotId,
+        at: &str,
+    ) -> std::result::Result<RefreshReport, RepositoryFailure> {
+        acknowledge(self.activate_catalog(id, at.into()))
+    }
+    fn fail(
+        &self,
+        id: JobId,
+        snapshot: Option<CatalogSnapshotId>,
+        code: RefreshCode,
+        at: &str,
+    ) -> std::result::Result<(), RepositoryFailure> {
+        acknowledge(self.finish_catalog_failure(id, snapshot, code, at.into()))
+    }
+}
+impl Database<'_> {
+    /// The caller has crossed the final cancellation check. No work token is
+    /// admitted here: activation, Age and success are a single transaction.
+    pub fn activate_catalog(
+        &self,
+        id: CatalogSnapshotId,
+        at: String,
+    ) -> Result<Pending<'_, TransactionOutcome<RefreshReport>>> {
+        let at = utc_time(&at)?;
+        self.repair_transaction(move|tx|{
+            let (sync,locale):(String,String)=tx.query_row("SELECT c.sync_id,c.locale FROM catalog_snapshots c JOIN catalog_syncs s ON s.id=c.sync_id WHERE c.id=? AND c.status='staged' AND s.status='running'",[id.get()],|r|Ok((r.get(0)?,r.get(1)?)))?;
+            let projection=crate::tagging::project_age_snapshot(tx,id.get(),&librairii_core::tagging::AgeConfig::default())?;
+            tx.execute("UPDATE catalog_snapshots SET status='superseded' WHERE locale=? AND status='active'",[&locale])?;
+            if tx.execute("UPDATE catalog_snapshots SET status='active',activated_at=? WHERE id=? AND status='staged'",params![at,id.get()])?!=1{return Err(invalid());}
+            if tx.execute("UPDATE catalog_syncs SET status='succeeded',matched_story_count=?,finished_at=?,error_code=NULL,error_message=NULL WHERE id=? AND status='running'",params![projection.matched_stories as i64,at,sync])?!=1{return Err(invalid());}
+            Ok(RefreshReport{sync:sync.parse().map_err(|_|invalid())?,snapshot:id,matched_stories:projection.matched_stories as i64,activated_at:at})
+        })
+    }
+    pub fn finish_catalog_failure(
+        &self,
+        id: JobId,
+        snapshot: Option<CatalogSnapshotId>,
+        code: RefreshCode,
+        at: String,
+    ) -> Result<Pending<'_, TransactionOutcome<()>>> {
+        let at = utc_time(&at)?;
+        self.repair_transaction(move|tx|{
+            if let Some(snapshot)=snapshot && tx.execute("UPDATE catalog_snapshots SET status='rejected' WHERE id=? AND sync_id=? AND status='staged'",params![snapshot.get(),id.to_string()])?!=1{return Err(invalid());}
+            let status=if code==RefreshCode::Cancelled{"cancelled"}else{"failed"};
+            if tx.execute("UPDATE catalog_syncs SET status=?,error_code=?,error_message=?,finished_at=? WHERE id=? AND status='running'",params![status,code.as_str(),code.as_str(),at,id.to_string()])?!=1{return Err(invalid());}Ok(())
+        })
+    }
+}

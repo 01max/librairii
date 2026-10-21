@@ -58,3 +58,17 @@ pathname deletion claims rollback. Normalized rows/artwork registrations are one
 transaction, with schema-enforced immutable content and staged/active/superseded/
 rejected transitions. Activation belongs to 11.3. Tests verify raw bytes/hash,
 locale fallback, invalid data, staged rejection, immutability and reopen.
+
+## 11.3 — Activation and explicit refresh
+
+The application refresh session retains one repository borrow across fetch,
+normalization, staging and reporting. It is driven on a blocking worker; the
+caller performs the isolated HTTP fetch between begin/finish. Cancellation is
+checked before staging and immediately before activation. Once entered, the
+uncancelled writer transaction reprojects Age, supersedes the same-locale prior
+snapshot, activates the new one, and persists the successful report together.
+Failures reject only staged snapshots and durably finish the failed/cancelled
+attempt, leaving the previous active snapshot available. An uncertain commit or
+lost acknowledgement is reported as outcome uncertain and never converted into
+an invented rollback/failure report. Tests inject projection drift to verify
+rollback, and exercise invalid/offline/cancel plus cancellation inside activation.

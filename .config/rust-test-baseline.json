@@ -2433,6 +2433,19 @@
         "x86_64-apple-darwin",
         "x86_64-unknown-linux-gnu"
       ]
+    },
+    {
+      "suite": "librairii-app::metadata",
+      "name": "cancellation_after_staging_rejects_but_cancellation_inside_activation_finishes_report"
+    },
+    {
+      "suite": "librairii-storage::metadata",
+      "name": "activation_is_atomic_and_failure_cancel_or_invalid_data_preserve_last_good",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
     }
   ]
 }

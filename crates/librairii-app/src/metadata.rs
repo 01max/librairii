@@ -7,7 +7,7 @@ use librairii_core::{
 };
 pub use normalize::{NormalizedCatalog, normalize};
 use std::sync::Arc;
-pub type Result<T> = std::result::Result<T, MetadataError>;
+type Result<T> = std::result::Result<T, MetadataError>;
 pub const MAX_CATALOG_BYTES: usize = 32 * 1024 * 1024;
 pub const ARTWORK_BASE: &str = "https://storage.googleapis.com/lunii-data-prod";
 pub fn digest(bytes: &[u8]) -> Checksum {
@@ -40,3 +40,7 @@ pub fn utc_time(value: &str) -> Result<String> {
         .format(&time::format_description::well_known::Rfc3339)
         .map_err(|_| MetadataError::InvalidCatalog)
 }
+mod refresh;
+pub use refresh::{
+    CatalogRepository, RefreshCode, RefreshReport, RefreshSession, RepositoryFailure,
+};

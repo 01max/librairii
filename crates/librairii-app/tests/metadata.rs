@@ -80,3 +80,81 @@ fn invalid_catalogs_never_construct_normalized_snapshots() -> Result<(), Box<dyn
     }
     Ok(())
 }
+#[test]
+fn cancellation_after_staging_rejects_but_cancellation_inside_activation_finishes_report()
+-> Result<(), Box<dyn std::error::Error>> {
+    use librairii_app::metadata::*;
+    use librairii_core::{CatalogSnapshotId, JobId};
+    use std::cell::Cell;
+    struct Repo {
+        cancel: Cell<bool>,
+        during_activation: bool,
+        failed: Cell<bool>,
+    }
+    impl CatalogRepository for Repo {
+        fn begin(&self, _: JobId, _: Locale, _: &str) -> Result<(), RepositoryFailure> {
+            Ok(())
+        }
+        fn stage(
+            &self,
+            _: JobId,
+            _: NormalizedCatalog,
+            _: &str,
+        ) -> Result<CatalogSnapshotId, RepositoryFailure> {
+            if !self.during_activation {
+                self.cancel.set(true);
+            }
+            CatalogSnapshotId::new(1).map_err(|_| RepositoryFailure::Proven)
+        }
+        fn activate(
+            &self,
+            id: CatalogSnapshotId,
+            at: &str,
+        ) -> Result<RefreshReport, RepositoryFailure> {
+            self.cancel.set(true);
+            Ok(RefreshReport {
+                sync: JobId::from_bytes([1; 16]),
+                snapshot: id,
+                matched_stories: 2,
+                activated_at: at.into(),
+            })
+        }
+        fn fail(
+            &self,
+            _: JobId,
+            id: Option<CatalogSnapshotId>,
+            code: RefreshCode,
+            _: &str,
+        ) -> Result<(), RepositoryFailure> {
+            assert!(id.is_some());
+            assert_eq!(code, RefreshCode::Cancelled);
+            self.failed.set(true);
+            Ok(())
+        }
+    }
+    for during_activation in [false, true] {
+        let repo = Repo {
+            cancel: Cell::new(false),
+            during_activation,
+            failed: Cell::new(false),
+        };
+        let session = RefreshSession::begin(
+            &repo,
+            JobId::from_bytes([1; 16]),
+            "en-GB",
+            "2026-10-21T12:00:00Z",
+        )
+        .map_err(|e| format!("{e:?}"))?;
+        let result = session.finish(Ok(RAW.to_vec()), "2026-10-21T12:00:01Z", || {
+            repo.cancel.get()
+        });
+        if during_activation {
+            assert!(result.is_ok());
+            assert!(!repo.failed.get());
+        } else {
+            assert_eq!(result, Err(RefreshCode::Cancelled));
+            assert!(repo.failed.get());
+        }
+    }
+    Ok(())
+}

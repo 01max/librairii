@@ -3196,6 +3196,27 @@
           ]
         },
         "reason": "Additive observed Task 11 discovery; original integration identities retain exact order and target scope."
+      },
+      {
+        "position": 419,
+        "identity": {
+          "suite": "librairii-app::metadata",
+          "name": "cancellation_after_staging_rejects_but_cancellation_inside_activation_finishes_report"
+        },
+        "reason": "Additive observed Task 11 discovery; original integration identities retain exact order and target scope."
+      },
+      {
+        "position": 420,
+        "identity": {
+          "suite": "librairii-storage::metadata",
+          "name": "activation_is_atomic_and_failure_cancel_or_invalid_data_preserve_last_good",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive observed Task 11 discovery; original integration identities retain exact order and target scope."
       }
     ],
     "python": [

@@ -66,3 +66,78 @@ fn staged_raw_is_exact_hashed_reopenable_and_rejected_rows_are_immutable()
     reopened.close()?;
     Ok(())
 }
+#[test]
+fn activation_is_atomic_and_failure_cancel_or_invalid_data_preserve_last_good()
+-> std::result::Result<(), Box<dyn std::error::Error>> {
+    use librairii_app::metadata::{RefreshCode, RefreshSession};
+    let roots = TestRoots::new()?;
+    let library = IsolatedLibrary::initialize_from_override(
+        Some(roots.library().as_os_str()),
+        "a0000000-0000-4000-8000-000000000001".parse()?,
+    )?;
+    let mut db = Database::open_isolated(&library)?;
+    let first = RefreshSession::begin(
+        &db,
+        "a0000000-0000-4000-8000-000000000010".parse()?,
+        "en-GB",
+        "2026-10-21T12:00:00Z",
+    )
+    .map_err(|e| format!("{e:?}"))?
+    .finish(Ok(RAW.to_vec()), "2026-10-21T12:00:01Z", || false)
+    .map_err(|e| format!("{e:?}"))?;
+    for (n, payload, cancel, expected) in [
+        (
+            11,
+            Ok(b"invalid".to_vec()),
+            false,
+            RefreshCode::InvalidCatalog,
+        ),
+        (
+            12,
+            Err(librairii_core::metadata::MetadataError::Network),
+            false,
+            RefreshCode::FetchFailed,
+        ),
+        (13, Ok(RAW.to_vec()), true, RefreshCode::Cancelled),
+    ] {
+        let id = format!("a0000000-0000-4000-8000-{n:012}").parse()?;
+        let session = RefreshSession::begin(&db, id, "en-GB", "2026-10-21T12:01:00Z")
+            .map_err(|e| format!("{e:?}"))?;
+        assert_eq!(
+            session.finish(payload, "2026-10-21T12:01:01Z", || cancel),
+            Err(expected)
+        );
+        assert_eq!(
+            db.catalog_snapshots()?
+                .wait()?
+                .iter()
+                .filter(|s| s.status == SnapshotStatus::Active)
+                .map(|s| s.id)
+                .collect::<Vec<_>>(),
+            vec![first.snapshot]
+        );
+    }
+    // Drift forces Age reprojection failure after a valid snapshot is staged.
+    committed(
+        db.transaction(WorkCancellation::default(), |tx| {
+            tx.execute(
+                "UPDATE tag_definitions SET label='Drift' WHERE key='age'",
+                [],
+            )?;
+            Ok(())
+        })?
+        .wait()?,
+    )?;
+    let id = "a0000000-0000-4000-8000-000000000014".parse()?;
+    let session = RefreshSession::begin(&db, id, "en-GB", "2026-10-21T12:02:00Z")
+        .map_err(|e| format!("{e:?}"))?;
+    assert_eq!(
+        session.finish(Ok(RAW.to_vec()), "2026-10-21T12:02:01Z", || false),
+        Err(RefreshCode::PersistenceFailed)
+    );
+    let snapshots = db.catalog_snapshots()?.wait()?;
+    assert_eq!(snapshots[0].status, SnapshotStatus::Active);
+    assert_eq!(snapshots[1].status, SnapshotStatus::Rejected);
+    db.close()?;
+    Ok(())
+}
