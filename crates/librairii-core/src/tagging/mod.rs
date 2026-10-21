@@ -4,6 +4,10 @@ use crate::collection_codec::{tag_is_mark, tag_key_decomposition, tag_trim};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, thiserror::Error)]
 pub enum TagError {
+    #[error("tagging.delete_plan_stale")]
+    DeletePlanStale,
+    #[error("tagging.saved_collection_query_invalid")]
+    SavedQueryInvalid,
     #[error("tagging.invalid_assignment")]
     InvalidAssignment,
     #[error("tagging.story_not_found")]
@@ -34,6 +38,8 @@ pub enum TagError {
 impl TagError {
     pub const fn code(self) -> &'static str {
         match self {
+            Self::DeletePlanStale => "tagging.delete_plan_stale",
+            Self::SavedQueryInvalid => "tagging.saved_collection_query_invalid",
             Self::InvalidAssignment => "tagging.invalid_assignment",
             Self::StoryNotFound => "tagging.story_not_found",
             Self::AssignmentKind => "tagging.assignment_kind",

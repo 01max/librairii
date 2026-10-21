@@ -1,10 +1,12 @@
 //! Tag repositories. Every command uses the existing owned writer transaction.
 mod assignments;
+mod deletion;
 use crate::{
     Result, StorageError,
     database::{Database, Pending, TransactionOutcome, WorkCancellation},
 };
 pub use assignments::workspace;
+pub use deletion::{DeleteTarget, DeletionPlan, plan_deletion};
 use librairii_core::tagging::{
     self, CatalogEntry, CreateDefinition, Definition, Kind, TagError, Value,
 };
@@ -12,6 +14,7 @@ use rusqlite::{OptionalExtension, Row, Transaction, params};
 
 #[derive(Debug)]
 pub enum Command {
+    Delete(Box<DeletionPlan>),
     Boolean {
         story_ids: Vec<i64>,
         definition_id: i64,
@@ -54,6 +57,7 @@ pub enum Command {
 }
 #[derive(Debug)]
 pub enum Response {
+    Deleted,
     Assignment(librairii_core::tagging::AssignmentResult),
     Definition(Definition),
     Value(Value),
@@ -66,6 +70,9 @@ impl Database<'_> {
         cancellation: WorkCancellation,
     ) -> Result<Pending<'_, TransactionOutcome<Response>>> {
         self.transaction(cancellation, move |tx| execute(tx, command))
+    }
+    pub fn tag_deletion_plan(&self, target: DeleteTarget) -> Result<Pending<'_, DeletionPlan>> {
+        self.read(move |tx| plan_deletion(tx, target))
     }
     pub fn assignment_workspace(
         &self,
@@ -160,6 +167,10 @@ fn value_label(s: &str) -> Result<String> {
 }
 pub fn execute(tx: &Transaction<'_>, command: Command) -> Result<Response> {
     match command {
+        Command::Delete(plan) => {
+            deletion::delete(tx, *plan)?;
+            Ok(Response::Deleted)
+        }
         Command::Boolean {
             story_ids,
             definition_id,

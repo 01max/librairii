@@ -2616,6 +2616,19 @@
           ]
         },
         "reason": "Additive observed Task 7/8 discovery; original integration identities retain exact order and target scope."
+      },
+      {
+        "position": 369,
+        "identity": {
+          "suite": "librairii-storage::tags",
+          "name": "confirmed_deletion_invalidates_entire_nested_collections_and_preserves_shelf_decisions",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive observed Task 7/8 discovery; original integration identities retain exact order and target scope."
       }
     ],
     "python": [

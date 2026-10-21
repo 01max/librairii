@@ -220,3 +220,79 @@ fn bulk_assignment_mixed_states_additive_toggles_noops_and_all_target_validation
     db.close()?;
     Ok(())
 }
+#[test]
+fn confirmed_deletion_invalidates_entire_nested_collections_and_preserves_shelf_decisions()
+-> TestResult {
+    use librairii_storage::tagging::DeleteTarget;
+    let roots = TestRoots::new()?;
+    let library = IsolatedLibrary::initialize_from_override(
+        Some(roots.library().as_os_str()),
+        "a0000000-0000-4000-8000-000000000001".parse()?,
+    )?;
+    let mut db = Database::open_isolated(&library)?;
+    seed_stories(&db, 2)?;
+    let d = create(&db, "genre", Kind::Choice)?;
+    let v = value(&db, d, "calm")?;
+    assignment(
+        &db,
+        Command::ChoiceValues {
+            story_ids: vec![1],
+            definition_id: d,
+            value_ids: vec![v],
+        },
+    )?;
+    let payload = format!(
+        r#"{{"anyOf":[{{"name":"moon"}},{{"choiceFilters":[{{"definitionId":{d},"valueIds":[{v}]}}]}}]}}"#
+    );
+    let retained = payload.clone();
+    committed(db.transaction(WorkCancellation::default(),move|tx|{
+ tx.execute("INSERT INTO collections(id,name,normalized_name,position,query_version,query_payload) VALUES(1,'Calm','calm',0,5,?)",[payload])?;
+ tx.execute_batch("INSERT INTO shelves(id,name,normalized_name,position) VALUES(1,'Keep','keep',0); INSERT INTO shelf_stories(shelf_id,story_uuid,position,protected) VALUES(1,'10000000-0000-4000-8000-000000000001',0,1); INSERT INTO shelf_exclusions(shelf_id,story_uuid) VALUES(1,'10000000-0000-4000-8000-000000000002');")?;Ok(())})?.wait()?)?;
+    let plan = db.tag_deletion_plan(DeleteTarget::Value(v))?.wait()?;
+    assert_eq!(plan.assignment_count, 1);
+    assert_eq!(plan.affected_collection_ids, vec![1]);
+    assignment(
+        &db,
+        Command::ChoiceToggle {
+            story_ids: vec![2],
+            definition_id: d,
+            value_id: v,
+            assigned: true,
+        },
+    )?;
+    assert!(matches!(
+        edit(&db, Command::Delete(Box::new(plan))),
+        Err(StorageError::Tag(TagError::DeletePlanStale))
+    ));
+    let plan = db.tag_deletion_plan(DeleteTarget::Value(v))?.wait()?;
+    edit(&db, Command::Delete(Box::new(plan)))?;
+    db.read(move |tx| {
+        let (payload, state, revision): (String, String, i64) = tx.query_row(
+            "SELECT query_payload,validity_state,revision FROM collections WHERE id=1",
+            [],
+            |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)),
+        )?;
+        assert_eq!(payload, retained);
+        assert_eq!(state, "needs_attention");
+        assert_eq!(revision, 2);
+        assert_eq!(
+            tx.query_row(
+                "SELECT COUNT(*) FROM shelf_stories WHERE protected=1",
+                [],
+                |r| r.get::<_, i64>(0)
+            )?,
+            1
+        );
+        assert_eq!(
+            tx.query_row("SELECT COUNT(*) FROM shelf_exclusions", [], |r| r
+                .get::<_, i64>(0))?,
+            1
+        );
+        Ok(())
+    })?
+    .wait()?;
+    let plan = db.tag_deletion_plan(DeleteTarget::Definition(d))?.wait()?;
+    edit(&db, Command::Delete(Box::new(plan)))?;
+    db.close()?;
+    Ok(())
+}
