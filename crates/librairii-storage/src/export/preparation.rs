@@ -39,6 +39,12 @@ pub struct Running<'run, 'db, 'library> {
     cursor: usize,
 }
 impl<'db, 'library> Exports<'db, 'library> {
+    fn retain_output(&mut self, output: Output) {
+        if output.retention_required() {
+            self.database.fence_external_effect();
+            self.retained.push(output);
+        }
+    }
     pub fn preview(&self, id: &PreparationId) -> Result<Preview> {
         let plan = self
             .prepared
@@ -134,13 +140,13 @@ impl<'db, 'library> Exports<'db, 'library> {
             Err(failure) => {
                 let failure = *failure;
                 if let Some(out) = failure.output {
-                    self.retained.push(out);
+                    self.retain_output(out);
                 }
                 return Err(failure.cause);
             }
         };
         if let Err(e) = probe.cleanup() {
-            self.retained.push(probe);
+            self.retain_output(probe);
             return Err(e);
         }
         let mut preview = Preview {
@@ -285,6 +291,86 @@ fn retained_bytes(scope: &Resolved, destination: &Destination, preview: &Preview
 mod tests {
     use super::*;
     #[test]
+    fn partial_acquisition_and_cleanup_failures_also_fence_the_actual_generation()
+    -> std::result::Result<(), Box<dyn std::error::Error>> {
+        for acquisition in [true, false] {
+            let roots = librairii_testkit::TestRoots::new()?;
+            let library = crate::IsolatedLibrary::initialize_from_override(
+                Some(roots.library().as_os_str()),
+                "a0000000-0000-4000-8000-000000000001".parse()?,
+            )?;
+            let mut db = Database::open_isolated(&library)?;
+            let directory = tempfile::tempdir()?;
+            let destination = Destination::open(directory.path())?;
+            let mut exports = Exports::new(&db);
+            let out = if acquisition {
+                let failure = destination
+                    .create_with_failed_acquisition()
+                    .err()
+                    .ok_or("fault absent")?;
+                failure.output.ok_or("actual partial owner absent")?
+            } else {
+                let mut out = destination.create_output().map_err(|f| f.cause)?;
+                assert!(out.cleanup_with_failed_flush().is_err());
+                out
+            };
+            assert!(out.retention_required());
+            exports.retain_output(out);
+            assert_eq!(exports.retained_outputs(), 1);
+            assert!(db.read(|_| Ok(())).is_err());
+            drop(exports);
+            assert!(db.close().is_err());
+            assert_eq!(
+                std::fs::read_dir(directory.path())?.count(),
+                usize::from(acquisition)
+            );
+        }
+        Ok(())
+    }
+    #[test]
+    fn uncertain_publication_remains_fenced_after_registry_replacement_and_drop()
+    -> std::result::Result<(), Box<dyn std::error::Error>> {
+        use std::io::Cursor;
+        let roots = librairii_testkit::TestRoots::new()?;
+        let library = crate::IsolatedLibrary::initialize_from_override(
+            Some(roots.library().as_os_str()),
+            "a0000000-0000-4000-8000-000000000001".parse()?,
+        )?;
+        let mut db = Database::open_isolated(&library)?;
+        let directory = tempfile::tempdir()?;
+        let destination = Destination::open(directory.path())?;
+        let mut output = destination.create_output().map_err(|f| f.cause)?;
+        let bytes = b"published";
+        output.stream(
+            &mut Cursor::new(bytes),
+            librairii_app::metadata::digest(bytes),
+            bytes.len() as u64,
+            &WorkCancellation::default(),
+            |_| {},
+        )?;
+        assert!(output.publish_with_failed_flush("final.zip").is_err());
+        assert!(output.published && output.uncertain);
+        let mut exports = Exports::new(&db);
+        exports.retain_output(output);
+        assert_eq!(exports.retained_outputs(), 1);
+        let mut replacement = Exports::new(&db);
+        assert!(
+            replacement
+                .prepare(
+                    Scope::CurrentQuery(QueryRequest::default()),
+                    directory.path(),
+                    "fr-FR".into(),
+                    &WorkCancellation::default()
+                )
+                .is_err()
+        );
+        drop(replacement);
+        drop(exports);
+        assert!(db.close().is_err());
+        assert_eq!(std::fs::read(directory.path().join("final.zip"))?, bytes);
+        Ok(())
+    }
+    #[test]
     fn preparation_budget_charges_large_source_snapshots_even_with_few_rows()
     -> std::result::Result<(), Box<dyn std::error::Error>> {
         let directory = tempfile::tempdir()?;
@@ -368,7 +454,7 @@ impl Running<'_, '_, '_> {
             Err(f) => {
                 let f = *f;
                 if let Some(out) = f.output {
-                    self.owner.retained.push(out);
+                    self.owner.retain_output(out);
                 }
                 return Err(f.cause);
             }
@@ -399,11 +485,11 @@ impl Running<'_, '_, '_> {
             }
             Err(cause) => {
                 if output.published || output.uncertain {
-                    self.owner.retained.push(output);
+                    self.owner.retain_output(output);
                     return Err(cause);
                 }
                 if let Err(cleanup) = output.cleanup() {
-                    self.owner.retained.push(output);
+                    self.owner.retain_output(output);
                     return Err(cleanup);
                 }
                 result.reason = Some(cause.code());

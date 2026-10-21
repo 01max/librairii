@@ -4432,6 +4432,32 @@
           ]
         },
         "reason": "Additive Task 12 export/custody/diagnostics assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 531,
+        "identity": {
+          "suite": "librairii-storage",
+          "name": "export::preparation::tests::uncertain_publication_remains_fenced_after_registry_replacement_and_drop",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive Task 12 export/custody/diagnostics assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 532,
+        "identity": {
+          "suite": "librairii-storage",
+          "name": "export::preparation::tests::partial_acquisition_and_cleanup_failures_also_fence_the_actual_generation",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive Task 12 export/custody/diagnostics assertions; all admitted identities retain exact order and target scope."
       }
     ],
     "python": [

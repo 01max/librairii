@@ -71,6 +71,18 @@ pub(crate) struct OutputFailure {
 }
 impl Destination {
     pub(crate) fn create_output(&self) -> std::result::Result<Output, Box<OutputFailure>> {
+        self.create_with(|| Ok(()))
+    }
+    #[cfg(test)]
+    pub(crate) fn create_with_failed_acquisition(
+        &self,
+    ) -> std::result::Result<Output, Box<OutputFailure>> {
+        self.create_with(|| Err(StorageError::DirectoryDurabilityUnavailable))
+    }
+    fn create_with(
+        &self,
+        after_open: impl FnOnce() -> Result<()>,
+    ) -> std::result::Result<Output, Box<OutputFailure>> {
         // Before attempting creation no ownership has transferred. Duplicate
         // acquisition errors have no filesystem effects.
         let directory = match self.directory.duplicate() {
@@ -107,6 +119,7 @@ impl Destination {
             )
             .map_err(|e| StorageError::io("create selected output temporary", e.into()))?;
             out.file = Some(File::from(fd));
+            after_open()?;
             let file = out
                 .file
                 .as_ref()
@@ -179,6 +192,17 @@ impl Output {
         self.validate()
     }
     pub(crate) fn publish(&mut self, name: &str) -> Result<()> {
+        self.publish_with(name, Directory::flush)
+    }
+    #[cfg(test)]
+    pub(crate) fn publish_with_failed_flush(&mut self, name: &str) -> Result<()> {
+        self.publish_with(name, |_| Err(StorageError::DirectoryDurabilityUnavailable))
+    }
+    fn publish_with(
+        &mut self,
+        name: &str,
+        flush: impl FnOnce(&Directory) -> Result<()>,
+    ) -> Result<()> {
         self.validate()?;
         let name = EntryName::parse(name)?;
         self.attempted = Some(name.as_os_str().to_owned());
@@ -206,9 +230,12 @@ impl Output {
             }
         }
         self.validate()?;
-        self.directory.flush()?;
+        flush(&self.directory)?;
         self.uncertain = false;
         Ok(())
+    }
+    pub(crate) fn retention_required(&self) -> bool {
+        self.file.is_some() || self.published || self.uncertain
     }
     fn validate(&self) -> Result<()> {
         self.directory.matches_metadata(
@@ -227,6 +254,13 @@ impl Output {
         self.directory.require_name(&self.name, identity)
     }
     pub(crate) fn cleanup(&mut self) -> Result<()> {
+        self.cleanup_with(Directory::flush)
+    }
+    #[cfg(test)]
+    pub(crate) fn cleanup_with_failed_flush(&mut self) -> Result<()> {
+        self.cleanup_with(|_| Err(StorageError::DirectoryDurabilityUnavailable))
+    }
+    fn cleanup_with(&mut self, flush: impl FnOnce(&Directory) -> Result<()>) -> Result<()> {
         if self.published || self.uncertain {
             return Err(StorageError::CustodyRecoveryRequired);
         }
@@ -238,7 +272,7 @@ impl Output {
         native::unlinkat(&self.directory.file, &self.name, AtFlags::empty())
             .map_err(|e| StorageError::io("remove owned output temporary", e.into()))?;
         self.uncertain = true;
-        self.directory.flush()?;
+        flush(&self.directory)?;
         self.file = None;
         self.uncertain = false;
         Ok(())

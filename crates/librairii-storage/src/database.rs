@@ -368,6 +368,7 @@ pub struct Database<'library> {
     diagnostics: Vec<ConnectionDiagnostics>,
     fenced: Arc<AtomicBool>,
     closed: bool,
+    external_effect_uncertain: AtomicBool,
     close_failed: bool,
 }
 
@@ -386,6 +387,15 @@ impl Database<'_> {
     pub(crate) fn native_import_registration(&self) -> bool {
         matches!(self.authority, Authority::Native(_))
     }
+    #[cfg(any(target_os = "macos", target_os = "linux"))]
+    pub(crate) fn fence_external_effect(&self) {
+        self.external_effect_uncertain
+            .store(true, Ordering::Release);
+        self.fenced.store(true, Ordering::Release);
+        self.authority.effect_fence().store(true, Ordering::Release);
+        self.authority.fence_failed_close();
+    }
+    #[cfg(any(target_os = "macos", target_os = "linux"))]
     pub(crate) fn library_layout(&self) -> &crate::LibraryLayout {
         self.authority.layout()
     }
@@ -468,6 +478,7 @@ impl<'library> Database<'library> {
             diagnostics: Vec::new(),
             fenced: Arc::new(AtomicBool::new(false)),
             closed: false,
+            external_effect_uncertain: AtomicBool::new(false),
             close_failed: false,
         };
         let path = authority
@@ -770,6 +781,9 @@ impl<'library> Database<'library> {
             return Err(StorageError::RuntimeFenced);
         }
         let mut failure = self.stop_ordinary().err();
+        if self.external_effect_uncertain.load(Ordering::Acquire) {
+            failure.get_or_insert(StorageError::CustodyRecoveryRequired);
+        }
         if let Err(error) = self.readers.stop_all() {
             failure.get_or_insert(error);
             self.readers.abort();
