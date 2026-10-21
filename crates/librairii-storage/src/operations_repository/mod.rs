@@ -12,6 +12,11 @@
 //! constructing this adapter or a public DTO cannot clear a storage fence.
 
 mod creation;
+#[cfg(any(target_os = "macos", target_os = "linux"))]
+mod destination;
+mod history;
+#[cfg(any(target_os = "macos", target_os = "linux"))]
+pub use destination::ExportDestination;
 mod jobs;
 mod policy;
 mod recovery;

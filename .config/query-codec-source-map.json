@@ -3831,6 +3831,32 @@
           ]
         },
         "reason": "Additive Task 6 durable operation/runtime/recovery assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 474,
+        "identity": {
+          "suite": "librairii-storage::operation_history",
+          "name": "active_latest_preserves_null_ordering_and_reveal_requires_retained_valid_directory",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive Task 6 durable operation/runtime/recovery assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 475,
+        "identity": {
+          "suite": "librairii-storage::operation_history",
+          "name": "history_twenty_raw_key_pages_remain_stable_with_concurrent_new_inserts",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive Task 6 durable operation/runtime/recovery assertions; all admitted identities retain exact order and target scope."
       }
     ],
     "python": [

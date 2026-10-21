@@ -168,3 +168,24 @@ outcomes. Normal recovery cleans only registered partials; symlink/hardlink
 substitution remains untouched with Active recovery state. Completed exports,
 unregistered destination files and the original legacy source remain unchanged.
 All 29 native-owner tests pass, retaining every prior restart/fence assertion.
+
+## 6.7 — History, active/latest and destination handover
+
+History resolves the raw before-ID and reads its 21-row lookahead plus item
+snapshots in one coherent writer-barrier transaction. Pages contain 20 operations;
+newer inserts cannot shift the next page. IDs/timestamps are compared as stored
+text, with no UUID/date normalization. Missing cursors return invalid-request.
+Active views retain every active row (no History20 cap), then append one latest
+terminal export using SQL COALESCE's NULL-only fallback. Both views enforce a
+64 MiB retained-result budget and return an explicit error rather than a partial
+or silently truncated page. Item outcomes and legacy source aliases are preserved.
+
+Export-directory handover starts from a real saved terminal export, validates an
+absolute existing canonical directory and retains its actual descriptor plus the
+Database borrow. Immediate reveal revalidation checks immutable SQL scope and the
+same directory object. Relative/blank/NUL/missing/file/symlink destinations and
+substituted directories are rejected. The native UI/platform file-manager launch
+is Task 15; this handover provides one validated path argument, never shell text
+or publication/deletion authority. Tests cover concurrent inserts, tie ordering,
+20-row cursors, 30 active rows, NULL versus empty finished timestamps, historical
+outcomes/aliases and unsafe/stale destinations.
