@@ -68,10 +68,7 @@ mod state {
             if self.format != "librairii.native-library"
                 || self.version != 1
                 || (self.state == Phase::ImportedClosed) != (self.epoch == 0)
-                || self
-                    .library_id_raw
-                    .parse::<librairii_core::LibraryId>()
-                    .is_err()
+                || crate::identity::parse_spelling(&self.library_id_raw).is_err()
             {
                 return Err(StorageError::RecoveryBindingRequired);
             }

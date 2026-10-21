@@ -1529,3 +1529,27 @@ failed,155 intentionally filtered. This is an actual storage-boundary failure,
 not a new Go campaign or a parser-parity/native-admission claim. Existing supplied
 frozen-Go optional/text observations are supporting evidence only. Native N3
 input1e954 and import input44 remain unchanged; no temporary proof is shipped.
+
+The original failing regression is
+`ce69e4b2e1927de878be30257cde42717aebe522`. The correction uses a private
+already-trimmed storage spelling adapter: for byte length38 it checks the UTF-8
+slice boundary and delegates the middle36 to the existing LibraryId parser;
+other supported shapes still delegate unchanged. Both marker parsing and the
+private native record use this one adapter. Raw spelling, exact marker bytes,
+profile equality, canonical diagnostics and shared/core string parsing remain
+separate. Surrounding native-record whitespace and malformed lengths/UUIDs still
+refuse. The existing UTF-8 marker domain is unchanged; no broad arbitrary-byte
+Go parser claim is made.
+
+Actual AppleARM GREEN: SAME two selected cases pass,155 intentionally filtered,
+run `4c8ae107-91b9-46e1-b21c-841b00fd0ce3`. The marker table now completes all
+seven supported spelling cases including arbitrary and NUL wrappers, followed by
+non-destructive malformed-middle/length/multibyte-boundary checks. The native
+codec roundtrips exact wrapper strings while retaining all strict invalid-input
+checks. Storage all-target Clippy with warnings denied, rustfmt and diff-check
+pass. RED log SHA256
+`280489cef1d6f4e21fa2775a5f6f9bfa1fda481856925da136ef9813b5db35f0`;
+GREEN `734f985d7d704b255ffa528d1ff2022c25717cdaf3815953b0a19e0a17b27adc`.
+No Go, full workspace, native-other-host, whole Native restart campaign or fixed
+temporary proof was rerun. Owner5 actual additive discovery/current combined
+quality and final provider/review/admission remain required.
