@@ -2233,7 +2233,7 @@
           "suite": "librairii-core",
           "name": "collection_codec::compatibility::normalization::tests::runtime_uses_input_derived_bounds_without_changing_saved_wire_refusal"
         },
-        "reason": "Task 7 additive discovery; all integration-base identities remain exact and ordered."
+        "reason": "Task 7 additive observed discovery; integration-base identities retain their exact order and scope."
       },
       {
         "position": 330,
@@ -2241,7 +2241,7 @@
           "suite": "librairii-core",
           "name": "collection_codec::runtime::tests::runtime_private_lists_use_frozen_language_and_per_node_source_limits"
         },
-        "reason": "Task 7 additive discovery; all integration-base identities remain exact and ordered."
+        "reason": "Task 7 additive observed discovery; integration-base identities retain their exact order and scope."
       },
       {
         "position": 331,
@@ -2249,7 +2249,7 @@
           "suite": "librairii-core",
           "name": "collection_codec::runtime::tests::runtime_rejects_private_retired_flags_without_retiring_or_saving"
         },
-        "reason": "Task 7 additive discovery; all integration-base identities remain exact and ordered."
+        "reason": "Task 7 additive observed discovery; integration-base identities retain their exact order and scope."
       },
       {
         "position": 332,
@@ -2257,7 +2257,7 @@
           "suite": "librairii-core",
           "name": "collection_codec::runtime::tests::runtime_visits_children_then_navigation_then_node_fields_in_source_order"
         },
-        "reason": "Task 7 additive discovery; all integration-base identities remain exact and ordered."
+        "reason": "Task 7 additive observed discovery; integration-base identities retain their exact order and scope."
       },
       {
         "position": 333,
@@ -2265,7 +2265,7 @@
           "suite": "librairii-core::query_normalization",
           "name": "query_runtime_choice_cardinality_is_checked_before_stable_deduplication"
         },
-        "reason": "Task 7 additive discovery; all integration-base identities remain exact and ordered."
+        "reason": "Task 7 additive observed discovery; integration-base identities retain their exact order and scope."
       },
       {
         "position": 334,
@@ -2273,7 +2273,7 @@
           "suite": "librairii-core::query_normalization",
           "name": "query_runtime_definition_duplicates_include_ignored_and_cross_kind_filters"
         },
-        "reason": "Task 7 additive discovery; all integration-base identities remain exact and ordered."
+        "reason": "Task 7 additive observed discovery; integration-base identities retain their exact order and scope."
       },
       {
         "position": 335,
@@ -2281,7 +2281,7 @@
           "suite": "librairii-core::query_normalization",
           "name": "query_runtime_group_limit_includes_language_and_compatibility_presence"
         },
-        "reason": "Task 7 additive discovery; all integration-base identities remain exact and ordered."
+        "reason": "Task 7 additive observed discovery; integration-base identities retain their exact order and scope."
       },
       {
         "position": 336,
@@ -2289,7 +2289,7 @@
           "suite": "librairii-core::query_normalization",
           "name": "query_runtime_large_removable_names_do_not_inherit_saved_wire_byte_refusal"
         },
-        "reason": "Task 7 additive discovery; all integration-base identities remain exact and ordered."
+        "reason": "Task 7 additive observed discovery; integration-base identities retain their exact order and scope."
       },
       {
         "position": 337,
@@ -2297,7 +2297,7 @@
           "suite": "librairii-core::query_normalization",
           "name": "query_runtime_mutated_decoded_value_and_payload_do_not_certify_runtime_validity"
         },
-        "reason": "Task 7 additive discovery; all integration-base identities remain exact and ordered."
+        "reason": "Task 7 additive observed discovery; integration-base identities retain their exact order and scope."
       },
       {
         "position": 338,
@@ -2305,7 +2305,7 @@
           "suite": "librairii-core::query_normalization",
           "name": "query_runtime_name_limit_counts_normalized_unicode_characters"
         },
-        "reason": "Task 7 additive discovery; all integration-base identities remain exact and ordered."
+        "reason": "Task 7 additive observed discovery; integration-base identities retain their exact order and scope."
       },
       {
         "position": 339,
@@ -2313,7 +2313,7 @@
           "suite": "librairii-core::query_normalization",
           "name": "query_runtime_navigation_defaults_and_exact_explicit_values_are_validated"
         },
-        "reason": "Task 7 additive discovery; all integration-base identities remain exact and ordered."
+        "reason": "Task 7 additive observed discovery; integration-base identities retain their exact order and scope."
       },
       {
         "position": 340,
@@ -2321,7 +2321,7 @@
           "suite": "librairii-core::query_normalization",
           "name": "query_runtime_node_budget_counts_root_flat_branches_and_nested_descendants"
         },
-        "reason": "Task 7 additive discovery; all integration-base identities remain exact and ordered."
+        "reason": "Task 7 additive observed discovery; integration-base identities retain their exact order and scope."
       },
       {
         "position": 341,
@@ -2329,7 +2329,7 @@
           "suite": "librairii-core::query_normalization",
           "name": "query_runtime_retains_ignored_filters_definition_order_and_stable_choice_deduplication"
         },
-        "reason": "Task 7 additive discovery; all integration-base identities remain exact and ordered."
+        "reason": "Task 7 additive observed discovery; integration-base identities retain their exact order and scope."
       },
       {
         "position": 342,
@@ -2337,29 +2337,94 @@
           "suite": "librairii-core::query_normalization",
           "name": "query_runtime_root_and_each_child_receive_exactly_one_unicode_normalization_pass"
         },
-        "reason": "Task 7 additive discovery; all integration-base identities remain exact and ordered."
+        "reason": "Task 7 additive observed discovery; integration-base identities retain their exact order and scope."
+      },
+      {
+        "position": 343,
+        "identity": {
+          "suite": "librairii-storage::queries",
+          "name": "boolean_choice_derived_compatibility_and_live_ownership_filters",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Task 7 additive observed discovery; integration-base identities retain their exact order and scope."
+      },
+      {
+        "position": 344,
+        "identity": {
+          "suite": "librairii-storage::queries",
+          "name": "filter_plans_use_preserved_assignment_indexes",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Task 7 additive observed discovery; integration-base identities retain their exact order and scope."
+      },
+      {
+        "position": 345,
+        "identity": {
+          "suite": "librairii-storage::queries",
+          "name": "literal_unicode_search_pages_sort_ties_and_huge_page_numbers",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Task 7 additive observed discovery; integration-base identities retain their exact order and scope."
+      },
+      {
+        "position": 346,
+        "identity": {
+          "suite": "librairii-storage::queries",
+          "name": "metadata_language_is_independent_of_display_locale_and_uses_active_snapshots",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Task 7 additive observed discovery; integration-base identities retain their exact order and scope."
+      },
+      {
+        "position": 347,
+        "identity": {
+          "suite": "librairii-storage::queries",
+          "name": "nested_any_of_is_and_with_local_predicates_and_empty_branch_matches_all",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Task 7 additive observed discovery; integration-base identities retain their exact order and scope."
       }
     ],
     "python": [
       {
         "position": 38,
         "identity": "test_sources.SourcePolicy.test_runtime_query_index_retains_all_prior_62_identities_and_prior_lookup_bytes",
-        "reason": "Task 7 additive discovery; all integration-base identities remain exact and ordered."
+        "reason": "Task 7 additive observed discovery; integration-base identities retain their exact order and scope."
       },
       {
         "position": 39,
         "identity": "test_sources.SourcePolicy.test_runtime_query_leaves_require_materialized_exact_bytes_and_headers",
-        "reason": "Task 7 additive discovery; all integration-base identities remain exact and ordered."
+        "reason": "Task 7 additive observed discovery; integration-base identities retain their exact order and scope."
       },
       {
         "position": 40,
         "identity": "test_sources.SourcePolicy.test_runtime_query_origins_and_scope_cannot_expand_to_sql_or_saved_conversion",
-        "reason": "Task 7 additive discovery; all integration-base identities remain exact and ordered."
+        "reason": "Task 7 additive observed discovery; integration-base identities retain their exact order and scope."
       },
       {
         "position": 41,
         "identity": "test_sources.SourcePolicy.test_runtime_query_binding_does_not_relax_saved_derivatives_or_notice_guards",
-        "reason": "Task 7 additive discovery; all integration-base identities remain exact and ordered."
+        "reason": "Task 7 additive observed discovery; integration-base identities retain their exact order and scope."
       }
     ]
   }

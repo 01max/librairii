@@ -1,0 +1,314 @@
+//! Frozen query semantics on a single caller-owned SQLite snapshot.
+//!
+//! SQL work stays on the existing database workers. Values are bound parameters;
+//! only fixed predicates/order clauses are composed into SQL. A result is data,
+//! never authority to export or mutate a story.
+use crate::{
+    Result, StorageError,
+    database::{Database, Pending},
+};
+use librairii_core::{
+    browsing::{DisplaySources, OfficialInfo, Page, StorySummary},
+    collection_codec::Query,
+    query::{QueryInputError, QueryRequest, normalize_request},
+};
+use rusqlite::{OptionalExtension, Transaction, params, params_from_iter, types::Value};
+
+const FROM: &str = " FROM stories s JOIN story_archives a ON a.story_id=s.id";
+// Exact matching/sorting expression from frozen story_query.go. In particular,
+// name matching uses raw UUID spelling; official display lookup canonicalizes it.
+const DISPLAY_NAME: &str = "COALESCE(NULLIF((SELECT m.title_normalized FROM official_story_metadata m JOIN catalog_snapshots c ON c.id=m.snapshot_id WHERE m.story_uuid=s.uuid AND c.status='active' AND c.locale=? ORDER BY c.activated_at DESC,c.id DESC LIMIT 1),''),s.display_name_normalized)";
+const RECORD: &str = "SELECT s.id,s.uuid,COALESCE(s.embedded_title,''),COALESCE(s.embedded_description,''),COALESCE(s.embedded_artwork_path,''),s.created_at,a.original_filename,a.detected_format,a.sha256,a.byte_size,a.managed_path,a.validation_state,s.is_broken";
+
+fn invalid() -> StorageError {
+    QueryInputError::InvalidQuery.into()
+}
+fn text(value: &str) -> Value {
+    Value::Text(value.to_owned())
+}
+
+impl Database<'_> {
+    pub fn search(&self, request: QueryRequest, locale: String) -> Result<Pending<'_, Page>> {
+        self.read(move |tx| search(tx, request, &locale))
+    }
+    pub fn count(&self, request: QueryRequest, locale: String) -> Result<Pending<'_, i64>> {
+        self.read(move |tx| count(tx, request, &locale))
+    }
+}
+
+/// Validate against this exact transaction, including ignored Boolean filters
+/// and value ownership in every branch. Missing references are never omitted.
+pub fn validate_references(tx: &Transaction<'_>, query: &Query) -> Result<()> {
+    for branch in &query.any_of {
+        validate_references(tx, branch)?;
+    }
+    for filter in &query.boolean_filters {
+        let kind: Option<String> = tx
+            .query_row(
+                "SELECT kind FROM tag_definitions WHERE id=?",
+                [filter.definition_id],
+                |r| r.get(0),
+            )
+            .optional()?;
+        if kind.as_deref() != Some("boolean") {
+            return Err(invalid());
+        }
+    }
+    for filter in &query.choice_filters {
+        let kind: Option<String> = tx
+            .query_row(
+                "SELECT kind FROM tag_definitions WHERE id=?",
+                [filter.definition_id],
+                |r| r.get(0),
+            )
+            .optional()?;
+        if kind.as_deref() != Some("choice") {
+            return Err(invalid());
+        }
+        for value in &filter.value_ids {
+            let exists: bool = tx.query_row(
+                "SELECT EXISTS(SELECT 1 FROM tag_values WHERE id=? AND definition_id=?)",
+                params![value, filter.definition_id],
+                |r| r.get(0),
+            )?;
+            if !exists {
+                return Err(invalid());
+            }
+        }
+    }
+    Ok(())
+}
+
+fn list(values: impl serde::Serialize) -> Result<Value> {
+    serde_json::to_string(&values)
+        .map(Value::Text)
+        .map_err(|_| invalid())
+}
+
+fn predicate(q: &Query, locale: &str, args: &mut Vec<Value>) -> Result<String> {
+    let mut parts = Vec::new();
+    if !q.name.is_empty() {
+        parts.push(format!("instr({DISPLAY_NAME},?)>0"));
+        args.extend([text(locale), text(&q.name)]);
+    }
+    if !q.languages().is_empty() {
+        parts.push("EXISTS(SELECT 1 FROM official_story_metadata m JOIN catalog_snapshots c ON c.id=m.snapshot_id WHERE m.story_uuid=s.uuid AND c.status='active' AND m.language IN (SELECT value FROM json_each(?)))".into());
+        args.push(list(q.languages())?);
+    }
+    if !q.compatibilities().is_empty() {
+        parts.push("a.validation_state IN (SELECT value FROM json_each(?))".into());
+        let states: Vec<&str> = q
+            .compatibilities()
+            .iter()
+            .map(|v| match v.as_str() {
+                "compatible" => "valid",
+                "missing" => "missing",
+                _ => "invalid",
+            })
+            .collect();
+        args.push(list(states)?);
+    }
+    for f in &q.boolean_filters {
+        if f.state == "ignored" {
+            continue;
+        }
+        let prefix = if f.state == "false" { "NOT " } else { "" };
+        parts.push(format!("{prefix}EXISTS(SELECT 1 FROM story_tag_assignments t WHERE t.story_id=s.id AND t.definition_id=? AND t.value_id IS NULL)"));
+        args.push(Value::Integer(f.definition_id));
+    }
+    for f in &q.choice_filters {
+        parts.push("EXISTS(SELECT 1 FROM story_tag_assignments t WHERE t.story_id=s.id AND t.definition_id=? AND t.value_id IS NOT NULL AND t.value_id IN (SELECT CAST(value AS INTEGER) FROM json_each(?)))".into());
+        args.extend([Value::Integer(f.definition_id), list(&f.value_ids)?]);
+    }
+    if !q.any_of.is_empty() {
+        let mut branches = Vec::new();
+        for branch in &q.any_of {
+            let p = predicate(branch, locale, args)?;
+            branches.push(format!("({})", if p.is_empty() { "1" } else { &p }));
+        }
+        parts.push(format!("({})", branches.join(" OR ")));
+    }
+    Ok(parts.join(" AND "))
+}
+
+fn matching(
+    tx: &Transaction<'_>,
+    request: QueryRequest,
+    locale: &str,
+) -> Result<(QueryRequest, String, Vec<Value>)> {
+    let request = normalize_request(request)?;
+    validate_references(tx, &request.criteria)?;
+    let mut args = Vec::new();
+    let predicate = predicate(&request.criteria, locale, &mut args)?;
+    let from = if predicate.is_empty() {
+        FROM.to_owned()
+    } else {
+        format!("{FROM} WHERE {predicate}")
+    };
+    Ok((request, from, args))
+}
+
+fn ordering(request: &QueryRequest, locale: &str, args: &mut Vec<Value>) -> String {
+    if request.sort == "imported_desc" {
+        " ORDER BY s.created_at DESC,s.id DESC".into()
+    } else {
+        args.push(text(locale));
+        format!(" ORDER BY {DISPLAY_NAME},s.uuid,s.id")
+    }
+}
+
+pub fn count(tx: &Transaction<'_>, request: QueryRequest, locale: &str) -> Result<i64> {
+    let (_, from, args) = matching(tx, request, locale)?;
+    Ok(tx.query_row(
+        &format!("SELECT COUNT(*){from}"),
+        params_from_iter(args),
+        |r| r.get(0),
+    )?)
+}
+
+pub fn search(tx: &Transaction<'_>, request: QueryRequest, locale: &str) -> Result<Page> {
+    let (request, from, mut args) = matching(tx, request, locale)?;
+    let total: i64 = tx.query_row(
+        &format!("SELECT COUNT(*){from}"),
+        params_from_iter(args.iter()),
+        |r| r.get(0),
+    )?;
+    let total_pages = total / request.page_size + i64::from(total % request.page_size != 0);
+    let mut stories = Vec::new();
+    // Huge valid page numbers are empty pages, not integer-wrap offsets.
+    if request.page <= total_pages {
+        let order = ordering(&request, locale, &mut args);
+        args.extend([
+            Value::Integer(request.page_size),
+            Value::Integer((request.page - 1) * request.page_size),
+        ]);
+        let mut statement = tx.prepare(&format!("{RECORD}{from}{order} LIMIT ? OFFSET ?"))?;
+        let mut rows = statement.query(params_from_iter(args))?;
+        while let Some(row) = rows.next()? {
+            stories.push(summary(tx, &Record::read(row)?, locale)?);
+        }
+    }
+    Ok(Page {
+        stories,
+        page: request.page,
+        page_size: request.page_size,
+        total_items: total,
+        total_pages,
+        sort: request.sort,
+    })
+}
+
+#[derive(Debug)]
+struct Record {
+    id: i64,
+    uuid: String,
+    title: String,
+    description: String,
+    artwork: String,
+    created: String,
+    format: String,
+    bytes: i64,
+    validation: String,
+    broken: bool,
+}
+impl Record {
+    fn read(r: &rusqlite::Row<'_>) -> rusqlite::Result<Self> {
+        Ok(Self {
+            id: r.get(0)?,
+            uuid: r.get(1)?,
+            title: r.get(2)?,
+            description: r.get(3)?,
+            artwork: r.get(4)?,
+            created: r.get(5)?,
+            format: r.get(7)?,
+            bytes: r.get(9)?,
+            validation: r.get(11)?,
+            broken: r.get(12)?,
+        })
+    }
+}
+
+fn resolved(official: &str, embedded: &str, fallback: String) -> (String, String) {
+    if !official.trim().is_empty() {
+        (official.trim().into(), "official".into())
+    } else if !embedded.trim().is_empty() {
+        (embedded.trim().into(), "embedded".into())
+    } else {
+        (fallback, "fallback".into())
+    }
+}
+
+fn summary(tx: &Transaction<'_>, r: &Record, locale: &str) -> Result<StorySummary> {
+    let uuid = r
+        .uuid
+        .parse::<librairii_core::StoryUuid>()
+        .map_err(|_| invalid())?
+        .to_string();
+    let official=tx.query_row("SELECT COALESCE(m.title,''),COALESCE(m.description,''),COALESCE(m.author,''),COALESCE(m.artwork_id,''),m.locale,COALESCE(m.publisher,''),COALESCE(m.language,''),m.duration_seconds,m.minimum_age,m.maximum_age,m.provenance,COALESCE(m.source_record_id,''),COALESCE(m.source_updated_at,''),c.fetched_at,c.activated_at FROM official_story_metadata m JOIN catalog_snapshots c ON c.id=m.snapshot_id WHERE m.story_uuid=? AND c.locale=? AND c.status='active'",params![uuid,locale],|row| {
+        Ok((row.get::<_,String>(0)?,row.get::<_,String>(1)?,row.get::<_,String>(2)?,row.get::<_,String>(3)?,OfficialInfo {locale:row.get(4)?,publisher:row.get(5)?,language:row.get(6)?,duration_seconds:row.get(7)?,minimum_age:row.get(8)?,maximum_age:row.get(9)?,provenance:row.get(10)?,source_record_id:row.get(11)?,source_updated_at:row.get(12)?,fetched_at:row.get(13)?,activated_at:row.get(14)?}))
+    }).optional()?;
+    let (ot, od, oa, oi, info) = official.map_or_else(
+        || {
+            (
+                String::new(),
+                String::new(),
+                String::new(),
+                String::new(),
+                None,
+            )
+        },
+        |(t, d, a, i, info)| (t, d, a, i, Some(info)),
+    );
+    let (title, ts) = resolved(&ot, &r.title, format!("Story {}", r.uuid));
+    let (description, ds) = resolved(&od, &r.description, String::new());
+    let (author, aus) = resolved(&oa, "", String::new());
+    let (artwork_id, ars) = if !oi.trim().is_empty() {
+        (oi.trim().to_owned(), "official".into())
+    } else if !r.artwork.is_empty() {
+        (format!("embedded:{}", r.id), "embedded".into())
+    } else {
+        (String::new(), "fallback".into())
+    };
+    let (compatibility, reason) = match r.validation.as_str() {
+        "valid" => ("compatible", ""),
+        "missing" => ("missing", "Managed archive bytes are missing."),
+        _ => ("invalid", "Managed archive verification failed."),
+    };
+    Ok(StorySummary {
+        broken: r.broken,
+        id: r.id,
+        uuid: r.uuid.clone(),
+        title,
+        description,
+        author,
+        artwork_id,
+        sources: DisplaySources {
+            title: ts,
+            description: ds,
+            author: aus,
+            artwork: ars,
+        },
+        detected_format: r.format.clone(),
+        compatibility: compatibility.into(),
+        compatibility_reason: reason.into(),
+        byte_size: r.bytes,
+        imported_at: r.created.clone(),
+        official: info,
+    })
+}
+
+/// Query-plan diagnostics for the same validated predicate and order as search.
+pub fn explain_search(
+    tx: &Transaction<'_>,
+    request: QueryRequest,
+    locale: &str,
+) -> Result<Vec<String>> {
+    let (request, from, mut args) = matching(tx, request, locale)?;
+    let order = ordering(&request, locale, &mut args);
+    let mut statement = tx.prepare(&format!(
+        "EXPLAIN QUERY PLAN {RECORD}{from}{order} LIMIT 100"
+    ))?;
+    Ok(statement
+        .query_map(params_from_iter(args), |r| r.get(3))?
+        .collect::<rusqlite::Result<Vec<_>>>()?)
+}

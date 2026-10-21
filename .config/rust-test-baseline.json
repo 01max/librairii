@@ -1879,6 +1879,51 @@
     {
       "suite": "librairii-core::query_normalization",
       "name": "query_runtime_root_and_each_child_receive_exactly_one_unicode_normalization_pass"
+    },
+    {
+      "suite": "librairii-storage::queries",
+      "name": "boolean_choice_derived_compatibility_and_live_ownership_filters",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::queries",
+      "name": "filter_plans_use_preserved_assignment_indexes",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::queries",
+      "name": "literal_unicode_search_pages_sort_ties_and_huge_page_numbers",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::queries",
+      "name": "metadata_language_is_independent_of_display_locale_and_uses_active_snapshots",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::queries",
+      "name": "nested_any_of_is_and_with_local_predicates_and_empty_branch_matches_all",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
     }
   ]
 }

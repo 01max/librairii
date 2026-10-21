@@ -11,7 +11,7 @@ This document records shipped scope and verification; pending rows are not passe
 | Subtask | Scope | Evidence |
 | --- | --- | --- |
 | 7.1 | Frozen Unicode runtime normalization | Original `191ae6c320778467b71a3d0d25a3efde61e30ebc` retained through a normal merge; one shared frozen pipeline, distinct saved/runtime passes. ARM Rust 1.99.1: core nextest 132/132, zero skips, UUID `eeab244d-7362-466b-ac86-acc3ce8c8f3a`; includes complete scalar/sequence references and 14 runtime identities. Source-policy 22/22; core all-target Clippy with warnings denied passed. |
-| 7.2 | SQL search/count/page, filters, ordering and indexes | Pending |
+| 7.2 | SQL search/count/page, filters, ordering and indexes | ARM: 5/5 isolated SQLite regressions, zero skips; UUID `610bcdc6-5728-42b5-937c-3f4bacbf3f38`. Live ignored/kind/value validation; literal wildcard/Unicode; active metadata/language independence; sort ties and huge pages; actual predicate EXPLAIN uses retained indexes. Storage Clippy and source gate passed. |
 | 7.3 | Bounded saved membership and live-reference validation | Pending |
 | 7.4 | Current/legacy URL and typed scope decoding | Pending |
 | 7.5 | Semantic navigation and native preference persistence | Pending |
