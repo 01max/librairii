@@ -1753,3 +1753,34 @@ target, not moving/retargeting an already-bound native root or replaying recover
 Those unsupported operations keep their explicit refusals. Actual Linux/Intel
 native results and final exact-head cumulative checks/independent review remain
 admission gates; prior5541 provider success is not a new-head pass.
+
+### Correction: retain preflight objects, not detached inode observations
+
+The gate's source-only finding at3aad65f is accepted: target_ids outlived the
+newly created Files/Directories, so device/inode equality after reopening could
+not establish exclusive-create authority if an inode were reused. No executed
+inode-reuse exploit or old-head failure reproduction is claimed.
+
+CopyCandidate now retains every returned preflight File and Directory through
+all payload writes and final name/hash/flush checks. Payloads are written through
+the SAME held exclusive-create File; ancestor traversal returns held original
+directories. Fresh readonly opens only compare observations while both original
+and named objects are live. Failed outcomes retain all acquired witnesses and
+the root lease, including unlinked objects. Child handles are released only
+after fully acknowledged successful copy completion; no saved ID becomes a later
+write capability. Descriptor exhaustion refuses with the acquired owner prefix,
+without dropping witnesses to continue or changing host limits.
+
+The existing copy-failure test now deterministically unlinks/recreates the file
+and the containing directory after all-name preflight. It asserts original File
+metadata/nlink0, actual retained Directory duplication after unlink, untouched
+empty replacements, refusal before ANY payload, retained lease and unchanged
+source. This verifies physical witness/substitution handling, not probabilistic
+inode allocation. All original test identities and assertions remain.
+
+Affected AppleARM Rust1.99.1 checks PASS: copy failures2/2, portability4/4 (including
+applied binding, checked reopen and schema018 archive hashes), selected native
+binding/retarget regressions2/2 with24 intentionally filtered (nextest
+22600a14-9aae-4936-9f3b-79ebe2e2e1ba), storage all-target Clippy-Dwarnings,
+owned-file rustfmt and diff checks. No old CI retry/cancel, Windows assay,
+Go/corpus campaign, new test identity or root policy change.
