@@ -1323,6 +1323,62 @@
       "targets": [
         "x86_64-pc-windows-msvc"
       ]
+    },
+    {
+      "suite": "librairii-core",
+      "name": "collection_codec::compatibility::normalization::tests::runtime_uses_input_derived_bounds_without_changing_saved_wire_refusal"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "collection_codec::runtime::tests::runtime_private_lists_use_frozen_language_and_per_node_source_limits"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "collection_codec::runtime::tests::runtime_rejects_private_retired_flags_without_retiring_or_saving"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "collection_codec::runtime::tests::runtime_visits_children_then_navigation_then_node_fields_in_source_order"
+    },
+    {
+      "suite": "librairii-core::query_normalization",
+      "name": "query_runtime_choice_cardinality_is_checked_before_stable_deduplication"
+    },
+    {
+      "suite": "librairii-core::query_normalization",
+      "name": "query_runtime_definition_duplicates_include_ignored_and_cross_kind_filters"
+    },
+    {
+      "suite": "librairii-core::query_normalization",
+      "name": "query_runtime_group_limit_includes_language_and_compatibility_presence"
+    },
+    {
+      "suite": "librairii-core::query_normalization",
+      "name": "query_runtime_large_removable_names_do_not_inherit_saved_wire_byte_refusal"
+    },
+    {
+      "suite": "librairii-core::query_normalization",
+      "name": "query_runtime_mutated_decoded_value_and_payload_do_not_certify_runtime_validity"
+    },
+    {
+      "suite": "librairii-core::query_normalization",
+      "name": "query_runtime_name_limit_counts_normalized_unicode_characters"
+    },
+    {
+      "suite": "librairii-core::query_normalization",
+      "name": "query_runtime_navigation_defaults_and_exact_explicit_values_are_validated"
+    },
+    {
+      "suite": "librairii-core::query_normalization",
+      "name": "query_runtime_node_budget_counts_root_flat_branches_and_nested_descendants"
+    },
+    {
+      "suite": "librairii-core::query_normalization",
+      "name": "query_runtime_retains_ignored_filters_definition_order_and_stable_choice_deduplication"
+    },
+    {
+      "suite": "librairii-core::query_normalization",
+      "name": "query_runtime_root_and_each_child_receive_exactly_one_unicode_normalization_pass"
     }
   ]
 }

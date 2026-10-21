@@ -18,3 +18,4 @@ internal/database/migrations/*.sql -text
 # Query provenance binds exact current inline bytes and source-map metadata.
 .config/query-codec-source-map.json -text
 crates/librairii-storage/src/migrations.rs -text
+crates/librairii-core/src/query/** -text

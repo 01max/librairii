@@ -2,6 +2,7 @@
 #![forbid(unsafe_code)]
 pub mod collection_codec;
 mod identity;
+pub mod query;
 mod vocabulary;
 pub use identity::{Checksum, CollectionId, JobId, LibraryId, ShelfId, StoryUuid};
 pub use vocabulary::{

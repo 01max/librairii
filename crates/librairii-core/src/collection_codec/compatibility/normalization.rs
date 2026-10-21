@@ -25,6 +25,52 @@ pub(in crate::collection_codec) enum NormalizeError {
 }
 type Result<T> = std::result::Result<T, NormalizeError>;
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq, thiserror::Error)]
+pub(in crate::collection_codec) enum RuntimeNormalizeError {
+    #[error("frozen normalization data/algorithm invariant failed")]
+    FrozenData,
+    #[error("runtime normalization buffer bounds exceed representable capacity")]
+    ResourceOverflow,
+}
+
+#[derive(Clone, Copy, Debug)]
+struct BufferBounds {
+    folded: usize,
+    normalized: usize,
+    runtime: bool,
+}
+impl BufferBounds {
+    const SAVED: Self = Self {
+        folded: MAX_FOLDED_BYTES,
+        normalized: MAX_NORMALIZED_BYTES,
+        runtime: false,
+    };
+
+    fn runtime(input_bytes: usize) -> std::result::Result<Self, RuntimeNormalizeError> {
+        let folded = input_bytes
+            .checked_mul(3)
+            .ok_or(RuntimeNormalizeError::ResourceOverflow)?;
+        let normalized = folded
+            .checked_mul(33)
+            .ok_or(RuntimeNormalizeError::ResourceOverflow)?;
+        Ok(Self {
+            folded,
+            normalized,
+            runtime: true,
+        })
+    }
+
+    fn output_limit_error(self) -> NormalizeError {
+        if self.runtime {
+            // The runtime wrapper projects a buffer-capacity refusal into its
+            // resource error, separately from corrupt frozen table evidence.
+            NormalizeError::InputLimit
+        } else {
+            NormalizeError::FrozenData
+        }
+    }
+}
+
 fn in_ranges(character: char, ranges: &[(u32, u32, u32)]) -> bool {
     let rune = u32::from(character);
     let i = ranges.partition_point(|&(_, hi, _)| hi < rune);
@@ -73,18 +119,23 @@ pub(in crate::collection_codec) fn ascii_field_key(value: &str) -> Option<String
         .collect()
 }
 
-fn folded(value: &str) -> Result<String> {
+fn folded_with_bounds(value: &str, bounds: BufferBounds) -> Result<String> {
     let mut output = String::new();
     for character in value.chars() {
         match unicode::FULL_FOLD.binary_search_by_key(&u32::from(character), |&(rune, _)| rune) {
             Ok(i) => output.push_str(unicode::FULL_FOLD[i].1),
             Err(_) => output.push(character),
         }
-        if output.len() > MAX_FOLDED_BYTES {
-            return Err(NormalizeError::FrozenData);
+        if output.len() > bounds.folded {
+            return Err(bounds.output_limit_error());
         }
     }
     Ok(output)
+}
+
+#[cfg(test)]
+fn folded(value: &str) -> Result<String> {
+    folded_with_bounds(value, BufferBounds::SAVED)
 }
 
 #[derive(Clone, Copy, Debug, Default)]
@@ -243,13 +294,13 @@ impl Segment {
         self.used += 1;
         Ok(())
     }
-    fn flush(&mut self, output: &mut String) -> Result<()> {
+    fn flush(&mut self, output: &mut String, bounds: BufferBounds) -> Result<()> {
         for &(character, _) in &self.runes[..self.used] {
             output.push(character);
         }
         self.used = 0;
-        if output.len() > MAX_NORMALIZED_BYTES {
-            return Err(NormalizeError::FrozenData);
+        if output.len() > bounds.normalized {
+            return Err(bounds.output_limit_error());
         }
         Ok(())
     }
@@ -258,8 +309,8 @@ impl Segment {
 /// Exact stream-safe partitioning is applied to ORIGINAL folded characters'
 /// generated leading/trailing counts BEFORE decomposition and CCC ordering.
 /// Inserting CGJ after globally ordered NFKD is observably different for Mc.
-fn nfkd(value: &str) -> Result<String> {
-    if value.len() > MAX_FOLDED_BYTES {
+fn nfkd_with_bounds(value: &str, bounds: BufferBounds) -> Result<String> {
+    if value.len() > bounds.folded {
         return Err(NormalizeError::InputLimit);
     }
     let mut output = String::new();
@@ -268,14 +319,14 @@ fn nfkd(value: &str) -> Result<String> {
     for character in value.chars() {
         let p = properties(character)?;
         if nonstarters + p.leading > NON_STARTERS {
-            segment.flush(&mut output)?;
+            segment.flush(&mut output, bounds)?;
             output.push(CGJ);
             nonstarters = 0;
         }
         nonstarters += p.leading;
         if p.leading == 0 {
             nonstarters = p.trailing;
-            segment.flush(&mut output)?;
+            segment.flush(&mut output, bounds)?;
         }
         let rune = u32::from(character);
         if (0xac00..0xd7a4).contains(&rune) {
@@ -293,7 +344,7 @@ fn nfkd(value: &str) -> Result<String> {
             for decomposed in decomposition.chars() {
                 let next = properties(decomposed)?;
                 if next.ccc == 0 && !next.backward {
-                    segment.flush(&mut output)?;
+                    segment.flush(&mut output, bounds)?;
                 }
                 segment.insert(decomposed, next.ccc)?;
             }
@@ -301,16 +352,39 @@ fn nfkd(value: &str) -> Result<String> {
             segment.insert(character, p.ccc)?;
         }
     }
-    segment.flush(&mut output)?;
+    segment.flush(&mut output, bounds)?;
     Ok(output)
+}
+
+#[cfg(test)]
+fn nfkd(value: &str) -> Result<String> {
+    nfkd_with_bounds(value, BufferBounds::SAVED)
 }
 
 pub(in crate::collection_codec) fn normalize(value: &str) -> Result<String> {
     if value.len() > MAX_INPUT_BYTES {
         return Err(NormalizeError::InputLimit);
     }
-    let folded = folded(trim_space(value))?;
-    let decomposed = nfkd(&folded)?;
+    normalize_with_bounds(value, BufferBounds::SAVED)
+}
+
+/// The runtime source has no saved-wire raw-byte cutoff. Bounds here are
+/// derived from this actual input with checked arithmetic, not product limits.
+/// This shares the saved path's complete algorithm and frozen data. Neither
+/// path claims a total-heap budget or recoverable allocator exhaustion.
+pub(in crate::collection_codec) fn normalize_runtime(
+    value: &str,
+) -> std::result::Result<String, RuntimeNormalizeError> {
+    let bounds = BufferBounds::runtime(value.len())?;
+    normalize_with_bounds(value, bounds).map_err(|error| match error {
+        NormalizeError::InputLimit => RuntimeNormalizeError::ResourceOverflow,
+        NormalizeError::FrozenData => RuntimeNormalizeError::FrozenData,
+    })
+}
+
+fn normalize_with_bounds(value: &str, bounds: BufferBounds) -> Result<String> {
+    let folded = folded_with_bounds(trim_space(value), bounds)?;
+    let decomposed = nfkd_with_bounds(&folded, bounds)?;
     let mut output = String::new();
     let mut pending_space = false;
     for character in decomposed.chars() {
@@ -336,6 +410,24 @@ mod tests {
     use sha2::{Digest, Sha256};
     use std::collections::BTreeMap;
     use std::error::Error;
+
+    #[test]
+    fn runtime_uses_input_derived_bounds_without_changing_saved_wire_refusal()
+    -> std::result::Result<(), Box<dyn Error>> {
+        let whitespace = " ".repeat(MAX_INPUT_BYTES + 1);
+        let marks = "\u{0301}".repeat(MAX_INPUT_BYTES / 2 + 1);
+        for value in [&whitespace, &marks] {
+            assert_eq!(normalize_runtime(value)?, "");
+            assert!(matches!(normalize(value), Err(NormalizeError::InputLimit)));
+        }
+        assert_eq!(
+            BufferBounds::runtime(usize::MAX).err(),
+            Some(RuntimeNormalizeError::ResourceOverflow)
+        );
+        assert_eq!(normalize_runtime("𝑨")?, "A");
+        assert_eq!(normalize("𝑨")?, "A");
+        Ok(())
+    }
 
     fn original_ccc(character: char) -> Result<u8> {
         let value = lookup(character)?;

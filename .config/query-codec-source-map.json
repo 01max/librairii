@@ -2,7 +2,7 @@
   "version": 2,
   "bundle": "go-1.26.5-xtext-0.43.0-unicode15-cldr32",
   "scope": "single-materialized-core-query-codec",
-  "lookup_index_sha256": "13dfd314abfda9a9553d152a1d8a5586f8bd1205a08c177af9bbec57a51ae822",
+  "lookup_index_sha256": "cd8fcdac9ccdd46f1f06294f27bc07e9f8ed40f79d16cdab4d39c7c0cd837d78",
   "historical_index_sha256": "10ea8fe193c594ce153ae7a1734c41ab80c9d406cc7ea314c8c7c471b7a92a99",
   "historical_manifest_sha256": "2f8bd6db37191346b6719d7345a46a0b4d3163be745d5fae6b7f8ebf429a0409",
   "historical_derivatives": {
@@ -735,30 +735,30 @@
     "LICENSE-GO-BSD.txt",
     "PATENTS-GO.txt"
   ],
-  "recipe": "Move the ONE existing codec and frozen compatibility implementation into core; preserve algorithms, canonical passes, assertion bodies, data and reference bytes. Only attribution, imports, includes, necessary visibility and qualification path bindings adapt. Public payload serializes/Go-escapes/checks output bytes only; arbitrary Query construction is not validation or live validity. Historical inline/reference/index records remain historical, not a new execution. Complete core closure and absence of old storage implementation are required after separately-owned storage delegation. Separate authored follow-up adds only two borrowed read-only slice observations for existing private languages/compatibilities data; no copying, setters, validation, normalization or extra canonical pass.",
+  "recipe": "Move the ONE existing codec and frozen compatibility implementation into core; preserve algorithms, canonical passes, assertion bodies, data and reference bytes. Only attribution, imports, includes, necessary visibility and qualification path bindings adapt. Public payload serializes/Go-escapes/checks output bytes only; arbitrary Query construction is not validation or live validity. Historical inline/reference/index records remain historical, not a new execution. Complete core closure and absence of old storage implementation are required after separately-owned storage delegation. Separate authored follow-up adds only two borrowed read-only slice observations for existing private languages/compatibilities data; no copying, setters, validation, normalization or extra canonical pass. Stage A additionally binds two actual runtime leaves and the precise one-pass runtime/page source selections below; the saved codec changes only by private module wiring and the approved shared-helper bound refactor, preserving saved guards, errors and passes.",
   "lookup_bindings": [
     {
       "path": "crates/librairii-core/src/collection_codec/compatibility/extract_normalization.py",
       "constant": "INDEX_HASH",
-      "lookup_index_sha256": "13dfd314abfda9a9553d152a1d8a5586f8bd1205a08c177af9bbec57a51ae822",
+      "lookup_index_sha256": "cd8fcdac9ccdd46f1f06294f27bc07e9f8ed40f79d16cdab4d39c7c0cd837d78",
       "historical_index_sha256": "10ea8fe193c594ce153ae7a1734c41ab80c9d406cc7ea314c8c7c471b7a92a99"
     },
     {
       "path": "crates/librairii-core/src/collection_codec/compatibility/extract_language.py",
       "constant": "INDEX_HASH",
-      "lookup_index_sha256": "13dfd314abfda9a9553d152a1d8a5586f8bd1205a08c177af9bbec57a51ae822",
+      "lookup_index_sha256": "cd8fcdac9ccdd46f1f06294f27bc07e9f8ed40f79d16cdab4d39c7c0cd837d78",
       "historical_index_sha256": "10ea8fe193c594ce153ae7a1734c41ab80c9d406cc7ea314c8c7c471b7a92a99"
     },
     {
       "path": "crates/librairii-core/src/collection_codec/compatibility/update_source_manifest.py",
       "constant": "INDEX_SHA",
-      "lookup_index_sha256": "13dfd314abfda9a9553d152a1d8a5586f8bd1205a08c177af9bbec57a51ae822",
+      "lookup_index_sha256": "cd8fcdac9ccdd46f1f06294f27bc07e9f8ed40f79d16cdab4d39c7c0cd837d78",
       "historical_index_sha256": "10ea8fe193c594ce153ae7a1734c41ab80c9d406cc7ea314c8c7c471b7a92a99"
     },
     {
       "path": "crates/librairii-core/src/collection_codec/compatibility/verify_normalization.py",
       "constant": "INDEX_SHA",
-      "lookup_index_sha256": "13dfd314abfda9a9553d152a1d8a5586f8bd1205a08c177af9bbec57a51ae822",
+      "lookup_index_sha256": "cd8fcdac9ccdd46f1f06294f27bc07e9f8ed40f79d16cdab4d39c7c0cd837d78",
       "historical_index_sha256": "10ea8fe193c594ce153ae7a1734c41ab80c9d406cc7ea314c8c7c471b7a92a99"
     }
   ],
@@ -972,8 +972,8 @@
   },
   "core_leaf": {
     "path": "crates/librairii-core/src/collection_codec/mod.rs",
-    "bytes": 29502,
-    "sha256": "9bb4959fe7b1cbbd838e50c000f9632eb2ed0cecf4fdbbd7fc5a230f7785922b",
+    "bytes": 29526,
+    "sha256": "570924f8640c6b02c582e2f32f22a6520c34bbe90aa8784d8ca2915d58e6af1e",
     "kind": "translated",
     "header_bytes": 379,
     "header_sha256": "84c790465b5688b1423350f07c1422d56e174de8117d978de4f39448ac75e807",
@@ -983,13 +983,13 @@
     {
       "path": "extract_language.py",
       "bytes": 13112,
-      "sha256": "1432e1c3feb3c3f677b4915df2f8e87661f58a4ed3053b997393296ea185f432",
+      "sha256": "b87c6138f803cd916f09b993730eb1b05e80d947eaccd6f8b22f3f91554115bd",
       "reason": "Actual lookup-index, module visibility/import/documentation or future formatter path adaptation only; no data/reference or algorithm regeneration."
     },
     {
       "path": "extract_normalization.py",
       "bytes": 10251,
-      "sha256": "cec28f978a3f75dd5f1b4311a7cd4490c0337c5acea6c5810555a072906d5130",
+      "sha256": "372b9efb501dbcbcac9970f87dc890ff89dd79bee2e1936b3dbafb34b6cc8e50",
       "reason": "Actual lookup-index, module visibility/import/documentation or future formatter path adaptation only; no data/reference or algorithm regeneration."
     },
     {
@@ -1000,26 +1000,26 @@
     },
     {
       "path": "mod.rs",
-      "bytes": 552,
-      "sha256": "02517f433a0d12aa158c4d019183a0f175e425de809efe95a9944990c6548801",
-      "reason": "Actual lookup-index, module visibility/import/documentation or future formatter path adaptation only; no data/reference or algorithm regeneration."
+      "bytes": 626,
+      "sha256": "d87bece17b5f9fe2370e6c74a7676bc5855381e1ff298caf7c911522feb32931",
+      "reason": "Expose the approved runtime normalization entry only within core while retaining the existing saved-codec entry and all frozen source/data/reference identities."
     },
     {
       "path": "normalization.rs",
-      "bytes": 19655,
-      "sha256": "001fde9e7232d3b3d0904852edeca6771a273f5eeabfa2475c11c9b76d5129ee",
-      "reason": "Actual lookup-index, module visibility/import/documentation or future formatter path adaptation only; no data/reference or algorithm regeneration."
+      "bytes": 22980,
+      "sha256": "e9a90c70e8ada3d308058702af037deae57a49fb64e730ae33f1fc0d12c2f776",
+      "reason": "Approved shared frozen pipeline refactor: saved entry retains its fixed guards/errors/passes; private runtime entry derives checked buffer bounds from actual input and maps overflow separately. Original frozen data and reference bytes are unchanged."
     },
     {
       "path": "update_source_manifest.py",
       "bytes": 11417,
-      "sha256": "fa88fc3465ab4b27322aa584f99cd767f2d2fa8573c528fdb0ea74e3c8cb34b3",
+      "sha256": "1cd7ae82985416db3c37a01b0fad1e56f4ad6d1e8444f0e924adf663bf83ec04",
       "reason": "Actual lookup-index, module visibility/import/documentation or future formatter path adaptation only; no data/reference or algorithm regeneration."
     },
     {
       "path": "verify_normalization.py",
       "bytes": 9962,
-      "sha256": "540cbf302c6fe759931d82d4c43e5a94b3bd94748d748bcbb39a261624f81590",
+      "sha256": "51663c1a2bde7d2ac22b1f349d2af0e15c565252b0dc64b227f8e53100835a55",
       "reason": "Actual lookup-index, module visibility/import/documentation or future formatter path adaptation only; no data/reference or algorithm regeneration."
     }
   ],
@@ -1194,5 +1194,191 @@
     "qualification": "Core discovery only at this intermediate move; storage caller delegation and full workspace validation remain separate."
   },
   "historical_rust_baseline_sha256": "33e43537409dd3d5dc07fac28572fe23d3df0b038d33fc7883fab79d3ef28b68",
-  "historical_python_baseline_sha256": "3deb3eabe0e6b31170f26629c042214da2371b023235d1adf5cf2429664fa836"
+  "historical_python_baseline_sha256": "3deb3eabe0e6b31170f26629c042214da2371b023235d1adf5cf2429664fa836",
+  "previous_query_index_sha256": "13dfd314abfda9a9553d152a1d8a5586f8bd1205a08c177af9bbec57a51ae822",
+  "runtime": {
+    "scope": "runtime-one-pass-query-normalization-and-page-sort-only",
+    "origins": [
+      {
+        "path": "oracle73a93303/internal/library/story_query.go",
+        "sha256": "5ea334a20dda303b81f2d559defcc21a4f06b03542922263a1ed71ebcd602bc7",
+        "header_sha256": "068c99d6f702e7c295838419b97e53cb0972f9082315ce5c30f28f2cb2ebd3b0",
+        "selection": "runtime-query-normalization"
+      },
+      {
+        "path": "oracle73a93303/internal/library/query.go",
+        "sha256": "fb2cdb2d0899076f0526cc2ef8748a3c26a61e414db5072086a22e26ceada697",
+        "header_sha256": "50676c8d673493195fa11cb8aa6031081f3ee76c9f3f261c48c6925008489801",
+        "selection": "runtime-query-page"
+      }
+    ],
+    "selection_scopes": {
+      "runtime-query-normalization": "ONLY borrowed runtime StoryLibraryQuery fields and the single normalizeStoryLibraryQuery/normalizeStoryLibraryQueryNode pass, its existing criteria validation and canonicalLanguage boundary. Reuse the SAME frozen normalization pipeline with checked input-derived resource bounds; saved-query fixed budgets/passes remain unchanged. No saved-payload decoding/canonicalization, SQL, projection or live authority.",
+      "runtime-query-page": "ONLY ListRequest page/pageSize/sort fields, DefaultPageSize=24, MaxPageSize=100, SortNameAscending=name_asc, SortImportedNewest=imported_desc and normalizeListRequest defaults/validation (page default1). No SQL, list execution, output materialization, metadata, destination/reveal or other query.go behavior."
+    },
+    "leaves": [
+      {
+        "path": "crates/librairii-core/src/query/mod.rs",
+        "bytes": 2111,
+        "sha256": "67b5aa753cbe39091f42affa80910bdf315db5acf295209370738eaa1ee1a558",
+        "kind": "translated",
+        "header_bytes": 241,
+        "header_sha256": "94da48d54f86ae15c8b45ad846f6457a584108a9be6077540b91ce5880dc418a"
+      },
+      {
+        "path": "crates/librairii-core/src/collection_codec/runtime.rs",
+        "bytes": 7865,
+        "sha256": "cab92ea837a104b2d084512cce5e2d7bd0e427e79ba64f099b0b5c45c396e3f3",
+        "kind": "translated",
+        "header_bytes": 164,
+        "header_sha256": "70ac93b84aa5e15f1b68a0716c87ecae6a6042651319b743c405b1bb01f2f772"
+      }
+    ],
+    "notices": [],
+    "recipe": "Translate only the frozen one-pass runtime request membership validation and page/sort defaults. Reuse existing owned Query and SAME frozen normalization/language pipeline; runtime buffer bounds are checked from actual input while saved-query fixed limits and passes stay unchanged. No JSON/wire parser, SQL, live-reference authority, output materialization or effect claims. Exact original source/header identities and both actual Rust leaves are bound here; historical lookup49/62 and derivative19 remain separately verifiable.",
+    "excluded": [
+      "SQL and database effects",
+      "live definition/value ownership or revision authority",
+      "saved wire/canonicalization budget or pass changes",
+      "query execution/output materialization and metadata/reveal"
+    ]
+  },
+  "identity_additions": {
+    "rust": [
+      {
+        "position": 204,
+        "identity": {
+          "suite": "librairii-core",
+          "name": "collection_codec::compatibility::normalization::tests::runtime_uses_input_derived_bounds_without_changing_saved_wire_refusal"
+        },
+        "reason": "Actual locked core nextest discovery from this Stage A source; retain every prior ordered/scoped identity."
+      },
+      {
+        "position": 205,
+        "identity": {
+          "suite": "librairii-core",
+          "name": "collection_codec::runtime::tests::runtime_private_lists_use_frozen_language_and_per_node_source_limits"
+        },
+        "reason": "Actual locked core nextest discovery from this Stage A source; retain every prior ordered/scoped identity."
+      },
+      {
+        "position": 206,
+        "identity": {
+          "suite": "librairii-core",
+          "name": "collection_codec::runtime::tests::runtime_rejects_private_retired_flags_without_retiring_or_saving"
+        },
+        "reason": "Actual locked core nextest discovery from this Stage A source; retain every prior ordered/scoped identity."
+      },
+      {
+        "position": 207,
+        "identity": {
+          "suite": "librairii-core",
+          "name": "collection_codec::runtime::tests::runtime_visits_children_then_navigation_then_node_fields_in_source_order"
+        },
+        "reason": "Actual locked core nextest discovery from this Stage A source; retain every prior ordered/scoped identity."
+      },
+      {
+        "position": 208,
+        "identity": {
+          "suite": "librairii-core::query_normalization",
+          "name": "query_runtime_choice_cardinality_is_checked_before_stable_deduplication"
+        },
+        "reason": "Actual locked core nextest discovery from this Stage A source; retain every prior ordered/scoped identity."
+      },
+      {
+        "position": 209,
+        "identity": {
+          "suite": "librairii-core::query_normalization",
+          "name": "query_runtime_definition_duplicates_include_ignored_and_cross_kind_filters"
+        },
+        "reason": "Actual locked core nextest discovery from this Stage A source; retain every prior ordered/scoped identity."
+      },
+      {
+        "position": 210,
+        "identity": {
+          "suite": "librairii-core::query_normalization",
+          "name": "query_runtime_group_limit_includes_language_and_compatibility_presence"
+        },
+        "reason": "Actual locked core nextest discovery from this Stage A source; retain every prior ordered/scoped identity."
+      },
+      {
+        "position": 211,
+        "identity": {
+          "suite": "librairii-core::query_normalization",
+          "name": "query_runtime_large_removable_names_do_not_inherit_saved_wire_byte_refusal"
+        },
+        "reason": "Actual locked core nextest discovery from this Stage A source; retain every prior ordered/scoped identity."
+      },
+      {
+        "position": 212,
+        "identity": {
+          "suite": "librairii-core::query_normalization",
+          "name": "query_runtime_mutated_decoded_value_and_payload_do_not_certify_runtime_validity"
+        },
+        "reason": "Actual locked core nextest discovery from this Stage A source; retain every prior ordered/scoped identity."
+      },
+      {
+        "position": 213,
+        "identity": {
+          "suite": "librairii-core::query_normalization",
+          "name": "query_runtime_name_limit_counts_normalized_unicode_characters"
+        },
+        "reason": "Actual locked core nextest discovery from this Stage A source; retain every prior ordered/scoped identity."
+      },
+      {
+        "position": 214,
+        "identity": {
+          "suite": "librairii-core::query_normalization",
+          "name": "query_runtime_navigation_defaults_and_exact_explicit_values_are_validated"
+        },
+        "reason": "Actual locked core nextest discovery from this Stage A source; retain every prior ordered/scoped identity."
+      },
+      {
+        "position": 215,
+        "identity": {
+          "suite": "librairii-core::query_normalization",
+          "name": "query_runtime_node_budget_counts_root_flat_branches_and_nested_descendants"
+        },
+        "reason": "Actual locked core nextest discovery from this Stage A source; retain every prior ordered/scoped identity."
+      },
+      {
+        "position": 216,
+        "identity": {
+          "suite": "librairii-core::query_normalization",
+          "name": "query_runtime_retains_ignored_filters_definition_order_and_stable_choice_deduplication"
+        },
+        "reason": "Actual locked core nextest discovery from this Stage A source; retain every prior ordered/scoped identity."
+      },
+      {
+        "position": 217,
+        "identity": {
+          "suite": "librairii-core::query_normalization",
+          "name": "query_runtime_root_and_each_child_receive_exactly_one_unicode_normalization_pass"
+        },
+        "reason": "Actual locked core nextest discovery from this Stage A source; retain every prior ordered/scoped identity."
+      }
+    ],
+    "python": [
+      {
+        "position": 25,
+        "identity": "test_sources.SourcePolicy.test_runtime_query_index_retains_all_prior_62_identities_and_prior_lookup_bytes",
+        "reason": "Actual new source-policy mutation assertion; retain all prior Python identities and their historical moves."
+      },
+      {
+        "position": 26,
+        "identity": "test_sources.SourcePolicy.test_runtime_query_leaves_require_materialized_exact_bytes_and_headers",
+        "reason": "Actual new source-policy mutation assertion; retain all prior Python identities and their historical moves."
+      },
+      {
+        "position": 27,
+        "identity": "test_sources.SourcePolicy.test_runtime_query_origins_and_scope_cannot_expand_to_sql_or_saved_conversion",
+        "reason": "Actual new source-policy mutation assertion; retain all prior Python identities and their historical moves."
+      },
+      {
+        "position": 28,
+        "identity": "test_sources.SourcePolicy.test_runtime_query_binding_does_not_relax_saved_derivatives_or_notice_guards",
+        "reason": "Actual new source-policy mutation assertion; retain all prior Python identities and their historical moves."
+      }
+    ]
+  }
 }
