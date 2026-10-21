@@ -8,7 +8,7 @@ use std::{
 #[derive(Clone, Debug)]
 pub struct CollectionDeletionPreview {
     pub collection: Collection,
-    pub shelves: Vec<SourceChangePreview>,
+    shelves: Vec<SourceChangePreview>,
 }
 #[derive(Clone, Debug)]
 pub struct CollectionDeletionPlan {
@@ -129,5 +129,15 @@ impl Database<'_> {
             crate::collections::execute(tx, crate::collections::Command::Delete { id: plan.id })?;
             Ok(DeletedCollection::after_reviewed_delete(plan.id, library))
         })
+    }
+}
+
+impl CollectionDeletionPreview {
+    pub fn shelf_count(&self) -> usize {
+        self.shelves.len()
+    }
+    /// Show one affected Shelf at a time, with its own bounded candidate pages.
+    pub fn shelf(&self, index: usize) -> Option<&SourceChangePreview> {
+        self.shelves.get(index)
     }
 }

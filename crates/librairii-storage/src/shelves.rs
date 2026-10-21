@@ -211,3 +211,10 @@ pub use source_change::{SourceChangePlan, SourceChangePreview};
 
 mod deletion;
 pub use deletion::{CollectionDeletionPlan, CollectionDeletionPreview, ShelfDecisions};
+
+/// Page indices are zero based. Overflow/out-of-range pages are empty.
+fn rows<T>(values: &[T], page: usize) -> &[T] {
+    let start = page.saturating_mul(25).min(values.len());
+    &values[start..start.saturating_add(25).min(values.len())]
+}
+pub use curation::{Exclusion, ExclusionPage};

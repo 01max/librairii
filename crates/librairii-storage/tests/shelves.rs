@@ -288,8 +288,8 @@ fn initial_creation_is_explicit_deduplicated_ordered_and_can_be_empty() -> TestR
             "fr-FR".into(),
         )?
         .wait()?;
-    assert_eq!(plan.preview().candidates.len(), 3);
-    assert_eq!(plan.preview().candidates[0].uuid, uuid(2));
+    assert_eq!(plan.preview().candidate_count(), 3);
+    assert_eq!(plan.preview().candidates_page(0)[0].uuid, uuid(2));
     assert!(db.shelves()?.wait()?.is_empty());
     let copy = plan.clone();
     let s = committed(
@@ -388,7 +388,7 @@ fn update_decisions_defer_keep_exclude_and_remove_atomically_with_origins() -> T
     )?;
     let p = preview(&db, s.id)?;
     let before = db.shelves()?.wait()?;
-    assert_eq!(p.preview().additions.len(), 4);
+    assert_eq!(p.preview().addition_count(), 4);
     assert!(apply(&db, p, vec![decision(1, Add), decision(1, Exclude)]).is_err());
     assert_eq!(db.shelves()?.wait()?, before);
     let p = preview(&db, s.id)?;
@@ -414,23 +414,23 @@ fn update_decisions_defer_keep_exclude_and_remove_atomically_with_origins() -> T
     assert!(!p.preview().up_to_date);
     assert_eq!(
         p.preview()
-            .additions
+            .additions_page(0)
             .iter()
             .map(|c| c.uuid.clone())
             .collect::<Vec<_>>(),
         vec![uuid(4)]
     );
-    assert!(p.preview().removals.is_empty());
+    assert!(p.preview().removal_count() == 0);
     committed(db.transaction(WorkCancellation::default(),|tx|{tx.execute("UPDATE collections SET validity_state='valid',query_payload='{\"name\":\"story\"}' WHERE id=2",[])?;Ok(())})?.wait()?)?;
     let p = preview(&db, id)?;
-    assert_eq!(p.preview().removals.len(), 2);
+    assert_eq!(p.preview().removal_count(), 2);
     apply(
         &db,
         p,
         vec![decision(1, Keep), decision(2, RemoveAndExclude)],
     )?;
     let p = preview(&db, id)?;
-    assert!(p.preview().removals.is_empty());
+    assert!(p.preview().removal_count() == 0);
     let m = db.shelf_members(id)?.wait()?;
     assert_eq!(m.len(), 1);
     assert!(m[0].manually_retained);
@@ -593,9 +593,9 @@ fn detachment_requires_complete_decisions_preserves_overlap_and_retains_unavaila
     let p = db
         .shelf_source_change_preview(s.id, vec![b], "fr-FR".into())?
         .wait()?;
-    assert_eq!(p.preview().affected.len(), 1);
-    assert_eq!(p.preview().affected[0].uuid, uuid(2));
-    assert!(p.preview().affected[0].story.is_none());
+    assert_eq!(p.preview().affected_count(), 1);
+    assert_eq!(p.preview().affected_page(0)[0].uuid, uuid(2));
+    assert!(p.preview().affected_page(0)[0].story.is_none());
     let before = db.shelves()?.wait()?;
     assert!(
         committed(
@@ -738,9 +738,12 @@ fn linked_deletion_is_atomic_across_shelves_and_preserves_unavailable_origins() 
     let p = db
         .linked_collection_deletion_preview(a, "fr-FR".into())?
         .wait()?;
-    assert_eq!(p.preview().shelves.len(), 2);
-    assert_eq!(p.preview().shelves[0].affected.len(), 2);
-    assert!(p.preview().shelves[1].affected.is_empty());
+    assert_eq!(p.preview().shelf_count(), 2);
+    assert_eq!(
+        p.preview().shelf(0).ok_or("first shelf")?.affected_count(),
+        2
+    );
+    assert!(p.preview().shelf(1).ok_or("second shelf")?.affected_count() == 0);
     let before = db.shelf_members(first.id)?.wait()?;
     let before_shelves = db.shelves()?.wait()?;
     assert!(
@@ -794,5 +797,234 @@ fn linked_deletion_is_atomic_across_shelves_and_preserves_unavailable_origins() 
     let mut db = Database::open_isolated(&lib)?;
     assert_eq!(db.shelf_members(first.id)?.wait()?[0].uuid, uuid(2));
     db.close()?;
+    Ok(())
+}
+#[test]
+fn five_thousand_story_union_preview_apply_and_every_model_page_meet_budget() -> TestResult {
+    use std::time::{Duration, Instant};
+    let roots = TestRoots::new()?;
+    let lib = library(&roots)?;
+    let mut db = Database::open_isolated(&lib)?;
+    seed(&db, 5000)?;
+    committed(db.transaction(WorkCancellation::default(),|tx|{tx.execute("UPDATE stories SET embedded_title=printf('Story %05d shared %s',id,CASE WHEN id%2=0 THEN 'moon' ELSE 'forest' END),display_name_normalized=printf('story %05d shared %s',id,CASE WHEN id%2=0 THEN 'moon' ELSE 'forest' END),is_broken=(id%5=0)",[])?;Ok(())})?.wait()?)?;
+    let mut q = Query::default();
+    q.name = "shared".into();
+    let all = collection(&db, "All shared", q)?;
+    let mut q = Query::default();
+    q.name = "moon".into();
+    let moon = collection(&db, "Moon", q)?;
+    let s = create(&db, "Large")?;
+    committed(
+        db.attach_shelf_sources(s.id, vec![all, moon], WorkCancellation::default())?
+            .wait()?,
+    )?;
+    let mut worst = Duration::ZERO;
+    let mut p = preview(&db, s.id)?;
+    for _ in 0..4 {
+        let started = Instant::now();
+        p = preview(&db, s.id)?;
+        worst = worst.max(started.elapsed());
+        assert_eq!(p.preview().addition_count(), 5000);
+        assert_eq!(p.preview().additions_page(0).len(), 25);
+        assert_eq!(p.preview().additions_page(199).len(), 25);
+        assert!(p.preview().additions_page(usize::MAX).is_empty());
+    }
+    let selected = (0..2)
+        .flat_map(|page| p.preview().additions_page(page))
+        .map(|c| shelves::Decision {
+            uuid: c.uuid.clone(),
+            action: shelves::Action::Add,
+        })
+        .collect();
+    let started = Instant::now();
+    apply(&db, p, selected)?;
+    let apply_time = started.elapsed();
+    assert_eq!(preview(&db, s.id)?.preview().addition_count(), 4950);
+    let opened = db
+        .shelf_page(
+            s.id,
+            librairii_core::query::QueryRequest {
+                page_size: 100,
+                ..Default::default()
+            },
+            "fr-FR".into(),
+        )?
+        .wait()?;
+    assert_eq!(opened.total, 50);
+    assert_eq!(opened.members.len(), 25);
+    assert_eq!(opened.members[0].member.origins.len(), 1);
+    assert_eq!(opened.members[1].member.origins.len(), 2);
+    let p = preview(&db, s.id)?;
+    let excludes = p.preview().bulk_decisions(shelves::Action::Exclude);
+    apply(&db, p, excludes)?;
+    let excluded = db.shelf_exclusions_page(s.id, 0)?.wait()?;
+    assert_eq!(excluded.total, 4950);
+    assert_eq!(excluded.rows.len(), 25);
+    assert!(
+        db.shelf_exclusions_page(s.id, usize::MAX)?
+            .wait()?
+            .rows
+            .is_empty()
+    );
+    let creation = db
+        .shelf_creation_preview(
+            shelves::CreationRequest {
+                name: "Many".into(),
+                collection_ids: vec![all, moon],
+                ..Default::default()
+            },
+            "fr-FR".into(),
+        )?
+        .wait()?;
+    assert_eq!(creation.preview().candidate_count(), 5000);
+    assert_eq!(creation.preview().candidates_page(100).len(), 25);
+    let detach = db
+        .shelf_source_change_preview(s.id, vec![], "fr-FR".into())?
+        .wait()?;
+    assert_eq!(detach.preview().affected_count(), 50);
+    assert_eq!(detach.preview().affected_page(0).len(), 25);
+    eprintln!("5000 stories: worst preview={worst:?}; apply 50={apply_time:?}");
+    assert!(worst < Duration::from_secs(5));
+    assert!(apply_time < Duration::from_secs(5));
+    db.close()?;
+    Ok(())
+}
+fn source_json(s: &librairii_core::shelves::Source) -> serde_json::Value {
+    serde_json::json!({"id":s.id,"collectionId":s.collection_id.unwrap_or(0),"name":s.name,"active":s.active})
+}
+fn candidates_json(candidates: &[shelves::Candidate]) -> Vec<serde_json::Value> {
+    candidates.iter().map(|c|serde_json::json!({"uuid":c.uuid,"title":c.title,"manual":c.manual,"sources":c.sources.iter().map(source_json).collect::<Vec<_>>(),"origins":c.origins.iter().map(source_json).collect::<Vec<_>>()})).collect()
+}
+fn shelf_state(db: &Database<'_>, id: i64) -> Result<serde_json::Value> {
+    db.read(move|tx|{
+    let s=shelves::read(tx,id)?;let members=shelves::members(tx,id)?.iter().map(|m|serde_json::json!({"uuid":m.uuid,"position":m.position,"protected":m.manually_retained,"cachedTitle":m.cached_title,"origins":m.origins.iter().map(source_json).collect::<Vec<_>>()})).collect::<Vec<_>>();
+    Ok(serde_json::json!({"shelf":{"id":s.id,"name":s.name,"position":s.position,"revision":s.revision,"count":s.count,"brokenCount":s.broken_count,"unavailableCount":s.unavailable_count,"sourceCount":s.source_count},"members":members,"sources":shelves::sources(tx,id,false)?.iter().map(source_json).collect::<Vec<_>>(),"exclusions":shelves::exclusions(tx,id)?}))
+})?.wait()
+}
+#[test]
+fn frozen_go_creation_curation_origins_duplication_and_detachment_match_exact_state() -> TestResult
+{
+    let reference: serde_json::Value =
+        serde_json::from_str(include_str!("fixtures/shelves/reference.json"))?;
+    let roots = TestRoots::new()?;
+    let lib = library(&roots)?;
+    let mut db = Database::open_isolated(&lib)?;
+    seed(&db, 3)?;
+    committed(
+        db.transaction(WorkCancellation::default(), |tx| {
+            tx.execute(
+                "UPDATE stories SET embedded_title='Story'||id,display_name_normalized='story'||id",
+                [],
+            )?;
+            Ok(())
+        })?
+        .wait()?,
+    )?;
+    let a = collection(&db, "All", Query::default())?;
+    let b = collection(&db, "Also", Query::default())?;
+    let mut events = Vec::new();
+    let p = db
+        .shelf_creation_preview(
+            shelves::CreationRequest {
+                name: "Chosen".into(),
+                manual_uuids: vec![uuid(2)],
+                collection_ids: vec![a, b],
+            },
+            "fr-FR".into(),
+        )?
+        .wait()?;
+    events.push(serde_json::json!({"initial":candidates_json(p.preview().candidates_page(0)),"incomplete":p.preview().incomplete}));
+    let s = committed(
+        db.create_shelf_reviewed(p, vec![uuid(1), uuid(2)], WorkCancellation::default())?
+            .wait()?,
+    )?;
+    events.push(shelf_state(&db, s.id)?);
+    let p = preview(&db, s.id)?;
+    events.push(serde_json::json!({"additions":candidates_json(p.preview().additions_page(0)),"removals":candidates_json(p.preview().removals_page(0))}));
+    apply(&db, p, vec![decision(3, shelves::Action::Exclude)])?;
+    events.push(shelf_state(&db, s.id)?);
+    curate(&db, s.id, shelves::Curation::Remove(vec![uuid(1)]))?;
+    events.push(shelf_state(&db, s.id)?);
+    let p = preview(&db, s.id)?;
+    apply(&db, p, vec![decision(1, shelves::Action::Add)])?;
+    events.push(shelf_state(&db, s.id)?);
+    committed(
+        db.transaction(WorkCancellation::default(), |tx| {
+            tx.execute(
+                "UPDATE collections SET query_payload='{\"name\":\"nothing\"}'",
+                [],
+            )?;
+            Ok(())
+        })?
+        .wait()?,
+    )?;
+    let p = preview(&db, s.id)?;
+    events.push(serde_json::json!({"additions":candidates_json(p.preview().additions_page(0)),"removals":candidates_json(p.preview().removals_page(0))}));
+    apply(&db, p, vec![decision(1, shelves::Action::Keep)])?;
+    events.push(shelf_state(&db, s.id)?);
+    committed(
+        db.transaction(WorkCancellation::default(), |tx| {
+            tx.execute("DELETE FROM stories WHERE id=2", [])?;
+            tx.execute("UPDATE stories SET is_broken=1", [])?;
+            Ok(())
+        })?
+        .wait()?,
+    )?;
+    let Response::Shelf(copy) = edit(
+        &db,
+        Command::Duplicate {
+            id: s.id,
+            name: "Independent".into(),
+        },
+    )?
+    else {
+        return Err("duplicate".into());
+    };
+    events.push(shelf_state(&db, copy.id)?);
+    let p = db
+        .shelf_source_change_preview(s.id, vec![], "fr-FR".into())?
+        .wait()?;
+    committed(
+        db.change_shelf_sources(p, true, vec![], WorkCancellation::default())?
+            .wait()?,
+    )?;
+    events.push(shelf_state(&db, s.id)?);
+    assert_eq!(serde_json::json!({"events":events}), reference);
+    db.close()?;
+    Ok(())
+}
+
+#[test]
+fn frozen_shelf_reference_manifest_binds_probe_and_capture_bytes() -> TestResult {
+    use sha2::{Digest, Sha256};
+    let manifest: serde_json::Value =
+        serde_json::from_str(include_str!("fixtures/shelves/manifest.json"))?;
+    assert_eq!(
+        manifest["frozenRevision"],
+        "73a93303a9a44cf0a92eaf525331561ed8c04460"
+    );
+    assert_eq!(manifest["repeatCapture"], "byte-identical");
+    for (name, bytes) in [
+        (
+            "reference.json",
+            include_bytes!("fixtures/shelves/reference.json").as_slice(),
+        ),
+        (
+            "reference_probe.go.in",
+            include_bytes!("fixtures/shelves/reference_probe.go.in").as_slice(),
+        ),
+    ] {
+        let record = manifest["files"]
+            .as_array()
+            .ok_or("files")?
+            .iter()
+            .find(|r| r["path"] == name)
+            .ok_or("record")?;
+        assert_eq!(record["bytes"], bytes.len());
+        assert_eq!(
+            record["sha256"],
+            librairii_core::Checksum::from_bytes(Sha256::digest(bytes).into()).to_string()
+        );
+    }
     Ok(())
 }

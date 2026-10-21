@@ -31,8 +31,8 @@ pub struct CreationRequest {
 #[derive(Clone, Debug)]
 pub struct CreationPreview {
     pub name: String,
-    pub candidates: Vec<Candidate>,
-    pub warnings: Vec<Warning>,
+    pub(super) candidates: Vec<Candidate>,
+    pub(super) warnings: Vec<Warning>,
     pub incomplete: bool,
 }
 #[derive(Clone, Debug)]
@@ -54,7 +54,8 @@ impl CreationPlan {
 pub(super) fn digest(value: &impl std::fmt::Debug) -> [u8; 32] {
     Sha256::digest(format!("{value:?}").as_bytes()).into()
 }
-fn headings(candidates: &[Candidate]) -> Vec<(&str, &str, bool, &[Source], &[Source])> {
+type Heading<'a> = (&'a str, &'a str, bool, &'a [Source], &'a [Source]);
+fn headings(candidates: &[Candidate]) -> Vec<Heading<'_>> {
     candidates
         .iter()
         .map(|c| {
@@ -240,9 +241,9 @@ pub struct Decision {
 pub struct UpdatePreview {
     pub shelf_id: i64,
     pub revision: i64,
-    pub additions: Vec<Candidate>,
-    pub removals: Vec<Candidate>,
-    pub warnings: Vec<Warning>,
+    pub(super) additions: Vec<Candidate>,
+    pub(super) removals: Vec<Candidate>,
+    pub(super) warnings: Vec<Warning>,
     pub incomplete: bool,
     pub up_to_date: bool,
 }
@@ -466,5 +467,57 @@ impl Database<'_> {
             }
             bump(tx, plan.id, changed)
         })
+    }
+}
+
+impl CreationPreview {
+    pub fn candidate_count(&self) -> usize {
+        self.candidates.len()
+    }
+    pub fn candidates_page(&self, page: usize) -> &[Candidate] {
+        super::rows(&self.candidates, page)
+    }
+    pub fn all_uuids(&self) -> Vec<String> {
+        self.candidates.iter().map(|c| c.uuid.clone()).collect()
+    }
+    pub fn warning_count(&self) -> usize {
+        self.warnings.len()
+    }
+    pub fn warnings_page(&self, page: usize) -> &[Warning] {
+        super::rows(&self.warnings, page)
+    }
+}
+impl UpdatePreview {
+    pub fn addition_count(&self) -> usize {
+        self.additions.len()
+    }
+    pub fn removal_count(&self) -> usize {
+        self.removals.len()
+    }
+    pub fn additions_page(&self, page: usize) -> &[Candidate] {
+        super::rows(&self.additions, page)
+    }
+    pub fn removals_page(&self, page: usize) -> &[Candidate] {
+        super::rows(&self.removals, page)
+    }
+    pub fn warning_count(&self) -> usize {
+        self.warnings.len()
+    }
+    pub fn warnings_page(&self, page: usize) -> &[Warning] {
+        super::rows(&self.warnings, page)
+    }
+    /// Called only after an explicit bulk choice; previews default to Not now.
+    pub fn bulk_decisions(&self, action: Action) -> Vec<Decision> {
+        let candidates: Box<dyn Iterator<Item = &Candidate>> = match action {
+            Action::Add | Action::Exclude => Box::new(self.additions.iter()),
+            Action::Keep | Action::RemoveAndExclude => Box::new(self.removals.iter()),
+            Action::NotNow => Box::new(self.additions.iter().chain(&self.removals)),
+        };
+        candidates
+            .map(|c| Decision {
+                uuid: c.uuid.clone(),
+                action,
+            })
+            .collect()
     }
 }

@@ -7,8 +7,8 @@ pub struct SourceChangePreview {
     pub shelf_name: String,
     pub sources: Vec<Source>,
     pub detached: Vec<Source>,
-    pub affected: Vec<Candidate>,
-    pub warnings: Vec<Warning>,
+    pub(super) affected: Vec<Candidate>,
+    pub(super) warnings: Vec<Warning>,
     pub incomplete: bool,
 }
 #[derive(Clone, Debug)]
@@ -216,5 +216,36 @@ impl Database<'_> {
             let actions = validate(&fresh.preview, keep_all, &decisions)?;
             apply(tx, &fresh, &actions)
         })
+    }
+}
+
+impl SourceChangePreview {
+    pub fn affected_count(&self) -> usize {
+        self.affected.len()
+    }
+    pub fn affected_page(&self, page: usize) -> &[Candidate] {
+        super::rows(&self.affected, page)
+    }
+    pub fn warning_count(&self) -> usize {
+        self.warnings.len()
+    }
+    pub fn warnings_page(&self, page: usize) -> &[Warning] {
+        super::rows(&self.warnings, page)
+    }
+    pub fn bulk_decisions(&self, action: Action) -> Result<Vec<Decision>> {
+        if !matches!(action, Action::Keep | Action::RemoveAndExclude)
+            || (action == Action::RemoveAndExclude
+                && (self.incomplete || self.affected.iter().any(|c| c.story.is_none())))
+        {
+            return Err(ShelfError::InvalidInput.into());
+        }
+        Ok(self
+            .affected
+            .iter()
+            .map(|c| Decision {
+                uuid: c.uuid.clone(),
+                action,
+            })
+            .collect())
     }
 }

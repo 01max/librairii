@@ -3015,6 +3015,45 @@
           ]
         },
         "reason": "Additive observed Task 10 discovery; original integration identities retain exact order and target scope."
+      },
+      {
+        "position": 402,
+        "identity": {
+          "suite": "librairii-storage::shelves",
+          "name": "five_thousand_story_union_preview_apply_and_every_model_page_meet_budget",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive observed Task 10 discovery; original integration identities retain exact order and target scope."
+      },
+      {
+        "position": 403,
+        "identity": {
+          "suite": "librairii-storage::shelves",
+          "name": "frozen_go_creation_curation_origins_duplication_and_detachment_match_exact_state",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive observed Task 10 discovery; original integration identities retain exact order and target scope."
+      },
+      {
+        "position": 404,
+        "identity": {
+          "suite": "librairii-storage::shelves",
+          "name": "frozen_shelf_reference_manifest_binds_probe_and_capture_bytes",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive observed Task 10 discovery; original integration identities retain exact order and target scope."
       }
     ],
     "python": [

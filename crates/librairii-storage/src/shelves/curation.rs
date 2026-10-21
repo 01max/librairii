@@ -160,3 +160,28 @@ pub fn curate(tx: &Transaction<'_>, id: i64, action: Curation, locale: &str) -> 
     }
     bump(tx, id, changed)
 }
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct Exclusion {
+    pub uuid: String,
+    pub title: String,
+}
+#[derive(Debug)]
+pub struct ExclusionPage {
+    pub total: usize,
+    pub rows: Vec<Exclusion>,
+}
+impl Database<'_> {
+    pub fn shelf_exclusions_page(
+        &self,
+        id: i64,
+        page: usize,
+    ) -> Result<Pending<'_, ExclusionPage>> {
+        self.read(move|tx|{
+            read(tx,id)?;
+            let total=tx.query_row("SELECT COUNT(*) FROM shelf_exclusions WHERE shelf_id=?",[id],|r|r.get::<_,i64>(0))? as usize;
+            let offset=page.checked_mul(25).and_then(|n|i64::try_from(n).ok()).unwrap_or(i64::MAX);
+            let rows=tx.prepare("SELECT e.story_uuid,COALESCE(NULLIF(s.embedded_title,''),e.story_uuid) FROM shelf_exclusions e LEFT JOIN stories s ON s.uuid=e.story_uuid WHERE e.shelf_id=? ORDER BY e.story_uuid LIMIT 25 OFFSET ?")?.query_map(params![id,offset],|r|Ok(Exclusion{uuid:r.get(0)?,title:r.get(1)?}))?.collect::<rusqlite::Result<_>>()?;
+            Ok(ExclusionPage{total,rows})
+        })
+    }
+}
