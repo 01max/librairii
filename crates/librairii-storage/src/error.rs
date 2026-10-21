@@ -6,6 +6,8 @@ pub type Result<T> = std::result::Result<T, StorageError>;
 #[derive(Debug, thiserror::Error)]
 pub enum StorageError {
     #[error("{0}")]
+    OperationInput(#[from] librairii_app::ports::creation::InputError),
+    #[error("{0}")]
     Metadata(#[from] librairii_core::metadata::MetadataError),
     #[error("{0}")]
     Shelf(#[from] librairii_core::shelves::ShelfError),
@@ -152,6 +154,12 @@ impl StorageError {
 
     pub const fn code(&self) -> &'static str {
         match self {
+            Self::OperationInput(librairii_app::ports::creation::InputError::Invalid) => {
+                "operations.invalid_request"
+            }
+            Self::OperationInput(librairii_app::ports::creation::InputError::ResourceLimit) => {
+                "operations.resource_limit"
+            }
             Self::Metadata(error) => error.code(),
             Self::Collection(error) => error.code(),
             Self::Shelf(error) => error.code(),

@@ -15,6 +15,7 @@ pub mod layout;
 pub mod metadata;
 pub mod migrations;
 pub mod native;
+pub mod operations_repository;
 pub mod platform;
 pub mod portability;
 pub mod profile;
