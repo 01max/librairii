@@ -1302,6 +1302,27 @@
         "x86_64-apple-darwin",
         "x86_64-unknown-linux-gnu"
       ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "platform::windows::directory_sync_qualification::windows_directory_safe_sync_owned_write_ack_requires_list_access_denied_contrast",
+      "targets": [
+        "x86_64-pc-windows-msvc"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "platform::windows::directory_sync_qualification::windows_directory_safe_sync_refuses_missing_wrong_kind_reparse_and_invalid_components",
+      "targets": [
+        "x86_64-pc-windows-msvc"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "platform::windows::directory_sync_qualification::windows_directory_safe_sync_faults_retain_acquired_handle_pins_and_independent_errors",
+      "targets": [
+        "x86_64-pc-windows-msvc"
+      ]
     }
   ]
 }
