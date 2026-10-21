@@ -809,6 +809,623 @@ mod fixed_ntfs {
     }
 }
 
+// Deliberately test-only: this is an owned, finite API observation, not a
+// production directory-flush capability or a mutation/durability precondition.
+#[cfg(test)]
+mod directory_sync_qualification {
+    use super::*;
+    use crate::platform::lock::LibraryLease;
+    use librairii_testkit::TestRoots;
+    use std::{
+        error::Error,
+        fs,
+        process::{Command, Stdio},
+        time::{Duration, Instant},
+    };
+    use windows_sys::{
+        Wdk::Storage::FileSystem::FILE_DIRECTORY_FILE,
+        Win32::{Foundation::ERROR_ACCESS_DENIED, Storage::FileSystem::FILE_GENERIC_WRITE},
+    };
+
+    type TestResult = std::result::Result<(), Box<dyn Error>>;
+    const LIST_ACCESS: u32 = FILE_LIST_DIRECTORY | FILE_READ_ATTRIBUTES | SYNCHRONIZE;
+    const WRITE_ACCESS: u32 = FILE_GENERIC_WRITE | LIST_ACCESS;
+    const SHARE: u32 = FILE_SHARE_READ | FILE_SHARE_WRITE;
+    const OPTIONS: u32 = FILE_DIRECTORY_FILE | FILE_SYNCHRONOUS_IO_NONALERT;
+    const SENTINEL: &[u8] = b"owned sentinel: safe sync observes the SAME directory handle";
+    const _: () = {
+        assert!(LIST_ACCESS == 0x0010_0081);
+        assert!(WRITE_ACCESS == 0x0012_0197);
+        assert!(SHARE == 3);
+        assert!(OPTIONS == 0x21);
+        assert!(WRITE_ACCESS & 0x4000_0000 == 0); // No raw GENERIC_WRITE bit.
+        assert!(size_of::<OBJECT_ATTRIBUTES>() <= u32::MAX as usize);
+    };
+
+    #[derive(Clone, Copy, Debug, Eq, PartialEq)]
+    enum Cut {
+        None,
+        ChildQuery,
+        BeforeClassification,
+        UnknownClassification,
+        BeforeSync,
+        AfterSync,
+        AfterClassification,
+    }
+
+    fn injected(cut: Cut) -> StorageError {
+        StorageError::io(
+            "injected directory qualification observation failure",
+            io::Error::other(format!("{cut:?}")),
+        )
+    }
+
+    fn is_injected(error: Option<&StorageError>, cut: Cut) -> bool {
+        matches!(error, Some(StorageError::Io { operation, source })
+            if *operation == "injected directory qualification observation failure"
+                && source.to_string() == format!("{cut:?}"))
+    }
+
+    // There is intentionally no Error/From/raw-file extraction adapter. Even a
+    // pre-open refusal retains the actual lease; a post-open refusal retains
+    // the actual File before attempting any fallible child observation.
+    #[derive(Debug)]
+    struct OpenAttempt<'lease> {
+        file: Option<File>,
+        identity: Option<FileIdentity>,
+        status: Option<i32>,
+        access: u32,
+        failure: Option<StorageError>,
+        lease: &'lease LibraryLease,
+    }
+    impl Drop for OpenAttempt<'_> {
+        fn drop(&mut self) {}
+    }
+    impl OpenAttempt<'_> {
+        fn checked(&self) -> bool {
+            self.status.is_some_and(|status| status >= 0)
+                && self.file.is_some()
+                && self.identity.is_some()
+                && self.failure.is_none()
+        }
+    }
+
+    /// ONE existing directory child, relative only to the retained lease root.
+    ///
+    /// # Invariants
+    /// All pointers refer to initialized, aligned SDK repr(C) locals and checked
+    /// UTF-16 BYTE lengths, live through final synchronous completion. NONALERT
+    /// includes SYNCHRONIZE in both fixed masks; no APC/event/async I/O exists.
+    /// OBJ_DONT_REPARSE refuses encountered reparse; this distinct directory
+    /// variant omits OPEN_REPARSE_POINT without changing the regular-file path.
+    /// FILE_OPEN cannot create/supersede. Successful unique ownership is installed
+    /// in the attempt immediately, before metadata/type/identity observations.
+    #[expect(
+        unsafe_code,
+        reason = "necessary finite synchronous root-relative directory-open qualification; initialized SDK buffers and unique RAII ownership documented at each call"
+    )]
+    fn open<'lease>(
+        lease: &'lease LibraryLease,
+        name: &OsStr,
+        access: u32,
+        cut: Cut,
+    ) -> OpenAttempt<'lease> {
+        let mut attempt = OpenAttempt {
+            file: None,
+            identity: None,
+            status: None,
+            access,
+            failure: None,
+            lease,
+        };
+        let mut units = match checked_child_name(name) {
+            Ok(units) => units,
+            Err(error) => {
+                attempt.failure = Some(error);
+                return attempt;
+            }
+        };
+        let (parent, expected_parent) = lease.retained_windows_root();
+        match query_identity(parent) {
+            Ok(facts) if facts.directory && facts.identity == expected_parent => {}
+            Ok(_) => {
+                attempt.failure = Some(StorageError::LibraryLeaseChanged);
+                return attempt;
+            }
+            Err(error) => {
+                attempt.failure = Some(error);
+                return attempt;
+            }
+        }
+        // checked_child_name already bounded units to u16::MAX / 2.
+        let bytes = match u16::try_from(units.len() * 2) {
+            Ok(bytes) => bytes,
+            Err(_) => {
+                attempt.failure = Some(StorageError::InvalidManagedPath);
+                return attempt;
+            }
+        };
+        let text = UNICODE_STRING {
+            Length: bytes,
+            MaximumLength: bytes,
+            Buffer: units.as_mut_ptr(),
+        };
+        let attributes = OBJECT_ATTRIBUTES {
+            Length: size_of::<OBJECT_ATTRIBUTES>() as u32,
+            RootDirectory: parent.as_raw_handle(),
+            ObjectName: &text,
+            Attributes: OBJ_DONT_REPARSE,
+            SecurityDescriptor: std::ptr::null(),
+            SecurityQualityOfService: std::ptr::null(),
+        };
+        let mut completion = IO_STATUS_BLOCK {
+            // Initialize the entire pointer-width union, not just NTSTATUS.
+            Anonymous: IO_STATUS_BLOCK_0 {
+                Pointer: std::ptr::null_mut(),
+            },
+            Information: 0,
+        };
+        let mut handle = std::ptr::null_mut();
+        // SAFETY: actual lease/root File stays borrowed/live, with no close or
+        // duplication. All repr(C) locals/name storage are initialized, aligned,
+        // unaliased during the synchronous call and live until its final return.
+        // Checked name lengths exclude NUL. Optional buffers are NULL/zero.
+        // The two fixed specific-rights masks include SYNCHRONIZE; NONALERT
+        // requests final synchronous completion, with no pending pointers/APC.
+        let status = unsafe {
+            NtCreateFile(
+                &mut handle,
+                access,
+                &attributes,
+                &mut completion,
+                std::ptr::null(),
+                0,
+                SHARE,
+                FILE_OPEN,
+                OPTIONS,
+                std::ptr::null(),
+                0,
+            )
+        };
+        // A successful native return supplies the unique owned HANDLE. Install
+        // it before any fallible query/classifier/sync or test fault boundary.
+        if status >= 0 && !handle.is_null() && handle != INVALID_HANDLE_VALUE {
+            // SAFETY: successful synchronous NtCreateFile returned one valid
+            // uniquely owned HANDLE. Only this File will close it; no pending
+            // operation, duplicate owner or escaped native pointer exists.
+            attempt.file = Some(unsafe { File::from_raw_handle(handle) });
+        }
+        attempt.status = Some(status);
+        if status < 0 {
+            // The raw failed NTSTATUS IS the open failure, retained above; no
+            // fabricated StorageError/BOOL/last-error conversion replaces it.
+            return attempt;
+        }
+        if attempt.file.is_none() {
+            attempt.failure = Some(StorageError::CompatibilityInvariant);
+            return attempt;
+        }
+        if cut == Cut::ChildQuery {
+            attempt.failure = Some(injected(cut));
+            return attempt;
+        }
+        if let Some(file) = &attempt.file {
+            match query_identity(file) {
+                Ok(facts) => {
+                    attempt.identity = Some(facts.identity);
+                    if !facts.directory || facts.identity.volume != expected_parent.volume {
+                        attempt.failure = Some(StorageError::PathEscape);
+                    }
+                }
+                Err(error) => attempt.failure = Some(error),
+            }
+        }
+        attempt
+    }
+
+    // These are references to physically retained owners in the synchronous
+    // host frame. The candidate/negative observations borrow this whole frame;
+    // neither a path, expected ID nor a DTO can replace its actual handles.
+    #[derive(Debug)]
+    struct Pins<'pins, 'lease> {
+        list: &'pins OpenAttempt<'lease>,
+        sentinel: &'pins File,
+        sentinel_id: FileIdentity,
+    }
+    impl Pins<'_, '_> {
+        fn revalidate(&self) -> Result<FileIdentity> {
+            let (root, expected_root) = self.list.lease.retained_windows_root();
+            let root = query_identity(root)?;
+            let list = self
+                .list
+                .file
+                .as_ref()
+                .ok_or(StorageError::CompatibilityInvariant)?;
+            let list = query_identity(list)?;
+            let sentinel = query_identity(self.sentinel)?;
+            if !self.list.checked()
+                || self.list.access != LIST_ACCESS
+                || !root.directory
+                || root.identity != expected_root
+                || !list.directory
+                || Some(list.identity) != self.list.identity
+                || list.identity.volume != root.identity.volume
+                || sentinel.directory
+                || sentinel.links != 1
+                || sentinel.identity != self.sentinel_id
+                || sentinel.identity.volume != root.identity.volume
+            {
+                return Err(StorageError::LibraryLeaseChanged);
+            }
+            Ok(list.identity)
+        }
+    }
+
+    #[derive(Debug)]
+    struct SyncAttempt<'pins, 'lease> {
+        open: OpenAttempt<'lease>,
+        before: Option<FileIdentity>,
+        after: Option<FileIdentity>,
+        sync: Option<io::Result<()>>,
+        refusal: Option<StorageError>,
+        post_failure: Option<StorageError>,
+        pins: &'pins Pins<'pins, 'lease>,
+    }
+    impl Drop for SyncAttempt<'_, '_> {
+        fn drop(&mut self) {}
+    }
+    impl SyncAttempt<'_, '_> {
+        fn qualified_ack(&self) -> bool {
+            self.open.checked()
+                && self.open.access == WRITE_ACCESS
+                && self.refusal.is_none()
+                && self.post_failure.is_none()
+                && self.before.is_some()
+                && self.before == self.after
+                && matches!(self.sync, Some(Ok(())))
+        }
+        fn qualified_access_denied(&self) -> bool {
+            self.open.checked()
+                && self.open.access == LIST_ACCESS
+                && self.refusal.is_none()
+                && self.post_failure.is_none()
+                && self.before.is_some()
+                && self.before == self.after
+                && matches!(&self.sync, Some(Err(error)) if error.raw_os_error() == Some(ERROR_ACCESS_DENIED as i32))
+        }
+    }
+
+    fn observe<'pins, 'lease>(
+        pins: &'pins Pins<'pins, 'lease>,
+        name: &OsStr,
+        access: u32,
+        cut: Cut,
+    ) -> SyncAttempt<'pins, 'lease> {
+        let mut attempt = SyncAttempt {
+            open: open(pins.list.lease, name, access, cut),
+            before: None,
+            after: None,
+            sync: None,
+            refusal: None,
+            post_failure: None,
+            pins,
+        };
+        if !attempt.open.checked() {
+            return attempt;
+        }
+        let preflight = (|| -> Result<FileIdentity> {
+            let expected = pins.revalidate()?;
+            let file = attempt
+                .open
+                .file
+                .as_ref()
+                .ok_or(StorageError::CompatibilityInvariant)?;
+            if attempt.open.identity != Some(expected) {
+                return Err(StorageError::LibraryLeaseChanged);
+            }
+            if cut == Cut::BeforeClassification {
+                return Err(injected(cut));
+            }
+            let classification = if cut == Cut::UnknownClassification {
+                None
+            } else {
+                fixed_ntfs::observe(file)?
+            };
+            if classification != Some(expected) || query_identity(file)?.identity != expected {
+                return Err(StorageError::CompatibilityInvariant);
+            }
+            Ok(expected)
+        })();
+        match preflight {
+            Ok(identity) => attempt.before = Some(identity),
+            Err(error) => {
+                attempt.refusal = Some(error);
+                return attempt;
+            }
+        }
+        if cut == Cut::BeforeSync {
+            attempt.refusal = Some(injected(cut));
+            return attempt;
+        }
+        if let Some(file) = &attempt.open.file {
+            // SAFE std route, on exactly the retained opened File. No second
+            // handle, reopen, FlushFileBuffers FFI or permission fallback.
+            attempt.sync = Some(file.sync_all());
+        }
+        // Even native sync errors retain their independent raw OS error while
+        // attempting fresh post-observations. Later failure never erases it.
+        let postflight = (|| -> Result<FileIdentity> {
+            if cut == Cut::AfterSync {
+                return Err(injected(cut));
+            }
+            let file = attempt
+                .open
+                .file
+                .as_ref()
+                .ok_or(StorageError::CompatibilityInvariant)?;
+            let identity = query_identity(file)?.identity;
+            if fixed_ntfs::observe(file)? != Some(identity) {
+                return Err(StorageError::CompatibilityInvariant);
+            }
+            if cut == Cut::AfterClassification {
+                return Err(injected(cut));
+            }
+            if Some(identity) != attempt.before || pins.revalidate()? != identity {
+                return Err(StorageError::LibraryLeaseChanged);
+            }
+            Ok(identity)
+        })();
+        match postflight {
+            Ok(identity) => attempt.after = Some(identity),
+            Err(error) => attempt.post_failure = Some(error),
+        }
+        attempt
+    }
+
+    fn retained_sentinel(file: &File) -> io::Result<Vec<u8>> {
+        use std::os::windows::fs::FileExt;
+        // SAME File, bounded explicit-offset reads, including one growth
+        // sentinel byte. No second handle/path reopen or content mutation.
+        let mut buffer = [0u8; SENTINEL.len() + 1];
+        let mut length = 0;
+        while length < buffer.len() {
+            match file.seek_read(&mut buffer[length..], length as u64) {
+                Ok(0) => break,
+                Ok(read) => length += read,
+                Err(error) if error.kind() == io::ErrorKind::Interrupted => continue,
+                Err(error) => return Err(error),
+            }
+        }
+        Ok(buffer[..length].to_vec())
+    }
+
+    fn context(directory: &Path) -> TestResult {
+        // Fixed readonly commands, no shell interpolation, ACL/token changes or
+        // security FFI. Bound recorded output and refuse command failure; an
+        // unavailable executable is explicitly recorded, never a native pass.
+        for (program, args) in [
+            (
+                "cmd.exe",
+                vec![OsStr::new("/D"), OsStr::new("/C"), OsStr::new("ver")],
+            ),
+            ("whoami.exe", vec![OsStr::new("/all")]),
+            ("icacls.exe", vec![directory.as_os_str()]),
+        ] {
+            // Redirect to an anonymous owned working file outside the library
+            // namespace: no pipe deadlock or unbounded in-memory capture. Bound
+            // the wait and read, and always reap our own context-command child.
+            let mut output = tempfile::tempfile()?;
+            match Command::new(program)
+                .args(args)
+                .stdin(Stdio::null())
+                .stdout(Stdio::from(output.try_clone()?))
+                .stderr(Stdio::from(output.try_clone()?))
+                .spawn()
+            {
+                Ok(mut child) => {
+                    let start = Instant::now();
+                    let status = loop {
+                        let outcome = child.try_wait();
+                        // A first observed success after the deadline is not
+                        // qualified merely because try_wait returned Some.
+                        let observed_at = Instant::now();
+                        match outcome {
+                            Ok(Some(status))
+                                if observed_at.duration_since(start) < Duration::from_secs(5) =>
+                            {
+                                assert_eq!(child.wait()?, status);
+                                break status;
+                            }
+                            Ok(None)
+                                if observed_at.duration_since(start) < Duration::from_secs(5) =>
+                            {
+                                std::thread::sleep(Duration::from_millis(10));
+                            }
+                            outcome => {
+                                let killed = child.kill();
+                                let reaped = child.wait();
+                                return Err(io::Error::other(format!(
+                                    "readonly {program} did not complete: {outcome:?}; kill={killed:?}, reap={reaped:?}"
+                                )).into());
+                            }
+                        }
+                    };
+                    use std::io::{Seek, SeekFrom};
+                    output.seek(SeekFrom::Start(0))?;
+                    let mut bytes = Vec::new();
+                    output.take(64 * 1024 + 1).read_to_end(&mut bytes)?;
+                    assert!(bytes.len() <= 64 * 1024, "context output exceeded bound");
+                    // Native console output can use a legacy code page. Retain
+                    // the exact bytes as well as a human-readable rendering.
+                    eprintln!(
+                        "{program}: status={status} bytes={bytes:02x?} text={}",
+                        String::from_utf8_lossy(&bytes)
+                    );
+                    assert!(status.success(), "readonly context command failed");
+                }
+                Err(error) if error.kind() == io::ErrorKind::NotFound => {
+                    eprintln!("{program}: UNAVAILABLE {error}");
+                }
+                Err(error) => return Err(error.into()),
+            }
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn windows_directory_safe_sync_owned_write_ack_requires_list_access_denied_contrast()
+    -> TestResult {
+        let roots = TestRoots::new()?;
+        let name = OsStr::new("owned Éte # %2F directory");
+        let directory = roots.library().join(name);
+        fs::create_dir(&directory)?;
+        let sentinel_path = directory.join("sentinel.bin");
+        fs::write(&sentinel_path, SENTINEL)?;
+        let lease = LibraryLease::create_fresh(roots.library())?;
+        context(&directory)?;
+        let list = open(&lease, name, LIST_ACCESS, Cut::None);
+        assert!(list.checked(), "{list:?}");
+        let (sentinel, sentinel_id) = metadata_witness(&sentinel_path, false)?;
+        let pins = Pins {
+            list: &list,
+            sentinel: &sentinel,
+            sentinel_id,
+        };
+        let candidate = observe(&pins, name, WRITE_ACCESS, Cut::None);
+        let negative = observe(&pins, name, LIST_ACCESS, Cut::None);
+        eprintln!(
+            "candidate_access={WRITE_ACCESS:#x} negative_access={LIST_ACCESS:#x} share={SHARE:#x} disposition={FILE_OPEN:#x} options={OPTIONS:#x} object_attributes={OBJ_DONT_REPARSE:#x}\ncandidate={candidate:?}\nnegative={negative:?}"
+        );
+        // Unsupported/Unknown, unexpected negative ACK or any other error is a
+        // FAILED qualification. No skip-success or numeric/generic fallback.
+        assert!(candidate.qualified_ack(), "{candidate:?}");
+        assert!(negative.qualified_access_denied(), "{negative:?}");
+        assert_eq!(candidate.before, negative.before);
+        let bytes = retained_sentinel(pins.sentinel)?;
+        assert_eq!(bytes, SENTINEL);
+        assert_eq!(query_identity(pins.sentinel)?.identity, sentinel_id);
+        lease.revalidate()?;
+        eprintln!(
+            "same_handle_classification_before_and_after=NTFS+volume_GUID+DRIVE_FIXED sentinel_id={sentinel_id:?} sentinel_bytes={bytes:02x?}; directory_durability=UNQUALIFIED"
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn windows_directory_safe_sync_refuses_missing_wrong_kind_reparse_and_invalid_components()
+    -> TestResult {
+        let roots = TestRoots::new()?;
+        let directory = roots.library().join("owned");
+        fs::create_dir(&directory)?;
+        fs::write(directory.join("sentinel.bin"), SENTINEL)?;
+        fs::write(roots.library().join("regular.bin"), b"unchanged regular")?;
+        // Required native fixture construction, never silently skipped.
+        std::os::windows::fs::symlink_dir(&directory, roots.library().join("reparse"))?;
+        let lease = LibraryLease::create_fresh(roots.library())?;
+        let list = open(&lease, OsStr::new("owned"), LIST_ACCESS, Cut::None);
+        assert!(list.checked(), "{list:?}");
+        let (sentinel, sentinel_id) = metadata_witness(&directory.join("sentinel.bin"), false)?;
+        let pins = Pins {
+            list: &list,
+            sentinel: &sentinel,
+            sentinel_id,
+        };
+        let count = fs::read_dir(roots.library())?.count();
+        for name in [
+            "missing",
+            "regular.bin",
+            "reparse",
+            "",
+            ".",
+            "..",
+            "a/b",
+            "a\\b",
+            "C:drive",
+            "nul\0tail",
+        ] {
+            let attempt = observe(&pins, OsStr::new(name), WRITE_ACCESS, Cut::None);
+            assert!(!attempt.qualified_ack(), "{name:?}: {attempt:?}");
+            assert!(attempt.sync.is_none(), "{attempt:?}");
+            assert!(std::ptr::eq(attempt.pins.list.lease, &lease));
+            eprintln!("refused {name:?}: {attempt:?}");
+        }
+        assert_eq!(fs::read_dir(roots.library())?.count(), count);
+        assert_eq!(retained_sentinel(pins.sentinel)?, SENTINEL);
+        assert_eq!(
+            fs::read(roots.library().join("regular.bin"))?,
+            b"unchanged regular"
+        );
+        lease.revalidate()?;
+        Ok(())
+    }
+
+    #[test]
+    fn windows_directory_safe_sync_faults_retain_acquired_handle_pins_and_independent_errors()
+    -> TestResult {
+        let roots = TestRoots::new()?;
+        let name = OsStr::new("owned");
+        let directory = roots.library().join(name);
+        fs::create_dir(&directory)?;
+        fs::write(directory.join("sentinel.bin"), SENTINEL)?;
+        let lease = LibraryLease::create_fresh(roots.library())?;
+        let list = open(&lease, name, LIST_ACCESS, Cut::None);
+        assert!(list.checked(), "{list:?}");
+        let (sentinel, sentinel_id) = metadata_witness(&directory.join("sentinel.bin"), false)?;
+        let pins = Pins {
+            list: &list,
+            sentinel: &sentinel,
+            sentinel_id,
+        };
+        let expected = pins.revalidate()?;
+        for cut in [
+            Cut::ChildQuery,
+            Cut::BeforeClassification,
+            Cut::UnknownClassification,
+            Cut::BeforeSync,
+            Cut::AfterSync,
+            Cut::AfterClassification,
+        ] {
+            let attempt = observe(&pins, name, LIST_ACCESS, cut);
+            assert!(!attempt.qualified_ack(), "{attempt:?}");
+            let file = attempt
+                .open
+                .file
+                .as_ref()
+                .ok_or("fault lost actual acquired handle")?;
+            assert_eq!(query_identity(file)?.identity, expected);
+            assert!(std::ptr::eq(attempt.pins, &pins));
+            if cut == Cut::ChildQuery {
+                assert_eq!(attempt.open.identity, None);
+                assert!(is_injected(attempt.open.failure.as_ref(), cut));
+            } else {
+                assert_eq!(attempt.open.identity, Some(expected));
+                assert!(attempt.open.checked(), "{attempt:?}");
+            }
+            if matches!(cut, Cut::AfterSync | Cut::AfterClassification) {
+                assert!(
+                    matches!(&attempt.sync, Some(Err(error)) if error.raw_os_error() == Some(ERROR_ACCESS_DENIED as i32)),
+                    "{attempt:?}"
+                );
+                assert!(is_injected(attempt.post_failure.as_ref(), cut));
+            } else {
+                assert!(attempt.sync.is_none());
+                if matches!(cut, Cut::BeforeClassification | Cut::BeforeSync) {
+                    assert!(is_injected(attempt.refusal.as_ref(), cut));
+                } else if cut == Cut::UnknownClassification {
+                    assert!(matches!(
+                        attempt.refusal,
+                        Some(StorageError::CompatibilityInvariant)
+                    ));
+                }
+            }
+            assert_eq!(retained_sentinel(pins.sentinel)?, SENTINEL);
+            eprintln!("retained cut={cut:?}: {attempt:?}");
+        }
+        lease.revalidate()?;
+        Ok(())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

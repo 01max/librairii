@@ -1658,3 +1658,60 @@ infrastructure or flaky-test cause. The next actual native failure needs the
 labelled phase before a causal fix can be selected. No manual CI retry/cancel,
 full suite, Go, frontend, Unicode campaign or fixed proof replay was performed.
 Unrelated directory OPEN+SAFE-sync qualification source remains unpublished.
+
+### 4.9 partial: owned Windows directory OPEN and safe sync observation
+
+Root has separately supplied current4a3 all-eight-check success, including the
+native Windows job118994094434/run39530201729. That receipt is not a diagnosis
+or correction of the original954 RuntimeFenced failure recorded above. No
+provider log fetch or retry was needed to resume this already released slice.
+
+The new path is private Windows test code only. It borrows the actual
+LibraryLease and its retained root, checks one native OsStr component, and uses
+FILE_OPEN with OBJ_DONT_REPARSE, share READ|WRITE/no DELETE and directory options
+DIRECTORY_FILE|SYNCHRONOUS_IO_NONALERT (0x21). This distinct observation omits
+OPEN_REPARSE_POINT; the existing regular-file path is unchanged. The candidate
+specific access mask is 0x00120197 and the LIST/READATTR/SYNCHRONIZE negative
+mask is 0x00100081. Neither contains raw GENERIC_WRITE. Their API acceptance and
+flush eligibility remain native questions, not consequences of the bit values.
+
+An attempt owner exists before acquisition. Every successful returned File is
+installed before child metadata/type/identity queries and retained on query,
+classifier or sync refusal. Identities are optional until actually acquired;
+the raw NTSTATUS, native sync result and later independent observation errors
+remain separate. There is no bare-error handle adapter. Each sync attempt also
+borrows the actual lease/root, continuous LIST/READATTR directory pin and readable
+sentinel pin. The only flush call is SAFE File::sync_all on that SAME retained
+File; no FlushFileBuffers/security FFI, reopen, access fallback or runtime API is
+added. The necessary NtCreateFile call has one function-local unsafe expectation
+and individual initialized-layout, pointer-lifetime, synchronous-completion and
+unique-RAII safety documentation.
+
+Three authored Windows-only tests require: a positive write-handle sync ACK AND
+a LIST-only native ACCESS_DENIED contrast on the same existing owned directory;
+missing/non-directory/reparse/invalid-component refusal without sync; and actual
+retained handles across post-acquisition query/classifier/sync fault boundaries.
+The fault cases verify the intended injected cause, and preserve an actual
+negative native sync error alongside an independent later failure. Existing
+fixed_ntfs observations and volume/128-bit IDs are checked on the same File
+before and after sync; unknown, changed, unsupported, unexpected negative ACK or
+other errors fail qualification. Sentinel IDs and exact readable bytes remain
+checked while the owners are alive. No negative outcome is a skip-success.
+
+The positive fixture records exact masks/options/status/IDs/sync errors and
+sentinel bytes, plus bounded read-only OS, whoami /all and owned-directory ACL
+context when available. Context child processes have a five-second observation
+deadline, bounded output reads and actual wait/reap; first success observed after
+the deadline is unqualified. There is no token, ACL or privilege change.
+
+Actual checks before publication: scoped Rust1.99.1 rustfmt and git diff-check
+PASS. Local host is AppleARM; the new Windows-only module has NOT been compiled,
+discovered or executed here. The three names are authored candidates until an
+actual Windows compiler/discovery/run supplies evidence. No new-head Clippy,
+full-quality, native API ACK, durability or other-host claim is made. Owner5's
+separate authorized f9 EMFILE full check owns the local Cargo lane throughout
+this source publication. Existing4a3 source and original R/F/frontend histories,
+Unix factory, root/graph/discovery, fixed G/G2/N3/C2/C70 and shipping proofs remain
+unchanged. No rename/delete, source DELETE, configuration replacement, NtFlush,
+POSIX, publication, both-parent durability, power-loss, physical permanence or
+Native activation is granted or qualified by this observational code.
