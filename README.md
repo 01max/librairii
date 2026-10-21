@@ -217,7 +217,7 @@ GOFLAGS="-tags=webkit2_41" make check
 ```
 
 For a verified portable archive, follow the host setup in
-[the platform workflow](.github/workflows/platform-release.yml) and run
+[the Linux release job](.github/workflows/ci.yml) and run
 `make verify-platform-linux`.
 
 </details>
