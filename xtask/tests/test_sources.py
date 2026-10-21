@@ -548,7 +548,7 @@ class SourcePolicy(unittest.TestCase):
 
     def test_fresh_autocrlf_checkout_runs_actual_checker_and_rejects_unprotected_bytes(self):
         source = Path(__file__).resolve().parents[2]
-        self.derivative()
+        self.selected_derivatives()
         shutil.copyfile(source / '.gitattributes', self.root / '.gitattributes')
         (self.root / 'xtask').mkdir()
         shutil.copyfile(source / 'xtask/check_sources.py', self.root / 'xtask/check_sources.py')
@@ -584,7 +584,7 @@ class SourcePolicy(unittest.TestCase):
                 self.assertEqual(result.returncode, 0, result.stderr)
                 report = json.loads(result.stdout)
                 self.assertEqual(len(report['source_identities']), gate.SOURCE_COUNT)
-                self.assertEqual(len(report['private_derivatives']), 20)
+                self.assertEqual(len(report['private_derivatives']), 19)
             else:
                 self.assertNotEqual(result.returncode, 0)
                 if mode == 'negative-index':
@@ -592,5 +592,5 @@ class SourcePolicy(unittest.TestCase):
                     converted = fresh / self.bundle['source_index']
                 else:
                     self.assertIn('changed source-policy file', result.stderr)
-                    converted = fresh / gate.DERIVATIVES / 'synthetic.rs'
+                    converted = fresh / gate.DERIVATIVES / 'normalization.rs'
                 self.assertIn(b'\r\n', converted.read_bytes())
