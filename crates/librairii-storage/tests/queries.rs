@@ -246,3 +246,55 @@ fn nested_any_of_is_and_with_local_predicates_and_empty_branch_matches_all() -> 
     db.close()?;
     Ok(())
 }
+
+#[test]
+fn saved_membership_migrates_retired_flags_but_preserves_current_user_tag_reuse() -> TestResult {
+    let roots = TestRoots::new()?;
+    let library = library(&roots)?;
+    let mut db = Database::open_isolated(&library)?;
+    seed(&db)?;
+    let (legacy,current)=db.read(|tx| {
+        Ok((query::saved_membership(tx,3,br#"{"anyOf":[{"booleanFilters":[{"definitionId":10,"state":"true"}],"brokenVisibility":"hide"}]}"#,10)?,query::saved_membership(tx,5,br#"{"booleanFilters":[{"definitionId":10,"state":"true"}]}"#,10)?))
+    })?.wait()?;
+    assert!(legacy.criteria.any_of[0].boolean_filters.is_empty());
+    assert_eq!(current.criteria.boolean_filters[0].definition_id, 10);
+    assert_eq!(current.version, 5);
+    assert_eq!(
+        collection_codec::encode(current.criteria.clone())?,
+        current.payload
+    );
+    db.close()?;
+    Ok(())
+}
+
+#[test]
+fn invalid_nested_saved_reference_never_broadens_membership_or_changes_database() -> TestResult {
+    let roots = TestRoots::new()?;
+    let library = library(&roots)?;
+    let mut db = Database::open_isolated(&library)?;
+    seed(&db)?;
+    for payload in [
+        br#"{"anyOf":[{"choiceFilters":[{"definitionId":11,"valueIds":[21]}]}]}"#.as_slice(),
+        br#"{"anyOf":[{"booleanFilters":[{"definitionId":999,"state":"true"}]}]}"#,
+    ] {
+        let payload = payload.to_vec();
+        assert!(
+            db.read(move |tx| query::saved_membership(tx, 5, &payload, 0))?
+                .wait()
+                .is_err()
+        );
+    }
+    let mut too_deep = Query::default();
+    for _ in 0..50 {
+        let mut parent = Query::default();
+        parent.any_of.push(too_deep);
+        too_deep = parent;
+    }
+    assert!(collection_codec::encode(too_deep).is_err());
+    assert_eq!(
+        db.count(QueryRequest::default(), "en-GB".into())?.wait()?,
+        4
+    );
+    db.close()?;
+    Ok(())
+}

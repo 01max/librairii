@@ -38,7 +38,7 @@ impl Database<'_> {
 
 /// Validate against this exact transaction, including ignored Boolean filters
 /// and value ownership in every branch. Missing references are never omitted.
-pub fn validate_references(tx: &Transaction<'_>, query: &Query) -> Result<()> {
+fn validate_references(tx: &Transaction<'_>, query: &Query) -> Result<()> {
     for branch in &query.any_of {
         validate_references(tx, branch)?;
     }
@@ -311,4 +311,33 @@ pub fn explain_search(
     Ok(statement
         .query_map(params_from_iter(args), |r| r.get(3))?
         .collect::<rusqlite::Result<Vec<_>>>()?)
+}
+
+/// Current canonical membership after version migration and same-snapshot live
+/// validation. This is an observation; later mutations must validate again.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct SavedMembership {
+    pub version: i64,
+    pub payload: String,
+    pub criteria: Query,
+}
+
+pub fn saved_membership(
+    tx: &Transaction<'_>,
+    version: i64,
+    payload: &[u8],
+    legacy_broken_id: i64,
+) -> Result<SavedMembership> {
+    use librairii_core::collection_codec::{self, CodecError};
+    let (payload, criteria) = collection_codec::migrate(version, payload, legacy_broken_id)
+        .map_err(|e| match e {
+            CodecError::FrozenData => StorageError::CompatibilityInvariant,
+            _ => invalid(),
+        })?;
+    validate_references(tx, &criteria)?;
+    Ok(SavedMembership {
+        version: 5,
+        payload,
+        criteria,
+    })
 }

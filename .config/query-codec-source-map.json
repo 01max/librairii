@@ -972,8 +972,8 @@
   },
   "core_leaf": {
     "path": "crates/librairii-core/src/collection_codec/mod.rs",
-    "bytes": 29526,
-    "sha256": "570924f8640c6b02c582e2f32f22a6520c34bbe90aa8784d8ca2915d58e6af1e",
+    "bytes": 29879,
+    "sha256": "f00889a7492ebad93d0deb24ca6848f96f69f92a28ae266e764ac9a7e144a4d8",
     "kind": "translated",
     "header_bytes": 379,
     "header_sha256": "84c790465b5688b1423350f07c1422d56e174de8117d978de4f39448ac75e807",
@@ -2396,6 +2396,32 @@
         "identity": {
           "suite": "librairii-storage::queries",
           "name": "nested_any_of_is_and_with_local_predicates_and_empty_branch_matches_all",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Task 7 additive observed discovery; integration-base identities retain their exact order and scope."
+      },
+      {
+        "position": 348,
+        "identity": {
+          "suite": "librairii-storage::queries",
+          "name": "invalid_nested_saved_reference_never_broadens_membership_or_changes_database",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Task 7 additive observed discovery; integration-base identities retain their exact order and scope."
+      },
+      {
+        "position": 349,
+        "identity": {
+          "suite": "librairii-storage::queries",
+          "name": "saved_membership_migrates_retired_flags_but_preserves_current_user_tag_reuse",
           "targets": [
             "aarch64-apple-darwin",
             "x86_64-apple-darwin",

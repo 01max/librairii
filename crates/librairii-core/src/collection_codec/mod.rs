@@ -580,6 +580,14 @@ pub fn migrate(version: i64, bytes: &[u8], legacy_id: i64) -> Result<(String, Qu
     validate_references(&q, &mut remaining, true)?;
     Ok((payload(&q)?, q))
 }
+/// Encode current membership with the frozen saved-query canonical passes.
+/// Navigation and presentation belong to the caller's separate native state.
+pub fn encode(mut query: Query) -> Result<String> {
+    canonical_saved(&mut query)?;
+    let mut remaining = MAX_NODES;
+    validate_references(&query, &mut remaining, true)?;
+    payload(&query)
+}
 /// Serialize the supplied owned value in frozen field/escape order and check
 /// output bytes only; this does not validate an arbitrary Query value.
 pub fn payload(query: &Query) -> Result<String> {
