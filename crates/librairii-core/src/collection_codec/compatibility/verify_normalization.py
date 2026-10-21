@@ -18,7 +18,9 @@ import zipfile
 ORACLE = "73a93303a9a44cf0a92eaf525331561ed8c04460"
 ORACLE_TREE = "e797e9d59926d83b73fb7c02e5c3611073e89a16"
 ZIP_SHA = "b75131f628f6e2e4892fd638d33127e952a5027775e0162b94ba069cb4e13863"
-INDEX_SHA = "10ea8fe193c594ce153ae7a1734c41ab80c9d406cc7ea314c8c7c471b7a92a99"
+# Future lookups use the admitted superset; existing reference provenance is historical.
+HISTORICAL_INDEX_SHA = "10ea8fe193c594ce153ae7a1734c41ab80c9d406cc7ea314c8c7c471b7a92a99"
+INDEX_SHA = "13dfd314abfda9a9553d152a1d8a5586f8bd1205a08c177af9bbec57a51ae822"
 GO_ROOT = Path("/opt/homebrew/Cellar/go/1.26.5/libexec")
 ZIP = Path("/Users/maxime/go/pkg/mod/cache/download/golang.org/x/text/@v/v0.43.0.zip")
 BUNDLE = "go-1.26.5-xtext-0.43.0-unicode15-cldr32"

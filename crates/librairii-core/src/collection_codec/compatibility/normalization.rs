@@ -17,7 +17,7 @@ const NON_STARTERS: u8 = 30;
 const CGJ: char = '\u{034f}';
 
 #[derive(Debug, thiserror::Error)]
-pub(in crate::migrations) enum NormalizeError {
+pub(in crate::collection_codec) enum NormalizeError {
     #[error("saved query input exceeds the frozen wire limit")]
     InputLimit,
     #[error("frozen normalization data/algorithm invariant failed")]
@@ -36,11 +36,11 @@ fn is_space(character: char) -> bool {
     in_ranges(character, unicode::WHITE_SPACE)
 }
 
-pub(in crate::migrations) fn trim_space(value: &str) -> &str {
+pub(in crate::collection_codec) fn trim_space(value: &str) -> &str {
     value.trim_matches(is_space)
 }
 
-pub(in crate::migrations) fn lowercase_key(value: &str) -> Result<String> {
+pub(in crate::collection_codec) fn lowercase_key(value: &str) -> Result<String> {
     value
         .chars()
         .map(|character| {
@@ -58,7 +58,7 @@ pub(in crate::migrations) fn lowercase_key(value: &str) -> Result<String> {
 
 /// Fold ONLY the Unicode15 simple-case orbits that reach ASCII field names.
 /// Full folding would incorrectly admit multi-rune ligatures as wire keys.
-pub(in crate::migrations) fn ascii_field_key(value: &str) -> Option<String> {
+pub(in crate::collection_codec) fn ascii_field_key(value: &str) -> Option<String> {
     value
         .chars()
         .map(|character| {
@@ -305,7 +305,7 @@ fn nfkd(value: &str) -> Result<String> {
     Ok(output)
 }
 
-pub(in crate::migrations) fn normalize(value: &str) -> Result<String> {
+pub(in crate::collection_codec) fn normalize(value: &str) -> Result<String> {
     if value.len() > MAX_INPUT_BYTES {
         return Err(NormalizeError::InputLimit);
     }
@@ -424,7 +424,7 @@ mod tests {
         for (key, hash) in scalar {
             assert_eq!(
                 reference["scalarDigests"][key],
-                librairii_core::Checksum::from_bytes(hash.finalize().into()).to_string(),
+                crate::Checksum::from_bytes(hash.finalize().into()).to_string(),
                 "all scalar {key}"
             );
         }
@@ -479,7 +479,7 @@ mod tests {
         for (key, hash) in sequence {
             assert_eq!(
                 reference["sequenceDigests"][key],
-                librairii_core::Checksum::from_bytes(hash.finalize().into()).to_string(),
+                crate::Checksum::from_bytes(hash.finalize().into()).to_string(),
                 "original-character partition {key}"
             );
         }

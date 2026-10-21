@@ -675,9 +675,13 @@ fn j6_one_metadata_reservation_lasts_until_report_acknowledgement() -> TestResul
 fn j6_unacknowledged_reports_retain_worker_budget_until_explicit_readback() -> TestResult {
     let rig = Rig::new(2, Gates::new(), StartPolicy::Create, true)?;
     rig.created(input(1, OperationKind::Export, 20, 31))?;
+    // The peak includes a reserved source call, which may return no item.
+    // Wait for seven actual offers before stopping the retained pipeline.
     until(|| {
         let m = rig.handle.measurements();
-        m.uncertain_reports == 2 && m.dispatched_handles == 7
+        m.uncertain_reports == 2
+            && m.dispatched_handles == 7
+            && guard(&rig.store).offered.len() == 7
     })?;
     assert_eq!(guard(&rig.store).recorded.len(), 0);
     assert_eq!(rig.gates.execute.entries(), 2);

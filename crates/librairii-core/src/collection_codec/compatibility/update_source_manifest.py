@@ -10,7 +10,9 @@ from pathlib import Path
 
 
 BUNDLE = "go-1.26.5-xtext-0.43.0-unicode15-cldr32"
-INDEX_SHA = "10ea8fe193c594ce153ae7a1734c41ab80c9d406cc7ea314c8c7c471b7a92a99"
+# Future lookups use the admitted superset; existing reference provenance is historical.
+HISTORICAL_INDEX_SHA = "10ea8fe193c594ce153ae7a1734c41ab80c9d406cc7ea314c8c7c471b7a92a99"
+INDEX_SHA = "13dfd314abfda9a9553d152a1d8a5586f8bd1205a08c177af9bbec57a51ae822"
 MODULE = "golang.org/x/text@v0.43.0/"
 NORMALIZATION_NOTICES = ["LICENSE-GO-BSD.txt", "PATENTS-GO.txt", "LICENSE-UNICODE-V3.txt"]
 LANGUAGE_NOTICES = ["LICENSE-GO-BSD.txt", "PATENTS-GO.txt", "LICENSE-CLDR32-UNICODE.txt", "LICENSE-CLDR32-APACHE.txt", "LICENSE-CC0.txt"]
@@ -44,7 +46,7 @@ def main():
     index = json.loads(index_bytes)
     sources = {f["path"]: f for p in index["packages"] for f in p["files"]}
     sources.update({f["path"]: f for f in index["supplementalSourceFiles"]})
-    recipe = "python3 extract_normalization.py --source-root <authenticated49-materialization> --source-index <pinned-index>; cargo fmt -p librairii-storage"
+    recipe = "python3 extract_normalization.py --source-root <authenticated49-materialization> --source-index <pinned-index>; cargo fmt -p librairii-core"
     files = {
         "mod.rs": ("authored", "Private module wiring only; no source algorithm.", []),
         "codec_oracle.go.in": ("authored", "Qualification-only actual frozen collections/query.go Decode/Migrate calls. A byte-IDENTICAL copy is compiled alone under a new private internal path, avoiding unrelated SQL linkage; original library/collectionquery/searchtext remain unmodified. No product implementation or corpus generator.", []),
@@ -59,7 +61,7 @@ def main():
         "normalization.rs": ("translated", "Hand translation of frozen full-fold→Go stream-safe NFKD→Mn-only removal→Go whitespace folding; original-character leading/trailing partition precedes stable CCC insertion. Safe checked UTF8 trie and fixed32-rune segment, Hangul decomposition; no modern composition or runtime Go.", TABLES + PROPERTIES + ALGORITHM),
         "normalization-reference.json": ("generated", "python3 verify_normalization.py; actual pinned Go1.26.5 frozen Normalize/cases.Fold/norm.NFKD/unicode APIs over all1112064 valid scalars (including separate JSON-key simple lowercase/ASCII-reaching simple-fold metrics) and147228 boundary sequences. Includes57 CCC/Mn representatives and all18019 decomposing/backward-interacting scalars on both sides of overflow; exact framed SHA256 digests. Source/tool/ZIP/probe identities and before/after proof retained; not arbitrary-string or language qualification.", TABLES + PROPERTIES + ALGORITHM),
         "extract_language.py": ("translated", "Hand-translate frozen getLangID finite two/three-letter lookup and compact bit decoding into literal extraction; verify selected bytes/headers; remove ONLY regionTypes ccTLD bit1/value2 before writing, retain other bits; never copy TLD APIs or regenerate current registries.", LANGUAGE_TABLES + [MODULE + "internal/language/compact.go"]),
-        "language_data.rs": ("generated", "python3 extract_language.py --source-root <authenticated49-materialization> --source-index <pinned-index>; cargo fmt -p librairii-storage. Literal frozen mappings, aliases, scripts, regions, variants, grandfathered data and compact core IDs; regionTypes bit1/value2 excluded before emission, other bits unchanged; no TLD APIs or current registry.", LANGUAGE_TABLES),
+        "language_data.rs": ("generated", "python3 extract_language.py --source-root <authenticated49-materialization> --source-index <pinned-index>; cargo fmt -p librairii-core. Literal frozen mappings, aliases, scripts, regions, variants, grandfathered data and compact core IDs; regionTypes bit1/value2 excluded before emission, other bits unchanged; no TLD APIs or current registry.", LANGUAGE_TABLES),
         "language-cases.json": ("generated", "python3 extract_language.py: decode the773 frozen compact cores and2 special strings, retain112 variant names; append authored suffix/selected/random seed protocol. Qualification INPUTS only, never expected outputs, fixture-specific aliases or preservation corpus regeneration; no DNS data.", LANGUAGE_TABLES + [MODULE + "internal/language/compact.go"]),
         "language.rs": ("translated", "Private product35-byte canonicalLanguage boundary; frozen Default=Deprecated|Legacy scanner/core/variant/extension and exact compact round trip. Lazy token validation preserves transform truncation; region override/compact bit widths remain observable; no SuppressScript/Macro/CLDR, parent/matcher approximation or TLD API. TrimSpace delegates the single private frozen Unicode primitive. Does not expose partial error tags that the product rejects.", LANGUAGE_TABLES + LANGUAGE_ALGORITHM),
         "language_oracle.go.in": ("authored", "Qualification-only calls to actual frozen public Default parser/String/Und/error and product boundary; framed digest protocol, finite alphabets, compact region overrides and deterministic grammar sequences; no runtime Go.", []),

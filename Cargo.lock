@@ -407,7 +407,9 @@ dependencies = [
  "criterion",
  "insta",
  "proptest",
+ "serde",
  "serde_json",
+ "sha2",
  "thiserror",
  "uuid",
 ]
