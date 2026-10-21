@@ -176,3 +176,30 @@ the extreme-number case remains identified as valid JSON with a compatibility
 restriction. Native raster limits are separately required by 11.6. A subsequent
 fresh dependency audit rejected newly yanked Tokio 1.54.0; 1.54.1 replaces that
 exact pin, with no warning/advisory suppression.
+
+### Standards review result
+
+The reviewer rechecked `eddf4bc…6dbd14e` and confirmed both findings resolved:
+actual partial ownership remains in `MetadataStorage`, and typed status/error
+DTOs preserve unfamiliar error codes. The private FileLoan extension retains
+existing borrowed contracts. No new actionable standards regression was found.
+
+### Spec review result
+
+The reviewer rechecked the same correction and confirmed interrupted refresh,
+pre-activation abandonment, last-good preservation and reopen/retry behavior are
+resolved. Activation and unknown outcomes cannot become invented cancellation
+reports. Persisted legacy messages and independent localization remain compatible.
+No unresolved or new actionable spec findings remain; the six JSON restrictions
+retain their explicit classification.
+
+Review totals: Standards 0 open (P2/P3 corrected); Spec 0 open (P1 corrected).
+
+Validation: the full pinned `cargo xtask check` passed on macOS ARM at
+`6dbd14e`, including 417 executed tests, cumulative discovery/preservation,
+workspace/fuzz dependency policy and advisory checks, source/notice checks,
+formatting/build/all-target Clippy and ownership doctests. Linux x86-64 and Intel
+macOS require their native provider checks on the PR head; this host result does
+not claim those targets or desktop/UI/package release acceptance. Windows remains
+deferred. All frozen Go metadata/artwork/Lunii suites and repeated fixture captures
+passed using synthetic data/local transports with module downloads disabled.
