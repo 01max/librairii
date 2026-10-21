@@ -204,13 +204,7 @@ impl<'db, 'library> Exports<'db, 'library> {
         if preview.can_export() {
             let id = PreparationId::fresh();
             preview.preparation = Some(id.clone());
-            let bytes = scope.stories.iter().try_fold(0usize, |n, s| {
-                n.checked_add(super::row_bytes(s) * 2)
-                    .ok_or(ExportError::ResourceLimit)
-            })?;
-            if bytes > MAX_PREPARED_BYTES {
-                return Err(ExportError::ResourceLimit.into());
-            }
+            let bytes = retained_bytes(&scope, &destination, &preview)?;
             while self.prepared.len() >= MAX_PREPARED
                 || self.prepared.iter().map(|p| p.bytes).sum::<usize>() + bytes > MAX_PREPARED_BYTES
             {
@@ -225,6 +219,102 @@ impl<'db, 'library> Exports<'db, 'library> {
             });
         }
         Ok(preview)
+    }
+}
+
+fn retained_bytes(scope: &Resolved, destination: &Destination, preview: &Preview) -> Result<usize> {
+    fn add(total: &mut usize, n: usize) -> Result<()> {
+        *total = total.checked_add(n).ok_or(ExportError::ResourceLimit)?;
+        if *total > MAX_PREPARED_BYTES {
+            return Err(ExportError::ResourceLimit.into());
+        }
+        Ok(())
+    }
+    fn array(total: &mut usize, capacity: usize, size: usize) -> Result<()> {
+        add(
+            total,
+            capacity
+                .checked_mul(size)
+                .ok_or(ExportError::ResourceLimit)?,
+        )
+    }
+    fn source(total: &mut usize, s: &Source) -> Result<()> {
+        add(total, std::mem::size_of::<Source>())?;
+        array(total, s.ids.capacity(), std::mem::size_of::<i64>())?;
+        array(total, s.names.capacity(), std::mem::size_of::<Vec<u8>>())?;
+        for name in &s.names {
+            add(total, name.capacity())?;
+        }
+        Ok(())
+    }
+    let mut total = std::mem::size_of::<Prepared>() + 128;
+    source(&mut total, &scope.source)?;
+    source(&mut total, &preview.source)?;
+    array(
+        &mut total,
+        scope.stories.capacity(),
+        std::mem::size_of::<ExportStory>(),
+    )?;
+    for row in &scope.stories {
+        add(&mut total, super::row_bytes(row))?;
+    }
+    array(
+        &mut total,
+        preview.items.len(),
+        std::mem::size_of::<PreviewItem>(),
+    )?;
+    for row in preview.items.iter() {
+        for s in [&row.uuid, &row.title, &row.output_name, &row.format] {
+            add(&mut total, s.capacity())?;
+        }
+    }
+    array(
+        &mut total,
+        preview.formats.capacity(),
+        std::mem::size_of::<String>(),
+    )?;
+    for format in &preview.formats {
+        add(&mut total, format.capacity())?;
+    }
+    add(&mut total, preview.destination_label.capacity())?;
+    add(&mut total, destination.retained_bytes())?;
+    Ok(total)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn preparation_budget_charges_large_source_snapshots_even_with_few_rows()
+    -> std::result::Result<(), Box<dyn std::error::Error>> {
+        let directory = tempfile::tempdir()?;
+        let destination = Destination::open(directory.path())?;
+        let source = Source {
+            kind: ExportScopeKind::CollectionUnion,
+            ids: vec![1],
+            names: vec![vec![b'a'; MAX_PREPARED_BYTES / 2 + 1]],
+        };
+        let preview = Preview {
+            preparation: None,
+            source: source.clone(),
+            destination_label: destination.label(),
+            items: Arc::from([]),
+            ready: 0,
+            bytes: 0,
+            formats: Vec::new(),
+            collapsed_overlap: 0,
+            issue: None,
+        };
+        let scope = Resolved {
+            source,
+            stories: Vec::new(),
+            collapsed_overlap: 0,
+        };
+        assert!(matches!(
+            retained_bytes(&scope, &destination, &preview),
+            Err(StorageError::Export(ExportError::ResourceLimit))
+        ));
+        Ok(())
     }
 }
 impl Running<'_, '_, '_> {

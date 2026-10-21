@@ -23,6 +23,9 @@ impl Destination {
     pub(crate) fn path(&self) -> &Path {
         &self.path
     }
+    pub(crate) fn retained_bytes(&self) -> usize {
+        std::mem::size_of::<Self>() + self.path.capacity()
+    }
     pub(crate) fn label(&self) -> OsString {
         self.path
             .file_name()
