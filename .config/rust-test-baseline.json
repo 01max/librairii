@@ -1144,6 +1144,79 @@
         "x86_64-apple-darwin",
         "x86_64-unknown-linux-gnu"
       ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "platform::unix::tests::owned_read_source_retains_readonly_fd_raw_name_and_cooperative_observations",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "platform::unix::tests::owned_read_source_refuses_aliases_replaced_names_and_partial_components",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "platform::unix::tests::owned_read_source_detects_parent_substitution_and_keeps_actual_owner",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "platform::unix::tests::owned_read_source_reports_size_changes_and_never_claims_snapshot_exclusion",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "platform::unix::tests::owned_read_source_retains_non_utf8_native_basename_without_reencoding",
+      "targets": [
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::native_library",
+      "name": "native_owned_read_source_retains_database_and_reads_after_stop_or_uncertainty",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "platform::windows::fixed_ntfs::qualification::windows_fixed_ntfs_positive_uses_same_retained_handle_and_complete_guid_root",
+      "targets": [
+        "x86_64-pc-windows-msvc"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "platform::windows::fixed_ntfs::qualification::windows_fixed_ntfs_native_short_buffers_keep_errors_or_truncation_unknown",
+      "targets": [
+        "x86_64-pc-windows-msvc"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "platform::windows::fixed_ntfs::qualification::windows_fixed_ntfs_controlled_unknown_changed_and_malformed_observations_refuse",
+      "targets": [
+        "x86_64-pc-windows-msvc"
+      ]
     }
   ]
 }
