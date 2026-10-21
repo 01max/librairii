@@ -381,7 +381,9 @@ pub(super) fn inspect(
         Err(StorageError::Io { source, .. })
             if matches!(
                 source.kind(),
-                std::io::ErrorKind::NotFound | std::io::ErrorKind::InvalidInput
+                std::io::ErrorKind::NotFound
+                    | std::io::ErrorKind::InvalidInput
+                    | std::io::ErrorKind::NotADirectory
             ) =>
         {
             return Ok(Some(Issue::ArchiveMissing));

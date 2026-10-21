@@ -141,7 +141,7 @@ pub fn supported_name(name: &str, format: &str) -> bool {
         "seven_zip" => ".7z",
         _ => return false,
     };
-    name.to_ascii_lowercase().ends_with(extension)
+    crate::collection_codec::filename_lower(name).is_ok_and(|name| name.ends_with(extension))
 }
 pub fn filename_key(name: &str) -> Result<String, crate::collection_codec::CodecError> {
     crate::collection_codec::filename_lower(name)

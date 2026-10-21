@@ -9,6 +9,76 @@ use librairii_storage::{
 use librairii_testkit::TestRoots;
 use std::error::Error;
 type TestResult<T = ()> = Result<T, Box<dyn Error>>;
+#[test]
+fn unicode_suffix_and_unsafe_sources_keep_per_item_preflight_reasons() -> TestResult {
+    use librairii_core::export::{Disposition, Issue};
+    let roots = TestRoots::new()?;
+    let library = IsolatedLibrary::initialize_from_override(
+        Some(roots.library().as_os_str()),
+        "a0000000-0000-4000-8000-000000000001".parse()?,
+    )?;
+    let mut db = Database::open_isolated(&library)?;
+    seed(&db, 3)?;
+    files(&db, &library, 3)?;
+    committed(db.transaction(WorkCancellation::default(),|tx|{
+        tx.execute_batch("UPDATE stories SET is_broken=0; UPDATE story_archives SET original_filename='story.ZİP' WHERE story_id=3;")?;Ok(())
+    })?.wait()?)?;
+    let destination = tempfile::tempdir()?;
+    let cancel = WorkCancellation::default();
+    let mut exports = librairii_storage::export::Exports::new(&db);
+    let unicode = exports.prepare(
+        Scope::Selection(vec![3]),
+        destination.path(),
+        "fr-FR".into(),
+        &cancel,
+    )?;
+    assert_eq!(unicode.items[0].disposition, Disposition::Ready);
+    std::fs::remove_file(library.layout().archives().join("1"))?;
+    std::fs::write(destination.path().join("outside"), b"1")?;
+    std::os::unix::fs::symlink(
+        destination.path().join("outside"),
+        library.layout().archives().join("1"),
+    )?;
+    std::fs::create_dir(library.layout().archives().join("real"))?;
+    std::fs::rename(
+        library.layout().archives().join("2"),
+        library.layout().archives().join("real/two"),
+    )?;
+    std::os::unix::fs::symlink("real", library.layout().archives().join("link"))?;
+    committed(
+        db.transaction(WorkCancellation::default(), |tx| {
+            tx.execute(
+                "UPDATE story_archives SET managed_path='archives/link/two' WHERE story_id=2",
+                [],
+            )?;
+            Ok(())
+        })?
+        .wait()?,
+    )?;
+    let preview = exports.prepare(
+        Scope::Selection(vec![1, 2, 3]),
+        destination.path(),
+        "fr-FR".into(),
+        &cancel,
+    )?;
+    assert_eq!(
+        preview
+            .items
+            .iter()
+            .map(|i| i.disposition)
+            .collect::<Vec<_>>(),
+        [
+            Disposition::Skipped(Issue::ArchiveMissing),
+            Disposition::Skipped(Issue::ArchiveMissing),
+            Disposition::Ready
+        ]
+    );
+    assert_eq!(preview.ready, 1);
+    assert_eq!(std::fs::read(destination.path().join("outside"))?, b"1");
+    drop(exports);
+    db.close()?;
+    Ok(())
+}
 fn files(db: &Database<'_>, library: &IsolatedLibrary, count: i64) -> TestResult {
     use sha2::{Digest, Sha256};
     let mut hashes = Vec::new();
