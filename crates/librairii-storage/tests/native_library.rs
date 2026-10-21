@@ -107,7 +107,11 @@ fn native_files_retain_same_database_custody_and_drain_after_intake_stop() -> Te
         let files = LibraryFiles::open_native(&db)?;
         let peer = LibraryFiles::open_native(&db)?;
         assert!(matches!(peer.try_custody(), Err(StorageError::CustodyBusy)));
-        let mut stage = files.create_stage(&guard)?;
+        let creation = files.create_stage(&guard);
+        assert!(creation.is_ok(), "successful-stage fixture: {creation:?}");
+        let Ok(mut stage) = creation else {
+            return Err("successful-stage fixture failed".into());
+        };
         stage.write_all(b"owned native payload")?;
         let digest = stage.measure(20, &WorkCancellation::default())?;
         let publication = stage
@@ -123,7 +127,11 @@ fn native_files_retain_same_database_custody_and_drain_after_intake_stop() -> Te
             return Err("new destination was not owned".into());
         };
         committed_file.revalidate(&guard, &WorkCancellation::default())?;
-        let mut other = peer.create_stage(&guard)?;
+        let creation = peer.create_stage(&guard);
+        assert!(creation.is_ok(), "successful-stage fixture: {creation:?}");
+        let Ok(mut other) = creation else {
+            return Err("successful-stage fixture failed".into());
+        };
         other.write_all(b"owned native payload")?;
         let reused = other
             .publish_no_clobber(
@@ -143,7 +151,11 @@ fn native_files_retain_same_database_custody_and_drain_after_intake_stop() -> Te
         };
         existing.revalidate(&guard, &WorkCancellation::default())?;
         assert_eq!(existing.identity(), committed_file.identity());
-        let mut cancelled_stage = files.create_stage(&guard)?;
+        let creation = files.create_stage(&guard);
+        assert!(creation.is_ok(), "successful-stage fixture: {creation:?}");
+        let Ok(mut cancelled_stage) = creation else {
+            return Err("successful-stage fixture failed".into());
+        };
         cancelled_stage.write_all(b"cancel keeps ownership")?;
         let measured = cancelled_stage.measure(22, &WorkCancellation::default())?;
         let cancelled = WorkCancellation::default();
@@ -228,7 +240,11 @@ fn native_files_keep_owned_bytes_and_writer_repair_when_commit_becomes_uncertain
     {
         let files = LibraryFiles::open_native(&db)?;
         let guard = files.try_custody()?;
-        let mut stage = files.create_stage(&guard)?;
+        let creation = files.create_stage(&guard);
+        assert!(creation.is_ok(), "successful-stage fixture: {creation:?}");
+        let Ok(mut stage) = creation else {
+            return Err("successful-stage fixture failed".into());
+        };
         stage.write_all(b"needs repair")?;
         let outcome = db.transaction(WorkCancellation::default(), |tx| {
             tx.execute_batch("CREATE TEMP TABLE files_parent(id INTEGER PRIMARY KEY); CREATE TEMP TABLE files_child(parent INTEGER REFERENCES files_parent(id) DEFERRABLE INITIALLY DEFERRED); INSERT INTO files_child VALUES (999);")?;
@@ -291,7 +307,8 @@ fn native_files_refuse_substituted_directory_and_preserve_db_only_readback() -> 
         fs::rename(root.join("archives"), root.join("retained-archives"))?;
         fs::create_dir(root.join("archives"))?;
         fs::write(root.join("archives/foreign"), b"untouched foreign bytes")?;
-        assert!(files.create_stage(&guard).is_err());
+        let retained_creation = files.create_stage(&guard);
+        assert!(retained_creation.is_err());
         assert!(matches!(
             files.try_custody(),
             Err(StorageError::CustodyRecoveryRequired)

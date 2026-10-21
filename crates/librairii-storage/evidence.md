@@ -1570,3 +1570,58 @@ failure result; partial allocation resolution remains outside this slice. The
 fixed successful-stage-input import proof and native/scoped terminal proofs are
 unchanged. The separately assigned current-head frontend failure remains open;
 no retry or frontend changes are part of this correction.
+
+The ORIGINAL RED is `79a7c54` (log SHA256
+`c7e35754865ca524bb3e299be36be8c9d8da32c31d53da4822e03b5dc49428f9`).
+The correction REPLACES `LibraryFiles::create_stage`, in the existing public
+Unix namespace, with
+`Result<OwnedStage<'files, 'library>, Box<StageCreateFailure<'files, 'library>>>`.
+There is no legacy bare-error adapter, `From` conversion, owned-cause extractor
+or standard-error conversion on this borrowed failure. `cause()` borrows the
+original structured error; `disposition()` distinguishes this call's positively
+`NoAllocation` from `RetainedUnresolved`; `retained_allocation()` borrows its
+opaque actual partial owner. Optional identities remain absent until observed.
+Positive creation flags never turn a failed/unknown call into no-effects proof.
+
+Every attempted allocation starts with the SAME Files borrow/original staging
+parent and exact validated single components. Every returned directory/payload
+FD is installed into that state before metadata, type, link, identity, name or
+root/guard validation. This path does not use the bare-error child/open helpers.
+Intake/generation checks precede each attempt and complete authority is issued
+only after fresh final parent/name/link/root checks. EEXIST collisions confer no
+ownership and are bounded to64; generic syscall failures remain retained and
+fenced. No partial cleanup, retry, path scan, destructive Drop, new graph/export,
+unsafe code or domain implementation is added. Only fully validated OwnedStage
+can use existing retirement. Existing successful fixtures explicitly assert
+success; negative cases retain the actual failure, with their source/guard
+owners remaining outside the factory.
+
+Actual AppleARM final focused run `202349fb-66d4-43b4-acd3-993d34af1848`:
+20PASS/0skip,144 intentionally filtered. Seven new creation cases cover the
+original RED,12 post-effect/acquisition/pre-validation checkpoints, known
+pre-effect/no-create/collision controls, missing-FD syscall failures, actual
+directory/payload substitution, a hardlink change after metadata, and the actual
+Native close/finalizer boundary. Retained FDs/IDs and prefix bytes are checked;
+later NoAllocation and owner drops preserve the prior sticky fence. The Native
+case uses a verified corpus copy and SAME Database, performs mandatory writer
+readback, drains/closes/drops DB, then retains actual NativeCloseFailure with
+Active record/root lock/profile exclusion and unchanged partial bytes. Ending
+negative fixture borrows is explicitly not cleanup or settlement. Existing
+affected publication/reuse/retirement/cancellation/native-file cases pass too.
+
+Storage doctests14PASS:12 compile-fail lifetime cases plus two compile-pass
+controls. Direct rustc diagnostic checks on the actual boxed-failure example
+produce E0505+E0502 (Files/DB) and E0502 (DB-only), with no E0277 conversion error.
+The publication compile-pass control consumes the fixture Result before testing
+receipt drain, so a leftover Result cannot masquerade as receipt lifetime proof.
+Storage all-target Clippy with warnings denied, rustfmt and diff-check pass.
+The first new Native negative fixture reached its final lock assertion but
+looked for the library-lock filename in the profile namespace; that fixture-only
+NotFound failure is retained separately and corrected to the actual public
+ProfileInUse check. No product RED is invented from that setup error.
+
+These seven test identities are Mac/Linux scoped. No Linux/Windows execution,
+current whole-workspace/provider/admission, full4.8/4.11, partial-allocation
+resolution, fixed-G/N3/C2/C70 replay or new Go/normalization campaign is claimed.
+Owner5 actual additive discovery and then current combined quality remain next;
+the independent current-head frontend failure remains separately unresolved.
