@@ -1028,3 +1028,206 @@ fn frozen_shelf_reference_manifest_binds_probe_and_capture_bytes() -> TestResult
     }
     Ok(())
 }
+#[test]
+fn v14_upgrade_tags_metadata_curation_unavailable_reimport_and_restart_compose() -> TestResult {
+    use librairii_storage::tagging::{self, Command as TagCommand};
+    let roots = TestRoots::new()?;
+    let lib = library(&roots)?;
+    let source = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../../preservation/corpus/databases/prefix-014.sqlite3");
+    let original = std::fs::read(&source)?;
+    std::fs::write(lib.layout().database(), &original)?;
+    let mut db = Database::open_isolated(&lib)?;
+    committed(
+        db.transaction(WorkCancellation::default(), |tx| {
+            // This admitted schema fixture also carries a synthetic unfinished removal.
+            // Settle that test-only precondition; Task 12 owns real trash recovery.
+            tx.execute("DELETE FROM removal_intents", [])?;
+            Ok(())
+        })?
+        .wait()?,
+    )?;
+    assert_eq!(db.broken_summary(vec![1])?.wait()?.flagged_stories, 1);
+    assert_eq!(
+        db.assignment_workspace(vec![1])?
+            .wait()?
+            .states
+            .iter()
+            .find(|s| s.definition_id == 8)
+            .map(|s| s.assigned_stories),
+        Some(1)
+    );
+    let legacy = "123e4567-e89b-42d3-a456-426614174000".to_string();
+    let inspected = committed(
+        db.edit_collections(
+            librairii_storage::collections::Command::Inspect { id: 1 },
+            WorkCancellation::default(),
+        )?
+        .wait()?,
+    )?;
+    let librairii_storage::collections::Response::Inspection(i) = inspected else {
+        return Err("legacy inspection".into());
+    };
+    assert_eq!(i.collection.id, 1);
+    assert_eq!(i.collection.query_version, 5);
+    let s = sourced(&db, "Upgrade", vec![1], vec![legacy.clone()])?;
+    let before = db.shelf_members(s.id)?.wait()?;
+    committed(
+        db.edit_tags(
+            TagCommand::Boolean {
+                story_ids: vec![1],
+                definition_id: 8,
+                assigned: false,
+            },
+            WorkCancellation::default(),
+        )?
+        .wait()?,
+    )?;
+    let obsolete = preview(&db, s.id)?;
+    assert_eq!(obsolete.preview().removal_count(), 1);
+    assert_eq!(db.shelf_members(s.id)?.wait()?, before);
+    committed(
+        db.edit_tags(
+            TagCommand::Boolean {
+                story_ids: vec![1],
+                definition_id: 8,
+                assigned: true,
+            },
+            WorkCancellation::default(),
+        )?
+        .wait()?,
+    )?;
+    assert!(matches!(
+        apply(
+            &db,
+            obsolete,
+            vec![shelves::Decision {
+                uuid: legacy.clone(),
+                action: shelves::Action::RemoveAndExclude
+            }]
+        ),
+        Err(StorageError::Shelf(ShelfError::StaleReview))
+    ));
+    let obsolete = preview(&db, s.id)?;
+    committed(db.transaction(WorkCancellation::default(),|tx|{
+        tx.execute_batch("INSERT INTO catalog_syncs(id,locale,status,started_at) VALUES('10000000-0000-4000-8000-000000000001','fr-FR','running','2000'); INSERT INTO catalog_snapshots(id,sync_id,locale,raw_path,raw_sha256,byte_size,record_count,fetched_at) VALUES(1,'10000000-0000-4000-8000-000000000001','fr-FR','catalog/synthetic',printf('%064d',1),1,1,'2000'); INSERT INTO official_story_metadata(snapshot_id,story_uuid,locale,title,title_normalized,provenance) VALUES(1,'123e4567-e89b-42d3-a456-426614174000','fr-FR','Forest','forest','lunii_catalog'); UPDATE catalog_snapshots SET status='active',activated_at='2001' WHERE id=1;")?;
+        Ok(())
+    })?.wait()?)?;
+    assert!(matches!(
+        apply(&db, obsolete, vec![]),
+        Err(StorageError::Shelf(ShelfError::StaleReview))
+    ));
+    let fresh = preview(&db, s.id)?;
+    assert_eq!(fresh.preview().removals_page(0)[0].title, "Forest");
+    apply(
+        &db,
+        fresh,
+        vec![shelves::Decision {
+            uuid: legacy.clone(),
+            action: shelves::Action::Keep,
+        }],
+    )?;
+    curate(&db, s.id, shelves::Curation::Exclude(vec![uuid(9)]))?;
+    let id = s.id;
+    let retained = db.shelf_members(id)?.wait()?;
+    assert!(retained[0].manually_retained);
+    assert_eq!(retained[0].origins[0].collection_id, Some(1));
+    committed(
+        db.transaction(WorkCancellation::default(), |tx| {
+            tx.execute("DELETE FROM stories WHERE id=1", [])?;
+            Ok(())
+        })?
+        .wait()?,
+    )?;
+    let p = db
+        .shelf_page(id, Default::default(), "fr-FR".into())?
+        .wait()?;
+    assert_eq!(p.shelf.unavailable_count, 1);
+    assert_eq!(p.members[0].member.cached_title, retained[0].cached_title);
+    let old_ticket = preview(&db, id)?;
+    assert_eq!(old_ticket.preview().removal_count(), 0);
+    assert_eq!(old_ticket.preview().warning_count(), 1);
+    db.close()?;
+    let mut db = Database::open_isolated(&lib)?;
+    assert_eq!(db.shelf_members(id)?.wait()?, retained);
+    assert!(
+        db.apply_shelf_updates(old_ticket, vec![], WorkCancellation::default())
+            .is_err()
+    );
+    let reimport = legacy.clone();
+    committed(db.transaction(WorkCancellation::default(),move|tx|{
+        tx.execute("INSERT INTO stories(id,uuid,embedded_title,display_name_normalized) VALUES(101,?,'Reimported','reimported')",[reimport])?;
+        tx.execute("INSERT INTO story_archives(story_id,original_filename,detected_format,sha256,byte_size,managed_path,validation_state) VALUES(101,'reimport.zip','zip',printf('%064d',101),1,'archives/101','valid')",[])?;
+        tagging::execute(tx,TagCommand::Boolean{story_ids:vec![101],definition_id:8,assigned:true})?;Ok(())
+    })?.wait()?)?;
+    let p = db
+        .shelf_page(id, Default::default(), "fr-FR".into())?
+        .wait()?;
+    assert_eq!(p.members[0].story.as_ref().map(|s| s.id), Some(101));
+    assert_eq!(
+        p.members[0].story.as_ref().map(|s| s.title.as_str()),
+        Some("Forest")
+    );
+    assert_eq!(db.shelf_members(id)?.wait()?, retained);
+    assert_eq!(
+        db.shelf_exclusions_page(id, 0)?.wait()?.rows[0].uuid,
+        uuid(9)
+    );
+    db.close()?;
+    assert_eq!(std::fs::read(source)?, original);
+    Ok(())
+}
+#[test]
+fn uncertain_remaining_coverage_only_allows_retention_and_view_refinements_never_persist()
+-> TestResult {
+    let roots = TestRoots::new()?;
+    let lib = library(&roots)?;
+    let mut db = Database::open_isolated(&lib)?;
+    seed(&db, 2)?;
+    let a = collection(&db, "All", Query::default())?;
+    let b = collection(&db, "Other", Query::default())?;
+    let s = sourced(&db, "Conservative", vec![a, b], vec![uuid(1), uuid(2)])?;
+    committed(
+        db.transaction(WorkCancellation::default(), move |tx| {
+            tx.execute(
+                "UPDATE collections SET validity_state='needs_attention' WHERE id=?",
+                [b],
+            )?;
+            tx.execute("DELETE FROM stories WHERE id=2", [])?;
+            Ok(())
+        })?
+        .wait()?,
+    )?;
+    let before = db.shelf_members(s.id)?.wait()?;
+    let mut request = librairii_core::query::QueryRequest {
+        sort: "name_asc".into(),
+        ..Default::default()
+    };
+    request.criteria.name = " \t ".into();
+    let p = db.shelf_page(s.id, request, "fr-FR".into())?.wait()?;
+    assert_eq!(p.total, 2);
+    assert!(p.members[1].story.is_none());
+    assert_eq!(db.shelf_members(s.id)?.wait()?, before);
+    let p = db
+        .shelf_source_change_preview(s.id, vec![b], "fr-FR".into())?
+        .wait()?;
+    assert!(p.preview().incomplete);
+    assert_eq!(p.preview().affected_count(), 2);
+    assert!(
+        p.preview()
+            .bulk_decisions(shelves::Action::RemoveAndExclude)
+            .is_err()
+    );
+    committed(
+        db.change_shelf_sources(p, true, vec![], WorkCancellation::default())?
+            .wait()?,
+    )?;
+    assert!(
+        db.shelf_members(s.id)?
+            .wait()?
+            .iter()
+            .all(|m| m.manually_retained)
+    );
+    db.close()?;
+    Ok(())
+}

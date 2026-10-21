@@ -37,8 +37,8 @@ pub fn page(
     locale: &str,
 ) -> Result<MemberPage> {
     let sorted = !request.sort.is_empty();
-    let filtered = request.criteria != Query::default();
     let navigation = normalize_request(request.clone())?;
+    let filtered = navigation.criteria != Query::default();
     let shelf = read(tx, id)?;
     let members = members(tx, id)?;
     let uuids = members.iter().map(|m| m.uuid.clone()).collect::<Vec<_>>();

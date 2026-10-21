@@ -177,9 +177,8 @@ impl NativeProfileStore {
             }
             self.namespace.flush()?;
             self.revalidate_namespace()?;
-            let (actual, _file, metadata) = self
-                .ui_bytes(name)?
-                .ok_or(StorageError::ProfileChanged)?;
+            let (actual, _file, metadata) =
+                self.ui_bytes(name)?.ok_or(StorageError::ProfileChanged)?;
             if actual != bytes {
                 return Err(StorageError::ProfileChanged);
             }
