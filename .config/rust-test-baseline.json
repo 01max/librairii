@@ -1699,6 +1699,33 @@
         "x86_64-apple-darwin",
         "x86_64-unknown-linux-gnu"
       ]
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "archive::custody::tests::prepublication_creation_noallocation_retains_whole_box_prior_stage_and_cancel_truth",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "archive::custody::tests::prepublication_creation_success_delegates_copy_with_exact_bytes_and_source",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "archive::custody::tests::prepublication_creation_success_with_cancel_keeps_existing_retirement_contract",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
     }
   ]
 }
