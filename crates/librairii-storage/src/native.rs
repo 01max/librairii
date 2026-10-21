@@ -545,9 +545,27 @@ mod owned {
     }
     impl<'profile> NativeLibrary<'profile> {
         pub fn bind_independent(
+            copy: IndependentCopy,
+            store: &'profile NativeProfileStore,
+            locations: &ProfileLocations,
+            cancellation: &WorkCancellation,
+        ) -> std::result::Result<Self, Box<NativeBindingFailure<'profile>>> {
+            Self::bind_with_profile(copy, store, locations, None, cancellation)
+        }
+        pub(crate) fn bind_rebound(
+            copy: IndependentCopy,
+            store: &'profile NativeProfileStore,
+            locations: &ProfileLocations,
+            foreign: &crate::profile::Profile,
+            cancellation: &WorkCancellation,
+        ) -> std::result::Result<Self, Box<NativeBindingFailure<'profile>>> {
+            Self::bind_with_profile(copy, store, locations, Some(foreign), cancellation)
+        }
+        fn bind_with_profile(
             mut copy: IndependentCopy,
             store: &'profile NativeProfileStore,
             locations: &ProfileLocations,
+            foreign: Option<&crate::profile::Profile>,
             cancellation: &WorkCancellation,
         ) -> std::result::Result<Self, Box<NativeBindingFailure<'profile>>> {
             let mut record = None;
@@ -559,6 +577,15 @@ mod owned {
                 }
                 copy.revalidate(cancellation)?;
                 copy.require_no_recovery_input()?;
+                // Foreign wire data can select preserved settings only AFTER
+                // actual independent-copy ownership and exact raw ID proof.
+                // A recovering profile/journal is not replay/cleanup authority.
+                let mut proposed = foreign.unwrap_or(copy.source_profile().profile()).clone();
+                if !proposed.complete || proposed.recovering {
+                    return Err(StorageError::RecoveryBindingRequired);
+                }
+                copy.identity().require_spelling(&proposed.library_id)?;
+                proposed.root = exact_path(copy.root())?;
                 require_paths(copy.root(), copy.source_root(), store, locations)?;
                 let layout = LibraryLayout::probe(copy.root())?;
                 let root = copy.retain_root()?;
@@ -610,9 +637,6 @@ mod owned {
                 if cancellation.is_cancelled() {
                     return Err(StorageError::Cancelled);
                 }
-                let mut proposed = copy.source_profile().profile().clone();
-                proposed.root = exact_path(copy.root())?;
-                copy.identity().require_spelling(&proposed.library_id)?;
                 let binding = admission.publish(&proposed)?;
                 Ok((layout, root, database, marker, binding))
             })();

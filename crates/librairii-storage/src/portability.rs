@@ -1,6 +1,8 @@
-//! Read-only foreign profile evidence and identity-verified rebinding DATA.
+//! Foreign profile evidence and applied, identity-verified copy rebinding.
 //!
-//! These types cannot open a library, publish settings or replay journals. Raw
+//! Inspection/preparation is DATA only. Applying rebinding consumes an actual
+//! verified independent copy through the existing native binding protocol; a
+//! foreign profile alone cannot open a library or replay journals. Raw
 //! history/destination strings remain historical data, never cleanup authority.
 //! Filename diagnostics never establish collation/filesystem capabilities or
 //! recovery-path authority. Passing a lexical check is not adoption permission.
@@ -134,6 +136,36 @@ impl ForeignProfile {
         self.syntax
     }
 
+    /// Apply relocation from a verified closed input to its actual independently
+    /// owned target copy. Retains exact raw ID/foreign bytes and opaque history;
+    /// only the new native profile's root is rebound. The foreign path is never
+    /// resolved, opened, rewritten, or used as cleanup authority.
+    ///
+    /// This consumes the actual copy/lease, verifies its complete tree again,
+    /// then uses the same durable ImportedClosed record and atomic profile
+    /// publication as NativeLibrary::bind_independent. Existing conflicting
+    /// native bindings, recovering profiles and copied journals are refused.
+    /// Failures retain the copy, namespace borrow and acquired record witnesses.
+    #[cfg(any(target_os = "macos", target_os = "linux"))]
+    pub fn apply_rebinding<'profile>(
+        &self,
+        copy: crate::adoption::IndependentCopy,
+        store: &'profile crate::profile::NativeProfileStore,
+        locations: &crate::profile::ProfileLocations,
+        cancellation: &crate::database::WorkCancellation,
+    ) -> std::result::Result<
+        crate::native::NativeLibrary<'profile>,
+        Box<crate::native::NativeBindingFailure<'profile>>,
+    > {
+        crate::native::NativeLibrary::bind_rebound(
+            copy,
+            store,
+            locations,
+            &self.profile,
+            cancellation,
+        )
+    }
+
     #[cfg(any(target_os = "macos", target_os = "linux"))]
     pub fn prepare_rebinding<'copy>(
         &'copy self,
@@ -190,8 +222,8 @@ fn absolute(root: &str, syntax: ProfilePathSyntax) -> bool {
 }
 
 /// A proposed native-host profile DOCUMENT borrowing the actual independent
-/// copy/lease. It has no publish/runtime/cleanup method. A future activation
-/// must separately establish the native namespace and rebind/refuse recovery.
+/// copy/lease. It has no publish/runtime/cleanup method. Applying rebinding is
+/// a separate consuming-copy operation through ForeignProfile::apply_rebinding.
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 #[derive(Debug)]
 pub struct PreparedProfileRebinding<'copy> {

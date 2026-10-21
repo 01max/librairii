@@ -267,6 +267,138 @@ fn profile_rebinding_borrows_verified_copy_keeps_raw_authority_and_never_replays
         foreign.prepare_rebinding(&copy, &cancelled),
         Err(StorageError::Cancelled)
     ));
+
+    // Applying a foreign profile requires an actual newly owned verified copy,
+    // not the proposed DATA above. Recovery bytes/flags still grant no effects.
+    use librairii_storage::{
+        database::Database,
+        native::NativeLibrary,
+        profile::{NativeProfileStore, ProfileLocations},
+    };
+    let locations = ProfileLocations::for_host(
+        &roots.profile().join("home"),
+        Some(&roots.profile().join("config")),
+        Some(&roots.library().join("data")),
+    )?;
+    fs::create_dir_all(&locations.data)?;
+    fs::create_dir_all(locations.native.parent().ok_or("native parent")?)?;
+    let store = NativeProfileStore::create_fresh(&locations.native)?;
+    let cancel = WorkCancellation::default();
+    let rejected_path = locations.data.join("refused-recovery");
+    let rejected = input.copy_to_new_root(&rejected_path, &cancel)?;
+    let failure = foreign
+        .apply_rebinding(rejected, &store, &locations, &cancel)
+        .err()
+        .ok_or("recovering foreign profile activated")?;
+    assert!(matches!(
+        failure.storage_error(),
+        StorageError::RecoveryBindingRequired
+    ));
+    assert_eq!(failure.retained_copy().root(), rejected_path);
+    assert!(!failure.retains_native_record());
+    assert!(store.load()?.is_none());
+    assert!(!rejected_path.join(".librairii-native-state.json").exists());
+    let lock = fs::OpenOptions::new()
+        .read(true)
+        .write(true)
+        .open(rejected_path.join(".librairii-library.lock"))?;
+    assert!(matches!(lock.try_lock(), Err(fs::TryLockError::WouldBlock)));
+    drop(failure);
+
+    let mut ready: serde_json::Value = serde_json::from_slice(foreign_bytes)?;
+    ready["recovering"] = false.into();
+    ready["language"] = "en".into();
+    let ready_bytes = serde_json::to_vec(&ready)?;
+    let ready = ForeignProfile::decode(&ready_bytes, ProfilePathSyntax::Windows)?;
+    let mut wrong_ready: serde_json::Value = serde_json::from_slice(&ready_bytes)?;
+    wrong_ready["libraryId"] = ready.profile().library_id.to_ascii_uppercase().into();
+    let wrong_ready = ForeignProfile::decode(
+        &serde_json::to_vec(&wrong_ready)?,
+        ProfilePathSyntax::Windows,
+    )?;
+    let wrong_copy = input.copy_to_new_root(&locations.data.join("refused-raw-id"), &cancel)?;
+    let failure = wrong_ready
+        .apply_rebinding(wrong_copy, &store, &locations, &cancel)
+        .err()
+        .ok_or("different raw ID activated")?;
+    assert!(matches!(
+        failure.storage_error(),
+        StorageError::IdentityMismatch
+    ));
+    assert!(!failure.retains_native_record());
+    assert!(store.load()?.is_none());
+    drop(failure);
+    let relocated = locations.data.join("relocated Éte # %2F");
+    let owned = input.copy_to_new_root(&relocated, &cancel)?;
+    assert_eq!(owned.prefix().version(), 18);
+    let original_db = fs::read(source.join("db/librairii.sqlite3"))?;
+    let native = ready
+        .apply_rebinding(owned, &store, &locations, &cancel)
+        .map_err(|f| f.to_string())?;
+    let published = store.load()?.ok_or("missing applied profile")?;
+    assert_eq!(
+        published.profile().root,
+        relocated.to_str().ok_or("relocated root")?
+    );
+    assert_eq!(published.profile().library_id, ready.profile().library_id);
+    assert_eq!(published.profile().language, ready.profile().language);
+    assert!(!published.profile().recovering);
+    assert_eq!(ready.original_bytes(), ready_bytes);
+    let mut db = Database::open_native(&native)?;
+    db.close()?;
+    drop(db);
+    native.finish().map_err(|f| f.to_string())?;
+    drop(store);
+
+    // Successful checked restart uses persisted native binding+Closed record,
+    // fresh actual leases/IDs and the same worker close/finalizer protocol.
+    let store = NativeProfileStore::open_native(&locations.native)?;
+    let native = NativeLibrary::reopen(&store, &locations, &cancel)?;
+    assert_eq!(native.layout().root(), relocated);
+    assert_eq!(native.identity().spelling(), ready.profile().library_id);
+    let mut db = Database::open_native(&native)?;
+    db.close()?;
+    drop(db);
+    native.finish().map_err(|f| f.to_string())?;
+    let closed: serde_json::Value =
+        serde_json::from_slice(&fs::read(relocated.join(".librairii-native-state.json"))?)?;
+    assert_eq!(closed["state"], "closed");
+    assert_eq!(closed["epoch"], 2);
+    let mut archive_count = 0;
+    for entry in manifest.as_array().ok_or("manifest array")? {
+        let path = entry["path"].as_str().ok_or("manifest path")?;
+        if path.starts_with("archives/") && entry["directory"].as_bool() != Some(true) {
+            archive_count += 1;
+            let expected: librairii_core::Checksum =
+                entry["sha256"].as_str().ok_or("archive hash")?.parse()?;
+            let mut file = fs::File::open(relocated.join(path))?;
+            let digest = librairii_storage::platform::hash_stream(
+                &mut file,
+                entry["size"].as_u64().ok_or("archive bytes")?,
+                &cancel,
+            )?;
+            assert_eq!(
+                digest.checksum(),
+                expected,
+                "schema018 managed archive changed: {path}"
+            );
+        }
+    }
+    assert!(
+        archive_count > 0,
+        "schema018 archive acceptance must not be vacuous"
+    );
+    for path in ["history.json", "state.json", ".librairii-library"] {
+        assert_eq!(
+            fs::read(source.join(path))?,
+            fs::read(relocated.join(path))?
+        );
+    }
+    assert_eq!(fs::read(source.join("db/librairii.sqlite3"))?, original_db);
+    assert_eq!(input.profile().original_bytes(), input_profile);
+    assert!(!source.join(".librairii-library.lock").exists());
+    assert!(!source.join(".librairii-native-state.json").exists());
+
     fs::write(
         target.join("unowned-foreign-journal"),
         b"never follow/remove this",

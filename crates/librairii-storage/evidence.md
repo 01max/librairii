@@ -1715,3 +1715,41 @@ Unix factory, root/graph/discovery, fixed G/G2/N3/C2/C70 and shipping proofs rem
 unchanged. No rename/delete, source DELETE, configuration replacement, NtFlush,
 POSIX, publication, both-parent durability, power-loss, physical permanence or
 Native activation is granted or qualified by this observational code.
+
+### Unix target preflight and applied independent-copy profile rebinding
+
+2026-10-21: Linux/macOS v1 continuation after the separately committed Windows
+handover. No Windows production primitive, wire/schema/graph change, shared
+port, recovery replay, or unrelated proof branch is included.
+
+`ClosedLibraryInput::copy_to_new_root` now creates every literal manifest name
+in the actual fresh leased target before copying any source payload. Exclusive
+creation, exact native enumeration and retained device/inode observations refuse
+collation aliases, transformed names and substituted empty files/directories.
+Empty-file and child/root/parent flushes exercise the existing Unix durability
+primitives there before payload copying. Final hash verification and durability
+ordering remain required; early acknowledgements do not guarantee future I/O.
+Failure retains the inactive candidate/root/lease and bytes, without Drop cleanup.
+
+`ForeignProfile::apply_rebinding` consumes an actual verified IndependentCopy,
+checks exact raw marker/ID and complete non-recovering state, then delegates to
+the existing native record/binding publisher. Foreign root strings are not opened
+or trusted. Native namespace/source separation, binding exclusion, ImportedClosed
+record publication, Active-before-SQL and consuming Closed finalization are reused.
+Copied recovery journals and recovering profiles refuse, retaining actual owners.
+
+Existing assertions/IDs are retained and extended. Actual AppleARM Rust1.99.1
+checks: two copy-failure tests PASS (including the empty preflight boundary and
+same-name empty substitution); portability 4/4 PASS, including real publication,
+two DB open/close/finalizer cycles, fresh checked reopen, Closed epoch2, exact
+history/state/marker/source bytes and non-vacuous schema018 managed archive SHA256
+checks against the admitted manifest. Two selected native binding/unverified
+retarget regressions PASS (24 intentionally filtered), nextest UUID
+4b2d9267-0bd0-4e02-8f60-105f0c68d9aa. Storage all-target ARM Clippy -Dwarnings,
+owned-file rustfmt and diff checks PASS. No new test identity/discovery edit.
+
+This supports relocation by verified independent copy into a newly bound native
+target, not moving/retargeting an already-bound native root or replaying recovery.
+Those unsupported operations keep their explicit refusals. Actual Linux/Intel
+native results and final exact-head cumulative checks/independent review remain
+admission gates; prior5541 provider success is not a new-head pass.

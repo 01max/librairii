@@ -106,7 +106,7 @@ mod closed {
         platform::{
             hash_stream,
             lock::{LIBRARY_LOCK_FILE, LibraryLease},
-            unix::{Directory, EntryName, durable_file_flush},
+            unix::{Directory, EntryName, FileIdentity, durable_file_flush},
         },
         profile::{MAX_PROFILE_BYTES, ProfileDocument},
     };
@@ -275,6 +275,9 @@ mod closed {
         /// Copy to a NEW explicit root with independent files and a retained
         /// cooperative OS lease. The result is INACTIVE: source/profile/journal
         /// authority is unchanged, and copied recovery paths grant no effects.
+        /// All literal names and empty-file/directory durability are exercised
+        /// on the target before copying payloads; aliases or changed spellings
+        /// refuse, never rename/truncate. This observes only this actual target.
         /// Native profile/recovery separation and activation are distinct gates.
         /// Failure never recursively removes a root or the only partial copy.
         pub fn copy_to_new_root(
@@ -282,13 +285,24 @@ mod closed {
             target: &Path,
             cancellation: &WorkCancellation,
         ) -> std::result::Result<IndependentCopy, Box<IndependentCopyFailure>> {
-            self.copy_with_checkpoint(target, cancellation, || Ok(()))
+            self.copy_with_checkpoints(target, cancellation, || Ok(()), || Ok(()))
         }
 
+        #[cfg(test)]
         fn copy_with_checkpoint(
             &self,
             target: &Path,
             cancellation: &WorkCancellation,
+            before_final_flush: impl FnOnce() -> Result<()>,
+        ) -> std::result::Result<IndependentCopy, Box<IndependentCopyFailure>> {
+            self.copy_with_checkpoints(target, cancellation, || Ok(()), before_final_flush)
+        }
+
+        fn copy_with_checkpoints(
+            &self,
+            target: &Path,
+            cancellation: &WorkCancellation,
+            after_name_preflight: impl FnOnce() -> Result<()>,
             before_final_flush: impl FnOnce() -> Result<()>,
         ) -> std::result::Result<IndependentCopy, Box<IndependentCopyFailure>> {
             let mut retained = None;
@@ -347,14 +361,70 @@ mod closed {
                     .filter(|e| e.directory)
                     .collect();
                 directories.sort_by_key(|e| e.path.split('/').count());
+                let mut target_ids = BTreeMap::new();
+                target_ids.insert("", candidate.directory.identity());
                 for entry in &directories {
                     if cancellation.is_cancelled() {
                         return Err(StorageError::Cancelled);
                     }
                     let (parent, name) = entry.path.rsplit_once('/').unwrap_or(("", &entry.path));
-                    directory_at(&candidate.directory, parent, cancellation)?
-                        .create_child(OsStr::new(name))?;
+                    let child = target_directory_at(
+                        &candidate.directory,
+                        parent,
+                        &target_ids,
+                        cancellation,
+                    )?
+                    .create_child(OsStr::new(name))?;
+                    target_ids.insert(entry.path.as_str(), child.identity());
                 }
+                // Exercise EVERY literal component on this actual target
+                // filesystem before copying any source payload. Exclusive
+                // creation rejects case/normalization aliases and real length
+                // limits; enumeration rejects transformed spellings. These are
+                // the copy's actual empty files, not disposable probe names.
+                for entry in self.manifest.entries.iter().filter(|e| !e.directory) {
+                    if cancellation.is_cancelled() {
+                        return Err(StorageError::Cancelled);
+                    }
+                    let (parent, name) = entry.path.rsplit_once('/').unwrap_or(("", &entry.path));
+                    let file = target_directory_at(
+                        &candidate.directory,
+                        parent,
+                        &target_ids,
+                        cancellation,
+                    )?
+                    .open_regular(
+                        OsStr::new(name),
+                        rustix::fs::OFlags::RDWR
+                            | rustix::fs::OFlags::CREATE
+                            | rustix::fs::OFlags::EXCL,
+                    )?;
+                    target_ids.insert(entry.path.as_str(), FileIdentity::from_file(&file)?);
+                    durable_file_flush(&file)?;
+                }
+                check_names(
+                    &candidate.directory,
+                    &self.manifest,
+                    cancellation,
+                    true,
+                    false,
+                )?;
+                // Observe the existing durability primitives on this actual
+                // filesystem before payload copying as well. This is a finite
+                // acknowledgement, not a guarantee against future I/O failure.
+                for entry in directories.iter().rev() {
+                    target_directory_at(
+                        &candidate.directory,
+                        &entry.path,
+                        &target_ids,
+                        cancellation,
+                    )?
+                    .flush()?;
+                }
+                candidate.directory.flush()?;
+                candidate.parent.flush()?;
+                candidate.revalidate()?;
+                after_name_preflight()?;
                 for entry in self.manifest.entries.iter().filter(|e| !e.directory) {
                     if cancellation.is_cancelled() {
                         return Err(StorageError::Cancelled);
@@ -368,13 +438,24 @@ mod closed {
                     source
                         .seek(SeekFrom::Start(0))
                         .map_err(|e| StorageError::io("rewind independent copy source", e))?;
-                    let target_parent = directory_at(&candidate.directory, parent, cancellation)?;
-                    let mut output = target_parent.open_regular(
-                        OsStr::new(name),
-                        rustix::fs::OFlags::RDWR
-                            | rustix::fs::OFlags::CREATE
-                            | rustix::fs::OFlags::EXCL,
+                    let target_parent = target_directory_at(
+                        &candidate.directory,
+                        parent,
+                        &target_ids,
+                        cancellation,
                     )?;
+                    let mut output =
+                        target_parent.open_regular(OsStr::new(name), rustix::fs::OFlags::RDWR)?;
+                    if target_ids.get(entry.path.as_str())
+                        != Some(&FileIdentity::from_file(&output)?)
+                        || output
+                            .metadata()
+                            .map_err(|e| StorageError::io("revalidate empty target file", e))?
+                            .len()
+                            != 0
+                    {
+                        return Err(StorageError::AdoptionInputChanged);
+                    }
                     let mut reader = InputCopyReader {
                         file: &mut source,
                         cancellation,
@@ -397,6 +478,28 @@ mod closed {
                     durable_file_flush(&output)?;
                 }
                 self.revalidate(cancellation)?;
+                for entry in &directories {
+                    target_directory_at(
+                        &candidate.directory,
+                        &entry.path,
+                        &target_ids,
+                        cancellation,
+                    )?;
+                }
+                for entry in self.manifest.entries.iter().filter(|e| !e.directory) {
+                    let (parent, name) = entry.path.rsplit_once('/').unwrap_or(("", &entry.path));
+                    let file = target_directory_at(
+                        &candidate.directory,
+                        parent,
+                        &target_ids,
+                        cancellation,
+                    )?
+                    .open_regular(OsStr::new(name), rustix::fs::OFlags::RDONLY)?;
+                    if target_ids.get(entry.path.as_str()) != Some(&FileIdentity::from_file(&file)?)
+                    {
+                        return Err(StorageError::AdoptionInputChanged);
+                    }
+                }
                 scan_with_lock(&candidate.directory, &self.manifest, cancellation, true)?;
                 let scratch = tempfile::tempdir()
                     .map_err(|e| StorageError::io("create copied database probe", e))?;
@@ -613,6 +716,30 @@ mod closed {
         }
         Ok(current)
     }
+    fn target_directory_at(
+        root: &Directory,
+        path: &str,
+        identities: &BTreeMap<&str, FileIdentity>,
+        cancellation: &WorkCancellation,
+    ) -> Result<Directory> {
+        let mut current = root.duplicate()?;
+        if identities.get("") != Some(&current.identity()) {
+            return Err(StorageError::AdoptionInputChanged);
+        }
+        let mut end = 0;
+        for part in path.split('/').filter(|part| !part.is_empty()) {
+            if cancellation.is_cancelled() {
+                return Err(StorageError::Cancelled);
+            }
+            end += part.len();
+            current = current.child(OsStr::new(part))?;
+            if identities.get(&path[..end]) != Some(&current.identity()) {
+                return Err(StorageError::AdoptionInputChanged);
+            }
+            end += 1;
+        }
+        Ok(current)
+    }
     fn scan(
         root: &Directory,
         manifest: &ClosedManifest,
@@ -638,19 +765,7 @@ mod closed {
         if cancellation.is_cancelled() {
             return Err(StorageError::Cancelled);
         }
-        let mut children: BTreeMap<&str, Vec<OsString>> = BTreeMap::new();
-        children.insert("", Vec::new());
-        if owned_lock {
-            children
-                .get_mut("")
-                .ok_or(StorageError::AdoptionInputInvalid)?
-                .push(OsString::from(LIBRARY_LOCK_FILE));
-        }
         if let Some((witness, bytes)) = record {
-            children
-                .get_mut("")
-                .ok_or(StorageError::AdoptionInputInvalid)?
-                .push(OsString::from(crate::native::NATIVE_STATE_FILE));
             let mut file = root.open_regular(
                 OsStr::new(crate::native::NATIVE_STATE_FILE),
                 rustix::fs::OFlags::RDONLY,
@@ -677,6 +792,38 @@ mod closed {
                 return Err(StorageError::AdoptionInputChanged);
             }
         }
+        check_names(root, manifest, cancellation, owned_lock, record.is_some())?;
+        for entry in &manifest.entries {
+            if entry.directory {
+                continue;
+            }
+            if cancellation.is_cancelled() {
+                return Err(StorageError::Cancelled);
+            }
+            let (parent, name) = entry.path.rsplit_once('/').unwrap_or(("", &entry.path));
+            let directory = directory_at(root, parent, cancellation)?;
+            let mut file = directory
+                .read_regular(OsStr::new(name))?
+                .ok_or(StorageError::AdoptionInputChanged)?;
+            verify_file(&mut file, entry, cancellation)?;
+        }
+        Ok(())
+    }
+    fn check_names(
+        root: &Directory,
+        manifest: &ClosedManifest,
+        cancellation: &WorkCancellation,
+        owned_lock: bool,
+        owned_record: bool,
+    ) -> Result<()> {
+        let mut children: BTreeMap<&str, Vec<OsString>> = BTreeMap::new();
+        let controls = children.entry("").or_default();
+        if owned_lock {
+            controls.push(OsString::from(LIBRARY_LOCK_FILE));
+        }
+        if owned_record {
+            controls.push(OsString::from(crate::native::NATIVE_STATE_FILE));
+        }
         for entry in &manifest.entries {
             let (parent, name) = entry.path.rsplit_once('/').unwrap_or(("", &entry.path));
             children
@@ -693,20 +840,6 @@ mod closed {
             if directory.entries(expected.len(), cancellation)? != expected {
                 return Err(StorageError::AdoptionInputChanged);
             }
-        }
-        for entry in &manifest.entries {
-            if entry.directory {
-                continue;
-            }
-            if cancellation.is_cancelled() {
-                return Err(StorageError::Cancelled);
-            }
-            let (parent, name) = entry.path.rsplit_once('/').unwrap_or(("", &entry.path));
-            let directory = directory_at(root, parent, cancellation)?;
-            let mut file = directory
-                .read_regular(OsStr::new(name))?
-                .ok_or(StorageError::AdoptionInputChanged)?;
-            verify_file(&mut file, entry, cancellation)?;
         }
         Ok(())
     }
@@ -765,6 +898,15 @@ mod closed {
                 let digest = hash_stream(&mut file, size, &WorkCancellation::default())?;
                 entries.push(serde_json::json!({"path":name,"size":size,"sha256":digest.checksum().to_string()}));
             }
+            let name = "raw Éte # %2F : ?.bin";
+            let payload = b"literal filename payload";
+            fs::write(root.join(name), payload)?;
+            let digest = hash_stream(
+                &mut payload.as_slice(),
+                payload.len() as u64,
+                &WorkCancellation::default(),
+            )?;
+            entries.push(serde_json::json!({"path":name,"size":payload.len(),"sha256":digest.checksum().to_string()}));
             let profile = serde_json::json!({"version":1,"language":"fr","root":root,"libraryId":"a0000000-0000-4000-8000-000000000001","complete":true});
             Ok(ClosedLibraryInput::verify(
                 &root,
@@ -780,6 +922,75 @@ mod closed {
             let roots = TestRoots::new()?;
             let input = input(&roots)?;
             let original = fs::read(input.root.join("db/librairii.sqlite3"))?;
+            let preflight = roots.library().join("preflight-no-payload");
+            let failed = input
+                .copy_with_checkpoints(
+                    &preflight,
+                    &WorkCancellation::default(),
+                    || {
+                        // Every actual target spelling exists before ANY source
+                        // payload is copied, including raw punctuation/Unicode.
+                        for entry in input.manifest.entries.iter().filter(|e| !e.directory) {
+                            assert_eq!(
+                                fs::metadata(preflight.join(&entry.path))
+                                    .map_err(|e| StorageError::io(
+                                        "test inspect preflight payload",
+                                        e
+                                    ))?
+                                    .len(),
+                                0
+                            );
+                        }
+                        Err(StorageError::DirectoryDurabilityUnavailable)
+                    },
+                    || Ok(()),
+                )
+                .err()
+                .ok_or("preflight boundary must fail")?;
+            assert!(failed.retains_lease());
+            assert_eq!(
+                fs::metadata(preflight.join("db/librairii.sqlite3"))?.len(),
+                0
+            );
+            assert_eq!(
+                fs::metadata(preflight.join("raw Éte # %2F : ?.bin"))?.len(),
+                0
+            );
+            assert_eq!(fs::read(input.root.join("db/librairii.sqlite3"))?, original);
+            // Retaining/restoring fixture resources never cleans the candidate.
+            drop(failed);
+            assert!(preflight.join(LIBRARY_LOCK_FILE).is_file());
+
+            let replaced = roots.library().join("preflight-replaced");
+            let failed = input
+                .copy_with_checkpoints(
+                    &replaced,
+                    &WorkCancellation::default(),
+                    || {
+                        fs::rename(
+                            replaced.join("db/librairii.sqlite3"),
+                            replaced.join("held-original"),
+                        )
+                        .map_err(|e| StorageError::io("test retain preflight file", e))?;
+                        fs::write(replaced.join("db/librairii.sqlite3"), [])
+                            .map_err(|e| StorageError::io("test replace preflight file", e))?;
+                        Ok(())
+                    },
+                    || Ok(()),
+                )
+                .err()
+                .ok_or("same-name empty replacement must refuse")?;
+            assert!(matches!(
+                failed.storage_error(),
+                StorageError::AdoptionInputChanged
+            ));
+            assert!(failed.retains_lease());
+            assert_eq!(
+                fs::metadata(replaced.join("db/librairii.sqlite3"))?.len(),
+                0
+            );
+            assert_eq!(fs::metadata(replaced.join("held-original"))?.len(), 0);
+
             let target = roots.library().join("copy-unacknowledged");
             let failed = input
                 .copy_with_checkpoint(&target, &WorkCancellation::default(), || {

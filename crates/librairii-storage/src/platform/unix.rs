@@ -60,7 +60,7 @@ pub struct FileIdentity {
     inode: u64,
 }
 impl FileIdentity {
-    fn from_file(file: &File) -> Result<Self> {
+    pub(crate) fn from_file(file: &File) -> Result<Self> {
         let stat = file
             .metadata()
             .map_err(|e| StorageError::io("inspect retained file", e))?;
@@ -87,6 +87,9 @@ pub(crate) struct Directory {
     identity: FileIdentity,
 }
 impl Directory {
+    pub(crate) fn identity(&self) -> FileIdentity {
+        self.identity
+    }
     pub(crate) fn duplicate(&self) -> Result<Self> {
         Self::from_file(
             self.file
