@@ -1,1 +1,2 @@
-//! External/native boundary. No archive, network, picker or filesystem effects implemented.
+//! External/native boundaries. Qualification mechanisms do not admit imports.
+pub mod archive;

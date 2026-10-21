@@ -9,3 +9,12 @@ preservation/** -text
 .config/upstream-sources/go-1.26.5-json-v1-studio/** -text
 .config/upstream-notices/go-1.26.5-json-v1-studio/** -text
 crates/librairii-core/src/import/studio_json/** -text
+
+# Authenticated upstream index and notice payloads retain their pinned bytes.
+.config/upstream-sources/** -text
+.config/upstream-notices/go-1.26.5-xtext-0.43.0-unicode15-cldr32/** -text
+# Private derivatives are also inventoried as exact bytes.
+crates/librairii-storage/src/migrations/compatibility/** -text
+# Migration SQL is an exact persisted schema contract, compared to the corpus.
+crates/librairii-storage/migrations/*.sql -text
+internal/database/migrations/*.sql -text
