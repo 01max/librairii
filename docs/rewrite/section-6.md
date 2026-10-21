@@ -217,3 +217,22 @@ A second session is refused until the first joins. Another test pauses creation,
 requests shutdown, then admits the row: the subsequently queued item is cancelled
 without entering the effect adapter. Queue push/pop recheck shutdown under the
 same mutex, closing the admission/prefetch cancellation race.
+
+## 6.9 — Process-death matrix and independent review
+
+The native fixture now kills and reaps a separate process at sixteen transitions:
+independent binding, SQLite/runtime opening, operation creation, item start,
+persisted progress, a saved sibling outcome, operation finish, SQLite close,
+native close, export creation/start, import registration/write and export
+registration/write/publication. Every signal is emitted with the actual owners
+still borrowed on the child stack. Restart checks durable History state, byte
+counts, preserved terminal outcomes, registered partial cleanup, completed-file
+preservation and the unchanged legacy source. These are process-death tests;
+they do not claim to simulate a power-loss filesystem or implement Task 12's
+production export publisher. Existing admission, progress, cancellation,
+acknowledgement-loss and compensation race tests complement this matrix.
+
+Independent standards and spec reviews of the 6.1–6.8 head identified four
+correctness findings: cancellation-read refusal, aggregate text budgets,
+permanent creation failures and finalization blocked by unrelated work. Their
+fixes and final-head reassessment are recorded separately from this test commit.

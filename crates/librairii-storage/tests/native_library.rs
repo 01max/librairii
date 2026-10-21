@@ -2252,9 +2252,11 @@ fn native_registered_temporaries_recover_after_process_death_and_preserve_final_
             &WorkCancellation::default(),
         )
         .map_err(|f| f.to_string())?;
-        let db = Database::open_native(&native)?;
+        operation_crash_checkpoint(&value, "bound", &root, &native)?;
+        let mut db = Database::open_native(&native)?;
         let repository = TerminalRepository::new(&db, 1);
         assert!(matches!(repository.startup(), StoreResult::Known(())));
+        operation_crash_checkpoint(&value, "opened", &root, &(&db, &native))?;
         let import = NewOperation {
             id: "a0000000-0000-4000-8000-000000000081".into(),
             kind: OperationKind::Import,
@@ -2263,6 +2265,7 @@ fn native_registered_temporaries_recover_after_process_death_and_preserve_final_
             items: vec![
                 NewItem {
                     source_name: "partial.zip".into(),
+                    total_bytes: 1024,
                     ..Default::default()
                 },
                 NewItem {
@@ -2275,6 +2278,7 @@ fn native_registered_temporaries_recover_after_process_death_and_preserve_final_
             db.create_operation(import, "2026-10-22T00:00:00Z".into(), Default::default())?
                 .wait()?,
         )?;
+        operation_crash_checkpoint(&value, "created", &root, &(&db, &native))?;
         committed_operation(
             db.mark_operation_item_running(
                 import.operation.identity.id.clone(),
@@ -2284,6 +2288,12 @@ fn native_registered_temporaries_recover_after_process_death_and_preserve_final_
             )?
             .wait()?,
         )?;
+        operation_crash_checkpoint(&value, "running", &root, &(&db, &native))?;
+        assert!(matches!(
+            repository.save_progress(import.items[0].identity.id, 256, 1024),
+            StoreResult::Known(())
+        ));
+        operation_crash_checkpoint(&value, "progress", &root, &(&db, &native))?;
         let saved = CompleteItemCommand {
             generation: 1,
             operation: import.operation.immutable_scope(),
@@ -2300,6 +2310,39 @@ fn native_registered_temporaries_recover_after_process_death_and_preserve_final_
             repository.complete_item(&saved).disposition,
             AttemptDisposition::Committed { .. }
         ));
+        operation_crash_checkpoint(&value, "item_saved", &root, &(&db, &native))?;
+        if matches!(
+            value["phase"].as_str(),
+            Some("finished" | "sql_closed" | "native_closed")
+        ) {
+            let mut completed = saved.clone();
+            completed.item = import.items[0].immutable_scope();
+            completed.state = ItemState::Succeeded;
+            completed.completed_bytes = 1024;
+            completed.outcome = RawOutcome::default();
+            assert!(matches!(
+                repository.complete_item(&completed).disposition,
+                AttemptDisposition::Committed { .. }
+            ));
+            let finish = FinishCommand {
+                generation: 1,
+                operation: import.operation.immutable_scope(),
+                state: librairii_core::OperationState::Succeeded,
+                outcome: RawOutcome::default(),
+                finished_at: "2026-10-22T00:00:04Z".into(),
+            };
+            assert!(matches!(
+                repository.finish(&finish).disposition,
+                AttemptDisposition::Committed { .. }
+            ));
+            operation_crash_checkpoint(&value, "finished", &root, &(&db, &native))?;
+            db.close()?;
+            drop(db);
+            operation_crash_checkpoint(&value, "sql_closed", &root, &native)?;
+            native.finish().map_err(|f| f.to_string())?;
+            operation_crash_checkpoint(&value, "native_closed", &root, &profile)?;
+            return Err("missing close checkpoint".into());
+        }
         let export = NewOperation {
             id: "a0000000-0000-4000-8000-000000000082".into(),
             kind: OperationKind::Export,
@@ -2330,6 +2373,7 @@ fn native_registered_temporaries_recover_after_process_death_and_preserve_final_
             db.create_operation(export, "2026-10-22T00:00:02Z".into(), Default::default())?
                 .wait()?,
         )?;
+        operation_crash_checkpoint(&value, "export_created", &root, &(&db, &native))?;
         for item in &export.items {
             committed_operation(
                 db.mark_operation_item_running(
@@ -2341,6 +2385,7 @@ fn native_registered_temporaries_recover_after_process_death_and_preserve_final_
                 .wait()?,
             )?;
         }
+        operation_crash_checkpoint(&value, "export_running", &root, &(&db, &native))?;
         let files = LibraryFiles::open_native(&db)?;
         let custody = files.try_custody()?;
         let mut stage = files
@@ -2351,7 +2396,19 @@ fn native_registered_temporaries_recover_after_process_death_and_preserve_final_
             import.operation.identity.id.clone(),
             import.items[0].identity.id,
         )?;
+        operation_crash_checkpoint(
+            &value,
+            "stage_registered",
+            &root,
+            &(&db, &native, &files, &custody, &stage),
+        )?;
         stage.write_all(b"partial import")?;
+        operation_crash_checkpoint(
+            &value,
+            "stage_written",
+            &root,
+            &(&db, &native, &files, &custody, &stage),
+        )?;
         let mut partial = files
             .create_export_temporary(
                 &custody,
@@ -2359,8 +2416,20 @@ fn native_registered_temporaries_recover_after_process_death_and_preserve_final_
                 export.items[0].identity.id,
             )
             .map_err(|f| f.to_string())?;
+        operation_crash_checkpoint(
+            &value,
+            "export_registered",
+            &root,
+            &(&db, &native, &files, &custody, &stage, &partial),
+        )?;
         partial.write_all(b"partial export")?;
         partial.flush_durable()?;
+        operation_crash_checkpoint(
+            &value,
+            "export_written",
+            &root,
+            &(&db, &native, &files, &custody, &stage, &partial),
+        )?;
         let mut complete = files
             .create_export_temporary(
                 &custody,
@@ -2379,6 +2448,12 @@ fn native_registered_temporaries_recover_after_process_death_and_preserve_final_
             path("destination")?.join("completed.zip"),
         )?;
         fs::File::open(path("destination")?)?.sync_all()?;
+        operation_crash_checkpoint(
+            &value,
+            "export_published",
+            &root,
+            &(&db, &native, &files, &custody, &stage, &partial, &complete),
+        )?;
         let ready = serde_json::json!({"root":root,"partial":partial.workspace_name().to_str().ok_or("partial name")?,"complete":complete.workspace_name().to_str().ok_or("complete name")?});
         let mut signal = fs::OpenOptions::new()
             .create_new(true)
@@ -2507,4 +2582,211 @@ fn committed_operation<T>(value: TransactionOutcome<T>) -> TestResult<T> {
             Err(e.into())
         }
     }
+}
+
+// A ready signal is emitted only while the actual owners at the named boundary
+// remain borrowed on the child stack. The parent kills and reaps that process.
+fn operation_crash_checkpoint(
+    context: &serde_json::Value,
+    phase: &str,
+    root: &Path,
+    owners: &impl Sized,
+) -> TestResult {
+    if context["phase"].as_str() != Some(phase) {
+        return Ok(());
+    }
+    let ready = Path::new(context["ready"].as_str().ok_or("ready path")?);
+    let mut signal = fs::OpenOptions::new()
+        .create_new(true)
+        .write(true)
+        .open(ready.with_extension("writing"))?;
+    signal.write_all(&serde_json::to_vec(
+        &serde_json::json!({"root":root,"phase":phase}),
+    )?)?;
+    signal.sync_all()?;
+    fs::rename(ready.with_extension("writing"), ready)?;
+    loop {
+        std::thread::park();
+        std::hint::black_box(owners);
+    }
+}
+
+#[test]
+fn native_operation_crash_transition_matrix_reconciles_history_and_progress() -> TestResult {
+    use librairii_app::ports::jobs::{JobStore, StoreResult};
+    use librairii_core::{OperationState, operations::ItemState};
+    use librairii_storage::operations_repository::TerminalRepository;
+    use std::{
+        process::{Child, Command, Stdio},
+        time::{Duration, Instant},
+    };
+    struct Process(Child);
+    impl Drop for Process {
+        fn drop(&mut self) {
+            let _ = self.0.kill();
+            let _ = self.0.wait();
+        }
+    }
+    let phases = [
+        "bound",
+        "opened",
+        "created",
+        "running",
+        "progress",
+        "item_saved",
+        "finished",
+        "sql_closed",
+        "native_closed",
+        "export_created",
+        "export_running",
+        "stage_registered",
+        "stage_written",
+        "export_registered",
+        "export_written",
+        "export_published",
+    ];
+    for phase in phases {
+        let roots = TestRoots::new()?;
+        let (copy, locations) = prepare(&roots, false)?;
+        let source = Path::new(&copy.source_profile().profile().root);
+        let original = fs::read(source.join("db/librairii.sqlite3"))?;
+        let destination = roots.profile().join("exports");
+        fs::create_dir(&destination)?;
+        fs::write(destination.join("foreign.txt"), b"unchanged")?;
+        let context = roots.profile().join("context.json");
+        let ready = roots.profile().join("ready.json");
+        fs::write(
+            &context,
+            serde_json::to_vec(
+                &serde_json::json!({"native":locations.native,"data":locations.data,"legacy":locations.legacy,"source":source,"destination":destination,"ready":ready,"phase":phase}),
+            )?,
+        )?;
+        let output_path = roots.profile().join("child-output");
+        let output = fs::File::create(&output_path)?;
+        let mut child = Process(Command::new(std::env::current_exe()?).args(["--exact", "native_registered_temporaries_recover_after_process_death_and_preserve_final_files", "--nocapture"]).env("LIBRAIRII_NATIVE_OPERATION_CRASH_CONTEXT", &context).stdout(Stdio::from(output.try_clone()?)).stderr(Stdio::from(output)).spawn()?);
+        let end = Instant::now() + Duration::from_secs(30);
+        while !ready.exists() {
+            if let Some(status) = child.0.try_wait()? {
+                return Err(format!(
+                    "{phase}: child {status}: {}",
+                    fs::read_to_string(&output_path)?
+                )
+                .into());
+            }
+            if Instant::now() >= end {
+                return Err(format!("{phase}: child timed out").into());
+            }
+            std::thread::sleep(Duration::from_millis(10));
+        }
+        let signal: serde_json::Value = serde_json::from_slice(&fs::read(&ready)?)?;
+        assert_eq!(signal["phase"], phase);
+        let root = Path::new(signal["root"].as_str().ok_or("root")?);
+        child.0.kill()?;
+        child.0.wait()?;
+        let store = NativeProfileStore::open_native(&locations.native)?;
+        let inspect = |db: &Database<'_>| -> TestResult {
+            let repository = TerminalRepository::new(db, 2);
+            assert!(
+                matches!(repository.startup(), StoreResult::Known(())),
+                "{phase}"
+            );
+            let saved = db
+                .operation_snapshot("a0000000-0000-4000-8000-000000000081".into())?
+                .wait()?;
+            if matches!(phase, "bound" | "opened") {
+                assert!(saved.is_none(), "{phase}");
+            } else {
+                let saved = saved.ok_or("missing import history")?;
+                let terminal = matches!(phase, "finished" | "sql_closed" | "native_closed");
+                assert_eq!(
+                    saved.operation.state,
+                    if terminal {
+                        OperationState::Succeeded
+                    } else {
+                        OperationState::Interrupted
+                    },
+                    "{phase}"
+                );
+                if !matches!(phase, "created" | "running" | "progress") {
+                    assert_eq!(saved.items[1].state, ItemState::Skipped, "{phase}");
+                    assert_eq!(
+                        saved.items[1].outcome.code.as_deref(),
+                        Some("future.outcome"),
+                        "{phase}"
+                    );
+                }
+                let bytes = if terminal {
+                    1024
+                } else if matches!(phase, "created" | "running") {
+                    0
+                } else {
+                    256
+                };
+                assert_eq!(saved.items[0].progress.completed, bytes, "{phase}");
+                let history = db.operation_history(Default::default())?.wait()?;
+                assert!(
+                    history
+                        .operations
+                        .iter()
+                        .any(|o| o.operation.identity.id == saved.operation.identity.id),
+                    "{phase}"
+                );
+            }
+            let export = db
+                .operation_snapshot("a0000000-0000-4000-8000-000000000082".into())?
+                .wait()?;
+            if let Some(export) = export {
+                assert_eq!(
+                    export.operation.state,
+                    OperationState::Interrupted,
+                    "{phase}"
+                );
+            }
+            assert!(
+                fs::read_dir(root.join("staging"))?.next().is_none(),
+                "{phase}"
+            );
+            Ok(())
+        };
+        if matches!(phase, "bound" | "native_closed") {
+            let native = NativeLibrary::reopen(&store, &locations, &WorkCancellation::default())?;
+            let mut db = Database::open_native(&native)?;
+            inspect(&db)?;
+            db.close()?;
+            drop(db);
+            native.finish().map_err(|f| f.to_string())?;
+        } else {
+            assert!(
+                NativeLibrary::reopen(&store, &locations, &WorkCancellation::default()).is_err(),
+                "{phase}"
+            );
+            let recovery = NativeLibrary::recover_interrupted(
+                &store,
+                &locations,
+                &WorkCancellation::default(),
+            )?;
+            let mut db = recovery.open()?;
+            inspect(&db)?;
+            db.close()?;
+            drop(db);
+            recovery.finish().map_err(|f| f.to_string())?;
+        }
+        assert_eq!(native_state(root)?["state"], "closed", "{phase}");
+        assert_eq!(
+            fs::read(source.join("db/librairii.sqlite3"))?,
+            original,
+            "{phase}"
+        );
+        assert_eq!(fs::read(destination.join("foreign.txt"))?, b"unchanged");
+        assert_eq!(
+            destination.join("completed.zip").exists(),
+            phase == "export_published"
+        );
+        assert_eq!(
+            fs::read_dir(&destination)?.count(),
+            if phase == "export_published" { 2 } else { 1 },
+            "{phase}"
+        );
+    }
+    Ok(())
 }
