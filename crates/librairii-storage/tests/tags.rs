@@ -563,3 +563,28 @@ fn undo_restores_only_changed_targets_and_atomically_rejects_stale_or_unavailabl
     db.close()?;
     Ok(())
 }
+
+#[test]
+fn deletion_inspects_valid_references_without_normalizing_unrelated_membership_fields() -> TestResult
+{
+    use librairii_storage::tagging::DeleteTarget;
+    let roots = TestRoots::new()?;
+    let library = IsolatedLibrary::initialize_from_override(
+        Some(roots.library().as_os_str()),
+        "a0000000-0000-4000-8000-000000000001".parse()?,
+    )?;
+    let mut db = Database::open_isolated(&library)?;
+    let d = create(&db, "genre", Kind::Choice)?;
+    let v = value(&db, d, "calm")?;
+    committed(db.transaction(WorkCancellation::default(),move|tx|{
+ for (id,validity) in [(1,"valid"),(2,"needs_attention")] {
+ let payload=serde_json::json!({"name":"a".repeat(201),"compatibilities":["unsupported"],"anyOf":[{"choiceFilters":[{"definitionId":d,"valueIds":vec![v;101]}]}]}).to_string();
+ tx.execute("INSERT INTO collections(id,name,normalized_name,position,query_version,query_payload,validity_state) VALUES(?1,'Source'||?1,'source'||?1,?1-1,5,?2,?3)",rusqlite::params![id,payload,validity])?;
+ }Ok(())})?.wait()?)?;
+    let plan = db.tag_deletion_plan(DeleteTarget::Value(v))?.wait()?;
+    assert_eq!(plan.affected_collection_ids, vec![1, 2]);
+    edit(&db, Command::Delete(Box::new(plan)))?;
+    assert_eq!(db.read(|tx|Ok(tx.query_row("SELECT COUNT(*) FROM collections WHERE validity_state='needs_attention' AND instr(query_payload,'unsupported')>0",[],|r|r.get::<_,i64>(0))?))?.wait()?,2);
+    db.close()?;
+    Ok(())
+}

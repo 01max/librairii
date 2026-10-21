@@ -972,8 +972,8 @@
   },
   "core_leaf": {
     "path": "crates/librairii-core/src/collection_codec/mod.rs",
-    "bytes": 29971,
-    "sha256": "b230028346aa65bb597f7d105522c7e9c5c8de2304b0568305b6552bf390aa7a",
+    "bytes": 31091,
+    "sha256": "7bb5d6391b3d5bac2aadf5238775a480675ccb24a56d8ec0373bc3d3c695fbc7",
     "kind": "translated",
     "header_bytes": 379,
     "header_sha256": "84c790465b5688b1423350f07c1422d56e174de8117d978de4f39448ac75e807",
@@ -2682,6 +2682,27 @@
         "identity": {
           "suite": "librairii-core::tag_identity",
           "name": "every_unicode_scalar_matches_the_actual_frozen_go_tag_key_digest"
+        },
+        "reason": "Additive observed Task 7/8 discovery; original integration identities retain exact order and target scope."
+      },
+      {
+        "position": 375,
+        "identity": {
+          "suite": "librairii-storage::tags",
+          "name": "deletion_inspects_valid_references_without_normalizing_unrelated_membership_fields",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive observed Task 7/8 discovery; original integration identities retain exact order and target scope."
+      },
+      {
+        "position": 376,
+        "identity": {
+          "suite": "librairii-core::tag_references",
+          "name": "tag_reference_inspection_is_bounded_strict_and_distinct_from_membership_normalization"
         },
         "reason": "Additive observed Task 7/8 discovery; original integration identities retain exact order and target scope."
       }

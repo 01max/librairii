@@ -1,7 +1,7 @@
 use super::{choice, definition, user, value};
 use crate::Result;
 use librairii_core::{
-    collection_codec::{self, Query},
+    collection_codec::{self, References},
     tagging::{Definition, TagError, Value},
 };
 use rusqlite::{OptionalExtension, Transaction};
@@ -29,8 +29,8 @@ pub struct DeletionPlan {
     pub affected_collection_ids: Vec<i64>,
     references: Vec<Reference>,
 }
-fn matches(q: &Query, target: DeleteTarget) -> bool {
-    (match target {
+fn matches(q: &References, target: DeleteTarget) -> bool {
+    match target {
         DeleteTarget::Definition(id) => {
             q.boolean_filters
                 .iter()
@@ -38,7 +38,7 @@ fn matches(q: &Query, target: DeleteTarget) -> bool {
                 || q.choice_filters.iter().any(|f| f.definition_id == id)
         }
         DeleteTarget::Value(id) => q.choice_filters.iter().any(|f| f.value_ids.contains(&id)),
-    }) || q.any_of.iter().any(|q| matches(q, target))
+    }
 }
 fn references(tx: &Transaction<'_>, target: DeleteTarget) -> Result<Vec<Reference>> {
     let legacy = tx
@@ -60,7 +60,7 @@ fn references(tx: &Transaction<'_>, target: DeleteTarget) -> Result<Vec<Referenc
             validity: row.get(3)?,
             revision: row.get(4)?,
         };
-        match collection_codec::decode(r.version, &r.payload, legacy) {
+        match collection_codec::decode_references(r.version, &r.payload, legacy) {
             Ok(q) if matches(&q, target) => out.push(r),
             Ok(_) => {}
             Err(collection_codec::CodecError::FrozenData) => {

@@ -2097,6 +2097,19 @@
     {
       "suite": "librairii-core::tag_identity",
       "name": "every_unicode_scalar_matches_the_actual_frozen_go_tag_key_digest"
+    },
+    {
+      "suite": "librairii-storage::tags",
+      "name": "deletion_inspects_valid_references_without_normalizing_unrelated_membership_fields",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-core::tag_references",
+      "name": "tag_reference_inspection_is_bounded_strict_and_distinct_from_membership_normalization"
     }
   ]
 }

@@ -552,7 +552,7 @@ fn canonical_saved(q: &mut Query) -> Result<()> {
     }
     Ok(())
 }
-pub fn decode(version: i64, bytes: &[u8], legacy_id: i64) -> Result<Query> {
+fn decode_payload(version: i64, bytes: &[u8]) -> Result<Query> {
     if !(1..=5).contains(&version) {
         return Err(CodecError::UnsupportedVersion);
     }
@@ -565,9 +565,36 @@ pub fn decode(version: i64, bytes: &[u8], legacy_id: i64) -> Result<Query> {
     if parser.offset != bytes.len() || !matches!(&value, Wire::Object(_)) {
         return Err(CodecError::Invalid);
     }
-    let mut q = query(value, version == 1)?;
+    let q = query(value, version == 1)?;
     let mut remaining = MAX_NODES;
     validate_references(&q, &mut remaining, version == 5)?;
+    Ok(q)
+}
+/// Reference inspection validates wire shape and tag identities only. It does
+/// not normalize membership or grant authority to execute the saved query.
+#[derive(Clone, Debug, Default, Eq, PartialEq)]
+pub struct References {
+    pub boolean_filters: Vec<BooleanFilter>,
+    pub choice_filters: Vec<ChoiceFilter>,
+}
+pub fn decode_references(version: i64, bytes: &[u8], legacy_id: i64) -> Result<References> {
+    fn collect(q: Query, refs: &mut References, version: i64, legacy: i64) {
+        refs.boolean_filters
+            .extend(q.boolean_filters.into_iter().filter(|f| {
+                f.state != "ignored" && !(version < 4 && legacy > 0 && f.definition_id == legacy)
+            }));
+        refs.choice_filters.extend(q.choice_filters);
+        for branch in q.any_of {
+            collect(branch, refs, version, legacy);
+        }
+    }
+    let q = decode_payload(version, bytes)?;
+    let mut refs = References::default();
+    collect(q, &mut refs, version, legacy_id);
+    Ok(refs)
+}
+pub fn decode(version: i64, bytes: &[u8], legacy_id: i64) -> Result<Query> {
+    let mut q = decode_payload(version, bytes)?;
     retire(&mut q, version, legacy_id);
     canonical_saved(&mut q)?;
     Ok(q)
