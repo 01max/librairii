@@ -36,6 +36,12 @@ criterion = { version = "=0.8.2", default-features = false, features = ["cargo_b
 
 time = { version = "=0.3.55", default-features = false, features = ["std"] }
 
+reqwest = { version = "=0.13.5", default-features = false, features = ["rustls-no-provider"] }
+rustls = { version = "=0.23.46", default-features = false, features = ["std", "ring", "tls12"] }
+tokio = { version = "=1.54.0", default-features = false, features = ["rt", "time", "sync", "macros"] }
+mime = "=0.3.17"
+rustls-platform-verifier = "=0.7.1"
+
 [workspace.lints.rust]
 unsafe_code = "deny"
 missing_debug_implementations = "warn"

@@ -3119,6 +3119,54 @@
           ]
         },
         "reason": "Additive PR 51 regression: deletion retires dependent plans before SQLite can reuse Shelf/source IDs."
+      },
+      {
+        "position": 410,
+        "identity": {
+          "suite": "librairii-adapters",
+          "name": "lunii::tests::actual_streamed_limits_apply_to_token_and_catalog_without_content_length"
+        },
+        "reason": "Additive observed Task 11 discovery; original integration identities retain exact order and target scope."
+      },
+      {
+        "position": 411,
+        "identity": {
+          "suite": "librairii-adapters",
+          "name": "lunii::tests::cancellation_and_total_deadline_interrupt_waiting_responses"
+        },
+        "reason": "Additive observed Task 11 discovery; original integration identities retain exact order and target scope."
+      },
+      {
+        "position": 412,
+        "identity": {
+          "suite": "librairii-adapters",
+          "name": "lunii::tests::guest_envelope_headers_and_exact_catalog_bytes_match_protocol"
+        },
+        "reason": "Additive observed Task 11 discovery; original integration identities retain exact order and target scope."
+      },
+      {
+        "position": 413,
+        "identity": {
+          "suite": "librairii-adapters",
+          "name": "lunii::tests::redirects_status_content_type_malformed_json_and_token_are_refused"
+        },
+        "reason": "Additive observed Task 11 discovery; original integration identities retain exact order and target scope."
+      },
+      {
+        "position": 414,
+        "identity": {
+          "suite": "librairii-adapters",
+          "name": "lunii::tests::request_admission_is_bounded_without_waiting_queue"
+        },
+        "reason": "Additive observed Task 11 discovery; original integration identities retain exact order and target scope."
+      },
+      {
+        "position": 415,
+        "identity": {
+          "suite": "librairii-adapters",
+          "name": "lunii::tests::tls_validates_roots_and_server_names_with_no_insecure_override"
+        },
+        "reason": "Additive observed Task 11 discovery; original integration identities retain exact order and target scope."
       }
     ],
     "python": [

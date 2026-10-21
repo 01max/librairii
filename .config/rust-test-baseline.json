@@ -2392,6 +2392,30 @@
         "x86_64-apple-darwin",
         "x86_64-unknown-linux-gnu"
       ]
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "lunii::tests::actual_streamed_limits_apply_to_token_and_catalog_without_content_length"
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "lunii::tests::cancellation_and_total_deadline_interrupt_waiting_responses"
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "lunii::tests::guest_envelope_headers_and_exact_catalog_bytes_match_protocol"
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "lunii::tests::redirects_status_content_type_malformed_json_and_token_are_refused"
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "lunii::tests::request_admission_is_bounded_without_waiting_queue"
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "lunii::tests::tls_validates_roots_and_server_names_with_no_insecure_override"
     }
   ]
 }

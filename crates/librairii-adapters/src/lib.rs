@@ -1,1 +1,3 @@
-//! External/native boundary. No archive, network, picker or filesystem effects implemented.
+//! External/native adapters behind typed application and domain boundaries.
+#![forbid(unsafe_code)]
+pub mod lunii;

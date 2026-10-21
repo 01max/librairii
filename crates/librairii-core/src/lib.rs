@@ -6,6 +6,7 @@ pub mod collection_codec;
 pub mod collections;
 mod identity;
 pub mod import;
+pub mod metadata;
 pub mod navigation;
 pub mod operations;
 pub mod query;
