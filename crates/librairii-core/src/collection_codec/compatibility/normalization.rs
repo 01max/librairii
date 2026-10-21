@@ -17,7 +17,7 @@ const NON_STARTERS: u8 = 30;
 const CGJ: char = '\u{034f}';
 
 #[derive(Debug, thiserror::Error)]
-pub(in crate::collection_codec) enum NormalizeError {
+pub(crate) enum NormalizeError {
     #[error("saved query input exceeds the frozen wire limit")]
     InputLimit,
     #[error("frozen normalization data/algorithm invariant failed")]
@@ -100,6 +100,18 @@ pub(in crate::collection_codec) fn lowercase_key(value: &str) -> Result<String> 
             }
         })
         .collect()
+}
+
+/// Frozen tag identity uses simple lowercase followed by NFKD (never full fold).
+pub(crate) fn tag_key_decomposition(value: &str) -> Result<String> {
+    let bounds = BufferBounds::runtime(value.len()).map_err(|_| NormalizeError::InputLimit)?;
+    nfkd_with_bounds(&lowercase_key(value)?, bounds)
+}
+pub(crate) fn tag_is_mark(character: char) -> bool {
+    in_ranges(character, unicode::MN)
+}
+pub(crate) fn tag_trim(value: &str) -> &str {
+    trim_space(value)
 }
 
 /// Fold ONLY the Unicode15 simple-case orbits that reach ASCII field names.

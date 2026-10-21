@@ -2031,6 +2031,107 @@
     {
       "suite": "librairii-core::query_urls",
       "name": "every_ascii_percent_pair_agrees_with_the_two_hex_digit_grammar"
+    },
+    {
+      "suite": "librairii-core::tag_identity",
+      "name": "frozen_tag_identity_keeps_simple_lowercase_distinct_from_search_folding"
+    },
+    {
+      "suite": "librairii-storage::tags",
+      "name": "crud_preserves_stable_keys_normalized_uniqueness_and_atomic_order",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::tags",
+      "name": "bulk_assignment_mixed_states_additive_toggles_noops_and_all_target_validation",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::tags",
+      "name": "confirmed_deletion_invalidates_entire_nested_collections_and_preserves_shelf_decisions",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::tags",
+      "name": "derived_age_identity_bands_and_custom_colors_survive_reseeding_and_projection",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::tags",
+      "name": "broken_flags_are_atomic_independent_visible_and_skipped_without_a_selection_cap_on_export",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::tags",
+      "name": "undo_restores_only_changed_targets_and_atomically_rejects_stale_or_unavailable_batches",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-core::tag_identity",
+      "name": "long_mark_input_has_no_saved_query_wire_limit_for_tag_identity"
+    },
+    {
+      "suite": "librairii-core::tag_identity",
+      "name": "every_unicode_scalar_matches_the_actual_frozen_go_tag_key_digest"
+    },
+    {
+      "suite": "librairii-storage::tags",
+      "name": "deletion_inspects_valid_references_without_normalizing_unrelated_membership_fields",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-core::tag_references",
+      "name": "tag_reference_inspection_is_bounded_strict_and_distinct_from_membership_normalization"
+    },
+    {
+      "suite": "librairii-core::tag_identity",
+      "name": "configured_age_bands_are_precise_bounded_and_nonoverlapping"
+    },
+    {
+      "suite": "librairii-storage::tags",
+      "name": "actual_go_tagging_and_broken_vertical_reference_matches_every_recorded_field",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::tags",
+      "name": "precommit_cancellation_and_sql_failures_roll_back_real_tag_and_flag_writes",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
     }
   ]
 }

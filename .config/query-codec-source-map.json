@@ -972,8 +972,8 @@
   },
   "core_leaf": {
     "path": "crates/librairii-core/src/collection_codec/mod.rs",
-    "bytes": 29892,
-    "sha256": "a4212d2c4455499496489b9cdf298d61c7d65f9c749b2aaebb9991b6d7541d6e",
+    "bytes": 31091,
+    "sha256": "7bb5d6391b3d5bac2aadf5238775a480675ccb24a56d8ec0373bc3d3c695fbc7",
     "kind": "translated",
     "header_bytes": 379,
     "header_sha256": "84c790465b5688b1423350f07c1422d56e174de8117d978de4f39448ac75e807",
@@ -984,43 +984,43 @@
       "path": "extract_language.py",
       "bytes": 13112,
       "sha256": "b87c6138f803cd916f09b993730eb1b05e80d947eaccd6f8b22f3f91554115bd",
-      "reason": "Actual lookup-index, module visibility/import/documentation or future formatter path adaptation only; no data/reference or algorithm regeneration."
+      "reason": "Task 8 reuses the frozen lowercase/NFKD/Mn/whitespace algorithm for tag identity; saved/runtime data and references retain original bytes."
     },
     {
       "path": "extract_normalization.py",
       "bytes": 10251,
       "sha256": "372b9efb501dbcbcac9970f87dc890ff89dd79bee2e1936b3dbafb34b6cc8e50",
-      "reason": "Actual lookup-index, module visibility/import/documentation or future formatter path adaptation only; no data/reference or algorithm regeneration."
+      "reason": "Task 8 reuses the frozen lowercase/NFKD/Mn/whitespace algorithm for tag identity; saved/runtime data and references retain original bytes."
     },
     {
       "path": "language.rs",
       "bytes": 26508,
       "sha256": "2cf2dd6bed4a45f75a11a10387048fcb3c5799e0c67e98f6be08be0f6537b9f1",
-      "reason": "Actual lookup-index, module visibility/import/documentation or future formatter path adaptation only; no data/reference or algorithm regeneration."
+      "reason": "Task 8 reuses the frozen lowercase/NFKD/Mn/whitespace algorithm for tag identity; saved/runtime data and references retain original bytes."
     },
     {
       "path": "mod.rs",
-      "bytes": 626,
-      "sha256": "d87bece17b5f9fe2370e6c74a7676bc5855381e1ff298caf7c911522feb32931",
-      "reason": "Expose the approved runtime normalization entry only within core while retaining the existing saved-codec entry and all frozen source/data/reference identities."
+      "bytes": 705,
+      "sha256": "ab5a3bc667fd93a812ff9c81017da2bff181ac18ff7d81477000c26d6d3bfdcb",
+      "reason": "Task 8 reuses the frozen lowercase/NFKD/Mn/whitespace algorithm for tag identity; saved/runtime data and references retain original bytes."
     },
     {
       "path": "normalization.rs",
-      "bytes": 22980,
-      "sha256": "e9a90c70e8ada3d308058702af037deae57a49fb64e730ae33f1fc0d12c2f776",
-      "reason": "Approved shared frozen pipeline refactor: saved entry retains its fixed guards/errors/passes; private runtime entry derives checked buffer bounds from actual input and maps overflow separately. Original frozen data and reference bytes are unchanged."
+      "bytes": 23423,
+      "sha256": "4ecb186d7071380d9cd36c0666237ba26617a1f057630e86c670ba478813874f",
+      "reason": "Task 8 reuses the frozen lowercase/NFKD/Mn/whitespace algorithm for tag identity; saved/runtime data and references retain original bytes."
     },
     {
       "path": "update_source_manifest.py",
       "bytes": 11417,
       "sha256": "1cd7ae82985416db3c37a01b0fad1e56f4ad6d1e8444f0e924adf663bf83ec04",
-      "reason": "Actual lookup-index, module visibility/import/documentation or future formatter path adaptation only; no data/reference or algorithm regeneration."
+      "reason": "Task 8 reuses the frozen lowercase/NFKD/Mn/whitespace algorithm for tag identity; saved/runtime data and references retain original bytes."
     },
     {
       "path": "verify_normalization.py",
       "bytes": 9962,
       "sha256": "51663c1a2bde7d2ac22b1f349d2af0e15c565252b0dc64b227f8e53100835a55",
-      "reason": "Actual lookup-index, module visibility/import/documentation or future formatter path adaptation only; no data/reference or algorithm regeneration."
+      "reason": "Task 8 reuses the frozen lowercase/NFKD/Mn/whitespace algorithm for tag identity; saved/runtime data and references retain original bytes."
     }
   ],
   "identity_migrations": {
@@ -2233,7 +2233,7 @@
           "suite": "librairii-core",
           "name": "collection_codec::compatibility::normalization::tests::runtime_uses_input_derived_bounds_without_changing_saved_wire_refusal"
         },
-        "reason": "Task 7 additive observed discovery; integration-base identities retain their exact order and scope."
+        "reason": "Additive observed Task 7/8 discovery; original integration identities retain exact order and target scope."
       },
       {
         "position": 330,
@@ -2241,7 +2241,7 @@
           "suite": "librairii-core",
           "name": "collection_codec::runtime::tests::runtime_private_lists_use_frozen_language_and_per_node_source_limits"
         },
-        "reason": "Task 7 additive observed discovery; integration-base identities retain their exact order and scope."
+        "reason": "Additive observed Task 7/8 discovery; original integration identities retain exact order and target scope."
       },
       {
         "position": 331,
@@ -2249,7 +2249,7 @@
           "suite": "librairii-core",
           "name": "collection_codec::runtime::tests::runtime_rejects_private_retired_flags_without_retiring_or_saving"
         },
-        "reason": "Task 7 additive observed discovery; integration-base identities retain their exact order and scope."
+        "reason": "Additive observed Task 7/8 discovery; original integration identities retain exact order and target scope."
       },
       {
         "position": 332,
@@ -2257,7 +2257,7 @@
           "suite": "librairii-core",
           "name": "collection_codec::runtime::tests::runtime_visits_children_then_navigation_then_node_fields_in_source_order"
         },
-        "reason": "Task 7 additive observed discovery; integration-base identities retain their exact order and scope."
+        "reason": "Additive observed Task 7/8 discovery; original integration identities retain exact order and target scope."
       },
       {
         "position": 333,
@@ -2265,7 +2265,7 @@
           "suite": "librairii-core::query_normalization",
           "name": "query_runtime_choice_cardinality_is_checked_before_stable_deduplication"
         },
-        "reason": "Task 7 additive observed discovery; integration-base identities retain their exact order and scope."
+        "reason": "Additive observed Task 7/8 discovery; original integration identities retain exact order and target scope."
       },
       {
         "position": 334,
@@ -2273,7 +2273,7 @@
           "suite": "librairii-core::query_normalization",
           "name": "query_runtime_definition_duplicates_include_ignored_and_cross_kind_filters"
         },
-        "reason": "Task 7 additive observed discovery; integration-base identities retain their exact order and scope."
+        "reason": "Additive observed Task 7/8 discovery; original integration identities retain exact order and target scope."
       },
       {
         "position": 335,
@@ -2281,7 +2281,7 @@
           "suite": "librairii-core::query_normalization",
           "name": "query_runtime_group_limit_includes_language_and_compatibility_presence"
         },
-        "reason": "Task 7 additive observed discovery; integration-base identities retain their exact order and scope."
+        "reason": "Additive observed Task 7/8 discovery; original integration identities retain exact order and target scope."
       },
       {
         "position": 336,
@@ -2289,7 +2289,7 @@
           "suite": "librairii-core::query_normalization",
           "name": "query_runtime_large_removable_names_do_not_inherit_saved_wire_byte_refusal"
         },
-        "reason": "Task 7 additive observed discovery; integration-base identities retain their exact order and scope."
+        "reason": "Additive observed Task 7/8 discovery; original integration identities retain exact order and target scope."
       },
       {
         "position": 337,
@@ -2297,7 +2297,7 @@
           "suite": "librairii-core::query_normalization",
           "name": "query_runtime_mutated_decoded_value_and_payload_do_not_certify_runtime_validity"
         },
-        "reason": "Task 7 additive observed discovery; integration-base identities retain their exact order and scope."
+        "reason": "Additive observed Task 7/8 discovery; original integration identities retain exact order and target scope."
       },
       {
         "position": 338,
@@ -2305,7 +2305,7 @@
           "suite": "librairii-core::query_normalization",
           "name": "query_runtime_name_limit_counts_normalized_unicode_characters"
         },
-        "reason": "Task 7 additive observed discovery; integration-base identities retain their exact order and scope."
+        "reason": "Additive observed Task 7/8 discovery; original integration identities retain exact order and target scope."
       },
       {
         "position": 339,
@@ -2313,7 +2313,7 @@
           "suite": "librairii-core::query_normalization",
           "name": "query_runtime_navigation_defaults_and_exact_explicit_values_are_validated"
         },
-        "reason": "Task 7 additive observed discovery; integration-base identities retain their exact order and scope."
+        "reason": "Additive observed Task 7/8 discovery; original integration identities retain exact order and target scope."
       },
       {
         "position": 340,
@@ -2321,7 +2321,7 @@
           "suite": "librairii-core::query_normalization",
           "name": "query_runtime_node_budget_counts_root_flat_branches_and_nested_descendants"
         },
-        "reason": "Task 7 additive observed discovery; integration-base identities retain their exact order and scope."
+        "reason": "Additive observed Task 7/8 discovery; original integration identities retain exact order and target scope."
       },
       {
         "position": 341,
@@ -2329,7 +2329,7 @@
           "suite": "librairii-core::query_normalization",
           "name": "query_runtime_retains_ignored_filters_definition_order_and_stable_choice_deduplication"
         },
-        "reason": "Task 7 additive observed discovery; integration-base identities retain their exact order and scope."
+        "reason": "Additive observed Task 7/8 discovery; original integration identities retain exact order and target scope."
       },
       {
         "position": 342,
@@ -2337,7 +2337,7 @@
           "suite": "librairii-core::query_normalization",
           "name": "query_runtime_root_and_each_child_receive_exactly_one_unicode_normalization_pass"
         },
-        "reason": "Task 7 additive observed discovery; integration-base identities retain their exact order and scope."
+        "reason": "Additive observed Task 7/8 discovery; original integration identities retain exact order and target scope."
       },
       {
         "position": 343,
@@ -2350,7 +2350,7 @@
             "x86_64-unknown-linux-gnu"
           ]
         },
-        "reason": "Task 7 additive observed discovery; integration-base identities retain their exact order and scope."
+        "reason": "Additive observed Task 7/8 discovery; original integration identities retain exact order and target scope."
       },
       {
         "position": 344,
@@ -2363,7 +2363,7 @@
             "x86_64-unknown-linux-gnu"
           ]
         },
-        "reason": "Task 7 additive observed discovery; integration-base identities retain their exact order and scope."
+        "reason": "Additive observed Task 7/8 discovery; original integration identities retain exact order and target scope."
       },
       {
         "position": 345,
@@ -2376,7 +2376,7 @@
             "x86_64-unknown-linux-gnu"
           ]
         },
-        "reason": "Task 7 additive observed discovery; integration-base identities retain their exact order and scope."
+        "reason": "Additive observed Task 7/8 discovery; original integration identities retain exact order and target scope."
       },
       {
         "position": 346,
@@ -2389,7 +2389,7 @@
             "x86_64-unknown-linux-gnu"
           ]
         },
-        "reason": "Task 7 additive observed discovery; integration-base identities retain their exact order and scope."
+        "reason": "Additive observed Task 7/8 discovery; original integration identities retain exact order and target scope."
       },
       {
         "position": 347,
@@ -2402,7 +2402,7 @@
             "x86_64-unknown-linux-gnu"
           ]
         },
-        "reason": "Task 7 additive observed discovery; integration-base identities retain their exact order and scope."
+        "reason": "Additive observed Task 7/8 discovery; original integration identities retain exact order and target scope."
       },
       {
         "position": 348,
@@ -2415,7 +2415,7 @@
             "x86_64-unknown-linux-gnu"
           ]
         },
-        "reason": "Task 7 additive observed discovery; integration-base identities retain their exact order and scope."
+        "reason": "Additive observed Task 7/8 discovery; original integration identities retain exact order and target scope."
       },
       {
         "position": 349,
@@ -2428,7 +2428,7 @@
             "x86_64-unknown-linux-gnu"
           ]
         },
-        "reason": "Task 7 additive observed discovery; integration-base identities retain their exact order and scope."
+        "reason": "Additive observed Task 7/8 discovery; original integration identities retain exact order and target scope."
       },
       {
         "position": 350,
@@ -2436,7 +2436,7 @@
           "suite": "librairii-core::query_urls",
           "name": "history_hash_binding_and_typed_ids_distinguish_dynamic_and_curated_shelves"
         },
-        "reason": "Task 7 additive observed discovery; integration-base identities retain their exact order and scope."
+        "reason": "Additive observed Task 7/8 discovery; original integration identities retain exact order and target scope."
       },
       {
         "position": 351,
@@ -2444,7 +2444,7 @@
           "suite": "librairii-core::query_urls",
           "name": "legacy_flags_retire_recursively_while_current_tag_reuse_survives"
         },
-        "reason": "Task 7 additive observed discovery; integration-base identities retain their exact order and scope."
+        "reason": "Additive observed Task 7/8 discovery; original integration identities retain exact order and target scope."
       },
       {
         "position": 352,
@@ -2452,7 +2452,7 @@
           "suite": "librairii-core::query_urls",
           "name": "url_bounds_and_non_idempotent_unicode_are_validated_without_extra_output_passes"
         },
-        "reason": "Task 7 additive observed discovery; integration-base identities retain their exact order and scope."
+        "reason": "Additive observed Task 7/8 discovery; original integration identities retain exact order and target scope."
       },
       {
         "position": 353,
@@ -2460,7 +2460,7 @@
           "suite": "librairii-core::query_urls",
           "name": "url_shared_current_and_legacy_fixtures_preserve_non_broken_criteria"
         },
-        "reason": "Task 7 additive observed discovery; integration-base identities retain their exact order and scope."
+        "reason": "Additive observed Task 7/8 discovery; original integration identities retain exact order and target scope."
       },
       {
         "position": 354,
@@ -2468,7 +2468,7 @@
           "suite": "librairii-core::navigation",
           "name": "navigation_branching_bounds_and_invalid_selection_preserve_the_prior_state"
         },
-        "reason": "Task 7 additive observed discovery; integration-base identities retain their exact order and scope."
+        "reason": "Additive observed Task 7/8 discovery; original integration identities retain exact order and target scope."
       },
       {
         "position": 355,
@@ -2476,7 +2476,7 @@
           "suite": "librairii-core::navigation",
           "name": "navigation_restores_scope_refinement_selection_page_and_independent_presentation"
         },
-        "reason": "Task 7 additive observed discovery; integration-base identities retain their exact order and scope."
+        "reason": "Additive observed Task 7/8 discovery; original integration identities retain exact order and target scope."
       },
       {
         "position": 356,
@@ -2484,7 +2484,7 @@
           "suite": "librairii-core::navigation",
           "name": "reopen_preserves_one_pass_unicode_and_refuses_foreign_future_or_corrupt_documents"
         },
-        "reason": "Task 7 additive observed discovery; integration-base identities retain their exact order and scope."
+        "reason": "Additive observed Task 7/8 discovery; original integration identities retain exact order and target scope."
       },
       {
         "position": 357,
@@ -2492,7 +2492,7 @@
           "suite": "librairii-core::navigation",
           "name": "stale_query_and_library_generation_stamps_cannot_apply_results"
         },
-        "reason": "Task 7 additive observed discovery; integration-base identities retain their exact order and scope."
+        "reason": "Additive observed Task 7/8 discovery; original integration identities retain exact order and target scope."
       },
       {
         "position": 358,
@@ -2505,7 +2505,7 @@
             "x86_64-unknown-linux-gnu"
           ]
         },
-        "reason": "Task 7 additive observed discovery; integration-base identities retain their exact order and scope."
+        "reason": "Additive observed Task 7/8 discovery; original integration identities retain exact order and target scope."
       },
       {
         "position": 359,
@@ -2518,7 +2518,7 @@
             "x86_64-unknown-linux-gnu"
           ]
         },
-        "reason": "Task 7 additive observed discovery; integration-base identities retain their exact order and scope."
+        "reason": "Additive observed Task 7/8 discovery; original integration identities retain exact order and target scope."
       },
       {
         "position": 360,
@@ -2531,7 +2531,7 @@
             "x86_64-unknown-linux-gnu"
           ]
         },
-        "reason": "Task 7 additive observed discovery; integration-base identities retain their exact order and scope."
+        "reason": "Additive observed Task 7/8 discovery; original integration identities retain exact order and target scope."
       },
       {
         "position": 361,
@@ -2544,7 +2544,7 @@
             "x86_64-unknown-linux-gnu"
           ]
         },
-        "reason": "Task 7 additive observed discovery; integration-base identities retain their exact order and scope."
+        "reason": "Additive observed Task 7/8 discovery; original integration identities retain exact order and target scope."
       },
       {
         "position": 362,
@@ -2557,7 +2557,7 @@
             "x86_64-unknown-linux-gnu"
           ]
         },
-        "reason": "Task 7 additive observed discovery; integration-base identities retain their exact order and scope."
+        "reason": "Additive observed Task 7/8 discovery; original integration identities retain exact order and target scope."
       },
       {
         "position": 363,
@@ -2565,7 +2565,7 @@
           "suite": "librairii-core::query_urls",
           "name": "percent_escapes_require_two_hex_digits_and_never_turn_malformed_input_into_empty_success"
         },
-        "reason": "Task 7 additive observed discovery; integration-base identities retain their exact order and scope."
+        "reason": "Additive observed Task 7/8 discovery; original integration identities retain exact order and target scope."
       },
       {
         "position": 364,
@@ -2573,7 +2573,7 @@
           "suite": "librairii-core::navigation",
           "name": "recreated_or_forked_navigation_cannot_accept_an_older_owners_query_stamp"
         },
-        "reason": "Task 7 additive observed discovery; integration-base identities retain their exact order and scope."
+        "reason": "Additive observed Task 7/8 discovery; original integration identities retain exact order and target scope."
       },
       {
         "position": 365,
@@ -2581,34 +2581,196 @@
           "suite": "librairii-core::query_urls",
           "name": "every_ascii_percent_pair_agrees_with_the_two_hex_digit_grammar"
         },
-        "reason": "Task 7 additive observed discovery; integration-base identities retain their exact order and scope."
+        "reason": "Additive observed Task 7/8 discovery; original integration identities retain exact order and target scope."
+      },
+      {
+        "position": 366,
+        "identity": {
+          "suite": "librairii-core::tag_identity",
+          "name": "frozen_tag_identity_keeps_simple_lowercase_distinct_from_search_folding"
+        },
+        "reason": "Additive observed Task 7/8 discovery; original integration identities retain exact order and target scope."
+      },
+      {
+        "position": 367,
+        "identity": {
+          "suite": "librairii-storage::tags",
+          "name": "crud_preserves_stable_keys_normalized_uniqueness_and_atomic_order",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive observed Task 7/8 discovery; original integration identities retain exact order and target scope."
+      },
+      {
+        "position": 368,
+        "identity": {
+          "suite": "librairii-storage::tags",
+          "name": "bulk_assignment_mixed_states_additive_toggles_noops_and_all_target_validation",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive observed Task 7/8 discovery; original integration identities retain exact order and target scope."
+      },
+      {
+        "position": 369,
+        "identity": {
+          "suite": "librairii-storage::tags",
+          "name": "confirmed_deletion_invalidates_entire_nested_collections_and_preserves_shelf_decisions",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive observed Task 7/8 discovery; original integration identities retain exact order and target scope."
+      },
+      {
+        "position": 370,
+        "identity": {
+          "suite": "librairii-storage::tags",
+          "name": "derived_age_identity_bands_and_custom_colors_survive_reseeding_and_projection",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive observed Task 7/8 discovery; original integration identities retain exact order and target scope."
+      },
+      {
+        "position": 371,
+        "identity": {
+          "suite": "librairii-storage::tags",
+          "name": "broken_flags_are_atomic_independent_visible_and_skipped_without_a_selection_cap_on_export",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive observed Task 7/8 discovery; original integration identities retain exact order and target scope."
+      },
+      {
+        "position": 372,
+        "identity": {
+          "suite": "librairii-storage::tags",
+          "name": "undo_restores_only_changed_targets_and_atomically_rejects_stale_or_unavailable_batches",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive observed Task 7/8 discovery; original integration identities retain exact order and target scope."
+      },
+      {
+        "position": 373,
+        "identity": {
+          "suite": "librairii-core::tag_identity",
+          "name": "long_mark_input_has_no_saved_query_wire_limit_for_tag_identity"
+        },
+        "reason": "Additive observed Task 7/8 discovery; original integration identities retain exact order and target scope."
+      },
+      {
+        "position": 374,
+        "identity": {
+          "suite": "librairii-core::tag_identity",
+          "name": "every_unicode_scalar_matches_the_actual_frozen_go_tag_key_digest"
+        },
+        "reason": "Additive observed Task 7/8 discovery; original integration identities retain exact order and target scope."
+      },
+      {
+        "position": 375,
+        "identity": {
+          "suite": "librairii-storage::tags",
+          "name": "deletion_inspects_valid_references_without_normalizing_unrelated_membership_fields",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive observed Task 7/8 discovery; original integration identities retain exact order and target scope."
+      },
+      {
+        "position": 376,
+        "identity": {
+          "suite": "librairii-core::tag_references",
+          "name": "tag_reference_inspection_is_bounded_strict_and_distinct_from_membership_normalization"
+        },
+        "reason": "Additive observed Task 7/8 discovery; original integration identities retain exact order and target scope."
+      },
+      {
+        "position": 377,
+        "identity": {
+          "suite": "librairii-core::tag_identity",
+          "name": "configured_age_bands_are_precise_bounded_and_nonoverlapping"
+        },
+        "reason": "Additive observed Task 7/8 discovery; original integration identities retain exact order and target scope."
+      },
+      {
+        "position": 378,
+        "identity": {
+          "suite": "librairii-storage::tags",
+          "name": "actual_go_tagging_and_broken_vertical_reference_matches_every_recorded_field",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive observed Task 7/8 discovery; original integration identities retain exact order and target scope."
+      },
+      {
+        "position": 379,
+        "identity": {
+          "suite": "librairii-storage::tags",
+          "name": "precommit_cancellation_and_sql_failures_roll_back_real_tag_and_flag_writes",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive observed Task 7/8 discovery; original integration identities retain exact order and target scope."
       }
     ],
     "python": [
       {
         "position": 38,
         "identity": "test_sources.SourcePolicy.test_runtime_query_index_retains_all_prior_62_identities_and_prior_lookup_bytes",
-        "reason": "Task 7 additive observed discovery; integration-base identities retain their exact order and scope."
+        "reason": "Additive observed Task 7/8 discovery; original integration identities retain exact order and target scope."
       },
       {
         "position": 39,
         "identity": "test_sources.SourcePolicy.test_runtime_query_leaves_require_materialized_exact_bytes_and_headers",
-        "reason": "Task 7 additive observed discovery; integration-base identities retain their exact order and scope."
+        "reason": "Additive observed Task 7/8 discovery; original integration identities retain exact order and target scope."
       },
       {
         "position": 40,
         "identity": "test_sources.SourcePolicy.test_runtime_query_origins_and_scope_cannot_expand_to_sql_or_saved_conversion",
-        "reason": "Task 7 additive observed discovery; integration-base identities retain their exact order and scope."
+        "reason": "Additive observed Task 7/8 discovery; original integration identities retain exact order and target scope."
       },
       {
         "position": 41,
         "identity": "test_sources.SourcePolicy.test_runtime_query_binding_does_not_relax_saved_derivatives_or_notice_guards",
-        "reason": "Task 7 additive observed discovery; integration-base identities retain their exact order and scope."
+        "reason": "Additive observed Task 7/8 discovery; original integration identities retain exact order and target scope."
       },
       {
         "position": 42,
         "identity": "test_sources.SourcePolicy.test_url_handover_requires_exact_origin_scope_and_materialized_leaf",
-        "reason": "Task 7 additive observed discovery; integration-base identities retain their exact order and scope."
+        "reason": "Additive observed Task 7/8 discovery; original integration identities retain exact order and target scope."
+      },
+      {
+        "position": 43,
+        "identity": "test_sources.SourcePolicy.test_tag_categories_are_exact_scoped_and_read_only",
+        "reason": "Additive observed Task 7/8 discovery; original integration identities retain exact order and target scope."
       }
     ]
   },
@@ -2625,5 +2787,23 @@
       "bytes": 11573,
       "sha256": "6a6d073f574b5abaeed762328ce23d5993a24503bee2bad55bbb6fde74001a14"
     }
+  },
+  "tagging": {
+    "path": "crates/librairii-core/src/tagging/unicode15.rs",
+    "bytes": 19356,
+    "sha256": "529508c01f55b15674865c7bbb16629faf1770d25d0f683c7b63b0f88302797f",
+    "source": "Go1.26.5/src/unicode/tables.go",
+    "source_sha256": "6a88d48746c4b2c471cc04ae40559694b734770212e6f5ea5f1962adb0c0bdb1",
+    "selection": "Unicode15 Letter and Nd ranges only; simple lowercase/NFKD reuse the original codec pipeline.",
+    "recipe": {
+      "path": "xtask/extract_tag_categories.py",
+      "bytes": 2057,
+      "sha256": "7b56b8c5359ad4c093e5e39d2e9b513947de45e2b4ddf290bea26248273d552e"
+    },
+    "notices": [
+      "LICENSE-GO-BSD.txt",
+      "PATENTS-GO.txt",
+      "LICENSE-UNICODE-V3.txt"
+    ]
   }
 }

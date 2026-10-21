@@ -46,7 +46,7 @@ class SourcePolicy(unittest.TestCase):
         self.core_path = self.root / gate.CORE_PATH
         self.core_path.parent.mkdir(parents=True)
         shutil.copyfile(source / gate.CORE_PATH, self.core_path)
-        for name in (*gate.RUNTIME_LEAVES, 'crates/librairii-core/src/collection_codec/url.rs'):
+        for name in (*gate.RUNTIME_LEAVES, 'crates/librairii-core/src/collection_codec/url.rs', 'crates/librairii-core/src/tagging/unicode15.rs', 'xtask/extract_tag_categories.py'):
             destination = self.root / name
             destination.parent.mkdir(parents=True, exist_ok=True)
             shutil.copyfile(source / name, destination)
@@ -687,7 +687,7 @@ class SourcePolicy(unittest.TestCase):
         source = Path(__file__).resolve().parents[2]
         self.selected_derivatives()
         shutil.copyfile(source / '.gitattributes', self.root / '.gitattributes')
-        (self.root / 'xtask').mkdir()
+        (self.root / 'xtask').mkdir(exist_ok=True)
         shutil.copyfile(source / 'xtask/check_sources.py', self.root / 'xtask/check_sources.py')
         hooks = self.root.parent / 'empty-hooks'
         hooks.mkdir()
@@ -741,6 +741,29 @@ class SourcePolicy(unittest.TestCase):
         original = leaf.read_bytes()
         try:
             leaf.write_bytes(original + b'// changed URL decoder\n')
+            with self.assertRaises(ValueError):
+                gate.check(self.root)
+        finally:
+            leaf.write_bytes(original)
+        gate.check(self.root)
+
+    def test_tag_categories_are_exact_scoped_and_read_only(self):
+        before = snapshot(self.root)
+        gate.check(self.root)
+        self.assertEqual(before, snapshot(self.root))
+        for change in ['source', 'source_sha256', 'selection', 'notices', 'recipe']:
+            changed = copy.deepcopy(self.query_map)
+            if change == 'notices':
+                changed['tagging'][change] = []
+            elif change == 'recipe':
+                changed['tagging'][change]['path'] = 'xtask/check_sources.py'
+            else:
+                changed['tagging'][change] = 'unapproved'
+            self.assert_query_map_rejected(changed)
+        leaf = self.root / self.query_map['tagging']['path']
+        original = leaf.read_bytes()
+        try:
+            leaf.write_bytes(original + b'// changed category\n')
             with self.assertRaises(ValueError):
                 gate.check(self.root)
         finally:
