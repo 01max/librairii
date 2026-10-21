@@ -1227,11 +1227,13 @@ mod closed {
             }
             let output = tempfile::NamedTempFile::new()?;
             let mut child = OwnedChild(Command::new("/bin/bash")
+                .args(["--noprofile", "--norc"])
                 .arg("-c")
-                .arg("ulimit -S -n 64 || exit 97; test \"$(ulimit -S -n)\" = 64 || exit 98; printf 'COPY_FD_BUDGET=64\\n'; exec \"$@\"")
+                .arg("builtin ulimit -S -n 64 || exit 97; builtin test \"$(builtin ulimit -S -n)\" = 64 || exit 98; builtin printf 'COPY_FD_BUDGET=64\\n'; exec \"$@\"")
                 .arg("bounded-copy")
                 .arg(std::env::current_exe()?)
                 .args(["--exact", "adoption::closed::copy_failures::failed_copy_flush_retains_real_root_lease_and_every_recoverable_byte", "--nocapture", "--test-threads=1"])
+                .env_clear()
                 .env("LIBRAIRII_COPY_BUDGET_CHILD", "many-v1")
                 .stdout(Stdio::from(output.as_file().try_clone()?))
                 .stderr(Stdio::from(output.as_file().try_clone()?))

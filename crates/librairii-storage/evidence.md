@@ -1844,3 +1844,20 @@ Actual ARM copy unit2/2 (including the child), adoption integration10/10 and
 portability4/4 PASS; storage all-target Clippy-Dwarnings/fmt/diff PASS. Descriptor
 usage still reflects ancestry depth and fixed working handles, not a claim about
 arbitrary deep paths or graceful OOM. Original test identities/scopes retained.
+
+### Final review gate: child environment and independent preferences
+
+The first full check at05d3465 executed188 tests:187 passed and the orphan-copy
+test retained one obsolete expectation that an unbound complete profile rejects
+language updates. That assertion now requires successful language publication
+with root/rawID/complete/recovering and persisted native-state bytes unchanged.
+The orphan's unverified authority/retarget refusals and checked reopen remain.
+
+The bounded-copy child now clears its inherited environment, disables Bash
+profile/rc loading and uses only the explicit child-role variable, a constant
+builtin-only limit/query/exec script and the absolute current executable argument.
+This excludes BASH_ENV and exported-function influence on the fixed-budget setup.
+Budget64,192 payloads, bounded output, deadline, true wait/reap and all success/
+failure assertions are unchanged. No production copy algorithm changed here;
+the corrected launcher is exercised by the necessary final full check, without
+a separate resource campaign. The failed05d3465 gate is not a final-head pass.

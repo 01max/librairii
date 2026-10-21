@@ -1355,18 +1355,32 @@ fn native_imported_orphan_never_publishes_profile_authority_or_retargets() -> Te
     drop(store);
     fs::write(locations.native.join("settings.json"), profile)?;
     let store = NativeProfileStore::open_native(&locations.native)?;
-    assert!(matches!(
-        store.update(|p| {
-            p.language = "en".into();
-            Ok(())
-        }),
-        Err(StorageError::RecoveryBindingRequired)
-    ));
-    let native = NativeLibrary::reopen(&store, &locations, &WorkCancellation::default())?;
-    store.update(|p| {
-        p.language = "en".into();
+    let previous = store
+        .load()?
+        .ok_or("restored profile missing")?
+        .profile()
+        .clone();
+    let changed = store.update(|p| {
+        p.language = if p.language == "en" { "fr" } else { "en" }.into();
         Ok(())
     })?;
+    assert_ne!(changed.language, previous.language);
+    assert_eq!(
+        (
+            &changed.root,
+            &changed.library_id,
+            changed.complete,
+            changed.recovering
+        ),
+        (
+            &previous.root,
+            &previous.library_id,
+            previous.complete,
+            previous.recovering
+        )
+    );
+    assert_eq!(fs::read(root.join(NATIVE_STATE))?, before);
+    let native = NativeLibrary::reopen(&store, &locations, &WorkCancellation::default())?;
     let mut db = Database::open_native(&native)?;
     db.close()?;
     drop(db);
