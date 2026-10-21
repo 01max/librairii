@@ -78,23 +78,53 @@ pub struct Report {
     pub outcome: RawOutcome,
 }
 impl Report {
-    pub(crate) fn cancelled(bytes: i64) -> Self {
+    pub(crate) fn cancelled(work: &WorkItem) -> Self {
+        let (code, message, story_id) = match work.operation.kind {
+            librairii_core::OperationKind::Import => ("cancelled", "Import cancelled.", 0),
+            librairii_core::OperationKind::Export => (
+                "cancelled",
+                "Story export cancelled.",
+                work.item.identity.historical_story_id(),
+            ),
+            librairii_core::OperationKind::MetadataSync => (
+                "catalog_cancelled",
+                "Official metadata refresh was cancelled.",
+                0,
+            ),
+        };
         Self {
             state: ItemState::Cancelled,
-            story_id: 0,
-            completed_bytes: bytes,
+            story_id,
+            completed_bytes: work.item.progress.completed,
             outcome: RawOutcome {
-                code: Some("cancelled".into()),
-                message: Some("The operation was cancelled.".into()),
+                code: Some(code.into()),
+                message: Some(message.into()),
             },
         }
     }
+}
+/// Durable boundary observed by the effect adapter, never inferred from a
+/// cancellation flag or a pathname. Compensating retains its actual resource.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum Boundary {
+    BeforeCommit,
+    Committed,
+    Compensating,
+}
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum Phase {
+    Running,
+    Committing,
+    Compensating,
+    Reporting,
+    Settling,
 }
 /// The effect adapter owns actual file/metadata/removal resources throughout
 /// execution and hands them back even after an irreversible commit. Cancellation
 /// after that boundary must not replace the committed result with Cancelled.
 #[derive(Debug)]
 pub struct Execution<R> {
+    pub boundary: Boundary,
     pub report: Report,
     pub resources: Option<R>,
 }
@@ -117,6 +147,10 @@ pub trait Executor: Sync {
         cancel: &Cancellation,
         progress: &ProgressSink,
     ) -> Execution<Self::Resources>;
+    /// Required restoration uses the original owner and remains uncancelled.
+    /// Return false while its acknowledgement is uncertain; never substitute a
+    /// path/observation for the actual retained metadata/removal resources.
+    fn compensate(&self, resources: &mut Self::Resources) -> bool;
     /// On uncertainty return the original actual owner. The runtime retains it
     /// and retries without cancellation or shutdown deadlines.
     fn settle(

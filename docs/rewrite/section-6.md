@@ -85,3 +85,22 @@ The test emits 10,000 updates, observes one latest slot, checks real persisted
 export bytes and late callbacks, and rejects stale query/session responses and
 an older active snapshot after terminal persistence. Another test retains an
 oversized legacy outcome unchanged while refusing its materialization.
+
+## 6.4 — Cancellation and durable boundaries
+
+Cancellation wakes matching executing/queued tokens promptly and records the
+request through the reserved writer lane. Queued items never enter the effect
+adapter after cancellation. Returned committed results are retained even when
+the token is cancelled. The adapter explicitly distinguishes BeforeCommit,
+Committed and Compensating; cancellation is never treated as evidence of rollback.
+
+Compensating execution retains its actual owner and retries restoration without
+a cancellation token before persisting its terminal report. Reporting and final
+resource settlement are also uncancelled. Typed phases expose running, entering
+commit, compensation, reporting and settlement to later native presentation.
+Metadata activation/report and removal restoration use this same contract;
+Task 13 still owns the removal domain implementation and Task 15 its UI.
+The test performs real file writes/restoration, holds compensation unavailable
+across multiple attempts, verifies SQLite remains running until restoration,
+and proves cancellation preserves the committed first item while queued items
+are cancelled. Queued cancellation uses the frozen kind-specific outcome text.

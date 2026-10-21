@@ -2088,6 +2088,7 @@ fn native_job_session_borrows_actual_database_and_file_owner_until_durable_settl
                 .open_read_source(FileArea::Archives, self.name.clone())
             {
                 Ok(source) => Execution {
+                    boundary: Boundary::BeforeCommit,
                     report: Report {
                         state: ItemState::Skipped,
                         story_id: 0,
@@ -2097,6 +2098,7 @@ fn native_job_session_borrows_actual_database_and_file_owner_until_durable_settl
                     resources: Some(source),
                 },
                 Err(_) => Execution {
+                    boundary: Boundary::BeforeCommit,
                     report: Report {
                         state: ItemState::Failed,
                         story_id: 0,
@@ -2109,6 +2111,9 @@ fn native_job_session_borrows_actual_database_and_file_owner_until_durable_settl
                     resources: None,
                 },
             }
+        }
+        fn compensate(&self, _: &mut Self::Resources) -> bool {
+            true
         }
         fn settle(
             &self,

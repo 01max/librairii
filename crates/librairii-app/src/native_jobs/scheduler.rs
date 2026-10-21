@@ -315,13 +315,30 @@ fn worker(store: &impl JobStore, executor: &impl Executor, shared: &Shared, inde
         );
         let mut execution = if token.is_cancelled() {
             Execution {
-                report: Report::cancelled(work.item.progress.completed),
+                boundary: Boundary::BeforeCommit,
+                report: Report::cancelled(&work),
                 resources: None,
             }
         } else {
             executor.execute(&work, &token, &progress)
         };
         progress.seal();
+        if execution.boundary == Boundary::Compensating {
+            progress.owned_phase(Phase::Compensating);
+            if let Some(resources) = execution.resources.as_mut() {
+                while !executor.compensate(resources) {
+                    pause();
+                }
+            } else {
+                store.fence();
+                let mut state = shared.state.lock().unwrap_or_else(|e| e.into_inner());
+                state.failed = true;
+                state.done = true;
+                shared.changed.notify_all();
+                return;
+            }
+        }
+        progress.owned_phase(Phase::Reporting);
         let c = CompleteItemCommand {
             generation: store.generation(),
             operation: work.operation.clone(),
@@ -332,6 +349,7 @@ fn worker(store: &impl JobStore, executor: &impl Executor, shared: &Shared, inde
             outcome: execution.report.outcome,
         };
         persist(store, &CommandWitness::CompleteItem(Box::new(c.clone())));
+        progress.owned_phase(Phase::Settling);
         while let Some(resources) = execution.resources.take() {
             match executor.settle(resources, &DurableReport { command: &c }) {
                 Ok(()) => {}

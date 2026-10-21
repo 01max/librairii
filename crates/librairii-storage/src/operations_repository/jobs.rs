@@ -148,7 +148,7 @@ impl JobStore for TerminalRepository<'_, '_> {
     fn request_cancel(&self, id: &str) -> StoreResult<()> {
         let id = id.to_owned();
         write(self.database.repair_transaction(move|tx| {
-            tx.execute("UPDATE file_operations SET cancel_requested=1 WHERE id=? AND status IN ('queued','running')",[id])?;Ok(())
+            if tx.execute("UPDATE file_operations SET cancel_requested=1 WHERE id=? AND status IN ('queued','running')",[id])?!=1 {return Err(invalid());}Ok(())
         }))
     }
     fn cancel_all(&self) -> StoreResult<()> {

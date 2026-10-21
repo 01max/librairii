@@ -19,6 +19,7 @@ impl PartialEq for Generation {
 impl Eq for Generation {}
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct ProgressUpdate {
+    pub phase: super::Phase,
     pub generation: Generation,
     pub item: i64,
     pub revision: u64,
@@ -65,6 +66,7 @@ impl ProgressSink {
         *slot.lock().unwrap_or_else(|e| e.into_inner()) = Slot {
             epoch: epoch.clone(),
             latest: Some(ProgressUpdate {
+                phase: super::Phase::Running,
                 generation,
                 item,
                 revision: 0,
@@ -107,6 +109,28 @@ impl ProgressSink {
         slot.dirty = true;
         self.wake.store(true, Ordering::Release);
         true
+    }
+    pub fn phase(&self, phase: super::Phase) -> bool {
+        let mut slot = self.slot.lock().unwrap_or_else(|e| e.into_inner());
+        if slot.sealed || !Arc::ptr_eq(&slot.epoch, &self.epoch) {
+            return false;
+        }
+        if let Some(latest) = slot.latest.as_mut() {
+            latest.phase = phase;
+        }
+        slot.dirty = true;
+        self.wake.store(true, Ordering::Release);
+        true
+    }
+    pub(super) fn owned_phase(&self, phase: super::Phase) {
+        let mut slot = self.slot.lock().unwrap_or_else(|e| e.into_inner());
+        if Arc::ptr_eq(&slot.epoch, &self.epoch) {
+            if let Some(latest) = slot.latest.as_mut() {
+                latest.phase = phase;
+            }
+            slot.dirty = true;
+            self.wake.store(true, Ordering::Release);
+        }
     }
     pub(super) fn seal(&self) {
         let mut slot = self.slot.lock().unwrap_or_else(|e| e.into_inner());

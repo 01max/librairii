@@ -52,6 +52,7 @@ impl Executor for Effect {
         }
         self.active.fetch_sub(1, Ordering::SeqCst);
         Execution {
+            boundary: Boundary::BeforeCommit,
             report: Report {
                 state: ItemState::Skipped,
                 story_id: 0,
@@ -60,6 +61,9 @@ impl Executor for Effect {
             },
             resources: Some(Box::new(active)),
         }
+    }
+    fn compensate(&self, _: &mut Self::Resources) -> bool {
+        true
     }
     fn settle(&self, _: Box<usize>, durable: &DurableReport<'_>) -> Result<(), Box<usize>> {
         assert_eq!(durable.command().state, ItemState::Skipped);
@@ -209,6 +213,7 @@ fn progress_coalesces_persists_and_rejects_late_producers_and_stale_responses() 
                 thread::sleep(Duration::from_millis(1));
             }
             Execution {
+                boundary: Boundary::BeforeCommit,
                 report: Report {
                     state: ItemState::Succeeded,
                     story_id: work.item.identity.historical_story_id(),
@@ -217,6 +222,9 @@ fn progress_coalesces_persists_and_rejects_late_producers_and_stale_responses() 
                 },
                 resources: None,
             }
+        }
+        fn compensate(&self, _: &mut Self::Resources) -> bool {
+            true
         }
         fn settle(&self, _: (), _: &DurableReport<'_>) -> Result<(), ()> {
             Ok(())
@@ -318,5 +326,148 @@ fn progress_coalesces_persists_and_rejects_late_producers_and_stale_responses() 
         assert!(stale.accept(&handle, None).is_none());
     })?;
     db.close()?;
+    Ok(())
+}
+
+#[test]
+fn queued_cancel_committed_result_and_required_compensation_keep_distinct_boundaries() -> TestResult
+{
+    use std::{
+        fs::{File, OpenOptions},
+        io::{Read, Seek, Write},
+    };
+    struct Transition {
+        file: File,
+        boundary: Boundary,
+        entered: AtomicBool,
+        restore: AtomicBool,
+        attempts: AtomicUsize,
+        settled: AtomicBool,
+    }
+    impl Executor for Transition {
+        type Resources = File;
+        fn execute(&self, _: &WorkItem, c: &Cancellation, p: &ProgressSink) -> Execution<File> {
+            let mut file = must(self.file.try_clone());
+            if self.boundary != Boundary::BeforeCommit {
+                must(file.write_all(b"effect"));
+                must(file.sync_all());
+                assert!(p.phase(Phase::Committing));
+            }
+            self.entered.store(true, Ordering::Release);
+            while !c.is_cancelled() {
+                thread::sleep(Duration::from_millis(1));
+            }
+            Execution {
+                boundary: self.boundary,
+                report: Report {
+                    state: if self.boundary == Boundary::Committed {
+                        ItemState::Succeeded
+                    } else {
+                        ItemState::Cancelled
+                    },
+                    story_id: 0,
+                    completed_bytes: 0,
+                    outcome: RawOutcome::default(),
+                },
+                resources: Some(file),
+            }
+        }
+        fn compensate(&self, file: &mut File) -> bool {
+            self.attempts.fetch_add(1, Ordering::SeqCst);
+            if !self.restore.load(Ordering::Acquire) {
+                return false;
+            }
+            must(file.set_len(0));
+            must(file.rewind());
+            must(file.write_all(b"restored"));
+            must(file.sync_all());
+            true
+        }
+        fn settle(&self, _: File, _: &DurableReport<'_>) -> Result<(), File> {
+            self.settled.store(true, Ordering::Release);
+            Ok(())
+        }
+    }
+    for (index, boundary) in [
+        Boundary::BeforeCommit,
+        Boundary::Committed,
+        Boundary::Compensating,
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        let roots = TestRoots::new()?;
+        let lib = IsolatedLibrary::initialize_from_override(
+            Some(roots.library().as_os_str()),
+            "b0000000-0000-4000-8000-000000000001".parse()?,
+        )?;
+        let mut db = Database::open_isolated(&lib)?;
+        let store = TerminalRepository::new(&db, 1);
+        let path = roots.profile().join("effect");
+        let file = OpenOptions::new()
+            .create_new(true)
+            .read(true)
+            .write(true)
+            .open(&path)?;
+        let effect = Transition {
+            file,
+            boundary,
+            entered: AtomicBool::new(false),
+            restore: AtomicBool::new(false),
+            attempts: AtomicUsize::new(0),
+            settled: AtomicBool::new(false),
+        };
+        let request = input(OperationKind::Import, 4, index + 20);
+        let id = request.id.clone();
+        with_runtime(
+            &store,
+            &effect,
+            must(Configuration::new(1).ok_or("workers")),
+            |handle| {
+                assert!(handle.try_start(must(Start::new(request))).is_ok());
+                wait(|| effect.entered.load(Ordering::Acquire) && handle.status().queued == 2);
+                assert!(handle.cancel(id.clone()).is_ok());
+                if boundary == Boundary::Compensating {
+                    wait(|| effect.attempts.load(Ordering::SeqCst) >= 2);
+                    let snapshot = must(must(db.operation_snapshot(id.clone())).wait())
+                        .unwrap_or_else(|| unreachable!());
+                    assert_eq!(snapshot.operation.state, OperationState::Running);
+                    assert_eq!(snapshot.items[0].state, ItemState::Running);
+                    assert!(!effect.settled.load(Ordering::Acquire));
+                    effect.restore.store(true, Ordering::Release);
+                }
+                wait(|| {
+                    must(must(db.operation_snapshot(id.clone())).wait())
+                        .is_some_and(|s| librairii_core::operations::is_terminal(s.operation.state))
+                });
+            },
+        )?;
+        let saved = db.operation_snapshot(id)?.wait()?.ok_or("terminal")?;
+        assert_eq!(
+            saved.items[0].state,
+            if boundary == Boundary::Committed {
+                ItemState::Succeeded
+            } else {
+                ItemState::Cancelled
+            }
+        );
+        assert!(
+            saved.items[1..]
+                .iter()
+                .all(|i| i.state == ItemState::Cancelled)
+        );
+        assert!(effect.settled.load(Ordering::Acquire));
+        let mut bytes = String::new();
+        File::open(path)?.read_to_string(&mut bytes)?;
+        assert_eq!(
+            bytes,
+            match boundary {
+                Boundary::BeforeCommit => "",
+                Boundary::Committed => "effect",
+                Boundary::Compensating => "restored",
+            }
+        );
+        db.close()?;
+    }
     Ok(())
 }
