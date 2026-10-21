@@ -13,7 +13,9 @@ pub mod query;
 pub mod shelves;
 pub mod tagging;
 mod vocabulary;
-pub use identity::{Checksum, CollectionId, JobId, LibraryId, ShelfId, StoryUuid};
+pub use identity::{
+    CatalogSnapshotId, Checksum, CollectionId, JobId, LibraryId, ShelfId, StoryUuid,
+};
 pub use vocabulary::{
     BoundaryError, BrowseScope, ExportScopeKind, MessageId, OperationKind, OperationState,
     ReviewDecision,

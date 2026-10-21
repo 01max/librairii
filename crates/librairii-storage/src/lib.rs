@@ -9,6 +9,8 @@ pub mod database;
 pub mod error;
 pub mod identity;
 pub mod layout;
+#[cfg(any(target_os = "macos", target_os = "linux"))]
+pub mod metadata;
 pub mod migrations;
 pub mod native;
 pub mod platform;

@@ -2416,6 +2416,23 @@
     {
       "suite": "librairii-adapters",
       "name": "lunii::tests::tls_validates_roots_and_server_names_with_no_insecure_override"
+    },
+    {
+      "suite": "librairii-app::metadata",
+      "name": "exact_raw_hash_normalization_and_requested_same_language_available_fallback"
+    },
+    {
+      "suite": "librairii-app::metadata",
+      "name": "invalid_catalogs_never_construct_normalized_snapshots"
+    },
+    {
+      "suite": "librairii-storage::metadata",
+      "name": "staged_raw_is_exact_hashed_reopenable_and_rejected_rows_are_immutable",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
     }
   ]
 }

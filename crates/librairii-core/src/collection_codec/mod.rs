@@ -837,3 +837,18 @@ mod tests {
         Ok(())
     }
 }
+
+/// Shared frozen locale spelling for official metadata, without live authority.
+pub(crate) fn metadata_locale(
+    value: &str,
+) -> std::result::Result<String, crate::metadata::MetadataError> {
+    compatibility::canonical_language(value)
+        .map_err(|_| crate::metadata::MetadataError::InvalidCatalog)
+}
+/// Catalog titles use the same one-pass frozen search text normalization.
+pub(crate) fn metadata_text(
+    value: &str,
+) -> std::result::Result<String, crate::metadata::MetadataError> {
+    compatibility::normalize_runtime(value)
+        .map_err(|_| crate::metadata::MetadataError::InvalidCatalog)
+}

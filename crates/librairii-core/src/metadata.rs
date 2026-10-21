@@ -47,3 +47,40 @@ impl MetadataError {
         }
     }
 }
+
+#[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
+pub struct Locale(String);
+impl Locale {
+    pub fn parse(value: &str) -> Result<Self, MetadataError> {
+        Ok(Self(crate::collection_codec::metadata_locale(value)?))
+    }
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+}
+pub fn title_key(value: &str) -> Result<String, MetadataError> {
+    crate::collection_codec::metadata_text(value)
+}
+pub fn trim(value: &str) -> &str {
+    crate::collection_codec::tag_trim(value)
+}
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct CatalogRecord {
+    pub uuid: crate::StoryUuid,
+    pub title: String,
+    pub description: String,
+    pub author: String,
+    pub publisher: String,
+    pub language: Locale,
+    pub duration_seconds: Option<i64>,
+    pub minimum_age: Option<i64>,
+    pub maximum_age: Option<i64>,
+    pub artwork_id: Option<crate::Checksum>,
+    pub source_record_id: String,
+    pub source_updated_at: Option<String>,
+}
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct CatalogArtwork {
+    pub id: crate::Checksum,
+    pub source_url: String,
+}

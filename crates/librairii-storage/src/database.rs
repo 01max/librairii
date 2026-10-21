@@ -378,6 +378,13 @@ impl Database<'_> {
             Authority::Native(library) => library.identity().typed(),
         }
     }
+    #[cfg(any(target_os = "macos", target_os = "linux"))]
+    pub(crate) fn metadata_files(&self) -> Result<crate::platform::unix::LibraryFiles<'_>> {
+        match self.authority {
+            Authority::Isolated(library) => crate::platform::unix::LibraryFiles::open(library),
+            Authority::Native(_) => crate::platform::unix::LibraryFiles::open_native(self),
+        }
+    }
     pub(crate) fn snapshot_identity(&self) -> SnapshotIdentity {
         SnapshotIdentity(Arc::downgrade(&self.writer))
     }

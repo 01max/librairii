@@ -34,7 +34,7 @@ proptest = { version = "=1.12.0", default-features = false, features = ["std"] }
 insta = { version = "=1.49.0", default-features = false, features = ["json"] }
 criterion = { version = "=0.8.2", default-features = false, features = ["cargo_bench_support"] }
 
-time = { version = "=0.3.55", default-features = false, features = ["std"] }
+time = { version = "=0.3.55", default-features = false, features = ["std", "parsing", "formatting"] }
 
 reqwest = { version = "=0.13.5", default-features = false, features = ["rustls-no-provider"] }
 rustls = { version = "=0.23.46", default-features = false, features = ["std", "ring", "tls12"] }

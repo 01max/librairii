@@ -972,8 +972,8 @@
   },
   "core_leaf": {
     "path": "crates/librairii-core/src/collection_codec/mod.rs",
-    "bytes": 31138,
-    "sha256": "77b6709b8a9d7823ef836b7e5597ad3b2445750f26033ee132530109fac6bbe4",
+    "bytes": 31754,
+    "sha256": "991be3f84c9507759ec111e5d52f36b9a82fd5789a9c4f2e12790205173d774c",
     "kind": "translated",
     "header_bytes": 379,
     "header_sha256": "84c790465b5688b1423350f07c1422d56e174de8117d978de4f39448ac75e807",
@@ -3165,6 +3165,35 @@
         "identity": {
           "suite": "librairii-adapters",
           "name": "lunii::tests::tls_validates_roots_and_server_names_with_no_insecure_override"
+        },
+        "reason": "Additive observed Task 11 discovery; original integration identities retain exact order and target scope."
+      },
+      {
+        "position": 416,
+        "identity": {
+          "suite": "librairii-app::metadata",
+          "name": "exact_raw_hash_normalization_and_requested_same_language_available_fallback"
+        },
+        "reason": "Additive observed Task 11 discovery; original integration identities retain exact order and target scope."
+      },
+      {
+        "position": 417,
+        "identity": {
+          "suite": "librairii-app::metadata",
+          "name": "invalid_catalogs_never_construct_normalized_snapshots"
+        },
+        "reason": "Additive observed Task 11 discovery; original integration identities retain exact order and target scope."
+      },
+      {
+        "position": 418,
+        "identity": {
+          "suite": "librairii-storage::metadata",
+          "name": "staged_raw_is_exact_hashed_reopenable_and_rejected_rows_are_immutable",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
         },
         "reason": "Additive observed Task 11 discovery; original integration identities retain exact order and target scope."
       }

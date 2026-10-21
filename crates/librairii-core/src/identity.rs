@@ -54,6 +54,7 @@ macro_rules! group_identity {
 }
 group_identity!(CollectionId);
 group_identity!(ShelfId);
+group_identity!(CatalogSnapshotId);
 
 /// SHA-256 identity only; hashing/custody is implemented in later sections.
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]

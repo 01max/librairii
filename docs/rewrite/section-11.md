@@ -40,3 +40,21 @@ The HTTP/TLS tests cover exact request headers/raw bytes, redirects/status/MIME,
 invalid JSON/token, chunked bodies exceeding both limits, cancellation/deadline,
 untrusted roots, wrong server name and a valid locally trusted chain. The fixture
 leaf key is intentionally public synthetic test material, never a production key.
+
+## 11.2 — Validated catalogs and raw custody
+
+Normalization retains the exact response bytes and SHA-256, checks complete UUIDs,
+canonical locales, duplicate identities, availability and numeric bounds, and
+selects requested locale, same-language locale, then another available locale.
+Text keys and language tags reuse the frozen compatibility codec; no new Unicode
+normalizer is introduced. Typed snapshot IDs preserve SQLite's positive i64 range.
+
+New raw files use `catalog/raw-<sync UUID>.json`, a managed relative path already
+accepted by the legacy repository (the old nested layout remains readable by
+legacy code). The existing retained-descriptor stage/no-clobber publisher supplies
+hashing, durability and substitution checks. Its receipt and custody live through
+SQL acknowledgement. Uncertain outcomes retain recoverable bytes; no compensating
+pathname deletion claims rollback. Normalized rows/artwork registrations are one
+transaction, with schema-enforced immutable content and staged/active/superseded/
+rejected transitions. Activation belongs to 11.3. Tests verify raw bytes/hash,
+locale fallback, invalid data, staged rejection, immutability and reopen.
