@@ -36,3 +36,29 @@ creation/start/completion/readback/reopen, legacy dynamic/curated source JSON,
 invalid creation rollback and contradictory header readback tests. The private
 controlled jobs engine remains historical model evidence, not production effect
 composition.
+
+## 6.2 — Owned bounded job session
+
+The public application session borrows a real `JobStore` and effect adapter.
+Its native implementation borrows the admitted Database, loads one individual
+item through the reserved writer barrier and preserves legacy FIFO order. The
+session owns two blocking workers by default (configurable 1–8), a shared ready
+queue of 2W, at most W executing/settling owners and one source/admission slot.
+SQLite stores the rest of each operation; the queue never retains a whole scope
+vector. Intake retains one bounded 16 MiB command and one unread acknowledgement;
+Busy returns the original move-only input. Effect adapters must independently
+bound their own archive/network/file resources. Count bounds are not a claim
+that arbitrary adapter-owned resources have a byte bound.
+
+The import picker accepts at most 1,000 entries. Exports have no item-count cap;
+the retained-command byte budget still applies. Metadata conflicts are checked
+inside creation's writer transaction and backed by migration 009's existing
+unique index. The reservation remains until a durable terminal operation state.
+
+Scoped OS blocking threads are deliberate: they retain actual non-static
+Database and managed-file borrows across the native event loop, then join before
+those owners can close. Tokio remains the isolated HTTP runtime; no unbounded
+spawn_blocking queue or fabricated static storage handle is introduced. Native
+UI composition is Task 15. The runtime test uses a real independently adopted
+native library, admitted Database and actual OwnedReadSource retained through
+SQL completion and settlement, followed by clean Database/native closure.

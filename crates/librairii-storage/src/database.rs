@@ -1084,3 +1084,11 @@ mod initialization_tests {
         Ok(())
     }
 }
+
+impl Database<'_> {
+    /// Unsettled operation ownership prevents clean closure after a runtime panic.
+    pub(crate) fn fence_operations(&self) {
+        self.fenced.store(true, Ordering::Release);
+        self.authority.effect_fence().store(true, Ordering::Release);
+    }
+}

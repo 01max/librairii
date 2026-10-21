@@ -2048,3 +2048,143 @@ fn metadata_refresh_and_artwork_settle_native_close_and_offline_reopen() -> Test
     native.finish().map_err(|f| f.to_string())?;
     Ok(())
 }
+
+#[test]
+fn native_job_session_borrows_actual_database_and_file_owner_until_durable_settlement() -> TestResult
+{
+    use librairii_app::{
+        native_jobs::*,
+        ports::{
+            creation::{NewItem, NewOperation},
+            jobs::WorkItem,
+        },
+    };
+    use librairii_core::{
+        OperationKind, OperationState,
+        operations::{ItemState, RawOutcome},
+    };
+    use librairii_storage::{
+        operations_repository::TerminalRepository,
+        platform::unix::{EntryName, FileArea, LibraryFiles, OwnedReadSource},
+    };
+    use std::{
+        thread,
+        time::{Duration, Instant},
+    };
+    struct Source<'files, 'library> {
+        files: &'files LibraryFiles<'library>,
+        name: EntryName,
+    }
+    impl<'files, 'library> Executor for Source<'files, 'library> {
+        type Resources = OwnedReadSource<'files, 'library>;
+        fn execute(&self, _: &WorkItem, _: &Cancellation) -> Execution<Self::Resources> {
+            match self
+                .files
+                .open_read_source(FileArea::Archives, self.name.clone())
+            {
+                Ok(source) => Execution {
+                    report: Report {
+                        state: ItemState::Skipped,
+                        story_id: 0,
+                        completed_bytes: 0,
+                        outcome: RawOutcome::default(),
+                    },
+                    resources: Some(source),
+                },
+                Err(_) => Execution {
+                    report: Report {
+                        state: ItemState::Failed,
+                        story_id: 0,
+                        completed_bytes: 0,
+                        outcome: RawOutcome {
+                            code: Some("source_unavailable".into()),
+                            message: None,
+                        },
+                    },
+                    resources: None,
+                },
+            }
+        }
+        fn settle(
+            &self,
+            source: Self::Resources,
+            durable: &DurableReport<'_>,
+        ) -> Result<(), Self::Resources> {
+            if durable.command().state == ItemState::Skipped && source.revalidate().is_ok() {
+                Ok(())
+            } else {
+                Err(source)
+            }
+        }
+    }
+    let roots = TestRoots::new()?;
+    let (copy, locations) = prepare(&roots, false)?;
+    let name = EntryName::parse(
+        fs::read_dir(copy.root().join("archives"))?
+            .next()
+            .ok_or("archive")??
+            .file_name(),
+    )?;
+    let profile = NativeProfileStore::create_fresh(&locations.native)?;
+    let native =
+        NativeLibrary::bind_independent(copy, &profile, &locations, &WorkCancellation::default())
+            .map_err(|f| f.to_string())?;
+    let mut db = Database::open_native(&native)?;
+    {
+        let files = LibraryFiles::open_native(&db)?;
+        let source = Source {
+            files: &files,
+            name,
+        };
+        let store = TerminalRepository::new(&db, 1);
+        let request = NewOperation {
+            id: "a0000000-0000-4000-8000-000000000099".into(),
+            kind: OperationKind::Import,
+            source: None,
+            destination: None,
+            items: vec![NewItem {
+                source_name: "original.zip".into(),
+                ..Default::default()
+            }],
+        };
+        let id = request.id.clone();
+        let start = Start::new(request).map_err(|_| "start")?;
+        with_runtime(
+            &store,
+            &source,
+            Configuration::default(),
+            |handle| -> TestResult {
+                handle.try_start(start).map_err(|_| "intake")?;
+                let end = Instant::now() + Duration::from_secs(10);
+                loop {
+                    if let Some(admission) = handle.take_admission() {
+                        if !admission.accepted {
+                            return Err("native start rejected".into());
+                        }
+                    }
+                    if let Some(snapshot) = db.operation_snapshot(id.clone())?.wait()? {
+                        if snapshot.operation.state == OperationState::Succeeded {
+                            break;
+                        }
+                        if librairii_core::operations::is_terminal(snapshot.operation.state) {
+                            return Err(format!(
+                                "native terminal {:?}: {:?}",
+                                snapshot.operation.state, snapshot.operation.outcome
+                            )
+                            .into());
+                        }
+                    }
+                    if Instant::now() >= end {
+                        return Err("native operation timed out".into());
+                    }
+                    thread::sleep(Duration::from_millis(2));
+                }
+                Ok(())
+            },
+        )??;
+    }
+    db.close()?;
+    drop(db);
+    native.finish().map_err(|f| f.to_string())?;
+    Ok(())
+}

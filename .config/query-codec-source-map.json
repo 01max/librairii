@@ -3714,6 +3714,45 @@
           ]
         },
         "reason": "Additive Task 6 durable operation/runtime/recovery assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 465,
+        "identity": {
+          "suite": "librairii-storage::native_jobs",
+          "name": "actual_sql_source_bounds_queue_workers_and_keeps_borrow_through_settlement",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive Task 6 durable operation/runtime/recovery assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 466,
+        "identity": {
+          "suite": "librairii-storage::native_jobs",
+          "name": "import_picker_limit_export_scope_and_metadata_conflict_are_distinct",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive Task 6 durable operation/runtime/recovery assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 467,
+        "identity": {
+          "suite": "librairii-storage::native_library",
+          "name": "native_job_session_borrows_actual_database_and_file_owner_until_durable_settlement",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive Task 6 durable operation/runtime/recovery assertions; all admitted identities retain exact order and target scope."
       }
     ],
     "python": [

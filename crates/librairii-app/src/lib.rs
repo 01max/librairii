@@ -5,3 +5,4 @@ pub mod jobs;
 pub mod ports;
 
 pub mod metadata;
+pub mod native_jobs;

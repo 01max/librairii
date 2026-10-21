@@ -12,6 +12,7 @@
 //! constructing this adapter or a public DTO cannot clear a storage fence.
 
 mod creation;
+mod jobs;
 mod policy;
 mod rows;
 
