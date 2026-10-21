@@ -2752,6 +2752,19 @@
           ]
         },
         "reason": "Additive observed Task 7/8/9 discovery; original integration identities retain exact order and target scope."
+      },
+      {
+        "position": 381,
+        "identity": {
+          "suite": "librairii-storage::collections",
+          "name": "live_counts_follow_library_tags_metadata_and_removal_without_shelf_mutation",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive observed Task 9 discovery; original integration identities retain exact order and target scope."
       }
     ],
     "python": [

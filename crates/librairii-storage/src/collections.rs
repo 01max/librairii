@@ -203,3 +203,109 @@ pub fn execute(tx: &Transaction<'_>, command: Command) -> Result<Response> {
         }
     }
 }
+
+/// Domain refusal is committed as data so lazy attention/migration updates are
+/// not rolled back. Operational failures still fail the enclosing transaction.
+#[derive(Debug)]
+pub enum Observation<T> {
+    Ready(T),
+    NeedsAttention(Inspection),
+}
+#[derive(Debug)]
+pub struct Evaluation {
+    pub collection: Collection,
+    pub criteria: Query,
+    pub page: librairii_core::browsing::Page,
+}
+#[derive(Debug)]
+pub struct Summary {
+    pub inspection: Inspection,
+    pub count: i64,
+}
+impl Database<'_> {
+    pub fn evaluate_collection(
+        &self,
+        id: i64,
+        request: librairii_core::query::QueryRequest,
+        locale: String,
+        cancellation: WorkCancellation,
+    ) -> Result<Pending<'_, TransactionOutcome<Observation<Evaluation>>>> {
+        self.transaction(cancellation, move |tx| evaluate(tx, id, request, &locale))
+    }
+    pub fn collection_summaries(
+        &self,
+        locale: String,
+        cancellation: WorkCancellation,
+    ) -> Result<Pending<'_, TransactionOutcome<Vec<Summary>>>> {
+        self.transaction(cancellation, move |tx| summaries(tx, &locale))
+    }
+}
+/// Inspect/migrate and evaluate in one writer snapshot. Request navigation is
+/// retained; membership always comes from the saved Collection definition.
+pub fn evaluate(
+    tx: &Transaction<'_>,
+    id: i64,
+    mut request: librairii_core::query::QueryRequest,
+    locale: &str,
+) -> Result<Observation<Evaluation>> {
+    let inspection = inspect(tx, id)?;
+    if !inspection.is_openable() {
+        return Ok(Observation::NeedsAttention(inspection));
+    }
+    let criteria = inspection
+        .query
+        .ok_or(StorageError::CompatibilityInvariant)?;
+    request.criteria = criteria.clone();
+    let page = crate::query::search(tx, request, locale)?;
+    Ok(Observation::Ready(Evaluation {
+        collection: inspection.collection,
+        criteria,
+        page,
+    }))
+}
+pub fn summaries(tx: &Transaction<'_>, locale: &str) -> Result<Vec<Summary>> {
+    list(tx)?
+        .into_iter()
+        .map(|c| {
+            let inspection = inspect(tx, c.id)?;
+            let count = if inspection.is_openable() {
+                // Match the source Summaries -> Count -> Open path, including its
+                // second saved-query pass (normalization is not idempotent).
+                let opened = inspect(tx, c.id)?;
+                crate::query::count(
+                    tx,
+                    librairii_core::query::QueryRequest {
+                        criteria: opened.query.ok_or(StorageError::CompatibilityInvariant)?,
+                        ..Default::default()
+                    },
+                    locale,
+                )?
+            } else {
+                0
+            };
+            Ok(Summary { inspection, count })
+        })
+        .collect()
+}
+/// Read-only participant for reviewed Shelf/export snapshots. This deliberately
+/// decodes stored bytes directly, without migrating, healing or marking rows.
+/// A later mutation must call it again within its own writer transaction.
+pub fn source(tx: &Transaction<'_>, id: i64) -> Result<(Collection, Query)> {
+    let c = read(tx, id)?;
+    if c.validity != Validity::Valid {
+        return Err(CollectionError::NeedsAttention.into());
+    }
+    let legacy = tx
+        .query_row(
+            "SELECT definition_id FROM legacy_broken_tag WHERE singleton=1",
+            [],
+            |r| r.get::<_, i64>(0),
+        )
+        .optional()?
+        .unwrap_or(0);
+    let q = collection_codec::decode(c.query_version, &c.query_payload, legacy).map_err(codec)?;
+    if !migrations::available_criteria(tx, &q)? {
+        return Err(CollectionError::CriteriaUnavailable.into());
+    }
+    Ok((c, q))
+}

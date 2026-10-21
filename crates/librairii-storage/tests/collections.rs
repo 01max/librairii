@@ -96,3 +96,117 @@ fn collection_crud_preserves_ids_namespace_query_bytes_revisions_and_atomic_orde
     db.close()?;
     Ok(())
 }
+
+fn seed_stories(db: &Database<'_>, count: i64) -> TestResult {
+    committed(db.transaction(WorkCancellation::default(),move|tx|{for id in 1..=count {
+ tx.execute("INSERT INTO stories(id,uuid,display_name_normalized) VALUES(?1,printf('10000000-0000-4000-8000-%012d',?1),'story')",[id])?;
+ tx.execute("INSERT INTO story_archives(story_id,original_filename,detected_format,sha256,byte_size,managed_path,validation_state) VALUES(?1,'story.zip','zip',printf('%064d',?1),1,'archives/'||?1,'valid')",[id])?;
+ }Ok(())})?.wait()?)?;
+    Ok(())
+}
+fn counts(db: &Database<'_>) -> Result<Vec<i64>> {
+    Ok(committed(
+        db.collection_summaries("fr-FR".into(), WorkCancellation::default())?
+            .wait()?,
+    )?
+    .into_iter()
+    .map(|s| s.count)
+    .collect())
+}
+#[test]
+fn live_counts_follow_library_tags_metadata_and_removal_without_shelf_mutation() -> TestResult {
+    let roots = TestRoots::new()?;
+    let library = IsolatedLibrary::initialize_from_override(
+        Some(roots.library().as_os_str()),
+        "a0000000-0000-4000-8000-000000000001".parse()?,
+    )?;
+    let mut db = Database::open_isolated(&library)?;
+    seed_stories(&db, 2)?;
+    committed(db.transaction(WorkCancellation::default(),|tx|{
+        tx.execute_batch("INSERT INTO tag_definitions(id,key,normalized_key,label,kind,source,position,color) VALUES(44,'favorite','favorite','Favorite','boolean','user',0,'#405CF5'); INSERT INTO shelves(id,name,normalized_name,position) VALUES(1,'Approved','approved',0); INSERT INTO shelf_stories(shelf_id,story_uuid,position,cached_title) VALUES(1,'10000000-0000-4000-8000-000000000001',0,'Retained');")?;Ok(())
+    })?.wait()?)?;
+    let all = created(&db, "All", Query::default())?;
+    let tag = created(
+        &db,
+        "Favorite",
+        librairii_core::collection_codec::decode(
+            5,
+            br#"{"booleanFilters":[{"definitionId":44,"state":"true"}]}"#,
+            0,
+        )?,
+    )?;
+    created(&db, "Moon", {
+        let mut q = Query::default();
+        q.name = "moon".into();
+        q
+    })?;
+    assert_eq!(counts(&db)?, vec![2, 0, 0]);
+    seed_stories_extra(&db)?;
+    assert_eq!(counts(&db)?, vec![3, 1, 1]);
+    committed(db.transaction(WorkCancellation::default(),|tx|{
+        tx.execute_batch("UPDATE stories SET is_broken=1; DELETE FROM story_tag_assignments; DELETE FROM stories WHERE id=2;")?;Ok(())
+    })?.wait()?)?;
+    assert_eq!(counts(&db)?, vec![2, 0, 1]);
+    let librairii_storage::collections::Observation::Ready(e) = committed(
+        db.evaluate_collection(
+            all.id,
+            librairii_core::query::QueryRequest {
+                page_size: 1,
+                ..Default::default()
+            },
+            "fr-FR".into(),
+            WorkCancellation::default(),
+        )?
+        .wait()?,
+    )?
+    else {
+        return Err("evaluation".into());
+    };
+    assert_eq!(e.page.total_items, 2);
+    assert_eq!(e.page.stories.len(), 1);
+    committed(
+        db.transaction(WorkCancellation::default(), move |tx| {
+            tx.execute("DELETE FROM tag_definitions WHERE id=44", [])?;
+            let before = librairii_storage::collections::read(tx, tag.id)?;
+            assert!(librairii_storage::collections::source(tx, tag.id).is_err());
+            assert_eq!(librairii_storage::collections::read(tx, tag.id)?, before);
+            Ok(())
+        })?
+        .wait()?,
+    )?;
+    let v = committed(
+        db.evaluate_collection(
+            tag.id,
+            Default::default(),
+            "fr-FR".into(),
+            WorkCancellation::default(),
+        )?
+        .wait()?,
+    )?;
+    assert!(matches!(
+        v,
+        librairii_storage::collections::Observation::NeedsAttention(_)
+    ));
+    assert_eq!(
+        db.collections()?.wait()?[1].validity,
+        Validity::NeedsAttention
+    );
+    let shelf = db
+        .read(|tx| {
+            Ok(tx.query_row(
+                "SELECT cached_title FROM shelf_stories WHERE shelf_id=1",
+                [],
+                |r| r.get::<_, String>(0),
+            )?)
+        })?
+        .wait()?;
+    assert_eq!(shelf, "Retained");
+    db.close()?;
+    Ok(())
+}
+fn seed_stories_extra(db: &Database<'_>) -> TestResult {
+    committed(db.transaction(WorkCancellation::default(),|tx|{
+        tx.execute_batch("INSERT INTO stories(id,uuid,display_name_normalized) VALUES(3,'10000000-0000-4000-8000-000000000003','story'); INSERT INTO story_archives(story_id,original_filename,detected_format,sha256,byte_size,managed_path,validation_state) VALUES(3,'story.zip','zip',printf('%064d',3),1,'archives/3','valid'); INSERT INTO story_tag_assignments(story_id,definition_id,source) VALUES(3,44,'manual'); INSERT INTO catalog_syncs(id,locale,status,started_at) VALUES('10000000-0000-4000-8000-000000000001','fr-FR','running','2000'); INSERT INTO catalog_snapshots(id,sync_id,locale,raw_path,raw_sha256,byte_size,record_count,fetched_at) VALUES(1,'10000000-0000-4000-8000-000000000001','fr-FR','catalog/one',printf('%064d',1),1,1,'2000'); INSERT INTO official_story_metadata(snapshot_id,story_uuid,locale,title,title_normalized,provenance) VALUES(1,'10000000-0000-4000-8000-000000000003','fr-FR','Moon','moon','lunii_catalog'); UPDATE catalog_snapshots SET status='active',activated_at='2001' WHERE id=1;")?;Ok(())
+    })?.wait()?)?;
+    Ok(())
+}
