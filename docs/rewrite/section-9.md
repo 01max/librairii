@@ -11,7 +11,8 @@ Each subtask has its own commit:
 - 9.2: current-state evaluation and coherent counts after library/tag/metadata
   changes, with Broken flags independent of membership and approved Shelf rows.
 - 9.3: OR preview with per-source, unique and overlap counts in one transaction;
-  SQL UNION counts all pages without retaining an uncapped story-ID set. Saving
+  Ordered SQL cursors merge all pages with one next-ID per selected source,
+  avoiding compound/aggregate parameter limits and an uncapped story-ID set. Saving
   copies criteria rather than source IDs, subject to existing saved-query limits.
 - 9.4: explicit query replacement, preserving invalid bytes until repair. Opaque
   plans bind the writer runtime and entire stored row, and revalidate live

@@ -221,6 +221,16 @@ fn union_preview_counts_overlap_all_pages_and_saves_independent_definition() -> 
     )?;
     let mut db = Database::open_isolated(&library)?;
     seed_stories(&db, 251)?;
+    committed(
+        db.transaction(WorkCancellation::default(), |tx| {
+            tx.execute(
+                "UPDATE stories SET display_name_normalized='other' WHERE id=1",
+                [],
+            )?;
+            Ok(())
+        })?
+        .wait()?,
+    )?;
     let all = created(&db, "All", Query::default())?;
     let mut q = Query::default();
     q.name = "story".into();
@@ -237,13 +247,13 @@ fn union_preview_counts_overlap_all_pages_and_saves_independent_definition() -> 
         return Err("preview".into());
     };
     assert_eq!(p.unique_count, 251);
-    assert_eq!(p.overlap_count, 251);
+    assert_eq!(p.overlap_count, 250);
     assert_eq!(
         p.sources
             .iter()
             .map(|s| (s.collection.id, s.count))
             .collect::<Vec<_>>(),
-        vec![(stories.id, 251), (all.id, 251)]
+        vec![(stories.id, 250), (all.id, 251)]
     );
     assert!(
         committed(
@@ -705,7 +715,7 @@ fn stale_navigation_and_cross_library_plans_cannot_apply_and_many_source_preview
     assert_eq!(nav.current().location.scope, Scope::Library);
     seed_stories(&db, 1)?;
     let mut ids = vec![];
-    for n in 0..51 {
+    for n in 0..501 {
         ids.push(created(&db, &format!("Source {n}"), Query::default())?.id);
     }
     let Observation::Ready(preview) = committed(
@@ -715,7 +725,7 @@ fn stale_navigation_and_cross_library_plans_cannot_apply_and_many_source_preview
     else {
         return Err("preview".into());
     };
-    assert_eq!((preview.unique_count, preview.overlap_count), (1, 50));
+    assert_eq!((preview.unique_count, preview.overlap_count), (1, 500));
     assert!(matches!(
         committed(
             db.save_combined_collection(ids, "Too complex".into(), WorkCancellation::default())?
@@ -723,7 +733,7 @@ fn stale_navigation_and_cross_library_plans_cannot_apply_and_many_source_preview
         ),
         Err(StorageError::Collection(CollectionError::InvalidQuery))
     ));
-    assert_eq!(db.collections()?.wait()?.len(), 51);
+    assert_eq!(db.collections()?.wait()?.len(), 501);
     other_db.close()?;
     db.close()?;
     Ok(())

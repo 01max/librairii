@@ -391,16 +391,18 @@ pub fn visit_scope(
 
 /// Count a union without replaying pages or retaining every matching story ID.
 /// Each source gets exactly one runtime pass and live validation in this same
-/// transaction. Unlike saving a combined definition, previewing does not impose
-/// one saved query's 50-node limit across otherwise independent sources.
+/// transaction. One ordered cursor per source keeps only its next ID in a heap;
+/// neither compound SELECT limits nor aggregate SQL parameter limits cap the
+/// selection. Retained SQL/bindings/cursors scale with selected definitions,
+/// never with their complete story membership.
 pub fn count_union(tx: &Transaction<'_>, criteria: Vec<Query>, locale: &str) -> Result<i64> {
+    use std::{cmp::Reverse, collections::BinaryHeap};
     if criteria.is_empty() {
         return Err(invalid());
     }
-    let mut branches = Vec::with_capacity(criteria.len());
-    let mut args = Vec::new();
+    let mut queries = Vec::with_capacity(criteria.len());
     for q in criteria {
-        let (_, from, values) = matching(
+        let (_, from, args) = matching(
             tx,
             QueryRequest {
                 criteria: q,
@@ -408,12 +410,35 @@ pub fn count_union(tx: &Transaction<'_>, criteria: Vec<Query>, locale: &str) -> 
             },
             locale,
         )?;
-        branches.push(format!("SELECT s.id{from}"));
-        args.extend(values);
+        queries.push((format!("SELECT s.id{from} ORDER BY s.id"), args));
     }
-    Ok(tx.query_row(
-        &format!("SELECT COUNT(*) FROM ({})", branches.join(" UNION ")),
-        params_from_iter(args),
-        |r| r.get(0),
-    )?)
+    let mut statements = queries
+        .iter()
+        .map(|(sql, _)| tx.prepare(sql))
+        .collect::<rusqlite::Result<Vec<_>>>()?;
+    let mut cursors = statements
+        .iter_mut()
+        .zip(&queries)
+        .map(|(stmt, (_, args))| stmt.query(params_from_iter(args)))
+        .collect::<rusqlite::Result<Vec<_>>>()?;
+    let mut next = BinaryHeap::new();
+    for (source, cursor) in cursors.iter_mut().enumerate() {
+        if let Some(row) = cursor.next()? {
+            next.push(Reverse((row.get::<_, i64>(0)?, source)));
+        }
+    }
+    let mut previous = None;
+    let mut count = 0_i64;
+    while let Some(Reverse((id, source))) = next.pop() {
+        if previous != Some(id) {
+            count = count
+                .checked_add(1)
+                .ok_or(QueryInputError::ResourceOverflow)?;
+            previous = Some(id);
+        }
+        if let Some(row) = cursors[source].next()? {
+            next.push(Reverse((row.get::<_, i64>(0)?, source)));
+        }
+    }
+    Ok(count)
 }
