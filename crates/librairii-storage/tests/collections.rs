@@ -210,3 +210,92 @@ fn seed_stories_extra(db: &Database<'_>) -> TestResult {
     })?.wait()?)?;
     Ok(())
 }
+
+#[test]
+fn union_preview_counts_overlap_all_pages_and_saves_independent_definition() -> TestResult {
+    use librairii_storage::collections::Observation;
+    let roots = TestRoots::new()?;
+    let library = IsolatedLibrary::initialize_from_override(
+        Some(roots.library().as_os_str()),
+        "a0000000-0000-4000-8000-000000000001".parse()?,
+    )?;
+    let mut db = Database::open_isolated(&library)?;
+    seed_stories(&db, 251)?;
+    let all = created(&db, "All", Query::default())?;
+    let mut q = Query::default();
+    q.name = "story".into();
+    let stories = created(&db, "Stories", q)?;
+    let Observation::Ready(p) = committed(
+        db.collection_selection_preview(
+            vec![stories.id, all.id],
+            "fr-FR".into(),
+            WorkCancellation::default(),
+        )?
+        .wait()?,
+    )?
+    else {
+        return Err("preview".into());
+    };
+    assert_eq!(p.unique_count, 251);
+    assert_eq!(p.overlap_count, 251);
+    assert_eq!(
+        p.sources
+            .iter()
+            .map(|s| (s.collection.id, s.count))
+            .collect::<Vec<_>>(),
+        vec![(stories.id, 251), (all.id, 251)]
+    );
+    assert!(
+        committed(
+            db.collection_selection_preview(
+                vec![all.id, all.id],
+                "fr-FR".into(),
+                WorkCancellation::default()
+            )?
+            .wait()?
+        )
+        .is_err()
+    );
+    let Observation::Ready(copy) = committed(
+        db.save_combined_collection(
+            vec![stories.id, all.id],
+            "Copied OR".into(),
+            WorkCancellation::default(),
+        )?
+        .wait()?,
+    )?
+    else {
+        return Err("save".into());
+    };
+    assert_eq!(copy.query_payload, br#"{"anyOf":[{"name":"story"},{}]}"#);
+    edit(&db, Command::Delete { id: all.id })?;
+    edit(&db, Command::Delete { id: stories.id })?;
+    let Observation::Ready(e) = committed(
+        db.evaluate_collection(
+            copy.id,
+            librairii_core::query::QueryRequest {
+                page: 3,
+                page_size: 100,
+                ..Default::default()
+            },
+            "fr-FR".into(),
+            WorkCancellation::default(),
+        )?
+        .wait()?,
+    )?
+    else {
+        return Err("evaluation".into());
+    };
+    assert_eq!(e.page.total_items, 251);
+    assert_eq!(e.page.stories.len(), 51);
+    seed_stories_extra_unfiltered(&db)?;
+    assert_eq!(counts(&db)?, vec![252]);
+    db.close()?;
+    Ok(())
+}
+fn seed_stories_extra_unfiltered(db: &Database<'_>) -> TestResult {
+    committed(db.transaction(WorkCancellation::default(),|tx|{
+        tx.execute_batch("INSERT INTO stories(id,uuid,display_name_normalized) VALUES(999,'10000000-0000-4000-8000-000000000999','other'); INSERT INTO story_archives(story_id,original_filename,detected_format,sha256,byte_size,managed_path,validation_state) VALUES(999,'new.zip','zip',printf('%064d',999),1,'archives/999','valid');")?;Ok(())
+    })?.wait()?)?;
+    Ok(())
+}

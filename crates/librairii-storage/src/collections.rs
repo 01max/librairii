@@ -309,3 +309,113 @@ pub fn source(tx: &Transaction<'_>, id: i64) -> Result<(Collection, Query)> {
     }
     Ok((c, q))
 }
+
+#[derive(Debug)]
+pub struct SelectedSource {
+    pub collection: Collection,
+    pub count: i64,
+}
+#[derive(Debug)]
+pub struct SelectionPreview {
+    pub sources: Vec<SelectedSource>,
+    pub unique_count: i64,
+    pub overlap_count: i64,
+}
+fn validate_selection(ids: &[i64]) -> Result<()> {
+    let mut seen = std::collections::BTreeSet::new();
+    if ids.is_empty() || ids.iter().any(|id| *id <= 0 || !seen.insert(*id)) {
+        return Err(CollectionError::InvalidSelection.into());
+    }
+    Ok(())
+}
+fn selected(tx: &Transaction<'_>, ids: &[i64]) -> Result<Observation<Vec<(Collection, Query)>>> {
+    validate_selection(ids)?;
+    let mut sources = Vec::with_capacity(ids.len());
+    for id in ids {
+        let inspection = inspect(tx, *id)?;
+        if !inspection.is_openable() {
+            return Ok(Observation::NeedsAttention(inspection));
+        }
+        sources.push((
+            inspection.collection,
+            inspection
+                .query
+                .ok_or(StorageError::CompatibilityInvariant)?,
+        ));
+    }
+    Ok(Observation::Ready(sources))
+}
+pub fn preview_selection(
+    tx: &Transaction<'_>,
+    ids: &[i64],
+    locale: &str,
+) -> Result<Observation<SelectionPreview>> {
+    let selected = match selected(tx, ids)? {
+        Observation::Ready(s) => s,
+        Observation::NeedsAttention(i) => return Ok(Observation::NeedsAttention(i)),
+    };
+    let criteria = selected.iter().map(|(_, q)| q.clone()).collect();
+    let unique_count = crate::query::count_union(tx, criteria, locale)?;
+    let mut sources = Vec::with_capacity(selected.len());
+    let mut total = 0_i64;
+    for (collection, q) in selected {
+        let count = crate::query::count(
+            tx,
+            librairii_core::query::QueryRequest {
+                criteria: q,
+                ..Default::default()
+            },
+            locale,
+        )?;
+        total = total
+            .checked_add(count)
+            .ok_or(librairii_core::query::QueryInputError::ResourceOverflow)?;
+        sources.push(SelectedSource { collection, count });
+    }
+    Ok(Observation::Ready(SelectionPreview {
+        sources,
+        unique_count,
+        overlap_count: total - unique_count,
+    }))
+}
+/// Copy current definitions in one transaction, never source Collection IDs.
+/// Subsequent edits/deletion of an original cannot change this saved query.
+pub fn save_combined(
+    tx: &Transaction<'_>,
+    ids: &[i64],
+    name: &str,
+) -> Result<Observation<Collection>> {
+    let (name, normalized) = normalize_name(name)?;
+    let sources = match selected(tx, ids)? {
+        Observation::Ready(s) => s,
+        Observation::NeedsAttention(i) => return Ok(Observation::NeedsAttention(i)),
+    };
+    let mut q = Query::default();
+    q.any_of = sources.into_iter().map(|(_, q)| q).collect();
+    let payload = canonical(tx, q)?;
+    Ok(Observation::Ready(insert(
+        tx,
+        name,
+        normalized,
+        payload,
+        Validity::Valid,
+    )?))
+}
+impl Database<'_> {
+    pub fn collection_selection_preview(
+        &self,
+        ids: Vec<i64>,
+        locale: String,
+        cancellation: WorkCancellation,
+    ) -> Result<Pending<'_, TransactionOutcome<Observation<SelectionPreview>>>> {
+        self.transaction(cancellation, move |tx| preview_selection(tx, &ids, &locale))
+    }
+    pub fn save_combined_collection(
+        &self,
+        ids: Vec<i64>,
+        name: String,
+        cancellation: WorkCancellation,
+    ) -> Result<Pending<'_, TransactionOutcome<Observation<Collection>>>> {
+        self.transaction(cancellation, move |tx| save_combined(tx, &ids, &name))
+    }
+}

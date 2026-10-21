@@ -388,3 +388,32 @@ pub fn visit_scope(
     }
     Ok(count)
 }
+
+/// Count a union without replaying pages or retaining every matching story ID.
+/// Each source gets exactly one runtime pass and live validation in this same
+/// transaction. Unlike saving a combined definition, previewing does not impose
+/// one saved query's 50-node limit across otherwise independent sources.
+pub fn count_union(tx: &Transaction<'_>, criteria: Vec<Query>, locale: &str) -> Result<i64> {
+    if criteria.is_empty() {
+        return Err(invalid());
+    }
+    let mut branches = Vec::with_capacity(criteria.len());
+    let mut args = Vec::new();
+    for q in criteria {
+        let (_, from, values) = matching(
+            tx,
+            QueryRequest {
+                criteria: q,
+                ..Default::default()
+            },
+            locale,
+        )?;
+        branches.push(format!("SELECT s.id{from}"));
+        args.extend(values);
+    }
+    Ok(tx.query_row(
+        &format!("SELECT COUNT(*) FROM ({})", branches.join(" UNION ")),
+        params_from_iter(args),
+        |r| r.get(0),
+    )?)
+}
