@@ -128,3 +128,43 @@ saved result and retained metadata reservation. A second test conservatively
 loses a real commit acknowledgement, refuses two readbacks, and finally crosses
 the real writer barrier: the counter increments once and completion is not
 repeated. Busy intake tests retain and retry the same move-only command.
+
+## 6.6 — Native startup and owned temporary recovery
+
+Normal reopen still refuses Active control records. The separate recovery route
+validates the existing complete native profile, raw library marker, native control
+record, independent-root separation, actual directories and exclusive OS lease.
+It verifies regular SQLite sidecars through an independent probe, persists the
+next Active epoch before opening SQLite, then reconciles before returning an
+admitted Database. Missing known managed directories at the pre-SQLite crash
+boundary can be created under the retained root owner. Foreign/corrupt/aliased
+control or roots remain refused.
+
+The native control record now has an optional bounded temporary registry (64
+entries within its existing 64 KiB wire budget); migrations 001–018 are unchanged.
+Registrations require an actual retained Stage/native Files/Custody owner and a
+fresh writer-validated running operation/item. They bind the complete immutable
+SQL scope, actual parent/private-directory/payload identities and destination.
+Export allocation first durably reserves its private destination/name, then
+records the acquired owners before payload writes. An interrupted allocation
+without sufficient ownership evidence stays in explicit recovery. Public scope,
+marker, pathname or inode observations alone cannot invoke this cleanup route.
+
+Startup removes only registered no-follow regular single-link payloads in their
+owned private workspace, flushes deletion, then retires the control registration.
+It never receives final export filenames as cleanup authority. Missing payloads
+from completed publication leave final files intact. Substituted files, links,
+unregistered staging, unexpected entries or changed destinations are preserved
+and block new work with a recoverable diagnostic. Active nonresumable SQL rows
+become Interrupted, preserving terminal items, outcomes and byte counts; cleanup
+failure remains explicit. Existing catalog-specific recovery is retained.
+
+Runtime startup owns a unique actual Database job-session reservation. Intake
+waits until reconciliation completes, preventing duplicate sessions from starting
+or interrupting one another. Shutdown repeats registered-temporary settlement
+after all effect owners have drained. A real child-process kill test covers
+registered import staging, partial/completed exports and preserved terminal item
+outcomes. Normal recovery cleans only registered partials; symlink/hardlink
+substitution remains untouched with Active recovery state. Completed exports,
+unregistered destination files and the original legacy source remain unchanged.
+All 29 native-owner tests pass, retaining every prior restart/fence assertion.

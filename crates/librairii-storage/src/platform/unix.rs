@@ -54,7 +54,8 @@ impl EntryName {
     }
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct FileIdentity {
     device: u64,
     inode: u64,
@@ -3618,5 +3619,384 @@ mod tests {
             Err(StorageError::CustodyRecoveryRequired)
         ));
         Ok(())
+    }
+}
+
+impl OwnedStage<'_, '_> {
+    /// Register this actual retained allocation in the durable native control
+    /// record before writing payload bytes. A scope DTO cannot construct a stage.
+    /// Errors leave this original owner in the caller; never delete by basename.
+    pub fn register_operation(
+        &self,
+        guard: &Custody<'_>,
+        operation: String,
+        item: i64,
+    ) -> Result<()> {
+        self.revalidate(guard)?;
+        let FilesAuthority::Native { library, database } = self.files.authority else {
+            return Err(StorageError::IdentityMismatch);
+        };
+        let (scope, _, _) = database.operation_temp_scope(operation.clone(), item, true)?;
+        durable_file_flush(&self.file)?;
+        self.directory.flush()?;
+        self.files.staging.flush()?;
+        library.register_temporary(crate::native_effects::Temporary {
+            operation,
+            item,
+            scope_sha256: scope,
+            destination: None,
+            parent: self.files.staging.identity(),
+            name: self
+                .directory_name
+                .to_str()
+                .ok_or(StorageError::InvalidManagedPath)?
+                .into(),
+            directory: Some(self.directory.identity()),
+            payload: Some(self.identity),
+        })
+    }
+}
+impl LibraryFiles<'_> {
+    pub(crate) fn require_empty_staging(&self) -> Result<()> {
+        if !self
+            .staging
+            .entries(0, &WorkCancellation::default())?
+            .is_empty()
+        {
+            return Err(StorageError::CustodyRecoveryRequired);
+        }
+        Ok(())
+    }
+    pub(crate) fn recover_registered_temporary(
+        &self,
+        guard: &Custody<'_>,
+        record: &crate::native_effects::Temporary,
+    ) -> Result<()> {
+        self.check(guard)?;
+        record.validate()?;
+        let parent = match &record.destination {
+            None => self.staging.duplicate()?,
+            Some(path) => {
+                if std::fs::canonicalize(path)
+                    .map_err(|e| StorageError::io("resolve registered export directory", e))?
+                    != Path::new(path)
+                {
+                    return Err(StorageError::SnapshotChanged);
+                }
+                Directory::open(Path::new(path))?
+            }
+        };
+        if parent.identity() != record.parent {
+            return Err(StorageError::SnapshotChanged);
+        }
+        let directory = match parent.child(OsStr::new(&record.name)) {
+            Ok(d) => d,
+            Err(StorageError::Io { source, .. }) if source.kind() == io::ErrorKind::NotFound => {
+                return parent.flush();
+            }
+            Err(error) => return Err(error),
+        };
+        if Some(directory.identity()) != record.directory {
+            return Err(StorageError::SnapshotChanged);
+        }
+        for name in directory.entries(1, &WorkCancellation::default())? {
+            if name != OsStr::new(PAYLOAD) {
+                return Err(StorageError::CustodyRecoveryRequired);
+            }
+        }
+        if let Some(file) = directory.read_regular(OsStr::new(PAYLOAD))? {
+            if FileIdentity::from_file(&file)?
+                != record
+                    .payload
+                    .ok_or(StorageError::CustodyRecoveryRequired)?
+            {
+                return Err(StorageError::SnapshotChanged);
+            }
+            directory.require_name(
+                OsStr::new(PAYLOAD),
+                record
+                    .payload
+                    .ok_or(StorageError::CustodyRecoveryRequired)?,
+            )?;
+            native::unlinkat(&directory.file, PAYLOAD, AtFlags::empty())
+                .map_err(|e| StorageError::io("remove registered regular temporary", e.into()))?;
+            directory.flush()?;
+        }
+        parent.require_name(
+            OsStr::new(&record.name),
+            record
+                .directory
+                .ok_or(StorageError::CustodyRecoveryRequired)?,
+        )?;
+        native::unlinkat(&parent.file, OsStr::new(&record.name), AtFlags::REMOVEDIR)
+            .map_err(|e| StorageError::io("remove registered temporary workspace", e.into()))?;
+        parent.flush()
+    }
+}
+
+/// Allocation retains the actual native library, external directory and every
+/// acquired FD through partial creation or an uncertain registration result.
+#[derive(Debug)]
+struct ExportAllocation<'files, 'library> {
+    files: &'files LibraryFiles<'library>,
+    parent: Option<Directory>,
+    directory: Option<Directory>,
+    file: Option<File>,
+    name: OsString,
+    record: Option<crate::native_effects::Temporary>,
+}
+#[derive(Debug)]
+pub struct ExportTemporaryFailure<'files, 'library> {
+    pub cause: StorageError,
+    allocation: ExportAllocation<'files, 'library>,
+}
+impl std::fmt::Display for ExportTemporaryFailure<'_, '_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "owned export temporary: {}", self.cause)
+    }
+}
+impl std::error::Error for ExportTemporaryFailure<'_, '_> {}
+impl ExportTemporaryFailure<'_, '_> {
+    pub fn workspace_name(&self) -> &OsStr {
+        &self.allocation.name
+    }
+}
+#[derive(Debug)]
+pub struct OwnedExportTemporary<'files, 'library> {
+    allocation: ExportAllocation<'files, 'library>,
+}
+impl<'library> LibraryFiles<'library> {
+    /// Creates only inside this real running export's registered destination.
+    /// Scope/path values alone cannot create or clean up this actual owner.
+    pub fn create_export_temporary<'files>(
+        &'files self,
+        guard: &Custody<'_>,
+        operation: String,
+        item: i64,
+    ) -> std::result::Result<
+        OwnedExportTemporary<'files, 'library>,
+        Box<ExportTemporaryFailure<'files, 'library>>,
+    > {
+        let mut allocation = ExportAllocation {
+            files: self,
+            parent: None,
+            directory: None,
+            file: None,
+            name: OsString::new(),
+            record: None,
+        };
+        let result = (|| {
+            self.check(guard)?;
+            let FilesAuthority::Native { library, database } = self.authority else {
+                return Err(StorageError::IdentityMismatch);
+            };
+            let (scope, destination, kind) =
+                database.operation_temp_scope(operation.clone(), item, true)?;
+            if kind != librairii_core::OperationKind::Export {
+                return Err(StorageError::SnapshotChanged);
+            }
+            let path = destination.ok_or(StorageError::InvalidManagedPath)?;
+            if path.len() > 16 * 1024
+                || std::fs::canonicalize(&path)
+                    .map_err(|e| StorageError::io("resolve chosen export directory", e))?
+                    != Path::new(&path)
+            {
+                return Err(StorageError::InvalidManagedPath);
+            }
+            allocation.parent = Some(Directory::open(Path::new(&path))?);
+            let parent = allocation
+                .parent
+                .as_ref()
+                .ok_or(StorageError::CompatibilityInvariant)?;
+            for _ in 0..64 {
+                allocation.name = unique_name("export");
+                let reservation = crate::native_effects::Temporary {
+                    operation: operation.clone(),
+                    item,
+                    scope_sha256: scope.clone(),
+                    destination: Some(path.clone()),
+                    parent: parent.identity(),
+                    name: allocation
+                        .name
+                        .to_str()
+                        .ok_or(StorageError::InvalidManagedPath)?
+                        .into(),
+                    directory: None,
+                    payload: None,
+                };
+                allocation.record = Some(reservation.clone());
+                library.register_temporary(reservation)?;
+                match parent.create_child(&allocation.name) {
+                    Ok(directory) => {
+                        allocation.directory = Some(directory);
+                        break;
+                    }
+                    Err(StorageError::Io { source, .. })
+                        if source.kind() == io::ErrorKind::AlreadyExists =>
+                    {
+                        library.forget_temporary(
+                            allocation
+                                .record
+                                .as_ref()
+                                .ok_or(StorageError::CompatibilityInvariant)?,
+                        )?;
+                        allocation.record = None;
+                        continue;
+                    }
+                    Err(error) => return Err(error),
+                }
+            }
+            let directory = allocation
+                .directory
+                .as_ref()
+                .ok_or(StorageError::QueueFull)?;
+            allocation.file = Some(match directory.create_control_record(OsStr::new(PAYLOAD)) {
+                Ok(control) => control.file,
+                Err(failure) => {
+                    let mut failure = *failure;
+                    allocation.file = failure.allocation.file.take();
+                    return Err(failure.cause);
+                }
+            });
+            let file = allocation
+                .file
+                .as_ref()
+                .ok_or(StorageError::CompatibilityInvariant)?;
+            durable_file_flush(file)?;
+            directory.flush()?;
+            parent.flush()?;
+            let record = crate::native_effects::Temporary {
+                operation,
+                item,
+                scope_sha256: scope,
+                destination: Some(path),
+                parent: parent.identity(),
+                name: allocation
+                    .name
+                    .to_str()
+                    .ok_or(StorageError::InvalidManagedPath)?
+                    .into(),
+                directory: Some(directory.identity()),
+                payload: Some(FileIdentity::from_file(file)?),
+            };
+            allocation.record = Some(record.clone());
+            library.register_temporary(record)
+        })();
+        match result {
+            Ok(()) => Ok(OwnedExportTemporary { allocation }),
+            Err(cause) => {
+                if allocation.record.is_some()
+                    || allocation.directory.is_some()
+                    || allocation.file.is_some()
+                {
+                    self.fence();
+                }
+                Err(Box::new(ExportTemporaryFailure { cause, allocation }))
+            }
+        }
+    }
+}
+impl<'files, 'library> OwnedExportTemporary<'files, 'library> {
+    pub fn workspace_name(&self) -> &OsStr {
+        &self.allocation.name
+    }
+    fn revalidate(&self) -> Result<()> {
+        self.allocation.files.authority.require_intake()?;
+        let record = self
+            .allocation
+            .record
+            .as_ref()
+            .ok_or(StorageError::CompatibilityInvariant)?;
+        let parent = self
+            .allocation
+            .parent
+            .as_ref()
+            .ok_or(StorageError::CompatibilityInvariant)?;
+        let directory = self
+            .allocation
+            .directory
+            .as_ref()
+            .ok_or(StorageError::CompatibilityInvariant)?;
+        let file = self
+            .allocation
+            .file
+            .as_ref()
+            .ok_or(StorageError::CompatibilityInvariant)?;
+        require_regular(file)?;
+        parent.require_name(
+            &self.allocation.name,
+            record
+                .directory
+                .ok_or(StorageError::CustodyRecoveryRequired)?,
+        )?;
+        directory.require_name(
+            OsStr::new(PAYLOAD),
+            record
+                .payload
+                .ok_or(StorageError::CustodyRecoveryRequired)?,
+        )?;
+        Ok(())
+    }
+    pub fn flush_durable(&self) -> Result<()> {
+        self.revalidate()?;
+        durable_file_flush(
+            self.allocation
+                .file
+                .as_ref()
+                .ok_or(StorageError::CompatibilityInvariant)?,
+        )?;
+        self.allocation
+            .directory
+            .as_ref()
+            .ok_or(StorageError::CompatibilityInvariant)?
+            .flush()
+    }
+    /// This can retire only the registered private workspace, never a final
+    /// destination filename. Failure returns the original allocation owner.
+    pub fn retire(
+        self,
+        guard: &Custody<'_>,
+    ) -> std::result::Result<(), Box<ExportTemporaryFailure<'files, 'library>>> {
+        let result = (|| {
+            let FilesAuthority::Native { library, .. } = self.allocation.files.authority else {
+                return Err(StorageError::IdentityMismatch);
+            };
+            let record = self
+                .allocation
+                .record
+                .as_ref()
+                .ok_or(StorageError::CompatibilityInvariant)?;
+            self.allocation
+                .files
+                .recover_registered_temporary(guard, record)?;
+            library.forget_temporary(record)
+        })();
+        match result {
+            Ok(()) => Ok(()),
+            Err(cause) => {
+                self.allocation.files.fence();
+                Err(Box::new(ExportTemporaryFailure {
+                    cause,
+                    allocation: self.allocation,
+                }))
+            }
+        }
+    }
+}
+impl Write for OwnedExportTemporary<'_, '_> {
+    fn write(&mut self, bytes: &[u8]) -> io::Result<usize> {
+        self.revalidate().map_err(io::Error::other)?;
+        self.allocation
+            .file
+            .as_mut()
+            .ok_or_else(|| io::Error::other("missing actual temporary"))?
+            .write(bytes)
+    }
+    fn flush(&mut self) -> io::Result<()> {
+        self.allocation
+            .file
+            .as_mut()
+            .ok_or_else(|| io::Error::other("missing actual temporary"))?
+            .flush()
     }
 }

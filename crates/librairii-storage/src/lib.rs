@@ -26,3 +26,6 @@ pub mod tagging;
 pub use error::{Result, StorageError};
 pub use identity::LibraryIdentity;
 pub use layout::{DATA_ROOT_OVERRIDE, IsolatedLibrary, LibraryLayout, ManagedPath};
+
+#[cfg(any(target_os = "macos", target_os = "linux"))]
+mod native_effects;

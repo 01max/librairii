@@ -85,6 +85,18 @@ impl OperationTerminalStore for Observed<'_, '_> {
     }
 }
 impl JobStore for Observed<'_, '_> {
+    fn claim_session(&self) -> bool {
+        self.store.claim_session()
+    }
+    fn release_session(&self) {
+        self.store.release_session();
+    }
+    fn startup(&self) -> StoreResult<()> {
+        self.store.startup()
+    }
+    fn shutdown_cleanup(&self) -> StoreResult<()> {
+        self.store.shutdown_cleanup()
+    }
     fn generation(&self) -> u64 {
         self.store.generation()
     }

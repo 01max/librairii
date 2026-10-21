@@ -14,6 +14,7 @@
 mod creation;
 mod jobs;
 mod policy;
+mod recovery;
 mod rows;
 
 use crate::{

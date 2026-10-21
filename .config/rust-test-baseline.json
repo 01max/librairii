@@ -2839,6 +2839,15 @@
         "x86_64-apple-darwin",
         "x86_64-unknown-linux-gnu"
       ]
+    },
+    {
+      "suite": "librairii-storage::native_library",
+      "name": "native_registered_temporaries_recover_after_process_death_and_preserve_final_files",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
     }
   ]
 }

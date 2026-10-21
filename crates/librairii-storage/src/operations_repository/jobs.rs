@@ -19,9 +19,7 @@ fn read<T>(pending: Result<Pending<'_, T>>) -> StoreResult<T> {
 }
 fn write<T>(pending: Result<Pending<'_, TransactionOutcome<T>>>) -> StoreResult<T> {
     match pending {
-        Err(StorageError::QueueFull | StorageError::IntakeClosed | StorageError::ProfileBusy) => {
-            StoreResult::Retry
-        }
+        Err(StorageError::QueueFull | StorageError::ProfileBusy) => StoreResult::Retry,
         Err(_) => StoreResult::Rejected,
         Ok(p) => match p.wait() {
             Ok(TransactionOutcome::Committed(value)) => StoreResult::Known(value),
@@ -37,6 +35,30 @@ fn invalid() -> StorageError {
     crate::StorageError::SnapshotChanged
 }
 impl JobStore for TerminalRepository<'_, '_> {
+    fn claim_session(&self) -> bool {
+        self.database.claim_jobs()
+    }
+    fn release_session(&self) {
+        self.database.release_jobs();
+    }
+    fn startup(&self) -> StoreResult<()> {
+        match self.database.recover_operation_startup() {
+            Ok(()) => StoreResult::Known(()),
+            Err(StorageError::QueueFull | StorageError::ProfileBusy) => StoreResult::Retry,
+            Err(_) => StoreResult::Rejected,
+        }
+    }
+    fn shutdown_cleanup(&self) -> StoreResult<()> {
+        #[cfg(any(target_os = "macos", target_os = "linux"))]
+        let result = self.database.recover_native_temporaries();
+        #[cfg(not(any(target_os = "macos", target_os = "linux")))]
+        let result: crate::Result<()> = Ok(());
+        match result {
+            Ok(()) => StoreResult::Known(()),
+            Err(StorageError::QueueFull | StorageError::ProfileBusy) => StoreResult::Retry,
+            Err(_) => StoreResult::Rejected,
+        }
+    }
     fn generation(&self) -> u64 {
         self.generation
     }

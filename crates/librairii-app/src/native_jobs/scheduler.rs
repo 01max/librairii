@@ -47,6 +47,7 @@ struct State {
     stopping: bool,
     done: bool,
     failed: bool,
+    ready: bool,
     cancel: Option<String>,
 }
 #[derive(Debug)]
@@ -122,7 +123,7 @@ impl Handle {
         if s.stopping || s.done {
             return Err((Refusal::Closed, start));
         }
-        if s.admitting || s.ingress.is_some() || s.admission.is_some() {
+        if !s.ready || s.admitting || s.ingress.is_some() || s.admission.is_some() {
             return Err((Refusal::Busy, start));
         }
         s.ingress = Some(start);
@@ -492,6 +493,27 @@ fn worker(store: &impl JobStore, executor: &impl Executor, shared: &Shared, inde
 }
 fn coordinator(store: &impl JobStore, shared: &Shared) {
     loop {
+        match store.startup() {
+            StoreResult::Known(()) => break,
+            StoreResult::Rejected => {
+                store.fence();
+                let mut state = shared.state.lock().unwrap_or_else(|e| e.into_inner());
+                state.failed = true;
+                state.done = true;
+                shared.changed.notify_all();
+                return;
+            }
+            _ => pause(),
+        }
+    }
+    {
+        let mut state = shared.state.lock().unwrap_or_else(|e| e.into_inner());
+        state.ready = true;
+        shared.dirty.store(true, Ordering::Release);
+        shared.changed.notify_all();
+    }
+
+    loop {
         if shared.state.lock().unwrap_or_else(|e| e.into_inner()).done {
             return;
         }
@@ -641,6 +663,19 @@ fn coordinator(store: &impl JobStore, shared: &Shared) {
                     continue;
                 }
                 StoreResult::Known(None) if stopping => {
+                    loop {
+                        match store.shutdown_cleanup() {
+                            StoreResult::Known(()) => break,
+                            StoreResult::Rejected => {
+                                store.fence();
+                                let mut state =
+                                    shared.state.lock().unwrap_or_else(|e| e.into_inner());
+                                state.failed = true;
+                                break;
+                            }
+                            _ => pause(),
+                        }
+                    }
                     let mut s = shared.state.lock().unwrap_or_else(|e| e.into_inner());
                     s.done = true;
                     shared.changed.notify_all();
@@ -661,6 +696,16 @@ pub fn with_runtime<S: JobStore, E: Executor, T>(
     config: Configuration,
     run: impl FnOnce(Handle) -> T,
 ) -> Result<T, SessionError> {
+    if !store.claim_session() {
+        return Err(SessionError);
+    }
+    struct Session<'a, S: JobStore>(&'a S);
+    impl<S: JobStore> Drop for Session<'_, S> {
+        fn drop(&mut self) {
+            self.0.release_session();
+        }
+    }
+    let _session = Session(store);
     let shared = Arc::new(Shared {
         config,
         state: Mutex::new(State {
@@ -673,6 +718,7 @@ pub fn with_runtime<S: JobStore, E: Executor, T>(
             stopping: false,
             done: false,
             failed: false,
+            ready: false,
             cancel: None,
         }),
         changed: Condvar::new(),

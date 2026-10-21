@@ -2201,3 +2201,310 @@ fn native_job_session_borrows_actual_database_and_file_owner_until_durable_settl
     native.finish().map_err(|f| f.to_string())?;
     Ok(())
 }
+
+#[test]
+fn native_registered_temporaries_recover_after_process_death_and_preserve_final_files() -> TestResult
+{
+    use librairii_app::ports::{
+        creation::{NewItem, NewOperation},
+        jobs::{JobStore, StoreResult},
+        operations::*,
+    };
+    use librairii_core::{
+        OperationKind,
+        operations::{ExportSource, ExportSourceType, ItemState, RawOutcome},
+    };
+    use librairii_storage::{
+        operations_repository::TerminalRepository, platform::unix::LibraryFiles,
+    };
+    use std::{
+        process::{Child, Command, Stdio},
+        time::{Duration, Instant},
+    };
+    const CONTEXT: &str = "LIBRAIRII_NATIVE_OPERATION_CRASH_CONTEXT";
+    if let Some(context) = std::env::var_os(CONTEXT) {
+        let value: serde_json::Value = serde_json::from_slice(&fs::read(context)?)?;
+        let path = |key: &str| -> TestResult<std::path::PathBuf> {
+            Ok(value[key].as_str().ok_or("fixture path")?.into())
+        };
+        let locations = ProfileLocations {
+            native: path("native")?,
+            data: path("data")?,
+            legacy: Some(path("legacy")?),
+        };
+        let profile = ProfileDocument::decode(&fs::read(path("legacy")?.join("settings.json"))?)?;
+        let verified = ClosedLibraryInput::verify(
+            &path("source")?,
+            profile,
+            ClosedManifest::decode(MANIFEST)?,
+            &WorkCancellation::default(),
+        )?;
+        let copy = verified.copy_to_new_root(
+            &locations.data.join("job-recovery-child"),
+            &WorkCancellation::default(),
+        )?;
+        let root = copy.root().to_owned();
+        let profile = NativeProfileStore::create_fresh(&locations.native)?;
+        let native = NativeLibrary::bind_independent(
+            copy,
+            &profile,
+            &locations,
+            &WorkCancellation::default(),
+        )
+        .map_err(|f| f.to_string())?;
+        let db = Database::open_native(&native)?;
+        let repository = TerminalRepository::new(&db, 1);
+        assert!(matches!(repository.startup(), StoreResult::Known(())));
+        let import = NewOperation {
+            id: "a0000000-0000-4000-8000-000000000081".into(),
+            kind: OperationKind::Import,
+            source: None,
+            destination: None,
+            items: vec![
+                NewItem {
+                    source_name: "partial.zip".into(),
+                    ..Default::default()
+                },
+                NewItem {
+                    source_name: "saved.zip".into(),
+                    ..Default::default()
+                },
+            ],
+        };
+        let import = committed_operation(
+            db.create_operation(import, "2026-10-22T00:00:00Z".into(), Default::default())?
+                .wait()?,
+        )?;
+        committed_operation(
+            db.mark_operation_item_running(
+                import.operation.identity.id.clone(),
+                import.items[0].identity.id,
+                "2026-10-22T00:00:01Z".into(),
+                Default::default(),
+            )?
+            .wait()?,
+        )?;
+        let saved = CompleteItemCommand {
+            generation: 1,
+            operation: import.operation.immutable_scope(),
+            item: import.items[1].immutable_scope(),
+            story_id: 0,
+            state: ItemState::Skipped,
+            completed_bytes: 0,
+            outcome: RawOutcome {
+                code: Some("future.outcome".into()),
+                message: Some("Original saved outcome".into()),
+            },
+        };
+        assert!(matches!(
+            repository.complete_item(&saved).disposition,
+            AttemptDisposition::Committed { .. }
+        ));
+        let export = NewOperation {
+            id: "a0000000-0000-4000-8000-000000000082".into(),
+            kind: OperationKind::Export,
+            source: Some(ExportSource {
+                source_type: ExportSourceType::Selection,
+                collection_ids: Vec::new(),
+                collection_names: Vec::new(),
+                shelf_ids: Vec::new(),
+                shelf_names: Vec::new(),
+            }),
+            destination: Some(
+                path("destination")?
+                    .to_str()
+                    .ok_or("UTF8 destination")?
+                    .into(),
+            ),
+            items: (1..=2)
+                .map(|n| NewItem {
+                    source_name: format!("export-{n}"),
+                    story_title: "Gone".into(),
+                    story_uuid: format!("c0000000-0000-4000-8000-{n:012}"),
+                    export_skip_code: "story_unavailable".into(),
+                    ..Default::default()
+                })
+                .collect(),
+        };
+        let export = committed_operation(
+            db.create_operation(export, "2026-10-22T00:00:02Z".into(), Default::default())?
+                .wait()?,
+        )?;
+        for item in &export.items {
+            committed_operation(
+                db.mark_operation_item_running(
+                    export.operation.identity.id.clone(),
+                    item.identity.id,
+                    "2026-10-22T00:00:03Z".into(),
+                    Default::default(),
+                )?
+                .wait()?,
+            )?;
+        }
+        let files = LibraryFiles::open_native(&db)?;
+        let custody = files.try_custody()?;
+        let mut stage = files
+            .create_stage(&custody)
+            .map_err(|f| f.cause().to_string())?;
+        stage.register_operation(
+            &custody,
+            import.operation.identity.id.clone(),
+            import.items[0].identity.id,
+        )?;
+        stage.write_all(b"partial import")?;
+        let mut partial = files
+            .create_export_temporary(
+                &custody,
+                export.operation.identity.id.clone(),
+                export.items[0].identity.id,
+            )
+            .map_err(|f| f.to_string())?;
+        partial.write_all(b"partial export")?;
+        partial.flush_durable()?;
+        let mut complete = files
+            .create_export_temporary(
+                &custody,
+                export.operation.identity.id.clone(),
+                export.items[1].identity.id,
+            )
+            .map_err(|f| f.to_string())?;
+        complete.write_all(b"completed export")?;
+        complete.flush_durable()?;
+        // Explicit synthetic crash point after publication, before SQL reporting.
+        // Recovery is never given this final name as cleanup authority.
+        fs::rename(
+            path("destination")?
+                .join(complete.workspace_name())
+                .join("payload"),
+            path("destination")?.join("completed.zip"),
+        )?;
+        fs::File::open(path("destination")?)?.sync_all()?;
+        let ready = serde_json::json!({"root":root,"partial":partial.workspace_name().to_str().ok_or("partial name")?,"complete":complete.workspace_name().to_str().ok_or("complete name")?});
+        let mut signal = fs::OpenOptions::new()
+            .create_new(true)
+            .write(true)
+            .open(path("ready")?.with_extension("writing"))?;
+        signal.write_all(&serde_json::to_vec(&ready)?)?;
+        signal.sync_all()?;
+        fs::rename(path("ready")?.with_extension("writing"), path("ready")?)?;
+        loop {
+            std::thread::park();
+            std::hint::black_box((&db, &native, &files, &custody, &stage, &partial, &complete));
+        }
+    }
+    struct Process(Child);
+    impl Drop for Process {
+        fn drop(&mut self) {
+            let _ = self.0.kill();
+            let _ = self.0.wait();
+        }
+    }
+    for mode in ["owned", "symlink", "hardlink"] {
+        let roots = TestRoots::new()?;
+        let (copy, locations) = prepare(&roots, false)?;
+        let source = Path::new(&copy.source_profile().profile().root);
+        let source_db = fs::read(source.join("db/librairii.sqlite3"))?;
+        let destination = roots.profile().join("exports");
+        fs::create_dir(&destination)?;
+        let foreign = destination.join("foreign.txt");
+        fs::write(&foreign, b"unrelated file")?;
+        fs::write(
+            destination.join(".librairii-export-unregistered.tmp"),
+            b"unregistered regular file",
+        )?;
+        let context = roots.profile().join("recovery-context.json");
+        let ready = roots.profile().join("recovery-ready.json");
+        fs::write(
+            &context,
+            serde_json::to_vec(
+                &serde_json::json!({"native":locations.native,"data":locations.data,"legacy":locations.legacy,"source":source,"destination":destination,"ready":ready}),
+            )?,
+        )?;
+        let output_path = roots.profile().join("child-output");
+        let output = fs::File::create(&output_path)?;
+        let mut child=Process(Command::new(std::env::current_exe()?).args(["--exact","native_registered_temporaries_recover_after_process_death_and_preserve_final_files","--nocapture"]).env(CONTEXT,&context).stdout(Stdio::from(output.try_clone()?)).stderr(Stdio::from(output)).spawn()?);
+        let end = Instant::now() + Duration::from_secs(30);
+        while !ready.exists() {
+            if let Some(status) = child.0.try_wait()? {
+                return Err(format!(
+                    "registered child {status}: {}",
+                    fs::read_to_string(&output_path)?
+                )
+                .into());
+            }
+            if Instant::now() >= end {
+                return Err("registered child timed out".into());
+            }
+            std::thread::sleep(Duration::from_millis(10));
+        }
+        let ready: serde_json::Value = serde_json::from_slice(&fs::read(&ready)?)?;
+        let root = Path::new(ready["root"].as_str().ok_or("root")?);
+        child.0.kill()?;
+        child.0.wait()?;
+        let partial = destination.join(ready["partial"].as_str().ok_or("partial")?);
+        if mode != "owned" {
+            fs::remove_file(partial.join("payload"))?;
+            if mode == "symlink" {
+                std::os::unix::fs::symlink(&foreign, partial.join("payload"))?;
+            } else {
+                fs::hard_link(&foreign, partial.join("payload"))?;
+            }
+        }
+        let store = NativeProfileStore::open_native(&locations.native)?;
+        assert!(NativeLibrary::reopen(&store, &locations, &WorkCancellation::default()).is_err());
+        let recovery =
+            NativeLibrary::recover_interrupted(&store, &locations, &WorkCancellation::default())?;
+        match recovery.open() {
+            Ok(mut db) => {
+                assert_eq!(mode, "owned");
+                let import = db
+                    .operation_snapshot("a0000000-0000-4000-8000-000000000081".into())?
+                    .wait()?
+                    .ok_or("import history")?;
+                assert_eq!(
+                    import.operation.state,
+                    librairii_core::OperationState::Interrupted
+                );
+                assert_eq!(import.items[1].state, ItemState::Skipped);
+                assert_eq!(
+                    import.items[1].outcome.code.as_deref(),
+                    Some("future.outcome")
+                );
+                assert!(fs::read_dir(root.join("staging"))?.next().is_none());
+                assert!(!partial.exists());
+                db.close()?;
+                drop(db);
+            }
+            Err(_) => {
+                assert_ne!(mode, "owned");
+                assert!(fs::symlink_metadata(partial.join("payload")).is_ok());
+            }
+        }
+        assert_eq!(
+            fs::read(destination.join("completed.zip"))?,
+            b"completed export"
+        );
+        assert_eq!(fs::read(&foreign)?, b"unrelated file");
+        assert_eq!(
+            fs::read(destination.join(".librairii-export-unregistered.tmp"))?,
+            b"unregistered regular file"
+        );
+        assert_eq!(fs::read(source.join("db/librairii.sqlite3"))?, source_db);
+        if mode == "owned" {
+            recovery.finish().map_err(|f| f.to_string())?;
+            assert_eq!(native_state(root)?["state"], "closed");
+        } else {
+            assert!(recovery.finish().is_err());
+            assert_eq!(native_state(root)?["state"], "active");
+        }
+    }
+    Ok(())
+}
+fn committed_operation<T>(value: TransactionOutcome<T>) -> TestResult<T> {
+    match value {
+        TransactionOutcome::Committed(v) => Ok(v),
+        TransactionOutcome::ProvenNotCommitted(e) | TransactionOutcome::CommitUncertain(e) => {
+            Err(e.into())
+        }
+    }
+}

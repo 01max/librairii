@@ -27,6 +27,10 @@ pub struct WorkItem {
 /// Call only on blocking runtime threads, never the paint/input thread.
 /// Returned rows are owned observations; the borrow retains the real DB owner.
 pub trait JobStore: OperationTerminalStore + Sync {
+    fn claim_session(&self) -> bool;
+    fn release_session(&self);
+    fn startup(&self) -> StoreResult<()>;
+    fn shutdown_cleanup(&self) -> StoreResult<()>;
     fn generation(&self) -> u64;
     fn create(&self, input: &NewOperation, at: &str) -> StoreResult<()>;
     fn creation_readback(&self, input: &NewOperation, at: &str) -> StoreResult<bool>;
