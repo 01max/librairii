@@ -371,9 +371,19 @@ fn parent_attempt() -> TestResult {
     };
     let deadline = Instant::now() + Duration::from_secs(30);
     let (status, failure) = loop {
-        match owner.child.try_wait() {
-            Ok(Some(_)) => break (owner.wait()?, None),
-            Ok(None) if Instant::now() < deadline => {
+        let observed = owner.child.try_wait();
+        let observed_at = Instant::now();
+        match observed {
+            Ok(Some(_)) => {
+                let expired = (observed_at >= deadline).then(|| {
+                    io::Error::new(
+                        io::ErrorKind::TimedOut,
+                        "child completion first observed at or after 30s deadline",
+                    )
+                });
+                break (owner.wait()?, expired);
+            }
+            Ok(None) if observed_at < deadline => {
                 std::thread::sleep(Duration::from_millis(10));
             }
             Ok(None) => {
