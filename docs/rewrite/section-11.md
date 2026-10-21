@@ -72,3 +72,14 @@ attempt, leaving the previous active snapshot available. An uncertain commit or
 lost acknowledgement is reported as outcome uncertain and never converted into
 an invented rollback/failure report. Tests inject projection drift to verify
 rollback, and exercise invalid/offline/cancel plus cancellation inside activation.
+
+## 11.4 — Display, freshness and preserved user decisions
+
+The existing independent title/description/author/artwork resolver now consumes
+real activated rows. Catalog status exposes never-synced/fresh/stale-cache with
+last attempt, activation time and matched count; metadata locale is independent
+of presentation language. A complete refresh test covers official title with
+embedded description/artwork, publisher/language/provenance, same-locale
+supersession and stale offline cache. It verifies Age assignment and a recolored
+Age definition survive refresh alongside user assignments, Broken and approved
+Shelf membership/order. No new display-time path access is introduced.

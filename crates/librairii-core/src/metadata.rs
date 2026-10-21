@@ -84,3 +84,20 @@ pub struct CatalogArtwork {
     pub id: crate::Checksum,
     pub source_url: String,
 }
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum Freshness {
+    NeverSynced,
+    Fresh,
+    StaleCache,
+}
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct CatalogStatus {
+    pub state: Freshness,
+    pub locale: Locale,
+    pub matched_stories: i64,
+    pub fetched_at: Option<String>,
+    pub activated_at: Option<String>,
+    pub last_attempt_status: Option<String>,
+    pub last_attempt_at: Option<String>,
+    pub error_code: Option<String>,
+}

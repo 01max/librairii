@@ -141,3 +141,150 @@ fn activation_is_atomic_and_failure_cancel_or_invalid_data_preserve_last_good()
     db.close()?;
     Ok(())
 }
+#[test]
+fn resolved_fields_freshness_and_age_changes_preserve_manual_state_and_curated_members()
+-> std::result::Result<(), Box<dyn std::error::Error>> {
+    use librairii_app::metadata::RefreshSession;
+    use librairii_core::{metadata::Freshness, query::QueryRequest, tagging::AgeConfig};
+    let roots = TestRoots::new()?;
+    let library = IsolatedLibrary::initialize_from_override(
+        Some(roots.library().as_os_str()),
+        "a0000000-0000-4000-8000-000000000001".parse()?,
+    )?;
+    let mut db = Database::open_isolated(&library)?;
+    let locale = Locale::parse("en-GB")?;
+    assert_eq!(
+        db.catalog_status(locale.clone())?.wait()?.state,
+        Freshness::NeverSynced
+    );
+    committed(db.transaction(WorkCancellation::default(),|tx|{
+        tx.execute_batch("INSERT INTO stories(id,uuid,embedded_title,embedded_description,embedded_artwork_path,display_name_normalized,is_broken) VALUES(1,'123e4567-e89b-42d3-a456-426614174000','Embedded title','Embedded description','catalog/embedded/test.png','embedded title',1); INSERT INTO story_archives(story_id,original_filename,detected_format,sha256,byte_size,managed_path,validation_state) VALUES(1,'story.zip','zip',printf('%064d',1),1,'archives/1','valid'); INSERT INTO tag_definitions(id,key,normalized_key,label,color,kind,source,position,is_protected) VALUES(10,'favorite','favorite','Favorite','#405CF5','boolean','user',0,0); INSERT INTO story_tag_assignments(story_id,definition_id,source) VALUES(1,10,'manual'); INSERT INTO shelves(id,name,normalized_name,position) VALUES(1,'Approved','approved',0); INSERT INTO shelf_stories(shelf_id,story_uuid,position,protected,cached_title) VALUES(1,'123e4567-e89b-42d3-a456-426614174000',7,1,'Approved title');")?;Ok(())
+    })?.wait()?)?;
+    committed(
+        db.seed_age_facets(AgeConfig::default(), WorkCancellation::default())?
+            .wait()?,
+    )?;
+    committed(
+        db.transaction(WorkCancellation::default(), |tx| {
+            tx.execute(
+                "UPDATE tag_definitions SET color='#405CF5' WHERE key='age'",
+                [],
+            )?;
+            Ok(())
+        })?
+        .wait()?,
+    )?;
+    let mut v: serde_json::Value = serde_json::from_slice(RAW)?;
+    let row = v["response"]
+        .as_object_mut()
+        .ok_or("response")?
+        .values_mut()
+        .next()
+        .ok_or("row")?;
+    let infos = row["localized_infos"].as_object_mut().ok_or("infos")?;
+    let info = infos.values_mut().next().ok_or("info")?;
+    info["description"] = serde_json::json!("");
+    info["image"] = serde_json::Value::Null;
+    let payload = serde_json::to_vec(&v)?;
+    for n in [20, 21] {
+        let session = RefreshSession::begin(
+            &db,
+            format!("a0000000-0000-4000-8000-{n:012}").parse()?,
+            "en-GB",
+            &format!("2026-10-21T12:{n}:00Z"),
+        )
+        .map_err(|e| format!("{e:?}"))?;
+        let report = session
+            .finish(
+                Ok(payload.clone()),
+                &format!("2026-10-21T12:{n}:01Z"),
+                || false,
+            )
+            .map_err(|e| format!("{e:?}"))?;
+        assert_eq!(report.matched_stories, 1);
+    }
+    let snapshots = db.catalog_snapshots()?.wait()?;
+    assert_eq!(snapshots[0].status, SnapshotStatus::Superseded);
+    assert_eq!(snapshots[1].status, SnapshotStatus::Active);
+    let page = db.search(QueryRequest::default(), "en-GB".into())?.wait()?;
+    let s = &page.stories[0];
+    assert_eq!(s.title, "The Clockwork Mountain");
+    assert_eq!(s.description, "Embedded description");
+    assert_eq!(s.sources.title, "official");
+    assert_eq!(s.sources.description, "embedded");
+    assert_eq!(s.artwork_id, "embedded:1");
+    assert_eq!(s.sources.artwork, "embedded");
+    assert!(s.broken);
+    let official = s.official.as_ref().ok_or("official")?;
+    assert_eq!(official.publisher, "Fixture Press");
+    assert_eq!(official.language, "en-GB");
+    // UI language is independent: a different metadata locale falls back locally.
+    assert_eq!(
+        db.search(QueryRequest::default(), "fr-FR".into())?
+            .wait()?
+            .stories[0]
+            .title,
+        "Embedded title"
+    );
+    let status = db.catalog_status(locale.clone())?.wait()?;
+    assert_eq!(status.state, Freshness::Fresh);
+    assert_eq!(status.matched_stories, 1);
+    let session = RefreshSession::begin(
+        &db,
+        "a0000000-0000-4000-8000-000000000022".parse()?,
+        "en-GB",
+        "2026-10-21T12:22:00Z",
+    )
+    .map_err(|e| format!("{e:?}"))?;
+    assert!(
+        session
+            .finish(
+                Err(librairii_core::metadata::MetadataError::Network),
+                "2026-10-21T12:22:01Z",
+                || false
+            )
+            .is_err()
+    );
+    assert_eq!(
+        db.catalog_status(locale)?.wait()?.state,
+        Freshness::StaleCache
+    );
+    db.read(|tx| {
+        assert_eq!(
+            tx.query_row(
+                "SELECT count(*) FROM story_tag_assignments WHERE story_id=1 AND source='manual'",
+                [],
+                |r| r.get::<_, i64>(0)
+            )?,
+            1
+        );
+        assert_eq!(
+            tx.query_row(
+                "SELECT count(*) FROM story_tag_assignments WHERE story_id=1 AND source='derived'",
+                [],
+                |r| r.get::<_, i64>(0)
+            )?,
+            1
+        );
+        assert_eq!(
+            tx.query_row(
+                "SELECT color FROM tag_definitions WHERE key='age'",
+                [],
+                |r| r.get::<_, String>(0)
+            )?,
+            "#405CF5"
+        );
+        assert_eq!(
+            tx.query_row(
+                "SELECT position FROM shelf_stories WHERE shelf_id=1",
+                [],
+                |r| r.get::<_, i64>(0)
+            )?,
+            7
+        );
+        Ok(())
+    })?
+    .wait()?;
+    db.close()?;
+    Ok(())
+}

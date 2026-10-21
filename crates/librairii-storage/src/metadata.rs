@@ -262,3 +262,19 @@ impl Database<'_> {
         })
     }
 }
+impl Database<'_> {
+    pub fn catalog_status(
+        &self,
+        locale: Locale,
+    ) -> Result<Pending<'_, librairii_core::metadata::CatalogStatus>> {
+        self.read(move|tx|{
+        use librairii_core::metadata::{CatalogStatus,Freshness};use rusqlite::OptionalExtension;
+        let active=tx.query_row("SELECT c.fetched_at,c.activated_at,s.matched_story_count FROM catalog_snapshots c JOIN catalog_syncs s ON s.id=c.sync_id WHERE c.locale=? AND c.status='active'",[locale.as_str()],|r|Ok((r.get::<_,String>(0)?,r.get::<_,String>(1)?,r.get::<_,i64>(2)?))).optional()?;
+        let latest=tx.query_row("SELECT status,started_at,error_code FROM catalog_syncs WHERE locale=? ORDER BY started_at DESC,id DESC LIMIT 1",[locale.as_str()],|r|Ok((r.get::<_,String>(0)?,r.get::<_,String>(1)?,r.get::<_,Option<String>>(2)?))).optional()?;
+        let mut status=CatalogStatus{state:Freshness::NeverSynced,locale,matched_stories:0,fetched_at:None,activated_at:None,last_attempt_status:None,last_attempt_at:None,error_code:None};
+        if let Some((fetched,activated,count))=active{status.state=Freshness::Fresh;status.fetched_at=Some(fetched);status.activated_at=Some(activated);status.matched_stories=count;}
+        if let Some((state,at,error))=latest{if status.state==Freshness::Fresh && matches!(state.as_str(),"failed"|"cancelled"){status.state=Freshness::StaleCache;}status.last_attempt_status=Some(state);status.last_attempt_at=Some(at);status.error_code=error;}
+        Ok(status)
+    })
+    }
+}
