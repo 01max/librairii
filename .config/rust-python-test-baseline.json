@@ -37,6 +37,10 @@
     "test_sources.SourcePolicy.test_materialized_core_headers_and_removed_storage_duplicates_are_enforced",
     "test_sources.SourcePolicy.test_query_map_binds_lookup_and_historical_index_separately",
     "test_sources.SourcePolicy.test_lookup_helper_bindings_cannot_restore_historical_or_fabricated_constants",
-    "test_sources.SourcePolicy.test_historical_reference_bytes_and_original_manifest_records_remain_fixed"
+    "test_sources.SourcePolicy.test_historical_reference_bytes_and_original_manifest_records_remain_fixed",
+    "test_sources.SourcePolicy.test_runtime_query_index_retains_all_prior_62_identities_and_prior_lookup_bytes",
+    "test_sources.SourcePolicy.test_runtime_query_leaves_require_materialized_exact_bytes_and_headers",
+    "test_sources.SourcePolicy.test_runtime_query_origins_and_scope_cannot_expand_to_sql_or_saved_conversion",
+    "test_sources.SourcePolicy.test_runtime_query_binding_does_not_relax_saved_derivatives_or_notice_guards"
   ]
 }

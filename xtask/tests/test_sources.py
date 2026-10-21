@@ -46,6 +46,10 @@ class SourcePolicy(unittest.TestCase):
         self.core_path = self.root / gate.CORE_PATH
         self.core_path.parent.mkdir(parents=True)
         shutil.copyfile(source / gate.CORE_PATH, self.core_path)
+        for name in gate.RUNTIME_LEAVES:
+            destination = self.root / name
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(source / name, destination)
         for path in ['.config/upstream-sources', '.config/upstream-notices/' + gate.BUNDLE]:
             shutil.copytree(source / path, self.root / path)
         self.registry_path = self.root / '.config/upstream-sources.json'
@@ -153,9 +157,11 @@ class SourcePolicy(unittest.TestCase):
         lookup_bytes = (self.source / historical_path).read_bytes()
         self.assertEqual((self.root / historical_path).read_bytes(), lookup_bytes)
         historical = json.loads(lookup_bytes)
+        historical.pop('runtimeSourceFiles')
+        historical.pop('runtimeSourceProvenance')
         query_sources = historical.pop('querySourceFiles')
         historical.pop('querySourceProvenance')
-        self.assertEqual(len(query_sources), gate.SOURCE_COUNT - 49)
+        self.assertEqual(len(query_sources), len(gate.QUERY_SELECTIONS))
         original_bytes = (json.dumps(historical, indent=2) + '\n').encode('utf-8')
         self.assertEqual(gate.digest(original_bytes),
             '10ea8fe193c594ce153ae7a1734c41ab80c9d406cc7ea314c8c7c471b7a92a99')
@@ -170,7 +176,7 @@ class SourcePolicy(unittest.TestCase):
                 self.assertEqual(by_path[original['path']], original)
 
     def test_query_origins_require_exact_set_and_bounded_selection(self):
-        self.assertEqual(len(self.query_map['origins']), gate.SOURCE_COUNT - 49)
+        self.assertEqual(len(self.query_map['origins']), len(gate.QUERY_SELECTIONS))
         for mutation in ['missing', 'extra', 'duplicate', 'selection']:
             changed = copy.deepcopy(self.query_map)
             if mutation == 'missing':
@@ -324,6 +330,137 @@ class SourcePolicy(unittest.TestCase):
             finally:
                 path.write_bytes(original)
                 self.save_manifest(self.initial_manifest)
+
+    def test_runtime_query_index_retains_all_prior_62_identities_and_prior_lookup_bytes(self):
+        previous = copy.deepcopy(self.index)
+        added = previous.pop('runtimeSourceFiles')
+        provenance = previous.pop('runtimeSourceProvenance')
+        self.assertEqual(gate.digest((json.dumps(previous, indent=2) + '\n').encode()),
+            '13dfd314abfda9a9553d152a1d8a5586f8bd1205a08c177af9bbec57a51ae822')
+        self.assertEqual(provenance['previousQuerySourceIndexSha256'], gate.PREVIOUS_QUERY_INDEX_SHA)
+        self.assertEqual([item['path'] for item in added],
+            ['oracle73a93303/internal/library/query.go'])
+        prior = [item for package in previous['packages'] for item in package['files']]
+        prior += previous['supplementalSourceFiles'] + previous['querySourceFiles']
+        self.assertEqual(len(prior), 62)
+        observed = {item['path']: item for item in gate.check(self.root)['source_identities']}
+        self.assertEqual(len(observed), 63)
+        for item in prior:
+            with self.subTest(origin=item['path']):
+                self.assertEqual(observed[item['path']], item)
+        changed = copy.deepcopy(self.query_map)
+        changed['previous_query_index_sha256'] = changed['historical_index_sha256']
+        self.assert_query_map_rejected(changed)
+
+    def test_runtime_query_leaves_require_materialized_exact_bytes_and_headers(self):
+        self.assertEqual([item['path'] for item in self.query_map['runtime']['leaves']],
+            list(gate.RUNTIME_LEAVES))
+        for record in self.query_map['runtime']['leaves']:
+            path = self.root / record['path']
+            original = path.read_bytes()
+            for changed in [None, original + b'\n// Owned runtime leaf mutation.\n']:
+                try:
+                    if changed is None:
+                        path.unlink()
+                    else:
+                        path.write_bytes(changed)
+                    before = snapshot(self.root)
+                    with self.subTest(leaf=record['path'], missing=changed is None):
+                        with self.assertRaises((ValueError, OSError)):
+                            gate.check(self.root)
+                    self.assertEqual(snapshot(self.root), before)
+                finally:
+                    path.write_bytes(original)
+        for mutation in ['missing', 'extra', 'duplicate', 'header', 'kind']:
+            changed = copy.deepcopy(self.query_map)
+            leaves = changed['runtime']['leaves']
+            if mutation == 'missing':
+                leaves.pop()
+            elif mutation in ('extra', 'duplicate'):
+                leaves.append(copy.deepcopy(leaves[0]))
+                if mutation == 'extra':
+                    leaves[-1]['path'] = 'crates/librairii-core/src/query/unselected.rs'
+            elif mutation == 'header':
+                leaves[0]['header_sha256'] = '0' * 64
+            else:
+                leaves[0]['kind'] = 'authored'
+            with self.subTest(mutation=mutation):
+                self.assert_query_map_rejected(changed)
+        extra = self.root / 'crates/librairii-core/src/query/unselected.rs'
+        extra.write_bytes(b'// No selected runtime origin.\n')
+        before = snapshot(self.root)
+        with self.assertRaisesRegex(ValueError, 'extra materialized runtime'):
+            gate.check(self.root)
+        self.assertEqual(snapshot(self.root), before)
+
+    def test_runtime_query_origins_and_scope_cannot_expand_to_sql_or_saved_conversion(self):
+        self.assertEqual(self.query_map['runtime']['origins'], [
+            {'path': path, 'sha256': next(item['sha256'] for item in
+                self.index['supplementalSourceFiles'] + self.index['runtimeSourceFiles']
+                if item['path'] == path),
+             'header_sha256': next(item['first12LinesSha256'] for item in
+                self.index['supplementalSourceFiles'] + self.index['runtimeSourceFiles']
+                if item['path'] == path), 'selection': role}
+            for path, role in gate.RUNTIME_SELECTIONS.items()])
+        for mutation in ['missing', 'duplicate', 'foreign', 'selection', 'source_hash',
+                         'source_header', 'scope', 'page_scope', 'excluded']:
+            changed = copy.deepcopy(self.query_map)
+            runtime = changed['runtime']
+            if mutation == 'missing':
+                runtime['origins'].pop()
+            elif mutation == 'duplicate':
+                runtime['origins'].append(copy.deepcopy(runtime['origins'][0]))
+            elif mutation == 'foreign':
+                runtime['origins'][0]['path'] = 'oracle73a93303/internal/library/unselected.go'
+            elif mutation == 'selection':
+                runtime['origins'][0]['selection'] = 'query-product'
+            elif mutation == 'source_hash':
+                runtime['origins'][0]['sha256'] = '0' * 64
+            elif mutation == 'source_header':
+                runtime['origins'][0]['header_sha256'] = '0' * 64
+            elif mutation == 'scope':
+                runtime['scope'] = 'all-library-query-and-saved-canonicalization'
+            elif mutation == 'page_scope':
+                runtime['selection_scopes']['runtime-query-page'] += ' Also execute SQL.'
+            else:
+                runtime['excluded'] = []
+            with self.subTest(mutation=mutation):
+                self.assert_query_map_rejected(changed)
+        registry = copy.deepcopy(self.registry)
+        registry['bundles'][0]['source_selections'][
+            'oracle73a93303/internal/library/query.go'].append('query-product')
+        self.save_registry(registry)
+        with self.assertRaises(ValueError):
+            gate.check(self.root)
+
+    def test_runtime_query_binding_does_not_relax_saved_derivatives_or_notice_guards(self):
+        changed = copy.deepcopy(self.query_map)
+        changed['runtime']['notices'] = ['LICENSE-GO-BSD.txt']
+        self.assert_query_map_rejected(changed)
+        path = self.private / 'normalization_data.rs'
+        original = path.read_bytes()
+        changed_bytes = original + b'\n// A runtime source does not authorize new frozen data.\n'
+        try:
+            path.write_bytes(changed_bytes)
+            manifest = copy.deepcopy(self.initial_manifest)
+            record = next(item for item in manifest['files'] if item['path'] == path.name)
+            record.update(bytes=len(changed_bytes), sha256=gate.digest(changed_bytes))
+            self.save_manifest(manifest)
+            with self.assertRaisesRegex(ValueError, 'historical derivative'):
+                gate.check(self.root)
+        finally:
+            path.write_bytes(original)
+            self.save_manifest(self.initial_manifest)
+        notice = self.root / self.bundle['notices_root'] / 'LICENSE-UNICODE-V3.txt'
+        original = notice.read_bytes()
+        try:
+            notice.write_bytes(original + b'\n')
+            before = snapshot(self.root)
+            with self.assertRaises(ValueError):
+                gate.check(self.root)
+            self.assertEqual(snapshot(self.root), before)
+        finally:
+            notice.write_bytes(original)
 
     def test_registered_sources_and_notices_pass_without_writes(self):
         before = snapshot(self.root)

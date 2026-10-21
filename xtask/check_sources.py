@@ -9,16 +9,17 @@ import stat
 import sys
 
 HISTORICAL_INDEX_SHA = '10ea8fe193c594ce153ae7a1734c41ab80c9d406cc7ea314c8c7c471b7a92a99'
-INDEX_SHA = '13dfd314abfda9a9553d152a1d8a5586f8bd1205a08c177af9bbec57a51ae822'
-SOURCE_COUNT = 62
+PREVIOUS_QUERY_INDEX_SHA = '13dfd314abfda9a9553d152a1d8a5586f8bd1205a08c177af9bbec57a51ae822'
+INDEX_SHA = 'cd8fcdac9ccdd46f1f06294f27bc07e9f8ed40f79d16cdab4d39c7c0cd837d78'
+SOURCE_COUNT = 63
 QUERY_MAP = '.config/query-codec-source-map.json'
-QUERY_MAP_SHA = 'fbd3eb75eeb0838911740a9ea42a3cb68bbd8510d84bfbff3b5a14b9838bcb1e'
+QUERY_MAP_SHA = 'f052d60299299bd549d569bd714c5cb9a93e791ffe0d721dcd9ed3ffe69aa710'
 HISTORICAL_MANIFEST_SHA = '2f8bd6db37191346b6719d7345a46a0b4d3163be745d5fae6b7f8ebf429a0409'
 BUNDLE = 'go-1.26.5-xtext-0.43.0-unicode15-cldr32'
 APPROVED_BUNDLES = {BUNDLE, 'go-1.26.5-json-v1-studio'}
 DERIVATIVES = 'crates/librairii-core/src/collection_codec/compatibility'
 # Actual ORIGINAL8471 closure delivered onto current94b; source bytes only.
-SELECTED_MANIFEST_SHA = '026a9dcbd53f03857561c8f3e3b1d47519053a80dde1fada11a2fa52e46cfe3a'
+SELECTED_MANIFEST_SHA = 'fc5c3b06541999a667e66aee35348d6e312c1ac706840622722281dc1e1efc3e'
 SELECTED_KINDS = {
     'codec-reference.json': 'generated',
     'codec_oracle.go.in': 'authored',
@@ -50,6 +51,8 @@ NOTICE_REQUIREMENTS = {
     'query-json-wire': ['LICENSE-GO-BSD.txt', 'PATENTS-GO.txt'],
     'query-json-i64': ['LICENSE-GO-BSD.txt', 'PATENTS-GO.txt'],
     'query-json-output': ['LICENSE-GO-BSD.txt', 'PATENTS-GO.txt'],
+    'runtime-query-normalization': [],
+    'runtime-query-page': [],
 }
 
 QUERY_SELECTIONS = {'Go1.26.5/src/encoding/json/scanner.go': 'query-json-wire',
@@ -79,6 +82,27 @@ QUERY_SCOPES = {'query-product': 'ONLY frozen v1-v5 saved-query payload/referenc
  'query-json-output': 'ONLY fixed Query serialization order/omission and string escaping '
                       'references including HTML <>& and U+2028/U+2029 from encode.go/tables.go; '
                       'no generic encoder/reflection/API.'}
+RUNTIME_SELECTIONS = {
+    'oracle73a93303/internal/library/story_query.go': 'runtime-query-normalization',
+    'oracle73a93303/internal/library/query.go': 'runtime-query-page',
+}
+RUNTIME_SCOPES = {
+    'runtime-query-normalization': 'ONLY borrowed runtime StoryLibraryQuery fields and the single '
+        'normalizeStoryLibraryQuery/normalizeStoryLibraryQueryNode pass, its existing criteria '
+        'validation and canonicalLanguage boundary. Reuse the SAME frozen normalization pipeline '
+        'with checked input-derived resource bounds; saved-query fixed budgets/passes remain '
+        'unchanged. No saved-payload decoding/canonicalization, SQL, projection or live authority.',
+    'runtime-query-page': 'ONLY ListRequest page/pageSize/sort fields, DefaultPageSize=24, '
+        'MaxPageSize=100, SortNameAscending=name_asc, SortImportedNewest=imported_desc and '
+        'normalizeListRequest defaults/validation (page default1). No SQL, list execution, output '
+        'materialization, metadata, destination/reveal or other query.go behavior.',
+}
+RUNTIME_SCOPE = 'runtime-one-pass-query-normalization-and-page-sort-only'
+RUNTIME_LEAVES = ('crates/librairii-core/src/query/mod.rs',
+                  'crates/librairii-core/src/collection_codec/runtime.rs')
+RUNTIME_EXCLUDED = ['SQL and database effects', 'live definition/value ownership or revision authority',
+                    'saved wire/canonicalization budget or pass changes',
+                    'query execution/output materialization and metadata/reveal']
 LOOKUP_BINDINGS = {'crates/librairii-core/src/collection_codec/compatibility/extract_normalization.py': 'INDEX_HASH',
  'crates/librairii-core/src/collection_codec/compatibility/extract_language.py': 'INDEX_HASH',
  'crates/librairii-core/src/collection_codec/compatibility/update_source_manifest.py': 'INDEX_SHA',
@@ -167,6 +191,9 @@ def pinned(root, record):
 
 
 def selection(path):
+    if path in RUNTIME_SELECTIONS:
+        roles = ['product-boundary'] if path.endswith('/story_query.go') else []
+        return roles + [RUNTIME_SELECTIONS[path]]
     if path in QUERY_SELECTIONS:
         return [QUERY_SELECTIONS[path]]
     if path.startswith(('golang.org/x/text@v0.43.0/internal/language/',
@@ -200,6 +227,7 @@ def check(root):
             or bundle['excluded'] != EXCLUDED
             or bundle['selection_notices'] != NOTICE_REQUIREMENTS
             or bundle.get('query_selection_scopes') != QUERY_SCOPES
+            or bundle.get('runtime_selection_scopes') != RUNTIME_SCOPES
             or bundle.get('query_codec') != {'map_path': QUERY_MAP, 'map_sha256': QUERY_MAP_SHA,
                 'scope': 'single-materialized-core-query-codec', 'core_leaf': CORE_PATH}):
         raise ValueError('unreviewed source selection, scope or DNS policy')
@@ -210,7 +238,11 @@ def check(root):
     if {p.relative_to(index_path.parent).as_posix() for p in index_path.parent.rglob('*')} != {'source-index.json'}:
         raise ValueError('extra files beside authenticated source index')
     index = decode(data)
-    historical = {k: v for k, v in index.items()
+    previous = {k: v for k, v in index.items()
+                if k not in ('runtimeSourceFiles', 'runtimeSourceProvenance')}
+    if digest((json.dumps(previous, indent=2) + '\n').encode()) != PREVIOUS_QUERY_INDEX_SHA:
+        raise ValueError('changed previous62 source identities or provenance')
+    historical = {k: v for k, v in previous.items()
                   if k not in ('querySourceFiles', 'querySourceProvenance')}
     if digest((json.dumps(historical, indent=2) + '\n').encode()) != HISTORICAL_INDEX_SHA:
         raise ValueError('changed historical49 source identities or provenance')
@@ -219,6 +251,12 @@ def check(root):
             or {r['path'] for r in query_sources} != set(QUERY_SELECTIONS)
             or index.get('querySourceProvenance', {}).get('historicalSourceIndexSha256') != HISTORICAL_INDEX_SHA):
         raise ValueError('missing extra or duplicate query origins')
+    runtime_sources = index.get('runtimeSourceFiles', [])
+    if (len(runtime_sources) != 1 or runtime_sources[0]['path'] !=
+            'oracle73a93303/internal/library/query.go'
+            or index.get('runtimeSourceProvenance', {}).get('previousQuerySourceIndexSha256') !=
+            PREVIOUS_QUERY_INDEX_SHA):
+        raise ValueError('missing extra or duplicate runtime origins')
     sources = [f for package in index['packages'] for f in package['files']]
     if len(sources) != 43:
         raise ValueError('changed package-source set')
@@ -226,6 +264,7 @@ def check(root):
     if len(sources) != 49:
         raise ValueError('changed historical49 source set')
     sources += query_sources
+    sources += runtime_sources
     by_path = {f['path']: f for f in sources}
     if len(sources) != SOURCE_COUNT or len(by_path) != SOURCE_COUNT:
         raise ValueError('changed or duplicate source identities')
@@ -327,11 +366,12 @@ def check_query_map(root, bundle, by_path, records):
             'historical_manifest_sha256', 'historical_derivatives', 'historical_inline',
             'core_leaf', 'origins', 'notices', 'recipe', 'lookup_bindings', 'fixed_references',
             'current_derivative_changes', 'identity_migrations', 'historical_rust_baseline_sha256',
-            'historical_python_baseline_sha256', 'delivery_lineage'}
+            'historical_python_baseline_sha256', 'delivery_lineage', 'previous_query_index_sha256', 'runtime', 'identity_additions'}
     if (set(value) != keys or value['version'] != 2 or value['bundle'] != BUNDLE
             or value['scope'] != 'single-materialized-core-query-codec'
             or value['lookup_index_sha256'] != INDEX_SHA
             or value['historical_index_sha256'] != HISTORICAL_INDEX_SHA
+            or value['previous_query_index_sha256'] != PREVIOUS_QUERY_INDEX_SHA
             or value['historical_manifest_sha256'] != HISTORICAL_MANIFEST_SHA
             or value['historical_inline'] != HISTORICAL_INLINE):
         raise ValueError('invalid materialized core map or historical inline identity')
@@ -383,7 +423,8 @@ def check_query_map(root, bundle, by_path, records):
         for line in original_header.splitlines():
             if line.startswith(b'// Copyright') and line not in header:
                 raise ValueError('dropped original core copyright header')
-    complete = {'mod.rs', 'compatibility/source-manifest.json'} | {
+    check_runtime_map(root, value['runtime'], by_path)
+    complete = {'mod.rs', 'runtime.rs', 'compatibility/source-manifest.json'} | {
         'compatibility/' + x['path'] for x in records}
     directory = safe(root, CORE_PATH).parent
     actual = set()
@@ -474,6 +515,18 @@ def check_delivery_lineage(root, value):
     for kind, path in [('rust', '.config/rust-test-baseline.json'),
                        ('python', '.config/rust-python-test-baseline.json')]:
         baseline = decode(safe(root, path).read_bytes())
+        additions = value['identity_additions'][kind]
+        if (not isinstance(additions, list)
+                or len({x['position'] for x in additions}) != len(additions)):
+            raise ValueError('invalid explicit discovery additions')
+        for addition in sorted(additions, key=lambda x: x['position'], reverse=True):
+            if (set(addition) != {'position', 'identity', 'reason'}
+                    or type(addition['position']) is not int or addition['position'] < 0
+                    or addition['position'] >= len(baseline['required'])
+                    or baseline['required'][addition['position']] != addition['identity']
+                    or not isinstance(addition['reason'], str) or not addition['reason'].strip()):
+                raise ValueError('unobserved or misplaced discovery addition')
+            del baseline['required'][addition['position']]
         base = copy.deepcopy(baseline)
         if kind == 'rust':
             for move in value['identity_migrations']['rust']:
@@ -520,6 +573,40 @@ def check_selected(root):
     regular(root, CORE_PATH)
     return check(root)
 
+
+
+def check_runtime_map(root, value, by_path):
+    if (set(value) != {'scope', 'origins', 'selection_scopes', 'leaves', 'notices',
+                       'recipe', 'excluded'} or value['scope'] != RUNTIME_SCOPE
+            or value['selection_scopes'] != RUNTIME_SCOPES
+            or value['excluded'] != RUNTIME_EXCLUDED or value['notices'] != []
+            or not isinstance(value['recipe'], str) or not value['recipe'].strip()):
+        raise ValueError('invalid bounded runtime query scope or notices')
+    expected = [{'path': path, 'sha256': by_path[path]['sha256'],
+                 'header_sha256': by_path[path]['first12LinesSha256'], 'selection': role}
+                for path, role in RUNTIME_SELECTIONS.items()]
+    if value['origins'] != expected:
+        raise ValueError('unapproved runtime query origin header or selection')
+    leaves = value['leaves']
+    if len(leaves) != len(RUNTIME_LEAVES) or [x['path'] for x in leaves] != list(RUNTIME_LEAVES):
+        raise ValueError('missing duplicate or extra materialized runtime query leaf')
+    for leaf in leaves:
+        if (set(leaf) != {'path', 'bytes', 'sha256', 'kind', 'header_bytes', 'header_sha256'}
+                or leaf['kind'] != 'translated' or not isinstance(leaf['header_bytes'], int)
+                or leaf['header_bytes'] < 1 or leaf['header_bytes'] > leaf['bytes']):
+            raise ValueError('invalid materialized runtime query leaf')
+        content = pinned(root, leaf)
+        if digest(content[:leaf['header_bytes']]) != leaf['header_sha256']:
+            raise ValueError('changed materialized runtime query header identity')
+    directory = safe(root, RUNTIME_LEAVES[0]).parent
+    actual = set()
+    for path in directory.rglob('*'):
+        name = path.relative_to(directory).as_posix()
+        safe(directory, name)
+        if path.is_file():
+            actual.add(name)
+    if actual != {'mod.rs'}:
+        raise ValueError('incomplete or extra materialized runtime query namespace')
 
 
 def inventory(root, report):

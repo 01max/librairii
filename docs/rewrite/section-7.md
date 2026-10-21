@@ -1,0 +1,30 @@
+# Search, query codecs and navigation
+
+Task 7 is delivered against `rewrite-in-rust-native-desktop`, starting at
+`b90d30e99218ae2687bbd84f853e3e39af10505c`. Required production targets are
+Linux x86-64 and macOS Apple silicon/Intel. Windows support is deferred.
+
+Each subtask has a distinct Conventional Commit with an `OpenSpec-Task` trailer.
+The canonical OpenSpec checklist lives in the separate local `openspec` repository.
+This document records shipped scope and verification; pending rows are not passes.
+
+| Subtask | Scope | Evidence |
+| --- | --- | --- |
+| 7.1 | Frozen Unicode runtime normalization | Original `191ae6c320778467b71a3d0d25a3efde61e30ebc` retained through a normal merge; one shared frozen pipeline, distinct saved/runtime passes. ARM Rust 1.99.1: core nextest 132/132, zero skips, UUID `eeab244d-7362-466b-ac86-acc3ce8c8f3a`; includes complete scalar/sequence references and 14 runtime identities. Source-policy 22/22; core all-target Clippy with warnings denied passed. |
+| 7.2 | SQL search/count/page, filters, ordering and indexes | Pending |
+| 7.3 | Bounded saved membership and live-reference validation | Pending |
+| 7.4 | Current/legacy URL and typed scope decoding | Pending |
+| 7.5 | Semantic navigation and native preference persistence | Pending |
+| 7.6 | Full-scope snapshot resolution and differential references | Pending |
+| 7.7 | Independent review and edge/stale-response verification | Pending |
+
+The 7.1 merge preserves all 329 integration-base Rust discovery objects and all
+38 Python identities, appending 14 Rust and four Python identities. Both source
+bundles, original codec delivery lineage, frozen references, notices and strict
+selected-closure checks remain mandatory. Conflicts were resolved by retaining
+both provenance contracts and recording additions before historical comparisons.
+
+Parity coverage: normalization/search P14 and query/navigation P15–P17;
+exact row mapping and final cumulative/provider results are recorded as each
+implementation boundary is verified. This headless work does not qualify a GUI,
+toolkit, package, production import, metadata synchronization or Windows writes.

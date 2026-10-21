@@ -4,6 +4,7 @@ pub mod collection_codec;
 mod identity;
 pub mod import;
 pub mod operations;
+pub mod query;
 mod vocabulary;
 pub use identity::{Checksum, CollectionId, JobId, LibraryId, ShelfId, StoryUuid};
 pub use vocabulary::{

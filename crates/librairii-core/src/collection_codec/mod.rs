@@ -14,6 +14,7 @@
 //! normalization/language derivatives retain their compatibility manifest.
 
 mod compatibility;
+pub(crate) mod runtime;
 
 use self::compatibility::{LanguageError, NormalizeError};
 use serde::Serialize;
