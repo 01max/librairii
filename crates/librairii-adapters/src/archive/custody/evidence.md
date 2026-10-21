@@ -92,3 +92,43 @@ No accepted inspection, format/classifier, archive read/CRC/PNG/decoder/resource
 strategy, publication/reuse, SQL/commit, published compensation, durable recovery,
 clean finalizer, other native target or full5.N/5.10 admission/merge is claimed.
 All full section5 checkboxes remain open; no shared OpenSpec progress was edited.
+
+## Original contribution ledger
+
+| Partial contribution | Original full SHA |
+|---|---|
+|5.6 successful-stage-input copy/hash|93894aeeed9b425403f11dc8fac7645998c00781|
+|5.8 uncancelled unused-temp retirement/retained failure|02d7e4762f3cf3f9322ce3160f11ccbf5ea7e5d3|
+
+The ledger update is a separate documentation commit. No commit is a5.10
+completion/admission, review or executed-test receipt. All originals and the
+entire662 ancestry are retained without squash/rebase/cherry-pick.
+
+## Authored candidate test identities — NOT observed discovery
+
+These17 source declarations exist under cfg macOS/Linux. The expected parent
+module path is `archive::custody::tests`; owner5 must derive the actual nextest
+identities AFTER wiring, rather than pinning a declared count. Two additional
+compile-fail examples on CopyOutcome are authored, NOT executed doctests. Existing
+parent assertions/scopes/docs and both source-policy closures remain unchanged
+in firstG. Tests use existing librairii-testkit::TestRoots, so the prospective
+owner5 support needs that dev-only internal edge as well as adapters->storage.
+No serde/JSON/crypto/decoder or other external dependency is requested.
+
+- `archive::custody::tests::prepublication_copy_retains_real_native_owners_raw_name_and_exact_eof_bytes`
+- `archive::custody::tests::prepublication_empty_source_requires_actual_eof_and_empty_stage_digest`
+- `archive::custody::tests::prepublication_growth_sentinel_is_read_but_never_written_past_bound`
+- `archive::custody::tests::prepublication_nonempty_stage_is_refused_without_appending_source`
+- `archive::custody::tests::prepublication_qualification_envelope_is_not_a_product_or_expanded_limit`
+- `archive::custody::tests::prepublication_short_copy_eof_retires_only_actual_owned_prefix`
+- `archive::custody::tests::prepublication_real_borrowed_read_error_preserves_prefix_and_uncancelled_retirement`
+- `archive::custody::tests::prepublication_unacknowledged_write_prefix_and_cancel_never_erase_io_cause`
+- `archive::custody::tests::prepublication_short_writes_and_interrupted_read_still_measure_real_eof`
+- `archive::custody::tests::prepublication_acknowledged_partial_write_error_keeps_exact_bytes`
+- `archive::custody::tests::prepublication_cancellation_phase_matrix_retains_owners_without_partial_digest`
+- `archive::custody::tests::prepublication_cancellation_between_read_and_write_or_short_writes_is_observed`
+- `archive::custody::tests::prepublication_hash_read_error_or_short_eof_produces_no_digest`
+- `archive::custody::tests::prepublication_changed_source_or_actual_stage_is_never_measured_success`
+- `archive::custody::tests::prepublication_retirement_failure_keeps_actual_stage_source_guard_and_foreign_bytes`
+- `archive::custody::tests::prepublication_already_owned_work_can_finish_after_ordinary_intake_stop`
+- `archive::custody::tests::prepublication_checked_counter_overflow_preserves_prior_observation`
