@@ -296,3 +296,77 @@ fn confirmed_deletion_invalidates_entire_nested_collections_and_preserves_shelf_
     db.close()?;
     Ok(())
 }
+#[test]
+fn derived_age_identity_bands_and_custom_colors_survive_reseeding_and_projection() -> TestResult {
+    use librairii_core::tagging::AgeConfig;
+    let roots = TestRoots::new()?;
+    let library = IsolatedLibrary::initialize_from_override(
+        Some(roots.library().as_os_str()),
+        "a0000000-0000-4000-8000-000000000001".parse()?,
+    )?;
+    let mut db = Database::open_isolated(&library)?;
+    seed_stories(&db, 4)?;
+    let id = committed(
+        db.seed_age_facets(AgeConfig::default(), WorkCancellation::default())?
+            .wait()?,
+    )?;
+    assert_eq!(db.tag_catalog()?.wait()?[0].definition.color, "#267D5D");
+    edit(
+        &db,
+        Command::RecolorDefinition {
+            id,
+            color: "#405CF5".into(),
+        },
+    )?;
+    assert!(
+        edit(
+            &db,
+            Command::RenameDefinition {
+                id,
+                label: "Not age".into()
+            }
+        )
+        .is_err()
+    );
+    assert!(value(&db, id, "other").is_err());
+    assert!(
+        assignment(
+            &db,
+            Command::ChoiceValues {
+                story_ids: vec![1],
+                definition_id: id,
+                value_ids: vec![]
+            }
+        )
+        .is_err()
+    );
+    committed(db.transaction(WorkCancellation::default(),|tx|{
+ tx.execute_batch("INSERT INTO catalog_syncs(id,locale,started_at) VALUES('20000000-0000-4000-8000-000000000001','fr-FR','2026-01-01'); INSERT INTO catalog_snapshots(id,sync_id,locale,status,raw_path,raw_sha256,byte_size,record_count,fetched_at,activated_at) VALUES(1,'20000000-0000-4000-8000-000000000001','fr-FR','staged','catalog/age.json',printf('%064d',1),1,4,'2026-01-01',NULL);")?;
+ for (story,min,max) in [(1,Some(3),Some(5)),(2,Some(6),Some(8)),(3,Some(3),Some(8)),(4,None,None)]{
+ tx.execute("INSERT INTO official_story_metadata(snapshot_id,story_uuid,locale,title,minimum_age,maximum_age,provenance) SELECT 1,uuid,'fr-FR','Official',?2,?3,'lunii_catalog' FROM stories WHERE id=?1",rusqlite::params![story,min,max])?;
+ }Ok(())})?.wait()?)?;
+    let r = committed(
+        db.rebuild_age_projection(1, AgeConfig::default(), WorkCancellation::default())?
+            .wait()?,
+    )?;
+    assert_eq!(
+        (r.matched_stories, r.assigned_stories, r.unassigned),
+        (4, 2, 2)
+    );
+    committed(
+        db.seed_age_facets(AgeConfig::default(), WorkCancellation::default())?
+            .wait()?,
+    )?;
+    let ws = db.assignment_workspace(vec![1, 2, 3, 4])?.wait()?;
+    assert_eq!(ws.catalog[0].definition.color, "#405CF5");
+    assert_eq!(
+        ws.states[0]
+            .values
+            .iter()
+            .map(|v| v.assigned_stories)
+            .collect::<Vec<_>>(),
+        vec![1, 1]
+    );
+    db.close()?;
+    Ok(())
+}

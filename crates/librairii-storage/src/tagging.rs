@@ -1,5 +1,7 @@
 //! Tag repositories. Every command uses the existing owned writer transaction.
+mod age;
 mod assignments;
+pub use age::{after_story_create_age, ensure_age_facets, project_age_snapshot};
 mod deletion;
 use crate::{
     Result, StorageError,
@@ -70,6 +72,26 @@ impl Database<'_> {
         cancellation: WorkCancellation,
     ) -> Result<Pending<'_, TransactionOutcome<Response>>> {
         self.transaction(cancellation, move |tx| execute(tx, command))
+    }
+    pub fn seed_age_facets(
+        &self,
+        config: librairii_core::tagging::AgeConfig,
+        cancellation: WorkCancellation,
+    ) -> Result<Pending<'_, TransactionOutcome<i64>>> {
+        self.transaction(
+            cancellation,
+            move |tx| Ok(ensure_age_facets(tx, &config)?.0),
+        )
+    }
+    pub fn rebuild_age_projection(
+        &self,
+        snapshot: i64,
+        config: librairii_core::tagging::AgeConfig,
+        cancellation: WorkCancellation,
+    ) -> Result<Pending<'_, TransactionOutcome<librairii_core::tagging::ProjectionResult>>> {
+        self.transaction(cancellation, move |tx| {
+            project_age_snapshot(tx, snapshot, &config)
+        })
     }
     pub fn tag_deletion_plan(&self, target: DeleteTarget) -> Result<Pending<'_, DeletionPlan>> {
         self.read(move |tx| plan_deletion(tx, target))

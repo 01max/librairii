@@ -4,6 +4,10 @@ use crate::collection_codec::{tag_is_mark, tag_key_decomposition, tag_trim};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, thiserror::Error)]
 pub enum TagError {
+    #[error("tagging.invalid_projection_config")]
+    InvalidProjectionConfig,
+    #[error("tagging.derived_facet_drift")]
+    DerivedFacetDrift,
     #[error("tagging.delete_plan_stale")]
     DeletePlanStale,
     #[error("tagging.saved_collection_query_invalid")]
@@ -38,6 +42,8 @@ pub enum TagError {
 impl TagError {
     pub const fn code(self) -> &'static str {
         match self {
+            Self::InvalidProjectionConfig => "tagging.invalid_projection_config",
+            Self::DerivedFacetDrift => "tagging.derived_facet_drift",
             Self::DeletePlanStale => "tagging.delete_plan_stale",
             Self::SavedQueryInvalid => "tagging.saved_collection_query_invalid",
             Self::InvalidAssignment => "tagging.invalid_assignment",
@@ -196,4 +202,91 @@ pub fn story_ids(ids: &[i64]) -> Result<Vec<i64>, TagError> {
     ids.sort_unstable();
     ids.dedup();
     Ok(ids)
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct AgeBand {
+    pub key: String,
+    pub label: String,
+    pub minimum: i64,
+    pub maximum: i64,
+}
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct AgeConfig {
+    pub bands: Vec<AgeBand>,
+}
+impl Default for AgeConfig {
+    fn default() -> Self {
+        Self {
+            bands: vec![
+                AgeBand {
+                    key: "3-5".into(),
+                    label: "3–5 years".into(),
+                    minimum: 3,
+                    maximum: 5,
+                },
+                AgeBand {
+                    key: "6-8".into(),
+                    label: "6–8 years".into(),
+                    minimum: 6,
+                    maximum: 8,
+                },
+            ],
+        }
+    }
+}
+impl AgeConfig {
+    pub fn validate(&self) -> Result<(), TagError> {
+        if self.bands.is_empty() || self.bands.len() > 32 {
+            return Err(TagError::InvalidProjectionConfig);
+        }
+        for (i, b) in self.bands.iter().enumerate() {
+            if b.key.is_empty()
+                || b.key.chars().count() > 64
+                || !b
+                    .key
+                    .bytes()
+                    .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == b'-')
+                || b.label.is_empty()
+                || tag_trim(&b.label) != b.label
+                || b.label.chars().count() > 80
+                || b.minimum < 0
+                || b.maximum < b.minimum
+            {
+                return Err(TagError::InvalidProjectionConfig);
+            }
+            if self.bands[..i]
+                .iter()
+                .any(|a| a.key == b.key || (b.minimum <= a.maximum && a.minimum <= b.maximum))
+            {
+                return Err(TagError::InvalidProjectionConfig);
+            }
+        }
+        Ok(())
+    }
+    pub fn matching_band(&self, minimum: Option<i64>, maximum: Option<i64>) -> Option<usize> {
+        let (minimum, maximum) = (minimum?, maximum?);
+        if minimum > maximum {
+            return None;
+        }
+        let mut matches = self
+            .bands
+            .iter()
+            .enumerate()
+            .filter(|(_, b)| minimum >= b.minimum && maximum <= b.maximum)
+            .map(|(i, _)| i);
+        let first = matches.next()?;
+        if matches.next().is_some() {
+            None
+        } else {
+            Some(first)
+        }
+    }
+}
+#[derive(Clone, Debug, Default, Eq, PartialEq)]
+pub struct ProjectionResult {
+    pub definition_id: i64,
+    pub matched_stories: usize,
+    pub assigned_stories: usize,
+    pub unassigned: usize,
 }
