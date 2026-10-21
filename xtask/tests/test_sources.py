@@ -2,6 +2,7 @@
 import copy
 import importlib.util
 import json
+import os
 from pathlib import Path
 import shutil
 import subprocess
@@ -20,6 +21,10 @@ def snapshot(root):
             for p in root.rglob('*')}
 
 
+def bundle(registry):
+    return next(entry for entry in registry['bundles'] if entry['id'] == gate.BUNDLE)
+
+
 class SourcePolicy(unittest.TestCase):
     def setUp(self):
         self.directory = tempfile.TemporaryDirectory(prefix='librairii-source-policy-')
@@ -32,7 +37,7 @@ class SourcePolicy(unittest.TestCase):
             shutil.copytree(source / path, self.root / path)
         self.registry_path = self.root / '.config/upstream-sources.json'
         self.registry = json.loads(self.registry_path.read_text(encoding='utf-8'))
-        self.bundle = self.registry['bundles'][0]
+        self.bundle = bundle(self.registry)
         self.index = json.loads((self.root / self.bundle['source_index']).read_bytes())
         self.private = self.root / gate.DERIVATIVES
 
@@ -59,6 +64,16 @@ class SourcePolicy(unittest.TestCase):
     def save_manifest(self, value):
         (self.private / 'source-manifest.json').write_text(json.dumps(value), encoding='utf-8')
 
+    def selected_derivatives(self):
+        source = Path(__file__).resolve().parents[2]
+        shutil.copytree(source / gate.DERIVATIVES, self.private)
+
+    def assert_selected_rejected_without_writes(self):
+        before = snapshot(self.root.parent)
+        with self.assertRaises(ValueError):
+            gate.check_selected(self.root)
+        self.assertEqual(snapshot(self.root.parent), before)
+
     def test_registered_sources_and_notices_pass_without_writes(self):
         before = snapshot(self.root)
         report = gate.check(self.root)
@@ -68,6 +83,25 @@ class SourcePolicy(unittest.TestCase):
         self.assertEqual(report['private_derivatives'], [])
         self.assertIn('regionTypes.ccTLD-bit1-value2', report['excluded'])
         self.assertEqual(snapshot(self.root), before)
+
+        self.selected_derivatives()
+        before = snapshot(self.root.parent)
+        report = gate.check_selected(self.root)
+        self.assertEqual(len(report['source_identities']), 49)
+        self.assertEqual(len(report['private_derivatives']), 19)
+        self.assertEqual(report['state'], 'private-provenance-recorded')
+        self.assertEqual(snapshot(self.root.parent), before)
+        retained = self.root.parent / 'owned-retained-selected-closure'
+        self.private.rename(retained)
+        self.assert_selected_rejected_without_writes()
+        retained.rename(self.private)
+        for name in ['mod.rs', 'source-manifest.json']:
+            with self.subTest(missing=name):
+                path = self.private / name
+                original = path.read_bytes()
+                path.unlink()
+                self.assert_selected_rejected_without_writes()
+                path.write_bytes(original)
 
     def test_missing_changed_or_extra_source_metadata_and_notices_fail(self):
         for relative in [self.bundle['source_index'],
@@ -96,7 +130,7 @@ class SourcePolicy(unittest.TestCase):
         replacement = b'Forged upstream terms in an owned negative fixture.\n'
         path.write_bytes(replacement)
         changed = copy.deepcopy(self.registry)
-        changed_notice = changed['bundles'][0]['notices'][0]
+        changed_notice = bundle(changed)['notices'][0]
         changed_notice.update(bytes=len(replacement), sha256=gate.digest(replacement), upstream_path=None)
         self.save_registry(changed)
         with self.assertRaisesRegex(ValueError, 'notice origin'):
@@ -138,6 +172,64 @@ class SourcePolicy(unittest.TestCase):
         with self.assertRaises(OSError):
             gate.check(self.root)
 
+        shutil.rmtree(self.private)
+        self.selected_derivatives()
+        manifest_path = self.private / 'source-manifest.json'
+        original_manifest = manifest_path.read_bytes()
+        path = self.private / 'normalization.rs'
+        original = path.read_bytes()
+        path.write_bytes(original + b'\n// owned changed-byte control\n')
+        self.assert_selected_rejected_without_writes()
+        manifest = json.loads(original_manifest)
+        record = next(row for row in manifest['files'] if row['path'] == path.name)
+        record.update(bytes=path.stat().st_size, sha256=gate.digest(path.read_bytes()))
+        self.save_manifest(manifest)
+        # The generic provenance predicate alone permits an authored re-pin.
+        # The selected source-byte gate must still reject it.
+        self.assertEqual(len(gate.check(self.root)['private_derivatives']), 19)
+        self.assert_selected_rejected_without_writes()
+        path.write_bytes(original)
+        manifest_path.write_bytes(original_manifest)
+        manifest = json.loads(original_manifest)
+        record = next(row for row in manifest['files'] if row['path'] == 'normalization_data.rs')
+        record['kind'] = 'translated'
+        self.save_manifest(manifest)
+        self.assertEqual(len(gate.check(self.root)['private_derivatives']), 19)
+        self.assert_selected_rejected_without_writes()
+        manifest_path.write_bytes(original_manifest)
+        path = self.private / 'verify_codec.py'
+        renamed = self.private / 'unselected_verify_codec.py'
+        path.rename(renamed)
+        manifest = json.loads(original_manifest)
+        record = next(row for row in manifest['files'] if row['path'] == path.name)
+        record['path'] = renamed.name
+        self.save_manifest(manifest)
+        self.assertEqual(len(gate.check(self.root)['private_derivatives']), 19)
+        self.assert_selected_rejected_without_writes()
+
+        shutil.rmtree(self.private)
+        self.selected_derivatives()
+        for directory in [False, True]:
+            extra = self.private / 'unselected'
+            if directory:
+                extra.mkdir()
+            else:
+                extra.write_bytes(b'owned unselected control')
+            self.assert_selected_rejected_without_writes()
+            if directory:
+                extra.rmdir()
+            else:
+                extra.unlink()
+        path = self.private / 'mod.rs'
+        peer = self.root.parent / 'owned-hard-link-peer'
+        path.rename(peer)
+        os.link(peer, path)
+        try:
+            self.assert_selected_rejected_without_writes()
+        finally:
+            path.unlink()
+            peer.rename(path)
+
     def test_dropped_header_and_unapproved_dns_selection_fail(self):
         manifest = self.derivative()
         content = b'// dropped upstream copyright\n'
@@ -170,6 +262,27 @@ class SourcePolicy(unittest.TestCase):
         self.assertEqual(snapshot(self.root / '.config'), before)
 
     def test_unlicensed_repository_and_scope_cannot_be_reassigned(self):
+        reordered = copy.deepcopy(self.registry)
+        reordered['bundles'].reverse()
+        self.save_registry(reordered)
+        before = snapshot(self.root.parent)
+        self.assertEqual(gate.check(self.root)['bundle'], gate.BUNDLE)
+        self.assertEqual(snapshot(self.root.parent), before)
+        own = bundle(self.registry)
+        other = next(entry for entry in self.registry['bundles'] if entry['id'] != gate.BUNDLE)
+        for entries in [[], [own], [other], [own, own], [other, other],
+                        [own, other, {'id': 'unapproved-source-bundle'}],
+                        [own, {'id': 'unapproved-source-bundle'}]]:
+            with self.subTest(ids=[entry['id'] for entry in entries]):
+                changed = copy.deepcopy(self.registry)
+                changed['bundles'] = entries
+                self.save_registry(changed)
+                before = snapshot(self.root.parent)
+                with self.assertRaises(ValueError):
+                    gate.check(self.root)
+                self.assertEqual(snapshot(self.root.parent), before)
+        self.save_registry(self.registry)
+
         changed = copy.deepcopy(self.registry)
         changed['product_license'] = 'BSD-3-Clause'
         self.save_registry(changed)
@@ -177,20 +290,20 @@ class SourcePolicy(unittest.TestCase):
             gate.check(self.root)
 
         changed = copy.deepcopy(self.registry)
-        changed['bundles'][0]['scope'] = 'public-core-query'
+        bundle(changed)['scope'] = 'public-core-query'
         self.save_registry(changed)
         with self.assertRaises(ValueError):
             gate.check(self.root)
         changed = copy.deepcopy(self.registry)
         path = 'golang.org/x/text@v0.43.0/internal/language/tables.go'
-        changed['bundles'][0]['source_selections'][path] = ['normalization']
+        bundle(changed)['source_selections'][path] = ['normalization']
         self.save_registry(changed)
         with self.assertRaises(ValueError):
             gate.check(self.root)
 
     def test_fresh_autocrlf_checkout_runs_actual_checker_and_rejects_unprotected_bytes(self):
         source = Path(__file__).resolve().parents[2]
-        self.derivative()
+        self.selected_derivatives()
         shutil.copyfile(source / '.gitattributes', self.root / '.gitattributes')
         (self.root / 'xtask').mkdir()
         shutil.copyfile(source / 'xtask/check_sources.py', self.root / 'xtask/check_sources.py')
@@ -226,7 +339,7 @@ class SourcePolicy(unittest.TestCase):
                 self.assertEqual(result.returncode, 0, result.stderr)
                 report = json.loads(result.stdout)
                 self.assertEqual(len(report['source_identities']), 49)
-                self.assertEqual(len(report['private_derivatives']), 1)
+                self.assertEqual(len(report['private_derivatives']), 19)
             else:
                 self.assertNotEqual(result.returncode, 0)
                 if mode == 'negative-index':
@@ -234,5 +347,5 @@ class SourcePolicy(unittest.TestCase):
                     converted = fresh / self.bundle['source_index']
                 else:
                     self.assertIn('changed source-policy file', result.stderr)
-                    converted = fresh / gate.DERIVATIVES / 'synthetic.rs'
+                    converted = fresh / gate.DERIVATIVES / 'normalization.rs'
                 self.assertIn(b'\r\n', converted.read_bytes())

@@ -1579,6 +1579,250 @@
     {
       "suite": "librairii-core::operations",
       "name": "op67_reveal_eligibility_never_validates_a_directory_or_provisional_truth"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::tests::dispatch_preserves_suffix_and_content_precedence"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::tests::frozen_codes_are_exact_and_errors_preserve_presence_and_raw_entry"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::tests::misleading_suffix_container_and_disguised_studio_fail_distinctly"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::tests::suffix_matching_is_simple_lower_not_search_folding_or_lossy_name_conversion"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::tests::candidate_bytes_preserve_source_name_uuid_and_absent_vs_empty_payload"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::tests::committed_facts_and_ids_survive_late_cancel_cleanup_and_reporting_errors"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::tests::directories_count_but_do_not_satisfy_files_or_assets"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::tests::duplicate_conflict_facts_raw_fields_and_independent_compensation_error_remain_owned"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::tests::duplicate_lexical_aliases_are_terminal_and_not_unicode_composed"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::tests::import_uuid_retains_legacy_spelling_without_changing_shared_identity_parsing"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::tests::invalid_limits_and_unsigned_or_aggregate_overflow_refuse_without_wrapping"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::tests::malformed_or_nil_uuid_forms_fail_at_import_boundary"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::tests::nested_joined_causes_preserve_first_validation_order_and_optional_empty_data"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::tests::paths_use_go_lexical_keys_preserving_raw_bytes_and_unicode_forms"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::tests::plain_required_entry_order_assets_and_exact_uuid_payload_are_separate"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::tests::reported_import_and_failure_codes_match_frozen_source_without_unknown_fallback"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::tests::retained_header_limits_match_all_frozen_expected_codes"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::tests::uncertain_report_does_not_invent_ids_or_noncommit_from_error"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::tests::unsafe_link_negative_duplicate_and_nested_checks_keep_source_priority"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::tests::uuid_pack_missing_entries_and_assets_preserve_exact_root_spelling"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::tests::uuid_root_detection_uses_raw_root_count_before_required_entries"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::tests::validation_causes_retain_nested_joined_structure_and_standard_source"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::tests::zip_entry_and_sevenzip_whole_container_ratios_are_distinct"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::tests::studio_policy_assets_and_required_thumbnail_must_be_regular_inventory_files"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::tests::studio_policy_base_path_errors_keep_nested_causes_and_assets_prefix_is_literal"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::tests::studio_policy_borrowed_refs_allow_repeats_empty_nodes_and_raw_uuid_forms"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::tests::studio_policy_error_priority_is_uuid_then_node_image_audio_then_thumbnail"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::tests::studio_policy_looks_up_original_refs_without_cleaning_or_unicode_composition"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::tests::studio_policy_reference_byte_and_depth_boundaries_precede_missing_asset"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::tests::studio_policy_stage_count_is_not_the_inventory_entry_budget"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::tests::studio_policy_zero_nodes_refs_and_nonempty_whitespace_have_distinct_errors"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::studio_json::tests::studio_json_decode_uuid_refs_and_thumbnail_preserve_pipeline_error_order"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::studio_json::tests::studio_json_depth_10000_is_iterative_including_ignored_subtrees"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::studio_json::tests::studio_json_duplicate_arrays_reuse_hidden_backing_cells_after_shrink_and_growth"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::studio_json::tests::studio_json_first_value_syntax_outranks_types_but_types_precede_trailing"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::studio_json::tests::studio_json_grammar_accepts_unknown_valid_scalars_escapes_and_ascii_whitespace"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::studio_json::tests::studio_json_grammar_rejects_controls_bad_escapes_and_container_number_errors"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::studio_json::tests::studio_json_image_audio_and_node_type_errors_keep_input_order"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::studio_json::tests::studio_json_known_string_null_duplicates_and_saved_first_type_error"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::studio_json::tests::studio_json_null_and_empty_array_reset_cells_but_null_nodes_and_fields_do_not"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::studio_json::tests::studio_json_raw_invalid_utf8_and_escaped_surrogates_have_distinct_replacements"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::studio_json::tests::studio_json_reference_count_is_not_the_archive_entry_limit"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::studio_json::tests::studio_json_replacement_and_escape_decoded_references_use_exact_inventory_keys"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::studio_json::tests::studio_json_schema_casefold_uses_long_s_but_not_dotted_or_dotless_i"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::studio_json::tests::studio_json_successful_decode_checks_eof_before_uuid_or_assets"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::studio_json::tests::studio_json_supplied_byte_limits_count_original_bytes_not_replacement_output"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::studio_json::tests::studio_json_supplied_bytes_decode_then_existing_policy_preserve_identity"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::studio_json::tests::studio_json_unknown_subtrees_skip_huge_numbers_without_float_or_new_strictness"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::studio_json::optional::tests::optional_metadata_duplicates_null_folding_and_first_type_error_are_ordered"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::studio_json::optional::tests::optional_metadata_empty_uuid_is_allowed_without_changing_primary_identity"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::studio_json::optional::tests::optional_metadata_first_syntax_then_types_then_eof_then_uuid_priority"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::studio_json::optional::tests::optional_metadata_preserves_replacement_origins_and_boundary_only_text"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::studio_json::optional::tests::optional_metadata_selection_distinguishes_absence_directory_unselected_and_empty"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::studio_json::optional::tests::optional_metadata_supplied_original_byte_cap_and_depth_are_separate_from_heap_reads"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::studio_json::optional::tests::optional_metadata_three_field_shape_skips_studio_and_unknown_types"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::studio_json::optional::tests::optional_metadata_uuid_uses_untrimmed_legacy_forms_and_canonical_comparison"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::studio_json::tests::studio_text_frozen_whitespace_and_nonspace_boundaries"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::studio_json::tests::studio_text_known_duplicates_null_and_fold_keep_decoder_semantics"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::studio_json::tests::studio_text_projection_follows_uuid_refs_regular_thumbnail_presence"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::studio_json::tests::studio_text_projection_preserves_raw_identity_and_only_trims_boundaries"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::studio_json::tests::studio_text_replacement_origins_and_interior_composition_are_preserved"
     }
   ]
 }

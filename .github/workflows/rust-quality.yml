@@ -63,6 +63,8 @@ jobs:
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           python -I -B -X utf8 (Join-Path $fresh 'xtask/check_sources.py') > windows-autocrlf-sources.json
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python -I -B -X utf8 (Join-Path $fresh 'xtask/check_import_sources.py') > windows-autocrlf-import-sources.json
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           $evidence = Join-Path $env:GITHUB_WORKSPACE 'target/quality'
           New-Item -ItemType Directory -Force $evidence | Out-Null
           python -I -B -X utf8 (Join-Path $fresh 'xtask/check_migration_bytes.py') > (Join-Path $evidence 'windows-autocrlf-migration-hashes.json')
@@ -80,6 +82,7 @@ jobs:
           mkdir -p target/quality
           if test -f windows-autocrlf-preservation.json; then mv windows-autocrlf-preservation.json target/quality/; fi
           if test -f windows-autocrlf-sources.json; then mv windows-autocrlf-sources.json target/quality/; fi
+          if test -f windows-autocrlf-import-sources.json; then mv windows-autocrlf-import-sources.json target/quality/; fi
           git rev-parse HEAD > target/quality/source.txt
           rustc -vV > target/quality/rustc.txt
           cargo --version > target/quality/cargo.txt

@@ -3,11 +3,37 @@ import hashlib
 import json
 from pathlib import Path, PurePosixPath
 import shutil
+import stat
 import sys
 
 INDEX_SHA = '10ea8fe193c594ce153ae7a1734c41ab80c9d406cc7ea314c8c7c471b7a92a99'
 BUNDLE = 'go-1.26.5-xtext-0.43.0-unicode15-cldr32'
+APPROVED_BUNDLES = {BUNDLE, 'go-1.26.5-json-v1-studio'}
 DERIVATIVES = 'crates/librairii-storage/src/migrations/compatibility'
+# Exact selected BB7=bb7c3ecd6c1c77557aa52d99068d19ce4b9e7446.
+# Source bytes only; this gate does not establish parity or native qualification.
+SELECTED_MANIFEST_SHA = '2f8bd6db37191346b6719d7345a46a0b4d3163be745d5fae6b7f8ebf429a0409'
+SELECTED_KINDS = {
+    'codec-reference.json': 'generated',
+    'codec_oracle.go.in': 'authored',
+    'extract_language.py': 'translated',
+    'extract_normalization.py': 'translated',
+    'language-cases.json': 'generated',
+    'language-reference.json': 'generated',
+    'language.rs': 'translated',
+    'language_data.rs': 'generated',
+    'language_oracle.go.in': 'authored',
+    'mod.rs': 'authored',
+    'normalization-reference.json': 'generated',
+    'normalization.rs': 'translated',
+    'normalization_data.rs': 'generated',
+    'normalization_oracle.go.in': 'authored',
+    'unicode_properties.rs': 'generated',
+    'update_source_manifest.py': 'authored',
+    'verify_codec.py': 'authored',
+    'verify_language.py': 'authored',
+    'verify_normalization.py': 'authored',
+}
 EXCLUDED = ['regionTypes.ccTLD-bit1-value2', 'internal/language.Region.TLD', 'language.Region.TLD']
 NOTICE_REQUIREMENTS = {
     'normalization': ['LICENSE-GO-BSD.txt', 'PATENTS-GO.txt', 'LICENSE-UNICODE-V3.txt'],
@@ -55,12 +81,25 @@ def relative(value):
 
 def safe(root, value):
     value = relative(value)
+    if root.is_symlink() or getattr(root, 'is_junction', lambda: False)():
+        raise ValueError('aliased source-policy root')
     current = root
     for part in value.split('/'):
         current = current / part
         if current.is_symlink() or getattr(current, 'is_junction', lambda: False)():
             raise ValueError('aliased source-policy path')
     return current
+
+
+def regular(root, value):
+    path = safe(root, value)
+    try:
+        metadata = path.lstat()
+    except FileNotFoundError as error:
+        raise ValueError('missing selected source-policy file') from error
+    if not stat.S_ISREG(metadata.st_mode) or metadata.st_nlink != 1:
+        raise ValueError('nonregular or hard-linked selected source-policy file')
+    return path
 
 
 def pinned(root, record):
@@ -85,10 +124,16 @@ def selection(path):
 
 def check(root):
     registry = decode(safe(root, '.config/upstream-sources.json').read_bytes())
-    if (set(registry) != {'version', 'product_license', 'bundles'} or registry['version'] != 1
-            or registry['product_license'] is not None or len(registry['bundles']) != 1):
+    if (set(registry) != {'version', 'product_license', 'bundles'}
+            or type(registry['version']) is not int or registry['version'] != 1
+            or registry['product_license'] is not None
+            or not isinstance(registry['bundles'], list)
+            or len(registry['bundles']) != len(APPROVED_BUNDLES)
+            or any(not isinstance(bundle, dict) or not isinstance(bundle.get('id'), str)
+                   for bundle in registry['bundles'])
+            or {bundle['id'] for bundle in registry['bundles']} != APPROVED_BUNDLES):
         raise ValueError('source registry must not assign a product license or widen scope')
-    bundle = registry['bundles'][0]
+    bundle = next(bundle for bundle in registry['bundles'] if bundle['id'] == BUNDLE)
     if (bundle['id'] != BUNDLE or bundle['scope'] != 'private-storage-4.4'
             or bundle['source_index'] != '.config/upstream-sources/' + BUNDLE + '/source-index.json'
             or bundle['notices_root'] != '.config/upstream-notices/' + BUNDLE
@@ -200,6 +245,33 @@ def check(root):
     }
 
 
+def check_selected(root):
+    """Require the actual selected nineteen-file closure on the CLI path.
+
+    check() remains usable for the existing synthetic provenance regressions;
+    it deliberately does not establish that the selected implementation exists.
+    The pinned manifest binds every selected path, byte hash, kind and recipe.
+    """
+    directory = safe(root, DERIVATIVES)
+    manifest_path = regular(directory, 'source-manifest.json')
+    data = manifest_path.read_bytes()
+    if digest(data) != SELECTED_MANIFEST_SHA:
+        raise ValueError('changed source-policy file: selected derivative manifest')
+    manifest = decode(data)
+    records = manifest['files']
+    if (len(records) != len(SELECTED_KINDS)
+            or {record['path']: record['kind'] for record in records} != SELECTED_KINDS):
+        raise ValueError('changed selected derivative paths or kinds')
+    expected = set(SELECTED_KINDS) | {'source-manifest.json'}
+    actual = set()
+    for path in directory.iterdir():
+        regular(directory, path.name)
+        actual.add(path.name)
+    if actual != expected:
+        raise ValueError('extra or missing selected source-policy file')
+    return check(root)
+
+
 def inventory(root, report):
     source = safe(root, '.config/upstream-notices/' + BUNDLE)
     destination = safe(root, 'target/quality/notices/' + BUNDLE)
@@ -218,7 +290,7 @@ def main():
     if sys.argv[1:] not in ([], ['--inventory']):
         raise ValueError('usage: check_sources.py [--inventory]')
     root = Path(__file__).resolve().parent.parent
-    report = check(root)
+    report = check_selected(root)
     if sys.argv[1:] == ['--inventory']:
         inventory(root, report)
     print(json.dumps(report, indent=2))

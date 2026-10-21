@@ -1,6 +1,7 @@
 #![forbid(unsafe_code)]
 mod deep;
 mod discovery;
+mod import_sources;
 mod policy;
 mod preservation;
 mod sources;
