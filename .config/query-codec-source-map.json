@@ -2864,6 +2864,261 @@
           ]
         },
         "reason": "Additive observed Task 9 discovery; original integration identities retain exact order and target scope."
+      },
+      {
+        "position": 390,
+        "identity": {
+          "suite": "librairii-storage::shelves",
+          "name": "crud_namespace_order_unavailable_duplicate_and_restart_are_independent",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive observed Task 10 discovery; original integration identities retain exact order and target scope."
+      },
+      {
+        "position": 391,
+        "identity": {
+          "suite": "librairii-storage::shelves",
+          "name": "manual_curation_retention_exclusions_order_and_noops_are_explicit",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive observed Task 10 discovery; original integration identities retain exact order and target scope."
+      },
+      {
+        "position": 392,
+        "identity": {
+          "suite": "librairii-storage::shelves",
+          "name": "uuid_reimport_reconnects_new_numeric_id_without_rewriting_approved_state",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive observed Task 10 discovery; original integration identities retain exact order and target scope."
+      },
+      {
+        "position": 393,
+        "identity": {
+          "suite": "librairii-storage::shelves",
+          "name": "source_union_is_read_only_and_current_matches_do_not_rewrite_origins",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive observed Task 10 discovery; original integration identities retain exact order and target scope."
+      },
+      {
+        "position": 394,
+        "identity": {
+          "suite": "librairii-storage::shelves",
+          "name": "initial_creation_is_explicit_deduplicated_ordered_and_can_be_empty",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive observed Task 10 discovery; original integration identities retain exact order and target scope."
+      },
+      {
+        "position": 395,
+        "identity": {
+          "suite": "librairii-storage::shelves",
+          "name": "broken_only_changes_preserve_review_but_sources_availability_and_decisions_invalidate",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive observed Task 10 discovery; original integration identities retain exact order and target scope."
+      },
+      {
+        "position": 396,
+        "identity": {
+          "suite": "librairii-storage::shelves",
+          "name": "update_decisions_defer_keep_exclude_and_remove_atomically_with_origins",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive observed Task 10 discovery; original integration identities retain exact order and target scope."
+      },
+      {
+        "position": 397,
+        "identity": {
+          "suite": "librairii-storage",
+          "name": "shelves::tickets::tests::lifetime_kind_target_eviction_and_replay_are_fail_closed"
+        },
+        "reason": "Additive observed Task 10 discovery; original integration identities retain exact order and target scope."
+      },
+      {
+        "position": 398,
+        "identity": {
+          "suite": "librairii-storage::shelves",
+          "name": "ticket_limit_is_shared_across_kinds_and_two_queued_applies_cannot_replay",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive observed Task 10 discovery; original integration identities retain exact order and target scope."
+      },
+      {
+        "position": 399,
+        "identity": {
+          "suite": "librairii-storage::shelves",
+          "name": "detachment_requires_complete_decisions_preserves_overlap_and_retains_unavailable",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive observed Task 10 discovery; original integration identities retain exact order and target scope."
+      },
+      {
+        "position": 400,
+        "identity": {
+          "suite": "librairii-storage::shelves",
+          "name": "warning_acknowledgements_persist_without_decisions_and_renew_on_coverage_changes",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive observed Task 10 discovery; original integration identities retain exact order and target scope."
+      },
+      {
+        "position": 401,
+        "identity": {
+          "suite": "librairii-storage::shelves",
+          "name": "linked_deletion_is_atomic_across_shelves_and_preserves_unavailable_origins",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive observed Task 10 discovery; original integration identities retain exact order and target scope."
+      },
+      {
+        "position": 402,
+        "identity": {
+          "suite": "librairii-storage::shelves",
+          "name": "five_thousand_story_union_preview_apply_and_every_model_page_meet_budget",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive observed Task 10 discovery; original integration identities retain exact order and target scope."
+      },
+      {
+        "position": 403,
+        "identity": {
+          "suite": "librairii-storage::shelves",
+          "name": "frozen_go_creation_curation_origins_duplication_and_detachment_match_exact_state",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive observed Task 10 discovery; original integration identities retain exact order and target scope."
+      },
+      {
+        "position": 404,
+        "identity": {
+          "suite": "librairii-storage::shelves",
+          "name": "frozen_shelf_reference_manifest_binds_probe_and_capture_bytes",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive observed Task 10 discovery; original integration identities retain exact order and target scope."
+      },
+      {
+        "position": 405,
+        "identity": {
+          "suite": "librairii-storage::shelves",
+          "name": "uncertain_remaining_coverage_only_allows_retention_and_view_refinements_never_persist",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive observed Task 10 discovery; original integration identities retain exact order and target scope."
+      },
+      {
+        "position": 406,
+        "identity": {
+          "suite": "librairii-storage::shelves",
+          "name": "v14_upgrade_tags_metadata_curation_unavailable_reimport_and_restart_compose",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive observed Task 10 discovery; original integration identities retain exact order and target scope."
+      },
+      {
+        "position": 407,
+        "identity": {
+          "suite": "librairii-storage::shelves",
+          "name": "reviewed_actions_preserve_uppercase_uuid_spelling_without_retargeting_canonical_rows",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive observed Task 10 discovery; original integration identities retain exact order and target scope."
+      },
+      {
+        "position": 408,
+        "identity": {
+          "suite": "librairii-storage::shelves",
+          "name": "creation_selections_preserve_legacy_spelling_and_distinguish_canonical_aliases",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive PR 51 regression: confirmed creation preserves legacy UUID spelling and distinct aliases."
+      },
+      {
+        "position": 409,
+        "identity": {
+          "suite": "librairii-storage::shelves",
+          "name": "deleted_shelf_reviews_cannot_target_reused_ids_and_unrelated_plans_survive",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive PR 51 regression: deletion retires dependent plans before SQLite can reuse Shelf/source IDs."
       }
     ],
     "python": [

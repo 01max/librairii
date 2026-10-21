@@ -543,6 +543,10 @@ pub struct DeletedCollection {
     library: librairii_core::LibraryId,
 }
 impl DeletedCollection {
+    pub(crate) fn after_reviewed_delete(id: i64, library: librairii_core::LibraryId) -> Self {
+        Self { id, library }
+    }
+
     pub fn id(&self) -> i64 {
         self.id
     }

@@ -442,3 +442,29 @@ pub fn count_union(tx: &Transaction<'_>, criteria: Vec<Query>, locale: &str) -> 
     }
     Ok(count)
 }
+
+/// Resolve only the requested UUID scope using the frozen query/display/sort
+/// path. One JSON binding avoids parameter ceilings for large curated Shelves.
+/// The caller owns retained rows; no navigation or membership is persisted.
+pub fn visit_uuids(
+    tx: &Transaction<'_>,
+    request: QueryRequest,
+    locale: &str,
+    uuids: &[String],
+    mut consume: impl FnMut(StorySummary) -> Result<()>,
+) -> Result<()> {
+    let (request, mut from, mut args) = matching(tx, request, locale)?;
+    from.push_str(if from == FROM {
+        " WHERE s.uuid IN (SELECT value FROM json_each(?))"
+    } else {
+        " AND s.uuid IN (SELECT value FROM json_each(?))"
+    });
+    args.push(list(uuids)?);
+    let order = ordering(&request, locale, &mut args);
+    let mut stmt = tx.prepare(&format!("{RECORD}{from}{order}"))?;
+    let mut rows = stmt.query(params_from_iter(args))?;
+    while let Some(row) = rows.next()? {
+        consume(summary(tx, &Record::read(row)?, locale)?)?;
+    }
+    Ok(())
+}

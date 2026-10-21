@@ -348,6 +348,7 @@ impl<'library> Authority<'library> {
 /// independent schema/integrity probe and durable backup before migration.
 #[derive(Debug)]
 pub struct Database<'library> {
+    pub(crate) shelf_tickets: Arc<std::sync::Mutex<crate::shelves::tickets::Registry>>,
     authority: Authority<'library>,
     writer: Arc<Queue>,
     readers: Arc<Queue>,
@@ -432,6 +433,7 @@ impl<'library> Database<'library> {
     fn open_owned(authority: Authority<'library>) -> Result<Self> {
         authority.claim_runtime()?;
         let mut runtime = Self {
+            shelf_tickets: Arc::default(),
             authority,
             writer: Arc::new(Queue::new(REPAIR_QUEUE_CAPACITY, 1)),
             readers: Arc::new(Queue::new(0, READ_WORKERS)),
@@ -579,6 +581,20 @@ impl<'library> Database<'library> {
         work: impl FnOnce(&Transaction<'_>) -> Result<T> + Send + 'static,
     ) -> Result<Pending<'_, T>> {
         self.enqueue(&self.readers, false, move |connection| {
+            let transaction = connection.transaction()?;
+            let result = work(&transaction)?;
+            transaction.commit()?;
+            Ok(result)
+        })
+    }
+
+    /// Issue review capabilities in writer order so deletion cannot invalidate
+    /// a ticket and then let a concurrent preview certify the pre-delete row.
+    pub(crate) fn writer_read<T: Send + 'static>(
+        &self,
+        work: impl FnOnce(&Transaction<'_>) -> Result<T> + Send + 'static,
+    ) -> Result<Pending<'_, T>> {
+        self.enqueue(&self.writer, false, move |connection| {
             let transaction = connection.transaction()?;
             let result = work(&transaction)?;
             transaction.commit()?;
