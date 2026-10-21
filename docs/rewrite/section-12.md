@@ -1,5 +1,8 @@
 # Task 12: exports, trash custody and diagnostics
 
+**Partial: 12.1–12.4 implemented; 12.5–12.9 remain incomplete. Keep the Task 12
+PR in draft.** This is an export-domain/copy slice, not completion of Task 12.
+
 Base: `7883a73d3a991ad50d174f2c456365aad029d039` (Task 11 merged).
 One dedicated PR targets `rewrite-in-rust-native-desktop`. Linux x86-64 and
 macOS ARM/Intel are in scope; Windows remains deferred. Each numbered subtask
@@ -77,3 +80,24 @@ share identical ZIP bytes, so tests use independent libraries rather than
 violating unique-checksum import identity. This proves passthrough preservation
 of Go-qualified synthetic input, not a new archive-inspection port or an actual
 Lunii.QT GUI execution.
+
+## Remaining dependency and acceptance gates
+
+12.5 requires restart cleanup with retained completed outputs. The admitted Task
+6 runtime still has no production operation repository/startup composition to
+persist the actual external temporary acquisition and its authority. The copier
+cleans a known live unpublished owner on ordinary failure/cancel and retains
+actual uncertain owners, but does not adopt a temporary from its basename, saved
+inode, history DTO or supplied success flag after process death. Dropping a
+running object does not establish a durable operation outcome. Complete that
+runtime ownership/report/recovery boundary before claiming restart cleanup.
+
+12.6 durable removal/trash/compensation, 12.7–12.8 diagnostic logging/ZIP/privacy,
+and 12.9 full independent acceptance are not implemented by these four commits.
+12.9's complete import→inspect→export→reopen slice also depends on Task 5's real
+hostile archive inspection/import custody, which remains incomplete. The preserved
+Go archive fixtures used in 12.4 do not establish that missing Rust import port.
+
+Next prerequisite: Task 6's production operation store, retained effect ownership
+and startup recovery, in its own PR. Resume this same Task 12 PR afterwards;
+do not check off its remaining tasks from the partial implementation or CI result.
