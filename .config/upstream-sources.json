@@ -4,7 +4,7 @@
   "bundles": [
     {
       "id": "go-1.26.5-xtext-0.43.0-unicode15-cldr32",
-      "scope": "private-storage-4.4-query-codec-origins",
+      "scope": "single-core-query-codec",
       "source_index": ".config/upstream-sources/go-1.26.5-xtext-0.43.0-unicode15-cldr32/source-index.json",
       "source_index_sha256": "13dfd314abfda9a9553d152a1d8a5586f8bd1205a08c177af9bbec57a51ae822",
       "source_identities": 62,
@@ -49,12 +49,12 @@
         },
         {
           "path": "PROVENANCE.md",
-          "bytes": 7105,
-          "sha256": "e844ef2ef70b3db6c3d73f6ee12c88694f228d359f9a77b7a20376b5288fd5dd",
+          "bytes": 7916,
+          "sha256": "90726c9be554f621e2ce32cd3acb09b3ac628ce4fbfa660b988916208a23be55",
           "upstream_path": null
         }
       ],
-      "derivative_root": "crates/librairii-storage/src/migrations/compatibility",
+      "derivative_root": "crates/librairii-core/src/collection_codec/compatibility",
       "derivative_manifest": "source-manifest.json",
       "source_selections": {
         "golang.org/x/text@v0.43.0/internal/tag/tag.go": [
@@ -286,9 +286,9 @@
       },
       "query_codec": {
         "map_path": ".config/query-codec-source-map.json",
-        "map_sha256": "aaa5fbab00cb69b8b3c178012d8a8ae63778670fc1825ee92d5cffff0f9ad8ed",
-        "scope": "current-storage-inline-query-origins-only",
-        "future_core_leaf": null
+        "map_sha256": "71c1c5c89f3229b19e165472fe79d7b8adc98a81a52bc42de428654872f26791",
+        "scope": "single-materialized-core-query-codec",
+        "core_leaf": "crates/librairii-core/src/collection_codec/mod.rs"
       }
     }
   ]

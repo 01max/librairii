@@ -21,7 +21,7 @@ fn allowed(from: &str, to: &str, dev: bool) -> bool {
         return true;
     }
     let allowed: &[&str] = match from {
-        "librairii-core" => &["uuid", "thiserror"],
+        "librairii-core" => &["uuid", "thiserror", "serde", "serde_json"],
         "librairii-app" => &["librairii-core"],
         "librairii-storage" | "librairii-adapters" | "librairii-ui" => {
             &["librairii-app", "librairii-core"]
@@ -75,6 +75,7 @@ mod tests {
             "reqwest",
             "librairii-app",
             "librairii-testkit",
+            "sha2",
         ] {
             assert!(!allowed("librairii-core", dependency, false));
         }
@@ -82,5 +83,8 @@ mod tests {
         assert!(!allowed("librairii-ui", "librairii-storage", false));
         assert!(allowed("librairii-ui", "librairii-app", false));
         assert!(allowed("librairii-core", "librairii-testkit", true));
+        assert!(allowed("librairii-core", "serde", false));
+        assert!(allowed("librairii-core", "serde_json", false));
+        assert!(allowed("librairii-core", "sha2", true));
     }
 }

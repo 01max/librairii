@@ -29,11 +29,18 @@ class SourcePolicy(unittest.TestCase):
         self.source = source
         (self.root / '.config').mkdir(parents=True)
         shutil.copyfile(source / '.config/upstream-sources.json', self.root / '.config/upstream-sources.json')
+        for name in ['rust-test-baseline.json', 'rust-python-test-baseline.json']:
+            shutil.copyfile(source / '.config' / name, self.root / '.config' / name)
         self.query_map_path = self.root / gate.QUERY_MAP
         shutil.copyfile(source / gate.QUERY_MAP, self.query_map_path)
-        self.inline_path = self.root / 'crates/librairii-storage/src/migrations.rs'
-        self.inline_path.parent.mkdir(parents=True)
-        shutil.copyfile(source / 'crates/librairii-storage/src/migrations.rs', self.inline_path)
+        self.storage_path = self.root / gate.STORAGE_CALLER
+        self.storage_path.parent.mkdir(parents=True)
+        # Policy fixture only: the released storage child will perform this
+        # delegation. Never copy the retired inline implementation as authority.
+        self.storage_path.write_text('use librairii_core::collection_codec;\n', encoding='utf-8')
+        self.core_path = self.root / gate.CORE_PATH
+        self.core_path.parent.mkdir(parents=True)
+        shutil.copyfile(source / gate.CORE_PATH, self.core_path)
         for path in ['.config/upstream-sources', '.config/upstream-notices/' + gate.BUNDLE]:
             shutil.copytree(source / path, self.root / path)
         self.registry_path = self.root / '.config/upstream-sources.json'
@@ -87,8 +94,8 @@ class SourcePolicy(unittest.TestCase):
             self.query_map_path.write_bytes(original)
             self.save_registry(self.registry)
 
-    def test_inline_query_map_and_current_source_are_mandatory(self):
-        for path in [self.query_map_path, self.inline_path]:
+    def test_materialized_core_query_map_and_current_source_are_mandatory(self):
+        for path in [self.query_map_path, self.core_path]:
             original = path.read_bytes()
             try:
                 path.unlink()
@@ -97,16 +104,13 @@ class SourcePolicy(unittest.TestCase):
                         gate.check(self.root)
             finally:
                 path.write_bytes(original)
-        original = self.inline_path.read_bytes()
-        marker = b'mod collection_codec {'
-        self.assertEqual(original.count(marker), 1)
+        original = self.core_path.read_bytes()
         try:
-            self.inline_path.write_bytes(original.replace(
-                marker, marker + b'\n// Owned negative fixture changes the mapped fragment.'))
+            self.core_path.write_bytes(original + b'\n// Owned negative fixture changes the materialized core leaf.\n')
             with self.assertRaises(ValueError):
                 gate.check(self.root)
         finally:
-            self.inline_path.write_bytes(original)
+            self.core_path.write_bytes(original)
 
     def test_duplicate_query_map_fields_are_rejected(self):
         original = self.query_map_path.read_bytes()
@@ -171,39 +175,72 @@ class SourcePolicy(unittest.TestCase):
             with self.subTest(field=field):
                 self.assert_query_map_rejected(changed)
 
-    def test_inline_query_fragment_hash_and_materialization_cannot_be_fabricated(self):
+    def test_historical_inline_identity_and_materialized_core_leaf_cannot_be_fabricated(self):
         for field, replacement in [
                 ('sha256', '0' * 64), ('fragment_sha256', '0' * 64),
                 ('bytes', 0), ('fragment_bytes', 0),
                 ('path', 'crates/librairii-core/src/query/unreleased.rs')]:
             changed = copy.deepcopy(self.query_map)
-            changed['current_inline'][field] = replacement
-            with self.subTest(field=field):
+            changed['historical_inline'][field] = replacement
+            with self.subTest(historical_field=field):
                 self.assert_query_map_rejected(changed)
         for field in ['begin', 'end', 'materialization']:
             changed = copy.deepcopy(self.query_map)
-            del changed['current_inline'][field]
-            with self.subTest(missing=field):
+            del changed['historical_inline'][field]
+            with self.subTest(missing_historical_field=field):
+                self.assert_query_map_rejected(changed)
+        for field, replacement in [('path', 'crates/librairii-storage/src/migrations.rs'),
+                                   ('bytes', 0), ('sha256', '0' * 64), ('kind', 'authored')]:
+            changed = copy.deepcopy(self.query_map)
+            changed['core_leaf'][field] = replacement
+            with self.subTest(core_field=field):
                 self.assert_query_map_rejected(changed)
 
-    def test_future_core_leaf_remains_unmaterialized_and_unapproved(self):
-        self.assertIsNone(self.query_map['future_core_leaf'])
-        self.assertIsNone(self.bundle['query_codec']['future_core_leaf'])
-        fabricated = {'path': 'crates/librairii-core/src/query/unreleased.rs',
-            'bytes': 0, 'sha256': gate.digest(b''), 'header_sha256': gate.digest(b'')}
-        self.assertFalse((self.root / fabricated['path']).exists())
-        changed = copy.deepcopy(self.query_map)
-        changed['future_core_leaf'] = fabricated
-        self.assert_query_map_rejected(changed)
-        registry = copy.deepcopy(self.registry)
-        registry['bundles'][0]['query_codec']['future_core_leaf'] = fabricated
-        self.save_registry(registry)
+    def test_materialized_core_headers_and_removed_storage_duplicates_are_enforced(self):
+        self.assertEqual(self.query_map['core_leaf']['path'], gate.CORE_PATH)
+        self.assertNotIn('future_core_leaf', self.query_map)
+        self.assertNotIn('future_core_leaf', self.bundle['query_codec'])
+        original = self.core_path.read_bytes()
+        originals = self.index['querySourceFiles']
+        expected_headers = {line for record in originals
+            for line in bytes.fromhex(record['headerFirst12LinesHex']).splitlines()
+            if line.startswith(b'// Copyright')}
+        self.assertTrue(expected_headers)
+        for line in expected_headers:
+            with self.subTest(header=line):
+                self.assertIn(line, original)
+        stripped = b'\n'.join(line for line in original.split(b'\n')
+            if not line.startswith(b'// Copyright'))
         try:
+            self.core_path.write_bytes(stripped)
+            changed = copy.deepcopy(self.query_map)
+            changed['core_leaf'].update(bytes=len(stripped), sha256=gate.digest(stripped))
+            self.assert_query_map_rejected(changed)
+        finally:
+            self.core_path.write_bytes(original)
+        changed = copy.deepcopy(self.query_map)
+        changed['future_core_leaf'] = None
+        self.assert_query_map_rejected(changed)
+        old_private = self.root / 'crates/librairii-storage/src/migrations/compatibility'
+        self.assertFalse(old_private.exists())
+        shutil.copytree(self.private, old_private)
+        try:
+            before = snapshot(self.root)
             with self.assertRaises(ValueError):
                 gate.check(self.root)
+            self.assertEqual(snapshot(self.root), before)
         finally:
-            self.save_registry(self.registry)
-        self.assertFalse((self.root / fabricated['path']).exists())
+            shutil.rmtree(old_private)
+        storage = self.storage_path.read_bytes()
+        for duplicate in [b'mod compatibility;\n', b'mod collection_codec {\n}\n']:
+            try:
+                self.storage_path.write_bytes(storage + duplicate)
+                before = snapshot(self.root)
+                with self.subTest(duplicate=duplicate), self.assertRaises(ValueError):
+                    gate.check(self.root)
+                self.assertEqual(snapshot(self.root), before)
+            finally:
+                self.storage_path.write_bytes(storage)
 
     def test_query_map_binds_lookup_and_historical_index_separately(self):
         self.assertNotEqual(self.query_map['lookup_index_sha256'],

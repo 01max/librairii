@@ -229,8 +229,8 @@
     },
     {
       "path": "language.rs",
-      "bytes": 26505,
-      "sha256": "e8a182c35519516016384d4996cdb1cfe5433e227a1a9b46f55e94014409ae66",
+      "bytes": 26508,
+      "sha256": "2cf2dd6bed4a45f75a11a10387048fcb3c5799e0c67e98f6be08be0f6537b9f1",
       "kind": "translated",
       "recipe": "Private product35-byte canonicalLanguage boundary; frozen Default=Deprecated|Legacy scanner/core/variant/extension and exact compact round trip. Lazy token validation preserves transform truncation; region override/compact bit widths remain observable; no SuppressScript/Macro/CLDR, parent/matcher approximation or TLD API. TrimSpace delegates the single private frozen Unicode primitive. Does not expose partial error tags that the product rejects.",
       "sources": [
@@ -366,8 +366,8 @@
     },
     {
       "path": "mod.rs",
-      "bytes": 643,
-      "sha256": "04f2d4d6acf8665c4967237bdd1207aefa3acdfecb0fb3af8dcedd4c13a740de",
+      "bytes": 552,
+      "sha256": "02517f433a0d12aa158c4d019183a0f175e425de809efe95a9944990c6548801",
       "kind": "authored",
       "recipe": "Private module wiring only; no source algorithm.",
       "sources": [],
@@ -461,8 +461,8 @@
     },
     {
       "path": "normalization.rs",
-      "bytes": 19643,
-      "sha256": "ab4b1c10137332c5cdbe4430edead212054e38219fb025daef2ba753d6b0502f",
+      "bytes": 19655,
+      "sha256": "001fde9e7232d3b3d0904852edeca6771a273f5eeabfa2475c11c9b76d5129ee",
       "kind": "translated",
       "recipe": "Hand translation of frozen full-fold\u2192Go stream-safe NFKD\u2192Mn-only removal\u2192Go whitespace folding; original-character leading/trailing partition precedes stable CCC insertion. Safe checked UTF8 trie and fixed32-rune segment, Hangul decomposition; no modern composition or runtime Go.",
       "sources": [
@@ -608,8 +608,8 @@
     },
     {
       "path": "update_source_manifest.py",
-      "bytes": 11423,
-      "sha256": "2868d59f759f4f6428725bc209ed2de4cd19913113172725b060d6e500c915bb",
+      "bytes": 11417,
+      "sha256": "fa88fc3465ab4b27322aa584f99cd767f2d2fa8573c528fdb0ea74e3c8cb34b3",
       "kind": "authored",
       "recipe": "Explicit private file map; hash actual post-format bytes and retain pinned original identities, selections and notice names.",
       "sources": [],

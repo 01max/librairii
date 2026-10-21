@@ -9,7 +9,7 @@ preservation/** -text
 .config/upstream-notices/go-1.26.5-xtext-0.43.0-unicode15-cldr32/** -text
 
 # Private derivatives are also inventoried as exact bytes.
-crates/librairii-storage/src/migrations/compatibility/** -text
+crates/librairii-core/src/collection_codec/** -text
 
 # Migration SQL is an exact persisted schema contract, compared to the corpus.
 crates/librairii-storage/migrations/*.sql -text

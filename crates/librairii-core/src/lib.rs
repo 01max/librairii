@@ -1,5 +1,6 @@
-//! Effect-free typed foundations, not persisted codecs or implemented workflows.
+//! Effect-free typed foundations and frozen saved-query compatibility codecs.
 #![forbid(unsafe_code)]
+pub mod collection_codec;
 mod identity;
 mod vocabulary;
 pub use identity::{Checksum, CollectionId, JobId, LibraryId, ShelfId, StoryUuid};

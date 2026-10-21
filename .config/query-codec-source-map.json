@@ -1,7 +1,7 @@
 {
-  "version": 1,
+  "version": 2,
   "bundle": "go-1.26.5-xtext-0.43.0-unicode15-cldr32",
-  "scope": "current-storage-inline-query-origins-only",
+  "scope": "single-materialized-core-query-codec",
   "lookup_index_sha256": "13dfd314abfda9a9553d152a1d8a5586f8bd1205a08c177af9bbec57a51ae822",
   "historical_index_sha256": "10ea8fe193c594ce153ae7a1734c41ab80c9d406cc7ea314c8c7c471b7a92a99",
   "historical_manifest_sha256": "2f8bd6db37191346b6719d7345a46a0b4d3163be745d5fae6b7f8ebf429a0409",
@@ -651,17 +651,6 @@
       }
     ]
   },
-  "current_inline": {
-    "path": "crates/librairii-storage/src/migrations.rs",
-    "bytes": 48784,
-    "sha256": "c01e805177d99b33e1f0bd5f5c4b0e5463b2190f185b53906558e80dffe2ff59",
-    "begin": "mod collection_codec {\n",
-    "end": "\n/// Storage-local transitional inspection result.",
-    "fragment_bytes": 31508,
-    "fragment_sha256": "fc8ff89fa3425cbc0ed8baff6082b3c80c27a3447f7563d5c05b95d8106f3b4f",
-    "materialization": "existing-storage-inline-reference-map; final translated core leaf and its retained headers are not materialized"
-  },
-  "future_core_leaf": null,
   "origins": [
     {
       "path": "Go1.26.5/src/encoding/json/scanner.go",
@@ -746,28 +735,28 @@
     "LICENSE-GO-BSD.txt",
     "PATENTS-GO.txt"
   ],
-  "recipe": "Map ONLY the actual unchanged inline codec bytes to bounded query product/Go lexical/i64/output origins. No Rust header is asserted added here. The separately released core move must create its real translated leaf, preserve selected original copyright lines, update this exact materialized binding and remove the old pure implementation. Never invent a future core file/hash/header, second parser or new canonicalization pass. payload serializes/escapes/checks output bytes only; it does not validate arbitrary Query values.",
+  "recipe": "Move the ONE existing codec and frozen compatibility implementation into core; preserve algorithms, canonical passes, assertion bodies, data and reference bytes. Only attribution, imports, includes, necessary visibility and qualification path bindings adapt. Public payload serializes/Go-escapes/checks output bytes only; arbitrary Query construction is not validation or live validity. Historical inline/reference/index records remain historical, not a new execution. Complete core closure and absence of old storage implementation are required after separately-owned storage delegation.",
   "lookup_bindings": [
     {
-      "path": "crates/librairii-storage/src/migrations/compatibility/extract_normalization.py",
+      "path": "crates/librairii-core/src/collection_codec/compatibility/extract_normalization.py",
       "constant": "INDEX_HASH",
       "lookup_index_sha256": "13dfd314abfda9a9553d152a1d8a5586f8bd1205a08c177af9bbec57a51ae822",
       "historical_index_sha256": "10ea8fe193c594ce153ae7a1734c41ab80c9d406cc7ea314c8c7c471b7a92a99"
     },
     {
-      "path": "crates/librairii-storage/src/migrations/compatibility/extract_language.py",
+      "path": "crates/librairii-core/src/collection_codec/compatibility/extract_language.py",
       "constant": "INDEX_HASH",
       "lookup_index_sha256": "13dfd314abfda9a9553d152a1d8a5586f8bd1205a08c177af9bbec57a51ae822",
       "historical_index_sha256": "10ea8fe193c594ce153ae7a1734c41ab80c9d406cc7ea314c8c7c471b7a92a99"
     },
     {
-      "path": "crates/librairii-storage/src/migrations/compatibility/update_source_manifest.py",
+      "path": "crates/librairii-core/src/collection_codec/compatibility/update_source_manifest.py",
       "constant": "INDEX_SHA",
       "lookup_index_sha256": "13dfd314abfda9a9553d152a1d8a5586f8bd1205a08c177af9bbec57a51ae822",
       "historical_index_sha256": "10ea8fe193c594ce153ae7a1734c41ab80c9d406cc7ea314c8c7c471b7a92a99"
     },
     {
-      "path": "crates/librairii-storage/src/migrations/compatibility/verify_normalization.py",
+      "path": "crates/librairii-core/src/collection_codec/compatibility/verify_normalization.py",
       "constant": "INDEX_SHA",
       "lookup_index_sha256": "13dfd314abfda9a9553d152a1d8a5586f8bd1205a08c177af9bbec57a51ae822",
       "historical_index_sha256": "10ea8fe193c594ce153ae7a1734c41ab80c9d406cc7ea314c8c7c471b7a92a99"
@@ -970,5 +959,240 @@
         "PATENTS-GO.txt"
       ]
     }
-  ]
+  ],
+  "historical_inline": {
+    "path": "crates/librairii-storage/src/migrations.rs",
+    "bytes": 48784,
+    "sha256": "c01e805177d99b33e1f0bd5f5c4b0e5463b2190f185b53906558e80dffe2ff59",
+    "begin": "mod collection_codec {\n",
+    "end": "\n/// Storage-local transitional inspection result.",
+    "fragment_bytes": 31508,
+    "fragment_sha256": "fc8ff89fa3425cbc0ed8baff6082b3c80c27a3447f7563d5c05b95d8106f3b4f",
+    "materialization": "existing-storage-inline-reference-map; final translated core leaf and its retained headers are not materialized"
+  },
+  "core_leaf": {
+    "path": "crates/librairii-core/src/collection_codec/mod.rs",
+    "bytes": 29166,
+    "sha256": "29263f44c3991cbb60dff48d44db6ab2005991ed0d151894e59d6a21f573d4a6",
+    "kind": "translated",
+    "header_bytes": 379,
+    "header_sha256": "84c790465b5688b1423350f07c1422d56e174de8117d978de4f39448ac75e807",
+    "materialization": "single actual core codec; no SQL, live-reference or effect authority"
+  },
+  "current_derivative_changes": [
+    {
+      "path": "extract_language.py",
+      "bytes": 13112,
+      "sha256": "1432e1c3feb3c3f677b4915df2f8e87661f58a4ed3053b997393296ea185f432",
+      "reason": "Actual lookup-index, module visibility/import/documentation or future formatter path adaptation only; no data/reference or algorithm regeneration."
+    },
+    {
+      "path": "extract_normalization.py",
+      "bytes": 10251,
+      "sha256": "cec28f978a3f75dd5f1b4311a7cd4490c0337c5acea6c5810555a072906d5130",
+      "reason": "Actual lookup-index, module visibility/import/documentation or future formatter path adaptation only; no data/reference or algorithm regeneration."
+    },
+    {
+      "path": "language.rs",
+      "bytes": 26508,
+      "sha256": "2cf2dd6bed4a45f75a11a10387048fcb3c5799e0c67e98f6be08be0f6537b9f1",
+      "reason": "Actual lookup-index, module visibility/import/documentation or future formatter path adaptation only; no data/reference or algorithm regeneration."
+    },
+    {
+      "path": "mod.rs",
+      "bytes": 552,
+      "sha256": "02517f433a0d12aa158c4d019183a0f175e425de809efe95a9944990c6548801",
+      "reason": "Actual lookup-index, module visibility/import/documentation or future formatter path adaptation only; no data/reference or algorithm regeneration."
+    },
+    {
+      "path": "normalization.rs",
+      "bytes": 19655,
+      "sha256": "001fde9e7232d3b3d0904852edeca6771a273f5eeabfa2475c11c9b76d5129ee",
+      "reason": "Actual lookup-index, module visibility/import/documentation or future formatter path adaptation only; no data/reference or algorithm regeneration."
+    },
+    {
+      "path": "update_source_manifest.py",
+      "bytes": 11417,
+      "sha256": "fa88fc3465ab4b27322aa584f99cd767f2d2fa8573c528fdb0ea74e3c8cb34b3",
+      "reason": "Actual lookup-index, module visibility/import/documentation or future formatter path adaptation only; no data/reference or algorithm regeneration."
+    },
+    {
+      "path": "verify_normalization.py",
+      "bytes": 9962,
+      "sha256": "540cbf302c6fe759931d82d4c43e5a94b3bd94748d748bcbb39a261624f81590",
+      "reason": "Actual lookup-index, module visibility/import/documentation or future formatter path adaptation only; no data/reference or algorithm regeneration."
+    }
+  ],
+  "identity_migrations": {
+    "rust": [
+      {
+        "position": 109,
+        "old": {
+          "suite": "librairii-storage",
+          "name": "migrations::compatibility::normalization::tests::every_scalar_and_frozen_ccc_boundaries_match_actual_go_reference"
+        },
+        "new": {
+          "suite": "librairii-core",
+          "name": "collection_codec::compatibility::normalization::tests::every_scalar_and_frozen_ccc_boundaries_match_actual_go_reference"
+        },
+        "reason": "Same assertion body/reference inputs, observed compiled core namespace relocation only."
+      },
+      {
+        "position": 110,
+        "old": {
+          "suite": "librairii-storage",
+          "name": "migrations::compatibility::normalization::tests::frozen_go_streamsafe_partition_preserves_surviving_mc_order"
+        },
+        "new": {
+          "suite": "librairii-core",
+          "name": "collection_codec::compatibility::normalization::tests::frozen_go_streamsafe_partition_preserves_surviving_mc_order"
+        },
+        "reason": "Same assertion body/reference inputs, observed compiled core namespace relocation only."
+      },
+      {
+        "position": 111,
+        "old": {
+          "suite": "librairii-storage",
+          "name": "migrations::compatibility::normalization::tests::frozen_unicode_folding_mn_space_and_hangul_keep_separate_semantics"
+        },
+        "new": {
+          "suite": "librairii-core",
+          "name": "collection_codec::compatibility::normalization::tests::frozen_unicode_folding_mn_space_and_hangul_keep_separate_semantics"
+        },
+        "reason": "Same assertion body/reference inputs, observed compiled core namespace relocation only."
+      },
+      {
+        "position": 112,
+        "old": {
+          "suite": "librairii-storage",
+          "name": "migrations::compatibility::language::tests::bounded_default_grammar_matches_actual_go_without_dns"
+        },
+        "new": {
+          "suite": "librairii-core",
+          "name": "collection_codec::compatibility::language::tests::bounded_default_grammar_matches_actual_go_without_dns"
+        },
+        "reason": "Same assertion body/reference inputs, observed compiled core namespace relocation only."
+      },
+      {
+        "position": 113,
+        "old": {
+          "suite": "librairii-storage",
+          "name": "migrations::compatibility::language::tests::frozen_default_aliases_are_distinct_from_suppress_macro_and_cldr"
+        },
+        "new": {
+          "suite": "librairii-core",
+          "name": "collection_codec::compatibility::language::tests::frozen_default_aliases_are_distinct_from_suppress_macro_and_cldr"
+        },
+        "reason": "Same assertion body/reference inputs, observed compiled core namespace relocation only."
+      },
+      {
+        "position": 114,
+        "old": {
+          "suite": "librairii-storage",
+          "name": "migrations::compatibility::language::tests::frozen_language_lookup_retains_non_dns_region_bits_only"
+        },
+        "new": {
+          "suite": "librairii-core",
+          "name": "collection_codec::compatibility::language::tests::frozen_language_lookup_retains_non_dns_region_bits_only"
+        },
+        "reason": "Same assertion body/reference inputs, observed compiled core namespace relocation only."
+      },
+      {
+        "position": 115,
+        "old": {
+          "suite": "librairii-storage",
+          "name": "migrations::compatibility::language::tests::selected_default_cases_match_actual_go_and_dns_omission_reference"
+        },
+        "new": {
+          "suite": "librairii-core",
+          "name": "collection_codec::compatibility::language::tests::selected_default_cases_match_actual_go_and_dns_omission_reference"
+        },
+        "reason": "Same assertion body/reference inputs, observed compiled core namespace relocation only."
+      },
+      {
+        "position": 116,
+        "old": {
+          "suite": "librairii-storage",
+          "name": "migrations::compatibility::normalization::tests::frozen_json_key_lowercase_and_simple_orbits_preserve_distinct_rules"
+        },
+        "new": {
+          "suite": "librairii-core",
+          "name": "collection_codec::compatibility::normalization::tests::frozen_json_key_lowercase_and_simple_orbits_preserve_distinct_rules"
+        },
+        "reason": "Same assertion body/reference inputs, observed compiled core namespace relocation only."
+      },
+      {
+        "position": 117,
+        "old": {
+          "suite": "librairii-storage",
+          "name": "migrations::collection_codec::tests::wire_keys_nulls_utf8_surrogates_and_integer_lexemes_are_go_compatible"
+        },
+        "new": {
+          "suite": "librairii-core",
+          "name": "collection_codec::tests::wire_keys_nulls_utf8_surrogates_and_integer_lexemes_are_go_compatible"
+        },
+        "reason": "Same assertion body/reference inputs, observed compiled core namespace relocation only."
+      },
+      {
+        "position": 118,
+        "old": {
+          "suite": "librairii-storage",
+          "name": "migrations::collection_codec::tests::strict_versions_references_and_retired_broken_order_prevent_broadening"
+        },
+        "new": {
+          "suite": "librairii-core",
+          "name": "collection_codec::tests::strict_versions_references_and_retired_broken_order_prevent_broadening"
+        },
+        "reason": "Same assertion body/reference inputs, observed compiled core namespace relocation only."
+      },
+      {
+        "position": 119,
+        "old": {
+          "suite": "librairii-storage",
+          "name": "migrations::collection_codec::tests::canonical_wire_order_budgets_and_repeated_normalization_match_source"
+        },
+        "new": {
+          "suite": "librairii-core",
+          "name": "collection_codec::tests::canonical_wire_order_budgets_and_repeated_normalization_match_source"
+        },
+        "reason": "Same assertion body/reference inputs, observed compiled core namespace relocation only."
+      },
+      {
+        "position": 120,
+        "old": {
+          "suite": "librairii-storage",
+          "name": "migrations::collection_codec::tests::strict_codec_decode_and_migrate_match_actual_frozen_go_cases"
+        },
+        "new": {
+          "suite": "librairii-core",
+          "name": "collection_codec::tests::strict_codec_decode_and_migrate_match_actual_frozen_go_cases"
+        },
+        "reason": "Same assertion body/reference inputs, observed compiled core namespace relocation only."
+      }
+    ],
+    "python": [
+      {
+        "position": 15,
+        "old": "test_sources.SourcePolicy.test_inline_query_map_and_current_source_are_mandatory",
+        "new": "test_sources.SourcePolicy.test_materialized_core_query_map_and_current_source_are_mandatory",
+        "reason": "Superseded inline-only/unmaterialized assertion now checks actual core/header materialization and rejects old storage duplicates."
+      },
+      {
+        "position": 20,
+        "old": "test_sources.SourcePolicy.test_inline_query_fragment_hash_and_materialization_cannot_be_fabricated",
+        "new": "test_sources.SourcePolicy.test_historical_inline_identity_and_materialized_core_leaf_cannot_be_fabricated",
+        "reason": "Superseded inline-only/unmaterialized assertion now checks actual core/header materialization and rejects old storage duplicates."
+      },
+      {
+        "position": 21,
+        "old": "test_sources.SourcePolicy.test_future_core_leaf_remains_unmaterialized_and_unapproved",
+        "new": "test_sources.SourcePolicy.test_materialized_core_headers_and_removed_storage_duplicates_are_enforced",
+        "reason": "Superseded inline-only/unmaterialized assertion now checks actual core/header materialization and rejects old storage duplicates."
+      }
+    ],
+    "observed_core_discovery_sha256": "28b0151f7c977a4204d9fcd0ee36305a93fe213fc01577bf4d62451374ab026f",
+    "qualification": "Core discovery only at this intermediate move; storage caller delegation and full workspace validation remain separate."
+  },
+  "historical_rust_baseline_sha256": "33e43537409dd3d5dc07fac28572fe23d3df0b038d33fc7883fab79d3ef28b68",
+  "historical_python_baseline_sha256": "3deb3eabe0e6b31170f26629c042214da2371b023235d1adf5cf2429664fa836"
 }
