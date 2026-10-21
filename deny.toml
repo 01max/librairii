@@ -8,7 +8,7 @@ git-fetch-with-cli = true
 ignore = []
 
 [licenses]
-allow = ["MIT", "Apache-2.0", "Unicode-3.0", "NCSA"]
+allow = ["MIT", "Apache-2.0", "Unicode-3.0", "NCSA", "ISC", "BSD-3-Clause"]
 confidence-threshold = 0.9
 exceptions = []
 
@@ -20,7 +20,7 @@ ignore = true
 [bans]
 multiple-versions = "deny"
 wildcards = "deny"
-skip = []
+skip = ["getrandom@0.2.17", "miniz_oxide@0.8.9"]
 skip-tree = []
 
 [sources]

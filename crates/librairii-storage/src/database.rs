@@ -378,6 +378,13 @@ impl Database<'_> {
             Authority::Native(library) => library.identity().typed(),
         }
     }
+    #[cfg(any(target_os = "macos", target_os = "linux"))]
+    pub(crate) fn metadata_files(&self) -> Result<crate::platform::unix::LibraryFiles<'_>> {
+        match self.authority {
+            Authority::Isolated(library) => crate::platform::unix::LibraryFiles::open(library),
+            Authority::Native(_) => crate::platform::unix::LibraryFiles::open_native(self),
+        }
+    }
     pub(crate) fn snapshot_identity(&self) -> SnapshotIdentity {
         SnapshotIdentity(Arc::downgrade(&self.writer))
     }
@@ -502,6 +509,14 @@ impl<'library> Database<'library> {
         runtime
             .diagnostics
             .push(receiver.recv().map_err(|_| StorageError::WorkerStopped)??);
+        // The exclusive generation has no admitted catalog sessions yet.
+        // Reconcile only DB state; retain every raw/cache file for recovery.
+        #[cfg(any(target_os = "macos", target_os = "linux"))]
+        match runtime.recover_catalog_refreshes()?.wait()? {
+            TransactionOutcome::Committed(()) => {}
+            TransactionOutcome::ProvenNotCommitted(error)
+            | TransactionOutcome::CommitUncertain(error) => return Err(error),
+        }
         for index in 0..READ_WORKERS {
             let (sender, receiver) = mpsc::sync_channel(1);
             let queue = runtime.readers.clone();

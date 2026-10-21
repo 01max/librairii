@@ -6,6 +6,8 @@ pub type Result<T> = std::result::Result<T, StorageError>;
 #[derive(Debug, thiserror::Error)]
 pub enum StorageError {
     #[error("{0}")]
+    Metadata(#[from] librairii_core::metadata::MetadataError),
+    #[error("{0}")]
     Shelf(#[from] librairii_core::shelves::ShelfError),
     #[error("{0}")]
     Collection(#[from] librairii_core::collections::CollectionError),
@@ -150,6 +152,7 @@ impl StorageError {
 
     pub const fn code(&self) -> &'static str {
         match self {
+            Self::Metadata(error) => error.code(),
             Self::Collection(error) => error.code(),
             Self::Shelf(error) => error.code(),
             Self::Flag(error) => error.code(),

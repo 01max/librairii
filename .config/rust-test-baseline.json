@@ -2392,6 +2392,188 @@
         "x86_64-apple-darwin",
         "x86_64-unknown-linux-gnu"
       ]
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "lunii::tests::actual_streamed_limits_apply_to_token_and_catalog_without_content_length"
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "lunii::tests::cancellation_and_total_deadline_interrupt_waiting_responses"
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "lunii::tests::guest_envelope_headers_and_exact_catalog_bytes_match_protocol"
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "lunii::tests::redirects_status_content_type_malformed_json_and_token_are_refused"
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "lunii::tests::request_admission_is_bounded_without_waiting_queue"
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "lunii::tests::tls_validates_roots_and_server_names_with_no_insecure_override"
+    },
+    {
+      "suite": "librairii-app::metadata",
+      "name": "exact_raw_hash_normalization_and_requested_same_language_available_fallback"
+    },
+    {
+      "suite": "librairii-app::metadata",
+      "name": "invalid_catalogs_never_construct_normalized_snapshots"
+    },
+    {
+      "suite": "librairii-storage::metadata",
+      "name": "staged_raw_is_exact_hashed_reopenable_and_rejected_rows_are_immutable",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-app::metadata",
+      "name": "cancellation_after_staging_rejects_but_cancellation_inside_activation_finishes_report"
+    },
+    {
+      "suite": "librairii-storage::metadata",
+      "name": "activation_is_atomic_and_failure_cancel_or_invalid_data_preserve_last_good",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::metadata",
+      "name": "resolved_fields_freshness_and_age_changes_preserve_manual_state_and_curated_members",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "lunii::tests::artwork_allowlist_stream_limit_sniffing_and_concurrent_misses"
+    },
+    {
+      "suite": "librairii-storage::metadata",
+      "name": "registered_artwork_cache_is_hashed_offline_and_refuses_corruption_or_aliases",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "thumbnails::tests::invalidation_rejects_old_work_and_fallback_is_official_then_embedded_then_placeholder"
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "thumbnails::tests::thumbnail_lru_evicts_old_results_at_the_entry_budget"
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "thumbnails::tests::thumbnails_decode_all_formats_reuse_lru_and_bound_pixels_and_output"
+    },
+    {
+      "suite": "librairii-storage::metadata",
+      "name": "embedded_legacy_cover_reads_are_bounded_and_do_not_accept_arbitrary_paths",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::metadata",
+      "name": "frozen_go_artwork_validation_bytes_hash_and_legacy_layout_match",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::metadata",
+      "name": "frozen_go_catalog_normalization_and_artwork_url_cases_match",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "metadata::owner::tests::metadata_and_artwork_partial_creation_keep_original_handles_and_custody"
+    },
+    {
+      "suite": "librairii-storage::metadata",
+      "name": "interrupted_and_dropped_refreshes_settle_without_stranding_busy_or_losing_last_good",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::metadata",
+      "name": "real_staged_cancellation_rejects_only_the_new_snapshot",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "metadata::owner::tests::known_metadata_acknowledgements_settle_stages_but_uncertainty_retains_receipts",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "metadata::owner::tests::metadata_cleanup_failure_retains_custody_without_changing_committed_acknowledgement",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "platform::unix::tests::metadata_stage_cleanup_preserves_substituted_directories_and_payloads",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "platform::unix::tests::metadata_stage_cleanup_flush_failure_keeps_actual_receipts_and_fences_custody",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::native_library",
+      "name": "metadata_refresh_and_artwork_settle_native_close_and_offline_reopen",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
     }
   ]
 }

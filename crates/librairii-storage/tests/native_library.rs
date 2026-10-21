@@ -1994,3 +1994,57 @@ fn native_non_utf8_copy_root_is_retained_without_lossy_record_or_profile_publica
     );
     Ok(())
 }
+
+#[test]
+fn metadata_refresh_and_artwork_settle_native_close_and_offline_reopen() -> TestResult {
+    use librairii_app::metadata::{ArtworkAsset, MediaType, RefreshSession, normalize};
+    use librairii_storage::metadata::MetadataStorage;
+    const RAW: &[u8] = include_bytes!("../../librairii-app/tests/fixtures/lunii-catalog.json");
+    let roots = TestRoots::new()?;
+    let (copy, locations) = prepare(&roots, false)?;
+    let root = copy.root().to_owned();
+    let profile = NativeProfileStore::create_fresh(&locations.native)?;
+    let native =
+        NativeLibrary::bind_independent(copy, &profile, &locations, &WorkCancellation::default())
+            .map_err(|f| f.to_string())?;
+    let mut db = Database::open_native(&native)?;
+    let metadata = MetadataStorage::new(&db);
+    let report = RefreshSession::begin(
+        &metadata,
+        "a0000000-0000-4000-8000-000000000091".parse()?,
+        "en-GB",
+        "2026-10-21T14:00:00Z",
+    )
+    .map_err(|e| format!("{e:?}"))?
+    .finish(Ok(RAW.to_vec()), "2026-10-21T14:00:01Z", || false)
+    .map_err(|e| format!("{e:?}"))?;
+    let id = normalize(RAW.to_vec(), "en-GB")?.artworks()[0].id;
+    let asset = ArtworkAsset::checked(
+        include_bytes!("../../librairii-adapters/tests/fixtures/artwork/cover.png").to_vec(),
+        MediaType::Png,
+    )?;
+    // Exercise both newly published and reused existing artwork bytes.
+    for _ in 0..2 {
+        metadata.persist_artwork(id, &asset, "2026-10-21T14:00:02Z", None, None)?;
+    }
+    assert!(metadata.retained_failures().is_empty());
+    drop(metadata);
+    db.close()?;
+    drop(db);
+    native.finish().map_err(|f| f.to_string())?;
+    assert_eq!(fs::read_dir(root.join("staging"))?.count(), 0);
+    assert_eq!(fs::read_dir(root.join("trash"))?.count(), 0);
+    drop(profile);
+    let profile = NativeProfileStore::open_native(&locations.native)?;
+    let native = NativeLibrary::reopen(&profile, &locations, &WorkCancellation::default())?;
+    let mut db = Database::open_native(&native)?;
+    assert_eq!(
+        db.catalog_snapshots()?.wait()?.last().ok_or("snapshot")?.id,
+        report.snapshot
+    );
+    assert_eq!(db.read_registered_artwork(id)?.cached, Some(asset));
+    db.close()?;
+    drop(db);
+    native.finish().map_err(|f| f.to_string())?;
+    Ok(())
+}
