@@ -487,3 +487,279 @@ fn deletion_reports_links_preserves_approved_history_and_transitions_only_commit
     db.close()?;
     Ok(())
 }
+
+fn collection_json(c: Collection) -> serde_json::Value {
+    serde_json::json!({"id":c.id,"name":String::from_utf8_lossy(&c.name),"normalizedName":String::from_utf8_lossy(&c.normalized_name),"position":c.position,"queryVersion":c.query_version,"queryPayload":String::from_utf8_lossy(&c.query_payload),"validity":if c.validity==Validity::Valid {"valid"} else {"needs_attention"},"revision":c.revision})
+}
+#[test]
+fn frozen_go_crud_query_passes_legacy_ids_and_attention_match_after_restart() -> TestResult {
+    let reference: serde_json::Value =
+        serde_json::from_str(include_str!("fixtures/collections/reference.json"))?;
+    let roots = TestRoots::new()?;
+    let library = IsolatedLibrary::initialize_from_override(
+        Some(roots.library().as_os_str()),
+        "a0000000-0000-4000-8000-000000000001".parse()?,
+    )?;
+    let mut db = Database::open_isolated(&library)?;
+    let mut events = vec![];
+    let mut q = Query::default();
+    q.name = "𝑨".into();
+    let c = created(&db, "  𝑨\tÉTÉ  ", q)?;
+    events.push(collection_json(c.clone()));
+    let Response::Collection(copy) = edit(
+        &db,
+        Command::Duplicate {
+            id: c.id,
+            name: "Independent".into(),
+        },
+    )?
+    else {
+        return Err("copy".into());
+    };
+    events.push(collection_json(copy.clone()));
+    let Response::Inspection(i) = edit(&db, Command::Inspect { id: c.id })? else {
+        return Err("inspect".into());
+    };
+    events.push(collection_json(i.collection));
+    let Response::Collection(c) = edit(
+        &db,
+        Command::Rename {
+            id: c.id,
+            name: "Histoires d'ÉTÉ".into(),
+        },
+    )?
+    else {
+        return Err("rename".into());
+    };
+    events.push(collection_json(c.clone()));
+    let duplicate = matches!(
+        created(&db, "HISTOIRES d'ete", Query::default()),
+        Err(StorageError::Collection(CollectionError::DuplicateName))
+    );
+    events.push(serde_json::json!({"duplicateName":duplicate}));
+    let plan = db
+        .collection_replacement_plan(c.id, Query::default())?
+        .wait()?;
+    events.push(collection_json(committed(
+        db.replace_collection(plan, WorkCancellation::default())?
+            .wait()?,
+    )?));
+    let Response::Collections(order) = edit(&db, Command::Reorder(vec![copy.id, c.id]))? else {
+        return Err("order".into());
+    };
+    events.push(serde_json::Value::Array(
+        order.into_iter().map(collection_json).collect(),
+    ));
+    committed(db.transaction(WorkCancellation::default(),|tx|{
+        tx.execute_batch("INSERT INTO collections(id,name,normalized_name,position,query_version,query_payload) VALUES(77,'Legacy','legacy',77,1,'{\"page\":9,\"name\":\"moon\",\"brokenState\":\"broken\"}'); INSERT INTO collections(id,name,normalized_name,position,query_version,query_payload) VALUES(88,'Unsupported','unsupported',88,99,'{\"name\":\"forest\"}');")?;Ok(())
+    })?.wait()?)?;
+    for id in [77, 88] {
+        let Response::Inspection(i) = edit(&db, Command::Inspect { id })? else {
+            return Err("legacy inspect".into());
+        };
+        events.push(collection_json(i.collection));
+    }
+    assert_eq!(reference["events"], serde_json::Value::Array(events));
+    let before = db.collections()?.wait()?;
+    let replacement = db
+        .collection_replacement_plan(copy.id, Query::default())?
+        .wait()?;
+    let deletion = db.collection_deletion_plan(copy.id)?.wait()?;
+    db.close()?;
+    let mut reopened = Database::open_isolated(&library)?;
+    assert_eq!(reopened.collections()?.wait()?, before);
+    assert!(matches!(
+        reopened.replace_collection(replacement, WorkCancellation::default()),
+        Err(StorageError::Collection(CollectionError::StalePreview))
+    ));
+    assert!(matches!(
+        reopened.delete_collection(deletion, WorkCancellation::default()),
+        Err(StorageError::Collection(CollectionError::StalePreview))
+    ));
+    reopened.close()?;
+    Ok(())
+}
+
+#[test]
+fn replacement_revalidates_live_references_and_failures_do_not_publish_partial_deletion()
+-> TestResult {
+    let roots = TestRoots::new()?;
+    let library = IsolatedLibrary::initialize_from_override(
+        Some(roots.library().as_os_str()),
+        "a0000000-0000-4000-8000-000000000001".parse()?,
+    )?;
+    let mut db = Database::open_isolated(&library)?;
+    let c = created(&db, "Source", Query::default())?;
+    committed(db.transaction(WorkCancellation::default(),|tx|{
+        tx.execute_batch("INSERT INTO tag_definitions(id,key,normalized_key,label,kind,source,position,color) VALUES(44,'favorite','favorite','Favorite','boolean','user',0,'#405CF5');")?;Ok(())
+    })?.wait()?)?;
+    let q = librairii_core::collection_codec::decode(
+        5,
+        br#"{"booleanFilters":[{"definitionId":44,"state":"true"}]}"#,
+        0,
+    )?;
+    let plan = db.collection_replacement_plan(c.id, q)?.wait()?;
+    committed(
+        db.transaction(WorkCancellation::default(), |tx| {
+            tx.execute("DELETE FROM tag_definitions WHERE id=44", [])?;
+            Ok(())
+        })?
+        .wait()?,
+    )?;
+    assert!(matches!(
+        committed(
+            db.replace_collection(plan, WorkCancellation::default())?
+                .wait()?
+        ),
+        Err(StorageError::Collection(
+            CollectionError::CriteriaUnavailable
+        ))
+    ));
+    assert_eq!(db.collections()?.wait()?, vec![c.clone()]);
+    committed(db.transaction(WorkCancellation::default(),move|tx|{
+        tx.execute_batch("INSERT INTO shelves(id,name,normalized_name,position) VALUES(1,'Approved','approved',0);")?;
+        tx.execute("INSERT INTO shelf_sources(id,shelf_id,collection_id,collection_name,active) VALUES(1,1,?,'Source',0)",[c.id])?;
+        tx.execute_batch("CREATE TRIGGER fail_collection_delete BEFORE DELETE ON collections BEGIN SELECT RAISE(ABORT,'injected after source update'); END;")?;Ok(())
+    })?.wait()?)?;
+    let plan = db.collection_deletion_plan(c.id)?.wait()?;
+    assert!(matches!(
+        committed(
+            db.delete_collection(plan, WorkCancellation::default())?
+                .wait()?
+        ),
+        Err(StorageError::Sqlite(_))
+    ));
+    assert_eq!(db.collections()?.wait()?.len(), 1);
+    assert_eq!(
+        db.read(|tx| Ok(tx.query_row(
+            "SELECT collection_id FROM shelf_sources WHERE id=1",
+            [],
+            |r| r.get::<_, i64>(0)
+        )?))?
+        .wait()?,
+        c.id
+    );
+    db.close()?;
+    Ok(())
+}
+
+#[test]
+fn stale_navigation_and_cross_library_plans_cannot_apply_and_many_source_preview_is_not_saved_node_limited()
+-> TestResult {
+    use librairii_core::{
+        CollectionId,
+        collection_codec::url::{Location, Scope},
+        navigation::{Frame, Navigation},
+    };
+    use librairii_storage::collections::Observation;
+    let roots = TestRoots::new()?;
+    let library = IsolatedLibrary::initialize_from_override(
+        Some(roots.library().as_os_str()),
+        "a0000000-0000-4000-8000-000000000001".parse()?,
+    )?;
+    let mut db = Database::open_isolated(&library)?;
+    let c = created(&db, "One", Query::default())?;
+    let other_roots = TestRoots::new()?;
+    let other_library = IsolatedLibrary::initialize_from_override(
+        Some(other_roots.library().as_os_str()),
+        "b0000000-0000-4000-8000-000000000001".parse()?,
+    )?;
+    let mut other_db = Database::open_isolated(&other_library)?;
+    created(&other_db, "One", Query::default())?;
+    let plan = db.collection_deletion_plan(c.id)?.wait()?;
+    assert!(matches!(
+        other_db.delete_collection(plan, WorkCancellation::default()),
+        Err(StorageError::Collection(CollectionError::StalePreview))
+    ));
+    let plan = db
+        .collection_replacement_plan(c.id, Query::default())?
+        .wait()?;
+    assert!(matches!(
+        other_db.replace_collection(plan, WorkCancellation::default()),
+        Err(StorageError::Collection(CollectionError::StalePreview))
+    ));
+    let mut nav = Navigation::new(
+        library.identity().typed(),
+        1,
+        Location {
+            scope: Scope::Collection(CollectionId::new(c.id)?),
+            request: Default::default(),
+        },
+    )?;
+    let old_stamp = nav.stamp();
+    nav.push(Frame {
+        location: Location {
+            scope: Scope::Library,
+            request: Default::default(),
+        },
+        selection: vec![],
+    })?;
+    let receipt = committed(
+        db.delete_collection(
+            db.collection_deletion_plan(c.id)?.wait()?,
+            WorkCancellation::default(),
+        )?
+        .wait()?,
+    )?;
+    assert!(!receipt.apply_navigation(&mut nav, &old_stamp)?);
+    assert_eq!(nav.current().location.scope, Scope::Library);
+    seed_stories(&db, 1)?;
+    let mut ids = vec![];
+    for n in 0..51 {
+        ids.push(created(&db, &format!("Source {n}"), Query::default())?.id);
+    }
+    let Observation::Ready(preview) = committed(
+        db.collection_selection_preview(ids.clone(), "fr-FR".into(), WorkCancellation::default())?
+            .wait()?,
+    )?
+    else {
+        return Err("preview".into());
+    };
+    assert_eq!((preview.unique_count, preview.overlap_count), (1, 50));
+    assert!(matches!(
+        committed(
+            db.save_combined_collection(ids, "Too complex".into(), WorkCancellation::default())?
+                .wait()?
+        ),
+        Err(StorageError::Collection(CollectionError::InvalidQuery))
+    ));
+    assert_eq!(db.collections()?.wait()?.len(), 51);
+    other_db.close()?;
+    db.close()?;
+    Ok(())
+}
+
+#[test]
+fn frozen_collection_reference_manifest_binds_probe_and_capture_bytes() -> TestResult {
+    use sha2::{Digest, Sha256};
+    let manifest: serde_json::Value =
+        serde_json::from_str(include_str!("fixtures/collections/manifest.json"))?;
+    assert_eq!(
+        manifest["frozenRevision"],
+        "73a93303a9a44cf0a92eaf525331561ed8c04460"
+    );
+    assert_eq!(manifest["repeatCapture"], "byte-identical");
+    for (name, bytes) in [
+        (
+            "reference.json",
+            include_bytes!("fixtures/collections/reference.json").as_slice(),
+        ),
+        (
+            "reference_probe.go.in",
+            include_bytes!("fixtures/collections/reference_probe.go.in").as_slice(),
+        ),
+    ] {
+        let record = manifest["files"]
+            .as_array()
+            .ok_or("files")?
+            .iter()
+            .find(|r| r["path"] == name)
+            .ok_or("record")?;
+        assert_eq!(record["bytes"], bytes.len());
+        assert_eq!(
+            record["sha256"],
+            librairii_core::Checksum::from_bytes(Sha256::digest(bytes).into()).to_string()
+        );
+    }
+    Ok(())
+}

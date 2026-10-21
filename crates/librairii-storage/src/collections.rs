@@ -209,7 +209,7 @@ pub fn execute(tx: &Transaction<'_>, command: Command) -> Result<Response> {
 #[derive(Debug)]
 pub enum Observation<T> {
     Ready(T),
-    NeedsAttention(Inspection),
+    NeedsAttention(Box<Inspection>),
 }
 #[derive(Debug)]
 pub struct Evaluation {
@@ -250,7 +250,7 @@ pub fn evaluate(
 ) -> Result<Observation<Evaluation>> {
     let inspection = inspect(tx, id)?;
     if !inspection.is_openable() {
-        return Ok(Observation::NeedsAttention(inspection));
+        return Ok(Observation::NeedsAttention(Box::new(inspection)));
     }
     let criteria = inspection
         .query
@@ -334,7 +334,7 @@ fn selected(tx: &Transaction<'_>, ids: &[i64]) -> Result<Observation<Vec<(Collec
     for id in ids {
         let inspection = inspect(tx, *id)?;
         if !inspection.is_openable() {
-            return Ok(Observation::NeedsAttention(inspection));
+            return Ok(Observation::NeedsAttention(Box::new(inspection)));
         }
         sources.push((
             inspection.collection,
