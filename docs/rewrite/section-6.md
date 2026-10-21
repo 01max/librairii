@@ -236,3 +236,15 @@ Independent standards and spec reviews of the 6.1–6.8 head identified four
 correctness findings: cancellation-read refusal, aggregate text budgets,
 permanent creation failures and finalization blocked by unrelated work. Their
 fixes and final-head reassessment are recorded separately from this test commit.
+
+The review fixes reject positively rolled-back SQLite constraint failures without
+retrying forever, validate new IDs as 36 non-NUL Unicode characters (without
+requiring UUID syntax), and retain unknown-acknowledgement readback obligations.
+A refused cancellation read leaves the fetched row pending; effects cannot start
+until cancellation is observed. Finalization polls independently of source intake
+and excludes only operations whose actual item owners are still in flight. A
+completed metadata operation can finish and release its conflict while an
+unrelated import remains blocked. SQLite ID extraction and streaming terminal
+aggregation now preflight text before allocating; status/kind join the row budget.
+Regressions cover each finding, including a missing story FK and retained
+oversized legacy outcomes.

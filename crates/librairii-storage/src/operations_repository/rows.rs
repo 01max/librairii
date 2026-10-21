@@ -50,6 +50,8 @@ fn budget(
 }
 const HEADER_TEXT: &[&str] = &[
     "id",
+    "kind",
+    "status",
     "created_at",
     "started_at",
     "finished_at",
@@ -61,6 +63,7 @@ const HEADER_TEXT: &[&str] = &[
     "error_message",
 ];
 const ITEM_TEXT: &[&str] = &[
+    "status",
     "operation_id",
     "story_uuid",
     "story_title",
@@ -215,4 +218,28 @@ pub(super) fn view(
         item,
         siblings,
     }))
+}
+
+// Even selection keys are checked before constructing an owned allocation.
+// Frozen IDs have 36 SQLite characters; 256 UTF-8 bytes covers every valid ID.
+pub(super) fn bounded_id(row: &Row<'_>, index: usize) -> rusqlite::Result<String> {
+    let value = row.get_ref(index)?.as_str()?;
+    if value.len() > 256 {
+        return Err(rusqlite::Error::FromSqlConversionFailure(
+            index,
+            Type::Text,
+            Box::new(librairii_app::ports::creation::InputError::ResourceLimit),
+        ));
+    }
+    Ok(value.to_owned())
+}
+
+// Aggregation streams arbitrarily many siblings, retaining only one outcome.
+// Bound each selected row, without imposing an operation-wide item-count cap.
+pub(super) fn terminal_outcomes_budget(tx: &Transaction<'_>, id: &str) -> Result<()> {
+    let largest: i64 = tx.query_row("SELECT COALESCE(MAX(length(CAST(status AS BLOB))+COALESCE(length(CAST(outcome_code AS BLOB)),0)+COALESCE(length(CAST(outcome_message AS BLOB)),0)),0) FROM file_operation_items WHERE operation_id=?", [id], |r|r.get(0))?;
+    if largest > MAX_ROW_TEXT {
+        return Err(librairii_app::ports::creation::InputError::ResourceLimit.into());
+    }
+    Ok(())
 }

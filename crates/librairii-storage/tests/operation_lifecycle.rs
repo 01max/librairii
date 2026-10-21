@@ -1,6 +1,7 @@
 #![cfg(any(target_os = "macos", target_os = "linux"))]
 use librairii_app::ports::{
     creation::{NewItem, NewOperation},
+    jobs::{JobStore, StoreResult},
     operations::*,
 };
 use librairii_core::{
@@ -257,6 +258,18 @@ fn snapshot_byte_limits_refuse_oversized_legacy_text_without_changing_rows() -> 
     assert!(matches!(
         TerminalRepository::new(&db, 1).snapshot(&request.id),
         SnapshotReply::Unavailable(_)
+    ));
+    committed(
+        db.transaction(Default::default(), |tx| {
+            tx.execute("UPDATE file_operation_items SET status='skipped'", [])?;
+            tx.execute("UPDATE file_operations SET completed_items=total_items", [])?;
+            Ok(())
+        })?
+        .wait()?,
+    )?;
+    assert!(matches!(
+        TerminalRepository::new(&db, 1).ready_to_finish(&[]),
+        StoreResult::Retry
     ));
     assert_eq!(
         db.barrier_read(|tx| Ok(tx.query_row(

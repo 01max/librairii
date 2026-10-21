@@ -96,7 +96,16 @@ impl NewOperation {
     }
     pub fn validate(&self) -> Result<i64, InputError> {
         self.retained_bytes()?;
-        if self.id.is_empty() || self.items.is_empty() {
+        // Match SQLite character length for new IDs. Existing
+        // 36-character non-UUID identities remain valid and are not normalized.
+        if self
+            .id
+            .split('\0')
+            .next()
+            .map_or(0, |id| id.chars().count())
+            != 36
+            || self.items.is_empty()
+        {
             return Err(InputError::Invalid);
         }
         let mut total = 0i64;

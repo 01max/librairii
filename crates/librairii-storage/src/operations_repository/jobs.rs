@@ -26,6 +26,9 @@ fn write<T>(pending: Result<Pending<'_, TransactionOutcome<T>>>) -> StoreResult<
             Ok(TransactionOutcome::ProvenNotCommitted(
                 StorageError::SnapshotChanged | StorageError::OperationInput(_),
             )) => StoreResult::Rejected,
+            Ok(TransactionOutcome::ProvenNotCommitted(StorageError::Sqlite(
+                rusqlite::Error::SqliteFailure(error, _),
+            ))) if error.code == rusqlite::ErrorCode::ConstraintViolation => StoreResult::Rejected,
             Ok(TransactionOutcome::ProvenNotCommitted(_)) => StoreResult::Retry,
             _ => StoreResult::Unknown,
         },
@@ -96,7 +99,7 @@ impl JobStore for TerminalRepository<'_, '_> {
         read(self.database.barrier_read(move|tx| {
             let marks=std::iter::repeat_n("?",excluded.len()).collect::<Vec<_>>().join(",");
             let sql=format!("SELECT i.operation_id,i.id FROM file_operation_items i JOIN file_operations o ON o.id=i.operation_id WHERE o.status IN ('queued','running') AND i.status='pending' AND i.id NOT IN ({marks}) ORDER BY o.created_at,o.id,i.id LIMIT 1");
-            let found:Option<(String,i64)>=tx.query_row(&sql,rusqlite::params_from_iter(excluded),|r|Ok((r.get(0)?,r.get(1)?))).optional()?;
+            let found:Option<(String,i64)>=tx.query_row(&sql,rusqlite::params_from_iter(excluded),|r|Ok((rows::bounded_id(r,0)?,r.get(1)?))).optional()?;
             let Some((operation,item))=found else{return Ok(None);};
             let v=rows::view(tx,&operation,Some(item))?.ok_or_else(invalid)?;
             Ok(Some(WorkItem{operation:v.operation.immutable_scope(),item:v.item.ok_or_else(invalid)?}))
@@ -136,15 +139,23 @@ impl JobStore for TerminalRepository<'_, '_> {
     }
     fn ready_to_finish(
         &self,
+        excluded: &[String],
     ) -> StoreResult<
         Option<(
             librairii_app::ports::operations::OperationScope,
             librairii_core::operations::TerminalResult,
         )>,
     > {
-        read(self.database.barrier_read(|tx| {
-            let id:Option<String>=tx.query_row("SELECT id FROM file_operations WHERE status IN ('queued','running') AND completed_items=total_items ORDER BY created_at,id LIMIT 1",[],|r|r.get(0)).optional()?;
+        if excluded.len() > 25 {
+            return StoreResult::Rejected;
+        }
+        let excluded = excluded.to_vec();
+        read(self.database.barrier_read(move |tx| {
+            let marks=std::iter::repeat_n("?",excluded.len()).collect::<Vec<_>>().join(",");
+            let sql=format!("SELECT id FROM file_operations WHERE status IN ('queued','running') AND completed_items=total_items AND id NOT IN ({marks}) ORDER BY created_at,id LIMIT 1");
+            let id:Option<String>=tx.query_row(&sql,rusqlite::params_from_iter(excluded),|r|rows::bounded_id(r,0)).optional()?;
             let Some(id)=id else{return Ok(None);};let header=rows::header(tx,&id)?.ok_or_else(invalid)?;
+            rows::terminal_outcomes_budget(tx,&id)?;
             let mut aggregate=CompletionAggregate::new(header.kind,header.counts.total).map_err(|_|invalid())?;
             let mut q=tx.prepare("SELECT status,outcome_code,outcome_message FROM file_operation_items WHERE operation_id=? ORDER BY id")?;
             let mut rows=q.query([&id])?;

@@ -43,11 +43,11 @@ impl Database<'_> {
             let mut ids=Vec::with_capacity(21);
             if before.is_empty() {
                 let mut q=tx.prepare("SELECT id FROM file_operations ORDER BY created_at DESC,id DESC LIMIT 21")?;
-                for id in q.query_map([],|r|r.get::<_,String>(0))? {ids.push(id?);}
+                for id in q.query_map([],|r|rows::bounded_id(r,0))? {ids.push(id?);}
             }else{
                 let at=rows::header(tx,&before)?.ok_or_else(invalid)?.identity.created_at;
                 let mut q=tx.prepare("SELECT id FROM file_operations WHERE (created_at,id)<(?,?) ORDER BY created_at DESC,id DESC LIMIT 21")?;
-                for id in q.query_map(rusqlite::params![at,before],|r|r.get::<_,String>(0))?{ids.push(id?);}
+                for id in q.query_map(rusqlite::params![at,before],|r|rows::bounded_id(r,0))?{ids.push(id?);}
             }
             let next_before=if ids.len()>20{ids.truncate(20);ids.last().cloned()}else{None};
             for id in ids {append(tx,&id,&mut operations,&mut used)?;}
@@ -60,8 +60,8 @@ impl Database<'_> {
         self.barrier_read(|tx| {
             let mut operations=Vec::new();let mut used=0;
             let mut q=tx.prepare("SELECT id FROM file_operations WHERE status IN ('queued','running') ORDER BY created_at DESC,id DESC")?;
-            for id in q.query_map([],|r|r.get::<_,String>(0))? {append(tx,&id?,&mut operations,&mut used)?;}
-            let latest:Option<String>=tx.query_row("SELECT id FROM file_operations WHERE kind='export' AND status IN ('succeeded','partially_succeeded','failed','cancelled','interrupted') ORDER BY COALESCE(finished_at,created_at) DESC,id DESC LIMIT 1",[],|r|r.get(0)).optional()?;
+            for id in q.query_map([],|r|rows::bounded_id(r,0))? {append(tx,&id?,&mut operations,&mut used)?;}
+            let latest:Option<String>=tx.query_row("SELECT id FROM file_operations WHERE kind='export' AND status IN ('succeeded','partially_succeeded','failed','cancelled','interrupted') ORDER BY COALESCE(finished_at,created_at) DESC,id DESC LIMIT 1",[],|r|rows::bounded_id(r,0)).optional()?;
             if let Some(id)=latest{append(tx,&id,&mut operations,&mut used)?;}Ok(operations)
         })
     }

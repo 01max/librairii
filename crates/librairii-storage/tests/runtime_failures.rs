@@ -26,6 +26,8 @@ use std::{
 };
 type TestResult = Result<(), Box<dyn Error>>;
 struct Observed<'a, 'b> {
+    cancel_created: AtomicBool,
+    cancelled_refusals: AtomicUsize,
     pause_creation: AtomicBool,
     creation_entered: AtomicBool,
     allow_creation: AtomicBool,
@@ -110,7 +112,14 @@ impl JobStore for Observed<'_, '_> {
                 thread::sleep(Duration::from_millis(1));
             }
         }
-        self.store.create(i, at)
+        let result = self.store.create(i, at);
+        if self.cancel_created.load(Ordering::Acquire) && matches!(result, StoreResult::Known(())) {
+            assert!(matches!(
+                self.store.request_cancel(&i.id),
+                StoreResult::Known(())
+            ));
+        }
+        result
     }
     fn creation_readback(&self, i: &NewOperation, at: &str) -> StoreResult<bool> {
         self.store.creation_readback(i, at)
@@ -124,14 +133,27 @@ impl JobStore for Observed<'_, '_> {
     fn start_readback(&self, w: &WorkItem) -> StoreResult<StartObservation> {
         self.store.start_readback(w)
     }
-    fn ready_to_finish(&self) -> StoreResult<Option<(OperationScope, TerminalResult)>> {
-        self.store.ready_to_finish()
+    fn ready_to_finish(
+        &self,
+        excluded: &[String],
+    ) -> StoreResult<Option<(OperationScope, TerminalResult)>> {
+        self.store.ready_to_finish(excluded)
     }
     fn save_progress(&self, i: i64, c: i64, t: i64) -> StoreResult<()> {
         self.store.save_progress(i, c, t)
     }
     fn cancelled(&self, id: &str) -> StoreResult<bool> {
-        self.store.cancelled(id)
+        let result = self.store.cancelled(id);
+        if matches!(result, StoreResult::Known(true))
+            && self
+                .cancelled_refusals
+                .try_update(Ordering::AcqRel, Ordering::Acquire, |n| n.checked_sub(1))
+                .is_ok()
+        {
+            StoreResult::Retry
+        } else {
+            result
+        }
     }
     fn request_cancel(&self, id: &str) -> StoreResult<()> {
         self.store.request_cancel(id)
@@ -230,6 +252,8 @@ fn three_real_failed_writes_then_continued_interruption_retains_owner_and_metada
     let mut db = Database::open_isolated(&lib)?;
     assert!(matches!(db.transaction(Default::default(),|tx|{tx.execute_batch("CREATE TRIGGER fail_complete BEFORE UPDATE OF status ON file_operation_items WHEN NEW.status='succeeded' BEGIN SELECT RAISE(ABORT,'complete unavailable'); END; CREATE TRIGGER fail_interrupt BEFORE UPDATE OF status ON file_operations WHEN NEW.status='interrupted' BEGIN SELECT RAISE(ABORT,'interrupt unavailable'); END;")?;Ok(())})?.wait()?,librairii_storage::database::TransactionOutcome::Committed(())));
     let store = Observed {
+        cancel_created: AtomicBool::new(false),
+        cancelled_refusals: AtomicUsize::new(0),
         pause_creation: AtomicBool::new(false),
         creation_entered: AtomicBool::new(false),
         allow_creation: AtomicBool::new(true),
@@ -347,6 +371,8 @@ fn lost_real_commit_ack_then_barrier_refusal_cannot_erase_unknown_or_repeat_comp
     let mut db = Database::open_isolated(&lib)?;
     let store = Observed {
         store: TerminalRepository::new(&db, 1),
+        cancel_created: AtomicBool::new(false),
+        cancelled_refusals: AtomicUsize::new(0),
         pause_creation: AtomicBool::new(false),
         creation_entered: AtomicBool::new(false),
         allow_creation: AtomicBool::new(true),
@@ -429,6 +455,8 @@ fn shutdown_during_admission_cancels_later_enqueued_work_without_entering_effect
     let mut db = Database::open_isolated(&lib)?;
     let store = Observed {
         store: TerminalRepository::new(&db, 1),
+        cancel_created: AtomicBool::new(false),
+        cancelled_refusals: AtomicUsize::new(0),
         pause_creation: AtomicBool::new(true),
         creation_entered: AtomicBool::new(false),
         allow_creation: AtomicBool::new(false),
@@ -466,6 +494,191 @@ fn shutdown_during_admission_cancels_later_enqueued_work_without_entering_effect
         saved.operation.state,
         librairii_core::OperationState::Cancelled
     );
+    db.close()?;
+    Ok(())
+}
+
+#[derive(Default)]
+struct ReviewEffect {
+    calls: AtomicUsize,
+    import_entered: AtomicBool,
+    release: AtomicBool,
+}
+impl Executor for ReviewEffect {
+    type Resources = ();
+    fn execute(&self, work: &WorkItem, _: &Cancellation, _: &ProgressSink) -> Execution<()> {
+        self.calls.fetch_add(1, Ordering::SeqCst);
+        if work.operation.kind == OperationKind::Import {
+            self.import_entered.store(true, Ordering::Release);
+            while !self.release.load(Ordering::Acquire) {
+                thread::sleep(Duration::from_millis(1));
+            }
+        }
+        Execution {
+            boundary: Boundary::Committed,
+            report: Report {
+                state: librairii_core::operations::ItemState::Succeeded,
+                story_id: 0,
+                completed_bytes: 0,
+                outcome: Default::default(),
+            },
+            resources: None,
+        }
+    }
+    fn compensate(&self, _: &mut ()) -> bool {
+        true
+    }
+    fn settle(&self, _: (), _: &DurableReport<'_>) -> Result<(), ()> {
+        Ok(())
+    }
+}
+
+#[test]
+fn durable_queued_cancellation_survives_transient_cancellation_read_refusals() -> TestResult {
+    let roots = TestRoots::new()?;
+    let lib = IsolatedLibrary::initialize_from_override(
+        Some(roots.library().as_os_str()),
+        "b0000000-0000-4000-8000-000000000001".parse()?,
+    )?;
+    let mut db = Database::open_isolated(&lib)?;
+    let store = Observed {
+        store: TerminalRepository::new(&db, 1),
+        cancel_created: AtomicBool::new(true),
+        cancelled_refusals: AtomicUsize::new(3),
+        pause_creation: AtomicBool::new(false),
+        creation_entered: AtomicBool::new(false),
+        allow_creation: AtomicBool::new(true),
+        lose_ack: AtomicBool::new(false),
+        refusals: AtomicUsize::new(0),
+        readbacks: AtomicUsize::new(0),
+        completes: Mutex::new(Vec::new()),
+        interrupts: Mutex::new(Vec::new()),
+    };
+    let effect = ReviewEffect::default();
+    with_runtime(&store, &effect, Configuration::default(), |handle| {
+        must(runtime_support::offer(
+            &handle,
+            must(Start::new(request(72))),
+        ));
+        wait(|| {
+            must(must(db.operation_snapshot(request(72).id)).wait())
+                .is_some_and(|s| s.operation.state == librairii_core::OperationState::Cancelled)
+        });
+    })?;
+    assert_eq!(effect.calls.load(Ordering::Acquire), 0);
+    assert_eq!(store.cancelled_refusals.load(Ordering::Acquire), 0);
+    db.close()?;
+    Ok(())
+}
+
+#[test]
+fn permanent_creation_rejection_releases_admission_and_allows_shutdown() -> TestResult {
+    use librairii_core::operations::{ExportSource, ExportSourceType};
+    let roots = TestRoots::new()?;
+    let lib = IsolatedLibrary::initialize_from_override(
+        Some(roots.library().as_os_str()),
+        "b0000000-0000-4000-8000-000000000001".parse()?,
+    )?;
+    let mut db = Database::open_isolated(&lib)?;
+    let mut invalid = request(73);
+    invalid.id = "x".into();
+    assert!(Start::new(invalid).is_err());
+    let mut unicode = request(73);
+    unicode.id = "É".repeat(36);
+    assert!(Start::new(unicode).is_ok());
+    let mut input = request(73);
+    input.kind = OperationKind::Export;
+    input.destination = Some(roots.profile().to_string_lossy().into_owned());
+    input.source = Some(ExportSource {
+        source_type: ExportSourceType::Selection,
+        collection_ids: Vec::new(),
+        collection_names: Vec::new(),
+        shelf_ids: Vec::new(),
+        shelf_names: Vec::new(),
+    });
+    input.items = vec![NewItem {
+        story_id: 99999,
+        story_uuid: "c0000000-0000-4000-8000-000000000001".into(),
+        story_title: "Deleted after planning".into(),
+        source_name: "gone.zip".into(),
+        output_name: "gone.zip".into(),
+        archive_relative_path: "archives/gone.zip".into(),
+        archive_sha256: "a".repeat(64),
+        ..Default::default()
+    }];
+    let store = TerminalRepository::new(&db, 1);
+    assert!(matches!(store.create(&input, "now"), StoreResult::Rejected));
+    let effect = ReviewEffect::default();
+    with_runtime(&store, &effect, Configuration::default(), |handle| {
+        must(runtime_support::offer(&handle, must(Start::new(input))));
+        let mut rejected = false;
+        wait(|| {
+            if let Some(admission) = handle.take_admission() {
+                rejected = !admission.accepted;
+            }
+            rejected
+        });
+        must(runtime_support::offer(
+            &handle,
+            must(Start::new(request(74))),
+        ));
+        wait(|| {
+            must(must(db.operation_snapshot(request(74).id)).wait())
+                .is_some_and(|s| s.operation.state == librairii_core::OperationState::Succeeded)
+        });
+    })?;
+    assert!(db.operation_snapshot(request(73).id)?.wait()?.is_none());
+    assert_eq!(effect.calls.load(Ordering::Acquire), 1);
+    db.close()?;
+    Ok(())
+}
+
+#[test]
+fn completed_metadata_finishes_while_unrelated_import_still_owns_its_resources() -> TestResult {
+    let roots = TestRoots::new()?;
+    let lib = IsolatedLibrary::initialize_from_override(
+        Some(roots.library().as_os_str()),
+        "b0000000-0000-4000-8000-000000000001".parse()?,
+    )?;
+    let mut db = Database::open_isolated(&lib)?;
+    let store = TerminalRepository::new(&db, 1);
+    let effect = ReviewEffect::default();
+    struct Release<'a>(&'a AtomicBool);
+    impl Drop for Release<'_> {
+        fn drop(&mut self) {
+            self.0.store(true, Ordering::Release);
+        }
+    }
+    with_runtime(&store, &effect, Configuration::default(), |handle| {
+        let _release = Release(&effect.release);
+        let mut import = request(75);
+        import.kind = OperationKind::Import;
+        must(runtime_support::offer(&handle, must(Start::new(import))));
+        wait(|| effect.import_entered.load(Ordering::Acquire));
+        wait(|| handle.take_admission().is_some());
+        must(runtime_support::offer(
+            &handle,
+            must(Start::new(request(76))),
+        ));
+        wait(|| {
+            must(must(db.operation_snapshot(request(76).id)).wait())
+                .is_some_and(|s| s.operation.state == librairii_core::OperationState::Succeeded)
+        });
+        assert!(!effect.release.load(Ordering::Acquire));
+        assert_eq!(
+            must(must(db.operation_snapshot(request(75).id)).wait()).map(|s| s.operation.state),
+            Some(librairii_core::OperationState::Running)
+        );
+        wait(|| handle.take_admission().is_some());
+        must(runtime_support::offer(
+            &handle,
+            must(Start::new(request(77))),
+        ));
+        wait(|| {
+            must(must(db.operation_snapshot(request(77).id)).wait())
+                .is_some_and(|s| s.operation.state == librairii_core::OperationState::Succeeded)
+        });
+    })?;
     db.close()?;
     Ok(())
 }

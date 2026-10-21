@@ -37,7 +37,10 @@ pub trait JobStore: OperationTerminalStore + Sync {
     fn next_pending(&self, excluded: &[i64]) -> StoreResult<Option<WorkItem>>;
     fn start_item(&self, work: &WorkItem, at: &str) -> StoreResult<()>;
     fn start_readback(&self, work: &WorkItem) -> StoreResult<StartObservation>;
-    fn ready_to_finish(&self) -> StoreResult<Option<(OperationScope, TerminalResult)>>;
+    fn ready_to_finish(
+        &self,
+        excluded: &[String],
+    ) -> StoreResult<Option<(OperationScope, TerminalResult)>>;
     fn save_progress(&self, item: i64, completed: i64, total: i64) -> StoreResult<()>;
     fn cancelled(&self, id: &str) -> StoreResult<bool>;
     fn request_cancel(&self, id: &str) -> StoreResult<()>;

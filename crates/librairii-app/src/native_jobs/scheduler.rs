@@ -645,6 +645,37 @@ fn coordinator(store: &impl JobStore, shared: &Shared) {
                 c.cancel();
             }
         }
+        let finishing_exclusions = {
+            let s = shared.state.lock().unwrap_or_else(|e| e.into_inner());
+            s.inflight
+                .iter()
+                .map(|(_, id, _)| id.clone())
+                .collect::<Vec<_>>()
+        };
+        let no_finished = match store.ready_to_finish(&finishing_exclusions) {
+            StoreResult::Known(Some((operation, result))) => {
+                let command = FinishCommand {
+                    generation: store.generation(),
+                    operation,
+                    state: result.state,
+                    outcome: RawOutcome {
+                        code: Some(result.code),
+                        message: Some(result.message),
+                    },
+                    finished_at: now(),
+                };
+                persist(
+                    store,
+                    &CommandWitness::Finish(Box::new(command)),
+                    shared,
+                    None,
+                );
+                shared.dirty.store(true, Ordering::Release);
+                continue;
+            }
+            StoreResult::Known(None) => true,
+            _ => false,
+        };
         let excluded = {
             let s = shared.state.lock().unwrap_or_else(|e| e.into_inner());
             if s.queue.len() < shared.config.queue_capacity() {
@@ -661,13 +692,18 @@ fn coordinator(store: &impl JobStore, shared: &Shared) {
                         shared.metadata_owner.store(true, Ordering::Release);
                     }
                     let token = Cancellation::default();
-                    if stopping
-                        || matches!(
-                            store.cancelled(&work.operation.identity.id),
-                            StoreResult::Known(true)
-                        )
-                    {
-                        token.cancel();
+                    match store.cancelled(&work.operation.identity.id) {
+                        StoreResult::Known(cancelled) => {
+                            if stopping || cancelled {
+                                token.cancel();
+                            }
+                        }
+                        // The row is still pending in SQLite. Retry observation
+                        // before queueing; an unavailable read is not permission.
+                        _ => {
+                            pause();
+                            continue;
+                        }
                     }
                     let mut s = shared.state.lock().unwrap_or_else(|e| e.into_inner());
                     if s.done {
@@ -690,55 +726,31 @@ fn coordinator(store: &impl JobStore, shared: &Shared) {
             }
         }
         if empty
+            && no_finished
             && shared
                 .state
                 .lock()
                 .unwrap_or_else(|e| e.into_inner())
                 .inflight
                 .is_empty()
+            && stopping
         {
-            match store.ready_to_finish() {
-                StoreResult::Known(Some((operation, result))) => {
-                    let command = FinishCommand {
-                        generation: store.generation(),
-                        operation,
-                        state: result.state,
-                        outcome: RawOutcome {
-                            code: Some(result.code),
-                            message: Some(result.message),
-                        },
-                        finished_at: now(),
-                    };
-                    persist(
-                        store,
-                        &CommandWitness::Finish(Box::new(command)),
-                        shared,
-                        None,
-                    );
-                    shared.dirty.store(true, Ordering::Release);
-                    continue;
-                }
-                StoreResult::Known(None) if stopping => {
-                    loop {
-                        match store.shutdown_cleanup() {
-                            StoreResult::Known(()) => break,
-                            StoreResult::Rejected => {
-                                store.fence();
-                                let mut state =
-                                    shared.state.lock().unwrap_or_else(|e| e.into_inner());
-                                state.failed = true;
-                                break;
-                            }
-                            _ => pause(),
-                        }
+            loop {
+                match store.shutdown_cleanup() {
+                    StoreResult::Known(()) => break,
+                    StoreResult::Rejected => {
+                        store.fence();
+                        let mut state = shared.state.lock().unwrap_or_else(|e| e.into_inner());
+                        state.failed = true;
+                        break;
                     }
-                    let mut s = shared.state.lock().unwrap_or_else(|e| e.into_inner());
-                    s.done = true;
-                    shared.changed.notify_all();
-                    return;
+                    _ => pause(),
                 }
-                _ => {}
             }
+            let mut s = shared.state.lock().unwrap_or_else(|e| e.into_inner());
+            s.done = true;
+            shared.changed.notify_all();
+            return;
         }
         let s = shared.state.lock().unwrap_or_else(|e| e.into_inner());
         let _ = shared.changed.wait_timeout(s, TICK);
