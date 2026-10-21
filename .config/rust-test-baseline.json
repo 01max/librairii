@@ -1239,6 +1239,69 @@
     {
       "suite": "librairii-storage::layout_identity",
       "name": "identity_probe_keeps_go_uuid_middle_bytes_and_exact_wrapper_spelling"
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "platform::unix::tests::stage_creation_post_open_failure_preserves_bytes_and_fences_generation",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "platform::unix::tests::stage_creation_validation_faults_keep_every_acquired_handle_and_optional_identity",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "platform::unix::tests::stage_creation_no_allocation_and_collisions_never_own_existing_bytes",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "platform::unix::tests::stage_creation_substitution_retains_original_handles_without_replacement_authority",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "platform::unix::tests::stage_creation_payload_link_change_after_metadata_never_returns_complete_authority",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "platform::unix::tests::stage_creation_syscall_errors_keep_attempt_truth_and_missing_handles",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "platform::unix::tests::stage_creation_partial_native_owner_fences_finalization_and_preserves_active",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
     }
   ]
 }
