@@ -2093,6 +2093,10 @@
     {
       "suite": "librairii-core::tag_identity",
       "name": "long_mark_input_has_no_saved_query_wire_limit_for_tag_identity"
+    },
+    {
+      "suite": "librairii-core::tag_identity",
+      "name": "every_unicode_scalar_matches_the_actual_frozen_go_tag_key_digest"
     }
   ]
 }

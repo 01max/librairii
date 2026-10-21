@@ -2676,6 +2676,14 @@
           "name": "long_mark_input_has_no_saved_query_wire_limit_for_tag_identity"
         },
         "reason": "Additive observed Task 7/8 discovery; original integration identities retain exact order and target scope."
+      },
+      {
+        "position": 374,
+        "identity": {
+          "suite": "librairii-core::tag_identity",
+          "name": "every_unicode_scalar_matches_the_actual_frozen_go_tag_key_digest"
+        },
+        "reason": "Additive observed Task 7/8 discovery; original integration identities retain exact order and target scope."
       }
     ],
     "python": [
@@ -2722,8 +2730,8 @@
   },
   "tagging": {
     "path": "crates/librairii-core/src/tagging/unicode15.rs",
-    "bytes": 19217,
-    "sha256": "a32b2a16c53cf1a412db5f95849a88a3d810236c4e237a8c433a49297914a92c",
+    "bytes": 19356,
+    "sha256": "529508c01f55b15674865c7bbb16629faf1770d25d0f683c7b63b0f88302797f",
     "source": "Go1.26.5/src/unicode/tables.go",
     "source_sha256": "6a88d48746c4b2c471cc04ae40559694b734770212e6f5ea5f1962adb0c0bdb1",
     "selection": "Unicode15 Letter and Nd ranges only; simple lowercase/NFKD reuse the original codec pipeline.",

@@ -119,11 +119,12 @@ pub fn normalize_key(value: &str) -> Result<String, TagError> {
             continue;
         }
         let code = u32::from(c);
-        let i = unicode15::LETTER_DIGIT.partition_point(|&(_, hi, _)| hi < code);
-        if unicode15::LETTER_DIGIT
-            .get(i)
-            .is_some_and(|&(lo, _, stride)| code >= lo && (code - lo) % stride == 0)
-        {
+        if [unicode15::LETTER, unicode15::DIGIT].iter().any(|ranges| {
+            let i = ranges.partition_point(|&(_, hi, _)| hi < code);
+            ranges
+                .get(i)
+                .is_some_and(|&(lo, _, stride)| code >= lo && (code - lo) % stride == 0)
+        }) {
             if separator && !out.is_empty() {
                 out.push('-');
             }
