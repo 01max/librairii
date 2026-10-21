@@ -972,8 +972,8 @@
   },
   "core_leaf": {
     "path": "crates/librairii-core/src/collection_codec/mod.rs",
-    "bytes": 31091,
-    "sha256": "7bb5d6391b3d5bac2aadf5238775a480675ccb24a56d8ec0373bc3d3c695fbc7",
+    "bytes": 31138,
+    "sha256": "77b6709b8a9d7823ef836b7e5597ad3b2445750f26033ee132530109fac6bbe4",
     "kind": "translated",
     "header_bytes": 379,
     "header_sha256": "84c790465b5688b1423350f07c1422d56e174de8117d978de4f39448ac75e807",
@@ -1000,14 +1000,14 @@
     },
     {
       "path": "mod.rs",
-      "bytes": 705,
-      "sha256": "ab5a3bc667fd93a812ff9c81017da2bff181ac18ff7d81477000c26d6d3bfdcb",
+      "bytes": 753,
+      "sha256": "fafb062daf5989de79366fd22499c263a7d51e7eb02d428d393354e4d2091df8",
       "reason": "Task 8 reuses the frozen lowercase/NFKD/Mn/whitespace algorithm for tag identity; saved/runtime data and references retain original bytes."
     },
     {
       "path": "normalization.rs",
-      "bytes": 23423,
-      "sha256": "4ecb186d7071380d9cd36c0666237ba26617a1f057630e86c670ba478813874f",
+      "bytes": 24363,
+      "sha256": "abbbde9d182ca19466f5fc721b6220240993aa1291a234c712f29a940d67885d",
       "reason": "Task 8 reuses the frozen lowercase/NFKD/Mn/whitespace algorithm for tag identity; saved/runtime data and references retain original bytes."
     },
     {
@@ -2739,6 +2739,131 @@
           ]
         },
         "reason": "Additive observed Task 7/8 discovery; original integration identities retain exact order and target scope."
+      },
+      {
+        "position": 380,
+        "identity": {
+          "suite": "librairii-storage::collections",
+          "name": "collection_crud_preserves_ids_namespace_query_bytes_revisions_and_atomic_order",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive observed Task 7/8/9 discovery; original integration identities retain exact order and target scope."
+      },
+      {
+        "position": 381,
+        "identity": {
+          "suite": "librairii-storage::collections",
+          "name": "live_counts_follow_library_tags_metadata_and_removal_without_shelf_mutation",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive observed Task 9 discovery; original integration identities retain exact order and target scope."
+      },
+      {
+        "position": 382,
+        "identity": {
+          "suite": "librairii-storage::collections",
+          "name": "union_preview_counts_overlap_all_pages_and_saves_independent_definition",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive observed Task 9 discovery; original integration identities retain exact order and target scope."
+      },
+      {
+        "position": 383,
+        "identity": {
+          "suite": "librairii-storage::collections",
+          "name": "explicit_repair_retains_invalid_bytes_rejects_stale_plans_and_rolls_back_writes",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive observed Task 9 discovery; original integration identities retain exact order and target scope."
+      },
+      {
+        "position": 384,
+        "identity": {
+          "suite": "librairii-storage::collections",
+          "name": "deletion_reports_links_preserves_approved_history_and_transitions_only_committed_active_view",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive observed Task 9 discovery; original integration identities retain exact order and target scope."
+      },
+      {
+        "position": 385,
+        "identity": {
+          "suite": "librairii-core::collection_identity",
+          "name": "every_unicode_scalar_matches_frozen_go_collection_name_identity"
+        },
+        "reason": "Additive observed Task 9 discovery; original integration identities retain exact order and target scope."
+      },
+      {
+        "position": 386,
+        "identity": {
+          "suite": "librairii-storage::collections",
+          "name": "frozen_collection_reference_manifest_binds_probe_and_capture_bytes",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive observed Task 9 discovery; original integration identities retain exact order and target scope."
+      },
+      {
+        "position": 387,
+        "identity": {
+          "suite": "librairii-storage::collections",
+          "name": "frozen_go_crud_query_passes_legacy_ids_and_attention_match_after_restart",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive observed Task 9 discovery; original integration identities retain exact order and target scope."
+      },
+      {
+        "position": 388,
+        "identity": {
+          "suite": "librairii-storage::collections",
+          "name": "replacement_revalidates_live_references_and_failures_do_not_publish_partial_deletion",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive observed Task 9 discovery; original integration identities retain exact order and target scope."
+      },
+      {
+        "position": 389,
+        "identity": {
+          "suite": "librairii-storage::collections",
+          "name": "stale_navigation_and_cross_library_plans_cannot_apply_and_many_source_preview_is_not_saved_node_limited",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive observed Task 9 discovery; original integration identities retain exact order and target scope."
       }
     ],
     "python": [

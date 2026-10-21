@@ -102,6 +102,32 @@ pub(in crate::collection_codec) fn lowercase_key(value: &str) -> Result<String> 
         .collect()
 }
 
+/// Frozen Collection display whitespace and one-pass search namespace.
+pub(crate) fn collection_name(value: &str) -> Result<(String, String)> {
+    if value
+        .chars()
+        .any(|c| matches!(c, '\u{0}'..='\u{1f}' | '\u{7f}'..='\u{9f}') && !is_space(c))
+    {
+        return Err(NormalizeError::InputLimit);
+    }
+    let name = value
+        .split(is_space)
+        .filter(|s| !s.is_empty())
+        .collect::<Vec<_>>()
+        .join(" ");
+    if name.is_empty() || name.chars().count() > 80 {
+        return Err(NormalizeError::InputLimit);
+    }
+    let normalized = normalize_runtime(&name).map_err(|e| match e {
+        RuntimeNormalizeError::FrozenData => NormalizeError::FrozenData,
+        RuntimeNormalizeError::ResourceOverflow => NormalizeError::InputLimit,
+    })?;
+    if normalized.is_empty() || normalized.chars().count() > 80 {
+        return Err(NormalizeError::InputLimit);
+    }
+    Ok((name, normalized))
+}
+
 /// Frozen tag identity uses simple lowercase followed by NFKD (never full fold).
 pub(crate) fn tag_key_decomposition(value: &str) -> Result<String> {
     let bounds = BufferBounds::runtime(value.len()).map_err(|_| NormalizeError::InputLimit)?;

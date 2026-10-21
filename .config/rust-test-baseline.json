@@ -2132,6 +2132,91 @@
         "x86_64-apple-darwin",
         "x86_64-unknown-linux-gnu"
       ]
+    },
+    {
+      "suite": "librairii-storage::collections",
+      "name": "collection_crud_preserves_ids_namespace_query_bytes_revisions_and_atomic_order",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::collections",
+      "name": "live_counts_follow_library_tags_metadata_and_removal_without_shelf_mutation",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::collections",
+      "name": "union_preview_counts_overlap_all_pages_and_saves_independent_definition",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::collections",
+      "name": "explicit_repair_retains_invalid_bytes_rejects_stale_plans_and_rolls_back_writes",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::collections",
+      "name": "deletion_reports_links_preserves_approved_history_and_transitions_only_committed_active_view",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-core::collection_identity",
+      "name": "every_unicode_scalar_matches_frozen_go_collection_name_identity"
+    },
+    {
+      "suite": "librairii-storage::collections",
+      "name": "frozen_collection_reference_manifest_binds_probe_and_capture_bytes",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::collections",
+      "name": "frozen_go_crud_query_passes_legacy_ids_and_attention_match_after_restart",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::collections",
+      "name": "replacement_revalidates_live_references_and_failures_do_not_publish_partial_deletion",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::collections",
+      "name": "stale_navigation_and_cross_library_plans_cannot_apply_and_many_source_preview_is_not_saved_node_limited",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
     }
   ]
 }

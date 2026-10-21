@@ -33,3 +33,6 @@ crates/librairii-storage/tests/fixtures/query/*.json -text
 crates/librairii-core/src/tagging/unicode15.rs -text
 crates/librairii-storage/tests/fixtures/tags/** -text
 xtask/extract_tag_categories.py -text
+
+# Task 9 Collection reference capture and probe use exact-byte provenance.
+crates/librairii-storage/tests/fixtures/collections/** -text

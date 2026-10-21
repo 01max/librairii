@@ -3,6 +3,7 @@
 pub mod broken;
 pub mod browsing;
 pub mod collection_codec;
+pub mod collections;
 mod identity;
 pub mod import;
 pub mod navigation;
