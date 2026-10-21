@@ -230,3 +230,42 @@ fn uuid_reimport_reconnects_new_numeric_id_without_rewriting_approved_state() ->
     db.close()?;
     Ok(())
 }
+#[test]
+fn source_union_is_read_only_and_current_matches_do_not_rewrite_origins() -> TestResult {
+    let roots = TestRoots::new()?;
+    let lib = library(&roots)?;
+    let mut db = Database::open_isolated(&lib)?;
+    seed(&db, 3)?;
+    let all = collection(&db, "All", Query::default())?;
+    let same = collection(&db, "Same", Query::default())?;
+    let s = create(&db, "Linked")?;
+    committed(
+        db.attach_shelf_sources(s.id, vec![all, same, all], WorkCancellation::default())?
+            .wait()?,
+    )?;
+    let e = db.shelf_source_evaluation(s.id, "fr-FR".into())?.wait()?;
+    assert_eq!(e.matching.len(), 3);
+    assert_eq!(e.matching[&uuid(1)].len(), 2);
+    assert!(!e.incomplete);
+    assert_eq!(db.shelves()?.wait()?[0].count, 0);
+    let id = s.id;
+    committed(
+        db.transaction(WorkCancellation::default(), move |tx| {
+            tx.execute(
+                "UPDATE collections SET validity_state='needs_attention' WHERE id=?",
+                [same],
+            )?;
+            Ok(())
+        })?
+        .wait()?,
+    )?;
+    let before = db.collections()?.wait()?;
+    let e = db.shelf_source_evaluation(id, "fr-FR".into())?.wait()?;
+    assert!(e.incomplete);
+    assert_eq!(e.matching.len(), 3);
+    assert_eq!(e.matching[&uuid(1)].len(), 1);
+    assert_eq!(db.collections()?.wait()?, before);
+    assert_eq!(db.shelves()?.wait()?[0].count, 0);
+    db.close()?;
+    Ok(())
+}

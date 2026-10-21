@@ -198,3 +198,5 @@ mod curation;
 pub use curation::{Curation, curate, exclusions};
 mod browse;
 pub use browse::{MemberPage, ResolvedMember, page};
+mod sources;
+pub use sources::{SourceEvaluation, SourceState};
