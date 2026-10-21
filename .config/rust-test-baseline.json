@@ -1440,6 +1440,152 @@
         "x86_64-apple-darwin",
         "x86_64-unknown-linux-gnu"
       ]
+    },
+    {
+      "suite": "librairii-app",
+      "name": "jobs::scoped::tests::sh_active_parent_target_terminal_conflict_keeps_actual_item_without_recount_or_finish"
+    },
+    {
+      "suite": "librairii-app",
+      "name": "jobs::scoped::tests::sh_actual_different_terminal_truth_is_preserved_without_overwriting_finish"
+    },
+    {
+      "suite": "librairii-app",
+      "name": "jobs::scoped::tests::sh_blocked_attempt_uses_observed_return_tick_instead_of_catching_up"
+    },
+    {
+      "suite": "librairii-app",
+      "name": "jobs::scoped::tests::sh_borrowed_typed_store_keeps_raw_signed_ids_and_sticky_complete_then_finish"
+    },
+    {
+      "suite": "librairii-app",
+      "name": "jobs::scoped::tests::sh_committed_without_view_never_recounts_after_fresh_view_refusal"
+    },
+    {
+      "suite": "librairii-app",
+      "name": "jobs::scoped::tests::sh_delivery_panic_preserves_committed_fact_and_original_error_fields"
+    },
+    {
+      "suite": "librairii-app",
+      "name": "jobs::scoped::tests::sh_intake_stop_work_cancel_and_unresolved_observation_do_not_detach_blocked_join"
+    },
+    {
+      "suite": "librairii-app",
+      "name": "jobs::scoped::tests::sh_interruption_has_own_budget_then_one_reconciliation_step_per_observed_second"
+    },
+    {
+      "suite": "librairii-app",
+      "name": "jobs::scoped::tests::sh_invalid_supplied_scope_returns_original_without_work_or_db_admission"
+    },
+    {
+      "suite": "librairii-app",
+      "name": "jobs::scoped::tests::sh_source_panic_is_no_db_admission_and_not_a_fabricated_item_attempt"
+    },
+    {
+      "suite": "librairii-app",
+      "name": "jobs::scoped::tests::sh_store_panic_before_admission_is_unknown_until_positive_fresh_nonapplication"
+    },
+    {
+      "suite": "librairii-app",
+      "name": "jobs::scoped::tests::sh_store_unwind_after_commit_reads_exact_witness_without_replaying_work_or_complete"
+    },
+    {
+      "suite": "librairii-app",
+      "name": "jobs::scoped::tests::sh_typed_execution_fact_and_independent_work_error_survive_reporting_together"
+    },
+    {
+      "suite": "librairii-app",
+      "name": "jobs::scoped::tests::sh_unknown_survives_queue_refusal_and_returns_same_full_owner_without_deadline_settlement"
+    },
+    {
+      "suite": "librairii-app",
+      "name": "jobs::scoped::tests::sh_virtual_pacing_has_three_attempts_no_catch_up_and_checked_ticks"
+    },
+    {
+      "suite": "librairii-app",
+      "name": "jobs::scoped::tests::sh_w8_shared_four_controlled_calls_refuse_without_extra_owners_or_hidden_queue"
+    },
+    {
+      "suite": "librairii-app",
+      "name": "jobs::scoped::tests::sh_work_panic_before_db_keeps_owner_and_uses_only_supplied_interruption"
+    },
+    {
+      "suite": "librairii-app",
+      "name": "jobs::scoped::tests::sh_wrong_full_witness_never_acknowledges_and_keeps_only_bounded_latest_diagnostics"
+    },
+    {
+      "suite": "librairii-storage::native_terminal_host",
+      "name": "native_host_actual_lost_pending_ack_reports_truth_but_retains_typed_close_failure",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::native_terminal_host",
+      "name": "native_host_two_occupied_workers_settle_report_then_close_and_reopen_next_epoch",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::operations_repository",
+      "name": "terminal_sql_commit_error_is_unknown_then_reserved_fresh_readback_proves_state"
+    },
+    {
+      "suite": "librairii-storage::operations_repository",
+      "name": "terminal_sql_completion_is_atomic_exact_and_idempotent_across_siblings"
+    },
+    {
+      "suite": "librairii-storage::operations_repository",
+      "name": "terminal_sql_critical_refusal_retains_original_report_and_variable_command_bytes"
+    },
+    {
+      "suite": "librairii-storage::operations_repository",
+      "name": "terminal_sql_explicit_negative_item_id_is_preserved_and_completed_once"
+    },
+    {
+      "suite": "librairii-storage::operations_repository",
+      "name": "terminal_sql_explicit_zero_item_id_is_preserved_and_completed_once"
+    },
+    {
+      "suite": "librairii-storage::operations_repository",
+      "name": "terminal_sql_finish_and_interrupt_preserve_legacy_zero_totals"
+    },
+    {
+      "suite": "librairii-storage::operations_repository",
+      "name": "terminal_sql_finish_guard_rolls_back_and_invalid_commands_never_admit"
+    },
+    {
+      "suite": "librairii-storage::operations_repository",
+      "name": "terminal_sql_interrupt_preserves_terminal_items_and_all_bytes"
+    },
+    {
+      "suite": "librairii-storage::operations_repository",
+      "name": "terminal_sql_proven_commit_survives_postcommit_snapshot_refusal_and_drains"
+    },
+    {
+      "suite": "librairii-storage::operations_repository",
+      "name": "terminal_sql_raw_snapshot_preserves_non_uuid_null_scope_and_row_order"
+    },
+    {
+      "suite": "librairii-storage::operations_repository",
+      "name": "terminal_sql_second_guard_failure_rolls_back_first_item_mutation_and_trigger"
+    },
+    {
+      "suite": "librairii-storage::operations_repository",
+      "name": "terminal_sql_two_callers_complete_distinct_siblings_on_one_writer"
+    },
+    {
+      "suite": "librairii-storage::operations_repository",
+      "name": "terminal_sql_writer_barrier_matches_unacknowledged_prior_commit_without_recount"
+    },
+    {
+      "suite": "librairii-storage::operations_repository",
+      "name": "terminal_sql_wrong_scope_missing_and_contradictory_counts_never_ack"
     }
   ]
 }
