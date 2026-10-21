@@ -39,7 +39,7 @@ fn navigation_restores_scope_refinement_selection_page_and_independent_presentat
     let restored = Navigation::decode(&nav.encode()?, library()?, 2)?;
     assert_eq!(restored.current(), nav.current());
     assert_eq!(restored.presentation(), Presentation::LargeCovers);
-    assert!(!restored.accepts(nav.stamp()));
+    assert!(!restored.accepts(&nav.stamp()));
     Ok(())
 }
 
@@ -77,21 +77,21 @@ fn stale_query_and_library_generation_stamps_cannot_apply_results() -> TestResul
     let first = nav.stamp();
     nav.set_presentation(Presentation::SmallCovers);
     nav.select(vec![1])?;
-    assert!(nav.accepts(first));
+    assert!(nav.accepts(&first));
     nav.push(Frame {
         location: location("two"),
         selection: Vec::new(),
     })?;
-    assert!(!nav.accepts(first));
+    assert!(!nav.accepts(&first));
     let second = nav.stamp();
     assert!(nav.back()?);
-    assert!(!nav.accepts(second));
+    assert!(!nav.accepts(&second));
     let other = Navigation::new(
         "20000000-0000-4000-8000-000000000001".parse()?,
         9,
         location("one"),
     )?;
-    assert!(!other.accepts(nav.stamp()));
+    assert!(!other.accepts(&nav.stamp()));
     Ok(())
 }
 
@@ -118,5 +118,27 @@ fn reopen_preserves_one_pass_unicode_and_refuses_foreign_future_or_corrupt_docum
         Navigation::decode(&bytes, "20000000-0000-4000-8000-000000000001".parse()?, 2).is_err()
     );
     assert!(Navigation::decode(b"{", library()?, 2).is_err());
+    Ok(())
+}
+
+#[test]
+fn recreated_or_forked_navigation_cannot_accept_an_older_owners_query_stamp() -> TestResult {
+    let first = Navigation::new(library()?, 7, location("first"))?;
+    let stale = first.stamp();
+    let second = Navigation::new(library()?, 7, location("second"))?;
+    assert!(!second.accepts(&stale));
+    let restored = Navigation::decode(&first.encode()?, library()?, 7)?;
+    assert!(!restored.accepts(&first.stamp()));
+    let mut left = first.clone();
+    let mut right = first.clone();
+    left.push(Frame {
+        location: location("left"),
+        selection: Vec::new(),
+    })?;
+    right.push(Frame {
+        location: location("right"),
+        selection: Vec::new(),
+    })?;
+    assert!(!right.accepts(&left.stamp()));
     Ok(())
 }

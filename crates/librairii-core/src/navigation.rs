@@ -4,7 +4,7 @@ use crate::{
     collection_codec::url::{self, Location, Scope},
 };
 use serde::{Deserialize, Serialize};
-use std::collections::BTreeSet;
+use std::{collections::BTreeSet, sync::Arc};
 
 pub const MAX_HISTORY: usize = 100;
 pub const MAX_STATE_BYTES: usize = 8 * 1024 * 1024;
@@ -22,11 +22,12 @@ pub struct Frame {
     pub location: Location,
     pub selection: Vec<i64>,
 }
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug)]
 pub struct QueryStamp {
     library: LibraryId,
     generation: u64,
     revision: u64,
+    identity: Arc<()>,
 }
 #[derive(Clone, Copy, Debug, Eq, PartialEq, thiserror::Error)]
 #[error("native navigation state is invalid or exceeds its bounds")]
@@ -38,10 +39,21 @@ pub struct Navigation {
     library: LibraryId,
     generation: u64,
     revision: u64,
+    identity: Arc<()>,
     frames: Vec<Frame>,
     position: usize,
     presentation: Presentation,
 }
+impl PartialEq for QueryStamp {
+    fn eq(&self, other: &Self) -> bool {
+        self.library == other.library
+            && self.generation == other.generation
+            && self.revision == other.revision
+            && Arc::ptr_eq(&self.identity, &other.identity)
+    }
+}
+impl Eq for QueryStamp {}
+
 impl Navigation {
     pub fn new(library: LibraryId, generation: u64, location: Location) -> Result<Self> {
         if generation == 0 {
@@ -51,6 +63,7 @@ impl Navigation {
             library,
             generation,
             revision: 1,
+            identity: Arc::new(()),
             frames: vec![Frame {
                 location,
                 selection: Vec::new(),
@@ -78,10 +91,11 @@ impl Navigation {
             library: self.library,
             generation: self.generation,
             revision: self.revision,
+            identity: self.identity.clone(),
         }
     }
-    pub fn accepts(&self, stamp: QueryStamp) -> bool {
-        self.stamp() == stamp
+    pub fn accepts(&self, stamp: &QueryStamp) -> bool {
+        self.stamp() == *stamp
     }
     pub fn push(&mut self, frame: Frame) -> Result<()> {
         let mut next = self.clone();
@@ -92,6 +106,7 @@ impl Navigation {
         }
         next.position = next.frames.len() - 1;
         next.revision = next.revision.checked_add(1).ok_or(InvalidNavigation)?;
+        next.identity = Arc::new(());
         next.encode()?;
         *self = next;
         Ok(())
@@ -100,6 +115,7 @@ impl Navigation {
         let mut next = self.clone();
         next.frames[next.position] = frame;
         next.revision = next.revision.checked_add(1).ok_or(InvalidNavigation)?;
+        next.identity = Arc::new(());
         next.encode()?;
         *self = next;
         Ok(())
@@ -118,6 +134,7 @@ impl Navigation {
         let revision = self.revision.checked_add(1).ok_or(InvalidNavigation)?;
         self.position -= 1;
         self.revision = revision;
+        self.identity = Arc::new(());
         Ok(true)
     }
     pub fn forward(&mut self) -> Result<bool> {
@@ -127,6 +144,7 @@ impl Navigation {
         let revision = self.revision.checked_add(1).ok_or(InvalidNavigation)?;
         self.position += 1;
         self.revision = revision;
+        self.identity = Arc::new(());
         Ok(true)
     }
     pub fn encode(&self) -> Result<Vec<u8>> {
@@ -219,6 +237,7 @@ impl Navigation {
             library: expected,
             generation,
             revision: 1,
+            identity: Arc::new(()),
             frames,
             position: wire.position,
             presentation: wire.presentation,

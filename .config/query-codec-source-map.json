@@ -2566,6 +2566,14 @@
           "name": "percent_escapes_require_two_hex_digits_and_never_turn_malformed_input_into_empty_success"
         },
         "reason": "Task 7 additive observed discovery; integration-base identities retain their exact order and scope."
+      },
+      {
+        "position": 364,
+        "identity": {
+          "suite": "librairii-core::navigation",
+          "name": "recreated_or_forked_navigation_cannot_accept_an_older_owners_query_stamp"
+        },
+        "reason": "Task 7 additive observed discovery; integration-base identities retain their exact order and scope."
       }
     ],
     "python": [
