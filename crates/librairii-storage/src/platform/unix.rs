@@ -926,6 +926,13 @@ impl<'library> LibraryFiles<'library> {
         Ok(source)
     }
     pub fn create_stage(&self, guard: &Custody<'_>) -> Result<OwnedStage<'_, 'library>> {
+        self.create_stage_after_open(guard, |_, _| Ok(()))
+    }
+    fn create_stage_after_open(
+        &self,
+        guard: &Custody<'_>,
+        mut after_open: impl FnMut(&OsStr, &File) -> Result<()>,
+    ) -> Result<OwnedStage<'_, 'library>> {
         self.check(guard)?;
         for _ in 0..64 {
             let name = unique_name("stage");
@@ -936,6 +943,7 @@ impl<'library> LibraryFiles<'library> {
                         OsStr::new(PAYLOAD),
                         OFlags::RDWR | OFlags::CREATE | OFlags::EXCL,
                     )?;
+                    after_open(&name, &file)?;
                     let identity = FileIdentity::from_file(&file)?;
                     self.check(guard)?;
                     return Ok(OwnedStage {
@@ -1448,6 +1456,38 @@ mod tests {
             .map_err(|e| StorageError::io("write test stage", e))?;
         let measurement = stage.measure(bytes.len() as u64, &WorkCancellation::default())?;
         Ok((stage, measurement))
+    }
+
+    #[test]
+    fn stage_creation_post_open_failure_preserves_bytes_and_fences_generation() -> TestResult {
+        let roots = TestRoots::new()?;
+        let library = isolated(roots.library())?;
+        let files = LibraryFiles::open(&library)?;
+        let guard = files.try_custody()?;
+        let mut observed = None;
+        let creation = files.create_stage_after_open(&guard, |name, file| {
+            let mut writer = file;
+            writer
+                .write_all(b"actual partial stage bytes")
+                .map_err(|e| StorageError::io("write injected partial stage", e))?;
+            observed = Some((name.to_owned(), FileIdentity::from_file(file)?));
+            Err(StorageError::io(
+                "inject stage creation failure after payload acquisition",
+                io::Error::other("actual acquired descriptor"),
+            ))
+        });
+        assert!(creation.is_err());
+        let (name, identity) = observed.ok_or("payload was not actually acquired")?;
+        let path = library.layout().staging().join(name).join(PAYLOAD);
+        assert_eq!(fs::read(&path)?, b"actual partial stage bytes");
+        let metadata = fs::metadata(&path)?;
+        assert_eq!(metadata.dev(), identity.device);
+        assert_eq!(metadata.ino(), identity.inode);
+        assert!(
+            library.custody_fenced.load(Ordering::Acquire),
+            "post-acquisition failure lost its unresolved generation fence"
+        );
+        Ok(())
     }
 
     #[test]

@@ -1553,3 +1553,20 @@ GREEN `734f985d7d704b255ffa528d1ff2022c25717cdaf3815953b0a19e0a17b27adc`.
 No Go, full workspace, native-other-host, whole Native restart campaign or fixed
 temporary proof was rerun. Owner5 actual additive discovery/current combined
 quality and final provider/review/admission remain required.
+
+### 4.8 correction: retain partial stage creation
+
+The current stage factory can create a private directory/payload and then
+return a bare error after a descriptor has been acquired. The original focused
+regression injects an error after opening the actual payload, writes and verifies
+its retained inode and bytes, and requires the unresolved generation fence.
+Actual AppleARM RED: run `c744a2f2-e029-437c-b64d-2d21f4d99da5`, one selected
+case failed because the fence was absent;157 other tests were intentionally
+filtered. This is an executed post-acquisition failure, not a claim that every
+acquisition/validation branch or partial-allocation cleanup is qualified.
+
+The bounded correction replaces the bare-error stage factory with an owning
+failure result; partial allocation resolution remains outside this slice. The
+fixed successful-stage-input import proof and native/scoped terminal proofs are
+unchanged. The separately assigned current-head frontend failure remains open;
+no retry or frontend changes are part of this correction.
