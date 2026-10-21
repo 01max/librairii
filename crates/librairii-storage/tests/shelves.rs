@@ -300,8 +300,12 @@ fn initial_creation_is_explicit_deduplicated_ordered_and_can_be_empty() -> TestR
     assert!(db.shelves()?.wait()?.is_empty());
     let copy = plan.clone();
     let s = committed(
-        db.create_shelf_reviewed(plan, vec![story(1), story(2)], WorkCancellation::default())?
-            .wait()?,
+        db.create_shelf_reviewed(
+            plan,
+            vec![story(1).into(), story(2).into()],
+            WorkCancellation::default(),
+        )?
+        .wait()?,
     )?;
     let m = db.shelf_members(s.id)?.wait()?;
     assert_eq!(
@@ -352,7 +356,7 @@ fn initial_creation_is_explicit_deduplicated_ordered_and_can_be_empty() -> TestR
     )?;
     assert!(matches!(
         committed(
-            db.create_shelf_reviewed(plan, vec![story(1)], WorkCancellation::default())?
+            db.create_shelf_reviewed(plan, vec![story(1).into()], WorkCancellation::default())?
                 .wait()?
         ),
         Err(StorageError::Shelf(ShelfError::StaleReview))
@@ -570,8 +574,12 @@ fn sourced(
         )?
         .wait()?;
     committed(
-        db.create_shelf_reviewed(p, selected, WorkCancellation::default())?
-            .wait()?,
+        db.create_shelf_reviewed(
+            p,
+            selected.into_iter().map(Into::into).collect(),
+            WorkCancellation::default(),
+        )?
+        .wait()?,
     )
 }
 #[test]
@@ -944,8 +952,12 @@ fn frozen_go_creation_curation_origins_duplication_and_detachment_match_exact_st
         .wait()?;
     events.push(serde_json::json!({"initial":candidates_json(p.preview().candidates_page(0)),"incomplete":p.preview().incomplete}));
     let s = committed(
-        db.create_shelf_reviewed(p, vec![story(1), story(2)], WorkCancellation::default())?
-            .wait()?,
+        db.create_shelf_reviewed(
+            p,
+            vec![story(1).into(), story(2).into()],
+            WorkCancellation::default(),
+        )?
+        .wait()?,
     )?;
     events.push(shelf_state(&db, s.id)?);
     let p = preview(&db, s.id)?;
@@ -1327,6 +1339,158 @@ fn reviewed_actions_preserve_uppercase_uuid_spelling_without_retargeting_canonic
     }
     let raw = StoryReference::from_stored(uppercase)?;
     assert_ne!(raw, raw.identity().into());
+    db.close()?;
+    Ok(())
+}
+
+#[test]
+fn creation_selections_preserve_legacy_spelling_and_distinguish_canonical_aliases() -> TestResult {
+    let roots = TestRoots::new()?;
+    let lib = library(&roots)?;
+    let mut db = Database::open_isolated(&lib)?;
+    let uppercase = "10000000-0000-4000-8000-00000000000A";
+    let lowercase = "10000000-0000-4000-8000-00000000000a";
+    let c = collection(&db, "All", Query::default())?;
+    for with_alias in [false, true] {
+        let (id, uuid) = if with_alias {
+            (101, lowercase)
+        } else {
+            (100, uppercase)
+        };
+        committed(db.transaction(WorkCancellation::default(), move |tx| {
+            tx.execute("INSERT INTO stories(id,uuid,embedded_title,display_name_normalized) VALUES(?,?,'Legacy case','legacy case')", rusqlite::params![id, uuid])?;
+            tx.execute("INSERT INTO story_archives(story_id,original_filename,detected_format,sha256,byte_size,managed_path,validation_state) VALUES(?1,'legacy.zip','zip',printf('%064d',?1),1,'archives/'||?1,'valid')", [id])?;
+            Ok(())
+        })?.wait()?)?;
+        for bulk in [false, true] {
+            let plan = db
+                .shelf_creation_preview(
+                    shelves::CreationRequest {
+                        name: format!("Case {with_alias} {bulk}"),
+                        collection_ids: vec![c],
+                        ..Default::default()
+                    },
+                    "fr-FR".into(),
+                )?
+                .wait()?;
+            let selected = if bulk {
+                plan.preview().all_uuids()?
+            } else {
+                vec![
+                    plan.preview()
+                        .candidates_page(0)
+                        .iter()
+                        .find(|candidate| candidate.uuid == uppercase)
+                        .ok_or("uppercase candidate")?
+                        .reference()?,
+                ]
+            };
+            let expected = selected
+                .iter()
+                .map(|r| r.as_stored().to_owned())
+                .collect::<Vec<_>>();
+            assert_eq!(expected.len(), if bulk && with_alias { 2 } else { 1 });
+            assert_eq!(expected[0], uppercase);
+            let s = committed(
+                db.create_shelf_reviewed(plan, selected, WorkCancellation::default())?
+                    .wait()?,
+            )?;
+            let members = db.shelf_members(s.id)?.wait()?;
+            assert_eq!(
+                members.iter().map(|m| m.uuid.clone()).collect::<Vec<_>>(),
+                expected
+            );
+            assert!(
+                members
+                    .iter()
+                    .all(|m| !m.manually_retained && m.origins.len() == 1)
+            );
+        }
+    }
+    db.close()?;
+    Ok(())
+}
+
+#[test]
+fn deleted_shelf_reviews_cannot_target_reused_ids_and_unrelated_plans_survive() -> TestResult {
+    let roots = TestRoots::new()?;
+    let lib = library(&roots)?;
+    let mut db = Database::open_isolated(&lib)?;
+    seed(&db, 1)?;
+    let c = collection(&db, "All", Query::default())?;
+    let other = create(&db, "Other")?;
+    committed(
+        db.attach_shelf_sources(other.id, vec![c], WorkCancellation::default())?
+            .wait()?,
+    )?;
+    let unaffected = preview(&db, other.id)?;
+    let s = create(&db, "Original")?;
+    committed(
+        db.attach_shelf_sources(s.id, vec![c], WorkCancellation::default())?
+            .wait()?,
+    )?;
+    let old_update = preview(&db, s.id)?;
+    let old_sources = db
+        .shelf_source_change_preview(s.id, vec![], "fr-FR".into())?
+        .wait()?;
+    let old_delete = db
+        .linked_collection_deletion_preview(c, "fr-FR".into())?
+        .wait()?;
+    let old_source_ids = db
+        .shelf_source_evaluation(s.id, "fr-FR".into())?
+        .wait()?
+        .sources;
+
+    edit(&db, Command::Delete { id: s.id })?;
+    let replacement = create(&db, "Original")?;
+    committed(
+        db.attach_shelf_sources(replacement.id, vec![c], WorkCancellation::default())?
+            .wait()?,
+    )?;
+    assert_eq!(s.id, replacement.id);
+    assert_eq!(
+        db.shelf_source_evaluation(replacement.id, "fr-FR".into())?
+            .wait()?
+            .sources,
+        old_source_ids
+    );
+    let fresh = preview(&db, replacement.id)?;
+    assert_eq!(fresh.preview().revision, old_update.preview().revision);
+    assert_eq!(
+        fresh.preview().additions_page(0),
+        old_update.preview().additions_page(0)
+    );
+
+    assert!(matches!(
+        apply(&db, old_update, vec![decision(1, shelves::Action::Add)]),
+        Err(StorageError::Shelf(ShelfError::StaleReview))
+    ));
+    assert!(matches!(
+        committed(
+            db.change_shelf_sources(old_sources, true, vec![], WorkCancellation::default())?
+                .wait()?
+        ),
+        Err(StorageError::Shelf(ShelfError::StaleReview))
+    ));
+    assert!(matches!(
+        committed(
+            db.delete_linked_collection(old_delete, true, vec![], WorkCancellation::default())?
+                .wait()?
+        ),
+        Err(StorageError::Shelf(ShelfError::StaleReview))
+    ));
+    assert!(db.shelf_members(replacement.id)?.wait()?.is_empty());
+    assert_eq!(
+        db.shelf_source_evaluation(replacement.id, "fr-FR".into())?
+            .wait()?
+            .sources,
+        old_source_ids
+    );
+    assert_eq!(db.collections()?.wait()?.len(), 1);
+    apply(&db, unaffected, vec![decision(1, shelves::Action::Add)])?;
+    let fresh = preview(&db, replacement.id)?;
+    apply(&db, fresh, vec![decision(1, shelves::Action::Add)])?;
+    assert_eq!(db.shelf_members(replacement.id)?.wait()?.len(), 1);
     db.close()?;
     Ok(())
 }

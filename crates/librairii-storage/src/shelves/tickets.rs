@@ -22,6 +22,7 @@ pub(crate) enum Kind {
 pub(crate) struct Ticket {
     kind: Kind,
     target: i64,
+    shelves: Vec<ShelfId>,
     issued: Instant,
     live: AtomicBool,
 }
@@ -45,7 +46,13 @@ pub(crate) struct Registry {
     tickets: VecDeque<Arc<Ticket>>,
 }
 impl Registry {
-    fn issue_at(&mut self, kind: Kind, target: i64, now: Instant) -> Arc<Ticket> {
+    fn issue_at(
+        &mut self,
+        kind: Kind,
+        target: i64,
+        shelves: Vec<ShelfId>,
+        now: Instant,
+    ) -> Arc<Ticket> {
         self.tickets.retain(|t| {
             let valid = t.live.load(Ordering::Acquire)
                 && now.saturating_duration_since(t.issued) < LIFETIME;
@@ -62,6 +69,7 @@ impl Registry {
         let ticket = Arc::new(Ticket {
             kind,
             target,
+            shelves,
             issued: now,
             live: AtomicBool::new(true),
         });
@@ -69,11 +77,31 @@ impl Registry {
         ticket
     }
 }
-pub(super) fn issue(registry: &Mutex<Registry>, kind: Kind, target: i64) -> Result<Arc<Ticket>> {
+pub(super) fn issue(
+    registry: &Mutex<Registry>,
+    kind: Kind,
+    target: i64,
+    shelves: Vec<ShelfId>,
+) -> Result<Arc<Ticket>> {
     Ok(registry
         .lock()
         .map_err(|_| ShelfError::StaleReview)?
-        .issue_at(kind, target, Instant::now()))
+        .issue_at(kind, target, shelves, Instant::now()))
+}
+pub(super) fn invalidate_shelf(registry: &Mutex<Registry>, id: ShelfId) -> Result<()> {
+    registry
+        .lock()
+        .map_err(|_| ShelfError::StaleReview)?
+        .tickets
+        .retain(|ticket| {
+            if ticket.shelves.contains(&id) {
+                ticket.live.store(false, Ordering::Release);
+                false
+            } else {
+                true
+            }
+        });
+    Ok(())
 }
 #[cfg(test)]
 mod tests {
@@ -82,17 +110,17 @@ mod tests {
     fn lifetime_kind_target_eviction_and_replay_are_fail_closed() {
         let mut registry = Registry::default();
         let now = Instant::now();
-        let first = registry.issue_at(Kind::Create, 0, now);
+        let first = registry.issue_at(Kind::Create, 0, vec![], now);
         assert!(first.claim_at(Kind::Update, 0, now).is_err());
         assert!(first.claim_at(Kind::Create, 1, now).is_err());
         for _ in 0..LIMIT {
-            registry.issue_at(Kind::Update, 2, now);
+            registry.issue_at(Kind::Update, 2, vec![], now);
         }
         assert!(first.claim_at(Kind::Create, 0, now).is_err());
         assert_eq!(registry.tickets.len(), LIMIT);
-        let last = registry.issue_at(Kind::Create, 0, now);
+        let last = registry.issue_at(Kind::Create, 0, vec![], now);
         assert!(last.claim_at(Kind::Create, 0, now + LIFETIME).is_err());
-        let fresh = registry.issue_at(Kind::Update, 7, now + LIFETIME);
+        let fresh = registry.issue_at(Kind::Update, 7, vec![], now + LIFETIME);
         assert_eq!(registry.tickets.len(), 1);
         assert!(fresh.claim_at(Kind::Update, 7, now + LIFETIME).is_ok());
         assert!(fresh.claim_at(Kind::Update, 7, now + LIFETIME).is_err());

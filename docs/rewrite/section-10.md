@@ -91,3 +91,18 @@ that spelling; new manual seeds/additions still require canonical text admission
 The uppercase regression covers source Add, update Keep/removal, detachment
 Keep/removal and clearing the resulting exclusion without retargeting a canonical
 alias. Frozen state comparisons remain unchanged.
+
+PR 51 review correction: confirmed creation selections and its bulk helper now
+use lossless StoryReference values. The regression accepts a source candidate
+with uppercase UUID spelling alone and alongside a distinct lowercase SQL row;
+single selection cannot retarget the alias, and bulk selection preserves both.
+Manual seed admission remains canonical.
+
+PR 51 deletion correction: Shelf update, source-change and linked-deletion plans
+record their dependent Shelf IDs. Deleting a Shelf retires those capabilities,
+including clones, before a later insert can reuse its ID. Issuing dependent
+previews shares the ordinary writer queue with deletion, so concurrent reads
+cannot certify a pre-delete row after its tickets were invalidated. Unrelated
+plans remain valid, failed deletion attempts conservatively require refresh,
+and fresh plans work for a replacement Shelf. Migrations and stored IDs remain
+unchanged; the registry still retains at most 64 live capabilities.

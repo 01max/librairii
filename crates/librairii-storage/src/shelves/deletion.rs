@@ -65,14 +65,22 @@ impl Database<'_> {
     ) -> Result<Pending<'_, CollectionDeletionPlan>> {
         let identity = self.snapshot_identity();
         let registry = self.shelf_tickets.clone();
-        self.read(move |tx| {
+        self.writer_read(move |tx| {
             let e = evaluate(tx, id, &locale)?;
             Ok(CollectionDeletionPlan {
                 id,
+                ticket: tickets::issue(
+                    &registry,
+                    tickets::Kind::DeleteCollection,
+                    id.get(),
+                    e.changes
+                        .iter()
+                        .map(|change| change.preview.shelf_id)
+                        .collect(),
+                )?,
                 preview: e.preview,
                 fingerprint: e.fingerprint,
                 identity,
-                ticket: tickets::issue(&registry, tickets::Kind::DeleteCollection, id.get())?,
                 locale,
             })
         })

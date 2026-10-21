@@ -588,6 +588,20 @@ impl<'library> Database<'library> {
         })
     }
 
+    /// Issue review capabilities in writer order so deletion cannot invalidate
+    /// a ticket and then let a concurrent preview certify the pre-delete row.
+    pub(crate) fn writer_read<T: Send + 'static>(
+        &self,
+        work: impl FnOnce(&Transaction<'_>) -> Result<T> + Send + 'static,
+    ) -> Result<Pending<'_, T>> {
+        self.enqueue(&self.writer, false, move |connection| {
+            let transaction = connection.transaction()?;
+            let result = work(&transaction)?;
+            transaction.commit()?;
+            Ok(result)
+        })
+    }
+
     /// Cross all earlier writer admissions, then read one fresh coherent view
     /// on the SAME writer. Reserved capacity remains available after intake stop.
     /// Domain matching/acknowledgement predicates belong to the repository owner.

@@ -33,7 +33,8 @@ impl Database<'_> {
         command: Command,
         cancellation: WorkCancellation,
     ) -> Result<Pending<'_, TransactionOutcome<Response>>> {
-        self.transaction(cancellation, move |tx| execute(tx, command))
+        let registry = self.shelf_tickets.clone();
+        self.transaction(cancellation, move |tx| execute(tx, command, &registry))
     }
     pub fn shelves(&self) -> Result<Pending<'_, Vec<Shelf>>> {
         self.read(list)
@@ -134,7 +135,11 @@ fn bump(tx: &Transaction<'_>, id: ShelfId, changed: bool) -> Result<Shelf> {
     }
     read(tx, id)
 }
-pub fn execute(tx: &Transaction<'_>, command: Command) -> Result<Response> {
+fn execute(
+    tx: &Transaction<'_>,
+    command: Command,
+    registry: &std::sync::Mutex<tickets::Registry>,
+) -> Result<Response> {
     match command {
         Command::Create { name } => Ok(Response::Shelf(insert(tx, &name)?)),
         Command::Rename { id, name } => {
@@ -151,6 +156,9 @@ pub fn execute(tx: &Transaction<'_>, command: Command) -> Result<Response> {
         Command::Delete { id } => {
             read(tx, id)?;
             tx.execute("DELETE FROM shelves WHERE id=?", [id.get()])?;
+            // Invalidate even if the transaction subsequently rolls back:
+            // a failed or uncertain attempt always requires a fresh review.
+            tickets::invalidate_shelf(registry, id)?;
             Ok(Response::Deleted)
         }
         Command::Reorder(ids) => {

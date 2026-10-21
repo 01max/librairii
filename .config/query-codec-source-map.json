@@ -3093,6 +3093,32 @@
           ]
         },
         "reason": "Additive observed Task 10 discovery; original integration identities retain exact order and target scope."
+      },
+      {
+        "position": 408,
+        "identity": {
+          "suite": "librairii-storage::shelves",
+          "name": "creation_selections_preserve_legacy_spelling_and_distinguish_canonical_aliases",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive PR 51 regression: confirmed creation preserves legacy UUID spelling and distinct aliases."
+      },
+      {
+        "position": 409,
+        "identity": {
+          "suite": "librairii-storage::shelves",
+          "name": "deleted_shelf_reviews_cannot_target_reused_ids_and_unrelated_plans_survive",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive PR 51 regression: deletion retires dependent plans before SQLite can reuse Shelf/source IDs."
       }
     ],
     "python": [

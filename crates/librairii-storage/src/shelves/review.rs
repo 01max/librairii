@@ -179,7 +179,7 @@ impl Database<'_> {
                 preview,
                 fingerprint,
                 identity,
-                ticket: super::tickets::issue(&registry, super::tickets::Kind::Create, 0)?,
+                ticket: super::tickets::issue(&registry, super::tickets::Kind::Create, 0, vec![])?,
                 locale,
             })
         })
@@ -187,7 +187,7 @@ impl Database<'_> {
     pub fn create_shelf_reviewed(
         &self,
         plan: CreationPlan,
-        selected: Vec<StoryUuid>,
+        selected: Vec<StoryReference>,
         cancellation: WorkCancellation,
     ) -> Result<Pending<'_, TransactionOutcome<Shelf>>> {
         if self.snapshot_identity() != plan.identity {
@@ -199,7 +199,9 @@ impl Database<'_> {
             if fingerprint != plan.fingerprint {
                 return Err(ShelfError::StaleReview.into());
             }
-            let selected = uuid_strings(&selected).into_iter().collect::<BTreeSet<_>>();
+            let selected = reference_strings(&selected)
+                .into_iter()
+                .collect::<BTreeSet<_>>();
             let known = fresh
                 .candidates
                 .iter()
@@ -423,14 +425,19 @@ impl Database<'_> {
     ) -> Result<Pending<'_, UpdatePlan>> {
         let identity = self.snapshot_identity();
         let registry = self.shelf_tickets.clone();
-        self.read(move |tx| {
+        self.writer_read(move |tx| {
             let e = evaluation(tx, id, &locale, None)?;
             Ok(UpdatePlan {
                 id,
                 preview: e.preview,
                 fingerprint: e.fingerprint,
                 identity,
-                ticket: super::tickets::issue(&registry, super::tickets::Kind::Update, id.get())?,
+                ticket: super::tickets::issue(
+                    &registry,
+                    super::tickets::Kind::Update,
+                    id.get(),
+                    vec![id],
+                )?,
                 locale,
             })
         })
@@ -489,14 +496,9 @@ impl CreationPreview {
     pub fn candidates_page(&self, page: usize) -> &[Candidate] {
         super::rows(&self.candidates, page)
     }
-    pub fn all_uuids(&self) -> Result<Vec<StoryUuid>> {
-        Ok(librairii_core::shelves::parse_uuids(
-            &self
-                .candidates
-                .iter()
-                .map(|c| c.uuid.clone())
-                .collect::<Vec<_>>(),
-        )?)
+    /// Confirm the exact previewed rows, including preserved legacy spelling.
+    pub fn all_uuids(&self) -> Result<Vec<StoryReference>> {
+        self.candidates.iter().map(Candidate::reference).collect()
     }
     pub fn warning_count(&self) -> usize {
         self.warnings.len()

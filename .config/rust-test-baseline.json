@@ -2374,6 +2374,24 @@
         "x86_64-apple-darwin",
         "x86_64-unknown-linux-gnu"
       ]
+    },
+    {
+      "suite": "librairii-storage::shelves",
+      "name": "creation_selections_preserve_legacy_spelling_and_distinguish_canonical_aliases",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::shelves",
+      "name": "deleted_shelf_reviews_cannot_target_reused_ids_and_unrelated_plans_survive",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
     }
   ]
 }

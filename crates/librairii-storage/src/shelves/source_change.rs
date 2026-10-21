@@ -188,7 +188,7 @@ impl Database<'_> {
     ) -> Result<Pending<'_, SourceChangePlan>> {
         let identity = self.snapshot_identity();
         let registry = self.shelf_tickets.clone();
-        self.read(move |tx| {
+        self.writer_read(move |tx| {
             let e = evaluate(tx, id, &desired, &locale)?;
             Ok(SourceChangePlan {
                 id,
@@ -196,7 +196,7 @@ impl Database<'_> {
                 preview: e.preview,
                 fingerprint: e.fingerprint,
                 identity,
-                ticket: tickets::issue(&registry, tickets::Kind::Sources, id.get())?,
+                ticket: tickets::issue(&registry, tickets::Kind::Sources, id.get(), vec![id])?,
                 locale,
             })
         })
