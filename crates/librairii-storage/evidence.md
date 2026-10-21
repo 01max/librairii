@@ -1625,3 +1625,36 @@ current whole-workspace/provider/admission, full4.8/4.11, partial-allocation
 resolution, fixed-G/N3/C2/C70 replay or new Go/normalization campaign is claimed.
 Owner5 actual additive discovery and then current combined quality remain next;
 the independent current-head frontend failure remains separately unresolved.
+
+### Current954 Windows coherent-snapshot failure: phase diagnosis
+
+Current954 Windows job118982600201/run39526500284 compiled/discovered106
+tests and completed105PASS/1FAIL/0skip. The sole failure is
+`database_workers::four_coherent_read_snapshots_run_concurrently_with_the_separate_writer`,
+6.137s, returning `RuntimeFenced`. The original full job log is retained at
+SHA256 `f9bdc2e247b058ed1d5a2334f4d6c49da6eae9d0857f09d7e51c4eb6243c3aab`.
+This is a current native failure, not an old missing-dependency alert or a
+qualification pass. Its Windows fixed-NTFS/relative-child/metadata cases passed
+their existing finite assertions independently; they do not resolve this failure.
+
+The test's previous outer error contains no failing phase. Source permits
+`RuntimeFenced` from startup diagnostics, poisoned queue state, a non-autocommit
+writer barrier or final busy writer checkpoint; the supplied log does not select
+one. A read callback's five-second gate timeout itself returns a synthetic I/O
+error, and ordinary queue saturation itself returns QueueFull. Elapsed time alone
+does not establish either as the cause. No timeout, assertion, fence or runtime
+mechanism is changed. Error-only labels now preserve the original typed result
+and report which admission/wait/outcome/barrier/close phase returned an error.
+This is diagnostic source support, not a product correction or an explanation
+of the original Windows failure.
+
+ONE focused AppleARM assay of this same labelled test passed1/1, with10 other
+integration cases intentionally filtered, run
+`c369d5fd-2338-4536-90d7-026ad95c4c49` (0.139s). Log SHA256
+`c5491f423006acc868680641224e6bef0b15a7e8224bf9bf0b769b8d0f8f49d2`.
+Targeted database_workers Clippy with warnings denied, rustfmt and diff-check
+pass. This is neither a Windows reproduction nor proof of a timing,
+infrastructure or flaky-test cause. The next actual native failure needs the
+labelled phase before a causal fix can be selected. No manual CI retry/cancel,
+full suite, Go, frontend, Unicode campaign or fixed proof replay was performed.
+Unrelated directory OPEN+SAFE-sync qualification source remains unpublished.

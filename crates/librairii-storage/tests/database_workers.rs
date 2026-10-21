@@ -92,16 +92,25 @@ fn five_owned_connections_have_actual_required_pragmas_and_close_before_reuse() 
 
 #[test]
 fn four_coherent_read_snapshots_run_concurrently_with_the_separate_writer() -> TestResult {
+    fn at<T, E: std::fmt::Debug>(phase: &str, result: Result<T, E>) -> Result<T, E> {
+        result.inspect_err(|error| eprintln!("coherent snapshot phase={phase}: {error:?}"))
+    }
     let roots = TestRoots::new()?;
     let library = isolated(&roots)?;
-    let mut database = Database::open_isolated(&library)?;
-    committed(
-        database
-            .transaction(WorkCancellation::default(), |tx| {
-                tx.execute_batch("CREATE TABLE worker_probe(value INTEGER)")?;
-                Ok(())
-            })?
-            .wait()?,
+    let mut database = at("open five connections", Database::open_isolated(&library))?;
+    at(
+        "create table outcome",
+        committed(at(
+            "create table wait",
+            at(
+                "create table admission",
+                database.transaction(WorkCancellation::default(), |tx| {
+                    tx.execute_batch("CREATE TABLE worker_probe(value INTEGER)")?;
+                    Ok(())
+                }),
+            )?
+            .wait(),
+        )?),
     )?;
     let (entered, observed) = mpsc::channel();
     let mut gates = Vec::new();
@@ -110,31 +119,40 @@ fn four_coherent_read_snapshots_run_concurrently_with_the_separate_writer() -> T
         let (release, gate) = mpsc::channel();
         gates.push(release);
         let entered = entered.clone();
-        pending.push(database.read(move |tx| {
-            let before: i64 =
-                tx.query_row("SELECT count(*) FROM worker_probe", [], |row| row.get(0))?;
-            entered.send(()).map_err(synthetic_error)?;
-            gate.recv_timeout(Duration::from_secs(5))
-                .map_err(synthetic_error)?;
-            let after: i64 =
-                tx.query_row("SELECT count(*) FROM worker_probe", [], |row| row.get(0))?;
-            Ok((before, after))
-        })?);
+        pending.push(at(
+            "held reader admission",
+            database.read(move |tx| {
+                let before: i64 =
+                    tx.query_row("SELECT count(*) FROM worker_probe", [], |row| row.get(0))?;
+                entered.send(()).map_err(synthetic_error)?;
+                gate.recv_timeout(Duration::from_secs(5))
+                    .map_err(synthetic_error)?;
+                let after: i64 =
+                    tx.query_row("SELECT count(*) FROM worker_probe", [], |row| row.get(0))?;
+                Ok((before, after))
+            }),
+        )?);
     }
     for _ in 0..READ_WORKERS {
         observed.recv_timeout(Duration::from_secs(3))?;
     }
     let (started, started_receiver) = mpsc::channel();
-    let write = database.transaction(WorkCancellation::default(), move |tx| {
-        tx.execute("INSERT INTO worker_probe VALUES(1)", [])?;
-        started.send(()).map_err(synthetic_error)?;
-        Ok(())
-    })?;
+    let write = at(
+        "concurrent writer admission",
+        database.transaction(WorkCancellation::default(), move |tx| {
+            tx.execute("INSERT INTO worker_probe VALUES(1)", [])?;
+            started.send(()).map_err(synthetic_error)?;
+            Ok(())
+        }),
+    )?;
     started_receiver.recv_timeout(Duration::from_secs(3))?;
-    committed(write.wait()?)?;
+    at(
+        "concurrent writer outcome",
+        committed(at("concurrent writer wait", write.wait())?),
+    )?;
     let mut queued = Vec::new();
     for _ in 0..ORDINARY_QUEUE_CAPACITY {
-        queued.push(database.read(|_| Ok(()))?);
+        queued.push(at("saturated reader admission", database.read(|_| Ok(())))?);
     }
     assert!(matches!(
         database.read(|_| Ok(())),
@@ -144,22 +162,27 @@ fn four_coherent_read_snapshots_run_concurrently_with_the_separate_writer() -> T
         gate.send(())?;
     }
     for read in pending {
-        assert_eq!(read.wait()?, (0, 0));
+        assert_eq!(at("held snapshot wait", read.wait())?, (0, 0));
     }
     for read in queued {
-        read.wait()?;
+        at("queued reader wait", read.wait())?;
     }
     assert_eq!(
-        database
-            .barrier_read(|tx| Ok(tx.query_row(
-                "SELECT count(*) FROM worker_probe",
-                [],
-                |row| row.get::<_, i64>(0)
-            )?))?
-            .wait()?,
+        at(
+            "fresh writer barrier wait",
+            at(
+                "fresh writer barrier admission",
+                database.barrier_read(|tx| Ok(tx.query_row(
+                    "SELECT count(*) FROM worker_probe",
+                    [],
+                    |row| row.get::<_, i64>(0)
+                )?))
+            )?
+            .wait()
+        )?,
         1
     );
-    database.close()?;
+    at("drain joins checkpoint close", database.close())?;
     Ok(())
 }
 
