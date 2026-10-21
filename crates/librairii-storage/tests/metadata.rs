@@ -288,3 +288,73 @@ fn resolved_fields_freshness_and_age_changes_preserve_manual_state_and_curated_m
     db.close()?;
     Ok(())
 }
+#[test]
+fn registered_artwork_cache_is_hashed_offline_and_refuses_corruption_or_aliases()
+-> std::result::Result<(), Box<dyn std::error::Error>> {
+    use librairii_app::metadata::{ArtworkAsset, MediaType};
+    let roots = TestRoots::new()?;
+    let library = IsolatedLibrary::initialize_from_override(
+        Some(roots.library().as_os_str()),
+        "a0000000-0000-4000-8000-000000000001".parse()?,
+    )?;
+    let mut db = Database::open_isolated(&library)?;
+    let image = include_bytes!("../../librairii-adapters/tests/fixtures/artwork/cover.png");
+    let asset = ArtworkAsset::checked(image.to_vec(), MediaType::Png)?;
+    let catalog = normalize(RAW.to_vec(), "en-GB")?;
+    let id = catalog.artworks()[0].id;
+    assert!(
+        db.persist_artwork(id, &asset, "2026-10-21T12:00:00Z", None, None)
+            .is_err()
+    );
+    let sync = "a0000000-0000-4000-8000-000000000030".parse()?;
+    committed(
+        db.begin_catalog_sync(
+            sync,
+            Locale::parse("en-GB")?,
+            "2026-10-21T12:00:00Z".into(),
+            WorkCancellation::default(),
+        )?
+        .wait()?,
+    )?;
+    committed(db.stage_catalog(
+        sync,
+        catalog,
+        "2026-10-21T12:00:01Z".into(),
+        WorkCancellation::default(),
+    )?)?;
+    assert!(db.read_registered_artwork(id)?.cached.is_none());
+    db.persist_artwork(
+        id,
+        &asset,
+        "2026-10-21T12:00:02Z",
+        Some("fixture-tag".into()),
+        None,
+    )?;
+    assert_eq!(db.read_registered_artwork(id)?.cached, Some(asset.clone()));
+    let path = db
+        .read(move |tx| {
+            Ok(tx.query_row(
+                "SELECT managed_path FROM catalog_artworks WHERE id=?",
+                [id.to_string()],
+                |r| r.get::<_, String>(0),
+            )?)
+        })?
+        .wait()?;
+    db.close()?;
+    let mut reopened = Database::open_isolated(&library)?;
+    assert_eq!(reopened.read_registered_artwork(id)?.cached, Some(asset));
+    std::fs::write(roots.library().join(&path), b"corruption")?;
+    assert!(reopened.read_registered_artwork(id).is_err());
+    std::fs::remove_file(roots.library().join(&path))?;
+    let outside = roots
+        .library()
+        .parent()
+        .ok_or("parent")?
+        .join("outside-cover.png");
+    std::fs::write(&outside, image)?;
+    std::os::unix::fs::symlink(&outside, roots.library().join(path))?;
+    assert!(reopened.read_registered_artwork(id).is_err());
+    assert_eq!(std::fs::read(outside)?, image);
+    reopened.close()?;
+    Ok(())
+}

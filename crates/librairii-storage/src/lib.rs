@@ -2,6 +2,8 @@
 //!
 //! Root selection is explicit. The isolated override never discovers a profile.
 pub mod adoption;
+#[cfg(any(target_os = "macos", target_os = "linux"))]
+pub mod artwork;
 pub mod backup;
 pub mod broken;
 pub mod collections;

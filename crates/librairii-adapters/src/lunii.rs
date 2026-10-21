@@ -272,3 +272,128 @@ impl CatalogClient {
 }
 #[cfg(test)]
 mod tests;
+
+#[derive(Clone, Debug)]
+pub struct ArtworkDownload {
+    pub asset: librairii_app::metadata::ArtworkAsset,
+    pub etag: Option<String>,
+    pub last_modified: Option<String>,
+}
+impl CatalogClient {
+    pub async fn fetch_artwork(
+        &self,
+        source: &str,
+        cancel: &Cancellation,
+    ) -> Result<ArtworkDownload> {
+        use librairii_app::metadata::{
+            ARTWORK_BASE, ArtworkAsset, MAX_ARTWORK_BYTES, MediaType, artwork_url,
+        };
+        // Validate the original bytes before URL parsing can remove traversal.
+        let path = source
+            .strip_prefix(ARTWORK_BASE)
+            .ok_or(MetadataError::InvalidArtwork)?;
+        if artwork_url(path)? != source {
+            return Err(MetadataError::InvalidArtwork);
+        }
+        let url = parse(&format!(
+            "{}{path}",
+            self.endpoints.artwork.as_str().trim_end_matches('/')
+        ))?;
+        let _permit = self
+            .permits
+            .try_acquire()
+            .map_err(|_| MetadataError::Busy)?;
+        let mut response = self
+            .send(
+                url,
+                HeaderMap::new(),
+                "image/png, image/jpeg, image/webp",
+                cancel,
+            )
+            .await?;
+        let media = response
+            .headers()
+            .get(CONTENT_TYPE)
+            .ok_or(MetadataError::InvalidArtwork)?
+            .to_str()
+            .map_err(|_| MetadataError::InvalidArtwork)?
+            .parse::<mime::Mime>()
+            .map_err(|_| MetadataError::InvalidArtwork)?;
+        let media = MediaType::parse(media.essence_str())?;
+        let etag = optional_header(response.headers(), "etag")?;
+        let last_modified = optional_header(response.headers(), "last-modified")?;
+        let body = read_body(&mut response, MAX_ARTWORK_BYTES, cancel).await?;
+        Ok(ArtworkDownload {
+            asset: ArtworkAsset::checked(body, media)?,
+            etag,
+            last_modified,
+        })
+    }
+}
+fn optional_header(headers: &HeaderMap, name: &str) -> Result<Option<String>> {
+    headers
+        .get(name)
+        .map(|v| {
+            v.to_str()
+                .map(str::to_owned)
+                .map_err(|_| MetadataError::InvalidArtwork)
+        })
+        .transpose()
+}
+/// One service is retained per open library; its single miss lock coalesces
+/// downloads, with a 64-caller admission ceiling. Do not drive synchronous
+/// repository operations on a UI executor. No request starts on construction.
+#[derive(Debug)]
+pub struct ArtworkService<R> {
+    repository: R,
+    client: CatalogClient,
+    miss: tokio::sync::Mutex<()>,
+    callers: Semaphore,
+}
+impl<R: librairii_app::metadata::ArtworkRepository> ArtworkService<R> {
+    pub fn new(repository: R, client: CatalogClient) -> Self {
+        Self {
+            repository,
+            client,
+            miss: tokio::sync::Mutex::new(()),
+            callers: Semaphore::new(64),
+        }
+    }
+    pub async fn load(
+        &self,
+        id: librairii_core::Checksum,
+        at: &str,
+        cancel: &Cancellation,
+    ) -> Result<librairii_app::metadata::ArtworkAsset> {
+        let _slot = self
+            .callers
+            .try_acquire()
+            .map_err(|_| MetadataError::Busy)?;
+        if cancel.is_cancelled() {
+            return Err(MetadataError::Cancelled);
+        }
+        if let Some(asset) = self.repository.registered_artwork(id)?.cached {
+            return Ok(asset);
+        }
+        let _miss = tokio::select! {biased;_=cancel.cancelled()=>return Err(MetadataError::Cancelled),guard=self.miss.lock()=>guard};
+        let registered = self.repository.registered_artwork(id)?;
+        if let Some(asset) = registered.cached {
+            return Ok(asset);
+        }
+        let download = self
+            .client
+            .fetch_artwork(&registered.source_url, cancel)
+            .await?;
+        if cancel.is_cancelled() {
+            return Err(MetadataError::Cancelled);
+        }
+        self.repository.cache_artwork(
+            id,
+            &download.asset,
+            at,
+            download.etag,
+            download.last_modified,
+        )?;
+        Ok(download.asset)
+    }
+}

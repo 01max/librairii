@@ -292,7 +292,7 @@
       },
       "query_codec": {
         "map_path": ".config/query-codec-source-map.json",
-        "map_sha256": "8d46dff922aaab677816af7fa36bc6fa6c435bb07c98a7c433e1f11545a93147",
+        "map_sha256": "ae68f1aae6125bfda0f99b51206f35d6cd7f259fa4a5a315ee677cd88cb93f9e",
         "scope": "single-materialized-core-query-codec",
         "core_leaf": "crates/librairii-core/src/collection_codec/mod.rs"
       },

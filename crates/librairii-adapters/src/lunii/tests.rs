@@ -324,3 +324,119 @@ async fn request_admission_is_bounded_without_waiting_queue() -> TestResult {
     );
     Ok(())
 }
+#[tokio::test]
+async fn artwork_allowlist_stream_limit_sniffing_and_concurrent_misses() -> TestResult {
+    use librairii_app::metadata::{
+        ArtworkAsset, ArtworkRepository, MAX_ARTWORK_BYTES, RegisteredArtwork, artwork_url, digest,
+    };
+    use librairii_core::Checksum;
+    use std::sync::Mutex;
+    #[derive(Debug)]
+    struct Repo {
+        cache: Mutex<Option<ArtworkAsset>>,
+        url: String,
+        id: Checksum,
+    }
+    impl ArtworkRepository for Repo {
+        fn registered_artwork(&self, id: Checksum) -> Result<RegisteredArtwork> {
+            if id != self.id {
+                return Err(MetadataError::ArtworkNotFound);
+            }
+            Ok(RegisteredArtwork {
+                id,
+                source_url: self.url.clone(),
+                cached: self
+                    .cache
+                    .lock()
+                    .map_err(|_| MetadataError::InvalidArtwork)?
+                    .clone(),
+            })
+        }
+        fn cache_artwork(
+            &self,
+            _: Checksum,
+            asset: &ArtworkAsset,
+            _: &str,
+            _: Option<String>,
+            _: Option<String>,
+        ) -> Result<()> {
+            *self
+                .cache
+                .lock()
+                .map_err(|_| MetadataError::InvalidArtwork)? = Some(asset.clone());
+            Ok(())
+        }
+    }
+    let image = include_bytes!("../../tests/fixtures/artwork/cover.png");
+    let mut response = reply(image);
+    response.media = "image/png";
+    response.delay = Duration::from_millis(30);
+    let (base, worker) = server(vec![response])?;
+    let url = artwork_url("/fixture/cover.png")?;
+    let id = digest(url.as_bytes());
+    let service = ArtworkService::new(
+        Repo {
+            cache: Mutex::new(None),
+            url,
+            id,
+        },
+        CatalogClient::loopback(&base, DEADLINE)?,
+    );
+    let cancel = Cancellation::default();
+    let (a, b) = tokio::join!(
+        service.load(id, "2026-10-21T12:00:00Z", &cancel),
+        service.load(id, "2026-10-21T12:00:00Z", &cancel)
+    );
+    assert_eq!(a?.bytes.as_ref(), image);
+    assert_eq!(b?.bytes.as_ref(), image);
+    let requests = joined(worker)?;
+    assert_eq!(requests.len(), 1);
+    assert!(requests[0].starts_with("GET /lunii-data-prod/fixture/cover.png "));
+    assert!(requests[0].contains("accept: image/png, image/jpeg, image/webp\r\n"));
+    assert_eq!(
+        service
+            .load(Checksum::from_bytes([0; 32]), "invalid time", &cancel)
+            .await,
+        Err(MetadataError::ArtworkNotFound)
+    );
+    for (bytes, media, want) in [
+        (
+            b"not an image".to_vec(),
+            "image/png",
+            MetadataError::InvalidArtwork,
+        ),
+        (image.to_vec(), "text/plain", MetadataError::InvalidArtwork),
+        (
+            vec![0; MAX_ARTWORK_BYTES + 1],
+            "image/png",
+            MetadataError::TooLarge,
+        ),
+    ] {
+        let mut r = reply(&bytes);
+        r.media = media;
+        r.chunked = true;
+        let (base, worker) = server(vec![r])?;
+        let client = CatalogClient::loopback(&base, DEADLINE)?;
+        assert_eq!(
+            client
+                .fetch_artwork(&artwork_url("/fixture/cover.png")?, &cancel)
+                .await
+                .err(),
+            Some(want)
+        );
+        joined(worker)?;
+    }
+    let client = CatalogClient::loopback("http://127.0.0.1:1/", DEADLINE)?;
+    for url in [
+        "https://outside/cover.png",
+        "https://storage.googleapis.com/lunii-data-prod/../cover.png",
+        "https://storage.googleapis.com/lunii-data-prod/cover.png?x",
+        "https://storage.googleapis.com/lunii-data-prod-evil/cover.png",
+    ] {
+        assert_eq!(
+            client.fetch_artwork(url, &cancel).await.err(),
+            Some(MetadataError::InvalidArtwork)
+        );
+    }
+    Ok(())
+}

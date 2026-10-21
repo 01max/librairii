@@ -3217,6 +3217,40 @@
           ]
         },
         "reason": "Additive observed Task 11 discovery; original integration identities retain exact order and target scope."
+      },
+      {
+        "position": 421,
+        "identity": {
+          "suite": "librairii-storage::metadata",
+          "name": "resolved_fields_freshness_and_age_changes_preserve_manual_state_and_curated_members",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive observed Task 11 discovery; original integration identities retain exact order and target scope."
+      },
+      {
+        "position": 422,
+        "identity": {
+          "suite": "librairii-adapters",
+          "name": "lunii::tests::artwork_allowlist_stream_limit_sniffing_and_concurrent_misses"
+        },
+        "reason": "Additive observed Task 11 discovery; original integration identities retain exact order and target scope."
+      },
+      {
+        "position": 423,
+        "identity": {
+          "suite": "librairii-storage::metadata",
+          "name": "registered_artwork_cache_is_hashed_offline_and_refuses_corruption_or_aliases",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive observed Task 11 discovery; original integration identities retain exact order and target scope."
       }
     ],
     "python": [

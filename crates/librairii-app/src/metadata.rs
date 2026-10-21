@@ -44,3 +44,8 @@ mod refresh;
 pub use refresh::{
     CatalogRepository, RefreshCode, RefreshReport, RefreshSession, RepositoryFailure,
 };
+mod artwork;
+pub use artwork::{
+    ArtworkAsset, ArtworkRepository, MAX_ARTWORK_BYTES, MediaType, RegisteredArtwork,
+    validate_artwork,
+};

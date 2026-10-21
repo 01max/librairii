@@ -1810,6 +1810,67 @@ impl<'files, 'library> OwnedStage<'files, 'library> {
     }
 }
 
+impl LibraryFiles<'_> {
+    /// Bounded read of a stored catalog-relative path. Every component is opened
+    /// relative to retained directories with no-follow semantics, and every
+    /// binding is checked again after reading. This grants no mutation rights.
+    pub(crate) fn read_catalog(&self, path: &str, limit: usize) -> Result<Vec<u8>> {
+        self.authority.require_intake()?;
+        self.revalidate()?;
+        let relative = path
+            .strip_prefix("catalog/")
+            .ok_or(StorageError::InvalidManagedPath)?;
+        let parts = relative
+            .split('/')
+            .map(EntryName::parse)
+            .collect::<Result<Vec<_>>>()?;
+        if parts.is_empty() || parts.len() > 4 || limit > 10 * 1024 * 1024 {
+            return Err(StorageError::InvalidManagedPath);
+        }
+        let mut directories = vec![self.catalog.duplicate()?];
+        for name in &parts[..parts.len() - 1] {
+            let parent = directories.last().ok_or(StorageError::InvalidManagedPath)?;
+            directories.push(parent.child(name.as_os_str())?);
+        }
+        let parent = directories.last().ok_or(StorageError::InvalidManagedPath)?;
+        let name = parts.last().ok_or(StorageError::InvalidManagedPath)?;
+        let mut file = parent.open_regular(name.as_os_str(), OFlags::RDONLY)?;
+        let identity = FileIdentity::from_file(&file)?;
+        let before = file
+            .metadata()
+            .map_err(|e| StorageError::io("inspect catalog asset", e))?;
+        if before.len() > limit as u64 {
+            return Err(StorageError::HashSizeLimit);
+        }
+        let mut bytes = Vec::new();
+        std::io::Read::by_ref(&mut file)
+            .take(limit as u64 + 1)
+            .read_to_end(&mut bytes)
+            .map_err(|e| StorageError::io("read catalog asset", e))?;
+        if bytes.len() > limit {
+            return Err(StorageError::HashSizeLimit);
+        }
+        require_regular(&file)?;
+        parent.require_name(name.as_os_str(), identity)?;
+        for (index, name) in parts[..parts.len() - 1].iter().enumerate() {
+            directories[index].require_name(name.as_os_str(), directories[index + 1].identity)?;
+        }
+        self.revalidate()?;
+        let after = file
+            .metadata()
+            .map_err(|e| StorageError::io("reinspect catalog asset", e))?;
+        if before.len() != after.len()
+            || before.mtime() != after.mtime()
+            || before.mtime_nsec() != after.mtime_nsec()
+            || before.ctime() != after.ctime()
+            || before.ctime_nsec() != after.ctime_nsec()
+        {
+            return Err(StorageError::SnapshotChanged);
+        }
+        Ok(bytes)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

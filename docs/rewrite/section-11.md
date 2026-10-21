@@ -83,3 +83,20 @@ embedded description/artwork, publisher/language/provenance, same-locale
 supersession and stale offline cache. It verifies Age assignment and a recolored
 Age definition survive refresh alongside user assignments, Broken and approved
 Shelf membership/order. No new display-time path access is introduced.
+
+## 11.5 — Lazy registered artwork
+
+Artwork requires an opaque registered SHA-256 identity. The isolated HTTP client
+validates the original allowlisted URL before parsing, refuses redirects and
+unsupported MIME/signature pairs, and streams at most 10 MiB. PNG/JPEG/WebP remain
+supported for compatibility. A library-owned service coalesces misses under one
+lock, rechecks the cache, and bounds waiting callers to 64. Cancelled work stops
+before publishing; an entered durable cache write finishes acknowledgement.
+
+New cache files use `catalog/art-<opaque ID>-<content SHA>.<extension>` through
+the existing no-clobber publisher. The path is stored in the unchanged legacy
+schema. Reads support existing nested catalog paths through retained no-follow
+directory descriptors, reject links/substitutions and verify recorded length,
+MIME signature and content hash. Failed/uncertain outcomes preserve recoverable
+bytes. Tests cover coalesced fetches, allowlist escapes, chunked overflow, MIME
+mismatch, registration, offline reopen, corruption and symlink refusal.
