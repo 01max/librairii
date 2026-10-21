@@ -13,13 +13,13 @@ PREVIOUS_QUERY_INDEX_SHA = '13dfd314abfda9a9553d152a1d8a5586f8bd1205a08c177af9bb
 INDEX_SHA = 'cd8fcdac9ccdd46f1f06294f27bc07e9f8ed40f79d16cdab4d39c7c0cd837d78'
 SOURCE_COUNT = 63
 QUERY_MAP = '.config/query-codec-source-map.json'
-QUERY_MAP_SHA = '60130c378f2438fbb4fbea75f4251dbc5c7159dca47150c180e7902f5c18970f'
+QUERY_MAP_SHA = '9b6edbde47e0fd8c99f0e566249792622cf3f23c7b1d87a3068507aef086e44a'
 HISTORICAL_MANIFEST_SHA = '2f8bd6db37191346b6719d7345a46a0b4d3163be745d5fae6b7f8ebf429a0409'
 BUNDLE = 'go-1.26.5-xtext-0.43.0-unicode15-cldr32'
 APPROVED_BUNDLES = {BUNDLE, 'go-1.26.5-json-v1-studio'}
 DERIVATIVES = 'crates/librairii-core/src/collection_codec/compatibility'
 # Actual ORIGINAL8471 closure delivered onto current94b; source bytes only.
-SELECTED_MANIFEST_SHA = 'fc5c3b06541999a667e66aee35348d6e312c1ac706840622722281dc1e1efc3e'
+SELECTED_MANIFEST_SHA = '0688b9e0bd00eb8bb46a8c4966669d4fe9d2dcf05b168573f90a669a6be032f1'
 SELECTED_KINDS = {
     'codec-reference.json': 'generated',
     'codec_oracle.go.in': 'authored',
@@ -366,7 +366,7 @@ def check_query_map(root, bundle, by_path, records):
             'historical_manifest_sha256', 'historical_derivatives', 'historical_inline',
             'core_leaf', 'origins', 'notices', 'recipe', 'lookup_bindings', 'fixed_references',
             'current_derivative_changes', 'identity_migrations', 'historical_rust_baseline_sha256',
-            'historical_python_baseline_sha256', 'delivery_lineage', 'previous_query_index_sha256', 'runtime', 'identity_additions', 'url_codec'}
+            'historical_python_baseline_sha256', 'delivery_lineage', 'previous_query_index_sha256', 'runtime', 'identity_additions', 'url_codec', 'tagging'}
     if (set(value) != keys or value['version'] != 2 or value['bundle'] != BUNDLE
             or value['scope'] != 'single-materialized-core-query-codec'
             or value['lookup_index_sha256'] != INDEX_SHA
@@ -375,6 +375,15 @@ def check_query_map(root, bundle, by_path, records):
             or value['historical_manifest_sha256'] != HISTORICAL_MANIFEST_SHA
             or value['historical_inline'] != HISTORICAL_INLINE):
         raise ValueError('invalid materialized core map or historical inline identity')
+    tagging = value['tagging']
+    if (set(tagging) != {'path', 'bytes', 'sha256', 'source', 'source_sha256', 'selection', 'notices'}
+            or tagging['path'] != 'crates/librairii-core/src/tagging/unicode15.rs'
+            or tagging['source'] != 'Go1.26.5/src/unicode/tables.go'
+            or tagging['source_sha256'] != by_path[tagging['source']]['sha256']
+            or tagging['notices'] != ['LICENSE-GO-BSD.txt', 'PATENTS-GO.txt', 'LICENSE-UNICODE-V3.txt']
+            or not tagging['selection']):
+        raise ValueError('invalid frozen tag category source')
+    pinned(root, tagging)
     historical = value['historical_derivatives']
     if digest((json.dumps(historical, indent=2) + '\n').encode()) != HISTORICAL_MANIFEST_SHA:
         raise ValueError('changed historical19 derivative lineage')

@@ -11,3 +11,5 @@ mod unicode_properties;
 pub(super) use language::{LanguageError, canonical as canonical_language};
 pub(super) use normalization::{NormalizeError, ascii_field_key, lowercase_key, normalize};
 pub(super) use normalization::{RuntimeNormalizeError, normalize_runtime};
+
+pub(crate) use normalization::{tag_is_mark, tag_key_decomposition, tag_trim};

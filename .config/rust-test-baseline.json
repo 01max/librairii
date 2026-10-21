@@ -2031,6 +2031,19 @@
     {
       "suite": "librairii-core::query_urls",
       "name": "every_ascii_percent_pair_agrees_with_the_two_hex_digit_grammar"
+    },
+    {
+      "suite": "librairii-core::tag_identity",
+      "name": "frozen_tag_identity_keeps_simple_lowercase_distinct_from_search_folding"
+    },
+    {
+      "suite": "librairii-storage::tags",
+      "name": "crud_preserves_stable_keys_normalized_uniqueness_and_atomic_order",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
     }
   ]
 }

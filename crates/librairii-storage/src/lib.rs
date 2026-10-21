@@ -13,6 +13,7 @@ pub mod platform;
 pub mod portability;
 pub mod profile;
 pub mod query;
+pub mod tagging;
 
 pub use error::{Result, StorageError};
 pub use identity::LibraryIdentity;

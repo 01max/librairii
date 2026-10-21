@@ -605,6 +605,8 @@ pub fn payload(query: &Query) -> Result<String> {
     Ok(payload)
 }
 
+pub(crate) use compatibility::{tag_is_mark, tag_key_decomposition, tag_trim};
+
 #[cfg(test)]
 mod tests {
     use super::*;
