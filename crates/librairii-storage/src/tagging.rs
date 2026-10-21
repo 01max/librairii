@@ -1,8 +1,10 @@
 //! Tag repositories. Every command uses the existing owned writer transaction.
+mod assignments;
 use crate::{
     Result, StorageError,
     database::{Database, Pending, TransactionOutcome, WorkCancellation},
 };
+pub use assignments::workspace;
 use librairii_core::tagging::{
     self, CatalogEntry, CreateDefinition, Definition, Kind, TagError, Value,
 };
@@ -10,6 +12,22 @@ use rusqlite::{OptionalExtension, Row, Transaction, params};
 
 #[derive(Debug)]
 pub enum Command {
+    Boolean {
+        story_ids: Vec<i64>,
+        definition_id: i64,
+        assigned: bool,
+    },
+    ChoiceToggle {
+        story_ids: Vec<i64>,
+        definition_id: i64,
+        value_id: i64,
+        assigned: bool,
+    },
+    ChoiceValues {
+        story_ids: Vec<i64>,
+        definition_id: i64,
+        value_ids: Vec<i64>,
+    },
     CreateDefinition(CreateDefinition),
     RenameDefinition {
         id: i64,
@@ -36,6 +54,7 @@ pub enum Command {
 }
 #[derive(Debug)]
 pub enum Response {
+    Assignment(librairii_core::tagging::AssignmentResult),
     Definition(Definition),
     Value(Value),
     Catalog(Vec<CatalogEntry>),
@@ -47,6 +66,12 @@ impl Database<'_> {
         cancellation: WorkCancellation,
     ) -> Result<Pending<'_, TransactionOutcome<Response>>> {
         self.transaction(cancellation, move |tx| execute(tx, command))
+    }
+    pub fn assignment_workspace(
+        &self,
+        ids: Vec<i64>,
+    ) -> Result<Pending<'_, librairii_core::tagging::AssignmentWorkspace>> {
+        self.read(move |tx| workspace(tx, &ids))
     }
     pub fn tag_catalog(&self) -> Result<Pending<'_, Vec<CatalogEntry>>> {
         self.read(catalog)
@@ -135,6 +160,38 @@ fn value_label(s: &str) -> Result<String> {
 }
 pub fn execute(tx: &Transaction<'_>, command: Command) -> Result<Response> {
     match command {
+        Command::Boolean {
+            story_ids,
+            definition_id,
+            assigned,
+        } => Ok(Response::Assignment(assignments::boolean(
+            tx,
+            &story_ids,
+            definition_id,
+            assigned,
+        )?)),
+        Command::ChoiceToggle {
+            story_ids,
+            definition_id,
+            value_id,
+            assigned,
+        } => Ok(Response::Assignment(assignments::toggle(
+            tx,
+            &story_ids,
+            definition_id,
+            value_id,
+            assigned,
+        )?)),
+        Command::ChoiceValues {
+            story_ids,
+            definition_id,
+            value_ids,
+        } => Ok(Response::Assignment(assignments::replace(
+            tx,
+            &story_ids,
+            definition_id,
+            &value_ids,
+        )?)),
         Command::CreateDefinition(input) => {
             let key = tagging::normalize_key(&input.key)?;
             let label = tagging::normalize_label(&input.label)?;

@@ -4,6 +4,14 @@ use crate::collection_codec::{tag_is_mark, tag_key_decomposition, tag_trim};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, thiserror::Error)]
 pub enum TagError {
+    #[error("tagging.invalid_assignment")]
+    InvalidAssignment,
+    #[error("tagging.story_not_found")]
+    StoryNotFound,
+    #[error("tagging.assignment_kind")]
+    AssignmentKind,
+    #[error("tagging.derived_assignment")]
+    DerivedAssignment,
     #[error("tagging.invalid_definition")]
     InvalidDefinition,
     #[error("tagging.duplicate_definition")]
@@ -26,6 +34,10 @@ pub enum TagError {
 impl TagError {
     pub const fn code(self) -> &'static str {
         match self {
+            Self::InvalidAssignment => "tagging.invalid_assignment",
+            Self::StoryNotFound => "tagging.story_not_found",
+            Self::AssignmentKind => "tagging.assignment_kind",
+            Self::DerivedAssignment => "tagging.derived_assignment",
             Self::InvalidDefinition => "tagging.invalid_definition",
             Self::DuplicateDefinition => "tagging.duplicate_definition",
             Self::DefinitionNotFound => "tagging.definition_not_found",
@@ -143,4 +155,39 @@ pub fn normalize_color(value: &str) -> Result<String, TagError> {
         return Err(TagError::InvalidDefinition);
     }
     Ok(value)
+}
+
+#[derive(Clone, Debug, Default, Eq, PartialEq)]
+pub struct AssignmentResult {
+    pub requested_stories: usize,
+    pub changed_stories: usize,
+    pub assignments_added: usize,
+    pub assignments_removed: usize,
+}
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct ValueState {
+    pub value_id: i64,
+    pub assigned_stories: i64,
+}
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct DefinitionState {
+    pub definition_id: i64,
+    pub assigned_stories: i64,
+    pub values: Vec<ValueState>,
+}
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct AssignmentWorkspace {
+    pub catalog: Vec<CatalogEntry>,
+    pub requested_stories: usize,
+    pub states: Vec<DefinitionState>,
+}
+/// Raw selection cap applies before deduplication, matching the frozen API.
+pub fn story_ids(ids: &[i64]) -> Result<Vec<i64>, TagError> {
+    if ids.is_empty() || ids.len() > 1000 || ids.iter().any(|&id| id <= 0) {
+        return Err(TagError::InvalidAssignment);
+    }
+    let mut ids = ids.to_vec();
+    ids.sort_unstable();
+    ids.dedup();
+    Ok(ids)
 }

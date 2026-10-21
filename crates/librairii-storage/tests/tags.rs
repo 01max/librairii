@@ -103,3 +103,120 @@ fn crud_preserves_stable_keys_normalized_uniqueness_and_atomic_order() -> TestRe
     db.close()?;
     Ok(())
 }
+fn seed_stories(db: &Database<'_>, count: i64) -> TestResult {
+    committed(db.transaction(WorkCancellation::default(),move|tx|{for id in 1..=count {
+ tx.execute("INSERT INTO stories(id,uuid,display_name_normalized) VALUES(?1,printf('10000000-0000-4000-8000-%012d',?1),'story')",[id])?;
+ tx.execute("INSERT INTO story_archives(story_id,original_filename,detected_format,sha256,byte_size,managed_path,validation_state) VALUES(?1,'story.zip','zip',printf('%064d',?1),1,'archives/'||?1,'valid')",[id])?;
+ }Ok(())})?.wait()?)?;
+    Ok(())
+}
+fn assignment(
+    db: &Database<'_>,
+    command: Command,
+) -> Result<librairii_core::tagging::AssignmentResult> {
+    match edit(db, command)? {
+        Response::Assignment(v) => Ok(v),
+        _ => Err(StorageError::CompatibilityInvariant),
+    }
+}
+#[test]
+fn bulk_assignment_mixed_states_additive_toggles_noops_and_all_target_validation() -> TestResult {
+    let roots = TestRoots::new()?;
+    let library = IsolatedLibrary::initialize_from_override(
+        Some(roots.library().as_os_str()),
+        "a0000000-0000-4000-8000-000000000001".parse()?,
+    )?;
+    let mut db = Database::open_isolated(&library)?;
+    seed_stories(&db, 3)?;
+    let a = create(&db, "flag", Kind::Boolean)?;
+    let b = create(&db, "genre", Kind::Choice)?;
+    let v = value(&db, b, "one")?;
+    let w = value(&db, b, "two")?;
+    let r = assignment(
+        &db,
+        Command::Boolean {
+            story_ids: vec![1, 1, 2],
+            definition_id: a,
+            assigned: true,
+        },
+    )?;
+    assert_eq!(
+        (r.requested_stories, r.changed_stories, r.assignments_added),
+        (2, 2, 2)
+    );
+    assert_eq!(
+        assignment(
+            &db,
+            Command::Boolean {
+                story_ids: vec![1, 2],
+                definition_id: a,
+                assigned: true
+            }
+        )?
+        .changed_stories,
+        0
+    );
+    assignment(
+        &db,
+        Command::ChoiceValues {
+            story_ids: vec![1],
+            definition_id: b,
+            value_ids: vec![v],
+        },
+    )?;
+    assignment(
+        &db,
+        Command::ChoiceToggle {
+            story_ids: vec![1, 2],
+            definition_id: b,
+            value_id: w,
+            assigned: true,
+        },
+    )?;
+    let before = db.assignment_workspace(vec![1, 2, 3])?.wait()?;
+    assert_eq!(before.states[0].assigned_stories, 2);
+    assert_eq!(before.states[1].values[0].assigned_stories, 1);
+    assert_eq!(before.states[1].values[1].assigned_stories, 2);
+    assert!(
+        edit(
+            &db,
+            Command::Boolean {
+                story_ids: vec![3, 999],
+                definition_id: a,
+                assigned: true
+            }
+        )
+        .is_err()
+    );
+    assert!(
+        edit(
+            &db,
+            Command::ChoiceValues {
+                story_ids: vec![1, 2],
+                definition_id: b,
+                value_ids: vec![999]
+            }
+        )
+        .is_err()
+    );
+    assert_eq!(db.assignment_workspace(vec![1, 2, 3])?.wait()?, before);
+    let cancel = WorkCancellation::default();
+    cancel.cancel();
+    assert!(
+        committed(
+            db.edit_tags(
+                Command::Boolean {
+                    story_ids: vec![3],
+                    definition_id: a,
+                    assigned: true
+                },
+                cancel
+            )?
+            .wait()?
+        )
+        .is_err()
+    );
+    assert_eq!(db.assignment_workspace(vec![1, 2, 3])?.wait()?, before);
+    db.close()?;
+    Ok(())
+}
