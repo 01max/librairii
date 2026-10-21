@@ -1424,3 +1424,40 @@ No section5 code/API handoff, external-picker permission, import inspection/SQL,
 resource-budget decision, source cleanup, custody transfer or production bridge
 is released by this mechanism. Owner5 additive discovery/current quality and
 actual target evidence remain required.
+
+### Partial 4.9: finite fixed-NTFS handle-observation helper
+
+`QUAL4.9-FIXED-NTFS-757` adds a private readonly helper using the already
+consumed exact windows-sys0.61.2 graph plus originald6ea WindowsProgramming
+feature. On the SAME retained File, it requires exact complete NTFS name,
+GetFinalPathNameByHandleW OPENED|GUID output with checked `0<len<capacity` and
+NUL, a strictly validated GUID root/trailing backslash, and positive published
+DRIVE_FIXED from GetDriveTypeW only on that derived root. Fixed initialized
+16/1024 WCHAR buffers refuse truncation without growing/retrying; these are
+qualification observation bounds, not product path limits. Facts/filesystem/GUID
+are re-observed around the non-atomic calls. Unsupported/error/unknown/remote/
+other classes or changed facts produce Unknown/refusal, with native causes
+preserved, never a caller-drive or clear-remote-bit fallback.
+
+Three individual safe native wrappers document their necessary local unsafe
+calls: live std File/borrowed handle, aligned initialized fixed outputs and NULL
+optional outputs, checked lengths, immutable validated NUL root, synchronous
+completion and no pointer/ownership escape. No blanket unsafe allowance exists.
+A function-specific non-test dead-code expectation keeps this finite helper out
+of production preconditions while required native qualification is pending.
+
+Three Windows-only required source test identities assert actual owned-file and
+directory positives (Unknown is FAIL), actual short-buffer native failure and
+truncation, and separately injected unsupported/changed/malformed observations.
+The latter source controls are not execution on a real remote/removable/foreign
+filesystem. There is NO local Windows compile/ABI/helper execution claim; host
+storage Clippy excludes this target code. Rustfmt/source/diff review only applies
+here, with owner5 additive discovery and exact-head native provider evidence
+still required. The earlier exacte858 read-child pass does not qualify this code.
+
+API success would establish only current OS-reported fixed NTFS on that host,
+not physical/permanent storage, a whole snapshot, source custody, parent access,
+both-parent rename persistence or power-loss durability. No directory flush,
+NtFlush, ReplaceFileW/POSIX mutation, restart, activation or full4.9 grant follows.
+The independently verified Unix read-source issuer is separately committed as
+`34dc8e0ab2691f7bda0b49f8bb0fe65746da019a` and adds no Windows authority.

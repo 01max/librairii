@@ -381,6 +381,434 @@ pub(crate) fn metadata_witness(path: &Path, directory: bool) -> Result<(File, Fi
     Ok((file, facts.identity))
 }
 
+// Qualification observation only. No caller uses this as a directory mutation,
+// flush, custody, restart or physical-storage precondition. The finite native
+// tests must establish GetDriveTypeW's volume-GUID applicability on that host.
+mod fixed_ntfs {
+    use super::*;
+    use windows_sys::Win32::{
+        Storage::FileSystem::{
+            FILE_NAME_OPENED, GetDriveTypeW, GetFinalPathNameByHandleW,
+            GetVolumeInformationByHandleW, VOLUME_NAME_GUID,
+        },
+        System::WindowsProgramming::{DRIVE_FIXED, DRIVE_UNKNOWN},
+    };
+
+    const FS_CAPACITY: usize = 16;
+    const PATH_CAPACITY: usize = 1024;
+    const GUID_ROOT_UNITS: usize = 49;
+
+    trait Calls {
+        fn facts(&mut self, file: &File) -> Result<ObjectFacts>;
+        fn filesystem(&mut self, file: &File, buffer: &mut [u16]) -> Result<()>;
+        fn opened_path(&mut self, file: &File, buffer: &mut [u16]) -> Result<u32>;
+        fn drive_type(&mut self, root: &[u16; GUID_ROOT_UNITS + 1]) -> u32;
+    }
+    struct Native;
+    impl Calls for Native {
+        fn facts(&mut self, file: &File) -> Result<ObjectFacts> {
+            query_identity(file)
+        }
+        fn filesystem(&mut self, file: &File, buffer: &mut [u16]) -> Result<()> {
+            filesystem(file, buffer)
+        }
+        fn opened_path(&mut self, file: &File, buffer: &mut [u16]) -> Result<u32> {
+            opened_path(file, buffer)
+        }
+        fn drive_type(&mut self, root: &[u16; GUID_ROOT_UNITS + 1]) -> u32 {
+            drive_type(root)
+        }
+    }
+
+    /// Observe only the current OS-reported fixed NTFS classification of this
+    /// SAME borrowed handle. None or Err is Unknown/refusal, never a locality
+    /// fallback. Calls are not atomic; repeated facts constrain this observation
+    /// but cannot establish physical/permanent storage or directory durability.
+    #[cfg_attr(
+        not(test),
+        expect(
+            dead_code,
+            reason = "released finite Windows qualification helper; not yet a production filesystem precondition"
+        )
+    )]
+    pub(super) fn observe(file: &File) -> Result<Option<FileIdentity>> {
+        observe_with(file, &mut Native, FS_CAPACITY, PATH_CAPACITY)
+    }
+
+    fn observe_with(
+        file: &File,
+        calls: &mut impl Calls,
+        fs_capacity: usize,
+        path_capacity: usize,
+    ) -> Result<Option<FileIdentity>> {
+        // Fixed initialized receive storage, including the zero terminator.
+        // Smaller slices are solely for actual native truncation controls.
+        if !(1..=FS_CAPACITY).contains(&fs_capacity)
+            || !(1..=PATH_CAPACITY).contains(&path_capacity)
+        {
+            return Ok(None);
+        }
+        let mut fs = [0u16; FS_CAPACITY];
+        let mut path = [0u16; PATH_CAPACITY];
+        let before = calls.facts(file)?;
+        calls.filesystem(file, &mut fs[..fs_capacity])?;
+        if !exact_ntfs(&fs[..fs_capacity]) {
+            return Ok(None);
+        }
+        let length = calls.opened_path(file, &mut path[..path_capacity])?;
+        let Some(root) = guid_root(&path[..path_capacity], length) else {
+            return Ok(None);
+        };
+        if calls.drive_type(&root) != DRIVE_FIXED {
+            return Ok(None);
+        }
+        // The volume APIs and drive-type call do not form an atomic snapshot.
+        // Re-observe filesystem, derived root and object facts around them.
+        fs.fill(0);
+        calls.filesystem(file, &mut fs[..fs_capacity])?;
+        path.fill(0);
+        let length = calls.opened_path(file, &mut path[..path_capacity])?;
+        let after = calls.facts(file)?;
+        if !exact_ntfs(&fs[..fs_capacity])
+            || guid_root(&path[..path_capacity], length) != Some(root)
+            || before.identity != after.identity
+            || before.directory != after.directory
+            || before.links != after.links
+        {
+            return Ok(None);
+        }
+        Ok(Some(before.identity))
+    }
+
+    fn exact_ntfs(buffer: &[u16]) -> bool {
+        buffer.iter().position(|unit| *unit == 0) == Some(4)
+            && buffer.starts_with(&[78, 84, 70, 83])
+    }
+
+    fn guid_root(buffer: &[u16], length: u32) -> Option<[u16; GUID_ROOT_UNITS + 1]> {
+        let length = usize::try_from(length).ok()?;
+        // On insufficient capacity, the API may return required capacity
+        // including NUL. Such a length is never a successfully received path.
+        if length < GUID_ROOT_UNITS
+            || length >= buffer.len()
+            || buffer[length] != 0
+            || buffer[..length].contains(&0)
+        {
+            return None;
+        }
+        let prefix = [92, 92, 63, 92, 86, 111, 108, 117, 109, 101, 123];
+        if buffer[..11] != prefix || buffer[47] != 125 || buffer[48] != 92 {
+            return None;
+        }
+        for (index, unit) in buffer[11..47].iter().enumerate() {
+            if matches!(index, 8 | 13 | 18 | 23) {
+                if *unit != 45 {
+                    return None;
+                }
+            } else if !matches!(*unit, 48..=57 | 65..=70 | 97..=102) {
+                return None;
+            }
+        }
+        let mut root = [0u16; GUID_ROOT_UNITS + 1];
+        root[..GUID_ROOT_UNITS].copy_from_slice(&buffer[..GUID_ROOT_UNITS]);
+        Some(root)
+    }
+
+    /// # Invariants
+    /// The borrowed std File owns this live HANDLE through the synchronous call.
+    /// The uniquely borrowed initialized bounded WCHAR output is valid for its
+    /// checked length; all unused optional output pointers are NULL/size0.
+    /// Nothing is transferred, closed, mutated or retained by Windows.
+    #[expect(
+        unsafe_code,
+        reason = "necessary readonly volume-name observation on the retained handle; bounded initialized output and NULL optional fields"
+    )]
+    fn filesystem(file: &File, buffer: &mut [u16]) -> Result<()> {
+        let capacity =
+            u32::try_from(buffer.len()).map_err(|_| StorageError::CompatibilityInvariant)?;
+        // SAFETY: same live borrowed File; initialized/aligned u16 slice is
+        // uniquely mutable and valid for exactly capacity units, no alias or
+        // pointer escapes; every unused optional buffer/output is NULL/zero.
+        let status = unsafe {
+            GetVolumeInformationByHandleW(
+                file.as_raw_handle(),
+                std::ptr::null_mut(),
+                0,
+                std::ptr::null_mut(),
+                std::ptr::null_mut(),
+                std::ptr::null_mut(),
+                buffer.as_mut_ptr(),
+                capacity,
+            )
+        };
+        if status == 0 {
+            return Err(StorageError::io(
+                "observe retained Windows filesystem",
+                io::Error::last_os_error(),
+            ));
+        }
+        Ok(())
+    }
+
+    /// # Invariants
+    /// The live shared File borrow and uniquely mutable fixed WCHAR output
+    /// survive this synchronous call. Flags request opened name + volume GUID,
+    /// with no pathname input, ownership transfer or retained pointer. Returned
+    /// length is checked separately before reading or deriving any root.
+    #[expect(
+        unsafe_code,
+        reason = "necessary readonly opened volume-GUID path observation on the same retained handle"
+    )]
+    fn opened_path(file: &File, buffer: &mut [u16]) -> Result<u32> {
+        let capacity =
+            u32::try_from(buffer.len()).map_err(|_| StorageError::CompatibilityInvariant)?;
+        // SAFETY: same std-owned live handle; initialized u16 output is aligned,
+        // valid for exactly capacity and unaliased for this synchronous write;
+        // no pointers escape, no allocation or async operation is delegated.
+        let length = unsafe {
+            GetFinalPathNameByHandleW(
+                file.as_raw_handle(),
+                buffer.as_mut_ptr(),
+                capacity,
+                FILE_NAME_OPENED | VOLUME_NAME_GUID,
+            )
+        };
+        if length == 0 {
+            return Err(StorageError::io(
+                "observe retained Windows volume GUID path",
+                io::Error::last_os_error(),
+            ));
+        }
+        Ok(length)
+    }
+
+    /// # Invariants
+    /// The caller supplies only the fixed, fully validated GUID root produced
+    /// above, including its trailing backslash and one NUL. The borrowed slice
+    /// stays initialized/live throughout this synchronous readonly call.
+    #[expect(
+        unsafe_code,
+        reason = "necessary current OS drive-class observation of only the validated handle-derived volume GUID root"
+    )]
+    fn drive_type(root: &[u16; GUID_ROOT_UNITS + 1]) -> u32 {
+        if guid_root(root, GUID_ROOT_UNITS as u32) != Some(*root) {
+            return DRIVE_UNKNOWN;
+        }
+        // SAFETY: the complete fixed GUID root including NUL was validated
+        // above. The immutable u16 buffer stays live and unaliased
+        // throughout the synchronous call; no pointer is retained or mutated.
+        unsafe { GetDriveTypeW(root.as_ptr()) }
+    }
+
+    #[cfg(test)]
+    mod qualification {
+        use super::*;
+        use librairii_testkit::TestRoots;
+        use std::{error::Error, fs};
+        use windows_sys::Win32::System::WindowsProgramming::{
+            DRIVE_NO_ROOT_DIR, DRIVE_REMOTE, DRIVE_REMOVABLE,
+        };
+        type TestResult = std::result::Result<(), Box<dyn Error>>;
+
+        #[test]
+        fn windows_fixed_ntfs_positive_uses_same_retained_handle_and_complete_guid_root()
+        -> TestResult {
+            let roots = TestRoots::new()?;
+            let path = roots.library().join("Éte # %2F native volume.bin");
+            fs::write(&path, b"volume observation does not mutate bytes")?;
+            let (file, identity) = metadata_witness(&path, false)?;
+            // Unknown is an explicit failed positive qualification, never a
+            // skip/pass or substitution with caller paths/drive letters.
+            assert_eq!(observe(&file)?, Some(identity));
+            let (directory, directory_id) = metadata_witness(roots.library(), true)?;
+            assert_eq!(observe(&directory)?, Some(directory_id));
+            assert_eq!(query_identity(&file)?.identity, identity);
+            assert_eq!(
+                fs::read(&path)?,
+                b"volume observation does not mutate bytes"
+            );
+            Ok(())
+        }
+
+        #[test]
+        fn windows_fixed_ntfs_native_short_buffers_keep_errors_or_truncation_unknown() -> TestResult
+        {
+            let roots = TestRoots::new()?;
+            let path = roots.library().join("owned.bin");
+            fs::write(&path, b"unchanged")?;
+            let (file, identity) = metadata_witness(&path, false)?;
+            let mut short_fs = [0u16; 1];
+            assert!(matches!(
+                filesystem(&file, &mut short_fs),
+                Err(StorageError::Io { .. })
+            ));
+            assert!(matches!(
+                observe_with(&file, &mut Native, 1, PATH_CAPACITY),
+                Err(StorageError::Io { .. })
+            ));
+            let mut short_path = [0u16; 1];
+            let required = opened_path(&file, &mut short_path)?;
+            assert!(required >= short_path.len() as u32);
+            assert!(guid_root(&short_path, required).is_none());
+            assert_eq!(observe_with(&file, &mut Native, FS_CAPACITY, 1)?, None);
+            assert_eq!(query_identity(&file)?.identity, identity);
+            assert_eq!(fs::read(&path)?, b"unchanged");
+            Ok(())
+        }
+
+        #[derive(Clone, Copy)]
+        enum Fault {
+            FilesystemUnavailable,
+            PathUnavailable,
+            Drive(u32),
+            DifferentFilesystem,
+            ChangedFilesystem,
+            ChangedIdentity,
+            ChangedGuid,
+            MissingPathNul,
+            ZeroLength,
+            RequiredLength,
+            DriveLetterPath,
+        }
+        struct Controlled {
+            fault: Fault,
+            facts_calls: usize,
+            filesystem_calls: usize,
+            path_calls: usize,
+            drive_calls: usize,
+        }
+        impl Calls for Controlled {
+            fn facts(&mut self, file: &File) -> Result<ObjectFacts> {
+                let mut facts = query_identity(file)?;
+                self.facts_calls += 1;
+                if matches!(self.fault, Fault::ChangedIdentity) && self.facts_calls == 2 {
+                    facts.identity.id[0] ^= 1;
+                }
+                Ok(facts)
+            }
+            fn filesystem(&mut self, _file: &File, buffer: &mut [u16]) -> Result<()> {
+                self.filesystem_calls += 1;
+                if matches!(self.fault, Fault::FilesystemUnavailable) {
+                    return Err(StorageError::io(
+                        "injected unavailable filesystem observation",
+                        io::Error::from(io::ErrorKind::Unsupported),
+                    ));
+                }
+                let name = if matches!(self.fault, Fault::DifferentFilesystem)
+                    || (matches!(self.fault, Fault::ChangedFilesystem)
+                        && self.filesystem_calls == 2)
+                {
+                    [82, 101, 70, 83, 0] // ReFS, not an NTFS observation.
+                } else {
+                    [78, 84, 70, 83, 0]
+                };
+                buffer[..name.len()].copy_from_slice(&name);
+                Ok(())
+            }
+            fn opened_path(&mut self, _file: &File, buffer: &mut [u16]) -> Result<u32> {
+                self.path_calls += 1;
+                if matches!(self.fault, Fault::PathUnavailable) {
+                    return Err(StorageError::io(
+                        "injected unavailable opened path observation",
+                        io::Error::from(io::ErrorKind::Unsupported),
+                    ));
+                }
+                let text = if matches!(self.fault, Fault::DriveLetterPath) {
+                    "C:\\caller-path\\owned"
+                } else if matches!(self.fault, Fault::ChangedGuid) && self.path_calls == 2 {
+                    "\\\\?\\Volume{01234567-89ab-cdef-0123-456789abcdee}\\owned"
+                } else {
+                    "\\\\?\\Volume{01234567-89ab-cdef-0123-456789abcdef}\\owned"
+                };
+                let units: Vec<_> = OsStr::new(text).encode_wide().collect();
+                buffer[..units.len()].copy_from_slice(&units);
+                if matches!(self.fault, Fault::MissingPathNul) {
+                    buffer[units.len()] = 65;
+                }
+                Ok(match self.fault {
+                    Fault::ZeroLength => 0,
+                    Fault::RequiredLength => buffer.len() as u32,
+                    _ => units.len() as u32,
+                })
+            }
+            fn drive_type(&mut self, root: &[u16; GUID_ROOT_UNITS + 1]) -> u32 {
+                self.drive_calls += 1;
+                assert_eq!(guid_root(root, GUID_ROOT_UNITS as u32), Some(*root));
+                match self.fault {
+                    Fault::Drive(value) => value,
+                    _ => DRIVE_FIXED,
+                }
+            }
+        }
+
+        #[test]
+        fn windows_fixed_ntfs_controlled_unknown_changed_and_malformed_observations_refuse()
+        -> TestResult {
+            let roots = TestRoots::new()?;
+            let path = roots.library().join("owned.bin");
+            fs::write(&path, b"retained")?;
+            let (file, identity) = metadata_witness(&path, false)?;
+            for fault in [
+                Fault::FilesystemUnavailable,
+                Fault::PathUnavailable,
+                Fault::Drive(DRIVE_UNKNOWN),
+                Fault::Drive(DRIVE_NO_ROOT_DIR),
+                Fault::Drive(DRIVE_REMOTE),
+                Fault::Drive(DRIVE_REMOVABLE),
+                Fault::DifferentFilesystem,
+                Fault::ChangedFilesystem,
+                Fault::ChangedIdentity,
+                Fault::ChangedGuid,
+                Fault::MissingPathNul,
+                Fault::ZeroLength,
+                Fault::RequiredLength,
+                Fault::DriveLetterPath,
+            ] {
+                let mut calls = Controlled {
+                    fault,
+                    facts_calls: 0,
+                    filesystem_calls: 0,
+                    path_calls: 0,
+                    drive_calls: 0,
+                };
+                assert!(!matches!(
+                    observe_with(&file, &mut calls, FS_CAPACITY, PATH_CAPACITY),
+                    Ok(Some(_))
+                ));
+                if matches!(
+                    fault,
+                    Fault::FilesystemUnavailable
+                        | Fault::DifferentFilesystem
+                        | Fault::PathUnavailable
+                        | Fault::DriveLetterPath
+                        | Fault::MissingPathNul
+                        | Fault::ZeroLength
+                        | Fault::RequiredLength
+                ) {
+                    assert_eq!(calls.drive_calls, 0);
+                }
+            }
+            let valid: Vec<_> =
+                OsStr::new("\\\\?\\Volume{01234567-89ab-cdef-0123-456789abcdef}\\owned")
+                    .encode_wide()
+                    .chain(Some(0))
+                    .collect();
+            let length = (valid.len() - 1) as u32;
+            assert!(guid_root(&valid, length).is_some());
+            for index in [0, 2, 10, 11, 19, 24, 29, 34, 47, 48] {
+                let mut changed = valid.clone();
+                changed[index] = 71; // Neither punctuation nor hex.
+                assert!(guid_root(&changed, length).is_none());
+            }
+            assert!(!exact_ntfs(&[78, 84, 70, 83])); // No terminating NUL.
+            assert!(!exact_ntfs(&[78, 84, 70, 83, 88, 0]));
+            assert_eq!(query_identity(&file)?.identity, identity);
+            assert_eq!(fs::read(&path)?, b"retained");
+            Ok(())
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
