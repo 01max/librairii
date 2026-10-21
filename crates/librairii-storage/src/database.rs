@@ -348,6 +348,7 @@ impl<'library> Authority<'library> {
 /// independent schema/integrity probe and durable backup before migration.
 #[derive(Debug)]
 pub struct Database<'library> {
+    pub(crate) shelf_tickets: Arc<std::sync::Mutex<crate::shelves::tickets::Registry>>,
     authority: Authority<'library>,
     writer: Arc<Queue>,
     readers: Arc<Queue>,
@@ -432,6 +433,7 @@ impl<'library> Database<'library> {
     fn open_owned(authority: Authority<'library>) -> Result<Self> {
         authority.claim_runtime()?;
         let mut runtime = Self {
+            shelf_tickets: Arc::default(),
             authority,
             writer: Arc::new(Queue::new(REPAIR_QUEUE_CAPACITY, 1)),
             readers: Arc::new(Queue::new(0, READ_WORKERS)),

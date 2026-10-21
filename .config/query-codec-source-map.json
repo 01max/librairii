@@ -2955,6 +2955,27 @@
           ]
         },
         "reason": "Additive observed Task 10 discovery; original integration identities retain exact order and target scope."
+      },
+      {
+        "position": 397,
+        "identity": {
+          "suite": "librairii-storage",
+          "name": "shelves::tickets::tests::lifetime_kind_target_eviction_and_replay_are_fail_closed"
+        },
+        "reason": "Additive observed Task 10 discovery; original integration identities retain exact order and target scope."
+      },
+      {
+        "position": 398,
+        "identity": {
+          "suite": "librairii-storage::shelves",
+          "name": "ticket_limit_is_shared_across_kinds_and_two_queued_applies_cannot_replay",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive observed Task 10 discovery; original integration identities retain exact order and target scope."
       }
     ],
     "python": [

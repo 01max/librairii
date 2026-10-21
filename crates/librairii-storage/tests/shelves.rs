@@ -492,3 +492,57 @@ fn broken_only_changes_preserve_review_but_sources_availability_and_decisions_in
     db.close()?;
     Ok(())
 }
+#[test]
+fn ticket_limit_is_shared_across_kinds_and_two_queued_applies_cannot_replay() -> TestResult {
+    let roots = TestRoots::new()?;
+    let lib = library(&roots)?;
+    let mut db = Database::open_isolated(&lib)?;
+    seed(&db, 1)?;
+    let a = collection(&db, "All", Query::default())?;
+    let s = create(&db, "Tickets")?;
+    committed(
+        db.attach_shelf_sources(s.id, vec![a], WorkCancellation::default())?
+            .wait()?,
+    )?;
+    let oldest = preview(&db, s.id)?;
+    for _ in 0..64 {
+        db.shelf_creation_preview(
+            shelves::CreationRequest {
+                name: "Other".into(),
+                ..Default::default()
+            },
+            "fr-FR".into(),
+        )?
+        .wait()?;
+    }
+    assert!(matches!(
+        apply(&db, oldest, vec![]),
+        Err(StorageError::Shelf(ShelfError::StaleReview))
+    ));
+    let p = preview(&db, s.id)?;
+    let replay = p.clone();
+    let first = db.apply_shelf_updates(
+        p,
+        vec![decision(1, shelves::Action::Add)],
+        WorkCancellation::default(),
+    )?;
+    let second = db.apply_shelf_updates(
+        replay,
+        vec![decision(1, shelves::Action::Add)],
+        WorkCancellation::default(),
+    )?;
+    assert_eq!(committed(first.wait()?)?.count, 1);
+    assert!(matches!(
+        committed(second.wait()?),
+        Err(StorageError::Shelf(ShelfError::StaleReview))
+    ));
+    let foreign = preview(&db, s.id)?;
+    db.close()?;
+    let mut db = Database::open_isolated(&lib)?;
+    assert!(
+        db.apply_shelf_updates(foreign, vec![], WorkCancellation::default())
+            .is_err()
+    );
+    db.close()?;
+    Ok(())
+}

@@ -2280,6 +2280,19 @@
         "x86_64-apple-darwin",
         "x86_64-unknown-linux-gnu"
       ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "shelves::tickets::tests::lifetime_kind_target_eviction_and_replay_are_fail_closed"
+    },
+    {
+      "suite": "librairii-storage::shelves",
+      "name": "ticket_limit_is_shared_across_kinds_and_two_queued_applies_cannot_replay",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
     }
   ]
 }

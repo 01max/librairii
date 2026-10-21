@@ -4,10 +4,7 @@ use librairii_core::{browsing::StorySummary, query::QueryRequest, shelves::uniqu
 use sha2::{Digest, Sha256};
 use std::{
     collections::{BTreeMap, BTreeSet},
-    sync::{
-        Arc,
-        atomic::{AtomicBool, Ordering},
-    },
+    sync::Arc,
 };
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Candidate {
@@ -44,7 +41,7 @@ pub struct CreationPlan {
     preview: CreationPreview,
     fingerprint: [u8; 32],
     identity: SnapshotIdentity,
-    used: Arc<AtomicBool>,
+    ticket: Arc<super::tickets::Ticket>,
     locale: String,
 }
 impl CreationPlan {
@@ -168,6 +165,7 @@ impl Database<'_> {
         locale: String,
     ) -> Result<Pending<'_, CreationPlan>> {
         let identity = self.snapshot_identity();
+        let registry = self.shelf_tickets.clone();
         self.read(move |tx| {
             let (preview, fingerprint) = creation(tx, &request, &locale)?;
             Ok(CreationPlan {
@@ -175,7 +173,7 @@ impl Database<'_> {
                 preview,
                 fingerprint,
                 identity,
-                used: Arc::new(AtomicBool::new(false)),
+                ticket: super::tickets::issue(&registry, super::tickets::Kind::Create, 0)?,
                 locale,
             })
         })
@@ -190,9 +188,7 @@ impl Database<'_> {
             return Err(ShelfError::StaleReview.into());
         }
         self.transaction(cancellation, move |tx| {
-            if plan.used.swap(true, Ordering::AcqRel) {
-                return Err(ShelfError::StaleReview.into());
-            }
+            plan.ticket.claim(super::tickets::Kind::Create, 0)?;
             let (fresh, fingerprint) = creation(tx, &plan.request, &plan.locale)?;
             if fingerprint != plan.fingerprint {
                 return Err(ShelfError::StaleReview.into());
@@ -256,7 +252,7 @@ pub struct UpdatePlan {
     preview: UpdatePreview,
     fingerprint: [u8; 32],
     identity: SnapshotIdentity,
-    used: Arc<AtomicBool>,
+    ticket: Arc<super::tickets::Ticket>,
     locale: String,
 }
 impl UpdatePlan {
@@ -410,6 +406,7 @@ pub(super) fn keep(tx: &Transaction<'_>, id: i64, uuid: &str) -> Result<bool> {
 impl Database<'_> {
     pub fn shelf_update_preview(&self, id: i64, locale: String) -> Result<Pending<'_, UpdatePlan>> {
         let identity = self.snapshot_identity();
+        let registry = self.shelf_tickets.clone();
         self.read(move |tx| {
             let e = evaluation(tx, id, &locale, None)?;
             Ok(UpdatePlan {
@@ -417,7 +414,7 @@ impl Database<'_> {
                 preview: e.preview,
                 fingerprint: e.fingerprint,
                 identity,
-                used: Arc::new(AtomicBool::new(false)),
+                ticket: super::tickets::issue(&registry, super::tickets::Kind::Update, id)?,
                 locale,
             })
         })
@@ -432,9 +429,7 @@ impl Database<'_> {
             return Err(ShelfError::StaleReview.into());
         }
         self.transaction(cancellation, move |tx| {
-            if plan.used.swap(true, Ordering::AcqRel) {
-                return Err(ShelfError::StaleReview.into());
-            }
+            plan.ticket.claim(super::tickets::Kind::Update, plan.id)?;
             let fresh = evaluation(tx, plan.id, &plan.locale, None)?;
             if fresh.fingerprint != plan.fingerprint {
                 return Err(ShelfError::StaleReview.into());
