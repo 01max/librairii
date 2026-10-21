@@ -76,6 +76,9 @@ impl Member {
     pub fn identity(&self) -> Result<crate::StoryUuid, ShelfError> {
         self.uuid.parse().map_err(|_| ShelfError::InvalidInput)
     }
+    pub fn reference(&self) -> Result<StoryReference, ShelfError> {
+        StoryReference::from_stored(&self.uuid)
+    }
 }
 /// Admission for text-based/native inputs, before constructing typed commands.
 pub fn parse_uuids(values: &[String]) -> Result<Vec<crate::StoryUuid>, ShelfError> {
@@ -83,4 +86,37 @@ pub fn parse_uuids(values: &[String]) -> Result<Vec<crate::StoryUuid>, ShelfErro
         .iter()
         .map(|u| u.parse().map_err(|_| ShelfError::InvalidInput))
         .collect()
+}
+
+/// A parsed UUID plus its exact stored spelling. Existing decisions may use
+/// uppercase hex; canonicalizing a command must never retarget another SQL row.
+#[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
+pub struct StoryReference {
+    identity: crate::StoryUuid,
+    stored: String,
+}
+impl StoryReference {
+    pub fn from_stored(stored: &str) -> Result<Self, ShelfError> {
+        if stored.len() != 36 {
+            return Err(ShelfError::InvalidInput);
+        }
+        Ok(Self {
+            identity: stored.parse().map_err(|_| ShelfError::InvalidInput)?,
+            stored: stored.to_owned(),
+        })
+    }
+    pub fn identity(&self) -> crate::StoryUuid {
+        self.identity
+    }
+    pub fn as_stored(&self) -> &str {
+        &self.stored
+    }
+}
+impl From<crate::StoryUuid> for StoryReference {
+    fn from(identity: crate::StoryUuid) -> Self {
+        Self {
+            identity,
+            stored: identity.to_string(),
+        }
+    }
 }

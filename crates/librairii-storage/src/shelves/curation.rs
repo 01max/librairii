@@ -4,11 +4,11 @@ use std::collections::BTreeMap;
 #[derive(Debug)]
 pub enum Curation {
     Add(Vec<StoryUuid>),
-    Remove(Vec<StoryUuid>),
-    RemoveAndExclude(Vec<StoryUuid>),
-    Exclude(Vec<StoryUuid>),
-    ClearExclusion(StoryUuid),
-    Reorder(Vec<StoryUuid>),
+    Remove(Vec<StoryReference>),
+    RemoveAndExclude(Vec<StoryReference>),
+    Exclude(Vec<StoryReference>),
+    ClearExclusion(StoryReference),
+    Reorder(Vec<StoryReference>),
 }
 impl Database<'_> {
     pub fn curate_shelf(
@@ -75,7 +75,7 @@ pub fn curate(tx: &Transaction<'_>, id: ShelfId, action: Curation, locale: &str)
         _ => None,
     };
     if let Some((values, excluding, removing)) = removals {
-        let ids = uuid_strings(values);
+        let ids = reference_strings(values);
         if removing {
             let known: std::collections::BTreeSet<_> = members(tx, id)?
                 .into_iter()
@@ -115,14 +115,14 @@ pub fn curate(tx: &Transaction<'_>, id: ShelfId, action: Curation, locale: &str)
             return Err(ShelfError::InvalidInput.into());
         }
         Curation::ClearExclusion(value) => {
-            let value = value.to_string();
+            let value = value.as_stored();
             changed = tx.execute(
                 "DELETE FROM shelf_exclusions WHERE shelf_id=? AND story_uuid=?",
                 params![id.get(), value],
             )? != 0;
         }
         Curation::Reorder(values) => {
-            let ids = uuid_strings(&values);
+            let ids = reference_strings(&values);
             let current = members(tx, id)?;
             let old: Vec<_> = current.iter().map(|m| m.uuid.clone()).collect();
             if ids.len() != values.len()

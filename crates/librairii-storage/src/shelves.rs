@@ -3,7 +3,7 @@ use crate::{
     Result, StorageError,
     database::{Database, Pending, TransactionOutcome, WorkCancellation},
 };
-use librairii_core::shelves::{Member, Shelf, ShelfError, Source, normalize_name};
+use librairii_core::shelves::{Member, Shelf, ShelfError, Source, StoryReference, normalize_name};
 use librairii_core::{CollectionId, ShelfId, StoryUuid};
 use rusqlite::{OptionalExtension, Transaction, params};
 
@@ -238,5 +238,14 @@ fn uuid_strings(values: &[StoryUuid]) -> Vec<String> {
         .iter()
         .filter(|u| seen.insert(**u))
         .map(ToString::to_string)
+        .collect()
+}
+
+fn reference_strings(values: &[StoryReference]) -> Vec<String> {
+    let mut seen = std::collections::BTreeSet::new();
+    values
+        .iter()
+        .filter(|u| seen.insert(u.as_stored()))
+        .map(|u| u.as_stored().to_owned())
         .collect()
 }

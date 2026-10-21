@@ -46,7 +46,7 @@ the frozen UI's session-only suppression to satisfy 10.8; SQLite stays compatibl
 
 Evidence:
 
-- Sixteen storage integration cases cover CRUD, decisions, overlap/provenance,
+- Seventeen storage integration cases cover CRUD, decisions, overlap/provenance,
   reimport, incomplete coverage, source changes, linked deletion rollback, ticket
   eviction/replay/cross-runtime use, preferences, paging, and frozen Go parity.
 - Ticket unit tests use explicit monotonic instants for exact 15-minute expiry,
@@ -74,11 +74,20 @@ transport (Task 11), import/trash execution or the GUI/package cutover.
 Independent review at `737a6a0`: Spec reported no actionable gaps. Standards
 identified one P2: domain/command identities used raw integers and strings despite
 the design requiring newtypes. The correction uses ShelfId/CollectionId in
-records and command ports, StoryUuid in curation/creation/review decisions, and
+records and command ports, StoryUuid in manual creation/addition and parsed StoryReference values for existing curation/review decisions, and
 explicit SQL-boundary conversion. Read projections retain lossless stored UUID
 spelling with a parsed identity accessor. Compile-fail examples reject a
 CollectionId passed to a Shelf command and arbitrary strings used as UUID commands.
-All sixteen Shelf tests still match the frozen reference after this correction.
+All seventeen Shelf tests still match the frozen reference after this correction.
 Standards also suggested an optional private authority-record extraction (P3);
 the four current plan paths consistently check the same invariants, so that
 refinement is deferred without weakening their checks.
+
+A follow-up Spec review caught a P2 regression in the first typed-UUID correction:
+canonical decision text could no longer target preserved uppercase UUID rows.
+The separate correction introduces StoryReference: parsed StoryUuid identity plus
+exact stored spelling. Reviewed actions and existing-member commands now retain
+that spelling; new manual seeds/additions still require canonical text admission.
+The uppercase regression covers source Add, update Keep/removal, detachment
+Keep/removal and clearing the resulting exclusion without retargeting a canonical
+alias. Frozen state comparisons remain unchanged.

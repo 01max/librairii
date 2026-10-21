@@ -131,12 +131,14 @@ pub(super) fn validate(
     let mut result = BTreeMap::new();
     for d in decisions {
         let candidate = known
-            .get(d.uuid.to_string().as_str())
+            .get(d.uuid.as_stored())
             .ok_or(ShelfError::InvalidInput)?;
         if !matches!(d.action, Action::Keep | Action::RemoveAndExclude)
             || (d.action == Action::RemoveAndExclude
                 && (preview.incomplete || candidate.story.is_none()))
-            || result.insert(d.uuid.to_string(), d.action).is_some()
+            || result
+                .insert(d.uuid.as_stored().to_owned(), d.action)
+                .is_some()
         {
             return Err(ShelfError::InvalidInput.into());
         }
@@ -245,7 +247,7 @@ impl SourceChangePreview {
             .iter()
             .map(|c| {
                 Ok(Decision {
-                    uuid: c.uuid.parse().map_err(|_| ShelfError::InvalidInput)?,
+                    uuid: StoryReference::from_stored(&c.uuid)?,
                     action,
                 })
             })

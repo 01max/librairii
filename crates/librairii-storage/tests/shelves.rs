@@ -154,19 +154,19 @@ fn manual_curation_retention_exclusions_order_and_noops_are_explicit() -> TestRe
     assert_eq!(s.revision, 2);
     let unchanged = curate(&db, s.id, Add(vec![story(1)]))?;
     assert_eq!(s, unchanged);
-    curate(&db, s.id, Reorder(vec![story(1), story(2)]))?;
-    assert!(curate(&db, s.id, Reorder(vec![story(1), story(1)])).is_err());
-    curate(&db, s.id, Remove(vec![story(1)]))?;
+    curate(&db, s.id, Reorder(vec![story(1).into(), story(2).into()]))?;
+    assert!(curate(&db, s.id, Reorder(vec![story(1).into(), story(1).into()])).is_err());
+    curate(&db, s.id, Remove(vec![story(1).into()]))?;
     let id = s.id;
     assert!(
         db.read(move |tx| shelves::exclusions(tx, id))?
             .wait()?
             .is_empty()
     );
-    curate(&db, s.id, RemoveAndExclude(vec![story(2)]))?;
-    let cleared = curate(&db, s.id, ClearExclusion(story(2)))?;
+    curate(&db, s.id, RemoveAndExclude(vec![story(2).into()]))?;
+    let cleared = curate(&db, s.id, ClearExclusion(story(2).into()))?;
     assert_eq!(cleared.count, 0);
-    curate(&db, s.id, Exclude(vec![story(3)]))?;
+    curate(&db, s.id, Exclude(vec![story(3).into()]))?;
     curate(&db, s.id, Add(vec![story(3), story(2)]))?;
     let m = db.shelf_members(s.id)?.wait()?;
     assert_eq!(
@@ -375,7 +375,7 @@ fn apply(
 }
 fn decision(id: i64, action: shelves::Action) -> shelves::Decision {
     shelves::Decision {
-        uuid: story(id),
+        uuid: story(id).into(),
         action,
     }
 }
@@ -473,7 +473,7 @@ fn broken_only_changes_preserve_review_but_sources_availability_and_decisions_in
     )?;
     apply(&db, p, vec![decision(1, Add)])?;
     let p = preview(&db, s.id)?;
-    curate(&db, s.id, shelves::Curation::Exclude(vec![story(3)]))?;
+    curate(&db, s.id, shelves::Curation::Exclude(vec![story(3).into()]))?;
     assert!(matches!(
         apply(&db, p, vec![decision(2, Add)]),
         Err(StorageError::Shelf(ShelfError::StaleReview))
@@ -840,11 +840,11 @@ fn five_thousand_story_union_preview_apply_and_every_model_page_meet_budget() ->
         .flat_map(|page| p.preview().additions_page(page))
         .map(|c| {
             Ok(shelves::Decision {
-                uuid: c.uuid.parse().map_err(|_| ShelfError::InvalidInput)?,
+                uuid: c.reference()?,
                 action: shelves::Action::Add,
             })
         })
-        .collect::<std::result::Result<Vec<_>, ShelfError>>()?;
+        .collect::<Result<Vec<_>>>()?;
     let started = Instant::now();
     apply(&db, p, selected)?;
     let apply_time = started.elapsed();
@@ -952,7 +952,7 @@ fn frozen_go_creation_curation_origins_duplication_and_detachment_match_exact_st
     events.push(serde_json::json!({"additions":candidates_json(p.preview().additions_page(0)),"removals":candidates_json(p.preview().removals_page(0))}));
     apply(&db, p, vec![decision(3, shelves::Action::Exclude)])?;
     events.push(shelf_state(&db, s.id)?);
-    curate(&db, s.id, shelves::Curation::Remove(vec![story(1)]))?;
+    curate(&db, s.id, shelves::Curation::Remove(vec![story(1).into()]))?;
     events.push(shelf_state(&db, s.id)?);
     let p = preview(&db, s.id)?;
     apply(&db, p, vec![decision(1, shelves::Action::Add)])?;
@@ -1116,7 +1116,7 @@ fn v14_upgrade_tags_metadata_curation_unavailable_reimport_and_restart_compose()
             &db,
             obsolete,
             vec![shelves::Decision {
-                uuid: legacy.parse()?,
+                uuid: librairii_core::shelves::StoryReference::from_stored(&legacy)?,
                 action: shelves::Action::RemoveAndExclude
             }]
         ),
@@ -1137,11 +1137,11 @@ fn v14_upgrade_tags_metadata_curation_unavailable_reimport_and_restart_compose()
         &db,
         fresh,
         vec![shelves::Decision {
-            uuid: legacy.parse()?,
+            uuid: librairii_core::shelves::StoryReference::from_stored(&legacy)?,
             action: shelves::Action::Keep,
         }],
     )?;
-    curate(&db, s.id, shelves::Curation::Exclude(vec![story(9)]))?;
+    curate(&db, s.id, shelves::Curation::Exclude(vec![story(9).into()]))?;
     let id = s.id;
     let retained = db.shelf_members(id)?.wait()?;
     assert!(retained[0].manually_retained);
@@ -1245,6 +1245,88 @@ fn uncertain_remaining_coverage_only_allows_retention_and_view_refinements_never
             .iter()
             .all(|m| m.manually_retained)
     );
+    db.close()?;
+    Ok(())
+}
+#[test]
+fn reviewed_actions_preserve_uppercase_uuid_spelling_without_retargeting_canonical_rows()
+-> TestResult {
+    use librairii_core::shelves::StoryReference;
+    let roots = TestRoots::new()?;
+    let lib = library(&roots)?;
+    let mut db = Database::open_isolated(&lib)?;
+    let uppercase = "10000000-0000-4000-8000-00000000000A";
+    committed(db.transaction(WorkCancellation::default(),move|tx|{
+        tx.execute("INSERT INTO stories(id,uuid,embedded_title,display_name_normalized) VALUES(100,?,'Legacy case','legacy case')",[uppercase])?;
+        tx.execute("INSERT INTO story_archives(story_id,original_filename,detected_format,sha256,byte_size,managed_path,validation_state) VALUES(100,'legacy.zip','zip',printf('%064d',100),1,'archives/100','valid')",[])?;Ok(())
+    })?.wait()?)?;
+    let a = collection(&db, "All", Query::default())?;
+    let s = create(&db, "Raw addition")?;
+    committed(
+        db.attach_shelf_sources(s.id, vec![a], WorkCancellation::default())?
+            .wait()?,
+    )?;
+    let p = preview(&db, s.id)?;
+    let decisions = p.preview().bulk_decisions(shelves::Action::Add)?;
+    assert_eq!(decisions[0].uuid.as_stored(), uppercase);
+    apply(&db, p, decisions)?;
+    assert_eq!(db.shelf_members(s.id)?.wait()?[0].uuid, uppercase);
+    for detached in [false, true] {
+        for action in [shelves::Action::Keep, shelves::Action::RemoveAndExclude] {
+            let s = create(&db, &format!("Case {detached} {action:?}"))?;
+            committed(
+                db.attach_shelf_sources(s.id, vec![a], WorkCancellation::default())?
+                    .wait()?,
+            )?;
+            let id = s.id;
+            committed(db.transaction(WorkCancellation::default(),move|tx|{
+            tx.execute("INSERT INTO shelf_stories(shelf_id,story_uuid,position,protected,cached_title) VALUES(?,?,0,0,'Cached legacy')",rusqlite::params![id.get(),uppercase])?;Ok(())
+        })?.wait()?)?;
+            if detached {
+                let p = db
+                    .shelf_source_change_preview(s.id, vec![], "fr-FR".into())?
+                    .wait()?;
+                let decisions = p.preview().bulk_decisions(action)?;
+                committed(
+                    db.change_shelf_sources(p, false, decisions, WorkCancellation::default())?
+                        .wait()?,
+                )?;
+            } else {
+                committed(db.transaction(WorkCancellation::default(),move|tx|{tx.execute("UPDATE collections SET query_payload='{\"name\":\"nothing\"}' WHERE id=?",[a.get()])?;Ok(())})?.wait()?)?;
+                let p = preview(&db, s.id)?;
+                let decisions = p.preview().bulk_decisions(action)?;
+                apply(&db, p, decisions)?;
+                committed(
+                    db.transaction(WorkCancellation::default(), move |tx| {
+                        tx.execute(
+                            "UPDATE collections SET query_payload='{}' WHERE id=?",
+                            [a.get()],
+                        )?;
+                        Ok(())
+                    })?
+                    .wait()?,
+                )?;
+            }
+            if action == shelves::Action::Keep {
+                let m = db.shelf_members(s.id)?.wait()?;
+                assert_eq!(m[0].uuid, uppercase);
+                assert!(m[0].manually_retained);
+                assert_eq!(m[0].reference()?.as_stored(), uppercase);
+            } else {
+                assert!(db.shelf_members(s.id)?.wait()?.is_empty());
+                let x = db.shelf_exclusions_page(s.id, 0)?.wait()?;
+                assert_eq!(x.rows[0].uuid, uppercase);
+                curate(
+                    &db,
+                    s.id,
+                    shelves::Curation::ClearExclusion(StoryReference::from_stored(uppercase)?),
+                )?;
+                assert_eq!(db.shelf_exclusions_page(s.id, 0)?.wait()?.total, 0);
+            }
+        }
+    }
+    let raw = StoryReference::from_stored(uppercase)?;
+    assert_ne!(raw, raw.identity().into());
     db.close()?;
     Ok(())
 }

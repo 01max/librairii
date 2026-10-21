@@ -237,7 +237,7 @@ pub enum Action {
 }
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Decision {
-    pub uuid: StoryUuid,
+    pub uuid: StoryReference,
     pub action: Action,
 }
 #[derive(Clone, Debug)]
@@ -389,9 +389,9 @@ fn actions(preview: &UpdatePreview, decisions: &[Decision]) -> Result<BTreeMap<S
         .collect::<BTreeSet<_>>();
     let mut result = BTreeMap::new();
     for d in decisions {
-        let allowed = if additions.contains(d.uuid.to_string().as_str()) {
+        let allowed = if additions.contains(d.uuid.as_stored()) {
             matches!(d.action, Action::Add | Action::Exclude | Action::NotNow)
-        } else if removals.contains(d.uuid.to_string().as_str()) {
+        } else if removals.contains(d.uuid.as_stored()) {
             matches!(
                 d.action,
                 Action::Keep | Action::RemoveAndExclude | Action::NotNow
@@ -399,7 +399,11 @@ fn actions(preview: &UpdatePreview, decisions: &[Decision]) -> Result<BTreeMap<S
         } else {
             false
         };
-        if !allowed || result.insert(d.uuid.to_string(), d.action).is_some() {
+        if !allowed
+            || result
+                .insert(d.uuid.as_stored().to_owned(), d.action)
+                .is_some()
+        {
             return Err(ShelfError::InvalidInput.into());
         }
     }
@@ -530,10 +534,16 @@ impl UpdatePreview {
         candidates
             .map(|c| {
                 Ok(Decision {
-                    uuid: c.uuid.parse().map_err(|_| ShelfError::InvalidInput)?,
+                    uuid: StoryReference::from_stored(&c.uuid)?,
                     action,
                 })
             })
             .collect()
+    }
+}
+
+impl Candidate {
+    pub fn reference(&self) -> Result<StoryReference> {
+        Ok(StoryReference::from_stored(&self.uuid)?)
     }
 }
