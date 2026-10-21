@@ -4,6 +4,7 @@ use librairii_core::{JobId, metadata::Locale};
 use librairii_storage::{
     IsolatedLibrary, Result, StorageError,
     database::{Database, TransactionOutcome, WorkCancellation},
+    metadata::MetadataStorage,
     metadata::SnapshotStatus,
 };
 use librairii_testkit::TestRoots;
@@ -25,6 +26,7 @@ fn staged_raw_is_exact_hashed_reopenable_and_rejected_rows_are_immutable()
         "a0000000-0000-4000-8000-000000000001".parse()?,
     )?;
     let mut db = Database::open_isolated(&library)?;
+    let store = MetadataStorage::new(&db);
     let sync: JobId = "a0000000-0000-4000-8000-000000000002".parse()?;
     committed(
         db.begin_catalog_sync(
@@ -37,7 +39,7 @@ fn staged_raw_is_exact_hashed_reopenable_and_rejected_rows_are_immutable()
     )?;
     let normalized = normalize(RAW.to_vec(), "en-GB")?;
     let hash = normalized.checksum();
-    let id = committed(db.stage_catalog(
+    let id = committed(store.stage_catalog(
         sync,
         normalized,
         "2026-10-21T12:00:01Z".into(),
@@ -57,6 +59,7 @@ fn staged_raw_is_exact_hashed_reopenable_and_rejected_rows_are_immutable()
         db.reject_catalog(id)?.wait()?,
         TransactionOutcome::ProvenNotCommitted(StorageError::Metadata(_))
     ));
+    drop(store);
     db.close()?;
     let mut reopened = Database::open_isolated(&library)?;
     assert_eq!(
@@ -76,8 +79,9 @@ fn activation_is_atomic_and_failure_cancel_or_invalid_data_preserve_last_good()
         "a0000000-0000-4000-8000-000000000001".parse()?,
     )?;
     let mut db = Database::open_isolated(&library)?;
+    let store = MetadataStorage::new(&db);
     let first = RefreshSession::begin(
-        &db,
+        &store,
         "a0000000-0000-4000-8000-000000000010".parse()?,
         "en-GB",
         "2026-10-21T12:00:00Z",
@@ -101,7 +105,7 @@ fn activation_is_atomic_and_failure_cancel_or_invalid_data_preserve_last_good()
         (13, Ok(RAW.to_vec()), true, RefreshCode::Cancelled),
     ] {
         let id = format!("a0000000-0000-4000-8000-{n:012}").parse()?;
-        let session = RefreshSession::begin(&db, id, "en-GB", "2026-10-21T12:01:00Z")
+        let session = RefreshSession::begin(&store, id, "en-GB", "2026-10-21T12:01:00Z")
             .map_err(|e| format!("{e:?}"))?;
         assert_eq!(
             session.finish(payload, "2026-10-21T12:01:01Z", || cancel),
@@ -129,7 +133,7 @@ fn activation_is_atomic_and_failure_cancel_or_invalid_data_preserve_last_good()
         .wait()?,
     )?;
     let id = "a0000000-0000-4000-8000-000000000014".parse()?;
-    let session = RefreshSession::begin(&db, id, "en-GB", "2026-10-21T12:02:00Z")
+    let session = RefreshSession::begin(&store, id, "en-GB", "2026-10-21T12:02:00Z")
         .map_err(|e| format!("{e:?}"))?;
     assert_eq!(
         session.finish(Ok(RAW.to_vec()), "2026-10-21T12:02:01Z", || false),
@@ -138,6 +142,7 @@ fn activation_is_atomic_and_failure_cancel_or_invalid_data_preserve_last_good()
     let snapshots = db.catalog_snapshots()?.wait()?;
     assert_eq!(snapshots[0].status, SnapshotStatus::Active);
     assert_eq!(snapshots[1].status, SnapshotStatus::Rejected);
+    drop(store);
     db.close()?;
     Ok(())
 }
@@ -152,6 +157,7 @@ fn resolved_fields_freshness_and_age_changes_preserve_manual_state_and_curated_m
         "a0000000-0000-4000-8000-000000000001".parse()?,
     )?;
     let mut db = Database::open_isolated(&library)?;
+    let store = MetadataStorage::new(&db);
     let locale = Locale::parse("en-GB")?;
     assert_eq!(
         db.catalog_status(locale.clone())?.wait()?.state,
@@ -188,7 +194,7 @@ fn resolved_fields_freshness_and_age_changes_preserve_manual_state_and_curated_m
     let payload = serde_json::to_vec(&v)?;
     for n in [20, 21] {
         let session = RefreshSession::begin(
-            &db,
+            &store,
             format!("a0000000-0000-4000-8000-{n:012}").parse()?,
             "en-GB",
             &format!("2026-10-21T12:{n}:00Z"),
@@ -230,7 +236,7 @@ fn resolved_fields_freshness_and_age_changes_preserve_manual_state_and_curated_m
     assert_eq!(status.state, Freshness::Fresh);
     assert_eq!(status.matched_stories, 1);
     let session = RefreshSession::begin(
-        &db,
+        &store,
         "a0000000-0000-4000-8000-000000000022".parse()?,
         "en-GB",
         "2026-10-21T12:22:00Z",
@@ -285,6 +291,7 @@ fn resolved_fields_freshness_and_age_changes_preserve_manual_state_and_curated_m
         Ok(())
     })?
     .wait()?;
+    drop(store);
     db.close()?;
     Ok(())
 }
@@ -298,12 +305,14 @@ fn registered_artwork_cache_is_hashed_offline_and_refuses_corruption_or_aliases(
         "a0000000-0000-4000-8000-000000000001".parse()?,
     )?;
     let mut db = Database::open_isolated(&library)?;
+    let store = MetadataStorage::new(&db);
     let image = include_bytes!("../../librairii-adapters/tests/fixtures/artwork/cover.png");
     let asset = ArtworkAsset::checked(image.to_vec(), MediaType::Png)?;
     let catalog = normalize(RAW.to_vec(), "en-GB")?;
     let id = catalog.artworks()[0].id;
     assert!(
-        db.persist_artwork(id, &asset, "2026-10-21T12:00:00Z", None, None)
+        store
+            .persist_artwork(id, &asset, "2026-10-21T12:00:00Z", None, None)
             .is_err()
     );
     let sync = "a0000000-0000-4000-8000-000000000030".parse()?;
@@ -316,14 +325,14 @@ fn registered_artwork_cache_is_hashed_offline_and_refuses_corruption_or_aliases(
         )?
         .wait()?,
     )?;
-    committed(db.stage_catalog(
+    committed(store.stage_catalog(
         sync,
         catalog,
         "2026-10-21T12:00:01Z".into(),
         WorkCancellation::default(),
     )?)?;
     assert!(db.read_registered_artwork(id)?.cached.is_none());
-    db.persist_artwork(
+    store.persist_artwork(
         id,
         &asset,
         "2026-10-21T12:00:02Z",
@@ -340,6 +349,7 @@ fn registered_artwork_cache_is_hashed_offline_and_refuses_corruption_or_aliases(
             )?)
         })?
         .wait()?;
+    drop(store);
     db.close()?;
     let mut reopened = Database::open_isolated(&library)?;
     assert_eq!(reopened.read_registered_artwork(id)?.cached, Some(asset));
@@ -367,6 +377,7 @@ fn embedded_legacy_cover_reads_are_bounded_and_do_not_accept_arbitrary_paths()
         "a0000000-0000-4000-8000-000000000001".parse()?,
     )?;
     let mut db = Database::open_isolated(&library)?;
+    let store = MetadataStorage::new(&db);
     let dir = roots
         .library()
         .join("catalog/embedded/123e4567-e89b-42d3-a456-426614174000");
@@ -386,6 +397,7 @@ fn embedded_legacy_cover_reads_are_bounded_and_do_not_accept_arbitrary_paths()
     committed(db.transaction(WorkCancellation::default(),|tx|{tx.execute("UPDATE stories SET embedded_artwork_path='catalog/official/elsewhere.png' WHERE id=1",[])?;Ok(())})?.wait()?)?;
     assert!(db.read_embedded_artwork(1).is_err());
     assert!(db.read_embedded_artwork(999)?.is_none());
+    drop(store);
     db.close()?;
     Ok(())
 }
@@ -501,6 +513,7 @@ fn frozen_go_artwork_validation_bytes_hash_and_legacy_layout_match()
         "a0000000-0000-4000-8000-000000000001".parse()?,
     )?;
     let mut db = Database::open_isolated(&library)?;
+    let store = MetadataStorage::new(&db);
     let normalized = normalize(RAW.to_vec(), "en-GB")?;
     let id = normalized.artworks()[0].id;
     let sync = "a0000000-0000-4000-8000-000000000031".parse()?;
@@ -513,7 +526,7 @@ fn frozen_go_artwork_validation_bytes_hash_and_legacy_layout_match()
         )?
         .wait()?,
     )?;
-    committed(db.stage_catalog(
+    committed(store.stage_catalog(
         sync,
         normalized,
         "2026-10-21T12:00:01Z".into(),
@@ -521,7 +534,7 @@ fn frozen_go_artwork_validation_bytes_hash_and_legacy_layout_match()
     )?)?;
     let image = include_bytes!("../../librairii-adapters/tests/fixtures/artwork/cover.png");
     let asset = ArtworkAsset::checked(image.to_vec(), MediaType::Png)?;
-    db.persist_artwork(id, &asset, "2026-10-21T12:00:02Z", None, None)?;
+    store.persist_artwork(id, &asset, "2026-10-21T12:00:02Z", None, None)?;
     let path = db
         .read(move |tx| {
             Ok(tx.query_row(
@@ -533,6 +546,142 @@ fn frozen_go_artwork_validation_bytes_hash_and_legacy_layout_match()
         .wait()?;
     assert_eq!(path, expected[0]["path"]);
     assert_eq!(db.read_registered_artwork(id)?.cached, Some(asset));
+    drop(store);
+    db.close()?;
+    Ok(())
+}
+#[test]
+fn interrupted_and_dropped_refreshes_settle_without_stranding_busy_or_losing_last_good()
+-> std::result::Result<(), Box<dyn std::error::Error>> {
+    use librairii_app::metadata::RefreshSession;
+    use librairii_core::metadata::{CatalogFailure, Freshness, SyncStatus};
+    let roots = TestRoots::new()?;
+    let library = IsolatedLibrary::initialize_from_override(
+        Some(roots.library().as_os_str()),
+        "a0000000-0000-4000-8000-000000000001".parse()?,
+    )?;
+    let mut db = Database::open_isolated(&library)?;
+    let store = MetadataStorage::new(&db);
+    let session = RefreshSession::begin(
+        &store,
+        "a0000000-0000-4000-8000-000000000040".parse()?,
+        "en-GB",
+        "2026-10-21T12:00:00Z",
+    )
+    .map_err(|e| format!("{e:?}"))?;
+    drop(session);
+    assert_eq!(
+        db.catalog_status(Locale::parse("en-GB")?)?
+            .wait()?
+            .last_attempt_status,
+        Some(SyncStatus::Cancelled)
+    );
+    let first = RefreshSession::begin(
+        &store,
+        "a0000000-0000-4000-8000-000000000041".parse()?,
+        "en-GB",
+        "2026-10-21T12:01:00Z",
+    )
+    .map_err(|e| format!("{e:?}"))?
+    .finish(Ok(RAW.to_vec()), "2026-10-21T12:01:01Z", || false)
+    .map_err(|e| format!("{e:?}"))?;
+    let interrupted = "a0000000-0000-4000-8000-000000000042".parse()?;
+    committed(
+        db.begin_catalog_sync(
+            interrupted,
+            Locale::parse("en-GB")?,
+            "2026-10-21T12:02:00Z".into(),
+            WorkCancellation::default(),
+        )?
+        .wait()?,
+    )?;
+    let staged = committed(store.stage_catalog(
+        interrupted,
+        normalize(RAW.to_vec(), "en-GB")?,
+        "2026-10-21T12:02:01Z".into(),
+        WorkCancellation::default(),
+    )?)?;
+    drop(store);
+    db.close()?;
+    let mut reopened = Database::open_isolated(&library)?;
+    let snapshots = reopened.catalog_snapshots()?.wait()?;
+    assert_eq!(
+        snapshots
+            .iter()
+            .find(|s| s.id == first.snapshot)
+            .ok_or("first")?
+            .status,
+        SnapshotStatus::Active
+    );
+    assert_eq!(
+        snapshots
+            .iter()
+            .find(|s| s.id == staged)
+            .ok_or("staged")?
+            .status,
+        SnapshotStatus::Rejected
+    );
+    let status = reopened.catalog_status(Locale::parse("en-GB")?)?.wait()?;
+    assert_eq!(status.state, Freshness::StaleCache);
+    assert_eq!(status.last_attempt_status, Some(SyncStatus::Failed));
+    assert_eq!(status.error_code, Some(CatalogFailure::Interrupted));
+    let owner = MetadataStorage::new(&reopened);
+    let result = RefreshSession::begin(
+        &owner,
+        "a0000000-0000-4000-8000-000000000043".parse()?,
+        "en-GB",
+        "2026-10-21T12:03:00Z",
+    )
+    .map_err(|e| format!("{e:?}"))?
+    .finish(Ok(RAW.to_vec()), "2026-10-21T12:03:01Z", || false);
+    assert!(result.is_ok());
+    drop(owner);
+    reopened.close()?;
+    Ok(())
+}
+#[test]
+fn real_staged_cancellation_rejects_only_the_new_snapshot()
+-> std::result::Result<(), Box<dyn std::error::Error>> {
+    use librairii_app::metadata::{RefreshCode, RefreshSession};
+    use std::cell::Cell;
+    let roots = TestRoots::new()?;
+    let library = IsolatedLibrary::initialize_from_override(
+        Some(roots.library().as_os_str()),
+        "a0000000-0000-4000-8000-000000000001".parse()?,
+    )?;
+    let mut db = Database::open_isolated(&library)?;
+    let store = MetadataStorage::new(&db);
+    let first = RefreshSession::begin(
+        &store,
+        "a0000000-0000-4000-8000-000000000060".parse()?,
+        "en-GB",
+        "2026-10-21T12:00:00Z",
+    )
+    .map_err(|e| format!("{e:?}"))?
+    .finish(Ok(RAW.to_vec()), "2026-10-21T12:00:01Z", || false)
+    .map_err(|e| format!("{e:?}"))?;
+    let check = Cell::new(0);
+    let session = RefreshSession::begin(
+        &store,
+        "a0000000-0000-4000-8000-000000000061".parse()?,
+        "en-GB",
+        "2026-10-21T12:01:00Z",
+    )
+    .map_err(|e| format!("{e:?}"))?;
+    assert_eq!(
+        session.finish(Ok(RAW.to_vec()), "2026-10-21T12:01:01Z", || {
+            check.set(check.get() + 1);
+            check.get() >= 3
+        }),
+        Err(RefreshCode::Cancelled)
+    );
+    let snapshots = db.catalog_snapshots()?.wait()?;
+    assert_eq!(snapshots.len(), 2);
+    assert_eq!(snapshots[0].id, first.snapshot);
+    assert_eq!(snapshots[0].status, SnapshotStatus::Active);
+    assert_eq!(snapshots[1].status, SnapshotStatus::Rejected);
+    assert!(store.retained_failures().is_empty());
+    drop(store);
     db.close()?;
     Ok(())
 }

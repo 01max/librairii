@@ -736,17 +736,17 @@ pub struct LibraryFiles<'library> {
 #[derive(Debug)]
 struct OfficialArtworkRoute {
     id: String,
-    official: Directory,
-    artwork: Directory,
+    official: Option<Directory>,
+    artwork: Option<Directory>,
 }
 impl LibraryFiles<'_> {
     /// A closed, hash-typed catalog route, under the same retained custody.
     /// Parent directories are durable before the existing publisher is entered.
     pub(crate) fn official_artwork(
-        mut self,
+        &mut self,
         guard: &Custody<'_>,
         id: librairii_core::Checksum,
-    ) -> Result<Self> {
+    ) -> Result<()> {
         self.check(guard)?;
         let ensure = |parent: &Directory, name: &OsStr| -> Result<Directory> {
             match parent.child(name) {
@@ -759,25 +759,36 @@ impl LibraryFiles<'_> {
                 Err(e) => Err(e),
             }
         };
+        self.catalog_route = Some(OfficialArtworkRoute {
+            id: id.to_string(),
+            official: None,
+            artwork: None,
+        });
         let result = (|| {
-            let official = ensure(&self.catalog, OsStr::new("official"))?;
-            let id = id.to_string();
-            let artwork = ensure(&official, OsStr::new(&id))?;
+            let route = self
+                .catalog_route
+                .as_mut()
+                .ok_or(StorageError::CompatibilityInvariant)?;
+            route.official = Some(ensure(&self.catalog, OsStr::new("official"))?);
+            let official = route
+                .official
+                .as_ref()
+                .ok_or(StorageError::CompatibilityInvariant)?;
+            route.artwork = Some(ensure(official, OsStr::new(&route.id))?);
             self.catalog.flush()?;
             official.flush()?;
-            artwork.flush()?;
-            self.catalog_route = Some(OfficialArtworkRoute {
-                id,
-                official,
-                artwork,
-            });
+            route
+                .artwork
+                .as_ref()
+                .ok_or(StorageError::CompatibilityInvariant)?
+                .flush()?;
             self.check(guard)
         })();
         if result.is_err() {
             self.fence();
         }
         result?;
-        Ok(self)
+        Ok(())
     }
 }
 // Keep the library borrow live until all retained directory descriptors close.
@@ -928,13 +939,22 @@ impl<'library> LibraryFiles<'library> {
             }
         }
         if let Some(route) = &self.catalog_route {
-            self.catalog
-                .require_name(OsStr::new("official"), route.official.identity)?;
-            route
+            let official = route
                 .official
-                .require_name(OsStr::new(&route.id), route.artwork.identity)?;
+                .as_ref()
+                .ok_or(StorageError::CustodyRecoveryRequired)?;
+            let artwork = route
+                .artwork
+                .as_ref()
+                .ok_or(StorageError::CustodyRecoveryRequired)?;
+            self.catalog
+                .require_name(OsStr::new("official"), official.identity)?;
+            official.require_name(OsStr::new(&route.id), artwork.identity)?;
         }
         Ok(())
+    }
+    pub(crate) fn fence_metadata(&self) {
+        self.fence();
     }
     fn fence(&self) {
         self.authority.fence();
@@ -945,7 +965,8 @@ impl<'library> LibraryFiles<'library> {
             FileArea::Catalog => self
                 .catalog_route
                 .as_ref()
-                .map_or(&self.catalog, |route| &route.artwork),
+                .and_then(|route| route.artwork.as_ref())
+                .unwrap_or(&self.catalog),
         }
     }
     /// Issue only from an actual storage-owned managed-area descriptor and one
@@ -1063,17 +1084,62 @@ impl<'library> LibraryFiles<'library> {
     fn create_stage_with<'files>(
         &'files self,
         guard: &Custody<'_>,
+        next_name: impl FnMut() -> OsString,
+        checkpoint: impl FnMut(StageCreatePoint, &StageAllocation<'files, 'library>) -> Result<()>,
+    ) -> std::result::Result<OwnedStage<'files, 'library>, Box<StageCreateFailure<'files, 'library>>>
+    {
+        Self::create_stage_from(FileLoan::Borrowed(self), guard, next_name, checkpoint)
+    }
+    pub(crate) fn create_owned_stage(
+        files: std::sync::Arc<Self>,
+        guard: &Custody<'_>,
+    ) -> std::result::Result<
+        OwnedStage<'library, 'library>,
+        Box<StageCreateFailure<'library, 'library>>,
+    > {
+        Self::create_stage_from(
+            FileLoan::Owned(files),
+            guard,
+            || unique_name("stage"),
+            |_, _| Ok(()),
+        )
+    }
+    #[cfg(test)]
+    pub(crate) fn create_owned_stage_fault(
+        files: std::sync::Arc<Self>,
+        guard: &Custody<'_>,
+    ) -> std::result::Result<
+        OwnedStage<'library, 'library>,
+        Box<StageCreateFailure<'library, 'library>>,
+    > {
+        Self::create_stage_from(
+            FileLoan::Owned(files),
+            guard,
+            || unique_name("stage"),
+            |point, _| {
+                if point == StageCreatePoint::PayloadAcquired {
+                    Err(StorageError::IntegrityFailed)
+                } else {
+                    Ok(())
+                }
+            },
+        )
+    }
+    fn create_stage_from<'files>(
+        files: FileLoan<'files, 'library>,
+        guard: &Custody<'_>,
         mut next_name: impl FnMut() -> OsString,
         mut checkpoint: impl FnMut(StageCreatePoint, &StageAllocation<'files, 'library>) -> Result<()>,
     ) -> std::result::Result<OwnedStage<'files, 'library>, Box<StageCreateFailure<'files, 'library>>>
     {
-        self.check(guard)
-            .and_then(|()| self.authority.require_intake())
+        files
+            .check(guard)
+            .and_then(|()| files.authority.require_intake())
             .map_err(StageCreateFailure::no_allocation)?;
         for _ in 0..64 {
             // All original parent/name witnesses exist BEFORE the first effect.
             let mut allocation = StageAllocation {
-                files: self,
+                files: files.clone(),
                 directory_name: next_name(),
                 payload_name: OsString::from(PAYLOAD),
                 directory: None,
@@ -1095,7 +1161,7 @@ impl<'library> LibraryFiles<'library> {
                 if !allocation.mkdir_attempted {
                     return Err(StageCreateFailure::no_allocation(cause));
                 }
-                self.fence();
+                files.fence();
                 return Err(Box::new(StageCreateFailure {
                     cause,
                     allocation: Some(allocation),
@@ -1111,7 +1177,7 @@ impl<'library> LibraryFiles<'library> {
             ) {
                 (Some(directory), Some(directory_identity), Some(file), Some(identity)) => {
                     return Ok(OwnedStage {
-                        files: self,
+                        files: files.clone(),
                         directory: Directory {
                             file: directory,
                             identity: directory_identity,
@@ -1125,7 +1191,7 @@ impl<'library> LibraryFiles<'library> {
                 (directory, _, payload, _) => {
                     allocation.directory = directory;
                     allocation.payload = payload;
-                    self.fence();
+                    files.fence();
                     return Err(Box::new(StageCreateFailure {
                         cause: StorageError::CompatibilityInvariant,
                         allocation: Some(allocation),
@@ -1195,13 +1261,27 @@ impl<'files, 'library> StageCreateFailure<'files, 'library> {
     }
 }
 
+#[derive(Clone, Debug)]
+enum FileLoan<'files, 'library> {
+    Borrowed(&'files LibraryFiles<'library>),
+    Owned(std::sync::Arc<LibraryFiles<'library>>),
+}
+impl<'library> std::ops::Deref for FileLoan<'_, 'library> {
+    type Target = LibraryFiles<'library>;
+    fn deref(&self) -> &Self::Target {
+        match self {
+            Self::Borrowed(files) => files,
+            Self::Owned(files) => files,
+        }
+    }
+}
 /// Opaque, unresolved attempted creation. Actual optional raw handles are held
 /// before ANY fallible metadata/type/name validation. Missing observations stay
 /// None. Names/IDs are observations, never authority over substituted objects.
 /// No public write/cleanup/raw-handle extraction or partial retirement exists.
 #[derive(Debug)]
 pub struct StageAllocation<'files, 'library> {
-    files: &'files LibraryFiles<'library>,
+    files: FileLoan<'files, 'library>,
     directory_name: OsString,
     payload_name: OsString,
     directory: Option<File>,
@@ -1220,6 +1300,16 @@ impl Drop for StageAllocation<'_, '_> {
     fn drop(&mut self) {}
 }
 impl StageAllocation<'_, '_> {
+    #[cfg(test)]
+    pub(crate) fn retained_payload_metadata(&self) -> Result<Option<std::fs::Metadata>> {
+        self.payload
+            .as_ref()
+            .map(|file| {
+                file.metadata()
+                    .map_err(|e| StorageError::io("inspect actual retained payload", e))
+            })
+            .transpose()
+    }
     pub fn parent_identity(&self) -> FileIdentity {
         self.files.staging.identity
     }
@@ -1411,7 +1501,7 @@ enum StageCreatePoint {
 /// Drop closes handles and PRESERVES bytes. No pathname/hash tuple can create it.
 #[derive(Debug)]
 pub struct OwnedStage<'files, 'library> {
-    files: &'files LibraryFiles<'library>,
+    files: FileLoan<'files, 'library>,
     directory: Directory,
     directory_name: OsString,
     file: File,
@@ -1456,7 +1546,7 @@ impl Seek for StageReader<'_> {
 
 #[derive(Debug)]
 pub struct ExistingFile<'files, 'library> {
-    files: &'files LibraryFiles<'library>,
+    files: FileLoan<'files, 'library>,
     area: FileArea,
     name: EntryName,
     file: File,
@@ -1671,7 +1761,8 @@ impl<'files, 'library> OwnedStage<'files, 'library> {
                 publish_uncertain: false,
             }));
         }
-        let destination = self.files.area(area);
+        let destination_owner = self.files.clone();
+        let destination = destination_owner.area(area);
         let rename = native::renameat_with(
             &self.directory.file,
             PAYLOAD,
@@ -1719,7 +1810,7 @@ impl<'files, 'library> OwnedStage<'files, 'library> {
                 destination.require_name(name.as_os_str(), identity)?;
                 self.revalidate(guard)?;
                 Ok(ExistingFile {
-                    files: self.files,
+                    files: self.files.clone(),
                     area,
                     name: name.clone(),
                     file,
@@ -2053,7 +2144,7 @@ mod tests {
             let state = failure
                 .retained_allocation()
                 .ok_or("missing partial owner")?;
-            assert!(std::ptr::eq(state.files, &files));
+            assert!(std::ptr::eq(&*state.files, &files));
             assert_eq!(state.parent_identity(), files.staging.identity);
             assert!(state.mkdir_attempted());
             assert!(state.directory_created());

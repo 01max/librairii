@@ -97,7 +97,63 @@ pub struct CatalogStatus {
     pub matched_stories: i64,
     pub fetched_at: Option<String>,
     pub activated_at: Option<String>,
-    pub last_attempt_status: Option<String>,
+    pub last_attempt_status: Option<SyncStatus>,
     pub last_attempt_at: Option<String>,
-    pub error_code: Option<String>,
+    pub error_code: Option<CatalogFailure>,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum SyncStatus {
+    Running,
+    Succeeded,
+    Failed,
+    Cancelled,
+}
+impl SyncStatus {
+    pub fn from_stored(value: &str) -> Result<Self, MetadataError> {
+        match value {
+            "running" => Ok(Self::Running),
+            "succeeded" => Ok(Self::Succeeded),
+            "failed" => Ok(Self::Failed),
+            "cancelled" => Ok(Self::Cancelled),
+            _ => Err(MetadataError::InvalidTransition),
+        }
+    }
+}
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum CatalogFailure {
+    FetchFailed,
+    InvalidCatalog,
+    StageFailed,
+    PersistenceFailed,
+    Cancelled,
+    OutcomeUncertain,
+    Interrupted,
+    Unknown(String),
+}
+impl CatalogFailure {
+    pub fn from_stored(value: String) -> Self {
+        match value.as_str() {
+            "catalog_fetch_failed" => Self::FetchFailed,
+            "catalog_invalid" => Self::InvalidCatalog,
+            "catalog_stage_failed" => Self::StageFailed,
+            "catalog_persist_failed" => Self::PersistenceFailed,
+            "catalog_cancelled" => Self::Cancelled,
+            "catalog_outcome_uncertain" => Self::OutcomeUncertain,
+            "catalog_interrupted" => Self::Interrupted,
+            _ => Self::Unknown(value),
+        }
+    }
+    pub fn as_str(&self) -> &str {
+        match self {
+            Self::FetchFailed => "catalog_fetch_failed",
+            Self::InvalidCatalog => "catalog_invalid",
+            Self::StageFailed => "catalog_stage_failed",
+            Self::PersistenceFailed => "catalog_persist_failed",
+            Self::Cancelled => "catalog_cancelled",
+            Self::OutcomeUncertain => "catalog_outcome_uncertain",
+            Self::Interrupted => "catalog_interrupted",
+            Self::Unknown(value) => value,
+        }
+    }
 }

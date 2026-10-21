@@ -2507,6 +2507,28 @@
         "x86_64-apple-darwin",
         "x86_64-unknown-linux-gnu"
       ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "metadata::owner::tests::metadata_and_artwork_partial_creation_keep_original_handles_and_custody"
+    },
+    {
+      "suite": "librairii-storage::metadata",
+      "name": "interrupted_and_dropped_refreshes_settle_without_stranding_busy_or_losing_last_good",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::metadata",
+      "name": "real_staged_cancellation_rejects_only_the_new_snapshot",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
     }
   ]
 }

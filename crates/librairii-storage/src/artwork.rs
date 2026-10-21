@@ -1,15 +1,14 @@
 //! Owned artwork cache. Network fetches occur before entering this repository.
+use crate::metadata::MetadataStorage;
 use crate::{
     Result, StorageError,
     database::{Database, TransactionOutcome, WorkCancellation},
-    platform::unix::{EntryName, FileArea, Publication},
 };
 use librairii_app::metadata::{
     ArtworkAsset, ArtworkRepository, MAX_ARTWORK_BYTES, MediaType, RegisteredArtwork, utc_time,
 };
 use librairii_core::{Checksum, metadata::MetadataError};
 use rusqlite::{OptionalExtension, params};
-use std::io::Write;
 #[derive(Debug)]
 struct Record {
     url: String,
@@ -46,6 +45,8 @@ impl Database<'_> {
             cached,
         })
     }
+}
+impl MetadataStorage<'_, '_> {
     pub fn persist_artwork(
         &self,
         id: Checksum,
@@ -59,57 +60,41 @@ impl Database<'_> {
             return Err(StorageError::IntegrityFailed);
         }
         // Require registration before any filesystem effect, then revalidate in SQL.
-        self.read_registered_artwork(id)?;
+        self.database.read_registered_artwork(id)?;
         let at = utc_time(at)?;
-        let files = self.metadata_files()?;
-        let guard = files.try_custody()?;
-        let files = files.official_artwork(&guard, id)?;
-        let mut stage = files
-            .create_stage(&guard)
-            .map_err(|_| StorageError::CustodyRecoveryRequired)?;
-        stage
-            .write_all(&asset.bytes)
-            .map_err(|e| StorageError::io("write artwork", e))?;
-        let cancel = WorkCancellation::default();
-        let measurement = stage.measure(MAX_ARTWORK_BYTES as u64, &cancel)?;
         let name = format!("{}.{}", asset.checksum, asset.media.extension());
-        let mut receipt = stage
-            .publish_no_clobber(
-                &guard,
-                FileArea::Catalog,
-                EntryName::parse(&name)?,
-                measurement,
-                &cancel,
-            )
-            .map_err(|_| StorageError::CustodyRecoveryRequired)?;
-        match &mut receipt {
-            Publication::NewOwned(file) => file.revalidate(&guard, &cancel)?,
-            Publication::ReusedExisting { existing, .. } => existing.revalidate(&guard, &cancel)?,
-        }
+        let publication = self.publish(
+            &asset.bytes,
+            asset.checksum,
+            name.clone(),
+            Some(id),
+            &WorkCancellation::default(),
+        )?;
         let path = format!("catalog/official/{id}/{name}");
         let media = asset.media.as_str();
         let hash = asset.checksum.to_string();
         let size = asset.bytes.len() as i64;
-        let outcome=self.repair_transaction(move|tx|{if tx.execute("UPDATE catalog_artworks SET managed_path=?,content_type=?,sha256=?,byte_size=?,etag=?,last_modified=?,cached_at=?,updated_at=? WHERE id=?",params![path,media,hash,size,etag,last_modified,at,at,id.to_string()])?!=1{return Err(MetadataError::ArtworkNotFound.into());}Ok(())})?.wait()?;
-        let result = match outcome {
+        let outcome=self.database.repair_transaction(move|tx|{if tx.execute("UPDATE catalog_artworks SET managed_path=?,content_type=?,sha256=?,byte_size=?,etag=?,last_modified=?,cached_at=?,updated_at=? WHERE id=?",params![path,media,hash,size,etag,last_modified,at,at,id.to_string()])?!=1{return Err(MetadataError::ArtworkNotFound.into());}Ok(())}).and_then(|pending|pending.wait());
+        let outcome = self.acknowledge_files(publication, outcome)?;
+        match outcome {
             TransactionOutcome::Committed(()) => Ok(()),
             TransactionOutcome::ProvenNotCommitted(e) | TransactionOutcome::CommitUncertain(e) => {
                 Err(e)
             }
-        };
-        drop(receipt);
-        result
+        }
     }
 }
-impl ArtworkRepository for Database<'_> {
+impl ArtworkRepository for MetadataStorage<'_, '_> {
     fn registered_artwork(
         &self,
         id: Checksum,
     ) -> std::result::Result<RegisteredArtwork, MetadataError> {
-        self.read_registered_artwork(id).map_err(|e| match e {
-            StorageError::Metadata(e) => e,
-            _ => MetadataError::InvalidArtwork,
-        })
+        self.database
+            .read_registered_artwork(id)
+            .map_err(|e| match e {
+                StorageError::Metadata(e) => e,
+                _ => MetadataError::InvalidArtwork,
+            })
     }
     fn cache_artwork(
         &self,

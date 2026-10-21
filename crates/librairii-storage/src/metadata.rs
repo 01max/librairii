@@ -12,6 +12,8 @@ use librairii_core::{
 };
 use rusqlite::{Transaction, params};
 use std::io::Write;
+mod owner;
+pub use owner::{MetadataStorage, RetainedKind};
 
 #[derive(Clone, Debug)]
 pub struct Snapshot {
@@ -58,65 +60,6 @@ impl Database<'_> {
             Ok(())
         })
     }
-    /// Publish the exact validated response using retained descriptor custody,
-    /// then retain its receipt until the owned SQL acknowledgement is observed.
-    /// Failed/uncertain SQL leaves a recoverable raw file; never compensates by
-    /// deleting a pathname whose database reference may have committed.
-    pub fn stage_catalog(
-        &self,
-        id: JobId,
-        catalog: NormalizedCatalog,
-        fetched_at: String,
-        cancel: WorkCancellation,
-    ) -> Result<TransactionOutcome<CatalogSnapshotId>> {
-        let fetched_at = utc_time(&fetched_at)?;
-        let files = self.metadata_files()?;
-        let guard = files.try_custody()?;
-        let mut stage = files.create_stage(&guard).map_err(|e| {
-            StorageError::io(
-                "create catalog stage",
-                std::io::Error::other(e.cause().code()),
-            )
-        })?;
-        for chunk in catalog.raw().chunks(64 * 1024) {
-            if cancel.is_cancelled() {
-                return Err(StorageError::Cancelled);
-            }
-            stage
-                .write_all(chunk)
-                .map_err(|e| StorageError::io("write catalog stage", e))?;
-        }
-        let measurement =
-            stage.measure(librairii_app::metadata::MAX_CATALOG_BYTES as u64, &cancel)?;
-        if measurement.checksum() != catalog.checksum() {
-            return Err(StorageError::IntegrityFailed);
-        }
-        let name = format!("raw-{id}.json");
-        let mut receipt = stage
-            .publish_no_clobber(
-                &guard,
-                FileArea::Catalog,
-                EntryName::parse(&name)?,
-                measurement,
-                &cancel,
-            )
-            .map_err(|e| {
-                StorageError::io("publish catalog", std::io::Error::other(e.cause.code()))
-            })?;
-        match &mut receipt {
-            Publication::NewOwned(file) => file.revalidate(&guard, &cancel)?,
-            Publication::ReusedExisting { existing, .. } => existing.revalidate(&guard, &cancel)?,
-        }
-        let path = format!("catalog/{name}");
-        let result = self
-            .transaction(cancel, move |tx| {
-                stage_rows(tx, id, &catalog, &path, &fetched_at)
-            })?
-            .wait();
-        // Receipt, custody and Database loan stay live through acknowledgement.
-        drop(receipt);
-        result
-    }
     pub fn catalog_snapshots(&self) -> Result<Pending<'_, Vec<Snapshot>>> {
         self.read(|tx|{
         let mut stmt=tx.prepare("SELECT id,sync_id,locale,raw_path,raw_sha256,byte_size,status FROM catalog_snapshots ORDER BY id")?;
@@ -140,6 +83,39 @@ impl Database<'_> {
         })
     }
 }
+impl MetadataStorage<'_, '_> {
+    /// Publish the exact validated response using retained descriptor custody,
+    /// then retain its receipt until the owned SQL acknowledgement is observed.
+    /// Failed/uncertain SQL leaves a recoverable raw file; never compensates by
+    /// deleting a pathname whose database reference may have committed.
+    pub fn stage_catalog(
+        &self,
+        id: JobId,
+        catalog: NormalizedCatalog,
+        fetched_at: String,
+        cancel: WorkCancellation,
+    ) -> Result<TransactionOutcome<CatalogSnapshotId>> {
+        let fetched_at = utc_time(&fetched_at)?;
+        let name = format!("raw-{id}.json");
+        let publication = self.publish(
+            catalog.raw(),
+            catalog.checksum(),
+            name.clone(),
+            None,
+            &cancel,
+        )?;
+        let path = format!("catalog/{name}");
+        let result = self
+            .database
+            .transaction(cancel, move |tx| {
+                stage_rows(tx, id, &catalog, &path, &fetched_at)
+            })
+            .and_then(|pending| pending.wait());
+        // Receipt, custody and Database loan stay live through acknowledgement.
+        self.acknowledge_files(publication, result)
+    }
+}
+
 fn stage_rows(
     tx: &Transaction<'_>,
     id: JobId,
@@ -188,14 +164,19 @@ fn acknowledge<T>(
         Ok(TransactionOutcome::CommitUncertain(_)) | Err(_) => Err(RepositoryFailure::Uncertain),
     }
 }
-impl CatalogRepository for Database<'_> {
+impl CatalogRepository for MetadataStorage<'_, '_> {
     fn begin(
         &self,
         id: JobId,
         locale: Locale,
         at: &str,
     ) -> std::result::Result<(), RepositoryFailure> {
-        acknowledge(self.begin_catalog_sync(id, locale, at.into(), WorkCancellation::default()))
+        acknowledge(self.database.begin_catalog_sync(
+            id,
+            locale,
+            at.into(),
+            WorkCancellation::default(),
+        ))
     }
     fn stage(
         &self,
@@ -217,7 +198,7 @@ impl CatalogRepository for Database<'_> {
         id: CatalogSnapshotId,
         at: &str,
     ) -> std::result::Result<RefreshReport, RepositoryFailure> {
-        acknowledge(self.activate_catalog(id, at.into()))
+        acknowledge(self.database.activate_catalog(id, at.into()))
     }
     fn fail(
         &self,
@@ -226,7 +207,10 @@ impl CatalogRepository for Database<'_> {
         code: RefreshCode,
         at: &str,
     ) -> std::result::Result<(), RepositoryFailure> {
-        acknowledge(self.finish_catalog_failure(id, snapshot, code, at.into()))
+        acknowledge(
+            self.database
+                .finish_catalog_failure(id, snapshot, code, at.into()),
+        )
     }
 }
 impl Database<'_> {
@@ -258,7 +242,7 @@ impl Database<'_> {
         self.repair_transaction(move|tx|{
             if let Some(snapshot)=snapshot && tx.execute("UPDATE catalog_snapshots SET status='rejected' WHERE id=? AND sync_id=? AND status='staged'",params![snapshot.get(),id.to_string()])?!=1{return Err(invalid());}
             let status=if code==RefreshCode::Cancelled{"cancelled"}else{"failed"};
-            if tx.execute("UPDATE catalog_syncs SET status=?,error_code=?,error_message=?,finished_at=? WHERE id=? AND status='running'",params![status,code.as_str(),code.as_str(),at,id.to_string()])?!=1{return Err(invalid());}Ok(())
+            if tx.execute("UPDATE catalog_syncs SET status=?,error_code=?,error_message=?,finished_at=? WHERE id=? AND status='running'",params![status,code.as_str(),failure_message(code),at,id.to_string()])?!=1{return Err(invalid());}Ok(())
         })
     }
 }
@@ -268,13 +252,32 @@ impl Database<'_> {
         locale: Locale,
     ) -> Result<Pending<'_, librairii_core::metadata::CatalogStatus>> {
         self.read(move|tx|{
-        use librairii_core::metadata::{CatalogStatus,Freshness};use rusqlite::OptionalExtension;
+        use librairii_core::metadata::{CatalogStatus,Freshness,SyncStatus,CatalogFailure};use rusqlite::OptionalExtension;
         let active=tx.query_row("SELECT c.fetched_at,c.activated_at,s.matched_story_count FROM catalog_snapshots c JOIN catalog_syncs s ON s.id=c.sync_id WHERE c.locale=? AND c.status='active'",[locale.as_str()],|r|Ok((r.get::<_,String>(0)?,r.get::<_,String>(1)?,r.get::<_,i64>(2)?))).optional()?;
         let latest=tx.query_row("SELECT status,started_at,error_code FROM catalog_syncs WHERE locale=? ORDER BY started_at DESC,id DESC LIMIT 1",[locale.as_str()],|r|Ok((r.get::<_,String>(0)?,r.get::<_,String>(1)?,r.get::<_,Option<String>>(2)?))).optional()?;
         let mut status=CatalogStatus{state:Freshness::NeverSynced,locale,matched_stories:0,fetched_at:None,activated_at:None,last_attempt_status:None,last_attempt_at:None,error_code:None};
         if let Some((fetched,activated,count))=active{status.state=Freshness::Fresh;status.fetched_at=Some(fetched);status.activated_at=Some(activated);status.matched_stories=count;}
-        if let Some((state,at,error))=latest{if status.state==Freshness::Fresh && matches!(state.as_str(),"failed"|"cancelled"){status.state=Freshness::StaleCache;}status.last_attempt_status=Some(state);status.last_attempt_at=Some(at);status.error_code=error;}
+        if let Some((state,at,error))=latest{if status.state==Freshness::Fresh && matches!(state.as_str(),"failed"|"cancelled"){status.state=Freshness::StaleCache;}status.last_attempt_status=Some(SyncStatus::from_stored(&state)?);status.last_attempt_at=Some(at);status.error_code=error.map(CatalogFailure::from_stored);}
         Ok(status)
     })
+    }
+}
+
+impl Database<'_> {
+    pub(crate) fn recover_catalog_refreshes(&self) -> Result<Pending<'_, TransactionOutcome<()>>> {
+        self.repair_transaction(|tx|{
+            tx.execute("UPDATE catalog_snapshots SET status='rejected' WHERE status='staged' AND sync_id IN(SELECT id FROM catalog_syncs WHERE status='running')",[])?;
+            tx.execute("UPDATE catalog_syncs SET status='failed',error_code='catalog_interrupted',error_message='Official metadata refresh was interrupted. Start a new refresh to retry.',finished_at=strftime('%Y-%m-%dT%H:%M:%SZ','now') WHERE status='running'",[])?;Ok(())
+        })
+    }
+}
+
+fn failure_message(code: RefreshCode) -> &'static str {
+    match code {
+        RefreshCode::FetchFailed => "Official metadata could not be downloaded.",
+        RefreshCode::InvalidCatalog => "The downloaded official catalog was invalid.",
+        RefreshCode::StageFailed => "The downloaded official catalog could not be staged.",
+        RefreshCode::Cancelled => "Official metadata refresh was cancelled.",
+        _ => "Official metadata could not be saved.",
     }
 }

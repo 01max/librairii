@@ -68,6 +68,9 @@ pub struct RefreshSession<'a, R: CatalogRepository> {
     repository: &'a R,
     id: JobId,
     locale: Locale,
+    started_at: String,
+    staged: std::cell::Cell<Option<CatalogSnapshotId>>,
+    settled: std::cell::Cell<bool>,
 }
 impl<'a, R: CatalogRepository> RefreshSession<'a, R> {
     pub fn begin(
@@ -84,6 +87,9 @@ impl<'a, R: CatalogRepository> RefreshSession<'a, R> {
             repository,
             id,
             locale,
+            started_at: at.into(),
+            staged: std::cell::Cell::new(None),
+            settled: std::cell::Cell::new(false),
         })
     }
     pub fn finish(
@@ -92,6 +98,11 @@ impl<'a, R: CatalogRepository> RefreshSession<'a, R> {
         at: &str,
         cancelled: impl Fn() -> bool,
     ) -> std::result::Result<RefreshReport, RefreshCode> {
+        let canonical_at = match utc_time(at) {
+            Ok(at) => at,
+            Err(_) => return self.failed(None, RefreshCode::PersistenceFailed, &self.started_at),
+        };
+        let at = canonical_at.as_str();
         let raw = match payload {
             Ok(v) => v,
             Err(_) => {
@@ -118,12 +129,17 @@ impl<'a, R: CatalogRepository> RefreshSession<'a, R> {
         }
         let snapshot = match self.repository.stage(self.id, normalized, at) {
             Ok(v) => v,
-            Err(RepositoryFailure::Uncertain) => return Err(RefreshCode::OutcomeUncertain),
+            Err(RepositoryFailure::Uncertain) => {
+                self.settled.set(true);
+                return Err(RefreshCode::OutcomeUncertain);
+            }
             Err(_) => return self.failed(None, RefreshCode::StageFailed, at),
         };
+        self.staged.set(Some(snapshot));
         if cancelled() {
             return self.failed(Some(snapshot), RefreshCode::Cancelled, at);
         }
+        self.settled.set(true);
         match self.repository.activate(snapshot, at) {
             Ok(report) => Ok(report),
             Err(RepositoryFailure::Uncertain) => Err(RefreshCode::OutcomeUncertain),
@@ -136,6 +152,7 @@ impl<'a, R: CatalogRepository> RefreshSession<'a, R> {
         code: RefreshCode,
         at: &str,
     ) -> std::result::Result<T, RefreshCode> {
+        self.settled.set(true);
         self.repository
             .fail(self.id, snapshot, code, at)
             .map_err(|e| failure(e, RefreshCode::PersistenceFailed))?;
@@ -146,5 +163,23 @@ fn failure(e: RepositoryFailure, otherwise: RefreshCode) -> RefreshCode {
     match e {
         RepositoryFailure::Proven => otherwise,
         RepositoryFailure::Uncertain => RefreshCode::OutcomeUncertain,
+    }
+}
+
+impl<R: CatalogRepository> Drop for RefreshSession<'_, R> {
+    fn drop(&mut self) {
+        if !self.settled.replace(true) {
+            let now = match time::OffsetDateTime::now_utc()
+                .format(&time::format_description::well_known::Rfc3339)
+            {
+                Ok(now) => now,
+                Err(_) => self.started_at.clone(),
+            };
+            // The blocking operation owner settles a pre-activation abandon.
+            // Failure/uncertainty remains durable running state for reopening.
+            let _ = self
+                .repository
+                .fail(self.id, self.staged.get(), RefreshCode::Cancelled, &now);
+        }
     }
 }

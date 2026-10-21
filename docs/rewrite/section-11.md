@@ -19,7 +19,7 @@ or opening a library. Tests use explicit numeric loopback endpoints and syntheti
 TLS certificates, never public endpoints.
 
 The design selects reqwest/Tokio/rustls. Exact pins are reqwest 0.13.5, Tokio
-1.54.0, rustls 0.23.46, rustls-platform-verifier 0.7.1 and mime 0.3.17. Defaults
+1.54.1, rustls 0.23.46, rustls-platform-verifier 0.7.1 and mime 0.3.17. Defaults
 are disabled; no compression, HTTP/3, cookies, blocking-client runtime or account
 features are selected. Ring is the explicit per-client crypto provider; TLS 1.2
 and 1.3 use the platform certificate verifier, with no global-provider mutation
@@ -142,3 +142,37 @@ or ambiguous JSON cases document stricter native catalog validation rather than
 claiming parity; see the fixture README. Raster bounds are an intentional native
 resource policy required by 11.6. These differences are submitted to 11.8's
 independent review. The complete preservation corpus remains unchanged.
+
+## 11.8 — Independent review and corrections
+
+Standards review found a P2 loss of partial file-creation ownership and a P3
+stringly typed status boundary. Spec review found a P1 stranded-running refresh
+after interruption. All three are corrected in a separate fix commit.
+
+`MetadataStorage` now owns the actual failed creation/publication/cleanup and its
+original custody. The existing stage/publisher uses a private borrowed-or-Arc
+loan to the same filesystem authority, so a retained failure holds the real
+Database/library/lease lifetime without a self-reference or fabricated handle.
+Known unpublished stages can retire through the existing qualified mechanism;
+unresolved partial allocations/publications stay in the operation owner and
+fence the generation. Tests inject failure immediately after payload acquisition
+through both catalog and artwork repositories, substitute the pathname, and
+verify the original retained FD still refers to the original bytes. Shutdown
+must drain this owner before Database close; it cannot clear the sticky native
+uncertainty fence or declare clean closure.
+
+Startup, under the exclusive Database generation and before reader/work intake,
+rejects interrupted staged snapshots and records interrupted attempts while
+retaining all files and active snapshots. Dropping a pre-activation refresh
+session durably cancels it; activation/unknown outcomes are never converted to
+abandon failures. Reopen tests demonstrate last-good preservation and a new
+successful refresh. Persisted legacy failure messages retain their original
+English text; UI consumers receive typed status/error identities for localization.
+Unknown persisted error codes are retained explicitly.
+
+The Spec reviewer accepted the six documented JSON restrictions as explicitly
+classified validation differences, as required by the quality specification;
+the extreme-number case remains identified as valid JSON with a compatibility
+restriction. Native raster limits are separately required by 11.6. A subsequent
+fresh dependency audit rejected newly yanked Tokio 1.54.0; 1.54.1 replaces that
+exact pin, with no warning/advisory suppression.
