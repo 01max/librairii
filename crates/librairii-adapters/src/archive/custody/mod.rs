@@ -12,7 +12,7 @@ use librairii_storage::{
     database::WorkCancellation,
     platform::{
         HASH_BUFFER_BYTES, StreamDigest, hash_stream,
-        unix::{Custody, OwnedReadSource, OwnedStage},
+        unix::{Custody, OwnedReadSource, OwnedStage, RetiredTemp, TempCleanupFailure},
     },
 };
 use std::{
@@ -35,6 +35,7 @@ pub enum CopyPhase {
     HashAfter,
     MeasureStage,
     Complete,
+    RetireUnused,
 }
 
 /// Local mechanism errors, not legacy inspection/outcome codes.
@@ -95,13 +96,51 @@ pub enum StageOutcome<'files, 'library> {
         stage: OwnedStage<'files, 'library>,
         measurement: StreamDigest,
     },
-    /// Actual ownership remains with the caller; never an error-only drop.
-    Unresolved(OwnedStage<'files, 'library>),
+    /// Recoverable owned trash, NOT deletion or clean native finalization.
+    Retired(RetiredTemp<'files, 'library>),
+    /// Actual FD/directory/source+trash witnesses and independent cleanup cause.
+    /// The caller physically retains these resources AND the guard below.
+    RetirementFailed(Box<TempCleanupFailure<'files, 'library>>),
 }
 
 /// Every outcome physically retains source/name/FD and custody. The host must
 /// hold unresolved resources/exclusion until actual resolution or an actual
 /// acknowledged guarded handoff; returning/enqueueing a DTO is not settlement.
+///
+/// The actual Database cannot close before the returned owners drain:
+/// ```compile_fail
+/// use librairii_adapters::archive::custody::{copy_to_stage, QualificationEnvelope};
+/// use librairii_storage::{Result, database::{Database, WorkCancellation},
+///     platform::unix::{LibraryFiles, EntryName, FileArea}};
+/// fn close_before_outcome(database: &mut Database<'_>) -> Result<()> {
+///     let files = LibraryFiles::open_native(database)?;
+///     let guard = files.try_custody()?;
+///     let source = files.open_read_source(FileArea::Archives, EntryName::parse("owned")?)?;
+///     let stage = files.create_stage(&guard)?;
+///     let outcome = copy_to_stage(source, stage, guard, QualificationEnvelope::default(),
+///         &WorkCancellation::default());
+///     database.close()?;
+///     drop(outcome);
+///     Ok(())
+/// }
+/// ```
+/// A path/ID observation cannot replace the actual borrowed Files owner:
+/// ```compile_fail
+/// use librairii_adapters::archive::custody::{copy_to_stage, QualificationEnvelope};
+/// use librairii_storage::{Result, database::{Database, WorkCancellation},
+///     platform::unix::{LibraryFiles, EntryName, FileArea}};
+/// fn discard_files(database: &mut Database<'_>) -> Result<()> {
+///     let files = LibraryFiles::open_native(database)?;
+///     let guard = files.try_custody()?;
+///     let source = files.open_read_source(FileArea::Archives, EntryName::parse("owned")?)?;
+///     let stage = files.create_stage(&guard)?;
+///     let outcome = copy_to_stage(source, stage, guard, QualificationEnvelope::default(),
+///         &WorkCancellation::default());
+///     drop(files);
+///     drop(outcome);
+///     Ok(())
+/// }
+/// ```
 #[must_use = "retain the actual source/stage/custody owners through resolution"]
 #[derive(Debug)]
 pub struct CopyOutcome<'files, 'library> {
@@ -184,7 +223,17 @@ fn copy_with_io<'files, 'library>(
     );
     let (stage, error) = match work {
         Ok(measurement) => (StageOutcome::Measured { stage, measurement }, None),
-        Err(error) => (StageOutcome::Unresolved(stage), Some(error)),
+        Err(error) => {
+            io.checkpoint(CopyPhase::RetireUnused);
+            // Mandatory resolution has NO ambient cancellation argument. Only
+            // the real unused-stage capability is accepted; never publication,
+            // reuse, committed/uncertain bytes or a pathname/hash tuple.
+            let retained = match stage.retire_owned_temp(&custody) {
+                Ok(retired) => StageOutcome::Retired(retired),
+                Err(failure) => StageOutcome::RetirementFailed(failure),
+            };
+            (retained, Some(error))
+        }
     };
     CopyOutcome {
         source,

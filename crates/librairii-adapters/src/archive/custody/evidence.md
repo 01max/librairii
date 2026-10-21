@@ -38,6 +38,46 @@ Native binding. TestRoots only allocates owned paths. Test-only path reads asser
 bytes; they never construct capability authority. Corpora/generators and normal
 profiles are untouched. Teardown preserves stage/trash bytes; it does not claim
 clean Native finalization.
+The test fixture captures its actual native directory entry spelling before
+closed verification, and compares the retained source name with that spelling.
+It does not impose NFC/NFD or treat filename strings as raw7z header evidence.
+
+## 5.8 PARTIAL: unused-stage retirement and physically retained failure
+
+After any work error/cancel, the only mutation is storage's existing
+`retire_owned_temp(&custody)` without ambient cancellation. Success returns the
+actual RetiredTemp owner and its recoverable trash identity; it is not deletion,
+import compensation, restart cleanup or a clean-finalizer receipt. Failure
+returns the actual boxed TempCleanupFailure, including stage FD/directory and
+any trash witness/cleanup uncertainty/cause. Source and guard remain in the same
+outcome. The primary work error, independent cancellation observation and cleanup
+cause coexist. No Result-only error discards actual owners; Drop never cleans.
+
+Fault wrappers are private and borrow actual OwnedReadSource/OwnedStage objects.
+They inject errors/short operations/EOF/cancel without minting origin, a digest
+or cleanup authority. Tests assert real prefix bytes, source bytes and retained
+exclusion. A failed Write may have physically written bytes that it never
+acknowledged; the counter explicitly does not claim that physical length.
+
+The inner sentinel regression intentionally supplies a smaller defensive bound
+to the private copy loop over an actual larger managed source. The public path
+always derives its expected size from the real initial observation; a managed
+source that changes is normally refused by the issuer's own metadata checks.
+No adversarial interleaving/immutability proof is inferred from that regression.
+
+The retirement-failure test substitutes the actual private stage container
+before retirement, checks both actual old FD bytes and foreign named bytes, and
+retains the real pre-move failure/guard. This does NOT dynamically exercise a
+post-rename directory-flush uncertainty. Such a failure is retained faithfully
+by the same real TempCleanupFailure type, but actual G fault evidence for that
+branch and restart/guarded successor resolution remains open. Issuer allocation,
+stage allocation and arbitrary blocked-read interruption are still excluded.
+
+The SAME source/stage/guard relationship is a caller-held host precondition,
+established by real constructors in the tests. The current storage API has no
+public non-consuming stage/guard identity-check operation; this mechanism must
+not be advertised as a general admission API proving arbitrary inputs share an
+activation. No shared production port or capability conversion is added.
 
 ## Verification state
 
