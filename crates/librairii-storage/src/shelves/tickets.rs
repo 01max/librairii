@@ -16,6 +16,7 @@ pub(crate) enum Kind {
     Create,
     Update,
     Sources,
+    DeleteCollection,
 }
 #[derive(Debug)]
 pub(crate) struct Ticket {

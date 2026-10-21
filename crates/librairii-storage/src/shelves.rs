@@ -208,3 +208,6 @@ pub(crate) mod tickets;
 
 mod source_change;
 pub use source_change::{SourceChangePlan, SourceChangePreview};
+
+mod deletion;
+pub use deletion::{CollectionDeletionPlan, CollectionDeletionPreview, ShelfDecisions};

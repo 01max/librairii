@@ -3002,6 +3002,19 @@
           ]
         },
         "reason": "Additive observed Task 10 discovery; original integration identities retain exact order and target scope."
+      },
+      {
+        "position": 401,
+        "identity": {
+          "suite": "librairii-storage::shelves",
+          "name": "linked_deletion_is_atomic_across_shelves_and_preserves_unavailable_origins",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive observed Task 10 discovery; original integration identities retain exact order and target scope."
       }
     ],
     "python": [

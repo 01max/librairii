@@ -724,3 +724,75 @@ fn warning_acknowledgements_persist_without_decisions_and_renew_on_coverage_chan
     db.close()?;
     Ok(())
 }
+#[test]
+fn linked_deletion_is_atomic_across_shelves_and_preserves_unavailable_origins() -> TestResult {
+    let roots = TestRoots::new()?;
+    let lib = library(&roots)?;
+    let mut db = Database::open_isolated(&lib)?;
+    seed(&db, 2)?;
+    let a = collection(&db, "All", Query::default())?;
+    let b = collection(&db, "Also", Query::default())?;
+    let first = sourced(&db, "First", vec![a], vec![uuid(1), uuid(2)])?;
+    let second = sourced(&db, "Second", vec![a, b], vec![uuid(1)])?;
+    committed(db.transaction(WorkCancellation::default(),|tx|{tx.execute("DELETE FROM stories WHERE id=2",[])?;tx.execute_batch("CREATE TRIGGER fail_shelf_collection_delete BEFORE DELETE ON collections BEGIN SELECT RAISE(ABORT,'test failure'); END")?;Ok(())})?.wait()?)?;
+    let p = db
+        .linked_collection_deletion_preview(a, "fr-FR".into())?
+        .wait()?;
+    assert_eq!(p.preview().shelves.len(), 2);
+    assert_eq!(p.preview().shelves[0].affected.len(), 2);
+    assert!(p.preview().shelves[1].affected.is_empty());
+    let before = db.shelf_members(first.id)?.wait()?;
+    let before_shelves = db.shelves()?.wait()?;
+    assert!(
+        committed(
+            db.delete_linked_collection(p, true, vec![], WorkCancellation::default())?
+                .wait()?
+        )
+        .is_err()
+    );
+    assert_eq!(db.shelf_members(first.id)?.wait()?, before);
+    assert_eq!(db.shelves()?.wait()?, before_shelves);
+    assert_eq!(db.collections()?.wait()?.len(), 2);
+    committed(
+        db.transaction(WorkCancellation::default(), |tx| {
+            tx.execute_batch("DROP TRIGGER fail_shelf_collection_delete")?;
+            Ok(())
+        })?
+        .wait()?,
+    )?;
+    let p = db
+        .linked_collection_deletion_preview(a, "fr-FR".into())?
+        .wait()?;
+    let receipt = committed(
+        db.delete_linked_collection(
+            p,
+            false,
+            vec![shelves::ShelfDecisions {
+                shelf_id: first.id,
+                decisions: vec![
+                    decision(1, shelves::Action::RemoveAndExclude),
+                    decision(2, shelves::Action::Keep),
+                ],
+            }],
+            WorkCancellation::default(),
+        )?
+        .wait()?,
+    )?;
+    assert_eq!(receipt.id(), a);
+    let m = db.shelf_members(first.id)?.wait()?;
+    assert_eq!(m.len(), 1);
+    assert_eq!(m[0].uuid, uuid(2));
+    assert!(m[0].manually_retained);
+    assert_eq!(m[0].origins[0].name, "All");
+    assert_eq!(m[0].origins[0].collection_id, None);
+    assert!(!m[0].origins[0].active);
+    let m = db.shelf_members(second.id)?.wait()?;
+    assert!(!m[0].manually_retained);
+    assert_eq!(m[0].origins.len(), 2);
+    assert_eq!(db.collections()?.wait()?.len(), 1);
+    db.close()?;
+    let mut db = Database::open_isolated(&lib)?;
+    assert_eq!(db.shelf_members(first.id)?.wait()?[0].uuid, uuid(2));
+    db.close()?;
+    Ok(())
+}
