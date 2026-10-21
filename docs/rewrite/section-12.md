@@ -41,3 +41,18 @@ no copy authority. Tests cover mixed rows, exact bytes, nested archives, Unicode
 collisions, existing output preservation and cancellation. Frozen codec provenance
 is refreshed only for the additive simple-lowercase wrapper; source/data pins stay
 unchanged.
+
+## 12.3 — Preparation and queued eligibility
+
+The registry retains at most eight plans and 64 MiB of conservatively accounted
+row/preview data, evicting oldest plans when necessary. IDs belong to one registry
+and cannot be replayed or moved to another. `start` consumes the ID, revalidates
+the selected directory, and compares every UUID/record/Broken state in one read
+transaction before returning a running owner. The running owner borrows the
+actual registry and Database; it cannot outlive them or race another run through
+that registry. Per-item checks require the original record, archive metadata and
+eligibility immediately before copying; prepared skipped/conflicted rows never
+promote. `invalidate` discards preparations before a future library transition.
+Tests cover eviction, forged/foreign/replayed IDs, stale flags, original skips,
+and a queued ready item becoming Broken. Scheduling/terminal persistence remains
+the separately incomplete Task 6 composition rather than an inferred job port.

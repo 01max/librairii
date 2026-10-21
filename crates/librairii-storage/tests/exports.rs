@@ -9,6 +9,32 @@ use librairii_storage::{
 use librairii_testkit::TestRoots;
 use std::error::Error;
 type TestResult<T = ()> = Result<T, Box<dyn Error>>;
+fn files(db: &Database<'_>, library: &IsolatedLibrary, count: i64) -> TestResult {
+    use sha2::{Digest, Sha256};
+    let mut hashes = Vec::new();
+    for id in 1..=count {
+        let bytes = id.to_string();
+        std::fs::write(library.layout().archives().join(&bytes), bytes.as_bytes())?;
+        hashes.push((
+            id,
+            librairii_core::Checksum::from_bytes(Sha256::digest(bytes.as_bytes()).into())
+                .to_string(),
+        ));
+    }
+    committed(
+        db.transaction(WorkCancellation::default(), move |tx| {
+            for (id, hash) in hashes {
+                tx.execute(
+                    "UPDATE story_archives SET sha256=? WHERE story_id=?",
+                    rusqlite::params![hash, id],
+                )?;
+            }
+            Ok(())
+        })?
+        .wait()?,
+    )?;
+    Ok(())
+}
 fn committed<T>(v: TransactionOutcome<T>) -> TestResult<T> {
     match v {
         TransactionOutcome::Committed(v) => Ok(v),
@@ -256,6 +282,83 @@ fn preflight_verifies_bytes_and_names_without_reserving_skipped_output_names() -
             .is_err()
     );
     drop(exports);
+    db.close()?;
+    Ok(())
+}
+
+#[test]
+fn prepared_ids_evict_consume_invalidate_and_recheck_each_queued_eligibility_boundary() -> TestResult
+{
+    use librairii_core::export::{Disposition, Issue, PreparationId};
+    let roots = TestRoots::new()?;
+    let library = IsolatedLibrary::initialize_from_override(
+        Some(roots.library().as_os_str()),
+        "a0000000-0000-4000-8000-000000000001".parse()?,
+    )?;
+    let mut db = Database::open_isolated(&library)?;
+    seed(&db, 3)?;
+    files(&db, &library, 3)?;
+    let destination = tempfile::tempdir()?;
+    let cancel = WorkCancellation::default();
+    let mut exports = librairii_storage::export::Exports::new(&db);
+    let mut ids = Vec::new();
+    for _ in 0..9 {
+        ids.push(
+            exports
+                .prepare(
+                    Scope::Selection(vec![1, 2, 3]),
+                    destination.path(),
+                    "fr-FR".into(),
+                    &cancel,
+                )?
+                .preparation
+                .ok_or("id")?,
+        );
+    }
+    assert_eq!(exports.preparation_count(), 8);
+    assert!(exports.preview(&ids[0]).is_err());
+    assert!(exports.start(&PreparationId::fresh(), &cancel).is_err());
+    let mut foreign = librairii_storage::export::Exports::new(&db);
+    assert!(foreign.start(&ids[8], &cancel).is_err());
+    committed(
+        db.transaction(WorkCancellation::default(), |tx| {
+            tx.execute("UPDATE stories SET is_broken=1 WHERE id=1", [])?;
+            Ok(())
+        })?
+        .wait()?,
+    )?;
+    assert!(exports.start(&ids[8], &cancel).is_err());
+    assert!(exports.preview(&ids[8]).is_err());
+    let fresh = exports
+        .prepare(
+            Scope::Selection(vec![1, 2, 3]),
+            destination.path(),
+            "fr-FR".into(),
+            &cancel,
+        )?
+        .preparation
+        .ok_or("id")?;
+    let running = exports.start(&fresh, &cancel)?;
+    committed(db.transaction(WorkCancellation::default(),|tx|{tx.execute_batch("UPDATE stories SET is_broken=0 WHERE id IN (1,2); UPDATE stories SET is_broken=1 WHERE id=3;")?;Ok(())})?.wait()?)?;
+    assert_eq!(
+        running.check_item(0)?,
+        Disposition::Skipped(Issue::StoryMarkedBroken)
+    );
+    assert_eq!(
+        running.check_item(1)?,
+        Disposition::Skipped(Issue::StoryMarkedBroken)
+    );
+    assert_eq!(
+        running.check_item(2)?,
+        Disposition::Skipped(Issue::StoryMarkedBroken)
+    );
+    drop(running);
+    assert!(exports.start(&fresh, &cancel).is_err());
+    exports.invalidate();
+    assert_eq!(exports.preparation_count(), 0);
+    assert!(exports.preview(&ids[7]).is_err());
+    drop(exports);
+    drop(foreign);
     db.close()?;
     Ok(())
 }

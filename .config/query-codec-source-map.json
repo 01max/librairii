@@ -4380,6 +4380,19 @@
           ]
         },
         "reason": "Additive Task 12 export/custody/diagnostics assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 527,
+        "identity": {
+          "suite": "librairii-storage::exports",
+          "name": "prepared_ids_evict_consume_invalidate_and_recheck_each_queued_eligibility_boundary",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive Task 12 export/custody/diagnostics assertions; all admitted identities retain exact order and target scope."
       }
     ],
     "python": [

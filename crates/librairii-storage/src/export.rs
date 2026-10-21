@@ -15,7 +15,7 @@ use std::collections::{BTreeMap, BTreeSet};
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 mod preparation;
 #[cfg(any(target_os = "macos", target_os = "linux"))]
-pub use preparation::Exports;
+pub use preparation::{Exports, MAX_PREPARED, MAX_PREPARED_BYTES, Running};
 
 /// Explicit aggregate retained-data refusal, never truncation or an item cap.
 /// This includes row/string capacities and the deduplication keys. Temporary SQL

@@ -22,12 +22,20 @@ pub(super) struct Prepared {
     pub scope: Resolved,
     pub destination: Destination,
     pub preview: Preview,
+    pub bytes: usize,
 }
 #[derive(Debug)]
 pub struct Exports<'db, 'library> {
     pub(super) database: &'db Database<'library>,
     pub(super) prepared: VecDeque<Prepared>,
     pub(super) retained: Vec<Output>,
+}
+pub const MAX_PREPARED: usize = 8;
+pub const MAX_PREPARED_BYTES: usize = 64 * 1024 * 1024;
+#[derive(Debug)]
+pub struct Running<'run, 'db, 'library> {
+    pub(super) owner: &'run mut Exports<'db, 'library>,
+    pub(super) plan: Prepared,
 }
 impl<'db, 'library> Exports<'db, 'library> {
     pub fn preview(&self, id: &PreparationId) -> Result<Preview> {
@@ -51,6 +59,48 @@ impl<'db, 'library> Exports<'db, 'library> {
     }
     pub fn retained_outputs(&self) -> usize {
         self.retained.len()
+    }
+    pub fn preparation_count(&self) -> usize {
+        self.prepared.len()
+    }
+    pub fn invalidate(&mut self) {
+        self.prepared.clear();
+    }
+    /// Consume a plan once. Validation is one coherent snapshot before any
+    /// destination effect; later per-item checks do not expand its UUID set.
+    pub fn start(
+        &mut self,
+        id: &PreparationId,
+        cancel: &WorkCancellation,
+    ) -> Result<Running<'_, 'db, 'library>> {
+        if cancel.is_cancelled() {
+            return Err(StorageError::Cancelled);
+        }
+        if !self.retained.is_empty() {
+            return Err(StorageError::CustodyRecoveryRequired);
+        }
+        let index = self
+            .prepared
+            .iter()
+            .position(|p| p.id.same(id))
+            .ok_or(ExportError::Stale)?;
+        let plan = self.prepared.remove(index).ok_or(ExportError::Stale)?;
+        plan.destination.revalidate()?;
+        let states = plan
+            .scope
+            .stories
+            .iter()
+            .map(|s| (s.uuid.clone(), s.id, s.broken))
+            .collect::<Vec<_>>();
+        self.database.read(move|tx|{
+            use rusqlite::OptionalExtension;
+            let mut stmt=tx.prepare("SELECT s.id,s.is_broken FROM stories s JOIN story_archives a ON a.story_id=s.id WHERE s.uuid=?")?;
+            for (uuid,id,broken) in states {
+                let current=stmt.query_row([uuid],|r|Ok((r.get::<_,i64>(0)?,r.get::<_,bool>(1)?))).optional()?.unwrap_or((0,false));
+                if current!=(id,broken) { return Err(ExportError::Stale.into()); }
+            }Ok(())
+        })?.wait()?;
+        Ok(Running { owner: self, plan })
     }
     pub fn prepare(
         &mut self,
@@ -149,14 +199,56 @@ impl<'db, 'library> Exports<'db, 'library> {
         if preview.can_export() {
             let id = PreparationId::fresh();
             preview.preparation = Some(id.clone());
+            let bytes = scope.stories.iter().try_fold(0usize, |n, s| {
+                n.checked_add(super::row_bytes(s) * 2)
+                    .ok_or(ExportError::ResourceLimit)
+            })?;
+            if bytes > MAX_PREPARED_BYTES {
+                return Err(ExportError::ResourceLimit.into());
+            }
+            while self.prepared.len() >= MAX_PREPARED
+                || self.prepared.iter().map(|p| p.bytes).sum::<usize>() + bytes > MAX_PREPARED_BYTES
+            {
+                self.prepared.pop_front();
+            }
             self.prepared.push_back(Prepared {
                 id,
                 scope,
                 destination,
                 preview: preview.clone(),
+                bytes,
             });
         }
         Ok(preview)
+    }
+}
+impl Running<'_, '_, '_> {
+    pub fn preview(&self) -> &Preview {
+        &self.plan.preview
+    }
+    /// Observation only. A copier calls this immediately before source open.
+    /// Previously skipped/conflicted rows retain their original disposition.
+    pub fn check_item(&self, index: usize) -> Result<Disposition> {
+        let preview = self
+            .plan
+            .preview
+            .items
+            .get(index)
+            .ok_or(ExportError::InvalidScope)?;
+        if preview.disposition != Disposition::Ready {
+            return Ok(preview.disposition);
+        }
+        let original = self.plan.scope.stories[index].clone();
+        self.owner.database.read(move|tx|{
+            use rusqlite::OptionalExtension;
+            let current=tx.query_row("SELECT s.id,s.is_broken,a.sha256,a.byte_size,a.managed_path,a.original_filename,a.detected_format,a.validation_state FROM stories s JOIN story_archives a ON a.story_id=s.id WHERE s.uuid=?",[&original.uuid],|r|Ok((r.get::<_,i64>(0)?,r.get::<_,bool>(1)?,r.get::<_,String>(2)?,r.get::<_,i64>(3)?,r.get::<_,String>(4)?,r.get::<_,String>(5)?,r.get::<_,String>(6)?,r.get::<_,String>(7)?))).optional()?;
+            let Some((id,broken,hash,bytes,path,name,format,validation))=current else {return Ok(Disposition::Skipped(Issue::StoryUnavailable));};
+            Ok(if id!=original.id {Disposition::Skipped(Issue::StoryUnavailable)}
+            else if broken {Disposition::Skipped(Issue::StoryMarkedBroken)}
+            else if hash!=original.sha256 || bytes!=original.byte_size || path!=original.managed_relative_path || name!=original.original_filename || format!=original.detected_format {Disposition::Skipped(Issue::ArchiveChanged)}
+            else if validation!="valid" {Disposition::Skipped(if validation=="missing"{Issue::ArchiveMissing}else{Issue::ArchiveInvalid})}
+            else{Disposition::Ready})
+        })?.wait()
     }
 }
 pub(super) fn inspect(
