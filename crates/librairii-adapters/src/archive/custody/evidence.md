@@ -202,3 +202,20 @@ All17 original G assertion declarations remain present. Owner5 derives actual
 discovery after exact wiring/serialized lane. No new root/port/pool/runtime,
 allocation-failure cleanup, publication/SQL/PNG/CRC/decoder/resource/accepted
 inspection, recovery/settlement/nativeClosed or full5.N/5.10 claim is made.
+
+### Original G2 contribution
+
+| Partial contribution | Original full SHA |
+|---|---|
+|5.8 retained actual creation-result routing/fixture and borrow controls|8b3daa37b2d76186de6398047cae8de901f31a25|
+
+This original source commit is a direct child of originalGca330. The ledger
+update is separate; no review/test/completion commit is fabricated. Byte
+comparison confirms copy_to_stage and all following copy/hash/retirement
+algorithm code are EXACT originalG. The wrapper boxes the successful CopyOutcome
+without changing those owners or algorithms. Scoped Rust1.99.1 rustfmt and Git
+diff checks PASS; no cargo/discovery/doctest/target-diagnostic run occurred.
+The original17 assertion declarations remain, plus three authored candidate
+additions above. Neither that source inventory nor owner5's279 parent static
+pre-G2 union is an executed pass count. Future actual discovery and all quality
+remain with the selected distinct owner5 composition/lane.
