@@ -734,6 +734,17 @@ impl<'library> Database<'library> {
     /// drains external readers/artwork. Exclusive &mut ownership prevents new
     /// admissions during close. An error retains a fenced authority; it is not
     /// successful closure or permission to activate a replacement generation.
+    /// A live operation session retains the real Database borrow through joins.
+    /// ```compile_fail
+    /// use librairii_storage::{database::Database,operations_repository::TerminalRepository};
+    /// use librairii_app::native_jobs::{Executor,Configuration,with_runtime};
+    /// fn close_during_session<E:Executor>(database:&mut Database<'_>,effect:&E) {
+    ///     let repository=TerminalRepository::new(database,1);
+    ///     let _=with_runtime(&repository,effect,Configuration::default(),|_| {
+    ///         let _=database.close();
+    ///     });
+    /// }
+    /// ```
     pub fn close(&mut self) -> Result<()> {
         if self.closed {
             return Ok(());

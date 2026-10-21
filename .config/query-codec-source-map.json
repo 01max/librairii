@@ -3857,6 +3857,40 @@
           ]
         },
         "reason": "Additive Task 6 durable operation/runtime/recovery assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 476,
+        "identity": {
+          "suite": "librairii-app",
+          "name": "native_jobs::shutdown::tests::elapsed_wait_only_offers_explicit_escalation_and_never_claims_closed_or_settled"
+        },
+        "reason": "Additive Task 6 durable operation/runtime/recovery assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 477,
+        "identity": {
+          "suite": "librairii-storage::native_jobs",
+          "name": "shutdown_joins_after_uncancelled_compensation_reporting_and_actual_owner_settlement",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive Task 6 durable operation/runtime/recovery assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 478,
+        "identity": {
+          "suite": "librairii-storage::runtime_failures",
+          "name": "shutdown_during_admission_cancels_later_enqueued_work_without_entering_effects",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive Task 6 durable operation/runtime/recovery assertions; all admitted identities retain exact order and target scope."
       }
     ],
     "python": [

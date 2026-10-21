@@ -27,12 +27,24 @@ pub struct RuntimeStatus {
     pub running: usize,
     pub stopping: bool,
     pub failed: bool,
+    pub starting: bool,
+    pub drained: bool,
 }
 #[derive(Debug)]
-pub struct SessionError;
+pub enum SessionError {
+    Unavailable,
+    ThreadStart,
+    WorkerFailed,
+    RecoveryRequired,
+}
 impl std::fmt::Display for SessionError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str("operation worker failed; library fenced")
+        f.write_str(match self {
+            Self::Unavailable => "operation session is unavailable",
+            Self::ThreadStart => "operation threads could not start",
+            Self::WorkerFailed => "operation worker failed; library requires recovery",
+            Self::RecoveryRequired => "operation recovery is required",
+        })
     }
 }
 impl std::error::Error for SessionError {}
@@ -48,6 +60,7 @@ struct State {
     done: bool,
     failed: bool,
     ready: bool,
+    stop_requested_at: Option<std::time::Instant>,
     cancel: Option<String>,
 }
 #[derive(Debug)]
@@ -116,6 +129,36 @@ impl Handle {
                 .is_none_or(|q| nav.is_some_and(|nav| nav.accepts(q)))
     }
 
+    pub(super) fn shutdown_observation(&self) -> (RuntimeStatus, Duration, Vec<i64>) {
+        let s = self.0.state.lock().unwrap_or_else(|e| e.into_inner());
+        (
+            RuntimeStatus {
+                queued: s.queue.len(),
+                running: s.running,
+                stopping: s.stopping,
+                failed: s.failed,
+                starting: !s.ready && !s.done,
+                drained: s.done && !s.failed,
+            },
+            s.stop_requested_at
+                .map_or(Duration::ZERO, |at| at.elapsed()),
+            s.inflight.iter().map(|(id, _, _)| *id).collect(),
+        )
+    }
+    pub(super) fn take_phases(&self, active: &[i64]) -> Vec<Phase> {
+        self.0
+            .progress
+            .iter()
+            .filter_map(|slot| {
+                slot.lock()
+                    .unwrap_or_else(|e| e.into_inner())
+                    .latest
+                    .as_ref()
+                    .filter(|p| active.contains(&p.item))
+                    .map(|p| p.phase)
+            })
+            .collect()
+    }
     pub fn try_start(&self, start: Start) -> Result<(), (Refusal, Start)> {
         let Ok(mut s) = self.0.state.try_lock() else {
             return Err((Refusal::Busy, start));
@@ -162,6 +205,8 @@ impl Handle {
     pub fn shutdown(&self) {
         if let Ok(mut s) = self.0.state.lock() {
             s.stopping = true;
+            s.stop_requested_at
+                .get_or_insert_with(std::time::Instant::now);
             for (_, _, c) in &s.inflight {
                 c.cancel();
             }
@@ -175,6 +220,8 @@ impl Handle {
             running: s.running,
             stopping: s.stopping,
             failed: s.failed,
+            starting: !s.ready && !s.done,
+            drained: s.done && !s.failed,
         }
     }
 }
@@ -408,6 +455,9 @@ fn worker(store: &impl JobStore, executor: &impl Executor, shared: &Shared, inde
                         shared.changed.notify_all();
                         return;
                     };
+                    if s.stopping {
+                        token.cancel();
+                    }
                     s.running += 1;
                     shared.changed.notify_all();
                     break (work, token);
@@ -620,6 +670,12 @@ fn coordinator(store: &impl JobStore, shared: &Shared) {
                         token.cancel();
                     }
                     let mut s = shared.state.lock().unwrap_or_else(|e| e.into_inner());
+                    if s.done {
+                        return;
+                    }
+                    if s.stopping || s.cancel.as_ref() == Some(&work.operation.identity.id) {
+                        token.cancel();
+                    }
                     s.inflight.push((
                         work.item.identity.id,
                         work.operation.identity.id.clone(),
@@ -697,7 +753,7 @@ pub fn with_runtime<S: JobStore, E: Executor, T>(
     run: impl FnOnce(Handle) -> T,
 ) -> Result<T, SessionError> {
     if !store.claim_session() {
-        return Err(SessionError);
+        return Err(SessionError::Unavailable);
     }
     struct Session<'a, S: JobStore>(&'a S);
     impl<S: JobStore> Drop for Session<'_, S> {
@@ -719,6 +775,7 @@ pub fn with_runtime<S: JobStore, E: Executor, T>(
             done: false,
             failed: false,
             ready: false,
+            stop_requested_at: None,
             cancel: None,
         }),
         changed: Condvar::new(),
@@ -732,13 +789,47 @@ pub fn with_runtime<S: JobStore, E: Executor, T>(
     });
     thread::scope(|scope| {
         let mut workers = Vec::with_capacity(config.workers());
+        let stop_partial = || {
+            let mut s = shared.state.lock().unwrap_or_else(|e| e.into_inner());
+            s.done = true;
+            s.stopping = true;
+            shared.changed.notify_all();
+        };
         for index in 0..config.workers() {
             let s = &shared;
-            workers
-                .push(scope.spawn(move || guarded(store, s, || worker(store, executor, s, index))));
+            match thread::Builder::new()
+                .name(format!("librairii-job-{index}"))
+                .spawn_scoped(scope, move || {
+                    guarded(store, s, || worker(store, executor, s, index))
+                }) {
+                Ok(worker) => workers.push(worker),
+                Err(_) => {
+                    stop_partial();
+                    for worker in workers {
+                        if worker.join().is_err() {
+                            store.fence();
+                        }
+                    }
+                    return Err(SessionError::ThreadStart);
+                }
+            }
         }
         let s = &shared;
-        let coordinator = scope.spawn(move || guarded(store, s, || coordinator(store, s)));
+        let coordinator = match thread::Builder::new()
+            .name("librairii-job-source".into())
+            .spawn_scoped(scope, move || guarded(store, s, || coordinator(store, s)))
+        {
+            Ok(coordinator) => coordinator,
+            Err(_) => {
+                stop_partial();
+                for worker in workers {
+                    if worker.join().is_err() {
+                        store.fence();
+                    }
+                }
+                return Err(SessionError::ThreadStart);
+            }
+        };
         let handle = Handle(shared.clone());
         let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| run(handle.clone())));
         handle.shutdown();
@@ -754,7 +845,11 @@ pub fn with_runtime<S: JobStore, E: Executor, T>(
                 .failed
         {
             store.fence();
-            return Err(SessionError);
+            return Err(if failed {
+                SessionError::WorkerFailed
+            } else {
+                SessionError::RecoveryRequired
+            });
         }
         match result {
             Ok(result) => Ok(result),

@@ -495,3 +495,160 @@ pub fn cancel(handle: &Handle, mut id: String) -> Result<(), Box<dyn Error>> {
         }
     }
 }
+
+#[test]
+fn shutdown_joins_after_uncancelled_compensation_reporting_and_actual_owner_settlement()
+-> TestResult {
+    use std::{
+        fs::{File, OpenOptions},
+        io::{Seek, Write},
+        sync::Mutex,
+    };
+    struct Effect {
+        file: File,
+        entered: AtomicBool,
+        restore: AtomicBool,
+        settling: AtomicBool,
+        release: AtomicBool,
+    }
+    impl Executor for Effect {
+        type Resources = File;
+        fn execute(&self, _: &WorkItem, c: &Cancellation, p: &ProgressSink) -> Execution<File> {
+            let mut file = must(self.file.try_clone());
+            must(file.write_all(b"moved"));
+            must(file.sync_all());
+            self.entered.store(true, Ordering::Release);
+            while !c.is_cancelled() {
+                thread::sleep(Duration::from_millis(1));
+            }
+            assert!(p.phase(Phase::Compensating));
+            Execution {
+                boundary: Boundary::Compensating,
+                report: Report {
+                    state: ItemState::Cancelled,
+                    story_id: 0,
+                    completed_bytes: 0,
+                    outcome: RawOutcome::default(),
+                },
+                resources: Some(file),
+            }
+        }
+        fn compensate(&self, file: &mut File) -> bool {
+            if !self.restore.load(Ordering::Acquire) {
+                return false;
+            }
+            must(file.set_len(0));
+            must(file.rewind());
+            must(file.write_all(b"restored"));
+            must(file.sync_all());
+            true
+        }
+        fn settle(&self, file: File, ack: &DurableReport<'_>) -> Result<(), File> {
+            assert!(ack.interrupted().is_none());
+            self.settling.store(true, Ordering::Release);
+            if !self.release.load(Ordering::Acquire) {
+                Err(file)
+            } else {
+                Ok(())
+            }
+        }
+    }
+    struct Release<'a>(&'a Effect);
+    impl Drop for Release<'_> {
+        fn drop(&mut self) {
+            self.0.restore.store(true, Ordering::Release);
+            self.0.release.store(true, Ordering::Release);
+        }
+    }
+    let roots = TestRoots::new()?;
+    let lib = IsolatedLibrary::initialize_from_override(
+        Some(roots.library().as_os_str()),
+        "b0000000-0000-4000-8000-000000000001".parse()?,
+    )?;
+    let mut db = Database::open_isolated(&lib)?;
+    let store = TerminalRepository::new(&db, 1);
+    let path = roots.profile().join("actual-owned-effect");
+    let effect = Effect {
+        file: OpenOptions::new()
+            .create_new(true)
+            .write(true)
+            .read(true)
+            .open(&path)?,
+        entered: AtomicBool::new(false),
+        restore: AtomicBool::new(false),
+        settling: AtomicBool::new(false),
+        release: AtomicBool::new(false),
+    };
+    let observed = Mutex::new(None);
+    let ui_returned = AtomicBool::new(false);
+    let joined = AtomicBool::new(false);
+    thread::scope(|scope| -> TestResult {
+        let _release = Release(&effect);
+        let run = scope.spawn(|| {
+            let result = with_runtime(&store, &effect, Configuration::default(), |handle| {
+                must(runtime_support::offer(
+                    &handle,
+                    must(Start::new(input(OperationKind::Import, 1, 70))),
+                ));
+                wait(|| effect.entered.load(Ordering::Acquire));
+                assert!(matches!(
+                    with_runtime(&store, &effect, Configuration::default(), |_| ()),
+                    Err(SessionError::Unavailable)
+                ));
+                *observed.lock().unwrap_or_else(|e| e.into_inner()) = Some(handle.clone());
+                handle.shutdown();
+                ui_returned.store(true, Ordering::Release);
+            });
+            joined.store(true, Ordering::Release);
+            result
+        });
+        wait(|| ui_returned.load(Ordering::Acquire));
+        let handle = observed
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .clone()
+            .ok_or("handle")?;
+        wait(|| handle.shutdown_presentation().stage == ShutdownStage::RestoringChanges);
+        assert!(!joined.load(Ordering::Acquire));
+        let pending = db
+            .operation_snapshot(input(OperationKind::Import, 1, 70).id)?
+            .wait()?
+            .ok_or("pending")?;
+        assert_eq!(pending.items[0].state, ItemState::Running);
+        effect.restore.store(true, Ordering::Release);
+        wait(|| effect.settling.load(Ordering::Acquire));
+        let reported = db
+            .operation_snapshot(input(OperationKind::Import, 1, 70).id)?
+            .wait()?
+            .ok_or("reported")?;
+        assert_eq!(reported.items[0].state, ItemState::Cancelled);
+        assert_eq!(reported.operation.state, OperationState::Running);
+        assert!(!joined.load(Ordering::Acquire));
+        assert_eq!(
+            handle.shutdown_presentation().stage,
+            ShutdownStage::FinishingChanges
+        );
+        effect.release.store(true, Ordering::Release);
+        run.join().map_err(|_| "runtime thread")??;
+        assert!(joined.load(Ordering::Acquire));
+        assert_eq!(
+            handle.shutdown_presentation().stage,
+            ShutdownStage::ReadyToClose
+        );
+        Ok(())
+    })?;
+    assert_eq!(std::fs::read(path)?, b"restored");
+    with_runtime(&store, &effect, Configuration::default(), |handle| {
+        assert_ne!(
+            handle.generation(),
+            observed
+                .lock()
+                .unwrap_or_else(|e| e.into_inner())
+                .as_ref()
+                .unwrap_or_else(|| unreachable!())
+                .generation()
+        );
+    })?;
+    db.close()?;
+    Ok(())
+}

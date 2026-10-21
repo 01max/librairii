@@ -3,12 +3,14 @@
 //! joined before this function returns and the Database/library borrow ends.
 mod progress;
 mod scheduler;
+mod shutdown;
 use crate::ports::{creation::NewOperation, jobs::WorkItem, operations::CompleteItemCommand};
 use librairii_core::operations::{ItemState, RawOutcome};
 pub use progress::{
     Generation, OperationProjection, ProgressSink, ProgressUpdate, RequestStamp, Response,
 };
 pub use scheduler::{Admission, Handle, Refusal, RuntimeStatus, SessionError, with_runtime};
+pub use shutdown::{ESCALATION_AFTER, ShutdownPresentation, ShutdownStage};
 use std::sync::{
     Arc,
     atomic::{AtomicBool, Ordering},

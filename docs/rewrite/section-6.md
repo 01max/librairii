@@ -189,3 +189,31 @@ is Task 15; this handover provides one validated path argument, never shell text
 or publication/deletion authority. Tests cover concurrent inserts, tie ordering,
 20-row cursors, 30 active rows, NULL versus empty finished timestamps, historical
 outcomes/aliases and unsafe/stale destinations.
+
+## 6.8 — Graceful wait, owned joins and close ordering
+
+Shutdown stops intake and cancels safe executing/queued work. The first request
+starts a monotonic elapsed timer. After ten seconds presentation may offer Keep
+waiting or an explicitly confirmed Force quit with a restart-recovery warning.
+This is a presentation threshold, never a report/compensation timeout. Typed
+messages distinguish finishing work, saving, restoring and final settlement.
+The runtime exposes ReadyToClose only after durable reporting/cleanup; actual
+scoped-thread joins still finish before `with_runtime` returns. Native window
+layout/localized strings and the explicit process-termination action are Task 15.
+
+Worker and source thread creation uses fallible scoped builders. Partial startup
+wakes and joins every thread already created. Unexpected worker/source/UI panic
+fences the actual library and cannot acknowledge a clean close. A unique Database
+session reservation remains held through all joins. A compile-fail ownership
+example proves mutable Database close cannot overlap the operation session.
+The composition order is session cancellation/drain/compensation/reporting,
+registered-temporary settlement, actual worker/source joins, then Database
+checkpoint/connection joins and native profile/root finalization.
+
+Tests let the UI callback return while compensation and then actual resource
+settlement remain blocked. The outer runtime cannot return at either boundary;
+terminal item reporting and operation finish retain their separate ordering.
+A second session is refused until the first joins. Another test pauses creation,
+requests shutdown, then admits the row: the subsequently queued item is cancelled
+without entering the effect adapter. Queue push/pop recheck shutdown under the
+same mutex, closing the admission/prefetch cancellation race.

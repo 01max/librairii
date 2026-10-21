@@ -2866,6 +2866,28 @@
         "x86_64-apple-darwin",
         "x86_64-unknown-linux-gnu"
       ]
+    },
+    {
+      "suite": "librairii-app",
+      "name": "native_jobs::shutdown::tests::elapsed_wait_only_offers_explicit_escalation_and_never_claims_closed_or_settled"
+    },
+    {
+      "suite": "librairii-storage::native_jobs",
+      "name": "shutdown_joins_after_uncancelled_compensation_reporting_and_actual_owner_settlement",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::runtime_failures",
+      "name": "shutdown_during_admission_cancels_later_enqueued_work_without_entering_effects",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
     }
   ]
 }

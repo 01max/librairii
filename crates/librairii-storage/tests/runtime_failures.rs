@@ -26,6 +26,9 @@ use std::{
 };
 type TestResult = Result<(), Box<dyn Error>>;
 struct Observed<'a, 'b> {
+    pause_creation: AtomicBool,
+    creation_entered: AtomicBool,
+    allow_creation: AtomicBool,
     lose_ack: AtomicBool,
     refusals: AtomicUsize,
     readbacks: AtomicUsize,
@@ -101,6 +104,12 @@ impl JobStore for Observed<'_, '_> {
         self.store.generation()
     }
     fn create(&self, i: &NewOperation, at: &str) -> StoreResult<()> {
+        if self.pause_creation.load(Ordering::Acquire) {
+            self.creation_entered.store(true, Ordering::Release);
+            while !self.allow_creation.load(Ordering::Acquire) {
+                thread::sleep(Duration::from_millis(1));
+            }
+        }
         self.store.create(i, at)
     }
     fn creation_readback(&self, i: &NewOperation, at: &str) -> StoreResult<bool> {
@@ -221,6 +230,9 @@ fn three_real_failed_writes_then_continued_interruption_retains_owner_and_metada
     let mut db = Database::open_isolated(&lib)?;
     assert!(matches!(db.transaction(Default::default(),|tx|{tx.execute_batch("CREATE TRIGGER fail_complete BEFORE UPDATE OF status ON file_operation_items WHEN NEW.status='succeeded' BEGIN SELECT RAISE(ABORT,'complete unavailable'); END; CREATE TRIGGER fail_interrupt BEFORE UPDATE OF status ON file_operations WHEN NEW.status='interrupted' BEGIN SELECT RAISE(ABORT,'interrupt unavailable'); END;")?;Ok(())})?.wait()?,librairii_storage::database::TransactionOutcome::Committed(())));
     let store = Observed {
+        pause_creation: AtomicBool::new(false),
+        creation_entered: AtomicBool::new(false),
+        allow_creation: AtomicBool::new(true),
         lose_ack: AtomicBool::new(false),
         refusals: AtomicUsize::new(0),
         readbacks: AtomicUsize::new(0),
@@ -335,6 +347,9 @@ fn lost_real_commit_ack_then_barrier_refusal_cannot_erase_unknown_or_repeat_comp
     let mut db = Database::open_isolated(&lib)?;
     let store = Observed {
         store: TerminalRepository::new(&db, 1),
+        pause_creation: AtomicBool::new(false),
+        creation_entered: AtomicBool::new(false),
+        allow_creation: AtomicBool::new(true),
         lose_ack: AtomicBool::new(true),
         refusals: AtomicUsize::new(2),
         readbacks: AtomicUsize::new(0),
@@ -375,6 +390,81 @@ fn lost_real_commit_ack_then_barrier_refusal_cannot_erase_unknown_or_repeat_comp
             .counts
             .completed,
         1
+    );
+    db.close()?;
+    Ok(())
+}
+
+#[test]
+fn shutdown_during_admission_cancels_later_enqueued_work_without_entering_effects() -> TestResult {
+    use librairii_core::operations::{ItemState, RawOutcome};
+    struct Effect(AtomicUsize);
+    impl Executor for Effect {
+        type Resources = ();
+        fn execute(&self, _: &WorkItem, _: &Cancellation, _: &ProgressSink) -> Execution<()> {
+            self.0.fetch_add(1, Ordering::SeqCst);
+            Execution {
+                boundary: Boundary::BeforeCommit,
+                report: Report {
+                    state: ItemState::Skipped,
+                    story_id: 0,
+                    completed_bytes: 0,
+                    outcome: RawOutcome::default(),
+                },
+                resources: None,
+            }
+        }
+        fn compensate(&self, _: &mut ()) -> bool {
+            true
+        }
+        fn settle(&self, _: (), _: &DurableReport<'_>) -> Result<(), ()> {
+            Ok(())
+        }
+    }
+    let roots = TestRoots::new()?;
+    let lib = IsolatedLibrary::initialize_from_override(
+        Some(roots.library().as_os_str()),
+        "b0000000-0000-4000-8000-000000000001".parse()?,
+    )?;
+    let mut db = Database::open_isolated(&lib)?;
+    let store = Observed {
+        store: TerminalRepository::new(&db, 1),
+        pause_creation: AtomicBool::new(true),
+        creation_entered: AtomicBool::new(false),
+        allow_creation: AtomicBool::new(false),
+        lose_ack: AtomicBool::new(false),
+        refusals: AtomicUsize::new(0),
+        readbacks: AtomicUsize::new(0),
+        completes: Mutex::new(Vec::new()),
+        interrupts: Mutex::new(Vec::new()),
+    };
+    let effect = Effect(AtomicUsize::new(0));
+    struct Release<'a>(&'a AtomicBool);
+    impl Drop for Release<'_> {
+        fn drop(&mut self) {
+            self.0.store(true, Ordering::Release);
+        }
+    }
+    with_runtime(&store, &effect, Configuration::default(), |handle| {
+        let _release = Release(&store.allow_creation);
+        must(runtime_support::offer(
+            &handle,
+            must(Start::new(request(71))),
+        ));
+        wait(|| store.creation_entered.load(Ordering::Acquire));
+        handle.shutdown();
+        store.allow_creation.store(true, Ordering::Release);
+        wait(|| handle.status().drained);
+    })?;
+    assert_eq!(effect.0.load(Ordering::SeqCst), 0);
+    let saved = db
+        .operation_snapshot(request(71).id)?
+        .wait()?
+        .ok_or("cancelled")?;
+    assert_eq!(saved.items[0].state, ItemState::Cancelled);
+    assert_eq!(
+        saved.operation.state,
+        librairii_core::OperationState::Cancelled
     );
     db.close()?;
     Ok(())
