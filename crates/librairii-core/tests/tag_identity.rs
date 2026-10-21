@@ -66,3 +66,55 @@ fn every_unicode_scalar_matches_the_actual_frozen_go_tag_key_digest()
     );
     Ok(())
 }
+#[test]
+fn configured_age_bands_are_precise_bounded_and_nonoverlapping() {
+    use librairii_core::tagging::{AgeBand, AgeConfig};
+    let config = AgeConfig::default();
+    assert!(config.validate().is_ok());
+    for (minimum, maximum, expected) in [
+        (Some(3), Some(5), Some(0)),
+        (Some(4), Some(4), Some(0)),
+        (Some(6), Some(8), Some(1)),
+        (Some(3), Some(8), None),
+        (Some(5), Some(3), None),
+        (None, Some(5), None),
+        (Some(3), None, None),
+    ] {
+        assert_eq!(config.matching_band(minimum, maximum), expected);
+    }
+    let mut invalid = config.clone();
+    invalid.bands.push(AgeBand {
+        key: "overlap".into(),
+        label: "Overlap".into(),
+        minimum: 5,
+        maximum: 6,
+    });
+    assert!(invalid.validate().is_err());
+    for (key, label, min, max) in [
+        ("Age", "Age", 0, 1),
+        ("a", " label", 0, 1),
+        ("a", "Label", -1, 1),
+        ("a", "Label", 2, 1),
+    ] {
+        assert!(
+            AgeConfig {
+                bands: vec![AgeBand {
+                    key: key.into(),
+                    label: label.into(),
+                    minimum: min,
+                    maximum: max
+                }]
+            }
+            .validate()
+            .is_err()
+        );
+    }
+    assert!(AgeConfig { bands: vec![] }.validate().is_err());
+    assert!(
+        AgeConfig {
+            bands: vec![config.bands[0].clone(); 33]
+        }
+        .validate()
+        .is_err()
+    );
+}

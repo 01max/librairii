@@ -563,7 +563,219 @@ fn undo_restores_only_changed_targets_and_atomically_rejects_stale_or_unavailabl
     db.close()?;
     Ok(())
 }
-
+fn assignment_json(v: &librairii_core::tagging::AssignmentResult) -> serde_json::Value {
+    serde_json::json!({"requestedStories":v.requested_stories,"changedStories":v.changed_stories,"assignmentsAdded":v.assignments_added,"assignmentsRemoved":v.assignments_removed})
+}
+fn flag_json(v: &librairii_core::broken::FlagResult) -> serde_json::Value {
+    serde_json::json!({"requestedStories":v.requested_stories,"changedStories":v.changed_stories,"changes":v.changes.iter().map(|c|serde_json::json!({"storyId":c.story_id,"previous":c.previous,"current":c.current})).collect::<Vec<_>>()})
+}
+fn workspace_json(w: &librairii_core::tagging::AssignmentWorkspace) -> serde_json::Value {
+    serde_json::json!({"catalog":{"definitions":w.catalog.iter().map(|e|{let d=&e.definition;serde_json::json!({"id":d.id,"key":d.key,"normalizedKey":d.normalized_key,"label":d.label,"color":d.color,"kind":d.kind.as_str(),"source":d.source,"presentation":d.presentation,"position":d.position,"protected":d.protected,"values":e.values.iter().map(|v|serde_json::json!({"id":v.id,"definitionId":v.definition_id,"key":v.key,"normalizedKey":v.normalized_key,"label":v.label,"position":v.position})).collect::<Vec<_>>()})}).collect::<Vec<_>>()},"requestedStories":w.requested_stories,"states":w.states.iter().map(|s|serde_json::json!({"definitionId":s.definition_id,"assignedStories":s.assigned_stories,"values":s.values.iter().map(|v|serde_json::json!({"valueId":v.value_id,"assignedStories":v.assigned_stories})).collect::<Vec<_>>()})).collect::<Vec<_>>()})
+}
+#[test]
+fn actual_go_tagging_and_broken_vertical_reference_matches_every_recorded_field() -> TestResult {
+    use librairii_core::tagging::AgeConfig;
+    use librairii_storage::tagging::DeleteTarget;
+    use serde_json::json;
+    let expected: serde_json::Value =
+        serde_json::from_str(include_str!("fixtures/tags/vertical.json"))?;
+    let roots = TestRoots::new()?;
+    let library = IsolatedLibrary::initialize_from_override(
+        Some(roots.library().as_os_str()),
+        "a0000000-0000-4000-8000-000000000001".parse()?,
+    )?;
+    let mut db = Database::open_isolated(&library)?;
+    seed_stories(&db, 3)?;
+    let age = committed(
+        db.seed_age_facets(AgeConfig::default(), WorkCancellation::default())?
+            .wait()?,
+    )?;
+    let a = match edit(
+        &db,
+        Command::CreateDefinition(CreateDefinition {
+            key: "Été favorites".into(),
+            label: "Favorite".into(),
+            color: "#405CF5".into(),
+            kind: Kind::Boolean,
+        }),
+    )? {
+        Response::Definition(d) => d.id,
+        _ => return Err("definition".into()),
+    };
+    let b = create(&db, "Genre", Kind::Choice)?;
+    let v = value(&db, b, "Calm")?;
+    let w = value(&db, b, "Dreamy")?;
+    let mut events = vec![];
+    for command in [
+        Command::Boolean {
+            story_ids: vec![1, 1, 2],
+            definition_id: a,
+            assigned: true,
+        },
+        Command::ChoiceValues {
+            story_ids: vec![1],
+            definition_id: b,
+            value_ids: vec![v],
+        },
+        Command::ChoiceToggle {
+            story_ids: vec![1, 2],
+            definition_id: b,
+            value_id: w,
+            assigned: true,
+        },
+        Command::ChoiceToggle {
+            story_ids: vec![1, 2],
+            definition_id: b,
+            value_id: w,
+            assigned: true,
+        },
+    ] {
+        events.push(assignment_json(&assignment(&db, command)?));
+    }
+    events.push(json!({"invalidAtomic":matches!(edit(&db,Command::Boolean{story_ids:vec![3,999],definition_id:a,assigned:true}),Err(StorageError::Tag(TagError::StoryNotFound)))}));
+    let workspace = workspace_json(&db.assignment_workspace(vec![1, 2, 3])?.wait()?);
+    committed(db.transaction(WorkCancellation::default(),move|tx|{let payload=json!({"anyOf":[{"name":"moon"},{"choiceFilters":[{"definitionId":b,"valueIds":[v]}]}]}).to_string();tx.execute("INSERT INTO collections(id,name,normalized_name,position,query_version,query_payload) VALUES(1,'Calm','calm',0,5,?)",[payload])?;Ok(())})?.wait()?)?;
+    let plan = db.tag_deletion_plan(DeleteTarget::Value(v))?.wait()?;
+    events.push(
+        json!({"assignments":plan.assignment_count,"collections":plan.affected_collection_ids}),
+    );
+    assignment(
+        &db,
+        Command::ChoiceToggle {
+            story_ids: vec![3],
+            definition_id: b,
+            value_id: v,
+            assigned: true,
+        },
+    )?;
+    events.push(json!({"staleDelete":matches!(edit(&db,Command::Delete(Box::new(plan))),Err(StorageError::Tag(TagError::DeletePlanStale)))}));
+    let plan = db.tag_deletion_plan(DeleteTarget::Value(v))?.wait()?;
+    edit(&db, Command::Delete(Box::new(plan)))?;
+    let (state, revision) = db
+        .read(|tx| {
+            Ok(tx.query_row(
+                "SELECT validity_state,revision FROM collections WHERE id=1",
+                [],
+                |r| Ok((r.get::<_, String>(0)?, r.get::<_, i64>(1)?)),
+            )?)
+        })?
+        .wait()?;
+    edit(
+        &db,
+        Command::RecolorDefinition {
+            id: age,
+            color: "#405CF5".into(),
+        },
+    )?;
+    committed(
+        db.seed_age_facets(AgeConfig::default(), WorkCancellation::default())?
+            .wait()?,
+    )?;
+    let first = committed(
+        db.set_broken(vec![1], true, WorkCancellation::default())?
+            .wait()?,
+    )?;
+    let action = committed(
+        db.set_broken(vec![1, 2, 2], true, WorkCancellation::default())?
+            .wait()?,
+    )?;
+    let undo = committed(
+        db.restore_broken(action.changes.clone(), WorkCancellation::default())?
+            .wait()?,
+    )?;
+    let flags = db
+        .read(|tx| {
+            let mut stmt = tx.prepare("SELECT is_broken FROM stories ORDER BY id")?;
+            Ok(stmt
+                .query_map([], |r| r.get::<_, bool>(0))?
+                .collect::<rusqlite::Result<Vec<_>>>()?)
+        })?
+        .wait()?;
+    let actual = json!({"events":events,"workspace":workspace,"collectionState":state,"collectionRevision":revision,"ageColor":"#405CF5","firstFlag":flag_json(&first),"mixedFlag":flag_json(&action),"undo":flag_json(&undo),"flags":flags});
+    assert_eq!(actual, expected);
+    db.close()?;
+    Ok(())
+}
+#[test]
+fn precommit_cancellation_and_sql_failures_roll_back_real_tag_and_flag_writes() -> TestResult {
+    let roots = TestRoots::new()?;
+    let library = IsolatedLibrary::initialize_from_override(
+        Some(roots.library().as_os_str()),
+        "a0000000-0000-4000-8000-000000000001".parse()?,
+    )?;
+    let mut db = Database::open_isolated(&library)?;
+    seed_stories(&db, 2)?;
+    let a = create(&db, "favorite", Kind::Boolean)?;
+    let cancel = WorkCancellation::default();
+    let signal = cancel.clone();
+    let outcome = db
+        .transaction(cancel, move |tx| {
+            let result = librairii_storage::tagging::execute(
+                tx,
+                Command::Boolean {
+                    story_ids: vec![1, 2],
+                    definition_id: a,
+                    assigned: true,
+                },
+            )?;
+            signal.cancel();
+            Ok(result)
+        })?
+        .wait()?;
+    assert!(matches!(
+        outcome,
+        TransactionOutcome::ProvenNotCommitted(StorageError::Cancelled)
+    ));
+    assert_eq!(
+        db.assignment_workspace(vec![1, 2])?.wait()?.states[0].assigned_stories,
+        0
+    );
+    committed(db.transaction(WorkCancellation::default(),|tx|{tx.execute_batch("CREATE TRIGGER fail_second_assignment BEFORE INSERT ON story_tag_assignments WHEN NEW.story_id=2 BEGIN SELECT RAISE(ABORT,'injected tag write failure'); END; CREATE TRIGGER fail_second_flag BEFORE UPDATE OF is_broken ON stories WHEN NEW.id=2 BEGIN SELECT RAISE(ABORT,'injected flag write failure'); END;")?;Ok(())})?.wait()?)?;
+    assert!(
+        edit(
+            &db,
+            Command::Boolean {
+                story_ids: vec![1, 2],
+                definition_id: a,
+                assigned: true
+            }
+        )
+        .is_err()
+    );
+    assert_eq!(
+        db.assignment_workspace(vec![1, 2])?.wait()?.states[0].assigned_stories,
+        0
+    );
+    assert!(
+        committed(
+            db.set_broken(vec![1, 2], true, WorkCancellation::default())?
+                .wait()?
+        )
+        .is_err()
+    );
+    assert_eq!(db.broken_summary(vec![1, 2])?.wait()?.flagged_stories, 0);
+    let cancel = WorkCancellation::default();
+    let signal = cancel.clone();
+    let outcome = db
+        .transaction(cancel, move |tx| {
+            let result = librairii_storage::broken::set(tx, &[1], true)?;
+            signal.cancel();
+            Ok(result)
+        })?
+        .wait()?;
+    assert!(matches!(
+        outcome,
+        TransactionOutcome::ProvenNotCommitted(StorageError::Cancelled)
+    ));
+    assert_eq!(db.broken_summary(vec![1])?.wait()?.flagged_stories, 0);
+    db.stop_ordinary()?;
+    assert!(
+        db.set_broken(vec![1], true, WorkCancellation::default())
+            .is_err()
+    );
+    db.close()?;
+    Ok(())
+}
 #[test]
 fn deletion_inspects_valid_references_without_normalizing_unrelated_membership_fields() -> TestResult
 {

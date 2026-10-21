@@ -2705,6 +2705,40 @@
           "name": "tag_reference_inspection_is_bounded_strict_and_distinct_from_membership_normalization"
         },
         "reason": "Additive observed Task 7/8 discovery; original integration identities retain exact order and target scope."
+      },
+      {
+        "position": 377,
+        "identity": {
+          "suite": "librairii-core::tag_identity",
+          "name": "configured_age_bands_are_precise_bounded_and_nonoverlapping"
+        },
+        "reason": "Additive observed Task 7/8 discovery; original integration identities retain exact order and target scope."
+      },
+      {
+        "position": 378,
+        "identity": {
+          "suite": "librairii-storage::tags",
+          "name": "actual_go_tagging_and_broken_vertical_reference_matches_every_recorded_field",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive observed Task 7/8 discovery; original integration identities retain exact order and target scope."
+      },
+      {
+        "position": 379,
+        "identity": {
+          "suite": "librairii-storage::tags",
+          "name": "precommit_cancellation_and_sql_failures_roll_back_real_tag_and_flag_writes",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive observed Task 7/8 discovery; original integration identities retain exact order and target scope."
       }
     ],
     "python": [
@@ -2732,6 +2766,11 @@
         "position": 42,
         "identity": "test_sources.SourcePolicy.test_url_handover_requires_exact_origin_scope_and_materialized_leaf",
         "reason": "Additive observed Task 7/8 discovery; original integration identities retain exact order and target scope."
+      },
+      {
+        "position": 43,
+        "identity": "test_sources.SourcePolicy.test_tag_categories_are_exact_scoped_and_read_only",
+        "reason": "Additive observed Task 7/8 discovery; original integration identities retain exact order and target scope."
       }
     ]
   },
@@ -2756,6 +2795,11 @@
     "source": "Go1.26.5/src/unicode/tables.go",
     "source_sha256": "6a88d48746c4b2c471cc04ae40559694b734770212e6f5ea5f1962adb0c0bdb1",
     "selection": "Unicode15 Letter and Nd ranges only; simple lowercase/NFKD reuse the original codec pipeline.",
+    "recipe": {
+      "path": "xtask/extract_tag_categories.py",
+      "bytes": 2057,
+      "sha256": "7b56b8c5359ad4c093e5e39d2e9b513947de45e2b4ddf290bea26248273d552e"
+    },
     "notices": [
       "LICENSE-GO-BSD.txt",
       "PATENTS-GO.txt",
