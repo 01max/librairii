@@ -88,7 +88,7 @@ The qualification implementation is:
 
 - macOS: `scripts/verify-packaged-acceptance`;
 - Linux: `scripts/verify-platform-linux`; and
-- CI orchestration: `.github/workflows/platform-release.yml`.
+- CI orchestration: `.github/workflows/ci.yml`.
 
 Failed or cancelled jobs publish no artifact.
 
