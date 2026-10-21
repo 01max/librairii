@@ -1726,6 +1726,14 @@
         "x86_64-apple-darwin",
         "x86_64-unknown-linux-gnu"
       ]
+    },
+    {
+      "suite": "librairii-adapters::retained_stage_host",
+      "name": "retained_stage_emfile_routes_one_real_native_failure",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin"
+      ]
     }
   ]
 }
