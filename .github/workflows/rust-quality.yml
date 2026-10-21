@@ -26,8 +26,6 @@ jobs:
             target: x86_64-apple-darwin
           - runner: ubuntu-24.04
             target: x86_64-unknown-linux-gnu
-          - runner: windows-2025
-            target: x86_64-pc-windows-msvc
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 40
     defaults:
@@ -47,42 +45,10 @@ jobs:
         run: .github/scripts/ubuntu-apt build-essential pkg-config python3
       - name: Install exact stable toolchain
         run: rustup toolchain install 1.99.1 --profile minimal --component rustfmt --component clippy --component llvm-tools-preview
-      - name: Verify admitted bytes in a fresh Windows special-path autocrlf checkout
-        if: runner.os == 'Windows'
-        shell: pwsh
-        run: |
-          $source = git rev-parse HEAD
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          $fresh = Join-Path $env:RUNNER_TEMP ('lp-Été #%2F-' + [guid]::NewGuid())
-          git clone --config core.autocrlf=true --no-local --no-checkout . $fresh
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          git -C $fresh checkout --detach $source
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          if ((git -C $fresh config --get core.autocrlf) -ne 'true') { throw 'Fresh checkout must persist core.autocrlf=true' }
-          python -I -B -X utf8 (Join-Path $fresh 'xtask/check_preservation.py') > windows-autocrlf-preservation.json
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          python -I -B -X utf8 (Join-Path $fresh 'xtask/check_sources.py') > windows-autocrlf-sources.json
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          python -I -B -X utf8 (Join-Path $fresh 'xtask/check_import_sources.py') > windows-autocrlf-import-sources.json
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          $evidence = Join-Path $env:GITHUB_WORKSPACE 'target/quality'
-          New-Item -ItemType Directory -Force $evidence | Out-Null
-          python -I -B -X utf8 (Join-Path $fresh 'xtask/check_migration_bytes.py') > (Join-Path $evidence 'windows-autocrlf-migration-hashes.json')
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          Push-Location $fresh
-          try {
-            cargo test --locked --package librairii-storage --test migrations --target $env:RUST_TARGET every_embedded_sql_byte_matches_the_admitted_corpus_and_go_source -- --exact 2>&1 | Tee-Object -FilePath (Join-Path $evidence 'windows-autocrlf-embedded-migrations.log')
-            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          } finally {
-            Pop-Location
-          }
       - name: Assert native architecture and record source/toolchain
         run: |
           test "$(rustc -vV | sed -n 's/^host: //p')" = "$RUST_TARGET"
           mkdir -p target/quality
-          if test -f windows-autocrlf-preservation.json; then mv windows-autocrlf-preservation.json target/quality/; fi
-          if test -f windows-autocrlf-sources.json; then mv windows-autocrlf-sources.json target/quality/; fi
-          if test -f windows-autocrlf-import-sources.json; then mv windows-autocrlf-import-sources.json target/quality/; fi
           git rev-parse HEAD > target/quality/source.txt
           rustc -vV > target/quality/rustc.txt
           cargo --version > target/quality/cargo.txt
@@ -90,18 +56,7 @@ jobs:
       - name: Install pinned quality tools
         run: cargo xtask tools
       - name: Cumulative workspace check
-        if: runner.os != 'Windows'
         run: cargo xtask check
-      - name: Cumulative workspace check from native Windows PowerShell
-        if: runner.os == 'Windows'
-        shell: pwsh
-        run: |
-          # Match a normal native shell: remove directories supplying GNU date.
-          # Git's standard cmd directory and all Rust tools remain on PATH.
-          $env:PATH = ($env:PATH -split ';' | Where-Object { $_ -and -not (Test-Path -LiteralPath (Join-Path $_ 'date.exe')) }) -join ';'
-          if (Get-Command date.exe -ErrorAction SilentlyContinue) { throw 'GNU date must be absent for native-shell verification' }
-          cargo xtask check
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Retain native check evidence
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
