@@ -2,6 +2,7 @@
 #![forbid(unsafe_code)]
 mod identity;
 pub mod import;
+pub mod operations;
 mod vocabulary;
 pub use identity::{Checksum, CollectionId, JobId, LibraryId, ShelfId, StoryUuid};
 pub use vocabulary::{
