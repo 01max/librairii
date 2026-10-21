@@ -4,6 +4,7 @@ mod discovery;
 mod import_sources;
 mod policy;
 mod preservation;
+mod sources;
 mod supply_chain;
 use std::{
     env,

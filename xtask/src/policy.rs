@@ -23,9 +23,8 @@ fn allowed(from: &str, to: &str, dev: bool) -> bool {
     let allowed: &[&str] = match from {
         "librairii-core" => &["uuid", "thiserror"],
         "librairii-app" => &["librairii-core"],
-        "librairii-storage" | "librairii-adapters" | "librairii-ui" => {
-            &["librairii-app", "librairii-core"]
-        }
+        "librairii-adapters" => &["librairii-app", "librairii-core", "librairii-storage"],
+        "librairii-storage" | "librairii-ui" => &["librairii-app", "librairii-core"],
         "librairii-desktop" => &[
             "librairii-app",
             "librairii-storage",
@@ -80,6 +79,11 @@ mod tests {
         }
         assert!(!allowed("librairii-app", "librairii-ui", false));
         assert!(!allowed("librairii-ui", "librairii-storage", false));
+        assert!(!allowed("librairii-app", "librairii-storage", false));
+        assert!(!allowed("librairii-core", "librairii-storage", false));
+        assert!(allowed("librairii-adapters", "librairii-storage", false));
+        assert!(!allowed("librairii-adapters", "librairii-testkit", false));
+        assert!(allowed("librairii-adapters", "librairii-testkit", true));
         assert!(allowed("librairii-ui", "librairii-app", false));
         assert!(allowed("librairii-core", "librairii-testkit", true));
     }

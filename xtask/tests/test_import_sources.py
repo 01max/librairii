@@ -23,6 +23,10 @@ def contents(root):
         for p in root.rglob('*')}
 
 
+def bundle(registry):
+    return next(entry for entry in registry['bundles'] if entry['id'] == gate.BUNDLE)
+
+
 class StudioSourcePolicy(unittest.TestCase):
     def setUp(self):
         self.directory = tempfile.TemporaryDirectory(prefix='librairii-import-source-policy-')
@@ -51,6 +55,27 @@ class StudioSourcePolicy(unittest.TestCase):
         self.assertEqual(len(report['private_derivatives']), 7)
         self.assertEqual(contents(self.parent), before)
 
+    def test_two_bundle_registry_rejects_missing_extra_and_duplicate_ids_without_writes(self):
+        registry_path = '.config/upstream-sources.json'
+        original = self.load(registry_path)
+        reordered = dict(original, bundles=list(reversed(original['bundles'])))
+        self.save(registry_path, reordered)
+        before = contents(self.parent)
+        self.assertEqual(gate.check(self.root)['bundle'], gate.BUNDLE)
+        self.assertEqual(contents(self.parent), before)
+        own = bundle(original)
+        other = next(entry for entry in original['bundles'] if entry['id'] != gate.BUNDLE)
+        for entries in [[], [own], [other], [own, own], [other, other],
+                        [own, other, {'id': 'unapproved-source-bundle'}],
+                        [own, {'id': 'unapproved-source-bundle'}]]:
+            with self.subTest(ids=[entry['id'] for entry in entries]):
+                self.save(registry_path, dict(original, bundles=entries))
+                before = contents(self.parent)
+                with self.assertRaises(ValueError):
+                    gate.check(self.root)
+                self.assertEqual(contents(self.parent), before)
+        self.save(registry_path, original)
+
     def test_index_schema_or_scope_repinning_cannot_widen_authority(self):
         registry_path = '.config/upstream-sources.json'
         original = (self.root / registry_path).read_bytes()
@@ -58,7 +83,7 @@ class StudioSourcePolicy(unittest.TestCase):
                                     ('required_derivatives', {}), ('selection_notices', {})]:
             with self.subTest(field=field):
                 registry = json.loads(original)
-                registry['bundles'][0][field] = replacement
+                bundle(registry)[field] = replacement
                 self.save(registry_path, registry)
                 with self.assertRaises(ValueError):
                     gate.check(self.root)
@@ -76,7 +101,7 @@ class StudioSourcePolicy(unittest.TestCase):
                 data = path.read_bytes()
                 changed = data + b'\n'
                 path.write_bytes(changed)
-                registry['bundles'][0][key] = hashlib.sha256(changed).hexdigest()
+                bundle(registry)[key] = hashlib.sha256(changed).hexdigest()
                 self.save(registry_path, registry)
                 with self.assertRaises(ValueError):
                     gate.check(self.root)
@@ -100,7 +125,7 @@ class StudioSourcePolicy(unittest.TestCase):
         path.write_bytes(original + b'changed')
         for origin in [None, {'kind': 'authored'}]:
             registry = json.loads(registry_bytes)
-            notice = registry['bundles'][0]['notices'][0]
+            notice = bundle(registry)['notices'][0]
             notice.update(bytes=path.stat().st_size, sha256=gate.digest(path.read_bytes()), origin=origin)
             self.save(registry_path, registry)
             with self.assertRaises(ValueError):
@@ -281,7 +306,7 @@ class StudioSourcePolicy(unittest.TestCase):
         for origin in [None, {'kind': 'authored'}]:
             with self.subTest(origin=origin):
                 registry = json.loads(registry_bytes)
-                notice = next(row for row in registry['bundles'][0]['notices']
+                notice = next(row for row in bundle(registry)['notices']
                               if row['path'] == 'LICENSE-UNICODE-V3.txt')
                 notice.update(bytes=path.stat().st_size, sha256=gate.digest(path.read_bytes()),
                               origin=origin)

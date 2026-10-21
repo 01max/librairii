@@ -7,6 +7,7 @@ import stat
 import sys
 
 BUNDLE = 'go-1.26.5-json-v1-studio'
+APPROVED_BUNDLES = {BUNDLE, 'go-1.26.5-xtext-0.43.0-unicode15-cldr32'}
 INDEX_SHA = '91ff9950bb9608b66cc1c8ce0cbd19fc11df80492d92fda5819897cf43b264cf'
 SCHEMA_SHA = 'e7c2cd289d76f65950d4d15edf8a95b1f3089283218c0f0a43ac031272c6745c'
 METADATA = '.config/upstream-sources/' + BUNDLE
@@ -142,9 +143,13 @@ def check(root):
     if (set(registry) != {'version', 'product_license', 'bundles'}
             or type(registry['version']) is not int or registry['version'] != 1
             or registry['product_license'] is not None
-            or len(registry['bundles']) != 1):
+            or not isinstance(registry['bundles'], list)
+            or len(registry['bundles']) != len(APPROVED_BUNDLES)
+            or any(not isinstance(bundle, dict) or not isinstance(bundle.get('id'), str)
+                   for bundle in registry['bundles'])
+            or {bundle['id'] for bundle in registry['bundles']} != APPROVED_BUNDLES):
         raise ValueError('unreviewed source registry or product license')
-    bundle = registry['bundles'][0]
+    bundle = next(bundle for bundle in registry['bundles'] if bundle['id'] == BUNDLE)
     expected = {
         'id': BUNDLE, 'scope': 'private-core-import-studio-json-v1',
         'source_index': METADATA + '/source-index.json', 'source_index_sha256': INDEX_SHA,

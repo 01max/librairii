@@ -244,6 +244,7 @@ fn write_notices(package: &Value, notices: &Path, text: &mut String) -> Result {
 pub fn inventory() -> Result {
     inventory_graph("workspace", "Cargo.toml", "Cargo.lock")?;
     inventory_graph("fuzz", "fuzz/Cargo.toml", "fuzz/Cargo.lock")?;
+    crate::sources::inventory()?;
     crate::import_sources::inventory()
 }
 fn inventory_graph(graph: &str, manifest: &str, lockfile: &str) -> Result {

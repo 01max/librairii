@@ -18,6 +18,20 @@
     "test_import_sources.StudioSourcePolicy.test_inventory_refuses_hard_linked_output_without_clobbering_owned_peer",
     "test_import_sources.StudioSourcePolicy.test_nested_derivative_inventory_rejects_extra_missing_and_directory_aliases",
     "test_import_sources.StudioSourcePolicy.test_trim_scope_and_simple_fold_sources_are_not_interchangeable",
-    "test_import_sources.StudioSourcePolicy.test_widened_unicode_use_cannot_self_repin_notice_or_remove_origin"
+    "test_import_sources.StudioSourcePolicy.test_widened_unicode_use_cannot_self_repin_notice_or_remove_origin",
+    "test_sources.SourcePolicy.test_alias_or_traversal_paths_are_rejected_before_reading",
+    "test_sources.SourcePolicy.test_dropped_header_and_unapproved_dns_selection_fail",
+    "test_sources.SourcePolicy.test_inventory_contains_selected_sources_and_copies_exact_notices",
+    "test_sources.SourcePolicy.test_missing_changed_or_extra_source_metadata_and_notices_fail",
+    "test_sources.SourcePolicy.test_private_derivatives_require_complete_source_and_content_records",
+    "test_sources.SourcePolicy.test_registered_sources_and_notices_pass_without_writes",
+    "test_sources.SourcePolicy.test_unlicensed_repository_and_scope_cannot_be_reassigned",
+    "test_sources.SourcePolicy.test_fresh_autocrlf_checkout_runs_actual_checker_and_rejects_unprotected_bytes",
+    "test_migration_bytes.MigrationCheckout.test_fresh_autocrlf_preserves_storage_go_and_corpus_bytes",
+    "test_import_sources.StudioSourcePolicy.test_two_bundle_registry_rejects_missing_extra_and_duplicate_ids_without_writes",
+    "test_sources.SourcePolicy.test_selected_storage_closure_is_required_and_read_only",
+    "test_sources.SourcePolicy.test_selected_storage_closure_rejects_changed_and_self_repinned_content_without_writes",
+    "test_sources.SourcePolicy.test_selected_storage_closure_rejects_extra_entries_and_hard_links_without_writes",
+    "test_sources.SourcePolicy.test_two_bundle_registry_rejects_missing_extra_and_duplicate_ids_without_writes"
   ]
 }
