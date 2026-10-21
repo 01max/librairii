@@ -148,3 +148,15 @@ pub(super) fn evaluate(
     }
     Ok(result)
 }
+pub(super) fn origins(
+    tx: &Transaction<'_>,
+    id: i64,
+    uuid: &str,
+    sources: &[Source],
+) -> Result<bool> {
+    let mut changed = false;
+    for source in sources {
+        changed|=tx.execute("INSERT INTO shelf_story_origins(shelf_id,story_uuid,source_id) VALUES(?,?,?) ON CONFLICT DO NOTHING",params![id,uuid,source.id])?!=0;
+    }
+    Ok(changed)
+}

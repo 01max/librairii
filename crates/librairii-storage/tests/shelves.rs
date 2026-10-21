@@ -269,3 +269,87 @@ fn source_union_is_read_only_and_current_matches_do_not_rewrite_origins() -> Tes
     db.close()?;
     Ok(())
 }
+#[test]
+fn initial_creation_is_explicit_deduplicated_ordered_and_can_be_empty() -> TestResult {
+    use shelves::CreationRequest;
+    let roots = TestRoots::new()?;
+    let lib = library(&roots)?;
+    let mut db = Database::open_isolated(&lib)?;
+    seed(&db, 3)?;
+    let a = collection(&db, "All", Query::default())?;
+    let b = collection(&db, "Also", Query::default())?;
+    let plan = db
+        .shelf_creation_preview(
+            CreationRequest {
+                name: "Mixed".into(),
+                manual_uuids: vec![uuid(2)],
+                collection_ids: vec![a, b],
+            },
+            "fr-FR".into(),
+        )?
+        .wait()?;
+    assert_eq!(plan.preview().candidates.len(), 3);
+    assert_eq!(plan.preview().candidates[0].uuid, uuid(2));
+    assert!(db.shelves()?.wait()?.is_empty());
+    let copy = plan.clone();
+    let s = committed(
+        db.create_shelf_reviewed(plan, vec![uuid(1), uuid(2)], WorkCancellation::default())?
+            .wait()?,
+    )?;
+    let m = db.shelf_members(s.id)?.wait()?;
+    assert_eq!(
+        m.iter().map(|m| m.uuid.clone()).collect::<Vec<_>>(),
+        vec![uuid(2), uuid(1)]
+    );
+    assert!(m[0].manually_retained);
+    assert!(!m[1].manually_retained);
+    assert_eq!(m[1].origins.len(), 2);
+    assert!(
+        committed(
+            db.create_shelf_reviewed(copy, vec![], WorkCancellation::default())?
+                .wait()?
+        )
+        .is_err()
+    );
+    let plan = db
+        .shelf_creation_preview(
+            CreationRequest {
+                name: "Empty linked".into(),
+                collection_ids: vec![a],
+                ..Default::default()
+            },
+            "fr-FR".into(),
+        )?
+        .wait()?;
+    let empty = committed(
+        db.create_shelf_reviewed(plan, vec![], WorkCancellation::default())?
+            .wait()?,
+    )?;
+    assert_eq!((empty.count, empty.source_count, empty.revision), (0, 1, 1));
+    let plan = db
+        .shelf_creation_preview(
+            CreationRequest {
+                name: "Stale".into(),
+                collection_ids: vec![a],
+                ..Default::default()
+            },
+            "fr-FR".into(),
+        )?
+        .wait()?;
+    committed(
+        db.transaction(WorkCancellation::default(), |tx| {
+            tx.execute("DELETE FROM stories WHERE id=3", [])?;
+            Ok(())
+        })?
+        .wait()?,
+    )?;
+    assert!(matches!(
+        committed(
+            db.create_shelf_reviewed(plan, vec![uuid(1)], WorkCancellation::default())?
+                .wait()?
+        ),
+        Err(StorageError::Shelf(ShelfError::StaleReview))
+    ));
+    db.close()?;
+    Ok(())
+}
