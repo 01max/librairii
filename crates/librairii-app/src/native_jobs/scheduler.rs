@@ -50,16 +50,70 @@ struct State {
     cancel: Option<String>,
 }
 #[derive(Debug)]
-struct Shared {
+pub(super) struct Shared {
     state: Mutex<State>,
     changed: Condvar,
     config: Configuration,
+    generation: Generation,
+    progress: Vec<Arc<Mutex<super::progress::Slot>>>,
+    dirty: Arc<AtomicBool>,
+    revision: std::sync::atomic::AtomicU64,
 }
 /// Handles can outlive a session, but then return Closed. A new session has a
 /// different Arc identity and cannot be reached through a stale handle.
 #[derive(Clone, Debug)]
-pub struct Handle(Arc<Shared>);
+pub struct Handle(pub(super) Arc<Shared>);
 impl Handle {
+    pub fn generation(&self) -> Generation {
+        self.0.generation.clone()
+    }
+    pub fn take_dirty(&self) -> bool {
+        self.0.dirty.swap(false, Ordering::AcqRel)
+    }
+    pub fn take_progress(&self) -> Vec<ProgressUpdate> {
+        self.0
+            .progress
+            .iter()
+            .filter_map(|slot| {
+                let mut slot = slot.lock().unwrap_or_else(|e| e.into_inner());
+                if !slot.dirty {
+                    return None;
+                }
+                slot.dirty = false;
+                slot.latest.clone()
+            })
+            .collect()
+    }
+    pub fn request_stamp(
+        &self,
+        query: Option<librairii_core::navigation::QueryStamp>,
+    ) -> Option<RequestStamp> {
+        let revision = self
+            .0
+            .revision
+            .try_update(Ordering::AcqRel, Ordering::Acquire, |v| v.checked_add(1))
+            .ok()?;
+        Some(RequestStamp {
+            generation: self.generation(),
+            revision,
+            query,
+        })
+    }
+    pub(super) fn accepts_stamp(
+        &self,
+        stamp: &RequestStamp,
+        nav: Option<&librairii_core::navigation::Navigation>,
+    ) -> bool {
+        let s = self.0.state.lock().unwrap_or_else(|e| e.into_inner());
+        !s.done
+            && !s.failed
+            && stamp.generation == self.0.generation
+            && stamp
+                .query
+                .as_ref()
+                .is_none_or(|q| nav.is_some_and(|nav| nav.accepts(q)))
+    }
+
     pub fn try_start(&self, start: Start) -> Result<(), (Refusal, Start)> {
         let Ok(mut s) = self.0.state.try_lock() else {
             return Err((Refusal::Busy, start));
@@ -219,7 +273,7 @@ fn persist(store: &impl JobStore, command: &CommandWitness) {
         pause();
     }
 }
-fn worker(store: &impl JobStore, executor: &impl Executor, shared: &Shared) {
+fn worker(store: &impl JobStore, executor: &impl Executor, shared: &Shared, index: usize) {
     loop {
         let (work, token) = {
             let mut s = shared.state.lock().unwrap_or_else(|e| e.into_inner());
@@ -251,14 +305,23 @@ fn worker(store: &impl JobStore, executor: &impl Executor, shared: &Shared) {
             }
         };
         start(store, &work);
+        let progress = ProgressSink::bind(
+            shared.progress[index].clone(),
+            shared.generation.clone(),
+            work.item.identity.id,
+            work.item.progress,
+            work.operation.kind == librairii_core::OperationKind::Export,
+            shared.dirty.clone(),
+        );
         let mut execution = if token.is_cancelled() {
             Execution {
                 report: Report::cancelled(work.item.progress.completed),
                 resources: None,
             }
         } else {
-            executor.execute(&work, &token)
+            executor.execute(&work, &token, &progress)
         };
+        progress.seal();
         let c = CompleteItemCommand {
             generation: store.generation(),
             operation: work.operation.clone(),
@@ -278,6 +341,7 @@ fn worker(store: &impl JobStore, executor: &impl Executor, shared: &Shared) {
                 }
             }
         }
+        shared.dirty.store(true, Ordering::Release);
         let mut s = shared.state.lock().unwrap_or_else(|e| e.into_inner());
         s.inflight.retain(|(id, _, _)| *id != work.item.identity.id);
         s.running -= 1;
@@ -301,6 +365,7 @@ fn coordinator(store: &impl JobStore, shared: &Shared) {
             let accepted = admit(store, &start.input);
             let mut s = shared.state.lock().unwrap_or_else(|e| e.into_inner());
             s.admitting = false;
+            shared.dirty.store(true, Ordering::Release);
             s.admission = Some(Admission {
                 id: start.input.id,
                 accepted,
@@ -321,6 +386,31 @@ fn coordinator(store: &impl JobStore, shared: &Shared) {
         if stopping {
             while !matches!(store.cancel_all(), StoreResult::Known(())) {
                 pause();
+            }
+        }
+        for slot in &shared.progress {
+            let pending = {
+                let slot = slot.lock().unwrap_or_else(|e| e.into_inner());
+                slot.latest
+                    .as_ref()
+                    .filter(|v| {
+                        !slot.sealed
+                            && slot.export
+                            && v.completed > slot.saved
+                            && (v.completed - slot.saved >= 256 * 1024 || v.completed == v.total)
+                    })
+                    .cloned()
+            };
+            if let Some(pending) = pending
+                && matches!(
+                    store.save_progress(pending.item, pending.completed, pending.total),
+                    StoreResult::Known(())
+                )
+            {
+                let mut slot = slot.lock().unwrap_or_else(|e| e.into_inner());
+                if slot.latest.as_ref().is_some_and(|v| v.item == pending.item) {
+                    slot.saved = slot.saved.max(pending.completed);
+                }
             }
         }
         let checks = {
@@ -391,6 +481,7 @@ fn coordinator(store: &impl JobStore, shared: &Shared) {
                         finished_at: now(),
                     };
                     persist(store, &CommandWitness::Finish(Box::new(command)));
+                    shared.dirty.store(true, Ordering::Release);
                     continue;
                 }
                 StoreResult::Known(None) if stopping => {
@@ -429,12 +520,19 @@ pub fn with_runtime<S: JobStore, E: Executor, T>(
             cancel: None,
         }),
         changed: Condvar::new(),
+        generation: Generation(Arc::new(())),
+        progress: (0..config.workers())
+            .map(|_| Arc::new(Mutex::new(super::progress::Slot::default())))
+            .collect(),
+        dirty: Arc::new(AtomicBool::new(false)),
+        revision: std::sync::atomic::AtomicU64::new(1),
     });
     thread::scope(|scope| {
         let mut workers = Vec::with_capacity(config.workers());
-        for _ in 0..config.workers() {
+        for index in 0..config.workers() {
             let s = &shared;
-            workers.push(scope.spawn(move || guarded(store, s, || worker(store, executor, s))));
+            workers
+                .push(scope.spawn(move || guarded(store, s, || worker(store, executor, s, index))));
         }
         let s = &shared;
         let coordinator = scope.spawn(move || guarded(store, s, || coordinator(store, s)));

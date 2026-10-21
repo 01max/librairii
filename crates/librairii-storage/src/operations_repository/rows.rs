@@ -19,6 +19,60 @@ const ITEMS: &str = "SELECT operation_id, id, story_id, resolved_story_id, story
     export_skip_code, status, outcome_code, outcome_message, completed_bytes, total_bytes
     FROM file_operation_items";
 
+// Bound materialization before extracting any variable-length SQLite text.
+// History has a separate aggregate page budget in addition to this per-snapshot
+// ceiling. These limits are bytes, not an export count or a stored-row rewrite.
+const MAX_ROW_TEXT: i64 = 16 * 1024 * 1024;
+const MAX_SNAPSHOT: i64 = 64 * 1024 * 1024;
+fn budget(
+    tx: &Transaction<'_>,
+    table: &str,
+    columns: &[&str],
+    predicate: &str,
+    args: impl rusqlite::Params,
+    overhead: usize,
+    limit: i64,
+) -> Result<()> {
+    let text = columns
+        .iter()
+        .map(|c| format!("COALESCE(length(CAST({c} AS BLOB)),0)"))
+        .collect::<Vec<_>>()
+        .join("+");
+    let (bytes, largest): (i64, i64) = tx.query_row(
+        &format!("SELECT COALESCE(SUM({text}+{overhead}),0),COALESCE(MAX({text}+{overhead}),0) FROM {table} WHERE {predicate}"),
+        args,
+        |r| Ok((r.get(0)?, r.get(1)?)),
+    )?;
+    if bytes > limit || largest > MAX_ROW_TEXT {
+        return Err(librairii_app::ports::creation::InputError::ResourceLimit.into());
+    }
+    Ok(())
+}
+const HEADER_TEXT: &[&str] = &[
+    "id",
+    "created_at",
+    "started_at",
+    "finished_at",
+    "export_source_type",
+    "export_source_shelf_ids",
+    "export_source_shelf_names",
+    "export_destination",
+    "error_code",
+    "error_message",
+];
+const ITEM_TEXT: &[&str] = &[
+    "operation_id",
+    "story_uuid",
+    "story_title",
+    "source_name",
+    "output_name",
+    "archive_relative_path",
+    "archive_sha256",
+    "export_skip_code",
+    "outcome_code",
+    "outcome_message",
+];
+
 fn codec(index: usize, error: librairii_core::operations::OperationCodecError) -> rusqlite::Error {
     rusqlite::Error::FromSqlConversionFailure(index, Type::Text, Box::new(error))
 }
@@ -83,6 +137,15 @@ fn item_row(row: &Row<'_>) -> rusqlite::Result<OperationItem> {
 }
 
 pub(super) fn header(tx: &Transaction<'_>, id: &str) -> Result<Option<OperationHeader>> {
+    budget(
+        tx,
+        "file_operations",
+        HEADER_TEXT,
+        "id=?",
+        [id],
+        std::mem::size_of::<OperationHeader>(),
+        MAX_ROW_TEXT,
+    )?;
     Ok(tx.query_row(HEADER, [id], header_row).optional()?)
 }
 
@@ -90,6 +153,15 @@ pub(super) fn snapshot(tx: &Transaction<'_>, id: &str) -> Result<Option<Operatio
     let Some(operation) = header(tx, id)? else {
         return Ok(None);
     };
+    budget(
+        tx,
+        "file_operation_items",
+        ITEM_TEXT,
+        "operation_id=?",
+        [id],
+        std::mem::size_of::<OperationItem>(),
+        MAX_SNAPSHOT - MAX_ROW_TEXT,
+    )?;
     let mut statement = tx.prepare(&format!("{ITEMS} WHERE operation_id = ? ORDER BY id"))?;
     let items = statement
         .query_map([id], item_row)?
@@ -105,6 +177,17 @@ pub(super) fn view(
     let Some(operation) = header(tx, id)? else {
         return Ok(None);
     };
+    if let Some(item) = item {
+        budget(
+            tx,
+            "file_operation_items",
+            ITEM_TEXT,
+            "operation_id=? AND id=?",
+            rusqlite::params![id, item],
+            std::mem::size_of::<OperationItem>(),
+            MAX_ROW_TEXT,
+        )?;
+    }
     let item = match item {
         Some(item) => tx
             .query_row(

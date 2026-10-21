@@ -2794,6 +2794,24 @@
         "x86_64-apple-darwin",
         "x86_64-unknown-linux-gnu"
       ]
+    },
+    {
+      "suite": "librairii-storage::native_jobs",
+      "name": "progress_coalesces_persists_and_rejects_late_producers_and_stale_responses",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::operation_lifecycle",
+      "name": "snapshot_byte_limits_refuse_oversized_legacy_text_without_changing_rows",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
     }
   ]
 }

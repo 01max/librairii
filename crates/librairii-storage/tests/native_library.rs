@@ -2077,7 +2077,12 @@ fn native_job_session_borrows_actual_database_and_file_owner_until_durable_settl
     }
     impl<'files, 'library> Executor for Source<'files, 'library> {
         type Resources = OwnedReadSource<'files, 'library>;
-        fn execute(&self, _: &WorkItem, _: &Cancellation) -> Execution<Self::Resources> {
+        fn execute(
+            &self,
+            _: &WorkItem,
+            _: &Cancellation,
+            _: &ProgressSink,
+        ) -> Execution<Self::Resources> {
             match self
                 .files
                 .open_read_source(FileArea::Archives, self.name.clone())

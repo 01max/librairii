@@ -1,9 +1,13 @@
 //! Production blocking job session borrowing the admitted store and effect owner.
 //! The session closure normally hosts the UI loop. Every owned scoped worker is
 //! joined before this function returns and the Database/library borrow ends.
+mod progress;
 mod scheduler;
 use crate::ports::{creation::NewOperation, jobs::WorkItem, operations::CompleteItemCommand};
 use librairii_core::operations::{ItemState, RawOutcome};
+pub use progress::{
+    Generation, OperationProjection, ProgressSink, ProgressUpdate, RequestStamp, Response,
+};
 pub use scheduler::{Admission, Handle, Refusal, RuntimeStatus, SessionError, with_runtime};
 use std::sync::{
     Arc,
@@ -107,7 +111,12 @@ impl DurableReport<'_> {
 }
 pub trait Executor: Sync {
     type Resources: Send;
-    fn execute(&self, work: &WorkItem, cancel: &Cancellation) -> Execution<Self::Resources>;
+    fn execute(
+        &self,
+        work: &WorkItem,
+        cancel: &Cancellation,
+        progress: &ProgressSink,
+    ) -> Execution<Self::Resources>;
     /// On uncertainty return the original actual owner. The runtime retains it
     /// and retries without cancellation or shutdown deadlines.
     fn settle(

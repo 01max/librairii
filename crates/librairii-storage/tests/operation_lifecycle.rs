@@ -233,3 +233,40 @@ fn invalid_creation_rolls_back_and_changed_header_is_not_an_acknowledgement() ->
     db.close()?;
     Ok(())
 }
+
+#[test]
+fn snapshot_byte_limits_refuse_oversized_legacy_text_without_changing_rows() -> TestResult {
+    let roots = TestRoots::new()?;
+    let lib = library(&roots)?;
+    let mut db = Database::open_isolated(&lib)?;
+    let request = input("ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ");
+    committed(
+        db.create_operation(request.clone(), "now".into(), Default::default())?
+            .wait()?,
+    )?;
+    committed(
+        db.transaction(Default::default(), |tx| {
+            tx.execute(
+                "UPDATE file_operation_items SET outcome_message=CAST(zeroblob(16777217) AS TEXT)",
+                [],
+            )?;
+            Ok(())
+        })?
+        .wait()?,
+    )?;
+    assert!(matches!(
+        TerminalRepository::new(&db, 1).snapshot(&request.id),
+        SnapshotReply::Unavailable(_)
+    ));
+    assert_eq!(
+        db.barrier_read(|tx| Ok(tx.query_row(
+            "SELECT length(CAST(outcome_message AS BLOB)) FROM file_operation_items",
+            [],
+            |r| r.get::<_, i64>(0)
+        )?))?
+        .wait()?,
+        16_777_217
+    );
+    db.close()?;
+    Ok(())
+}

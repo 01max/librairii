@@ -127,6 +127,14 @@ impl JobStore for TerminalRepository<'_, '_> {
             Ok(Some((header.immutable_scope(),aggregate.terminal_result().map_err(|_|invalid())?)))
         }))
     }
+    fn save_progress(&self, item: i64, completed: i64, total: i64) -> StoreResult<()> {
+        if completed < 0 || total < 0 || completed > total {
+            return StoreResult::Rejected;
+        }
+        write(self.database.repair_transaction(move|tx| {
+            tx.execute("UPDATE file_operation_items SET completed_bytes=? WHERE id=? AND status='running' AND total_bytes=? AND completed_bytes<=? AND EXISTS(SELECT 1 FROM file_operations o WHERE o.id=operation_id AND o.status IN ('queued','running'))",params![completed,item,total,completed])?;Ok(())
+        }))
+    }
     fn cancelled(&self, id: &str) -> StoreResult<bool> {
         let id = id.to_owned();
         read(self.database.barrier_read(move |tx| {

@@ -62,3 +62,26 @@ spawn_blocking queue or fabricated static storage handle is introduced. Native
 UI composition is Task 15. The runtime test uses a real independently adopted
 native library, admitted Database and actual OwnedReadSource retained through
 SQL completion and settlement, followed by clean Database/native closure.
+
+## 6.3 — Coalesced progress and correlated observations
+
+Each worker owns one scalar progress slot with monotonic byte/revision checks,
+an opaque item epoch and a seal at execution completion. Late callbacks cannot
+write into a later item or reopen terminal presentation. One dirty bit coalesces
+wakeups; terminal truth is fetched from SQLite, never delivered through a lossy
+progress queue. Export progress persists at 256 KiB increments or its final byte
+through the reserved writer lane. Progress writes cannot update terminal rows.
+
+Read requests carry an opaque session identity and optional existing navigation
+QueryStamp. Equal numeric generation values on a new session do not admit old
+responses. Query-independent operation observations survive browser changes.
+Operation projections bind one raw operation ID and retain a durable terminal
+snapshot against delayed active responses. Native UI rendering remains Task 15.
+
+Before extracting variable-length SQLite text, reads check each row against
+16 MiB and full snapshots against a 64 MiB aggregate budget. Oversized historical
+rows return a resource-limit error without rewriting or truncating stored data.
+The test emits 10,000 updates, observes one latest slot, checks real persisted
+export bytes and late callbacks, and rejects stale query/session responses and
+an older active snapshot after terminal persistence. Another test retains an
+oversized legacy outcome unchanged while refusing its materialization.
