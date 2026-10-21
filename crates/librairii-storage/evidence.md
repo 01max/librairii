@@ -1461,3 +1461,51 @@ both-parent rename persistence or power-loss durability. No directory flush,
 NtFlush, ReplaceFileW/POSIX mutation, restart, activation or full4.9 grant follows.
 The independently verified Unix read-source issuer is separately committed as
 `34dc8e0ab2691f7bda0b49f8bb0fe65746da019a` and adds no Windows authority.
+
+Original nine-identity support
+`44c2416ab5d79c5513dd039f02e3f866972b8067` was fast-forward consumed and
+published, retaining all prior objects/scopes and issuer34dc/helper8223 source.
+ONE exact44 worker6 full quality run passed178 nextest/zero skips and thirteen
+workspace compile-fail docs (eleven storage), unchanged146/strict15/source19,
+both graph policies, discovery/fmt/build/Clippy. The launcher explicitly reported
+Source44 and the actual worker6 root. Log SHA256
+`e6e741698e4f38a58a06776a1a256caae325e56c8095c4ee0e8efaadbb7bdd9b`.
+This historical AppleARM source-combined result does not qualify Windows helper
+execution or the subsequently added process tests.
+
+### Partial 4.7: actual process death and relocation refusal
+
+Two macOS/Linux integration cases add finite lifecycle evidence without changing
+any production mechanism, format, API, dependency or cross-section input pin.
+The process case uses one actual child test process and explicit private owned
+fixture locations. The child independently verifies the admitted closed source,
+creates its OWN new copy and marked native profile through actual constructors,
+and opens the actual five-connection Native Database before readiness. No parent
+copy receipt, path/ID tuple or TestRoots boolean is cast into child runtime
+authority. The readiness file is test synchronization data outside native
+namespaces, never activation/closure authority.
+
+The parent verifies both kernel locks are held, forcibly kills and truly waits
+for the child, then verifies the root/profile locks become available. That OS
+release does NOT permit mutable restart: actual checked reopen refuses persisted
+Active, preserves exact record bytes, source DB, legacy settings and all managed
+archive bytes. No child Drop/finalizer/clean flag executes and no journal/sidecar
+cleanup or Active recovery is attempted. A readiness deadline fails the test and
+the owning host fallback kills/WAITS rather than inventing a closed/durable pass.
+This is process-death evidence, not physical power-loss durability.
+
+The relocation case first positively closes/drains/finishes the actual native
+owner, moves its now-Closed root inside the owned data namespace, and verifies
+old profile authority cannot reopen or be publicly retargeted from data. Exact
+profile, marker and record bytes remain unchanged and no old path is recreated.
+It proves refusal/preservation, NOT successful verified cross-OS rebinding or
+automatic relocation repair.
+
+AppleARM scoped execution: each new exact case passed1/1 with25 other native
+tests intentionally filtered; storage all-target Clippy with warnings denied,
+rustfmt and diff-check passed. No fabricated executed RED, full178 repeat,
+Go/export/scalar/C2 campaign, actual Linux/Windows or provider qualification is
+claimed. Current source-defined test identities require owner5 additive support;
+current native/provider/cumulative/review and full4.7/4.10/4.11 gates remain open.
+The distinct proposed Native terminal proof stays pinned to1e954 and the import
+proof to44; neither is silently updated by these tests.

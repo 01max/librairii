@@ -1686,6 +1686,197 @@ fn native_forgotten_pending_retains_owned_slot_and_cannot_acknowledge_clean_data
 }
 
 #[test]
+fn native_actual_process_crash_keeps_active_and_releases_only_os_locks() -> TestResult {
+    use std::{
+        process::{Child, Command, Stdio},
+        time::{Duration, Instant},
+    };
+    const CHILD: &str = "LIBRAIRII_STORAGE_NATIVE_CRASH_FIXTURE";
+    const SOURCE: &str = "LIBRAIRII_STORAGE_NATIVE_CRASH_SOURCE";
+    const NAMESPACE: &str = "LIBRAIRII_STORAGE_NATIVE_CRASH_NAMESPACE";
+    const DATA: &str = "LIBRAIRII_STORAGE_NATIVE_CRASH_DATA";
+    const LEGACY: &str = "LIBRAIRII_STORAGE_NATIVE_CRASH_LEGACY";
+    const READY: &str = "LIBRAIRII_STORAGE_NATIVE_CRASH_READY";
+    if std::env::var_os(CHILD).is_some() {
+        // These are explicit private test input locations, never authority.
+        // The child independently verifies and owns a NEW copy through the
+        // actual storage route; no parent receipt/path cast crosses processes.
+        let value = |name| -> TestResult<std::path::PathBuf> {
+            Ok(std::env::var_os(name)
+                .ok_or("missing child fixture input")?
+                .into())
+        };
+        let locations = ProfileLocations {
+            native: value(NAMESPACE)?,
+            data: value(DATA)?,
+            legacy: Some(value(LEGACY)?),
+        };
+        let source = value(SOURCE)?;
+        let profile = ProfileDocument::decode(&fs::read(
+            locations
+                .legacy
+                .as_ref()
+                .ok_or("legacy input")?
+                .join("settings.json"),
+        )?)?;
+        let input = ClosedLibraryInput::verify(
+            &source,
+            profile,
+            ClosedManifest::decode(MANIFEST)?,
+            &WorkCancellation::default(),
+        )?;
+        let copy = input.copy_to_new_root(
+            &locations.data.join("actual-process-owned"),
+            &WorkCancellation::default(),
+        )?;
+        let root = copy.root().to_owned();
+        let store = NativeProfileStore::create_fresh(&locations.native)?;
+        let native =
+            NativeLibrary::bind_independent(copy, &store, &locations, &WorkCancellation::default())
+                .map_err(|f| f.to_string())?;
+        let db = Database::open_native(&native)?;
+        assert_eq!(db.diagnostics().len(), 5);
+        assert_eq!(native_state(&root)?["state"], "active");
+        assert_eq!(native_state(&root)?["epoch"], 1);
+        let mut ready = fs::OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(value(READY)?)?;
+        ready.write_all(b"active-five-owned-connections")?;
+        ready.sync_all()?;
+        // The parent forcibly kills this real process. No Rust Drop/finalizer,
+        // successful close or synthetic clean flag can execute on that path.
+        loop {
+            std::thread::park();
+            std::hint::black_box((&db, &native, &store));
+        }
+    }
+
+    struct ProcessOwner(Child);
+    impl Drop for ProcessOwner {
+        fn drop(&mut self) {
+            // Test-host fallback only. Explicit success/failure below always
+            // performs real wait; this never certifies library settlement.
+            let _ = self.0.kill();
+            let _ = self.0.wait();
+        }
+    }
+    let roots = TestRoots::new()?;
+    let (original_copy, locations) = prepare(&roots, false)?;
+    let source = Path::new(&original_copy.source_profile().profile().root);
+    let source_db = fs::read(source.join("db/librairii.sqlite3"))?;
+    let legacy = locations.legacy.as_ref().ok_or("legacy context")?;
+    let legacy_profile = fs::read(legacy.join("settings.json"))?;
+    let ready = roots.profile().join("native-child-ready");
+    let output_path = roots.profile().join("native-child-output");
+    let output = fs::File::create(&output_path)?;
+    let mut child = ProcessOwner(
+        Command::new(std::env::current_exe()?)
+            .args([
+                "--exact",
+                "native_actual_process_crash_keeps_active_and_releases_only_os_locks",
+                "--nocapture",
+            ])
+            .env(CHILD, "owned-child")
+            .env(SOURCE, source)
+            .env(NAMESPACE, &locations.native)
+            .env(DATA, &locations.data)
+            .env(LEGACY, legacy)
+            .env(READY, &ready)
+            .stdout(Stdio::from(output.try_clone()?))
+            .stderr(Stdio::from(output))
+            .spawn()?,
+    );
+    let deadline = Instant::now() + Duration::from_secs(30);
+    loop {
+        if ready.exists() && fs::read(&ready)? == b"active-five-owned-connections" {
+            break;
+        }
+        if let Some(status) = child.0.try_wait()? {
+            return Err(format!(
+                "native child exited {status}: {}",
+                fs::read_to_string(&output_path)?
+            )
+            .into());
+        }
+        if Instant::now() >= deadline {
+            // Expiration fails this test and the owning fallback kills/WAITS;
+            // it cannot fabricate settled/closed product state or a pass.
+            return Err("native child did not reach actual Active runtime".into());
+        }
+        std::thread::sleep(Duration::from_millis(10));
+    }
+    let root = locations.data.join("actual-process-owned");
+    let active = fs::read(root.join(NATIVE_STATE))?;
+    assert_eq!(native_state(&root)?["state"], "active");
+    require_lock_held(&root)?;
+    assert!(matches!(
+        NativeProfileStore::open_native(&locations.native),
+        Err(StorageError::ProfileInUse)
+    ));
+    child.0.kill()?;
+    assert!(!child.0.wait()?.success());
+    // Actual process death releases kernel locks, NOT the persisted-generation
+    // recovery fence. The probe is dropped before testing checked reopen.
+    let lock = fs::OpenOptions::new()
+        .read(true)
+        .write(true)
+        .open(root.join(LIBRARY_LOCK_FILE))?;
+    lock.try_lock()?;
+    drop(lock);
+    let store = NativeProfileStore::open_native(&locations.native)?;
+    assert!(matches!(
+        NativeLibrary::reopen(&store, &locations, &WorkCancellation::default()),
+        Err(StorageError::RecoveryBindingRequired)
+    ));
+    assert_eq!(fs::read(root.join(NATIVE_STATE))?, active);
+    assert_eq!(fs::read(source.join("db/librairii.sqlite3"))?, source_db);
+    assert_eq!(fs::read(legacy.join("settings.json"))?, legacy_profile);
+    for entry in fs::read_dir(source.join("archives"))? {
+        let entry = entry?;
+        assert_eq!(
+            fs::read(root.join("archives").join(entry.file_name()))?,
+            fs::read(entry.path())?
+        );
+    }
+    Ok(())
+}
+
+#[test]
+fn native_closed_root_relocation_refuses_unverified_retarget_without_rewriting_data() -> TestResult
+{
+    let roots = TestRoots::new()?;
+    let (copy, locations) = prepare(&roots, false)?;
+    let old_root = copy.root().to_owned();
+    let store = NativeProfileStore::create_fresh(&locations.native)?;
+    let native =
+        NativeLibrary::bind_independent(copy, &store, &locations, &WorkCancellation::default())
+            .map_err(|f| f.to_string())?;
+    let mut db = Database::open_native(&native)?;
+    db.close()?;
+    drop(db);
+    native.finish().map_err(|f| f.to_string())?;
+    let settings = fs::read(locations.native.join("settings.json"))?;
+    let record = fs::read(old_root.join(NATIVE_STATE))?;
+    let marker = fs::read(old_root.join(".librairii-library"))?;
+    let moved = locations.data.join("unverified-relocation");
+    fs::rename(&old_root, &moved)?;
+    assert!(NativeLibrary::reopen(&store, &locations, &WorkCancellation::default()).is_err());
+    assert!(matches!(
+        store.update(|p| {
+            p.root = moved.to_str().ok_or(StorageError::InvalidProfile)?.into();
+            Ok(())
+        }),
+        Err(StorageError::ProfileBindingActive)
+    ));
+    assert_eq!(fs::read(locations.native.join("settings.json"))?, settings);
+    assert_eq!(fs::read(moved.join(NATIVE_STATE))?, record);
+    assert_eq!(fs::read(moved.join(".librairii-library"))?, marker);
+    assert!(!old_root.exists());
+    Ok(())
+}
+
+#[test]
 #[cfg(target_os = "linux")]
 fn native_non_utf8_copy_root_is_retained_without_lossy_record_or_profile_publication() -> TestResult
 {
