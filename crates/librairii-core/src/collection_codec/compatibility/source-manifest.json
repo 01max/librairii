@@ -30,7 +30,7 @@
     {
       "path": "extract_language.py",
       "bytes": 13112,
-      "sha256": "1432e1c3feb3c3f677b4915df2f8e87661f58a4ed3053b997393296ea185f432",
+      "sha256": "b87c6138f803cd916f09b993730eb1b05e80d947eaccd6f8b22f3f91554115bd",
       "kind": "translated",
       "recipe": "Hand-translate frozen getLangID finite two/three-letter lookup and compact bit decoding into literal extraction; verify selected bytes/headers; remove ONLY regionTypes ccTLD bit1/value2 before writing, retain other bits; never copy TLD APIs or regenerate current registries.",
       "sources": [
@@ -70,7 +70,7 @@
     {
       "path": "extract_normalization.py",
       "bytes": 10251,
-      "sha256": "cec28f978a3f75dd5f1b4311a7cd4490c0337c5acea6c5810555a072906d5130",
+      "sha256": "372b9efb501dbcbcac9970f87dc890ff89dd79bee2e1936b3dbafb34b6cc8e50",
       "kind": "translated",
       "recipe": "Extract literal fixed source arrays and the frozen full-fold map, verifying hashes/headers. Translate Go15 CaseRanges conversion and SimpleFold ASCII orbit closure for strict wire keys; no upstream execution or regeneration from current data.",
       "sources": [
@@ -366,8 +366,8 @@
     },
     {
       "path": "mod.rs",
-      "bytes": 552,
-      "sha256": "02517f433a0d12aa158c4d019183a0f175e425de809efe95a9944990c6548801",
+      "bytes": 626,
+      "sha256": "d87bece17b5f9fe2370e6c74a7676bc5855381e1ff298caf7c911522feb32931",
       "kind": "authored",
       "recipe": "Private module wiring only; no source algorithm.",
       "sources": [],
@@ -461,8 +461,8 @@
     },
     {
       "path": "normalization.rs",
-      "bytes": 19655,
-      "sha256": "001fde9e7232d3b3d0904852edeca6771a273f5eeabfa2475c11c9b76d5129ee",
+      "bytes": 22980,
+      "sha256": "e9a90c70e8ada3d308058702af037deae57a49fb64e730ae33f1fc0d12c2f776",
       "kind": "translated",
       "recipe": "Hand translation of frozen full-fold\u2192Go stream-safe NFKD\u2192Mn-only removal\u2192Go whitespace folding; original-character leading/trailing partition precedes stable CCC insertion. Safe checked UTF8 trie and fixed32-rune segment, Hangul decomposition; no modern composition or runtime Go.",
       "sources": [
@@ -609,7 +609,7 @@
     {
       "path": "update_source_manifest.py",
       "bytes": 11417,
-      "sha256": "fa88fc3465ab4b27322aa584f99cd767f2d2fa8573c528fdb0ea74e3c8cb34b3",
+      "sha256": "1cd7ae82985416db3c37a01b0fad1e56f4ad6d1e8444f0e924adf663bf83ec04",
       "kind": "authored",
       "recipe": "Explicit private file map; hash actual post-format bytes and retain pinned original identities, selections and notice names.",
       "sources": [],
@@ -636,7 +636,7 @@
     {
       "path": "verify_normalization.py",
       "bytes": 9962,
-      "sha256": "540cbf302c6fe759931d82d4c43e5a94b3bd94748d748bcbb39a261624f81590",
+      "sha256": "51663c1a2bde7d2ac22b1f349d2af0e15c565252b0dc64b227f8e53100835a55",
       "kind": "authored",
       "recipe": "Offline disposable exact73 archive/authenticated487-member ZIP/pinnedGo qualification with before/after original-file verification; never a product runtime or corpus generator.",
       "sources": [],

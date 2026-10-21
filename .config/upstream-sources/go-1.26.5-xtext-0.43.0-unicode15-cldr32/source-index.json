@@ -1236,5 +1236,21 @@
     "productOrigin": "frozen-git-blob",
     "historicalSourceIndexSha256": "10ea8fe193c594ce153ae7a1734c41ab80c9d406cc7ea314c8c7c471b7a92a99",
     "qualification": "File/header origin selection only; no new Go execution or runtime/parity qualification"
+  },
+  "runtimeSourceFiles": [
+    {
+      "path": "oracle73a93303/internal/library/query.go",
+      "bytes": 16534,
+      "sha256": "fb2cdb2d0899076f0526cc2ef8748a3c26a61e414db5072086a22e26ceada697",
+      "headerFirst12LinesHex": "7061636b616765206c6962726172790a0a696d706f727420280a0922636f6e74657874220a092264617461626173652f73716c220a0922656e636f64696e672f6a736f6e220a09226572726f7273220a0922666d74220a0922737472696e6773220a290a0a636f6e737420280a",
+      "first12LinesSha256": "50676c8d673493195fa11cb8aa6031081f3ee76c9f3f261c48c6925008489801"
+    }
+  ],
+  "runtimeSourceProvenance": {
+    "previousQuerySourceIndexSha256": "13dfd314abfda9a9553d152a1d8a5586f8bd1205a08c177af9bbec57a51ae822",
+    "frozenOracleCommit": "73a93303a9a44cf0a92eaf525331561ed8c04460",
+    "frozenOracleTree": "e797e9d59926d83b73fb7c02e5c3611073e89a16",
+    "sourceGitBlob": "ffcbb3378d5acabb7c87db9ea607768bcbae1fea",
+    "materialization": "Read exact existing retained independent oracle73 regular file; no download, capture, Go execution or generator. Identity only; selected scope is normalizeListRequest and page/sort constants/types, not the rest of query.go."
   }
 }

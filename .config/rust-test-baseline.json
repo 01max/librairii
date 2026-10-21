@@ -1823,6 +1823,214 @@
     {
       "suite": "librairii-core",
       "name": "import::studio_json::tests::studio_text_replacement_origins_and_interior_composition_are_preserved"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "collection_codec::compatibility::normalization::tests::runtime_uses_input_derived_bounds_without_changing_saved_wire_refusal"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "collection_codec::runtime::tests::runtime_private_lists_use_frozen_language_and_per_node_source_limits"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "collection_codec::runtime::tests::runtime_rejects_private_retired_flags_without_retiring_or_saving"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "collection_codec::runtime::tests::runtime_visits_children_then_navigation_then_node_fields_in_source_order"
+    },
+    {
+      "suite": "librairii-core::query_normalization",
+      "name": "query_runtime_choice_cardinality_is_checked_before_stable_deduplication"
+    },
+    {
+      "suite": "librairii-core::query_normalization",
+      "name": "query_runtime_definition_duplicates_include_ignored_and_cross_kind_filters"
+    },
+    {
+      "suite": "librairii-core::query_normalization",
+      "name": "query_runtime_group_limit_includes_language_and_compatibility_presence"
+    },
+    {
+      "suite": "librairii-core::query_normalization",
+      "name": "query_runtime_large_removable_names_do_not_inherit_saved_wire_byte_refusal"
+    },
+    {
+      "suite": "librairii-core::query_normalization",
+      "name": "query_runtime_mutated_decoded_value_and_payload_do_not_certify_runtime_validity"
+    },
+    {
+      "suite": "librairii-core::query_normalization",
+      "name": "query_runtime_name_limit_counts_normalized_unicode_characters"
+    },
+    {
+      "suite": "librairii-core::query_normalization",
+      "name": "query_runtime_navigation_defaults_and_exact_explicit_values_are_validated"
+    },
+    {
+      "suite": "librairii-core::query_normalization",
+      "name": "query_runtime_node_budget_counts_root_flat_branches_and_nested_descendants"
+    },
+    {
+      "suite": "librairii-core::query_normalization",
+      "name": "query_runtime_retains_ignored_filters_definition_order_and_stable_choice_deduplication"
+    },
+    {
+      "suite": "librairii-core::query_normalization",
+      "name": "query_runtime_root_and_each_child_receive_exactly_one_unicode_normalization_pass"
+    },
+    {
+      "suite": "librairii-storage::queries",
+      "name": "boolean_choice_derived_compatibility_and_live_ownership_filters",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::queries",
+      "name": "filter_plans_use_preserved_assignment_indexes",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::queries",
+      "name": "literal_unicode_search_pages_sort_ties_and_huge_page_numbers",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::queries",
+      "name": "metadata_language_is_independent_of_display_locale_and_uses_active_snapshots",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::queries",
+      "name": "nested_any_of_is_and_with_local_predicates_and_empty_branch_matches_all",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::queries",
+      "name": "invalid_nested_saved_reference_never_broadens_membership_or_changes_database",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::queries",
+      "name": "saved_membership_migrates_retired_flags_but_preserves_current_user_tag_reuse",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-core::query_urls",
+      "name": "history_hash_binding_and_typed_ids_distinguish_dynamic_and_curated_shelves"
+    },
+    {
+      "suite": "librairii-core::query_urls",
+      "name": "legacy_flags_retire_recursively_while_current_tag_reuse_survives"
+    },
+    {
+      "suite": "librairii-core::query_urls",
+      "name": "url_bounds_and_non_idempotent_unicode_are_validated_without_extra_output_passes"
+    },
+    {
+      "suite": "librairii-core::query_urls",
+      "name": "url_shared_current_and_legacy_fixtures_preserve_non_broken_criteria"
+    },
+    {
+      "suite": "librairii-core::navigation",
+      "name": "navigation_branching_bounds_and_invalid_selection_preserve_the_prior_state"
+    },
+    {
+      "suite": "librairii-core::navigation",
+      "name": "navigation_restores_scope_refinement_selection_page_and_independent_presentation"
+    },
+    {
+      "suite": "librairii-core::navigation",
+      "name": "reopen_preserves_one_pass_unicode_and_refuses_foreign_future_or_corrupt_documents"
+    },
+    {
+      "suite": "librairii-core::navigation",
+      "name": "stale_query_and_library_generation_stamps_cannot_apply_results"
+    },
+    {
+      "suite": "librairii-storage::query_preferences",
+      "name": "navigation_preferences_refuse_symlink_substitution_and_preserve_external_bytes",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::query_preferences",
+      "name": "navigation_preferences_reopen_outside_the_library_and_preserve_unknown_versions",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::queries",
+      "name": "validation_count_page_enrichment_and_scope_share_one_snapshot_during_a_writer_commit",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::query_differential",
+      "name": "all_twenty_four_frozen_count_page_and_full_scope_returns_match_without_normalization",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::query_differential",
+      "name": "streaming_scope_exceeds_picker_and_page_limits_and_stops_on_callback_failure",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-core::query_urls",
+      "name": "percent_escapes_require_two_hex_digits_and_never_turn_malformed_input_into_empty_success"
+    },
+    {
+      "suite": "librairii-core::navigation",
+      "name": "recreated_or_forked_navigation_cannot_accept_an_older_owners_query_stamp"
+    },
+    {
+      "suite": "librairii-core::query_urls",
+      "name": "every_ascii_percent_pair_agrees_with_the_two_hex_digit_grammar"
     }
   ]
 }

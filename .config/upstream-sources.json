@@ -6,8 +6,8 @@
       "id": "go-1.26.5-xtext-0.43.0-unicode15-cldr32",
       "scope": "single-core-query-codec",
       "source_index": ".config/upstream-sources/go-1.26.5-xtext-0.43.0-unicode15-cldr32/source-index.json",
-      "source_index_sha256": "13dfd314abfda9a9553d152a1d8a5586f8bd1205a08c177af9bbec57a51ae822",
-      "source_identities": 62,
+      "source_index_sha256": "cd8fcdac9ccdd46f1f06294f27bc07e9f8ed40f79d16cdab4d39c7c0cd837d78",
+      "source_identities": 63,
       "package_files": 43,
       "notices_root": ".config/upstream-notices/go-1.26.5-xtext-0.43.0-unicode15-cldr32",
       "notices": [
@@ -202,7 +202,8 @@
           "normalization"
         ],
         "oracle73a93303/internal/library/story_query.go": [
-          "product-boundary"
+          "product-boundary",
+          "runtime-query-normalization"
         ],
         "Go1.26.5/src/encoding/json/scanner.go": [
           "query-json-wire"
@@ -242,6 +243,9 @@
         ],
         "oracle73a93303/internal/collectionquery/unique_keys.go": [
           "query-product"
+        ],
+        "oracle73a93303/internal/library/query.go": [
+          "runtime-query-page"
         ]
       },
       "selection_notices": {
@@ -270,7 +274,9 @@
         "query-json-output": [
           "LICENSE-GO-BSD.txt",
           "PATENTS-GO.txt"
-        ]
+        ],
+        "runtime-query-normalization": [],
+        "runtime-query-page": []
       },
       "excluded": [
         "regionTypes.ccTLD-bit1-value2",
@@ -286,9 +292,13 @@
       },
       "query_codec": {
         "map_path": ".config/query-codec-source-map.json",
-        "map_sha256": "fbd3eb75eeb0838911740a9ea42a3cb68bbd8510d84bfbff3b5a14b9838bcb1e",
+        "map_sha256": "60130c378f2438fbb4fbea75f4251dbc5c7159dca47150c180e7902f5c18970f",
         "scope": "single-materialized-core-query-codec",
         "core_leaf": "crates/librairii-core/src/collection_codec/mod.rs"
+      },
+      "runtime_selection_scopes": {
+        "runtime-query-normalization": "ONLY borrowed runtime StoryLibraryQuery fields and the single normalizeStoryLibraryQuery/normalizeStoryLibraryQueryNode pass, its existing criteria validation and canonicalLanguage boundary. Reuse the SAME frozen normalization pipeline with checked input-derived resource bounds; saved-query fixed budgets/passes remain unchanged. No saved-payload decoding/canonicalization, SQL, projection or live authority.",
+        "runtime-query-page": "ONLY ListRequest page/pageSize/sort fields, DefaultPageSize=24, MaxPageSize=100, SortNameAscending=name_asc, SortImportedNewest=imported_desc and normalizeListRequest defaults/validation (page default1). No SQL, list execution, output materialization, metadata, destination/reveal or other query.go behavior."
       }
     },
     {

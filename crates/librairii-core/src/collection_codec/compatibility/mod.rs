@@ -10,3 +10,4 @@ mod unicode_properties;
 // ports and do not activate schema-open projection.
 pub(super) use language::{LanguageError, canonical as canonical_language};
 pub(super) use normalization::{NormalizeError, ascii_field_key, lowercase_key, normalize};
+pub(super) use normalization::{RuntimeNormalizeError, normalize_runtime};

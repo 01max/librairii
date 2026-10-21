@@ -12,6 +12,7 @@ pub mod native;
 pub mod platform;
 pub mod portability;
 pub mod profile;
+pub mod query;
 
 pub use error::{Result, StorageError};
 pub use identity::LibraryIdentity;
