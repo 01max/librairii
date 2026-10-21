@@ -3,6 +3,7 @@
 //! Root selection is explicit. The isolated override never discovers a profile.
 pub mod adoption;
 pub mod backup;
+pub mod broken;
 pub mod database;
 pub mod error;
 pub mod identity;

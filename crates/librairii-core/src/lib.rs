@@ -1,5 +1,6 @@
 //! Effect-free typed foundations and frozen saved-query compatibility codecs.
 #![forbid(unsafe_code)]
+pub mod broken;
 pub mod browsing;
 pub mod collection_codec;
 mod identity;

@@ -6,6 +6,8 @@ pub type Result<T> = std::result::Result<T, StorageError>;
 #[derive(Debug, thiserror::Error)]
 pub enum StorageError {
     #[error("{0}")]
+    Flag(#[from] librairii_core::broken::FlagError),
+    #[error("{0}")]
     Tag(#[from] librairii_core::tagging::TagError),
     #[error("navigation.invalid_state")]
     InvalidNavigation,
@@ -144,6 +146,7 @@ impl StorageError {
 
     pub const fn code(&self) -> &'static str {
         match self {
+            Self::Flag(error) => error.code(),
             Self::Tag(error) => error.code(),
             Self::InvalidNavigation => "navigation.invalid_state",
             Self::QueryInput(librairii_core::query::QueryInputError::InvalidQuery) => {

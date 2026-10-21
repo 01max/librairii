@@ -2642,6 +2642,19 @@
           ]
         },
         "reason": "Additive observed Task 7/8 discovery; original integration identities retain exact order and target scope."
+      },
+      {
+        "position": 371,
+        "identity": {
+          "suite": "librairii-storage::tags",
+          "name": "broken_flags_are_atomic_independent_visible_and_skipped_without_a_selection_cap_on_export",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive observed Task 7/8 discovery; original integration identities retain exact order and target scope."
       }
     ],
     "python": [

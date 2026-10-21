@@ -370,3 +370,88 @@ fn derived_age_identity_bands_and_custom_colors_survive_reseeding_and_projection
     db.close()?;
     Ok(())
 }
+#[test]
+fn broken_flags_are_atomic_independent_visible_and_skipped_without_a_selection_cap_on_export()
+-> TestResult {
+    use librairii_core::{broken::ExportSkip, query::QueryRequest};
+    let roots = TestRoots::new()?;
+    let library = IsolatedLibrary::initialize_from_override(
+        Some(roots.library().as_os_str()),
+        "a0000000-0000-4000-8000-000000000001".parse()?,
+    )?;
+    let mut db = Database::open_isolated(&library)?;
+    seed_stories(&db, 1001)?;
+    let ordinary = create(&db, "broken", Kind::Boolean)?;
+    assignment(
+        &db,
+        Command::Boolean {
+            story_ids: vec![1],
+            definition_id: ordinary,
+            assigned: true,
+        },
+    )?;
+    let ids = (1..=1000).collect::<Vec<_>>();
+    let result = committed(
+        db.set_broken(ids.clone(), true, WorkCancellation::default())?
+            .wait()?,
+    )?;
+    assert_eq!(result.changed_stories, 1000);
+    assert_eq!(
+        db.broken_summary(vec![1, 1, 1001])?.wait()?.flagged_stories,
+        1
+    );
+    assert!(
+        committed(
+            db.set_broken((1..=1001).collect(), false, WorkCancellation::default())?
+                .wait()?
+        )
+        .is_err()
+    );
+    assert!(
+        committed(
+            db.set_broken(vec![1, 9999], false, WorkCancellation::default())?
+                .wait()?
+        )
+        .is_err()
+    );
+    assert_eq!(
+        committed(
+            db.set_broken(vec![1, 1], true, WorkCancellation::default())?
+                .wait()?
+        )?
+        .changed_stories,
+        0
+    );
+    assert_eq!(
+        db.count(QueryRequest::default(), "fr-FR".into())?.wait()?,
+        1001
+    );
+    let page = db.search(QueryRequest::default(), "fr-FR".into())?.wait()?;
+    assert_eq!(page.total_items, 1001);
+    assert!(page.stories[0].broken);
+    let skipped = db
+        .read(|tx| {
+            let mut skipped = 0;
+            let mut ready = 0;
+            librairii_storage::query::visit_scope(tx, QueryRequest::default(), "fr-FR", |s| {
+                if s.manual_export_skip() == Some(ExportSkip::Broken) {
+                    skipped += 1;
+                } else {
+                    ready += 1;
+                }
+                Ok(())
+            })?;
+            Ok((skipped, ready))
+        })?
+        .wait()?;
+    assert_eq!(skipped, (1000, 1));
+    assert_eq!(
+        db.assignment_workspace(vec![1])?.wait()?.states[0].assigned_stories,
+        1
+    );
+    db.close()?;
+    let mut db = Database::open_isolated(&library)?;
+    assert_eq!(db.broken_summary(ids)?.wait()?.flagged_stories, 1000);
+    db.close()?;
+    Ok(())
+}

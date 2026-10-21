@@ -87,3 +87,10 @@ pub struct ExportStory {
     pub managed_relative_path: String,
     pub verification: String,
 }
+impl ExportStory {
+    /// Mandatory manual eligibility guard, independent of the export scope.
+    /// A later copier must still revalidate the live record and owned file.
+    pub const fn manual_export_skip(&self) -> Option<crate::broken::ExportSkip> {
+        crate::broken::export_skip(self.id != 0, self.broken)
+    }
+}

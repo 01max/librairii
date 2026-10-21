@@ -2071,6 +2071,15 @@
         "x86_64-apple-darwin",
         "x86_64-unknown-linux-gnu"
       ]
+    },
+    {
+      "suite": "librairii-storage::tags",
+      "name": "broken_flags_are_atomic_independent_visible_and_skipped_without_a_selection_cap_on_export",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
     }
   ]
 }
