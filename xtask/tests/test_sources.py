@@ -26,8 +26,14 @@ class SourcePolicy(unittest.TestCase):
         self.addCleanup(self.directory.cleanup)
         self.root = Path(self.directory.name) / 'owned Été # %2F'
         source = Path(__file__).resolve().parents[2]
+        self.source = source
         (self.root / '.config').mkdir(parents=True)
         shutil.copyfile(source / '.config/upstream-sources.json', self.root / '.config/upstream-sources.json')
+        self.query_map_path = self.root / gate.QUERY_MAP
+        shutil.copyfile(source / gate.QUERY_MAP, self.query_map_path)
+        self.inline_path = self.root / 'crates/librairii-storage/src/migrations.rs'
+        self.inline_path.parent.mkdir(parents=True)
+        shutil.copyfile(source / 'crates/librairii-storage/src/migrations.rs', self.inline_path)
         for path in ['.config/upstream-sources', '.config/upstream-notices/' + gate.BUNDLE]:
             shutil.copytree(source / path, self.root / path)
         self.registry_path = self.root / '.config/upstream-sources.json'
@@ -35,6 +41,9 @@ class SourcePolicy(unittest.TestCase):
         self.bundle = self.registry['bundles'][0]
         self.index = json.loads((self.root / self.bundle['source_index']).read_bytes())
         self.private = self.root / gate.DERIVATIVES
+        shutil.copytree(source / gate.DERIVATIVES, self.private)
+        self.initial_manifest = json.loads((self.private / 'source-manifest.json').read_bytes())
+        self.query_map = json.loads(self.query_map_path.read_bytes())
 
     def save_registry(self, registry):
         self.registry_path.write_text(json.dumps(registry), encoding='utf-8')
@@ -52,20 +61,223 @@ class SourcePolicy(unittest.TestCase):
             'sources': [{'path': source_path, 'sha256': original['sha256'],
                 'header_sha256': original['first12LinesSha256'], 'selection': selected}],
             'notices': list(gate.NOTICE_REQUIREMENTS[selected])}
-        manifest = {'version': 1, 'bundle': gate.BUNDLE, 'files': [record]}
+        manifest = copy.deepcopy(self.initial_manifest)
+        manifest['files'].append(record)
         self.save_manifest(manifest)
         return manifest
 
     def save_manifest(self, value):
         (self.private / 'source-manifest.json').write_text(json.dumps(value), encoding='utf-8')
 
+    def assert_query_map_rejected(self, changed):
+        original = self.query_map_path.read_bytes()
+        try:
+            data = json.dumps(changed).encode('utf-8')
+            self.query_map_path.write_bytes(data)
+            registry = copy.deepcopy(self.registry)
+            registry['bundles'][0]['query_codec']['map_sha256'] = gate.digest(data)
+            self.save_registry(registry)
+            # Reach the semantic guard after making this OWNED negative map
+            # self-consistent with its registry digest. The production pin is
+            # never changed; ordinary raw tampering is covered separately.
+            with mock.patch.object(gate, 'QUERY_MAP_SHA', gate.digest(data)):
+                with self.assertRaises(ValueError):
+                    gate.check(self.root)
+        finally:
+            self.query_map_path.write_bytes(original)
+            self.save_registry(self.registry)
+
+    def test_inline_query_map_and_current_source_are_mandatory(self):
+        for path in [self.query_map_path, self.inline_path]:
+            original = path.read_bytes()
+            try:
+                path.unlink()
+                with self.subTest(missing=path.relative_to(self.root).as_posix()):
+                    with self.assertRaises((ValueError, OSError)):
+                        gate.check(self.root)
+            finally:
+                path.write_bytes(original)
+        original = self.inline_path.read_bytes()
+        marker = b'mod collection_codec {'
+        self.assertEqual(original.count(marker), 1)
+        try:
+            self.inline_path.write_bytes(original.replace(
+                marker, marker + b'\n// Owned negative fixture changes the mapped fragment.'))
+            with self.assertRaises(ValueError):
+                gate.check(self.root)
+        finally:
+            self.inline_path.write_bytes(original)
+
+    def test_duplicate_query_map_fields_are_rejected(self):
+        original = self.query_map_path.read_bytes()
+        value = json.loads(original)
+        key = next(iter(value))
+        duplicate = json.dumps(key) + ':' + json.dumps(value[key])
+        try:
+            data = ('{' + duplicate + ',' + original.decode('utf-8').lstrip()[1:]).encode('utf-8')
+            self.query_map_path.write_bytes(data)
+            registry = copy.deepcopy(self.registry)
+            registry['bundles'][0]['query_codec']['map_sha256'] = gate.digest(data)
+            self.save_registry(registry)
+            with mock.patch.object(gate, 'QUERY_MAP_SHA', gate.digest(data)):
+                with self.assertRaisesRegex(ValueError, 'duplicate'):
+                    gate.check(self.root)
+        finally:
+            self.query_map_path.write_bytes(original)
+            self.save_registry(self.registry)
+
+    def test_query_lookup_preserves_all_original_49_source_identities_and_historical_index_bytes(self):
+        historical_path = (Path('.config/upstream-sources') / gate.BUNDLE / 'source-index.json')
+        lookup_bytes = (self.source / historical_path).read_bytes()
+        self.assertEqual((self.root / historical_path).read_bytes(), lookup_bytes)
+        historical = json.loads(lookup_bytes)
+        query_sources = historical.pop('querySourceFiles')
+        historical.pop('querySourceProvenance')
+        self.assertEqual(len(query_sources), gate.SOURCE_COUNT - 49)
+        original_bytes = (json.dumps(historical, indent=2) + '\n').encode('utf-8')
+        self.assertEqual(gate.digest(original_bytes),
+            '10ea8fe193c594ce153ae7a1734c41ab80c9d406cc7ea314c8c7c471b7a92a99')
+        original_sources = [record for package in historical['packages'] for record in package['files']]
+        original_sources += historical['supplementalSourceFiles']
+        self.assertEqual(len(original_sources), 49)
+        observed = gate.check(self.root)['source_identities']
+        by_path = {record['path']: record for record in observed}
+        self.assertEqual(len(by_path), gate.SOURCE_COUNT)
+        for original in original_sources:
+            with self.subTest(source=original['path']):
+                self.assertEqual(by_path[original['path']], original)
+
+    def test_query_origins_require_exact_set_and_bounded_selection(self):
+        self.assertEqual(len(self.query_map['origins']), gate.SOURCE_COUNT - 49)
+        for mutation in ['missing', 'extra', 'duplicate', 'selection']:
+            changed = copy.deepcopy(self.query_map)
+            if mutation == 'missing':
+                changed['origins'].pop()
+            elif mutation == 'extra':
+                extra = copy.deepcopy(changed['origins'][0])
+                extra['path'] = 'Go1.26.5/src/encoding/json/unselected.go'
+                changed['origins'].append(extra)
+            elif mutation == 'duplicate':
+                changed['origins'].append(copy.deepcopy(changed['origins'][0]))
+            else:
+                changed['origins'][0]['selection'] = 'normalization'
+            with self.subTest(mutation=mutation):
+                self.assert_query_map_rejected(changed)
+
+    def test_query_origin_source_and_header_hashes_cannot_be_repinned(self):
+        for field in ['sha256', 'header_sha256']:
+            changed = copy.deepcopy(self.query_map)
+            changed['origins'][0][field] = '0' * 64
+            with self.subTest(field=field):
+                self.assert_query_map_rejected(changed)
+
+    def test_inline_query_fragment_hash_and_materialization_cannot_be_fabricated(self):
+        for field, replacement in [
+                ('sha256', '0' * 64), ('fragment_sha256', '0' * 64),
+                ('bytes', 0), ('fragment_bytes', 0),
+                ('path', 'crates/librairii-core/src/query/unreleased.rs')]:
+            changed = copy.deepcopy(self.query_map)
+            changed['current_inline'][field] = replacement
+            with self.subTest(field=field):
+                self.assert_query_map_rejected(changed)
+        for field in ['begin', 'end', 'materialization']:
+            changed = copy.deepcopy(self.query_map)
+            del changed['current_inline'][field]
+            with self.subTest(missing=field):
+                self.assert_query_map_rejected(changed)
+
+    def test_future_core_leaf_remains_unmaterialized_and_unapproved(self):
+        self.assertIsNone(self.query_map['future_core_leaf'])
+        self.assertIsNone(self.bundle['query_codec']['future_core_leaf'])
+        fabricated = {'path': 'crates/librairii-core/src/query/unreleased.rs',
+            'bytes': 0, 'sha256': gate.digest(b''), 'header_sha256': gate.digest(b'')}
+        self.assertFalse((self.root / fabricated['path']).exists())
+        changed = copy.deepcopy(self.query_map)
+        changed['future_core_leaf'] = fabricated
+        self.assert_query_map_rejected(changed)
+        registry = copy.deepcopy(self.registry)
+        registry['bundles'][0]['query_codec']['future_core_leaf'] = fabricated
+        self.save_registry(registry)
+        try:
+            with self.assertRaises(ValueError):
+                gate.check(self.root)
+        finally:
+            self.save_registry(self.registry)
+        self.assertFalse((self.root / fabricated['path']).exists())
+
+    def test_query_map_binds_lookup_and_historical_index_separately(self):
+        self.assertNotEqual(self.query_map['lookup_index_sha256'],
+            self.query_map['historical_index_sha256'])
+        self.assertEqual(self.query_map['lookup_index_sha256'], self.bundle['source_index_sha256'])
+        self.assertEqual(self.query_map['historical_index_sha256'],
+            '10ea8fe193c594ce153ae7a1734c41ab80c9d406cc7ea314c8c7c471b7a92a99')
+        for field in ['lookup_index_sha256', 'historical_index_sha256']:
+            changed = copy.deepcopy(self.query_map)
+            other = ('historical_index_sha256' if field == 'lookup_index_sha256'
+                else 'lookup_index_sha256')
+            changed[field] = changed[other]
+            with self.subTest(field=field):
+                self.assert_query_map_rejected(changed)
+
+    def test_lookup_helper_bindings_cannot_restore_historical_or_fabricated_constants(self):
+        self.assertEqual(len(self.query_map['lookup_bindings']), 4)
+        for binding in self.query_map['lookup_bindings']:
+            path = self.root / binding['path']
+            original = path.read_bytes()
+            expected = binding['lookup_index_sha256'].encode('ascii')
+            self.assertEqual(original.count(expected), 1)
+            for replacement in [binding['historical_index_sha256'], '0' * 64]:
+                try:
+                    content = original.replace(expected, replacement.encode('ascii'))
+                    path.write_bytes(content)
+                    manifest = copy.deepcopy(self.initial_manifest)
+                    record = next(item for item in manifest['files']
+                        if self.private / item['path'] == path)
+                    record.update(bytes=len(content), sha256=gate.digest(content))
+                    self.save_manifest(manifest)
+                    with self.subTest(helper=binding['path'], replacement=replacement):
+                        with self.assertRaises(ValueError):
+                            gate.check(self.root)
+                finally:
+                    path.write_bytes(original)
+                    self.save_manifest(self.initial_manifest)
+        changed = copy.deepcopy(self.query_map)
+        changed['lookup_bindings'][0]['constant'] = 'INVENTED_LOOKUP_ALIAS'
+        self.assert_query_map_rejected(changed)
+
+    def test_historical_reference_bytes_and_original_manifest_records_remain_fixed(self):
+        self.assertEqual(len(self.query_map['historical_derivatives']['files']), 19)
+        self.assertEqual(len(self.query_map['fixed_references']), 3)
+        historical = {record['path']: record
+            for record in self.query_map['historical_derivatives']['files']}
+        for record in self.query_map['fixed_references']:
+            self.assertEqual(record, historical[record['path']])
+            path = self.private / record['path']
+            original = path.read_bytes()
+            self.assertEqual(gate.digest(original), record['sha256'])
+            self.assertEqual(len(original), record['bytes'])
+            try:
+                changed_bytes = original + b'\n'
+                path.write_bytes(changed_bytes)
+                manifest = copy.deepcopy(self.initial_manifest)
+                current = next(item for item in manifest['files'] if item['path'] == record['path'])
+                current.update(bytes=len(changed_bytes), sha256=gate.digest(changed_bytes))
+                self.save_manifest(manifest)
+                with self.subTest(reference=record['path']):
+                    with self.assertRaises(ValueError):
+                        gate.check(self.root)
+            finally:
+                path.write_bytes(original)
+                self.save_manifest(self.initial_manifest)
+
     def test_registered_sources_and_notices_pass_without_writes(self):
         before = snapshot(self.root)
         report = gate.check(self.root)
-        self.assertEqual(len(report['source_identities']), 49)
-        self.assertEqual(report['state'], 'awaiting-private-implementation')
+        self.assertEqual(len(report['source_identities']), gate.SOURCE_COUNT)
+        self.assertEqual(report['state'], 'private-provenance-recorded')
         self.assertIsNone(report['product_license'])
-        self.assertEqual(report['private_derivatives'], [])
+        self.assertEqual(report['private_derivatives'], self.initial_manifest['files'])
+        self.assertEqual(len(report['private_derivatives']), 19)
         self.assertIn('regionTypes.ccTLD-bit1-value2', report['excluded'])
         self.assertEqual(snapshot(self.root), before)
 
@@ -117,7 +329,7 @@ class SourcePolicy(unittest.TestCase):
 
     def test_private_derivatives_require_complete_source_and_content_records(self):
         manifest = self.derivative()
-        self.assertEqual(len(gate.check(self.root)['private_derivatives']), 1)
+        self.assertEqual(len(gate.check(self.root)['private_derivatives']), 20)
         original = (self.private / 'synthetic.rs').read_bytes()
         (self.private / 'synthetic.rs').write_bytes(original + b'changed')
         with self.assertRaisesRegex(ValueError, 'changed'):
@@ -129,7 +341,7 @@ class SourcePolicy(unittest.TestCase):
         (self.private / 'unrecorded.rs').unlink()
         for field, replacement in [('recipe', ''), ('sources', []), ('notices', [])]:
             changed = copy.deepcopy(manifest)
-            changed['files'][0][field] = replacement
+            changed['files'][-1][field] = replacement
             self.save_manifest(changed)
             with self.subTest(field=field), self.assertRaises(ValueError):
                 gate.check(self.root)
@@ -142,16 +354,16 @@ class SourcePolicy(unittest.TestCase):
         manifest = self.derivative()
         content = b'// dropped upstream copyright\n'
         (self.private / 'synthetic.rs').write_bytes(content)
-        manifest['files'][0].update(bytes=len(content), sha256=gate.digest(content))
+        manifest['files'][-1].update(bytes=len(content), sha256=gate.digest(content))
         self.save_manifest(manifest)
         with self.assertRaisesRegex(ValueError, 'copyright'):
             gate.check(self.root)
         manifest = self.derivative('golang.org/x/text@v0.43.0/internal/language/tables.go')
-        self.assertEqual(len(gate.check(self.root)['private_derivatives']), 1)
+        self.assertEqual(len(gate.check(self.root)['private_derivatives']), 20)
         for field, value in [('selection', 'language-default-whole-table'),
                              ('sha256', '0' * 64), ('header_sha256', '0' * 64)]:
             changed = copy.deepcopy(manifest)
-            changed['files'][0]['sources'][0][field] = value
+            changed['files'][-1]['sources'][0][field] = value
             self.save_manifest(changed)
             with self.subTest(field=field), self.assertRaises(ValueError):
                 gate.check(self.root)
@@ -166,7 +378,7 @@ class SourcePolicy(unittest.TestCase):
             self.assertEqual((destination / record['path']).read_bytes(), source.read_bytes())
         summary = (destination.parent / 'NOTICES-frozen-sources.txt').read_text(encoding='utf-8')
         self.assertIn('Product license remains undecided', summary)
-        self.assertIn('awaiting-private-implementation', summary)
+        self.assertIn('private-provenance-recorded', summary)
         self.assertEqual(snapshot(self.root / '.config'), before)
 
     def test_unlicensed_repository_and_scope_cannot_be_reassigned(self):
@@ -225,8 +437,8 @@ class SourcePolicy(unittest.TestCase):
             if mode == 'protected':
                 self.assertEqual(result.returncode, 0, result.stderr)
                 report = json.loads(result.stdout)
-                self.assertEqual(len(report['source_identities']), 49)
-                self.assertEqual(len(report['private_derivatives']), 1)
+                self.assertEqual(len(report['source_identities']), gate.SOURCE_COUNT)
+                self.assertEqual(len(report['private_derivatives']), 20)
             else:
                 self.assertNotEqual(result.returncode, 0)
                 if mode == 'negative-index':

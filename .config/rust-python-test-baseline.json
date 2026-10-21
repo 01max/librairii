@@ -14,6 +14,16 @@
     "test_sources.SourcePolicy.test_registered_sources_and_notices_pass_without_writes",
     "test_sources.SourcePolicy.test_unlicensed_repository_and_scope_cannot_be_reassigned",
     "test_sources.SourcePolicy.test_fresh_autocrlf_checkout_runs_actual_checker_and_rejects_unprotected_bytes",
-    "test_migration_bytes.MigrationCheckout.test_fresh_autocrlf_preserves_storage_go_and_corpus_bytes"
+    "test_migration_bytes.MigrationCheckout.test_fresh_autocrlf_preserves_storage_go_and_corpus_bytes",
+    "test_sources.SourcePolicy.test_inline_query_map_and_current_source_are_mandatory",
+    "test_sources.SourcePolicy.test_duplicate_query_map_fields_are_rejected",
+    "test_sources.SourcePolicy.test_query_lookup_preserves_all_original_49_source_identities_and_historical_index_bytes",
+    "test_sources.SourcePolicy.test_query_origins_require_exact_set_and_bounded_selection",
+    "test_sources.SourcePolicy.test_query_origin_source_and_header_hashes_cannot_be_repinned",
+    "test_sources.SourcePolicy.test_inline_query_fragment_hash_and_materialization_cannot_be_fabricated",
+    "test_sources.SourcePolicy.test_future_core_leaf_remains_unmaterialized_and_unapproved",
+    "test_sources.SourcePolicy.test_query_map_binds_lookup_and_historical_index_separately",
+    "test_sources.SourcePolicy.test_lookup_helper_bindings_cannot_restore_historical_or_fabricated_constants",
+    "test_sources.SourcePolicy.test_historical_reference_bytes_and_original_manifest_records_remain_fixed"
   ]
 }

@@ -14,3 +14,7 @@ crates/librairii-storage/src/migrations/compatibility/** -text
 # Migration SQL is an exact persisted schema contract, compared to the corpus.
 crates/librairii-storage/migrations/*.sql -text
 internal/database/migrations/*.sql -text
+
+# Query provenance binds exact current inline bytes and source-map metadata.
+.config/query-codec-source-map.json -text
+crates/librairii-storage/src/migrations.rs -text

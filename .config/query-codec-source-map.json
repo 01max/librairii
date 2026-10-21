@@ -1,0 +1,974 @@
+{
+  "version": 1,
+  "bundle": "go-1.26.5-xtext-0.43.0-unicode15-cldr32",
+  "scope": "current-storage-inline-query-origins-only",
+  "lookup_index_sha256": "13dfd314abfda9a9553d152a1d8a5586f8bd1205a08c177af9bbec57a51ae822",
+  "historical_index_sha256": "10ea8fe193c594ce153ae7a1734c41ab80c9d406cc7ea314c8c7c471b7a92a99",
+  "historical_manifest_sha256": "2f8bd6db37191346b6719d7345a46a0b4d3163be745d5fae6b7f8ebf429a0409",
+  "historical_derivatives": {
+    "version": 1,
+    "bundle": "go-1.26.5-xtext-0.43.0-unicode15-cldr32",
+    "files": [
+      {
+        "path": "codec-reference.json",
+        "bytes": 1546282,
+        "sha256": "b2fd01d9685133f295f1fbe23296d50971f07314ed94ed18d6a235903bca0d09",
+        "kind": "generated",
+        "recipe": "python3 verify_codec.py; actual pinned offline Go1.26.5 DecodeSavedLibraryQuery and MigrateSavedLibraryQuery on2864 scoped cases, separate canonical bytes/refusal classifications. Retain input/source/probe/recipe/tool/archive hashes and exact standalone source-copy identity, no production source copying or arbitrary-input/domain/SQL qualification. This indexed product-boundary source supplies the membership normalization; the additional exact query.go identity is recorded by archive/copy hashes in reference provenance.",
+        "sources": [
+          {
+            "path": "oracle73a93303/internal/library/story_query.go",
+            "sha256": "5ea334a20dda303b81f2d559defcc21a4f06b03542922263a1ed71ebcd602bc7",
+            "header_sha256": "068c99d6f702e7c295838419b97e53cb0972f9082315ce5c30f28f2cb2ebd3b0",
+            "selection": "product-boundary"
+          }
+        ],
+        "notices": []
+      },
+      {
+        "path": "codec_oracle.go.in",
+        "bytes": 2024,
+        "sha256": "5f4e782a32237508763159909d4222df3eb1d7056b5894c463d883bd0130590a",
+        "kind": "authored",
+        "recipe": "Qualification-only actual frozen collections/query.go Decode/Migrate calls. A byte-IDENTICAL copy is compiled alone under a new private internal path, avoiding unrelated SQL linkage; original library/collectionquery/searchtext remain unmodified. No product implementation or corpus generator.",
+        "sources": [],
+        "notices": []
+      },
+      {
+        "path": "extract_language.py",
+        "bytes": 12933,
+        "sha256": "7565ca5982ebfc90423ce0d839ebb4ad0845a054cb9306b2318ab0a0442ea4aa",
+        "kind": "translated",
+        "recipe": "Hand-translate frozen getLangID finite two/three-letter lookup and compact bit decoding into literal extraction; verify selected bytes/headers; remove ONLY regionTypes ccTLD bit1/value2 before writing, retain other bits; never copy TLD APIs or regenerate current registries.",
+        "sources": [
+          {
+            "path": "golang.org/x/text@v0.43.0/internal/language/tables.go",
+            "sha256": "876a73fb8b8fffd239efa592ffdf903c25757b4d17b715fc80d7aee8db2b985e",
+            "header_sha256": "8b677ec913c4566323b03c86ab9fc3d6caf0d6c4539faadaf0a54edb31fca3f8",
+            "selection": "language-default-without-dns"
+          },
+          {
+            "path": "golang.org/x/text@v0.43.0/internal/language/lookup.go",
+            "sha256": "8f0ac8780f89d5c2b29b98fd599269b445d7bb612a7948c9e97d425424b5ea38",
+            "header_sha256": "935e0ce82233cbc759045f0b5cec9278a4cf4ec8390fa52da364e99351b27c2e",
+            "selection": "language-default-without-dns"
+          },
+          {
+            "path": "golang.org/x/text@v0.43.0/internal/language/compact/tables.go",
+            "sha256": "99415fb6642ebd291f825497d32e70ae32da8569815d8f4ef587664c6c5ce7d5",
+            "header_sha256": "560ac6950b60bf8f1ac1b726c6e4b6cc762c4ae416a8b8ccdc504277f8ddd58b",
+            "selection": "language-default-without-dns"
+          },
+          {
+            "path": "golang.org/x/text@v0.43.0/internal/language/compact.go",
+            "sha256": "2d121c703729c5fbd5f3f13fd568af142ca8fde0f01a07e1874df22dbaadde98",
+            "header_sha256": "95b588b661b3deaab5460dab9ecd953034f149cfea585a8168c2714598178066",
+            "selection": "language-default-without-dns"
+          }
+        ],
+        "notices": [
+          "LICENSE-CC0.txt",
+          "LICENSE-CLDR32-APACHE.txt",
+          "LICENSE-CLDR32-UNICODE.txt",
+          "LICENSE-GO-BSD.txt",
+          "PATENTS-GO.txt"
+        ]
+      },
+      {
+        "path": "extract_normalization.py",
+        "bytes": 10072,
+        "sha256": "86e1cd15f81f6957d172a17b19ecbbb5484eb51dd0b84374b0d4a9ce06630a99",
+        "kind": "translated",
+        "recipe": "Extract literal fixed source arrays and the frozen full-fold map, verifying hashes/headers. Translate Go15 CaseRanges conversion and SimpleFold ASCII orbit closure for strict wire keys; no upstream execution or regeneration from current data.",
+        "sources": [
+          {
+            "path": "Go1.26.5/src/unicode/tables.go",
+            "sha256": "6a88d48746c4b2c471cc04ae40559694b734770212e6f5ea5f1962adb0c0bdb1",
+            "header_sha256": "ec9651df3b673e4e73deeeab3bd947b37e70bc0fbed401698cf27b3dfa0c0136",
+            "selection": "normalization"
+          },
+          {
+            "path": "Go1.26.5/src/unicode/letter.go",
+            "sha256": "b35a6d259313cef88d07e9e4027b8bd72c60ae140418f5be2c41a2ecea6074fe",
+            "header_sha256": "b1f8a48bd98929bacf4fe0520affc9eb02063542a76dd3cd25a71a6035014fec",
+            "selection": "normalization"
+          }
+        ],
+        "notices": [
+          "LICENSE-GO-BSD.txt",
+          "LICENSE-UNICODE-V3.txt",
+          "PATENTS-GO.txt"
+        ]
+      },
+      {
+        "path": "language-cases.json",
+        "bytes": 13727,
+        "sha256": "43e2b7563d57294410da9d6d06693954b347cce9bc00b3fef923338f77755957",
+        "kind": "generated",
+        "recipe": "python3 extract_language.py: decode the773 frozen compact cores and2 special strings, retain112 variant names; append authored suffix/selected/random seed protocol. Qualification INPUTS only, never expected outputs, fixture-specific aliases or preservation corpus regeneration; no DNS data.",
+        "sources": [
+          {
+            "path": "golang.org/x/text@v0.43.0/internal/language/tables.go",
+            "sha256": "876a73fb8b8fffd239efa592ffdf903c25757b4d17b715fc80d7aee8db2b985e",
+            "header_sha256": "8b677ec913c4566323b03c86ab9fc3d6caf0d6c4539faadaf0a54edb31fca3f8",
+            "selection": "language-default-without-dns"
+          },
+          {
+            "path": "golang.org/x/text@v0.43.0/internal/language/lookup.go",
+            "sha256": "8f0ac8780f89d5c2b29b98fd599269b445d7bb612a7948c9e97d425424b5ea38",
+            "header_sha256": "935e0ce82233cbc759045f0b5cec9278a4cf4ec8390fa52da364e99351b27c2e",
+            "selection": "language-default-without-dns"
+          },
+          {
+            "path": "golang.org/x/text@v0.43.0/internal/language/compact/tables.go",
+            "sha256": "99415fb6642ebd291f825497d32e70ae32da8569815d8f4ef587664c6c5ce7d5",
+            "header_sha256": "560ac6950b60bf8f1ac1b726c6e4b6cc762c4ae416a8b8ccdc504277f8ddd58b",
+            "selection": "language-default-without-dns"
+          },
+          {
+            "path": "golang.org/x/text@v0.43.0/internal/language/compact.go",
+            "sha256": "2d121c703729c5fbd5f3f13fd568af142ca8fde0f01a07e1874df22dbaadde98",
+            "header_sha256": "95b588b661b3deaab5460dab9ecd953034f149cfea585a8168c2714598178066",
+            "selection": "language-default-without-dns"
+          }
+        ],
+        "notices": [
+          "LICENSE-CC0.txt",
+          "LICENSE-CLDR32-APACHE.txt",
+          "LICENSE-CLDR32-UNICODE.txt",
+          "LICENSE-GO-BSD.txt",
+          "PATENTS-GO.txt"
+        ]
+      },
+      {
+        "path": "language-reference.json",
+        "bytes": 15081,
+        "sha256": "a687f58350d126addd110fb8b6aa6f88489ccfb05e4dc6cd401de92a99ce45b8",
+        "kind": "generated",
+        "recipe": "python3 verify_language.py: actual pinned offline Go1.26.5 Default/String/Und/errors and35-byte product outcomes on1369529 inputs; counterfactual deletion of TLD APIs+masked bit2 gives identical raw/product digests. Retain exact original/modified hashes, source/probe/seed identities and framed results; not all possible strings, Collection SQL or native filesystem qualification.",
+        "sources": [
+          {
+            "path": "golang.org/x/text@v0.43.0/internal/language/tables.go",
+            "sha256": "876a73fb8b8fffd239efa592ffdf903c25757b4d17b715fc80d7aee8db2b985e",
+            "header_sha256": "8b677ec913c4566323b03c86ab9fc3d6caf0d6c4539faadaf0a54edb31fca3f8",
+            "selection": "language-default-without-dns"
+          },
+          {
+            "path": "golang.org/x/text@v0.43.0/internal/language/lookup.go",
+            "sha256": "8f0ac8780f89d5c2b29b98fd599269b445d7bb612a7948c9e97d425424b5ea38",
+            "header_sha256": "935e0ce82233cbc759045f0b5cec9278a4cf4ec8390fa52da364e99351b27c2e",
+            "selection": "language-default-without-dns"
+          },
+          {
+            "path": "golang.org/x/text@v0.43.0/internal/language/compact/tables.go",
+            "sha256": "99415fb6642ebd291f825497d32e70ae32da8569815d8f4ef587664c6c5ce7d5",
+            "header_sha256": "560ac6950b60bf8f1ac1b726c6e4b6cc762c4ae416a8b8ccdc504277f8ddd58b",
+            "selection": "language-default-without-dns"
+          },
+          {
+            "path": "golang.org/x/text@v0.43.0/internal/language/parse.go",
+            "sha256": "0c884b51bb83d3633a51f16e90c7dbaf45c301a449e366df591eda11a3000972",
+            "header_sha256": "d4f940e8d017445b1c498ae7059e239d32a1b587637da9575bde53cce976f39c",
+            "selection": "language-default-without-dns"
+          },
+          {
+            "path": "golang.org/x/text@v0.43.0/internal/language/language.go",
+            "sha256": "19a0ccf7635fd3dbad3766d953996df5d1c24a367e44c49200ab6ec3023fc871",
+            "header_sha256": "1af9c42d5f5e97e0a01c3f139247e1b0fb5b6b1b8f1cda838752c312acbcd647",
+            "selection": "language-default-without-dns"
+          },
+          {
+            "path": "golang.org/x/text@v0.43.0/internal/language/compact.go",
+            "sha256": "2d121c703729c5fbd5f3f13fd568af142ca8fde0f01a07e1874df22dbaadde98",
+            "header_sha256": "95b588b661b3deaab5460dab9ecd953034f149cfea585a8168c2714598178066",
+            "selection": "language-default-without-dns"
+          },
+          {
+            "path": "golang.org/x/text@v0.43.0/internal/language/common.go",
+            "sha256": "68089abad3eed7b2559bb97510355e900a6ef2e1fac7ff89364bda9c50a2acba",
+            "header_sha256": "5fad59e6ddf9e9c908c8be95d2a14eebe7d016cb95519a452689457cee7761e7",
+            "selection": "language-default-without-dns"
+          },
+          {
+            "path": "golang.org/x/text@v0.43.0/internal/tag/tag.go",
+            "sha256": "97a27a6bfdd26d872e07d051fc27e622e1cd764943350e8bfa9cf0e2e13cc474",
+            "header_sha256": "1686d76e9009c87ae2ff0779d3c0f7cfe900a3b20d1542985f1d6ff5e042f8c6",
+            "selection": "language-default-without-dns"
+          },
+          {
+            "path": "golang.org/x/text@v0.43.0/language/parse.go",
+            "sha256": "3552f8fba45f310216182d167ba1da8e0c02212ad1896eeb66b194dd546b7bc2",
+            "header_sha256": "2e37b8573f92a4eafcf056282feec7474a2301437a74bfe69f3ae5b5f92e97f4",
+            "selection": "language-default-without-dns"
+          },
+          {
+            "path": "golang.org/x/text@v0.43.0/language/language.go",
+            "sha256": "3f2032f0367d83fb14772384d47119d27c2c427b277aa0a02913db59abe32bb0",
+            "header_sha256": "9b985a1a56e135fdc020f3a56bcdb360fa86595606c561003809ddc5170a7d6c",
+            "selection": "language-default-without-dns"
+          },
+          {
+            "path": "golang.org/x/text@v0.43.0/internal/language/compact/compact.go",
+            "sha256": "e154aa511d328fd47a9c9fc1115d9c92be2d385e885ae65c5e348ec1d5844ead",
+            "header_sha256": "e5b40da46c643c9fbb7c573f4c36c352df676a97781930d1f9b46b67b76585ed",
+            "selection": "language-default-without-dns"
+          },
+          {
+            "path": "golang.org/x/text@v0.43.0/internal/language/compact/language.go",
+            "sha256": "1d49845ec8c93b000391718e3127c0979c054186570805fce27f7fe167ad2c5d",
+            "header_sha256": "600c17b37c9b6265457f05c5811a9141b5071c9be50cf6026b810c3c9e97aa8b",
+            "selection": "language-default-without-dns"
+          },
+          {
+            "path": "oracle73a93303/internal/library/story_query.go",
+            "sha256": "5ea334a20dda303b81f2d559defcc21a4f06b03542922263a1ed71ebcd602bc7",
+            "header_sha256": "068c99d6f702e7c295838419b97e53cb0972f9082315ce5c30f28f2cb2ebd3b0",
+            "selection": "product-boundary"
+          }
+        ],
+        "notices": [
+          "LICENSE-CC0.txt",
+          "LICENSE-CLDR32-APACHE.txt",
+          "LICENSE-CLDR32-UNICODE.txt",
+          "LICENSE-GO-BSD.txt",
+          "PATENTS-GO.txt"
+        ]
+      },
+      {
+        "path": "language.rs",
+        "bytes": 26505,
+        "sha256": "e8a182c35519516016384d4996cdb1cfe5433e227a1a9b46f55e94014409ae66",
+        "kind": "translated",
+        "recipe": "Private product35-byte canonicalLanguage boundary; frozen Default=Deprecated|Legacy scanner/core/variant/extension and exact compact round trip. Lazy token validation preserves transform truncation; region override/compact bit widths remain observable; no SuppressScript/Macro/CLDR, parent/matcher approximation or TLD API. TrimSpace delegates the single private frozen Unicode primitive. Does not expose partial error tags that the product rejects.",
+        "sources": [
+          {
+            "path": "golang.org/x/text@v0.43.0/internal/language/tables.go",
+            "sha256": "876a73fb8b8fffd239efa592ffdf903c25757b4d17b715fc80d7aee8db2b985e",
+            "header_sha256": "8b677ec913c4566323b03c86ab9fc3d6caf0d6c4539faadaf0a54edb31fca3f8",
+            "selection": "language-default-without-dns"
+          },
+          {
+            "path": "golang.org/x/text@v0.43.0/internal/language/lookup.go",
+            "sha256": "8f0ac8780f89d5c2b29b98fd599269b445d7bb612a7948c9e97d425424b5ea38",
+            "header_sha256": "935e0ce82233cbc759045f0b5cec9278a4cf4ec8390fa52da364e99351b27c2e",
+            "selection": "language-default-without-dns"
+          },
+          {
+            "path": "golang.org/x/text@v0.43.0/internal/language/compact/tables.go",
+            "sha256": "99415fb6642ebd291f825497d32e70ae32da8569815d8f4ef587664c6c5ce7d5",
+            "header_sha256": "560ac6950b60bf8f1ac1b726c6e4b6cc762c4ae416a8b8ccdc504277f8ddd58b",
+            "selection": "language-default-without-dns"
+          },
+          {
+            "path": "golang.org/x/text@v0.43.0/internal/language/parse.go",
+            "sha256": "0c884b51bb83d3633a51f16e90c7dbaf45c301a449e366df591eda11a3000972",
+            "header_sha256": "d4f940e8d017445b1c498ae7059e239d32a1b587637da9575bde53cce976f39c",
+            "selection": "language-default-without-dns"
+          },
+          {
+            "path": "golang.org/x/text@v0.43.0/internal/language/language.go",
+            "sha256": "19a0ccf7635fd3dbad3766d953996df5d1c24a367e44c49200ab6ec3023fc871",
+            "header_sha256": "1af9c42d5f5e97e0a01c3f139247e1b0fb5b6b1b8f1cda838752c312acbcd647",
+            "selection": "language-default-without-dns"
+          },
+          {
+            "path": "golang.org/x/text@v0.43.0/internal/language/compact.go",
+            "sha256": "2d121c703729c5fbd5f3f13fd568af142ca8fde0f01a07e1874df22dbaadde98",
+            "header_sha256": "95b588b661b3deaab5460dab9ecd953034f149cfea585a8168c2714598178066",
+            "selection": "language-default-without-dns"
+          },
+          {
+            "path": "golang.org/x/text@v0.43.0/internal/language/common.go",
+            "sha256": "68089abad3eed7b2559bb97510355e900a6ef2e1fac7ff89364bda9c50a2acba",
+            "header_sha256": "5fad59e6ddf9e9c908c8be95d2a14eebe7d016cb95519a452689457cee7761e7",
+            "selection": "language-default-without-dns"
+          },
+          {
+            "path": "golang.org/x/text@v0.43.0/internal/tag/tag.go",
+            "sha256": "97a27a6bfdd26d872e07d051fc27e622e1cd764943350e8bfa9cf0e2e13cc474",
+            "header_sha256": "1686d76e9009c87ae2ff0779d3c0f7cfe900a3b20d1542985f1d6ff5e042f8c6",
+            "selection": "language-default-without-dns"
+          },
+          {
+            "path": "golang.org/x/text@v0.43.0/language/parse.go",
+            "sha256": "3552f8fba45f310216182d167ba1da8e0c02212ad1896eeb66b194dd546b7bc2",
+            "header_sha256": "2e37b8573f92a4eafcf056282feec7474a2301437a74bfe69f3ae5b5f92e97f4",
+            "selection": "language-default-without-dns"
+          },
+          {
+            "path": "golang.org/x/text@v0.43.0/language/language.go",
+            "sha256": "3f2032f0367d83fb14772384d47119d27c2c427b277aa0a02913db59abe32bb0",
+            "header_sha256": "9b985a1a56e135fdc020f3a56bcdb360fa86595606c561003809ddc5170a7d6c",
+            "selection": "language-default-without-dns"
+          },
+          {
+            "path": "golang.org/x/text@v0.43.0/internal/language/compact/compact.go",
+            "sha256": "e154aa511d328fd47a9c9fc1115d9c92be2d385e885ae65c5e348ec1d5844ead",
+            "header_sha256": "e5b40da46c643c9fbb7c573f4c36c352df676a97781930d1f9b46b67b76585ed",
+            "selection": "language-default-without-dns"
+          },
+          {
+            "path": "golang.org/x/text@v0.43.0/internal/language/compact/language.go",
+            "sha256": "1d49845ec8c93b000391718e3127c0979c054186570805fce27f7fe167ad2c5d",
+            "header_sha256": "600c17b37c9b6265457f05c5811a9141b5071c9be50cf6026b810c3c9e97aa8b",
+            "selection": "language-default-without-dns"
+          },
+          {
+            "path": "oracle73a93303/internal/library/story_query.go",
+            "sha256": "5ea334a20dda303b81f2d559defcc21a4f06b03542922263a1ed71ebcd602bc7",
+            "header_sha256": "068c99d6f702e7c295838419b97e53cb0972f9082315ce5c30f28f2cb2ebd3b0",
+            "selection": "product-boundary"
+          }
+        ],
+        "notices": [
+          "LICENSE-CC0.txt",
+          "LICENSE-CLDR32-APACHE.txt",
+          "LICENSE-CLDR32-UNICODE.txt",
+          "LICENSE-GO-BSD.txt",
+          "PATENTS-GO.txt"
+        ]
+      },
+      {
+        "path": "language_data.rs",
+        "bytes": 249065,
+        "sha256": "538696302fdd3c0e776c1c70f1632d5a12e7c08e953b90e7eb01bc336487066c",
+        "kind": "generated",
+        "recipe": "python3 extract_language.py --source-root <authenticated49-materialization> --source-index <pinned-index>; cargo fmt -p librairii-storage. Literal frozen mappings, aliases, scripts, regions, variants, grandfathered data and compact core IDs; regionTypes bit1/value2 excluded before emission, other bits unchanged; no TLD APIs or current registry.",
+        "sources": [
+          {
+            "path": "golang.org/x/text@v0.43.0/internal/language/tables.go",
+            "sha256": "876a73fb8b8fffd239efa592ffdf903c25757b4d17b715fc80d7aee8db2b985e",
+            "header_sha256": "8b677ec913c4566323b03c86ab9fc3d6caf0d6c4539faadaf0a54edb31fca3f8",
+            "selection": "language-default-without-dns"
+          },
+          {
+            "path": "golang.org/x/text@v0.43.0/internal/language/lookup.go",
+            "sha256": "8f0ac8780f89d5c2b29b98fd599269b445d7bb612a7948c9e97d425424b5ea38",
+            "header_sha256": "935e0ce82233cbc759045f0b5cec9278a4cf4ec8390fa52da364e99351b27c2e",
+            "selection": "language-default-without-dns"
+          },
+          {
+            "path": "golang.org/x/text@v0.43.0/internal/language/compact/tables.go",
+            "sha256": "99415fb6642ebd291f825497d32e70ae32da8569815d8f4ef587664c6c5ce7d5",
+            "header_sha256": "560ac6950b60bf8f1ac1b726c6e4b6cc762c4ae416a8b8ccdc504277f8ddd58b",
+            "selection": "language-default-without-dns"
+          }
+        ],
+        "notices": [
+          "LICENSE-CC0.txt",
+          "LICENSE-CLDR32-APACHE.txt",
+          "LICENSE-CLDR32-UNICODE.txt",
+          "LICENSE-GO-BSD.txt",
+          "PATENTS-GO.txt"
+        ]
+      },
+      {
+        "path": "language_oracle.go.in",
+        "bytes": 4568,
+        "sha256": "0e00e209ca02790c23611eb7fa19409639ef52f0029cb5ae28d6efc5ba3ffc67",
+        "kind": "authored",
+        "recipe": "Qualification-only calls to actual frozen public Default parser/String/Und/error and product boundary; framed digest protocol, finite alphabets, compact region overrides and deterministic grammar sequences; no runtime Go.",
+        "sources": [],
+        "notices": []
+      },
+      {
+        "path": "mod.rs",
+        "bytes": 643,
+        "sha256": "04f2d4d6acf8665c4967237bdd1207aefa3acdfecb0fb3af8dcedd4c13a740de",
+        "kind": "authored",
+        "recipe": "Private module wiring only; no source algorithm.",
+        "sources": [],
+        "notices": []
+      },
+      {
+        "path": "normalization-reference.json",
+        "bytes": 2401,
+        "sha256": "61a5a904eae2e88d07aa667f5cd2e0d74dd83a7c2e247e87d46b621f427a2468",
+        "kind": "generated",
+        "recipe": "python3 verify_normalization.py; actual pinned Go1.26.5 frozen Normalize/cases.Fold/norm.NFKD/unicode APIs over all1112064 valid scalars (including separate JSON-key simple lowercase/ASCII-reaching simple-fold metrics) and147228 boundary sequences. Includes57 CCC/Mn representatives and all18019 decomposing/backward-interacting scalars on both sides of overflow; exact framed SHA256 digests. Source/tool/ZIP/probe identities and before/after proof retained; not arbitrary-string or language qualification.",
+        "sources": [
+          {
+            "path": "golang.org/x/text@v0.43.0/unicode/norm/tables15.0.0.go",
+            "sha256": "9e29fbffef687d6d2191c999c466729dff2f394d8dcbec377a2fc14336f33cdb",
+            "header_sha256": "1fa8a0bff101dcf4e771378d869ef6f730054412bcafcc8039328230387bea58",
+            "selection": "normalization"
+          },
+          {
+            "path": "Go1.26.5/src/unicode/tables.go",
+            "sha256": "6a88d48746c4b2c471cc04ae40559694b734770212e6f5ea5f1962adb0c0bdb1",
+            "header_sha256": "ec9651df3b673e4e73deeeab3bd947b37e70bc0fbed401698cf27b3dfa0c0136",
+            "selection": "normalization"
+          },
+          {
+            "path": "oracle73a93303/frontend/src/search-casefold.json",
+            "sha256": "547a5aeae46f102d6a5310dcc5125988c6233d45125e96ffd712847a9c07b5de",
+            "header_sha256": "576879310fc9051d7c17f542e6bd8512135c430cde5458ea29f6be021800a85d",
+            "selection": "normalization"
+          },
+          {
+            "path": "Go1.26.5/src/unicode/letter.go",
+            "sha256": "b35a6d259313cef88d07e9e4027b8bd72c60ae140418f5be2c41a2ecea6074fe",
+            "header_sha256": "b1f8a48bd98929bacf4fe0520affc9eb02063542a76dd3cd25a71a6035014fec",
+            "selection": "normalization"
+          },
+          {
+            "path": "golang.org/x/text@v0.43.0/unicode/norm/composition.go",
+            "sha256": "326e91fea709726d884e475db9b7a61ad17829e32d795f182cdcfcfdf64d9bf6",
+            "header_sha256": "a2e12721634cd63e9a4a8cb2abbb925686c5d2f223764f937bc0fc7d577f801c",
+            "selection": "normalization"
+          },
+          {
+            "path": "golang.org/x/text@v0.43.0/unicode/norm/forminfo.go",
+            "sha256": "b53ecff9ab5a83fd45598f54dfc9ea03849a3bcf4617ef02cf43225c71acc1e3",
+            "header_sha256": "271f868ad8b22dd4a00cbe723f58a2551f13bb4ee9d39ad40db223161fd25698",
+            "selection": "normalization"
+          },
+          {
+            "path": "golang.org/x/text@v0.43.0/unicode/norm/normalize.go",
+            "sha256": "f1363700e71a35f9c966492f10dc6f3405cd824f2cc03b08ee64b24503d56f39",
+            "header_sha256": "625e25f79feaf321c015337395f98d73d7c62681a0f7d4066f9e837245129670",
+            "selection": "normalization"
+          },
+          {
+            "path": "golang.org/x/text@v0.43.0/unicode/norm/trie.go",
+            "sha256": "d87793d558251ee8824954f0b7bc5564803e4c9d59a8c4eebb4c3c5cfbd19492",
+            "header_sha256": "10ddbcfb05753ed54f6b5c95dbf71c09e297017ed4d99cbb2e051ac51456cadb",
+            "selection": "normalization"
+          },
+          {
+            "path": "golang.org/x/text@v0.43.0/cases/fold.go",
+            "sha256": "14ff03fda441587198ce6f3e59e6dde979fc21b2db9e248c15b43da497c594ac",
+            "header_sha256": "8d862084959e793269ab88e442c64bbf72cb03592bd652ef3ff0cbe122f415ff",
+            "selection": "normalization"
+          },
+          {
+            "path": "Go1.26.5/src/unicode/graphic.go",
+            "sha256": "46a43107a87c88cf17a05a557e00dbf6b0f4bb53ebcd7d3035e02f1e67c428be",
+            "header_sha256": "6845d75459e7366def56726e85d227de1c07312d79691c15e6d00ba5251dbca8",
+            "selection": "normalization"
+          },
+          {
+            "path": "Go1.26.5/src/strings/strings.go",
+            "sha256": "ba9478be775d11b6956c828ebf870a8f8e7b7318ee382834f1e741f02d1336ef",
+            "header_sha256": "e66b8ccab4bb0d14764b2baa569347d537f1ced4107b95294dab8578bfc97ae0",
+            "selection": "normalization"
+          },
+          {
+            "path": "internal/searchtext/searchtext.go",
+            "sha256": "0bf676dbaadeabe17130cb1c7be22a42205b7d7b87baaf652df4f25da02d52dc",
+            "header_sha256": "8bbc5eece8d52504c194976dfbbf30c32cc139a5183166b1bdf98aae910a50bb",
+            "selection": "product-boundary"
+          }
+        ],
+        "notices": [
+          "LICENSE-GO-BSD.txt",
+          "LICENSE-UNICODE-V3.txt",
+          "PATENTS-GO.txt"
+        ]
+      },
+      {
+        "path": "normalization.rs",
+        "bytes": 19643,
+        "sha256": "ab4b1c10137332c5cdbe4430edead212054e38219fb025daef2ba753d6b0502f",
+        "kind": "translated",
+        "recipe": "Hand translation of frozen full-fold\u2192Go stream-safe NFKD\u2192Mn-only removal\u2192Go whitespace folding; original-character leading/trailing partition precedes stable CCC insertion. Safe checked UTF8 trie and fixed32-rune segment, Hangul decomposition; no modern composition or runtime Go.",
+        "sources": [
+          {
+            "path": "golang.org/x/text@v0.43.0/unicode/norm/tables15.0.0.go",
+            "sha256": "9e29fbffef687d6d2191c999c466729dff2f394d8dcbec377a2fc14336f33cdb",
+            "header_sha256": "1fa8a0bff101dcf4e771378d869ef6f730054412bcafcc8039328230387bea58",
+            "selection": "normalization"
+          },
+          {
+            "path": "Go1.26.5/src/unicode/tables.go",
+            "sha256": "6a88d48746c4b2c471cc04ae40559694b734770212e6f5ea5f1962adb0c0bdb1",
+            "header_sha256": "ec9651df3b673e4e73deeeab3bd947b37e70bc0fbed401698cf27b3dfa0c0136",
+            "selection": "normalization"
+          },
+          {
+            "path": "oracle73a93303/frontend/src/search-casefold.json",
+            "sha256": "547a5aeae46f102d6a5310dcc5125988c6233d45125e96ffd712847a9c07b5de",
+            "header_sha256": "576879310fc9051d7c17f542e6bd8512135c430cde5458ea29f6be021800a85d",
+            "selection": "normalization"
+          },
+          {
+            "path": "Go1.26.5/src/unicode/letter.go",
+            "sha256": "b35a6d259313cef88d07e9e4027b8bd72c60ae140418f5be2c41a2ecea6074fe",
+            "header_sha256": "b1f8a48bd98929bacf4fe0520affc9eb02063542a76dd3cd25a71a6035014fec",
+            "selection": "normalization"
+          },
+          {
+            "path": "golang.org/x/text@v0.43.0/unicode/norm/composition.go",
+            "sha256": "326e91fea709726d884e475db9b7a61ad17829e32d795f182cdcfcfdf64d9bf6",
+            "header_sha256": "a2e12721634cd63e9a4a8cb2abbb925686c5d2f223764f937bc0fc7d577f801c",
+            "selection": "normalization"
+          },
+          {
+            "path": "golang.org/x/text@v0.43.0/unicode/norm/forminfo.go",
+            "sha256": "b53ecff9ab5a83fd45598f54dfc9ea03849a3bcf4617ef02cf43225c71acc1e3",
+            "header_sha256": "271f868ad8b22dd4a00cbe723f58a2551f13bb4ee9d39ad40db223161fd25698",
+            "selection": "normalization"
+          },
+          {
+            "path": "golang.org/x/text@v0.43.0/unicode/norm/normalize.go",
+            "sha256": "f1363700e71a35f9c966492f10dc6f3405cd824f2cc03b08ee64b24503d56f39",
+            "header_sha256": "625e25f79feaf321c015337395f98d73d7c62681a0f7d4066f9e837245129670",
+            "selection": "normalization"
+          },
+          {
+            "path": "golang.org/x/text@v0.43.0/unicode/norm/trie.go",
+            "sha256": "d87793d558251ee8824954f0b7bc5564803e4c9d59a8c4eebb4c3c5cfbd19492",
+            "header_sha256": "10ddbcfb05753ed54f6b5c95dbf71c09e297017ed4d99cbb2e051ac51456cadb",
+            "selection": "normalization"
+          },
+          {
+            "path": "golang.org/x/text@v0.43.0/cases/fold.go",
+            "sha256": "14ff03fda441587198ce6f3e59e6dde979fc21b2db9e248c15b43da497c594ac",
+            "header_sha256": "8d862084959e793269ab88e442c64bbf72cb03592bd652ef3ff0cbe122f415ff",
+            "selection": "normalization"
+          },
+          {
+            "path": "Go1.26.5/src/unicode/graphic.go",
+            "sha256": "46a43107a87c88cf17a05a557e00dbf6b0f4bb53ebcd7d3035e02f1e67c428be",
+            "header_sha256": "6845d75459e7366def56726e85d227de1c07312d79691c15e6d00ba5251dbca8",
+            "selection": "normalization"
+          },
+          {
+            "path": "Go1.26.5/src/strings/strings.go",
+            "sha256": "ba9478be775d11b6956c828ebf870a8f8e7b7318ee382834f1e741f02d1336ef",
+            "header_sha256": "e66b8ccab4bb0d14764b2baa569347d537f1ced4107b95294dab8578bfc97ae0",
+            "selection": "normalization"
+          },
+          {
+            "path": "internal/searchtext/searchtext.go",
+            "sha256": "0bf676dbaadeabe17130cb1c7be22a42205b7d7b87baaf652df4f25da02d52dc",
+            "header_sha256": "8bbc5eece8d52504c194976dfbbf30c32cc139a5183166b1bdf98aae910a50bb",
+            "selection": "product-boundary"
+          }
+        ],
+        "notices": [
+          "LICENSE-GO-BSD.txt",
+          "LICENSE-UNICODE-V3.txt",
+          "PATENTS-GO.txt"
+        ]
+      },
+      {
+        "path": "normalization_data.rs",
+        "bytes": 201487,
+        "sha256": "e35838b2a934ea6e9db2892fc82fad076d0ec19f9702805fc491f1f4957758bb",
+        "kind": "generated",
+        "recipe": "python3 extract_normalization.py --source-root <authenticated49-materialization> --source-index <pinned-index>; cargo fmt -p librairii-storage; retain only NFKC trie/decomposition/CCC data used by NFKD, no recomposition data or modern source.",
+        "sources": [
+          {
+            "path": "golang.org/x/text@v0.43.0/unicode/norm/tables15.0.0.go",
+            "sha256": "9e29fbffef687d6d2191c999c466729dff2f394d8dcbec377a2fc14336f33cdb",
+            "header_sha256": "1fa8a0bff101dcf4e771378d869ef6f730054412bcafcc8039328230387bea58",
+            "selection": "normalization"
+          }
+        ],
+        "notices": [
+          "LICENSE-GO-BSD.txt",
+          "LICENSE-UNICODE-V3.txt",
+          "PATENTS-GO.txt"
+        ]
+      },
+      {
+        "path": "normalization_oracle.go.in",
+        "bytes": 5226,
+        "sha256": "2011455b23aad4701a11a086db7673d34d9899102f8841b4761cf35a0b20d455",
+        "kind": "authored",
+        "recipe": "Qualification glue calling actual frozen Go APIs; fixed scalar/framing/sequence program, executed only by verify_normalization.py in independent inputs.",
+        "sources": [],
+        "notices": []
+      },
+      {
+        "path": "unicode_properties.rs",
+        "bytes": 83440,
+        "sha256": "10c6968997b7d29981dd5a5719492ad802c800947c7946e9632e851313c101ee",
+        "kind": "generated",
+        "recipe": "python3 extract_normalization.py --source-root <authenticated49-materialization> --source-index <pinned-index>; cargo fmt -p librairii-storage; retain Go15 Mn/White_Space ranges, exact frozen1616 full-fold map, simple lowercase mappings and complete ASCII-reaching simple-fold orbits. Key rules are distinct from search folding; no current Unicode regeneration.",
+        "sources": [
+          {
+            "path": "Go1.26.5/src/unicode/tables.go",
+            "sha256": "6a88d48746c4b2c471cc04ae40559694b734770212e6f5ea5f1962adb0c0bdb1",
+            "header_sha256": "ec9651df3b673e4e73deeeab3bd947b37e70bc0fbed401698cf27b3dfa0c0136",
+            "selection": "normalization"
+          },
+          {
+            "path": "oracle73a93303/frontend/src/search-casefold.json",
+            "sha256": "547a5aeae46f102d6a5310dcc5125988c6233d45125e96ffd712847a9c07b5de",
+            "header_sha256": "576879310fc9051d7c17f542e6bd8512135c430cde5458ea29f6be021800a85d",
+            "selection": "normalization"
+          },
+          {
+            "path": "Go1.26.5/src/unicode/letter.go",
+            "sha256": "b35a6d259313cef88d07e9e4027b8bd72c60ae140418f5be2c41a2ecea6074fe",
+            "header_sha256": "b1f8a48bd98929bacf4fe0520affc9eb02063542a76dd3cd25a71a6035014fec",
+            "selection": "normalization"
+          }
+        ],
+        "notices": [
+          "LICENSE-GO-BSD.txt",
+          "LICENSE-UNICODE-V3.txt",
+          "PATENTS-GO.txt"
+        ]
+      },
+      {
+        "path": "update_source_manifest.py",
+        "bytes": 11244,
+        "sha256": "79a796337df68eb3adce9e10f4739aaa9e32b20c2acedb265a0a447144b38b88",
+        "kind": "authored",
+        "recipe": "Explicit private file map; hash actual post-format bytes and retain pinned original identities, selections and notice names.",
+        "sources": [],
+        "notices": []
+      },
+      {
+        "path": "verify_codec.py",
+        "bytes": 7115,
+        "sha256": "bd3674d526da14aa1d6943588a836ae8c92eb8746d0bb0cd60ea99ded691393d",
+        "kind": "authored",
+        "recipe": "Deterministic strict-wire/versions/retired-reference/limit/JSON lexical adversarial inputs; reuse pinned offline disposable qualification, exact original query.go copy and unchanged436+487 proof. Inputs never supply expected outputs; no runtime Go or preservation changes.",
+        "sources": [],
+        "notices": []
+      },
+      {
+        "path": "verify_language.py",
+        "bytes": 5210,
+        "sha256": "e7239d706442423bbfca4aa48789aa98a58aae322634aa8a1c91ee33d626177b",
+        "kind": "authored",
+        "recipe": "Reuse authenticated disposable source/tool materialization; compare original Go results with a separate owned copy masking exactly ccTLDbit2 and deleting BOTH TLD API functions. Verify exactly3 counterfactual members changed,484 unchanged and all original inputs unchanged. No preservation or production writes.",
+        "sources": [],
+        "notices": []
+      },
+      {
+        "path": "verify_normalization.py",
+        "bytes": 9783,
+        "sha256": "7e0f09eec485805be8eeb1725b94d5c9076e3a95c676fbca25e7c9308cb65d68",
+        "kind": "authored",
+        "recipe": "Offline disposable exact73 archive/authenticated487-member ZIP/pinnedGo qualification with before/after original-file verification; never a product runtime or corpus generator.",
+        "sources": [],
+        "notices": []
+      }
+    ]
+  },
+  "current_inline": {
+    "path": "crates/librairii-storage/src/migrations.rs",
+    "bytes": 48784,
+    "sha256": "c01e805177d99b33e1f0bd5f5c4b0e5463b2190f185b53906558e80dffe2ff59",
+    "begin": "mod collection_codec {\n",
+    "end": "\n/// Storage-local transitional inspection result.",
+    "fragment_bytes": 31508,
+    "fragment_sha256": "fc8ff89fa3425cbc0ed8baff6082b3c80c27a3447f7563d5c05b95d8106f3b4f",
+    "materialization": "existing-storage-inline-reference-map; final translated core leaf and its retained headers are not materialized"
+  },
+  "future_core_leaf": null,
+  "origins": [
+    {
+      "path": "Go1.26.5/src/encoding/json/scanner.go",
+      "sha256": "2b16dd215274dfa8e0806b53cca144684d5b9c8a02319cf5ce10120c50e6eef2",
+      "header_sha256": "23047bbfe6a46c835452f0aba6c4218d3ac8a18abd1b580b4a365d3796624995",
+      "selection": "query-json-wire"
+    },
+    {
+      "path": "Go1.26.5/src/encoding/json/decode.go",
+      "sha256": "a91535f18f9a2c8380448b1c84c4c2017dbe3d530a10faf8babf03494042da48",
+      "header_sha256": "47c6ebe8449f5f9e86e7042141dcc9c2607daf76ec247c9e649fa9fc647df3da",
+      "selection": "query-json-wire"
+    },
+    {
+      "path": "Go1.26.5/src/encoding/json/fold.go",
+      "sha256": "5b3c91bfbf6943e04d9aeb934031331a3f08a83b10079a0a7f0def3466b2f39e",
+      "header_sha256": "724c2b5626a7a6c08734842f6602294ee40f1e1aafbc8e752ce4d1cdb6b9d1c4",
+      "selection": "query-json-wire"
+    },
+    {
+      "path": "Go1.26.5/src/encoding/json/stream.go",
+      "sha256": "bb26b2442db6a686fc7f823ea9cc89babe26ac988ec7d8caf4a157aeb60d92f2",
+      "header_sha256": "78cca841388a8bdf39db8da07f304959864eca2a6c4676d245a1e6356e6ab0be",
+      "selection": "query-json-wire"
+    },
+    {
+      "path": "Go1.26.5/src/unicode/utf8/utf8.go",
+      "sha256": "3c145ee25fd7631ebbc670fd1236e8c163ca30ae8913c796489efbf3f267ad54",
+      "header_sha256": "5fa9c22df735fe95250fe5471f4760d6ca0b27d6751b4ecd82f8d1a322f0a18b",
+      "selection": "query-json-wire"
+    },
+    {
+      "path": "Go1.26.5/src/unicode/utf16/utf16.go",
+      "sha256": "6b8b3037015f41351d4a323513b57b8ac90caa69f69be31eaf02ca2a4632d0cd",
+      "header_sha256": "a6b3369a02c98317c004e8e506e404f3b75aec2f8e21c61f12c5e79dbcc051a2",
+      "selection": "query-json-wire"
+    },
+    {
+      "path": "Go1.26.5/src/encoding/json/encode.go",
+      "sha256": "4012d78aa8236f3067a6330ddf2f719c7e59b262fcf4fff5e51b4abd1ccba235",
+      "header_sha256": "8310898733aaa9e429f23af37066927b6c80b6a835d86157a098c76863ccbdd0",
+      "selection": "query-json-output"
+    },
+    {
+      "path": "Go1.26.5/src/encoding/json/tables.go",
+      "sha256": "74f7f392e1cc22890b72959647b9e5facda591a890c81f8167b532d31adc561e",
+      "header_sha256": "22b4c1cded9dd6c89902a4a519ad3f2fde2e40eea08e2bfb7b88bbd5371be3e0",
+      "selection": "query-json-output"
+    },
+    {
+      "path": "Go1.26.5/src/strconv/number.go",
+      "sha256": "dda43e8c91d95f9dea0c46b2fec6637e5520cae099e40c5965dca0e41bbaab9e",
+      "header_sha256": "152100314e297cb012b7a5adcf23a6c053e88f5e1ad50883d38890802d21cabc",
+      "selection": "query-json-i64"
+    },
+    {
+      "path": "Go1.26.5/src/internal/strconv/atoi.go",
+      "sha256": "eb5ad640903abe9e8c8b7fbce8dd3487176dbeb43e8b8b4efa6e73ecb5207ddc",
+      "header_sha256": "b399124b9ffc5779c4c67a451e47dab3c5bf56b59db399d9179f1055c08b655c",
+      "selection": "query-json-i64"
+    },
+    {
+      "path": "oracle73a93303/internal/collections/query.go",
+      "sha256": "569189457f91d9f29980a51fa7d68040745b07d7bddbb2d71dfc03c8dc89b763",
+      "header_sha256": "8728666f51dacc7465dd18d9dfadaf4dcd8216ad8c64b80d62bb04abe69810b1",
+      "selection": "query-product"
+    },
+    {
+      "path": "oracle73a93303/internal/collectionquery/references.go",
+      "sha256": "b3e72f4a3fb6f67ed3ee934c9db148d75d0f1ee82ab6d25ce21ea0eda1481828",
+      "header_sha256": "dad4bf4b23d4b110cfa8a92695ec2762d8d62de45fd1e4d835b3cb24b10892a5",
+      "selection": "query-product"
+    },
+    {
+      "path": "oracle73a93303/internal/collectionquery/unique_keys.go",
+      "sha256": "f4ba4045ba5fbd2c98ba78bec21cb7334430b4fe24eea00f90a842683c0f6f24",
+      "header_sha256": "3b3da419942ba0426399040d8e8a9ffeac5416ccf39f69e7ecd08e996cc70d82",
+      "selection": "query-product"
+    }
+  ],
+  "notices": [
+    "LICENSE-GO-BSD.txt",
+    "PATENTS-GO.txt"
+  ],
+  "recipe": "Map ONLY the actual unchanged inline codec bytes to bounded query product/Go lexical/i64/output origins. No Rust header is asserted added here. The separately released core move must create its real translated leaf, preserve selected original copyright lines, update this exact materialized binding and remove the old pure implementation. Never invent a future core file/hash/header, second parser or new canonicalization pass. payload serializes/escapes/checks output bytes only; it does not validate arbitrary Query values.",
+  "lookup_bindings": [
+    {
+      "path": "crates/librairii-storage/src/migrations/compatibility/extract_normalization.py",
+      "constant": "INDEX_HASH",
+      "lookup_index_sha256": "13dfd314abfda9a9553d152a1d8a5586f8bd1205a08c177af9bbec57a51ae822",
+      "historical_index_sha256": "10ea8fe193c594ce153ae7a1734c41ab80c9d406cc7ea314c8c7c471b7a92a99"
+    },
+    {
+      "path": "crates/librairii-storage/src/migrations/compatibility/extract_language.py",
+      "constant": "INDEX_HASH",
+      "lookup_index_sha256": "13dfd314abfda9a9553d152a1d8a5586f8bd1205a08c177af9bbec57a51ae822",
+      "historical_index_sha256": "10ea8fe193c594ce153ae7a1734c41ab80c9d406cc7ea314c8c7c471b7a92a99"
+    },
+    {
+      "path": "crates/librairii-storage/src/migrations/compatibility/update_source_manifest.py",
+      "constant": "INDEX_SHA",
+      "lookup_index_sha256": "13dfd314abfda9a9553d152a1d8a5586f8bd1205a08c177af9bbec57a51ae822",
+      "historical_index_sha256": "10ea8fe193c594ce153ae7a1734c41ab80c9d406cc7ea314c8c7c471b7a92a99"
+    },
+    {
+      "path": "crates/librairii-storage/src/migrations/compatibility/verify_normalization.py",
+      "constant": "INDEX_SHA",
+      "lookup_index_sha256": "13dfd314abfda9a9553d152a1d8a5586f8bd1205a08c177af9bbec57a51ae822",
+      "historical_index_sha256": "10ea8fe193c594ce153ae7a1734c41ab80c9d406cc7ea314c8c7c471b7a92a99"
+    }
+  ],
+  "fixed_references": [
+    {
+      "path": "codec-reference.json",
+      "bytes": 1546282,
+      "sha256": "b2fd01d9685133f295f1fbe23296d50971f07314ed94ed18d6a235903bca0d09",
+      "kind": "generated",
+      "recipe": "python3 verify_codec.py; actual pinned offline Go1.26.5 DecodeSavedLibraryQuery and MigrateSavedLibraryQuery on2864 scoped cases, separate canonical bytes/refusal classifications. Retain input/source/probe/recipe/tool/archive hashes and exact standalone source-copy identity, no production source copying or arbitrary-input/domain/SQL qualification. This indexed product-boundary source supplies the membership normalization; the additional exact query.go identity is recorded by archive/copy hashes in reference provenance.",
+      "sources": [
+        {
+          "path": "oracle73a93303/internal/library/story_query.go",
+          "sha256": "5ea334a20dda303b81f2d559defcc21a4f06b03542922263a1ed71ebcd602bc7",
+          "header_sha256": "068c99d6f702e7c295838419b97e53cb0972f9082315ce5c30f28f2cb2ebd3b0",
+          "selection": "product-boundary"
+        }
+      ],
+      "notices": []
+    },
+    {
+      "path": "language-reference.json",
+      "bytes": 15081,
+      "sha256": "a687f58350d126addd110fb8b6aa6f88489ccfb05e4dc6cd401de92a99ce45b8",
+      "kind": "generated",
+      "recipe": "python3 verify_language.py: actual pinned offline Go1.26.5 Default/String/Und/errors and35-byte product outcomes on1369529 inputs; counterfactual deletion of TLD APIs+masked bit2 gives identical raw/product digests. Retain exact original/modified hashes, source/probe/seed identities and framed results; not all possible strings, Collection SQL or native filesystem qualification.",
+      "sources": [
+        {
+          "path": "golang.org/x/text@v0.43.0/internal/language/tables.go",
+          "sha256": "876a73fb8b8fffd239efa592ffdf903c25757b4d17b715fc80d7aee8db2b985e",
+          "header_sha256": "8b677ec913c4566323b03c86ab9fc3d6caf0d6c4539faadaf0a54edb31fca3f8",
+          "selection": "language-default-without-dns"
+        },
+        {
+          "path": "golang.org/x/text@v0.43.0/internal/language/lookup.go",
+          "sha256": "8f0ac8780f89d5c2b29b98fd599269b445d7bb612a7948c9e97d425424b5ea38",
+          "header_sha256": "935e0ce82233cbc759045f0b5cec9278a4cf4ec8390fa52da364e99351b27c2e",
+          "selection": "language-default-without-dns"
+        },
+        {
+          "path": "golang.org/x/text@v0.43.0/internal/language/compact/tables.go",
+          "sha256": "99415fb6642ebd291f825497d32e70ae32da8569815d8f4ef587664c6c5ce7d5",
+          "header_sha256": "560ac6950b60bf8f1ac1b726c6e4b6cc762c4ae416a8b8ccdc504277f8ddd58b",
+          "selection": "language-default-without-dns"
+        },
+        {
+          "path": "golang.org/x/text@v0.43.0/internal/language/parse.go",
+          "sha256": "0c884b51bb83d3633a51f16e90c7dbaf45c301a449e366df591eda11a3000972",
+          "header_sha256": "d4f940e8d017445b1c498ae7059e239d32a1b587637da9575bde53cce976f39c",
+          "selection": "language-default-without-dns"
+        },
+        {
+          "path": "golang.org/x/text@v0.43.0/internal/language/language.go",
+          "sha256": "19a0ccf7635fd3dbad3766d953996df5d1c24a367e44c49200ab6ec3023fc871",
+          "header_sha256": "1af9c42d5f5e97e0a01c3f139247e1b0fb5b6b1b8f1cda838752c312acbcd647",
+          "selection": "language-default-without-dns"
+        },
+        {
+          "path": "golang.org/x/text@v0.43.0/internal/language/compact.go",
+          "sha256": "2d121c703729c5fbd5f3f13fd568af142ca8fde0f01a07e1874df22dbaadde98",
+          "header_sha256": "95b588b661b3deaab5460dab9ecd953034f149cfea585a8168c2714598178066",
+          "selection": "language-default-without-dns"
+        },
+        {
+          "path": "golang.org/x/text@v0.43.0/internal/language/common.go",
+          "sha256": "68089abad3eed7b2559bb97510355e900a6ef2e1fac7ff89364bda9c50a2acba",
+          "header_sha256": "5fad59e6ddf9e9c908c8be95d2a14eebe7d016cb95519a452689457cee7761e7",
+          "selection": "language-default-without-dns"
+        },
+        {
+          "path": "golang.org/x/text@v0.43.0/internal/tag/tag.go",
+          "sha256": "97a27a6bfdd26d872e07d051fc27e622e1cd764943350e8bfa9cf0e2e13cc474",
+          "header_sha256": "1686d76e9009c87ae2ff0779d3c0f7cfe900a3b20d1542985f1d6ff5e042f8c6",
+          "selection": "language-default-without-dns"
+        },
+        {
+          "path": "golang.org/x/text@v0.43.0/language/parse.go",
+          "sha256": "3552f8fba45f310216182d167ba1da8e0c02212ad1896eeb66b194dd546b7bc2",
+          "header_sha256": "2e37b8573f92a4eafcf056282feec7474a2301437a74bfe69f3ae5b5f92e97f4",
+          "selection": "language-default-without-dns"
+        },
+        {
+          "path": "golang.org/x/text@v0.43.0/language/language.go",
+          "sha256": "3f2032f0367d83fb14772384d47119d27c2c427b277aa0a02913db59abe32bb0",
+          "header_sha256": "9b985a1a56e135fdc020f3a56bcdb360fa86595606c561003809ddc5170a7d6c",
+          "selection": "language-default-without-dns"
+        },
+        {
+          "path": "golang.org/x/text@v0.43.0/internal/language/compact/compact.go",
+          "sha256": "e154aa511d328fd47a9c9fc1115d9c92be2d385e885ae65c5e348ec1d5844ead",
+          "header_sha256": "e5b40da46c643c9fbb7c573f4c36c352df676a97781930d1f9b46b67b76585ed",
+          "selection": "language-default-without-dns"
+        },
+        {
+          "path": "golang.org/x/text@v0.43.0/internal/language/compact/language.go",
+          "sha256": "1d49845ec8c93b000391718e3127c0979c054186570805fce27f7fe167ad2c5d",
+          "header_sha256": "600c17b37c9b6265457f05c5811a9141b5071c9be50cf6026b810c3c9e97aa8b",
+          "selection": "language-default-without-dns"
+        },
+        {
+          "path": "oracle73a93303/internal/library/story_query.go",
+          "sha256": "5ea334a20dda303b81f2d559defcc21a4f06b03542922263a1ed71ebcd602bc7",
+          "header_sha256": "068c99d6f702e7c295838419b97e53cb0972f9082315ce5c30f28f2cb2ebd3b0",
+          "selection": "product-boundary"
+        }
+      ],
+      "notices": [
+        "LICENSE-CC0.txt",
+        "LICENSE-CLDR32-APACHE.txt",
+        "LICENSE-CLDR32-UNICODE.txt",
+        "LICENSE-GO-BSD.txt",
+        "PATENTS-GO.txt"
+      ]
+    },
+    {
+      "path": "normalization-reference.json",
+      "bytes": 2401,
+      "sha256": "61a5a904eae2e88d07aa667f5cd2e0d74dd83a7c2e247e87d46b621f427a2468",
+      "kind": "generated",
+      "recipe": "python3 verify_normalization.py; actual pinned Go1.26.5 frozen Normalize/cases.Fold/norm.NFKD/unicode APIs over all1112064 valid scalars (including separate JSON-key simple lowercase/ASCII-reaching simple-fold metrics) and147228 boundary sequences. Includes57 CCC/Mn representatives and all18019 decomposing/backward-interacting scalars on both sides of overflow; exact framed SHA256 digests. Source/tool/ZIP/probe identities and before/after proof retained; not arbitrary-string or language qualification.",
+      "sources": [
+        {
+          "path": "golang.org/x/text@v0.43.0/unicode/norm/tables15.0.0.go",
+          "sha256": "9e29fbffef687d6d2191c999c466729dff2f394d8dcbec377a2fc14336f33cdb",
+          "header_sha256": "1fa8a0bff101dcf4e771378d869ef6f730054412bcafcc8039328230387bea58",
+          "selection": "normalization"
+        },
+        {
+          "path": "Go1.26.5/src/unicode/tables.go",
+          "sha256": "6a88d48746c4b2c471cc04ae40559694b734770212e6f5ea5f1962adb0c0bdb1",
+          "header_sha256": "ec9651df3b673e4e73deeeab3bd947b37e70bc0fbed401698cf27b3dfa0c0136",
+          "selection": "normalization"
+        },
+        {
+          "path": "oracle73a93303/frontend/src/search-casefold.json",
+          "sha256": "547a5aeae46f102d6a5310dcc5125988c6233d45125e96ffd712847a9c07b5de",
+          "header_sha256": "576879310fc9051d7c17f542e6bd8512135c430cde5458ea29f6be021800a85d",
+          "selection": "normalization"
+        },
+        {
+          "path": "Go1.26.5/src/unicode/letter.go",
+          "sha256": "b35a6d259313cef88d07e9e4027b8bd72c60ae140418f5be2c41a2ecea6074fe",
+          "header_sha256": "b1f8a48bd98929bacf4fe0520affc9eb02063542a76dd3cd25a71a6035014fec",
+          "selection": "normalization"
+        },
+        {
+          "path": "golang.org/x/text@v0.43.0/unicode/norm/composition.go",
+          "sha256": "326e91fea709726d884e475db9b7a61ad17829e32d795f182cdcfcfdf64d9bf6",
+          "header_sha256": "a2e12721634cd63e9a4a8cb2abbb925686c5d2f223764f937bc0fc7d577f801c",
+          "selection": "normalization"
+        },
+        {
+          "path": "golang.org/x/text@v0.43.0/unicode/norm/forminfo.go",
+          "sha256": "b53ecff9ab5a83fd45598f54dfc9ea03849a3bcf4617ef02cf43225c71acc1e3",
+          "header_sha256": "271f868ad8b22dd4a00cbe723f58a2551f13bb4ee9d39ad40db223161fd25698",
+          "selection": "normalization"
+        },
+        {
+          "path": "golang.org/x/text@v0.43.0/unicode/norm/normalize.go",
+          "sha256": "f1363700e71a35f9c966492f10dc6f3405cd824f2cc03b08ee64b24503d56f39",
+          "header_sha256": "625e25f79feaf321c015337395f98d73d7c62681a0f7d4066f9e837245129670",
+          "selection": "normalization"
+        },
+        {
+          "path": "golang.org/x/text@v0.43.0/unicode/norm/trie.go",
+          "sha256": "d87793d558251ee8824954f0b7bc5564803e4c9d59a8c4eebb4c3c5cfbd19492",
+          "header_sha256": "10ddbcfb05753ed54f6b5c95dbf71c09e297017ed4d99cbb2e051ac51456cadb",
+          "selection": "normalization"
+        },
+        {
+          "path": "golang.org/x/text@v0.43.0/cases/fold.go",
+          "sha256": "14ff03fda441587198ce6f3e59e6dde979fc21b2db9e248c15b43da497c594ac",
+          "header_sha256": "8d862084959e793269ab88e442c64bbf72cb03592bd652ef3ff0cbe122f415ff",
+          "selection": "normalization"
+        },
+        {
+          "path": "Go1.26.5/src/unicode/graphic.go",
+          "sha256": "46a43107a87c88cf17a05a557e00dbf6b0f4bb53ebcd7d3035e02f1e67c428be",
+          "header_sha256": "6845d75459e7366def56726e85d227de1c07312d79691c15e6d00ba5251dbca8",
+          "selection": "normalization"
+        },
+        {
+          "path": "Go1.26.5/src/strings/strings.go",
+          "sha256": "ba9478be775d11b6956c828ebf870a8f8e7b7318ee382834f1e741f02d1336ef",
+          "header_sha256": "e66b8ccab4bb0d14764b2baa569347d537f1ced4107b95294dab8578bfc97ae0",
+          "selection": "normalization"
+        },
+        {
+          "path": "internal/searchtext/searchtext.go",
+          "sha256": "0bf676dbaadeabe17130cb1c7be22a42205b7d7b87baaf652df4f25da02d52dc",
+          "header_sha256": "8bbc5eece8d52504c194976dfbbf30c32cc139a5183166b1bdf98aae910a50bb",
+          "selection": "product-boundary"
+        }
+      ],
+      "notices": [
+        "LICENSE-GO-BSD.txt",
+        "LICENSE-UNICODE-V3.txt",
+        "PATENTS-GO.txt"
+      ]
+    }
+  ]
+}

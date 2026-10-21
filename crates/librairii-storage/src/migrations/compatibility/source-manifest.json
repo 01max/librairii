@@ -29,8 +29,8 @@
     },
     {
       "path": "extract_language.py",
-      "bytes": 12933,
-      "sha256": "7565ca5982ebfc90423ce0d839ebb4ad0845a054cb9306b2318ab0a0442ea4aa",
+      "bytes": 13112,
+      "sha256": "1432e1c3feb3c3f677b4915df2f8e87661f58a4ed3053b997393296ea185f432",
       "kind": "translated",
       "recipe": "Hand-translate frozen getLangID finite two/three-letter lookup and compact bit decoding into literal extraction; verify selected bytes/headers; remove ONLY regionTypes ccTLD bit1/value2 before writing, retain other bits; never copy TLD APIs or regenerate current registries.",
       "sources": [
@@ -69,8 +69,8 @@
     },
     {
       "path": "extract_normalization.py",
-      "bytes": 10072,
-      "sha256": "86e1cd15f81f6957d172a17b19ecbbb5484eb51dd0b84374b0d4a9ce06630a99",
+      "bytes": 10251,
+      "sha256": "cec28f978a3f75dd5f1b4311a7cd4490c0337c5acea6c5810555a072906d5130",
       "kind": "translated",
       "recipe": "Extract literal fixed source arrays and the frozen full-fold map, verifying hashes/headers. Translate Go15 CaseRanges conversion and SimpleFold ASCII orbit closure for strict wire keys; no upstream execution or regeneration from current data.",
       "sources": [
@@ -608,8 +608,8 @@
     },
     {
       "path": "update_source_manifest.py",
-      "bytes": 11244,
-      "sha256": "79a796337df68eb3adce9e10f4739aaa9e32b20c2acedb265a0a447144b38b88",
+      "bytes": 11423,
+      "sha256": "2868d59f759f4f6428725bc209ed2de4cd19913113172725b060d6e500c915bb",
       "kind": "authored",
       "recipe": "Explicit private file map; hash actual post-format bytes and retain pinned original identities, selections and notice names.",
       "sources": [],
@@ -635,8 +635,8 @@
     },
     {
       "path": "verify_normalization.py",
-      "bytes": 9783,
-      "sha256": "7e0f09eec485805be8eeb1725b94d5c9076e3a95c676fbca25e7c9308cb65d68",
+      "bytes": 9962,
+      "sha256": "540cbf302c6fe759931d82d4c43e5a94b3bd94748d748bcbb39a261624f81590",
       "kind": "authored",
       "recipe": "Offline disposable exact73 archive/authenticated487-member ZIP/pinnedGo qualification with before/after original-file verification; never a product runtime or corpus generator.",
       "sources": [],
