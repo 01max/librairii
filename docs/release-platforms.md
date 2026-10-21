@@ -88,7 +88,12 @@ The qualification implementation is:
 
 - macOS: `scripts/verify-packaged-acceptance`;
 - Linux: `scripts/verify-platform-linux`; and
-- CI orchestration: `.github/workflows/platform-release.yml`.
+- CI orchestration: `.github/workflows/ci.yml`.
+
+CI runs the Go/Wails jobs for relevant application, shared-script, or workflow
+changes. Rust-only changes use the native Rust matrix; manually dispatch the CI
+workflow to force the legacy verification and Linux release jobs. See
+[the rewrite CI policy](rewrite/ci.md) for the active Linux/macOS scope and caches.
 
 Failed or cancelled jobs publish no artifact.
 

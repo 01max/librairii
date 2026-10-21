@@ -1,7 +1,21 @@
 name: Rust focused checks
 
 on:
+  # Routine Rust PRs already run the complete native suites. Exercise this
+  # lane on PRs that change its own wiring/tooling, and after integration.
   pull_request:
+    paths:
+      - '.github/workflows/rust-deep.yml'
+      - '.github/actions/rust-environment/**'
+      - '.github/scripts/install-rust-tools.py'
+      - '.config/rust-tools.toml'
+      - 'rust-toolchain.toml'
+      - 'Cargo.toml'
+      - 'Cargo.lock'
+      - 'fuzz/rust-toolchain.toml'
+      - 'fuzz/**'
+      - 'crates/**/benches/**'
+      - 'xtask/src/deep.rs'
   push:
     branches: [main, rewrite-in-rust-native-desktop]
   workflow_dispatch:
@@ -20,21 +34,21 @@ jobs:
     name: Rust coverage benchmark fuzz
     runs-on: ubuntu-24.04
     timeout-minutes: 35
+    env:
+      CARGO_INCREMENTAL: '0'
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - name: Install signed Ubuntu compiler prerequisites
         run: .github/scripts/ubuntu-apt build-essential pkg-config clang
-      - name: Install exact stable and separate fuzz toolchains
+      - uses: ./.github/actions/rust-environment
+        with:
+          tools: focused
+      - name: Install the separately pinned fuzz compiler
         run: |
-          rustup toolchain install 1.99.1 --profile minimal --component rustfmt --component clippy --component llvm-tools-preview
-          rustup toolchain install nightly-2026-10-19 --profile minimal --component rustfmt
-      - name: Install pinned tools
-        run: |
-          cargo xtask tools
-          cargo install --locked --version 0.9.1 cargo-llvm-cov
-          cargo install --locked --version 0.13.2 cargo-fuzz
+          pin="$(python3 -c 'import tomllib; print(tomllib.load(open("fuzz/rust-toolchain.toml", "rb"))["toolchain"]["channel"])')"
+          rustup toolchain install "$pin" --profile minimal --component rustfmt
       - name: Capture coverage evidence
         run: cargo xtask coverage
       - name: Exercise benchmark harness
@@ -42,7 +56,8 @@ jobs:
       - name: Measure diagnostic benchmarks
         if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
         run: |
-          export LIBRAIRII_BENCH_HARDWARE="GitHub ubuntu-24.04 $RUNNER_ARCH; $(lscpu | tr '\n' ';')"
+          LIBRAIRII_BENCH_HARDWARE="GitHub ubuntu-24.04 $RUNNER_ARCH; $(lscpu | tr '\n' ';')"
+          export LIBRAIRII_BENCH_HARDWARE
           cargo xtask bench
       - name: Run bounded identity fuzzing
         run: cargo xtask fuzz
