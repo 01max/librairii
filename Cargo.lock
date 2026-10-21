@@ -819,6 +819,7 @@ name = "librairii-app"
 version = "0.0.0"
 dependencies = [
  "librairii-core",
+ "serde",
  "serde_json",
  "sha2",
  "time",

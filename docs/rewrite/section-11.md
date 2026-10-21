@@ -93,7 +93,7 @@ supported for compatibility. A library-owned service coalesces misses under one
 lock, rechecks the cache, and bounds waiting callers to 64. Cancelled work stops
 before publishing; an entered durable cache write finishes acknowledgement.
 
-New cache files use `catalog/art-<opaque ID>-<content SHA>.<extension>` through
+New cache files retain `catalog/official/<opaque ID>/<content SHA>.<extension>` through
 the existing no-clobber publisher. The path is stored in the unchanged legacy
 schema. Reads support existing nested catalog paths through retained no-follow
 directory descriptors, reject links/substitutions and verify recorded length,
@@ -124,3 +124,21 @@ The image graph needs a second exact duplicate exception: png 0.18.1 directly
 uses miniz_oxide 0.8.9 while flate2 1.1.10 uses 0.9.1. Its owned exception expires
 2027-01-21 and must be reconsidered when png changes. No advisory suppression or
 new license allowance is needed; cargo-deny passes with retained upstream notices.
+
+## 11.7 — Frozen differential and local transport evidence
+
+The committed metadata fixture manifest authenticates frozen sources, probes,
+inputs, repeated byte-identical outputs and the preserved synthetic cover.
+Normalization compares all fields and artwork identities; the real Go artwork
+publisher/loader establishes signature/hash/media/size and the exact legacy
+nested layout. Frozen metadata/artwork/Lunii suites pass offline with cached
+modules. Rust transport cases use local HTTP/TLS only; no account, device,
+archive, firmware, upload or production request is exercised.
+
+The comparison corrected UTC timestamp parsing/formatting, fixed-struct field
+case folding, null attribution elements, long image paths, slash artwork URLs,
+WebP signature matching, and the nested artwork layout. Six explicit malformed
+or ambiguous JSON cases document stricter native catalog validation rather than
+claiming parity; see the fixture README. Raster bounds are an intentional native
+resource policy required by 11.6. These differences are submitted to 11.8's
+independent review. The complete preservation corpus remains unchanged.

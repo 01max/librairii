@@ -63,7 +63,7 @@ fn attribution(value: Option<&Value>) -> Result<String> {
                 match v {
                     Value::Null => {}
                     Value::Object(person) => {
-                        let v = person.get("name");
+                        let v = wire(person, "name")?;
                         if let Some(v) = v.filter(|v| !v.is_null()) {
                             names.push(if v.is_null() {
                                 ""
@@ -111,8 +111,8 @@ fn select<'a>(
     record: &'a Map<String, Value>,
     preferred: &Locale,
 ) -> Result<Option<(&'a Map<String, Value>, Locale)>> {
-    let declared = object(record.get("locales_available").ok_or_else(invalid)?)?;
-    let localized = object(record.get("localized_infos").ok_or_else(invalid)?)?;
+    let declared = object(wire(record, "locales_available")?.ok_or_else(invalid)?)?;
+    let localized = object(wire(record, "localized_infos")?.ok_or_else(invalid)?)?;
     if declared.is_empty() || localized.is_empty() {
         return Err(invalid());
     }
@@ -158,8 +158,8 @@ pub fn normalize(raw: Vec<u8>, requested: &str) -> Result<NormalizedCatalog> {
         return Err(MetadataError::TooLarge);
     }
     let locale = Locale::parse(requested)?;
-    let envelope: Value = serde_json::from_slice(&raw).map_err(|_| invalid())?;
-    let response = object(envelope.get("response").ok_or_else(invalid)?)?;
+    let envelope: Value = super::json::parse(&raw)?;
+    let response = object(wire(object(&envelope)?, "response")?.ok_or_else(invalid)?)?;
     if response.is_empty() || response.len() > 50_000 {
         return Err(invalid());
     }
@@ -172,8 +172,7 @@ pub fn normalize(raw: Vec<u8>, requested: &str) -> Result<NormalizedCatalog> {
         }
         let record = object(record)?;
         let uuid = trim(
-            record
-                .get("uuid")
+            wire(record, "uuid")?
                 .and_then(Value::as_str)
                 .ok_or_else(invalid)?,
         );
@@ -192,10 +191,10 @@ pub fn normalize(raw: Vec<u8>, requested: &str) -> Result<NormalizedCatalog> {
         }
         let title = text(localized.get("title"), 1024, true)?;
         let description = text(localized.get("description"), 128 * 1024, false)?;
-        let author = attribution(record.get("authors"))?;
-        let mut publisher = attribution(record.get("publisher"))?;
+        let author = attribution(wire(record, "authors")?)?;
+        let mut publisher = attribution(wire(record, "publisher")?)?;
         if publisher.is_empty() {
-            publisher = attribution(record.get("publishers"))?;
+            publisher = attribution(wire(record, "publishers")?)?;
         }
         let duration_seconds =
             integer(localized, record, &["duration_seconds", "durationSeconds"])?;
@@ -219,13 +218,12 @@ pub fn normalize(raw: Vec<u8>, requested: &str) -> Result<NormalizedCatalog> {
         {
             return Err(invalid());
         }
-        let source_updated_at = record
-            .get("updated_at")
+        let source_updated_at = wire(record, "updated_at")?
             .filter(|v| !v.is_null())
             .map(|v| utc_time(v.as_str().ok_or_else(invalid)?))
             .transpose()?;
         let artwork_id = if let Some(image) = localized.get("image").filter(|v| !v.is_null()) {
-            let path = text(object(image)?.get("image_url"), 4096, true)?;
+            let path = text(wire(object(image)?, "image_url")?, MAX_CATALOG_BYTES, true)?;
             let url = artwork_url(&path)?;
             let id = digest(url.as_bytes());
             artwork.insert(
@@ -264,4 +262,28 @@ pub fn normalize(raw: Vec<u8>, requested: &str) -> Result<NormalizedCatalog> {
         records,
         artworks: artwork.into_values().collect(),
     })
+}
+
+/// JSONv1 folds fixed struct names using Unicode SimpleFold, while localized
+/// maps and numeric aliases remain exact. ASCII schema names have only the
+/// long-s/Kelvin non-ASCII orbits. Ambiguous duplicate struct spellings reject.
+fn wire<'a>(values: &'a Map<String, Value>, field: &str) -> Result<Option<&'a Value>> {
+    let mut found = None;
+    for (key, value) in values {
+        let folded: String = key
+            .chars()
+            .map(|c| match c {
+                '\u{017f}' => 's',
+                '\u{212a}' => 'k',
+                _ => c.to_ascii_lowercase(),
+            })
+            .collect();
+        if folded == field {
+            if found.is_some() {
+                return Err(invalid());
+            }
+            found = Some(value);
+        }
+    }
+    Ok(found)
 }

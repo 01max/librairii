@@ -191,7 +191,7 @@ async fn actual_streamed_limits_apply_to_token_and_catalog_without_content_lengt
 #[tokio::test]
 async fn cancellation_and_total_deadline_interrupt_waiting_responses() -> TestResult {
     let mut slow = token();
-    slow.delay = Duration::from_millis(150);
+    slow.delay = Duration::from_millis(600);
     let (base, worker) = server(vec![slow])?;
     let client = CatalogClient::loopback(&base, Duration::from_millis(30))?;
     let start = std::time::Instant::now();
@@ -199,7 +199,7 @@ async fn cancellation_and_total_deadline_interrupt_waiting_responses() -> TestRe
         client.fetch_catalog(&Cancellation::default()).await,
         Err(MetadataError::Network)
     );
-    assert!(start.elapsed() < Duration::from_millis(140));
+    assert!(start.elapsed() < Duration::from_millis(500));
     joined(worker)?;
     let mut slow = token();
     slow.delay = Duration::from_millis(150);

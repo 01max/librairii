@@ -730,7 +730,55 @@ pub struct LibraryFiles<'library> {
     staging: Directory,
     archives: Directory,
     catalog: Directory,
+    catalog_route: Option<OfficialArtworkRoute>,
     trash: Directory,
+}
+#[derive(Debug)]
+struct OfficialArtworkRoute {
+    id: String,
+    official: Directory,
+    artwork: Directory,
+}
+impl LibraryFiles<'_> {
+    /// A closed, hash-typed catalog route, under the same retained custody.
+    /// Parent directories are durable before the existing publisher is entered.
+    pub(crate) fn official_artwork(
+        mut self,
+        guard: &Custody<'_>,
+        id: librairii_core::Checksum,
+    ) -> Result<Self> {
+        self.check(guard)?;
+        let ensure = |parent: &Directory, name: &OsStr| -> Result<Directory> {
+            match parent.child(name) {
+                Ok(dir) => Ok(dir),
+                Err(StorageError::Io { source, .. })
+                    if source.kind() == io::ErrorKind::NotFound =>
+                {
+                    parent.create_child(name)
+                }
+                Err(e) => Err(e),
+            }
+        };
+        let result = (|| {
+            let official = ensure(&self.catalog, OsStr::new("official"))?;
+            let id = id.to_string();
+            let artwork = ensure(&official, OsStr::new(&id))?;
+            self.catalog.flush()?;
+            official.flush()?;
+            artwork.flush()?;
+            self.catalog_route = Some(OfficialArtworkRoute {
+                id,
+                official,
+                artwork,
+            });
+            self.check(guard)
+        })();
+        if result.is_err() {
+            self.fence();
+        }
+        result?;
+        Ok(self)
+    }
 }
 // Keep the library borrow live until all retained directory descriptors close.
 // This destructor performs no filesystem mutation; fields close normally.
@@ -833,6 +881,7 @@ impl<'library> LibraryFiles<'library> {
             staging: root.child(OsStr::new("staging"))?,
             archives: root.child(OsStr::new("archives"))?,
             catalog: root.child(OsStr::new("catalog"))?,
+            catalog_route: None,
             trash: root.child(OsStr::new("trash"))?,
             root,
             authority,
@@ -878,6 +927,13 @@ impl<'library> LibraryFiles<'library> {
                 return Err(StorageError::SnapshotChanged);
             }
         }
+        if let Some(route) = &self.catalog_route {
+            self.catalog
+                .require_name(OsStr::new("official"), route.official.identity)?;
+            route
+                .official
+                .require_name(OsStr::new(&route.id), route.artwork.identity)?;
+        }
         Ok(())
     }
     fn fence(&self) {
@@ -886,7 +942,10 @@ impl<'library> LibraryFiles<'library> {
     fn area(&self, area: FileArea) -> &Directory {
         match area {
             FileArea::Archives => &self.archives,
-            FileArea::Catalog => &self.catalog,
+            FileArea::Catalog => self
+                .catalog_route
+                .as_ref()
+                .map_or(&self.catalog, |route| &route.artwork),
         }
     }
     /// Issue only from an actual storage-owned managed-area descriptor and one

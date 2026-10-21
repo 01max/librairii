@@ -63,6 +63,7 @@ impl Database<'_> {
         let at = utc_time(at)?;
         let files = self.metadata_files()?;
         let guard = files.try_custody()?;
+        let files = files.official_artwork(&guard, id)?;
         let mut stage = files
             .create_stage(&guard)
             .map_err(|_| StorageError::CustodyRecoveryRequired)?;
@@ -71,7 +72,7 @@ impl Database<'_> {
             .map_err(|e| StorageError::io("write artwork", e))?;
         let cancel = WorkCancellation::default();
         let measurement = stage.measure(MAX_ARTWORK_BYTES as u64, &cancel)?;
-        let name = format!("art-{id}-{}.{}", asset.checksum, asset.media.extension());
+        let name = format!("{}.{}", asset.checksum, asset.media.extension());
         let mut receipt = stage
             .publish_no_clobber(
                 &guard,
@@ -85,7 +86,7 @@ impl Database<'_> {
             Publication::NewOwned(file) => file.revalidate(&guard, &cancel)?,
             Publication::ReusedExisting { existing, .. } => existing.revalidate(&guard, &cancel)?,
         }
-        let path = format!("catalog/{name}");
+        let path = format!("catalog/official/{id}/{name}");
         let media = asset.media.as_str();
         let hash = asset.checksum.to_string();
         let size = asset.bytes.len() as i64;

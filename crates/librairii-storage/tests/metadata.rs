@@ -389,3 +389,150 @@ fn embedded_legacy_cover_reads_are_bounded_and_do_not_accept_arbitrary_paths()
     db.close()?;
     Ok(())
 }
+#[test]
+fn frozen_go_catalog_normalization_and_artwork_url_cases_match()
+-> std::result::Result<(), Box<dyn std::error::Error>> {
+    use serde_json::json;
+    let inputs: serde_json::Value =
+        serde_json::from_str(include_str!("fixtures/metadata/cases.json"))?;
+    let reference: serde_json::Value =
+        serde_json::from_str(include_str!("fixtures/metadata/reference.json"))?;
+    assert_eq!(
+        inputs.as_array().ok_or("inputs")?.len(),
+        reference["cases"].as_array().ok_or("cases")?.len()
+    );
+    for (input, expected) in inputs
+        .as_array()
+        .ok_or("inputs")?
+        .iter()
+        .zip(reference["cases"].as_array().ok_or("cases")?)
+    {
+        let name = input["name"].as_str().ok_or("name")?;
+        assert_eq!(input["name"], expected["name"]);
+        let hex = input["payload"].as_str().ok_or("payload")?;
+        let bytes = hex
+            .as_bytes()
+            .as_chunks::<2>()
+            .0
+            .iter()
+            .map(|pair| u8::from_str_radix(std::str::from_utf8(pair)?, 16).map_err(Into::into))
+            .collect::<std::result::Result<Vec<u8>, Box<dyn std::error::Error>>>()?;
+        let result = normalize(bytes, input["locale"].as_str().ok_or("locale")?);
+        if input.get("hardening").is_some() {
+            assert_eq!(
+                expected["valid"], true,
+                "{name} must observe a deliberate difference"
+            );
+            assert!(result.is_err(), "{name}");
+            continue;
+        }
+        assert_eq!(
+            result.is_ok(),
+            expected["valid"].as_bool().ok_or("valid")?,
+            "{name}"
+        );
+        if let Ok(catalog) = result {
+            let stories:Vec<_>=catalog.records().iter().map(|r|json!({"uuid":r.uuid.to_string(),"title":r.title,"description":r.description,"author":r.author,"publisher":r.publisher,"language":r.language.as_str(),"duration":r.duration_seconds,"minimumAge":r.minimum_age,"maximumAge":r.maximum_age,"artworkId":r.artwork_id.map(|id|id.to_string()).unwrap_or_default(),"provenance":"lunii_catalog","sourceId":r.source_record_id,"updatedAt":r.source_updated_at})).collect();
+            let artworks: Vec<_> = catalog
+                .artworks()
+                .iter()
+                .map(|a| json!({"ID":a.id.to_string(),"SourceURL":a.source_url}))
+                .collect();
+            assert_eq!(json!(stories), expected["stories"], "{name}");
+            assert_eq!(json!(artworks), expected["artworks"], "{name}");
+        }
+    }
+    for p in reference["paths"].as_array().ok_or("paths")? {
+        let result = librairii_app::metadata::artwork_url(p["path"].as_str().ok_or("path")?);
+        assert_eq!(result.is_ok(), p["valid"].as_bool().ok_or("valid")?);
+        if let Ok(url) = result {
+            assert_eq!(url, p["url"]);
+        }
+    }
+    Ok(())
+}
+#[test]
+fn frozen_go_artwork_validation_bytes_hash_and_legacy_layout_match()
+-> std::result::Result<(), Box<dyn std::error::Error>> {
+    use librairii_app::metadata::{ArtworkAsset, MediaType};
+    let inputs: serde_json::Value =
+        serde_json::from_str(include_str!("fixtures/metadata/artwork-cases.json"))?;
+    let expected: serde_json::Value =
+        serde_json::from_str(include_str!("fixtures/metadata/artwork-reference.json"))?;
+    assert_eq!(
+        inputs.as_array().ok_or("inputs")?.len(),
+        expected.as_array().ok_or("expected")?.len()
+    );
+    for (input, expected) in inputs
+        .as_array()
+        .ok_or("inputs")?
+        .iter()
+        .zip(expected.as_array().ok_or("expected")?)
+    {
+        assert_eq!(input["name"], expected["name"]);
+        let hex = input["payload"].as_str().ok_or("hex")?;
+        let mut bytes = hex
+            .as_bytes()
+            .as_chunks::<2>()
+            .0
+            .iter()
+            .map(|p| u8::from_str_radix(std::str::from_utf8(p)?, 16).map_err(Into::into))
+            .collect::<std::result::Result<Vec<u8>, Box<dyn std::error::Error>>>()?;
+        if let Some(repeat) = input["repeat"].as_u64().filter(|n| *n > 0) {
+            bytes = vec![0; repeat as usize];
+        }
+        let media = MediaType::parse(input["media"].as_str().ok_or("media")?)?;
+        let result = ArtworkAsset::checked(bytes, media);
+        assert_eq!(
+            result.is_ok(),
+            expected["valid"].as_bool().ok_or("valid")?,
+            "{}",
+            input["name"]
+        );
+        if let Ok(asset) = result {
+            assert_eq!(asset.checksum.to_string(), expected["hash"]);
+            assert_eq!(asset.bytes.len(), expected["size"]);
+            assert_eq!(asset.media.as_str(), expected["media"]);
+        }
+    }
+    let roots = TestRoots::new()?;
+    let library = IsolatedLibrary::initialize_from_override(
+        Some(roots.library().as_os_str()),
+        "a0000000-0000-4000-8000-000000000001".parse()?,
+    )?;
+    let mut db = Database::open_isolated(&library)?;
+    let normalized = normalize(RAW.to_vec(), "en-GB")?;
+    let id = normalized.artworks()[0].id;
+    let sync = "a0000000-0000-4000-8000-000000000031".parse()?;
+    committed(
+        db.begin_catalog_sync(
+            sync,
+            Locale::parse("en-GB")?,
+            "2026-10-21T12:00:00Z".into(),
+            WorkCancellation::default(),
+        )?
+        .wait()?,
+    )?;
+    committed(db.stage_catalog(
+        sync,
+        normalized,
+        "2026-10-21T12:00:01Z".into(),
+        WorkCancellation::default(),
+    )?)?;
+    let image = include_bytes!("../../librairii-adapters/tests/fixtures/artwork/cover.png");
+    let asset = ArtworkAsset::checked(image.to_vec(), MediaType::Png)?;
+    db.persist_artwork(id, &asset, "2026-10-21T12:00:02Z", None, None)?;
+    let path = db
+        .read(move |tx| {
+            Ok(tx.query_row(
+                "SELECT managed_path FROM catalog_artworks WHERE id=?",
+                [id.to_string()],
+                |r| r.get::<_, String>(0),
+            )?)
+        })?
+        .wait()?;
+    assert_eq!(path, expected[0]["path"]);
+    assert_eq!(db.read_registered_artwork(id)?.cached, Some(asset));
+    db.close()?;
+    Ok(())
+}

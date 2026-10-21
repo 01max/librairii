@@ -39,7 +39,7 @@ pub fn validate_artwork(bytes: &[u8], media: MediaType) -> Result<()> {
         Some(MediaType::Png)
     } else if bytes.starts_with(b"\xff\xd8\xff") {
         Some(MediaType::Jpeg)
-    } else if bytes.len() >= 12 && &bytes[..4] == b"RIFF" && &bytes[8..12] == b"WEBP" {
+    } else if bytes.len() >= 14 && &bytes[..4] == b"RIFF" && &bytes[8..14] == b"WEBPVP" {
         Some(MediaType::Webp)
     } else {
         None

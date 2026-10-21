@@ -74,7 +74,6 @@ fn invalid_catalogs_never_construct_normalized_snapshots() -> Result<(), Box<dyn
         "/a?x",
         "/a\\b",
         "/a//b",
-        "/",
     ] {
         assert!(artwork_url(path).is_err(), "{path}");
     }

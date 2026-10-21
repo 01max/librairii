@@ -1,0 +1,46 @@
+[
+  {
+    "hash": "20d27aedc7d4876063ec6c1fbd565baeae8d69a7bb2711afb106180076aded2a",
+    "media": "image/png",
+    "name": "png",
+    "path": "catalog/official/7139e08f84f43e4c95387120838cab696b37b6f45ff1a74eb6ea5f92b3fc9dc9/20d27aedc7d4876063ec6c1fbd565baeae8d69a7bb2711afb106180076aded2a.png",
+    "size": 2687,
+    "valid": true
+  },
+  {
+    "hash": "6e568e1f67fba258184c78181539e5e8fdee447e49bb706fc0ea34fbf12336a5",
+    "media": "image/jpeg",
+    "name": "jpeg-signature",
+    "path": "catalog/official/7139e08f84f43e4c95387120838cab696b37b6f45ff1a74eb6ea5f92b3fc9dc9/6e568e1f67fba258184c78181539e5e8fdee447e49bb706fc0ea34fbf12336a5.jpg",
+    "size": 3,
+    "valid": true
+  },
+  {
+    "hash": "a644c54c1dfb79b6f37a24d89f5533aefd2ed33a8b3fd31f3d8ff0147b0c6ba5",
+    "media": "image/webp",
+    "name": "webp-signature",
+    "path": "catalog/official/7139e08f84f43e4c95387120838cab696b37b6f45ff1a74eb6ea5f92b3fc9dc9/a644c54c1dfb79b6f37a24d89f5533aefd2ed33a8b3fd31f3d8ff0147b0c6ba5.webp",
+    "size": 14,
+    "valid": true
+  },
+  {
+    "name": "incomplete-webp",
+    "valid": false
+  },
+  {
+    "name": "mismatch",
+    "valid": false
+  },
+  {
+    "name": "malformed",
+    "valid": false
+  },
+  {
+    "name": "empty",
+    "valid": false
+  },
+  {
+    "name": "over-limit",
+    "valid": false
+  }
+]
