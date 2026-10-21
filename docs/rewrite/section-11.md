@@ -203,3 +203,25 @@ macOS require their native provider checks on the PR head; this host result does
 not claim those targets or desktop/UI/package release acceptance. Windows remains
 deferred. All frozen Go metadata/artwork/Lunii suites and repeated fixture captures
 passed using synthetic data/local transports with module downloads disabled.
+
+### PR 52: native publication settlement
+
+A successful raw catalog/artwork publication previously left its private stage
+directory behind, preventing native finalization and the next checked reopen.
+After a known SQL acknowledgement, the metadata owner now removes only the empty
+owned stage directory, plus the separately owned unused payload when reusing an
+existing destination. Descriptor/name checks and durable directory flushes remain
+under the original custody; published catalog and cached artwork bytes remain.
+
+Uncertain commits or lost acknowledgements retain their original receipts without
+cleanup. Cleanup failures retain the actual publication/file/directory handles
+and custody, fence the generation and preserve the already acknowledged SQL
+outcome. Regression coverage exercises native refresh, new/reused artwork, clean
+close and offline reopen, substituted stage/payload names, cleanup flush failure
+and known versus uncertain acknowledgements. Existing discovery identities are
+unchanged; the five regression tests are additive.
+
+Validation: `cargo xtask check` passes on macOS ARM with 422 executed tests,
+ownership doctests, formatting, all-target Clippy, cumulative source/preservation
+checks and workspace/fuzz dependency/advisory policy. Other native hosts remain
+unverified by this local run.

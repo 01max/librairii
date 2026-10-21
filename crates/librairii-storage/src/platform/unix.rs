@@ -1635,6 +1635,85 @@ pub enum Publication<'files, 'library> {
 }
 
 #[derive(Debug)]
+pub(crate) struct MetadataStageCleanupFailure<'files, 'library> {
+    pub(crate) cause: StorageError,
+    // Keep the real file/directory witnesses even after a partial unlink or
+    // lost flush acknowledgement. Cleanup cannot be retried from a pathname.
+    pub(crate) publication: Publication<'files, 'library>,
+}
+impl<'files, 'library> Publication<'files, 'library> {
+    /// Only the metadata owner calls this after a known SQL acknowledgement.
+    /// Published/reused destination bytes are never removed; only the private
+    /// empty container, and the separately owned unused payload on reuse, are.
+    pub(crate) fn finish_metadata_stage(
+        self,
+        guard: &Custody<'_>,
+    ) -> std::result::Result<(), Box<MetadataStageCleanupFailure<'files, 'library>>> {
+        self.finish_metadata_stage_with(guard, Directory::flush)
+    }
+    fn finish_metadata_stage_with(
+        mut self,
+        guard: &Custody<'_>,
+        flush: impl Fn(&Directory) -> Result<()>,
+    ) -> std::result::Result<(), Box<MetadataStageCleanupFailure<'files, 'library>>> {
+        let result = (|| {
+            let verification = WorkCancellation::default();
+            let stage = match &mut self {
+                Self::NewOwned(published) => {
+                    published.revalidate(guard, &verification)?;
+                    &mut published.stage
+                }
+                Self::ReusedExisting { existing, staged } => {
+                    existing.revalidate(guard, &verification)?;
+                    staged.revalidate(guard)?;
+                    if staged.directory.entries(1, &verification)? != [OsString::from(PAYLOAD)] {
+                        return Err(StorageError::SnapshotChanged);
+                    }
+                    staged.revalidate(guard)?;
+                    // No writes are admitted once cleanup has been entered,
+                    // including when the unlink/flush acknowledgement is lost.
+                    staged.published = true;
+                    native::unlinkat(&staged.directory.file, PAYLOAD, AtFlags::empty()).map_err(
+                        |e| StorageError::io("remove unused metadata payload", e.into()),
+                    )?;
+                    flush(&staged.directory)?;
+                    staged
+                }
+            };
+            stage.files.check(guard)?;
+            stage
+                .files
+                .staging
+                .require_name(&stage.directory_name, stage.directory.identity)?;
+            stage.directory.entries(0, &verification)?;
+            stage
+                .files
+                .staging
+                .require_name(&stage.directory_name, stage.directory.identity)?;
+            native::unlinkat(
+                &stage.files.staging.file,
+                &stage.directory_name,
+                AtFlags::REMOVEDIR,
+            )
+            .map_err(|e| StorageError::io("remove empty metadata stage", e.into()))?;
+            flush(&stage.files.staging)?;
+            stage.files.check(guard)
+        })();
+        if let Err(cause) = result {
+            match &self {
+                Self::NewOwned(published) => published.stage.files.fence(),
+                Self::ReusedExisting { staged, .. } => staged.files.fence(),
+            }
+            return Err(Box::new(MetadataStageCleanupFailure {
+                cause,
+                publication: self,
+            }));
+        }
+        Ok(())
+    }
+}
+
+#[derive(Debug)]
 pub struct PublishFailure<'files, 'library> {
     pub staged: OwnedStage<'files, 'library>,
     pub area: FileArea,
@@ -2029,6 +2108,112 @@ mod tests {
     use std::{error::Error, fs, os::unix::fs::symlink};
 
     type TestResult = std::result::Result<(), Box<dyn Error>>;
+
+    #[test]
+    fn metadata_stage_cleanup_preserves_substituted_directories_and_payloads() -> TestResult {
+        for reused in [false, true] {
+            let roots = TestRoots::new()?;
+            let library = isolated(roots.library())?;
+            let files = LibraryFiles::open(&library)?;
+            let guard = files.try_custody()?;
+            let name = EntryName::parse("metadata.json")?;
+            if reused {
+                fs::write(
+                    library.layout().catalog().join(name.as_os_str()),
+                    b"catalog bytes",
+                )?;
+            }
+            let (staged, measured) = stage(&files, &guard, b"catalog bytes")?;
+            let original_identity = staged.identity;
+            let private = library.layout().staging().join(&staged.directory_name);
+            let publication = staged
+                .publish_no_clobber(
+                    &guard,
+                    FileArea::Catalog,
+                    name,
+                    measured,
+                    &WorkCancellation::default(),
+                )
+                .map_err(|f| f.cause)?;
+            let foreign = if reused {
+                fs::rename(private.join(PAYLOAD), private.join("held-original"))?;
+                fs::write(private.join(PAYLOAD), b"foreign payload")?;
+                private.join(PAYLOAD)
+            } else {
+                fs::rename(&private, library.layout().staging().join("held-original"))?;
+                fs::create_dir(&private)?;
+                fs::write(private.join("foreign"), b"foreign directory")?;
+                private.join("foreign")
+            };
+            let before = fs::read(&foreign)?;
+            let failure = publication
+                .finish_metadata_stage(&guard)
+                .err()
+                .ok_or("substitution accepted")?;
+            let retained_identity = match &failure.publication {
+                Publication::NewOwned(published) => published.identity(),
+                Publication::ReusedExisting { staged, .. } => staged.identity,
+            };
+            assert_eq!(retained_identity, original_identity);
+            assert_eq!(fs::read(&foreign)?, before);
+            assert_eq!(
+                fs::read(library.layout().catalog().join("metadata.json"))?,
+                b"catalog bytes"
+            );
+            drop(failure);
+            drop(guard);
+            assert!(files.try_custody().is_err());
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn metadata_stage_cleanup_flush_failure_keeps_actual_receipts_and_fences_custody() -> TestResult
+    {
+        for reused in [false, true] {
+            let roots = TestRoots::new()?;
+            let library = isolated(roots.library())?;
+            let files = LibraryFiles::open(&library)?;
+            let guard = files.try_custody()?;
+            let destination = library.layout().catalog().join("metadata.json");
+            if reused {
+                fs::write(&destination, b"catalog bytes")?;
+            }
+            let (staged, measured) = stage(&files, &guard, b"catalog bytes")?;
+            let original_identity = staged.identity;
+            let private = library.layout().staging().join(&staged.directory_name);
+            let publication = staged
+                .publish_no_clobber(
+                    &guard,
+                    FileArea::Catalog,
+                    EntryName::parse("metadata.json")?,
+                    measured,
+                    &WorkCancellation::default(),
+                )
+                .map_err(|f| f.cause)?;
+            let failure = publication
+                .finish_metadata_stage_with(&guard, |_| Err(StorageError::IntegrityFailed))
+                .err()
+                .ok_or("lost cleanup flush was success")?;
+            let stage = match &failure.publication {
+                Publication::NewOwned(published) => &published.stage,
+                Publication::ReusedExisting { staged, .. } => staged,
+            };
+            assert_eq!(FileIdentity::from_file(&stage.file)?, original_identity);
+            assert!(stage.published);
+            assert_eq!(stage.file.metadata()?.len(), b"catalog bytes".len() as u64);
+            assert_eq!(fs::read(&destination)?, b"catalog bytes");
+            assert_eq!(private.exists(), reused);
+            if reused {
+                assert_eq!(fs::read_dir(private)?.count(), 0);
+            }
+            drop(failure);
+            drop(guard);
+            assert!(files.try_custody().is_err());
+        }
+        Ok(())
+    }
+
     fn isolated(path: &Path) -> std::result::Result<IsolatedLibrary, Box<dyn Error>> {
         let identity: LibraryId = "a0000000-0000-4000-8000-000000000001".parse()?;
         Ok(IsolatedLibrary::initialize_from_override(

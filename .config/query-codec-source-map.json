@@ -3348,6 +3348,71 @@
           ]
         },
         "reason": "Additive observed Task 11 discovery; original integration identities retain exact order and target scope."
+      },
+      {
+        "position": 433,
+        "identity": {
+          "suite": "librairii-storage",
+          "name": "metadata::owner::tests::known_metadata_acknowledgements_settle_stages_but_uncertainty_retains_receipts",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive PR 52 regression: native metadata/artwork staging settlement preserves custody and permits clean offline restart."
+      },
+      {
+        "position": 434,
+        "identity": {
+          "suite": "librairii-storage",
+          "name": "metadata::owner::tests::metadata_cleanup_failure_retains_custody_without_changing_committed_acknowledgement",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive PR 52 regression: native metadata/artwork staging settlement preserves custody and permits clean offline restart."
+      },
+      {
+        "position": 435,
+        "identity": {
+          "suite": "librairii-storage",
+          "name": "platform::unix::tests::metadata_stage_cleanup_preserves_substituted_directories_and_payloads",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive PR 52 regression: native metadata/artwork staging settlement preserves custody and permits clean offline restart."
+      },
+      {
+        "position": 436,
+        "identity": {
+          "suite": "librairii-storage",
+          "name": "platform::unix::tests::metadata_stage_cleanup_flush_failure_keeps_actual_receipts_and_fences_custody",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive PR 52 regression: native metadata/artwork staging settlement preserves custody and permits clean offline restart."
+      },
+      {
+        "position": 437,
+        "identity": {
+          "suite": "librairii-storage::native_library",
+          "name": "metadata_refresh_and_artwork_settle_native_close_and_offline_reopen",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive PR 52 regression: native metadata/artwork staging settlement preserves custody and permits clean offline restart."
       }
     ],
     "python": [

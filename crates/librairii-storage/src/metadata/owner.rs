@@ -1,7 +1,8 @@
 //! Actual filesystem failures live in an operation owner, never an error DTO.
 use super::*;
 use crate::platform::unix::{
-    Custody, LibraryFiles, OwnedStage, PublishFailure, StageCreateFailure, TempCleanupFailure,
+    Custody, LibraryFiles, MetadataStageCleanupFailure, OwnedStage, PublishFailure,
+    StageCreateFailure, TempCleanupFailure,
 };
 use std::sync::{Arc, Mutex};
 #[derive(Debug)]
@@ -9,6 +10,7 @@ enum RetainedEffect<'db> {
     Creation(Box<StageCreateFailure<'db, 'db>>),
     Publication(Box<PublishFailure<'db, 'db>>),
     Cleanup(Box<TempCleanupFailure<'db, 'db>>),
+    MetadataCleanup(Box<MetadataStageCleanupFailure<'db, 'db>>),
     Receipt(Publication<'db, 'db>),
     Directory,
 }
@@ -65,6 +67,10 @@ impl<'db, 'library> MetadataStorage<'db, 'library> {
                 }
                 RetainedEffect::Cleanup(f) => {
                     let _ = &f.cause;
+                    RetainedKind::Cleanup
+                }
+                RetainedEffect::MetadataCleanup(f) => {
+                    let _ = (&f.cause, &f.publication);
                     RetainedKind::Cleanup
                 }
                 RetainedEffect::Receipt(r) => {
@@ -208,6 +214,17 @@ impl<'db, 'library> MetadataStorage<'db, 'library> {
                 publication.guard,
                 RetainedEffect::Receipt(publication.receipt),
             );
+        } else if let Err(failure) = publication
+            .receipt
+            .finish_metadata_stage(&publication.guard)
+        {
+            // The SQL outcome remains truthful even if private-stage cleanup
+            // fails. Retain its actual handles/custody and fence clean closure.
+            self.retain(
+                publication.files,
+                publication.guard,
+                RetainedEffect::MetadataCleanup(failure),
+            );
         }
         outcome
     }
@@ -224,6 +241,117 @@ mod tests {
     use librairii_app::metadata::{ArtworkAsset, MediaType, normalize};
     use librairii_core::metadata::Locale;
     use librairii_testkit::TestRoots;
+
+    #[test]
+    fn known_metadata_acknowledgements_settle_stages_but_uncertainty_retains_receipts()
+    -> std::result::Result<(), Box<dyn std::error::Error>> {
+        for outcome in 0..4 {
+            let roots = TestRoots::new()?;
+            let library = crate::IsolatedLibrary::initialize_from_override(
+                Some(roots.library().as_os_str()),
+                "a0000000-0000-4000-8000-000000000001".parse()?,
+            )?;
+            let mut db = Database::open_isolated(&library)?;
+            let store = MetadataStorage::new(&db);
+            let bytes = b"exact raw catalog bytes";
+            let publication = store.publish(
+                bytes,
+                librairii_app::metadata::digest(bytes),
+                "raw.json".into(),
+                None,
+                &WorkCancellation::default(),
+            )?;
+            let acknowledgement = match outcome {
+                0 => Ok(TransactionOutcome::Committed(())),
+                1 => Ok(TransactionOutcome::ProvenNotCommitted(
+                    StorageError::Cancelled,
+                )),
+                2 => Ok(TransactionOutcome::CommitUncertain(
+                    StorageError::WorkerStopped,
+                )),
+                _ => Err(StorageError::WorkerStopped),
+            };
+            let result = store.acknowledge_files(publication, acknowledgement);
+            assert!(matches!(
+                (&result, outcome),
+                (Ok(TransactionOutcome::Committed(())), 0)
+                    | (
+                        Ok(TransactionOutcome::ProvenNotCommitted(
+                            StorageError::Cancelled
+                        )),
+                        1
+                    )
+                    | (
+                        Ok(TransactionOutcome::CommitUncertain(
+                            StorageError::WorkerStopped
+                        )),
+                        2
+                    )
+                    | (Err(StorageError::WorkerStopped), 3)
+            ));
+            assert_eq!(
+                std::fs::read(roots.library().join("catalog/raw.json"))?,
+                bytes
+            );
+            assert_eq!(
+                std::fs::read_dir(roots.library().join("staging"))?.count(),
+                usize::from(outcome >= 2)
+            );
+            assert_eq!(std::fs::read_dir(roots.library().join("trash"))?.count(), 0);
+            if outcome >= 2 {
+                assert_eq!(store.retained_failures(), vec![RetainedKind::Receipt]);
+                assert!(db.metadata_files()?.try_custody().is_err());
+            } else {
+                assert!(store.retained_failures().is_empty());
+                db.metadata_files()?.try_custody()?;
+            }
+            drop(store);
+            db.close()?;
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn metadata_cleanup_failure_retains_custody_without_changing_committed_acknowledgement()
+    -> std::result::Result<(), Box<dyn std::error::Error>> {
+        let roots = TestRoots::new()?;
+        let library = crate::IsolatedLibrary::initialize_from_override(
+            Some(roots.library().as_os_str()),
+            "a0000000-0000-4000-8000-000000000001".parse()?,
+        )?;
+        let mut db = Database::open_isolated(&library)?;
+        let store = MetadataStorage::new(&db);
+        let bytes = b"exact raw catalog bytes";
+        let publication = store.publish(
+            bytes,
+            librairii_app::metadata::digest(bytes),
+            "raw.json".into(),
+            None,
+            &WorkCancellation::default(),
+        )?;
+        let private = std::fs::read_dir(roots.library().join("staging"))?
+            .next()
+            .ok_or("stage absent")??
+            .path();
+        std::fs::rename(&private, roots.library().join("staging/retained-original"))?;
+        std::fs::create_dir(&private)?;
+        std::fs::write(private.join("foreign"), b"foreign bytes")?;
+        assert!(matches!(
+            store.acknowledge_files(publication, Ok(TransactionOutcome::Committed(42)))?,
+            TransactionOutcome::Committed(42)
+        ));
+        assert_eq!(store.retained_failures(), vec![RetainedKind::Cleanup]);
+        assert_eq!(std::fs::read(private.join("foreign"))?, b"foreign bytes");
+        assert_eq!(
+            std::fs::read(roots.library().join("catalog/raw.json"))?,
+            bytes
+        );
+        assert!(db.metadata_files()?.try_custody().is_err());
+        drop(store);
+        db.close()?;
+        Ok(())
+    }
+
     #[test]
     fn metadata_and_artwork_partial_creation_keep_original_handles_and_custody()
     -> std::result::Result<(), Box<dyn std::error::Error>> {
