@@ -1715,3 +1715,45 @@ Unix factory, root/graph/discovery, fixed G/G2/N3/C2/C70 and shipping proofs rem
 unchanged. No rename/delete, source DELETE, configuration replacement, NtFlush,
 POSIX, publication, both-parent durability, power-loss, physical permanence or
 Native activation is granted or qualified by this observational code.
+
+### Partial 4.4 / 7.1 support: delegate to the single core query codec
+
+Release `STORAGE-QUERY-CODEC-DELEGATION-4144` starts this distinct storage child
+directly from ORIGINAL core move
+`c80f6edc1183d3e4581913838f5a9bfca8e5b3ac`, retaining original4144/5541 history.
+`migrations.rs` removes its inline codec and old compatibility declaration and
+imports `librairii_core::collection_codec`. The moved core implementation is the
+single parser/normalizer/language implementation; its owned Query remains data,
+with live reference checks performed in the storage transaction.
+
+The complete 5,938-byte SQL caller region is byte-identical to the parent
+(SHA256 `bdd9abd7193a34d853970f0af4d58d90f8a40a2c9a02c0267e8b01e2b8a88625`).
+It preserves raw version/payload/legacy-ID input, migrate followed by decode(v5),
+the discarded migration Query, branch-first live criteria validation and payload
+serialization. FrozenData remains a CompatibilityInvariant rollback; invalid or
+unsupported query data retains the existing attention outcome. SQL/conversion
+failures remain transaction failures. Already-attention canonicalization,
+postcommit domain results and migration016's sole persisted revision increment
+are unchanged; returned wrapping revision bookkeeping remains separate.
+
+The schema tail and existing collection integration tests are byte-identical.
+The core leaf remains the original c80 byte hash
+`29263f44c3991cbb60dff48d44db6ab2005991ed0d151894e59d6a21f573d4a6`.
+Only the storage import/removal and explanatory comments change runtime source.
+
+Actual Rust1.99.1 AppleARM verification in this child, using the handed-back
+owner6 cache: `cargo test -p librairii-storage --test collection_compatibility
+--test migrations --locked --target aarch64-apple-darwin` PASS six collection
+cases and five migration cases, zero failures/ignored/filtered. This includes the
+existing eighteen-prefix same-writer projection, criteria ownership/retirement,
+attention/idempotency, trigger rollback, commit uncertainty/fresh writer readback
+and exact embedded migration bytes. Test log SHA256
+`c3d1054521cd6765478ea9c1a29f40a0123ac09f50b5f05f7db46c58b3aead62`.
+Storage all-target locked AppleARM Clippy with warnings denied PASS (log SHA256
+`5108397c481481bfaa54382afaf65b4233fe81e8373b47533b869da3670c9aed`);
+owned-file rustfmt and diff-check PASS.
+
+These are affected-storage results on the c80 child. Owner5's separate526
+borrowed-observer follow-up, history composition, actual cumulative discovery,
+provenance and full-quality checks remain separate. PR43 stays5541; this branch
+does not publish a shipping union, native/review/CI verdict or full4.4/7.1 claim.
