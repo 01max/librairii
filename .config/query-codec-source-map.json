@@ -2574,6 +2574,14 @@
           "name": "recreated_or_forked_navigation_cannot_accept_an_older_owners_query_stamp"
         },
         "reason": "Task 7 additive observed discovery; integration-base identities retain their exact order and scope."
+      },
+      {
+        "position": 365,
+        "identity": {
+          "suite": "librairii-core::query_urls",
+          "name": "every_ascii_percent_pair_agrees_with_the_two_hex_digit_grammar"
+        },
+        "reason": "Task 7 additive observed discovery; integration-base identities retain their exact order and scope."
       }
     ],
     "python": [

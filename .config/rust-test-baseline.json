@@ -2027,6 +2027,10 @@
     {
       "suite": "librairii-core::navigation",
       "name": "recreated_or_forked_navigation_cannot_accept_an_older_owners_query_stamp"
+    },
+    {
+      "suite": "librairii-core::query_urls",
+      "name": "every_ascii_percent_pair_agrees_with_the_two_hex_digit_grammar"
     }
   ]
 }

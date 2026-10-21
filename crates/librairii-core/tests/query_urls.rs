@@ -138,3 +138,21 @@ fn percent_escapes_require_two_hex_digits_and_never_turn_malformed_input_into_em
         );
     }
 }
+
+#[test]
+fn every_ascii_percent_pair_agrees_with_the_two_hex_digit_grammar() {
+    for first in 0_u8..=127 {
+        for second in 0_u8..=127 {
+            let hash = format!(
+                "#/library?v=3&name=marker%{}{}tail",
+                char::from(first),
+                char::from(second)
+            );
+            assert_eq!(
+                url::decode(&hash, 0).is_ok(),
+                first.is_ascii_hexdigit() && second.is_ascii_hexdigit(),
+                "bytes {first:02x} {second:02x}"
+            );
+        }
+    }
+}
