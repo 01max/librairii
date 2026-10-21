@@ -35,6 +35,19 @@ pub struct FlagSummary {
     pub requested_stories: usize,
     pub flagged_stories: usize,
 }
+/// Restore input is the changed-only result of a successful committed action.
+pub fn validate_restore(changes: &[FlagChange]) -> Result<(), FlagError> {
+    if changes.is_empty() || changes.len() > 1000 {
+        return Err(FlagError::InvalidRequest);
+    }
+    let mut seen = BTreeSet::new();
+    for c in changes {
+        if c.story_id <= 0 || c.previous == c.current || !seen.insert(c.story_id) {
+            return Err(FlagError::InvalidRequest);
+        }
+    }
+    Ok(())
+}
 pub fn targets(ids: &[i64]) -> Result<Vec<i64>, FlagError> {
     if ids.is_empty() || ids.len() > 1000 || ids.iter().any(|&id| id <= 0) {
         return Err(FlagError::InvalidRequest);

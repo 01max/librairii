@@ -455,3 +455,111 @@ fn broken_flags_are_atomic_independent_visible_and_skipped_without_a_selection_c
     db.close()?;
     Ok(())
 }
+#[test]
+fn undo_restores_only_changed_targets_and_atomically_rejects_stale_or_unavailable_batches()
+-> TestResult {
+    use librairii_core::broken::{FlagChange, FlagError};
+    let roots = TestRoots::new()?;
+    let library = IsolatedLibrary::initialize_from_override(
+        Some(roots.library().as_os_str()),
+        "a0000000-0000-4000-8000-000000000001".parse()?,
+    )?;
+    let mut db = Database::open_isolated(&library)?;
+    seed_stories(&db, 3)?;
+    let ordinary = create(&db, "broken", Kind::Boolean)?;
+    assignment(
+        &db,
+        Command::Boolean {
+            story_ids: vec![2],
+            definition_id: ordinary,
+            assigned: true,
+        },
+    )?;
+    committed(
+        db.set_broken(vec![1], true, WorkCancellation::default())?
+            .wait()?,
+    )?;
+    let action = committed(
+        db.set_broken(vec![1, 2, 3], true, WorkCancellation::default())?
+            .wait()?,
+    )?;
+    assert_eq!(
+        action
+            .changes
+            .iter()
+            .map(|c| c.story_id)
+            .collect::<Vec<_>>(),
+        vec![2, 3]
+    );
+    let restore = committed(
+        db.restore_broken(action.changes, WorkCancellation::default())?
+            .wait()?,
+    )?;
+    assert_eq!(restore.changed_stories, 2);
+    assert_eq!(db.broken_summary(vec![1, 2, 3])?.wait()?.flagged_stories, 1);
+    let action = committed(
+        db.set_broken(vec![1, 2, 3], true, WorkCancellation::default())?
+            .wait()?,
+    )?;
+    committed(
+        db.set_broken(vec![3], false, WorkCancellation::default())?
+            .wait()?,
+    )?;
+    assert!(matches!(
+        committed(
+            db.restore_broken(action.changes.clone(), WorkCancellation::default())?
+                .wait()?
+        ),
+        Err(StorageError::Flag(FlagError::RestoreStale))
+    ));
+    assert_eq!(db.broken_summary(vec![2])?.wait()?.flagged_stories, 1);
+    committed(
+        db.set_broken(vec![3], true, WorkCancellation::default())?
+            .wait()?,
+    )?;
+    committed(
+        db.transaction(WorkCancellation::default(), |tx| {
+            tx.execute("DELETE FROM stories WHERE id=3", [])?;
+            Ok(())
+        })?
+        .wait()?,
+    )?;
+    assert!(matches!(
+        committed(
+            db.restore_broken(action.changes, WorkCancellation::default())?
+                .wait()?
+        ),
+        Err(StorageError::Flag(FlagError::StoryUnavailable))
+    ));
+    assert_eq!(db.broken_summary(vec![2])?.wait()?.flagged_stories, 1);
+    assert_eq!(
+        db.assignment_workspace(vec![2])?.wait()?.states[0].assigned_stories,
+        1
+    );
+    for changes in [
+        vec![],
+        vec![FlagChange {
+            story_id: 2,
+            previous: true,
+            current: true,
+        }],
+        vec![
+            FlagChange {
+                story_id: 2,
+                previous: false,
+                current: true
+            };
+            2
+        ],
+    ] {
+        assert!(
+            committed(
+                db.restore_broken(changes, WorkCancellation::default())?
+                    .wait()?
+            )
+            .is_err()
+        );
+    }
+    db.close()?;
+    Ok(())
+}

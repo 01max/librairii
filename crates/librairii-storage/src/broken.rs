@@ -6,6 +6,13 @@ use crate::{
 use librairii_core::broken::{FlagChange, FlagError, FlagResult, FlagSummary, targets};
 use rusqlite::{OptionalExtension, Transaction, params};
 impl Database<'_> {
+    pub fn restore_broken(
+        &self,
+        changes: Vec<FlagChange>,
+        cancellation: WorkCancellation,
+    ) -> Result<Pending<'_, TransactionOutcome<FlagResult>>> {
+        self.transaction(cancellation, move |tx| restore(tx, &changes))
+    }
     pub fn set_broken(
         &self,
         ids: Vec<i64>,
@@ -46,6 +53,21 @@ pub fn set(tx: &Transaction<'_>, ids: &[i64], broken: bool) -> Result<FlagResult
         }
     }
     publish(tx, ids.len(), changes)
+}
+pub fn restore(tx: &Transaction<'_>, changes: &[FlagChange]) -> Result<FlagResult> {
+    librairii_core::broken::validate_restore(changes)?;
+    let mut restored = Vec::with_capacity(changes.len());
+    for c in changes {
+        if current(tx, c.story_id)? != c.current {
+            return Err(FlagError::RestoreStale.into());
+        }
+        restored.push(FlagChange {
+            story_id: c.story_id,
+            previous: c.current,
+            current: c.previous,
+        });
+    }
+    publish(tx, changes.len(), restored)
 }
 pub(super) fn publish(
     tx: &Transaction<'_>,

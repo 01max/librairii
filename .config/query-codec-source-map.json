@@ -2655,6 +2655,19 @@
           ]
         },
         "reason": "Additive observed Task 7/8 discovery; original integration identities retain exact order and target scope."
+      },
+      {
+        "position": 372,
+        "identity": {
+          "suite": "librairii-storage::tags",
+          "name": "undo_restores_only_changed_targets_and_atomically_rejects_stale_or_unavailable_batches",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive observed Task 7/8 discovery; original integration identities retain exact order and target scope."
       }
     ],
     "python": [
