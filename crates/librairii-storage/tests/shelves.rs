@@ -353,3 +353,142 @@ fn initial_creation_is_explicit_deduplicated_ordered_and_can_be_empty() -> TestR
     db.close()?;
     Ok(())
 }
+fn preview(db: &Database<'_>, id: i64) -> Result<shelves::UpdatePlan> {
+    db.shelf_update_preview(id, "fr-FR".into())?.wait()
+}
+fn apply(
+    db: &Database<'_>,
+    plan: shelves::UpdatePlan,
+    decisions: Vec<shelves::Decision>,
+) -> Result<Shelf> {
+    committed(
+        db.apply_shelf_updates(plan, decisions, WorkCancellation::default())?
+            .wait()?,
+    )
+}
+fn decision(id: i64, action: shelves::Action) -> shelves::Decision {
+    shelves::Decision {
+        uuid: uuid(id),
+        action,
+    }
+}
+#[test]
+fn update_decisions_defer_keep_exclude_and_remove_atomically_with_origins() -> TestResult {
+    use shelves::Action::*;
+    let roots = TestRoots::new()?;
+    let lib = library(&roots)?;
+    let mut db = Database::open_isolated(&lib)?;
+    seed(&db, 4)?;
+    let a = collection(&db, "All", Query::default())?;
+    let b = collection(&db, "Also", Query::default())?;
+    let s = create(&db, "Review")?;
+    committed(
+        db.attach_shelf_sources(s.id, vec![a, b], WorkCancellation::default())?
+            .wait()?,
+    )?;
+    let p = preview(&db, s.id)?;
+    let before = db.shelves()?.wait()?;
+    assert_eq!(p.preview().additions.len(), 4);
+    assert!(apply(&db, p, vec![decision(1, Add), decision(1, Exclude)]).is_err());
+    assert_eq!(db.shelves()?.wait()?, before);
+    let p = preview(&db, s.id)?;
+    assert_eq!(apply(&db, p, vec![])?, before[0]);
+    let p = preview(&db, s.id)?;
+    apply(
+        &db,
+        p,
+        vec![
+            decision(2, Add),
+            decision(1, Add),
+            decision(3, Exclude),
+            decision(4, NotNow),
+        ],
+    )?;
+    let m = db.shelf_members(s.id)?.wait()?;
+    assert_eq!(m[0].uuid, uuid(1));
+    assert_eq!(m[0].origins.len(), 2);
+    let id = s.id;
+    committed(db.transaction(WorkCancellation::default(),|tx|{tx.execute("UPDATE collections SET query_payload='{}',validity_state='needs_attention' WHERE id=2",[])?;tx.execute("UPDATE stories SET display_name_normalized='other' WHERE id IN (1,2)",[])?;tx.execute("UPDATE collections SET query_payload='{\"name\":\"story\"}' WHERE id=1",[])?;Ok(())})?.wait()?)?;
+    let p = preview(&db, id)?;
+    assert!(p.preview().incomplete);
+    assert!(!p.preview().up_to_date);
+    assert_eq!(
+        p.preview()
+            .additions
+            .iter()
+            .map(|c| c.uuid.clone())
+            .collect::<Vec<_>>(),
+        vec![uuid(4)]
+    );
+    assert!(p.preview().removals.is_empty());
+    committed(db.transaction(WorkCancellation::default(),|tx|{tx.execute("UPDATE collections SET validity_state='valid',query_payload='{\"name\":\"story\"}' WHERE id=2",[])?;Ok(())})?.wait()?)?;
+    let p = preview(&db, id)?;
+    assert_eq!(p.preview().removals.len(), 2);
+    apply(
+        &db,
+        p,
+        vec![decision(1, Keep), decision(2, RemoveAndExclude)],
+    )?;
+    let p = preview(&db, id)?;
+    assert!(p.preview().removals.is_empty());
+    let m = db.shelf_members(id)?.wait()?;
+    assert_eq!(m.len(), 1);
+    assert!(m[0].manually_retained);
+    assert_eq!(m[0].origins[0].name, "All");
+    assert_eq!(
+        db.read(move |tx| shelves::exclusions(tx, id))?.wait()?,
+        vec![uuid(2), uuid(3)]
+    );
+    db.close()?;
+    Ok(())
+}
+#[test]
+fn broken_only_changes_preserve_review_but_sources_availability_and_decisions_invalidate()
+-> TestResult {
+    use shelves::Action::*;
+    let roots = TestRoots::new()?;
+    let lib = library(&roots)?;
+    let mut db = Database::open_isolated(&lib)?;
+    seed(&db, 3)?;
+    let a = collection(&db, "All", Query::default())?;
+    let s = create(&db, "Snapshot")?;
+    committed(
+        db.attach_shelf_sources(s.id, vec![a], WorkCancellation::default())?
+            .wait()?,
+    )?;
+    let p = preview(&db, s.id)?;
+    committed(
+        db.transaction(WorkCancellation::default(), |tx| {
+            tx.execute("UPDATE stories SET is_broken=1", [])?;
+            Ok(())
+        })?
+        .wait()?,
+    )?;
+    apply(&db, p, vec![decision(1, Add)])?;
+    let p = preview(&db, s.id)?;
+    curate(&db, s.id, shelves::Curation::Exclude(vec![uuid(3)]))?;
+    assert!(matches!(
+        apply(&db, p, vec![decision(2, Add)]),
+        Err(StorageError::Shelf(ShelfError::StaleReview))
+    ));
+    let p = preview(&db, s.id)?;
+    committed(
+        db.transaction(WorkCancellation::default(), |tx| {
+            tx.execute("DELETE FROM stories WHERE id=2", [])?;
+            Ok(())
+        })?
+        .wait()?,
+    )?;
+    assert!(apply(&db, p, vec![decision(2, Add)]).is_err());
+    let p = preview(&db, s.id)?;
+    committed(
+        db.transaction(WorkCancellation::default(), |tx| {
+            tx.execute("UPDATE stories SET is_broken=0", [])?;
+            Ok(())
+        })?
+        .wait()?,
+    )?;
+    apply(&db, p, vec![])?;
+    db.close()?;
+    Ok(())
+}
