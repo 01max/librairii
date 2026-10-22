@@ -4622,6 +4622,45 @@
           ]
         },
         "reason": "Additive resumed Task 12 export/removal/diagnostics assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 546,
+        "identity": {
+          "suite": "librairii-storage",
+          "name": "diagnostics::tests::native_diagnostics_no_clobber_cancel_and_uncertain_publication_retain_actual_output",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive resumed Task 12 export/removal/diagnostics assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 547,
+        "identity": {
+          "suite": "librairii-storage",
+          "name": "diagnostics::tests::native_diagnostics_rotation_keeps_five_bounded_owned_logs",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive resumed Task 12 export/removal/diagnostics assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 548,
+        "identity": {
+          "suite": "librairii-storage",
+          "name": "diagnostics::tests::native_diagnostics_zip_has_only_sanitized_logs_and_aggregate_manifest",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive resumed Task 12 export/removal/diagnostics assertions; all admitted identities retain exact order and target scope."
       }
     ],
     "python": [

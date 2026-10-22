@@ -1,6 +1,6 @@
 # Task 12: exports, trash custody and diagnostics
 
-**Partial: 12.1–12.6 implemented; 12.7–12.9 remain incomplete. Keep the Task 12
+**Partial: 12.1–12.7 implemented; 12.8–12.9 remain incomplete. Keep the Task 12
 PR in draft.** This is an export-domain/copy slice, not completion of Task 12.
 
 Rebased base: `5fd74f06fe4031b37bf84822d218943ec9ed970d` (Task 6 merged).
@@ -111,7 +111,7 @@ qualification of every full/removable filesystem or Windows sharing mode.
 
 ## Remaining dependency and acceptance gates
 
-12.7–12.8 logging/diagnostics remain to be implemented on the merged runtime. 12.9's complete import→inspect→export→reopen
+12.8 diagnostics presentation/documentation and 12.9 final acceptance remain incomplete. 12.9's complete import→inspect→export→reopen
 slice still depends on Task 5's real hostile archive inspection/import custody,
 which remains incomplete. Existing preserved Go fixtures do not establish that
 missing Rust import port. Keep that acceptance subtask open until it can run.
@@ -195,3 +195,30 @@ provide custody; imported checksums remain immutable SQL scope, not removal
 eligibility. Changed-size, validation-invalid archives can be moved to trash or
 restored after interruption. The expanded matrix includes a corrupt-file kill
 following its actual trash move. No archive data is read in a removal SQL callback.
+
+## 12.7 — Bounded logs and explicit diagnostics ZIP
+
+One logger per actual Database generation borrows LibraryFiles and its retained
+logs directory. Typed event/level/state inputs exclude free-form paths, titles,
+tokens and error strings. A serialized ring retains five fixed regular files of
+at most 256 KiB each, flushing each append and rotation. Replacements, symlinks
+and hard links refuse; partial writes/rotation retain actual file owners and
+fence clean closure. Read-only snapshot refusal does not claim a library effect.
+
+The explicit diagnostics service accepts a selected external directory, snapshots
+only the five known log names, strictly parses/re-encodes allowed fields, and
+builds a bounded stored ZIP containing `diagnostics.json` plus sanitized logs.
+The manifest contains format/schema versions, generation time, OS/architecture
+and aggregate story/Shelf/operation counts. It contains no IDs, paths, titles,
+SQLite pages, archive bytes or tokens. Publication uses the same destination-local
+stream/hash/readback/flush/no-clobber mechanism as exports, retaining actual
+outputs on uncertainty. No network transport is involved. Logger record/flush and
+service calls are blocking-worker APIs; native UI lifecycle wiring remains Task 15.
+
+Tests rotate a full five-file ring across six actual boundaries, check the output
+with Python's independent ZIP/CRC reader, and inject unknown fields, tokens, paths,
+invalid states and malformed/trailing JSON. Raced files survive, cancellation
+cleans only the owned temporary, and lost publication durability retains the
+actual final output and fences clean closure. The small stored ZIP writer follows
+[PKWARE APPNOTE 6.3.10](https://pkware.cachefly.net/webdocs/casestudies/APPNOTE.TXT),
+sections 4.3.7, 4.3.12 and 4.3.16; it adds no archive-reader/decompression surface.

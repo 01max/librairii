@@ -358,6 +358,8 @@ impl<'library> Authority<'library> {
 /// independent schema/integrity probe and durable backup before migration.
 #[derive(Debug)]
 pub struct Database<'library> {
+    #[cfg(any(target_os = "macos", target_os = "linux"))]
+    pub(crate) logger_active: AtomicBool,
     pub(crate) shelf_tickets: Arc<std::sync::Mutex<crate::shelves::tickets::Registry>>,
     authority: Authority<'library>,
     jobs_active: AtomicBool,
@@ -468,6 +470,8 @@ impl<'library> Database<'library> {
     fn open_owned(authority: Authority<'library>) -> Result<Self> {
         authority.claim_runtime()?;
         let mut runtime = Self {
+            #[cfg(any(target_os = "macos", target_os = "linux"))]
+            logger_active: AtomicBool::new(false),
             shelf_tickets: Arc::default(),
             authority,
             jobs_active: AtomicBool::new(false),

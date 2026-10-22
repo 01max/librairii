@@ -13,6 +13,7 @@
 //! cleared by dropping a guard, returning an error or enqueueing a DTO.
 use super::{StreamDigest, hash_stream};
 mod export_output;
+pub(crate) mod logging;
 pub(crate) mod removal;
 pub(crate) mod transfer;
 use crate::{

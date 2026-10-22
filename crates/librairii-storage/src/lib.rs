@@ -8,6 +8,8 @@ pub mod backup;
 pub mod broken;
 pub mod collections;
 pub mod database;
+#[cfg(any(target_os = "macos", target_os = "linux"))]
+pub mod diagnostics;
 pub mod error;
 pub mod export;
 pub mod identity;
