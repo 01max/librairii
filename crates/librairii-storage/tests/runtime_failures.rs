@@ -583,6 +583,9 @@ fn permanent_creation_rejection_releases_admission_and_allows_shutdown() -> Test
     let mut invalid = request(73);
     invalid.id = "x".into();
     assert!(Start::new(invalid).is_err());
+    let mut nul = request(73);
+    nul.id = format!("{}\0{}", "Z".repeat(36), "x".repeat(300));
+    assert!(Start::new(nul).is_err());
     let mut unicode = request(73);
     unicode.id = "É".repeat(36);
     assert!(Start::new(unicode).is_ok());

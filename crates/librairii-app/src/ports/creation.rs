@@ -98,14 +98,7 @@ impl NewOperation {
         self.retained_bytes()?;
         // Match SQLite character length for new IDs. Existing
         // 36-character non-UUID identities remain valid and are not normalized.
-        if self
-            .id
-            .split('\0')
-            .next()
-            .map_or(0, |id| id.chars().count())
-            != 36
-            || self.items.is_empty()
-        {
+        if self.id.contains('\0') || self.id.chars().count() != 36 || self.items.is_empty() {
             return Err(InputError::Invalid);
         }
         let mut total = 0i64;
