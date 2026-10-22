@@ -95,6 +95,7 @@ impl<R: Read + Seek> rawzip::ReaderAt for Positioned<R> {
 struct ZipMember {
     location: rawzip::ZipArchiveEntryWayfinder,
     method: rawzip::CompressionMethod,
+    encrypted: bool,
 }
 enum Reader<R: Read + Seek> {
     Zip {
@@ -121,6 +122,17 @@ impl<R: Read + Seek> fmt::Debug for Archive<R> {
 impl<R: Read + Seek> Archive<R> {
     pub fn open(source: R, filename: &[u8], limits: Limits, cancel: &Cancellation) -> Result<Self> {
         limits.validate()?;
+        let frozen = Limits::default();
+        if limits.max_entries > frozen.max_entries
+            || limits.max_path_bytes > frozen.max_path_bytes
+            || limits.max_path_depth > frozen.max_path_depth
+            || limits.max_expanded_bytes > frozen.max_expanded_bytes
+            || limits.max_metadata_bytes > frozen.max_metadata_bytes
+            || limits.max_artwork_bytes > frozen.max_artwork_bytes
+            || limits.max_compression_ratio > frozen.max_compression_ratio
+        {
+            return Err(ValidationError::new(ValidationCode::InvalidLimits).into());
+        }
         checkpoint(cancel)?;
         // Ask the existing suffix policy, without reading content, which family to open.
         let kind = if dispatch(
@@ -182,7 +194,7 @@ impl<R: Read + Seek> Archive<R> {
                 name,
                 entry.compressed_size_hint(),
                 entry.uncompressed_size_hint(),
-                entry.is_dir(),
+                entry.is_dir() || entry.mode().value() & 0xf000 == 0x4000,
                 entry.mode().is_symlink(),
             )?)?;
             let key = validate_entry_name(name, limits)?;
@@ -191,6 +203,9 @@ impl<R: Read + Seek> Archive<R> {
                 ZipMember {
                     location: entry.wayfinder(),
                     method: entry.compression_method(),
+                    encrypted: entry.flags().is_encrypted()
+                        || entry.flags().has_strong_encryption()
+                        || entry.flags().is_masked(),
                 },
             );
             count += 1;
@@ -224,7 +239,7 @@ impl<R: Read + Seek> Archive<R> {
             sevenz_turbo::Password::empty(),
             decoder_limits,
         )
-        .map_err(|_| invalid())?;
+        .map_err(seven_error)?;
         let mut index = InventoryBuilder::new(
             limits,
             CompressionAccounting::SevenZipContainer {
@@ -264,6 +279,9 @@ impl<R: Read + Seek> Archive<R> {
         let result = match &mut self.reader {
             Reader::Zip { archive, members } => {
                 let member = members.get(name).ok_or_else(invalid)?;
+                if member.encrypted {
+                    return Err(invalid());
+                }
                 let entry = archive.get_entry(member.location).map_err(|_| invalid())?;
                 let decoder: Box<dyn Read + '_> =
                     if member.method == rawzip::CompressionMethod::STORE {
@@ -273,7 +291,13 @@ impl<R: Read + Seek> Archive<R> {
                     } else {
                         return Err(invalid());
                     };
-                limited(&mut entry.verifying_reader(decoder), limit, code, &raw_name)
+                limited(
+                    &mut entry.verifying_reader(decoder),
+                    limit,
+                    code,
+                    &raw_name,
+                    &self.cancel,
+                )
             }
             Reader::Seven(reader) => {
                 let mut selected = None;
@@ -281,11 +305,11 @@ impl<R: Read + Seek> Archive<R> {
                     if entry.name().as_bytes() != raw_name {
                         return Ok(true);
                     }
-                    selected = Some(limited(bytes, limit, code, &raw_name));
+                    selected = Some(limited(bytes, limit, code, &raw_name, &self.cancel));
                     Ok(false)
                 });
-                if decoded.is_err() {
-                    Err(invalid())
+                if let Err(error) = decoded {
+                    Err(seven_error(error))
                 } else {
                     selected.unwrap_or_else(|| Err(invalid()))
                 }
@@ -300,10 +324,12 @@ fn limited(
     limit: u64,
     code: ValidationCode,
     name: &[u8],
+    cancel: &Cancellation,
 ) -> Result<Vec<u8>> {
     let mut result = Vec::new();
     let mut buffer = [0; 32 * 1024];
     loop {
+        checkpoint(cancel)?;
         let available = limit
             .saturating_sub(result.len() as u64)
             .saturating_add(1)
@@ -322,6 +348,26 @@ fn limited(
             .map_err(|_| ValidationError::at(code, name))?;
         result.extend_from_slice(&buffer[..count]);
     }
+}
+
+fn seven_error(error: sevenz_turbo::Error) -> ArchiveError {
+    use sevenz_turbo::{Error, Limit};
+    let code = match error {
+        Error::LimitExceeded {
+            what: Limit::Entries,
+            ..
+        } => ValidationCode::EntryLimit,
+        Error::LimitExceeded {
+            what: Limit::NameBytes,
+            ..
+        } => ValidationCode::UnsafePath,
+        Error::LimitExceeded {
+            what: Limit::UnpackBytes,
+            ..
+        } => ValidationCode::ExpandedSizeLimit,
+        _ => ValidationCode::InvalidContainer,
+    };
+    ValidationError::new(code).into()
 }
 #[cfg(test)]
 mod tests;

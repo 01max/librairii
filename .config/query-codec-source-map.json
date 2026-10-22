@@ -3975,6 +3975,38 @@
           "name": "archives::tests::indexed_archive_reads_selected_metadata_without_bulk_extraction"
         },
         "reason": "Additive Task 5 archive inspection/custody assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 487,
+        "identity": {
+          "suite": "librairii-adapters",
+          "name": "archives::tests::actual_entry_path_and_duplicate_checks_use_preserved_normalized_keys"
+        },
+        "reason": "Additive Task 5 archive inspection/custody assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 488,
+        "identity": {
+          "suite": "librairii-adapters",
+          "name": "archives::tests::actual_frozen_archive_rejections_cover_links_nested_duplicates_and_seven_ratio"
+        },
+        "reason": "Additive Task 5 archive inspection/custody assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 489,
+        "identity": {
+          "suite": "librairii-adapters",
+          "name": "archives::tests::entry_actual_read_errors_and_corrupt_payload_crc_cannot_return_partial_bytes"
+        },
+        "reason": "Additive Task 5 archive inspection/custody assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 490,
+        "identity": {
+          "suite": "librairii-adapters",
+          "name": "archives::tests::entry_and_expansion_limits_are_enforced_from_actual_container_headers"
+        },
+        "reason": "Additive Task 5 archive inspection/custody assertions; all admitted identities retain exact order and target scope."
       }
     ],
     "python": [

@@ -2940,6 +2940,22 @@
     {
       "suite": "librairii-adapters",
       "name": "archives::tests::indexed_archive_reads_selected_metadata_without_bulk_extraction"
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "archives::tests::actual_entry_path_and_duplicate_checks_use_preserved_normalized_keys"
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "archives::tests::actual_frozen_archive_rejections_cover_links_nested_duplicates_and_seven_ratio"
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "archives::tests::entry_actual_read_errors_and_corrupt_payload_crc_cannot_return_partial_bytes"
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "archives::tests::entry_and_expansion_limits_are_enforced_from_actual_container_headers"
     }
   ]
 }
