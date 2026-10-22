@@ -81,57 +81,59 @@ pub fn fuzz() -> Result {
     }
     context("fuzz", Some(pin))?;
     let working = root().join("target/quality/fuzz");
-    let corpus = working.join("corpus");
-    let artifacts = working.join("artifacts");
-    fs::create_dir_all(&corpus)?;
-    fs::create_dir_all(&artifacts)?;
-    for entry in fs::read_dir(root().join("fuzz/corpus/identity"))? {
-        let entry = entry?;
-        if entry.file_type()?.is_file() {
-            fs::copy(entry.path(), corpus.join(entry.file_name()))?;
+    for (target, max_len) in [("identity", "128"), ("import_boundaries", "16384")] {
+        let corpus = working.join("corpus").join(target);
+        let artifacts = working.join("artifacts").join(target);
+        fs::create_dir_all(&corpus)?;
+        fs::create_dir_all(&artifacts)?;
+        for entry in fs::read_dir(root().join("fuzz/corpus").join(target))? {
+            let entry = entry?;
+            if entry.file_type()?.is_file() {
+                fs::copy(entry.path(), corpus.join(entry.file_name()))?;
+            }
         }
-    }
-    // cargo-fuzz has no locked flag: resolve with Cargo locked, run offline,
-    // and reject any lockfile mutation before reporting success.
-    let lock_path = root().join("fuzz/Cargo.lock");
-    let locked = fs::read(&lock_path)?;
-    let status = Command::new("rustup")
-        .args([
-            "run",
-            pin,
-            "cargo",
-            "metadata",
-            "--locked",
-            "--format-version",
-            "1",
-        ])
-        .current_dir(root().join("fuzz"))
-        .stdout(std::process::Stdio::null())
-        .status()?;
-    if !status.success() {
-        return Err("locked fuzz graph validation failed".into());
-    }
-    let status = Command::new("rustup")
-        .args(["run", pin, "cargo", "fuzz", "run", "identity"])
-        .arg(&corpus)
-        .args([
-            "--",
-            "-max_total_time=30",
-            "-max_len=128",
-            "-timeout=2",
-            "-rss_limit_mb=512",
-            "-seed=1",
-        ])
-        .arg(format!("-artifact_prefix={}/", artifacts.display()))
-        .env("CARGO_NET_OFFLINE", "true")
-        .env("CARGO_TARGET_DIR", root().join("fuzz/target"))
-        .current_dir(root().join("fuzz"))
-        .status()?;
-    if fs::read(&lock_path)? != locked {
-        return Err("fuzz run changed the committed lockfile".into());
-    }
-    if !status.success() {
-        return Err("bounded identity fuzz run failed".into());
+        // cargo-fuzz has no locked flag: resolve with Cargo locked, run offline,
+        // and reject any lockfile mutation before reporting success.
+        let lock_path = root().join("fuzz/Cargo.lock");
+        let locked = fs::read(&lock_path)?;
+        let status = Command::new("rustup")
+            .args([
+                "run",
+                pin,
+                "cargo",
+                "metadata",
+                "--locked",
+                "--format-version",
+                "1",
+            ])
+            .current_dir(root().join("fuzz"))
+            .stdout(std::process::Stdio::null())
+            .status()?;
+        if !status.success() {
+            return Err("locked fuzz graph validation failed".into());
+        }
+        let status = Command::new("rustup")
+            .args(["run", pin, "cargo", "fuzz", "run", target])
+            .arg(&corpus)
+            .args([
+                "--",
+                "-max_total_time=30",
+                &format!("-max_len={max_len}"),
+                "-timeout=2",
+                "-rss_limit_mb=512",
+                "-seed=1",
+            ])
+            .arg(format!("-artifact_prefix={}/", artifacts.display()))
+            .env("CARGO_NET_OFFLINE", "true")
+            .env("CARGO_TARGET_DIR", root().join("fuzz/target"))
+            .current_dir(root().join("fuzz"))
+            .status()?;
+        if fs::read(&lock_path)? != locked {
+            return Err("fuzz run changed the committed lockfile".into());
+        }
+        if !status.success() {
+            return Err(format!("bounded {target} fuzz run failed").into());
+        }
     }
     Ok(())
 }

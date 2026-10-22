@@ -614,3 +614,210 @@ fn actual_metadata_and_rejections_match_entire_preserved_inspection_corpus() -> 
     }
     Ok(())
 }
+
+fn parity_fixture(name: &str) -> io::Result<Vec<u8>> {
+    fs::read(
+        PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("testdata/archive-parity")
+            .join(name),
+    )
+}
+#[test]
+fn independent_seven_codec_streams_preserve_studio_metadata_and_artwork() -> TestResult {
+    let original = fixture("clockwork-forest-studio.zip")?;
+    let expected_artwork = open(&original, b"story.zip")?
+        .inspect_metadata()?
+        .artwork
+        .ok_or("thumbnail")?
+        .bytes;
+    for name in [
+        "copy",
+        "lzma",
+        "lzma2",
+        "ppmd",
+        "bzip2",
+        "deflate",
+        "bcj",
+        "bcj2",
+        "ppc",
+        "arm",
+        "arm64",
+        "sparc",
+        "delta",
+        "lz4",
+        "zstd",
+        "solid-copy",
+        "non-solid-unused-corrupt",
+    ] {
+        let bytes = parity_fixture(&format!("{name}.7z"))?;
+        let mut archive = open(&bytes, b"story.7z")?;
+        let metadata = archive
+            .inspect_metadata()
+            .map_err(|e| format!("{name}: {e}"))?;
+        assert_eq!(
+            metadata.identity.canonical(),
+            "00112233-4455-4677-8899-aabbccddeeff",
+            "{name}"
+        );
+        assert_eq!(metadata.text, MetadataText::default(), "{name}");
+        assert_eq!(
+            metadata.artwork.ok_or("thumbnail")?.bytes,
+            expected_artwork,
+            "{name}"
+        );
+        archive.verify_payloads()?;
+    }
+    Ok(())
+}
+#[test]
+fn unsupported_go_filters_remain_rejected_when_selected_for_metadata() -> TestResult {
+    for name in ["ia64", "thumb", "riscv"] {
+        let bytes = parity_fixture(&format!("unsupported-{name}.7z"))?;
+        let mut archive = open(&bytes, b"story.7z")?;
+        assert!(archive.inspect_metadata().is_err(), "{name}");
+    }
+    Ok(())
+}
+#[test]
+fn retained_constructor_declarations_and_hardening_fixtures_refuse_before_unbounded_work()
+-> TestResult {
+    for name in [
+        "files-u64max.7z",
+        "coders-u64max.7z",
+        "header-16m.7z",
+        "decoded-header-16m.7z",
+        "coders-nine.7z",
+        "streams-nine.7z",
+        "total-coders-10002.7z",
+        "unknown-unused-coder.7z",
+        "dictionary-512m.7z",
+    ] {
+        let bytes = parity_fixture(name)?;
+        assert!(open(&bytes, b"story.7z").is_err(), "{name}");
+    }
+    for name in ["selected-crc.7z", "preceding-crc.7z"] {
+        let bytes = parity_fixture(name)?;
+        assert!(
+            open(&bytes, b"story.7z")?.inspect_metadata().is_err(),
+            "{name}"
+        );
+    }
+    let bytes = parity_fixture("path-512.7z")?;
+    let one_entry = Limits {
+        max_entries: 1,
+        ..Limits::default()
+    };
+    assert!(
+        Archive::open(
+            Cursor::new(&bytes),
+            b"story.7z",
+            one_entry,
+            &Cancellation::default()
+        )
+        .is_ok()
+    );
+    let bytes = parity_fixture("png-header-only.zip")?;
+    assert!(open(&bytes, b"story.zip")?.inspect_metadata().is_err());
+    Ok(())
+}
+
+#[test]
+fn zip_checks_unused_payload_crc_while_seven_zip_reads_only_selected_blocks() -> TestResult {
+    let zip = parity_fixture("zip-unused-corrupt.zip")?;
+    let mut archive = open(&zip, b"story.zip")?;
+    assert!(archive.inspect_metadata().is_ok());
+    assert!(archive.verify_payloads().is_err());
+    let seven = parity_fixture("non-solid-unused-corrupt.7z")?;
+    let mut archive = open(&seven, b"story.7z")?;
+    assert!(archive.inspect_metadata().is_ok());
+    assert!(archive.verify_payloads().is_ok());
+    Ok(())
+}
+
+#[test]
+fn retained_codec_and_hardening_manifest_hashes_and_expected_outcomes_are_enforced() -> TestResult {
+    use librairii_app::importing::Inspector;
+    let manifest: serde_json::Value = serde_json::from_slice(&parity_fixture("manifest.json")?)?;
+    let mut failures = Vec::new();
+    for row in manifest["fixtures"].as_array().ok_or("fixture array")? {
+        let name = row["file"].as_str().ok_or("fixture name")?;
+        let bytes = parity_fixture(name)?;
+        assert_eq!(
+            librairii_app::metadata::digest(&bytes).to_string(),
+            row["sha256"].as_str().ok_or("sha")?,
+            "{name}"
+        );
+        if name == "path-512.7z" {
+            continue;
+        }
+        let suffix = if name.ends_with(".zip") {
+            b"story.zip".as_slice()
+        } else {
+            b"story.7z".as_slice()
+        };
+        let outcome =
+            ArchiveInspector.inspect(&mut Cursor::new(&bytes), suffix, &Cancellation::default());
+        let actual = match outcome {
+            Ok(_) => "accepted",
+            Err(librairii_app::importing::InspectionError::Validation(ref e)) => e.code.as_str(),
+            Err(librairii_app::importing::InspectionError::Cancelled) => "cancelled",
+        };
+        let expected = row["rust"].as_str().ok_or("expected outcome")?;
+        if actual != expected {
+            failures.push(format!("{name}: {actual}; required {expected}"));
+        }
+    }
+    assert!(
+        failures.is_empty(),
+        "Unresolved import parity: {failures:?}"
+    );
+    Ok(())
+}
+
+#[test]
+fn constructor_budgets_can_only_reduce_production_allocation_ceilings() -> TestResult {
+    let bytes = fixture("studio.7z")?;
+    for decoder in [
+        DecoderLimits {
+            header_bytes: 0,
+            memory_bytes: DECODER_BYTES,
+        },
+        DecoderLimits {
+            header_bytes: HEADER_BYTES + 1,
+            memory_bytes: DECODER_BYTES,
+        },
+        DecoderLimits {
+            header_bytes: HEADER_BYTES,
+            memory_bytes: 0,
+        },
+        DecoderLimits {
+            header_bytes: HEADER_BYTES,
+            memory_bytes: DECODER_BYTES + 1,
+        },
+    ] {
+        assert!(matches!(
+            Archive::open_bounded(
+                Cursor::new(&bytes),
+                b"story.7z",
+                Limits::default(),
+                decoder,
+                &Cancellation::default()
+            ),
+            Err(ArchiveError::Validation(ValidationError {
+                code: ValidationCode::InvalidLimits,
+                ..
+            }))
+        ));
+    }
+    Ok(())
+}
+
+#[test]
+fn unqualified_brotli_payload_decoder_remains_disabled() -> TestResult {
+    let bytes = parity_fixture("brotli.7z")?;
+    let mut archive = open(&bytes, b"story.7z")?;
+    assert!(archive.inspect_metadata().is_err());
+    // Accepted Go behavior stays required by the separate failing parity manifest.
+    // This is temporary fail-closed quarantine, never a hardening waiver.
+    Ok(())
+}

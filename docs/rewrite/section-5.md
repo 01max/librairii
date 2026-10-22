@@ -269,3 +269,69 @@ setup: taking the guard before a fallible directory open could leave compensatio
 without its original guard. Directory preparation now finishes while resources
 retain custody. The generalized artwork route names also describe both embedded
 and official categories. These are separate review fixes, not waived findings.
+
+## 5.9 — In progress: bounded fuzzing and complete codec parity
+
+The new retained synthetic corpus exercises Copy, LZMA/LZMA2, PPMd, Deflate,
+BZip2, independent Zstd/Brotli/LZ4 streams and BCJ/BCJ2/PPC/ARM/ARM64/SPARC/Delta
+filters through actual Studio inspection. UUID, projected text and exact artwork
+bytes match. ZIP fully validates an unused corrupt payload's CRC, whereas 7z
+accepts a corrupt unrelated block without decoding it. Selected 7z reads now use
+the actual block map and original constructor limits; global all-block traversal
+cannot honor an early-stop callback between phases. Earlier solid members drain
+through32KiB cancellation checkpoints. Repeated selected reads may decode the
+same solid prefix repeatedly; the preserved2GiB logical expansion cap is not a
+single cumulative2GiB inspection-work claim.
+
+The source reader has a bounded encoded-header method preflight to preserve
+Go's decoder set before header decoding, as well as the selected-block method
+gate. IA64/Thumb/RISC-V filters remain unsupported where Go rejects them. The
+preflight only observes methods; the candidate still validates the full container,
+CRC, stream graph and allocation bounds. UTF16 total-name accounting includes
+all NUL terminators and the external flag. Production allocation ceilings are
+16MiB stored/decoded headers and256MiB decoder estimates; reduced public budgets
+cannot raise them. PNG config parsing bounds dimensions/pixels and128MiB parser
+allocation. The pinned png decoder's iCCP inflate is capped by its remaining
+byte budget and invalid/oversized optional profiles are discarded; config parsing
+does not rasterize image data.
+
+Individual retained previously accepted Go counterexamples cover dimensions,
+pixels, incomplete PNG framing, selected/predecessor7z CRC,
+end/decoded-header buffering, decoder memory, per-block coder/stream counts,
+aggregate coders and unmodelled unused decoder memory. Their hashes, observed Go
+results, rationales and required Rust outcomes remain separate hardening records
+pending independent5.10 acceptance. The frozen preservation corpus is unchanged.
+
+Both pinned bounded fuzz targets pass after the header preflight change:
+identity11140824cases and import_boundaries607849cases in31seconds each. Import
+fuzzing uses actual ZIP/7z/path/Studio/optional JSON decoders,64entries,128KiB
+expansion,16KiB input/header/metadata/artwork and8MiB decoder memory, with a2second
+per-input timeout and512MiB process RSS ceiling. Retained seeds and regressions
+are committed; generated corpus and crash artifacts remain task-local.
+
+**Qualification blocker:** encoded-header-bcj2.7z is valid and accepted by the
+frozen Go inspector, but sevenz-turbo0.29.2's encoded-header path refuses multi-I/O
+coders with `Multi input/output stream coders are not yet supported`. Its body
+BCJ2 decoder succeeds, so a body-only codec matrix would conceal the gap. The
+required Rust result remains Accepted and the parity test deliberately fails.
+This is lost supported behavior, not an intentional hardening exception. Task5.9
+and5.10 remain unchecked; the dependency is not qualified. The user was asked to
+choose a pinned, reviewed decoder repair or a replacement candidate before that
+design-dependent work proceeds.
+
+Independent spec review additionally found that the candidate's fixed32MiB
+Brotli estimate does not bound its allocator: locked brotli-decompressor6.0.1's
+custom-dictionary state enables large-window mode, which can allocate a1GiB ring
+buffer for a non-last metablock before a small output/header cap intervenes.
+No hostile allocation probe was run. The Brotli feature is disabled in both
+locked dependency graphs pending a bounded implementation. Its retained normal
+Go-accepted fixture still requires Accepted in the failing parity manifest;
+this temporary safety refusal is not a compatibility waiver. The ordinary
+positive codec test now exercises the15 remaining body codecs/filters.
+
+Two more qualification questions remain explicit: the parser's10000 structural
+count ceiling also applies to packed streams, so a separate >10000-stream/
+<=10000-file counterexample is required; and the Zstd decoder's additional128MiB
+window clamp needs its own comparison/record rather than assuming the general
+256MiB memory record covers it. These gaps and the safety defect keep5.9/5.10
+open even if a particular normal codec corpus passes.

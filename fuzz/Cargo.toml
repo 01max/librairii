@@ -14,11 +14,20 @@ resolver = "3"
 
 [dependencies]
 libfuzzer-sys = "=0.4.13"
+librairii-adapters = { path = "../crates/librairii-adapters", version = "=0.0.0" }
+librairii-app = { path = "../crates/librairii-app", version = "=0.0.0" }
 librairii-core = { path = "../crates/librairii-core", version = "=0.0.0" }
 
 [[bin]]
 name = "identity"
 path = "fuzz_targets/identity.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "import_boundaries"
+path = "fuzz_targets/import_boundaries.rs"
 test = false
 doc = false
 bench = false

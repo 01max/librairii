@@ -3131,6 +3131,34 @@
         "x86_64-apple-darwin",
         "x86_64-unknown-linux-gnu"
       ]
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "archives::tests::constructor_budgets_can_only_reduce_production_allocation_ceilings"
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "archives::tests::independent_seven_codec_streams_preserve_studio_metadata_and_artwork"
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "archives::tests::retained_codec_and_hardening_manifest_hashes_and_expected_outcomes_are_enforced"
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "archives::tests::retained_constructor_declarations_and_hardening_fixtures_refuse_before_unbounded_work"
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "archives::tests::unsupported_go_filters_remain_rejected_when_selected_for_metadata"
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "archives::tests::zip_checks_unused_payload_crc_while_seven_zip_reads_only_selected_blocks"
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "archives::tests::unqualified_brotli_payload_decoder_remains_disabled"
     }
   ]
 }

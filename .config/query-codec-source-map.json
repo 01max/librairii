@@ -4282,6 +4282,62 @@
           ]
         },
         "reason": "Additive Task 5 archive inspection/custody assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 516,
+        "identity": {
+          "suite": "librairii-adapters",
+          "name": "archives::tests::constructor_budgets_can_only_reduce_production_allocation_ceilings"
+        },
+        "reason": "Additive Task 5 archive inspection/custody assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 517,
+        "identity": {
+          "suite": "librairii-adapters",
+          "name": "archives::tests::independent_seven_codec_streams_preserve_studio_metadata_and_artwork"
+        },
+        "reason": "Additive Task 5 archive inspection/custody assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 518,
+        "identity": {
+          "suite": "librairii-adapters",
+          "name": "archives::tests::retained_codec_and_hardening_manifest_hashes_and_expected_outcomes_are_enforced"
+        },
+        "reason": "Additive Task 5 archive inspection/custody assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 519,
+        "identity": {
+          "suite": "librairii-adapters",
+          "name": "archives::tests::retained_constructor_declarations_and_hardening_fixtures_refuse_before_unbounded_work"
+        },
+        "reason": "Additive Task 5 archive inspection/custody assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 520,
+        "identity": {
+          "suite": "librairii-adapters",
+          "name": "archives::tests::unsupported_go_filters_remain_rejected_when_selected_for_metadata"
+        },
+        "reason": "Additive Task 5 archive inspection/custody assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 521,
+        "identity": {
+          "suite": "librairii-adapters",
+          "name": "archives::tests::zip_checks_unused_payload_crc_while_seven_zip_reads_only_selected_blocks"
+        },
+        "reason": "Additive Task 5 archive inspection/custody assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 522,
+        "identity": {
+          "suite": "librairii-adapters",
+          "name": "archives::tests::unqualified_brotli_payload_decoder_remains_disabled"
+        },
+        "reason": "Additive Task 5 archive inspection/custody assertions; all admitted identities retain exact order and target scope."
       }
     ],
     "python": [

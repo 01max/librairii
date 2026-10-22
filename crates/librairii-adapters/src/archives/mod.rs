@@ -21,6 +21,23 @@ use std::{
 const HEADER_BYTES: u64 = 16 * 1024 * 1024;
 const DECODER_BYTES: u64 = 256 * 1024 * 1024;
 const ZIP_BUFFER: usize = 256 * 1024;
+/// A caller may reduce constructor allocation budgets for bounded inspection.
+/// Zero or values above the production ceilings are refused.
+#[derive(Clone, Copy, Debug)]
+pub struct DecoderLimits {
+    pub header_bytes: u64,
+    pub memory_bytes: u64,
+}
+impl Default for DecoderLimits {
+    fn default() -> Self {
+        Self {
+            header_bytes: HEADER_BYTES,
+            memory_bytes: DECODER_BYTES,
+        }
+    }
+}
+
+mod header;
 type Result<T> = std::result::Result<T, ArchiveError>;
 
 #[derive(Clone, Copy, Debug, Default)]
@@ -173,6 +190,22 @@ impl<R: Read + Seek> fmt::Debug for Archive<R> {
 }
 impl<R: Read + Seek> Archive<R> {
     pub fn open(source: R, filename: &[u8], limits: Limits, cancel: &Cancellation) -> Result<Self> {
+        Self::open_bounded(source, filename, limits, DecoderLimits::default(), cancel)
+    }
+    pub fn open_bounded(
+        source: R,
+        filename: &[u8],
+        limits: Limits,
+        decoder: DecoderLimits,
+        cancel: &Cancellation,
+    ) -> Result<Self> {
+        if decoder.header_bytes == 0
+            || decoder.header_bytes > HEADER_BYTES
+            || decoder.memory_bytes == 0
+            || decoder.memory_bytes > DECODER_BYTES
+        {
+            return Err(ValidationError::new(ValidationCode::InvalidLimits).into());
+        }
         limits.validate()?;
         let frozen = Limits::default();
         if limits.max_entries > frozen.max_entries
@@ -218,7 +251,7 @@ impl<R: Read + Seek> Archive<R> {
         let opened = if kind == ContainerKind::Zip {
             Self::open_zip(source, limits, size)
         } else {
-            Self::open_seven(source, limits, size)
+            Self::open_seven(source, limits, decoder, size)
         };
         checkpoint(cancel)?;
         let (reader, inventory) = opened?;
@@ -268,18 +301,23 @@ impl<R: Read + Seek> Archive<R> {
         }
         Ok((Reader::Zip { archive, members }, index.finish()?))
     }
-    fn open_seven(source: Checked<R>, limits: Limits, size: u64) -> Result<(Reader<R>, Inventory)> {
+    fn open_seven(
+        mut source: Checked<R>,
+        limits: Limits,
+        decoder: DecoderLimits,
+        size: u64,
+    ) -> Result<(Reader<R>, Inventory)> {
         let decoder_limits = sevenz_turbo::ArchiveLimits {
-            memory_limit_bytes: DECODER_BYTES,
-            max_end_header_bytes: HEADER_BYTES,
-            max_header_unpacked_bytes: HEADER_BYTES,
+            memory_limit_bytes: decoder.memory_bytes,
+            max_end_header_bytes: decoder.header_bytes,
+            max_header_unpacked_bytes: decoder.header_bytes,
             max_entries: limits.max_entries as u64,
             // This is UTF-16 storage size; the compatibility path cap is UTF-8.
             max_name_bytes: limits.max_path_bytes.saturating_mul(2) as u64,
             max_total_name_bytes: limits
                 .max_entries
-                .saturating_mul(limits.max_path_bytes)
-                .saturating_mul(2) as u64,
+                .saturating_mul(limits.max_path_bytes.saturating_mul(2).saturating_add(2))
+                .saturating_add(1) as u64,
             max_total_coders: limits.max_entries as u64,
             max_unpack_bytes: limits.max_expanded_bytes as u64,
             // Frozen ratio uses the entire container, not compressed stream sizes.
@@ -287,6 +325,7 @@ impl<R: Read + Seek> Archive<R> {
             reject_unsafe_paths: false,
             ..Default::default()
         };
+        header::check(&mut source, size, decoder)?;
         let reader = sevenz_turbo::ArchiveReader::with_limits(
             source,
             sevenz_turbo::Password::empty(),
@@ -452,14 +491,56 @@ impl<R: Read + Seek> Archive<R> {
                 )
             }
             Reader::Seven(reader) => {
+                let file_index = reader
+                    .archive()
+                    .files
+                    .iter()
+                    .position(|entry| entry.name().as_bytes() == raw_name)
+                    .ok_or_else(invalid)?;
+                let Some(block) = reader.archive().stream_map.file_block_index[file_index] else {
+                    return limited(&mut io::empty(), limit, code, &raw_name, &self.cancel);
+                };
+                // Preserve the frozen Go decoder set when a block is actually
+                // requested. Other index-only payload blocks grant no decode.
+                if reader.archive().blocks[block]
+                    .coders
+                    .iter()
+                    .any(|coder| !header::baseline_method(coder.encoder_method_id()))
+                {
+                    return Err(invalid());
+                }
                 let mut selected = None;
-                let decoded = reader.for_each_entries(|entry, bytes| {
-                    if entry.name().as_bytes() != raw_name {
-                        return Ok(true);
-                    }
-                    selected = Some(limited(bytes, limit, code, &raw_name, &self.cancel));
-                    Ok(false)
-                });
+                // ArchiveReader's all-block traversal does not propagate a
+                // callback's false across block phases. Decode only the actual
+                // selected block, with this reader's original limits.
+                let decoded = reader
+                    .block_decoder(block)
+                    .map_err(seven_error)?
+                    .for_each_entries(&mut |entry, bytes| {
+                        checkpoint(&self.cancel).map_err(|_| {
+                            sevenz_turbo::Error::from(io::Error::other("archive cancelled"))
+                        })?;
+                        if entry.name().as_bytes() != raw_name {
+                            // Earlier members in this solid block must be decoded.
+                            // Drain through our chunk/cancellation checkpoints rather
+                            // than letting the library skip them in one opaque call.
+                            let mut buffer = [0u8; 32 * 1024];
+                            loop {
+                                if self.cancel.is_cancelled() {
+                                    return Err(sevenz_turbo::Error::from(io::Error::other(
+                                        "archive cancelled",
+                                    )));
+                                }
+                                if bytes.read(&mut buffer).map_err(sevenz_turbo::Error::from)? == 0
+                                {
+                                    break;
+                                }
+                            }
+                            return Ok(true);
+                        }
+                        selected = Some(limited(bytes, limit, code, &raw_name, &self.cancel));
+                        Ok(false)
+                    });
                 if let Err(error) = decoded {
                     Err(seven_error(error))
                 } else {

@@ -1,0 +1,3 @@
+package main
+import("os";"github.com/andybalholm/brotli";"github.com/pierrec/lz4/v4";"github.com/klauspost/compress/zstd";"io")
+func main(){b,e:=os.ReadFile(os.Args[1]);if e!=nil{panic(e)};for _,m:=range []string{"brotli","lz4","zstd"}{f,e:=os.Create(os.Args[2]+"/"+m+".packed");if e!=nil{panic(e)};var w io.WriteCloser;switch m{case "brotli":w=brotli.NewWriterLevel(f,4);case "lz4":w=lz4.NewWriter(f);case "zstd":w,e=zstd.NewWriter(f,zstd.WithEncoderConcurrency(1),zstd.WithWindowSize(1<<20));if e!=nil{panic(e)}};if _,e=w.Write(b);e!=nil{panic(e)};if e=w.Close();e!=nil{panic(e)};if e=f.Close();e!=nil{panic(e)}}}
