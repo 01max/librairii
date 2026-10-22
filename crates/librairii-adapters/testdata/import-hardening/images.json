@@ -7,7 +7,7 @@
     "decoder_allocation_bytes": 134217728
   },
   "rationale": "Reject image headers exceeding the existing bounded thumbnail pipeline before raster allocation. Original compressed bytes remain immutable.",
-  "review": "pending Task 5.10 independent review",
+  "review": "Dimension and pixel limits accepted by independent Task 5.10 Spec reviewer; exact hashes and Go/Rust observations verified. See docs/rewrite/section-5-review.md.",
   "fixtures": [
     {
       "file": "dimension.zip",

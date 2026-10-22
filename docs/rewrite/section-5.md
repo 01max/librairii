@@ -333,8 +333,9 @@ result does not substitute for Linux or Intel macOS CI.
 ## 5.10 — Independent review finalization
 
 The independent standards and spec reports are retained in
-[section-5-review.md](section-5-review.md). Final review and native CI evidence
-are being recorded before declaring Task 5 complete. The headless native test
+[section-5-review.md](section-5-review.md). Both reviewers approve the final implementation and individually retained
+hardening decisions, with no findings left open. Native CI must also pass on
+the pushed commits before platform qualification is reported. The headless native test
 checks import→inspection→publication→SQL/query→close→reopen, exact archive hashes,
 original native filename and managed-path bytes. Linux uses invalid UTF-8 names;
 macOS uses Unicode/spaces/case. GUI composition and product release/adoption gates

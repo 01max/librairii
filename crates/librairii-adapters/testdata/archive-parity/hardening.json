@@ -12,7 +12,7 @@
       },
       "expected_rust": "metadata_limit",
       "rationale": "Compare actual requested metadata with its declared file CRC; baseline did not compare it.",
-      "review": "pending Task5.10 independent review"
+      "review": "Accepted by independent Task 5.10 Spec reviewer after source and exact retained Go/Rust counterexample review; see docs/rewrite/section-5-review.md."
     },
     {
       "category": "preceding solid member CRC",
@@ -25,7 +25,7 @@
       },
       "expected_rust": "invalid_container",
       "rationale": "Bounded solid traversal validates predecessor CRC while streaming through cancellation checkpoints.",
-      "review": "pending Task5.10 independent review"
+      "review": "Accepted by independent Task 5.10 Spec reviewer after source and exact retained Go/Rust counterexample review; see docs/rewrite/section-5-review.md."
     },
     {
       "category": "decoder memory estimate above256MiB",
@@ -38,7 +38,7 @@
       },
       "expected_rust": "invalid_container",
       "rationale": "Refuse declared decoder memory before construction, including unselected payloads; no unsafe allocation probe is needed.",
-      "review": "pending Task5.10 independent review"
+      "review": "Accepted by independent Task 5.10 Spec reviewer after source and exact retained Go/Rust counterexample review; see docs/rewrite/section-5-review.md."
     },
     {
       "category": "encoded/end header allocation above16MiB",
@@ -51,7 +51,7 @@
       },
       "expected_rust": "invalid_container",
       "rationale": "Bound parser buffering before allocation; valid ignored Dummy properties do not justify allocating unlimited header bytes.",
-      "review": "pending Task5.10 independent review"
+      "review": "Accepted by independent Task 5.10 Spec reviewer after source and exact retained Go/Rust counterexample review; see docs/rewrite/section-5-review.md."
     },
     {
       "category": "decoded header allocation above16MiB",
@@ -64,7 +64,7 @@
       },
       "expected_rust": "invalid_container",
       "rationale": "Bound encoded header expansion before buffering its decoded representation.",
-      "review": "pending Task5.10 independent review"
+      "review": "Accepted by independent Task 5.10 Spec reviewer after source and exact retained Go/Rust counterexample review; see docs/rewrite/section-5-review.md."
     },
     {
       "category": "more than8 coders per block",
@@ -77,7 +77,7 @@
       },
       "expected_rust": "invalid_container",
       "rationale": "Bound recursive coder graph depth/work before decoder creation; nine valid identity coders are rejected.",
-      "review": "pending Task5.10 independent review"
+      "review": "Accepted by independent Task 5.10 Spec reviewer after source and exact retained Go/Rust counterexample review; see docs/rewrite/section-5-review.md."
     },
     {
       "category": "more than8 streams per coder",
@@ -90,7 +90,7 @@
       },
       "expected_rust": "invalid_container",
       "rationale": "Bound stream graph allocation/quadratic linking; baseline index-only inspection accepts this uninterpreted multi-stream payload.",
-      "review": "pending Task5.10 independent review"
+      "review": "Accepted by independent Task 5.10 Spec reviewer after source and exact retained Go/Rust counterexample review; see docs/rewrite/section-5-review.md."
     },
     {
       "category": "more than10000 aggregate coders",
@@ -103,7 +103,7 @@
       },
       "expected_rust": "invalid_container",
       "rationale": "Bound total parser graph allocation independently of frozen entry count.",
-      "review": "pending Task5.10 independent review"
+      "review": "Accepted by independent Task 5.10 Spec reviewer after source and exact retained Go/Rust counterexample review; see docs/rewrite/section-5-review.md."
     },
     {
       "category": "unmodelled decoder memory in unused blocks",
@@ -116,7 +116,7 @@
       },
       "expected_rust": "invalid_container",
       "rationale": "A decoder memory budget cannot be established for unknown methods, even if index-only Go inspection would not request bytes.",
-      "review": "pending Task5.10 independent review"
+      "review": "Accepted by independent Task 5.10 Spec reviewer after source and exact retained Go/Rust counterexample review; see docs/rewrite/section-5-review.md."
     },
     {
       "category": "incomplete PNG framing",
@@ -129,7 +129,7 @@
       },
       "expected_rust": "artwork_limit",
       "rationale": "Require PNG decoder header/framing acceptance rather than IHDR-only RGBA DecodeConfig acceptance; preserve compressed artwork without full raster decode.",
-      "review": "pending Task5.10 independent review"
+      "review": "Accepted by independent Task 5.10 Spec reviewer after source and exact retained Go/Rust counterexample review; see docs/rewrite/section-5-review.md."
     },
     {
       "category": "Zstd frame window above128MiB",
@@ -142,7 +142,7 @@
       },
       "expected_rust": "metadata_limit",
       "rationale": "Refuse a valid 256MiB Zstd window under the separately enforced 128MiB Zstd window clamp. This is stricter than both frozen Go acceptance and the global 256MiB decoder model limit, and is independently recorded rather than folded into that other category.",
-      "review": "pending Task5.10 independent review"
+      "review": "Accepted by independent Task 5.10 Spec reviewer after source and exact retained Go/Rust counterexample review; see docs/rewrite/section-5-review.md."
     },
     {
       "category": "more than10000 aggregate packed streams",
@@ -155,7 +155,7 @@
       },
       "expected_rust": "entry_limit",
       "rationale": "Bound parser allocations for packed-stream offsets/sizes independently of file and coder counts. This official7zz-produced archive has 3000 files/coders and 12000 packed streams; all files independently test successfully and Go accepts its complete import identity. The 10000 structural ceiling deliberately rejects it.",
-      "review": "pending Task5.10 independent review"
+      "review": "Accepted by independent Task 5.10 Spec reviewer after source and exact retained Go/Rust counterexample review; see docs/rewrite/section-5-review.md."
     }
   ]
 }
