@@ -210,3 +210,95 @@ impl<'files, 'library> OwnedStage<'files, 'library> {
 
 #[cfg(test)]
 mod tests;
+
+impl<'files, 'library> Publication<'files, 'library> {
+    /// A DTO/path alone cannot enter this route. The original publication owner
+    /// and same-guard writer-barrier absence are both required. Reused bytes
+    /// remain untouched; only a newly owned file moves back into its private
+    /// retained stage before recoverable trash retirement by the caller.
+    pub(crate) fn rollback_import(
+        self,
+        guard: &Custody<'_>,
+        proof: &crate::imports::UnreferencedImport<'_, '_>,
+    ) -> std::result::Result<OwnedStage<'files, 'library>, Box<PublishFailure<'files, 'library>>>
+    {
+        let (mut stage, area, name, measurement, reused) = match self {
+            Self::NewOwned(p) => (p.stage, p.area, p.name, p.measurement, false),
+            Self::ReusedExisting { existing, staged } => (
+                staged,
+                existing.area,
+                existing.name.clone(),
+                existing.measurement,
+                true,
+            ),
+        };
+        let result = (|| {
+            stage.files.check(guard)?;
+            let mut path = match area {
+                FileArea::Archives => {
+                    let route = stage
+                        .files
+                        .archive_route
+                        .as_ref()
+                        .ok_or(StorageError::InvalidManagedPath)?;
+                    format!("archives/{}/", route.hash).into_bytes()
+                }
+                FileArea::Catalog => {
+                    let route = stage
+                        .files
+                        .catalog_route
+                        .as_ref()
+                        .ok_or(StorageError::InvalidManagedPath)?;
+                    format!("catalog/{}/{}/", route.root_name, route.id).into_bytes()
+                }
+            };
+            path.extend_from_slice(name.as_os_str().as_bytes());
+            if !proof.matches(guard, &path) {
+                return Err(StorageError::SnapshotChanged);
+            }
+            if reused {
+                return Ok(());
+            }
+            if stage.measure(measurement.bytes(), &WorkCancellation::default())? != measurement {
+                return Err(StorageError::SnapshotChanged);
+            }
+            stage
+                .files
+                .area(area)
+                .require_name(name.as_os_str(), stage.identity)?;
+            stage
+                .files
+                .staging
+                .require_name(&stage.directory_name, stage.directory.identity)?;
+            stage.directory.entries(0, &WorkCancellation::default())?;
+            native::renameat_with(
+                &stage.files.area(area).file,
+                name.as_os_str(),
+                &stage.directory.file,
+                PAYLOAD,
+                RenameFlags::NOREPLACE,
+            )
+            .map_err(|e| {
+                StorageError::io("restore uncommitted owned import to staging", e.into())
+            })?;
+            stage.files.area(area).flush()?;
+            stage.directory.flush()?;
+            stage
+                .directory
+                .require_name(OsStr::new(PAYLOAD), stage.identity)?;
+            stage.published = false;
+            Ok(())
+        })();
+        if let Err(cause) = result {
+            stage.files.fence();
+            return Err(Box::new(PublishFailure {
+                staged: stage,
+                area,
+                name,
+                cause,
+                publish_uncertain: !reused,
+            }));
+        }
+        Ok(stage)
+    }
+}

@@ -5,7 +5,7 @@ mod progress;
 mod scheduler;
 mod shutdown;
 use crate::ports::{creation::NewOperation, jobs::WorkItem, operations::CompleteItemCommand};
-use librairii_core::operations::{ItemState, RawOutcome};
+pub use librairii_core::operations::{ItemState, RawOutcome};
 pub use progress::{
     Generation, OperationProjection, ProgressSink, ProgressUpdate, RequestStamp, Response,
 };

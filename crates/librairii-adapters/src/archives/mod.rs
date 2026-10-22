@@ -23,6 +23,41 @@ const DECODER_BYTES: u64 = 256 * 1024 * 1024;
 const ZIP_BUFFER: usize = 256 * 1024;
 type Result<T> = std::result::Result<T, ArchiveError>;
 
+#[derive(Clone, Copy, Debug, Default)]
+pub struct ArchiveInspector;
+impl librairii_app::importing::Inspector for ArchiveInspector {
+    fn inspect(
+        &self,
+        source: &mut dyn librairii_app::importing::ReadSeek,
+        original: &[u8],
+        cancel: &Cancellation,
+    ) -> std::result::Result<
+        librairii_app::importing::Inspection,
+        librairii_app::importing::InspectionError,
+    > {
+        let inspected = (|| {
+            let mut archive = Archive::open(source, original, Limits::default(), cancel)?;
+            let metadata = archive.inspect_metadata()?;
+            archive.verify_payloads()?;
+            Ok(metadata)
+        })();
+        match inspected {
+            Ok(m) => Ok(librairii_app::importing::Inspection {
+                identity: m.identity,
+                format: m.format,
+                text: m.text,
+                artwork: m.artwork.map(|a| a.bytes),
+            }),
+            Err(ArchiveError::Cancelled) => {
+                Err(librairii_app::importing::InspectionError::Cancelled)
+            }
+            Err(ArchiveError::Validation(e)) => {
+                Err(librairii_app::importing::InspectionError::Validation(e))
+            }
+        }
+    }
+}
+
 #[derive(Debug)]
 pub enum ArchiveError {
     Validation(ValidationError),
@@ -367,6 +402,35 @@ impl<R: Read + Seek> Archive<R> {
             artwork,
         })
     }
+    /// ZIP reads every regular payload through size/CRC verification after
+    /// metadata validation. 7z retains selected-entry inspection semantics.
+    pub fn verify_payloads(&mut self) -> Result<()> {
+        if let Reader::Zip { archive, members } = &self.reader {
+            let mut remaining = self.limits.max_expanded_bytes as u64;
+            let mut buffer = [0u8; 64 * 1024];
+            for name in self.inventory.file_names() {
+                let member = members.get(name).ok_or_else(invalid)?;
+                let mut reader = zip_reader(archive, member)?;
+                loop {
+                    checkpoint(&self.cancel)?;
+                    let available = remaining.saturating_add(1).min(buffer.len() as u64) as usize;
+                    let count = reader
+                        .read(&mut buffer[..available])
+                        .map_err(|_| invalid())?;
+                    if count == 0 {
+                        break;
+                    }
+                    if count as u64 > remaining {
+                        return Err(
+                            ValidationError::at(ValidationCode::ExpandedSizeLimit, name).into()
+                        );
+                    }
+                    remaining -= count as u64;
+                }
+            }
+        }
+        checkpoint(&self.cancel)
+    }
     /// Read one selected regular entry under its own actual-byte ceiling.
     pub fn read_entry(&mut self, name: &str, limit: u64, code: ValidationCode) -> Result<Vec<u8>> {
         checkpoint(&self.cancel)?;
@@ -379,20 +443,8 @@ impl<R: Read + Seek> Archive<R> {
         let result = match &mut self.reader {
             Reader::Zip { archive, members } => {
                 let member = members.get(name).ok_or_else(invalid)?;
-                if member.encrypted {
-                    return Err(invalid());
-                }
-                let entry = archive.get_entry(member.location).map_err(|_| invalid())?;
-                let decoder: Box<dyn Read + '_> =
-                    if member.method == rawzip::CompressionMethod::STORE {
-                        Box::new(entry.reader())
-                    } else if member.method == rawzip::CompressionMethod::DEFLATE {
-                        Box::new(flate2::read::DeflateDecoder::new(entry.reader()))
-                    } else {
-                        return Err(invalid());
-                    };
                 limited(
-                    &mut entry.verifying_reader(decoder),
+                    &mut zip_reader(archive, member)?,
                     limit,
                     code,
                     &raw_name,
@@ -418,6 +470,23 @@ impl<R: Read + Seek> Archive<R> {
         checkpoint(&self.cancel)?;
         result
     }
+}
+fn zip_reader<'a, R: Read + Seek>(
+    archive: &'a rawzip::ZipArchive<Positioned<R>>,
+    member: &ZipMember,
+) -> Result<rawzip::ZipVerifier<Box<dyn Read + 'a>>> {
+    if member.encrypted {
+        return Err(invalid());
+    }
+    let entry = archive.get_entry(member.location).map_err(|_| invalid())?;
+    let decoder: Box<dyn Read + 'a> = if member.method == rawzip::CompressionMethod::STORE {
+        Box::new(entry.reader())
+    } else if member.method == rawzip::CompressionMethod::DEFLATE {
+        Box::new(flate2::read::DeflateDecoder::new(entry.reader()))
+    } else {
+        return Err(invalid());
+    };
+    Ok(entry.verifying_reader(decoder))
 }
 fn limited(
     reader: &mut dyn Read,

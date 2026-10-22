@@ -188,3 +188,47 @@ scan after all workers release their owners. Six runtime failure tests pass,
 including the forced ordering that exposes the original race. Initial native
 Linux/ARM Mac/Intel Mac checks passed; the focused failure is not treated as a
 pass or hidden by rerunning unchanged tests.
+
+## 5.7 — Atomic catalog publication and native composition
+
+The native ImportExecutor binds explicit picker PathBufs to move-only prepared
+commands and opaque item slots. Full personal paths never become durable item
+fields or cleanup authority. Preparation retains at most eight batches/16 MiB,
+opens source FDs only transiently, returns the original preparation on intake
+refusal, and prunes terminal bindings. Work runs on the existing bounded native
+job workers with the real ArchiveInspector and ImportStorage. This is headless
+composition; the desktop executable still awaits its qualified GUI.
+
+Each native stage registers its actual allocation against the real operation/item
+scope before payload writes. Copy/inspection release global custody while private
+owners retain their DB/library loans. A fresh writer-barrier checksum/UUID check
+under reacquired custody precedes publication. Exact duplicates skip inspection;
+UUID conflicts publish nothing. Story, archive, normalized display name and derived
+Age hook commit atomically in the existing schema. The inspector verifies all ZIP
+regular payload sizes/CRCs; 7z keeps selected-entry semantics. Storage cancellation
+observes the actual native job flag before the transaction commit boundary.
+
+Archive/artwork receipts and custody remain live through durable item reporting.
+Known SQL rollback uses a new same-writer absence observation bound to the exact
+managed paths and actual retained guard, together with the original publication
+owners. Only newly owned files move back into retained staging then recoverable
+trash; reused existing bytes are preserved. Unknown writes are not repeated:
+exact catalog readback precedes any compensation decision. Uncertain filesystem
+owners remain retained/fenced for recovery, and dropping an unsettled import owner
+cannot certify clean shutdown. Settlement validates its actual correlated durable
+report; post-commit cancellation cannot replace Imported with Cancelled.
+
+Original filename and managed-path SQL TEXT preserve raw native bytes. Query
+snapshots retain those bytes separately; unrepresentable UTF-8 presentation fields
+are empty instead of becoming renamed paths. Follow-on export composition must
+consume the raw fields or refuse representation. Normal UTF-8 JSON envelopes and
+all frozen serialized fields remain unchanged. The existing official/embedded/
+fallback resolver and UUID-based Shelf reconnection remain authoritative.
+
+Three real executor integration tests pass: concurrent exact imports and UUID
+conflict with one catalog/managed archive; actual SQL-trigger failure with atomic
+rollback and owned archive/artwork trash compensation; and strict archive failures
+with frozen persisted reason/message identities. The first test closes/reopens the
+same SQLite and checks source/managed bytes and provenance. Full workspace
+all-target Clippy and fmt pass. Native registered-stage/restart/failure matrices
+and complete codec/hardening review remain 5.8–5.10 gates.

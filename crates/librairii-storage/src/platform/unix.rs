@@ -739,6 +739,7 @@ pub struct LibraryFiles<'library> {
 }
 #[derive(Debug)]
 struct OfficialArtworkRoute {
+    root_name: &'static str,
     id: String,
     official: Option<Directory>,
     artwork: Option<Directory>,
@@ -756,6 +757,21 @@ impl LibraryFiles<'_> {
         guard: &Custody<'_>,
         id: librairii_core::Checksum,
     ) -> Result<()> {
+        self.artwork_route(guard, "official", id.to_string())
+    }
+    pub(crate) fn embedded_artwork(
+        &mut self,
+        guard: &Custody<'_>,
+        uuid: librairii_core::StoryUuid,
+    ) -> Result<()> {
+        self.artwork_route(guard, "embedded", uuid.to_string())
+    }
+    fn artwork_route(
+        &mut self,
+        guard: &Custody<'_>,
+        root_name: &'static str,
+        id: String,
+    ) -> Result<()> {
         self.check(guard)?;
         let ensure = |parent: &Directory, name: &OsStr| -> Result<Directory> {
             match parent.child(name) {
@@ -769,7 +785,8 @@ impl LibraryFiles<'_> {
             }
         };
         self.catalog_route = Some(OfficialArtworkRoute {
-            id: id.to_string(),
+            root_name,
+            id,
             official: None,
             artwork: None,
         });
@@ -778,7 +795,7 @@ impl LibraryFiles<'_> {
                 .catalog_route
                 .as_mut()
                 .ok_or(StorageError::CompatibilityInvariant)?;
-            route.official = Some(ensure(&self.catalog, OsStr::new("official"))?);
+            route.official = Some(ensure(&self.catalog, OsStr::new(root_name))?);
             let official = route
                 .official
                 .as_ref()
@@ -958,7 +975,7 @@ impl<'library> LibraryFiles<'library> {
                 .as_ref()
                 .ok_or(StorageError::CustodyRecoveryRequired)?;
             self.catalog
-                .require_name(OsStr::new("official"), official.identity)?;
+                .require_name(OsStr::new(route.root_name), official.identity)?;
             official.require_name(OsStr::new(&route.id), artwork.identity)?;
         }
         if let Some(route) = &self.archive_route {

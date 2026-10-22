@@ -4152,6 +4152,45 @@
           ]
         },
         "reason": "Additive Task 5 archive inspection/custody assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 506,
+        "identity": {
+          "suite": "librairii-desktop::imports",
+          "name": "actual_catalog_failure_compensates_new_archive_and_artwork_without_partial_rows",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive Task 5 archive inspection/custody assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 507,
+        "identity": {
+          "suite": "librairii-desktop::imports",
+          "name": "actual_import_duplicate_and_uuid_conflict_are_atomic_and_survive_reopen",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive Task 5 archive inspection/custody assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 508,
+        "identity": {
+          "suite": "librairii-desktop::imports",
+          "name": "actual_inspection_failures_keep_frozen_operation_reasons_and_clean_staging",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive Task 5 archive inspection/custody assertions; all admitted identities retain exact order and target scope."
       }
     ],
     "python": [
