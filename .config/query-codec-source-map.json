@@ -4089,6 +4089,19 @@
         "reason": "Additive Task 5 archive inspection/custody assertions; all admitted identities retain exact order and target scope."
       },
       {
+        "position": 501,
+        "identity": {
+          "suite": "librairii-storage",
+          "name": "native::owned::tests::settled_import_stages_recycle_registration_slots_in_one_session",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive Task 5 archive inspection/custody assertions; all admitted identities retain exact order and target scope."
+      },
+      {
         "position": 502,
         "identity": {
           "suite": "librairii-storage",
@@ -4119,6 +4132,19 @@
         "identity": {
           "suite": "librairii-storage",
           "name": "platform::unix::import_source::tests::selected_source_streams_into_content_addressed_original_name_without_mutation",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive Task 5 archive inspection/custody assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 505,
+        "identity": {
+          "suite": "librairii-storage::native_library",
+          "name": "retired_export_temporaries_keep_descriptor_usage_bounded",
           "targets": [
             "aarch64-apple-darwin",
             "x86_64-apple-darwin",
@@ -4437,32 +4463,6 @@
         "position": 533,
         "identity": {
           "suite": "librairii-storage",
-          "name": "native::owned::tests::settled_import_stages_recycle_registration_slots_in_one_session",
-          "targets": [
-            "aarch64-apple-darwin",
-            "x86_64-apple-darwin",
-            "x86_64-unknown-linux-gnu"
-          ]
-        },
-        "reason": "Additive Task 5 archive inspection/custody assertions; all admitted identities retain exact order and target scope."
-      },
-      {
-        "position": 533,
-        "identity": {
-          "suite": "librairii-storage",
-          "name": "native::owned::tests::settled_import_stages_recycle_registration_slots_in_one_session",
-          "targets": [
-            "aarch64-apple-darwin",
-            "x86_64-apple-darwin",
-            "x86_64-unknown-linux-gnu"
-          ]
-        },
-        "reason": "Register already merged Task 6 regression during the Task 12 rebase; preserve its Linux/macOS execution scope."
-      },
-      {
-        "position": 534,
-        "identity": {
-          "suite": "librairii-storage",
           "name": "platform::unix::export_output::tests::native_export_copy_handles_short_writes_and_retains_exact_disk_full_prefix",
           "targets": [
             "aarch64-apple-darwin",
@@ -4473,7 +4473,7 @@
         "reason": "Additive resumed Task 12 export/removal/diagnostics assertions; all admitted identities retain exact order and target scope."
       },
       {
-        "position": 535,
+        "position": 534,
         "identity": {
           "suite": "librairii-storage",
           "name": "platform::unix::export_output::tests::native_export_copy_stops_between_chunks_without_claiming_complete_hash",
@@ -4486,7 +4486,7 @@
         "reason": "Additive resumed Task 12 export/removal/diagnostics assertions; all admitted identities retain exact order and target scope."
       },
       {
-        "position": 536,
+        "position": 535,
         "identity": {
           "suite": "librairii-storage",
           "name": "platform::unix::export_output::tests::native_export_refused_source_never_writes_destination_bytes",
@@ -4499,7 +4499,7 @@
         "reason": "Additive resumed Task 12 export/removal/diagnostics assertions; all admitted identities retain exact order and target scope."
       },
       {
-        "position": 537,
+        "position": 536,
         "identity": {
           "suite": "librairii-storage::native_library",
           "name": "native_export_cancel_during_second_copy_keeps_completed_file_and_retires_partial",
@@ -4512,7 +4512,7 @@
         "reason": "Additive resumed Task 12 export/removal/diagnostics assertions; all admitted identities retain exact order and target scope."
       },
       {
-        "position": 538,
+        "position": 537,
         "identity": {
           "suite": "librairii-storage::native_library",
           "name": "native_prepared_export_runs_durable_reports_and_preserves_racing_destinations",
@@ -4525,33 +4525,7 @@
         "reason": "Additive resumed Task 12 export/removal/diagnostics assertions; all admitted identities retain exact order and target scope."
       },
       {
-        "position": 539,
-        "identity": {
-          "suite": "librairii-storage::native_library",
-          "name": "retired_export_temporaries_keep_descriptor_usage_bounded",
-          "targets": [
-            "aarch64-apple-darwin",
-            "x86_64-apple-darwin",
-            "x86_64-unknown-linux-gnu"
-          ]
-        },
-        "reason": "Additive Task 5 archive inspection/custody assertions; all admitted identities retain exact order and target scope."
-      },
-      {
-        "position": 539,
-        "identity": {
-          "suite": "librairii-storage::native_library",
-          "name": "retired_export_temporaries_keep_descriptor_usage_bounded",
-          "targets": [
-            "aarch64-apple-darwin",
-            "x86_64-apple-darwin",
-            "x86_64-unknown-linux-gnu"
-          ]
-        },
-        "reason": "Register already merged Task 6 regression during the Task 12 rebase; preserve its Linux/macOS execution scope."
-      },
-      {
-        "position": 540,
+        "position": 538,
         "identity": {
           "suite": "librairii-app",
           "name": "ports::operations::native_path_tests::operation_paths_keep_exact_spelling_and_native_bytes_in_scope_equality"
@@ -4559,7 +4533,7 @@
         "reason": "Additive resumed Task 12 export/removal/diagnostics assertions; all admitted identities retain exact order and target scope."
       },
       {
-        "position": 541,
+        "position": 539,
         "identity": {
           "suite": "librairii-storage",
           "name": "platform::unix::export_output::tests::native_export_partial_acquisition_compensates_with_actual_owner_after_fence",
@@ -4572,7 +4546,7 @@
         "reason": "Additive resumed Task 12 export/removal/diagnostics assertions; all admitted identities retain exact order and target scope."
       },
       {
-        "position": 542,
+        "position": 540,
         "identity": {
           "suite": "librairii-storage",
           "name": "removal::tests::native_removal_intent_invalidates_prepared_and_queued_export",
@@ -4585,7 +4559,7 @@
         "reason": "Additive resumed Task 12 export/removal/diagnostics assertions; all admitted identities retain exact order and target scope."
       },
       {
-        "position": 543,
+        "position": 541,
         "identity": {
           "suite": "librairii-storage",
           "name": "removal::tests::native_removal_kill_at_intent_move_and_delete_recovers_before_intake",
@@ -4598,7 +4572,7 @@
         "reason": "Additive resumed Task 12 export/removal/diagnostics assertions; all admitted identities retain exact order and target scope."
       },
       {
-        "position": 544,
+        "position": 542,
         "identity": {
           "suite": "librairii-storage",
           "name": "removal::tests::native_removal_preserves_sources_shelf_decisions_and_compensates_uncancelled",
@@ -4611,7 +4585,7 @@
         "reason": "Additive resumed Task 12 export/removal/diagnostics assertions; all admitted identities retain exact order and target scope."
       },
       {
-        "position": 545,
+        "position": 543,
         "identity": {
           "suite": "librairii-storage",
           "name": "removal::tests::native_removal_refuses_foreign_restore_collision_and_retains_owner",
@@ -4624,7 +4598,7 @@
         "reason": "Additive resumed Task 12 export/removal/diagnostics assertions; all admitted identities retain exact order and target scope."
       },
       {
-        "position": 546,
+        "position": 544,
         "identity": {
           "suite": "librairii-storage",
           "name": "diagnostics::tests::native_diagnostics_no_clobber_cancel_and_uncertain_publication_retain_actual_output",
@@ -4637,7 +4611,7 @@
         "reason": "Additive resumed Task 12 export/removal/diagnostics assertions; all admitted identities retain exact order and target scope."
       },
       {
-        "position": 547,
+        "position": 545,
         "identity": {
           "suite": "librairii-storage",
           "name": "diagnostics::tests::native_diagnostics_rotation_keeps_five_bounded_owned_logs",
@@ -4650,7 +4624,7 @@
         "reason": "Additive resumed Task 12 export/removal/diagnostics assertions; all admitted identities retain exact order and target scope."
       },
       {
-        "position": 548,
+        "position": 546,
         "identity": {
           "suite": "librairii-storage",
           "name": "diagnostics::tests::native_diagnostics_zip_has_only_sanitized_logs_and_aggregate_manifest",
@@ -4663,7 +4637,7 @@
         "reason": "Additive resumed Task 12 export/removal/diagnostics assertions; all admitted identities retain exact order and target scope."
       },
       {
-        "position": 549,
+        "position": 547,
         "identity": {
           "suite": "librairii-storage",
           "name": "diagnostics::tests::native_diagnostics_requires_explicit_external_selection_and_localizes_safe_failures",
@@ -4676,7 +4650,7 @@
         "reason": "Additive resumed Task 12 export/removal/diagnostics assertions; all admitted identities retain exact order and target scope."
       },
       {
-        "position": 550,
+        "position": 548,
         "identity": {
           "suite": "librairii-storage::native_library",
           "name": "native_export_rechecks_broken_after_waiting_for_actual_custody",

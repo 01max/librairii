@@ -94,10 +94,12 @@ fn unavailable(uuid: String, title: String) -> ExportStory {
         },
         uuid,
         original_filename: String::new(),
+        original_filename_bytes: Vec::new(),
         detected_format: String::new(),
         sha256: String::new(),
         byte_size: 0,
         managed_relative_path: String::new(),
+        managed_relative_path_bytes: Vec::new(),
         verification: String::new(),
     }
 }

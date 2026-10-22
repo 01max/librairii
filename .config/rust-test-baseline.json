@@ -3242,15 +3242,6 @@
     },
     {
       "suite": "librairii-storage",
-      "name": "native::owned::tests::settled_import_stages_recycle_registration_slots_in_one_session",
-      "targets": [
-        "aarch64-apple-darwin",
-        "x86_64-apple-darwin",
-        "x86_64-unknown-linux-gnu"
-      ]
-    },
-    {
-      "suite": "librairii-storage",
       "name": "platform::unix::export_output::tests::native_export_copy_handles_short_writes_and_retains_exact_disk_full_prefix",
       "targets": [
         "aarch64-apple-darwin",
@@ -3288,15 +3279,6 @@
     {
       "suite": "librairii-storage::native_library",
       "name": "native_prepared_export_runs_durable_reports_and_preserves_racing_destinations",
-      "targets": [
-        "aarch64-apple-darwin",
-        "x86_64-apple-darwin",
-        "x86_64-unknown-linux-gnu"
-      ]
-    },
-    {
-      "suite": "librairii-storage::native_library",
-      "name": "retired_export_temporaries_keep_descriptor_usage_bounded",
       "targets": [
         "aarch64-apple-darwin",
         "x86_64-apple-darwin",
