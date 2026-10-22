@@ -4661,6 +4661,19 @@
           ]
         },
         "reason": "Additive resumed Task 12 export/removal/diagnostics assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 549,
+        "identity": {
+          "suite": "librairii-desktop::imports",
+          "name": "actual_native_import_inspect_export_and_reopen_preserves_all_formats_and_native_names",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Observed additive Task 12 native import-inspect-export-reopen acceptance; preserve all original identities and target scopes."
       }
     ],
     "python": [

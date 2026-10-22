@@ -56,8 +56,8 @@ pub(super) fn creation_matches(input: &NewOperation, snapshot: &OperationSnapsho
                 && stored.identity.story_uuid.as_deref() == nonempty(&new.story_uuid)
                 && stored.story_title.as_deref() == nonempty(&new.story_title)
                 && stored.source_name == new.source_name
-                && stored.output_name.as_deref() == new.stored_output_name()
-                && stored.archive_relative_path.as_deref() == new.stored_archive_path()
+                && stored.output_name.as_ref() == new.stored_output_name()
+                && stored.archive_relative_path.as_ref() == new.stored_archive_path()
                 && stored.archive_sha256.as_deref() == new.stored_archive_hash()
                 && stored.export_skip_code.as_deref() == nonempty(&new.export_skip_code)
                 && stored.progress.total == new.total_bytes
@@ -88,7 +88,7 @@ pub(super) fn create(
     tx.execute("INSERT INTO file_operations(id,kind,status,export_source_type,export_source_shelf_ids,export_source_shelf_names,export_destination,total_items,total_bytes,created_at,completed_items) VALUES(?,?,'queued',?,?,?,?,?,?,?,?)",params![input.id,encode_kind(input.kind),source.discriminator,source.group_ids,source.group_names,input.destination.as_deref().map(crate::native_path::SqlPath),input.items.len() as i64,total,created_at,input.items.iter().filter(|i|i.planned.is_some()).count() as i64])?;
     for item in &input.items {
         let story = (item.story_id != 0).then_some(item.story_id);
-        tx.execute("INSERT INTO file_operation_items(operation_id,story_id,resolved_story_id,story_uuid,story_title,source_name,output_name,archive_relative_path,archive_sha256,export_skip_code,status,total_bytes,outcome_code,outcome_message) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)",params![input.id,story,story,nonempty(&item.story_uuid),nonempty(&item.story_title),item.source_name,item.stored_output_name(),item.stored_archive_path(),item.stored_archive_hash(),nonempty(&item.export_skip_code),item.planned.as_ref().map_or("pending",|p|p.state.as_persisted()),item.total_bytes,item.planned.as_ref().and_then(|p|p.outcome.code.as_deref()),item.planned.as_ref().and_then(|p|p.outcome.message.as_deref())])?;
+        tx.execute("INSERT INTO file_operation_items(operation_id,story_id,resolved_story_id,story_uuid,story_title,source_name,output_name,archive_relative_path,archive_sha256,export_skip_code,status,total_bytes,outcome_code,outcome_message) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)",params![input.id,story,story,nonempty(&item.story_uuid),nonempty(&item.story_title),item.source_name,item.stored_output_name().map(|p|crate::native_path::SqlPath(p)),item.stored_archive_path().map(|p|crate::native_path::SqlPath(p)),item.stored_archive_hash(),nonempty(&item.export_skip_code),item.planned.as_ref().map_or("pending",|p|p.state.as_persisted()),item.total_bytes,item.planned.as_ref().and_then(|p|p.outcome.code.as_deref()),item.planned.as_ref().and_then(|p|p.outcome.message.as_deref())])?;
     }
     rows::snapshot(tx, &input.id)?.ok_or_else(invalid)
 }

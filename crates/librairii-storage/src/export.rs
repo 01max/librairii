@@ -54,10 +54,20 @@ pub(crate) fn row_bytes(s: &ExportStory) -> usize {
         + s.uuid.capacity() * 2
         + s.title.capacity()
         + s.original_filename.capacity()
+        + s.original_filename_bytes.capacity()
         + s.detected_format.capacity()
         + s.sha256.capacity()
         + s.managed_relative_path.capacity()
+        + s.managed_relative_path_bytes.capacity()
         + s.verification.capacity()
+}
+fn original_name(s: &ExportStory) -> Result<librairii_app::ports::operations::OperationPath> {
+    crate::native_path::from_bytes(&s.original_filename_bytes)
+        .map_err(|_| crate::StorageError::InvalidManagedPath)
+}
+fn managed_path(s: &ExportStory) -> Result<librairii_app::ports::operations::OperationPath> {
+    crate::native_path::from_bytes(&s.managed_relative_path_bytes)
+        .map_err(|_| crate::StorageError::InvalidManagedPath)
 }
 struct Rows {
     stories: Vec<ExportStory>,

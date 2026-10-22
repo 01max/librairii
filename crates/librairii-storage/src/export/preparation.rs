@@ -172,9 +172,9 @@ impl<'db, 'library> Exports<'db, 'library> {
                 Some(issue) => Disposition::Skipped(issue),
                 None => {
                     if !names.insert(
-                        librairii_core::export::filename_key(&s.original_filename)
+                        librairii_core::export::filename_key(&original_name(s)?.display_name())
                             .map_err(|_| StorageError::CompatibilityInvariant)?,
-                    ) || destination.exists(&s.original_filename)?
+                    ) || destination.exists(&original_name(s)?)?
                     {
                         Disposition::Conflicted
                     } else {
@@ -192,7 +192,7 @@ impl<'db, 'library> Exports<'db, 'library> {
             items.push(PreviewItem {
                 uuid: s.uuid.clone(),
                 title: s.title.clone(),
-                output_name: s.original_filename.clone(),
+                output_name: original_name(s)?.display_name(),
                 format: s.detected_format.clone(),
                 bytes: s.byte_size,
                 disposition,
@@ -305,7 +305,7 @@ impl Running<'_, '_, '_> {
         let story = story.clone();
         let mut result = CopyItem {
             uuid: story.uuid.clone(),
-            output_name: story.original_filename.clone(),
+            output_name: original_name(&story)?.display_name(),
             status: CopyStatus::Failed,
             bytes: 0,
             reason: None,
@@ -326,7 +326,7 @@ impl Running<'_, '_, '_> {
         }
         self.plan.destination.revalidate()?;
         let files = self.owner.database.metadata_files()?;
-        let mut source = match ArchiveSource::open(&files, &story.managed_relative_path) {
+        let mut source = match ArchiveSource::open(&files, managed_path(&story)?) {
             Ok(source) => source,
             Err(e) => {
                 result.reason = Some(e.code());
@@ -360,7 +360,7 @@ impl Running<'_, '_, '_> {
             if cancel.is_cancelled() {
                 return Err(StorageError::Cancelled);
             }
-            output.publish(&story.original_filename)
+            output.publish(&original_name(&story)?)
         })();
         match copied {
             Ok(()) => {
@@ -404,11 +404,11 @@ impl Running<'_, '_, '_> {
         let original = self.plan.scope.stories[index].clone();
         self.owner.database.read(move|tx|{
             use rusqlite::OptionalExtension;
-            let current=tx.query_row("SELECT s.id,s.is_broken,a.sha256,a.byte_size,a.managed_path,a.original_filename,a.detected_format,a.validation_state FROM stories s JOIN story_archives a ON a.story_id=s.id WHERE s.uuid=? AND NOT EXISTS(SELECT 1 FROM removal_intents r WHERE r.story_id=s.id)",[&original.uuid],|r|Ok((r.get::<_,i64>(0)?,r.get::<_,bool>(1)?,r.get::<_,String>(2)?,r.get::<_,i64>(3)?,r.get::<_,String>(4)?,r.get::<_,String>(5)?,r.get::<_,String>(6)?,r.get::<_,String>(7)?))).optional()?;
+            let current=tx.query_row("SELECT s.id,s.is_broken,a.sha256,a.byte_size,a.managed_path,a.original_filename,a.detected_format,a.validation_state FROM stories s JOIN story_archives a ON a.story_id=s.id WHERE s.uuid=? AND NOT EXISTS(SELECT 1 FROM removal_intents r WHERE r.story_id=s.id)",[&original.uuid],|r|Ok((r.get::<_,i64>(0)?,r.get::<_,bool>(1)?,r.get::<_,String>(2)?,r.get::<_,i64>(3)?,r.get_ref(4)?.as_bytes()?.to_vec(),r.get_ref(5)?.as_bytes()?.to_vec(),r.get::<_,String>(6)?,r.get::<_,String>(7)?))).optional()?;
             let Some((id,broken,hash,bytes,path,name,format,validation))=current else {return Ok(Disposition::Skipped(Issue::StoryUnavailable));};
             Ok(if id!=original.id {Disposition::Skipped(Issue::StoryUnavailable)}
             else if broken {Disposition::Skipped(Issue::StoryMarkedBroken)}
-            else if hash!=original.sha256 || bytes!=original.byte_size || path!=original.managed_relative_path || name!=original.original_filename || format!=original.detected_format {Disposition::Skipped(Issue::ArchiveChanged)}
+            else if hash!=original.sha256 || bytes!=original.byte_size || path!=original.managed_relative_path_bytes || name!=original.original_filename_bytes || format!=original.detected_format {Disposition::Skipped(Issue::ArchiveChanged)}
             else if validation!="valid" {Disposition::Skipped(if validation=="missing"{Issue::ArchiveMissing}else{Issue::ArchiveInvalid})}
             else{Disposition::Ready})
         })?.wait()
@@ -430,10 +430,10 @@ pub(super) fn inspect(
         "missing" => return Ok(Some(Issue::ArchiveMissing)),
         _ => return Ok(Some(Issue::ArchiveInvalid)),
     }
-    if !supported_name(&s.original_filename, &s.detected_format) {
+    if !supported_name(&original_name(s)?.display_name(), &s.detected_format) {
         return Ok(Some(Issue::UnsupportedExtension));
     }
-    let mut source = match ArchiveSource::open(files, &s.managed_relative_path) {
+    let mut source = match ArchiveSource::open(files, managed_path(s)?) {
         Ok(s) => s,
         Err(StorageError::PathEscape | StorageError::InvalidManagedPath) => {
             return Ok(Some(Issue::ArchiveMissing));

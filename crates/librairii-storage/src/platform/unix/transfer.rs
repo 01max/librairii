@@ -37,8 +37,8 @@ impl Destination {
             .map_err(|e| StorageError::io("revalidate selected destination", e))?;
         self.directory.matches_metadata(&metadata)
     }
-    pub(crate) fn exists(&self, name: &str) -> Result<bool> {
-        let name = EntryName::parse(name)?;
+    pub(crate) fn exists(&self, name: impl AsRef<OsStr>) -> Result<bool> {
+        let name = EntryName::parse(name.as_ref())?;
         match native::statat(
             &self.directory.file,
             name.as_os_str(),
@@ -191,16 +191,18 @@ impl Output {
         }
         self.validate()
     }
-    pub(crate) fn publish(&mut self, name: &str) -> Result<()> {
-        self.publish_with(name, Directory::flush)
+    pub(crate) fn publish(&mut self, name: impl AsRef<OsStr>) -> Result<()> {
+        self.publish_with(name.as_ref(), Directory::flush)
     }
     #[cfg(test)]
     pub(crate) fn publish_with_failed_flush(&mut self, name: &str) -> Result<()> {
-        self.publish_with(name, |_| Err(StorageError::DirectoryDurabilityUnavailable))
+        self.publish_with(OsStr::new(name), |_| {
+            Err(StorageError::DirectoryDurabilityUnavailable)
+        })
     }
     fn publish_with(
         &mut self,
-        name: &str,
+        name: &OsStr,
         flush: impl FnOnce(&Directory) -> Result<()>,
     ) -> Result<()> {
         self.validate()?;
@@ -290,14 +292,23 @@ pub(crate) struct ArchiveSource<'a, 'library> {
     initial: ReadSourceObservation,
 }
 impl<'a, 'library> ArchiveSource<'a, 'library> {
-    pub(crate) fn open(files: &'a LibraryFiles<'library>, relative: &str) -> Result<Self> {
+    pub(crate) fn open(
+        files: &'a LibraryFiles<'library>,
+        relative: impl AsRef<Path>,
+    ) -> Result<Self> {
         files.authority.require_intake()?;
         files.revalidate()?;
-        let mut parts = relative.split('/');
-        if parts.next() != Some("archives") {
+        let mut parts = relative
+            .as_ref()
+            .as_os_str()
+            .as_bytes()
+            .split(|b| *b == b'/');
+        if parts.next() != Some(b"archives".as_slice()) {
             return Err(StorageError::PathEscape);
         }
-        let mut names = parts.map(EntryName::parse).collect::<Result<Vec<_>>>()?;
+        let mut names = parts
+            .map(|p| EntryName::parse(OsStr::from_bytes(p)))
+            .collect::<Result<Vec<_>>>()?;
         let name = names.pop().ok_or(StorageError::PathEscape)?;
         let mut directories = vec![(EntryName::parse("archives")?, files.archives.duplicate()?)];
         for name in names {

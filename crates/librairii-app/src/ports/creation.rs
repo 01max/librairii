@@ -16,8 +16,8 @@ pub struct NewItem {
     pub story_uuid: String,
     pub story_title: String,
     pub source_name: String,
-    pub output_name: String,
-    pub archive_relative_path: String,
+    pub output_name: OperationPath,
+    pub archive_relative_path: OperationPath,
     pub archive_sha256: String,
     pub export_skip_code: String,
     pub total_bytes: i64,
@@ -31,11 +31,11 @@ pub struct PlannedItem {
 impl NewItem {
     // Preserve the immutable scope of preflight terminal rows verbatim. Only
     // ready rows pass copy-field validation and can enter the effect adapter.
-    pub fn stored_output_name(&self) -> Option<&str> {
-        (!self.output_name.is_empty()).then_some(self.output_name.as_str())
+    pub fn stored_output_name(&self) -> Option<&OperationPath> {
+        (!self.output_name.as_os_str().is_empty()).then_some(&self.output_name)
     }
-    pub fn stored_archive_path(&self) -> Option<&str> {
-        (!self.archive_relative_path.is_empty()).then_some(self.archive_relative_path.as_str())
+    pub fn stored_archive_path(&self) -> Option<&OperationPath> {
+        (!self.archive_relative_path.as_os_str().is_empty()).then_some(&self.archive_relative_path)
     }
     pub fn stored_archive_hash(&self) -> Option<&str> {
         (!self.archive_sha256.is_empty()).then_some(self.archive_sha256.as_str())
@@ -101,12 +101,12 @@ impl NewOperation {
                 add(p.outcome.code.as_ref().map_or(0, String::capacity))?;
                 add(p.outcome.message.as_ref().map_or(0, String::capacity))?;
             }
+            add(item.output_name.capacity())?;
+            add(item.archive_relative_path.capacity())?;
             for value in [
                 &item.story_uuid,
                 &item.story_title,
                 &item.source_name,
-                &item.output_name,
-                &item.archive_relative_path,
                 &item.archive_sha256,
                 &item.export_skip_code,
             ] {
@@ -203,8 +203,8 @@ impl NewOperation {
             }
             if item.story_id <= 0
                 || !ids.insert(item.story_id)
-                || !valid_output_name(&item.output_name)
-                || !valid_relative(&item.archive_relative_path)
+                || !valid_output_name(&item.output_name.display_name())
+                || !valid_relative(&item.archive_relative_path.display_name())
                 || !valid_hash(&item.archive_sha256)
             {
                 return Err(InputError::Invalid);
@@ -316,10 +316,11 @@ impl OperationSnapshot {
             insert_text(map, "destination", Some(&label));
         }
         let items=self.items.iter().map(|item|{
+            let output_name = item.output_name.as_ref().map(OperationPath::display_name);
             let mut v=json!({"id":item.identity.id,"sourceName":item.source_name,"status":item.state.as_persisted(),"completedBytes":item.progress.completed,"totalBytes":item.progress.total});
             if let Some(m)=v.as_object_mut(){
                 let story=item.identity.historical_story_id();if story!=0{m.insert("storyId".into(),json!(story));}
-                for (key,text) in [("storyUuid",item.identity.story_uuid.as_deref()),("storyTitle",item.story_title.as_deref()),("outputName",item.output_name.as_deref()),("outcomeCode",item.outcome.code.as_deref()),("outcomeMessage",item.outcome.message.as_deref())]{insert_text(m,key,text);}
+                for (key,text) in [("storyUuid",item.identity.story_uuid.as_deref()),("storyTitle",item.story_title.as_deref()),("outputName",output_name.as_deref()),("outcomeCode",item.outcome.code.as_deref()),("outcomeMessage",item.outcome.message.as_deref())]{insert_text(m,key,text);}
             }v
         }).collect::<Vec<_>>();
         map.insert(

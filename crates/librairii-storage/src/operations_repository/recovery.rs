@@ -48,8 +48,12 @@ impl Database<'_> {
                 i.identity.story_uuid.as_deref().map(str::as_bytes),
                 i.story_title.as_deref().map(str::as_bytes),
                 Some(i.source_name.as_bytes()),
-                i.output_name.as_deref().map(str::as_bytes),
-                i.archive_relative_path.as_deref().map(str::as_bytes),
+                i.output_name
+                    .as_ref()
+                    .map(|p| p.as_os_str().as_encoded_bytes()),
+                i.archive_relative_path
+                    .as_ref()
+                    .map(|p| p.as_os_str().as_encoded_bytes()),
                 i.archive_sha256.as_deref().map(str::as_bytes),
                 i.export_skip_code.as_deref().map(str::as_bytes),
             ] {

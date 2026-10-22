@@ -122,7 +122,7 @@ impl Running<'_, '_, '_> {
                 .stories
                 .iter()
                 .zip(self.plan.preview.items.iter())
-                .map(|(s, p)| {
+                .map(|(s, p)| -> Result<NewItem> {
                     let skip = match p.disposition {
                         librairii_core::export::Disposition::Skipped(
                             librairii_core::export::Issue::StoryMarkedBroken,
@@ -132,17 +132,17 @@ impl Running<'_, '_, '_> {
                         ) => "story_unavailable",
                         _ => "",
                     };
-                    NewItem {
+                    Ok(NewItem {
                         story_id: s.id,
                         story_uuid: s.uuid.clone(),
                         story_title: s.title.clone(),
-                        source_name: if s.original_filename.is_empty() {
+                        source_name: if s.original_filename_bytes.is_empty() {
                             s.title.clone()
                         } else {
-                            s.original_filename.clone()
+                            original_name(s)?.display_name()
                         },
-                        output_name: s.original_filename.clone(),
-                        archive_relative_path: s.managed_relative_path.clone(),
+                        output_name: original_name(s)?,
+                        archive_relative_path: managed_path(s)?,
                         archive_sha256: s.sha256.clone(),
                         export_skip_code: skip.into(),
                         total_bytes: if p.disposition == librairii_core::export::Disposition::Ready
@@ -173,9 +173,9 @@ impl Running<'_, '_, '_> {
                                 },
                             }),
                         },
-                    }
+                    })
                 })
-                .collect(),
+                .collect::<Result<Vec<_>>>()?,
         };
         input.validate()?;
         Ok(input)
@@ -325,8 +325,12 @@ impl<'a, 'run, 'db, 'library> Executor for CopyExecutor<'a, 'run, 'db, 'library>
             return before(report);
         }
         let story = &self.running.plan.scope.stories[index];
+        let path = match managed_path(story) {
+            Ok(path) => path,
+            Err(e) => return before(failed(work, &e)),
+        };
         let mut source = loop {
-            match ArchiveSource::open(self.files, &story.managed_relative_path) {
+            match ArchiveSource::open(self.files, &path) {
                 Ok(v) => break v,
                 Err(e) if transient(&e) && !cancel.is_cancelled() => pause(),
                 Err(e) => return before(failed(work, &e)),
@@ -414,7 +418,7 @@ impl<'a, 'run, 'db, 'library> Executor for CopyExecutor<'a, 'run, 'db, 'library>
             }
             progress.phase(Phase::Committing);
             loop {
-                match output.publish_registered(&custody, &story.original_filename) {
+                match output.publish_registered(&custody, &original_name(story)?) {
                     Ok(()) => break Ok(()),
                     Err(e)
                         if !output.publication_pending()
@@ -481,25 +485,6 @@ fn issue_message(issue: librairii_core::export::Issue) -> &'static str {
     }
 }
 
-// Go encoding/json consumes one byte for each invalid UTF-8 rune.
-fn go_display_name(mut bytes: &[u8]) -> String {
-    let mut name = String::with_capacity(bytes.len());
-    while !bytes.is_empty() {
-        match std::str::from_utf8(bytes) {
-            Ok(valid) => {
-                name.push_str(valid);
-                break;
-            }
-            Err(error) => {
-                let (valid, invalid) = bytes.split_at(error.valid_up_to());
-                // valid_up_to is guaranteed to delimit valid UTF-8.
-                if let Ok(valid) = std::str::from_utf8(valid) {
-                    name.push_str(valid);
-                }
-                name.push('\u{fffd}');
-                bytes = &invalid[1..];
-            }
-        }
-    }
-    name
+fn go_display_name(bytes: &[u8]) -> String {
+    librairii_app::ports::operations::display_native_text(bytes)
 }

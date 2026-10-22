@@ -41,9 +41,16 @@ impl OwnedExportTemporary<'_, '_> {
     }
     /// Returns only after both rename directory entries are durable. On a lost
     /// acknowledgement, retain this owner and retry this SAME name uncancelled.
-    pub fn publish_registered(&mut self, guard: &Custody<'_>, name: &str) -> Result<()> {
+    pub fn publish_registered(
+        &mut self,
+        guard: &Custody<'_>,
+        name: impl AsRef<OsStr>,
+    ) -> Result<()> {
         self.allocation.files.check(guard)?;
-        if !librairii_core::operations::valid_output_name(name) {
+        let name = name.as_ref();
+        if !librairii_core::operations::valid_output_name(
+            &librairii_app::ports::operations::display_native_text(name.as_bytes()),
+        ) {
             return Err(StorageError::InvalidManagedPath);
         }
         let record = self
@@ -61,11 +68,11 @@ impl OwnedExportTemporary<'_, '_> {
                 Ok(tx.query_row(
                     "SELECT output_name FROM file_operation_items WHERE operation_id=? AND id=?",
                     rusqlite::params![operation, item],
-                    |r| r.get::<_, String>(0),
+                    |r| Ok(r.get_ref(0)?.as_bytes()?.to_vec()),
                 )?)
             })?
             .wait()?;
-        if actual != name {
+        if actual != name.as_bytes() {
             return Err(StorageError::SnapshotChanged);
         }
         let final_name = EntryName::parse(name)?;

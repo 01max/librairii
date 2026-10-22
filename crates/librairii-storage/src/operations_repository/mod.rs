@@ -63,8 +63,14 @@ pub fn command_bytes(witness: &CommandWitness) -> usize {
                     + text(&c.item.story_uuid)
                     + text(&c.item.story_title)
                     + c.item.source_name.capacity()
-                    + text(&c.item.output_name)
-                    + text(&c.item.archive_relative_path)
+                    + c.item
+                        .output_name
+                        .as_ref()
+                        .map_or(0, librairii_app::ports::operations::OperationPath::capacity)
+                    + c.item
+                        .archive_relative_path
+                        .as_ref()
+                        .map_or(0, librairii_app::ports::operations::OperationPath::capacity)
                     + text(&c.item.archive_sha256)
                     + text(&c.item.export_skip_code)
                     + outcome(&c.outcome)
@@ -112,8 +118,14 @@ pub fn snapshot_bytes(snapshot: &OperationSnapshot) -> usize {
                 + text(&item.identity.story_uuid)
                 + text(&item.story_title)
                 + item.source_name.capacity()
-                + text(&item.output_name)
-                + text(&item.archive_relative_path)
+                + item
+                    .output_name
+                    .as_ref()
+                    .map_or(0, librairii_app::ports::operations::OperationPath::capacity)
+                + item
+                    .archive_relative_path
+                    .as_ref()
+                    .map_or(0, librairii_app::ports::operations::OperationPath::capacity)
                 + text(&item.archive_sha256)
                 + text(&item.export_skip_code)
                 + text(&item.outcome.code)

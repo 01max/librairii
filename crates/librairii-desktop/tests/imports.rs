@@ -1043,3 +1043,248 @@ fn actual_import_process_death_recovers_registered_stage_and_preserves_committed
     }
     Ok(())
 }
+
+#[test]
+fn actual_native_import_inspect_export_and_reopen_preserves_all_formats_and_native_names()
+-> TestResult {
+    use librairii_adapters::archives::ArchiveInspector;
+    use librairii_app::exporting::{Disposition, Scope};
+    use librairii_app::{
+        importing::Inspector,
+        native_jobs::{Refusal, Start},
+    };
+    use librairii_storage::export::Exports;
+    use std::{
+        ffi::OsString,
+        os::unix::ffi::{OsStrExt, OsStringExt},
+    };
+    let mut cases = vec![
+        (
+            "clockwork-forest.plain.pk",
+            OsString::from("Original Été.PLAIN.PK"),
+        ),
+        (
+            "00112233445546778899aabbccddeeff.v1.pk",
+            OsString::from("Original 日本語.v1.pk"),
+        ),
+        (
+            "00112233445546778899aabbccddeeff.v2.pk",
+            OsString::from("Original Été.v2.pk"),
+        ),
+        ("clockwork-forest.pk", OsString::from("Original 日本語.pk")),
+        ("clockwork-forest.zip", OsString::from("Original Été.ZIP")),
+        (
+            "clockwork-forest-studio.zip",
+            OsString::from("Original 日本語.ZIP"),
+        ),
+        ("studio.7z", OsString::from("Original Été.7z")),
+    ];
+    if cfg!(target_os = "linux") {
+        cases.push((
+            "clockwork-forest-studio.zip",
+            OsString::from_vec(b"Original \xe1\x80\xff.ZIP".to_vec()),
+        ));
+    }
+    fn offer_start(handle: &Handle, mut start: Start) -> TestResult {
+        let end = Instant::now() + Duration::from_secs(10);
+        loop {
+            match handle.try_start(start) {
+                Ok(()) => return Ok(()),
+                Err((Refusal::Busy, original)) if Instant::now() < end => {
+                    start = original;
+                    thread::sleep(Duration::from_millis(2));
+                }
+                Err(_) => return Err("export runtime intake unavailable".into()),
+            }
+        }
+    }
+    for (case, (input, filename)) in cases.into_iter().enumerate() {
+        let roots = TestRoots::new()?;
+        let (copy, locations) = native_fixture(&roots)?;
+        let legacy = PathBuf::from(copy.source_profile().profile().root.clone());
+        let legacy_database = fs::read(legacy.join("db/librairii.sqlite3"))?;
+        let profile = NativeProfileStore::create_fresh(&locations.native)?;
+        let native = NativeLibrary::bind_independent(
+            copy,
+            &profile,
+            &locations,
+            &WorkCancellation::default(),
+        )
+        .map_err(|f| f.to_string())?;
+        let source = roots.profile().join(&filename);
+        fs::copy(fixture(input), &source)?;
+        let bytes = fs::read(&source)?;
+        let expected = ArchiveInspector.inspect(
+            &mut std::io::Cursor::new(&bytes),
+            filename.as_bytes(),
+            &Cancellation::default(),
+        )?;
+        let uuid = expected.identity.canonical();
+        let import_id = format!("a0000000-0000-4000-8000-{:012}", 12000 + case * 2);
+        let export_id = format!("a0000000-0000-4000-8000-{:012}", 12001 + case * 2);
+        let mut db = Database::open_native(&native)?;
+        {
+            let executor = ImportExecutor::new(&db);
+            let store = TerminalRepository::new(&db, 1);
+            with_runtime(
+                &store,
+                &executor,
+                Configuration::default(),
+                |handle| -> TestResult {
+                    offer(
+                        &executor,
+                        &handle,
+                        PreparedImport::new(import_id.parse()?, vec![source.clone()])?,
+                    )?;
+                    wait_terminal(&db, &import_id)
+                },
+            )??;
+        }
+        let imported = db
+            .operation_snapshot(import_id.clone())?
+            .wait()?
+            .ok_or("missing import history")?;
+        assert_eq!(
+            imported.operation.state,
+            OperationState::Succeeded,
+            "{input}"
+        );
+        assert_eq!(imported.items[0].outcome.code.as_deref(), Some("imported"));
+        let snapshot = db
+            .resolve_export(Scope::CurrentQuery(Default::default()), "fr-FR".into())?
+            .wait()?;
+        let row = snapshot
+            .stories
+            .into_iter()
+            .find(|s| s.uuid == uuid)
+            .ok_or("missing imported story")?;
+        let story_id = row.id;
+        assert_eq!(row.original_filename_bytes, filename.as_bytes());
+        assert_eq!(
+            row.sha256,
+            librairii_app::metadata::digest(&bytes).to_string()
+        );
+        let managed = row.managed_relative_path_bytes;
+        let destination = roots.profile().join("selected destination Été");
+        fs::create_dir(&destination)?;
+        {
+            let mut exports = Exports::new(&db);
+            let preview = exports.prepare(
+                Scope::Selection(vec![story_id]),
+                &destination,
+                "fr-FR".into(),
+                &WorkCancellation::default(),
+            )?;
+            assert_eq!(preview.ready, 1, "{input}");
+            assert_eq!(preview.items[0].disposition, Disposition::Ready);
+            let preparation = preview.preparation.ok_or("no export preparation")?;
+            exports.run_prepared(
+                &preparation,
+                export_id.clone(),
+                Configuration::default(),
+                |handle, start| -> TestResult {
+                    offer_start(&handle, start)?;
+                    wait_terminal(&db, &export_id)
+                },
+            )??;
+        }
+        let history = db
+            .operation_snapshot(export_id.clone())?
+            .wait()?
+            .ok_or("missing export history")?;
+        assert_eq!(
+            history.operation.state,
+            OperationState::Succeeded,
+            "{input}"
+        );
+        assert_eq!(history.items[0].outcome.code.as_deref(), Some("exported"));
+        assert_eq!(
+            history.items[0]
+                .output_name
+                .as_ref()
+                .ok_or("no stored name")?
+                .as_os_str(),
+            filename
+        );
+        assert_eq!(
+            history.items[0]
+                .archive_relative_path
+                .as_ref()
+                .ok_or("no stored path")?
+                .as_os_str()
+                .as_bytes(),
+            managed
+        );
+        assert_eq!(
+            history.presentation()?["items"][0]["outputName"],
+            librairii_app::ports::operations::display_native_text(filename.as_bytes())
+        );
+        let sql_id = export_id.clone();
+        let stored=db.barrier_read(move |tx| Ok(tx.query_row(
+            "SELECT CAST(output_name AS BLOB),CAST(archive_relative_path AS BLOB),typeof(output_name),typeof(archive_relative_path) FROM file_operation_items WHERE operation_id=?",
+            [sql_id],|r|Ok((r.get::<_,Vec<u8>>(0)?,r.get::<_,Vec<u8>>(1)?,r.get::<_,String>(2)?,r.get::<_,String>(3)?)))?))?.wait()?;
+        assert_eq!(
+            stored,
+            (
+                filename.as_bytes().to_vec(),
+                managed.clone(),
+                "text".into(),
+                "text".into()
+            )
+        );
+        let output = destination.join(&filename);
+        assert_eq!(fs::read(&output)?, bytes);
+        assert_eq!(fs::read_dir(&destination)?.count(), 1);
+        let inspected = ArchiveInspector.inspect(
+            &mut fs::File::open(&output)?,
+            filename.as_bytes(),
+            &Cancellation::default(),
+        )?;
+        assert_eq!(inspected, expected, "{input}");
+        assert_eq!(
+            fs::read(
+                native
+                    .layout()
+                    .root()
+                    .join(OsString::from_vec(managed.clone()))
+            )?,
+            bytes
+        );
+        db.close()?;
+        drop(db);
+        native.finish().map_err(|f| f.to_string())?;
+        drop(profile);
+        let profile = NativeProfileStore::open_native(&locations.native)?;
+        let native = NativeLibrary::reopen(&profile, &locations, &WorkCancellation::default())?;
+        let mut db = Database::open_native(&native)?;
+        assert_eq!(
+            db.operation_snapshot(export_id.clone())?
+                .wait()?
+                .ok_or("export lost after reopen")?,
+            history
+        );
+        {
+            let mut exports = Exports::new(&db);
+            let preview = exports.prepare(
+                Scope::Selection(vec![story_id]),
+                &destination,
+                "en-GB".into(),
+                &WorkCancellation::default(),
+            )?;
+            assert_eq!(preview.items[0].disposition, Disposition::Conflicted);
+            assert_eq!(preview.ready, 0);
+            assert!(preview.preparation.is_none());
+        }
+        assert_eq!(fs::read(&output)?, bytes);
+        assert_eq!(fs::read(&source)?, bytes);
+        assert_eq!(
+            fs::read(legacy.join("db/librairii.sqlite3"))?,
+            legacy_database
+        );
+        assert_eq!(fs::read_dir(native.layout().staging())?.count(), 0);
+        db.close()?;
+        drop(db);
+        native.finish().map_err(|f| f.to_string())?;
+    }
+    Ok(())
+}

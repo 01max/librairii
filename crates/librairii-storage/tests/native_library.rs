@@ -3141,7 +3141,10 @@ fn native_prepared_export_runs_durable_reports_and_preserves_racing_destinations
                 Some("unsupported_extension")
             );
             assert_eq!(saved.items[1].source_name, "../unsafe.zip");
-            assert_eq!(saved.items[1].output_name.as_deref(), Some("../unsafe.zip"));
+            assert_eq!(
+                saved.items[1].output_name.as_deref(),
+                Some(Path::new("../unsafe.zip"))
+            );
         }
         if refined {
             assert_eq!(
