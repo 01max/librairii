@@ -331,6 +331,11 @@ mod state {
             let checked = self.revalidate(root);
             if checked.is_err() {
                 self.uncertain = true;
+            } else {
+                // Durable cleanup and final validation acknowledge this update.
+                // Only uncertain transitions need the displaced witnesses.
+                self.retained.clear();
+                self.retained_allocations.clear();
             }
             checked
         }

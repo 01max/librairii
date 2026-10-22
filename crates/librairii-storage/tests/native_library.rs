@@ -23,6 +23,118 @@ const MANIFEST: &[u8] =
     include_bytes!("../../../preservation/corpus/profiles/library-manifest.json");
 
 #[test]
+fn retired_export_temporaries_keep_descriptor_usage_bounded() -> TestResult {
+    // Run alone so unrelated test threads cannot perturb process-wide FD counts.
+    const CHILD: &str = "LIBRAIRII_EXPORT_DESCRIPTOR_PROBE";
+    if std::env::var_os(CHILD).is_none() {
+        let output = std::process::Command::new(std::env::current_exe()?)
+            .args([
+                "--exact",
+                "retired_export_temporaries_keep_descriptor_usage_bounded",
+            ])
+            .env(CHILD, "1")
+            .output()?;
+        assert!(
+            output.status.success(),
+            "{}{}",
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
+        );
+        return Ok(());
+    }
+    use librairii_app::ports::creation::{NewItem, NewOperation};
+    use librairii_core::{
+        OperationKind,
+        operations::{ExportSource, ExportSourceType},
+    };
+    use librairii_storage::platform::unix::LibraryFiles;
+    #[cfg(target_os = "macos")]
+    let descriptors = Path::new("/dev/fd");
+    #[cfg(target_os = "linux")]
+    let descriptors = Path::new("/proc/self/fd");
+    let roots = TestRoots::new()?;
+    let (copy, locations) = prepare(&roots, false)?;
+    let root = copy.root().to_owned();
+    let destination = roots.profile().join("exports");
+    fs::create_dir(&destination)?;
+    let store = NativeProfileStore::create_fresh(&locations.native)?;
+    let native =
+        NativeLibrary::bind_independent(copy, &store, &locations, &WorkCancellation::default())
+            .map_err(|f| f.to_string())?;
+    let mut db = Database::open_native(&native)?;
+    let operation = committed_operation(
+        db.create_operation(
+            NewOperation {
+                id: "a0000000-0000-4000-8000-000000000092".into(),
+                kind: OperationKind::Export,
+                source: Some(ExportSource {
+                    source_type: ExportSourceType::Selection,
+                    collection_ids: Vec::new(),
+                    collection_names: Vec::new(),
+                    shelf_ids: Vec::new(),
+                    shelf_names: Vec::new(),
+                }),
+                destination: Some(destination.to_str().ok_or("UTF8 destination")?.into()),
+                items: (1..=16)
+                    .map(|n| NewItem {
+                        source_name: format!("export-{n}"),
+                        story_title: "Gone".into(),
+                        story_uuid: format!("c0000000-0000-4000-8000-{n:012}"),
+                        export_skip_code: "story_unavailable".into(),
+                        ..Default::default()
+                    })
+                    .collect(),
+            },
+            "2026-10-22T00:00:00Z".into(),
+            Default::default(),
+        )?
+        .wait()?,
+    )?;
+    for item in &operation.items {
+        committed_operation(
+            db.mark_operation_item_running(
+                operation.operation.identity.id.clone(),
+                item.identity.id,
+                "2026-10-22T00:00:01Z".into(),
+                Default::default(),
+            )?
+            .wait()?,
+        )?;
+    }
+    {
+        let files = LibraryFiles::open_native(&db)?;
+        let guard = files.try_custody()?;
+        let before = fs::read_dir(descriptors)?.count();
+        for item in &operation.items {
+            files
+                .create_export_temporary(
+                    &guard,
+                    operation.operation.identity.id.clone(),
+                    item.identity.id,
+                )
+                .map_err(|f| f.to_string())?
+                .retire(&guard)
+                .map_err(|f| f.to_string())?;
+            assert_eq!(fs::read_dir(destination.as_path())?.count(), 0);
+            assert!(
+                native_state(&root)?["temporaries"]
+                    .as_array()
+                    .is_none_or(Vec::is_empty)
+            );
+            let after = fs::read_dir(descriptors)?.count();
+            assert!(
+                after <= before,
+                "retired export leaked descriptors: {before} -> {after}"
+            );
+        }
+    }
+    db.close()?;
+    drop(db);
+    native.finish().map_err(|f| f.to_string())?;
+    Ok(())
+}
+
+#[test]
 fn native_owned_read_source_retains_database_and_reads_after_stop_or_uncertainty() -> TestResult {
     use librairii_storage::platform::{
         hash_stream,
