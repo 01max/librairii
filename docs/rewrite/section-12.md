@@ -1,6 +1,6 @@
 # Task 12: exports, trash custody and diagnostics
 
-**Partial: 12.1–12.5 implemented; 12.6–12.9 remain incomplete. Keep the Task 12
+**Partial: 12.1–12.6 implemented; 12.7–12.9 remain incomplete. Keep the Task 12
 PR in draft.** This is an export-domain/copy slice, not completion of Task 12.
 
 Rebased base: `5fd74f06fe4031b37bf84822d218943ec9ed970d` (Task 6 merged).
@@ -111,8 +111,7 @@ qualification of every full/removable filesystem or Windows sharing mode.
 
 ## Remaining dependency and acceptance gates
 
-12.6 removal/trash/compensation and 12.7–12.8 logging/diagnostics remain to be
-implemented on the merged runtime. 12.9's complete import→inspect→export→reopen
+12.7–12.8 logging/diagnostics remain to be implemented on the merged runtime. 12.9's complete import→inspect→export→reopen
 slice still depends on Task 5's real hostile archive inspection/import custody,
 which remains incomplete. Existing preserved Go fixtures do not establish that
 missing Rust import port. Keep that acceptance subtask open until it can run.
@@ -164,3 +163,27 @@ control retirement, and refuses replacement names. The regression includes both
 partial cleanup boundaries and a lost forget acknowledgement, then repeats cleanup
 to establish idempotence. Go display-name replacement also consumes each invalid
 UTF-8 byte separately, including malformed multibyte prefixes.
+
+## 12.6 — Durable removal and restart rollback
+
+The blocking `Removals` service borrows the actual Database and LibraryFiles,
+retaining the same global custody guard, no-follow managed/trash parent chain and
+archive descriptor through intent persistence, no-clobber move and guarded story
+deletion. The original source file remains untouched; SQL deletion cascades tag
+assignments and the intent, while Shelf UUID decisions survive. Removal uses
+migration 003 unchanged and adds no operation kind or in-app restore.
+
+Cancellation and SQL failure trigger uncancelled restoration before intent
+retirement. A fresh writer barrier distinguishes a committed deletion from an
+unacknowledged transaction. Failed repair retains the actual owner and fences
+ordinary intake; repair can finish through that fence, without authorizing clean
+closure of the uncertain generation. Startup reconciles one bounded coherent
+intent at a time before returning a database; ambiguous custody refuses startup.
+Native closure permits retained trash and requires a drained removal-intent table.
+
+Tests cover intent/move cancellation through stopped intake, a refused deletion,
+exact retained trash bytes, tag cascade, original source preservation, Shelf
+membership, a foreign restore collision and retry with the same actual owner.
+Three real child-process kills exercise intent, trash move and committed deletion;
+reopening restores unfinished removals and retains completed trash. Both prepared
+and queued exports reject a story with an active removal intent.

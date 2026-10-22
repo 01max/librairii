@@ -1387,15 +1387,14 @@ mod owned {
             drop(managed);
             require_root_entries(&self.root)?;
             require_no_sidecars(&self.database)?;
-            for name in ["staging", "trash"] {
-                if !self
-                    .root
-                    .child(OsStr::new(name))?
-                    .entries(0, &WorkCancellation::default())?
-                    .is_empty()
-                {
-                    return Err(StorageError::CustodyRecoveryRequired);
-                }
+            // Trash is retained product data after a committed removal.
+            if !self
+                .root
+                .child(OsStr::new("staging"))?
+                .entries(0, &WorkCancellation::default())?
+                .is_empty()
+            {
+                return Err(StorageError::CustodyRecoveryRequired);
             }
             let mut record = self
                 .record

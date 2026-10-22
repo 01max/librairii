@@ -488,6 +488,7 @@ impl<'library> Database<'library> {
         let queue = runtime.writer.clone();
         let fenced = runtime.fenced.clone();
         let writer_path = path.clone();
+        let native_close = authority.persistent_uncertainty().is_some();
         let staging = authority
             .layout()
             .resolve(&ManagedPath::parse("staging")?)?;
@@ -520,6 +521,15 @@ impl<'library> Database<'library> {
                     let _ = sender.send(diagnostics(&connection, "writer"));
                     while let Some(job) = queue.next()? {
                         job(&mut connection);
+                    }
+                    if native_close
+                        && connection.query_row(
+                            "SELECT EXISTS(SELECT 1 FROM removal_intents)",
+                            [],
+                            |r| r.get::<_, bool>(0),
+                        )?
+                    {
+                        return Err(StorageError::CustodyRecoveryRequired);
                     }
                     let (busy, _, _): (i64, i64, i64) =
                         connection.query_row("PRAGMA wal_checkpoint(TRUNCATE)", [], |row| {
@@ -583,6 +593,11 @@ impl<'library> Database<'library> {
             runtime
                 .diagnostics
                 .push(receiver.recv().map_err(|_| StorageError::WorkerStopped)??);
+        }
+        #[cfg(any(target_os = "macos", target_os = "linux"))]
+        if let Err(error) = runtime.recover_removals() {
+            runtime.fence_external_effect();
+            return Err(error);
         }
         Ok(runtime)
     }

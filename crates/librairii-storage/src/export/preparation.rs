@@ -101,7 +101,7 @@ impl<'db, 'library> Exports<'db, 'library> {
             .collect::<Vec<_>>();
         self.database.read(move|tx|{
             use rusqlite::OptionalExtension;
-            let mut stmt=tx.prepare("SELECT s.id,s.is_broken FROM stories s JOIN story_archives a ON a.story_id=s.id WHERE s.uuid=?")?;
+            let mut stmt=tx.prepare("SELECT s.id,s.is_broken FROM stories s JOIN story_archives a ON a.story_id=s.id WHERE s.uuid=? AND NOT EXISTS(SELECT 1 FROM removal_intents r WHERE r.story_id=s.id)")?;
             for (uuid,id,broken) in states {
                 let current=stmt.query_row([uuid],|r|Ok((r.get::<_,i64>(0)?,r.get::<_,bool>(1)?))).optional()?.unwrap_or((0,false));
                 if current!=(id,broken) { return Err(ExportError::Stale.into()); }
@@ -404,7 +404,7 @@ impl Running<'_, '_, '_> {
         let original = self.plan.scope.stories[index].clone();
         self.owner.database.read(move|tx|{
             use rusqlite::OptionalExtension;
-            let current=tx.query_row("SELECT s.id,s.is_broken,a.sha256,a.byte_size,a.managed_path,a.original_filename,a.detected_format,a.validation_state FROM stories s JOIN story_archives a ON a.story_id=s.id WHERE s.uuid=?",[&original.uuid],|r|Ok((r.get::<_,i64>(0)?,r.get::<_,bool>(1)?,r.get::<_,String>(2)?,r.get::<_,i64>(3)?,r.get::<_,String>(4)?,r.get::<_,String>(5)?,r.get::<_,String>(6)?,r.get::<_,String>(7)?))).optional()?;
+            let current=tx.query_row("SELECT s.id,s.is_broken,a.sha256,a.byte_size,a.managed_path,a.original_filename,a.detected_format,a.validation_state FROM stories s JOIN story_archives a ON a.story_id=s.id WHERE s.uuid=? AND NOT EXISTS(SELECT 1 FROM removal_intents r WHERE r.story_id=s.id)",[&original.uuid],|r|Ok((r.get::<_,i64>(0)?,r.get::<_,bool>(1)?,r.get::<_,String>(2)?,r.get::<_,i64>(3)?,r.get::<_,String>(4)?,r.get::<_,String>(5)?,r.get::<_,String>(6)?,r.get::<_,String>(7)?))).optional()?;
             let Some((id,broken,hash,bytes,path,name,format,validation))=current else {return Ok(Disposition::Skipped(Issue::StoryUnavailable));};
             Ok(if id!=original.id {Disposition::Skipped(Issue::StoryUnavailable)}
             else if broken {Disposition::Skipped(Issue::StoryMarkedBroken)}

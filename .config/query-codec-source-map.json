@@ -4570,6 +4570,58 @@
           ]
         },
         "reason": "Additive resumed Task 12 export/removal/diagnostics assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 542,
+        "identity": {
+          "suite": "librairii-storage",
+          "name": "removal::tests::native_removal_intent_invalidates_prepared_and_queued_export",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive resumed Task 12 export/removal/diagnostics assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 543,
+        "identity": {
+          "suite": "librairii-storage",
+          "name": "removal::tests::native_removal_kill_at_intent_move_and_delete_recovers_before_intake",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive resumed Task 12 export/removal/diagnostics assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 544,
+        "identity": {
+          "suite": "librairii-storage",
+          "name": "removal::tests::native_removal_preserves_sources_shelf_decisions_and_compensates_uncancelled",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive resumed Task 12 export/removal/diagnostics assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 545,
+        "identity": {
+          "suite": "librairii-storage",
+          "name": "removal::tests::native_removal_refuses_foreign_restore_collision_and_retains_owner",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive resumed Task 12 export/removal/diagnostics assertions; all admitted identities retain exact order and target scope."
       }
     ],
     "python": [
