@@ -176,3 +176,15 @@ on macOS/Linux; Linux additionally exercises raw invalid-UTF-8 filename bytes
 (the native macOS filesystem refuses creation of that name). Adapter and storage
 Clippy/fmt pass. Native operation registration, SQL commitment, compensation and
 restart acceptance are completed by 5.7/5.8.
+
+## Runtime integration correction
+
+The first Linux focused CI run (39757124135, source 3e43445) reproduced the
+pre-existing shutdown/finish-scan race: item cancellation was durable while the
+parent remained Running after drain. The isolated fix and deterministic scan gate
+are carried from pending Task 12 commit 8a116c312caa7d323932f8a3b3b9f3c15e506199,
+without its export changes. Shutdown now performs a fresh same-writer finishing
+scan after all workers release their owners. Six runtime failure tests pass,
+including the forced ordering that exposes the original race. Initial native
+Linux/ARM Mac/Intel Mac checks passed; the focused failure is not treated as a
+pass or hidden by rerunning unchanged tests.
