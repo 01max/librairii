@@ -3943,6 +3943,38 @@
           ]
         },
         "reason": "Additive Task 6 durable operation/runtime/recovery assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 483,
+        "identity": {
+          "suite": "librairii-adapters",
+          "name": "archives::tests::actual_container_mismatch_and_unsupported_suffix_do_not_admit_an_archive"
+        },
+        "reason": "Additive Task 5 archive inspection/custody assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 484,
+        "identity": {
+          "suite": "librairii-adapters",
+          "name": "archives::tests::actual_studio_zip_disguised_as_every_pack_suffix_is_rejected"
+        },
+        "reason": "Additive Task 5 archive inspection/custody assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 485,
+        "identity": {
+          "suite": "librairii-adapters",
+          "name": "archives::tests::actual_zip_and_seven_zip_dispatch_preserves_suffix_content_combinations"
+        },
+        "reason": "Additive Task 5 archive inspection/custody assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 486,
+        "identity": {
+          "suite": "librairii-adapters",
+          "name": "archives::tests::indexed_archive_reads_selected_metadata_without_bulk_extraction"
+        },
+        "reason": "Additive Task 5 archive inspection/custody assertions; all admitted identities retain exact order and target scope."
       }
     ],
     "python": [

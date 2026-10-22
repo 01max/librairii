@@ -2924,6 +2924,22 @@
         "x86_64-apple-darwin",
         "x86_64-unknown-linux-gnu"
       ]
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "archives::tests::actual_container_mismatch_and_unsupported_suffix_do_not_admit_an_archive"
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "archives::tests::actual_studio_zip_disguised_as_every_pack_suffix_is_rejected"
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "archives::tests::actual_zip_and_seven_zip_dispatch_preserves_suffix_content_combinations"
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "archives::tests::indexed_archive_reads_selected_metadata_without_bulk_extraction"
     }
   ]
 }
