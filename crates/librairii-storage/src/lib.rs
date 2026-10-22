@@ -15,6 +15,7 @@ pub mod layout;
 pub mod metadata;
 pub mod migrations;
 pub mod native;
+pub mod operations_repository;
 pub mod platform;
 pub mod portability;
 pub mod profile;
@@ -25,3 +26,6 @@ pub mod tagging;
 pub use error::{Result, StorageError};
 pub use identity::LibraryIdentity;
 pub use layout::{DATA_ROOT_OVERRIDE, IsolatedLibrary, LibraryLayout, ManagedPath};
+
+#[cfg(any(target_os = "macos", target_os = "linux"))]
+mod native_effects;

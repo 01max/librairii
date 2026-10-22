@@ -29,3 +29,15 @@ pub use policy::{
     OperationPolicyError, Progress, TerminalResult, checked_byte_total, complete_item, finish,
     interrupt, mark_item_running, mark_running, request_cancel,
 };
+
+/// Frozen Go whitespace predicate for operation input, independent of the host
+/// Unicode version. It grants no path or persistence authority.
+pub fn text_present(value: &str) -> bool {
+    !crate::collection_codec::tag_trim(value).is_empty()
+}
+pub fn valid_output_name(value: &str) -> bool {
+    text_present(value)
+        && crate::collection_codec::tag_trim(value) == value
+        && !matches!(value, "." | "..")
+        && !value.contains(['/', '\\', '\0'])
+}

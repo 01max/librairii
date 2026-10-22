@@ -53,6 +53,8 @@ mod state {
         pub library_marker_sha256: String,
         pub profile_marker_sha256: String,
         pub source_manifest_sha256: String,
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
+        pub temporaries: Vec<crate::native_effects::Temporary>,
     }
     impl Document {
         pub fn decode(bytes: &[u8]) -> Result<Self> {
@@ -71,6 +73,19 @@ mod state {
                 || crate::identity::parse_spelling(&self.library_id_raw).is_err()
             {
                 return Err(StorageError::RecoveryBindingRequired);
+            }
+            if self.state != Phase::Active && !self.temporaries.is_empty() {
+                return Err(StorageError::RecoveryBindingRequired);
+            }
+            if self.temporaries.len() > 64 {
+                return Err(StorageError::RecoveryBindingRequired);
+            }
+            let mut names = std::collections::BTreeSet::new();
+            for temporary in &self.temporaries {
+                temporary.validate()?;
+                if !names.insert((&temporary.destination, &temporary.name)) {
+                    return Err(StorageError::RecoveryBindingRequired);
+                }
             }
             for path in [
                 &self.native_profile_root,
@@ -316,6 +331,11 @@ mod state {
             let checked = self.revalidate(root);
             if checked.is_err() {
                 self.uncertain = true;
+            } else {
+                // Durable cleanup and final validation acknowledge this update.
+                // Only uncertain transitions need the displaced witnesses.
+                self.retained.clear();
+                self.retained_allocations.clear();
             }
             checked
         }
@@ -339,6 +359,7 @@ mod state {
                 library_marker_sha256: "a".repeat(64),
                 profile_marker_sha256: "b".repeat(64),
                 source_manifest_sha256: "c".repeat(64),
+                temporaries: Vec::new(),
             }
         }
         #[test]
@@ -533,6 +554,7 @@ mod owned {
         record: Mutex<Record>,
         managed: Mutex<Option<Vec<(&'static str, Directory)>>>,
         runtime_active: AtomicBool,
+        recovery_pending: AtomicBool,
         closed_success: AtomicBool,
         pub(crate) custody_active: AtomicBool,
         fenced: Arc<AtomicBool>,
@@ -542,6 +564,26 @@ mod owned {
         // all callbacks/publications remain excluded without holding a mutex.
         frozen: Option<FrozenProfile<'profile>>,
         binding: Option<ProfileBinding<'profile>>,
+    }
+    #[derive(Debug)]
+    pub struct RecoveryLibrary<'profile> {
+        library: NativeLibrary<'profile>,
+    }
+    impl<'profile> RecoveryLibrary<'profile> {
+        pub fn layout(&self) -> &LibraryLayout {
+            self.library.layout()
+        }
+        pub fn open(&self) -> Result<crate::database::Database<'_>> {
+            let database = crate::database::Database::open_native(&self.library)?;
+            if let Err(error) = database.recover_operation_startup() {
+                self.library.fence();
+                return Err(error);
+            }
+            Ok(database)
+        }
+        pub fn finish(self) -> std::result::Result<(), Box<NativeCloseFailure<'profile>>> {
+            self.library.finish()
+        }
     }
     impl<'profile> NativeLibrary<'profile> {
         pub fn bind_independent(
@@ -613,6 +655,7 @@ mod owned {
                     library_marker_sha256: digest(copy.identity().original_bytes()),
                     profile_marker_sha256: store.marker_digest()?,
                     source_manifest_sha256: copy.manifest_digest(),
+                    temporaries: Vec::new(),
                 };
                 record = Some(match Record::create(&root, document) {
                     Ok(record) => record,
@@ -697,6 +740,7 @@ mod owned {
                 record: Mutex::new(record),
                 managed: Mutex::new(None),
                 runtime_active: AtomicBool::new(false),
+                recovery_pending: AtomicBool::new(false),
                 closed_success: AtomicBool::new(false),
                 custody_active: AtomicBool::new(false),
                 fenced,
@@ -714,6 +758,23 @@ mod owned {
             store: &'profile NativeProfileStore,
             locations: &ProfileLocations,
             cancellation: &WorkCancellation,
+        ) -> Result<Self> {
+            Self::reopen_mode(store, locations, cancellation, false)
+        }
+        pub fn recover_interrupted(
+            store: &'profile NativeProfileStore,
+            locations: &ProfileLocations,
+            cancellation: &WorkCancellation,
+        ) -> Result<RecoveryLibrary<'profile>> {
+            Ok(RecoveryLibrary {
+                library: Self::reopen_mode(store, locations, cancellation, true)?,
+            })
+        }
+        fn reopen_mode(
+            store: &'profile NativeProfileStore,
+            locations: &ProfileLocations,
+            cancellation: &WorkCancellation,
+            recovery: bool,
         ) -> Result<Self> {
             let profile = store
                 .load()?
@@ -737,7 +798,7 @@ mod owned {
             let root = Directory::open(&path)?;
             let lease = LibraryLease::acquire_existing_in(&path, &root)?;
             let record = Record::open(&root)?;
-            if record.document.state == Phase::Active {
+            if record.document.state == Phase::Active && !recovery {
                 return Err(StorageError::RecoveryBindingRequired);
             }
             let d = &record.document;
@@ -775,13 +836,24 @@ mod owned {
                     Ok(directory) => directories.push((name, directory)),
                     Err(StorageError::Io { source, .. })
                         if source.kind() == std::io::ErrorKind::NotFound
-                            && record.document.state == Phase::ImportedClosed => {}
+                            && (record.document.state == Phase::ImportedClosed
+                                || (recovery && name != "db")) => {}
                     Err(error) => return Err(error),
                 }
             }
             let parent = Directory::open(path.parent().ok_or(StorageError::RootNotAbsolute)?)?;
             let name = EntryName::parse(path.file_name().ok_or(StorageError::InvalidManagedPath)?)?;
-            require_no_sidecars(&database)?;
+            if recovery {
+                for name in [
+                    "librairii.sqlite3-wal",
+                    "librairii.sqlite3-shm",
+                    "librairii.sqlite3-journal",
+                ] {
+                    database.read_regular(OsStr::new(name))?;
+                }
+            } else {
+                require_no_sidecars(&database)?;
+            }
             let scratch = tempfile::tempdir()
                 .map_err(|e| StorageError::io("create existing native DB probe", e))?;
             crate::backup::probe_owned(&path.join("db/librairii.sqlite3"), scratch.path())?;
@@ -795,7 +867,7 @@ mod owned {
                 lease,
             }));
             owner.revalidate()?;
-            Ok(Self::new(
+            let library = Self::new(
                 NativeDirectories {
                     layout,
                     root,
@@ -806,7 +878,95 @@ mod owned {
                 record,
                 owner,
                 binding,
-            ))
+            );
+            library.recovery_pending.store(recovery, Ordering::Release);
+            Ok(library)
+        }
+        pub(crate) fn registered_temporaries(
+            &self,
+        ) -> Result<Vec<crate::native_effects::Temporary>> {
+            let record = self
+                .record
+                .lock()
+                .map_err(|_| StorageError::RuntimeFenced)?;
+            record.revalidate(&self.root)?;
+            Ok(record.document.temporaries.clone())
+        }
+        pub(crate) fn register_temporary(
+            &self,
+            temporary: crate::native_effects::Temporary,
+        ) -> Result<()> {
+            temporary.validate()?;
+            self.revalidate_database_ownership()?;
+            let mut record = self
+                .record
+                .lock()
+                .map_err(|_| StorageError::RuntimeFenced)?;
+            record.revalidate(&self.root)?;
+            if record.document.state != Phase::Active
+                || !self.runtime_active.load(Ordering::Acquire)
+            {
+                return Err(StorageError::IntakeClosed);
+            }
+            if record.document.temporaries.contains(&temporary) {
+                return Ok(());
+            }
+            if let Some(index) = record.document.temporaries.iter().position(|t| {
+                t.operation == temporary.operation
+                    && t.item == temporary.item
+                    && t.destination == temporary.destination
+                    && t.parent == temporary.parent
+                    && t.name == temporary.name
+            }) {
+                let prior = &record.document.temporaries[index];
+                if prior.scope_sha256 != temporary.scope_sha256
+                    || prior.directory.is_some()
+                    || prior.payload.is_some()
+                {
+                    return Err(StorageError::SnapshotChanged);
+                }
+                let mut next = record.document.clone();
+                next.temporaries[index] = temporary;
+                if next.bytes().is_err() {
+                    return Err(StorageError::QueueFull);
+                }
+                let result = record.transition_with(&self.root, next, || Ok(()));
+                if result.is_err() {
+                    self.fence();
+                }
+                return result;
+            }
+            if record.document.temporaries.len() >= 64 {
+                return Err(StorageError::QueueFull);
+            }
+            let mut next = record.document.clone();
+            next.temporaries.push(temporary);
+            if next.bytes().is_err() {
+                return Err(StorageError::QueueFull);
+            }
+            let result = record.transition_with(&self.root, next, || Ok(()));
+            if result.is_err() {
+                self.fence();
+            }
+            result
+        }
+        pub(crate) fn forget_temporary(
+            &self,
+            temporary: &crate::native_effects::Temporary,
+        ) -> Result<()> {
+            self.revalidate_database_ownership()?;
+            let mut record = self
+                .record
+                .lock()
+                .map_err(|_| StorageError::RuntimeFenced)?;
+            record.revalidate(&self.root)?;
+            let mut next = record.document.clone();
+            next.temporaries.retain(|t| t != temporary);
+            let result = record.transition_with(&self.root, next, || Ok(()));
+            if result.is_err() {
+                self.fence();
+            }
+            result
         }
         pub fn layout(&self) -> &LibraryLayout {
             &self.layout
@@ -913,7 +1073,10 @@ mod owned {
                 self.binding()?.revalidate()?;
                 self.revalidate_database_ownership()?;
                 require_root_entries(&self.root)?;
-                require_no_sidecars(&self.database)?;
+                let recovery = self.recovery_pending.swap(false, Ordering::AcqRel);
+                if !recovery {
+                    require_no_sidecars(&self.database)?;
+                }
                 let mut managed = self
                     .managed
                     .lock()
@@ -941,7 +1104,7 @@ mod owned {
                 }
                 self.owner.initial(&WorkCancellation::default())?;
                 let mut next = record.document.clone();
-                if next.state == Phase::Active {
+                if next.state == Phase::Active && !recovery {
                     return Err(StorageError::RecoveryBindingRequired);
                 }
                 next.epoch = next
@@ -1093,7 +1256,7 @@ mod owned {
                 .lock()
                 .map_err(|_| StorageError::RuntimeFenced)?;
             record.revalidate(&self.root)?;
-            if record.document.state != Phase::Active {
+            if record.document.state != Phase::Active || !record.document.temporaries.is_empty() {
                 return Err(StorageError::RecoveryBindingRequired);
             }
             // EVERY non-control settlement predicate is already true before
@@ -1395,6 +1558,149 @@ mod owned {
                 locations,
             ))
         }
+        #[test]
+        fn settled_import_stages_recycle_registration_slots_in_one_session() -> TestResult {
+            use crate::{
+                database::TransactionOutcome,
+                platform::unix::{EntryName, FileArea, LibraryFiles, Publication},
+            };
+            use librairii_app::ports::creation::{NewItem, NewOperation};
+            use librairii_core::OperationKind;
+            use std::io::Write;
+            for publish in [false, true] {
+                let roots = TestRoots::new()?;
+                let (copy, locations) = copy(&roots)?;
+                let store = NativeProfileStore::create_fresh(&locations.native)?;
+                let native = NativeLibrary::bind_independent(
+                    copy,
+                    &store,
+                    &locations,
+                    &WorkCancellation::default(),
+                )
+                .map_err(|f| f.to_string())?;
+                let mut db = Database::open_native(&native)?;
+                let TransactionOutcome::Committed(operation) = db
+                    .create_operation(
+                        NewOperation {
+                            id: "a0000000-0000-4000-8000-000000000093".into(),
+                            kind: OperationKind::Import,
+                            source: None,
+                            destination: None,
+                            items: (0..66)
+                                .map(|n| NewItem {
+                                    source_name: format!("import-{n}"),
+                                    ..Default::default()
+                                })
+                                .collect(),
+                        },
+                        "2026-10-22T00:00:00Z".into(),
+                        Default::default(),
+                    )?
+                    .wait()?
+                else {
+                    return Err("create operation was not acknowledged".into());
+                };
+                for item in &operation.items {
+                    assert!(matches!(
+                        db.mark_operation_item_running(
+                            operation.operation.identity.id.clone(),
+                            item.identity.id,
+                            "2026-10-22T00:00:01Z".into(),
+                            Default::default(),
+                        )?
+                        .wait()?,
+                        TransactionOutcome::Committed(_)
+                    ));
+                }
+                {
+                    let files = LibraryFiles::open_native(&db)?;
+                    let guard = files.try_custody()?;
+                    for (index, item) in operation.items.iter().enumerate() {
+                        let mut stage = files
+                            .create_stage(&guard)
+                            .map_err(|f| f.cause().to_string())?;
+                        stage.register_operation(
+                            &guard,
+                            operation.operation.identity.id.clone(),
+                            item.identity.id,
+                        )?;
+                        stage.write_all(b"registered import")?;
+                        if publish {
+                            let digest = stage.measure(17, &WorkCancellation::default())?;
+                            let publication = stage
+                                .publish_no_clobber(
+                                    &guard,
+                                    FileArea::Archives,
+                                    EntryName::parse("registered.pack")?,
+                                    digest,
+                                    &WorkCancellation::default(),
+                                )
+                                .map_err(|f| f.cause.to_string())?;
+                            assert_eq!(matches!(publication, Publication::NewOwned(_)), index == 0);
+                            publication
+                                .finish_metadata_stage(&guard)
+                                .map_err(|f| f.cause.to_string())?;
+                        } else {
+                            let retired = stage
+                                .retire_owned_temp(&guard)
+                                .map_err(|f| f.cause.to_string())?;
+                            retired.revalidate(&guard)?;
+                        }
+                    }
+                    assert!(native.registered_temporaries()?.is_empty());
+                    assert_eq!(fs::read_dir(native.layout().staging())?.count(), 0);
+                    if publish {
+                        assert_eq!(
+                            fs::read(native.layout().archives().join("registered.pack"))?,
+                            b"registered import"
+                        );
+                    } else {
+                        // Retirement preserves recoverable trash; it only frees
+                        // the registration for the former staging workspace.
+                        assert_eq!(fs::read_dir(native.layout().trash())?.count(), 66);
+                        let mut stage = files
+                            .create_stage(&guard)
+                            .map_err(|f| f.cause().to_string())?;
+                        stage.register_operation(
+                            &guard,
+                            operation.operation.identity.id.clone(),
+                            operation.items[0].identity.id,
+                        )?;
+                        stage.write_all(b"preserved")?;
+                        assert!(
+                            stage
+                                .register_operation(
+                                    &guard,
+                                    operation.operation.identity.id.clone(),
+                                    operation.items[1].identity.id
+                                )
+                                .is_err()
+                        );
+                        let registration = native
+                            .registered_temporaries()?
+                            .pop()
+                            .ok_or("registration")?;
+                        let original = native.layout().staging().join(&registration.name);
+                        let held = native.layout().staging().join("held-original");
+                        fs::rename(&original, &held)?;
+                        fs::create_dir(&original)?;
+                        let failure = stage
+                            .retire_owned_temp(&guard)
+                            .err()
+                            .ok_or("substitution accepted")?;
+                        assert_eq!(native.registered_temporaries()?, [registration]);
+                        assert_eq!(fs::read(held.join("payload"))?, b"preserved");
+                        drop(failure);
+                    }
+                }
+                db.close()?;
+                drop(db);
+                if publish {
+                    native.finish().map_err(|f| f.to_string())?;
+                }
+            }
+            Ok(())
+        }
         fn fault() -> Result<()> {
             Err(StorageError::io(
                 "injected native record post-replace flush boundary",
@@ -1510,4 +1816,4 @@ mod owned {
 }
 
 #[cfg(any(target_os = "macos", target_os = "linux"))]
-pub use owned::{NativeBindingFailure, NativeCloseFailure, NativeLibrary};
+pub use owned::{NativeBindingFailure, NativeCloseFailure, NativeLibrary, RecoveryLibrary};

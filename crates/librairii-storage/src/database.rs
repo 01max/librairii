@@ -350,6 +350,7 @@ impl<'library> Authority<'library> {
 pub struct Database<'library> {
     pub(crate) shelf_tickets: Arc<std::sync::Mutex<crate::shelves::tickets::Registry>>,
     authority: Authority<'library>,
+    jobs_active: AtomicBool,
     writer: Arc<Queue>,
     readers: Arc<Queue>,
     writer_thread: Option<JoinHandle<Result<()>>>,
@@ -442,6 +443,7 @@ impl<'library> Database<'library> {
         let mut runtime = Self {
             shelf_tickets: Arc::default(),
             authority,
+            jobs_active: AtomicBool::new(false),
             writer: Arc::new(Queue::new(REPAIR_QUEUE_CAPACITY, 1)),
             readers: Arc::new(Queue::new(0, READ_WORKERS)),
             writer_thread: None,
@@ -732,6 +734,17 @@ impl<'library> Database<'library> {
     /// drains external readers/artwork. Exclusive &mut ownership prevents new
     /// admissions during close. An error retains a fenced authority; it is not
     /// successful closure or permission to activate a replacement generation.
+    /// A live operation session retains the real Database borrow through joins.
+    /// ```compile_fail
+    /// use librairii_storage::{database::Database,operations_repository::TerminalRepository};
+    /// use librairii_app::native_jobs::{Executor,Configuration,with_runtime};
+    /// fn close_during_session<E:Executor>(database:&mut Database<'_>,effect:&E) {
+    ///     let repository=TerminalRepository::new(database,1);
+    ///     let _=with_runtime(&repository,effect,Configuration::default(),|_| {
+    ///         let _=database.close();
+    ///     });
+    /// }
+    /// ```
     pub fn close(&mut self) -> Result<()> {
         if self.closed {
             return Ok(());
@@ -1082,5 +1095,28 @@ mod initialization_tests {
         runtime.close()?;
         assert!(candidate.join("librairii.sqlite3").is_file());
         Ok(())
+    }
+}
+
+impl Database<'_> {
+    /// Unsettled operation ownership prevents clean closure after a runtime panic.
+    pub(crate) fn fence_operations(&self) {
+        self.fenced.store(true, Ordering::Release);
+        self.authority.effect_fence().store(true, Ordering::Release);
+    }
+}
+
+impl Database<'_> {
+    pub(crate) fn claim_jobs(&self) -> bool {
+        !self.closed
+            && !self.close_failed
+            && !self.fenced.load(Ordering::Acquire)
+            && self
+                .jobs_active
+                .compare_exchange(false, true, Ordering::AcqRel, Ordering::Acquire)
+                .is_ok()
+    }
+    pub(crate) fn release_jobs(&self) {
+        self.jobs_active.store(false, Ordering::Release);
     }
 }

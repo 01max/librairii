@@ -1,7 +1,8 @@
-//! Application boundary with a private headless jobs implementation.
-//! Production composition and effect ports remain unimplemented.
+//! Application services, borrowed effect ports and the historical controlled jobs model.
 #![forbid(unsafe_code)]
 
 pub mod jobs;
+pub mod ports;
 
 pub mod metadata;
+pub mod native_jobs;

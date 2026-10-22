@@ -3413,6 +3413,536 @@
           ]
         },
         "reason": "Additive PR 52 regression: native metadata/artwork staging settlement preserves custody and permits clean offline restart."
+      },
+      {
+        "position": 438,
+        "identity": {
+          "suite": "librairii-app",
+          "name": "ports::operations::tests::terminal_port_accepts_borrowed_synchronous_provider_and_owned_results"
+        },
+        "reason": "Additive Task 6 durable operation/runtime/recovery assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 439,
+        "identity": {
+          "suite": "librairii-app",
+          "name": "ports::operations::tests::terminal_port_barrier_results_retain_actual_conflict_and_unknown_evidence"
+        },
+        "reason": "Additive Task 6 durable operation/runtime/recovery assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 440,
+        "identity": {
+          "suite": "librairii-app",
+          "name": "ports::operations::tests::terminal_port_completion_null_rules_retain_raw_input_and_terminal_bytes"
+        },
+        "reason": "Additive Task 6 durable operation/runtime/recovery assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 441,
+        "identity": {
+          "suite": "librairii-app",
+          "name": "ports::operations::tests::terminal_port_confirmed_commit_survives_missing_snapshot_and_owned_cause"
+        },
+        "reason": "Additive Task 6 durable operation/runtime/recovery assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 442,
+        "identity": {
+          "suite": "librairii-app",
+          "name": "ports::operations::tests::terminal_port_finish_and_interrupt_have_distinct_null_and_time_rules"
+        },
+        "reason": "Additive Task 6 durable operation/runtime/recovery assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 443,
+        "identity": {
+          "suite": "librairii-app",
+          "name": "ports::operations::tests::terminal_port_full_witness_keeps_generation_scope_and_exact_payload"
+        },
+        "reason": "Additive Task 6 durable operation/runtime/recovery assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 444,
+        "identity": {
+          "suite": "librairii-app",
+          "name": "ports::operations::tests::terminal_port_immutable_scope_excludes_live_state_but_keeps_resolved_input"
+        },
+        "reason": "Additive Task 6 durable operation/runtime/recovery assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 445,
+        "identity": {
+          "suite": "librairii-app",
+          "name": "ports::operations::tests::terminal_port_legacy_zero_item_view_has_no_new_work_count_guard"
+        },
+        "reason": "Additive Task 6 durable operation/runtime/recovery assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 446,
+        "identity": {
+          "suite": "librairii-app",
+          "name": "ports::operations::tests::terminal_port_queue_refusal_retains_original_move_only_report"
+        },
+        "reason": "Additive Task 6 durable operation/runtime/recovery assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 447,
+        "identity": {
+          "suite": "librairii-app",
+          "name": "ports::operations::tests::terminal_port_raw_snapshot_keeps_non_uuid_ids_nulls_and_scope_bytes"
+        },
+        "reason": "Additive Task 6 durable operation/runtime/recovery assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 448,
+        "identity": {
+          "suite": "librairii-storage::operation_lifecycle",
+          "name": "invalid_creation_rolls_back_and_changed_header_is_not_an_acknowledgement",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive Task 6 durable operation/runtime/recovery assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 449,
+        "identity": {
+          "suite": "librairii-storage::operation_lifecycle",
+          "name": "real_creation_start_completion_readback_and_reopen_preserve_legacy_payloads",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive Task 6 durable operation/runtime/recovery assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 450,
+        "identity": {
+          "suite": "librairii-storage::operation_lifecycle",
+          "name": "unavailable_exports_and_legacy_dynamic_names_keep_distinct_curated_identity",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive Task 6 durable operation/runtime/recovery assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 451,
+        "identity": {
+          "suite": "librairii-storage::operations_repository",
+          "name": "terminal_sql_commit_error_is_unknown_then_reserved_fresh_readback_proves_state",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive Task 6 durable operation/runtime/recovery assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 452,
+        "identity": {
+          "suite": "librairii-storage::operations_repository",
+          "name": "terminal_sql_completion_is_atomic_exact_and_idempotent_across_siblings",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive Task 6 durable operation/runtime/recovery assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 453,
+        "identity": {
+          "suite": "librairii-storage::operations_repository",
+          "name": "terminal_sql_critical_refusal_retains_original_report_and_variable_command_bytes",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive Task 6 durable operation/runtime/recovery assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 454,
+        "identity": {
+          "suite": "librairii-storage::operations_repository",
+          "name": "terminal_sql_explicit_negative_item_id_is_preserved_and_completed_once",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive Task 6 durable operation/runtime/recovery assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 455,
+        "identity": {
+          "suite": "librairii-storage::operations_repository",
+          "name": "terminal_sql_explicit_zero_item_id_is_preserved_and_completed_once",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive Task 6 durable operation/runtime/recovery assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 456,
+        "identity": {
+          "suite": "librairii-storage::operations_repository",
+          "name": "terminal_sql_finish_and_interrupt_preserve_legacy_zero_totals",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive Task 6 durable operation/runtime/recovery assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 457,
+        "identity": {
+          "suite": "librairii-storage::operations_repository",
+          "name": "terminal_sql_finish_guard_rolls_back_and_invalid_commands_never_admit",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive Task 6 durable operation/runtime/recovery assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 458,
+        "identity": {
+          "suite": "librairii-storage::operations_repository",
+          "name": "terminal_sql_interrupt_preserves_terminal_items_and_all_bytes",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive Task 6 durable operation/runtime/recovery assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 459,
+        "identity": {
+          "suite": "librairii-storage::operations_repository",
+          "name": "terminal_sql_proven_commit_survives_postcommit_snapshot_refusal_and_drains",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive Task 6 durable operation/runtime/recovery assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 460,
+        "identity": {
+          "suite": "librairii-storage::operations_repository",
+          "name": "terminal_sql_raw_snapshot_preserves_non_uuid_null_scope_and_row_order",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive Task 6 durable operation/runtime/recovery assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 461,
+        "identity": {
+          "suite": "librairii-storage::operations_repository",
+          "name": "terminal_sql_second_guard_failure_rolls_back_first_item_mutation_and_trigger",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive Task 6 durable operation/runtime/recovery assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 462,
+        "identity": {
+          "suite": "librairii-storage::operations_repository",
+          "name": "terminal_sql_two_callers_complete_distinct_siblings_on_one_writer",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive Task 6 durable operation/runtime/recovery assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 463,
+        "identity": {
+          "suite": "librairii-storage::operations_repository",
+          "name": "terminal_sql_writer_barrier_matches_unacknowledged_prior_commit_without_recount",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive Task 6 durable operation/runtime/recovery assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 464,
+        "identity": {
+          "suite": "librairii-storage::operations_repository",
+          "name": "terminal_sql_wrong_scope_missing_and_contradictory_counts_never_ack",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive Task 6 durable operation/runtime/recovery assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 465,
+        "identity": {
+          "suite": "librairii-storage::native_jobs",
+          "name": "actual_sql_source_bounds_queue_workers_and_keeps_borrow_through_settlement",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive Task 6 durable operation/runtime/recovery assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 466,
+        "identity": {
+          "suite": "librairii-storage::native_jobs",
+          "name": "import_picker_limit_export_scope_and_metadata_conflict_are_distinct",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive Task 6 durable operation/runtime/recovery assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 467,
+        "identity": {
+          "suite": "librairii-storage::native_library",
+          "name": "native_job_session_borrows_actual_database_and_file_owner_until_durable_settlement",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive Task 6 durable operation/runtime/recovery assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 468,
+        "identity": {
+          "suite": "librairii-storage::native_jobs",
+          "name": "progress_coalesces_persists_and_rejects_late_producers_and_stale_responses",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive Task 6 durable operation/runtime/recovery assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 469,
+        "identity": {
+          "suite": "librairii-storage::operation_lifecycle",
+          "name": "snapshot_byte_limits_refuse_oversized_legacy_text_without_changing_rows",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive Task 6 durable operation/runtime/recovery assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 470,
+        "identity": {
+          "suite": "librairii-storage::native_jobs",
+          "name": "queued_cancel_committed_result_and_required_compensation_keep_distinct_boundaries",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive Task 6 durable operation/runtime/recovery assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 471,
+        "identity": {
+          "suite": "librairii-storage::runtime_failures",
+          "name": "lost_real_commit_ack_then_barrier_refusal_cannot_erase_unknown_or_repeat_completion",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive Task 6 durable operation/runtime/recovery assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 472,
+        "identity": {
+          "suite": "librairii-storage::runtime_failures",
+          "name": "three_real_failed_writes_then_continued_interruption_retains_owner_and_metadata_reservation",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive Task 6 durable operation/runtime/recovery assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 473,
+        "identity": {
+          "suite": "librairii-storage::native_library",
+          "name": "native_registered_temporaries_recover_after_process_death_and_preserve_final_files",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive Task 6 durable operation/runtime/recovery assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 474,
+        "identity": {
+          "suite": "librairii-storage::operation_history",
+          "name": "active_latest_preserves_null_ordering_and_reveal_requires_retained_valid_directory",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive Task 6 durable operation/runtime/recovery assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 475,
+        "identity": {
+          "suite": "librairii-storage::operation_history",
+          "name": "history_twenty_raw_key_pages_remain_stable_with_concurrent_new_inserts",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive Task 6 durable operation/runtime/recovery assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 476,
+        "identity": {
+          "suite": "librairii-app",
+          "name": "native_jobs::shutdown::tests::elapsed_wait_only_offers_explicit_escalation_and_never_claims_closed_or_settled"
+        },
+        "reason": "Additive Task 6 durable operation/runtime/recovery assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 477,
+        "identity": {
+          "suite": "librairii-storage::native_jobs",
+          "name": "shutdown_joins_after_uncancelled_compensation_reporting_and_actual_owner_settlement",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive Task 6 durable operation/runtime/recovery assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 478,
+        "identity": {
+          "suite": "librairii-storage::runtime_failures",
+          "name": "shutdown_during_admission_cancels_later_enqueued_work_without_entering_effects",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive Task 6 durable operation/runtime/recovery assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 479,
+        "identity": {
+          "suite": "librairii-storage::native_library",
+          "name": "native_operation_crash_transition_matrix_reconciles_history_and_progress",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive Task 6 durable operation/runtime/recovery assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 480,
+        "identity": {
+          "suite": "librairii-storage::runtime_failures",
+          "name": "completed_metadata_finishes_while_unrelated_import_still_owns_its_resources",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive Task 6 durable operation/runtime/recovery assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 481,
+        "identity": {
+          "suite": "librairii-storage::runtime_failures",
+          "name": "durable_queued_cancellation_survives_transient_cancellation_read_refusals",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive Task 6 durable operation/runtime/recovery assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 482,
+        "identity": {
+          "suite": "librairii-storage::runtime_failures",
+          "name": "permanent_creation_rejection_releases_admission_and_allows_shutdown",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive Task 6 durable operation/runtime/recovery assertions; all admitted identities retain exact order and target scope."
       }
     ],
     "python": [
