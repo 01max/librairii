@@ -1054,6 +1054,23 @@ mod owned {
             self.fence();
             result
         }
+        #[cfg(test)]
+        pub(crate) fn lose_forget_acknowledgement_for_test(
+            &self,
+            temporary: &crate::native_effects::Temporary,
+        ) -> Result<()> {
+            let mut record = self
+                .record
+                .lock()
+                .map_err(|_| StorageError::RuntimeFenced)?;
+            let mut next = record.document.clone();
+            next.temporaries.retain(|t| t != temporary);
+            let result = record.transition_with(&self.root, next, || {
+                Err(StorageError::DirectoryDurabilityUnavailable)
+            });
+            self.fence();
+            result
+        }
         pub(crate) fn reconcile_export_registration(
             &self,
             allocation: &crate::platform::unix::ExportAllocation<'_, '_>,

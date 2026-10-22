@@ -3858,6 +3858,7 @@ pub(crate) struct ExportAllocation<'files, 'library> {
     record: Option<crate::native_effects::Temporary>,
     final_name: Option<OsString>,
     uncertain: bool,
+    workspace_retired: bool,
 }
 #[derive(Debug)]
 pub struct ExportTemporaryFailure<'files, 'library> {
@@ -3912,6 +3913,7 @@ impl<'library> LibraryFiles<'library> {
             record: None,
             final_name: None,
             uncertain: false,
+            workspace_retired: false,
         };
         let result = (|| {
             self.check(guard)?;

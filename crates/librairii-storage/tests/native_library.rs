@@ -2992,7 +2992,7 @@ fn native_prepared_export_runs_durable_reports_and_preserves_racing_destinations
     committed_operation(
         db.transaction(Default::default(), move |tx| {
             tx.execute(
-                "UPDATE collections SET name=CAST(x'52ff6177' AS TEXT) WHERE id=?",
+                "UPDATE collections SET name=CAST(x'52e1806177' AS TEXT) WHERE id=?",
                 [collection_id],
             )?;
             Ok(())
@@ -3042,7 +3042,7 @@ fn native_prepared_export_runs_durable_reports_and_preserves_racing_destinations
             &Default::default(),
         )?;
         if collection {
-            assert_eq!(preview.source.names, vec![b"R\xffaw".to_vec()]);
+            assert_eq!(preview.source.names, vec![b"R\xe1\x80aw".to_vec()]);
         }
         let preparation = preview.preparation.ok_or("preparation")?;
         if race {
@@ -3129,7 +3129,7 @@ fn native_prepared_export_runs_durable_reports_and_preserves_racing_destinations
         if collection {
             assert_eq!(
                 saved.operation.export_scope.group_names.as_deref(),
-                Some("[\"R�aw\"]")
+                Some("[\"R��aw\"]")
             );
         }
     }

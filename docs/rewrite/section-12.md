@@ -156,3 +156,11 @@ post-acquisition durability failure and a lost control-record acknowledgement,
 terminal reporting, explicit restart, raw Collection names and mixed unsafe skips.
 Native-path equality retains spelling and bytes. Actual non-UTF-8 filesystem
 cases run on Linux; APFS on the development Mac refuses those components.
+
+The follow-up review caught a retirement retry gap after payload/workspace removal
+and before directory/control acknowledgement. Cleanup now observes the retained
+unlinked file and records actual workspace retirement, retries durability and
+control retirement, and refuses replacement names. The regression includes both
+partial cleanup boundaries and a lost forget acknowledgement, then repeats cleanup
+to establish idempotence. Go display-name replacement also consumes each invalid
+UTF-8 byte separately, including malformed multibyte prefixes.

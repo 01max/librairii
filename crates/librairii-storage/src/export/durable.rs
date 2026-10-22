@@ -84,7 +84,7 @@ impl Running<'_, '_, '_> {
         let names = source
             .names
             .iter()
-            .map(|n| String::from_utf8_lossy(n).into_owned())
+            .map(|n| go_display_name(n))
             .collect::<Vec<_>>();
         let collections = source_type.group_kind()
             == Some(librairii_core::operations::ExportGroupKind::Collection);
@@ -450,4 +450,27 @@ fn issue_message(issue: librairii_core::export::Issue) -> &'static str {
         }
         _ => "Story is not eligible for export.",
     }
+}
+
+// Go encoding/json consumes one byte for each invalid UTF-8 rune.
+fn go_display_name(mut bytes: &[u8]) -> String {
+    let mut name = String::with_capacity(bytes.len());
+    while !bytes.is_empty() {
+        match std::str::from_utf8(bytes) {
+            Ok(valid) => {
+                name.push_str(valid);
+                break;
+            }
+            Err(error) => {
+                let (valid, invalid) = bytes.split_at(error.valid_up_to());
+                // valid_up_to is guaranteed to delimit valid UTF-8.
+                if let Ok(valid) = std::str::from_utf8(valid) {
+                    name.push_str(valid);
+                }
+                name.push('\u{fffd}');
+                bytes = &invalid[1..];
+            }
+        }
+    }
+    name
 }

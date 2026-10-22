@@ -163,13 +163,18 @@ impl ExportAllocation<'_, '_> {
                 return Err(StorageError::SnapshotChanged);
             }
             if let Some(directory) = &self.directory {
-                parent.require_name(&self.name, directory.identity())?;
+                if !self.workspace_retired {
+                    parent.require_name(&self.name, directory.identity())?;
+                } else {
+                    require_absent(parent, &self.name)?;
+                }
                 current.directory = Some(directory.identity());
                 if let Some(file) = &self.file {
-                    require_regular(file)?;
                     let identity = FileIdentity::from_file(file)?;
                     if self.final_name.is_none() {
-                        directory.require_name(OsStr::new(PAYLOAD), identity)?;
+                        require_owned_or_unlinked(file, directory, OsStr::new(PAYLOAD), identity)?;
+                    } else {
+                        require_regular(file)?;
                     }
                     current.payload = Some(identity);
                 }
@@ -180,13 +185,84 @@ impl ExportAllocation<'_, '_> {
             library.register_temporary(current.clone())?;
             self.record = Some(current.clone());
         }
-        self.files.compensate_export_allocation(guard, self)?;
+        if !self.files.authority.same_generation(guard.authority) {
+            return Err(StorageError::IdentityMismatch);
+        }
+        library.revalidate_database_ownership()?;
+        if let (Some(parent), Some(directory)) = (&self.parent, &self.directory) {
+            if !self.workspace_retired {
+                parent.require_name(&self.name, directory.identity())?;
+                for name in directory.entries(1, &WorkCancellation::default())? {
+                    if name != OsStr::new(PAYLOAD) {
+                        return Err(StorageError::CustodyRecoveryRequired);
+                    }
+                }
+                if let Some(file) = &self.file {
+                    let identity = FileIdentity::from_file(file)?;
+                    if self.final_name.is_none()
+                        && file
+                            .metadata()
+                            .map_err(|e| StorageError::io("observe retiring payload", e))?
+                            .nlink()
+                            != 0
+                    {
+                        require_regular(file)?;
+                        directory.require_name(OsStr::new(PAYLOAD), identity)?;
+                        native::unlinkat(&directory.file, PAYLOAD, AtFlags::empty()).map_err(
+                            |e| StorageError::io("retire actual export payload", e.into()),
+                        )?;
+                    } else {
+                        require_absent(directory, OsStr::new(PAYLOAD))?;
+                    }
+                }
+                directory.flush()?;
+                parent.require_name(&self.name, directory.identity())?;
+                native::unlinkat(&parent.file, &self.name, AtFlags::REMOVEDIR)
+                    .map_err(|e| StorageError::io("retire actual export workspace", e.into()))?;
+                self.workspace_retired = true;
+            } else {
+                require_absent(parent, &self.name)?;
+            }
+            parent.flush()?;
+        } else {
+            self.files.compensate_export_allocation(guard, self)?;
+        }
         library.forget_temporary(&current)
     }
 }
 impl ExportTemporaryFailure<'_, '_> {
     pub(crate) fn retire_in_place(&mut self, guard: &Custody<'_>) -> Result<()> {
         self.allocation.retire_registered(guard)
+    }
+}
+
+// A retained unlinked descriptor proves retirement of that acquired object.
+// A replacement at its former name must still refuse; it is never adopted.
+fn require_owned_or_unlinked(
+    file: &File,
+    parent: &Directory,
+    name: &OsStr,
+    identity: FileIdentity,
+) -> Result<()> {
+    if FileIdentity::from_file(file)? != identity {
+        return Err(StorageError::SnapshotChanged);
+    }
+    let metadata = file
+        .metadata()
+        .map_err(|e| StorageError::io("observe retiring export owner", e))?;
+    if metadata.nlink() == 0 {
+        return require_absent(parent, name);
+    }
+    if metadata.is_file() {
+        require_regular(file)?;
+    }
+    parent.require_name(name, identity)
+}
+fn require_absent(parent: &Directory, name: &OsStr) -> Result<()> {
+    match native::statat(&parent.file, name, AtFlags::SYMLINK_NOFOLLOW) {
+        Err(rustix::io::Errno::NOENT) => Ok(()),
+        Ok(_) => Err(StorageError::SnapshotChanged),
+        Err(e) => Err(StorageError::io("observe retired export name", e.into())),
     }
 }
 
@@ -371,7 +447,7 @@ mod tests {
             OperationKind, OperationState,
             operations::{ExportSource, ExportSourceType, ItemState, RawOutcome},
         };
-        for control_ack in [false, true] {
+        for fault in 0..4 {
             let (roots, copy, locations) = native_copy()?;
             let destination = roots.profile().join("destination");
             std::fs::create_dir(&destination)?;
@@ -431,7 +507,7 @@ mod tests {
                         created.operation.identity.id.clone(),
                         created.items[0].identity.id,
                         || {
-                            if control_ack {
+                            if fault == 1 {
                                 native.lose_temporary_acknowledgement_for_test()
                             } else {
                                 Err(StorageError::DirectoryDurabilityUnavailable)
@@ -444,6 +520,25 @@ mod tests {
                     files.try_custody(),
                     Err(StorageError::CustodyRecoveryRequired)
                 ));
+                if fault >= 2 {
+                    let allocation = &mut failure.allocation;
+                    let directory = allocation.directory.as_ref().ok_or("directory")?;
+                    native::unlinkat(&directory.file, PAYLOAD, AtFlags::empty())?;
+                    // Inject an acknowledgement loss after actual payload retirement.
+                    if fault == 3 {
+                        let parent = allocation.parent.as_ref().ok_or("parent")?;
+                        native::unlinkat(&parent.file, &allocation.name, AtFlags::REMOVEDIR)?;
+                        allocation.workspace_retired = true;
+                        assert!(
+                            native
+                                .lose_forget_acknowledgement_for_test(
+                                    allocation.record.as_ref().ok_or("record")?
+                                )
+                                .is_err()
+                        );
+                    }
+                }
+                failure.retire_in_place(&custody)?;
                 failure.retire_in_place(&custody)?;
                 assert!(std::fs::read_dir(&destination)?.next().is_none());
                 let repository = TerminalRepository::new(&db, 1);
