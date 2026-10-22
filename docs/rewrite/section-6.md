@@ -262,3 +262,9 @@ advisories/licenses, workspace build, formatting, Clippy, required-test discover
 nextest and doctests. Linux x86-64 and both macOS architectures run the same
 required CI gate on the PR; Windows admission remains deferred. Domain effect
 composition continues in Tasks 5/12/13 and native presentation in Task 15.
+
+Linux CI exposed a transient `ProfileBusy` refusal while the native integration
+test polled History concurrently with coordinator ownership validation. That
+read is refused before admission. The test now retains and retries the read for
+`ProfileBusy`/`QueueFull` only; other errors and the original ten-second deadline
+still fail. Production worker/repository retry behavior is unchanged.

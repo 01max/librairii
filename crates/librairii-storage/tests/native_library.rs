@@ -2175,7 +2175,18 @@ fn native_job_session_borrows_actual_database_and_file_owner_until_durable_settl
                     {
                         return Err("native start rejected".into());
                     }
-                    if let Some(snapshot) = db.operation_snapshot(id.clone())?.wait()? {
+                    // Native ownership revalidation may briefly reserve the
+                    // profile while the coordinator reads it. Busy/queue refusal
+                    // precedes this read's admission; retain the request and retry.
+                    let snapshot = match db.operation_snapshot(id.clone()).and_then(|p| p.wait()) {
+                        Ok(snapshot) => snapshot,
+                        Err(
+                            librairii_storage::StorageError::ProfileBusy
+                            | librairii_storage::StorageError::QueueFull,
+                        ) => None,
+                        Err(error) => return Err(error.into()),
+                    };
+                    if let Some(snapshot) = snapshot {
                         if snapshot.operation.state == OperationState::Succeeded {
                             break;
                         }
