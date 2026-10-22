@@ -1,9 +1,10 @@
 # Task 12: exports, trash custody and diagnostics
 
-**Partial: 12.1–12.8 implemented; 12.9 remains incomplete. Keep the Task 12
-PR in draft.** This is a headless service slice, not completion of Task 12.
+Task 12.1–12.9 implementation and independent review are complete. Required
+native CI must also pass on the pushed revision before this PR is marked ready.
+This is a headless service slice; GUI, packages and general adoption remain later gates.
 
-Rebased base: `5fd74f06fe4031b37bf84822d218943ec9ed970d` (Task 6 merged).
+Rebased base: `22408a9e32efed073acc58cce1b25eedf1593236` (Tasks 5 and 6 merged).
 One dedicated PR targets `rewrite-in-rust-native-desktop`. Linux x86-64 and
 macOS ARM/Intel are in scope; Windows remains deferred. Each numbered subtask
 has its own Conventional Commit with an `OpenSpec-Task` trailer; review fixes
@@ -108,12 +109,13 @@ It preserves completed exports and removes registered partials; link substitutio
 remain refused. Injected disk/read failures are adapter-boundary evidence, not
 qualification of every full/removable filesystem or Windows sharing mode.
 
-## Remaining dependency and acceptance gates
+## Acceptance boundary
 
-12.9 final acceptance remains incomplete. 12.9's complete import→inspect→export→reopen
-slice still depends on Task 5's real hostile archive inspection/import custody,
-which remains incomplete. Existing preserved Go fixtures do not establish that
-missing Rust import port. Keep that acceptance subtask open until it can run.
+The merged Task 5 importer closes the former dependency gap. The complete native
+import→inspect→export→reopen slice now executes actual archive inspection, source
+custody, catalog commitment, prepared export, registered publication and native
+close/reopen. Existing preservation fixtures remain unchanged. This does not
+qualify GUI execution, Lunii.QT GUI interaction, packages or global cutover.
 
 ## Independent partial-slice review corrections
 
@@ -133,7 +135,7 @@ tests were observed failing before their respective semantic fixes and passing
 afterwards. The first cumulative gate also caught two narrow Clippy layout/style
 corrections, committed separately from initial subtasks. Full final-head checks
 and provider results are recorded on the draft PR; this review does not satisfy
-the still-open 12.9 acceptance gate.
+the later 12.9 acceptance gate, completed below.
 
 ## 12.5 — Native integration review corrections
 
@@ -248,7 +250,7 @@ intent is durable and a move is needed. Native finalization permits the retained
 all staging artifacts. Existing native closure, metadata, registration-retirement,
 schema-prefix and Shelf upgrade regressions remain required.
 
-## 12.9 — Independent review progress and remaining acceptance gap
+## 12.9 — Independent review and complete native acceptance
 
 The cumulative Standards review found refined Shelf provenance being dropped;
 resolution now retains its refined kind, Shelf ID and name through preview and
@@ -262,10 +264,35 @@ checks temporarily removed, that same regression fails because the item succeeds
 with the correction restored it passes. Resolution and durable History both
 assert the refined Shelf source snapshot.
 
-The independent review can qualify these implemented services; it cannot run
-Task 5's still-missing production archive inspection/import port. The complete
-import → inspect → export → reopen acceptance slice and checkbox 12.9 remain open.
-Keep this PR in draft, with no complete Task 12, GUI, package or Windows claim.
+The earlier review checkpoint could not qualify the missing production importer.
+After Task 5 merged, fd6e1e8 completed the real native slice across all seven
+format labels: plain/v1/v2/generic PK, ZIP, Studio ZIP and 7z. Each case imports
+through actual native workers, resolves the new catalog row, exports through the
+prepared durable service, inspects the output, finishes and reopens the native
+library, then verifies History and rejects a destination collision. Exact source,
+managed, exported and legacy-database bytes remain checked. Linux additionally
+uses a malformed UTF-8 original filename; macOS uses Unicode/spaces/case.
+
+Task 5's raw filename and managed-path buffers now remain authoritative through
+export preflight, stale checks, source opening and publication. Operation item
+paths reuse OperationPath's exact OsString equality through creation, SQL TEXT,
+immutable scopes, registration digests and History snapshots. Go JSON replacement
+semantics apply only to display strings. The retained preparation budget includes
+raw buffers, and the desktop composes typed export intents through the application
+layer without a new forbidden core dependency.
+
+Both independent reviewers found the remaining removal UTF-8 boundary. b2c9777
+carries exact native managed/trash paths through removal scopes, SQL intents,
+no-follow traversal, restoration and restart. The real import/export test now also
+removes the imported copy and checks its original native filename and exact bytes
+in recoverable trash. The process-death matrix runs all four existing boundaries
+with ordinary and difficult managed names, including malformed UTF-8 on Linux.
+No guessed path or display string becomes deletion or cleanup authority.
+
+The final independent Standards and Spec reports approve b2c9777 with no open
+findings. See [section-12-review.md](section-12-review.md) for the reviewed scope,
+resolved finding and verification evidence. Required Linux/macOS CI remains
+separate execution evidence; Windows stays deferred.
 
 The Intel provider exposed an existing runtime shutdown race: a worker could
 complete/release its cancelled item after a coordinator scan excluded that active
