@@ -49,7 +49,10 @@ pub fn command_bytes(witness: &CommandWitness) -> usize {
             + text(&value.export_scope.discriminator)
             + text(&value.export_scope.group_ids)
             + text(&value.export_scope.group_names)
-            + text(&value.destination)
+            + value
+                .destination
+                .as_ref()
+                .map_or(0, librairii_app::ports::operations::OperationPath::capacity)
     }
     std::mem::size_of::<CommandWitness>()
         + match witness {
@@ -96,7 +99,9 @@ pub fn snapshot_bytes(snapshot: &OperationSnapshot) -> usize {
         + text(&h.export_scope.discriminator)
         + text(&h.export_scope.group_ids)
         + text(&h.export_scope.group_names)
-        + text(&h.destination)
+        + h.destination
+            .as_ref()
+            .map_or(0, librairii_app::ports::operations::OperationPath::capacity)
         + text(&h.outcome.code)
         + text(&h.outcome.message);
     let items: usize = snapshot

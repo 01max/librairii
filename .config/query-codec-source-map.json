@@ -4549,6 +4549,27 @@
           ]
         },
         "reason": "Register already merged Task 6 regression during the Task 12 rebase; preserve its Linux/macOS execution scope."
+      },
+      {
+        "position": 540,
+        "identity": {
+          "suite": "librairii-app",
+          "name": "ports::operations::native_path_tests::operation_paths_keep_exact_spelling_and_native_bytes_in_scope_equality"
+        },
+        "reason": "Additive resumed Task 12 export/removal/diagnostics assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 541,
+        "identity": {
+          "suite": "librairii-storage",
+          "name": "platform::unix::export_output::tests::native_export_partial_acquisition_compensates_with_actual_owner_after_fence",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive resumed Task 12 export/removal/diagnostics assertions; all admitted identities retain exact order and target scope."
       }
     ],
     "python": [

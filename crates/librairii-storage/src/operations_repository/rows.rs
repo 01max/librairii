@@ -97,7 +97,7 @@ fn header_row(row: &Row<'_>) -> rusqlite::Result<OperationHeader> {
             group_ids: row.get(4)?,
             group_names: row.get(5)?,
         },
-        destination: row.get(6)?,
+        destination: crate::native_path::optional_sql_path(row, 6)?,
         counts: Counts {
             completed: row.get(7)?,
             total: row.get(8)?,

@@ -12,7 +12,7 @@ use crate::{
 use librairii_app::{
     native_jobs::*,
     ports::{
-        creation::{NewItem, NewOperation},
+        creation::{NewItem, NewOperation, PlannedItem},
         jobs::WorkItem,
     },
 };
@@ -79,11 +79,13 @@ impl Running<'_, '_, '_> {
                 }
             }
         };
+        // Go's JSON encoder replaces invalid UTF-8 in display names. Raw
+        // names remain in the retained plan; numeric IDs remain identity.
         let names = source
             .names
             .iter()
-            .map(|n| String::from_utf8(n.clone()).map_err(|_| StorageError::CompatibilityInvariant))
-            .collect::<Result<Vec<_>>>()?;
+            .map(|n| String::from_utf8_lossy(n).into_owned())
+            .collect::<Vec<_>>();
         let collections = source_type.group_kind()
             == Some(librairii_core::operations::ExportGroupKind::Collection);
         let grouped = source_type.group_kind().is_some();
@@ -113,14 +115,7 @@ impl Running<'_, '_, '_> {
                     Vec::new()
                 },
             }),
-            destination: Some(
-                self.plan
-                    .destination
-                    .path()
-                    .to_str()
-                    .ok_or(StorageError::InvalidManagedPath)?
-                    .into(),
-            ),
+            destination: Some(self.plan.destination.path().to_owned().into()),
             items: self
                 .plan
                 .scope
@@ -150,7 +145,34 @@ impl Running<'_, '_, '_> {
                         archive_relative_path: s.managed_relative_path.clone(),
                         archive_sha256: s.sha256.clone(),
                         export_skip_code: skip.into(),
-                        total_bytes: if skip.is_empty() { s.byte_size } else { 0 },
+                        total_bytes: if p.disposition == librairii_core::export::Disposition::Ready
+                        {
+                            s.byte_size
+                        } else {
+                            0
+                        },
+                        planned: match p.disposition {
+                            librairii_core::export::Disposition::Ready => None,
+                            librairii_core::export::Disposition::Skipped(issue) => {
+                                Some(PlannedItem {
+                                    state: ItemState::Skipped,
+                                    outcome: RawOutcome {
+                                        code: Some(issue.code().into()),
+                                        message: Some(issue_message(issue).into()),
+                                    },
+                                })
+                            }
+                            librairii_core::export::Disposition::Conflicted => Some(PlannedItem {
+                                state: ItemState::Conflicted,
+                                outcome: RawOutcome {
+                                    code: Some("filename_conflict".into()),
+                                    message: Some(
+                                        "A file with this name already exists in the destination."
+                                            .into(),
+                                    ),
+                                },
+                            }),
+                        },
                     }
                 })
                 .collect(),

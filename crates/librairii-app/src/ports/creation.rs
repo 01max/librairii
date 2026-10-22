@@ -21,13 +21,47 @@ pub struct NewItem {
     pub archive_sha256: String,
     pub export_skip_code: String,
     pub total_bytes: i64,
+    pub planned: Option<PlannedItem>,
+}
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct PlannedItem {
+    pub state: librairii_core::operations::ItemState,
+    pub outcome: librairii_core::operations::RawOutcome,
+}
+impl NewItem {
+    // Preserve the immutable scope of preflight terminal rows verbatim. Only
+    // ready rows pass copy-field validation and can enter the effect adapter.
+    pub fn stored_output_name(&self) -> Option<&str> {
+        (!self.output_name.is_empty()).then_some(self.output_name.as_str())
+    }
+    pub fn stored_archive_path(&self) -> Option<&str> {
+        (!self.archive_relative_path.is_empty()).then_some(self.archive_relative_path.as_str())
+    }
+    pub fn stored_archive_hash(&self) -> Option<&str> {
+        (!self.archive_sha256.is_empty()).then_some(self.archive_sha256.as_str())
+    }
+}
+fn valid_relative(path: &str) -> bool {
+    !path.is_empty()
+        && path != "."
+        && !path.starts_with('/')
+        && !path.starts_with("../")
+        && !path
+            .split('/')
+            .any(|p| p.is_empty() || p == "." || (p == ".." && path != ".."))
+}
+fn valid_hash(hash: &str) -> bool {
+    hash.len() == 64
+        && hash
+            .bytes()
+            .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
 }
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct NewOperation {
     pub id: String,
     pub kind: OperationKind,
     pub source: Option<ExportSource>,
-    pub destination: Option<String>,
+    pub destination: Option<OperationPath>,
     pub items: Vec<NewItem>,
 }
 pub const MAX_COMMAND_BYTES: usize = 16 * 1024 * 1024;
@@ -56,13 +90,17 @@ impl NewOperation {
             Ok(())
         };
         add(self.id.capacity())?;
-        add(self.destination.as_ref().map_or(0, String::capacity))?;
+        add(self.destination.as_ref().map_or(0, OperationPath::capacity))?;
         add(self
             .items
             .capacity()
             .checked_mul(std::mem::size_of::<NewItem>())
             .ok_or(InputError::ResourceLimit)?)?;
         for item in &self.items {
+            if let Some(p) = &item.planned {
+                add(p.outcome.code.as_ref().map_or(0, String::capacity))?;
+                add(p.outcome.message.as_ref().map_or(0, String::capacity))?;
+            }
             for value in [
                 &item.story_uuid,
                 &item.story_title,
@@ -105,13 +143,19 @@ impl NewOperation {
         let mut ids = std::collections::BTreeSet::new();
         let mut uuids = std::collections::BTreeSet::new();
         for item in &self.items {
-            if !text_present(&item.source_name) || item.total_bytes < 0 {
+            if (!text_present(&item.source_name)
+                && !(item.planned.is_some() && !item.source_name.is_empty()))
+                || item.total_bytes < 0
+            {
                 return Err(InputError::Invalid);
             }
             total = total
                 .checked_add(item.total_bytes)
                 .ok_or(InputError::Invalid)?;
             if self.kind != OperationKind::Export {
+                if item.planned.is_some() {
+                    return Err(InputError::Invalid);
+                }
                 continue;
             }
             if item
@@ -122,6 +166,29 @@ impl NewOperation {
                 || !uuids.insert(&item.story_uuid)
             {
                 return Err(InputError::Invalid);
+            }
+            if let Some(plan) = &item.planned {
+                if !matches!(
+                    plan.state,
+                    librairii_core::operations::ItemState::Skipped
+                        | librairii_core::operations::ItemState::Conflicted
+                ) || item.total_bytes != 0
+                    || !plan.outcome.code.as_deref().is_some_and(|s| !s.is_empty())
+                    || !plan
+                        .outcome
+                        .message
+                        .as_deref()
+                        .is_some_and(|s| !s.is_empty())
+                    || (!item.export_skip_code.is_empty()
+                        && (!matches!(
+                            item.export_skip_code.as_str(),
+                            "story_marked_broken" | "story_unavailable"
+                        ) || plan.outcome.code.as_deref()
+                            != Some(item.export_skip_code.as_str())))
+                {
+                    return Err(InputError::Invalid);
+                }
+                continue;
             }
             if !item.export_skip_code.is_empty() {
                 if !matches!(
@@ -134,23 +201,11 @@ impl NewOperation {
                 }
                 continue;
             }
-            let path = &item.archive_relative_path;
-            let clean = !path.is_empty()
-                && path != "."
-                && !path.starts_with('/')
-                && !path.starts_with("../")
-                && !path
-                    .split('/')
-                    .any(|p| p.is_empty() || p == "." || (p == ".." && path != ".."));
             if item.story_id <= 0
                 || !ids.insert(item.story_id)
                 || !valid_output_name(&item.output_name)
-                || !clean
-                || item.archive_sha256.len() != 64
-                || !item
-                    .archive_sha256
-                    .bytes()
-                    .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
+                || !valid_relative(&item.archive_relative_path)
+                || !valid_hash(&item.archive_sha256)
             {
                 return Err(InputError::Invalid);
             }
@@ -161,7 +216,10 @@ impl NewOperation {
                 .ok_or(InputError::Invalid)?
                 .validate()
                 .map_err(|_| InputError::Invalid)?;
-            if !self.destination.as_deref().is_some_and(text_present) {
+            if !self.destination.as_deref().is_some_and(|p| {
+                !p.as_os_str().as_encoded_bytes().contains(&0)
+                    && p.to_str().map_or(!p.as_os_str().is_empty(), text_present)
+            }) {
                 return Err(InputError::Invalid);
             }
             Ok(total)
@@ -245,7 +303,11 @@ impl OperationSnapshot {
                 map.insert("sourceCollectionNames".into(), json!(names));
             }
         }
-        if let Some(path) = h.destination.as_deref().filter(|s| !s.is_empty()) {
+        if let Some(path) = h
+            .destination
+            .as_deref()
+            .filter(|p| !p.as_os_str().is_empty())
+        {
             let path = std::path::Path::new(path);
             let label = path
                 .file_name()

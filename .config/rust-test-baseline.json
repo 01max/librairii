@@ -3302,6 +3302,19 @@
         "x86_64-apple-darwin",
         "x86_64-unknown-linux-gnu"
       ]
+    },
+    {
+      "suite": "librairii-app",
+      "name": "ports::operations::native_path_tests::operation_paths_keep_exact_spelling_and_native_bytes_in_scope_equality"
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "platform::unix::export_output::tests::native_export_partial_acquisition_compensates_with_actual_owner_after_fence",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
     }
   ]
 }

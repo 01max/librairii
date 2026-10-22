@@ -152,12 +152,36 @@ impl ExportAllocation<'_, '_> {
         let FilesAuthority::Native { library, .. } = self.files.authority else {
             return Err(StorageError::IdentityMismatch);
         };
-        let record = self
+        let prior = self
             .record
             .as_ref()
-            .ok_or(StorageError::CustodyRecoveryRequired)?;
-        self.files.recover_registered_temporary(guard, record)?;
-        library.forget_temporary(record)
+            .ok_or(StorageError::CustodyRecoveryRequired)?
+            .clone();
+        let mut current = prior.clone();
+        if let Some(parent) = &self.parent {
+            if parent.identity() != current.parent {
+                return Err(StorageError::SnapshotChanged);
+            }
+            if let Some(directory) = &self.directory {
+                parent.require_name(&self.name, directory.identity())?;
+                current.directory = Some(directory.identity());
+                if let Some(file) = &self.file {
+                    require_regular(file)?;
+                    let identity = FileIdentity::from_file(file)?;
+                    if self.final_name.is_none() {
+                        directory.require_name(OsStr::new(PAYLOAD), identity)?;
+                    }
+                    current.payload = Some(identity);
+                }
+            }
+        }
+        library.reconcile_export_registration(self, &current)?;
+        if current != prior {
+            library.register_temporary(current.clone())?;
+            self.record = Some(current.clone());
+        }
+        self.files.compensate_export_allocation(guard, self)?;
+        library.forget_temporary(&current)
     }
 }
 impl ExportTemporaryFailure<'_, '_> {
@@ -242,6 +266,19 @@ impl ExportTemporaryFailure<'_, '_> {
     }
 }
 
+impl ExportAllocation<'_, '_> {
+    pub(crate) fn matches_registration(&self, record: &crate::native_effects::Temporary) -> bool {
+        self.record.as_ref().is_some_and(|r| {
+            r.operation == record.operation
+                && r.item == record.item
+                && r.scope_sha256 == record.scope_sha256
+                && r.destination == record.destination
+                && r.parent == record.parent
+                && r.name == record.name
+        })
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -264,6 +301,206 @@ mod tests {
         fn flush(&mut self) -> io::Result<()> {
             Ok(())
         }
+    }
+    fn native_copy() -> std::result::Result<
+        (
+            librairii_testkit::TestRoots,
+            crate::adoption::IndependentCopy,
+            crate::profile::ProfileLocations,
+        ),
+        Box<dyn std::error::Error>,
+    > {
+        use crate::{
+            adoption::{ClosedLibraryInput, ClosedManifest},
+            profile::{Profile, ProfileDocument, ProfileLocations},
+        };
+        let roots = librairii_testkit::TestRoots::new()?;
+        let source = roots.library().join("closed-source");
+        std::fs::create_dir(&source)?;
+        let bytes =
+            include_bytes!("../../../../../preservation/corpus/profiles/library-manifest.json");
+        let corpus = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../preservation/corpus/libraries/schema018");
+        let manifest: serde_json::Value = serde_json::from_slice(bytes)?;
+        for entry in manifest.as_array().ok_or("manifest")? {
+            let name = entry["path"].as_str().ok_or("path")?;
+            if entry["directory"].as_bool() == Some(true) {
+                std::fs::create_dir(source.join(name))?;
+            } else {
+                std::fs::copy(corpus.join(name), source.join(name))?;
+            }
+        }
+        let profile = Profile {
+            version: 1,
+            language: "fr".into(),
+            root: source.to_str().ok_or("source")?.into(),
+            library_id: "a0000000-0000-4000-8000-000000000001".into(),
+            complete: true,
+            recovering: false,
+        };
+        let input = ClosedLibraryInput::verify(
+            &source,
+            ProfileDocument::decode(&serde_json::to_vec(&profile)?)?,
+            ClosedManifest::decode(bytes)?,
+            &Default::default(),
+        )?;
+        let locations = ProfileLocations::for_host(
+            &roots.profile().join("home"),
+            Some(&roots.profile().join("config")),
+            Some(&roots.library().join("data")),
+        )?;
+        std::fs::create_dir_all(&locations.data)?;
+        std::fs::create_dir_all(locations.native.parent().ok_or("native parent")?)?;
+        let copy = input.copy_to_new_root(&locations.data.join("copy"), &Default::default())?;
+        Ok((roots, copy, locations))
+    }
+    #[test]
+    fn native_export_partial_acquisition_compensates_with_actual_owner_after_fence()
+    -> std::result::Result<(), Box<dyn std::error::Error>> {
+        use crate::{
+            database::{Database, TransactionOutcome},
+            native::NativeLibrary,
+            operations_repository::TerminalRepository,
+            profile::NativeProfileStore,
+        };
+        use librairii_app::ports::{
+            creation::{NewItem, NewOperation},
+            operations::*,
+        };
+        use librairii_core::{
+            OperationKind, OperationState,
+            operations::{ExportSource, ExportSourceType, ItemState, RawOutcome},
+        };
+        for control_ack in [false, true] {
+            let (roots, copy, locations) = native_copy()?;
+            let destination = roots.profile().join("destination");
+            std::fs::create_dir(&destination)?;
+            let profile = NativeProfileStore::create_fresh(&locations.native)?;
+            let native =
+                NativeLibrary::bind_independent(copy, &profile, &locations, &Default::default())
+                    .map_err(|e| e.to_string())?;
+            let mut db = Database::open_native(&native)?;
+            let created = match db
+                .create_operation(
+                    NewOperation {
+                        id: "a0000000-0000-4000-8000-000000012500".into(),
+                        kind: OperationKind::Export,
+                        source: Some(ExportSource {
+                            source_type: ExportSourceType::Selection,
+                            collection_ids: Vec::new(),
+                            collection_names: Vec::new(),
+                            shelf_ids: Vec::new(),
+                            shelf_names: Vec::new(),
+                        }),
+                        destination: Some(destination.clone().into()),
+                        items: vec![NewItem {
+                            source_name: "test.zip".into(),
+                            output_name: "test.zip".into(),
+                            story_uuid: "e0000000-0000-4000-8000-000000012500".into(),
+                            story_title: "Unavailable".into(),
+                            export_skip_code: "story_unavailable".into(),
+                            ..Default::default()
+                        }],
+                    },
+                    "now".into(),
+                    Default::default(),
+                )?
+                .wait()?
+            {
+                TransactionOutcome::Committed(v) => v,
+                _ => return Err("creation".into()),
+            };
+            match db
+                .mark_operation_item_running(
+                    created.operation.identity.id.clone(),
+                    created.items[0].identity.id,
+                    "later".into(),
+                    Default::default(),
+                )?
+                .wait()?
+            {
+                TransactionOutcome::Committed(_) => {}
+                _ => return Err("start".into()),
+            };
+            {
+                let files = LibraryFiles::open_native(&db)?;
+                let custody = files.try_custody()?;
+                let mut failure = files
+                    .create_export_temporary_with(
+                        &custody,
+                        created.operation.identity.id.clone(),
+                        created.items[0].identity.id,
+                        || {
+                            if control_ack {
+                                native.lose_temporary_acknowledgement_for_test()
+                            } else {
+                                Err(StorageError::DirectoryDurabilityUnavailable)
+                            }
+                        },
+                    )
+                    .err()
+                    .ok_or("injected acquisition must fail")?;
+                assert!(matches!(
+                    files.try_custody(),
+                    Err(StorageError::CustodyRecoveryRequired)
+                ));
+                failure.retire_in_place(&custody)?;
+                assert!(std::fs::read_dir(&destination)?.next().is_none());
+                let repository = TerminalRepository::new(&db, 1);
+                let command = CompleteItemCommand {
+                    generation: 1,
+                    operation: created.operation.immutable_scope(),
+                    item: created.items[0].immutable_scope(),
+                    story_id: 0,
+                    state: ItemState::Failed,
+                    completed_bytes: 0,
+                    outcome: RawOutcome {
+                        code: Some("export_failed".into()),
+                        message: Some("The story archive could not be exported.".into()),
+                    },
+                };
+                assert!(matches!(
+                    repository.complete_item(&command).disposition,
+                    AttemptDisposition::Committed { .. }
+                ));
+                assert!(matches!(
+                    repository
+                        .finish(&FinishCommand {
+                            generation: 1,
+                            operation: created.operation.immutable_scope(),
+                            state: OperationState::Failed,
+                            outcome: command.outcome.clone(),
+                            finished_at: "finished".into()
+                        })
+                        .disposition,
+                    AttemptDisposition::Committed { .. }
+                ));
+            }
+            db.close()?;
+            drop(db);
+            let failure = native
+                .finish()
+                .err()
+                .ok_or("fenced generation must retain explicit recovery")?;
+            drop(failure);
+            drop(profile);
+            let profile = NativeProfileStore::open_native(&locations.native)?;
+            let recovery =
+                NativeLibrary::recover_interrupted(&profile, &locations, &Default::default())?;
+            let mut db = recovery.open()?;
+            assert_eq!(
+                db.operation_snapshot(created.operation.identity.id)?
+                    .wait()?
+                    .ok_or("saved")?
+                    .operation
+                    .state,
+                OperationState::Failed
+            );
+            db.close()?;
+            drop(db);
+            recovery.finish().map_err(|e| e.to_string())?;
+        }
+        Ok(())
     }
     #[test]
     fn native_export_copy_handles_short_writes_and_retains_exact_disk_full_prefix() -> Result<()> {

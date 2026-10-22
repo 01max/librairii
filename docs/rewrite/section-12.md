@@ -136,3 +136,23 @@ afterwards. The first cumulative gate also caught two narrow Clippy layout/style
 corrections, committed separately from initial subtasks. Full final-head checks
 and provider results are recorded on the draft PR; this review does not satisfy
 the still-open 12.9 acceptance gate.
+
+## 12.5 — Native integration review corrections
+
+Independent Standards and Spec review identified loss of non-UTF-8 Linux paths;
+the Spec axis also identified fenced partial-acquisition compensation and
+preflight skips being rejected during durable job creation. A separate fix carries
+exact native destination bytes through immutable SQL scopes and control records
+while retaining legacy UTF-8 encodings. Collection display names use Go JSON
+replacement semantics; numeric Collection identities and raw preparation names
+remain intact. Initial skipped/conflicted rows are persisted atomically with
+completed counts; ready rows still require the full copy-field validation.
+
+Actual retained export allocations can reconcile only control records matching
+their own immutable registration and previously retained control-file witnesses,
+then complete required cleanup through a fenced intake. This does not clear the
+profile fence or authorize a clean native shutdown. Tests cover both an injected
+post-acquisition durability failure and a lost control-record acknowledgement,
+terminal reporting, explicit restart, raw Collection names and mixed unsafe skips.
+Native-path equality retains spelling and bytes. Actual non-UTF-8 filesystem
+cases run on Linux; APFS on the development Mac refuses those components.

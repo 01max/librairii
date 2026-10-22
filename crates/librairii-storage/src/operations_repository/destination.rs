@@ -52,9 +52,11 @@ impl<'library> Database<'library> {
         }
         let raw = header.destination.as_deref().ok_or(InputError::Invalid)?;
         let path = Path::new(raw);
-        if raw.len() > 16 * 1024
-            || !text_present(raw)
-            || raw.contains('\0')
+        if raw.as_os_str().len() > 16 * 1024
+            || !raw
+                .to_str()
+                .map_or(!raw.as_os_str().is_empty(), text_present)
+            || raw.as_os_str().as_encoded_bytes().contains(&0)
             || !path.is_absolute()
             || path
                 .components()

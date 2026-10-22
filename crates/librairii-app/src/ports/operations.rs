@@ -35,13 +35,59 @@ use librairii_core::{
 use std::{error::Error, fmt};
 
 /// Exact stored columns, without Go's display COALESCE/JSON/basename projection.
+/// Exact native path bytes. Equality deliberately uses OsString rather than
+/// Path's component comparison, so terminal witnesses do not normalize spelling.
+#[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
+pub struct OperationPath(std::ffi::OsString);
+impl OperationPath {
+    pub fn capacity(&self) -> usize {
+        self.0.capacity()
+    }
+}
+impl std::ops::Deref for OperationPath {
+    type Target = std::path::Path;
+    fn deref(&self) -> &Self::Target {
+        std::path::Path::new(&self.0)
+    }
+}
+impl AsRef<std::path::Path> for OperationPath {
+    fn as_ref(&self) -> &std::path::Path {
+        self
+    }
+}
+impl AsRef<std::ffi::OsStr> for OperationPath {
+    fn as_ref(&self) -> &std::ffi::OsStr {
+        &self.0
+    }
+}
+impl From<std::ffi::OsString> for OperationPath {
+    fn from(v: std::ffi::OsString) -> Self {
+        Self(v)
+    }
+}
+impl From<std::path::PathBuf> for OperationPath {
+    fn from(v: std::path::PathBuf) -> Self {
+        Self(v.into_os_string())
+    }
+}
+impl From<String> for OperationPath {
+    fn from(v: String) -> Self {
+        Self(v.into())
+    }
+}
+impl From<&str> for OperationPath {
+    fn from(v: &str) -> Self {
+        Self(v.into())
+    }
+}
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct OperationHeader {
     pub identity: StoredOperationIdentity,
     pub kind: OperationKind,
     pub state: OperationState,
     pub export_scope: StoredExportScope,
-    pub destination: Option<String>,
+    pub destination: Option<OperationPath>,
     pub counts: Counts,
     pub total_bytes: i64,
     pub cancel_requested: bool,
@@ -68,7 +114,7 @@ pub struct OperationScope {
     pub identity: HistoryKey,
     pub kind: OperationKind,
     pub export_scope: StoredExportScope,
-    pub destination: Option<String>,
+    pub destination: Option<OperationPath>,
     pub total_items: i64,
     pub total_bytes: i64,
 }
@@ -780,5 +826,21 @@ mod tests {
             diagnostic: None,
         };
         assert_owned(reply);
+    }
+}
+
+#[cfg(test)]
+mod native_path_tests {
+    use super::OperationPath;
+    #[test]
+    fn operation_paths_keep_exact_spelling_and_native_bytes_in_scope_equality() {
+        assert_ne!(OperationPath::from("/a/./b"), OperationPath::from("/a/b"));
+        assert_ne!(OperationPath::from("/a//b"), OperationPath::from("/a/b"));
+        #[cfg(unix)]
+        {
+            use std::os::unix::ffi::OsStringExt;
+            let path = OperationPath::from(std::ffi::OsString::from_vec(b"/native-\xff".to_vec()));
+            assert_eq!(path.as_os_str().as_encoded_bytes(), b"/native-\xff");
+        }
     }
 }

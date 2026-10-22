@@ -17,7 +17,11 @@ impl Database<'_> {
         id: String,
         item: i64,
         running: bool,
-    ) -> Result<(String, Option<String>, OperationKind)> {
+    ) -> Result<(
+        String,
+        Option<librairii_app::ports::operations::OperationPath>,
+        OperationKind,
+    )> {
         self.barrier_read(move |tx| {
             let view = rows::view(tx, &id, Some(item))?.ok_or(StorageError::SnapshotChanged)?;
             let i = view.item.ok_or(StorageError::SnapshotChanged)?;
@@ -31,28 +35,30 @@ impl Database<'_> {
             let mut hash = Sha256::new();
             hash.update(b"librairii.temporary-scope.v1");
             for value in [
-                Some(h.identity.id.as_str()),
-                Some(h.identity.created_at.as_str()),
-                Some(encode_kind(h.kind)),
-                h.export_scope.discriminator.as_deref(),
-                h.export_scope.group_ids.as_deref(),
-                h.export_scope.group_names.as_deref(),
-                h.destination.as_deref(),
-                Some(i.operation_id.as_str()),
-                i.identity.story_uuid.as_deref(),
-                i.story_title.as_deref(),
-                Some(i.source_name.as_str()),
-                i.output_name.as_deref(),
-                i.archive_relative_path.as_deref(),
-                i.archive_sha256.as_deref(),
-                i.export_skip_code.as_deref(),
+                Some(h.identity.id.as_bytes()),
+                Some(h.identity.created_at.as_bytes()),
+                Some(encode_kind(h.kind).as_bytes()),
+                h.export_scope.discriminator.as_deref().map(str::as_bytes),
+                h.export_scope.group_ids.as_deref().map(str::as_bytes),
+                h.export_scope.group_names.as_deref().map(str::as_bytes),
+                h.destination
+                    .as_deref()
+                    .map(|p| p.as_os_str().as_encoded_bytes()),
+                Some(i.operation_id.as_bytes()),
+                i.identity.story_uuid.as_deref().map(str::as_bytes),
+                i.story_title.as_deref().map(str::as_bytes),
+                Some(i.source_name.as_bytes()),
+                i.output_name.as_deref().map(str::as_bytes),
+                i.archive_relative_path.as_deref().map(str::as_bytes),
+                i.archive_sha256.as_deref().map(str::as_bytes),
+                i.export_skip_code.as_deref().map(str::as_bytes),
             ] {
                 match value {
                     None => hash.update([0]),
                     Some(v) => {
                         hash.update([1]);
                         hash.update((v.len() as u64).to_le_bytes());
-                        hash.update(v.as_bytes());
+                        hash.update(v);
                     }
                 }
             }

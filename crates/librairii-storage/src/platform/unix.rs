@@ -3782,6 +3782,9 @@ impl LibraryFiles<'_> {
         record: &crate::native_effects::Temporary,
     ) -> Result<()> {
         self.check(guard)?;
+        self.retire_registered_record(record)
+    }
+    fn retire_registered_record(&self, record: &crate::native_effects::Temporary) -> Result<()> {
         record.validate()?;
         let parent = match &record.destination {
             None => self.staging.duplicate()?,
@@ -3846,7 +3849,7 @@ impl LibraryFiles<'_> {
 /// Allocation retains the actual native library, external directory and every
 /// acquired FD through partial creation or an uncertain registration result.
 #[derive(Debug)]
-struct ExportAllocation<'files, 'library> {
+pub(crate) struct ExportAllocation<'files, 'library> {
     files: &'files LibraryFiles<'library>,
     parent: Option<Directory>,
     directory: Option<Directory>,
@@ -3888,6 +3891,18 @@ impl<'library> LibraryFiles<'library> {
         OwnedExportTemporary<'files, 'library>,
         Box<ExportTemporaryFailure<'files, 'library>>,
     > {
+        self.create_export_temporary_with(guard, operation, item, || Ok(()))
+    }
+    fn create_export_temporary_with<'files>(
+        &'files self,
+        guard: &Custody<'_>,
+        operation: String,
+        item: i64,
+        after_acquire: impl FnOnce() -> Result<()>,
+    ) -> std::result::Result<
+        OwnedExportTemporary<'files, 'library>,
+        Box<ExportTemporaryFailure<'files, 'library>>,
+    > {
         let mut allocation = ExportAllocation {
             files: self,
             parent: None,
@@ -3909,7 +3924,7 @@ impl<'library> LibraryFiles<'library> {
                 return Err(StorageError::SnapshotChanged);
             }
             let path = destination.ok_or(StorageError::InvalidManagedPath)?;
-            if path.len() > 16 * 1024
+            if path.as_os_str().len() > 16 * 1024
                 || std::fs::canonicalize(&path)
                     .map_err(|e| StorageError::io("resolve chosen export directory", e))?
                     != Path::new(&path)
@@ -3975,6 +3990,7 @@ impl<'library> LibraryFiles<'library> {
                 .file
                 .as_ref()
                 .ok_or(StorageError::CompatibilityInvariant)?;
+            after_acquire()?;
             durable_file_flush(file)?;
             directory.flush()?;
             parent.flush()?;
@@ -4120,5 +4136,46 @@ impl Write for OwnedExportTemporary<'_, '_> {
             .as_mut()
             .ok_or_else(|| io::Error::other("missing actual temporary"))?
             .flush()
+    }
+}
+
+impl LibraryFiles<'_> {
+    fn compensate_export_allocation(
+        &self,
+        guard: &Custody<'_>,
+        allocation: &ExportAllocation<'_, '_>,
+    ) -> Result<()> {
+        if !self.authority.same_generation(guard.authority) || !std::ptr::eq(self, allocation.files)
+        {
+            return Err(StorageError::IdentityMismatch);
+        }
+        let FilesAuthority::Native { library, .. } = self.authority else {
+            return Err(StorageError::IdentityMismatch);
+        };
+        library.revalidate_database_ownership()?;
+        self.retire_registered_record(
+            allocation
+                .record
+                .as_ref()
+                .ok_or(StorageError::CustodyRecoveryRequired)?,
+        )
+    }
+}
+impl Directory {
+    pub(crate) fn retire_control_allocation(&self, allocation: &ControlAllocation) -> Result<()> {
+        if let Some(file) = &allocation.file {
+            use std::os::unix::fs::MetadataExt;
+            let metadata = file
+                .metadata()
+                .map_err(|e| StorageError::io("observe retained control allocation", e))?;
+            if metadata.nlink() == 0 {
+                return Ok(());
+            }
+            require_regular(file)?;
+            self.require_name(&allocation.name, FileIdentity::from_file(file)?)?;
+            native::unlinkat(&self.file, &allocation.name, AtFlags::empty())
+                .map_err(|e| StorageError::io("retire actual control allocation", e.into()))?;
+        }
+        self.flush()
     }
 }

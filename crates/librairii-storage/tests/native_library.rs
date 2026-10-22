@@ -2361,6 +2361,11 @@ fn native_registered_temporaries_recover_after_process_death_and_preserve_final_
     if let Some(context) = std::env::var_os(CONTEXT) {
         let value: serde_json::Value = serde_json::from_slice(&fs::read(context)?)?;
         let path = |key: &str| -> TestResult<std::path::PathBuf> {
+            if key == "destination" && value[key].is_null() {
+                use std::os::unix::ffi::OsStringExt;
+                let bytes: Vec<u8> = serde_json::from_value(value["destination_bytes"].clone())?;
+                return Ok(std::ffi::OsString::from_vec(bytes).into());
+            }
             Ok(value[key].as_str().ok_or("fixture path")?.into())
         };
         let locations = ProfileLocations {
@@ -2489,12 +2494,7 @@ fn native_registered_temporaries_recover_after_process_death_and_preserve_final_
                 shelf_ids: Vec::new(),
                 shelf_names: Vec::new(),
             }),
-            destination: Some(
-                path("destination")?
-                    .to_str()
-                    .ok_or("UTF8 destination")?
-                    .into(),
-            ),
+            destination: Some(path("destination")?.into()),
             items: (1..=2)
                 .map(|n| NewItem {
                     source_name: format!("export-{n}"),
@@ -2610,12 +2610,24 @@ fn native_registered_temporaries_recover_after_process_death_and_preserve_final_
             let _ = self.0.wait();
         }
     }
-    for mode in ["owned", "symlink", "hardlink"] {
+    for mode in ["owned", "symlink", "hardlink", "nonutf8"] {
+        // APFS refuses invalid UTF-8 directory components. Linux exercises the
+        // actual filesystem case; all native targets exercise the byte codec.
+        if mode == "nonutf8" && !cfg!(target_os = "linux") {
+            continue;
+        }
         let roots = TestRoots::new()?;
         let (copy, locations) = prepare(&roots, false)?;
         let source = Path::new(&copy.source_profile().profile().root);
         let source_db = fs::read(source.join("db/librairii.sqlite3"))?;
-        let destination = roots.profile().join("exports");
+        let destination = if mode == "nonutf8" {
+            use std::os::unix::ffi::OsStringExt;
+            roots
+                .profile()
+                .join(std::ffi::OsString::from_vec(b"exports-\xff".to_vec()))
+        } else {
+            roots.profile().join("exports")
+        };
         fs::create_dir(&destination)?;
         let foreign = destination.join("foreign.txt");
         fs::write(&foreign, b"unrelated file")?;
@@ -2628,7 +2640,7 @@ fn native_registered_temporaries_recover_after_process_death_and_preserve_final_
         fs::write(
             &context,
             serde_json::to_vec(
-                &serde_json::json!({"native":locations.native,"data":locations.data,"legacy":locations.legacy,"source":source,"destination":destination,"ready":ready}),
+                &serde_json::json!({"native":locations.native,"data":locations.data,"legacy":locations.legacy,"source":source,"destination":destination.to_str(),"destination_bytes":destination.as_os_str().as_encoded_bytes(),"ready":ready}),
             )?,
         )?;
         let output_path = roots.profile().join("child-output");
@@ -2653,7 +2665,7 @@ fn native_registered_temporaries_recover_after_process_death_and_preserve_final_
         child.0.kill()?;
         child.0.wait()?;
         let partial = destination.join(ready["partial"].as_str().ok_or("partial")?);
-        if mode != "owned" {
+        if matches!(mode, "symlink" | "hardlink") {
             fs::remove_file(partial.join("payload"))?;
             if mode == "symlink" {
                 std::os::unix::fs::symlink(&foreign, partial.join("payload"))?;
@@ -2667,7 +2679,7 @@ fn native_registered_temporaries_recover_after_process_death_and_preserve_final_
             NativeLibrary::recover_interrupted(&store, &locations, &WorkCancellation::default())?;
         match recovery.open() {
             Ok(mut db) => {
-                assert_eq!(mode, "owned");
+                assert!(matches!(mode, "owned" | "nonutf8"));
                 let import = db
                     .operation_snapshot("a0000000-0000-4000-8000-000000000081".into())?
                     .wait()?
@@ -2687,7 +2699,7 @@ fn native_registered_temporaries_recover_after_process_death_and_preserve_final_
                 drop(db);
             }
             Err(_) => {
-                assert_ne!(mode, "owned");
+                assert!(matches!(mode, "symlink" | "hardlink"));
                 assert!(fs::symlink_metadata(partial.join("payload")).is_ok());
             }
         }
@@ -2701,7 +2713,7 @@ fn native_registered_temporaries_recover_after_process_death_and_preserve_final_
             b"unregistered regular file"
         );
         assert_eq!(fs::read(source.join("db/librairii.sqlite3"))?, source_db);
-        if mode == "owned" {
+        if matches!(mode, "owned" | "nonutf8") {
             recovery.finish().map_err(|f| f.to_string())?;
             assert_eq!(native_state(root)?["state"], "closed");
         } else {
@@ -2955,16 +2967,83 @@ fn native_prepared_export_runs_durable_reports_and_preserves_racing_destinations
     fn hex_digest(bytes: &[u8]) -> String {
         librairii_core::Checksum::from_bytes(Sha256::digest(bytes).into()).to_string()
     }
-    for (n, race) in [false, true].into_iter().enumerate() {
-        let destination = roots.profile().join(format!("native-export-{n}"));
+    let unsafe_bytes = b"synthetic managed bytes for a skipped unsafe filename";
+    fs::write(root.join("archives/unsafe-export"), unsafe_bytes)?;
+    let unsafe_hash = hex_digest(unsafe_bytes);
+    committed_operation(db.transaction(Default::default(),move|tx|{
+        tx.execute("INSERT INTO stories(id,uuid,embedded_title,display_name_normalized) VALUES(10002,'e0000000-0000-4000-8000-000000010002','Unsafe stored name','unsafe stored name')",[])?;
+        tx.execute("INSERT INTO story_archives(story_id,original_filename,detected_format,sha256,byte_size,managed_path,validation_state) VALUES(10002,'../unsafe.zip','zip',?,?,'archives/unsafe-export','valid')",rusqlite::params![unsafe_hash,unsafe_bytes.len() as i64])?;Ok(())
+    })?.wait()?)?;
+    let mut criteria = librairii_core::collection_codec::Query::default();
+    criteria.name = "Native export".into();
+    committed_operation(
+        db.edit_collections(crate_collection_create(criteria), Default::default())?
+            .wait()?,
+    )?;
+    let collection_id = db
+        .barrier_read(|tx| {
+            Ok(tx.query_row(
+                "SELECT id FROM collections WHERE normalized_name='raw export'",
+                [],
+                |r| r.get::<_, i64>(0),
+            )?)
+        })?
+        .wait()?;
+    committed_operation(
+        db.transaction(Default::default(), move |tx| {
+            tx.execute(
+                "UPDATE collections SET name=CAST(x'52ff6177' AS TEXT) WHERE id=?",
+                [collection_id],
+            )?;
+            Ok(())
+        })?
+        .wait()?,
+    )?;
+    fn crate_collection_create(
+        criteria: librairii_core::collection_codec::Query,
+    ) -> librairii_storage::collections::Command {
+        librairii_storage::collections::Command::Create {
+            name: "Raw export".into(),
+            criteria,
+        }
+    }
+    let mut cases = vec![
+        (false, false, false, false),
+        (true, false, false, false),
+        (false, true, false, false),
+        (false, false, false, true),
+    ];
+    if cfg!(target_os = "linux") {
+        cases.push((false, false, true, false));
+    }
+    for (n, (race, collection, raw_path, mixed)) in cases.into_iter().enumerate() {
+        let destination = if raw_path {
+            use std::os::unix::ffi::OsStringExt;
+            roots
+                .profile()
+                .join(std::ffi::OsString::from_vec(b"native-export-\xff".to_vec()))
+        } else {
+            roots.profile().join(format!("native-export-{n}"))
+        };
         fs::create_dir(&destination)?;
         let mut exports = Exports::new(&db);
         let preview = exports.prepare(
-            Scope::Selection(vec![10001]),
+            if collection {
+                Scope::Collections(vec![librairii_core::CollectionId::new(collection_id)?])
+            } else {
+                Scope::Selection(if mixed {
+                    vec![10001, 10002]
+                } else {
+                    vec![10001]
+                })
+            },
             &destination,
             "fr-FR".into(),
             &Default::default(),
         )?;
+        if collection {
+            assert_eq!(preview.source.names, vec![b"R\xffaw".to_vec()]);
+        }
         let preparation = preview.preparation.ok_or("preparation")?;
         if race {
             fs::write(destination.join("native.zip"), b"racing foreign file")?;
@@ -2978,6 +3057,11 @@ fn native_prepared_export_runs_durable_reports_and_preserves_racing_destinations
                 runtime_support::offer(&handle, start)?;
                 let end = std::time::Instant::now() + std::time::Duration::from_secs(10);
                 loop {
+                    if let Some(admission) = handle.take_admission()
+                        && !admission.accepted
+                    {
+                        return Err(format!("durable export admission rejected in case {n}").into());
+                    }
                     match db.operation_snapshot(id.clone()).and_then(|p| p.wait()) {
                         Ok(Some(s))
                             if librairii_core::operations::is_terminal(s.operation.state) =>
@@ -2986,6 +3070,8 @@ fn native_prepared_export_runs_durable_reports_and_preserves_racing_destinations
                                 s.operation.state,
                                 if race {
                                     OperationState::Failed
+                                } else if mixed {
+                                    OperationState::PartiallySucceeded
                                 } else {
                                     OperationState::Succeeded
                                 }
@@ -3021,6 +3107,31 @@ fn native_prepared_export_runs_durable_reports_and_preserves_racing_destinations
             }
         );
         assert_eq!(fs::read_dir(&destination)?.count(), 1);
+        let saved = db.operation_snapshot(id.clone())?.wait()?.ok_or("saved")?;
+        assert_eq!(
+            saved.operation.destination.as_ref().map(|p| p.as_os_str()),
+            Some(destination.as_os_str())
+        );
+        if !race {
+            assert_eq!(
+                db.export_destination(id)?.path_for_reveal()?.as_os_str(),
+                destination.as_os_str()
+            );
+        }
+        if mixed {
+            assert_eq!(
+                saved.items[1].outcome.code.as_deref(),
+                Some("unsupported_extension")
+            );
+            assert_eq!(saved.items[1].source_name, "../unsafe.zip");
+            assert_eq!(saved.items[1].output_name.as_deref(), Some("../unsafe.zip"));
+        }
+        if collection {
+            assert_eq!(
+                saved.operation.export_scope.group_names.as_deref(),
+                Some("[\"R�aw\"]")
+            );
+        }
     }
     assert_eq!(fs::read(root.join("archives/native-export"))?, bytes);
     db.close()?;
