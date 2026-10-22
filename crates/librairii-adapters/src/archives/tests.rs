@@ -393,3 +393,79 @@ fn actual_uuid_roots_require_one_raw_root_and_all_pack_entries() -> TestResult {
     ));
     Ok(())
 }
+
+fn png() -> std::result::Result<Vec<u8>, Box<dyn std::error::Error>> {
+    let bytes = fixture("clockwork-forest-studio.zip")?;
+    Ok(open(&bytes, b"studio.zip")?.read_entry(
+        "thumbnail.png",
+        10 << 20,
+        ValidationCode::ArtworkLimit,
+    )?)
+}
+#[test]
+fn actual_studio_zip_and_seven_json_assets_text_and_thumbnail_match_oracle() -> TestResult {
+    for file in ["clockwork-forest-studio.zip", "studio.7z"] {
+        let bytes = fixture(file)?;
+        let mut archive = open(&bytes, file.as_bytes())?;
+        let metadata = archive.inspect_studio_metadata()?;
+        assert_eq!(
+            metadata.identity.canonical(),
+            "00112233-4455-4677-8899-aabbccddeeff"
+        );
+        assert_eq!(metadata.text.title, "The Clockwork Forest");
+        assert_eq!(metadata.text.description, "A synthetic STUdio fixture.");
+        assert_eq!(metadata.artwork.ok_or("missing thumbnail")?.bytes, png()?);
+        assert_eq!(
+            metadata.format,
+            if file.ends_with(".zip") {
+                ArchiveFormat::StudioZip
+            } else {
+                ArchiveFormat::SevenZip
+            }
+        );
+    }
+    Ok(())
+}
+#[test]
+fn actual_studio_json_rejects_strict_type_trailing_and_missing_references() -> TestResult {
+    let thumbnail = png()?;
+    for (story, code) in [
+        (br#"{"uuid":1}"#.as_slice(), ValidationCode::MalformedMetadata),
+        (br#"{"uuid":"00112233-4455-4677-8899-aabbccddeeff"} {}"#, ValidationCode::MalformedMetadata),
+        (br#"{"uuid":"not-a-uuid"}"#, ValidationCode::InvalidUuid),
+        (br#"{"uuid":"00112233-4455-4677-8899-aabbccddeeff","stageNodes":[]}"#, ValidationCode::MissingAsset),
+        (br#"{"uuid":"00112233-4455-4677-8899-aabbccddeeff","stageNodes":[{"image":"assets/missing"}]}"#, ValidationCode::MissingAsset),
+        (br#"{"uuid":"00112233-4455-4677-8899-aabbccddeeff","stageNodes":[{"image":"../outside"}]}"#, ValidationCode::UnsafePath),
+        (br#"{"uuid":"00112233-4455-4677-8899-aabbccddeeff","stageNodes":[{"image":"assets/./cover"}]}"#, ValidationCode::MissingAsset),
+    ] {
+        let bytes = zip_entries(&[("story.json", story), ("assets/cover", b"asset"), ("thumbnail.png", &thumbnail)])?;
+        let mut archive = open(&bytes, b"studio.zip")?;
+        let result = archive.inspect_studio_metadata();
+        assert!(matches!(result, Err(ArchiveError::Validation(ValidationError { code: actual, .. })) if actual == code), "{result:?}");
+    }
+    Ok(())
+}
+#[test]
+fn actual_studio_requires_readable_png_thumbnail_after_reference_validation() -> TestResult {
+    let story = br#"{"uuid":"00112233-4455-4677-8899-aabbccddeeff","title":"  Story  ","stageNodes":[{"audio":"assets/track"}]}"#;
+    for thumbnail in [None, Some(b"not a png".as_slice())] {
+        let mut entries = vec![
+            ("story.json", story.as_slice()),
+            ("assets/track", b"opaque audio".as_slice()),
+        ];
+        if let Some(bytes) = thumbnail {
+            entries.push(("thumbnail.png", bytes));
+        }
+        let bytes = zip_entries(&entries)?;
+        let mut archive = open(&bytes, b"studio.zip")?;
+        let code = if thumbnail.is_some() {
+            ValidationCode::ArtworkLimit
+        } else {
+            ValidationCode::MissingEntry
+        };
+        assert!(
+            matches!(archive.inspect_studio_metadata(), Err(ArchiveError::Validation(ValidationError { code: actual, .. })) if actual == code)
+        );
+    }
+    Ok(())
+}

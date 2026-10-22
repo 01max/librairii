@@ -4031,6 +4031,30 @@
           "name": "archives::tests::actual_uuid_roots_require_one_raw_root_and_all_pack_entries"
         },
         "reason": "Additive Task 5 archive inspection/custody assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 494,
+        "identity": {
+          "suite": "librairii-adapters",
+          "name": "archives::tests::actual_studio_json_rejects_strict_type_trailing_and_missing_references"
+        },
+        "reason": "Additive Task 5 archive inspection/custody assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 495,
+        "identity": {
+          "suite": "librairii-adapters",
+          "name": "archives::tests::actual_studio_requires_readable_png_thumbnail_after_reference_validation"
+        },
+        "reason": "Additive Task 5 archive inspection/custody assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 496,
+        "identity": {
+          "suite": "librairii-adapters",
+          "name": "archives::tests::actual_studio_zip_and_seven_json_assets_text_and_thumbnail_match_oracle"
+        },
+        "reason": "Additive Task 5 archive inspection/custody assertions; all admitted identities retain exact order and target scope."
       }
     ],
     "python": [

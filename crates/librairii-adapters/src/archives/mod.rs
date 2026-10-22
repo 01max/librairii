@@ -5,8 +5,9 @@
 use librairii_app::native_jobs::Cancellation;
 use librairii_core::import::{
     ArchivePlan, CompressionAccounting, ContainerKind, EntryInfo, ImportIdentity, Inventory,
-    InventoryBuilder, Limits, PackStructure, ValidationCode, ValidationError, dispatch,
-    validate_entry_name, validate_plain_entries, validate_uuid_root_entries,
+    InventoryBuilder, Limits, MetadataText, PackStructure, ValidationCode, ValidationError,
+    dispatch, project_studio_json, validate_entry_name, validate_plain_entries,
+    validate_uuid_root_entries,
 };
 use std::{
     collections::BTreeMap,
@@ -111,6 +112,21 @@ pub struct Archive<R: Read + Seek> {
     inventory: Inventory,
     plan: ArchivePlan,
     cancel: Cancellation,
+    limits: Limits,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct EmbeddedArtwork {
+    pub entry_name: &'static str,
+    pub bytes: Vec<u8>,
+}
+/// Observed content only; storage still owns integrity and publication gates.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct InspectedMetadata {
+    pub identity: ImportIdentity,
+    pub format: librairii_core::import::ArchiveFormat,
+    pub text: MetadataText,
+    pub artwork: Option<EmbeddedArtwork>,
 }
 impl<R: Read + Seek> fmt::Debug for Archive<R> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -177,6 +193,7 @@ impl<R: Read + Seek> Archive<R> {
             inventory,
             plan,
             cancel: cancel.clone(),
+            limits,
         })
     }
     fn open_zip(source: Checked<R>, limits: Limits, size: u64) -> Result<(Reader<R>, Inventory)> {
@@ -284,6 +301,32 @@ impl<R: Read + Seek> Archive<R> {
             }
         }
     }
+    pub fn inspect_studio_metadata(&mut self) -> Result<InspectedMetadata> {
+        if self.plan.structure != PackStructure::Studio {
+            return Err(ValidationError::new(ValidationCode::UnsupportedFormat).into());
+        }
+        let story = self.read_entry(
+            "story.json",
+            self.limits.max_metadata_bytes as u64,
+            ValidationCode::MetadataLimit,
+        )?;
+        let projection = project_studio_json(&self.inventory, &story, self.limits)?;
+        let bytes = self.read_entry(
+            "thumbnail.png",
+            self.limits.max_artwork_bytes as u64,
+            ValidationCode::ArtworkLimit,
+        )?;
+        validate_png(&bytes, "thumbnail.png")?;
+        Ok(InspectedMetadata {
+            identity: projection.identity,
+            format: self.plan.format,
+            text: projection.text,
+            artwork: Some(EmbeddedArtwork {
+                entry_name: "thumbnail.png",
+                bytes,
+            }),
+        })
+    }
     /// Read one selected regular entry under its own actual-byte ceiling.
     pub fn read_entry(&mut self, name: &str, limit: u64, code: ValidationCode) -> Result<Vec<u8>> {
         checkpoint(&self.cancel)?;
@@ -385,6 +428,21 @@ fn seven_error(error: sevenz_turbo::Error) -> ArchiveError {
         _ => ValidationCode::InvalidContainer,
     };
     ValidationError::new(code).into()
+}
+
+fn validate_png(bytes: &[u8], name: &str) -> Result<()> {
+    use image::ImageDecoder;
+    let mut limits = image::Limits::default();
+    limits.max_image_width = Some(crate::thumbnails::MAX_DIMENSION);
+    limits.max_image_height = Some(crate::thumbnails::MAX_DIMENSION);
+    limits.max_alloc = Some(128 * 1024 * 1024);
+    let decoder = image::codecs::png::PngDecoder::with_limits(std::io::Cursor::new(bytes), limits)
+        .map_err(|_| ValidationError::at(ValidationCode::ArtworkLimit, name))?;
+    let (width, height) = decoder.dimensions();
+    if u64::from(width) * u64::from(height) > crate::thumbnails::MAX_PIXELS {
+        return Err(ValidationError::at(ValidationCode::ArtworkLimit, name).into());
+    }
+    Ok(())
 }
 #[cfg(test)]
 mod tests;

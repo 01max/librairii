@@ -76,3 +76,20 @@ Eleven focused archive tests pass, including all six preserved valid plain/v1/v2
 generic/ZIP/7z pack fixtures, actual short/long/nil UUID payloads, plain-content
 precedence over v2 suffix, missing required entries and two raw roots encoding the
 same canonical UUID. fmt and all-target adapter Clippy pass.
+
+## 5.4 — Actual STUdio metadata and thumbnail
+
+Bounded story.json bytes now feed the preserved fixed-shape Go-compatible JSON
+policy: complete-first-value syntax, typed fields, duplicate/null semantics,
+trailing input, UUID, ordered stage references and exact asset lookup. Stage
+references are checked against regular observed entries without extracting media.
+The required thumbnail is actually read with the 10 MiB cap and parsed as PNG,
+with dimensions/allocation limits passed before decoder construction. ZIP and
+7z keep their distinct format labels. JSON projection returns authored text
+trimmed by the frozen whitespace rules.
+
+Fourteen focused archive tests pass. Both preserved STUdio fixtures match UUID,
+title, description and exact thumbnail bytes. Actual archives cover type/trailing
+JSON, invalid UUID, empty/missing/unsafe/aliased references, missing thumbnails and
+non-PNG thumbnails. fmt and all-target adapter Clippy pass. Image hardening
+counterexamples and their explicit compatibility record are part of 5.5.
