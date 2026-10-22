@@ -266,3 +266,13 @@ The independent review can qualify these implemented services; it cannot run
 Task 5's still-missing production archive inspection/import port. The complete
 import → inspect → export → reopen acceptance slice and checkbox 12.9 remain open.
 Keep this PR in draft, with no complete Task 12, GUI, package or Windows claim.
+
+The Intel provider exposed an existing runtime shutdown race: a worker could
+complete/release its cancelled item after a coordinator scan excluded that active
+operation. Shutdown then reported drained with the parent still Running. The
+existing real-SQL admission/shutdown test now forces that exact interleaving; it
+fails with the original scheduler and passes after a final finish-candidate
+readback once no workers own items and intake is stopped. A ready parent returns
+to the normal durable finish loop before cleanup/drain acknowledgement. No test
+is retried or weakened to mask the provider failure; runtime admission, terminal
+reporting and unknown-ack regressions remain required.
