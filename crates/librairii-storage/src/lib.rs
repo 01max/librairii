@@ -10,6 +10,8 @@ pub mod collections;
 pub mod database;
 pub mod error;
 pub mod identity;
+#[cfg(any(target_os = "macos", target_os = "linux"))]
+pub mod imports;
 pub mod layout;
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 pub mod metadata;

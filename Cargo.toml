@@ -1,6 +1,6 @@
 [workspace]
 members = ["crates/*", "xtask"]
-exclude = ["fuzz", "qualification/section-2"]
+exclude = ["fuzz", "qualification/section-2", "third_party/sevenz-turbo"]
 resolver = "3"
 
 [workspace.package]
@@ -43,6 +43,9 @@ mime = "=0.3.17"
 rustls-platform-verifier = "=0.7.1"
 
 image = { version = "=0.25.10", default-features = false, features = ["png", "jpeg", "webp"] }
+rawzip = "=0.5.2"
+flate2 = { version = "=1.1.10", default-features = false, features = ["rust_backend"] }
+sevenz-turbo = { version = "=0.29.2", default-features = false, features = ["bzip2", "ppmd", "deflate", "zstd", "lz4", "brotli"] }
 
 [workspace.lints.rust]
 unsafe_code = "deny"
@@ -59,3 +62,6 @@ unimplemented = "deny"
 dbg_macro = "deny"
 undocumented_unsafe_blocks = "deny"
 missing_safety_doc = "deny"
+
+[patch.crates-io]
+sevenz-turbo = { path = "third_party/sevenz-turbo" }

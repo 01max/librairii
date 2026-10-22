@@ -3943,6 +3943,417 @@
           ]
         },
         "reason": "Additive Task 6 durable operation/runtime/recovery assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 483,
+        "identity": {
+          "suite": "librairii-adapters",
+          "name": "archives::tests::actual_container_mismatch_and_unsupported_suffix_do_not_admit_an_archive"
+        },
+        "reason": "Additive Task 5 archive inspection/custody assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 484,
+        "identity": {
+          "suite": "librairii-adapters",
+          "name": "archives::tests::actual_studio_zip_disguised_as_every_pack_suffix_is_rejected"
+        },
+        "reason": "Additive Task 5 archive inspection/custody assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 485,
+        "identity": {
+          "suite": "librairii-adapters",
+          "name": "archives::tests::actual_zip_and_seven_zip_dispatch_preserves_suffix_content_combinations"
+        },
+        "reason": "Additive Task 5 archive inspection/custody assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 486,
+        "identity": {
+          "suite": "librairii-adapters",
+          "name": "archives::tests::indexed_archive_reads_selected_metadata_without_bulk_extraction"
+        },
+        "reason": "Additive Task 5 archive inspection/custody assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 487,
+        "identity": {
+          "suite": "librairii-adapters",
+          "name": "archives::tests::actual_entry_path_and_duplicate_checks_use_preserved_normalized_keys"
+        },
+        "reason": "Additive Task 5 archive inspection/custody assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 488,
+        "identity": {
+          "suite": "librairii-adapters",
+          "name": "archives::tests::actual_frozen_archive_rejections_cover_links_nested_duplicates_and_seven_ratio"
+        },
+        "reason": "Additive Task 5 archive inspection/custody assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 489,
+        "identity": {
+          "suite": "librairii-adapters",
+          "name": "archives::tests::entry_actual_read_errors_and_corrupt_payload_crc_cannot_return_partial_bytes"
+        },
+        "reason": "Additive Task 5 archive inspection/custody assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 490,
+        "identity": {
+          "suite": "librairii-adapters",
+          "name": "archives::tests::entry_and_expansion_limits_are_enforced_from_actual_container_headers"
+        },
+        "reason": "Additive Task 5 archive inspection/custody assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 491,
+        "identity": {
+          "suite": "librairii-adapters",
+          "name": "archives::tests::actual_plain_and_uuid_root_packs_match_preserved_identity_and_format"
+        },
+        "reason": "Additive Task 5 archive inspection/custody assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 492,
+        "identity": {
+          "suite": "librairii-adapters",
+          "name": "archives::tests::actual_plain_uuid_size_nil_and_missing_entry_failures_are_not_filename_identity"
+        },
+        "reason": "Additive Task 5 archive inspection/custody assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 493,
+        "identity": {
+          "suite": "librairii-adapters",
+          "name": "archives::tests::actual_uuid_roots_require_one_raw_root_and_all_pack_entries"
+        },
+        "reason": "Additive Task 5 archive inspection/custody assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 494,
+        "identity": {
+          "suite": "librairii-adapters",
+          "name": "archives::tests::actual_studio_json_rejects_strict_type_trailing_and_missing_references"
+        },
+        "reason": "Additive Task 5 archive inspection/custody assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 495,
+        "identity": {
+          "suite": "librairii-adapters",
+          "name": "archives::tests::actual_studio_requires_readable_png_thumbnail_after_reference_validation"
+        },
+        "reason": "Additive Task 5 archive inspection/custody assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 496,
+        "identity": {
+          "suite": "librairii-adapters",
+          "name": "archives::tests::actual_studio_zip_and_seven_json_assets_text_and_thumbnail_match_oracle"
+        },
+        "reason": "Additive Task 5 archive inspection/custody assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 497,
+        "identity": {
+          "suite": "librairii-adapters",
+          "name": "archives::tests::actual_image_hardening_refuses_retained_previously_accepted_dimensions_and_pixels"
+        },
+        "reason": "Additive Task 5 archive inspection/custody assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 498,
+        "identity": {
+          "suite": "librairii-adapters",
+          "name": "archives::tests::actual_metadata_and_rejections_match_entire_preserved_inspection_corpus"
+        },
+        "reason": "Additive Task 5 archive inspection/custody assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 499,
+        "identity": {
+          "suite": "librairii-adapters",
+          "name": "archives::tests::actual_optional_metadata_does_not_replace_identity_or_ignore_invalid_selected_bytes"
+        },
+        "reason": "Additive Task 5 archive inspection/custody assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 500,
+        "identity": {
+          "suite": "librairii-adapters",
+          "name": "archives::tests::actual_optional_metadata_uuid_text_absence_and_artwork_remain_independent"
+        },
+        "reason": "Additive Task 5 archive inspection/custody assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 501,
+        "identity": {
+          "suite": "librairii-storage",
+          "name": "native::owned::tests::settled_import_stages_recycle_registration_slots_in_one_session",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive Task 5 archive inspection/custody assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 502,
+        "identity": {
+          "suite": "librairii-storage",
+          "name": "platform::unix::import_source::tests::cancelled_copy_retains_owned_stage_and_never_publishes_or_changes_source",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive Task 5 archive inspection/custody assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 503,
+        "identity": {
+          "suite": "librairii-storage",
+          "name": "platform::unix::import_source::tests::selected_aliases_are_read_only_and_source_substitution_is_refused",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive Task 5 archive inspection/custody assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 504,
+        "identity": {
+          "suite": "librairii-storage",
+          "name": "platform::unix::import_source::tests::selected_source_streams_into_content_addressed_original_name_without_mutation",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive Task 5 archive inspection/custody assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 505,
+        "identity": {
+          "suite": "librairii-storage::native_library",
+          "name": "retired_export_temporaries_keep_descriptor_usage_bounded",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive Task 5 archive inspection/custody assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 506,
+        "identity": {
+          "suite": "librairii-desktop::imports",
+          "name": "actual_catalog_failure_compensates_new_archive_and_artwork_without_partial_rows",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive Task 5 archive inspection/custody assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 507,
+        "identity": {
+          "suite": "librairii-desktop::imports",
+          "name": "actual_import_duplicate_and_uuid_conflict_are_atomic_and_survive_reopen",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive Task 5 archive inspection/custody assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 508,
+        "identity": {
+          "suite": "librairii-desktop::imports",
+          "name": "actual_inspection_failures_keep_frozen_operation_reasons_and_clean_staging",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive Task 5 archive inspection/custody assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 509,
+        "identity": {
+          "suite": "librairii-desktop::imports",
+          "name": "actual_effect_boundary_failures_preserve_sources_and_cleanup_only_owned_temporaries",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive Task 5 archive inspection/custody assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 510,
+        "identity": {
+          "suite": "librairii-desktop::imports",
+          "name": "actual_file_size_limit_short_write_preserves_source_and_retires_partial_stage",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive Task 5 archive inspection/custody assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 511,
+        "identity": {
+          "suite": "librairii-desktop::imports",
+          "name": "actual_import_process_death_recovers_registered_stage_and_preserves_committed_bytes",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive Task 5 archive inspection/custody assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 512,
+        "identity": {
+          "suite": "librairii-desktop::imports",
+          "name": "actual_native_cancellation_on_both_sides_of_commit_preserves_truth_and_bytes",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive Task 5 archive inspection/custody assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 513,
+        "identity": {
+          "suite": "librairii-desktop::imports",
+          "name": "actual_registered_native_import_closes_and_reopens_with_unchanged_legacy_source",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive Task 5 archive inspection/custody assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 514,
+        "identity": {
+          "suite": "librairii-desktop::imports",
+          "name": "actual_staged_hash_mismatch_and_missing_picker_sources_fail_per_item",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive Task 5 archive inspection/custody assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 515,
+        "identity": {
+          "suite": "librairii-storage",
+          "name": "native::owned::tests::concurrent_native_observers_do_not_refuse_each_other_as_profile_updates",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive Task 5 archive inspection/custody assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 516,
+        "identity": {
+          "suite": "librairii-adapters",
+          "name": "archives::tests::constructor_budgets_can_only_reduce_production_allocation_ceilings"
+        },
+        "reason": "Additive Task 5 archive inspection/custody assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 517,
+        "identity": {
+          "suite": "librairii-adapters",
+          "name": "archives::tests::independent_seven_codec_streams_preserve_studio_metadata_and_artwork"
+        },
+        "reason": "Additive Task 5 archive inspection/custody assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 518,
+        "identity": {
+          "suite": "librairii-adapters",
+          "name": "archives::tests::retained_codec_and_hardening_manifest_hashes_and_expected_outcomes_are_enforced"
+        },
+        "reason": "Additive Task 5 archive inspection/custody assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 519,
+        "identity": {
+          "suite": "librairii-adapters",
+          "name": "archives::tests::retained_constructor_declarations_and_hardening_fixtures_refuse_before_unbounded_work"
+        },
+        "reason": "Additive Task 5 archive inspection/custody assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 520,
+        "identity": {
+          "suite": "librairii-adapters",
+          "name": "archives::tests::unsupported_go_filters_remain_rejected_when_selected_for_metadata"
+        },
+        "reason": "Additive Task 5 archive inspection/custody assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 521,
+        "identity": {
+          "suite": "librairii-adapters",
+          "name": "archives::tests::zip_checks_unused_payload_crc_while_seven_zip_reads_only_selected_blocks"
+        },
+        "reason": "Additive Task 5 archive inspection/custody assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 522,
+        "identity": {
+          "suite": "librairii-adapters",
+          "name": "archives::tests::unqualified_brotli_payload_decoder_remains_disabled"
+        },
+        "reason": "Additive Task 5 archive inspection/custody assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 523,
+        "identity": {
+          "suite": "librairii-adapters",
+          "name": "archives::tests::encoded_header_patch_rejects_graph_mismatch_and_aggregate_memory_before_decode"
+        },
+        "reason": "Additive Task 5 archive inspection/custody assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 524,
+        "identity": {
+          "suite": "librairii-adapters",
+          "name": "archives::tests::patched_header_graph_and_brotli_support_fragmented_source_reads_and_strict_windows"
+        },
+        "reason": "Additive Task 5 archive inspection/custody assertions; all admitted identities retain exact order and target scope."
       }
     ],
     "python": [
@@ -3975,6 +4386,36 @@
         "position": 43,
         "identity": "test_sources.SourcePolicy.test_tag_categories_are_exact_scoped_and_read_only",
         "reason": "Additive observed Task 7/8 discovery; original integration identities retain exact order and target scope."
+      },
+      {
+        "position": 44,
+        "identity": "test_archive_patch.ArchivePatchPolicy.test_either_dependency_graph_cannot_bypass_patch",
+        "reason": "Observed additive Task 5 pinned decoder provenance failure assertions on owned copies; preserves every admitted identity and ordering."
+      },
+      {
+        "position": 45,
+        "identity": "test_archive_patch.ArchivePatchPolicy.test_missing_extra_and_modified_sources_fail",
+        "reason": "Observed additive Task 5 pinned decoder provenance failure assertions on owned copies; preserves every admitted identity and ordering."
+      },
+      {
+        "position": 46,
+        "identity": "test_archive_patch.ArchivePatchPolicy.test_new_patched_file_and_duplicate_manifest_fields_fail",
+        "reason": "Observed additive Task 5 pinned decoder provenance failure assertions on owned copies; preserves every admitted identity and ordering."
+      },
+      {
+        "position": 47,
+        "identity": "test_archive_patch.ArchivePatchPolicy.test_original_source_and_upstream_identity_cannot_self_repin",
+        "reason": "Observed additive Task 5 pinned decoder provenance failure assertions on owned copies; preserves every admitted identity and ordering."
+      },
+      {
+        "position": 48,
+        "identity": "test_archive_patch.ArchivePatchPolicy.test_pinned_tree_and_both_graph_overrides_pass_without_writes",
+        "reason": "Observed additive Task 5 pinned decoder provenance failure assertions on owned copies; preserves every admitted identity and ordering."
+      },
+      {
+        "position": 49,
+        "identity": "test_archive_patch.ArchivePatchPolicy.test_root_nested_and_source_aliases_fail",
+        "reason": "Observed additive Task 5 pinned decoder provenance failure assertions on owned copies; preserves every admitted identity and ordering."
       }
     ]
   },

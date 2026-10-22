@@ -735,6 +735,18 @@ fn coordinator(store: &impl JobStore, shared: &Shared) {
                 .is_empty()
             && stopping
         {
+            // A worker may have completed/released its item after the earlier
+            // finishing scan excluded that in-flight operation. With no owners
+            // left and intake stopped, reobserve the durable finish candidates
+            // before certifying drain; the next loop persists any parent finish.
+            match store.ready_to_finish(&[]) {
+                StoreResult::Known(None) => {}
+                StoreResult::Known(Some(_)) => continue,
+                _ => {
+                    pause();
+                    continue;
+                }
+            }
             loop {
                 match store.shutdown_cleanup() {
                     StoreResult::Known(()) => break,

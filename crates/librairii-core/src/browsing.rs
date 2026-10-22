@@ -80,11 +80,17 @@ pub struct ExportStory {
     pub uuid: String,
     pub title: String,
     pub original_filename: String,
+    /// Lossless SQL/native bytes. Invalid UTF-8 has an empty display string;
+    /// a copier must consume these bytes or explicitly refuse representation.
+    #[serde(skip)]
+    pub original_filename_bytes: Vec<u8>,
     pub detected_format: String,
     #[serde(rename = "SHA256")]
     pub sha256: String,
     pub byte_size: i64,
     pub managed_relative_path: String,
+    #[serde(skip)]
+    pub managed_relative_path_bytes: Vec<u8>,
     pub verification: String,
 }
 impl ExportStory {

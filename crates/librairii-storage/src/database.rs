@@ -32,13 +32,23 @@ pub const BUSY_TIMEOUT: Duration = Duration::from_secs(5);
 /// or required repair. It does not promise interruption inside a running SQL
 /// statement; domain SQL work must have independently bounded work.
 #[derive(Clone, Debug, Default)]
-pub struct WorkCancellation(Arc<AtomicBool>);
+pub struct WorkCancellation {
+    requested: Arc<AtomicBool>,
+    job: Option<librairii_app::native_jobs::Cancellation>,
+}
 impl WorkCancellation {
+    pub fn for_job(job: &librairii_app::native_jobs::Cancellation) -> Self {
+        Self {
+            requested: Arc::new(AtomicBool::new(false)),
+            job: Some(job.clone()),
+        }
+    }
     pub fn cancel(&self) {
-        self.0.store(true, Ordering::Release);
+        self.requested.store(true, Ordering::Release);
     }
     pub fn is_cancelled(&self) -> bool {
-        self.0.load(Ordering::Acquire)
+        self.requested.load(Ordering::Acquire)
+            || self.job.as_ref().is_some_and(|job| job.is_cancelled())
     }
 }
 
@@ -372,6 +382,10 @@ impl PartialEq for SnapshotIdentity {
 }
 impl Eq for SnapshotIdentity {}
 impl Database<'_> {
+    #[cfg(any(target_os = "macos", target_os = "linux"))]
+    pub(crate) fn native_import_registration(&self) -> bool {
+        matches!(self.authority, Authority::Native(_))
+    }
     pub(crate) fn library_id(&self) -> librairii_core::LibraryId {
         match self.authority {
             Authority::Isolated(library) => library.identity().typed(),

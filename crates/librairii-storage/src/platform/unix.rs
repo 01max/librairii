@@ -31,6 +31,9 @@ use std::{
 };
 
 const PAYLOAD: &str = "payload";
+mod import_source;
+pub(crate) use import_source::CopyPoint;
+pub use import_source::PickedSource;
 static NEXT_TEMP: AtomicU64 = AtomicU64::new(1);
 
 /// A lossless single native component. Validation does not confer ownership.
@@ -731,14 +734,21 @@ pub struct LibraryFiles<'library> {
     staging: Directory,
     archives: Directory,
     catalog: Directory,
-    catalog_route: Option<OfficialArtworkRoute>,
+    catalog_route: Option<ArtworkRoute>,
+    archive_route: Option<ArchiveRoute>,
     trash: Directory,
 }
 #[derive(Debug)]
-struct OfficialArtworkRoute {
+struct ArtworkRoute {
+    root_name: &'static str,
     id: String,
-    official: Option<Directory>,
+    category: Option<Directory>,
     artwork: Option<Directory>,
+}
+#[derive(Debug)]
+struct ArchiveRoute {
+    hash: librairii_core::Checksum,
+    directory: Option<Directory>,
 }
 impl LibraryFiles<'_> {
     /// A closed, hash-typed catalog route, under the same retained custody.
@@ -747,6 +757,21 @@ impl LibraryFiles<'_> {
         &mut self,
         guard: &Custody<'_>,
         id: librairii_core::Checksum,
+    ) -> Result<()> {
+        self.artwork_route(guard, "official", id.to_string())
+    }
+    pub(crate) fn embedded_artwork(
+        &mut self,
+        guard: &Custody<'_>,
+        uuid: librairii_core::StoryUuid,
+    ) -> Result<()> {
+        self.artwork_route(guard, "embedded", uuid.to_string())
+    }
+    fn artwork_route(
+        &mut self,
+        guard: &Custody<'_>,
+        root_name: &'static str,
+        id: String,
     ) -> Result<()> {
         self.check(guard)?;
         let ensure = |parent: &Directory, name: &OsStr| -> Result<Directory> {
@@ -760,9 +785,10 @@ impl LibraryFiles<'_> {
                 Err(e) => Err(e),
             }
         };
-        self.catalog_route = Some(OfficialArtworkRoute {
-            id: id.to_string(),
-            official: None,
+        self.catalog_route = Some(ArtworkRoute {
+            root_name,
+            id,
+            category: None,
             artwork: None,
         });
         let result = (|| {
@@ -770,14 +796,14 @@ impl LibraryFiles<'_> {
                 .catalog_route
                 .as_mut()
                 .ok_or(StorageError::CompatibilityInvariant)?;
-            route.official = Some(ensure(&self.catalog, OsStr::new("official"))?);
-            let official = route
-                .official
+            route.category = Some(ensure(&self.catalog, OsStr::new(root_name))?);
+            let category = route
+                .category
                 .as_ref()
                 .ok_or(StorageError::CompatibilityInvariant)?;
-            route.artwork = Some(ensure(official, OsStr::new(&route.id))?);
+            route.artwork = Some(ensure(category, OsStr::new(&route.id))?);
             self.catalog.flush()?;
-            official.flush()?;
+            category.flush()?;
             route
                 .artwork
                 .as_ref()
@@ -894,6 +920,7 @@ impl<'library> LibraryFiles<'library> {
             archives: root.child(OsStr::new("archives"))?,
             catalog: root.child(OsStr::new("catalog"))?,
             catalog_route: None,
+            archive_route: None,
             trash: root.child(OsStr::new("trash"))?,
             root,
             authority,
@@ -940,8 +967,8 @@ impl<'library> LibraryFiles<'library> {
             }
         }
         if let Some(route) = &self.catalog_route {
-            let official = route
-                .official
+            let category = route
+                .category
                 .as_ref()
                 .ok_or(StorageError::CustodyRecoveryRequired)?;
             let artwork = route
@@ -949,8 +976,16 @@ impl<'library> LibraryFiles<'library> {
                 .as_ref()
                 .ok_or(StorageError::CustodyRecoveryRequired)?;
             self.catalog
-                .require_name(OsStr::new("official"), official.identity)?;
-            official.require_name(OsStr::new(&route.id), artwork.identity)?;
+                .require_name(OsStr::new(route.root_name), category.identity)?;
+            category.require_name(OsStr::new(&route.id), artwork.identity)?;
+        }
+        if let Some(route) = &self.archive_route {
+            let directory = route
+                .directory
+                .as_ref()
+                .ok_or(StorageError::CustodyRecoveryRequired)?;
+            self.archives
+                .require_name(OsStr::new(&route.hash.to_string()), directory.identity)?;
         }
         Ok(())
     }
@@ -962,7 +997,11 @@ impl<'library> LibraryFiles<'library> {
     }
     fn area(&self, area: FileArea) -> &Directory {
         match area {
-            FileArea::Archives => &self.archives,
+            FileArea::Archives => self
+                .archive_route
+                .as_ref()
+                .and_then(|route| route.directory.as_ref())
+                .unwrap_or(&self.archives),
             FileArea::Catalog => self
                 .catalog_route
                 .as_ref()
@@ -1761,6 +1800,49 @@ pub struct TempCleanupFailure<'files, 'library> {
 }
 
 impl<'files, 'library> OwnedStage<'files, 'library> {
+    /// Discard only the original unpublished private copy after the import
+    /// owner has acknowledged a checksum-duplicate report. Existing managed
+    /// bytes and picker sources are outside this capability.
+    pub(crate) fn discard_duplicate_stage(
+        mut self,
+        guard: &Custody<'_>,
+    ) -> std::result::Result<(), Box<TempCleanupFailure<'files, 'library>>> {
+        let result = (|| {
+            self.revalidate(guard)?;
+            let cancel = WorkCancellation::default();
+            if self.directory.entries(1, &cancel)? != [OsString::from(PAYLOAD)] {
+                return Err(StorageError::SnapshotChanged);
+            }
+            self.revalidate(guard)?;
+            self.published = true;
+            native::unlinkat(&self.directory.file, PAYLOAD, AtFlags::empty())
+                .map_err(|e| StorageError::io("discard duplicate private payload", e.into()))?;
+            self.directory.flush()?;
+            self.files
+                .staging
+                .require_name(&self.directory_name, self.directory.identity)?;
+            self.directory.entries(0, &cancel)?;
+            native::unlinkat(
+                &self.files.staging.file,
+                &self.directory_name,
+                AtFlags::REMOVEDIR,
+            )
+            .map_err(|e| StorageError::io("discard duplicate private workspace", e.into()))?;
+            self.files.staging.flush()?;
+            self.files.check(guard)?;
+            self.forget_registration()
+        })();
+        if let Err(cause) = result {
+            self.files.fence();
+            return Err(Box::new(TempCleanupFailure {
+                staged: self,
+                trash_name: None,
+                cause,
+                cleanup_uncertain: true,
+            }));
+        }
+        Ok(())
+    }
     pub fn inspector(&mut self) -> StageReader<'_> {
         StageReader {
             file: &mut self.file,

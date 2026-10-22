@@ -17,6 +17,9 @@ mime.workspace = true
 image.workspace = true
 serde.workspace = true
 serde_json.workspace = true
+rawzip.workspace = true
+flate2.workspace = true
+sevenz-turbo.workspace = true
 
 [lints]
 workspace = true

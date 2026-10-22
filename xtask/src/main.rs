@@ -1,4 +1,5 @@
 #![forbid(unsafe_code)]
+mod archive_patch;
 mod deep;
 mod discovery;
 mod import_sources;

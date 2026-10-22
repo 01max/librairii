@@ -36,3 +36,9 @@ xtask/extract_tag_categories.py -text
 
 # Task 9 Collection reference capture and probe use exact-byte provenance.
 crates/librairii-storage/tests/fixtures/collections/** -text
+
+# Pinned archive decoder source and regression evidence retain exact bytes.
+third_party/sevenz-turbo/** -text
+.config/sevenz-turbo-patch.json -text
+.config/upstream-notices/sevenz-turbo-0.29.2/** -text
+crates/librairii-adapters/testdata/archive-parity/** -text

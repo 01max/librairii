@@ -2924,6 +2924,249 @@
         "x86_64-apple-darwin",
         "x86_64-unknown-linux-gnu"
       ]
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "archives::tests::actual_container_mismatch_and_unsupported_suffix_do_not_admit_an_archive"
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "archives::tests::actual_studio_zip_disguised_as_every_pack_suffix_is_rejected"
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "archives::tests::actual_zip_and_seven_zip_dispatch_preserves_suffix_content_combinations"
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "archives::tests::indexed_archive_reads_selected_metadata_without_bulk_extraction"
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "archives::tests::actual_entry_path_and_duplicate_checks_use_preserved_normalized_keys"
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "archives::tests::actual_frozen_archive_rejections_cover_links_nested_duplicates_and_seven_ratio"
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "archives::tests::entry_actual_read_errors_and_corrupt_payload_crc_cannot_return_partial_bytes"
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "archives::tests::entry_and_expansion_limits_are_enforced_from_actual_container_headers"
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "archives::tests::actual_plain_and_uuid_root_packs_match_preserved_identity_and_format"
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "archives::tests::actual_plain_uuid_size_nil_and_missing_entry_failures_are_not_filename_identity"
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "archives::tests::actual_uuid_roots_require_one_raw_root_and_all_pack_entries"
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "archives::tests::actual_studio_json_rejects_strict_type_trailing_and_missing_references"
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "archives::tests::actual_studio_requires_readable_png_thumbnail_after_reference_validation"
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "archives::tests::actual_studio_zip_and_seven_json_assets_text_and_thumbnail_match_oracle"
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "archives::tests::actual_image_hardening_refuses_retained_previously_accepted_dimensions_and_pixels"
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "archives::tests::actual_metadata_and_rejections_match_entire_preserved_inspection_corpus"
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "archives::tests::actual_optional_metadata_does_not_replace_identity_or_ignore_invalid_selected_bytes"
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "archives::tests::actual_optional_metadata_uuid_text_absence_and_artwork_remain_independent"
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "native::owned::tests::settled_import_stages_recycle_registration_slots_in_one_session",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "platform::unix::import_source::tests::cancelled_copy_retains_owned_stage_and_never_publishes_or_changes_source",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "platform::unix::import_source::tests::selected_aliases_are_read_only_and_source_substitution_is_refused",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "platform::unix::import_source::tests::selected_source_streams_into_content_addressed_original_name_without_mutation",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::native_library",
+      "name": "retired_export_temporaries_keep_descriptor_usage_bounded",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-desktop::imports",
+      "name": "actual_catalog_failure_compensates_new_archive_and_artwork_without_partial_rows",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-desktop::imports",
+      "name": "actual_import_duplicate_and_uuid_conflict_are_atomic_and_survive_reopen",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-desktop::imports",
+      "name": "actual_inspection_failures_keep_frozen_operation_reasons_and_clean_staging",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-desktop::imports",
+      "name": "actual_effect_boundary_failures_preserve_sources_and_cleanup_only_owned_temporaries",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-desktop::imports",
+      "name": "actual_file_size_limit_short_write_preserves_source_and_retires_partial_stage",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-desktop::imports",
+      "name": "actual_import_process_death_recovers_registered_stage_and_preserves_committed_bytes",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-desktop::imports",
+      "name": "actual_native_cancellation_on_both_sides_of_commit_preserves_truth_and_bytes",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-desktop::imports",
+      "name": "actual_registered_native_import_closes_and_reopens_with_unchanged_legacy_source",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-desktop::imports",
+      "name": "actual_staged_hash_mismatch_and_missing_picker_sources_fail_per_item",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "native::owned::tests::concurrent_native_observers_do_not_refuse_each_other_as_profile_updates",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "archives::tests::constructor_budgets_can_only_reduce_production_allocation_ceilings"
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "archives::tests::independent_seven_codec_streams_preserve_studio_metadata_and_artwork"
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "archives::tests::retained_codec_and_hardening_manifest_hashes_and_expected_outcomes_are_enforced"
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "archives::tests::retained_constructor_declarations_and_hardening_fixtures_refuse_before_unbounded_work"
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "archives::tests::unsupported_go_filters_remain_rejected_when_selected_for_metadata"
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "archives::tests::zip_checks_unused_payload_crc_while_seven_zip_reads_only_selected_blocks"
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "archives::tests::unqualified_brotli_payload_decoder_remains_disabled"
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "archives::tests::encoded_header_patch_rejects_graph_mismatch_and_aggregate_memory_before_decode"
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "archives::tests::patched_header_graph_and_brotli_support_fragmented_source_reads_and_strict_windows"
     }
   ]
 }

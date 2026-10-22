@@ -25,7 +25,13 @@ use std::{
     time::{Duration, Instant},
 };
 type TestResult = Result<(), Box<dyn Error>>;
+struct FinishScanGate {
+    entered: AtomicBool,
+    allow: AtomicBool,
+    pause_once: AtomicBool,
+}
 struct Observed<'a, 'b> {
+    finish_scan_gate: Option<&'a FinishScanGate>,
     cancel_created: AtomicBool,
     cancelled_refusals: AtomicUsize,
     pause_creation: AtomicBool,
@@ -128,6 +134,9 @@ impl JobStore for Observed<'_, '_> {
         self.store.next_pending(e)
     }
     fn start_item(&self, w: &WorkItem, at: &str) -> StoreResult<()> {
+        if let Some(gate) = self.finish_scan_gate {
+            wait(|| gate.entered.load(Ordering::Acquire));
+        }
         self.store.start_item(w, at)
     }
     fn start_readback(&self, w: &WorkItem) -> StoreResult<StartObservation> {
@@ -137,7 +146,16 @@ impl JobStore for Observed<'_, '_> {
         &self,
         excluded: &[String],
     ) -> StoreResult<Option<(OperationScope, TerminalResult)>> {
-        self.store.ready_to_finish(excluded)
+        let result = self.store.ready_to_finish(excluded);
+        if let Some(gate) = self.finish_scan_gate
+            && !excluded.is_empty()
+            && matches!(result, StoreResult::Known(None))
+            && gate.pause_once.swap(false, Ordering::AcqRel)
+        {
+            gate.entered.store(true, Ordering::Release);
+            wait(|| gate.allow.load(Ordering::Acquire));
+        }
+        result
     }
     fn save_progress(&self, i: i64, c: i64, t: i64) -> StoreResult<()> {
         self.store.save_progress(i, c, t)
@@ -252,6 +270,7 @@ fn three_real_failed_writes_then_continued_interruption_retains_owner_and_metada
     let mut db = Database::open_isolated(&lib)?;
     assert!(matches!(db.transaction(Default::default(),|tx|{tx.execute_batch("CREATE TRIGGER fail_complete BEFORE UPDATE OF status ON file_operation_items WHEN NEW.status='succeeded' BEGIN SELECT RAISE(ABORT,'complete unavailable'); END; CREATE TRIGGER fail_interrupt BEFORE UPDATE OF status ON file_operations WHEN NEW.status='interrupted' BEGIN SELECT RAISE(ABORT,'interrupt unavailable'); END;")?;Ok(())})?.wait()?,librairii_storage::database::TransactionOutcome::Committed(())));
     let store = Observed {
+        finish_scan_gate: None,
         cancel_created: AtomicBool::new(false),
         cancelled_refusals: AtomicUsize::new(0),
         pause_creation: AtomicBool::new(false),
@@ -370,6 +389,7 @@ fn lost_real_commit_ack_then_barrier_refusal_cannot_erase_unknown_or_repeat_comp
     )?;
     let mut db = Database::open_isolated(&lib)?;
     let store = Observed {
+        finish_scan_gate: None,
         store: TerminalRepository::new(&db, 1),
         cancel_created: AtomicBool::new(false),
         cancelled_refusals: AtomicUsize::new(0),
@@ -453,7 +473,13 @@ fn shutdown_during_admission_cancels_later_enqueued_work_without_entering_effect
         "b0000000-0000-4000-8000-000000000001".parse()?,
     )?;
     let mut db = Database::open_isolated(&lib)?;
+    let finish_scan = FinishScanGate {
+        entered: AtomicBool::new(false),
+        allow: AtomicBool::new(false),
+        pause_once: AtomicBool::new(true),
+    };
     let store = Observed {
+        finish_scan_gate: Some(&finish_scan),
         store: TerminalRepository::new(&db, 1),
         cancel_created: AtomicBool::new(false),
         cancelled_refusals: AtomicUsize::new(0),
@@ -475,6 +501,7 @@ fn shutdown_during_admission_cancels_later_enqueued_work_without_entering_effect
     }
     with_runtime(&store, &effect, Configuration::default(), |handle| {
         let _release = Release(&store.allow_creation);
+        let _finish_release = Release(&finish_scan.allow);
         must(runtime_support::offer(
             &handle,
             must(Start::new(request(71))),
@@ -482,6 +509,16 @@ fn shutdown_during_admission_cancels_later_enqueued_work_without_entering_effect
         wait(|| store.creation_entered.load(Ordering::Acquire));
         handle.shutdown();
         store.allow_creation.store(true, Ordering::Release);
+        // Hold a real no-finished scan while the sole in-flight worker completes
+        // its cancelled item and releases ownership. The parent's finish then
+        // becomes visible only AFTER the coordinator's earlier scan.
+        wait(|| finish_scan.entered.load(Ordering::Acquire));
+        wait(|| {
+            must(must(db.operation_snapshot(request(71).id)).wait())
+                .is_some_and(|s| s.items[0].state == ItemState::Cancelled)
+                && handle.status().running == 0
+        });
+        finish_scan.allow.store(true, Ordering::Release);
         wait(|| handle.status().drained);
     })?;
     assert_eq!(effect.0.load(Ordering::SeqCst), 0);
@@ -542,6 +579,7 @@ fn durable_queued_cancellation_survives_transient_cancellation_read_refusals() -
     )?;
     let mut db = Database::open_isolated(&lib)?;
     let store = Observed {
+        finish_scan_gate: None,
         store: TerminalRepository::new(&db, 1),
         cancel_created: AtomicBool::new(true),
         cancelled_refusals: AtomicUsize::new(3),
