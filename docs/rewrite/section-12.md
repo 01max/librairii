@@ -187,3 +187,11 @@ membership, a foreign restore collision and retry with the same actual owner.
 Three real child-process kills exercise intent, trash move and committed deletion;
 reopening restores unfinished removals and retains completed trash. Both prepared
 and queued exports reject a story with an active removal intent.
+
+The independent removal review identified an unintended checksum eligibility gate
+and its uncancelled pre-move hashing. A separate correction removes bulk hashing
+from removal: no-follow parent/name and actual regular-file descriptor identity
+provide custody; imported checksums remain immutable SQL scope, not removal
+eligibility. Changed-size, validation-invalid archives can be moved to trash or
+restored after interruption. The expanded matrix includes a corrupt-file kill
+following its actual trash move. No archive data is read in a removal SQL callback.

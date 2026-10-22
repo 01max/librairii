@@ -12,8 +12,6 @@ pub(crate) struct RemovalFile<'files, 'library> {
     trash_name: EntryName,
     file: File,
     identity: FileIdentity,
-    hash: librairii_core::Checksum,
-    bytes: u64,
 }
 impl LibraryFiles<'_> {
     pub(crate) fn matches_database(&self, database: &Database<'_>) -> Result<()> {
@@ -23,7 +21,7 @@ impl LibraryFiles<'_> {
         }
         Ok(())
     }
-    fn drain_ownership(&self) -> Result<()> {
+    pub(super) fn drain_ownership(&self) -> Result<()> {
         match self.authority {
             FilesAuthority::Isolated(library) => library.revalidate_database_ownership(),
             FilesAuthority::Native { library, .. } => library.revalidate_database_ownership(),
@@ -99,12 +97,7 @@ impl<'files, 'library> RemovalFile<'files, 'library> {
             }
             _ => return Err(StorageError::CustodyRecoveryRequired),
         };
-        let hash = scope
-            .hash
-            .parse()
-            .map_err(|_| StorageError::CompatibilityInvariant)?;
-        let bytes = u64::try_from(scope.bytes).map_err(|_| StorageError::CompatibilityInvariant)?;
-        let mut actual = Self {
+        let actual = Self {
             files,
             managed,
             trash,
@@ -112,10 +105,8 @@ impl<'files, 'library> RemovalFile<'files, 'library> {
             trash_name,
             identity: FileIdentity::from_file(&file)?,
             file,
-            hash,
-            bytes,
         };
-        actual.verify()?;
+        actual.location()?;
         Ok(actual)
     }
     fn parent_chain(&self, chain: &[(EntryName, Directory)]) -> Result<()> {
@@ -145,18 +136,6 @@ impl<'files, 'library> RemovalFile<'files, 'library> {
             _ => Err(StorageError::CustodyRecoveryRequired),
         }
     }
-    fn verify(&mut self) -> Result<()> {
-        self.location()?;
-        self.file
-            .rewind()
-            .map_err(|e| StorageError::io("rewind removal archive", e))?;
-        let actual = hash_stream(&mut self.file, self.bytes, &WorkCancellation::default())?;
-        if actual.bytes() != self.bytes || actual.checksum() != self.hash {
-            return Err(StorageError::SnapshotChanged);
-        }
-        self.location()?;
-        Ok(())
-    }
     pub(crate) fn move_to_trash(&mut self, guard: &Custody<'_>) -> Result<()> {
         self.files.check(guard)?;
         self.relocate(true)
@@ -165,7 +144,7 @@ impl<'files, 'library> RemovalFile<'files, 'library> {
         self.relocate(false)
     }
     fn relocate(&mut self, to_trash: bool) -> Result<()> {
-        self.verify()?;
+        self.location()?;
         let m = &self.managed.last().ok_or(StorageError::PathEscape)?.1;
         let t = &self.trash.last().ok_or(StorageError::PathEscape)?.1;
         if self.location()? != to_trash {

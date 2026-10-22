@@ -409,7 +409,14 @@ mod tests {
     #[test]
     fn native_removal_preserves_sources_shelf_decisions_and_compensates_uncancelled() -> TestResult
     {
-        for mode in ["intent", "trash", "delete_failure", "success"] {
+        for mode in [
+            "intent",
+            "trash",
+            "delete_failure",
+            "success",
+            "corrupt_success",
+            "corrupt_trash",
+        ] {
             let (roots, copy, locations) = native_copy()?;
             let root = copy.root().to_owned();
             let profile = NativeProfileStore::create_fresh(&locations.native)?;
@@ -418,6 +425,19 @@ mod tests {
                     .map_err(|e| e.to_string())?;
             let mut db = Database::open_native(&native)?;
             let s = story(&db)?;
+            if mode.starts_with("corrupt") {
+                fs::write(
+                    root.join(&s.managed),
+                    b"corrupt managed bytes, with a changed size",
+                )?;
+                committed(
+                    db.transaction(Default::default(), |tx| {
+                        tx.execute("UPDATE story_archives SET validation_state='invalid'", [])?;
+                        Ok(())
+                    })?
+                    .wait()?,
+                )?;
+            }
             let original = fs::read(root.join(&s.managed))?;
             let source = roots.library().join("closed-source").join(&s.managed);
             let source_bytes = fs::read(&source)?;
@@ -439,14 +459,14 @@ mod tests {
                 let mut service = Removals::new(&db, &files)?;
                 let cancel = WorkCancellation::default();
                 let result = service.remove_with(s.id, &cancel, |at| {
-                    if at == mode {
+                    if at == mode || (mode == "corrupt_trash" && at == "trash") {
                         // SQL and file repair must drain through stopped intake.
                         db.stop_ordinary()?;
                         cancel.cancel();
                     }
                     Ok(())
                 });
-                if mode == "success" {
+                if mode.ends_with("success") {
                     assert_eq!(result?.uuid, s.uuid);
                 } else {
                     assert!(result.is_err());
@@ -462,7 +482,7 @@ mod tests {
             )))?.wait()?;
             assert_eq!(membership, 1);
             assert_eq!(intents, 0);
-            if mode == "success" {
+            if mode.ends_with("success") {
                 assert_eq!((present, tags), (0, 0));
                 assert!(!root.join(&s.managed).exists());
                 let mut found = false;
@@ -641,7 +661,7 @@ mod tests {
             })?;
             return Err("crash checkpoint missed".into());
         }
-        for at in ["intent", "trash", "deleted"] {
+        for at in ["intent", "trash", "deleted", "corrupt_trash"] {
             let (roots, copy, locations) = native_copy()?;
             let root = copy.root().to_owned();
             let profile = NativeProfileStore::create_fresh(&locations.native)?;
@@ -650,6 +670,16 @@ mod tests {
                     .map_err(|e| e.to_string())?;
             let mut db = Database::open_native(&native)?;
             let s = story(&db)?;
+            if at == "corrupt_trash" {
+                fs::write(root.join(&s.managed), b"corrupt managed bytes after import")?;
+                committed(
+                    db.transaction(Default::default(), |tx| {
+                        tx.execute("UPDATE story_archives SET validation_state='invalid'", [])?;
+                        Ok(())
+                    })?
+                    .wait()?,
+                )?;
+            }
             let original = fs::read(root.join(&s.managed))?;
             db.close()?;
             drop(db);
@@ -660,7 +690,7 @@ mod tests {
             fs::write(
                 &context,
                 serde_json::to_vec(
-                    &serde_json::json!({"home":roots.profile().join("home"),"config":roots.profile().join("config"),"data":roots.library().join("data"),"ready":ready,"at":at}),
+                    &serde_json::json!({"home":roots.profile().join("home"),"config":roots.profile().join("config"),"data":roots.library().join("data"),"ready":ready,"at":if at=="corrupt_trash" {"trash"} else {at}}),
                 )?,
             )?;
             let mut child=Command::new(std::env::current_exe()?).args(["--exact","removal::tests::native_removal_kill_at_intent_move_and_delete_recovers_before_intake"]).env(CHILD,&context).stdout(Stdio::null()).stderr(Stdio::inherit()).spawn()?;
