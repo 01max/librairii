@@ -263,3 +263,9 @@ unknown unlink/flush results retain the actual owner and fence intake. Failure
 compensation still preserves recoverable trash. General trash settlement/adoption
 release qualification remains a separate release gate; these tests do not certify
 arbitrary crash leftovers or substituted allocations as safe to remove.
+
+The independent standards review found a custody-loss path before artwork file
+setup: taking the guard before a fallible directory open could leave compensation
+without its original guard. Directory preparation now finishes while resources
+retain custody. The generalized artwork route names also describe both embedded
+and official categories. These are separate review fixes, not waived findings.

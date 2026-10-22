@@ -734,15 +734,15 @@ pub struct LibraryFiles<'library> {
     staging: Directory,
     archives: Directory,
     catalog: Directory,
-    catalog_route: Option<OfficialArtworkRoute>,
+    catalog_route: Option<ArtworkRoute>,
     archive_route: Option<ArchiveRoute>,
     trash: Directory,
 }
 #[derive(Debug)]
-struct OfficialArtworkRoute {
+struct ArtworkRoute {
     root_name: &'static str,
     id: String,
-    official: Option<Directory>,
+    category: Option<Directory>,
     artwork: Option<Directory>,
 }
 #[derive(Debug)]
@@ -785,10 +785,10 @@ impl LibraryFiles<'_> {
                 Err(e) => Err(e),
             }
         };
-        self.catalog_route = Some(OfficialArtworkRoute {
+        self.catalog_route = Some(ArtworkRoute {
             root_name,
             id,
-            official: None,
+            category: None,
             artwork: None,
         });
         let result = (|| {
@@ -796,14 +796,14 @@ impl LibraryFiles<'_> {
                 .catalog_route
                 .as_mut()
                 .ok_or(StorageError::CompatibilityInvariant)?;
-            route.official = Some(ensure(&self.catalog, OsStr::new(root_name))?);
-            let official = route
-                .official
+            route.category = Some(ensure(&self.catalog, OsStr::new(root_name))?);
+            let category = route
+                .category
                 .as_ref()
                 .ok_or(StorageError::CompatibilityInvariant)?;
-            route.artwork = Some(ensure(official, OsStr::new(&route.id))?);
+            route.artwork = Some(ensure(category, OsStr::new(&route.id))?);
             self.catalog.flush()?;
-            official.flush()?;
+            category.flush()?;
             route
                 .artwork
                 .as_ref()
@@ -967,8 +967,8 @@ impl<'library> LibraryFiles<'library> {
             }
         }
         if let Some(route) = &self.catalog_route {
-            let official = route
-                .official
+            let category = route
+                .category
                 .as_ref()
                 .ok_or(StorageError::CustodyRecoveryRequired)?;
             let artwork = route
@@ -976,8 +976,8 @@ impl<'library> LibraryFiles<'library> {
                 .as_ref()
                 .ok_or(StorageError::CustodyRecoveryRequired)?;
             self.catalog
-                .require_name(OsStr::new(route.root_name), official.identity)?;
-            official.require_name(OsStr::new(&route.id), artwork.identity)?;
+                .require_name(OsStr::new(route.root_name), category.identity)?;
+            category.require_name(OsStr::new(&route.id), artwork.identity)?;
         }
         if let Some(route) = &self.archive_route {
             let directory = route

@@ -448,11 +448,12 @@ impl<'db, 'library> ImportStorage<'db, 'library> {
             c.metadata.identity.canonical()
         );
         let uuid = c.metadata.identity.typed();
-        let guard = r.guard.take().ok_or(Problem("artwork_failed"))?;
         let mut files = self
             .database
             .metadata_files()
             .map_err(|_| Problem("artwork_failed"))?;
+        // Retain custody in resources through every fallible preparation step.
+        let guard = r.guard.take().ok_or(Problem("artwork_failed"))?;
         let route = files.embedded_artwork(&guard, uuid);
         let files = Arc::new(files);
         r.extra_files.push(files.clone());
