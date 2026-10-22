@@ -1558,6 +1558,149 @@ mod owned {
                 locations,
             ))
         }
+        #[test]
+        fn settled_import_stages_recycle_registration_slots_in_one_session() -> TestResult {
+            use crate::{
+                database::TransactionOutcome,
+                platform::unix::{EntryName, FileArea, LibraryFiles, Publication},
+            };
+            use librairii_app::ports::creation::{NewItem, NewOperation};
+            use librairii_core::OperationKind;
+            use std::io::Write;
+            for publish in [false, true] {
+                let roots = TestRoots::new()?;
+                let (copy, locations) = copy(&roots)?;
+                let store = NativeProfileStore::create_fresh(&locations.native)?;
+                let native = NativeLibrary::bind_independent(
+                    copy,
+                    &store,
+                    &locations,
+                    &WorkCancellation::default(),
+                )
+                .map_err(|f| f.to_string())?;
+                let mut db = Database::open_native(&native)?;
+                let TransactionOutcome::Committed(operation) = db
+                    .create_operation(
+                        NewOperation {
+                            id: "a0000000-0000-4000-8000-000000000093".into(),
+                            kind: OperationKind::Import,
+                            source: None,
+                            destination: None,
+                            items: (0..66)
+                                .map(|n| NewItem {
+                                    source_name: format!("import-{n}"),
+                                    ..Default::default()
+                                })
+                                .collect(),
+                        },
+                        "2026-10-22T00:00:00Z".into(),
+                        Default::default(),
+                    )?
+                    .wait()?
+                else {
+                    return Err("create operation was not acknowledged".into());
+                };
+                for item in &operation.items {
+                    assert!(matches!(
+                        db.mark_operation_item_running(
+                            operation.operation.identity.id.clone(),
+                            item.identity.id,
+                            "2026-10-22T00:00:01Z".into(),
+                            Default::default(),
+                        )?
+                        .wait()?,
+                        TransactionOutcome::Committed(_)
+                    ));
+                }
+                {
+                    let files = LibraryFiles::open_native(&db)?;
+                    let guard = files.try_custody()?;
+                    for (index, item) in operation.items.iter().enumerate() {
+                        let mut stage = files
+                            .create_stage(&guard)
+                            .map_err(|f| f.cause().to_string())?;
+                        stage.register_operation(
+                            &guard,
+                            operation.operation.identity.id.clone(),
+                            item.identity.id,
+                        )?;
+                        stage.write_all(b"registered import")?;
+                        if publish {
+                            let digest = stage.measure(17, &WorkCancellation::default())?;
+                            let publication = stage
+                                .publish_no_clobber(
+                                    &guard,
+                                    FileArea::Archives,
+                                    EntryName::parse("registered.pack")?,
+                                    digest,
+                                    &WorkCancellation::default(),
+                                )
+                                .map_err(|f| f.cause.to_string())?;
+                            assert_eq!(matches!(publication, Publication::NewOwned(_)), index == 0);
+                            publication
+                                .finish_metadata_stage(&guard)
+                                .map_err(|f| f.cause.to_string())?;
+                        } else {
+                            let retired = stage
+                                .retire_owned_temp(&guard)
+                                .map_err(|f| f.cause.to_string())?;
+                            retired.revalidate(&guard)?;
+                        }
+                    }
+                    assert!(native.registered_temporaries()?.is_empty());
+                    assert_eq!(fs::read_dir(native.layout().staging())?.count(), 0);
+                    if publish {
+                        assert_eq!(
+                            fs::read(native.layout().archives().join("registered.pack"))?,
+                            b"registered import"
+                        );
+                    } else {
+                        // Retirement preserves recoverable trash; it only frees
+                        // the registration for the former staging workspace.
+                        assert_eq!(fs::read_dir(native.layout().trash())?.count(), 66);
+                        let mut stage = files
+                            .create_stage(&guard)
+                            .map_err(|f| f.cause().to_string())?;
+                        stage.register_operation(
+                            &guard,
+                            operation.operation.identity.id.clone(),
+                            operation.items[0].identity.id,
+                        )?;
+                        stage.write_all(b"preserved")?;
+                        assert!(
+                            stage
+                                .register_operation(
+                                    &guard,
+                                    operation.operation.identity.id.clone(),
+                                    operation.items[1].identity.id
+                                )
+                                .is_err()
+                        );
+                        let registration = native
+                            .registered_temporaries()?
+                            .pop()
+                            .ok_or("registration")?;
+                        let original = native.layout().staging().join(&registration.name);
+                        let held = native.layout().staging().join("held-original");
+                        fs::rename(&original, &held)?;
+                        fs::create_dir(&original)?;
+                        let failure = stage
+                            .retire_owned_temp(&guard)
+                            .err()
+                            .ok_or("substitution accepted")?;
+                        assert_eq!(native.registered_temporaries()?, [registration]);
+                        assert_eq!(fs::read(held.join("payload"))?, b"preserved");
+                        drop(failure);
+                    }
+                }
+                db.close()?;
+                drop(db);
+                if publish {
+                    native.finish().map_err(|f| f.to_string())?;
+                }
+            }
+            Ok(())
+        }
         fn fault() -> Result<()> {
             Err(StorageError::io(
                 "injected native record post-replace flush boundary",

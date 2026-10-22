@@ -1187,6 +1187,7 @@ impl<'library> LibraryFiles<'library> {
                         file,
                         identity,
                         published: false,
+                        registration: None,
                     });
                 }
                 (directory, _, payload, _) => {
@@ -1508,6 +1509,7 @@ pub struct OwnedStage<'files, 'library> {
     file: File,
     identity: FileIdentity,
     published: bool,
+    registration: Option<Box<crate::native_effects::Temporary>>,
 }
 // Drop-checking must retain the generation/OS lease until its real file and
 // directory handles close, even when a caller stops using the stage early.
@@ -1698,7 +1700,8 @@ impl<'files, 'library> Publication<'files, 'library> {
             )
             .map_err(|e| StorageError::io("remove empty metadata stage", e.into()))?;
             flush(&stage.files.staging)?;
-            stage.files.check(guard)
+            stage.files.check(guard)?;
+            stage.forget_registration()
         })();
         if let Err(cause) = result {
             match &self {
@@ -2025,7 +2028,8 @@ impl<'files, 'library> OwnedStage<'files, 'library> {
             require_regular(&self.file)?;
             flush(&self.files.trash)?;
             flush(&self.files.staging)?;
-            self.files.check(guard)
+            self.files.check(guard)?;
+            self.forget_registration()
         })();
         if let Err(cause) = after {
             self.files.fence();
@@ -3627,7 +3631,7 @@ impl OwnedStage<'_, '_> {
     /// record before writing payload bytes. A scope DTO cannot construct a stage.
     /// Errors leave this original owner in the caller; never delete by basename.
     pub fn register_operation(
-        &self,
+        &mut self,
         guard: &Custody<'_>,
         operation: String,
         item: i64,
@@ -3640,7 +3644,7 @@ impl OwnedStage<'_, '_> {
         durable_file_flush(&self.file)?;
         self.directory.flush()?;
         self.files.staging.flush()?;
-        library.register_temporary(crate::native_effects::Temporary {
+        let registration = crate::native_effects::Temporary {
             operation,
             item,
             scope_sha256: scope,
@@ -3653,7 +3657,28 @@ impl OwnedStage<'_, '_> {
                 .into(),
             directory: Some(self.directory.identity()),
             payload: Some(self.identity),
-        })
+        };
+        if self
+            .registration
+            .as_ref()
+            .is_some_and(|prior| prior.as_ref() != &registration)
+        {
+            return Err(StorageError::SnapshotChanged);
+        }
+        // Keep the exact registration with the actual owner even if its durable
+        // update loses acknowledgement. Publication moves this owner intact.
+        self.registration = Some(Box::new(registration.clone()));
+        library.register_temporary(registration)
+    }
+    fn forget_registration(&mut self) -> Result<()> {
+        if let Some(registration) = &self.registration {
+            let FilesAuthority::Native { library, .. } = self.files.authority else {
+                return Err(StorageError::IdentityMismatch);
+            };
+            library.forget_temporary(registration)?;
+            self.registration = None;
+        }
+        Ok(())
     }
 }
 impl LibraryFiles<'_> {
