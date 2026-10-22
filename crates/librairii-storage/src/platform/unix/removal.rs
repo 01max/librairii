@@ -7,7 +7,8 @@ use crate::removal::Scope;
 pub(crate) struct RemovalFile<'files, 'library> {
     files: &'files LibraryFiles<'library>,
     managed: Vec<(EntryName, Directory)>,
-    trash: Vec<(EntryName, Directory)>,
+    trash: Option<Vec<(EntryName, Directory)>>,
+    trash_path: String,
     managed_name: EntryName,
     trash_name: EntryName,
     file: File,
@@ -87,20 +88,38 @@ impl<'files, 'library> RemovalFile<'files, 'library> {
     ) -> Result<Self> {
         files.check(guard)?;
         let (managed, managed_name) = parents(files, &scope.managed, "archives", recovery)?;
-        let (trash, trash_name) = parents(files, trash, "trash", true)?;
+        let trash_path = trash.to_owned();
+        let (trash, trash_name) = match parents(files, trash, "trash", false) {
+            Ok((chain, name)) => (Some(chain), name),
+            Err(StorageError::Io { source, .. }) if source.kind() == io::ErrorKind::NotFound => (
+                None,
+                EntryName::parse(trash.rsplit('/').next().ok_or(StorageError::PathEscape)?)?,
+            ),
+            Err(e) => return Err(e),
+        };
         let m = &managed.last().ok_or(StorageError::PathEscape)?.1;
-        let t = &trash.last().ok_or(StorageError::PathEscape)?.1;
-        let file = match (named(m, &managed_name)?, named(t, &trash_name)?) {
+        let observed_trash = match &trash {
+            Some(chain) => named(
+                &chain.last().ok_or(StorageError::PathEscape)?.1,
+                &trash_name,
+            )?,
+            None => None,
+        };
+        let file = match (named(m, &managed_name)?, observed_trash) {
             (Some(_), None) => m.open_regular(managed_name.as_os_str(), OFlags::RDONLY)?,
-            (None, Some(_)) if recovery => {
-                t.open_regular(trash_name.as_os_str(), OFlags::RDONLY)?
-            }
+            (None, Some(_)) if recovery => trash
+                .as_ref()
+                .and_then(|c| c.last())
+                .ok_or(StorageError::PathEscape)?
+                .1
+                .open_regular(trash_name.as_os_str(), OFlags::RDONLY)?,
             _ => return Err(StorageError::CustodyRecoveryRequired),
         };
         let actual = Self {
             files,
             managed,
             trash,
+            trash_path,
             managed_name,
             trash_name,
             identity: FileIdentity::from_file(&file)?,
@@ -123,14 +142,25 @@ impl<'files, 'library> RemovalFile<'files, 'library> {
     }
     fn location(&self) -> Result<bool> {
         self.parent_chain(&self.managed)?;
-        self.parent_chain(&self.trash)?;
+        self.files
+            .root
+            .require_name(OsStr::new("trash"), self.files.trash.identity)?;
+        if let Some(trash) = &self.trash {
+            self.parent_chain(trash)?;
+        }
         require_regular(&self.file)?;
         if FileIdentity::from_file(&self.file)? != self.identity {
             return Err(StorageError::SnapshotChanged);
         }
         let m = &self.managed.last().ok_or(StorageError::PathEscape)?.1;
-        let t = &self.trash.last().ok_or(StorageError::PathEscape)?.1;
-        match (named(m, &self.managed_name)?, named(t, &self.trash_name)?) {
+        let observed_trash = match &self.trash {
+            Some(chain) => named(
+                &chain.last().ok_or(StorageError::PathEscape)?.1,
+                &self.trash_name,
+            )?,
+            None => None,
+        };
+        match (named(m, &self.managed_name)?, observed_trash) {
             (Some(identity), None) if identity == self.identity => Ok(false),
             (None, Some(identity)) if identity == self.identity => Ok(true),
             _ => Err(StorageError::CustodyRecoveryRequired),
@@ -145,8 +175,18 @@ impl<'files, 'library> RemovalFile<'files, 'library> {
     }
     fn relocate(&mut self, to_trash: bool) -> Result<()> {
         self.location()?;
+        if to_trash && self.trash.is_none() {
+            let (chain, name) = parents(self.files, &self.trash_path, "trash", true)?;
+            if name != self.trash_name {
+                return Err(StorageError::SnapshotChanged);
+            }
+            self.trash = Some(chain);
+        }
         let m = &self.managed.last().ok_or(StorageError::PathEscape)?.1;
-        let t = &self.trash.last().ok_or(StorageError::PathEscape)?.1;
+        let t = match &self.trash {
+            Some(chain) => &chain.last().ok_or(StorageError::PathEscape)?.1,
+            None => &self.files.trash,
+        };
         if self.location()? != to_trash {
             let (from, name, to, target) = if to_trash {
                 (m, &self.managed_name, t, &self.trash_name)

@@ -1387,6 +1387,15 @@ mod owned {
             drop(managed);
             require_root_entries(&self.root)?;
             require_no_sidecars(&self.database)?;
+            // Durable removals retain product data in their bounded namespace.
+            // Other trash owners remain unsettled and cannot certify closure.
+            let trash = self.root.child(OsStr::new("trash"))?;
+            for entry in trash.entries(1, &WorkCancellation::default())? {
+                if entry != OsStr::new("removals") {
+                    return Err(StorageError::CustodyRecoveryRequired);
+                }
+                trash.child(&entry)?;
+            }
             // Trash is retained product data after a committed removal.
             if !self
                 .root

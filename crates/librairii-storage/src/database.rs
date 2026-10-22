@@ -599,7 +599,7 @@ impl<'library> Database<'library> {
                 .push(receiver.recv().map_err(|_| StorageError::WorkerStopped)??);
         }
         #[cfg(any(target_os = "macos", target_os = "linux"))]
-        if let Err(error) = runtime.recover_removals() {
+        if native_close && let Err(error) = runtime.recover_removals() {
             runtime.fence_external_effect();
             return Err(error);
         }

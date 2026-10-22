@@ -238,3 +238,12 @@ provide independent ZIP payload, race/no-clobber and retained-uncertainty eviden
 [Trash and diagnostics guidance](trash-and-diagnostics.md) explains explicit export,
 no upload, manual copy-out/reimport, retained Shelf UUID decisions, and the loss
 of deleted tag assignments. Native picker/dialog execution remains a later UI gate.
+
+Cumulative-gate integration correction: native startup alone performs automatic
+removal recovery; isolated schema/projection fixtures retain their explicit test
+preconditions. Recovery of an intent whose managed file is already present no
+longer creates missing trash parents. Trash parents are created only after the
+intent is durable and a move is needed. Native finalization permits the retained
+`trash/removals` directory while continuing to refuse other unsettled trash and
+all staging artifacts. Existing native closure, metadata, registration-retirement,
+schema-prefix and Shelf upgrade regressions remain required.
