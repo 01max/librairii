@@ -110,6 +110,21 @@ pub struct Report {
     pub byte_size: u64,
 }
 #[derive(Debug)]
+pub struct ExportFailure {
+    pub problem: librairii_core::diagnostics::Problem,
+    cause: StorageError,
+}
+impl std::fmt::Display for ExportFailure {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.problem.code())
+    }
+}
+impl std::error::Error for ExportFailure {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        Some(&self.cause)
+    }
+}
+#[derive(Debug)]
 pub struct Diagnostics<'db, 'logger, 'files, 'library> {
     database: &'db Database<'library>,
     logger: &'logger Logger<'db, 'files, 'library>,
@@ -133,8 +148,32 @@ impl<'db, 'logger, 'files, 'library> Diagnostics<'db, 'logger, 'files, 'library>
         self.retained.len()
     }
     /// Only the explicitly selected destination is used; no automatic upload.
-    pub fn export(&mut self, destination: &Path, cancel: &WorkCancellation) -> Result<Report> {
+    pub fn export(
+        &mut self,
+        destination: &Path,
+        cancel: &WorkCancellation,
+    ) -> std::result::Result<Report, ExportFailure> {
         self.export_with(destination, cancel, |output, name| output.publish(name))
+            .map_err(|cause| {
+                use librairii_core::diagnostics::Problem;
+                let problem = if !self.retained.is_empty() {
+                    Problem::RecoveryRequired
+                } else {
+                    match &cause {
+                        StorageError::Export(librairii_core::export::ExportError::Destination) => {
+                            Problem::Destination
+                        }
+                        StorageError::DestinationCollision => Problem::Collision,
+                        StorageError::Cancelled => Problem::Cancelled,
+                        StorageError::DiagnosticLogsUnavailable => Problem::LogsUnavailable,
+                        StorageError::CustodyRecoveryRequired
+                        | StorageError::RuntimeFenced
+                        | StorageError::OwnedTempCleanupFailed { .. } => Problem::RecoveryRequired,
+                        _ => Problem::ExportFailed,
+                    }
+                };
+                ExportFailure { problem, cause }
+            })
     }
     fn export_with(
         &mut self,
@@ -148,12 +187,13 @@ impl<'db, 'logger, 'files, 'library> Diagnostics<'db, 'logger, 'files, 'library>
         if !self.retained.is_empty() {
             return Err(StorageError::CustodyRecoveryRequired);
         }
-        let destination = Destination::open(destination)?;
+        let destination = Destination::open(destination)
+            .map_err(|_| librairii_core::export::ExportError::Destination)?;
         if destination
             .path()
             .starts_with(self.database.library_layout().root())
         {
-            return Err(StorageError::PathEscape);
+            return Err(librairii_core::export::ExportError::Destination.into());
         }
         let generated = timestamp()?;
         let at = generated.clone();
@@ -198,7 +238,11 @@ impl<'db, 'logger, 'files, 'library> Diagnostics<'db, 'logger, 'files, 'library>
             "diagnostics.json".to_owned(),
             serde_json::to_vec(&manifest).map_err(|_| StorageError::CompatibilityInvariant)?,
         )];
-        for (name, bytes) in self.logger.snapshots()? {
+        for (name, bytes) in self
+            .logger
+            .snapshots()
+            .map_err(|_| StorageError::DiagnosticLogsUnavailable)?
+        {
             entries.push((format!("logs/{name}"), bytes));
         }
         let bytes = zip::encode(&entries)?;
@@ -391,6 +435,83 @@ with zipfile.ZipFile(sys.argv[1]) as z:
             );
             logger.flush()?;
         }
+        db.close()?;
+        drop(db);
+        native.finish().map_err(|e| e.to_string())?;
+        Ok(())
+    }
+    #[test]
+    fn native_diagnostics_requires_explicit_external_selection_and_localizes_safe_failures()
+    -> TestResult {
+        use librairii_core::diagnostics::Problem;
+        let (roots, copy, locations) = native_copy()?;
+        let root = copy.root().to_owned();
+        let profile = NativeProfileStore::create_fresh(&locations.native)?;
+        let native =
+            NativeLibrary::bind_independent(copy, &profile, &locations, &Default::default())
+                .map_err(|e| e.to_string())?;
+        let mut db = Database::open_native(&native)?;
+        let destination = roots.profile().join("diagnostics");
+        fs::create_dir(&destination)?;
+        let token = roots.profile().join("personal-token.txt");
+        fs::write(&token, b"PRIVATE_TOKEN_NEVER_READ")?;
+        std::os::unix::fs::symlink(&token, root.join("logs/events.jsonl"))?;
+        {
+            let files = crate::platform::unix::LibraryFiles::open_native(&db)?;
+            let logger = Logger::new(&db, &files)?;
+            let mut diagnostics = Diagnostics::new(&db, &logger)?;
+            for selected in [
+                Path::new("relative"),
+                root.as_path(),
+                &root.join("archives"),
+            ] {
+                let error = diagnostics
+                    .export(selected, &Default::default())
+                    .err()
+                    .ok_or("unsafe destination accepted")?;
+                assert_eq!(error.problem, Problem::Destination);
+                assert_eq!(error.to_string(), "diagnostics.destination_invalid");
+            }
+            let cancel = WorkCancellation::default();
+            cancel.cancel();
+            assert_eq!(
+                diagnostics
+                    .export(&destination, &cancel)
+                    .err()
+                    .ok_or("cancellation ignored")?
+                    .problem,
+                Problem::Cancelled
+            );
+            let error = diagnostics
+                .export(&destination, &Default::default())
+                .err()
+                .ok_or("symlink log was read")?;
+            assert_eq!(error.problem, Problem::LogsUnavailable);
+            for problem in [
+                Problem::Destination,
+                Problem::Collision,
+                Problem::Cancelled,
+                Problem::LogsUnavailable,
+                Problem::ExportFailed,
+                Problem::RecoveryRequired,
+            ] {
+                assert_ne!(problem.message("en"), problem.message("fr-FR"));
+                assert!(problem.code().starts_with("diagnostics."));
+                for locale in ["en", "fr-FR"] {
+                    assert!(
+                        !problem
+                            .message(locale)
+                            .contains(root.to_str().ok_or("fixture UTF8")?)
+                    );
+                    assert!(!problem.message(locale).contains("PRIVATE_TOKEN"));
+                }
+            }
+            assert_eq!(diagnostics.retained_outputs(), 0);
+            assert_eq!(fs::read_dir(&destination)?.count(), 0);
+            assert_eq!(fs::read(&token)?, b"PRIVATE_TOKEN_NEVER_READ");
+        }
+        // A read-only refusal before file acquisition does not claim uncertain
+        // library effects or prevent ordinary clean closure.
         db.close()?;
         drop(db);
         native.finish().map_err(|e| e.to_string())?;

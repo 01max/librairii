@@ -1,7 +1,7 @@
 # Task 12: exports, trash custody and diagnostics
 
-**Partial: 12.1–12.7 implemented; 12.8–12.9 remain incomplete. Keep the Task 12
-PR in draft.** This is an export-domain/copy slice, not completion of Task 12.
+**Partial: 12.1–12.8 implemented; 12.9 remains incomplete. Keep the Task 12
+PR in draft.** This is a headless service slice, not completion of Task 12.
 
 Rebased base: `5fd74f06fe4031b37bf84822d218943ec9ed970d` (Task 6 merged).
 One dedicated PR targets `rewrite-in-rust-native-desktop`. Linux x86-64 and
@@ -57,8 +57,7 @@ that registry. Per-item checks require the original record, archive metadata and
 eligibility immediately before copying; prepared skipped/conflicted rows never
 promote. `invalidate` discards preparations before a future library transition.
 Tests cover eviction, forged/foreign/replayed IDs, stale flags, original skips,
-and a queued ready item becoming Broken. Scheduling/terminal persistence remains
-the separately incomplete Task 6 composition rather than an inferred job port.
+and a queued ready item becoming Broken. Task 12.5 composes scheduling and terminal persistence with the merged Task 6 runtime.
 
 ## 12.4 — Exact destination-local passthrough
 
@@ -111,7 +110,7 @@ qualification of every full/removable filesystem or Windows sharing mode.
 
 ## Remaining dependency and acceptance gates
 
-12.8 diagnostics presentation/documentation and 12.9 final acceptance remain incomplete. 12.9's complete import→inspect→export→reopen
+12.9 final acceptance remains incomplete. 12.9's complete import→inspect→export→reopen
 slice still depends on Task 5's real hostile archive inspection/import custody,
 which remains incomplete. Existing preserved Go fixtures do not establish that
 missing Rust import port. Keep that acceptance subtask open until it can run.
@@ -222,3 +221,20 @@ cleans only the owned temporary, and lost publication durability retains the
 actual final output and fences clean closure. The small stored ZIP writer follows
 [PKWARE APPNOTE 6.3.10](https://pkware.cachefly.net/webdocs/casestudies/APPNOTE.TXT),
 sections 4.3.7, 4.3.12 and 4.3.16; it adds no archive-reader/decompression surface.
+
+## 12.8 — Selection, safe localized failures and user recovery guidance
+
+Diagnostic export failures expose stable typed presentation identities and
+English/French messages. The Display string is the reason key; raw storage causes
+remain separate from presentation and cannot enter the typed event API. Relative,
+missing and library-internal selections refuse before output creation. Symlinked
+logs refuse without reading their target or claiming an uncertain library effect.
+The selected directory's actual identity is rechecked before publication.
+
+Additional tests verify explicit external selection, cancellation, refusal to read
+a token through a log symlink, no destination effects on those refusals, safe
+English/French messages and clean closure after read-only refusal. The 12.7 tests
+provide independent ZIP payload, race/no-clobber and retained-uncertainty evidence.
+[Trash and diagnostics guidance](trash-and-diagnostics.md) explains explicit export,
+no upload, manual copy-out/reimport, retained Shelf UUID decisions, and the loss
+of deleted tag assignments. Native picker/dialog execution remains a later UI gate.

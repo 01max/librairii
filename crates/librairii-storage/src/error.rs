@@ -5,6 +5,8 @@ pub type Result<T> = std::result::Result<T, StorageError>;
 
 #[derive(Debug, thiserror::Error)]
 pub enum StorageError {
+    #[error("diagnostics.logs_unavailable")]
+    DiagnosticLogsUnavailable,
     #[error("{0}")]
     OperationInput(#[from] librairii_app::ports::creation::InputError),
     #[error("{0}")]
@@ -156,6 +158,7 @@ impl StorageError {
 
     pub const fn code(&self) -> &'static str {
         match self {
+            Self::DiagnosticLogsUnavailable => "diagnostics.logs_unavailable",
             Self::OperationInput(librairii_app::ports::creation::InputError::Invalid) => {
                 "operations.invalid_request"
             }
