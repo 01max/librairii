@@ -93,3 +93,36 @@ title, description and exact thumbnail bytes. Actual archives cover type/trailin
 JSON, invalid UUID, empty/missing/unsafe/aliased references, missing thumbnails and
 non-PNG thumbnails. fmt and all-target adapter Clippy pass. Image hardening
 counterexamples and their explicit compatibility record are part of 5.5.
+
+## 5.5 — Embedded metadata and bounded PNG configuration
+
+The actual reader selects only regular root _metadata.json/_thumbnail.png for
+packs. Optional metadata retains strict Go-compatible string/null/duplicate/
+trailing behavior and canonical UUID consistency without replacing the primary
+identity. STUdio uses its own mandatory metadata/artwork branch. Empty authored
+fields remain empty; the existing query resolver separately applies official,
+embedded and `Story <UUID>`/placeholder fallback provenance. Import does not
+invent a filename title or overwrite official fields.
+
+PNG configuration receives the existing thumbnail pipeline's limits before
+construction: dimension 8192, 16 Mi pixels, 128 MiB decoder allocations, in
+addition to the frozen 10 MiB compressed-artwork ceiling. Configuration parsing
+preserves the baseline header-validation policy; no full raster decode is added.
+The allocation bound includes the PNG header/text metadata reader. As documented
+upstream, decoder allocation accounting does not include arbitrary allocator
+slack or a process-wide memory guarantee.
+
+`crates/librairii-adapters/testdata/import-hardening/` retains original valid PNG
+archives exceeding dimension and pixel limits, deterministic streaming generator,
+byte/hash manifest, exact probe source and actual Go 1.26.5 observations. Both Go
+inspections returned studio_zip and the expected UUID without errors; Rust returns
+artwork_limit. These are explicit compatibility changes with rationale and remain
+pending independent 5.10 review. Reproduce the Go probe by copying probe.go.txt
+into target/task5-go-probe/main.go and running the recorded command from the root.
+
+Eighteen focused archive tests pass. The entire unchanged 20-case preserved
+inspection corpus matches format/UUID/text/artwork SHA-256 or rejection code.
+Additional tests cover actual optional metadata absence/null/empty/type/trailing/
+UUID conflicts and independent artwork, plus both retained image hardening cases.
+fmt and all-target adapter Clippy pass. Publication/reopen provenance acceptance
+remains part of 5.7/5.10.

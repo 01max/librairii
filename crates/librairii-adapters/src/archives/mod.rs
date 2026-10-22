@@ -6,8 +6,8 @@ use librairii_app::native_jobs::Cancellation;
 use librairii_core::import::{
     ArchivePlan, CompressionAccounting, ContainerKind, EntryInfo, ImportIdentity, Inventory,
     InventoryBuilder, Limits, MetadataText, PackStructure, ValidationCode, ValidationError,
-    dispatch, project_studio_json, validate_entry_name, validate_plain_entries,
-    validate_uuid_root_entries,
+    dispatch, project_optional_metadata, project_studio_json, validate_entry_name,
+    validate_plain_entries, validate_uuid_root_entries,
 };
 use std::{
     collections::BTreeMap,
@@ -325,6 +325,46 @@ impl<R: Read + Seek> Archive<R> {
                 entry_name: "thumbnail.png",
                 bytes,
             }),
+        })
+    }
+    /// Project permitted embedded fields. Empty text remains empty so the
+    /// existing independent official/embedded/fallback resolver keeps provenance.
+    pub fn inspect_metadata(&mut self) -> Result<InspectedMetadata> {
+        if self.plan.structure == PackStructure::Studio {
+            return self.inspect_studio_metadata();
+        }
+        let identity = self.inspect_pack_identity()?;
+        let payload = if self.inventory.has_file("_metadata.json") {
+            Some(self.read_entry(
+                "_metadata.json",
+                self.limits.max_metadata_bytes as u64,
+                ValidationCode::MetadataLimit,
+            )?)
+        } else {
+            None
+        };
+        let text =
+            project_optional_metadata(&self.inventory, payload.as_deref(), &identity, self.limits)?
+                .unwrap_or_default();
+        let artwork = if self.inventory.has_file("_thumbnail.png") {
+            let bytes = self.read_entry(
+                "_thumbnail.png",
+                self.limits.max_artwork_bytes as u64,
+                ValidationCode::ArtworkLimit,
+            )?;
+            validate_png(&bytes, "_thumbnail.png")?;
+            Some(EmbeddedArtwork {
+                entry_name: "_thumbnail.png",
+                bytes,
+            })
+        } else {
+            None
+        };
+        Ok(InspectedMetadata {
+            identity,
+            format: self.plan.format,
+            text,
+            artwork,
         })
     }
     /// Read one selected regular entry under its own actual-byte ceiling.

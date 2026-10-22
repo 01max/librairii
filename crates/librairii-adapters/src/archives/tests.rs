@@ -469,3 +469,148 @@ fn actual_studio_requires_readable_png_thumbnail_after_reference_validation() ->
     }
     Ok(())
 }
+
+fn plain_extra(
+    extra: &[(&str, &[u8])],
+) -> std::result::Result<Vec<u8>, Box<dyn std::error::Error>> {
+    let mut entries: Vec<(&str, &[u8])> = vec![
+        ("uuid.bin", &[1; 16]),
+        ("ni", b"n"),
+        ("li.plain", b"l"),
+        ("ri.plain", b"r"),
+        ("si.plain", b"s"),
+        ("rf/a", b"r"),
+        ("sf/a", b"s"),
+    ];
+    entries.extend_from_slice(extra);
+    zip_entries(&entries)
+}
+#[test]
+fn actual_optional_metadata_uuid_text_absence_and_artwork_remain_independent() -> TestResult {
+    let cover = png()?;
+    let bytes = plain_extra(&[("_metadata.json", br#"{"uuid":"01010101-0101-0101-0101-010101010101","title":"  Embedded  ","description":"  Authored  "}"#), ("_thumbnail.png", &cover)])?;
+    let mut archive = open(&bytes, b"story.pk")?;
+    let result = archive.inspect_metadata()?;
+    assert_eq!(result.text.title, "Embedded");
+    assert_eq!(result.text.description, "Authored");
+    assert_eq!(result.artwork.ok_or("missing cover")?.bytes, cover);
+    for payload in [None, Some(b"null".as_slice()), Some(b"{}".as_slice())] {
+        let extra: Vec<_> = payload.map(|p| ("_metadata.json", p)).into_iter().collect();
+        let bytes = plain_extra(&extra)?;
+        let result = open(&bytes, b"story.pk")?.inspect_metadata()?;
+        assert_eq!(result.text, MetadataText::default());
+        assert!(result.artwork.is_none());
+    }
+    Ok(())
+}
+#[test]
+fn actual_optional_metadata_does_not_replace_identity_or_ignore_invalid_selected_bytes()
+-> TestResult {
+    for (payload, code) in [
+        (
+            br#"{"uuid":"00112233-4455-4677-8899-aabbccddeeff"}"#.as_slice(),
+            ValidationCode::InvalidUuid,
+        ),
+        (b"", ValidationCode::MalformedMetadata),
+        (b"{} {}", ValidationCode::MalformedMetadata),
+        (br#"{"title":42}"#, ValidationCode::MalformedMetadata),
+    ] {
+        let bytes = plain_extra(&[("_metadata.json", payload)])?;
+        let result = open(&bytes, b"story.pk")?.inspect_metadata();
+        assert!(
+            matches!(result, Err(ArchiveError::Validation(ValidationError { code: actual, .. })) if actual == code),
+            "{result:?}"
+        );
+    }
+    Ok(())
+}
+#[test]
+fn actual_image_hardening_refuses_retained_previously_accepted_dimensions_and_pixels() -> TestResult
+{
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("testdata/import-hardening");
+    let manifest: serde_json::Value = serde_json::from_slice(&fs::read(root.join("images.json"))?)?;
+    let rows = manifest["fixtures"]
+        .as_array()
+        .ok_or("missing image fixture records")?;
+    for row in rows {
+        let name = row["file"].as_str().ok_or("missing fixture name")?;
+        let bytes = fs::read(root.join(name))?;
+        assert_eq!(
+            librairii_app::metadata::digest(&bytes).to_string(),
+            row["sha256"].as_str().ok_or("missing fixture hash")?
+        );
+        let result = open(&bytes, name.as_bytes())?.inspect_metadata();
+        assert!(
+            matches!(
+                result,
+                Err(ArchiveError::Validation(ValidationError {
+                    code: ValidationCode::ArtworkLimit,
+                    ..
+                }))
+            ),
+            "{name}: {result:?}"
+        );
+    }
+    Ok(())
+}
+#[test]
+fn actual_metadata_and_rejections_match_entire_preserved_inspection_corpus() -> TestResult {
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../preservation/corpus");
+    let rows: Vec<serde_json::Value> =
+        serde_json::from_slice(&fs::read(root.join("inspection.json"))?)?;
+    for row in rows {
+        let relative = row["file"].as_str().ok_or("missing corpus path")?;
+        let name = relative
+            .strip_prefix("archives/")
+            .ok_or("unexpected fixture path")?;
+        let bytes = fs::read(root.join(relative))?;
+        let result = open(&bytes, name.as_bytes()).and_then(|mut a| a.inspect_metadata());
+        if row["error"].as_str().is_some_and(|s| !s.is_empty()) {
+            assert!(
+                matches!(result, Err(ArchiveError::Validation(ValidationError { code, .. })) if Some(code.as_str()) == row["error"].as_str()),
+                "{name}: {result:?}"
+            );
+        } else {
+            let actual = result?;
+            assert_eq!(
+                Some(actual.identity.canonical().as_str()),
+                row["uuid"].as_str(),
+                "{name}"
+            );
+            assert_eq!(
+                Some(actual.format.as_str()),
+                row["format"].as_str(),
+                "{name}"
+            );
+            assert_eq!(
+                Some(actual.text.title.as_str()),
+                row["title"].as_str(),
+                "{name}"
+            );
+            assert_eq!(
+                Some(actual.text.description.as_str()),
+                row["description"].as_str(),
+                "{name}"
+            );
+            if let Some(art) = actual.artwork {
+                assert_eq!(
+                    Some(art.entry_name),
+                    row["artwork"]["entry"].as_str(),
+                    "{name}"
+                );
+                assert_eq!(
+                    Some(
+                        librairii_app::metadata::digest(&art.bytes)
+                            .to_string()
+                            .as_str()
+                    ),
+                    row["artwork"]["sha256"].as_str(),
+                    "{name}"
+                );
+            } else {
+                assert!(row["artwork"].is_null(), "{name}");
+            }
+        }
+    }
+    Ok(())
+}

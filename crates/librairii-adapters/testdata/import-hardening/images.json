@@ -1,0 +1,31 @@
+{
+  "category": "bounded embedded PNG dimensions and pixels",
+  "scope": "both mandatory Studio and optional embedded PNG",
+  "limits": {
+    "dimension": 8192,
+    "pixels": 16777216,
+    "decoder_allocation_bytes": 134217728
+  },
+  "rationale": "Reject image headers exceeding the existing bounded thumbnail pipeline before raster allocation. Original compressed bytes remain immutable.",
+  "review": "pending Task 5.10 independent review",
+  "fixtures": [
+    {
+      "file": "dimension.zip",
+      "bytes": 540,
+      "sha256": "17386019598ce5725f033fda069c043ddd79ae95cf064f01bad34fd95ef9ff32",
+      "width": 8193,
+      "height": 1,
+      "go": "accepted",
+      "rust": "artwork_limit"
+    },
+    {
+      "file": "pixels.zip",
+      "bytes": 65758,
+      "sha256": "63ba19769292b0c9bdfc0195083c72e969455fea8f6c78fa5c22a91816c57e75",
+      "width": 8192,
+      "height": 2049,
+      "go": "accepted",
+      "rust": "artwork_limit"
+    }
+  ]
+}

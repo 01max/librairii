@@ -2980,6 +2980,22 @@
     {
       "suite": "librairii-adapters",
       "name": "archives::tests::actual_studio_zip_and_seven_json_assets_text_and_thumbnail_match_oracle"
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "archives::tests::actual_image_hardening_refuses_retained_previously_accepted_dimensions_and_pixels"
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "archives::tests::actual_metadata_and_rejections_match_entire_preserved_inspection_corpus"
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "archives::tests::actual_optional_metadata_does_not_replace_identity_or_ignore_invalid_selected_bytes"
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "archives::tests::actual_optional_metadata_uuid_text_absence_and_artwork_remain_independent"
     }
   ]
 }

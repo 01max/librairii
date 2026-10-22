@@ -4055,6 +4055,38 @@
           "name": "archives::tests::actual_studio_zip_and_seven_json_assets_text_and_thumbnail_match_oracle"
         },
         "reason": "Additive Task 5 archive inspection/custody assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 497,
+        "identity": {
+          "suite": "librairii-adapters",
+          "name": "archives::tests::actual_image_hardening_refuses_retained_previously_accepted_dimensions_and_pixels"
+        },
+        "reason": "Additive Task 5 archive inspection/custody assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 498,
+        "identity": {
+          "suite": "librairii-adapters",
+          "name": "archives::tests::actual_metadata_and_rejections_match_entire_preserved_inspection_corpus"
+        },
+        "reason": "Additive Task 5 archive inspection/custody assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 499,
+        "identity": {
+          "suite": "librairii-adapters",
+          "name": "archives::tests::actual_optional_metadata_does_not_replace_identity_or_ignore_invalid_selected_bytes"
+        },
+        "reason": "Additive Task 5 archive inspection/custody assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 500,
+        "identity": {
+          "suite": "librairii-adapters",
+          "name": "archives::tests::actual_optional_metadata_uuid_text_absence_and_artwork_remain_independent"
+        },
+        "reason": "Additive Task 5 archive inspection/custody assertions; all admitted identities retain exact order and target scope."
       }
     ],
     "python": [
