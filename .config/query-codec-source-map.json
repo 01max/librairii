@@ -4674,6 +4674,19 @@
           ]
         },
         "reason": "Additive resumed Task 12 export/removal/diagnostics assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 550,
+        "identity": {
+          "suite": "librairii-storage::native_library",
+          "name": "native_export_rechecks_broken_after_waiting_for_actual_custody",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive resumed Task 12 export/removal/diagnostics assertions; all admitted identities retain exact order and target scope."
       }
     ],
     "python": [

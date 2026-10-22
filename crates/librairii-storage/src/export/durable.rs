@@ -261,6 +261,38 @@ fn failed(work: &WorkItem, error: &StorageError) -> Report {
         ),
     }
 }
+impl CopyExecutor<'_, '_, '_, '_> {
+    fn eligibility(
+        &self,
+        index: usize,
+        work: &WorkItem,
+        cancel: &Cancellation,
+    ) -> std::result::Result<(), Report> {
+        let disposition = loop {
+            if cancel.is_cancelled() {
+                return Err(failed(work, &StorageError::Cancelled));
+            }
+            match self.running.check_item(index) {
+                Ok(d) => break d,
+                Err(e) if transient(&e) => pause(),
+                Err(e) => return Err(failed(work, &e)),
+            }
+        };
+        match disposition {
+            librairii_core::export::Disposition::Ready => Ok(()),
+            librairii_core::export::Disposition::Skipped(issue) => Err(report(
+                work,
+                ItemState::Skipped,
+                issue.code(),
+                issue_message(issue),
+                0,
+            )),
+            librairii_core::export::Disposition::Conflicted => {
+                Err(failed(work, &StorageError::DestinationCollision))
+            }
+        }
+    }
+}
 impl<'a, 'run, 'db, 'library> Executor for CopyExecutor<'a, 'run, 'db, 'library> {
     type Resources = Resources<'a, 'db>;
     fn execute(
@@ -289,28 +321,8 @@ impl<'a, 'run, 'db, 'library> Executor for CopyExecutor<'a, 'run, 'db, 'library>
         else {
             return before(failed(work, &StorageError::SnapshotChanged));
         };
-        let disposition = loop {
-            match self.running.check_item(index) {
-                Ok(d) => break d,
-                Err(e) if transient(&e) && !cancel.is_cancelled() => pause(),
-                Err(e) => return before(failed(work, &e)),
-            }
-        };
-        use librairii_core::export::Disposition;
-        match disposition {
-            Disposition::Skipped(issue) => {
-                return before(report(
-                    work,
-                    ItemState::Skipped,
-                    issue.code(),
-                    issue_message(issue),
-                    0,
-                ));
-            }
-            Disposition::Conflicted => {
-                return before(failed(work, &StorageError::DestinationCollision));
-            }
-            Disposition::Ready => {}
+        if let Err(report) = self.eligibility(index, work, cancel) {
+            return before(report);
         }
         let story = &self.running.plan.scope.stories[index];
         let mut source = loop {
@@ -329,6 +341,9 @@ impl<'a, 'run, 'db, 'library> Executor for CopyExecutor<'a, 'run, 'db, 'library>
         };
         if cancel.is_cancelled() {
             return before(failed(work, &StorageError::Cancelled));
+        }
+        if let Err(report) = self.eligibility(index, work, cancel) {
+            return before(report);
         }
         let mut output = loop {
             match self.files.create_export_temporary(
@@ -360,6 +375,20 @@ impl<'a, 'run, 'db, 'library> Executor for CopyExecutor<'a, 'run, 'db, 'library>
                 }
             }
         };
+        // Registration itself can wait on SQL/profile transitions. Revalidate
+        // once more at the actual byte-copy boundary, keeping any skip terminal.
+        if let Err(report) = self.eligibility(index, work, cancel) {
+            return Execution {
+                boundary: Boundary::Compensating,
+                report,
+                resources: Some(Resources {
+                    temporary: Temporary::Ready(Box::new(output)),
+                    _source: Some(source),
+                    custody,
+                    retired: false,
+                }),
+            };
+        }
         let copied = (|| {
             output.matches_destination(&self.running.plan.destination)?;
             let hash = story

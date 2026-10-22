@@ -247,3 +247,22 @@ intent is durable and a move is needed. Native finalization permits the retained
 `trash/removals` directory while continuing to refuse other unsettled trash and
 all staging artifacts. Existing native closure, metadata, registration-retirement,
 schema-prefix and Shelf upgrade regressions remain required.
+
+## 12.9 — Independent review progress and remaining acceptance gap
+
+The cumulative Standards review found refined Shelf provenance being dropped;
+resolution now retains its refined kind, Shelf ID and name through preview and
+durable History. The Spec review found eligibility becoming stale while a worker
+waited for global custody. Workers now revalidate after custody acquisition and
+again after temporary registration immediately before byte copying. Existing
+skips never promote. A deterministic regression observes the actual source
+acquisition while another guard holds custody, flags the story, then releases
+custody and proves durable skipping with no destination bytes. With the two late
+checks temporarily removed, that same regression fails because the item succeeds;
+with the correction restored it passes. Resolution and durable History both
+assert the refined Shelf source snapshot.
+
+The independent review can qualify these implemented services; it cannot run
+Task 5's still-missing production archive inspection/import port. The complete
+import → inspect → export → reopen acceptance slice and checkbox 12.9 remain open.
+Keep this PR in draft, with no complete Task 12, GUI, package or Windows claim.

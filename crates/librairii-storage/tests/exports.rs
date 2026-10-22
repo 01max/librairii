@@ -206,6 +206,12 @@ fn full_query_selection_collection_and_approved_shelf_unions_keep_identity_order
         )?
         .wait()?;
     assert_eq!(
+        refined.source.kind,
+        librairii_core::ExportScopeKind::RefinedShelf
+    );
+    assert_eq!(refined.source.ids, vec![1]);
+    assert_eq!(refined.source.names, vec![b"Approved".to_vec()]);
+    assert_eq!(
         refined.stories.iter().map(|s| s.id).collect::<Vec<_>>(),
         [1]
     );

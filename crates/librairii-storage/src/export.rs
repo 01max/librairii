@@ -239,7 +239,10 @@ pub fn resolve(tx: &Transaction<'_>, scope: Scope, locale: &str) -> Result<Resol
             }
         }
         Scope::ShelfResult { shelf, query } => {
-            curated(tx, shelf, Some(query), None, locale, &mut out)?;
+            source.kind = ExportScopeKind::RefinedShelf;
+            source.ids = vec![shelf.get()];
+            source.names =
+                vec![curated(tx, shelf, Some(query), None, locale, &mut out)?.into_bytes()];
         }
         Scope::ShelfSelection { shelf, uuids } => {
             source.kind = ExportScopeKind::Selection;

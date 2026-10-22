@@ -3007,16 +3007,21 @@ fn native_prepared_export_runs_durable_reports_and_preserves_racing_destinations
             criteria,
         }
     }
+    committed_operation(db.transaction(Default::default(),|tx|{
+        tx.execute("INSERT INTO shelves(id,name,normalized_name,position) VALUES(999,'Native refined Shelf','native refined shelf',999)",[])?;
+        tx.execute("INSERT INTO shelf_stories(shelf_id,story_uuid,position,protected,cached_title) VALUES(999,'e0000000-0000-4000-8000-000000010001',0,0,'Native export')",[])?;Ok(())
+    })?.wait()?)?;
     let mut cases = vec![
-        (false, false, false, false),
-        (true, false, false, false),
-        (false, true, false, false),
-        (false, false, false, true),
+        (false, false, false, false, false),
+        (true, false, false, false, false),
+        (false, true, false, false, false),
+        (false, false, false, true, false),
+        (false, false, false, false, true),
     ];
     if cfg!(target_os = "linux") {
-        cases.push((false, false, true, false));
+        cases.push((false, false, true, false, false));
     }
-    for (n, (race, collection, raw_path, mixed)) in cases.into_iter().enumerate() {
+    for (n, (race, collection, raw_path, mixed, refined)) in cases.into_iter().enumerate() {
         let destination = if raw_path {
             use std::os::unix::ffi::OsStringExt;
             roots
@@ -3028,7 +3033,19 @@ fn native_prepared_export_runs_durable_reports_and_preserves_racing_destinations
         fs::create_dir(&destination)?;
         let mut exports = Exports::new(&db);
         let preview = exports.prepare(
-            if collection {
+            if refined {
+                Scope::ShelfResult {
+                    shelf: librairii_core::ShelfId::new(999)?,
+                    query: librairii_core::query::QueryRequest {
+                        criteria: {
+                            let mut query = librairii_core::collection_codec::Query::default();
+                            query.name = "Native export".into();
+                            query
+                        },
+                        ..Default::default()
+                    },
+                }
+            } else if collection {
                 Scope::Collections(vec![librairii_core::CollectionId::new(collection_id)?])
             } else {
                 Scope::Selection(if mixed {
@@ -3125,6 +3142,20 @@ fn native_prepared_export_runs_durable_reports_and_preserves_racing_destinations
             );
             assert_eq!(saved.items[1].source_name, "../unsafe.zip");
             assert_eq!(saved.items[1].output_name.as_deref(), Some("../unsafe.zip"));
+        }
+        if refined {
+            assert_eq!(
+                saved.operation.export_scope.discriminator.as_deref(),
+                Some("curated_shelf")
+            );
+            assert_eq!(
+                saved.operation.export_scope.group_ids.as_deref(),
+                Some("[999]")
+            );
+            assert_eq!(
+                saved.operation.export_scope.group_names.as_deref(),
+                Some("[\"Native refined Shelf\"]")
+            );
         }
         if collection {
             assert_eq!(
@@ -3229,6 +3260,124 @@ fn native_export_cancel_during_second_copy_keeps_completed_file_and_retires_part
     assert_eq!(fs::read_dir(&destination)?.count(), 1);
     assert_eq!(fs::read(root.join("archives/cancel-11002"))?, large);
     drop(exports);
+    db.close()?;
+    drop(db);
+    native.finish().map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+#[test]
+fn native_export_rechecks_broken_after_waiting_for_actual_custody() -> TestResult {
+    use librairii_app::native_jobs::Configuration;
+    use librairii_core::{export::Scope, operations::ItemState};
+    use librairii_storage::{export::Exports, platform::unix::LibraryFiles};
+    use sha2::{Digest, Sha256};
+    use std::os::unix::fs::MetadataExt;
+    use std::time::{Duration, Instant};
+    let roots = TestRoots::new()?;
+    let (copy, locations) = prepare(&roots, false)?;
+    let root = copy.root().to_owned();
+    let profile = NativeProfileStore::create_fresh(&locations.native)?;
+    let native = NativeLibrary::bind_independent(copy, &profile, &locations, &Default::default())
+        .map_err(|e| e.to_string())?;
+    let mut db = Database::open_native(&native)?;
+    let bytes = b"synthetic passthrough bytes behind the custody guard";
+    let managed = root.join("archives/custody-wait.zip");
+    fs::write(&managed, bytes)?;
+    let identity = fs::metadata(&managed)?;
+    let hash = librairii_core::Checksum::from_bytes(Sha256::digest(bytes).into()).to_string();
+    committed_operation(db.transaction(Default::default(),move|tx|{
+        tx.execute("INSERT INTO stories(id,uuid,embedded_title,display_name_normalized) VALUES(120099,'e0000000-0000-4000-8000-000000120099','Custody wait','custody wait')",[])?;
+        tx.execute("INSERT INTO story_archives(story_id,original_filename,detected_format,sha256,byte_size,managed_path,validation_state) VALUES(120099,'custody-wait.zip','zip',?,?,'archives/custody-wait.zip','valid')",rusqlite::params![hash,bytes.len() as i64])?;Ok(())
+    })?.wait()?)?;
+    let destination = roots.profile().join("exports-after-wait");
+    fs::create_dir(&destination)?;
+    {
+        let files = LibraryFiles::open_native(&db)?;
+        let mut exports = Exports::new(&db);
+        let preview = exports.prepare(
+            Scope::Selection(vec![120099]),
+            &destination,
+            "en".into(),
+            &Default::default(),
+        )?;
+        let id = "a0000000-0000-4000-8000-000000120099".to_owned();
+        exports.run_prepared(
+            preview.preparation.as_ref().ok_or("preparation")?,
+            id.clone(),
+            Configuration::default(),
+            |handle, start| -> TestResult {
+                let startup_deadline = Instant::now() + Duration::from_secs(10);
+                while handle.status().starting {
+                    if Instant::now() > startup_deadline {
+                        return Err("startup did not settle".into());
+                    }
+                    std::thread::sleep(Duration::from_millis(2));
+                }
+                let guard = files.try_custody()?;
+                runtime_support::offer(&handle, start)?;
+                #[cfg(target_os = "macos")]
+                let descriptors = Path::new("/dev/fd");
+                #[cfg(target_os = "linux")]
+                let descriptors = Path::new("/proc/self/fd");
+                let deadline = Instant::now() + Duration::from_secs(10);
+                // Source acquisition occurs after the first eligibility check. Its
+                // actual descriptor proves execution reached the custody wait;
+                // this is not a sleep or an observation of scheduler state alone.
+                loop {
+                    let acquired = fs::read_dir(descriptors)?
+                        .filter_map(std::result::Result::ok)
+                        .any(|entry| {
+                            rustix::fs::open(
+                                entry.path(),
+                                rustix::fs::OFlags::RDONLY | rustix::fs::OFlags::NONBLOCK,
+                                rustix::fs::Mode::empty(),
+                            )
+                            .ok()
+                            .map(fs::File::from)
+                            .and_then(|f| f.metadata().ok())
+                            .is_some_and(|m| m.dev() == identity.dev() && m.ino() == identity.ino())
+                        });
+                    if acquired {
+                        break;
+                    }
+                    if Instant::now() > deadline {
+                        return Err("worker never acquired its source before waiting".into());
+                    }
+                    std::thread::sleep(Duration::from_millis(2));
+                }
+                committed_operation(
+                    db.set_broken(vec![120099], true, Default::default())?
+                        .wait()?,
+                )?;
+                drop(guard);
+                loop {
+                    match db.operation_snapshot(id.clone()).and_then(|p| p.wait()) {
+                        Ok(Some(saved))
+                            if librairii_core::operations::is_terminal(saved.operation.state) =>
+                        {
+                            assert_eq!(saved.items[0].state, ItemState::Skipped);
+                            assert_eq!(
+                                saved.items[0].outcome.code.as_deref(),
+                                Some("story_marked_broken")
+                            );
+                            break;
+                        }
+                        Err(StorageError::ProfileBusy | StorageError::QueueFull) => {}
+                        Err(e) => return Err(e.into()),
+                        _ => {}
+                    }
+                    if Instant::now() > deadline {
+                        return Err("queued Broken export did not settle".into());
+                    }
+                    std::thread::sleep(Duration::from_millis(2));
+                }
+                Ok(())
+            },
+        )??;
+        assert_eq!(fs::read_dir(&destination)?.count(), 0);
+        assert_eq!(fs::read(&managed)?, bytes);
+    }
     db.close()?;
     drop(db);
     native.finish().map_err(|e| e.to_string())?;
