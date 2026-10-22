@@ -31,6 +31,8 @@ use std::{
 };
 
 const PAYLOAD: &str = "payload";
+mod import_source;
+pub use import_source::PickedSource;
 static NEXT_TEMP: AtomicU64 = AtomicU64::new(1);
 
 /// A lossless single native component. Validation does not confer ownership.
@@ -732,6 +734,7 @@ pub struct LibraryFiles<'library> {
     archives: Directory,
     catalog: Directory,
     catalog_route: Option<OfficialArtworkRoute>,
+    archive_route: Option<ArchiveRoute>,
     trash: Directory,
 }
 #[derive(Debug)]
@@ -739,6 +742,11 @@ struct OfficialArtworkRoute {
     id: String,
     official: Option<Directory>,
     artwork: Option<Directory>,
+}
+#[derive(Debug)]
+struct ArchiveRoute {
+    hash: librairii_core::Checksum,
+    directory: Option<Directory>,
 }
 impl LibraryFiles<'_> {
     /// A closed, hash-typed catalog route, under the same retained custody.
@@ -894,6 +902,7 @@ impl<'library> LibraryFiles<'library> {
             archives: root.child(OsStr::new("archives"))?,
             catalog: root.child(OsStr::new("catalog"))?,
             catalog_route: None,
+            archive_route: None,
             trash: root.child(OsStr::new("trash"))?,
             root,
             authority,
@@ -952,6 +961,14 @@ impl<'library> LibraryFiles<'library> {
                 .require_name(OsStr::new("official"), official.identity)?;
             official.require_name(OsStr::new(&route.id), artwork.identity)?;
         }
+        if let Some(route) = &self.archive_route {
+            let directory = route
+                .directory
+                .as_ref()
+                .ok_or(StorageError::CustodyRecoveryRequired)?;
+            self.archives
+                .require_name(OsStr::new(&route.hash.to_string()), directory.identity)?;
+        }
         Ok(())
     }
     pub(crate) fn fence_metadata(&self) {
@@ -962,7 +979,11 @@ impl<'library> LibraryFiles<'library> {
     }
     fn area(&self, area: FileArea) -> &Directory {
         match area {
-            FileArea::Archives => &self.archives,
+            FileArea::Archives => self
+                .archive_route
+                .as_ref()
+                .and_then(|route| route.directory.as_ref())
+                .unwrap_or(&self.archives),
             FileArea::Catalog => self
                 .catalog_route
                 .as_ref()

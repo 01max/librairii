@@ -149,3 +149,30 @@ URLs/hashes are retained alongside each notice. The full `cargo xtask check`
 then passed on aarch64-apple-darwin, including both dependency graphs, notice
 inventory, source/preservation checks, locked build, fmt, Clippy, nextest and
 separate doctests. This intermediate gate does not complete import custody.
+
+## 5.6 — Retained source and content-addressed publication
+
+PickedSource is explicit read-only admission, separate from managed-file mutation
+or cleanup authority. It retains the opened regular source FD and resolved parent,
+keeps the selected original native filename, and observes size/identity/link/time
+changes before and after streaming. Selected symlink/hardlink aliases are readable
+as in Go; they grant no source write or delete capability. Cooperative metadata
+checks do not claim exclusion of a hostile in-place writer.
+
+One 64 KiB buffer copies into the actual private OwnedStage while computing
+SHA-256; a second same-FD staging measurement must agree. Source read/copy errors
+and cancellation leave the actual stage with its caller. Publication retains a
+hash-typed directory route from the same library/DB/custody owner, flushes the
+parent/child and uses the existing no-clobber/hash-verifying publisher at
+archives/<SHA-256>/<original native filename>. Exact crash-left files are reusable;
+foreign bytes are never replaced. Private stage retirement still uses the actual
+owner and verified directory entries, never a reconstructed pathname. Backslash
+managed names retain the legacy SafeJoin refusal.
+
+Three native custody regressions pass: chunk-boundary streaming/hash/publication/
+exact retry, read-only alias/substitution refusal, and cancelled-copy retirement
+with unchanged source and no managed publication. Unicode/spaces/case are tested
+on macOS/Linux; Linux additionally exercises raw invalid-UTF-8 filename bytes
+(the native macOS filesystem refuses creation of that name). Adapter and storage
+Clippy/fmt pass. Native operation registration, SQL commitment, compensation and
+restart acceptance are completed by 5.7/5.8.

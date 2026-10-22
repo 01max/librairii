@@ -2996,6 +2996,51 @@
     {
       "suite": "librairii-adapters",
       "name": "archives::tests::actual_optional_metadata_uuid_text_absence_and_artwork_remain_independent"
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "native::owned::tests::settled_import_stages_recycle_registration_slots_in_one_session",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "platform::unix::import_source::tests::cancelled_copy_retains_owned_stage_and_never_publishes_or_changes_source",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "platform::unix::import_source::tests::selected_aliases_are_read_only_and_source_substitution_is_refused",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "platform::unix::import_source::tests::selected_source_streams_into_content_addressed_original_name_without_mutation",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::native_library",
+      "name": "retired_export_temporaries_keep_descriptor_usage_bounded",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
     }
   ]
 }
