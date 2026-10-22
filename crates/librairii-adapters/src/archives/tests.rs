@@ -305,3 +305,91 @@ fn entry_actual_read_errors_and_corrupt_payload_crc_cannot_return_partial_bytes(
     ));
     Ok(())
 }
+
+#[test]
+fn actual_plain_and_uuid_root_packs_match_preserved_identity_and_format() -> TestResult {
+    for file in [
+        "clockwork-forest.plain.pk",
+        "00112233445546778899aabbccddeeff.v1.pk",
+        "00112233445546778899aabbccddeeff.v2.pk",
+        "clockwork-forest.pk",
+        "clockwork-forest.zip",
+        "generic.7z",
+    ] {
+        let bytes = fixture(file)?;
+        let mut archive = open(&bytes, file.as_bytes())?;
+        assert_eq!(
+            archive.inspect_pack_identity()?.canonical(),
+            "00112233-4455-4677-8899-aabbccddeeff",
+            "{file}"
+        );
+    }
+    Ok(())
+}
+#[test]
+fn actual_plain_uuid_size_nil_and_missing_entry_failures_are_not_filename_identity() -> TestResult {
+    for uuid in [vec![0; 16], vec![1; 15], vec![1; 17]] {
+        let bytes = zip_entries(&[
+            ("uuid.bin", &uuid),
+            ("ni", b"n"),
+            ("li.plain", b"l"),
+            ("ri.plain", b"r"),
+            ("si.plain", b"s"),
+            ("rf/a", b"r"),
+            ("sf/a", b"s"),
+        ])?;
+        let mut archive = open(&bytes, b"00112233445546778899aabbccddeeff.plain.pk")?;
+        assert!(matches!(
+            archive.inspect_pack_identity(),
+            Err(ArchiveError::Validation(ValidationError {
+                code: ValidationCode::InvalidUuid,
+                ..
+            }))
+        ));
+    }
+    let bytes = zip_entries(&[("uuid.bin", &[1; 16])])?;
+    let mut archive = open(&bytes, b"story.v2.pk")?;
+    assert_eq!(archive.plan().format, ArchiveFormat::PlainPk);
+    assert!(
+        matches!(archive.inspect_pack_identity(), Err(ArchiveError::Validation(ValidationError { code: ValidationCode::MissingEntry, entry: Some(entry), .. })) if entry == b"ni")
+    );
+    Ok(())
+}
+#[test]
+fn actual_uuid_roots_require_one_raw_root_and_all_pack_entries() -> TestResult {
+    let root = "00112233-4455-4677-8899-aabbccddeeff";
+    for (paths, code) in [
+        (
+            vec!["not-a-uuid/ni".to_string()],
+            ValidationCode::InvalidUuid,
+        ),
+        (vec![format!("{root}/ni")], ValidationCode::MissingEntry),
+        (
+            vec![
+                format!("{root}/ni"),
+                "00112233445546778899aabbccddeeff/ni".to_string(),
+            ],
+            ValidationCode::AmbiguousStructure,
+        ),
+    ] {
+        let entries: Vec<_> = paths
+            .iter()
+            .map(|p| (p.as_str(), b"x".as_slice()))
+            .collect();
+        let bytes = zip_entries(&entries)?;
+        let mut archive = open(&bytes, b"story.pk")?;
+        assert!(
+            matches!(archive.inspect_pack_identity(), Err(ArchiveError::Validation(ValidationError { code: actual, .. })) if actual == code)
+        );
+    }
+    let bytes = fixture("missing.7z")?;
+    let mut archive = open(&bytes, b"story.7z")?;
+    assert!(matches!(
+        archive.inspect_pack_identity(),
+        Err(ArchiveError::Validation(ValidationError {
+            code: ValidationCode::MissingEntry,
+            ..
+        }))
+    ));
+    Ok(())
+}

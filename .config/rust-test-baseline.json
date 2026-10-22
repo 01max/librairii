@@ -2956,6 +2956,18 @@
     {
       "suite": "librairii-adapters",
       "name": "archives::tests::entry_and_expansion_limits_are_enforced_from_actual_container_headers"
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "archives::tests::actual_plain_and_uuid_root_packs_match_preserved_identity_and_format"
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "archives::tests::actual_plain_uuid_size_nil_and_missing_entry_failures_are_not_filename_identity"
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "archives::tests::actual_uuid_roots_require_one_raw_root_and_all_pack_entries"
     }
   ]
 }

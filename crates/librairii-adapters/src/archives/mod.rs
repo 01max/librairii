@@ -4,8 +4,9 @@
 //! source custody, complete inspection, payload integrity or database admission.
 use librairii_app::native_jobs::Cancellation;
 use librairii_core::import::{
-    ArchivePlan, CompressionAccounting, ContainerKind, EntryInfo, Inventory, InventoryBuilder,
-    Limits, ValidationCode, ValidationError, dispatch, validate_entry_name,
+    ArchivePlan, CompressionAccounting, ContainerKind, EntryInfo, ImportIdentity, Inventory,
+    InventoryBuilder, Limits, PackStructure, ValidationCode, ValidationError, dispatch,
+    validate_entry_name, validate_plain_entries, validate_uuid_root_entries,
 };
 use std::{
     collections::BTreeMap,
@@ -266,6 +267,22 @@ impl<R: Read + Seek> Archive<R> {
     }
     pub const fn inventory(&self) -> &Inventory {
         &self.inventory
+    }
+    /// Validate a pack's required files and actual UUID bytes. Full inspection
+    /// still needs optional metadata/artwork and the family's payload checks.
+    pub fn inspect_pack_identity(&mut self) -> Result<ImportIdentity> {
+        checkpoint(&self.cancel)?;
+        match self.plan.structure {
+            PackStructure::Plain => {
+                validate_plain_entries(&self.inventory)?;
+                let bytes = self.read_entry("uuid.bin", 16, ValidationCode::InvalidUuid)?;
+                Ok(ImportIdentity::from_plain_bytes(&bytes)?)
+            }
+            PackStructure::UuidRoot => Ok(validate_uuid_root_entries(&self.inventory)?.identity),
+            PackStructure::Studio => {
+                Err(ValidationError::new(ValidationCode::UnsupportedFormat).into())
+            }
+        }
     }
     /// Read one selected regular entry under its own actual-byte ceiling.
     pub fn read_entry(&mut self, name: &str, limit: u64, code: ValidationCode) -> Result<Vec<u8>> {

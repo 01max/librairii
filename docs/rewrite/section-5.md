@@ -62,3 +62,17 @@ read boundaries and corrupt ZIP payload CRC. Test writers explicitly use verbati
 paths so their normalization cannot hide hostile names. fmt and all-target
 adapter Clippy pass. New decoder constructor hardening/codec/resource evidence
 still belongs to 5.9/5.10; these index tests alone do not qualify the reader.
+
+## 5.3 — Actual pack identity
+
+Pack identity validation now consumes the observed index and bounded uuid.bin
+bytes. Plain files require their complete fixed entry set plus rf/sf children;
+UUID-root packs require one distinct raw root with ni/li/ri/si and rf/sf children.
+The import-local UUID parser preserves legacy accepted spellings and nil
+rejection. Filenames never supply a missing identity. This phase alone does not
+establish full payload integrity or import publication.
+
+Eleven focused archive tests pass, including all six preserved valid plain/v1/v2/
+generic/ZIP/7z pack fixtures, actual short/long/nil UUID payloads, plain-content
+precedence over v2 suffix, missing required entries and two raw roots encoding the
+same canonical UUID. fmt and all-target adapter Clippy pass.
