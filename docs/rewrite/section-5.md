@@ -126,3 +126,26 @@ Additional tests cover actual optional metadata absence/null/empty/type/trailing
 UUID conflicts and independent artwork, plus both retained image hardening cases.
 fmt and all-target adapter Clippy pass. Publication/reopen provenance acceptance
 remains part of 5.7/5.10.
+
+## Archive dependency policy follow-up
+
+The first full gate correctly rejected newly encountered Zlib and bzip2-1.0.6
+terms plus two incompatible RustCrypto API versions. Review of the actual pinned
+notices permits redistribution with retained origin/notices, changed-source and
+non-endorsement conditions; both licenses join the explicit allowlist. The
+embedded Mark Adler Zlib notice in crc-turbo's combine.rs is retained separately
+under .config/upstream-notices/crc-turbo-1.11.0 and collected by the existing
+inventory route. No upstream implementation source is vendored.
+
+Only digest 0.10.7 and crypto-common 0.1.7 receive exact duplicate exceptions
+expiring 2027-01-22. They are required by pinned crc-turbo versus the existing
+sha2 0.11 API. No advisory or dependency subtree is ignored. The dependency
+inventory and generated notices cover all three target graphs.
+
+The two Brotli allocator packages omit BSD notice files from their registry
+archives. Supplemental notices were retrieved from their official Dropbox
+repository at immutable revision 0a81fd6928ea3b33c8cd484aa4575d50ffb98012; exact
+URLs/hashes are retained alongside each notice. The full `cargo xtask check`
+then passed on aarch64-apple-darwin, including both dependency graphs, notice
+inventory, source/preservation checks, locked build, fmt, Clippy, nextest and
+separate doctests. This intermediate gate does not complete import custody.

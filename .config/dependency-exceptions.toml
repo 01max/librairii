@@ -9,6 +9,22 @@ expires = "2027-01-21"
 
 [[exceptions]]
 kind = "duplicate"
+selector = "digest@0.10.7"
+owner = "01max"
+reason = "Task 5 pins sevenz-turbo 0.29.2 via lzma-turbo/crc-turbo 1.11.0, whose digest 0.10 API cannot unify with sha2 0.11.1's digest 0.11. Reassess when crc-turbo updates; no subtree or advisory suppression."
+tracking = "https://github.com/01max/librairii/blob/codex/rewrite-05-import/docs/rewrite/section-5.md"
+expires = "2027-01-22"
+
+[[exceptions]]
+kind = "duplicate"
+selector = "crypto-common@0.1.7"
+owner = "01max"
+reason = "Task 5's pinned crc-turbo digest 0.10 uses crypto-common 0.1; existing sha2 0.11.1 uses the incompatible crypto-common 0.2 API. Reassess with digest exception; no subtree or advisory suppression."
+tracking = "https://github.com/01max/librairii/blob/codex/rewrite-05-import/docs/rewrite/section-5.md"
+expires = "2027-01-22"
+
+[[exceptions]]
+kind = "duplicate"
 selector = "miniz_oxide@0.8.9"
 owner = "01max"
 reason = "Task 11 pins image 0.25.10 with png 0.18.1 (miniz_oxide 0.8), while flate2 1.1.10 uses miniz_oxide 0.9.1. Reassess on png update; no subtree suppression."
