@@ -335,3 +335,17 @@ count ceiling also applies to packed streams, so a separate >10000-stream/
 window clamp needs its own comparison/record rather than assuming the general
 256MiB memory record covers it. These gaps and the safety defect keep5.9/5.10
 open even if a particular normal codec corpus passes.
+
+## 5.10 — Independent review checkpoint, incomplete
+
+The independent standards and spec reports are retained in
+[section-5-review.md](section-5-review.md). Both standards findings were fixed in
+a separate commit. Spec review identified the codec/safety blockers and two more
+qualification gaps above, so no complete-import or decoder-admission claim is
+made. Hardening records remain pending rather than self-approved.
+
+The real native import→query→close→reopen test now checks original filename and
+managed-path SQL bytes before and after reopen: macOS uses Unicode/spaces/case;
+Linux additionally uses invalidUTF8 bytes. Invalid UTF8 presentation fields remain
+empty while raw bytes and filesystem content retain their original identity.
+The macOS regression passes; Linux execution must be confirmed by native CI.

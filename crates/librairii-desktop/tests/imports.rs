@@ -727,9 +727,48 @@ fn actual_registered_native_import_closes_and_reopens_with_unchanged_legacy_sour
     let native =
         NativeLibrary::bind_independent(copy, &profile, &locations, &WorkCancellation::default())
             .map_err(|f| f.to_string())?;
-    let source = roots.profile().join("new-source.zip");
+    use std::os::unix::ffi::{OsStrExt, OsStringExt};
+    #[cfg(target_os = "linux")]
+    let filename = std::ffi::OsString::from_vec(b"original \xff.ZIP".to_vec());
+    #[cfg(target_os = "macos")]
+    let filename = std::ffi::OsString::from("Original Été 日本語.ZIP");
+    let source = roots.profile().join(&filename);
     fs::copy(fixture("clockwork-forest-studio.zip"), &source)?;
     let original = fs::read(&source)?;
+    let mut managed =
+        format!("archives/{}/", librairii_app::metadata::digest(&original)).into_bytes();
+    managed.extend_from_slice(filename.as_bytes());
+    let managed_root = native.layout().root().to_owned();
+    let check_names = |db: &Database<'_>| -> TestResult {
+        let row = db
+            .barrier_read(|tx| {
+                let mut found = None;
+                librairii_storage::query::visit_scope(tx, Default::default(), "en-GB", |story| {
+                    if story.uuid == "00112233-4455-4677-8899-aabbccddeeff" {
+                        found = Some((
+                            story.original_filename_bytes,
+                            story.managed_relative_path_bytes,
+                            story.original_filename,
+                            story.managed_relative_path,
+                        ));
+                    }
+                    Ok(())
+                })?;
+                Ok(found)
+            })?
+            .wait()?
+            .ok_or("imported query record missing")?;
+        assert_eq!(row.0, filename.as_bytes());
+        assert_eq!(row.1, managed);
+        assert_eq!(
+            row.2,
+            std::str::from_utf8(filename.as_bytes()).unwrap_or_default()
+        );
+        assert_eq!(row.3, std::str::from_utf8(&managed).unwrap_or_default());
+        let path = managed_root.join(std::ffi::OsString::from_vec(managed.clone()));
+        assert_eq!(fs::read(path)?, original);
+        Ok(())
+    };
     let mut db = Database::open_native(&native)?;
     let before_count = db
         .search(Default::default(), "en-GB".into())?
@@ -770,6 +809,7 @@ fn actual_registered_native_import_closes_and_reopens_with_unchanged_legacy_sour
         Some("imported")
     );
     assert_eq!(fs::read_dir(native.layout().staging())?.count(), 0);
+    check_names(&db)?;
     db.close()?;
     drop(db);
     native.finish().map_err(|f| f.to_string())?;
@@ -777,6 +817,7 @@ fn actual_registered_native_import_closes_and_reopens_with_unchanged_legacy_sour
     let profile = NativeProfileStore::open_native(&locations.native)?;
     let native = NativeLibrary::reopen(&profile, &locations, &WorkCancellation::default())?;
     let mut db = Database::open_native(&native)?;
+    check_names(&db)?;
     assert_eq!(
         db.search(Default::default(), "en-GB".into())?
             .wait()?
