@@ -248,3 +248,17 @@ unrelated import remains blocked. SQLite ID extraction and streaming terminal
 aggregation now preflight text before allocating; status/kind join the row budget.
 Regressions cover each finding, including a missing story FK and retained
 oversized legacy outcomes.
+
+Both independent reviews passed at code head
+`42f48d61f1ea7c65ed0cb062b8896bb60cefff47`, with no remaining actionable
+standards or spec findings. A separate final correction rejects embedded NUL
+identities, including a 36-character prefix plus a 300-byte suffix. Each 6.1–6.9
+subtask has its own commit; subsequent review fixes are separate commits.
+The local OpenSpec task list now marks all nine Task 6 subtasks complete. Its
+nested repository is intentionally excluded from the application PR.
+
+The cumulative native check runs source/preservation/provenance policy, dependency
+advisories/licenses, workspace build, formatting, Clippy, required-test discovery,
+nextest and doctests. Linux x86-64 and both macOS architectures run the same
+required CI gate on the PR; Windows admission remains deferred. Domain effect
+composition continues in Tasks 5/12/13 and native presentation in Task 15.
