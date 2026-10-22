@@ -8,7 +8,7 @@ pub(crate) struct RemovalFile<'files, 'library> {
     files: &'files LibraryFiles<'library>,
     managed: Vec<(EntryName, Directory)>,
     trash: Option<Vec<(EntryName, Directory)>>,
-    trash_path: String,
+    trash_path: std::path::PathBuf,
     managed_name: EntryName,
     trash_name: EntryName,
     file: File,
@@ -31,18 +31,20 @@ impl LibraryFiles<'_> {
 }
 fn parents(
     files: &LibraryFiles<'_>,
-    path: &str,
+    path: &Path,
     area: &str,
     create: bool,
 ) -> Result<(Vec<(EntryName, Directory)>, EntryName)> {
-    if path.len() > 4096 {
+    if path.as_os_str().len() > 4096 {
         return Err(StorageError::InvalidManagedPath);
     }
-    let mut parts = path.split('/');
-    if parts.next() != Some(area) {
+    let mut parts = path.as_os_str().as_bytes().split(|b| *b == b'/');
+    if parts.next() != Some(area.as_bytes()) {
         return Err(StorageError::PathEscape);
     }
-    let mut names = parts.map(EntryName::parse).collect::<Result<Vec<_>>>()?;
+    let mut names = parts
+        .map(|p| EntryName::parse(OsStr::from_bytes(p)))
+        .collect::<Result<Vec<_>>>()?;
     if names.len() > 64 {
         return Err(StorageError::InvalidManagedPath);
     }
@@ -83,17 +85,17 @@ impl<'files, 'library> RemovalFile<'files, 'library> {
         files: &'files LibraryFiles<'library>,
         guard: &Custody<'_>,
         scope: &Scope,
-        trash: &str,
+        trash: &Path,
         recovery: bool,
     ) -> Result<Self> {
         files.check(guard)?;
         let (managed, managed_name) = parents(files, &scope.managed, "archives", recovery)?;
-        let trash_path = trash.to_owned();
+        let trash_path = trash.to_path_buf();
         let (trash, trash_name) = match parents(files, trash, "trash", false) {
             Ok((chain, name)) => (Some(chain), name),
             Err(StorageError::Io { source, .. }) if source.kind() == io::ErrorKind::NotFound => (
                 None,
-                EntryName::parse(trash.rsplit('/').next().ok_or(StorageError::PathEscape)?)?,
+                EntryName::parse(trash.file_name().ok_or(StorageError::PathEscape)?)?,
             ),
             Err(e) => return Err(e),
         };

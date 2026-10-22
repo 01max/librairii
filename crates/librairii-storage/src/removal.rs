@@ -5,12 +5,13 @@ use crate::{
     database::{Database, TransactionOutcome, WorkCancellation},
     platform::unix::{Custody, LibraryFiles, removal::RemovalFile},
 };
+use librairii_app::ports::operations::OperationPath;
 use rusqlite::{OptionalExtension, Transaction, params};
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(crate) struct Scope {
     id: i64,
     uuid: String,
-    pub(crate) managed: String,
+    pub(crate) managed: OperationPath,
     pub(crate) hash: String,
     pub(crate) bytes: i64,
 }
@@ -18,7 +19,7 @@ pub(crate) struct Scope {
 struct Intent {
     id: String,
     scope: Scope,
-    trash: String,
+    trash: OperationPath,
 }
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Removed {
@@ -90,11 +91,12 @@ impl<'db, 'files, 'library> Removals<'db, 'files, 'library> {
             .wait()?;
         let basename = scope
             .managed
-            .rsplit('/')
-            .next()
+            .file_name()
             .ok_or(StorageError::InvalidManagedPath)?;
         let intent = Intent {
-            trash: format!("trash/removals/{id}/{basename}"),
+            trash: std::path::PathBuf::from(format!("trash/removals/{id}"))
+                .join(basename)
+                .into(),
             id,
             scope,
         };
@@ -114,7 +116,7 @@ impl<'db, 'files, 'library> Removals<'db, 'files, 'library> {
             let create = intent.clone();
             committed(self.database.transaction(cancel.clone(),move|tx|{
                 require_scope(tx,&create.scope)?;
-                tx.execute("INSERT INTO removal_intents(id,story_id,managed_path,trash_path) VALUES(?,?,?,?)",params![create.id,create.scope.id,create.scope.managed,create.trash])?; Ok(())
+                tx.execute("INSERT INTO removal_intents(id,story_id,managed_path,trash_path) VALUES(?,?,?,?)",params![create.id,create.scope.id,crate::native_path::SqlPath(&create.scope.managed),crate::native_path::SqlPath(&create.trash)])?; Ok(())
             })?.wait()?)?;
             checkpoint("intent")?;
             if cancel.is_cancelled() {
@@ -281,7 +283,8 @@ fn scope(tx: &Transaction<'_>, id: i64) -> Result<Option<Scope>> {
     Ok(Some(Scope {
         id: r.get(0)?,
         uuid: r.get(1)?,
-        managed: r.get(2)?,
+        managed: crate::native_path::optional_sql_path(r, 2)?
+            .ok_or(StorageError::CompatibilityInvariant)?,
         hash: r.get(3)?,
         bytes: r.get(4)?,
     }))
@@ -305,8 +308,10 @@ fn read_intent(tx: &Transaction<'_>, id: &str) -> Result<Option<Intent>> {
                 }
                 Ok((
                     r.get::<_, i64>(0)?,
-                    r.get::<_, String>(1)?,
-                    r.get::<_, String>(2)?,
+                    crate::native_path::optional_sql_path(r, 1)?
+                        .ok_or(rusqlite::Error::InvalidQuery)?,
+                    crate::native_path::optional_sql_path(r, 2)?
+                        .ok_or(rusqlite::Error::InvalidQuery)?,
                 ))
             },
         )
@@ -661,7 +666,10 @@ mod tests {
             })?;
             return Err("crash checkpoint missed".into());
         }
-        for at in ["intent", "trash", "deleted", "corrupt_trash"] {
+        for (at, difficult_name) in ["intent", "trash", "deleted", "corrupt_trash"]
+            .into_iter()
+            .flat_map(|at| [(at, false), (at, true)])
+        {
             let (roots, copy, locations) = native_copy()?;
             let root = copy.root().to_owned();
             let profile = NativeProfileStore::create_fresh(&locations.native)?;
@@ -669,7 +677,30 @@ mod tests {
                 NativeLibrary::bind_independent(copy, &profile, &locations, &Default::default())
                     .map_err(|e| e.to_string())?;
             let mut db = Database::open_native(&native)?;
-            let s = story(&db)?;
+            let s = if difficult_name {
+                #[cfg(target_os = "linux")]
+                use std::os::unix::ffi::OsStringExt;
+                #[cfg(target_os = "linux")]
+                let name = std::ffi::OsString::from_vec(b"managed \xe1\x80\xff.ZIP".to_vec());
+                #[cfg(target_os = "macos")]
+                let name = std::ffi::OsString::from("Managed Été 日本語.ZIP");
+                let before = story(&db)?;
+                let relative = std::path::PathBuf::from("archives").join(name);
+                fs::rename(root.join(&before.managed), root.join(&relative))?;
+                committed(
+                    db.transaction(Default::default(), move |tx| {
+                        tx.execute(
+                            "UPDATE story_archives SET managed_path=? WHERE story_id=?",
+                            params![crate::native_path::SqlPath(&relative), before.id],
+                        )?;
+                        Ok(())
+                    })?
+                    .wait()?,
+                )?;
+                story(&db)?
+            } else {
+                story(&db)?
+            };
             if at == "corrupt_trash" {
                 fs::write(root.join(&s.managed), b"corrupt managed bytes after import")?;
                 committed(
@@ -729,6 +760,20 @@ mod tests {
             if at == "deleted" {
                 assert_eq!(present, 0);
                 assert!(!root.join(&s.managed).exists());
+                let mut retained = false;
+                for directory in fs::read_dir(root.join("trash/removals"))? {
+                    for file in fs::read_dir(directory?.path())? {
+                        let file = file?;
+                        if Some(file.file_name().as_os_str()) == s.managed.file_name() {
+                            assert_eq!(fs::read(file.path())?, original);
+                            retained = true;
+                        }
+                    }
+                }
+                assert!(
+                    retained,
+                    "committed removal lost original native name/bytes"
+                );
             } else {
                 assert_eq!(present, 1);
                 assert_eq!(fs::read(root.join(&s.managed))?, original);

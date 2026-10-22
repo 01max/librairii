@@ -1282,6 +1282,39 @@ fn actual_native_import_inspect_export_and_reopen_preserves_all_formats_and_nati
             legacy_database
         );
         assert_eq!(fs::read_dir(native.layout().staging())?.count(), 0);
+        {
+            let files = librairii_storage::platform::unix::LibraryFiles::open_native(&db)?;
+            let mut removals = librairii_storage::removal::Removals::new(&db, &files)?;
+            assert_eq!(
+                removals
+                    .remove(story_id, &WorkCancellation::default())?
+                    .uuid,
+                uuid
+            );
+        }
+        assert!(
+            !native
+                .layout()
+                .root()
+                .join(OsString::from_vec(managed))
+                .exists()
+        );
+        let mut retained = false;
+        for directory in fs::read_dir(native.layout().root().join("trash/removals"))? {
+            for archived in fs::read_dir(directory?.path())? {
+                let archived = archived?;
+                if archived.file_name() == filename {
+                    assert_eq!(fs::read(archived.path())?, bytes);
+                    retained = true;
+                }
+            }
+        }
+        assert!(retained, "removed import lost its native filename or bytes");
+        assert_eq!(fs::read(&source)?, bytes);
+        assert_eq!(
+            fs::read(legacy.join("db/librairii.sqlite3"))?,
+            legacy_database
+        );
         db.close()?;
         drop(db);
         native.finish().map_err(|f| f.to_string())?;
