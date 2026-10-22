@@ -10,7 +10,8 @@ pub(crate) struct Temporary {
     pub scope_sha256: String,
     /// None is the original managed staging descriptor. Some is a validated
     /// export destination, never an arbitrary final-file cleanup path.
-    pub destination: Option<String>,
+    #[serde(with = "crate::native_path::optional_wire")]
+    pub destination: Option<librairii_app::ports::operations::OperationPath>,
     pub parent: FileIdentity,
     pub name: String,
     pub directory: Option<FileIdentity>,
@@ -40,9 +41,9 @@ impl Temporary {
             return Err(StorageError::RecoveryBindingRequired);
         }
         if let Some(path) = &self.destination
-            && (!std::path::Path::new(path).is_absolute()
-                || path.len() > 16 * 1024
-                || path.contains('\0'))
+            && (!path.is_absolute()
+                || path.as_os_str().len() > 16 * 1024
+                || path.as_os_str().as_encoded_bytes().contains(&0))
         {
             return Err(StorageError::RecoveryBindingRequired);
         }

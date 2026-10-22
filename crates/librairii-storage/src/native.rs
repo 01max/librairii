@@ -253,6 +253,90 @@ mod state {
             }
             Ok(())
         }
+        // Used only with an actual retained export allocation under custody.
+        // Accept the exact prior, registered or retired form of this one record,
+        // and only a currently named control object whose FD we already own.
+        pub fn reconcile_temporary(
+            &mut self,
+            root: &Directory,
+            temporary: &crate::native_effects::Temporary,
+        ) -> Result<()> {
+            if !self.uncertain {
+                return self.revalidate(root);
+            }
+            let mut actual = root.read_config(OsStr::new(NATIVE_STATE_FILE))?;
+            let identity = crate::platform::unix::FileIdentity::from_file(&actual.file)?;
+            let owned = std::iter::once(&self.current.file)
+                .chain(self.retained.iter().map(|r| &r.file))
+                .chain(
+                    self.retained_allocations
+                        .iter()
+                        .filter_map(|r| r.file.as_ref()),
+                )
+                .any(|f| crate::platform::unix::FileIdentity::from_file(f).ok() == Some(identity));
+            if !owned {
+                return Err(StorageError::RecoveryBindingRequired);
+            }
+            let bytes = read(&mut actual.file)?;
+            let same = |t: &crate::native_effects::Temporary| {
+                t.operation == temporary.operation
+                    && t.item == temporary.item
+                    && t.destination == temporary.destination
+                    && t.parent == temporary.parent
+                    && t.name == temporary.name
+            };
+            let mut with = self.document.clone();
+            if let Some(index) = with.temporaries.iter().position(same) {
+                with.temporaries[index] = temporary.clone();
+            } else {
+                with.temporaries.push(temporary.clone());
+            }
+            let mut without = self.document.clone();
+            without.temporaries.retain(|t| !same(t));
+            let document = if bytes == self.bytes {
+                self.document.clone()
+            } else if bytes == with.bytes()? {
+                with
+            } else if bytes == without.bytes()? {
+                without
+            } else {
+                return Err(StorageError::RecoveryBindingRequired);
+            };
+            durable_file_flush(&actual.file)?;
+            root.flush()?;
+            if crate::platform::unix::FileIdentity::from_file(&self.current.file)? != identity {
+                let previous = std::mem::replace(&mut self.current, actual);
+                self.retained.push(previous);
+            }
+            self.document = document;
+            self.bytes = bytes;
+            for retained in &self.retained {
+                if retained.name != OsStr::new(NATIVE_STATE_FILE) {
+                    use std::os::unix::fs::MetadataExt;
+                    if retained
+                        .file
+                        .metadata()
+                        .map_err(|e| StorageError::io("observe retained control witness", e))?
+                        .nlink()
+                        != 0
+                    {
+                        root.remove_config_temp(retained)?;
+                    }
+                }
+            }
+            for retained in &self.retained_allocations {
+                root.retire_control_allocation(retained)?;
+            }
+            root.flush()?;
+            self.uncertain = false;
+            if let Err(e) = self.revalidate(root) {
+                self.uncertain = true;
+                return Err(e);
+            }
+            self.retained.clear();
+            self.retained_allocations.clear();
+            Ok(())
+        }
         pub fn transition_with(
             &mut self,
             root: &Directory,
@@ -954,6 +1038,60 @@ mod owned {
             }
             result
         }
+        #[cfg(test)]
+        pub(crate) fn lose_temporary_acknowledgement_for_test(&self) -> Result<()> {
+            let mut record = self
+                .record
+                .lock()
+                .map_err(|_| StorageError::RuntimeFenced)?;
+            if record.document.state != Phase::Active || record.document.temporaries.is_empty() {
+                return Err(StorageError::SnapshotChanged);
+            }
+            let next = record.document.clone();
+            let result = record.transition_with(&self.root, next, || {
+                Err(StorageError::DirectoryDurabilityUnavailable)
+            });
+            self.fence();
+            result
+        }
+        #[cfg(test)]
+        pub(crate) fn lose_forget_acknowledgement_for_test(
+            &self,
+            temporary: &crate::native_effects::Temporary,
+        ) -> Result<()> {
+            let mut record = self
+                .record
+                .lock()
+                .map_err(|_| StorageError::RuntimeFenced)?;
+            let mut next = record.document.clone();
+            next.temporaries.retain(|t| t != temporary);
+            let result = record.transition_with(&self.root, next, || {
+                Err(StorageError::DirectoryDurabilityUnavailable)
+            });
+            self.fence();
+            result
+        }
+        pub(crate) fn reconcile_export_registration(
+            &self,
+            allocation: &crate::platform::unix::ExportAllocation<'_, '_>,
+            temporary: &crate::native_effects::Temporary,
+        ) -> Result<()> {
+            if !allocation.matches_registration(temporary) {
+                return Err(StorageError::SnapshotChanged);
+            }
+            temporary.validate()?;
+            self.revalidate_database_ownership()?;
+            let mut record = self
+                .record
+                .lock()
+                .map_err(|_| StorageError::RuntimeFenced)?;
+            if record.document.state != Phase::Active
+                || !self.runtime_active.load(Ordering::Acquire)
+            {
+                return Err(StorageError::IntakeClosed);
+            }
+            record.reconcile_temporary(&self.root, temporary)
+        }
         pub(crate) fn forget_temporary(
             &self,
             temporary: &crate::native_effects::Temporary,
@@ -1249,15 +1387,23 @@ mod owned {
             drop(managed);
             require_root_entries(&self.root)?;
             require_no_sidecars(&self.database)?;
-            for name in ["staging", "trash"] {
-                if !self
-                    .root
-                    .child(OsStr::new(name))?
-                    .entries(0, &WorkCancellation::default())?
-                    .is_empty()
-                {
+            // Durable removals retain product data in their bounded namespace.
+            // Other trash owners remain unsettled and cannot certify closure.
+            let trash = self.root.child(OsStr::new("trash"))?;
+            for entry in trash.entries(1, &WorkCancellation::default())? {
+                if entry != OsStr::new("removals") {
                     return Err(StorageError::CustodyRecoveryRequired);
                 }
+                trash.child(&entry)?;
+            }
+            // Trash is retained product data after a committed removal.
+            if !self
+                .root
+                .child(OsStr::new("staging"))?
+                .entries(0, &WorkCancellation::default())?
+                .is_empty()
+            {
+                return Err(StorageError::CustodyRecoveryRequired);
             }
             let mut record = self
                 .record

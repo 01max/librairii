@@ -629,7 +629,7 @@ fn permanent_creation_rejection_releases_admission_and_allows_shutdown() -> Test
     assert!(Start::new(unicode).is_ok());
     let mut input = request(73);
     input.kind = OperationKind::Export;
-    input.destination = Some(roots.profile().to_string_lossy().into_owned());
+    input.destination = Some(roots.profile().to_owned().into());
     input.source = Some(ExportSource {
         source_type: ExportSourceType::Selection,
         collection_ids: Vec::new(),

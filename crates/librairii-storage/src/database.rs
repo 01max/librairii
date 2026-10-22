@@ -358,6 +358,8 @@ impl<'library> Authority<'library> {
 /// independent schema/integrity probe and durable backup before migration.
 #[derive(Debug)]
 pub struct Database<'library> {
+    #[cfg(any(target_os = "macos", target_os = "linux"))]
+    pub(crate) logger_active: AtomicBool,
     pub(crate) shelf_tickets: Arc<std::sync::Mutex<crate::shelves::tickets::Registry>>,
     authority: Authority<'library>,
     jobs_active: AtomicBool,
@@ -368,6 +370,7 @@ pub struct Database<'library> {
     diagnostics: Vec<ConnectionDiagnostics>,
     fenced: Arc<AtomicBool>,
     closed: bool,
+    external_effect_uncertain: AtomicBool,
     close_failed: bool,
 }
 
@@ -385,6 +388,18 @@ impl Database<'_> {
     #[cfg(any(target_os = "macos", target_os = "linux"))]
     pub(crate) fn native_import_registration(&self) -> bool {
         matches!(self.authority, Authority::Native(_))
+    }
+    #[cfg(any(target_os = "macos", target_os = "linux"))]
+    pub(crate) fn fence_external_effect(&self) {
+        self.external_effect_uncertain
+            .store(true, Ordering::Release);
+        self.fenced.store(true, Ordering::Release);
+        self.authority.effect_fence().store(true, Ordering::Release);
+        self.authority.fence_failed_close();
+    }
+    #[cfg(any(target_os = "macos", target_os = "linux"))]
+    pub(crate) fn library_layout(&self) -> &crate::LibraryLayout {
+        self.authority.layout()
     }
     pub(crate) fn library_id(&self) -> librairii_core::LibraryId {
         match self.authority {
@@ -455,6 +470,8 @@ impl<'library> Database<'library> {
     fn open_owned(authority: Authority<'library>) -> Result<Self> {
         authority.claim_runtime()?;
         let mut runtime = Self {
+            #[cfg(any(target_os = "macos", target_os = "linux"))]
+            logger_active: AtomicBool::new(false),
             shelf_tickets: Arc::default(),
             authority,
             jobs_active: AtomicBool::new(false),
@@ -465,6 +482,7 @@ impl<'library> Database<'library> {
             diagnostics: Vec::new(),
             fenced: Arc::new(AtomicBool::new(false)),
             closed: false,
+            external_effect_uncertain: AtomicBool::new(false),
             close_failed: false,
         };
         let path = authority
@@ -474,6 +492,7 @@ impl<'library> Database<'library> {
         let queue = runtime.writer.clone();
         let fenced = runtime.fenced.clone();
         let writer_path = path.clone();
+        let native_close = authority.persistent_uncertainty().is_some();
         let staging = authority
             .layout()
             .resolve(&ManagedPath::parse("staging")?)?;
@@ -506,6 +525,15 @@ impl<'library> Database<'library> {
                     let _ = sender.send(diagnostics(&connection, "writer"));
                     while let Some(job) = queue.next()? {
                         job(&mut connection);
+                    }
+                    if native_close
+                        && connection.query_row(
+                            "SELECT EXISTS(SELECT 1 FROM removal_intents)",
+                            [],
+                            |r| r.get::<_, bool>(0),
+                        )?
+                    {
+                        return Err(StorageError::CustodyRecoveryRequired);
                     }
                     let (busy, _, _): (i64, i64, i64) =
                         connection.query_row("PRAGMA wal_checkpoint(TRUNCATE)", [], |row| {
@@ -569,6 +597,11 @@ impl<'library> Database<'library> {
             runtime
                 .diagnostics
                 .push(receiver.recv().map_err(|_| StorageError::WorkerStopped)??);
+        }
+        #[cfg(any(target_os = "macos", target_os = "linux"))]
+        if native_close && let Err(error) = runtime.recover_removals() {
+            runtime.fence_external_effect();
+            return Err(error);
         }
         Ok(runtime)
     }
@@ -767,6 +800,9 @@ impl<'library> Database<'library> {
             return Err(StorageError::RuntimeFenced);
         }
         let mut failure = self.stop_ordinary().err();
+        if self.external_effect_uncertain.load(Ordering::Acquire) {
+            failure.get_or_insert(StorageError::CustodyRecoveryRequired);
+        }
         if let Err(error) = self.readers.stop_all() {
             failure.get_or_insert(error);
             self.readers.abort();

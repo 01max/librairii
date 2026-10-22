@@ -60,7 +60,7 @@ impl PreparedImport {
             let total = PickedSource::open(path).map(|s| s.bytes()).unwrap_or(0);
             items.push(NewItem {
                 source_name: name.to_string_lossy().into_owned(),
-                archive_relative_path: format!("{SLOT_PREFIX}{index}"),
+                archive_relative_path: format!("{SLOT_PREFIX}{index}").into(),
                 total_bytes: i64::try_from(total).map_err(|_| PrepareError::Invalid)?,
                 ..Default::default()
             });
@@ -193,7 +193,7 @@ impl<'db, 'library> ImportExecutor<'db, 'library> {
         }
     }
     fn source(&self, work: &WorkItem) -> Option<PathBuf> {
-        let token = work.item.archive_relative_path.as_deref()?;
+        let token = work.item.archive_relative_path.as_deref()?.to_str()?;
         let index: usize = token.strip_prefix(SLOT_PREFIX)?.parse().ok()?;
         if token != format!("{SLOT_PREFIX}{index}") {
             return None;

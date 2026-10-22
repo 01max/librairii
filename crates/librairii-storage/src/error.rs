@@ -5,8 +5,12 @@ pub type Result<T> = std::result::Result<T, StorageError>;
 
 #[derive(Debug, thiserror::Error)]
 pub enum StorageError {
+    #[error("diagnostics.logs_unavailable")]
+    DiagnosticLogsUnavailable,
     #[error("{0}")]
     OperationInput(#[from] librairii_app::ports::creation::InputError),
+    #[error("{0}")]
+    Export(#[from] librairii_core::export::ExportError),
     #[error("{0}")]
     Metadata(#[from] librairii_core::metadata::MetadataError),
     #[error("{0}")]
@@ -154,12 +158,14 @@ impl StorageError {
 
     pub const fn code(&self) -> &'static str {
         match self {
+            Self::DiagnosticLogsUnavailable => "diagnostics.logs_unavailable",
             Self::OperationInput(librairii_app::ports::creation::InputError::Invalid) => {
                 "operations.invalid_request"
             }
             Self::OperationInput(librairii_app::ports::creation::InputError::ResourceLimit) => {
                 "operations.resource_limit"
             }
+            Self::Export(error) => error.code(),
             Self::Metadata(error) => error.code(),
             Self::Collection(error) => error.code(),
             Self::Shelf(error) => error.code(),

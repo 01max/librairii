@@ -3167,6 +3167,226 @@
     {
       "suite": "librairii-adapters",
       "name": "archives::tests::patched_header_graph_and_brotli_support_fragmented_source_reads_and_strict_windows"
+    },
+    {
+      "suite": "librairii-storage::exports",
+      "name": "full_query_selection_collection_and_approved_shelf_unions_keep_identity_order_and_overlap",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::exports",
+      "name": "preflight_verifies_bytes_and_names_without_reserving_skipped_output_names",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::exports",
+      "name": "prepared_ids_evict_consume_invalidate_and_recheck_each_queued_eligibility_boundary",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::exports",
+      "name": "passthrough_exports_all_seven_frozen_formats_with_exact_original_names_and_bytes",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::exports",
+      "name": "unicode_suffix_and_unsafe_sources_keep_per_item_preflight_reasons",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "export::preparation::tests::preparation_budget_charges_large_source_snapshots_even_with_few_rows",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "export::preparation::tests::uncertain_publication_remains_fenced_after_registry_replacement_and_drop",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "export::preparation::tests::partial_acquisition_and_cleanup_failures_also_fence_the_actual_generation",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "platform::unix::export_output::tests::native_export_copy_handles_short_writes_and_retains_exact_disk_full_prefix",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "platform::unix::export_output::tests::native_export_copy_stops_between_chunks_without_claiming_complete_hash",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "platform::unix::export_output::tests::native_export_refused_source_never_writes_destination_bytes",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::native_library",
+      "name": "native_export_cancel_during_second_copy_keeps_completed_file_and_retires_partial",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::native_library",
+      "name": "native_prepared_export_runs_durable_reports_and_preserves_racing_destinations",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-app",
+      "name": "ports::operations::native_path_tests::operation_paths_keep_exact_spelling_and_native_bytes_in_scope_equality"
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "platform::unix::export_output::tests::native_export_partial_acquisition_compensates_with_actual_owner_after_fence",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "removal::tests::native_removal_intent_invalidates_prepared_and_queued_export",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "removal::tests::native_removal_kill_at_intent_move_and_delete_recovers_before_intake",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "removal::tests::native_removal_preserves_sources_shelf_decisions_and_compensates_uncancelled",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "removal::tests::native_removal_refuses_foreign_restore_collision_and_retains_owner",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "diagnostics::tests::native_diagnostics_no_clobber_cancel_and_uncertain_publication_retain_actual_output",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "diagnostics::tests::native_diagnostics_rotation_keeps_five_bounded_owned_logs",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "diagnostics::tests::native_diagnostics_zip_has_only_sanitized_logs_and_aggregate_manifest",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "diagnostics::tests::native_diagnostics_requires_explicit_external_selection_and_localizes_safe_failures",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::native_library",
+      "name": "native_export_rechecks_broken_after_waiting_for_actual_custody",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-desktop::imports",
+      "name": "actual_native_import_inspect_export_and_reopen_preserves_all_formats_and_native_names",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
     }
   ]
 }
