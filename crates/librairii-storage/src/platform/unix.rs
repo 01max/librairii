@@ -12,6 +12,7 @@
 //! never reported as proven-not-published. An unresolved failure cannot be
 //! cleared by dropping a guard, returning an error or enqueueing a DTO.
 use super::{StreamDigest, hash_stream};
+mod export_output;
 pub(crate) mod transfer;
 use crate::{
     IsolatedLibrary, Result, StorageError,
@@ -3852,6 +3853,8 @@ struct ExportAllocation<'files, 'library> {
     file: Option<File>,
     name: OsString,
     record: Option<crate::native_effects::Temporary>,
+    final_name: Option<OsString>,
+    uncertain: bool,
 }
 #[derive(Debug)]
 pub struct ExportTemporaryFailure<'files, 'library> {
@@ -3892,6 +3895,8 @@ impl<'library> LibraryFiles<'library> {
             file: None,
             name: OsString::new(),
             record: None,
+            final_name: None,
+            uncertain: false,
         };
         let result = (|| {
             self.check(guard)?;
@@ -4031,6 +4036,15 @@ impl<'files, 'library> OwnedExportTemporary<'files, 'library> {
             .as_ref()
             .ok_or(StorageError::CompatibilityInvariant)?;
         require_regular(file)?;
+        if self.allocation.final_name.is_some() || self.allocation.uncertain {
+            return Err(StorageError::CustodyRecoveryRequired);
+        }
+        if let Some(path) = &record.destination {
+            parent.matches_metadata(
+                &std::fs::symlink_metadata(path)
+                    .map_err(|e| StorageError::io("revalidate export destination", e))?,
+            )?;
+        }
         parent.require_name(
             &self.allocation.name,
             record

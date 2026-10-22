@@ -2498,6 +2498,12 @@ fn native_registered_temporaries_recover_after_process_death_and_preserve_final_
             items: (1..=2)
                 .map(|n| NewItem {
                     source_name: format!("export-{n}"),
+                    output_name: if n == 2 {
+                        "completed.zip"
+                    } else {
+                        "partial.zip"
+                    }
+                    .into(),
                     story_title: "Gone".into(),
                     story_uuid: format!("c0000000-0000-4000-8000-{n:012}"),
                     export_skip_code: "story_unavailable".into(),
@@ -2575,15 +2581,9 @@ fn native_registered_temporaries_recover_after_process_death_and_preserve_final_
             .map_err(|f| f.to_string())?;
         complete.write_all(b"completed export")?;
         complete.flush_durable()?;
-        // Explicit synthetic crash point after publication, before SQL reporting.
-        // Recovery is never given this final name as cleanup authority.
-        fs::rename(
-            path("destination")?
-                .join(complete.workspace_name())
-                .join("payload"),
-            path("destination")?.join("completed.zip"),
-        )?;
-        fs::File::open(path("destination")?)?.sync_all()?;
+        // The actual registered publisher commits the final name before the
+        // child is killed, with no final-name cleanup authority in its registry.
+        complete.publish_registered(&custody, "completed.zip")?;
         operation_crash_checkpoint(
             &value,
             "export_published",
@@ -2924,5 +2924,202 @@ fn native_operation_crash_transition_matrix_reconciles_history_and_progress() ->
             "{phase}"
         );
     }
+    Ok(())
+}
+
+#[test]
+fn native_prepared_export_runs_durable_reports_and_preserves_racing_destinations() -> TestResult {
+    use librairii_app::native_jobs::Configuration;
+    use librairii_core::{OperationState, export::Scope};
+    use librairii_storage::export::Exports;
+    use sha2::{Digest, Sha256};
+    let roots = TestRoots::new()?;
+    let (copy, locations) = prepare(&roots, false)?;
+    let root = copy.root().to_owned();
+    let profile = NativeProfileStore::create_fresh(&locations.native)?;
+    let native =
+        NativeLibrary::bind_independent(copy, &profile, &locations, &WorkCancellation::default())
+            .map_err(|e| e.to_string())?;
+    let mut db = Database::open_native(&native)?;
+    let bytes = fs::read(
+        Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../preservation/corpus/archives/clockwork-forest.zip"),
+    )?;
+    fs::write(root.join("archives/native-export"), &bytes)?;
+    let hash = hex_digest(&bytes);
+    let size = bytes.len() as i64;
+    committed_operation(db.transaction(Default::default(),move|tx|{
+        tx.execute("INSERT INTO stories(id,uuid,embedded_title,display_name_normalized) VALUES(10001,'e0000000-0000-4000-8000-000000010001','Native export','native export')",[])?;
+        tx.execute("INSERT INTO story_archives(story_id,original_filename,detected_format,sha256,byte_size,managed_path,validation_state) VALUES(10001,'native.zip','zip',?,?,'archives/native-export','valid')",rusqlite::params![hash,size])?;Ok(())
+    })?.wait()?)?;
+    fn hex_digest(bytes: &[u8]) -> String {
+        librairii_core::Checksum::from_bytes(Sha256::digest(bytes).into()).to_string()
+    }
+    for (n, race) in [false, true].into_iter().enumerate() {
+        let destination = roots.profile().join(format!("native-export-{n}"));
+        fs::create_dir(&destination)?;
+        let mut exports = Exports::new(&db);
+        let preview = exports.prepare(
+            Scope::Selection(vec![10001]),
+            &destination,
+            "fr-FR".into(),
+            &Default::default(),
+        )?;
+        let preparation = preview.preparation.ok_or("preparation")?;
+        if race {
+            fs::write(destination.join("native.zip"), b"racing foreign file")?;
+        }
+        let id = format!("a0000000-0000-4000-8000-{:012}", 1000 + n);
+        exports.run_prepared(
+            &preparation,
+            id.clone(),
+            Configuration::default(),
+            |handle, start| -> TestResult {
+                runtime_support::offer(&handle, start)?;
+                let end = std::time::Instant::now() + std::time::Duration::from_secs(10);
+                loop {
+                    match db.operation_snapshot(id.clone()).and_then(|p| p.wait()) {
+                        Ok(Some(s))
+                            if librairii_core::operations::is_terminal(s.operation.state) =>
+                        {
+                            assert_eq!(
+                                s.operation.state,
+                                if race {
+                                    OperationState::Failed
+                                } else {
+                                    OperationState::Succeeded
+                                }
+                            );
+                            assert_eq!(
+                                s.items[0].outcome.code.as_deref(),
+                                Some(if race {
+                                    "filename_conflict"
+                                } else {
+                                    "exported"
+                                })
+                            );
+                            break;
+                        }
+                        Err(StorageError::ProfileBusy | StorageError::QueueFull) => {}
+                        Err(e) => return Err(e.into()),
+                        _ => {}
+                    }
+                    if std::time::Instant::now() >= end {
+                        return Err("durable export timed out".into());
+                    }
+                    std::thread::sleep(std::time::Duration::from_millis(2));
+                }
+                Ok(())
+            },
+        )??;
+        assert_eq!(
+            fs::read(destination.join("native.zip"))?,
+            if race {
+                b"racing foreign file".to_vec()
+            } else {
+                bytes.clone()
+            }
+        );
+        assert_eq!(fs::read_dir(&destination)?.count(), 1);
+    }
+    assert_eq!(fs::read(root.join("archives/native-export"))?, bytes);
+    db.close()?;
+    drop(db);
+    native.finish().map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+#[test]
+fn native_export_cancel_during_second_copy_keeps_completed_file_and_retires_partial() -> TestResult
+{
+    use librairii_app::native_jobs::Configuration;
+    use librairii_core::{OperationState, export::Scope, operations::ItemState};
+    use librairii_storage::export::Exports;
+    use sha2::{Digest, Sha256};
+    let roots = TestRoots::new()?;
+    let (copy, locations) = prepare(&roots, false)?;
+    let root = copy.root().to_owned();
+    let profile = NativeProfileStore::create_fresh(&locations.native)?;
+    let native = NativeLibrary::bind_independent(copy, &profile, &locations, &Default::default())
+        .map_err(|e| e.to_string())?;
+    let mut db = Database::open_native(&native)?;
+    let complete = b"small completed synthetic copy".to_vec();
+    let large = vec![97u8; 8 * 1024 * 1024];
+    for (id, name, bytes) in [
+        (11001, "completed.zip", &complete),
+        (11002, "cancelled.zip", &large),
+    ] {
+        let hash = librairii_core::Checksum::from_bytes(Sha256::digest(bytes).into()).to_string();
+        let size = bytes.len() as i64;
+        let path = format!("archives/cancel-{id}");
+        fs::write(root.join(&path), bytes)?;
+        committed_operation(db.transaction(Default::default(),move|tx|{
+            tx.execute("INSERT INTO stories(id,uuid,embedded_title,display_name_normalized) VALUES(?,?,'Synthetic stream','synthetic stream')",rusqlite::params![id,format!("e0000000-0000-4000-8000-{id:012}")])?;
+            tx.execute("INSERT INTO story_archives(story_id,original_filename,detected_format,sha256,byte_size,managed_path,validation_state) VALUES(?,?,'zip',?,?,?,'valid')",rusqlite::params![id,name,hash,size,path])?;Ok(())
+        })?.wait()?)?;
+    }
+    let destination = roots.profile().join("cancel-output");
+    fs::create_dir(&destination)?;
+    let mut exports = Exports::new(&db);
+    let preparation = exports
+        .prepare(
+            Scope::Selection(vec![11001, 11002]),
+            &destination,
+            "fr-FR".into(),
+            &Default::default(),
+        )?
+        .preparation
+        .ok_or("preparation")?;
+    let id = "a0000000-0000-4000-8000-000000011099".to_string();
+    let mut cancelled = false;
+    exports.run_prepared(
+        &preparation,
+        id.clone(),
+        Configuration::new(1).ok_or("workers")?,
+        |handle, start| -> TestResult {
+            runtime_support::offer(&handle, start)?;
+            let end = std::time::Instant::now() + std::time::Duration::from_secs(20);
+            loop {
+                if !cancelled
+                    && handle
+                        .take_progress()
+                        .iter()
+                        .any(|p| p.total == large.len() as i64 && p.completed > 0)
+                    && handle.cancel(id.clone()).is_ok()
+                {
+                    cancelled = true;
+                }
+                match db.operation_snapshot(id.clone()).and_then(|p| p.wait()) {
+                    Ok(Some(s)) if librairii_core::operations::is_terminal(s.operation.state) => {
+                        assert_eq!(
+                            s.operation.state,
+                            OperationState::PartiallySucceeded,
+                            "{:?}",
+                            s.items
+                        );
+                        assert_eq!(s.items[0].state, ItemState::Succeeded);
+                        assert_eq!(s.items[1].state, ItemState::Cancelled);
+                        break;
+                    }
+                    Err(StorageError::ProfileBusy | StorageError::QueueFull) => {}
+                    Err(e) => return Err(e.into()),
+                    _ => {}
+                }
+                if std::time::Instant::now() >= end {
+                    return Err("cancelled export timed out".into());
+                }
+                std::thread::sleep(std::time::Duration::from_millis(1));
+            }
+            Ok(())
+        },
+    )??;
+    assert!(cancelled);
+    assert_eq!(fs::read(destination.join("completed.zip"))?, complete);
+    assert_eq!(fs::read_dir(&destination)?.count(), 1);
+    assert_eq!(fs::read(root.join("archives/cancel-11002"))?, large);
+    drop(exports);
+    db.close()?;
+    drop(db);
+    native.finish().map_err(|e| e.to_string())?;
     Ok(())
 }

@@ -13,7 +13,11 @@ use librairii_core::{
 use rusqlite::Transaction;
 use std::collections::{BTreeMap, BTreeSet};
 #[cfg(any(target_os = "macos", target_os = "linux"))]
+mod durable;
+#[cfg(any(target_os = "macos", target_os = "linux"))]
 mod preparation;
+#[cfg(any(target_os = "macos", target_os = "linux"))]
+pub use durable::DurableExportError;
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 pub use preparation::{Exports, MAX_PREPARED, MAX_PREPARED_BYTES, Running};
 

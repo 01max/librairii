@@ -1,9 +1,9 @@
 # Task 12: exports, trash custody and diagnostics
 
-**Partial: 12.1–12.4 implemented; 12.5–12.9 remain incomplete. Keep the Task 12
+**Partial: 12.1–12.5 implemented; 12.6–12.9 remain incomplete. Keep the Task 12
 PR in draft.** This is an export-domain/copy slice, not completion of Task 12.
 
-Base: `7883a73d3a991ad50d174f2c456365aad029d039` (Task 11 merged).
+Rebased base: `5fd74f06fe4031b37bf84822d218943ec9ed970d` (Task 6 merged).
 One dedicated PR targets `rewrite-in-rust-native-desktop`. Linux x86-64 and
 macOS ARM/Intel are in scope; Windows remains deferred. Each numbered subtask
 has its own Conventional Commit with an `OpenSpec-Task` trailer; review fixes
@@ -81,26 +81,41 @@ violating unique-checksum import identity. This proves passthrough preservation
 of Go-qualified synthetic input, not a new archive-inspection port or an actual
 Lunii.QT GUI execution.
 
+## 12.5 — Native durable copy, cancellation and restart
+
+`Exports::run_prepared` consumes the actual registry-owned preparation, validates
+its scope, and hosts a Task 6 worker session borrowing the admitted native
+Database and LibraryFiles. The event loop receives one move-only validated Start.
+Workers retain actual source/parent descriptors, custody and the registered
+private destination workspace through compensation, SQL reporting and settlement.
+The selected destination object is checked against the acquired actual parent.
+No existing manual copy/preview DTO gains restart cleanup authority.
+
+The registered publisher validates the saved output name, uses no-clobber rename
+and flushes both directory entries. After publication, cancellation cannot erase
+the completed result. Uncertain publication/durability retains its actual owner
+and reconciles uncancelled; cleanup never receives a final name. Before-commit
+failures and cancellation retire only the owned private workspace before reporting.
+Profile/queue refusal before acquisition is retryable; read refusal is not treated
+as EOF or a completed hash. Existing registry-local copies remain available for
+the isolated passthrough slice.
+
+Tests cover fragmented writes, an injected ENOSPC prefix, refused source reads,
+chunk-boundary cancellation, a real native export with durable History and a
+raced destination, and cancellation during a second native copy while preserving
+the first completed file and source bytes. The sixteen-transition kill/restart
+matrix now calls the actual registered publisher rather than a fixture rename.
+It preserves completed exports and removes registered partials; link substitutions
+remain refused. Injected disk/read failures are adapter-boundary evidence, not
+qualification of every full/removable filesystem or Windows sharing mode.
+
 ## Remaining dependency and acceptance gates
 
-12.5 requires restart cleanup with retained completed outputs. The admitted Task
-6 runtime still has no production operation repository/startup composition to
-persist the actual external temporary acquisition and its authority. The copier
-cleans a known live unpublished owner on ordinary failure/cancel and retains
-actual uncertain owners, but does not adopt a temporary from its basename, saved
-inode, history DTO or supplied success flag after process death. Dropping a
-running object does not establish a durable operation outcome. Complete that
-runtime ownership/report/recovery boundary before claiming restart cleanup.
-
-12.6 durable removal/trash/compensation, 12.7–12.8 diagnostic logging/ZIP/privacy,
-and 12.9 full independent acceptance are not implemented by these four commits.
-12.9's complete import→inspect→export→reopen slice also depends on Task 5's real
-hostile archive inspection/import custody, which remains incomplete. The preserved
-Go archive fixtures used in 12.4 do not establish that missing Rust import port.
-
-Next prerequisite: Task 6's production operation store, retained effect ownership
-and startup recovery, in its own PR. Resume this same Task 12 PR afterwards;
-do not check off its remaining tasks from the partial implementation or CI result.
+12.6 removal/trash/compensation and 12.7–12.8 logging/diagnostics remain to be
+implemented on the merged runtime. 12.9's complete import→inspect→export→reopen
+slice still depends on Task 5's real hostile archive inspection/import custody,
+which remains incomplete. Existing preserved Go fixtures do not establish that
+missing Rust import port. Keep that acceptance subtask open until it can run.
 
 ## Independent partial-slice review corrections
 
