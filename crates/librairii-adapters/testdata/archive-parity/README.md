@@ -29,3 +29,22 @@ without its production constructor ceilings. A2GiB logical archive expansion cap
 is per traversal, not a2GiB cumulative budget across repeated metadata requests.
 Only the selected block is decoded; a solid predecessor is drained in32KiB
 chunks with cancellation checks. Unrelated block payload CRCs remain unobserved.
+
+The pinned decoder repair adds `extend.py`, which preserves the base corpus and
+produces seven bounded codec/limit regressions with the same tool environment.
+Re-run the retained Go probe on those exact bytes to refresh its observations;
+the producer alone does not establish Go acceptance. The probe source is retained
+at ../import-hardening/probe.go.txt and runs from an owned target directory.
+GOMAXPROCS=1 keeps the known 256 MiB Zstd window to one Go decoder worker.
+`patch-regressions.py` separately creates two tiny encoded-header constructor
+regressions (packed-stream count mismatch and aggregate Zstd memory). Those
+malformed declarations are tested only through the bounded Rust constructor.
+
+Brotli standard/enveloped and encoded-header BCJ2 are required Accepted cases.
+Large-window Brotli and concatenated streams preserve actual Go rejection reasons.
+They are not used to waive ordinary codec support. The two additional hardening
+records separately cover the 128 MiB Zstd window clamp and 10,000 packed-stream
+ceiling. The many-stream fixture contains 3,000 valid files/coders and 12,000 packed
+streams; official 7zz tests all files. Its harmless PackPos padding aligns codec IDs
+to avoid frozen Go's unrelated short-Read method-ID parser defect. No Go code is
+changed and all archive/header CRCs are recomputed over the retained bytes.

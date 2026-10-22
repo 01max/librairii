@@ -645,6 +645,8 @@ fn independent_seven_codec_streams_preserve_studio_metadata_and_artwork() -> Tes
         "sparc",
         "delta",
         "lz4",
+        "brotli",
+        "brotli-envelope",
         "zstd",
         "solid-copy",
         "non-solid-unused-corrupt",
@@ -814,10 +816,91 @@ fn constructor_budgets_can_only_reduce_production_allocation_ceilings() -> TestR
 
 #[test]
 fn unqualified_brotli_payload_decoder_remains_disabled() -> TestResult {
-    let bytes = parity_fixture("brotli.7z")?;
+    let bytes = parity_fixture("large-window-brotli.7z")?;
     let mut archive = open(&bytes, b"story.7z")?;
     assert!(archive.inspect_metadata().is_err());
-    // Accepted Go behavior stays required by the separate failing parity manifest.
-    // This is temporary fail-closed quarantine, never a hardening waiver.
+    // The unqualified large-window extension stays disabled; ordinary Brotli
+    // is accepted by the separately enforced Go parity manifest.
+    Ok(())
+}
+
+#[test]
+fn patched_header_graph_and_brotli_support_fragmented_source_reads_and_strict_windows() -> TestResult
+{
+    struct Fragmented(Cursor<Vec<u8>>);
+    impl Read for Fragmented {
+        fn read(&mut self, out: &mut [u8]) -> io::Result<usize> {
+            let n = out.len().min(1);
+            self.0.read(&mut out[..n])
+        }
+    }
+    impl Seek for Fragmented {
+        fn seek(&mut self, p: SeekFrom) -> io::Result<u64> {
+            self.0.seek(p)
+        }
+    }
+    for name in [
+        "brotli.7z",
+        "brotli-envelope.7z",
+        "encoded-header-brotli.7z",
+        "encoded-header-bcj2.7z",
+    ] {
+        let bytes = parity_fixture(name)?;
+        let mut archive = Archive::open(
+            Fragmented(Cursor::new(bytes)),
+            b"story.7z",
+            Limits::default(),
+            &Cancellation::default(),
+        )?;
+        assert_eq!(
+            archive.inspect_metadata()?.identity.canonical(),
+            "00112233-4455-4677-8899-aabbccddeeff"
+        );
+    }
+    use librairii_app::importing::Inspector;
+    for name in ["large-window-brotli.7z", "large-window-encoded-brotli.7z"] {
+        let bytes = parity_fixture(name)?;
+        let result = ArchiveInspector.inspect(
+            &mut Cursor::new(bytes),
+            b"story.7z",
+            &Cancellation::default(),
+        );
+        assert!(result.is_err(), "{name}");
+    }
+    Ok(())
+}
+
+#[test]
+fn encoded_header_patch_rejects_graph_mismatch_and_aggregate_memory_before_decode() -> TestResult {
+    use sevenz_turbo::{ArchiveLimits, ArchiveReader, Error, Password};
+    for name in [
+        "encoded-header-pack-mismatch.7z",
+        "encoded-header-memory-chain.7z",
+    ] {
+        let bytes = parity_fixture(name)?;
+        let limits = ArchiveLimits {
+            max_end_header_bytes: HEADER_BYTES,
+            max_header_unpacked_bytes: HEADER_BYTES,
+            memory_limit_bytes: DECODER_BYTES,
+            ..ArchiveLimits::default()
+        };
+        let result = std::panic::catch_unwind(|| {
+            ArchiveReader::with_limits(Cursor::new(&bytes), Password::empty(), limits)
+        });
+        let refused = result
+            .map_err(|_| "encoded header panicked")?
+            .err()
+            .ok_or("header admitted")?;
+        if name == "encoded-header-memory-chain.7z" {
+            assert!(
+                matches!(refused, Error::MemoryLimited { .. }),
+                "{refused:?}"
+            );
+        }
+        assert!(matches!(
+            open(&bytes, b"story.7z"),
+            Err(ArchiveError::Validation(_))
+        ));
+    }
     Ok(())
 }

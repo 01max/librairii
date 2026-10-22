@@ -130,6 +130,32 @@
       "expected_rust": "artwork_limit",
       "rationale": "Require PNG decoder header/framing acceptance rather than IHDR-only RGBA DecodeConfig acceptance; preserve compressed artwork without full raster decode.",
       "review": "pending Task5.10 independent review"
+    },
+    {
+      "category": "Zstd frame window above128MiB",
+      "fixture": "zstd-window-256m.7z",
+      "sha256": "6b1a77103e5a9b720a6d925b267cbb32881cdb7497926b7f8e2e9810ebc4fc83",
+      "prior_go": {
+        "file": "zstd-window-256m.7z",
+        "format": "seven_zip",
+        "uuid": "00112233-4455-4677-8899-aabbccddeeff"
+      },
+      "expected_rust": "metadata_limit",
+      "rationale": "Refuse a valid 256MiB Zstd window under the separately enforced 128MiB Zstd window clamp. This is stricter than both frozen Go acceptance and the global 256MiB decoder model limit, and is independently recorded rather than folded into that other category.",
+      "review": "pending Task5.10 independent review"
+    },
+    {
+      "category": "more than10000 aggregate packed streams",
+      "fixture": "pack-streams-12000.7z",
+      "sha256": "55d2a63022cd47207550bea5583bfb2bdd5509fef67e58adf7be5a624ffa1577",
+      "prior_go": {
+        "file": "pack-streams-12000.7z",
+        "format": "seven_zip",
+        "uuid": "00112233-4455-4677-8899-aabbccddeeff"
+      },
+      "expected_rust": "entry_limit",
+      "rationale": "Bound parser allocations for packed-stream offsets/sizes independently of file and coder counts. This official7zz-produced archive has 3000 files/coders and 12000 packed streams; all files independently test successfully and Go accepts its complete import identity. The 10000 structural ceiling deliberately rejects it.",
+      "review": "pending Task5.10 independent review"
     }
   ]
 }

@@ -32,7 +32,7 @@ fuzz_target!(|data: &[u8]| {
                 limits,
                 DecoderLimits {
                     header_bytes: 16 * 1024,
-                    memory_bytes: 8 * 1024 * 1024,
+                    memory_bytes: 64 * 1024 * 1024,
                 },
                 &Cancellation::default(),
             ) {

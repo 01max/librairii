@@ -4338,6 +4338,22 @@
           "name": "archives::tests::unqualified_brotli_payload_decoder_remains_disabled"
         },
         "reason": "Additive Task 5 archive inspection/custody assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 523,
+        "identity": {
+          "suite": "librairii-adapters",
+          "name": "archives::tests::encoded_header_patch_rejects_graph_mismatch_and_aggregate_memory_before_decode"
+        },
+        "reason": "Additive Task 5 archive inspection/custody assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 524,
+        "identity": {
+          "suite": "librairii-adapters",
+          "name": "archives::tests::patched_header_graph_and_brotli_support_fragmented_source_reads_and_strict_windows"
+        },
+        "reason": "Additive Task 5 archive inspection/custody assertions; all admitted identities retain exact order and target scope."
       }
     ],
     "python": [
@@ -4370,6 +4386,36 @@
         "position": 43,
         "identity": "test_sources.SourcePolicy.test_tag_categories_are_exact_scoped_and_read_only",
         "reason": "Additive observed Task 7/8 discovery; original integration identities retain exact order and target scope."
+      },
+      {
+        "position": 44,
+        "identity": "test_archive_patch.ArchivePatchPolicy.test_either_dependency_graph_cannot_bypass_patch",
+        "reason": "Observed additive Task 5 pinned decoder provenance failure assertions on owned copies; preserves every admitted identity and ordering."
+      },
+      {
+        "position": 45,
+        "identity": "test_archive_patch.ArchivePatchPolicy.test_missing_extra_and_modified_sources_fail",
+        "reason": "Observed additive Task 5 pinned decoder provenance failure assertions on owned copies; preserves every admitted identity and ordering."
+      },
+      {
+        "position": 46,
+        "identity": "test_archive_patch.ArchivePatchPolicy.test_new_patched_file_and_duplicate_manifest_fields_fail",
+        "reason": "Observed additive Task 5 pinned decoder provenance failure assertions on owned copies; preserves every admitted identity and ordering."
+      },
+      {
+        "position": 47,
+        "identity": "test_archive_patch.ArchivePatchPolicy.test_original_source_and_upstream_identity_cannot_self_repin",
+        "reason": "Observed additive Task 5 pinned decoder provenance failure assertions on owned copies; preserves every admitted identity and ordering."
+      },
+      {
+        "position": 48,
+        "identity": "test_archive_patch.ArchivePatchPolicy.test_pinned_tree_and_both_graph_overrides_pass_without_writes",
+        "reason": "Observed additive Task 5 pinned decoder provenance failure assertions on owned copies; preserves every admitted identity and ordering."
+      },
+      {
+        "position": 49,
+        "identity": "test_archive_patch.ArchivePatchPolicy.test_root_nested_and_source_aliases_fail",
+        "reason": "Observed additive Task 5 pinned decoder provenance failure assertions on owned copies; preserves every admitted identity and ordering."
       }
     ]
   },

@@ -13,12 +13,7 @@
         "format": "seven_zip",
         "uuid": "00112233-4455-4677-8899-aabbccddeeff"
       },
-      "rust": "accepted",
-      "qualification_blocker": {
-        "actual_rust": "invalid_container",
-        "required_rust": "accepted",
-        "resolution": "feature disabled pending bounded Brotli allocator; not a hardening waiver"
-      }
+      "rust": "accepted"
     },
     {
       "file": "lz4.7z",
@@ -331,13 +326,7 @@
         "format": "seven_zip",
         "uuid": "00112233-4455-4677-8899-aabbccddeeff"
       },
-      "rust": "accepted",
-      "qualification_blocker": {
-        "actual_rust": "invalid_container",
-        "upstream_error": "Multi input/output stream coders are not yet supported",
-        "required_rust": "accepted",
-        "resolution": "pending decoder patch or replacement; cannot be waived as hardening"
-      }
+      "rust": "accepted"
     },
     {
       "file": "encoded-header-ia64.7z",
@@ -480,6 +469,109 @@
         "uuid": "00112233-4455-4677-8899-aabbccddeeff"
       },
       "rust": "accepted"
+    },
+    {
+      "file": "large-window-brotli.7z",
+      "bytes": 187,
+      "sha256": "23fcbe57f4f9278e3218563fa60468595e402ac2cddf93b295b35a0d6d9a3d36",
+      "category": "rejected codec",
+      "go": {
+        "error": "metadata_limit validation failed for \"story.json\": sevenzip: read error: brotli: error reading: brotli: WINDOW_BITS",
+        "file": "large-window-brotli.7z",
+        "format": "",
+        "uuid": ""
+      },
+      "rust": "metadata_limit"
+    },
+    {
+      "file": "brotli-envelope.7z",
+      "bytes": 646,
+      "sha256": "2550229a4dfc13d4b3b2c6812e0106230dbe177e0a6b0509859a195d1a58beb9",
+      "category": "codec",
+      "go": {
+        "file": "brotli-envelope.7z",
+        "format": "seven_zip",
+        "uuid": "00112233-4455-4677-8899-aabbccddeeff"
+      },
+      "rust": "accepted"
+    },
+    {
+      "file": "brotli-concatenated.7z",
+      "bytes": 623,
+      "sha256": "3988567d134a6714f8550204e561c31b08182a239af409bc8f0f01c7d0bc79f7",
+      "category": "rejected codec",
+      "go": {
+        "error": "metadata_limit validation failed for \"story.json\": sevenzip: read error: brotli: error reading: brotli: excessive input",
+        "file": "brotli-concatenated.7z",
+        "format": "",
+        "uuid": ""
+      },
+      "rust": "metadata_limit"
+    },
+    {
+      "file": "encoded-header-brotli.7z",
+      "bytes": 205,
+      "sha256": "509352a01c38555022a9bf7256cdf886658a44c35b56d6fb2a8716c51364e6de",
+      "category": "codec",
+      "go": {
+        "file": "encoded-header-brotli.7z",
+        "format": "seven_zip",
+        "uuid": "00112233-4455-4677-8899-aabbccddeeff"
+      },
+      "rust": "accepted"
+    },
+    {
+      "file": "large-window-encoded-brotli.7z",
+      "bytes": 89,
+      "sha256": "d6bd8c69bf73614dd60bac3d4b96d2d97e539f90e76551e64ff14ddc0cf80350",
+      "category": "rejected codec",
+      "go": {
+        "error": "invalid_container validation failed: sevenzip: read error: readEncodedHeader: ReadByte error: brotli: error reading: brotli: WINDOW_BITS",
+        "file": "large-window-encoded-brotli.7z",
+        "format": "",
+        "uuid": ""
+      },
+      "rust": "invalid_container"
+    },
+    {
+      "file": "zstd-window-256m.7z",
+      "bytes": 2402,
+      "sha256": "6b1a77103e5a9b720a6d925b267cbb32881cdb7497926b7f8e2e9810ebc4fc83",
+      "category": "hardening",
+      "go": {
+        "file": "zstd-window-256m.7z",
+        "format": "seven_zip",
+        "uuid": "00112233-4455-4677-8899-aabbccddeeff"
+      },
+      "rust": "metadata_limit"
+    },
+    {
+      "file": "pack-streams-12000.7z",
+      "bytes": 169947,
+      "sha256": "55d2a63022cd47207550bea5583bfb2bdd5509fef67e58adf7be5a624ffa1577",
+      "category": "hardening",
+      "go": {
+        "file": "pack-streams-12000.7z",
+        "format": "seven_zip",
+        "uuid": "00112233-4455-4677-8899-aabbccddeeff"
+      },
+      "rust": "entry_limit"
+    },
+    {
+      "file": "encoded-header-pack-mismatch.7z",
+      "bytes": 60,
+      "sha256": "f3b133a6b8d51485d06915ec373843f0741ccd07597c058690e79533c5d77360",
+      "category": "patch constructor regression",
+      "rust": "invalid_container",
+      "go_probe": "not executed: malformed constructor precondition; original Go outcomes are not asserted"
+    },
+    {
+      "file": "encoded-header-memory-chain.7z",
+      "bytes": 62,
+      "sha256": "3ea2b027c1faf4f1b485808889f1989b9a797c7eda7010c1aa6b2d47dc0cb588",
+      "category": "patch constructor regression",
+      "rust": "invalid_container",
+      "go_probe": "not executed: malformed constructor precondition; original Go outcomes are not asserted"
     }
   ],
   "go_version": "go1.26.5 darwin/arm64",
@@ -511,6 +603,22 @@
     {
       "path": "target/task5-go-probe/main.go",
       "sha256": "a8fca3c3016cbe51ea4ab9560950715c2ab9ddc4558aa5194f4e19e934838356"
+    },
+    {
+      "path": "extend.py",
+      "sha256": "3e310f655611160e1010000967b1f97dde4bd408a385ab74f3a74fd29a387356"
+    },
+    {
+      "path": "patch-regressions.py",
+      "sha256": "93d39fc307fcd678af53685686026bc987c0dcc0782b365bd50c9a9a30bcf05f"
     }
-  ]
+  ],
+  "patch_observations": {
+    "go": "go1.26.5 darwin/arm64",
+    "probe_source": "../import-hardening/probe.go.txt",
+    "env": {
+      "GOMAXPROCS": "1"
+    },
+    "scope": "Seven new patch/limit cases observed through unchanged actual Go inspector. Known tiny Zstd frame has one bounded 256MiB window; official7zz independently validates all 3000 files in the 12000-stream case. Malformed memory/count constructor regressions are never sent to Go."
+  }
 }

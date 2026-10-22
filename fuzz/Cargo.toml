@@ -31,3 +31,6 @@ path = "fuzz_targets/import_boundaries.rs"
 test = false
 doc = false
 bench = false
+
+[patch.crates-io]
+sevenz-turbo = { path = "../third_party/sevenz-turbo" }

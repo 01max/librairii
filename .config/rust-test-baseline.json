@@ -3159,6 +3159,14 @@
     {
       "suite": "librairii-adapters",
       "name": "archives::tests::unqualified_brotli_payload_decoder_remains_disabled"
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "archives::tests::encoded_header_patch_rejects_graph_mismatch_and_aggregate_memory_before_decode"
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "archives::tests::patched_header_graph_and_brotli_support_fragmented_source_reads_and_strict_windows"
     }
   ]
 }

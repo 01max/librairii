@@ -43,6 +43,12 @@
     "test_sources.SourcePolicy.test_runtime_query_origins_and_scope_cannot_expand_to_sql_or_saved_conversion",
     "test_sources.SourcePolicy.test_runtime_query_binding_does_not_relax_saved_derivatives_or_notice_guards",
     "test_sources.SourcePolicy.test_url_handover_requires_exact_origin_scope_and_materialized_leaf",
-    "test_sources.SourcePolicy.test_tag_categories_are_exact_scoped_and_read_only"
+    "test_sources.SourcePolicy.test_tag_categories_are_exact_scoped_and_read_only",
+    "test_archive_patch.ArchivePatchPolicy.test_either_dependency_graph_cannot_bypass_patch",
+    "test_archive_patch.ArchivePatchPolicy.test_missing_extra_and_modified_sources_fail",
+    "test_archive_patch.ArchivePatchPolicy.test_new_patched_file_and_duplicate_manifest_fields_fail",
+    "test_archive_patch.ArchivePatchPolicy.test_original_source_and_upstream_identity_cannot_self_repin",
+    "test_archive_patch.ArchivePatchPolicy.test_pinned_tree_and_both_graph_overrides_pass_without_writes",
+    "test_archive_patch.ArchivePatchPolicy.test_root_nested_and_source_aliases_fail"
   ]
 }

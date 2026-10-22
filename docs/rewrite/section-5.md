@@ -270,82 +270,72 @@ without its original guard. Directory preparation now finishes while resources
 retain custody. The generalized artwork route names also describe both embedded
 and official categories. These are separate review fixes, not waived findings.
 
-## 5.9 — In progress: bounded fuzzing and complete codec parity
+## 5.9 — Retained fuzzing and codec parity
 
-The new retained synthetic corpus exercises Copy, LZMA/LZMA2, PPMd, Deflate,
-BZip2, independent Zstd/Brotli/LZ4 streams and BCJ/BCJ2/PPC/ARM/ARM64/SPARC/Delta
-filters through actual Studio inspection. UUID, projected text and exact artwork
-bytes match. ZIP fully validates an unused corrupt payload's CRC, whereas 7z
-accepts a corrupt unrelated block without decoding it. Selected 7z reads now use
-the actual block map and original constructor limits; global all-block traversal
-cannot honor an early-stop callback between phases. Earlier solid members drain
-through32KiB cancellation checkpoints. Repeated selected reads may decode the
-same solid prefix repeatedly; the preserved2GiB logical expansion cap is not a
-single cumulative2GiB inspection-work claim.
+The retained synthetic corpus has 48 archives: independent Copy, LZMA/LZMA2,
+PPMd, Deflate, BZip2, Zstd/Brotli/LZ4 streams and BCJ/BCJ2/PPC/ARM/ARM64/SPARC/
+Delta filters, encoded-header variants, malformed inputs and individual hardening
+counterexamples. Actual Studio inspection compares UUID, projected text and exact
+artwork. All unchanged frozen archive observations still match. ZIP validates all
+regular payload sizes/CRCs; 7z decodes selected blocks only, including necessary
+solid predecessors with 32 KiB cancellation checkpoints. Repeated metadata reads
+may traverse a solid prefix repeatedly; 2 GiB remains a logical per-traversal cap.
 
-The source reader has a bounded encoded-header method preflight to preserve
-Go's decoder set before header decoding, as well as the selected-block method
-gate. IA64/Thumb/RISC-V filters remain unsupported where Go rejects them. The
-preflight only observes methods; the candidate still validates the full container,
-CRC, stream graph and allocation bounds. UTF16 total-name accounting includes
-all NUL terminators and the external flag. Production allocation ceilings are
-16MiB stored/decoded headers and256MiB decoder estimates; reduced public budgets
-cannot raise them. PNG config parsing bounds dimensions/pixels and128MiB parser
-allocation. The pinned png decoder's iCCP inflate is capped by its remaining
-byte budget and invalid/oversized optional profiles are discarded; config parsing
-does not rasterize image data.
+The pinned sevenz-turbo 0.29.2 patch is retained under third_party/sevenz-turbo.
+Only reader.rs and codec/brotli.rs differ from the published 176-file source
+index. Both locked graphs select this exact local patch. The source gate checks
+the original archive checksum/revision, closed tree, explicit modified hashes,
+source aliases and both overrides; dependency inventories distinguish the patched
+tree digest from the published archive checksum and copy its Apache license and
+modification provenance. Six failure tests exercise owned copies. Exact-byte Git
+attributes protect the source and evidence during checkout.
 
-Individual retained previously accepted Go counterexamples cover dimensions,
-pixels, incomplete PNG framing, selected/predecessor7z CRC,
-end/decoded-header buffering, decoder memory, per-block coder/stream counts,
-aggregate coders and unmodelled unused decoder memory. Their hashes, observed Go
-results, rationales and required Rust outcomes remain separate hardening records
-pending independent5.10 acceptance. The frozen preservation corpus is unchanged.
+Encoded BCJ2 headers now use the existing bounded graph decoder, after exact
+packed-stream count/source-range checks, finite aggregate decoder memory and
+unknown-model refusal. Review found those two missing preconditions; tiny retained
+constructor regressions verify refusal before decoding, without executing malformed
+allocation declarations in Go. Fragmented one-byte source reads exercise ordinary
+Brotli, envelopes, encoded Brotli and encoded BCJ2 through actual import.
 
-Both pinned bounded fuzz targets pass after the header preflight change:
-identity11140824cases and import_boundaries607849cases in31seconds each. Import
-fuzzing uses actual ZIP/7z/path/Studio/optional JSON decoders,64entries,128KiB
-expansion,16KiB input/header/metadata/artwork and8MiB decoder memory, with a2second
-per-input timeout and512MiB process RSS ceiling. Retained seeds and regressions
-are committed; generated corpus and crash artifacts remain task-local.
+Brotli rejects the large-window extension before state allocation and accepts
+standard RFC windows. It reads the optional 16-byte envelope completely, decodes
+one stream and reports trailing/concatenated input on the completing read, matching
+the frozen Go inspector. The streaming engine uses bounded compressed buffering
+and no decoded-output accumulation. Ordinary Brotli support is restored in both
+graphs. Neither lost valid BCJ2 behavior nor disabled ordinary Brotli is waived as
+hardening; both retained Go-accepted cases now pass.
 
-**Qualification blocker:** encoded-header-bcj2.7z is valid and accepted by the
-frozen Go inspector, but sevenz-turbo0.29.2's encoded-header path refuses multi-I/O
-coders with `Multi input/output stream coders are not yet supported`. Its body
-BCJ2 decoder succeeds, so a body-only codec matrix would conceal the gap. The
-required Rust result remains Accepted and the parity test deliberately fails.
-This is lost supported behavior, not an intentional hardening exception. Task5.9
-and5.10 remain unchecked; the dependency is not qualified. The user was asked to
-choose a pinned, reviewed decoder repair or a replacement candidate before that
-design-dependent work proceeds.
+Stored/decoded headers remain capped at 16 MiB and aggregate decoder estimates at
+256 MiB. Header preflight preserves Go's supported method set; selected IA64/Thumb/
+RISC-V remain refused. PNG configuration enforces dimensions, pixels and 128 MiB
+parser allocation without full raster decode. There are 12 individually recorded
+archive hardening categories and separate dimension/pixel counterexamples. The
+additional valid Zstd frame has a 256 MiB window accepted by Go but refused by the
+stricter 128 MiB Zstd clamp. The other new archive has 3,000 files/coders and 12,000
+packed streams, independently validated by official 7zz and accepted by Go; Rust
+refuses the 10,000 structural count. Exact observations and producer sources are
+retained separately from the unchanged preservation corpus.
 
-Independent spec review additionally found that the candidate's fixed32MiB
-Brotli estimate does not bound its allocator: locked brotli-decompressor6.0.1's
-custom-dictionary state enables large-window mode, which can allocate a1GiB ring
-buffer for a non-last metablock before a small output/header cap intervenes.
-No hostile allocation probe was run. The Brotli feature is disabled in both
-locked dependency graphs pending a bounded implementation. Its retained normal
-Go-accepted fixture still requires Accepted in the failing parity manifest;
-this temporary safety refusal is not a compatibility waiver. The ordinary
-positive codec test now exercises the15 remaining body codecs/filters.
+Bounded import fuzzing retains header/metadata/path/JSON seeds, both decoder
+regressions and ordinary/enveloped/large-window/concatenated Brotli. Its decoder
+budget is reduced to 64 MiB so the 32 MiB Brotli model reaches the strict guard;
+16 KiB input/header/metadata/artwork, 64 entries, 128 KiB logical expansion,
+2-second per-input timeout and 512 MiB process RSS ceilings remain enforced.
+Both pinned targets pass: identity 10,345,449 inputs and import_boundaries 561,411
+inputs in 31 seconds each, with peak RSS 283 MiB and 296 MiB respectively.
+Generated corpus/crashes remain local artifacts.
 
-Two more qualification questions remain explicit: the parser's10000 structural
-count ceiling also applies to packed streams, so a separate >10000-stream/
-<=10000-file counterexample is required; and the Zstd decoder's additional128MiB
-window clamp needs its own comparison/record rather than assuming the general
-256MiB memory record covers it. These gaps and the safety defect keep5.9/5.10
-open even if a particular normal codec corpus passes.
+Final local cargo xtask check passes on aarch64-apple-darwin: 509 tests, no skips,
+19 doctests, fmt, all-target Clippy, both locked dependency audits/inventories,
+notices, cumulative discovery and unchanged preservation assertions. This host
+result does not substitute for Linux or Intel macOS CI.
 
-## 5.10 — Independent review checkpoint, incomplete
+## 5.10 — Independent review finalization
 
 The independent standards and spec reports are retained in
-[section-5-review.md](section-5-review.md). Both standards findings were fixed in
-a separate commit. Spec review identified the codec/safety blockers and two more
-qualification gaps above, so no complete-import or decoder-admission claim is
-made. Hardening records remain pending rather than self-approved.
-
-The real native import→query→close→reopen test now checks original filename and
-managed-path SQL bytes before and after reopen: macOS uses Unicode/spaces/case;
-Linux additionally uses invalidUTF8 bytes. Invalid UTF8 presentation fields remain
-empty while raw bytes and filesystem content retain their original identity.
-The macOS regression passes; Linux execution must be confirmed by native CI.
+[section-5-review.md](section-5-review.md). Final review and native CI evidence
+are being recorded before declaring Task 5 complete. The headless native test
+checks import→inspection→publication→SQL/query→close→reopen, exact archive hashes,
+original native filename and managed-path bytes. Linux uses invalid UTF-8 names;
+macOS uses Unicode/spaces/case. GUI composition and product release/adoption gates
+remain in their own future task sections. Windows is deferred.
