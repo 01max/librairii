@@ -9,7 +9,7 @@ use librairii_app::{
 };
 use librairii_storage::{
     database::Database,
-    imports::{ImportResources, ImportStorage},
+    imports::{ImportObserver, ImportResources, ImportStorage},
     platform::unix::PickedSource,
 };
 use std::{collections::BTreeMap, fmt, path::PathBuf, sync::Mutex};
@@ -56,11 +56,12 @@ impl PreparedImport {
             if bytes > MAX_COMMAND_BYTES {
                 return Err(PrepareError::Invalid);
             }
-            let source = PickedSource::open(path).map_err(|_| PrepareError::SourceUnavailable)?;
+            let name = path.file_name().ok_or(PrepareError::SourceUnavailable)?;
+            let total = PickedSource::open(path).map(|s| s.bytes()).unwrap_or(0);
             items.push(NewItem {
-                source_name: source.name().as_os_str().to_string_lossy().into_owned(),
+                source_name: name.to_string_lossy().into_owned(),
                 archive_relative_path: format!("{SLOT_PREFIX}{index}"),
-                total_bytes: i64::try_from(source.bytes()).map_err(|_| PrepareError::Invalid)?,
+                total_bytes: i64::try_from(total).map_err(|_| PrepareError::Invalid)?,
                 ..Default::default()
             });
         }
@@ -106,6 +107,13 @@ pub struct ImportExecutor<'db, 'library> {
     batches: Mutex<BTreeMap<String, Batch>>,
 }
 impl<'db, 'library> ImportExecutor<'db, 'library> {
+    pub fn observed(database: &'db Database<'library>, observer: &'db dyn ImportObserver) -> Self {
+        Self {
+            store: ImportStorage::observed(database, observer),
+            database,
+            batches: Mutex::new(BTreeMap::new()),
+        }
+    }
     pub fn new(database: &'db Database<'library>) -> Self {
         Self {
             store: ImportStorage::new(database),

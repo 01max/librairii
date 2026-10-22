@@ -4191,6 +4191,97 @@
           ]
         },
         "reason": "Additive Task 5 archive inspection/custody assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 509,
+        "identity": {
+          "suite": "librairii-desktop::imports",
+          "name": "actual_effect_boundary_failures_preserve_sources_and_cleanup_only_owned_temporaries",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive Task 5 archive inspection/custody assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 510,
+        "identity": {
+          "suite": "librairii-desktop::imports",
+          "name": "actual_file_size_limit_short_write_preserves_source_and_retires_partial_stage",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive Task 5 archive inspection/custody assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 511,
+        "identity": {
+          "suite": "librairii-desktop::imports",
+          "name": "actual_import_process_death_recovers_registered_stage_and_preserves_committed_bytes",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive Task 5 archive inspection/custody assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 512,
+        "identity": {
+          "suite": "librairii-desktop::imports",
+          "name": "actual_native_cancellation_on_both_sides_of_commit_preserves_truth_and_bytes",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive Task 5 archive inspection/custody assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 513,
+        "identity": {
+          "suite": "librairii-desktop::imports",
+          "name": "actual_registered_native_import_closes_and_reopens_with_unchanged_legacy_source",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive Task 5 archive inspection/custody assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 514,
+        "identity": {
+          "suite": "librairii-desktop::imports",
+          "name": "actual_staged_hash_mismatch_and_missing_picker_sources_fail_per_item",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive Task 5 archive inspection/custody assertions; all admitted identities retain exact order and target scope."
+      },
+      {
+        "position": 515,
+        "identity": {
+          "suite": "librairii-storage",
+          "name": "native::owned::tests::concurrent_native_observers_do_not_refuse_each_other_as_profile_updates",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Additive Task 5 archive inspection/custody assertions; all admitted identities retain exact order and target scope."
       }
     ],
     "python": [

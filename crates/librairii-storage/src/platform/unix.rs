@@ -32,6 +32,7 @@ use std::{
 
 const PAYLOAD: &str = "payload";
 mod import_source;
+pub(crate) use import_source::CopyPoint;
 pub use import_source::PickedSource;
 static NEXT_TEMP: AtomicU64 = AtomicU64::new(1);
 
@@ -1799,6 +1800,49 @@ pub struct TempCleanupFailure<'files, 'library> {
 }
 
 impl<'files, 'library> OwnedStage<'files, 'library> {
+    /// Discard only the original unpublished private copy after the import
+    /// owner has acknowledged a checksum-duplicate report. Existing managed
+    /// bytes and picker sources are outside this capability.
+    pub(crate) fn discard_duplicate_stage(
+        mut self,
+        guard: &Custody<'_>,
+    ) -> std::result::Result<(), Box<TempCleanupFailure<'files, 'library>>> {
+        let result = (|| {
+            self.revalidate(guard)?;
+            let cancel = WorkCancellation::default();
+            if self.directory.entries(1, &cancel)? != [OsString::from(PAYLOAD)] {
+                return Err(StorageError::SnapshotChanged);
+            }
+            self.revalidate(guard)?;
+            self.published = true;
+            native::unlinkat(&self.directory.file, PAYLOAD, AtFlags::empty())
+                .map_err(|e| StorageError::io("discard duplicate private payload", e.into()))?;
+            self.directory.flush()?;
+            self.files
+                .staging
+                .require_name(&self.directory_name, self.directory.identity)?;
+            self.directory.entries(0, &cancel)?;
+            native::unlinkat(
+                &self.files.staging.file,
+                &self.directory_name,
+                AtFlags::REMOVEDIR,
+            )
+            .map_err(|e| StorageError::io("discard duplicate private workspace", e.into()))?;
+            self.files.staging.flush()?;
+            self.files.check(guard)?;
+            self.forget_registration()
+        })();
+        if let Err(cause) = result {
+            self.files.fence();
+            return Err(Box::new(TempCleanupFailure {
+                staged: self,
+                trash_name: None,
+                cause,
+                cleanup_uncertain: true,
+            }));
+        }
+        Ok(())
+    }
     pub fn inspector(&mut self) -> StageReader<'_> {
         StageReader {
             file: &mut self.file,

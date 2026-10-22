@@ -277,3 +277,728 @@ fn actual_inspection_failures_keep_frozen_operation_reasons_and_clean_staging() 
     db.close()?;
     Ok(())
 }
+
+use librairii_app::native_jobs::Cancellation;
+use librairii_storage::imports::{ImportObserver, ImportPoint};
+use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
+#[derive(Debug)]
+struct Fault {
+    point: ImportPoint,
+    hits: AtomicUsize,
+}
+impl ImportObserver for Fault {
+    fn before(&self, point: ImportPoint, _: &Cancellation) -> librairii_storage::Result<()> {
+        if point == self.point && self.hits.fetch_add(1, Ordering::SeqCst) == 0 {
+            return Err(librairii_storage::StorageError::Io {
+                operation: "injected import boundary",
+                source: std::io::Error::other("injected failure"),
+            });
+        }
+        Ok(())
+    }
+}
+#[test]
+fn actual_effect_boundary_failures_preserve_sources_and_cleanup_only_owned_temporaries()
+-> TestResult {
+    for (point, code) in [
+        (ImportPoint::SourceOpened, "stage_failed"),
+        (ImportPoint::BeforeRead, "stage_failed"),
+        (ImportPoint::AfterCopyChunk, "stage_failed"),
+        (ImportPoint::BeforeHash, "stage_failed"),
+        (ImportPoint::Inspected, "inspection_failed"),
+        (ImportPoint::BeforeArchivePublication, "publish_failed"),
+        (ImportPoint::ArchivePublished, "publish_failed"),
+        (ImportPoint::BeforeArtworkWrite, "artwork_failed"),
+        (ImportPoint::ArtworkPublished, "artwork_failed"),
+        (ImportPoint::BeforeCatalog, "catalog_failed"),
+        (ImportPoint::BeforeSettlement, "imported"),
+    ] {
+        let roots = TestRoots::new()?;
+        let library = IsolatedLibrary::initialize_from_override(
+            Some(roots.library().as_os_str()),
+            "a0000000-0000-4000-8000-000000000065".parse()?,
+        )?;
+        let source = roots.profile().join("source.zip");
+        fs::copy(fixture("clockwork-forest-studio.zip"), &source)?;
+        let bytes = fs::read(&source)?;
+        let mut db = Database::open_isolated(&library)?;
+        let id = "a0000000-0000-4000-8000-000000000066";
+        let observer = Fault {
+            point,
+            hits: AtomicUsize::new(0),
+        };
+        {
+            let executor = ImportExecutor::observed(&db, &observer);
+            let store = TerminalRepository::new(&db, 1);
+            with_runtime(
+                &store,
+                &executor,
+                Configuration::default(),
+                |handle| -> TestResult {
+                    offer(
+                        &executor,
+                        &handle,
+                        PreparedImport::new(id.parse()?, vec![source.clone()])?,
+                    )?;
+                    wait_terminal(&db, id)
+                },
+            )??;
+        }
+        let result = db
+            .operation_snapshot(id.into())?
+            .wait()?
+            .ok_or("missing operation")?;
+        assert_eq!(
+            result.items[0].outcome.code.as_deref(),
+            Some(code),
+            "{point:?}"
+        );
+        let committed = point == ImportPoint::BeforeSettlement;
+        assert_eq!(
+            db.search(Default::default(), "en-GB".into())?
+                .wait()?
+                .total_items,
+            i64::from(committed),
+            "{point:?}"
+        );
+        assert_eq!(
+            count_files(&library.layout().archives())?,
+            usize::from(committed),
+            "{point:?}"
+        );
+        assert_eq!(
+            count_files(&library.layout().catalog())?,
+            usize::from(committed),
+            "{point:?}"
+        );
+        assert_eq!(
+            fs::read_dir(library.layout().staging())?.count(),
+            0,
+            "{point:?}"
+        );
+        assert_eq!(fs::read(source)?, bytes, "{point:?}");
+        assert!(observer.hits.load(Ordering::SeqCst) >= if committed { 2 } else { 1 });
+        db.close()?;
+    }
+    Ok(())
+}
+#[derive(Debug)]
+struct CorruptHash {
+    staging: PathBuf,
+    changed: AtomicBool,
+}
+impl ImportObserver for CorruptHash {
+    fn before(&self, point: ImportPoint, _: &Cancellation) -> librairii_storage::Result<()> {
+        if point == ImportPoint::BeforeHash {
+            let action = (|| -> std::io::Result<()> {
+                let directory = fs::read_dir(&self.staging)?
+                    .next()
+                    .ok_or_else(|| std::io::Error::other("missing actual stage"))??;
+                fs::write(
+                    directory.path().join("payload"),
+                    b"externally corrupted staged bytes",
+                )?;
+                Ok(())
+            })();
+            action.map_err(|source| librairii_storage::StorageError::Io {
+                operation: "inject stage mutation",
+                source,
+            })?;
+            self.changed.store(true, Ordering::SeqCst);
+        }
+        Ok(())
+    }
+}
+#[test]
+fn actual_staged_hash_mismatch_and_missing_picker_sources_fail_per_item() -> TestResult {
+    let roots = TestRoots::new()?;
+    let library = IsolatedLibrary::initialize_from_override(
+        Some(roots.library().as_os_str()),
+        "a0000000-0000-4000-8000-000000000067".parse()?,
+    )?;
+    let source = roots.profile().join("source.zip");
+    fs::copy(fixture("clockwork-forest-studio.zip"), &source)?;
+    let bytes = fs::read(&source)?;
+    let missing = roots.profile().join("missing.zip");
+    let mut db = Database::open_isolated(&library)?;
+    let observer = CorruptHash {
+        staging: library.layout().staging(),
+        changed: AtomicBool::new(false),
+    };
+    let id = "a0000000-0000-4000-8000-000000000068";
+    {
+        let executor = ImportExecutor::observed(&db, &observer);
+        let store = TerminalRepository::new(&db, 1);
+        with_runtime(
+            &store,
+            &executor,
+            Configuration::new(1).ok_or("worker configuration")?,
+            |handle| -> TestResult {
+                offer(
+                    &executor,
+                    &handle,
+                    PreparedImport::new(id.parse()?, vec![missing, source.clone()])?,
+                )?;
+                wait_terminal(&db, id)
+            },
+        )??;
+    }
+    let result = db
+        .operation_snapshot(id.into())?
+        .wait()?
+        .ok_or("missing operation")?;
+    assert!(observer.changed.load(Ordering::SeqCst));
+    assert!(
+        result
+            .items
+            .iter()
+            .all(|i| i.outcome.code.as_deref() == Some("stage_failed"))
+    );
+    assert_eq!(fs::read(source)?, bytes);
+    assert_eq!(count_files(&library.layout().archives())?, 0);
+    assert_eq!(fs::read_dir(library.layout().staging())?.count(), 0);
+    db.close()?;
+    Ok(())
+}
+#[derive(Debug)]
+struct CancelGate {
+    point: Option<ImportPoint>,
+    entered: AtomicBool,
+    release: AtomicBool,
+    timed_out: AtomicBool,
+}
+impl CancelGate {
+    fn wait(&self, cancel: &Cancellation) {
+        self.entered.store(true, Ordering::SeqCst);
+        let end = Instant::now() + Duration::from_secs(15);
+        while !(self.release.load(Ordering::SeqCst) && cancel.is_cancelled()) {
+            if Instant::now() > end {
+                self.timed_out.store(true, Ordering::SeqCst);
+                break;
+            }
+            thread::sleep(Duration::from_millis(1));
+        }
+    }
+}
+impl ImportObserver for CancelGate {
+    fn before(&self, point: ImportPoint, cancel: &Cancellation) -> librairii_storage::Result<()> {
+        if self.point == Some(point) {
+            self.wait(cancel);
+        }
+        Ok(())
+    }
+    fn committed(&self, cancel: &Cancellation) {
+        if self.point.is_none() {
+            self.wait(cancel);
+        }
+    }
+}
+#[test]
+fn actual_native_cancellation_on_both_sides_of_commit_preserves_truth_and_bytes() -> TestResult {
+    for point in [
+        Some(ImportPoint::AfterCopyChunk),
+        Some(ImportPoint::BeforeCatalog),
+        None,
+    ] {
+        let roots = TestRoots::new()?;
+        let library = IsolatedLibrary::initialize_from_override(
+            Some(roots.library().as_os_str()),
+            "a0000000-0000-4000-8000-000000000069".parse()?,
+        )?;
+        let source = roots.profile().join("source.zip");
+        fs::copy(fixture("clockwork-forest-studio.zip"), &source)?;
+        let bytes = fs::read(&source)?;
+        let mut db = Database::open_isolated(&library)?;
+        let observer = CancelGate {
+            point,
+            entered: AtomicBool::new(false),
+            release: AtomicBool::new(false),
+            timed_out: AtomicBool::new(false),
+        };
+        let id = "a0000000-0000-4000-8000-000000000070";
+        {
+            let executor = ImportExecutor::observed(&db, &observer);
+            let store = TerminalRepository::new(&db, 1);
+            with_runtime(
+                &store,
+                &executor,
+                Configuration::default(),
+                |handle| -> TestResult {
+                    offer(
+                        &executor,
+                        &handle,
+                        PreparedImport::new(id.parse()?, vec![source.clone()])?,
+                    )?;
+                    let end = Instant::now() + Duration::from_secs(15);
+                    while !observer.entered.load(Ordering::SeqCst) {
+                        if Instant::now() > end {
+                            return Err("cancel boundary not reached".into());
+                        }
+                        thread::sleep(Duration::from_millis(1));
+                    }
+                    while handle.cancel(id.into()).is_err() {
+                        if Instant::now() > end {
+                            return Err("cancel intake unavailable".into());
+                        }
+                        thread::sleep(Duration::from_millis(1));
+                    }
+                    observer.release.store(true, Ordering::SeqCst);
+                    wait_terminal(&db, id)
+                },
+            )??;
+        }
+        assert!(!observer.timed_out.load(Ordering::SeqCst));
+        let result = db
+            .operation_snapshot(id.into())?
+            .wait()?
+            .ok_or("missing operation")?;
+        let committed = point.is_none();
+        assert_eq!(
+            result.items[0].outcome.code.as_deref(),
+            Some(if committed { "imported" } else { "cancelled" })
+        );
+        assert_eq!(
+            db.search(Default::default(), "en-GB".into())?
+                .wait()?
+                .total_items,
+            i64::from(committed)
+        );
+        assert_eq!(
+            count_files(&library.layout().archives())?,
+            usize::from(committed)
+        );
+        assert_eq!(fs::read_dir(library.layout().staging())?.count(), 0);
+        assert_eq!(fs::read(source)?, bytes);
+        db.close()?;
+    }
+    Ok(())
+}
+
+#[test]
+fn actual_file_size_limit_short_write_preserves_source_and_retires_partial_stage() -> TestResult {
+    const CHILD: &str = "LIBRAIRII_IMPORT_FSIZE_SOURCE";
+    const LIMIT: u64 = 8 * 1024 * 1024 + 17;
+    if let Some(source) = std::env::var_os(CHILD) {
+        let source = PathBuf::from(source);
+        let parent = source.parent().ok_or("missing synthetic source parent")?;
+        if parent.file_name().is_none_or(|n| n != "profile")
+            || parent
+                .parent()
+                .and_then(Path::file_name)
+                .is_none_or(|n| !n.to_string_lossy().starts_with("librairii-synthetic-"))
+        {
+            return Err("explicit synthetic parent source required".into());
+        }
+        let roots = TestRoots::new()?;
+        let library = IsolatedLibrary::initialize_from_override(
+            Some(roots.library().as_os_str()),
+            "a0000000-0000-4000-8000-000000000071".parse()?,
+        )?;
+        let mut db = Database::open_isolated(&library)?;
+        let id = "a0000000-0000-4000-8000-000000000072";
+        {
+            let executor = ImportExecutor::new(&db);
+            let store = TerminalRepository::new(&db, 1);
+            with_runtime(
+                &store,
+                &executor,
+                Configuration::default(),
+                |handle| -> TestResult {
+                    offer(
+                        &executor,
+                        &handle,
+                        PreparedImport::new(id.parse()?, vec![source])?,
+                    )?;
+                    wait_terminal(&db, id)
+                },
+            )??;
+        }
+        let result = db
+            .operation_snapshot(id.into())?
+            .wait()?
+            .ok_or("missing operation")?;
+        assert_eq!(result.operation.state, OperationState::Failed);
+        assert_eq!(
+            result.items[0].outcome.code.as_deref(),
+            Some("stage_failed")
+        );
+        assert_eq!(count_files(&library.layout().archives())?, 0);
+        assert_eq!(fs::read_dir(library.layout().staging())?.count(), 0);
+        let retired = fs::read_dir(library.layout().trash())?
+            .next()
+            .ok_or("partial stage not retained in trash")??;
+        assert_eq!(fs::metadata(retired.path().join("payload"))?.len(), LIMIT);
+        db.close()?;
+        return Ok(());
+    }
+    let roots = TestRoots::new()?;
+    let source = roots.profile().join("large.zip");
+    let mut payload = vec![0x5a; 10 * 1024 * 1024];
+    payload.extend_from_slice(&fs::read(fixture("clockwork-forest-studio.zip"))?);
+    fs::write(&source, &payload)?;
+    let script = r#"import os, resource, signal, sys
+limit=8*1024*1024+17
+resource.setrlimit(resource.RLIMIT_FSIZE,(limit,limit))
+if resource.getrlimit(resource.RLIMIT_FSIZE)!=(limit,limit):
+    raise SystemExit('file-size control did not apply')
+signal.signal(signal.SIGXFSZ,signal.SIG_IGN)
+os.execv(sys.argv[1],[sys.argv[1],'--exact','actual_file_size_limit_short_write_preserves_source_and_retires_partial_stage','--nocapture'])
+"#;
+    let output = std::process::Command::new("python3")
+        .args(["-c", script])
+        .arg(std::env::current_exe()?)
+        .env(CHILD, &source)
+        .output()?;
+    assert!(
+        output.status.success(),
+        "{}{}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+    assert_eq!(fs::read(source)?, payload);
+    Ok(())
+}
+
+use librairii_storage::{
+    adoption::{ClosedLibraryInput, ClosedManifest, IndependentCopy},
+    database::WorkCancellation,
+    native::NativeLibrary,
+    profile::{NativeProfileStore, Profile, ProfileDocument, ProfileLocations},
+};
+fn native_fixture(
+    roots: &TestRoots,
+) -> Result<(IndependentCopy, ProfileLocations), Box<dyn Error>> {
+    let source = roots.library().join("legacy-source");
+    fs::create_dir(&source)?;
+    let base = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../preservation/corpus");
+    let manifest = fs::read(base.join("profiles/library-manifest.json"))?;
+    let entries: serde_json::Value = serde_json::from_slice(&manifest)?;
+    for entry in entries.as_array().ok_or("manifest array")? {
+        let path = entry["path"].as_str().ok_or("manifest path")?;
+        if entry["directory"] == true {
+            fs::create_dir(source.join(path))?;
+        } else {
+            fs::copy(
+                base.join("libraries/schema018").join(path),
+                source.join(path),
+            )?;
+        }
+    }
+    let profile = Profile {
+        version: 1,
+        language: "fr".into(),
+        root: source.to_str().ok_or("source UTF8")?.into(),
+        library_id: "a0000000-0000-4000-8000-000000000001".into(),
+        complete: true,
+        recovering: false,
+    };
+    let bytes = serde_json::to_vec(&profile)?;
+    let verified = ClosedLibraryInput::verify(
+        &source,
+        ProfileDocument::decode(&bytes)?,
+        ClosedManifest::decode(&manifest)?,
+        &WorkCancellation::default(),
+    )?;
+    let locations = ProfileLocations::for_host(
+        &roots.profile().join("home"),
+        Some(&roots.profile().join("config")),
+        Some(&roots.library().join("data")),
+    )?;
+    fs::create_dir_all(&locations.data)?;
+    fs::create_dir_all(locations.native.parent().ok_or("native parent")?)?;
+    let legacy = locations.legacy.as_ref().ok_or("legacy namespace")?;
+    fs::create_dir_all(legacy)?;
+    fs::write(legacy.join("settings.json"), bytes)?;
+    let copy = verified
+        .copy_to_new_root(
+            &locations.data.join("candidate"),
+            &WorkCancellation::default(),
+        )
+        .map_err(|f| f.to_string())?;
+    Ok((copy, locations))
+}
+#[test]
+fn actual_registered_native_import_closes_and_reopens_with_unchanged_legacy_source() -> TestResult {
+    let roots = TestRoots::new()?;
+    let (copy, locations) = native_fixture(&roots)?;
+    let legacy = PathBuf::from(copy.source_profile().profile().root.clone());
+    let before = fs::read(legacy.join("db/librairii.sqlite3"))?;
+    let profile = NativeProfileStore::create_fresh(&locations.native)?;
+    let native =
+        NativeLibrary::bind_independent(copy, &profile, &locations, &WorkCancellation::default())
+            .map_err(|f| f.to_string())?;
+    let source = roots.profile().join("new-source.zip");
+    fs::copy(fixture("clockwork-forest-studio.zip"), &source)?;
+    let original = fs::read(&source)?;
+    let mut db = Database::open_native(&native)?;
+    let before_count = db
+        .search(Default::default(), "en-GB".into())?
+        .wait()?
+        .total_items;
+    let id = "a0000000-0000-4000-8000-000000000073";
+    {
+        let executor = ImportExecutor::new(&db);
+        let store = TerminalRepository::new(&db, 1);
+        with_runtime(
+            &store,
+            &executor,
+            Configuration::default(),
+            |handle| -> TestResult {
+                offer(
+                    &executor,
+                    &handle,
+                    PreparedImport::new(id.parse()?, vec![source.clone()])?,
+                )?;
+                wait_terminal(&db, id)
+            },
+        )??;
+    }
+    assert_eq!(
+        db.search(Default::default(), "en-GB".into())?
+            .wait()?
+            .total_items,
+        before_count + 1
+    );
+    assert_eq!(
+        db.operation_snapshot(id.into())?
+            .wait()?
+            .ok_or("missing import")?
+            .items[0]
+            .outcome
+            .code
+            .as_deref(),
+        Some("imported")
+    );
+    assert_eq!(fs::read_dir(native.layout().staging())?.count(), 0);
+    db.close()?;
+    drop(db);
+    native.finish().map_err(|f| f.to_string())?;
+    drop(profile);
+    let profile = NativeProfileStore::open_native(&locations.native)?;
+    let native = NativeLibrary::reopen(&profile, &locations, &WorkCancellation::default())?;
+    let mut db = Database::open_native(&native)?;
+    assert_eq!(
+        db.search(Default::default(), "en-GB".into())?
+            .wait()?
+            .total_items,
+        before_count + 1
+    );
+    db.close()?;
+    drop(db);
+    native.finish().map_err(|f| f.to_string())?;
+    assert_eq!(fs::read(source)?, original);
+    assert_eq!(fs::read(legacy.join("db/librairii.sqlite3"))?, before);
+    Ok(())
+}
+#[derive(Debug)]
+struct CrashGate {
+    point: Option<ImportPoint>,
+    ready: PathBuf,
+}
+impl CrashGate {
+    fn hold(&self) {
+        if fs::write(&self.ready, b"actual import boundary reached")
+            .and_then(|()| fs::File::open(&self.ready)?.sync_all())
+            .is_err()
+        {
+            std::process::exit(74);
+        }
+        loop {
+            thread::park();
+        }
+    }
+}
+impl ImportObserver for CrashGate {
+    fn before(&self, point: ImportPoint, _: &Cancellation) -> librairii_storage::Result<()> {
+        if self.point == Some(point) {
+            self.hold();
+        }
+        Ok(())
+    }
+    fn committed(&self, _: &Cancellation) {
+        if self.point.is_none() {
+            self.hold();
+        }
+    }
+}
+struct OwnedChild(std::process::Child);
+impl Drop for OwnedChild {
+    fn drop(&mut self) {
+        if self.0.try_wait().ok().flatten().is_none() {
+            let _ = self.0.kill();
+            let _ = self.0.wait();
+        }
+    }
+}
+#[test]
+fn actual_import_process_death_recovers_registered_stage_and_preserves_committed_bytes()
+-> TestResult {
+    const CONTEXT: &str = "LIBRAIRII_ACTUAL_IMPORT_CRASH_CONTEXT";
+    if let Some(context) = std::env::var_os(CONTEXT) {
+        let value: serde_json::Value = serde_json::from_slice(&fs::read(context)?)?;
+        let path = |key: &str| -> Result<PathBuf, Box<dyn Error>> {
+            Ok(value[key].as_str().ok_or("context path")?.into())
+        };
+        let locations = ProfileLocations {
+            native: path("native")?,
+            data: path("data")?,
+            legacy: Some(path("legacy")?),
+        };
+        let profile = NativeProfileStore::open_native(&locations.native)?;
+        let native = NativeLibrary::reopen(&profile, &locations, &WorkCancellation::default())?;
+        let mut db = Database::open_native(&native)?;
+        let point = match value["point"].as_str().ok_or("crash point")? {
+            "copy" => Some(ImportPoint::AfterCopyChunk),
+            "published" => Some(ImportPoint::ArchivePublished),
+            "committed" => None,
+            _ => return Err("unknown crash point".into()),
+        };
+        let observer = CrashGate {
+            point,
+            ready: path("ready")?,
+        };
+        let executor = ImportExecutor::observed(&db, &observer);
+        let store = TerminalRepository::new(&db, 1);
+        with_runtime(
+            &store,
+            &executor,
+            Configuration::default(),
+            |handle| -> TestResult {
+                offer(
+                    &executor,
+                    &handle,
+                    PreparedImport::new(
+                        "a0000000-0000-4000-8000-000000000074".parse()?,
+                        vec![path("source")?],
+                    )?,
+                )?;
+                loop {
+                    thread::park();
+                }
+            },
+        )??;
+        db.close()?;
+        return Err("crash child unexpectedly returned".into());
+    }
+    for point in ["copy", "published", "committed"] {
+        let roots = TestRoots::new()?;
+        let (copy, locations) = native_fixture(&roots)?;
+        let root = copy.root().to_owned();
+        let profile = NativeProfileStore::create_fresh(&locations.native)?;
+        let native = NativeLibrary::bind_independent(
+            copy,
+            &profile,
+            &locations,
+            &WorkCancellation::default(),
+        )
+        .map_err(|f| f.to_string())?;
+        let mut db = Database::open_native(&native)?;
+        let before = db
+            .search(Default::default(), "en-GB".into())?
+            .wait()?
+            .total_items;
+        db.close()?;
+        drop(db);
+        native.finish().map_err(|f| f.to_string())?;
+        drop(profile);
+        let source = roots.profile().join("source.zip");
+        fs::copy(fixture("clockwork-forest-studio.zip"), &source)?;
+        let bytes = fs::read(&source)?;
+        let ready = roots.profile().join("ready");
+        let context = roots.profile().join("context.json");
+        fs::write(
+            &context,
+            serde_json::to_vec(
+                &serde_json::json!({"native":locations.native,"data":locations.data,"legacy":locations.legacy,"source":source,"ready":ready,"point":point}),
+            )?,
+        )?;
+        let output_path = roots.profile().join("child-output");
+        let output = fs::File::create(&output_path)?;
+        let mut child=OwnedChild(std::process::Command::new(std::env::current_exe()?).args(["--exact","actual_import_process_death_recovers_registered_stage_and_preserves_committed_bytes","--nocapture"]).env(CONTEXT,&context).stdout(std::process::Stdio::from(output.try_clone()?)).stderr(std::process::Stdio::from(output)).spawn()?);
+        let end = Instant::now() + Duration::from_secs(20);
+        while !ready.exists() {
+            if let Some(status) = child.0.try_wait()? {
+                return Err(format!(
+                    "crash child {status}: {}",
+                    fs::read_to_string(&output_path)?
+                )
+                .into());
+            }
+            if Instant::now() > end {
+                return Err("actual import boundary not reached".into());
+            }
+            thread::sleep(Duration::from_millis(2));
+        }
+        child.0.kill()?;
+        child.0.wait()?;
+        let profile = NativeProfileStore::open_native(&locations.native)?;
+        assert!(NativeLibrary::reopen(&profile, &locations, &WorkCancellation::default()).is_err());
+        drop(profile);
+        let profile = NativeProfileStore::open_native(&locations.native)?;
+        let recovery =
+            NativeLibrary::recover_interrupted(&profile, &locations, &WorkCancellation::default())?;
+        let mut db = recovery.open()?;
+        let id = "a0000000-0000-4000-8000-000000000074";
+        assert_eq!(
+            db.operation_snapshot(id.into())?
+                .wait()?
+                .ok_or("interrupted operation missing")?
+                .operation
+                .state,
+            OperationState::Interrupted
+        );
+        assert_eq!(
+            db.search(Default::default(), "en-GB".into())?
+                .wait()?
+                .total_items,
+            before + i64::from(point == "committed")
+        );
+        assert_eq!(fs::read_dir(root.join("staging"))?.count(), 0);
+        // A new explicit retry safely reuses an orphan publication, or reports
+        // a checksum duplicate when SQL had already committed before death.
+        let retry = "a0000000-0000-4000-8000-000000000075";
+        {
+            let executor = ImportExecutor::new(&db);
+            let store = TerminalRepository::new(&db, 2);
+            with_runtime(
+                &store,
+                &executor,
+                Configuration::default(),
+                |handle| -> TestResult {
+                    offer(
+                        &executor,
+                        &handle,
+                        PreparedImport::new(retry.parse()?, vec![source.clone()])?,
+                    )?;
+                    wait_terminal(&db, retry)
+                },
+            )??;
+        }
+        let expected = if point == "committed" {
+            "duplicate_checksum"
+        } else {
+            "imported"
+        };
+        assert_eq!(
+            db.operation_snapshot(retry.into())?
+                .wait()?
+                .ok_or("retry missing")?
+                .items[0]
+                .outcome
+                .code
+                .as_deref(),
+            Some(expected)
+        );
+        assert_eq!(
+            db.search(Default::default(), "en-GB".into())?
+                .wait()?
+                .total_items,
+            before + 1
+        );
+        assert_eq!(fs::read(&source)?, bytes);
+        db.close()?;
+        drop(db);
+        recovery.finish().map_err(|f| f.to_string())?;
+    }
+    Ok(())
+}

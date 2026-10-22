@@ -553,6 +553,9 @@ mod owned {
         identity: LibraryIdentity,
         record: Mutex<Record>,
         managed: Mutex<Option<Vec<(&'static str, Directory)>>>,
+        // Serialize bounded binding observations made by concurrent database
+        // and file workers; a second observer must not resemble a profile update.
+        revalidation: Mutex<()>,
         runtime_active: AtomicBool,
         recovery_pending: AtomicBool,
         closed_success: AtomicBool,
@@ -739,6 +742,7 @@ mod owned {
                 identity,
                 record: Mutex::new(record),
                 managed: Mutex::new(None),
+                revalidation: Mutex::new(()),
                 runtime_active: AtomicBool::new(false),
                 recovery_pending: AtomicBool::new(false),
                 closed_success: AtomicBool::new(false),
@@ -978,6 +982,10 @@ mod owned {
             self.binding.as_ref().ok_or(StorageError::RuntimeFenced)
         }
         pub fn revalidate(&self, cancellation: &WorkCancellation) -> Result<()> {
+            let _observation = self
+                .revalidation
+                .lock()
+                .map_err(|_| StorageError::RuntimeFenced)?;
             self.binding()?.revalidate()?;
             let result = (|| {
                 self.revalidate_database_ownership()?;
@@ -1557,6 +1565,42 @@ mod owned {
                     .copy_to_new_root(&locations.data.join("copy"), &WorkCancellation::default())?,
                 locations,
             ))
+        }
+        #[test]
+        fn concurrent_native_observers_do_not_refuse_each_other_as_profile_updates() -> TestResult {
+            let roots = TestRoots::new()?;
+            let (copy, locations) = copy(&roots)?;
+            let store = NativeProfileStore::create_fresh(&locations.native)?;
+            let native = NativeLibrary::bind_independent(
+                copy,
+                &store,
+                &locations,
+                &WorkCancellation::default(),
+            )
+            .map_err(|f| f.to_string())?;
+            let mut db = Database::open_native(&native)?;
+            let barrier = std::sync::Barrier::new(4);
+            std::thread::scope(|scope| -> TestResult {
+                let workers: Vec<_> = (0..4)
+                    .map(|_| {
+                        scope.spawn(|| {
+                            barrier.wait();
+                            for _ in 0..100 {
+                                native.revalidate(&WorkCancellation::default())?;
+                            }
+                            Ok::<_, StorageError>(())
+                        })
+                    })
+                    .collect();
+                for worker in workers {
+                    worker.join().map_err(|_| "observer panicked")??;
+                }
+                Ok(())
+            })?;
+            db.close()?;
+            drop(db);
+            native.finish().map_err(|f| f.to_string())?;
+            Ok(())
         }
         #[test]
         fn settled_import_stages_recycle_registration_slots_in_one_session() -> TestResult {

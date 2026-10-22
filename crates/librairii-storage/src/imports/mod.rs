@@ -83,12 +83,58 @@ impl ImportResources<'_> {
 #[derive(Debug)]
 pub struct ImportStorage<'db, 'library> {
     database: &'db Database<'library>,
+    observer: Option<&'db dyn ImportObserver>,
+}
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum ImportPoint {
+    SourceOpened,
+    BeforeRead,
+    AfterCopyChunk,
+    BeforeHash,
+    Inspected,
+    BeforeArchivePublication,
+    ArchivePublished,
+    BeforeArtworkWrite,
+    ArtworkPublished,
+    BeforeCatalog,
+    BeforeSettlement,
+}
+/// Optional synchronous effect-boundary observation. A callback can refuse
+/// before an effect or coordinate a failure/cancel/crash test. It has no file
+/// authority, cannot fabricate successful effects and never runs in SQL.
+pub trait ImportObserver: Sync + std::fmt::Debug {
+    fn before(&self, _point: ImportPoint, _cancel: &Cancellation) -> Result<()> {
+        Ok(())
+    }
+    fn committed(&self, _cancel: &Cancellation) {}
 }
 #[derive(Clone, Copy, Debug)]
 struct Problem(&'static str);
 impl<'db, 'library> ImportStorage<'db, 'library> {
     pub const fn new(database: &'db Database<'library>) -> Self {
-        Self { database }
+        Self {
+            database,
+            observer: None,
+        }
+    }
+    pub const fn observed(
+        database: &'db Database<'library>,
+        observer: &'db dyn ImportObserver,
+    ) -> Self {
+        Self {
+            database,
+            observer: Some(observer),
+        }
+    }
+    fn observe(
+        &self,
+        point: ImportPoint,
+        cancel: &Cancellation,
+        code: &'static str,
+    ) -> std::result::Result<(), Problem> {
+        self.observer
+            .map_or(Ok(()), |o| o.before(point, cancel))
+            .map_err(|_| Problem(code))
     }
     /// The path is explicit read-only picker input; it cannot authorize managed
     /// mutation. The passed WorkItem supplies correlation, never cleanup rights.
@@ -124,6 +170,11 @@ impl<'db, 'library> ImportStorage<'db, 'library> {
         let result = self.run(work, source, inspector, cancel, progress, &mut resources);
         match result {
             Ok(decision) => {
+                if matches!(decision, Decision::Imported(_))
+                    && let Some(observer) = self.observer
+                {
+                    observer.committed(cancel);
+                }
                 let (state, message) = match &decision {
                     Decision::Imported(_) => (ItemState::Succeeded, "Story imported."),
                     Decision::Duplicate(_) => (
@@ -223,6 +274,7 @@ impl<'db, 'library> ImportStorage<'db, 'library> {
             return Err(Problem("stage_failed"));
         }
         let cancellation = WorkCancellation::for_job(cancel);
+        self.observe(ImportPoint::SourceOpened, cancel, "stage_failed")?;
         let guard = self
             .guard(&r.files, &cancellation)
             .map_err(|_| Problem("stage_failed"))?;
@@ -231,9 +283,21 @@ impl<'db, 'library> ImportStorage<'db, 'library> {
         // while copying/inspecting so other workers may make independent progress.
         drop(guard);
         let measured = source
-            .copy_into(
+            .copy_observed(
                 r.stage.as_mut().ok_or(Problem("stage_failed"))?,
                 &cancellation,
+                |point| {
+                    use crate::platform::unix::CopyPoint;
+                    let point = match point {
+                        CopyPoint::Read => ImportPoint::BeforeRead,
+                        CopyPoint::Written(bytes) => {
+                            let _ = progress.advance(bytes as i64);
+                            ImportPoint::AfterCopyChunk
+                        }
+                        CopyPoint::Hash => ImportPoint::BeforeHash,
+                    };
+                    self.observer.map_or(Ok(()), |o| o.before(point, cancel))
+                },
             )
             .map_err(|_| Problem("stage_failed"))?;
         let _ = progress.advance(measured.bytes() as i64);
@@ -263,6 +327,7 @@ impl<'db, 'library> ImportStorage<'db, 'library> {
                 InspectionError::Validation(e) => Problem(e.code.as_str()),
             })?;
         source.revalidate().map_err(|_| Problem("stage_failed"))?;
+        self.observe(ImportPoint::Inspected, cancel, "inspection_failed")?;
         let guard = self
             .guard(&r.files, &cancellation)
             .map_err(|_| Problem("publish_failed"))?;
@@ -288,8 +353,15 @@ impl<'db, 'library> ImportStorage<'db, 'library> {
         }
         r.guard = Some(guard);
         r.candidate = Some(candidate);
+        self.observe(
+            ImportPoint::BeforeArchivePublication,
+            cancel,
+            "publish_failed",
+        )?;
         self.publish_archive(r, source.name().clone(), measured, &cancellation)?;
-        self.publish_artwork(work, r, &cancellation)?;
+        self.observe(ImportPoint::ArchivePublished, cancel, "publish_failed")?;
+        self.publish_artwork(work, r, &cancellation, cancel)?;
+        self.observe(ImportPoint::BeforeCatalog, cancel, "catalog_failed")?;
         let candidate = r
             .candidate
             .as_ref()
@@ -363,11 +435,13 @@ impl<'db, 'library> ImportStorage<'db, 'library> {
         work: &WorkItem,
         r: &mut ImportResources<'db>,
         cancel: &WorkCancellation,
+        job: &Cancellation,
     ) -> std::result::Result<(), Problem> {
         let c = r.candidate.as_mut().ok_or(Problem("artwork_failed"))?;
         let Some(bytes) = c.metadata.artwork.take() else {
             return Ok(());
         };
+        self.observe(ImportPoint::BeforeArtworkWrite, job, "artwork_failed")?;
         let hash = librairii_app::metadata::digest(&bytes);
         c.artwork = format!(
             "catalog/embedded/{}/{hash}.png",
@@ -415,6 +489,7 @@ impl<'db, 'library> ImportStorage<'db, 'library> {
         ) {
             Ok(receipt) => {
                 r.publications.push(receipt);
+                self.observe(ImportPoint::ArtworkPublished, job, "artwork_failed")?;
                 Ok(())
             }
             Err(f) => {
@@ -482,6 +557,12 @@ impl<'db, 'library> ImportStorage<'db, 'library> {
         mut r: Box<ImportResources<'db>>,
         durable: &DurableReport<'_>,
     ) -> std::result::Result<(), Box<ImportResources<'db>>> {
+        if self.observer.is_some_and(|o| {
+            o.before(ImportPoint::BeforeSettlement, &Cancellation::default())
+                .is_err()
+        }) {
+            return Err(r);
+        }
         let command = durable.command();
         let expected = (
             command.state,
@@ -513,7 +594,12 @@ impl<'db, 'library> ImportStorage<'db, 'library> {
             .into_iter()
             .flatten()
         {
-            if let Err(f) = stage.retire_owned_temp(guard) {
+            let cleanup = if command.outcome.code.as_deref() == Some("duplicate_checksum") {
+                stage.discard_duplicate_stage(guard)
+            } else {
+                stage.retire_owned_temp(guard).map(|_| ())
+            };
+            if let Err(f) = cleanup {
                 r.held.push(Held::Cleanup(f));
                 return Err(r);
             }

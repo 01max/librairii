@@ -2,6 +2,12 @@
 use super::*;
 use sha2::{Digest, Sha256};
 use std::{fs, sync::Arc};
+#[derive(Clone, Copy, Debug)]
+pub(crate) enum CopyPoint {
+    Read,
+    Written(u64),
+    Hash,
+}
 
 /// Explicit user-selected source. It has no write, delete, cleanup or library
 /// authority. Symlink/hardlink aliases may be read, matching legacy import;
@@ -61,6 +67,14 @@ impl PickedSource {
         stage: &mut OwnedStage<'_, '_>,
         cancel: &WorkCancellation,
     ) -> Result<StreamDigest> {
+        self.copy_observed(stage, cancel, |_| Ok(()))
+    }
+    pub(crate) fn copy_observed(
+        &mut self,
+        stage: &mut OwnedStage<'_, '_>,
+        cancel: &WorkCancellation,
+        mut checkpoint: impl FnMut(CopyPoint) -> Result<()>,
+    ) -> Result<StreamDigest> {
         self.revalidate()?;
         self.file
             .rewind()
@@ -73,6 +87,7 @@ impl PickedSource {
                 return Err(StorageError::Cancelled);
             }
             self.revalidate()?;
+            checkpoint(CopyPoint::Read)?;
             let request = self
                 .initial
                 .bytes
@@ -96,6 +111,7 @@ impl PickedSource {
             bytes = bytes
                 .checked_add(count as u64)
                 .ok_or(StorageError::HashSizeLimit)?;
+            checkpoint(CopyPoint::Written(bytes))?;
         }
         self.revalidate()?;
         if cancel.is_cancelled() {
@@ -108,6 +124,7 @@ impl PickedSource {
             checksum: librairii_core::Checksum::from_bytes(hash.finalize().into()),
             bytes,
         };
+        checkpoint(CopyPoint::Hash)?;
         if stage.measure(bytes, cancel)? != measured {
             return Err(StorageError::SnapshotChanged);
         }

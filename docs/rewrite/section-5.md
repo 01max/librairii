@@ -232,3 +232,34 @@ with frozen persisted reason/message identities. The first test closes/reopens t
 same SQLite and checks source/managed bytes and provenance. Full workspace
 all-target Clippy and fmt pass. Native registered-stage/restart/failure matrices
 and complete codec/hardening review remain 5.8–5.10 gates.
+
+## 5.8 — Effect failures, cancellation and process death
+
+Nine executor integration tests pass. The failure matrix refuses source reads,
+copy/hash, inspection, archive/artwork publication, SQL and settlement at their
+actual boundaries. A private staging corruption fails the independent SHA-256
+measurement; unavailable picker inputs become per-item failures. A child with a
+verified POSIX file-size limit performs a real short write after 8 MiB + 17 bytes;
+the exact partial private copy remains recoverable and its source is unchanged.
+Actual SQLite trigger failure rolls back all catalog changes before compensation.
+
+Cancellation uses the real native job flag during copy and immediately before
+catalog admission; cancellation after the actual SQL commit preserves Imported.
+Forced child-process death during copy, after archive publication and after SQL
+commit leaves registered original private stages for native startup reconciliation.
+Recovery interrupts history, cleans only those registered allocations, preserves
+committed managed bytes and supports explicit re-selection: pre-commit retry
+imports/reuses exact orphan bytes; post-commit retry reports DuplicateChecksum.
+A separate real native import closes and reopens the library with its new row,
+metadata and unchanged legacy database and source archive.
+
+These scenarios exposed two integration corrections. Bounded native ownership
+observations serialize across file/DB workers so read-only checks do not refuse
+each other as a concurrent profile update. Real external profile updates retain
+their existing admission/refusal semantics. Four concurrent observers exercise
+400 successful ownership checks. After durable duplicate acknowledgement only,
+the original unused private stage can be discarded under its retained custody;
+unknown unlink/flush results retain the actual owner and fence intake. Failure
+compensation still preserves recoverable trash. General trash settlement/adoption
+release qualification remains a separate release gate; these tests do not certify
+arbitrary crash leftovers or substituted allocations as safe to remove.
