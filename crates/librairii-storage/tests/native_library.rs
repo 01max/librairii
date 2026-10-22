@@ -2198,10 +2198,21 @@ fn native_job_session_borrows_actual_database_and_file_owner_until_durable_settl
             _: &Cancellation,
             _: &ProgressSink,
         ) -> Execution<Self::Resources> {
-            match self
-                .files
-                .open_read_source(FileArea::Archives, self.name.clone())
-            {
+            let deadline = Instant::now() + Duration::from_secs(10);
+            let source = loop {
+                match self
+                    .files
+                    .open_read_source(FileArea::Archives, self.name.clone())
+                {
+                    // No source owner was admitted. Retain this work item and
+                    // retry after concurrent profile validation releases its slot.
+                    Err(StorageError::ProfileBusy) if Instant::now() < deadline => {
+                        thread::sleep(Duration::from_millis(1));
+                    }
+                    result => break result,
+                }
+            };
+            match source {
                 Ok(source) => Execution {
                     boundary: Boundary::BeforeCommit,
                     report: Report {
@@ -2212,7 +2223,7 @@ fn native_job_session_borrows_actual_database_and_file_owner_until_durable_settl
                     },
                     resources: Some(source),
                 },
-                Err(_) => Execution {
+                Err(error) => Execution {
                     boundary: Boundary::BeforeCommit,
                     report: Report {
                         state: ItemState::Failed,
@@ -2220,7 +2231,7 @@ fn native_job_session_borrows_actual_database_and_file_owner_until_durable_settl
                         completed_bytes: 0,
                         outcome: RawOutcome {
                             code: Some("source_unavailable".into()),
-                            message: None,
+                            message: Some(error.to_string()),
                         },
                     },
                     resources: None,
@@ -2304,8 +2315,10 @@ fn native_job_session_borrows_actual_database_and_file_owner_until_durable_settl
                         }
                         if librairii_core::operations::is_terminal(snapshot.operation.state) {
                             return Err(format!(
-                                "native terminal {:?}: {:?}",
-                                snapshot.operation.state, snapshot.operation.outcome
+                                "native terminal {:?}: {:?}, items: {:?}",
+                                snapshot.operation.state,
+                                snapshot.operation.outcome,
+                                snapshot.items
                             )
                             .into());
                         }
