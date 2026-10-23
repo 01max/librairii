@@ -33,8 +33,8 @@ executable hash and every required run/cleanup result. Missing evidence or a
 failed command fails the recorder. Build and execution have separate 900/300-second
 bounds; each app has a 30-second bound. Logs, exact commands, image/source/archive/
 binary identities, container inspection, package inventory and PNG hashes remain
-in `clean-linux/clean-linux.json` and the native CI artifact. Container-side file
-writes have a 4 MiB hard limit; the recorder also rejects oversized files or more
+in `clean-linux/clean-linux.json` and the native CI artifact. Container-side captured
+logs are capped at 4 MiB through pipes (reaching the cap fails the probe); the recorder also rejects oversized files or more
 than 64 runtime evidence files before reading their contents.
 
 Execution is pending native Linux CI. This qualifies an isolated Linux runtime
@@ -50,3 +50,10 @@ because the base image had no matching passwd entry. The correction creates an
 ordinary account/group matching the numeric runner UID/GID while building the
 test image. Execution remains nonroot and offline with the same restricted
 mounts/capabilities. No missing-user error is relabeled as a runtime/app pass.
+
+The follow-up at `7e9f3f4` started DBus successfully but failed with SIGXFSZ
+before the first frame: the inherited file-size limit also restricts graphics
+buffer files, not just log output. Its raw evidence remains in
+[run 40009932756](https://github.com/01max/librairii/actions/runs/40009932756).
+Log capture now uses bounded pipes, preserving graphics buffer allocation while
+still rejecting capped output. The temporary runtime filesystem remains capped.
