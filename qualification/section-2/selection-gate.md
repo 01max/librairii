@@ -1,5 +1,10 @@
 # Independent selection gate (2.13)
 
+Owner scope exception, 2026-10-23: VoiceOver execution is excluded from the
+current Task 2 qualification/merge gate at the owner's explicit request. Record
+it as skipped, with spoken macOS accessibility unqualified. The exception does
+not close keyboard, Linux accessibility or the other remaining evidence gates.
+
 2026-10-23 update: the active scope is **three Linux/macOS targets**; the Windows
 column below is historical and does not gate this change. The owner chose the
 Slint royalty-free desktop route with top-level AboutSlint attribution. Native

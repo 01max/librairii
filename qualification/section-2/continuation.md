@@ -216,3 +216,10 @@ Search paste after picker cancellation. Both fields pass; the failed automated
 picker shortcuts are false failures and do not call for an application patch.
 All three native qualification lanes, all required Rust targets and existing CI
 pass for `af132fe`; those results do not supply missing physical observations.
+
+## Owner scope update: skip VoiceOver execution
+
+On 2026-10-23 the owner explicitly declined VoiceOver testing. Skip its execution
+for this qualification; it no longer blocks the current Task 2 selection/merge
+gate. Do not report spoken macOS accessibility as qualified. Continue the
+remaining keyboard, Linux, renderer, package and performance checks.

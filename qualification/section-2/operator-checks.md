@@ -9,6 +9,10 @@ changed by the scripts. Use an already configured reader/IME/session or record
 that check as not run. Keep macOS security prompts visible and record them;
 the scripts never remove quarantine or change Gatekeeper settings.
 
+Owner scope decision (2026-10-23): skip VoiceOver execution on macOS for this
+qualification. Record it as skipped by owner decision; no spoken macOS
+accessibility pass is inferred. Other checks below retain their scope.
+
 Use a separate record for ARM macOS, **real Intel macOS**, Linux **X11**, and
 Linux **Wayland**. A hosted build or Rosetta run does not supply physical/AT
 qualification. macOS apps have an ad-hoc bundle integrity seal; they have no

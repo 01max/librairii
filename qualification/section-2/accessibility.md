@@ -1,5 +1,12 @@
 # Accessibility / keyboard gate (2.4, P56–P57)
 
+2026-10-23 scope update: the owner explicitly declined VoiceOver testing.
+VoiceOver execution is skipped for this Task 2 qualification and does not block
+this task's current selection/merge gate. Spoken macOS accessibility remains
+unqualified. Keyboard/AX checks and the remaining Linux checks retain their
+scope. Current ARM input observations are in [native-picker-input.json](native-picker-input.json).
+The initial access-denied inventory below is historical.
+
 Status: **not qualified on any target**. Observer: librairii-4, 2026-10-20.
 
 ARM Slint process execution succeeded, but native Computer Use rejected
