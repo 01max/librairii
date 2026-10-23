@@ -115,3 +115,8 @@ dialog and does not consume a pending Settings command. `--quit-smoke` starts
 real synthetic work, requests Quit only while progress is strictly between zero
 and completion, then asserts the worker was joined and the fixture is absent.
 Repeated identical menu enablement no longer performs native calls every tick.
+
+Re-review confirmed both P2 corrections and found one P3: the Linux menu group
+still disabled Quit during dialogs. Only Settings/About are now disabled, leaving
+Quit reachable. No other blocking implementation findings were reported; this
+review approves only the implemented continuation, not physical qualification.

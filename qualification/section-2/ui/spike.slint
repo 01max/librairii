@@ -106,9 +106,8 @@ export component Spike inherits Window {
     MenuBar {
         if !root.macos-menus: Menu {
             title: "Librairii";
-            enabled: !root.modal;
-            MenuItem { title: root.french ? "Réglages…" : "Settings…"; shortcut: @keys(Control + ","); activated => { root.open-dialog(1, 2); } }
-            MenuItem { title: root.french ? "À propos…" : "About…"; activated => { root.open-dialog(2, 2); } }
+            MenuItem { enabled: !root.modal; title: root.french ? "Réglages…" : "Settings…"; shortcut: @keys(Control + ","); activated => { root.open-dialog(1, 2); } }
+            MenuItem { enabled: !root.modal; title: root.french ? "À propos…" : "About…"; activated => { root.open-dialog(2, 2); } }
             MenuItem { title: root.french ? "Quitter" : "Quit"; shortcut: @keys(Control + Q); activated => { root.request-quit(); } }
         }
     }
