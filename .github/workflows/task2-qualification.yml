@@ -52,6 +52,8 @@ jobs:
           libegl1-mesa-dev libgl1-mesa-dev libdbus-1-dev xvfb xauth fonts-noto-cjk
       - name: Install the exact candidate compiler
         run: |
+          mkdir -p target/task2-evidence
+          git rev-parse HEAD > target/task2-evidence/source.txt
           pin="$(python3 -c 'import tomllib; print(tomllib.load(open("qualification/section-2/rust-toolchain.toml", "rb"))["toolchain"]["channel"])')"
           rustup toolchain install "$pin" --profile minimal --component rustfmt --component clippy
       - name: Cache the isolated spike graph and build outputs
@@ -71,6 +73,7 @@ jobs:
           CARGO_INSTALL_ROOT: ${{ runner.tool_cache }}/librairii-cargo-tools/quality
           TOOL_SET: quality
         run: |
+          export PATH="$CARGO_INSTALL_ROOT/bin:$PATH"
           python3 -I -B .github/scripts/install-rust-tools.py "$TOOL_SET"
           printf '%s\n' "$CARGO_INSTALL_ROOT/bin" >> "$GITHUB_PATH"
       - name: Assert native architecture and record compiler
