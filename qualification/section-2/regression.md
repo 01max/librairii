@@ -84,6 +84,32 @@ and subsequent native Search select-all/paste changed it to `0057`.
 retained as unresolved, separately from the passing picker menu-click route.**
 No IME, spoken accessibility, Intel/Linux clipboard or full input gate is claimed.
 
+Follow-up physical observation on the same ARM package: Maxime typed
+`/tmp/Before` in Go to Folder, pressed Command-A and typed `/tmp/After` without
+Return. Only `/tmp/After` remained. Native Select All/replacement therefore
+passes with the physical keyboard. The automated failure also reproduces in an
+authored plain AppKit NSOpenPanel without Slint/Winit/muda/rfd, while that control's
+normal NSTextField passes. An asynchronous rfd experiment did not change the
+automated result and was discarded. Preserve the failed automation separately;
+it does not establish an application selection defect or require a toolkit change.
+See [native-picker-input.json](native-picker-input.json) for exact source, binary,
+observer and narrowly scoped results. Maxime then physically pasted
+`/tmp/Été 日本語` in Go to Folder, verified select-all/cut emptied the field and
+paste restored it, cancelled both dialogs, and pasted into Search; both fields
+passed. These physical results resolve the reported picker shortcut concern.
+Remaining editing/IME/accessibility cases and other-host gates stay separate.
+
+Additional native input/AX checks on this package pass Settings containment
+(four Tab and four Shift-Tab inputs), Escape restoration with the Unicode draft,
+button-invoked French language changes and native picker cancellation. These
+are AX observations, not spoken accessibility or visual layout qualification.
+An automated file selection exposed both fixture rows as selected but did not
+enable Open; coordinate control failed `noWindowsAvailable`, so file acceptance
+is not recorded as passing. A screenshot retained the earlier main view despite
+new AX dialog/language state, and attempted foreground control timed out. Keep
+those automation limitations explicit rather than treating AX updates as visible
+presentation. The exact narrow results are in the same JSON evidence record.
+
 `--edit-smoke` supplements this OS check with public widget input, real selection
 replacement and resulting model contents, Undo/Redo, native-dialog scope cleanup,
 and modal/unfocused no-edit guards. It is included in the bounded raw and

@@ -204,3 +204,15 @@ the original red check and its passing result. Native picker keyboard shortcuts
 remain unresolved in automation; physical input/IME/AT qualification stays open.
 `--edit-smoke` adds bounded widget/model/undo/ownership regression coverage and
 explicitly does not label component callbacks as native clipboard evidence.
+
+Physical follow-up at `af132fe`: Maxime confirmed Command-A replaces the complete
+Go-to-Folder path using an actual keyboard. The matching automated failure also
+occurs in an authored AppKit-only picker, so it is retained as an automation
+limitation rather than an application selection defect. The attempted rfd async
+change did not help and was discarded. The exact observation and still-pending
+physical gates are in [native-picker-input.json](native-picker-input.json).
+Maxime also confirmed physical Unicode paste/cut/restore in Go to Folder and
+Search paste after picker cancellation. Both fields pass; the failed automated
+picker shortcuts are false failures and do not call for an application patch.
+All three native qualification lanes, all required Rust targets and existing CI
+pass for `af132fe`; those results do not supply missing physical observations.
