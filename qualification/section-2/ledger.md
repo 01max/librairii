@@ -129,3 +129,14 @@ All historical measurement reports remain byte-identical, including original
 The five-control/three-case runtime gate, all broader resource/cancel/codec/platform
 and license/toolkit gates stay open. Final evidence-commit SHA/tree are reported
 externally after publication; new exact-head native/current CI is required.
+
+## 2026-10-23 offline Linux runtime continuation
+
+Task 2.11 implementation `0e17aa6`, account correction `7e9f3f4`, bounded-pipe
+correction `c904c06`; actual package built at `3b003cf` passes all 16 isolated
+runtime checks in run40010930728. Source/image/binary/report/archive identities,
+all27 runtime hashes, eight frames and independent review are retained in
+`clean-linux-observations.json`. Full clean-host and macOS scope remain open.
+Task 2.6 observer `00cabd1`, capture review fix `3b003cf`, and private-bus/native
+selection fix `564be95` remain pending successful native integration execution.
+The original failed runs remain preserved; no overall toolkit selection follows.

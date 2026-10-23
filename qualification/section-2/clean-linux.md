@@ -37,8 +37,15 @@ in `clean-linux/clean-linux.json` and the native CI artifact. Container-side cap
 logs are capped at 4 MiB through pipes (reaching the cap fails the probe); the recorder also rejects oversized files or more
 than 64 runtime evidence files before reading their contents.
 
-Execution is pending native Linux CI. This qualifies an isolated Linux runtime
-environment for this synthetic spike only. It does not prove a complete desktop
+Native execution at implementation `3b003cf` passes all 16 checks in
+[run 40010930728](https://github.com/01max/librairii/actions/runs/40010930728).
+[Retained observations](clean-linux-observations.json) bind source, image, binary,
+archive, artifact ZIP, raw report and all runtime-file hashes. Independent review
+recomputes the verdicts, checks all 27 file hashes and visually verifies all eight
+French/CJK frames before/after filtering. Both Wayland routes configure, acknowledge
+and submit buffers on their actual toplevels. Normal reports WGPU; CPU reports
+software. This qualifies an isolated Linux runtime environment for this synthetic
+spike only. It does not prove a complete desktop
 install/update/uninstall, native portal/reveal integration, physical input/display,
 all minimum-OS configurations, or either macOS clean-host route. Those gates and
 overall Task 2.11 remain open. No toolkit selection or public release claim follows.
