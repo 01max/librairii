@@ -31,9 +31,12 @@ class Observations(unittest.TestCase):
         (package/'manifest.json').write_text(json.dumps(manifest))
         return package, manifest
 
-    def run_recorder(self, package, output):
+    def run_recorder(self, package, output, signature_valid=True):
+        def run(command, **kwargs):
+            code = 1 if command[0] == '/usr/bin/codesign' and not signature_valid else 0
+            return subprocess.CompletedProcess(command, code, '0', '')
         with patch.object(sys, 'argv', ['observe.py','--package',str(package),'--output',str(output),'--operator','test']), \
-             patch.object(observe.subprocess, 'run', return_value=subprocess.CompletedProcess([],0,'0','')), \
+             patch.object(observe.subprocess, 'run', side_effect=run), \
              patch.object(observe.subprocess, 'check_output', return_value='synthetic OS'), \
              contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
             observe.main()
@@ -56,6 +59,23 @@ class Observations(unittest.TestCase):
             (package/'qualification-desktop').write_bytes(b'changed')
             with self.assertRaises(SystemExit):
                 self.run_recorder(package, root/'observations.json')
+            self.assertFalse((root/'observations.json').exists())
+
+    def test_matching_bytes_with_invalid_macos_signature_cannot_create_record(self):
+        with tempfile.TemporaryDirectory() as directory, \
+             patch.object(observe.platform, 'system', return_value='Darwin'), \
+             patch.object(observe.platform, 'machine', return_value='arm64'):
+            root = pathlib.Path(directory)
+            package, manifest = self.fixture(root)
+            executable = 'Probe.app/Contents/MacOS/probe'
+            binary = package / executable
+            binary.parent.mkdir(parents=True)
+            (package / manifest['executable']).rename(binary)
+            manifest['executable'] = executable
+            manifest['files'] = {executable: manifest['binary_sha256']}
+            (package / 'manifest.json').write_text(json.dumps(manifest))
+            with self.assertRaises(SystemExit):
+                self.run_recorder(package, root/'observations.json', signature_valid=False)
             self.assertFalse((root/'observations.json').exists())
 
     def test_manifest_cannot_follow_an_outside_alias_or_unlisted_executable(self):

@@ -6,18 +6,21 @@ services. Pickers accept only this run's disposable fixture directory. Closing
 the app cancels and joins its synthetic worker before retiring that directory.
 No system accessibility, keyboard, display, privacy, or security setting is
 changed by the scripts. Use an already configured reader/IME/session or record
-that check as not run. Do not bypass OS security prompts to launch a package.
+that check as not run. Keep macOS security prompts visible and record them;
+the scripts never remove quarantine or change Gatekeeper settings.
 
 Use a separate record for ARM macOS, **real Intel macOS**, Linux **X11**, and
 Linux **Wayland**. A hosted build or Rosetta run does not supply physical/AT
-qualification. The package remains unsigned; public release signing is later.
+qualification. macOS apps have an ad-hoc bundle integrity seal; they have no
+Developer ID signature or Apple notarization. Public release signing is later.
 
 1. Download the matching `task2-<target>-<commit>` artifact from PR38's **Task 2
    native qualification** workflow. Verify its `.tar.gz.sha256`, extract it,
    and enter the extracted directory. Keep `manifest.json` with the binary.
 2. With Python 3 available on the qualification host, create a record:
    `python3 observe.py --package . --operator YOUR_HANDLE --output observations.json`.
-   It checks all manifest bytes/native architecture and starts **every check
+   It checks all manifest bytes/native architecture and macOS bundle integrity,
+   then starts **every check
    as not_run**. Add host hardware/reader/IME/desktop/file-manager versions in
    observations, without personal paths or credentials. Clean-host launch is
    a separate check and must also run without Python/development tools.
@@ -27,6 +30,13 @@ qualification. The package remains unsigned; public release signing is later.
    Repeat with `SLINT_BACKEND=winit-skia-software` for the explicit CPU path.
    Default startup requests Skia's normal renderer; that alone does not prove
    GPU use. Record the selected driver/backend with diagnostics where possible.
+   A downloaded macOS app may still require your explicit per-app approval.
+   If you trust the verified qualification build, use Apple's normal
+   [Open Anyway procedure](https://support.apple.com/en-us/102445). This is a
+   manual trust decision, separate from signature integrity. Record an ordinary
+   launch block and any subsequent approved launch as separate observations.
+   A “damaged” message or failed signature verification is a package failure:
+   stop and report it rather than approving that copy.
 4. Complete the checks below. In the JSON, replace a check's status with pass,
    fail, or not_run and describe **what actually happened**, including failures,
    exact reproduction, reader speech and capture references. Leave numerical
@@ -86,7 +96,8 @@ qualification. The package remains unsigned; public release signing is later.
 - On a clean native host/user without Rust/Go/Node/source checkout, launch the
   package offline, use both dialogs/menus, close and relaunch. Record missing
   native runtime/portal/font dependencies. Inspect linkage/processes for a
-  browser/webview/Go runtime. Signing/notarization remains a public-release gate.
+  browser/webview/Go runtime. An ad-hoc seal does not establish ordinary
+  Gatekeeper admission; Developer ID signing/notarization remains open.
 - Record identified hardware, renderer, sample count/distribution, startup,
   sustained idle CPU, peak RSS and final package size. Native 1,000-story
   completion must be ≤3,000 ms and actual input dispatch p95 ≤100 ms under

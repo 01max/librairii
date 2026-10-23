@@ -163,3 +163,29 @@ case, and checks pre-cancelled fixture retirement separately. The latter proves
 owned teardown, not absence of TCP traffic. Production networking, cancellation,
 request limits and deadline policy are unchanged. No retries/skips or relaxed
 performance threshold hide the failure.
+
+## 2.11 downloaded macOS bundle failure and repair
+
+The owner downloaded ARM artifact `8147bc4` and reported Finder's “damaged and
+can't be opened” message on macOS 15.7.7. All distributed-byte digests matched,
+but both `codesign --verify --deep --strict` and Gatekeeper assessment reported
+`code has no resources but signature indicates they must be present`. The
+linker's standalone ad-hoc Mach-O signature did not seal the final app bundle's
+Info.plist and notice resources. Raw-binary GUI smokes could not catch this.
+
+Packaging now ad-hoc signs the fully assembled bundle, verifies its resource
+seal, then hashes the signed executable and all signature files. Native
+regressions verify that subsequent Info.plist or notice tampering is refused.
+The recorder rejects a matching-byte app with an invalid bundle signature. CI
+extracts each finished tarball, verifies its bytes/native host, and on macOS
+verifies the resource seal and exercises the actual packaged app again. It also
+retains Gatekeeper's separate assessment without claiming that ad-hoc signing
+supplies Apple developer trust.
+
+An isolated copy reproduced the failure before sealing and passed strict
+integrity verification after sealing; Gatekeeper still rejected the ad-hoc
+identity. The original downloaded copy and reported failed launch are preserved.
+Developer ID/notarization and actual clean-host download admission stay open.
+An operator may explicitly approve a valid probe through Apple's ordinary
+per-app UI; that is recorded separately from default-policy admission. No
+quarantine removal, global security override or approval automation is used.

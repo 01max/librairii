@@ -51,6 +51,14 @@ def main():
              'machine': platform.machine(), 'session': os.environ.get('XDG_SESSION_TYPE', 'unknown'),
              'desktop': os.environ.get('XDG_CURRENT_DESKTOP', 'unknown')}
     if platform.system() == 'Darwin':
+        bundle = next((p for p in binary.parents if p.suffix == '.app' and p.is_relative_to(root)), None)
+        if bundle is not None:
+            signature = subprocess.run(['/usr/bin/codesign', '--verify', '--deep', '--strict',
+                str(bundle)], capture_output=True, text=True, timeout=30)
+            if signature.returncode != 0:
+                parser.error('macOS bundle signature is invalid; obtain a rebuilt package')
+            facts['bundle_integrity'] = 'verified'
+            facts['gatekeeper_acceptance'] = 'not_assessed'
         translated = subprocess.run(['/usr/sbin/sysctl','-in','sysctl.proc_translated'], capture_output=True, text=True)
         facts['rosetta'] = translated.stdout.strip() == '1'
         if facts['rosetta']:

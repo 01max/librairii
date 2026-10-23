@@ -5,8 +5,9 @@
 [runnable operator checklist](operator-checks.md). The owner chose Slint with
 About-screen attribution and can operate Intel/Linux hosts. Toolkit selection
 still awaits mandatory physical/AT/input/rendering/performance/clean-host gates.
-PR38's **Task 2 native qualification** workflow produces matching unsigned
-packages; its public API tests do not substitute for those operator observations.
+PR38's **Task 2 native qualification** workflow produces matching probe packages.
+macOS bundles now have verified ad-hoc integrity seals, without Developer ID or
+notarization; their public API tests do not substitute for operator observations.
 The original reports below retain their historical source attribution.
 
 Current public GUI regression command, on an eligible desktop:

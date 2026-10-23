@@ -90,7 +90,7 @@ jobs:
           cargo nextest run --locked --features gui --config-file ../../.config/nextest.toml --profile ci
           cargo test --locked --features gui --doc
           python3 -I -B -m unittest discover -s tests -p 'test_*.py'
-      - name: Build the unsigned native spike
+      - name: Build the native spike
         working-directory: qualification/section-2
         run: cargo build --locked --release --features gui --bin qualification-desktop
       - name: Public controller and widget smokes
@@ -107,7 +107,32 @@ jobs:
           --binary qualification/section-2/target/release/qualification-desktop
           --target "$RUST_TARGET"
           --output "target/task2-evidence/task2-$RUST_TARGET"
-      - name: Retain unsigned packages and automated evidence
+      - name: Verify archive round-trip bytes and native host
+        run: |
+          roundtrip="$RUNNER_TEMP/task2-roundtrip"
+          mkdir -p "$roundtrip"
+          tar -xzf "target/task2-evidence/task2-$RUST_TARGET.tar.gz" -C "$roundtrip"
+          python3 qualification/section-2/observe.py --package "$roundtrip/task2-$RUST_TARGET" \
+            --operator ci-archive-byte-verification --output target/task2-evidence/archive-verification.json
+      - name: Verify and exercise the packaged macOS app
+        if: runner.os == 'macOS'
+        run: |
+          app="$RUNNER_TEMP/task2-roundtrip/task2-$RUST_TARGET/LibrairiiQualification.app"
+          codesign --verify --deep --strict --verbose=2 "$app" 2>&1 | tee target/task2-evidence/bundle-signature.txt
+          codesign --display --verbose=2 "$app" 2>> target/task2-evidence/bundle-signature.txt
+          python3 qualification/section-2/run-smokes.py "$app/Contents/MacOS/qualification-desktop" \
+            2>&1 | tee target/task2-evidence/packaged-gui-smokes.log
+          python3 - <<'PY'
+          import json, os, pathlib, subprocess
+          app = pathlib.Path(os.environ['RUNNER_TEMP']) / 'task2-roundtrip' / ('task2-' + os.environ['RUST_TARGET']) / 'LibrairiiQualification.app'
+          result = subprocess.run(['/usr/sbin/spctl', '--assess', '--type', 'execute', '--verbose=4', str(app)],
+              capture_output=True, text=True, timeout=30)
+          pathlib.Path('target/task2-evidence/gatekeeper-assessment.json').write_text(json.dumps({
+              'returncode': result.returncode, 'stdout': result.stdout, 'stderr': result.stderr,
+              'developer_id': False, 'notarized': False,
+              'note': 'Ad-hoc resource sealing verifies integrity; Gatekeeper acceptance is not claimed.'}, indent=2) + '\n')
+          PY
+      - name: Retain qualification packages and automated evidence
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
