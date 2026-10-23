@@ -59,8 +59,9 @@ class Desktop:
     def __init__(self, session, evidence):
         import dbus
         import pyatspi
-        from gi.repository import Atspi
+        from gi.repository import Atspi, GLib
         Atspi.set_timeout(1000, 1000)
+        self.context = GLib.MainContext.default()
         self.a, self.dbus, self.session, self.root = pyatspi, dbus, session, evidence
         self.children, self.logs, self.overflow = [], [], []
         self.ipc = None
@@ -159,12 +160,20 @@ class Desktop:
             self.run(['wtype', '-s', '200', '-d', '30', text, '-s', '100'])
 
     def nodes(self, root=None):
+        context = getattr(self, 'context', None)
+        if context is not None:
+            for _ in range(64):
+                if not context.pending():
+                    break
+                context.iteration(False)
         queue = collections.deque([(root if root is not None else self.a.Registry.getDesktop(0), 0)])
         count = 0
         while queue and count < 4000:
             node, depth = queue.popleft()
             count += 1
             try:
+                if hasattr(node, 'clear_cache'):
+                    node.clear_cache()
                 yield node
                 if depth < 30:
                     queue.extend((node.getChildAtIndex(i), depth + 1) for i in range(min(node.childCount, 1000)))
@@ -298,6 +307,7 @@ def one_case(desktop, name, kind, expected):
                 target = fixture / 'Été 日本語 故事.zip' if kind == 'files' else (
                     desktop.runtime / 'outside' if expected == 'rejected' else fixture)
                 desktop.key('ctrl+l')
+                desktop.screenshot(output / 'location.png')
                 entry = wait_for(lambda: desktop.find(lambda n: desktop.visible(n) and
                     n.getState().contains(desktop.a.STATE_EDITABLE), dialog))
                 assert entry.queryEditableText().setTextContents(str(target)), 'native location entry failed'

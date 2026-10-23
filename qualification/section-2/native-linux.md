@@ -103,3 +103,12 @@ insufficient. The driver now sends actual Control_L press/release alongside the
 native modifier mask, retaining Settings/Search assertions. Raw X11 transient
 and PID properties plus the actual app PID are retained for independent review.
 Both failures remain preserved pending fresh native revalidation.
+
+At `214bb28` / run40015771459 X11 passes all eight native cases, including the
+actual Thunar location and owned shutdown. Wayland's multiple-file case also
+passes parenting, exact paths, native Settings/Search and retirement. The next
+chooser stalls locating its location entry after Ctrl+L, despite retained GTK
+key events. The observer now drains its bounded GLib accessibility-event context
+and clears native node caches before traversal; post-shortcut screenshots are
+retained. This is an observer synchronization correction requiring native
+revalidation, not a declared passing Wayland matrix.
