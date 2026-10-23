@@ -64,3 +64,13 @@ buffer files, not just log output. Its raw evidence remains in
 [run 40009932756](https://github.com/01max/librairii/actions/runs/40009932756).
 Log capture now uses bounded pipes, preserving graphics buffer allocation while
 still rejecting capped output. The temporary runtime filesystem remains capped.
+
+Fresh execution at `230cc47` in
+[run40018196257](https://github.com/01max/librairii/actions/runs/40018196257)
+passes all16 checks using the same archive/executable as the native integration
+result. The continuation record retains its own image/source/binary/report
+identities. Independent review recomputes all27 runtime-file hashes, verifies all
+711 archive payload entries and confirms all eight PNGs are byte-identical to
+the earlier visually reviewed French/CJK frames. This Linux result survives the
+separate Intel timeout-fixture correction in all-target green run40019286663;
+the broader clean-host qualification remains open.
