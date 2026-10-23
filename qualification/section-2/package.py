@@ -87,10 +87,15 @@ def main():
             'license': package.get('license'), 'source': package.get('source'), 'notices': entries})
     # rust-skia distributes the native library's BSD notice in the build output.
     native = list(binary.parent.glob('build/skia-bindings-*/out/skia/LICENSE_SKIA'))
-    if len(native) != 1:
-        raise RuntimeError('expected one exact native Skia license beside the build output')
+    if not native or len({sha(path) for path in native}) != 1:
+        raise RuntimeError('missing or conflicting native Skia licenses beside the build output')
     shutil.copy2(native[0], notices / 'LICENSE_SKIA')
     (output / 'dependencies.json').write_text(json.dumps(inventory, indent=2) + '\n')
+    if platform.system() == 'Darwin':
+        resources = app / 'Resources'
+        resources.mkdir()
+        shutil.copytree(notices, resources / 'notices')
+        shutil.copy2(output / 'dependencies.json', resources)
     manifest = {'schema': 1, 'kind': 'unsigned-synthetic-qualification-only',
         'source': source, 'source_dirty': dirty, 'target': args.target,
         'features': ['gui'], 'executable': str(executable.relative_to(output)),
@@ -108,6 +113,13 @@ def main():
     with tarfile.open(archive, 'x:gz') as stream:
         stream.add(output, arcname=output.name)
     archive.with_suffix(archive.suffix + '.sha256').write_text(sha(archive) + '  ' + archive.name + '\n')
+    if platform.system() == 'Darwin':
+        dmg = output.parent / (output.name + '.dmg')
+        if dmg.exists():
+            raise FileExistsError(dmg)
+        subprocess.run(['hdiutil', 'create', '-volname', 'Librairii Qualification',
+                        '-srcfolder', str(output), '-format', 'UDZO', str(dmg)], check=True)
+        dmg.with_suffix('.dmg.sha256').write_text(sha(dmg) + '  ' + dmg.name + '\n')
     print(archive)
 
 if __name__ == '__main__':

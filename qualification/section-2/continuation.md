@@ -87,3 +87,8 @@ An ARM development tarball assembled locally and its verified observation
 record was created successfully. The owner can execute Intel and Linux checks;
 actual operator results, clean-host launch and all three-target package evidence
 remain pending. The current workflow supplies matching unsigned artifacts.
+
+The macOS package also retains notices inside the application Resources and
+assembles an unsigned DMG in addition to the tarball. Repeated build profiles
+may leave several native Skia notice copies; packaging requires their exact
+content digests to agree instead of choosing among conflicting licenses.
