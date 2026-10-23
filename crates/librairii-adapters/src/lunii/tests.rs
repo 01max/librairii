@@ -3,6 +3,7 @@ use std::{
     error::Error,
     io::{Read, Write},
     net::{TcpListener, TcpStream},
+    sync::atomic::{AtomicBool, Ordering},
     thread,
 };
 type TestResult<T = ()> = std::result::Result<T, Box<dyn Error>>;
@@ -89,6 +90,105 @@ fn joined(worker: thread::JoinHandle<std::io::Result<Vec<String>>>) -> TestResul
         .join()
         .map_err(|_| "fixture thread panicked")?
         .map_err(Into::into)
+}
+// A response stays pending until the operation has stopped. Receipt is an
+// explicit signal, so cancellation does not depend on a fast CI scheduler.
+struct WaitingServer {
+    base: String,
+    arrived: tokio::sync::oneshot::Receiver<()>,
+    stop: Arc<AtomicBool>,
+    worker: Option<thread::JoinHandle<std::io::Result<bool>>>,
+}
+impl WaitingServer {
+    fn new() -> TestResult<Self> {
+        let listener = TcpListener::bind("127.0.0.1:0")?;
+        listener.set_nonblocking(true)?;
+        let base = format!("http://{}/", listener.local_addr()?);
+        let stop = Arc::new(AtomicBool::new(false));
+        let shutdown = stop.clone();
+        let (sent, arrived) = tokio::sync::oneshot::channel();
+        let worker = thread::spawn(move || {
+            let deadline = std::time::Instant::now() + Duration::from_secs(10);
+            let mut stream = loop {
+                if shutdown.load(Ordering::Acquire) {
+                    return Ok(false);
+                }
+                if std::time::Instant::now() >= deadline {
+                    return Err(std::io::Error::other("fixture connection deadline"));
+                }
+                match listener.accept() {
+                    Ok((stream, _)) => break stream,
+                    Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => {
+                        thread::sleep(Duration::from_millis(2))
+                    }
+                    Err(error) => return Err(error),
+                }
+            };
+            stream.set_nonblocking(true)?;
+            let mut request = Vec::new();
+            let mut buffer = [0; 1024];
+            while !request.windows(4).any(|part| part == b"\r\n\r\n") {
+                if shutdown.load(Ordering::Acquire) {
+                    return Ok(false);
+                }
+                if std::time::Instant::now() >= deadline {
+                    return Err(std::io::Error::other("fixture header deadline"));
+                }
+                match stream.read(&mut buffer) {
+                    Ok(0) => return Ok(false), // Early timeout/cancel may send no headers.
+                    Ok(count) => {
+                        if request.len() + count > 16384 {
+                            return Err(std::io::Error::other("fixture request bounds"));
+                        }
+                        request.extend_from_slice(&buffer[..count]);
+                    }
+                    Err(error)
+                        if matches!(
+                            error.kind(),
+                            std::io::ErrorKind::ConnectionReset
+                                | std::io::ErrorKind::ConnectionAborted
+                        ) =>
+                    {
+                        return Ok(false);
+                    }
+                    Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => {
+                        thread::sleep(Duration::from_millis(2))
+                    }
+                    Err(error) => return Err(error),
+                }
+            }
+            let _ = sent.send(());
+            while !shutdown.load(Ordering::Acquire) {
+                if std::time::Instant::now() >= deadline {
+                    return Err(std::io::Error::other("fixture response release deadline"));
+                }
+                thread::sleep(Duration::from_millis(2));
+            }
+            Ok(true)
+        });
+        Ok(Self {
+            base,
+            arrived,
+            stop,
+            worker: Some(worker),
+        })
+    }
+    fn finish(&mut self) -> TestResult<bool> {
+        self.stop.store(true, Ordering::Release);
+        self.worker
+            .take()
+            .ok_or("fixture already joined")?
+            .join()
+            .map_err(|_| "fixture thread panicked")?
+            .map_err(Into::into)
+    }
+}
+impl Drop for WaitingServer {
+    fn drop(&mut self) {
+        if self.worker.is_some() {
+            let _ = self.finish();
+        }
+    }
 }
 #[tokio::test]
 async fn guest_envelope_headers_and_exact_catalog_bytes_match_protocol() -> TestResult {
@@ -190,36 +290,52 @@ async fn actual_streamed_limits_apply_to_token_and_catalog_without_content_lengt
 }
 #[tokio::test]
 async fn cancellation_and_total_deadline_interrupt_waiting_responses() -> TestResult {
-    let mut slow = token();
-    slow.delay = Duration::from_millis(600);
-    let (base, worker) = server(vec![slow])?;
-    let client = CatalogClient::loopback(&base, Duration::from_millis(30))?;
-    let start = std::time::Instant::now();
-    assert_eq!(
-        client.fetch_catalog(&Cancellation::default()).await,
-        Err(MetadataError::Network)
-    );
-    assert!(start.elapsed() < Duration::from_millis(500));
-    joined(worker)?;
-    let mut slow = token();
-    slow.delay = Duration::from_millis(150);
-    let (base, worker) = server(vec![slow])?;
-    let client = CatalogClient::loopback(&base, DEADLINE)?;
+    // A deadline can expire before a connection is established. The fixture
+    // must stop/join without requiring a request that never reached the wire.
+    for timeout in [Duration::from_nanos(1), Duration::from_millis(30)] {
+        let mut fixture = WaitingServer::new()?;
+        let client = CatalogClient::loopback(&fixture.base, timeout)?;
+        let start = std::time::Instant::now();
+        assert_eq!(
+            client.fetch_catalog(&Cancellation::default()).await,
+            Err(MetadataError::Network)
+        );
+        assert!(start.elapsed() < Duration::from_millis(500));
+        fixture.finish()?;
+    }
+    let mut fixture = WaitingServer::new()?;
+    let client = CatalogClient::loopback(&fixture.base, DEADLINE)?;
     let cancel = Cancellation::default();
     let signal = cancel.clone();
-    let cancellation = async move {
-        tokio::time::sleep(Duration::from_millis(20)).await;
-        signal.cancel();
+    let cancellation = async {
+        let observed = tokio::time::timeout(Duration::from_secs(5), &mut fixture.arrived).await;
+        signal.cancel(); // Also release the client if the fixture failed to observe it.
+        observed??;
+        Ok::<(), Box<dyn Error>>(())
     };
-    let (result, ()) = tokio::join!(client.fetch_catalog(&cancel), cancellation);
+    let (result, cancellation) = tokio::join!(client.fetch_catalog(&cancel), cancellation);
+    cancellation?;
     assert_eq!(result, Err(MetadataError::Cancelled));
-    joined(worker)?;
+    assert!(
+        fixture.finish()?,
+        "request must arrive before in-flight cancellation"
+    );
+    Ok(())
+}
+#[tokio::test]
+async fn pre_cancelled_request_retires_fixture_without_requiring_headers() -> TestResult {
+    let mut fixture = WaitingServer::new()?;
+    let client = CatalogClient::loopback(&fixture.base, DEADLINE)?;
     let cancel = Cancellation::default();
     cancel.cancel();
     assert_eq!(
         client.fetch_catalog(&cancel).await,
         Err(MetadataError::Cancelled)
     );
+    // This checks owned teardown, not absence of TCP traffic: the fixture may
+    // stop before queued sockets/bytes have been observed.
+    fixture.finish()?;
+    assert!(fixture.worker.is_none());
     Ok(())
 }
 #[tokio::test]

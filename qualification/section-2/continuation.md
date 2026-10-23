@@ -144,3 +144,22 @@ the retained 24-artwork/full-PNG 50 ms budget. Unit regressions verify LRU recen
 reload, distinct pixels, deferred visible retries, saturated queues and join.
 Independent review found the initial missing backpressure retry; the bounded
 deferred-interest path and no-incidental-read regression correct it.
+
+## CI correction: coordinate inherited cancellation fixtures
+
+All three native qualification lanes passed at PR revision `0048b5f`. The
+required product workspace Intel lane then exposed a pre-existing test-fixture
+race: a valid early client timeout/cancellation can precede a connection or full
+headers, while the fixture still requires a request and fails ten seconds later.
+The unchanged original test passed 20 local repeats; reducing its request timeout
+to 1 ns reproduced the exact `fixture request deadline` failure. Immediate
+cancellation independently reproduced the related partial-header fixture error.
+
+Only the adapter test fixture changes. A bounded stoppable server now holds the
+response until operation completion, signals actual complete-header receipt for
+in-flight cancellation, and joins even when no headers arrive. The test retains
+the 500 ms completion assertion and 30 ms timeout, adds the before-connect 1 ns
+case, and checks pre-cancelled fixture retirement separately. The latter proves
+owned teardown, not absence of TCP traffic. Production networking, cancellation,
+request limits and deadline policy are unchanged. No retries/skips or relaxed
+performance threshold hide the failure.
