@@ -1,6 +1,6 @@
 use librairii_qualification::{REVIEW_COUNT, REVIEW_PAGE, Review, matching};
 use slint::{ComponentHandle, Model, ModelRc, SharedPixelBuffer, VecModel};
-use std::cell::RefCell;
+use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
@@ -97,6 +97,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         b"second synthetic picker fixture",
     )?;
     let root = fixture.path().canonicalize()?;
+    let fixture_root = root.clone();
     let weak = ui.as_weak();
     let files_root = root.clone();
     ui.on_pick_files(move || {
@@ -293,6 +294,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     if std::env::args().any(|arg| arg == "--settings-early") {
         menus.commands.settings();
     }
+    let requests = menus.commands.clone();
+    ui.on_request_quit(move || requests.quit());
+    let quit_smoke = std::env::args().any(|arg| arg == "--quit-smoke");
+    let quit_during_work = Rc::new(Cell::new(false));
+    let observed_quit = quit_during_work.clone();
+    if quit_smoke {
+        ui.invoke_start_work();
+    }
     let timer = slint::Timer::default();
     let weak = ui.as_weak();
     let work = worker.clone();
@@ -304,6 +313,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             if let Some(ui) = weak.upgrade() {
                 update_viewport(&ui);
                 menus.update(ui.get_french(), ui.get_modal());
+                let completed = progress.load(Ordering::Acquire);
+                if quit_smoke && completed > 0 && completed < 100 {
+                    observed_quit.set(true);
+                    menus.commands.quit();
+                }
+                if menus.commands.take_quit() {
+                    let _ = slint::quit_event_loop();
+                }
                 if !ui.get_modal()
                     && let Some(dialog) = menus.commands.next()
                 {
@@ -436,7 +453,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     if let Some(worker) = worker.borrow_mut().take() {
         worker.join().map_err(|_| "synthetic worker panicked")?;
     }
+    let retired = fixture.close();
     result?;
+    retired?;
+    if quit_smoke {
+        assert!(quit_during_work.get());
+        assert!(worker.borrow().is_none(), "all workers must be joined");
+        assert!(
+            !fixture_root.exists(),
+            "owned picker fixture must be retired"
+        );
+        eprintln!("quit_smoke=passed; active worker cancelled/joined and fixture retired");
+    }
     Ok(())
 }
 

@@ -14,6 +14,12 @@ impl Commands {
     fn about(&self) {
         self.0.fetch_or(2, Ordering::Release);
     }
+    pub fn quit(&self) {
+        self.0.fetch_or(4, Ordering::Release);
+    }
+    pub fn take_quit(&self) -> bool {
+        self.0.fetch_and(!4, Ordering::AcqRel) & 4 != 0
+    }
     pub fn next(&self) -> Option<i32> {
         if self.0.fetch_and(!1, Ordering::AcqRel) & 1 != 0 {
             Some(1)
@@ -35,6 +41,10 @@ pub struct Menus {
     about: muda::MenuItem,
     #[cfg(target_os = "macos")]
     french: std::cell::Cell<Option<bool>>,
+    #[cfg(target_os = "macos")]
+    modal: std::cell::Cell<Option<bool>>,
+    #[cfg(target_os = "macos")]
+    quit: muda::MenuItem,
 }
 impl Menus {
     pub fn install() -> Result<Self, Box<dyn std::error::Error>> {
@@ -52,6 +62,12 @@ impl Menus {
                 true,
                 Some(Accelerator::new(Some(Modifiers::META), Code::Comma)),
             );
+            let quit = MenuItem::with_id(
+                "qualification.quit",
+                "Quit Librairii Qualification",
+                true,
+                Some(Accelerator::new(Some(Modifiers::META), Code::KeyQ)),
+            );
             app.append_items(&[
                 &about,
                 &Standard::separator(),
@@ -63,7 +79,7 @@ impl Menus {
                 &Standard::hide_others(None),
                 &Standard::show_all(None),
                 &Standard::separator(),
-                &Standard::quit(None),
+                &quit,
             ])?;
             let edit = Submenu::new("Edit", true);
             edit.append_items(&[
@@ -82,6 +98,8 @@ impl Menus {
                     pending.settings();
                 } else if event.id == "qualification.about" {
                     pending.about();
+                } else if event.id == "qualification.quit" {
+                    pending.quit();
                 }
             }));
             bar.init_for_nsapp();
@@ -91,6 +109,8 @@ impl Menus {
                 settings,
                 about,
                 french: std::cell::Cell::new(None),
+                modal: std::cell::Cell::new(None),
+                quit,
             })
         }
         #[cfg(not(target_os = "macos"))]
@@ -107,9 +127,16 @@ impl Menus {
                 });
                 self.about
                     .set_text(if french { "À propos…" } else { "About…" });
+                self.quit.set_text(if french {
+                    "Quitter Librairii Qualification"
+                } else {
+                    "Quit Librairii Qualification"
+                });
             }
-            self.settings.set_enabled(!modal);
-            self.about.set_enabled(!modal);
+            if self.modal.replace(Some(modal)) != Some(modal) {
+                self.settings.set_enabled(!modal);
+                self.about.set_enabled(!modal);
+            }
         }
         #[cfg(not(target_os = "macos"))]
         let _ = (french, modal);
@@ -127,5 +154,15 @@ mod tests {
         native_handler.settings();
         assert_eq!(commands.next(), Some(1));
         assert_eq!(commands.next(), None);
+    }
+    #[test]
+    fn quit_is_independent_of_pending_dialogs_and_drained_once() {
+        let commands = Commands::default();
+        commands.settings();
+        commands.quit();
+        commands.quit();
+        assert!(commands.take_quit());
+        assert!(!commands.take_quit());
+        assert_eq!(commands.next(), Some(1));
     }
 }

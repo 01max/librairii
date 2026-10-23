@@ -65,6 +65,7 @@ export component Spike inherits Window {
     callback start-work();
     callback cancel-work();
     callback simulate-error();
+    callback request-quit();
     callback decide(int, bool);
     callback apply-review();
     callback change-review-page(int);
@@ -108,6 +109,7 @@ export component Spike inherits Window {
             enabled: !root.modal;
             MenuItem { title: root.french ? "Réglages…" : "Settings…"; shortcut: @keys(Control + ","); activated => { root.open-dialog(1, 2); } }
             MenuItem { title: root.french ? "À propos…" : "About…"; activated => { root.open-dialog(2, 2); } }
+            MenuItem { title: root.french ? "Quitter" : "Quit"; shortcut: @keys(Control + Q); activated => { root.request-quit(); } }
         }
     }
     key-scope := FocusScope {

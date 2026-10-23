@@ -103,3 +103,15 @@ review identities are stable across localized labels, and the virtualized view
 retains its mounted range during the dialog. The focus smoke now runs an actual
 UI loop and checks Review checkbox → menu Settings → Escape → same checkbox,
 as well as the button route and preserved multilingual draft input.
+
+## Independent review correction: route Quit through owned shutdown
+
+The predefined AppKit Quit action could terminate the process before Rust's
+post-event-loop join/cleanup. Quit/Command-Q is now a public native menu command
+into the bounded command sink, and Linux Quit/Control-Q uses the same path. The
+main thread requests event-loop exit, cancels and joins the actual worker, then
+explicitly closes the owned temporary fixture. Quit remains available during a
+dialog and does not consume a pending Settings command. `--quit-smoke` starts
+real synthetic work, requests Quit only while progress is strictly between zero
+and completion, then asserts the worker was joined and the fixture is absent.
+Repeated identical menu enablement no longer performs native calls every tick.
