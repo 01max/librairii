@@ -708,7 +708,13 @@ fn reveal(root: &std::path::Path) -> std::io::Result<()> {
     #[cfg(target_os = "macos")]
     let mut command = std::process::Command::new("/usr/bin/open");
     #[cfg(target_os = "linux")]
-    let mut command = std::process::Command::new("xdg-open");
+    let mut command = {
+        // xdg-open may remain attached to a newly started file manager. Hand
+        // that external GUI to the OS session; wait only for its short launcher.
+        let mut launcher = std::process::Command::new("setsid");
+        launcher.args(["--fork", "xdg-open"]);
+        launcher
+    };
     #[cfg(target_os = "windows")]
     let mut command = std::process::Command::new("explorer.exe");
     let status = command.arg(root).status()?;

@@ -147,7 +147,8 @@ class Desktop:
         if self.session == 'x11':
             self.run(['xdotool', 'key', '--clearmodifiers', key])
         elif key.startswith('ctrl+'):
-            self.run(['wtype', '-s', '200', '-M', 'ctrl', '-s', '50', '-k', key[5:], '-m', 'ctrl', '-s', '100'])
+            self.run(['wtype', '-s', '200', '-M', 'ctrl', '-P', 'Control_L', '-s', '50',
+                      '-k', key[5:], '-p', 'Control_L', '-m', 'ctrl', '-s', '100'])
         else:
             self.run(['wtype', '-s', '200', '-k', key, '-s', '100'])
 
@@ -243,7 +244,7 @@ def one_case(desktop, name, kind, expected):
     if kind == 'early-settings':
         flags += ['--settings-early']
     app = desktop.start(name, ['/opt/librairii/qualification-desktop', *flags], debug=True)
-    report = {'checks': {}, 'expected': expected}
+    report = {'checks': {}, 'expected': expected, 'app_pid': app.pid}
     try:
         fixture = pathlib.Path(wait_for(lambda: (app_dir / 'fixture.txt').read_text()))
         report['fixture'] = str(fixture)
@@ -255,12 +256,15 @@ def one_case(desktop, name, kind, expected):
             if desktop.session == 'x11':
                 xid = desktop.run(['xdotool', 'search', '--onlyvisible', '--name', '^' + title + '$']).splitlines()[-1]
                 props = desktop.run(['xprop', '-id', xid, 'WM_TRANSIENT_FOR'])
+                report['x11_parent'] = {'dialog_xid': xid, 'transient_property': props}
                 match = re.search(r'window id # (0x[0-9a-fA-F]+)', props)
                 if match:
                     transient = int(match[1], 16)
                     props = desktop.run(['xprop', '-id', hex(transient), '_NET_WM_PID'])
                     pid = re.search(r'= (\d+)', props)
                     parent_pid = int(pid[1]) if pid else None
+                    report['x11_parent'].update({'transient': transient, 'parent_pid': parent_pid,
+                        'pid_property': props})
             desktop.screenshot(output / 'dialog.png')
             if expected == 'cancelled':
                 desktop.button(dialog, ('Cancel',))

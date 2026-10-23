@@ -86,3 +86,20 @@ returns false when adding an already selected row and does not implement the
 ATK select-all operation. The driver preserves existing selection, adds each
 missing row through the native table interface, then requires exactly rows0/1
 and both exact callback paths. This follows GTK's actual contract.
+
+At `5747c4c` / run40014481637 both sessions prove exact multiple-file selection
+and real parent associations. All seven X11 picker/focus/early-Settings cases
+pass. Cold reveal exposed another app adapter issue: `xdg-open` may remain
+attached to a newly started Thunar, blocking the synchronous UI callback. Linux
+now hands that external GUI to the OS through util-linux `setsid --fork` and waits
+only for the short launcher. Request acceptance still requires the observer to
+see the real file-manager window/path; no successful launch exit can replace it.
+The external desktop app has OS lifetime; synthetic app workers remain owned and
+joined, and both test containers retire all remaining desktop processes.
+
+Wayland's actual Ctrl+comma typed a comma. Pinned Slint1.18.1's Winit adapter
+tracks modifier key press/release events; a Wayland modifier mask alone is
+insufficient. The driver now sends actual Control_L press/release alongside the
+native modifier mask, retaining Settings/Search assertions. Raw X11 transient
+and PID properties plus the actual app PID are retained for independent review.
+Both failures remain preserved pending fresh native revalidation.

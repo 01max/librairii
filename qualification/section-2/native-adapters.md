@@ -23,3 +23,15 @@ two files, one file, folder, cancel, wrong-root rejection, parent focus while a
 dialog is open, close/reopen, language changes, Settings before/after readiness,
 all conventional editing/Settings accelerators and validated reveal of the exact
 directory. Linux needs both portal-backed X11 and Wayland observations.
+
+## Automated Linux continuation, 2026-10-23
+
+See `native-linux.md` for retained real GTK portal selections/cancellation, exact
+parent proof and native focus/input coverage. Earlier access-denial notes above
+are historical; these automated sessions do not qualify physical input or speech.
+The Linux reveal probe needs util-linux `setsid`, `xdg-open`/`xdg-mime`, the `file`
+directory-detection helper and a registered desktop file-manager handler. It
+validates the fixture path, passes separate arguments, and waits for the short
+OS launcher rather than the external file manager's lifetime. Only an actual
+observed window at the correct path can qualify reveal; request acceptance alone
+cannot. No new Cargo dependency or toolkit pin is introduced.

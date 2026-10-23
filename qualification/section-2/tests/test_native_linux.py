@@ -89,3 +89,13 @@ class NativeLinux(unittest.TestCase):
             self.assertEqual(len(desktop.overflow), 1)
             self.assertIn('unwritable: capture ', desktop.overflow[0])
             self.assertNotEqual(child.returncode, 0)
+
+    def test_falsey_native_leaf_is_not_replaced_by_the_entire_desktop(self):
+        class Leaf:
+            childCount = 0
+            def __bool__(self):
+                return False
+        desktop = driver.Desktop.__new__(driver.Desktop)
+        desktop.a = object()  # Falling back to Registry would be an error.
+        leaf = Leaf()
+        self.assertEqual(list(desktop.nodes(leaf)), [leaf])
