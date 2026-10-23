@@ -1,6 +1,10 @@
-import { Button, LineEdit, VerticalBox, HorizontalBox, ListView, ProgressIndicator, CheckBox, AboutSlint } from "std-widgets.slint";
+import { Button, LineEdit, VerticalBox, HorizontalBox, ListView, ProgressIndicator, CheckBox, AboutSlint, Palette, ScrollView } from "std-widgets.slint";
 
 export struct StoryRow { id: int, title: string, cover: image }
+export struct DecisionRow { id: int, added: bool }
+
+global ProbeState { in-out property <bool> modal: false; }
+component Action inherits Button { enabled: !ProbeState.modal; }
 
 export component Spike inherits Window {
     title: "Librairii · qualification";
@@ -8,152 +12,246 @@ export component Spike inherits Window {
     preferred-height: 760px;
     min-width: 560px;
     min-height: 400px;
-    background: #f5f3ee;
+    background: Palette.background;
     in-out property <bool> french: false;
     in-out property <int> mode: 0;
     in-out property <bool> review-visible: false;
-    in-out property <bool> about-visible: false;
-    in-out property <bool> settings-visible: false;
-    in-out property <bool> detail-visible: false;
+    in-out property <bool> sidebar-open: false;
+    in-out property <int> dialog: 0;
+    private property <int> invoker: 0;
+    in-out property <bool> compact: false;
+    in-out property <bool> wide: true;
+    out property <bool> modal: root.dialog != 0;
     in-out property <string> query;
     in-out property <string> selected: "Étoiles — 日本語 — 故事";
     in property <[StoryRow]> stories;
     in property <[[StoryRow]]> grid;
+    in-out property <[DecisionRow]> decisions;
+    in property <int> review-page: 0;
+    in property <int> review-pages: 12;
     in property <float> progress: 0;
     in property <string> status;
     in property <bool> working: false;
     in property <int> approvals: 0;
     in-out property <bool> first-added: false;
-    in-out property <bool> second-added: false;
-    in-out property <bool> third-added: false;
     out property <bool> first-decision-checked: first-decision.checked;
+    out property <bool> close-has-focus: close-button.has-focus;
+    out property <bool> settings-has-focus: settings-button.has-focus;
+    out property <bool> search-has-focus: search-entry.has-focus;
     callback search(string);
     callback select-story(int);
     callback start-work();
     callback cancel-work();
     callback decide(int, bool);
     callback apply-review();
+    callback change-review-page(int);
     callback pick-files();
     callback pick-folder();
     callback reveal-fixture();
-    // Public focus hooks for in-process widget-event regression, not OS input.
     callback focus-first-decision();
     focus-first-decision => { first-decision.focus(); }
     callback focus-apply();
     focus-apply => { apply-button.focus(); }
+    callback focus-search();
+    focus-search => { search-entry.focus(); }
 
+    public function open-dialog(kind: int, from: int) {
+        if root.dialog == 0 {
+            root.invoker = from;
+            root.dialog = kind;
+            close-button.focus();
+        }
+    }
+    public function close-dialog() {
+        root.dialog = 0;
+        if root.invoker == 1 { details-button.focus(); }
+        else if root.invoker == 2 { search-entry.focus(); }
+        else { settings-button.focus(); }
+    }
+    public function open-sidebar() {
+        root.sidebar-open = true;
+        library-button.focus();
+    }
+    public function close-sidebar() {
+        root.sidebar-open = false;
+        navigation-button.focus();
+    }
+    changed dialog => { ProbeState.modal = root.modal; }
     MenuBar {
         Menu {
             title: "Librairii";
-            MenuItem { title: root.french ? "Réglages…" : "Settings…"; activated => { root.settings-visible = true; } }
-            MenuItem { title: root.french ? "À propos…" : "About…"; activated => { root.about-visible = true; } }
+            enabled: !root.modal;
+            MenuItem { title: root.french ? "Réglages…" : "Settings…"; activated => { root.open-dialog(1, 2); } }
+            MenuItem { title: root.french ? "À propos…" : "About…"; activated => { root.open-dialog(2, 2); } }
         }
     }
-    VerticalBox {
-        min-width: 0px;
-        padding: 14px;
-        HorizontalBox {
-            Text { text: "librairii"; font-size: 24px; font-weight: 700; }
-            search-entry := LineEdit {
-                text <=> root.query;
-                placeholder-text: root.french ? "Rechercher des histoires" : "Search stories";
-                accessible-label: self.placeholder-text;
-                edited => { root.search(self.text); }
+    key-scope := FocusScope {
+        focus-on-tab-navigation: false;
+        capture-key-pressed(event) => {
+            if root.modal {
+                if event.text == Key.Escape { root.close-dialog(); return accept; }
+                if event.text == Key.Tab || event.text == Key.Backtab {
+                    if root.dialog == 1 {
+                        if close-button.has-focus {
+                            if event.modifiers.shift { french-button.focus(); } else { english-button.focus(); }
+                        } else if english-button.has-focus {
+                            if event.modifiers.shift { close-button.focus(); } else { french-button.focus(); }
+                        } else {
+                            if event.modifiers.shift { english-button.focus(); } else { close-button.focus(); }
+                        }
+                    } else { close-button.focus(); }
+                    return accept;
+                }
             }
-            Button { text: root.french ? "English" : "Français"; clicked => { root.french = !root.french; } }
-            Button { text: root.french ? "Réglages" : "Settings"; clicked => { root.settings-visible = true; } }
+            if root.compact && root.sidebar-open && event.text == Key.Escape { root.close-sidebar(); return accept; }
+            return reject;
         }
-        HorizontalBox {
-            min-width: 0px;
-            Rectangle {
-                width: 180px; background: #e9e5dc;
-                VerticalBox {
-                    Text { text: root.french ? "BIBLIOTHÈQUE" : "LIBRARY"; }
-                    Button { text: root.french ? "Toutes les histoires" : "All stories"; clicked => { root.review-visible = false; } }
-                    Text { text: "Collections"; font-weight: 700; }
-                    Button { text: root.french ? "Les favoris" : "Favourites"; clicked => { root.review-visible = false; } }
-                    Text { text: root.french ? "Étagères" : "Shelves"; font-weight: 700; }
-                    Button { text: root.french ? "Histoires approuvées" : "Approved members"; clicked => { root.review-visible = true; } }
-                    Rectangle { vertical-stretch: 1; }
+        VerticalBox {
+            min-width: 0px; min-height: 0px; padding: 12px;
+            HorizontalBox {
+                min-width: 0px;
+                navigation-button := Action {
+                    visible: root.compact;
+                    text: root.french ? "Navigation" : "Navigation";
+                    clicked => { root.open-sidebar(); }
                 }
+                Text { text: "librairii"; font-size: 22px; font-weight: 700; }
+                search-entry := LineEdit {
+                    min-width: 0px;
+                    enabled: !root.modal;
+                    text <=> root.query;
+                    placeholder-text: root.french ? "Rechercher des histoires" : "Search stories";
+                    accessible-label: self.placeholder-text;
+                    edited => { root.search(self.text); }
+                }
+                settings-button := Action { text: root.french ? "Réglages" : "Settings"; clicked => { root.open-dialog(1, 0); } }
             }
-            VerticalBox {
-                HorizontalBox {
-                    Button { text: root.french ? "Liste" : "List"; clicked => { root.mode = 0; } }
-                    Button { text: root.french ? "Petites couvertures" : "Small covers"; clicked => { root.mode = 1; } }
-                    Button { text: root.french ? "Grandes couvertures" : "Large covers"; clicked => { root.mode = 2; } }
-                    Button { text: root.french ? "Membres / révision" : "Members / review"; clicked => { root.review-visible = !root.review-visible; } }
-                }
-                if root.mode == 0: ListView {
-                    for story in root.stories: Button {
-                        text: story.title;
-                        clicked => { root.select-story(story.id); }
+            HorizontalBox {
+                min-width: 0px; min-height: 0px;
+                sidebar := Rectangle {
+                    visible: !root.compact || root.sidebar-open;
+                    width: self.visible ? 170px : 0px;
+                    background: Palette.alternate-background;
+                    accessible-role: navigation;
+                    accessible-label: root.french ? "Navigation de la bibliothèque" : "Library navigation";
+                    VerticalBox {
+                        min-width: 0px; min-height: 0px;
+                        Text { text: root.french ? "BIBLIOTHÈQUE" : "LIBRARY"; }
+                        library-button := Action { text: root.french ? "Toutes les histoires" : "All stories"; clicked => { root.review-visible = false; if root.compact { root.close-sidebar(); } } }
+                        Text { text: "Collections"; font-weight: 700; }
+                        Action { text: root.french ? "Les favoris" : "Favourites"; clicked => { root.review-visible = false; if root.compact { root.close-sidebar(); } } }
+                        Text { text: root.french ? "Étagères" : "Shelves"; font-weight: 700; }
+                        Action { text: root.french ? "Membres approuvés" : "Approved members"; clicked => { root.review-visible = true; if root.compact { root.close-sidebar(); } } }
+                        Action { visible: root.compact; text: root.french ? "Fermer la navigation" : "Close navigation"; clicked => { root.close-sidebar(); } }
+                        Rectangle { vertical-stretch: 1; }
                     }
                 }
-                if root.mode != 0: ListView {
-                    for row in root.grid: HorizontalBox {
-                        for story in row: VerticalBox {
-                            Image { source: story.cover; height: root.mode == 1 ? 90px : 160px; image-fit: contain; }
-                            Button { text: story.title; clicked => { root.select-story(story.id); } }
+                VerticalBox {
+                    min-width: 0px; min-height: 0px;
+                    HorizontalBox {
+                        Action { text: root.french ? "Liste" : "List"; clicked => { root.mode = 0; } }
+                        Action { text: root.french ? "Petites couvertures" : "Small covers"; clicked => { root.mode = 1; } }
+                        Action { text: root.french ? "Grandes couvertures" : "Large covers"; clicked => { root.mode = 2; } }
+                    }
+                    HorizontalBox {
+                        Text { text: root.stories.length + (root.french ? " histoires synthétiques" : " synthetic stories"); }
+                        Action { text: root.french ? "Révision" : "Review"; clicked => { root.review-visible = !root.review-visible; } }
+                        details-button := Action { text: root.french ? "Détails" : "Details"; clicked => { root.open-dialog(3, 1); } }
+                    }
+                    if root.mode == 0: ListView {
+                        min-width: 0px; min-height: 0px;
+                        for story in root.stories: Action { text: story.title; clicked => { root.select-story(story.id); } }
+                    }
+                    if root.mode != 0: ListView {
+                        min-width: 0px; min-height: 0px;
+                        for row in root.grid: HorizontalBox {
+                            min-width: 0px;
+                            for story in row: VerticalBox {
+                                min-width: 0px;
+                                Image { source: story.cover; height: root.mode == 1 ? 75px : 130px; image-fit: contain; }
+                                Action { min-width: 0px; text: story.title; clicked => { root.select-story(story.id); } }
+                            }
+                        }
+                    }
+                    review-pane := VerticalBox {
+                        visible: root.review-visible;
+                        height: root.review-visible ? 220px : 0px;
+                        min-width: 0px;
+                        Text { text: root.french ? "Révision séparée — aucune approbation implicite" : "Separate review — no implicit approvals"; wrap: word-wrap; }
+                        HorizontalBox {
+                            Action { text: root.french ? "Précédent" : "Previous"; enabled: !root.modal && root.review-page > 0; clicked => { root.change-review-page(root.review-page - 1); } }
+                            Text { text: (root.review-page + 1) + " / " + root.review-pages + " · 300"; }
+                            Action { text: root.french ? "Suivant" : "Next"; enabled: !root.modal && root.review-page + 1 < root.review-pages; clicked => { root.change-review-page(root.review-page + 1); } }
+                            apply-button := Action { text: (root.french ? "Appliquer " : "Apply ") + root.approvals; enabled: !root.modal && root.approvals > 0; clicked => { root.apply-review(); } }
+                        }
+                        ScrollView {
+                            min-height: 0px; min-width: 0px;
+                            VerticalBox {
+                                first-decision := CheckBox {
+                                    enabled: !root.modal;
+                                    text: (root.french ? "Ajouter " : "Add ") + (root.review-page * 25) + (root.french ? " · Sinon : pas maintenant" : " · Otherwise: Not now");
+                                    checked <=> root.first-added;
+                                    toggled => { root.decide(0, self.checked); }
+                                }
+                                for row[index] in root.decisions: CheckBox {
+                                    enabled: !root.modal;
+                                    text: (root.french ? "Ajouter " : "Add ") + row.id + (root.french ? " · Sinon : pas maintenant" : " · Otherwise: Not now");
+                                    checked <=> row.added;
+                                    toggled => { root.decide(index + 1, self.checked); }
+                                }
+                            }
                         }
                     }
                 }
-            }
-            Rectangle {
-                width: 250px; background: #e9e5dc;
-                VerticalBox {
-                    Text { text: root.french ? "HISTOIRE SÉLECTIONNÉE" : "STORY INSPECTOR"; }
-                    Text { text: root.selected; wrap: word-wrap; }
-                    Text { text: root.french ? "Français · 4–6 ans" : "French · Ages 4–6"; }
-                    Text { text: root.french ? "Avertissement : indisponible" : "Warning: unavailable"; wrap: word-wrap; }
-                    Button { text: root.french ? "Détails" : "Details"; clicked => { root.detail-visible = true; } }
-                    Rectangle { vertical-stretch: 1; }
+                Rectangle {
+                    visible: root.wide;
+                    width: self.visible ? 230px : 0px;
+                    background: Palette.alternate-background;
+                    accessible-role: complementary;
+                    accessible-label: root.french ? "Histoire sélectionnée" : "Story inspector";
+                    VerticalBox {
+                        min-width: 0px;
+                        Text { text: root.french ? "HISTOIRE SÉLECTIONNÉE" : "STORY INSPECTOR"; wrap: word-wrap; }
+                        Text { text: root.selected; wrap: word-wrap; }
+                        Text { text: root.french ? "Français · 4–6 ans" : "French · Ages 4–6"; }
+                        Text { text: root.french ? "Avertissement : indisponible" : "Warning: unavailable"; wrap: word-wrap; }
+                        Rectangle { vertical-stretch: 1; }
+                    }
                 }
             }
-        }
-        VerticalBox {
-            visible: root.review-visible;
-            height: root.review-visible ? 90px : 0px;
-            Text { text: root.french ? "Révision séparée — aucune approbation implicite" : "Separate review — no implicit approvals"; }
             HorizontalBox {
-                first-decision := CheckBox {
-                    text: (root.french ? "Ajouter " : "Add ") + "0";
-                    checked <=> root.first-added;
-                    toggled => { root.decide(0, self.checked); }
-                }
-                CheckBox {
-                    text: (root.french ? "Ajouter " : "Add ") + "1";
-                    checked <=> root.second-added;
-                    toggled => { root.decide(1, self.checked); }
-                }
-                CheckBox {
-                    text: (root.french ? "Ajouter " : "Add ") + "2";
-                    checked <=> root.third-added;
-                    toggled => { root.decide(2, self.checked); }
-                }
-                apply-button := Button { text: (root.french ? "Appliquer " : "Apply ") + root.approvals; enabled: root.approvals > 0; clicked => { root.apply-review(); } }
+                Action { text: root.french ? "Choisir des fichiers" : "Choose files"; clicked => { root.pick-files(); } }
+                Action { text: root.french ? "Choisir un dossier" : "Choose folder"; clicked => { root.pick-folder(); } }
+                Action { text: root.french ? "Afficher le dossier" : "Reveal fixture"; clicked => { root.reveal-fixture(); } }
             }
+            HorizontalBox {
+                Action { text: root.french ? "Travail synthétique" : "Synthetic work"; enabled: !root.modal && !root.working; clicked => { root.start-work(); } }
+                Action { text: root.french ? "Annuler" : "Cancel"; enabled: !root.modal && root.working; clicked => { root.cancel-work(); } }
+                ProgressIndicator { progress: root.progress; }
+            }
+            Text { text: root.status; wrap: word-wrap; accessible-live-region: polite; }
         }
-        HorizontalBox {
-            Button { text: root.french ? "Choisir des fichiers" : "Choose files"; clicked => { root.pick-files(); } }
-            Button { text: root.french ? "Choisir un dossier" : "Choose folder"; clicked => { root.pick-folder(); } }
-            Button { text: root.french ? "Afficher le dossier" : "Reveal fixture"; clicked => { root.reveal-fixture(); } }
-        }
-        HorizontalBox {
-            Button { text: root.french ? "Travail synthétique" : "Synthetic work"; enabled: !root.working; clicked => { root.start-work(); } }
-            Button { text: root.french ? "Annuler" : "Cancel"; enabled: root.working; clicked => { root.cancel-work(); } }
-            ProgressIndicator { progress: root.progress; }
-            Text { text: root.status; }
-        }
-    }
-    if root.settings-visible || root.about-visible || root.detail-visible: Rectangle {
-        background: #ffffff; border-width: 2px; border-color: #264f49;
-        x: 40px; y: 60px; width: parent.width - 80px; height: parent.height - 120px;
-        VerticalBox {
-            if root.about-visible: AboutSlint { }
-            if root.settings-visible: Text { text: root.french ? "Réglages · Français / English" : "Settings · Français / English"; }
-            if root.detail-visible: Text { text: root.selected; wrap: word-wrap; }
-            Button { text: root.french ? "Fermer" : "Close"; clicked => { root.settings-visible = false; root.about-visible = false; root.detail-visible = false; search-entry.focus(); } }
+        if root.modal: TouchArea { clicked => { /* The backdrop deliberately does not accept decisions. */ } }
+        dialog-panel := Rectangle {
+            visible: root.modal;
+            x: 24px; y: 32px; width: parent.width - 48px; height: parent.height - 64px;
+            background: Palette.background;
+            border-width: 2px; border-color: Palette.foreground;
+            accessible-role: groupbox;
+            accessible-label: root.dialog == 1 ? (root.french ? "Réglages" : "Settings") : root.dialog == 2 ? (root.french ? "À propos" : "About") : (root.french ? "Détails" : "Details");
+            VerticalBox {
+                min-width: 0px; min-height: 0px; padding: 18px;
+                Text { text: dialog-panel.accessible-label; font-size: 24px; }
+                if root.dialog == 2: AboutSlint { }
+                if root.dialog == 3: Text { text: root.selected; wrap: word-wrap; }
+                HorizontalBox {
+                    visible: root.dialog == 1;
+                    english-button := Button { text: "English"; clicked => { root.french = false; } }
+                    french-button := Button { text: "Français"; clicked => { root.french = true; } }
+                }
+                Rectangle { vertical-stretch: 1; }
+                close-button := Button { text: root.french ? "Fermer" : "Close"; clicked => { root.close-dialog(); } }
+            }
         }
     }
 }

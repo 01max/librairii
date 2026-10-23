@@ -1,4 +1,4 @@
-use librairii_qualification::{Review, matching};
+use librairii_qualification::{REVIEW_COUNT, REVIEW_PAGE, Review, matching};
 use slint::{ComponentHandle, Model, ModelRc, SharedPixelBuffer, VecModel};
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -9,17 +9,23 @@ use std::time::{Duration, Instant};
 slint::include_modules!();
 
 fn show_rows(ui: &Spike, query: &str) {
-    let mut pixels = SharedPixelBuffer::<slint::Rgb8Pixel>::new(64, 80);
-    for (i, pixel) in pixels.make_mut_slice().iter_mut().enumerate() {
-        *pixel = slint::Rgb8Pixel::new(45 + (i % 40) as u8, 108, 112);
-    }
-    let cover = slint::Image::from_rgb8(pixels);
     let rows: Vec<_> = matching(query)
         .into_iter()
-        .map(|story| StoryRow {
-            id: story.id as i32,
-            title: story.title.into(),
-            cover: cover.clone(),
+        .map(|story| {
+            // Original distinct bounded rasters, not image-decode qualification.
+            let mut pixels = SharedPixelBuffer::<slint::Rgb8Pixel>::new(48, 64);
+            for (i, pixel) in pixels.make_mut_slice().iter_mut().enumerate() {
+                *pixel = slint::Rgb8Pixel::new(
+                    (45 + (story.id * 17 + i / 48) % 180) as u8,
+                    (50 + story.id * 29 % 170) as u8,
+                    (80 + i % 100) as u8,
+                );
+            }
+            StoryRow {
+                id: story.id as i32,
+                title: story.title.into(),
+                cover: slint::Image::from_rgb8(pixels),
+            }
         })
         .collect();
     let grid: Vec<ModelRc<StoryRow>> = rows
@@ -28,6 +34,34 @@ fn show_rows(ui: &Spike, query: &str) {
         .collect();
     ui.set_stories(ModelRc::new(VecModel::from(rows)));
     ui.set_grid(ModelRc::new(VecModel::from(grid)));
+}
+
+fn update_viewport(ui: &Spike) {
+    // Sample actual window geometry instead of feeding layout minimums back into
+    // Slint's width constraints. No self-dependent layout binding is introduced.
+    let width = ui
+        .window()
+        .size()
+        .to_logical(ui.window().scale_factor())
+        .width;
+    ui.set_compact(width < 850.0);
+    ui.set_wide(width >= 1180.0);
+}
+
+fn show_review(ui: &Spike, review: &Review) {
+    let first = review.page * REVIEW_PAGE;
+    ui.set_review_page(review.page as i32);
+    ui.set_review_pages(REVIEW_COUNT.div_ceil(REVIEW_PAGE) as i32);
+    ui.set_first_added(review.add[first]);
+    ui.set_approvals(review.add.iter().filter(|&&a| a).count() as i32);
+    ui.set_decisions(ModelRc::new(VecModel::from(
+        (first + 1..first + REVIEW_PAGE)
+            .map(|id| DecisionRow {
+                id: id as i32,
+                added: review.add[id],
+            })
+            .collect::<Vec<_>>(),
+    )));
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -112,7 +146,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     });
     if std::env::args().any(|arg| arg == "--settings-early") {
-        ui.set_settings_visible(true);
+        ui.invoke_open_dialog(1, 2);
     }
     show_rows(&ui, "");
     let weak = ui.as_weak();
@@ -132,28 +166,37 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let decisions = review.clone();
     let weak = ui.as_weak();
     ui.on_decide(move |index, add| {
-        if let Ok(index) = usize::try_from(index)
-            && let Some(decision) = decisions.borrow_mut().add.get_mut(index)
-        {
-            *decision = add;
+        if let Ok(index) = usize::try_from(index) {
+            decisions.borrow_mut().decide(index, add);
         }
         if let Some(ui) = weak.upgrade() {
-            ui.set_approvals(decisions.borrow().add.iter().filter(|&&a| a).count() as i32);
-            let decisions = decisions.borrow();
-            ui.set_first_added(decisions.add[0]);
-            ui.set_second_added(decisions.add[1]);
-            ui.set_third_added(decisions.add[2]);
+            show_review(&ui, &decisions.borrow());
         }
     });
+    let pages = review.clone();
+    let weak = ui.as_weak();
+    ui.on_change_review_page(move |page| {
+        if let Ok(page) = usize::try_from(page) {
+            pages.borrow_mut().set_page(page);
+        }
+        if let Some(ui) = weak.upgrade() {
+            show_review(&ui, &pages.borrow());
+        }
+    });
+    show_review(&ui, &review.borrow());
     let weak = ui.as_weak();
     ui.on_apply_review(move || {
         let applied = review.borrow_mut().apply();
         if let Some(ui) = weak.upgrade() {
-            ui.set_approvals(0);
-            ui.set_first_added(false);
-            ui.set_second_added(false);
-            ui.set_third_added(false);
-            ui.set_status(format!("{applied} synthetic decisions").into());
+            show_review(&ui, &review.borrow());
+            ui.set_status(
+                if ui.get_french() {
+                    format!("{applied} décisions synthétiques")
+                } else {
+                    format!("{applied} synthetic decisions")
+                }
+                .into(),
+            );
         }
     });
 
@@ -205,6 +248,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         Duration::from_millis(30),
         move || {
             if let Some(ui) = weak.upgrade() {
+                update_viewport(&ui);
                 ui.set_progress(progress.load(Ordering::Acquire) as f32 / 100.0);
                 ui.set_working(work.borrow().as_ref().is_some_and(|w| !w.is_finished()));
             }
@@ -215,6 +259,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         // Feed Slint's public in-process event API. This does not send OS input
         // or bypass the denied native Computer Use/accessibility permission.
         ui.set_review_visible(true);
+        ui.show()?;
         ui.window()
             .dispatch_event_with_result(slint::platform::WindowEvent::WindowActiveChanged(true))?;
         for _ in 0..2 {
@@ -244,10 +289,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         assert!(ui.get_selected().starts_with("0042"));
         ui.invoke_decide(1, true);
         assert_eq!(ui.get_approvals(), 1);
-        assert!(ui.get_second_added());
+        assert!(ui.get_decisions().row_data(0).is_some_and(|row| row.added));
         ui.invoke_apply_review();
         assert_eq!(ui.get_approvals(), 0);
-        assert!(!ui.get_second_added());
+        assert!(ui.get_decisions().row_data(0).is_some_and(|row| !row.added));
         eprintln!("controller_smoke=passed; public generated component APIs only");
         return Ok(());
     }
