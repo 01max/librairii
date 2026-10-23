@@ -329,27 +329,57 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let exit_timer = slint::Timer::default();
     if std::env::args().any(|arg| arg == "--focus-smoke") {
         ui.show()?;
-        ui.window()
-            .dispatch_event_with_result(slint::platform::WindowEvent::WindowActiveChanged(true))?;
-        ui.set_query("Été 日本語 · unsaved".into());
-        ui.invoke_open_dialog(1, 0);
-        assert!(ui.get_close_has_focus());
-        for _ in 0..4 {
-            press_key(ui.window(), slint::platform::Key::Tab.into())?;
-            assert!(!ui.get_settings_has_focus());
-            assert!(!ui.get_search_has_focus());
-        }
-        press_key(ui.window(), slint::platform::Key::Escape.into())?;
-        assert_eq!(ui.get_dialog(), 0);
-        assert!(
-            ui.get_settings_has_focus(),
-            "Escape must restore the invoker"
-        );
-        assert_eq!(ui.get_query(), "Été 日本語 · unsaved");
-        eprintln!(
-            "focus_smoke=passed; initial focus, Tab containment, Escape and invoker restoration"
-        );
-        return Ok(());
+        ui.set_review_visible(true);
+        let weak = ui.as_weak();
+        slint::Timer::single_shot(Duration::from_millis(20), move || {
+            let ui = weak.upgrade().expect("test window");
+            ui.window()
+                .dispatch_event_with_result(slint::platform::WindowEvent::WindowActiveChanged(true))
+                .expect("activate");
+            ui.set_query("Été 日本語 · unsaved".into());
+            ui.invoke_open_dialog(1, 0);
+            assert!(ui.get_close_has_focus());
+            for _ in 0..4 {
+                press_key(ui.window(), slint::platform::Key::Tab.into()).expect("Tab");
+                assert!(!ui.get_settings_has_focus());
+                assert!(!ui.get_search_has_focus());
+            }
+            press_key(ui.window(), slint::platform::Key::Escape.into()).expect("Escape");
+            assert_eq!(ui.get_dialog(), 0);
+            assert!(ui.get_settings_has_focus());
+            assert_eq!(ui.get_query(), "Été 日本語 · unsaved");
+            ui.invoke_focus_first_decision();
+            let weak = ui.as_weak();
+            slint::Timer::single_shot(Duration::from_millis(20), move || {
+                let ui = weak.upgrade().expect("test window");
+                ui.window()
+                    .dispatch_event_with_result(slint::platform::WindowEvent::WindowActiveChanged(
+                        true,
+                    ))
+                    .expect("activate test component");
+                assert!(ui.get_first_decision_has_focus());
+                ui.invoke_open_dialog(1, 2); // The native-menu/accelerator route.
+                press_key(ui.window(), slint::platform::Key::Escape.into()).expect("Escape");
+                let weak = ui.as_weak();
+                slint::Timer::single_shot(Duration::from_millis(20), move || {
+                    let ui = weak.upgrade().expect("test window");
+                    ui.window()
+                        .dispatch_event_with_result(
+                            slint::platform::WindowEvent::WindowActiveChanged(true),
+                        )
+                        .expect("activate test component");
+                    assert!(
+                        ui.get_first_decision_has_focus(),
+                        "menu dialog must restore the actual prior control"
+                    );
+                    eprintln!(
+                        "focus_smoke=passed; containment, Escape, button and native-menu focus restoration"
+                    );
+                    slint::quit_event_loop().expect("quit test loop");
+                });
+            });
+        });
+        return Ok(slint::run_event_loop()?);
     }
     if std::env::args().any(|arg| arg == "--widget-smoke") {
         // Feed Slint's public in-process event API. This does not send OS input

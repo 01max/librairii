@@ -3,8 +3,29 @@ import { Button, LineEdit, VerticalBox, HorizontalBox, ListView, ProgressIndicat
 export struct StoryRow { id: int, title: string, cover: image }
 export struct DecisionRow { id: int, added: bool }
 
-global ProbeState { in-out property <bool> modal: false; }
-component Action inherits Button { enabled: !ProbeState.modal; }
+global ProbeState {
+    in-out property <bool> modal: false;
+    in-out property <int> focus-key: 30;
+    in-out property <int> restore-epoch: 0;
+}
+component Action inherits Button {
+    in property <int> focus-key: 0;
+    private property <int> restore-epoch: ProbeState.restore-epoch;
+    enabled: !ProbeState.modal;
+    changed has-focus => { if self.has-focus && !ProbeState.modal { ProbeState.focus-key = self.focus-key; } }
+    changed restore-epoch => { if !ProbeState.modal && ProbeState.focus-key == self.focus-key { self.focus(); } }
+}
+component DecisionCheck inherits CheckBox {
+    in property <int> focus-key;
+    private property <int> restore-epoch: ProbeState.restore-epoch;
+    changed has-focus => { if self.has-focus && !ProbeState.modal { ProbeState.focus-key = self.focus-key; } }
+    changed restore-epoch => { if !ProbeState.modal && ProbeState.focus-key == self.focus-key { self.focus(); } }
+}
+component SearchField inherits LineEdit {
+    private property <int> restore-epoch: ProbeState.restore-epoch;
+    changed has-focus => { if self.has-focus && !ProbeState.modal { ProbeState.focus-key = 30; } }
+    changed restore-epoch => { if !ProbeState.modal && ProbeState.focus-key == 30 { self.focus(); } }
+}
 
 export component Spike inherits Window {
     title: "Librairii · qualification";
@@ -34,6 +55,7 @@ export component Spike inherits Window {
     in property <bool> working: false;
     in property <int> approvals: 0;
     in-out property <bool> first-added: false;
+    out property <bool> first-decision-has-focus: first-decision.has-focus;
     out property <bool> first-decision-checked: first-decision.checked;
     out property <bool> close-has-focus: close-button.has-focus;
     out property <bool> settings-has-focus: settings-button.has-focus;
@@ -68,7 +90,7 @@ export component Spike inherits Window {
         root.dialog = 0;
         ProbeState.modal = false;
         if root.invoker == 1 { details-button.focus(); }
-        else if root.invoker == 2 { search-entry.focus(); }
+        else if root.invoker == 2 { ProbeState.restore-epoch += 1; }
         else { settings-button.focus(); }
     }
     public function open-sidebar() {
@@ -113,13 +135,13 @@ export component Spike inherits Window {
             min-width: 0px; min-height: 0px; padding: 12px;
             HorizontalBox {
                 min-width: 0px;
-                navigation-button := Action {
+                navigation-button := Action { focus-key: 1;
                     visible: root.compact;
                     text: root.french ? "Navigation" : "Navigation";
                     clicked => { root.open-sidebar(); }
                 }
                 Text { text: "librairii"; font-size: 22px; font-weight: 700; }
-                search-entry := LineEdit {
+                search-entry := SearchField {
                     min-width: 0px;
                     enabled: !root.modal;
                     text <=> root.query;
@@ -127,7 +149,7 @@ export component Spike inherits Window {
                     accessible-label: self.placeholder-text;
                     edited => { root.search(self.text); }
                 }
-                settings-button := Action { text: root.french ? "Réglages" : "Settings"; clicked => { root.open-dialog(1, 0); } }
+                settings-button := Action { focus-key: 2; text: root.french ? "Réglages" : "Settings"; clicked => { root.open-dialog(1, 0); } }
             }
             HorizontalBox {
                 min-width: 0px; min-height: 0px;
@@ -140,30 +162,30 @@ export component Spike inherits Window {
                     VerticalBox {
                         min-width: 0px; min-height: 0px;
                         Text { text: root.french ? "BIBLIOTHÈQUE" : "LIBRARY"; }
-                        library-button := Action { text: root.french ? "Toutes les histoires" : "All stories"; clicked => { root.review-visible = false; if root.compact { root.close-sidebar(); } } }
+                        library-button := Action { focus-key: 3; text: root.french ? "Toutes les histoires" : "All stories"; clicked => { root.review-visible = false; if root.compact { root.close-sidebar(); } } }
                         Text { text: "Collections"; font-weight: 700; }
-                        Action { text: root.french ? "Les favoris" : "Favourites"; clicked => { root.review-visible = false; if root.compact { root.close-sidebar(); } } }
+                        Action { focus-key: 4; text: root.french ? "Les favoris" : "Favourites"; clicked => { root.review-visible = false; if root.compact { root.close-sidebar(); } } }
                         Text { text: root.french ? "Étagères" : "Shelves"; font-weight: 700; }
-                        Action { text: root.french ? "Membres approuvés" : "Approved members"; clicked => { root.review-visible = true; if root.compact { root.close-sidebar(); } } }
-                        Action { visible: root.compact; text: root.french ? "Fermer la navigation" : "Close navigation"; clicked => { root.close-sidebar(); } }
+                        Action { focus-key: 5; text: root.french ? "Membres approuvés" : "Approved members"; clicked => { root.review-visible = true; if root.compact { root.close-sidebar(); } } }
+                        Action { focus-key: 6; visible: root.compact; text: root.french ? "Fermer la navigation" : "Close navigation"; clicked => { root.close-sidebar(); } }
                         Rectangle { vertical-stretch: 1; }
                     }
                 }
                 VerticalBox {
                     min-width: 0px; min-height: 0px;
                     HorizontalBox {
-                        Action { text: root.french ? "Liste" : "List"; clicked => { root.mode = 0; } }
-                        Action { text: root.french ? "Petites couvertures" : "Small covers"; clicked => { root.mode = 1; } }
-                        Action { text: root.french ? "Grandes couvertures" : "Large covers"; clicked => { root.mode = 2; } }
+                        Action { focus-key: 7; text: root.french ? "Liste" : "List"; clicked => { root.mode = 0; } }
+                        Action { focus-key: 8; text: root.french ? "Petites couvertures" : "Small covers"; clicked => { root.mode = 1; } }
+                        Action { focus-key: 9; text: root.french ? "Grandes couvertures" : "Large covers"; clicked => { root.mode = 2; } }
                     }
                     HorizontalBox {
                         Text { text: root.stories.length + (root.french ? " histoires synthétiques" : " synthetic stories"); }
-                        Action { text: root.french ? "Révision" : "Review"; clicked => { root.review-visible = !root.review-visible; } }
-                        details-button := Action { text: root.french ? "Détails" : "Details"; clicked => { root.open-dialog(3, 1); } }
+                        Action { focus-key: 10; text: root.french ? "Révision" : "Review"; clicked => { root.review-visible = !root.review-visible; } }
+                        details-button := Action { focus-key: 11; text: root.french ? "Détails" : "Details"; clicked => { root.open-dialog(3, 1); } }
                     }
                     if root.mode == 0: ListView {
                         min-width: 0px; min-height: 0px;
-                        for story in root.stories: Action { text: story.title; clicked => { root.select-story(story.id); } }
+                        for story in root.stories: Action { focus-key: 1000 + story.id; text: story.title; clicked => { root.select-story(story.id); } }
                     }
                     if root.mode != 0: ListView {
                         min-width: 0px; min-height: 0px;
@@ -172,7 +194,7 @@ export component Spike inherits Window {
                             for story in row: VerticalBox {
                                 min-width: 0px;
                                 Image { source: story.cover; height: root.mode == 1 ? 75px : 130px; image-fit: contain; }
-                                Action { min-width: 0px; text: story.title; clicked => { root.select-story(story.id); } }
+                                Action { focus-key: 1000 + story.id; min-width: 0px; text: story.title; clicked => { root.select-story(story.id); } }
                             }
                         }
                     }
@@ -182,21 +204,23 @@ export component Spike inherits Window {
                         min-width: 0px;
                         Text { text: root.french ? "Révision séparée — aucune approbation implicite" : "Separate review — no implicit approvals"; wrap: word-wrap; }
                         HorizontalBox {
-                            Action { text: root.french ? "Précédent" : "Previous"; enabled: !root.modal && root.review-page > 0; clicked => { root.change-review-page(root.review-page - 1); } }
+                            Action { focus-key: 12; text: root.french ? "Précédent" : "Previous"; enabled: !root.modal && root.review-page > 0; clicked => { root.change-review-page(root.review-page - 1); } }
                             Text { text: (root.review-page + 1) + " / " + root.review-pages + " · 300"; }
-                            Action { text: root.french ? "Suivant" : "Next"; enabled: !root.modal && root.review-page + 1 < root.review-pages; clicked => { root.change-review-page(root.review-page + 1); } }
-                            apply-button := Action { text: (root.french ? "Appliquer " : "Apply ") + root.approvals; enabled: !root.modal && root.approvals > 0; clicked => { root.apply-review(); } }
+                            Action { focus-key: 13; text: root.french ? "Suivant" : "Next"; enabled: !root.modal && root.review-page + 1 < root.review-pages; clicked => { root.change-review-page(root.review-page + 1); } }
+                            apply-button := Action { focus-key: 14; text: (root.french ? "Appliquer " : "Apply ") + root.approvals; enabled: !root.modal && root.approvals > 0; clicked => { root.apply-review(); } }
                         }
                         ScrollView {
                             min-height: 0px; min-width: 0px;
                             VerticalBox {
-                                first-decision := CheckBox {
+                                first-decision := DecisionCheck {
+                                    focus-key: 2000 + root.review-page * 25;
                                     enabled: !root.modal;
                                     text: (root.french ? "Ajouter " : "Add ") + (root.review-page * 25) + (root.french ? " · Sinon : pas maintenant" : " · Otherwise: Not now");
                                     checked <=> root.first-added;
                                     toggled => { root.decide(0, self.checked); }
                                 }
-                                for row[index] in root.decisions: CheckBox {
+                                for row[index] in root.decisions: DecisionCheck {
+                                    focus-key: 2000 + row.id;
                                     enabled: !root.modal;
                                     text: (root.french ? "Ajouter " : "Add ") + row.id + (root.french ? " · Sinon : pas maintenant" : " · Otherwise: Not now");
                                     checked <=> row.added;
@@ -223,14 +247,14 @@ export component Spike inherits Window {
                 }
             }
             HorizontalBox {
-                Action { text: root.french ? "Choisir des fichiers" : "Choose files"; clicked => { root.pick-files(); } }
-                Action { text: root.french ? "Choisir un dossier" : "Choose folder"; clicked => { root.pick-folder(); } }
-                Action { text: root.french ? "Afficher le dossier" : "Reveal fixture"; clicked => { root.reveal-fixture(); } }
+                Action { focus-key: 15; text: root.french ? "Choisir des fichiers" : "Choose files"; clicked => { root.pick-files(); } }
+                Action { focus-key: 16; text: root.french ? "Choisir un dossier" : "Choose folder"; clicked => { root.pick-folder(); } }
+                Action { focus-key: 17; text: root.french ? "Afficher le dossier" : "Reveal fixture"; clicked => { root.reveal-fixture(); } }
             }
             HorizontalBox {
-                Action { text: root.french ? "Travail synthétique" : "Synthetic work"; enabled: !root.modal && !root.working; clicked => { root.start-work(); } }
-                Action { text: root.french ? "Annuler" : "Cancel"; enabled: !root.modal && root.working; clicked => { root.cancel-work(); } }
-                Action { text: root.french ? "Erreur synthétique" : "Synthetic error"; clicked => { root.simulate-error(); } }
+                Action { focus-key: 18; text: root.french ? "Travail synthétique" : "Synthetic work"; enabled: !root.modal && !root.working; clicked => { root.start-work(); } }
+                Action { focus-key: 19; text: root.french ? "Annuler" : "Cancel"; enabled: !root.modal && root.working; clicked => { root.cancel-work(); } }
+                Action { focus-key: 20; text: root.french ? "Erreur synthétique" : "Synthetic error"; clicked => { root.simulate-error(); } }
                 ProgressIndicator { progress: root.progress; }
             }
             Text { text: root.status; wrap: word-wrap; accessible-live-region: polite; }

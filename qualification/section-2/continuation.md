@@ -92,3 +92,14 @@ The macOS package also retains notices inside the application Resources and
 assembles an unsigned DMG in addition to the tarball. Repeated build profiles
 may leave several native Skia notice copies; packaging requires their exact
 content digests to agree instead of choosing among conflicting licenses.
+
+## Independent review correction: preserve focus from menu invocations
+
+The first focus smoke covered only the in-app Settings button. Independent
+review found that menu/accelerator invocation always restored Search. Main-view
+controls now record stable focus bookmarks; closing a menu-invoked dialog asks
+the still-mounted matching control to restore focus after enablement. Story and
+review identities are stable across localized labels, and the virtualized view
+retains its mounted range during the dialog. The focus smoke now runs an actual
+UI loop and checks Review checkbox → menu Settings → Escape → same checkbox,
+as well as the button route and preserved multilingual draft input.
