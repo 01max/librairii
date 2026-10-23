@@ -6,6 +6,9 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::time::{Duration, Instant};
 
+#[path = "desktop/native_menus.rs"]
+mod native_menus;
+
 slint::include_modules!();
 
 fn show_rows(ui: &Spike, query: &str) {
@@ -68,6 +71,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let start = Instant::now();
     // No profile, library, network client or filesystem input exists in this spike.
     let ui = Spike::new()?;
+    ui.set_macos_menus(cfg!(target_os = "macos"));
     if let Some(size) =
         std::env::args().find_map(|arg| arg.strip_prefix("--size=").map(str::to_owned))
     {
@@ -87,6 +91,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     std::fs::write(
         fixture.path().join("Été 日本語 故事.zip"),
         b"synthetic picker fixture",
+    )?;
+    std::fs::write(
+        fixture.path().join("Deuxième archive 02.pk"),
+        b"second synthetic picker fixture",
     )?;
     let root = fixture.path().canonicalize()?;
     let weak = ui.as_weak();
@@ -111,8 +119,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             });
             ui.set_status(
                 match result {
+                    None if ui.get_french() => "Annulé",
                     None => "Cancelled",
+                    Some(_) if valid && ui.get_french() => "Fichiers synthétiques sélectionnés",
                     Some(_) if valid => "Synthetic files selected",
+                    _ if ui.get_french() => "Choix hors du dossier synthétique refusé",
                     _ => "Rejected outside fixture",
                 }
                 .into(),
@@ -124,15 +135,26 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     ui.on_pick_folder(move || {
         if let Some(ui) = weak.upgrade() {
             let result = rfd::FileDialog::new()
+                .set_title(if ui.get_french() {
+                    "Choisir le dossier synthétique"
+                } else {
+                    "Choose the synthetic folder"
+                })
                 .set_directory(&folder_root)
                 .set_parent(&ui.window().window_handle())
                 .pick_folder();
             ui.set_status(
                 match result {
+                    None if ui.get_french() => "Annulé",
                     None => "Cancelled",
                     Some(p) if p.canonicalize().is_ok_and(|p| p == folder_root) => {
-                        "Fixture folder selected"
+                        if ui.get_french() {
+                            "Dossier synthétique sélectionné"
+                        } else {
+                            "Fixture folder selected"
+                        }
                     }
+                    _ if ui.get_french() => "Choix hors du dossier synthétique refusé",
                     _ => "Rejected outside fixture",
                 }
                 .into(),
@@ -149,18 +171,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 Err(std::io::Error::other("fixture changed"))
             };
             ui.set_status(
-                if result.is_ok() {
-                    "Reveal requested; verify file manager"
-                } else {
-                    "Reveal failed"
+                match (result.is_ok(), ui.get_french()) {
+                    (true, true) => "Affichage demandé ; vérifiez le gestionnaire de fichiers",
+                    (true, false) => "Reveal requested; verify file manager",
+                    (false, true) => "Échec de l’affichage",
+                    (false, false) => "Reveal failed",
                 }
                 .into(),
             );
         }
     });
-    if std::env::args().any(|arg| arg == "--settings-early") {
-        ui.invoke_open_dialog(1, 2);
-    }
     show_rows(&ui, "");
     let weak = ui.as_weak();
     ui.on_search(move |query| {
@@ -266,6 +286,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     });
 
     // One snapshot slot, polled by an owned UI timer; no unbounded progress queue.
+    ui.show()?;
+    // Slint's stock macOS app menu has no Settings role. Own a separate public
+    // native menu adapter; on Linux the toolkit menu stays in the window.
+    let menus = native_menus::Menus::install()?;
+    if std::env::args().any(|arg| arg == "--settings-early") {
+        menus.commands.settings();
+    }
     let timer = slint::Timer::default();
     let weak = ui.as_weak();
     let work = worker.clone();
@@ -276,6 +303,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         move || {
             if let Some(ui) = weak.upgrade() {
                 update_viewport(&ui);
+                menus.update(ui.get_french(), ui.get_modal());
+                if !ui.get_modal()
+                    && let Some(dialog) = menus.commands.next()
+                {
+                    ui.invoke_open_dialog(dialog, 2);
+                }
                 ui.set_progress(progress.load(Ordering::Acquire) as f32 / 100.0);
                 let working = work.borrow().as_ref().is_some_and(|w| !w.is_finished());
                 if ui.get_working() && !working {

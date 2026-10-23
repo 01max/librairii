@@ -54,3 +54,19 @@ input. The corrected in-process test passes. Live status uses a polite region;
 completion/cancellation emit one terminal message, and a synthetic error action
 provides an explicit retry announcement probe. Spoken output and all other
 required targets remain open until observed by the corresponding operators.
+
+## 2.6 native adapter continuation
+
+The stock Slint macOS menu adds a default application menu without a Settings
+role. The probe now uses the public, already resolved muda0.19.3 package directly
+on macOS, with defaults disabled. It owns application Settings/Command-comma,
+AboutSlint, Services/Hide/Quit and standard Edit actions. Linux retains the Slint
+application menu and Control-comma. No private Slint API or source patch is used.
+A bounded atomic command set retains/coalesces native Settings/About requests
+until the main-thread timer can deliver them; opening a second dialog waits for
+the current one to close. `--settings-early` uses that same command sink.
+
+Picker titles and all adapter outcomes now have English/French text. The owned
+fixture has two distinct difficult filenames so multiple selection is actually
+exercisable. Locked ARM build, focus and widget smokes pass. Exact native menu,
+picker, reveal and other target observations remain separate qualification.

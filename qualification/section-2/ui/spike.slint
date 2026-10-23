@@ -79,11 +79,12 @@ export component Spike inherits Window {
         root.sidebar-open = false;
         navigation-button.focus();
     }
+    in-out property <bool> macos-menus: false;
     MenuBar {
-        Menu {
+        if !root.macos-menus: Menu {
             title: "Librairii";
             enabled: !root.modal;
-            MenuItem { title: root.french ? "Réglages…" : "Settings…"; activated => { root.open-dialog(1, 2); } }
+            MenuItem { title: root.french ? "Réglages…" : "Settings…"; shortcut: @keys(Control + ","); activated => { root.open-dialog(1, 2); } }
             MenuItem { title: root.french ? "À propos…" : "About…"; activated => { root.open-dialog(2, 2); } }
         }
     }

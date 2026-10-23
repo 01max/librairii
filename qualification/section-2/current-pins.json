@@ -278,7 +278,7 @@
     "cargo-llvm-cov": "0.9.1",
     "cargo-fuzz": "0.13.2"
   },
-  "gui_lock_sha256": "42185dd254323f00cb2b198998b2ee9d646480e5dff381774827fad56c2e0489",
+  "gui_lock_sha256": "4be9740c50e69e41a01b76093ae1cdd201a91a92b72047aec9ded64e191e8888",
   "slint_license": {
     "route": "LicenseRef-Slint-Royalty-free-2.0",
     "attribution": "AboutSlint in a top-level About screen",
@@ -288,5 +288,6 @@
     "sha256": "5167f5056e850419106ab6265efbdca7cba4d99c849d1445ca0bbf6a1e2315fe"
   },
   "toolkit_selection": "pending physical gates and independent 2.13 review",
-  "historical_data_candidates": "zip/sevenz-rust2 and rejected Unicode compositions retained as historical experiments only"
+  "historical_data_candidates": "zip/sevenz-rust2 and rejected Unicode compositions retained as historical experiments only",
+  "native_menu_adapter": "Direct macOS muda=0.19.3, defaults disabled, existing locked package; no root graph change"
 }
