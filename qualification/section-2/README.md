@@ -3,8 +3,8 @@
 **Current continuation (2026-10-23):** Linux/macOS only. See
 [continuation.md](continuation.md), [current-pins.json](current-pins.json) and the
 [runnable operator checklist](operator-checks.md). The owner chose Slint with
-About-screen attribution and can operate Intel/Linux hosts. Toolkit selection
-still awaits mandatory physical/AT/input/rendering/performance/clean-host gates.
+About-screen attribution; Intel/Linux interactive hosts are unavailable. Toolkit
+selection still awaits mandatory physical/AT/input/rendering/performance/clean-host gates.
 PR38's **Task 2 native qualification** workflow produces matching probe packages.
 macOS bundles now have verified ad-hoc integrity seals, without Developer ID or
 notarization; their public API tests do not substitute for operator observations.
@@ -19,6 +19,10 @@ SLINT_BACKEND=winit-skia-software python3 run-smokes.py target/debug/qualificati
 
 On headless Linux, wrap the Python command with `xvfb-run -a`. This supplies X11
 in-process GUI regression evidence, not Wayland/Orca/physical qualification.
+
+For the separate packaged Wayland route, see [wayland.md](wayland.md). It owns
+a Weston headless compositor, removes X11 fallback and records actual Wayland
+configuration/buffer submission alongside the public component probes.
 
 
 **Partial qualification; no selected toolkit or supported-platform claim.**

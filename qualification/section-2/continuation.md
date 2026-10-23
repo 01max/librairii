@@ -275,3 +275,16 @@ the coordinator, without altering runtime policy or deadlines. The original
 failure and its controlled reproduction remain documented. New-head CI is pending;
 physical input, presentation, representative product-artwork budgets and new
 evidence-based ceilings are still separate unfinished parts of 2.9.
+
+## Packaged Wayland continuation (2.11)
+
+The [Wayland recorder](wayland.md) adds a separately owned Weston headless/Pixman
+session for the verified extracted Linux executable. Both normal and explicit
+Skia CPU runs must show actual xdg configuration and non-null buffer submission
+followed by a commit on the same surface, as well as component Search/model and
+fresh French/CJK snapshot checks. X11 fallback is unavailable; an absent-socket
+negative control must fail. Existing edit, modal focus, owned Quit and thumbnail
+probes also run under Wayland. Commands/output are bounded and process groups,
+compositor and temporary runtime are retired. Native CI execution is pending.
+This adds automated session evidence, leaving physical input/IME/Orca, portal
+pickers/reveal, real display scaling and clean-host package gates incomplete.
