@@ -365,46 +365,51 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         },
     );
     let exit_timer = slint::Timer::default();
-    let measurement_timer = slint::Timer::default();
+    let measurement_timer = Rc::new(slint::Timer::default());
     let renderer_probe = std::env::args()
         .find_map(|arg| {
             arg.strip_prefix("--renderer-smoke=")
                 .map(std::path::PathBuf::from)
         })
         .map(|directory| renderer_probe::Probe::start(&ui, directory));
+    let resource_probe = std::env::args().any(|arg| arg == "--resource-probe");
+    let resource_ready_timer = slint::Timer::default();
+    let resource_start_timer = slint::Timer::default();
     if thumbnail_smoke {
-        ui.set_mode(1); // Exercise Image delegates while PNG results arrive.
-        let loader = thumbnails.clone();
+        start_thumbnail_probe(&ui, &thumbnails, &measurement_timer);
+    }
+    if resource_probe {
         let weak = ui.as_weak();
-        let started = Instant::now();
-        let mut next = 0;
-        let mut first_24_ms = None;
-        let mut dispatch = std::collections::VecDeque::new();
-        measurement_timer.start(slint::TimerMode::Repeated, Duration::from_millis(10), move || {
-            assert!(started.elapsed() < Duration::from_secs(20), "thumbnail workload timed out");
-            let ui = weak.upgrade().expect("measurement window");
-            if !ui.get_working() { ui.invoke_start_work(); }
-            let input = Instant::now();
-            press_key(ui.window(), slint::platform::Key::Escape.into()).expect("public component input");
-            if dispatch.len() == 512 { dispatch.pop_front(); }
-            dispatch.push_back(input.elapsed().as_micros() as u64);
-            if next >= 500 { ui.set_mode(2); }
-            let mut state = loader.borrow_mut();
-            assert!(state.failure.is_none(), "PNG decoder failed: {:?}", state.failure);
-            while next < 1_000 && state.request(next) { next += 1; }
-            if first_24_ms.is_none() && (0..24).all(|id| state.decoded.contains(&id)) {
-                first_24_ms = Some(started.elapsed().as_millis());
-            }
-            if state.decoded.len() == 1_000 {
-                assert_eq!(state.peak_cache, thumbnails::CACHE);
-                let mut samples: Vec<_> = dispatch.iter().copied().collect();
-                samples.sort_unstable();
-                let p95 = samples[(samples.len() * 95).div_ceil(100) - 1];
-                eprintln!("thumbnail_smoke=passed; workload_ms={}; first_24_ms={}; component_dispatch_samples={}; component_dispatch_p95_us={}; physical_input=not_measured",
-                    started.elapsed().as_millis(), first_24_ms.unwrap(), samples.len(), p95);
-                slint::quit_event_loop().expect("quit measurement loop");
-            }
-        });
+        // First owned event-loop timer after show; not a first-presentation signal.
+        resource_ready_timer.start(
+            slint::TimerMode::SingleShot,
+            Duration::from_millis(10),
+            move || {
+                let ui = weak.upgrade().expect("resource probe window");
+                let size = ui.window().size();
+                eprintln!(
+                    "resource_probe_ready; pid={}; scale={}; size={}x{}",
+                    std::process::id(),
+                    ui.window().scale_factor(),
+                    size.width,
+                    size.height
+                );
+            },
+        );
+        let weak = ui.as_weak();
+        let loader = thumbnails.clone();
+        let delayed_measurement = measurement_timer.clone();
+        // Keep the normal UI polling timer, but do not inject input or start the
+        // thumbnail dispatch timer during the ten-second quiet phase.
+        resource_start_timer.start(
+            slint::TimerMode::SingleShot,
+            Duration::from_secs(10),
+            move || {
+                eprintln!("resource_probe_idle_end");
+                let ui = weak.upgrade().expect("resource workload window");
+                start_thumbnail_probe(&ui, &loader, &delayed_measurement);
+            },
+        );
     }
     if std::env::args().any(|arg| arg == "--edit-smoke") {
         let weak = ui.as_weak();
@@ -559,6 +564,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
     timer.stop();
     measurement_timer.stop();
+    resource_ready_timer.stop();
+    resource_start_timer.stop();
     thumbnails.borrow_mut().close()?;
     let images = thumbnails.borrow();
     eprintln!(
@@ -571,12 +578,20 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     if let Some(error) = &images.failure {
         return Err(error.clone().into());
     }
+    if resource_probe {
+        assert_eq!(images.decoded.len(), 1_000, "resource workload must finish");
+    }
     drop(images);
     let retired = fixture.close();
     result?;
     retired?;
     if let Some(probe) = renderer_probe {
         probe.verify();
+    }
+    if resource_probe {
+        assert!(worker.borrow().is_none(), "resource worker must be joined");
+        assert!(!fixture_root.exists(), "resource fixture must be retired");
+        eprintln!("resource_probe_complete; workers_joined=true; fixture_retired=true");
     }
     if quit_smoke {
         assert!(quit_during_work.get());
@@ -588,6 +603,48 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         eprintln!("quit_smoke=passed; active worker cancelled/joined and fixture retired");
     }
     Ok(())
+}
+
+fn start_thumbnail_probe(
+    ui: &Spike,
+    thumbnails: &Rc<RefCell<thumbnails::Loader>>,
+    measurement_timer: &slint::Timer,
+) {
+    ui.set_mode(1); // Exercise Image delegates while PNG results arrive.
+    let loader = thumbnails.clone();
+    let weak = ui.as_weak();
+    let started = Instant::now();
+    let mut next = 0;
+    let mut first_24_ms = None;
+    let mut dispatch = std::collections::VecDeque::new();
+    let mut completed = false;
+    measurement_timer.start(slint::TimerMode::Repeated, Duration::from_millis(10), move || {
+        if completed { return; }
+        assert!(started.elapsed() < Duration::from_secs(20), "thumbnail workload timed out");
+        let ui = weak.upgrade().expect("measurement window");
+        if !ui.get_working() { ui.invoke_start_work(); }
+        let input = Instant::now();
+        press_key(ui.window(), slint::platform::Key::Escape.into()).expect("public component input");
+        if dispatch.len() == 512 { dispatch.pop_front(); }
+        dispatch.push_back(input.elapsed().as_micros() as u64);
+        if next >= 500 { ui.set_mode(2); }
+        let mut state = loader.borrow_mut();
+        assert!(state.failure.is_none(), "PNG decoder failed: {:?}", state.failure);
+        while next < 1_000 && state.request(next) { next += 1; }
+        if first_24_ms.is_none() && (0..24).all(|id| state.decoded.contains(&id)) {
+            first_24_ms = Some(started.elapsed().as_millis());
+        }
+        if state.decoded.len() == 1_000 {
+            completed = true;
+            assert_eq!(state.peak_cache, thumbnails::CACHE);
+            let mut samples: Vec<_> = dispatch.iter().copied().collect();
+            samples.sort_unstable();
+            let p95 = samples[(samples.len() * 95).div_ceil(100) - 1];
+            eprintln!("thumbnail_smoke=passed; workload_ms={}; first_24_ms={}; component_dispatch_samples={}; component_dispatch_p95_us={}; physical_input=not_measured",
+                started.elapsed().as_millis(), first_24_ms.unwrap(), samples.len(), p95);
+            slint::quit_event_loop().expect("quit measurement loop");
+        }
+    });
 }
 
 fn press_space(window: &slint::Window) -> Result<(), slint::PlatformError> {

@@ -254,3 +254,18 @@ re-renders into CPU pixels; separate performance diagnostics identify the active
 surface. This adds no driver modification or application fallback policy.
 Linux execution/visual review are pending CI; physical input, IME, Wayland,
 remote desktops and post-start GPU loss are outside this automated result.
+
+## 2.9 startup, idle CPU, peak RSS and distribution measurements
+
+The resource continuation adds a ten-second quiet phase followed by the shared
+1,000-PNG/component-input/background workload and normal owned shutdown. The
+parent measures launch-to-first-UI-timer readiness, sustained cumulative process
+CPU and RSS, plus native full-run peak RSS. It verifies the measured package and
+archive identity, retains distribution byte counts/hashes and records actual
+surfaces, hardware, scale and session. One warmup plus three fresh-process runs
+per normal/CPU request produce raw observations and min/median/max diagnostics.
+Missing markers, counters, coverage or successful teardown fail the run rather
+than inventing measurements. See [performance.md](performance.md) for units,
+observer overhead, phase boundaries and exact limits. CI execution is pending;
+physical input, presentation, representative product-artwork budgets and new
+evidence-based ceilings are still separate unfinished parts of 2.9.

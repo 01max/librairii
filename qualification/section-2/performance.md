@@ -1,4 +1,53 @@
-# Current measurement probe (2026-10-23)
+# Automated resource measurement continuation (2.9, 2026-10-23)
+
+`measure-resources.py` measures the verified archive-round-trip executable on
+its matching native host. CI requests normal `winit-skia` and explicit
+`winit-skia-software`; actual selected surfaces are recorded rather than inferred
+from the request. Each backend gets one complete warmup, then three fresh
+process measurements. Raw runs, min/median/max, source/executable hashes, CPU and
+memory identity, scale/window size and session variables are retained in
+`resources/resource-measurements.json`. Disk caches are not flushed. These small
+samples are diagnostics, not a new p95 distribution or approved budget.
+
+`--resource-probe` emits its PID on the first owned UI timer after `show`.
+Parent launch-to-marker includes process/loader startup and observer delivery;
+it does **not** measure first visible presentation. The probe keeps the normal
+16 ms UI polling timer during a ten-second quiet phase. No component input or
+synthetic background job is injected then; initially visible PNG prefetch can
+settle. The sampler excludes the first two seconds and the last half-second,
+requires at least 20 samples spanning six seconds, and discards sampler calls
+taking more than 100 ms. The reported CPU percentage is a cumulative process CPU
+delta over that interval, with 100% meaning one core. Linux reads proc stat ticks
+and RSS pages; macOS reads `ps` accumulated user/system time and RSS (1024-byte
+units). Sampling the observer/time wrapper as though it were the app is avoided
+by the app's PID marker and owned process-group check.
+
+After quiet sampling, the same bounded 1,000-PNG thumbnail/component-input probe
+runs under synthetic background work and normal owned cancellation/join/fixture
+retirement. `/usr/bin/time` captures full-run wall/user/system time and maximum
+RSS through that workload: macOS reports RSS bytes; GNU time `%M` uses
+[KiB-sized memory units](https://www.gnu.org/software/time/manual/html_node/Memory-Resources.html)
+which the recorder converts to bytes. The existing thumbnail probe is shared,
+not a second decoder implementation. Its first-24 diagnostic in the resource
+run includes already-prefetched visible images and is not a cold artwork budget.
+Native time output and each CPU/RSS sample remain available for review.
+
+Each process group is bounded to 40 seconds, including quiet time and the
+existing 20-second thumbnail deadline. Timeouts, signals, missing metrics,
+insufficient idle coverage, unowned PIDs, missing surface identity, wrong explicit
+CPU surfaces, incomplete workload and missing owned shutdown fail measurement.
+A failed warmup or measured run is retained without replacing it with a retry.
+Reports are saved after each run. Package payload bytes include all verified
+manifest members plus the manifest. Archive size/hash is associated by checking
+its embedded manifest against the measured package; macOS DMG size/hash records
+the supplied builder output without remounting it here.
+
+Corrected three-target execution/results are pending this revision's CI.
+Task 2.9 remains incomplete: physical input/first presentation, representative
+product-artwork timing and additional evidence-based ceilings remain open.
+No existing budget is weakened, passed or replaced by these resource diagnostics.
+
+# Thumbnail measurement probe (2026-10-23)
 
 The current [continuation](continuation.md) replaces shared/generated rasters
 with a lazy original-PNG worker and bounded LRU. Run the packaged executable

@@ -50,7 +50,7 @@ jobs:
           libfontconfig1-dev libfreetype6-dev libx11-dev libx11-xcb-dev libxcursor-dev
           libxi-dev libxrandr-dev libxkbcommon-dev libxkbcommon-x11-dev libwayland-dev
           libegl1-mesa-dev libgl1-mesa-dev libdbus-1-dev xvfb xauth fonts-noto-cjk
-          libvulkan1 mesa-vulkan-drivers mesa-utils
+          libvulkan1 mesa-vulkan-drivers mesa-utils time
       - name: Install the exact candidate compiler
         run: |
           mkdir -p target/task2-evidence
@@ -126,6 +126,19 @@ jobs:
           python3 qualification/section-2/check-gpu-recovery.py
           --package "$RUNNER_TEMP/task2-roundtrip/task2-$RUST_TARGET"
           --output target/task2-evidence/gpu-recovery
+      - name: Measure packaged startup markers, idle CPU, peak RSS and distribution size
+        run: |
+          package="$RUNNER_TEMP/task2-roundtrip/task2-$RUST_TARGET"
+          archive="$PWD/target/task2-evidence/task2-$RUST_TARGET.tar.gz"
+          output="$PWD/target/task2-evidence/resources"
+          if [[ "$RUNNER_OS" == Linux ]]; then
+            xvfb-run -a python3 qualification/section-2/measure-resources.py \
+              --package "$package" --archive "$archive" --output "$output"
+          else
+            python3 qualification/section-2/measure-resources.py \
+              --package "$package" --archive "$archive" --output "$output" \
+              --disk-image "$PWD/target/task2-evidence/task2-$RUST_TARGET.dmg"
+          fi
       - name: Verify and exercise the packaged macOS app
         if: runner.os == 'macOS'
         run: |
