@@ -284,7 +284,8 @@ def one_case(desktop, name, kind, expected):
                 node = wait_for(lambda: desktop.find(archive_table, dialog))
                 table = node.queryTable()
                 for row in range(2):
-                    assert table.addRowSelection(row), 'native file row selection failed'
+                    if not table.isRowSelected(row):
+                        assert table.addRowSelection(row), 'native file row selection failed'
                 report['selected_rows'] = wait_for(lambda: (rows := table.getSelectedRows()) and
                     set(rows) == {0, 1} and list(rows))
                 desktop.screenshot(output / 'selected.png')

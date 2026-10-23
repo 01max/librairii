@@ -80,3 +80,9 @@ The observer now inspects each table row's own bounded cell descendants across
 columns, requires exactly the two expected filenames in distinct rows, and
 retains observed cell names for diagnosis. Native row selections and exact
 returned paths remain mandatory; this changes discovery, not the pass verdict.
+
+GTK3's [native table implementation](https://github.com/GNOME/gtk/blob/3.24.41/gtk/a11y/gtktreeviewaccessible.c)
+returns false when adding an already selected row and does not implement the
+ATK select-all operation. The driver preserves existing selection, adds each
+missing row through the native table interface, then requires exactly rows0/1
+and both exact callback paths. This follows GTK's actual contract.
