@@ -234,5 +234,21 @@ frameworks. The debug executable's Mach-O minimum is 11.0 while its verified app
 bundle requires 15.0; both are recorded without claiming older-OS support.
 Regressions cover substituted/aliased binaries, numeric ABI ordering, unresolved
 dependencies, loader paths, minimum-OS parsing and retained timeout output.
-See [renderers.md](renderers.md); three-target CI evidence and the rest of the
-renderer/clean-host gate remain open until actually observed.
+All three release packages subsequently passed immediate link inspection in
+[CI run 39950896230](https://github.com/01max/librairii/actions/runs/39950896230)
+at PR head `9dc3fca`; the exact runtime requirements are in
+[renderers.md](renderers.md). Dynamic desktop dependencies and clean-host
+qualification remain separate open gates.
+
+## 2.7 forced GPU initialization failure
+
+The new Linux probe runs the verified packaged executable in a separate Xvfb
+session. It compares a working OpenGL control with GPU-only failure controls and
+the normal renderer's automatic recovery under scoped EGL/Vulkan discovery
+failure and disabled GLX. A passing result requires actual backend diagnostics,
+French/CJK snapshots, changed scene pixels and Search widget/model assertions.
+It retains source/binary/frame hashes and raw failures. The public snapshot API
+re-renders into CPU pixels; separate performance diagnostics identify the active
+surface. This adds no driver modification or application fallback policy.
+Linux execution/visual review are pending CI; physical input, IME, Wayland,
+remote desktops and post-start GPU loss are outside this automated result.

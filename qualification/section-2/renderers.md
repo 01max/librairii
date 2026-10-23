@@ -1,5 +1,38 @@
 # Renderer/runtime gate (2.7, P56–P57/P59)
 
+## Forced Linux GPU initialization failure probe (2026-10-23)
+
+`check-gpu-recovery.py` runs the archive-round-tripped, manifest-verified Linux
+package as an ordinary user. A working OpenGL control must report its actual
+OpenGL surface. Failure cases start a separate Xvfb X11 server with GLX disabled
+and point EGL/Vulkan driver discovery at an intentionally absent manifest. These
+are child-process overrides; no installed driver, system setting or package is
+changed. The loader mechanisms are documented by
+[libglvnd](https://github.com/NVIDIA/libglvnd/blob/master/src/EGL/icd_enumeration.md)
+and the [Vulkan loader](https://github.com/KhronosGroup/Vulkan-Loader/blob/main/docs/LoaderDriverInterface.md).
+
+Separate `winit-skia-opengl` and `winit-skia-wgpu` controls must reject initialization
+under injection. The ordinary `winit-skia` request, with the same injection, must
+emit both GPU-candidate failures and report the actual `skia backend software`
+surface through Slint's performance diagnostics. The pinned Slint 1.18.1
+`create_default_surface` already tries WGPU, OpenGL and software candidates;
+this probe adds evidence rather than an application retry policy. A missing
+tool, signal, timeout, successful GPU-only control, absent fallback diagnostics
+or failed component assertion cannot qualify recovery. Each process group is
+bounded to 30 seconds and reaped on timeout.
+
+The public `--renderer-smoke=NEW_DIRECTORY` route saves a French/CJK scene,
+dispatches Search input to the actual widget, checks the filtered model and
+selection, and saves a changed frame. Normal owned shutdown still joins workers
+and retires fixtures. `Window::take_snapshot` re-renders on CPU; its pixels do
+not identify the on-screen surface. The independent backend trace supplies that
+identity. CI retains command outputs, source/executable/frame hashes, driver
+versions, Xvfb session description and both fresh PNG frames for each successful
+case. Visual glyph review remains separate from non-flat/changed-pixel checks;
+component input is not physical input, clipboard or IME evidence. Xvfb does not
+qualify a real Wayland/remote desktop or recovery from GPU loss after startup.
+Actual Linux results remain pending until this revision executes in CI.
+
 ## Current runtime inspection (2026-10-23)
 
 The current scope is ARM macOS, native Intel macOS and Linux x86-64; Windows
@@ -12,8 +45,12 @@ GLIBC/GLIBCXX/CXXABI symbol requirements, preserving nonnumeric ABI names too.
 Failed tools, timeouts and unresolved Linux/non-system macOS imports fail the
 inspection and retain their available outputs. Run only against trusted probes;
 `ldd` can invoke the binary's loader. CI retains `runtime-requirements.json` for
-each of the three native targets. Newly added CI evidence remains pending until
-that revision executes.
+each of the three native targets. All three passed in CI run
+[39950896230](https://github.com/01max/librairii/actions/runs/39950896230) at PR head
+`9dc3fca` (built merge `8317ce85854cef0fce245384d6941f09be37b53f`): macOS release
+packages have 18 OS-only imports and both minima 15.0; Linux resolves all seven
+immediate sonames with maximum GLIBC 2.39, GLIBCXX 3.4.26 and CXXABI 1.3.9.
+These requirements do not establish the full minimum supported desktop baseline.
 
 The clean local ARM package from `af132fe` passed immediate import inspection:
 18 imports, all OS libraries/frameworks, no rpaths. Its Mach-O declares 11.0,

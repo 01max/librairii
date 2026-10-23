@@ -8,6 +8,8 @@ use std::time::{Duration, Instant};
 
 #[path = "desktop/native_menus.rs"]
 mod native_menus;
+#[path = "desktop/renderer_probe.rs"]
+mod renderer_probe;
 #[path = "desktop/thumbnails.rs"]
 mod thumbnails;
 
@@ -355,6 +357,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
     let exit_timer = slint::Timer::default();
     let measurement_timer = slint::Timer::default();
+    let renderer_probe = std::env::args()
+        .find_map(|arg| {
+            arg.strip_prefix("--renderer-smoke=")
+                .map(std::path::PathBuf::from)
+        })
+        .map(|directory| renderer_probe::Probe::start(&ui, directory));
     if thumbnail_smoke {
         ui.set_mode(1); // Exercise Image delegates while PNG results arrive.
         let loader = thumbnails.clone();
@@ -558,6 +566,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let retired = fixture.close();
     result?;
     retired?;
+    if let Some(probe) = renderer_probe {
+        probe.verify();
+    }
     if quit_smoke {
         assert!(quit_during_work.get());
         assert!(worker.borrow().is_none(), "all workers must be joined");
