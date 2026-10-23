@@ -89,7 +89,9 @@ def inspect(package, archive, output):
         return result
 
     try:
-        run('build', ['docker', 'build', '--platform=linux/amd64', '--tag', image, str(HERE / 'clean-linux')], 900)
+        run('build', ['docker', 'build', '--platform=linux/amd64', '--tag', image,
+                     '--build-arg', f'QUALIFICATION_UID={os.getuid()}',
+                     '--build-arg', f'QUALIFICATION_GID={os.getgid()}', str(HERE / 'clean-linux')], 900)
         report['image'] = json.loads(run('image', ['docker', 'image', 'inspect', image])['output'])[0]['Id']
         evidence = output / 'runtime'
         evidence.mkdir()

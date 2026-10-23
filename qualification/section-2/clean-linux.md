@@ -42,3 +42,11 @@ environment for this synthetic spike only. It does not prove a complete desktop
 install/update/uninstall, native portal/reveal integration, physical input/display,
 all minimum-OS configurations, or either macOS clean-host route. Those gates and
 overall Task 2.11 remain open. No toolkit selection or public release claim follows.
+
+The initial native experiment at `0e17aa6` is retained in
+[run 40008230875](https://github.com/01max/librairii/actions/runs/40008230875).
+It failed before starting the app: DBus rejected the mapped runner UID 1001
+because the base image had no matching passwd entry. The correction creates an
+ordinary account/group matching the numeric runner UID/GID while building the
+test image. Execution remains nonroot and offline with the same restricted
+mounts/capabilities. No missing-user error is relabeled as a runtime/app pass.
