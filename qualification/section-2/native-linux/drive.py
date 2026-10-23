@@ -113,6 +113,11 @@ class Desktop:
         self.start('monitor', ['stdbuf', '-oL', 'dbus-monitor', '--session',
             "interface='org.freedesktop.portal.FileChooser'", "interface='org.freedesktop.portal.Request'"])
         self.run(['xdg-mime', 'default', 'thunar.desktop', 'inode/directory'])
+        self.run(['xfconf-query', '-c', 'thunar', '-p', '/last-location-bar', '--create',
+                  '-t', 'string', '-s', 'ThunarLocationEntry'])
+        preference = self.run(['xfconf-query', '-c', 'thunar', '-p', '/last-location-bar'])
+        assert preference.strip() == 'ThunarLocationEntry'
+        (self.root / 'file-manager-preference.txt').write_text(preference)
 
     def start(self, name, argv, debug=False):
         path = self.root / (name + '.log')
@@ -277,7 +282,7 @@ def one_case(desktop, name, kind, expected):
             desktop.screenshot(output / 'dialog.png')
             if expected == 'cancelled':
                 desktop.button(dialog, ('Cancel',))
-            elif name == 'files-multiple':
+            elif kind == 'files':
                 wanted = {'Été 日本語 故事.zip', 'Deuxième archive 02.pk'}
                 def archive_table(node):
                     if node.getRole() not in (desktop.a.ROLE_TABLE, desktop.a.ROLE_TREE_TABLE):
@@ -296,25 +301,33 @@ def one_case(desktop, name, kind, expected):
                     return all(len(values) == 1 for values in names) and set(sum(names, [])) == wanted
                 node = wait_for(lambda: desktop.find(archive_table, dialog))
                 table = node.queryTable()
+                chosen = {0, 1} if name == 'files-multiple' else {
+                    row for row, names in enumerate(report['selection_table']['row_archive_names'])
+                    if names == ['Été 日本語 故事.zip']}
+                assert len(chosen) == (2 if name == 'files-multiple' else 1)
                 for row in range(2):
-                    if not table.isRowSelected(row):
+                    if row in chosen and not table.isRowSelected(row):
                         assert table.addRowSelection(row), 'native file row selection failed'
+                    elif row not in chosen and table.isRowSelected(row):
+                        assert table.removeRowSelection(row), 'native file row deselection failed'
                 report['selected_rows'] = wait_for(lambda: (rows := table.getSelectedRows()) and
-                    set(rows) == {0, 1} and list(rows))
+                    set(rows) == chosen and list(rows))
                 desktop.screenshot(output / 'selected.png')
                 desktop.button(dialog, ('Open', 'Select'))
             else:
-                target = fixture / 'Été 日本語 故事.zip' if kind == 'files' else (
-                    desktop.runtime / 'outside' if expected == 'rejected' else fixture)
-                desktop.key('ctrl+l')
-                desktop.screenshot(output / 'location.png')
-                entry = wait_for(lambda: desktop.find(lambda n: desktop.visible(n) and
-                    n.getState().contains(desktop.a.STATE_EDITABLE), dialog))
-                assert entry.queryEditableText().setTextContents(str(target)), 'native location entry failed'
-                desktop.key('Return')
-                time.sleep(0.3)
-                if not (app_dir / 'callback-complete.txt').exists():
-                    desktop.button(dialog, ('Open', 'Select'))
+                if expected == 'rejected':
+                    breadcrumb = wait_for(lambda: desktop.find(lambda n: n.name == 'tmp' and
+                        n.getRole() in (desktop.a.ROLE_PUSH_BUTTON, desktop.a.ROLE_TOGGLE_BUTTON) and
+                        desktop.visible(n), dialog))
+                    desktop.action(breadcrumb)
+                    files = wait_for(lambda: desktop.find(lambda n: n.name == 'Files' and
+                        n.getRole() in (desktop.a.ROLE_TABLE, desktop.a.ROLE_TREE_TABLE) and
+                        desktop.visible(n) and 'native-runtime' in
+                        {str(child.name) for child in desktop.nodes(n)}, dialog))
+                    assert files.querySelection().clearSelection(), 'native folder selection reset failed'
+                    wait_for(lambda: not files.queryTable().getSelectedRows())
+                    desktop.screenshot(output / 'outside-folder.png')
+                desktop.button(dialog, ('Select', 'Open'))
             wait_for(lambda: (app_dir / 'callback-complete.txt').exists())
             monitor = (desktop.root / 'monitor.log').read_bytes()[before_monitor:].decode('utf-8', errors='replace')
             gtk_log = (desktop.root / 'gtk.log').read_bytes()[before_gtk:].decode('utf-8', errors='replace')
@@ -324,7 +337,7 @@ def one_case(desktop, name, kind, expected):
             paths = (app_dir / 'selected-paths.txt').read_text().splitlines()
             wanted_paths = ([str(fixture / f) for f in ('Été 日本語 故事.zip', 'Deuxième archive 02.pk')]
                 if name == 'files-multiple' else [str(fixture / 'Été 日本語 故事.zip')] if kind == 'files'
-                else [str(desktop.runtime / 'outside')] if expected == 'rejected' else [str(fixture)])
+                else ['/tmp'] if expected == 'rejected' else [str(fixture)])
             report['selected_paths'] = paths
             report['checks']['actual_picker_result'] = ((app_dir / 'outcome.txt').read_text() == expected
                 and len(paths) == (0 if expected == 'cancelled' else len(wanted_paths))
@@ -333,16 +346,13 @@ def one_case(desktop, name, kind, expected):
             wait_for(lambda: (app_dir / 'callback-complete.txt').exists())
             window = wait_for(lambda: desktop.find(lambda n: n.getRole() == desktop.a.ROLE_FRAME and desktop.visible(n)
                 and str(n.name).startswith(fixture.name)))
-            desktop.key('ctrl+l')
             entry = wait_for(lambda: desktop.find(lambda n: desktop.visible(n) and
                 n.getState().contains(desktop.a.STATE_EDITABLE) and
                 n.queryText().getText(0, -1).rstrip('/') == str(fixture), window))
             report['observed_file_manager_path'] = entry.queryText().getText(0, -1)
             report['checks']['actual_file_manager_window_path'] = bool(entry) and (app_dir / 'outcome.txt').read_text() == 'requested'
             desktop.screenshot(output / 'revealed.png')
-            desktop.key('alt+F4' if desktop.session == 'x11' else 'Escape')
-            if desktop.session == 'wayland':
-                desktop.run(['thunar', '--quit'])
+            desktop.run(['thunar', '--quit'])
         else:
             snapshot = wait_for(lambda: (value := state(app_dir)) and value[2] == '1' and value)
             report['checks']['early_settings_delivered'] = snapshot[4] == 'true'

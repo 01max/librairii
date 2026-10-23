@@ -112,3 +112,19 @@ key events. The observer now drains its bounded GLib accessibility-event context
 and clears native node caches before traversal; post-shortcut screenshots are
 retained. This is an observer synchronization correction requiring native
 revalidation, not a declared passing Wayland matrix.
+
+Run40016943055 / `4dd0bd4` falsifies cache staleness as the remaining shortcut
+failure: the post-Ctrl+L screenshot has no location entry. That failed GTK
+keyboard shortcut stays unqualified. The automation now drives actual GTK file
+rows for both single/multiple selection; folder acceptance uses the native
+Select button, and rejection activates the real `tmp` breadcrumb, clears child
+selection and requires the callback to return/reject exactly the container's
+private `/tmp`. Thunar's private location-bar preference is set to entry mode,
+read back, and its actual displayed path is still mandatory. No desired path is
+written into that location entry.
+
+Independent scope review confirms these native actions satisfy this automated
+Task2.6 subset. GTK keyboard-only operation and physical input remain open.
+Actual OS Settings/Search key events, all parent/cancel/early-command checks,
+both sessions, exact paths and normal owned shutdown remain required. Thunar is
+explicitly closed through its private session before retiring the test container.
