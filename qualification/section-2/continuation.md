@@ -70,3 +70,20 @@ Picker titles and all adapter outcomes now have English/French text. The owned
 fixture has two distinct difficult filenames so multiple selection is actually
 exercisable. Locked ARM build, focus and widget smokes pass. Exact native menu,
 picker, reveal and other target observations remain separate qualification.
+
+## 2.11 unsigned operator packages
+
+`package.py` assembles the actual native binary, manifest/architecture/digests,
+resolved dependency license inventory/notices, tagged Slint and native Skia BSD
+notices, and operator instructions. It refuses existing destinations and wrong
+native architectures. These tarballs are synthetic unsigned spike packages,
+not signed production DMGs or a completed native third-party notice audit.
+`observe.py` verifies package member bytes/containment, native host and macOS
+translation status, then creates only **not_run** observations. Three regression
+tests reject modified bytes, outside aliases and an unlisted executable, and
+verify that a valid package cannot pre-fill passing qualification.
+
+An ARM development tarball assembled locally and its verified observation
+record was created successfully. The owner can execute Intel and Linux checks;
+actual operator results, clean-host launch and all three-target package evidence
+remain pending. The current workflow supplies matching unsigned artifacts.
