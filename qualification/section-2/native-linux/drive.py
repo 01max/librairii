@@ -108,16 +108,21 @@ class Desktop:
         child = subprocess.Popen(argv, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         def capture():
             size = 0
-            with path.open('xb') as stream, child.stdout:
-                while chunk := child.stdout.read1(65536):
-                    remaining = LIMIT - size
-                    stream.write(chunk[:remaining])
-                    stream.flush()
-                    size += len(chunk)
-                    if size >= LIMIT:
-                        self.overflow.append(name)
-                        child.kill()
-                        break
+            try:
+                with path.open('xb') as stream, child.stdout:
+                    while chunk := child.stdout.read1(65536):
+                        remaining = LIMIT - size
+                        stream.write(chunk[:remaining])
+                        stream.flush()
+                        size += len(chunk)
+                        if size >= LIMIT:
+                            self.overflow.append(name)
+                            child.kill()
+                            break
+            except Exception as error:
+                self.overflow.append(name + ': capture ' + type(error).__name__ + ': ' + str(error))
+                child.kill()
+                child.stdout.close()
         reader = threading.Thread(target=capture, daemon=True)
         reader.start()
         self.logs.append(reader)

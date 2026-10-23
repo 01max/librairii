@@ -76,3 +76,16 @@ class NativeLinux(unittest.TestCase):
             self.assertEqual((desktop.root / 'noisy.log').stat().st_size, driver.LIMIT)
             self.assertEqual(desktop.overflow, ['noisy'])
             self.assertNotEqual(child.returncode, 0)
+
+    def test_log_write_failure_is_reported_and_retires_the_child(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            desktop = driver.Desktop.__new__(driver.Desktop)
+            desktop.root = pathlib.Path(tmp)
+            desktop.children, desktop.logs, desktop.overflow = [], [], []
+            (desktop.root / 'unwritable.log').mkdir()
+            child = desktop.start('unwritable', [sys.executable, '-c', 'import time; time.sleep(30)'])
+            child.wait(timeout=5)
+            desktop.close()
+            self.assertEqual(len(desktop.overflow), 1)
+            self.assertIn('unwritable: capture ', desktop.overflow[0])
+            self.assertNotEqual(child.returncode, 0)
