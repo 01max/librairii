@@ -114,6 +114,11 @@ jobs:
           tar -xzf "target/task2-evidence/task2-$RUST_TARGET.tar.gz" -C "$roundtrip"
           python3 qualification/section-2/observe.py --package "$roundtrip/task2-$RUST_TARGET" \
             --operator ci-archive-byte-verification --output target/task2-evidence/archive-verification.json
+      - name: Inspect packaged native runtime requirements
+        run: >-
+          python3 qualification/section-2/inspect-runtime.py
+          --package "$RUNNER_TEMP/task2-roundtrip/task2-$RUST_TARGET"
+          --output target/task2-evidence/runtime-requirements.json
       - name: Verify and exercise the packaged macOS app
         if: runner.os == 'macOS'
         run: |

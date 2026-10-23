@@ -223,3 +223,16 @@ On 2026-10-23 the owner explicitly declined VoiceOver testing. Skip its executio
 for this qualification; it no longer blocks the current Task 2 selection/merge
 gate. Do not report spoken macOS accessibility as qualified. Continue the
 remaining keyboard, Linux, renderer, package and performance checks.
+
+## 2.7 immediate runtime inspection
+
+The qualification workflow now inspects the verified archive-round-trip binary
+with native `otool` or ELF/loader tools and retains raw evidence, declared bundle
+and binary OS requirements, linked libraries and Linux symbol-version floors.
+Local ARM import inspection passes; all 18 immediate imports are OS libraries or
+frameworks. The debug executable's Mach-O minimum is 11.0 while its verified app
+bundle requires 15.0; both are recorded without claiming older-OS support.
+Regressions cover substituted/aliased binaries, numeric ABI ordering, unresolved
+dependencies, loader paths, minimum-OS parsing and retained timeout output.
+See [renderers.md](renderers.md); three-target CI evidence and the rest of the
+renderer/clean-host gate remain open until actually observed.
