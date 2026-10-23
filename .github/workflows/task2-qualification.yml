@@ -103,6 +103,7 @@ jobs:
             python3 qualification/section-2/run-smokes.py "$spike" 2>&1 | tee target/task2-evidence/gui-smokes.log
           fi
       - name: Assemble package and operator checklist
+        id: package
         run: >-
           python3 qualification/section-2/package.py
           --binary qualification/section-2/target/release/qualification-desktop
@@ -139,6 +140,13 @@ jobs:
           --package "$RUNNER_TEMP/task2-roundtrip/task2-$RUST_TARGET"
           --archive "target/task2-evidence/task2-$RUST_TARGET.tar.gz"
           --output target/task2-evidence/clean-linux
+      - name: Observe real portal pickers, parent association, native focus and folder reveal
+        if: runner.os == 'Linux' && !cancelled() && steps.package.outcome == 'success'
+        run: >-
+          python3 qualification/section-2/check-native-linux.py
+          --package "$RUNNER_TEMP/task2-roundtrip/task2-$RUST_TARGET"
+          --archive "target/task2-evidence/task2-$RUST_TARGET.tar.gz"
+          --output target/task2-evidence/native-linux
       - name: Measure packaged startup markers, idle CPU, peak RSS and distribution size
         run: |
           package="$RUNNER_TEMP/task2-roundtrip/task2-$RUST_TARGET"

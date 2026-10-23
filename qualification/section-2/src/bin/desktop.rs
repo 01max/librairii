@@ -8,6 +8,8 @@ use std::time::{Duration, Instant};
 
 #[path = "desktop/native_menus.rs"]
 mod native_menus;
+#[path = "desktop/native_probe.rs"]
+mod native_probe;
 #[path = "desktop/renderer_probe.rs"]
 mod renderer_probe;
 #[path = "desktop/thumbnails.rs"]
@@ -60,10 +62,16 @@ fn show_review(ui: &Spike, review: &Review) {
     )));
 }
 
-fn install_pickers(ui: &Spike, root: &std::path::Path, menus: Rc<native_menus::Menus>) {
+fn install_pickers(
+    ui: &Spike,
+    root: &std::path::Path,
+    menus: Rc<native_menus::Menus>,
+    recorder: Option<Rc<native_probe::Recorder>>,
+) {
     let weak = ui.as_weak();
     let files_root = root.to_path_buf();
     let files_menus = menus.clone();
+    let files_recorder = recorder.clone();
     ui.on_pick_files(move || {
         if let Some(ui) = weak.upgrade() {
             let title = if ui.get_french() {
@@ -80,10 +88,14 @@ fn install_pickers(ui: &Spike, root: &std::path::Path, menus: Rc<native_menus::M
                     .pick_files()
             });
             let valid = result.as_ref().is_some_and(|paths| {
-                paths
-                    .iter()
-                    .all(|p| p.canonicalize().is_ok_and(|p| p.starts_with(&files_root)))
+                !paths.is_empty()
+                    && paths
+                        .iter()
+                        .all(|p| p.canonicalize().is_ok_and(|p| p.starts_with(&files_root)))
             });
+            if let Some(recorder) = &files_recorder {
+                recorder.selection(result.as_deref(), valid);
+            }
             ui.set_status(
                 match result {
                     None if ui.get_french() => "Annulé",
@@ -112,6 +124,12 @@ fn install_pickers(ui: &Spike, root: &std::path::Path, menus: Rc<native_menus::M
                     .set_parent(&ui.window().window_handle())
                     .pick_folder()
             });
+            if let Some(recorder) = &recorder {
+                let valid = result
+                    .as_ref()
+                    .is_some_and(|p| p.canonicalize().is_ok_and(|p| p == folder_root));
+                recorder.selection(result.as_ref().map(std::slice::from_ref), valid);
+            }
             ui.set_status(
                 match result {
                     None if ui.get_french() => "Annulé",
@@ -134,6 +152,7 @@ fn install_pickers(ui: &Spike, root: &std::path::Path, menus: Rc<native_menus::M
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let start = Instant::now();
+    let native_recorder = native_probe::Recorder::from_args()?;
     if std::env::args().any(|arg| arg == "--require-opengl") {
         // The generic Skia graph compiles GL, but its skia-opengl renderer-name
         // alias is feature-gated. Require the API instead of allowing fallback.
@@ -172,6 +191,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     )?;
     let root = fixture.path().canonicalize()?;
     let fixture_root = root.clone();
+    let reveal_recorder = native_recorder.clone();
     let weak = ui.as_weak();
     ui.on_reveal_fixture(move || {
         if let Some(ui) = weak.upgrade() {
@@ -190,6 +210,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 }
                 .into(),
             );
+            if let Some(recorder) = &reveal_recorder {
+                recorder.write(
+                    "outcome.txt",
+                    if result.is_ok() {
+                        "requested"
+                    } else {
+                        "failed"
+                    },
+                );
+            }
         }
     });
     let thumbnails = Rc::new(RefCell::new(thumbnails::Loader::new()));
@@ -303,7 +333,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Slint's stock macOS app menu has no Settings role. Own a separate public
     // native menu adapter; on Linux the toolkit menu stays in the window.
     let menus = Rc::new(native_menus::Menus::install(ui.as_weak())?);
-    install_pickers(&ui, &fixture_root, menus.clone());
+    install_pickers(&ui, &fixture_root, menus.clone(), native_recorder.clone());
     if std::env::args().any(|arg| arg == "--settings-early") {
         menus.commands.settings();
     }
@@ -372,6 +402,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .map(std::path::PathBuf::from)
         })
         .map(|directory| renderer_probe::Probe::start(&ui, directory));
+    let native_probe = native_recorder
+        .as_ref()
+        .map(|recorder| native_probe::Probe::start(&ui, &fixture_root, recorder.clone()));
     let resource_probe = std::env::args().any(|arg| arg == "--resource-probe");
     let resource_ready_timer = slint::Timer::default();
     let resource_start_timer = slint::Timer::default();
@@ -587,6 +620,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     retired?;
     if let Some(probe) = renderer_probe {
         probe.verify();
+    }
+    if let Some(probe) = native_probe {
+        probe.verify();
+        assert!(worker.borrow().is_none(), "native workers must be joined");
+        assert!(!fixture_root.exists(), "native fixture must be retired");
+        native_recorder.as_ref().expect("native recorder").retired();
     }
     if resource_probe {
         assert!(worker.borrow().is_none(), "resource worker must be joined");

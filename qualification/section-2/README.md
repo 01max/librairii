@@ -103,3 +103,6 @@ Independent codec experiments retain six additional filename differences and a
 reproducible original Zstd fixture. `decoder-resources.md` / `decoder-observations.json`
 record bounded LinuxARM experiments, including a pre-callback OOM; they do not
 implement product admission or qualify the candidate's production resource limits.
+
+For real Linux portal/picker, focus and reveal observations in isolated desktops,
+see [native-linux.md](native-linux.md).
