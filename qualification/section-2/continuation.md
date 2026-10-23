@@ -257,7 +257,8 @@ remote desktops and post-start GPU loss are outside this automated result.
 
 ## 2.9 startup, idle CPU, peak RSS and distribution measurements
 
-The resource continuation adds a ten-second quiet phase followed by the shared
+The current resource continuation uses a fifteen-second quiet phase (historical
+measurements below used ten seconds), followed by the shared
 1,000-PNG/component-input/background workload and normal owned shutdown. The
 parent measures launch-to-first-UI-timer readiness, sustained cumulative process
 CPU and RSS, plus native full-run peak RSS. It verifies the measured package and

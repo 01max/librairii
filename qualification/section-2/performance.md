@@ -12,7 +12,7 @@ samples are diagnostics, not a new p95 distribution or approved budget.
 `--resource-probe` emits its PID on the first owned UI timer after `show`.
 Parent launch-to-marker includes process/loader startup and observer delivery;
 it does **not** measure first visible presentation. The probe keeps the normal
-16 ms UI polling timer during a ten-second quiet phase. No component input or
+16 ms UI polling timer during a fifteen-second quiet phase. No component input or
 synthetic background job is injected then; initially visible PNG prefetch can
 settle. The sampler excludes the first two seconds and the last half-second,
 requires at least 20 samples spanning six seconds, and discards sampler calls
@@ -49,7 +49,13 @@ implementation `b6016f1`, built source `ecbdcb7b9fea00455dd7c33baf6a32605925aefa
 [resource-observations.json](resource-observations.json) retains exact source,
 binary/distribution identities, actual hardware/surfaces and all six summaries;
 the linked artifacts retain the raw 24 runs (six warmups and 18 measurements).
-Independent review recomputed every verdict/summary successfully.
+Independent review recomputed every verdict/summary successfully. Those retained
+results used the historical ten-second quiet phase. The current fifteen-second
+phase adds observation margin after Intel run40020211745 correctly rejected an
+18-of20 low-latency sample set; that failed raw trace stays failed. Sample count,
+six-second coverage,100ms collection guard and40-second deadline are unchanged.
+See [native-linux.md](native-linux.md) for the retained failure and correction;
+the methods are distinct and no product-performance budget is approved.
 
 These are within-host diagnostic observations, not comparisons with the older
 physical-host baseline. Explicit Skia CPU medians were:
