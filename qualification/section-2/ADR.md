@@ -1,5 +1,19 @@
 # Candidate toolkit and dependency qualification (task 2.1)
 
+Current 2026-10-23 decision: see [current-pins.json](current-pins.json) and
+[continuation.md](continuation.md). The owner explicitly chose Slint with
+About-screen attribution under the pinned royalty-free desktop route. This
+selects the candidate licensing route, without changing Librairii’s own license
+or declaring the toolkit qualified. Ordinary public component/event APIs remain
+the test route; no commercial test tooling is enabled. The tagged terms are
+retained verbatim in [notices/](notices/Slint-Royalty-free-2.0.md).
+
+The record below is historical research. The production data graph has since
+been implemented in merged Tasks 4/5/7: bundled SQLite, rawzip/flate2 and the
+reviewed pinned sevenz-turbo derivative, plus the frozen core query codec.
+The rejected sevenz-rust2/Unicode experiments are not production dependencies.
+Windows is deferred; current qualification covers three Linux/macOS targets.
+
 Date: 2026-10-20. Owner: librairii-4. Status: **proposed candidates; toolkit not selected**.
 Scope: P02–P07, P13, P18–P19, P27–P38, P53, P56–P59.
 
