@@ -36,6 +36,8 @@ pub struct Menus {
     #[cfg(target_os = "macos")]
     _bar: muda::Menu,
     #[cfg(target_os = "macos")]
+    native_dialog_bar: muda::Menu,
+    #[cfg(target_os = "macos")]
     settings: muda::MenuItem,
     #[cfg(target_os = "macos")]
     about: muda::MenuItem,
@@ -45,9 +47,13 @@ pub struct Menus {
     modal: std::cell::Cell<Option<bool>>,
     #[cfg(target_os = "macos")]
     quit: muda::MenuItem,
+    #[cfg(target_os = "macos")]
+    edits: Vec<muda::MenuItem>,
+    #[cfg(target_os = "macos")]
+    edit_enabled: std::cell::Cell<Option<bool>>,
 }
 impl Menus {
-    pub fn install() -> Result<Self, Box<dyn std::error::Error>> {
+    pub fn install(_target: slint::Weak<super::Spike>) -> Result<Self, Box<dyn std::error::Error>> {
         let commands = Commands::default();
         #[cfg(target_os = "macos")]
         {
@@ -82,7 +88,42 @@ impl Menus {
                 &quit,
             ])?;
             let edit = Submenu::new("Edit", true);
-            edit.append_items(&[
+            // Predefined selectors (paste:, copy:, etc.) have no Winit responder.
+            // Route both clicks and native accelerators to public widget actions.
+            let edits = [
+                ("undo", "Undo", Code::KeyZ, Modifiers::META),
+                (
+                    "redo",
+                    "Redo",
+                    Code::KeyZ,
+                    Modifiers::META | Modifiers::SHIFT,
+                ),
+                ("cut", "Cut", Code::KeyX, Modifiers::META),
+                ("copy", "Copy", Code::KeyC, Modifiers::META),
+                ("paste", "Paste", Code::KeyV, Modifiers::META),
+                ("select-all", "Select All", Code::KeyA, Modifiers::META),
+            ]
+            .into_iter()
+            .map(|(id, label, code, modifiers)| {
+                MenuItem::with_id(
+                    format!("qualification.edit.{id}"),
+                    label,
+                    true,
+                    Some(Accelerator::new(Some(modifiers), code)),
+                )
+            })
+            .collect::<Vec<_>>();
+            for (index, item) in edits.iter().enumerate() {
+                if index == 2 {
+                    edit.append(&Standard::separator())?;
+                }
+                edit.append(item)?;
+            }
+            bar.append_items(&[&app, &edit])?;
+            // Native panels have AppKit text responders and need standard roles.
+            let native_dialog_bar = Menu::new();
+            let native_edit = Submenu::new("Edit", true);
+            native_edit.append_items(&[
                 &Standard::undo(None),
                 &Standard::redo(None),
                 &Standard::separator(),
@@ -91,7 +132,7 @@ impl Menus {
                 &Standard::paste(None),
                 &Standard::select_all(None),
             ])?;
-            bar.append_items(&[&app, &edit])?;
+            native_dialog_bar.append_items(&[&app, &native_edit])?;
             let pending = commands.clone();
             muda::MenuEvent::set_event_handler(Some(move |event: muda::MenuEvent| {
                 if event.id == "qualification.settings" {
@@ -100,23 +141,61 @@ impl Menus {
                     pending.about();
                 } else if event.id == "qualification.quit" {
                     pending.quit();
+                } else {
+                    use super::EditAction;
+                    let action = match event.id.as_ref() {
+                        "qualification.edit.undo" => EditAction::Undo,
+                        "qualification.edit.redo" => EditAction::Redo,
+                        "qualification.edit.cut" => EditAction::Cut,
+                        "qualification.edit.copy" => EditAction::Copy,
+                        "qualification.edit.paste" => EditAction::Paste,
+                        "qualification.edit.select-all" => EditAction::SelectAll,
+                        _ => return,
+                    };
+                    let _ = _target.upgrade_in_event_loop(move |ui| ui.invoke_edit_search(action));
                 }
             }));
             bar.init_for_nsapp();
             Ok(Self {
                 commands,
                 _bar: bar,
+                native_dialog_bar,
                 settings,
                 about,
                 french: std::cell::Cell::new(None),
                 modal: std::cell::Cell::new(None),
                 quit,
+                edits,
+                edit_enabled: std::cell::Cell::new(None),
             })
         }
         #[cfg(not(target_os = "macos"))]
         Ok(Self { commands })
     }
-    pub fn update(&self, french: bool, modal: bool) {
+    pub fn with_native_dialog<T>(&self, ui: &super::Spike, run: impl FnOnce() -> T) -> T {
+        struct Restore<'a> {
+            ui: &'a super::Spike,
+            #[cfg(target_os = "macos")]
+            bar: &'a muda::Menu,
+        }
+        impl Drop for Restore<'_> {
+            fn drop(&mut self) {
+                self.ui.set_native_dialog_open(false);
+                #[cfg(target_os = "macos")]
+                self.bar.init_for_nsapp();
+            }
+        }
+        ui.set_native_dialog_open(true);
+        #[cfg(target_os = "macos")]
+        self.native_dialog_bar.init_for_nsapp();
+        let _restore = Restore {
+            ui,
+            #[cfg(target_os = "macos")]
+            bar: &self._bar,
+        };
+        run()
+    }
+    pub fn update(&self, french: bool, modal: bool, search_focused: bool) {
         #[cfg(target_os = "macos")]
         {
             if self.french.replace(Some(french)) != Some(french) {
@@ -137,9 +216,15 @@ impl Menus {
                 self.settings.set_enabled(!modal);
                 self.about.set_enabled(!modal);
             }
+            let edit_enabled = !modal && search_focused;
+            if self.edit_enabled.replace(Some(edit_enabled)) != Some(edit_enabled) {
+                for item in &self.edits {
+                    item.set_enabled(edit_enabled);
+                }
+            }
         }
         #[cfg(not(target_os = "macos"))]
-        let _ = (french, modal);
+        let _ = (french, modal, search_focused);
     }
 }
 

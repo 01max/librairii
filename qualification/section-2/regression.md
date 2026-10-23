@@ -56,3 +56,37 @@ does not call show/activate for an OS window and sends no OS input; events remai
 inside Slint. No denied Computer Use permission is bypassed, no private testing
 crate/commercial service is enabled, and no screen-reader/physical keyboard or
 visual observation is claimed. This remains local in-process regression evidence.
+
+## ARM native clipboard regression (2.5 / 2.6)
+
+On 2026-10-23 the owner reported that Search would not paste in the sealed
+`9f50fc6` ARM package. Codex reproduced twice with native UI automation. The
+minimal red check focuses Search, clears its value, pastes synthetic `0042`,
+and asserts that the accessibility field contains `0042`; it failed with an
+empty field. This tests actual clipboard/Command-V dispatch, not `set_query`.
+
+The custom application menu used predefined AppKit editing selectors, including
+`paste:`, but the Winit view has no corresponding native text responder. Custom
+Edit actions now use the public LineEdit editing functions through a weak UI
+handle. Native clicks and conventional shortcuts share this route. Actions are
+guarded by actual Search focus and both toolkit/native dialog ownership; they
+retain the widget's selection and undo history and its normal edited callback.
+
+The exact native paste check passed after the fix, as did select-all replacement
+with `Été 日本語`, Undo and Redo. An independent review identified the need to
+retain AppKit editing for native picker text fields. Both picker callbacks now
+scope a standard responder Edit menu to their native dialog; a Drop guard
+restores the application menu and clears native ownership on return/unwind.
+Native Go-to-Folder Edit-menu Select All/Copy/Paste round-tripped an authored
+`/tmp/SyntheticPasteProbe` path. Cancelling both dialogs preserved Search `0042`,
+and subsequent native Search select-all/paste changed it to `0057`.
+**Picker keyboard accelerators did not act in automation; that observation is
+retained as unresolved, separately from the passing picker menu-click route.**
+No IME, spoken accessibility, Intel/Linux clipboard or full input gate is claimed.
+
+`--edit-smoke` supplements this OS check with public widget input, real selection
+replacement and resulting model contents, Undo/Redo, native-dialog scope cleanup,
+and modal/unfocused no-edit guards. It is included in the bounded raw and
+packaged-app smoke runner. It does not claim to exercise the native clipboard or
+AppKit menu dispatch. Retain the native empty-Search -> paste -> AX-value check
+when changing this adapter; component-only checks missed the original defect.

@@ -2,6 +2,7 @@ import { Button, LineEdit, VerticalBox, HorizontalBox, ListView, ProgressIndicat
 
 export struct StoryRow { id: int, title: string, cover: image }
 export struct DecisionRow { id: int, added: bool }
+export enum EditAction { undo, redo, cut, copy, paste, select-all }
 
 global ProbeState {
     in-out property <bool> modal: false;
@@ -39,6 +40,7 @@ export component Spike inherits Window {
     in-out property <bool> review-visible: false;
     in-out property <bool> sidebar-open: false;
     in-out property <int> dialog: 0;
+    in-out property <bool> native-dialog-open: false;
     private property <int> invoker: 0;
     in-out property <bool> compact: false;
     in-out property <bool> wide: true;
@@ -78,6 +80,18 @@ export component Spike inherits Window {
     focus-apply => { apply-button.focus(); }
     callback focus-search();
     focus-search => { search-entry.focus(); }
+    // AppKit's predefined edit selectors do not reach the Winit text input.
+    // Keep editing inside the focused widget, including its selection/undo state.
+    public function edit-search(action: EditAction) {
+        if !root.modal && !root.native-dialog-open && search-entry.has-focus {
+            if action == EditAction.undo { search-entry.undo(); }
+            else if action == EditAction.redo { search-entry.redo(); }
+            else if action == EditAction.cut { search-entry.cut(); }
+            else if action == EditAction.copy { search-entry.copy(); }
+            else if action == EditAction.paste { search-entry.paste(); }
+            else if action == EditAction.select-all { search-entry.select-all(); }
+        }
+    }
 
     public function open-dialog(kind: int, from: int) {
         if root.dialog == 0 {

@@ -189,3 +189,18 @@ Developer ID/notarization and actual clean-host download admission stay open.
 An operator may explicitly approve a valid probe through Apple's ordinary
 per-app UI; that is recorded separately from default-policy admission. No
 quarantine removal, global security override or approval automation is used.
+
+## 2.5 / 2.6 native Search editing repair
+
+The owner's ARM paste failure on `9f50fc6` was reproduced with native clipboard
+input into focused Search. Predefined AppKit editing selectors had no Winit
+responder. The adapter now connects custom Edit items/accelerators to public
+LineEdit functions, with actual focus and toolkit/native dialog guards. The
+native picker scope temporarily retains AppKit's standard Edit roles and restores
+the application menu on return/unwind. Native Search paste, Unicode replacement,
+Undo/Redo, picker menu-click clipboard roundtrip, unchanged background Search,
+and Search paste after picker cancellation were observed. See regression.md for
+the original red check and its passing result. Native picker keyboard shortcuts
+remain unresolved in automation; physical input/IME/AT qualification stays open.
+`--edit-smoke` adds bounded widget/model/undo/ownership regression coverage and
+explicitly does not label component callbacks as native clipboard evidence.

@@ -58,6 +58,78 @@ fn show_review(ui: &Spike, review: &Review) {
     )));
 }
 
+fn install_pickers(ui: &Spike, root: &std::path::Path, menus: Rc<native_menus::Menus>) {
+    let weak = ui.as_weak();
+    let files_root = root.to_path_buf();
+    let files_menus = menus.clone();
+    ui.on_pick_files(move || {
+        if let Some(ui) = weak.upgrade() {
+            let title = if ui.get_french() {
+                "Choisir des archives synthétiques"
+            } else {
+                "Choose synthetic archives"
+            };
+            let result = files_menus.with_native_dialog(&ui, || {
+                rfd::FileDialog::new()
+                    .set_title(title)
+                    .set_directory(&files_root)
+                    .set_parent(&ui.window().window_handle())
+                    .add_filter("Archives", &["pk", "zip", "7z"])
+                    .pick_files()
+            });
+            let valid = result.as_ref().is_some_and(|paths| {
+                paths
+                    .iter()
+                    .all(|p| p.canonicalize().is_ok_and(|p| p.starts_with(&files_root)))
+            });
+            ui.set_status(
+                match result {
+                    None if ui.get_french() => "Annulé",
+                    None => "Cancelled",
+                    Some(_) if valid && ui.get_french() => "Fichiers synthétiques sélectionnés",
+                    Some(_) if valid => "Synthetic files selected",
+                    _ if ui.get_french() => "Choix hors du dossier synthétique refusé",
+                    _ => "Rejected outside fixture",
+                }
+                .into(),
+            );
+        }
+    });
+    let weak = ui.as_weak();
+    let folder_root = root.to_path_buf();
+    ui.on_pick_folder(move || {
+        if let Some(ui) = weak.upgrade() {
+            let result = menus.with_native_dialog(&ui, || {
+                rfd::FileDialog::new()
+                    .set_title(if ui.get_french() {
+                        "Choisir le dossier synthétique"
+                    } else {
+                        "Choose the synthetic folder"
+                    })
+                    .set_directory(&folder_root)
+                    .set_parent(&ui.window().window_handle())
+                    .pick_folder()
+            });
+            ui.set_status(
+                match result {
+                    None if ui.get_french() => "Annulé",
+                    None => "Cancelled",
+                    Some(p) if p.canonicalize().is_ok_and(|p| p == folder_root) => {
+                        if ui.get_french() {
+                            "Dossier synthétique sélectionné"
+                        } else {
+                            "Fixture folder selected"
+                        }
+                    }
+                    _ if ui.get_french() => "Choix hors du dossier synthétique refusé",
+                    _ => "Rejected outside fixture",
+                }
+                .into(),
+            );
+        }
+    });
+}
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let start = Instant::now();
     // No profile, library, network client or filesystem input exists in this spike.
@@ -89,70 +161,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     )?;
     let root = fixture.path().canonicalize()?;
     let fixture_root = root.clone();
-    let weak = ui.as_weak();
-    let files_root = root.clone();
-    ui.on_pick_files(move || {
-        if let Some(ui) = weak.upgrade() {
-            let title = if ui.get_french() {
-                "Choisir des archives synthétiques"
-            } else {
-                "Choose synthetic archives"
-            };
-            let result = rfd::FileDialog::new()
-                .set_title(title)
-                .set_directory(&files_root)
-                .set_parent(&ui.window().window_handle())
-                .add_filter("Archives", &["pk", "zip", "7z"])
-                .pick_files();
-            let valid = result.as_ref().is_some_and(|paths| {
-                paths
-                    .iter()
-                    .all(|p| p.canonicalize().is_ok_and(|p| p.starts_with(&files_root)))
-            });
-            ui.set_status(
-                match result {
-                    None if ui.get_french() => "Annulé",
-                    None => "Cancelled",
-                    Some(_) if valid && ui.get_french() => "Fichiers synthétiques sélectionnés",
-                    Some(_) if valid => "Synthetic files selected",
-                    _ if ui.get_french() => "Choix hors du dossier synthétique refusé",
-                    _ => "Rejected outside fixture",
-                }
-                .into(),
-            );
-        }
-    });
-    let weak = ui.as_weak();
-    let folder_root = root.clone();
-    ui.on_pick_folder(move || {
-        if let Some(ui) = weak.upgrade() {
-            let result = rfd::FileDialog::new()
-                .set_title(if ui.get_french() {
-                    "Choisir le dossier synthétique"
-                } else {
-                    "Choose the synthetic folder"
-                })
-                .set_directory(&folder_root)
-                .set_parent(&ui.window().window_handle())
-                .pick_folder();
-            ui.set_status(
-                match result {
-                    None if ui.get_french() => "Annulé",
-                    None => "Cancelled",
-                    Some(p) if p.canonicalize().is_ok_and(|p| p == folder_root) => {
-                        if ui.get_french() {
-                            "Dossier synthétique sélectionné"
-                        } else {
-                            "Fixture folder selected"
-                        }
-                    }
-                    _ if ui.get_french() => "Choix hors du dossier synthétique refusé",
-                    _ => "Rejected outside fixture",
-                }
-                .into(),
-            );
-        }
-    });
     let weak = ui.as_weak();
     ui.on_reveal_fixture(move || {
         if let Some(ui) = weak.upgrade() {
@@ -283,12 +291,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     ui.show()?;
     // Slint's stock macOS app menu has no Settings role. Own a separate public
     // native menu adapter; on Linux the toolkit menu stays in the window.
-    let menus = native_menus::Menus::install()?;
+    let menus = Rc::new(native_menus::Menus::install(ui.as_weak())?);
+    install_pickers(&ui, &fixture_root, menus.clone());
     if std::env::args().any(|arg| arg == "--settings-early") {
         menus.commands.settings();
     }
     let requests = menus.commands.clone();
     ui.on_request_quit(move || requests.quit());
+    let edit_menus = menus.clone();
     let quit_smoke = std::env::args().any(|arg| arg == "--quit-smoke");
     let quit_during_work = Rc::new(Cell::new(false));
     let observed_quit = quit_during_work.clone();
@@ -308,7 +318,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             if let Some(ui) = weak.upgrade() {
                 thumbnails::Loader::poll(&thumbnail_poll);
                 update_viewport(&ui);
-                menus.update(ui.get_french(), ui.get_modal());
+                menus.update(
+                    ui.get_french(),
+                    ui.get_modal() || ui.get_native_dialog_open(),
+                    ui.get_search_has_focus(),
+                );
                 let completed = progress.load(Ordering::Acquire);
                 if quit_smoke && completed > 0 && completed < 100 {
                     observed_quit.set(true);
@@ -374,6 +388,48 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 slint::quit_event_loop().expect("quit measurement loop");
             }
         });
+    }
+    if std::env::args().any(|arg| arg == "--edit-smoke") {
+        let weak = ui.as_weak();
+        slint::Timer::single_shot(Duration::from_millis(20), move || {
+            let ui = weak.upgrade().expect("editing test window");
+            ui.window()
+                .dispatch_event_with_result(slint::platform::WindowEvent::WindowActiveChanged(true))
+                .expect("activate editing test component");
+            ui.invoke_focus_search();
+            press_key(ui.window(), "0042".into()).expect("enter query through text input");
+            assert_eq!(ui.get_query(), "0042");
+            assert_eq!(ui.get_stories().row_count(), 1);
+            ui.invoke_edit_search(EditAction::SelectAll);
+            press_key(ui.window(), "0057".into()).expect("replace actual selection");
+            assert_eq!(ui.get_query(), "0057");
+            assert_eq!(ui.get_stories().row_data(0).unwrap().id, 57);
+            ui.invoke_edit_search(EditAction::Undo);
+            assert_ne!(ui.get_query(), "0057", "widget undo must change the query");
+            ui.invoke_edit_search(EditAction::Redo);
+            assert_eq!(ui.get_query(), "0057");
+            edit_menus.with_native_dialog(&ui, || {
+                assert!(ui.get_native_dialog_open());
+                ui.invoke_edit_search(EditAction::Undo);
+                assert_eq!(ui.get_query(), "0057");
+            });
+            assert!(!ui.get_native_dialog_open());
+            // Menu editing must never mutate a background or unfocused input.
+            ui.invoke_open_dialog(1, 2);
+            ui.invoke_edit_search(EditAction::Undo);
+            assert_eq!(ui.get_query(), "0057");
+            ui.invoke_close_dialog();
+            ui.invoke_open_dialog(1, 0);
+            ui.invoke_close_dialog();
+            assert!(ui.get_settings_has_focus());
+            ui.invoke_edit_search(EditAction::Undo);
+            assert_eq!(ui.get_query(), "0057");
+            eprintln!(
+                "edit_smoke=passed; widget selection, model update, undo/redo and focus/modal guards; native_clipboard=not_measured"
+            );
+            slint::quit_event_loop().expect("quit editing test loop");
+        });
+        return Ok(slint::run_event_loop()?);
     }
     if std::env::args().any(|arg| arg == "--focus-smoke") {
         ui.show()?;
