@@ -342,6 +342,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let exit_timer = slint::Timer::default();
     let measurement_timer = slint::Timer::default();
     if thumbnail_smoke {
+        ui.set_mode(1); // Exercise Image delegates while PNG results arrive.
         let loader = thumbnails.clone();
         let weak = ui.as_weak();
         let started = Instant::now();
@@ -356,6 +357,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             press_key(ui.window(), slint::platform::Key::Escape.into()).expect("public component input");
             if dispatch.len() == 512 { dispatch.pop_front(); }
             dispatch.push_back(input.elapsed().as_micros() as u64);
+            if next >= 500 { ui.set_mode(2); }
             let mut state = loader.borrow_mut();
             assert!(state.failure.is_none(), "PNG decoder failed: {:?}", state.failure);
             while next < 1_000 && state.request(next) { next += 1; }
