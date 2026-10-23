@@ -435,10 +435,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         let loader = thumbnails.clone();
         let delayed_measurement = measurement_timer.clone();
         // Keep the normal UI polling timer, but do not inject input or start the
-        // thumbnail dispatch timer during the ten-second quiet phase.
+        // thumbnail dispatch timer during the fifteen-second quiet phase. Slow
+        // host process sampling must not force weaker idle-evidence gates.
         resource_start_timer.start(
             slint::TimerMode::SingleShot,
-            Duration::from_secs(10),
+            Duration::from_secs(15),
             move || {
                 eprintln!("resource_probe_idle_end");
                 let ui = weak.upgrade().expect("resource workload window");

@@ -146,3 +146,31 @@ in [run40019286663](https://github.com/01max/librairii/actions/runs/40019286663)
 including both offline runtime and native Linux checks. The Intel test now waits
 for child readiness before exercising the unchanged production deadline;
 assertions and workloads remain intact. Rust quality and existing CI also pass.
+
+Final evidence head `1c7dae0` retains a separate Intel resource-observation failure
+in [run40020211745](https://github.com/01max/librairii/actions/runs/40020211745);
+Linux and Apple Silicon pass, as do all Rust quality targets and existing CI.
+Intel's normal-renderer warmup completes normally, including its workload and
+owned shutdown, but only18 low-latency idle samples survive the unchanged100ms
+collector guard (20 required). They span7.201seconds with monotonic CPU. Several
+`ps` collections take110–244ms on that runner. All software warmup/measured runs
+pass. Artifact12530716647 ZIP SHA256
+`ba54ff2b1dbd8910e9845693dafdb580affa719150194974c927fe73bf05052e`
+retains the original failing trace. Replaying it through the analyzer reproduces
+the same failure and must continue to fail after correction.
+
+Only the synthetic resource probe's quiet phase increases from10 to15seconds to
+collect sufficient low-latency observations. A timing model using the recorded
+collection costs fails at10seconds and passes at15; it is an authored model,
+not a new measurement. The actual native CI probe remains the validation route.
+No retry, changed sample/duration/latency acceptance gate, production polling
+change or workload reduction is introduced. New reports state the longer quiet
+phase explicitly; historical reports and their timing methods remain unchanged.
+The analyzer already rejects the incomplete sample set correctly; its existing
+short/slow/regressing-sample regressions remain the guard, and native execution
+validates the changed app timer. No source-text assertion substitutes for that.
+
+Independent scoped review recomputes the18-sample failure and approves the
+longer fixed observation window with unchanged thresholds/deadline. All10
+resource-recorder regressions and Rust formatting pass locally. Product
+performance budgets remain unqualified. Fresh native CI validates this correction.
