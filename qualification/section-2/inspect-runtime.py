@@ -3,6 +3,7 @@
 import argparse
 import hashlib
 import json
+import os
 import pathlib
 import platform
 import plistlib
@@ -85,9 +86,11 @@ def inspect(root):
                     'versions': ['readelf', '--version-info', str(binary)],
                     'resolved': ['ldd', str(binary)]}
     outputs = {}
+    # Native tools use translated labels; parse one language on every desktop.
+    tool_env = {**os.environ, 'LC_ALL': 'C', 'LANG': 'C'}
     for name, command in commands.items():
         try:
-            result = subprocess.run(command, capture_output=True, text=True, timeout=30)
+            result = subprocess.run(command, capture_output=True, text=True, timeout=30, env=tool_env)
             outputs[name] = {'returncode': result.returncode,
                              'stdout': result.stdout, 'stderr': result.stderr, 'timed_out': False}
         except subprocess.TimeoutExpired as error:
@@ -112,10 +115,12 @@ def inspect(root):
                 raise ValueError('bundle metadata bytes changed')
             requirements['bundle_minimum_os'] = plistlib.loads(contents).get('LSMinimumSystemVersion')
         missing = requirements['non_system_libraries']
+        parsed = bool(requirements['linked_libraries'] and requirements['minimum_os_load_commands'])
     else:
         requirements = linux_requirements(*(outputs[name]['stdout'] for name in ('dynamic', 'versions', 'resolved')))
         missing = requirements['unresolved_libraries']
-    passed = not missing and all(value['returncode'] == 0 for value in outputs.values())
+        parsed = bool(requirements['needed_sonames'] and requirements['required_version_names'])
+    passed = parsed and not missing and all(value['returncode'] == 0 for value in outputs.values())
     return {
         'schema': 1, 'source': manifest['source'], 'source_dirty': manifest['source_dirty'],
         'target': manifest['target'], 'binary_sha256': manifest['binary_sha256'],
@@ -123,6 +128,7 @@ def inspect(root):
         'host': {'system': platform.system(), 'release': platform.release(),
                  'machine': platform.machine(), 'macos': platform.mac_ver()[0]},
         'immediate_link_inspection': 'pass' if passed else 'fail',
+        'parsed_metadata_complete': parsed,
         'requirements': requirements, 'tool_outputs': outputs,
         'scope': 'Immediate linked libraries and declared binary ABI only; dynamically loaded libraries/plugins and clean-host availability require separate execution.',
         'minimum_supported_os_qualified': False,

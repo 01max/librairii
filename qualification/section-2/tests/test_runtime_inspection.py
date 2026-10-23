@@ -3,6 +3,7 @@ import hashlib
 import importlib.util
 import pathlib
 import json
+import os
 import platform
 import subprocess
 import tempfile
@@ -100,6 +101,31 @@ class RuntimeInspection(unittest.TestCase):
             self.assertEqual(report['immediate_link_inspection'], 'fail')
             self.assertTrue(all(value['tool_error'] for value in report['tool_outputs'].values()))
             self.assertTrue(all('native tool unavailable' in value['stderr'] for value in report['tool_outputs'].values()))
+
+    def test_french_host_uses_stable_tool_labels_and_preserves_other_environment(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = pathlib.Path(directory)
+            binary = root / 'probe'
+            binary.write_bytes(b'synthetic bytes; never executed')
+            digest = hashlib.sha256(binary.read_bytes()).hexdigest()
+            target = next(name for name, host in runtime.TARGETS.items()
+                          if host == (platform.system(), platform.machine()))
+            manifest = {'target': target, 'source': 'synthetic', 'source_dirty': False,
+                        'executable': 'probe', 'binary_sha256': digest, 'files': {'probe': digest}}
+            (root / 'manifest.json').write_text(json.dumps(manifest))
+            def native_tool(command, **kwargs):
+                self.assertEqual(kwargs['env']['LC_ALL'], 'C')
+                self.assertEqual(kwargs['env']['LANG'], 'C')
+                self.assertEqual(kwargs['env']['LIBRAIRII_INSPECTION_TEST'], 'preserved')
+                return subprocess.CompletedProcess(command, 0, '', '')
+            with patch.dict(os.environ, {'LC_ALL': 'fr_FR.UTF-8', 'LANG': 'fr_FR.UTF-8',
+                                         'LIBRAIRII_INSPECTION_TEST': 'preserved'}), \
+                 patch.object(runtime.subprocess, 'run', side_effect=native_tool) as commands:
+                report = runtime.inspect(root)
+                self.assertEqual(report['immediate_link_inspection'], 'fail')
+                self.assertFalse(report['parsed_metadata_complete'])
+                self.assertEqual(commands.call_count, 2 if platform.system() == 'Darwin' else 3)
+                self.assertEqual(os.environ['LC_ALL'], 'fr_FR.UTF-8')
 
 
 if __name__ == '__main__':
