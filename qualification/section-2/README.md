@@ -1,5 +1,25 @@
 # Section 2 qualification spike
 
+**Current continuation (2026-10-23):** Linux/macOS only. See
+[continuation.md](continuation.md), [current-pins.json](current-pins.json) and the
+[runnable operator checklist](operator-checks.md). The owner chose Slint with
+About-screen attribution and can operate Intel/Linux hosts. Toolkit selection
+still awaits mandatory physical/AT/input/rendering/performance/clean-host gates.
+PR38's **Task 2 native qualification** workflow produces matching unsigned
+packages; its public API tests do not substitute for those operator observations.
+The original reports below retain their historical source attribution.
+
+Current public GUI regression command, on an eligible desktop:
+
+```sh
+cargo build --locked --features gui --bin qualification-desktop
+SLINT_BACKEND=winit-skia-software python3 run-smokes.py target/debug/qualification-desktop
+```
+
+On headless Linux, wrap the Python command with `xvfb-run -a`. This supplies X11
+in-process GUI regression evidence, not Wayland/Orca/physical qualification.
+
+
 **Partial qualification; no selected toolkit or supported-platform claim.**
 Owner: librairii-4. Base: integration commit
 `1419f1d7c5236016c0e330056c9eff45931ddf48`.

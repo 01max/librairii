@@ -1,5 +1,22 @@
 # Independent selection gate (2.13)
 
+2026-10-23 update: the active scope is **three Linux/macOS targets**; the Windows
+column below is historical and does not gate this change. The owner chose the
+Slint royalty-free desktop route with top-level AboutSlint attribution. Native
+ARM access is now available, and the owner can run Intel/Linux checks. The
+[current continuation](continuation.md), [pins](current-pins.json) and
+[operator checklist](operator-checks.md) supersede the historical pending-access
+and rejected-data-candidate status below. Actual toolkit selection remains open.
+
+A fresh independent code/evidence review found two P2 defects (native Quit and
+menu focus restoration), both corrected in separate commits. Re-review confirmed
+those fixes and found one P3 Linux Quit/menu issue, also separately corrected.
+That review approves the implemented continuation only. Automated CI/builds,
+package manifests and the local AX observations do not supply missing spoken AT,
+IME, real Intel/Linux interaction, GPU-failure, input/thumbnail or clean-host
+results. Keep missing gates visibly incomplete; do not start full feature UI.
+
+
 **PENDING FINAL QUALIFICATION REVIEW. TOOLKIT NOT SELECTED.**
 Draft task PR38 targets `rewrite-in-rust-native-desktop` only. No merge authorized.
 Source research/builds/controller tests and a local unsigned ARM image are useful
