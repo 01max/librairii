@@ -134,6 +134,15 @@ fn install_pickers(ui: &Spike, root: &std::path::Path, menus: Rc<native_menus::M
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let start = Instant::now();
+    if std::env::args().any(|arg| arg == "--require-opengl") {
+        // The generic Skia graph compiles GL, but its skia-opengl renderer-name
+        // alias is feature-gated. Require the API instead of allowing fallback.
+        slint::BackendSelector::new()
+            .backend_name("winit".into())
+            .renderer_name("skia".into())
+            .require_opengl()
+            .select()?;
+    }
     // No profile, library, network client or filesystem input exists in this spike.
     let ui = Spike::new()?;
     ui.set_macos_menus(cfg!(target_os = "macos"));

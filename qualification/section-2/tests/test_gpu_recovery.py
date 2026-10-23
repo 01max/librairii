@@ -26,6 +26,7 @@ class GpuRecovery(unittest.TestCase):
         for name, changed in [
                 ('baseline', run(0, gpu.CPU + gpu.DONE)),
                 ('opengl', run(0, gpu.GPU + gpu.DONE)),
+                ('baseline', run(0, 'unrecognized renderer skia-opengl' + gpu.GPU + gpu.DONE)),
                 ('opengl', run(-11, 'Error: signal')),
                 ('wgpu', run(1, 'Error: unsupported WGPU renderer')),
                 ('wgpu', run(127, 'command missing')),
@@ -47,11 +48,18 @@ class GpuRecovery(unittest.TestCase):
                 ('opengl', 'Error: unrelated application setup failure'),
                 ('opengl', 'Error: renderer was not compiled in'),
                 ('wgpu', 'Error: wgpu was not compiled in'),
-                ('wgpu', 'Error: wgpu helper tool is missing')]:
+                ('wgpu', 'Error: wgpu helper tool is missing'),
+                ('opengl', 'unrecognized renderer skia-opengl; Error: Error creating glutin display for native display Xlib')]:
             with self.subTest(name=name, text=text):
                 runs = self.success()
                 runs[name] = run(1, text)
                 self.assertFalse(gpu.checks_for(runs)['forced_' + name + '_rejected'])
+
+    def test_captured_linux_native_errors_are_accepted_without_component_snapshots(self):
+        runs = self.success()
+        runs['opengl'] = run(1, 'Error: Error creating glutin display for native display Xlib(XlibDisplayHandle): failed to create EGLDisplay without a reason')
+        runs['wgpu'] = run(1, 'Error: Error creating wgpu window surface: Failed to create surface for any enabled backend: {}')
+        self.assertTrue(all(gpu.checks_for(runs).values()))
 
     def test_timeout_retains_output_and_reaps_process_group(self):
         result = gpu.command([sys.executable, '-c', 'import time; print("starting", flush=True); time.sleep(30)'],

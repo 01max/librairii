@@ -65,11 +65,12 @@ def checks_for(runs):
                 and not runs[name]['timed_out'] and 'Error:' in text(name)
                 and any(marker in text(name) for marker in INIT_ERRORS[name])
                 and not any(marker in text(name).lower() for marker in
-                            ('unsupported', 'not compiled', 'not built', 'not enabled'))
+                            ('unsupported', 'not compiled', 'not built', 'not enabled', 'unrecognized renderer'))
                 and DONE not in text(name))
 
     return {
-        'working_opengl_control': passed('baseline') and GPU in text('baseline') and DONE in text('baseline'),
+        'working_opengl_control': passed('baseline') and GPU in text('baseline') and DONE in text('baseline')
+                                  and 'unrecognized renderer' not in text('baseline'),
         'forced_opengl_rejected': rejected('opengl'),
         'forced_wgpu_rejected': rejected('wgpu'),
         'default_attempted_both_gpu_candidates': all(marker in text('recovery') for marker in FAILURES),
@@ -98,15 +99,20 @@ def inspect(package, output):
     injection = {'__EGL_VENDOR_LIBRARY_FILENAMES': str(missing_driver),
                  'VK_DRIVER_FILES': str(missing_driver), 'VK_ICD_FILENAMES': str(missing_driver)}
     runs = {}
-    for name, backend in [('baseline', 'winit-skia-opengl'), ('opengl', 'winit-skia-opengl'),
+    for name, backend in [('baseline', 'winit-skia'), ('opengl', 'winit-skia'),
                           ('wgpu', 'winit-skia-wgpu'), ('recovery', 'winit-skia')]:
         directory = output.resolve() / name
         directory.mkdir()
         injected = name != 'baseline'
         case_env = {**env, **(injection if injected else {}), 'SLINT_BACKEND': backend}
         server = '-screen 0 1280x900x24 -nolisten tcp' + (' -extension GLX' if injected else '')
-        argv = ['xvfb-run', '-a', '--server-args=' + server, str(binary), '--french',
-                '--renderer-smoke=' + str(directory)]
+        flags = ['--french']
+        if name in ('baseline', 'opengl'):
+            flags += ['--require-opengl']
+        # Skia snapshots re-render on CPU even if a queued GPU init error is
+        # about to terminate the event loop. Failure controls must not use them.
+        flags += ['--renderer-smoke=' + str(directory)] if name in ('baseline', 'recovery') else ['--smoke']
+        argv = ['xvfb-run', '-a', '--server-args=' + server, str(binary), *flags]
         runs[name] = command(argv, case_env)
         runs[name]['backend_request'] = backend
         runs[name]['driver_overrides'] = injection if injected else {}
@@ -119,7 +125,7 @@ def inspect(package, output):
     versions = command(['dpkg-query', '-W', '-f=${Package} ${Version}\n', 'xvfb', 'libvulkan1',
                         'mesa-vulkan-drivers', 'libegl1', 'libegl-mesa0', 'libglx0', 'libglx-mesa0',
                         'libgl1-mesa-dri', 'fonts-noto-cjk'], env)
-    driver = command(['xvfb-run', '-a', 'glxinfo', '-B'], {**env, 'SLINT_BACKEND': 'winit-skia-opengl'})
+    driver = command(['xvfb-run', '-a', 'glxinfo', '-B'], env)
     checks['driver_context_recorded'] = versions['returncode'] == 0 and driver['returncode'] == 0
     report = {
         'source': manifest['source'], 'source_dirty': manifest['source_dirty'],

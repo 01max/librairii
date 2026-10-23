@@ -11,8 +11,9 @@ changed. The loader mechanisms are documented by
 [libglvnd](https://github.com/NVIDIA/libglvnd/blob/master/src/EGL/icd_enumeration.md)
 and the [Vulkan loader](https://github.com/KhronosGroup/Vulkan-Loader/blob/main/docs/LoaderDriverInterface.md).
 
-Separate `winit-skia-opengl` and `winit-skia-wgpu` controls must reject initialization
-under injection. The ordinary `winit-skia` request, with the same injection, must
+Separate public `BackendSelector::require_opengl` and `winit-skia-wgpu` controls
+must reject initialization under injection. The ordinary `winit-skia` request,
+with the same injection, must
 emit both GPU-candidate failures and report the actual `skia backend software`
 surface through Slint's performance diagnostics. The pinned Slint 1.18.1
 `create_default_surface` already tries WGPU, OpenGL and software candidates;
@@ -31,7 +32,17 @@ versions, Xvfb session description and both fresh PNG frames for each successful
 case. Visual glyph review remains separate from non-flat/changed-pixel checks;
 component input is not physical input, clipboard or IME evidence. Xvfb does not
 qualify a real Wayland/remote desktop or recovery from GPU loss after startup.
-Actual Linux results remain pending until this revision executes in CI.
+The first Linux run
+[39955558369](https://github.com/01max/librairii/actions/runs/39955558369), head
+`5ab2ec9`, retained a failing overall verdict: recovery itself reported both GPU
+errors and the software surface, with successful rendering/input, but the
+`skia-opengl` alias was unrecognized in this feature graph and fell back silently.
+The corrected control uses the public API requirement without changing the graph.
+That run also demonstrated that CPU snapshots can execute before a queued GPU
+initialization error returns. Failure controls now use the bounded ordinary
+smoke rather than snapshots. The report and original failure remain retained;
+this first run does not qualify the control comparison. Corrected Linux results
+remain pending until the next revision executes in CI.
 
 ## Current runtime inspection (2026-10-23)
 
