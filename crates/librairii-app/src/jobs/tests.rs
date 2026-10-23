@@ -858,6 +858,9 @@ fn j6_executor_callback_reentry_never_holds_queue_mutex() -> TestResult {
 #[test]
 fn j6_progress_is_coalesced_with_one_scalar_per_worker_and_one_wake() -> TestResult {
     let gates = Gates::new();
+    // Start both executors before publishing progress can block the sole
+    // coordinator call owner ahead of its second item dispatch.
+    gates.execute.close();
     gates.progress.close();
     gates.report.close();
     let rig = Rig::new(2, gates.clone(), StartPolicy::Create, false)?;
@@ -893,6 +896,8 @@ fn j6_progress_is_coalesced_with_one_scalar_per_worker_and_one_wake() -> TestRes
         item.total_bytes = 1_000_000;
     }
     rig.created(request)?;
+    until(|| gates.execute.entries() == 2)?;
+    gates.execute.open();
     until(|| gates.report.entries() == 2 && gates.progress.entries() == 1)?;
     let values = rig.handle.take_progress().ok_or("missing wake")?;
     assert_eq!(values.len(), 2);

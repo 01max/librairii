@@ -43,10 +43,36 @@ regular payload member's size/digest and exact manifest bytes, rejecting missing
 duplicate, changed, unexpected or alias members; macOS DMG size/hash records
 the supplied builder output without remounting it here.
 
-Corrected three-target execution/results are pending this revision's CI.
+The first three-target release measurements passed in
+[run 39961452717](https://github.com/01max/librairii/actions/runs/39961452717),
+implementation `b6016f1`, built source `ecbdcb7b9fea00455dd7c33baf6a32605925aefa`.
+[resource-observations.json](resource-observations.json) retains exact source,
+binary/distribution identities, actual hardware/surfaces and all six summaries;
+the linked artifacts retain the raw 24 runs (six warmups and 18 measurements).
+Independent review recomputed every verdict/summary successfully.
+
+These are within-host diagnostic observations, not comparisons with the older
+physical-host baseline. Explicit Skia CPU medians were:
+
+| Identified CI host | Readiness marker | Idle CPU (one core) | Peak RSS | tar.gz bytes |
+| --- | ---: | ---: | ---: | ---: |
+| ARM, Apple M1 (Virtual), 3 CPUs | 301.7 ms | 1.50% | 273,907,712 | 10,676,944 |
+| Intel i7-8700B, 4 CPUs | 301.9 ms | 0.98% | 216,297,472 | 11,215,538 |
+| Linux EPYC 9V74, 4 CPUs, Xvfb | 48.9 ms | 0.41% | 74,080,256 | 14,615,761 |
+
 Task 2.9 remains incomplete: physical input/first presentation, representative
 product-artwork timing and additional evidence-based ceilings remain open.
 No existing budget is weakened, passed or replaced by these resource diagnostics.
+
+The same head's separate cumulative Rust check retained a Linux failure in the
+inherited job progress test: 537/538 passed, then `controlled observation` timed
+out at ten seconds. A temporary 100 ms delay in fetching its second item
+reproduced the exact failure with only one executor active, one item prefetched
+and the coordinator blocked by the deliberately held progress callback. Waiting
+for both executors before releasing their existing gate passes that same
+schedule without changing the deadline, progress load or assertions. The
+temporary delay/debug instrumentation was removed; only fixture coordination
+changes. Production progress/coordinator policy remains unchanged.
 
 # Thumbnail measurement probe (2026-10-23)
 

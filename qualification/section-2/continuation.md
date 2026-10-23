@@ -266,6 +266,12 @@ surfaces, hardware, scale and session. One warmup plus three fresh-process runs
 per normal/CPU request produce raw observations and min/median/max diagnostics.
 Missing markers, counters, coverage or successful teardown fail the run rather
 than inventing measurements. See [performance.md](performance.md) for units,
-observer overhead, phase boundaries and exact limits. CI execution is pending;
+observer overhead, phase boundaries and exact limits. All three native release
+resource jobs passed at implementation `b6016f1`; exact observations are retained
+in [resource-observations.json](resource-observations.json). The separate Linux
+cumulative check exposed an inherited progress-fixture scheduling race; the
+existing executor gate now establishes both workers before progress can block
+the coordinator, without altering runtime policy or deadlines. The original
+failure and its controlled reproduction remain documented. New-head CI is pending;
 physical input, presentation, representative product-artwork budgets and new
 evidence-based ceilings are still separate unfinished parts of 2.9.
