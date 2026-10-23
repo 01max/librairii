@@ -90,9 +90,15 @@ qualification. The package remains unsigned; public release signing is later.
 - Record identified hardware, renderer, sample count/distribution, startup,
   sustained idle CPU, peak RSS and final package size. Native 1,000-story
   completion must be ≤3,000 ms and actual input dispatch p95 ≤100 ms under
-  background/thumbnail activity. The construction marker, three-second smoke,
-  generated raster fixture and in-process event timings do not establish those
-  gates or a thumbnail-decoder/eviction policy.
+  background/thumbnail activity. Run the binary with `--thumbnail-smoke` to
+  capture the bounded 1,000-PNG/cache workload and component-dispatch diagnostics.
+  This uses original tiny synthetic PNGs and a 64-entry shared LRU; visible
+  delegates can also retain their mounted images. Its first-24 marker includes
+  queue/event-loop delay; decode p95 is one PNG, not a batch of 24. The construction
+  marker, three-second smoke and in-process event timings do not establish
+  native first-presentation/input gates or the retained representative 24-artwork
+  loads plus full PNG decode ≤50 ms p95. Record these separately with attributed
+  samples; neither a fast synthetic result nor CI passes those physical gates.
 
 Return the filled JSON plus referenced screenshots/logs. Redact personal paths
 from captures. Missing or failed observations keep Task 2 incomplete and full

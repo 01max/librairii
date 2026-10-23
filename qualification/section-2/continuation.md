@@ -12,9 +12,10 @@ Not now remains the default, page changes retain explicit decisions, and Apply
 clears every pending checkbox. The first checkbox remains a static widget for
 the real widget-event regression; the other 24 use writable model bindings.
 
-List/Small covers/Large covers now use distinct original 48×64 rasters for the
-1,000 synthetic stories. This is bounded raster/model evidence, not a decoder,
-lazy-thumbnail cache or input-performance qualification. A main-thread timer
+List/Small covers/Large covers use distinct original 48×64 synthetic images for
+the 1,000 stories. The 2.9 continuation below adds actual PNG decoding and a
+bounded lazy cache; physical input and product-image qualification stay open.
+A main-thread timer
 samples actual logical window width to select compact/intermediate/wide states;
 it avoids a cyclic dependency between layout minimums and window width.
 Compact navigation has an explicit close/Escape path and returns focus to its
@@ -120,3 +121,26 @@ Re-review confirmed both P2 corrections and found one P3: the Linux menu group
 still disabled Quit during dialogs. Only Settings/About are now disabled, leaving
 Quit reachable. No other blocking implementation findings were reported; this
 review approves only the implemented continuation, not physical qualification.
+
+## 2.9 bounded PNG and cache probe
+
+The GUI now requests lazy images from an owned worker using the already locked
+image0.25.10 PNG decoder (default features disabled). The worker creates original
+48×64 PNG bytes, then measures decoding separately from encoding. It does not
+accept files or untrusted image bytes. Requests/results have 16 slots each,
+in-flight identities are capped at 33, and shared decoded images use a 64-entry
+LRU. Deferred visible interest is deduplicated within the fixed 1,000 identities;
+capacity return retries it even without another incidental model read. Decode
+samples retain at most 512 values. Both owned workers cancel/join before normal
+Quit retires the temporary fixture. Mounted delegates can retain their visible
+images independently of shared-cache eviction, avoiding immediate reload churn.
+
+`--thumbnail-smoke` decodes all 1,000 identities while synthetic work and public
+component key dispatch run, verifies the cache reaches its 64-entry cap, then
+exits through owned shutdown. It reports cold first-24 completion, total workload,
+PNG decode p95 and component-dispatch p95/sample count. These diagnostics do not
+measure physical input, first presentation, representative product artwork or
+the retained 24-artwork/full-PNG 50 ms budget. Unit regressions verify LRU recency,
+reload, distinct pixels, deferred visible retries, saturated queues and join.
+Independent review found the initial missing backpressure retry; the bounded
+deferred-interest path and no-incidental-read regression correct it.

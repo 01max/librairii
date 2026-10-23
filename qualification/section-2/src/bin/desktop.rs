@@ -1,5 +1,5 @@
 use librairii_qualification::{REVIEW_COUNT, REVIEW_PAGE, Review, matching};
-use slint::{ComponentHandle, Model, ModelRc, SharedPixelBuffer, VecModel};
+use slint::{ComponentHandle, Model, ModelRc, VecModel};
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 use std::sync::Arc;
@@ -8,34 +8,25 @@ use std::time::{Duration, Instant};
 
 #[path = "desktop/native_menus.rs"]
 mod native_menus;
+#[path = "desktop/thumbnails.rs"]
+mod thumbnails;
 
 slint::include_modules!();
 
-fn show_rows(ui: &Spike, query: &str) {
+fn show_rows(ui: &Spike, query: &str, loader: &Rc<RefCell<thumbnails::Loader>>) {
     let rows: Vec<_> = matching(query)
         .into_iter()
-        .map(|story| {
-            // Original distinct bounded rasters, not image-decode qualification.
-            let mut pixels = SharedPixelBuffer::<slint::Rgb8Pixel>::new(48, 64);
-            for (i, pixel) in pixels.make_mut_slice().iter_mut().enumerate() {
-                *pixel = slint::Rgb8Pixel::new(
-                    (45 + (story.id * 17 + i / 48) % 180) as u8,
-                    (50 + story.id * 29 % 170) as u8,
-                    (80 + i % 100) as u8,
-                );
-            }
-            StoryRow {
-                id: story.id as i32,
-                title: story.title.into(),
-                cover: slint::Image::from_rgb8(pixels),
-            }
+        .map(|story| StoryRow {
+            id: story.id as i32,
+            title: story.title.into(),
+            cover: slint::Image::default(),
         })
         .collect();
     let grid: Vec<ModelRc<StoryRow>> = rows
         .chunks(3)
-        .map(|row| ModelRc::new(VecModel::from(row.to_vec())))
+        .map(|row| thumbnails::Loader::rows(loader, row.to_vec()))
         .collect();
-    ui.set_stories(ModelRc::new(VecModel::from(rows)));
+    ui.set_stories(thumbnails::Loader::rows(loader, rows));
     ui.set_grid(ModelRc::new(VecModel::from(grid)));
 }
 
@@ -182,11 +173,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             );
         }
     });
-    show_rows(&ui, "");
+    let thumbnails = Rc::new(RefCell::new(thumbnails::Loader::new()));
+    show_rows(&ui, "", &thumbnails);
     let weak = ui.as_weak();
+    let search_thumbnails = thumbnails.clone();
     ui.on_search(move |query| {
         if let Some(ui) = weak.upgrade() {
-            show_rows(&ui, &query);
+            show_rows(&ui, &query, &search_thumbnails);
         }
     });
     let weak = ui.as_weak();
@@ -299,18 +292,21 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let quit_smoke = std::env::args().any(|arg| arg == "--quit-smoke");
     let quit_during_work = Rc::new(Cell::new(false));
     let observed_quit = quit_during_work.clone();
-    if quit_smoke {
+    let thumbnail_smoke = std::env::args().any(|arg| arg == "--thumbnail-smoke");
+    if quit_smoke || thumbnail_smoke {
         ui.invoke_start_work();
     }
+    let thumbnail_poll = thumbnails.clone();
     let timer = slint::Timer::default();
     let weak = ui.as_weak();
     let work = worker.clone();
     let poll_cancel = cancel.clone();
     timer.start(
         slint::TimerMode::Repeated,
-        Duration::from_millis(30),
+        Duration::from_millis(16),
         move || {
             if let Some(ui) = weak.upgrade() {
+                thumbnails::Loader::poll(&thumbnail_poll);
                 update_viewport(&ui);
                 menus.update(ui.get_french(), ui.get_modal());
                 let completed = progress.load(Ordering::Acquire);
@@ -344,6 +340,39 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         },
     );
     let exit_timer = slint::Timer::default();
+    let measurement_timer = slint::Timer::default();
+    if thumbnail_smoke {
+        let loader = thumbnails.clone();
+        let weak = ui.as_weak();
+        let started = Instant::now();
+        let mut next = 0;
+        let mut first_24_ms = None;
+        let mut dispatch = std::collections::VecDeque::new();
+        measurement_timer.start(slint::TimerMode::Repeated, Duration::from_millis(10), move || {
+            assert!(started.elapsed() < Duration::from_secs(20), "thumbnail workload timed out");
+            let ui = weak.upgrade().expect("measurement window");
+            if !ui.get_working() { ui.invoke_start_work(); }
+            let input = Instant::now();
+            press_key(ui.window(), slint::platform::Key::Escape.into()).expect("public component input");
+            if dispatch.len() == 512 { dispatch.pop_front(); }
+            dispatch.push_back(input.elapsed().as_micros() as u64);
+            let mut state = loader.borrow_mut();
+            assert!(state.failure.is_none(), "PNG decoder failed: {:?}", state.failure);
+            while next < 1_000 && state.request(next) { next += 1; }
+            if first_24_ms.is_none() && (0..24).all(|id| state.decoded.contains(&id)) {
+                first_24_ms = Some(started.elapsed().as_millis());
+            }
+            if state.decoded.len() == 1_000 {
+                assert_eq!(state.peak_cache, thumbnails::CACHE);
+                let mut samples: Vec<_> = dispatch.iter().copied().collect();
+                samples.sort_unstable();
+                let p95 = samples[(samples.len() * 95).div_ceil(100) - 1];
+                eprintln!("thumbnail_smoke=passed; workload_ms={}; first_24_ms={}; component_dispatch_samples={}; component_dispatch_p95_us={}; physical_input=not_measured",
+                    started.elapsed().as_millis(), first_24_ms.unwrap(), samples.len(), p95);
+                slint::quit_event_loop().expect("quit measurement loop");
+            }
+        });
+    }
     if std::env::args().any(|arg| arg == "--focus-smoke") {
         ui.show()?;
         ui.set_review_visible(true);
@@ -453,6 +482,21 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     if let Some(worker) = worker.borrow_mut().take() {
         worker.join().map_err(|_| "synthetic worker panicked")?;
     }
+    timer.stop();
+    measurement_timer.stop();
+    thumbnails.borrow_mut().close()?;
+    let images = thumbnails.borrow();
+    eprintln!(
+        "thumbnail_probe=png; distinct_decoded={}; peak_cache={}; cache_cap={}; decode_p95_us={}",
+        images.decoded.len(),
+        images.peak_cache,
+        thumbnails::CACHE,
+        images.decode_p95_us()
+    );
+    if let Some(error) = &images.failure {
+        return Err(error.clone().into());
+    }
+    drop(images);
     let retired = fixture.close();
     result?;
     retired?;

@@ -97,9 +97,9 @@ jobs:
         run: |
           spike="$PWD/qualification/section-2/target/release/qualification-desktop"
           if [[ "$RUNNER_OS" == Linux ]]; then
-            xvfb-run -a python3 qualification/section-2/run-smokes.py "$spike"
+            xvfb-run -a python3 qualification/section-2/run-smokes.py "$spike" 2>&1 | tee target/task2-evidence/gui-smokes.log
           else
-            python3 qualification/section-2/run-smokes.py "$spike"
+            python3 qualification/section-2/run-smokes.py "$spike" 2>&1 | tee target/task2-evidence/gui-smokes.log
           fi
       - name: Assemble package and operator checklist
         run: >-

@@ -1,3 +1,21 @@
+# Current measurement probe (2026-10-23)
+
+The current [continuation](continuation.md) replaces shared/generated rasters
+with a lazy original-PNG worker and bounded LRU. Run the packaged executable
+with `--thumbnail-smoke` (normal backend and explicit CPU path) and preserve its
+source manifest and complete output. It runs 1,000 decodes under background work,
+reports cold first-24 completion, a bounded last-512 PNG decode p95, component key
+dispatch p95/sample count and peak shared-cache entries. The outer smoke runner
+kills a hang at 30 seconds; the workload itself fails after 20 seconds.
+
+This fixed 48×64 synthetic corpus is useful regression evidence. Component
+callback timing excludes OS input delivery and presentation; cold first-24 is a
+single queue/event-loop sample and one-PNG p95 is not the batch-of-24 budget.
+No retained ceiling or additional hardware budget is passed by this smoke alone.
+[Operator checks](operator-checks.md) still require physical measurements,
+startup/presentation, sustained idle CPU, RSS, package size and representative
+artwork across actual hosts/renderers. The observations below are historical.
+
 # Resource diagnostics (2.9, P58)
 
 **Partial; no new performance ceiling approved.** 2026-10-20, librairii-4.

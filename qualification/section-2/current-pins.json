@@ -278,7 +278,7 @@
     "cargo-llvm-cov": "0.9.1",
     "cargo-fuzz": "0.13.2"
   },
-  "gui_lock_sha256": "4be9740c50e69e41a01b76093ae1cdd201a91a92b72047aec9ded64e191e8888",
+  "gui_lock_sha256": "abd9ff36a4ca272f07253d0103edbd70ac369462d46ebb81f641fbc9d6b66a76",
   "slint_license": {
     "route": "LicenseRef-Slint-Royalty-free-2.0",
     "attribution": "AboutSlint in a top-level About screen",
@@ -289,5 +289,18 @@
   },
   "toolkit_selection": "pending physical gates and independent 2.13 review",
   "historical_data_candidates": "zip/sevenz-rust2 and rejected Unicode compositions retained as historical experiments only",
-  "native_menu_adapter": "Direct macOS muda=0.19.3, defaults disabled, existing locked package; no root graph change"
+  "native_menu_adapter": "Direct macOS muda=0.19.3, defaults disabled, existing locked package; no root graph change",
+  "thumbnail_probe": {
+    "image": "0.25.10",
+    "features": [
+      "png"
+    ],
+    "default_features": false,
+    "inputs": "1000 bounded original 48x64 synthetic PNGs; no external images",
+    "cache_entries": 64,
+    "request_and_result_queue_entries": 16,
+    "pending_cap": 33,
+    "deferred_cap": 1000,
+    "decode_sample_cap": 512
+  }
 }
