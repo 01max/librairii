@@ -62,3 +62,14 @@ focus entry before injecting keys, following the native virtual-keyboard path in
 The multiple-selection precondition uses actual selected rows, since GTK's
 selected-child count includes table cells. Exact returned paths remain required.
 Both prior native observer runs remain failed; revalidation is required.
+
+At `8a56de7` / run40012639720 all seven X11 picker/focus/early-Settings cases
+pass, including cancellation. Reveal failed because the minimal observer lacked
+`file`, which `xdg-mime` needs to identify a directory before dispatching its
+registered Thunar handler. That runtime helper is now explicitly installed.
+Wayland selected-row assertions still fail: the observer now identifies the
+actual two-row archive table by its own cell names and selects each real GTK row
+through the native table interface, requiring both selected rows and exact
+returned paths. This avoids confusing an empty/falsey accessible with the whole
+desktop. Native OS key injection is still required for Settings and Search;
+no picker keyboard shortcut is claimed by these selection actions.

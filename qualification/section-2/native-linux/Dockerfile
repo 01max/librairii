@@ -10,7 +10,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libfontconfig1 libfreetype6 libxkbcommon-x11-0 libxcursor1 libxi6 libxrandr2 \
     libegl1 libgl1 libvulkan1 mesa-vulkan-drivers fonts-noto-cjk \
     python3 python3-pyatspi python3-dbus python3-gi dbus-x11 at-spi2-core \
-    xdg-desktop-portal xdg-desktop-portal-gtk xdg-utils thunar \
+    xdg-desktop-portal xdg-desktop-portal-gtk xdg-utils file thunar \
     xvfb openbox xdotool x11-utils scrot sway wtype grim procps \
     && rm -rf /var/lib/apt/lists/*
 COPY drive.py /checks/drive.py

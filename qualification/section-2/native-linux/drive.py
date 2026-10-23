@@ -158,7 +158,7 @@ class Desktop:
             self.run(['wtype', '-s', '200', '-d', '30', text, '-s', '100'])
 
     def nodes(self, root=None):
-        queue = collections.deque([(root or self.a.Registry.getDesktop(0), 0)])
+        queue = collections.deque([(root if root is not None else self.a.Registry.getDesktop(0), 0)])
         count = 0
         while queue and count < 4000:
             node, depth = queue.popleft()
@@ -266,11 +266,20 @@ def one_case(desktop, name, kind, expected):
                 desktop.button(dialog, ('Cancel',))
             elif name == 'files-multiple':
                 wanted = {'Été 日本語 故事.zip', 'Deuxième archive 02.pk'}
-                table = wait_for(lambda: desktop.find(lambda n: n.getRole() in (desktop.a.ROLE_TABLE, desktop.a.ROLE_TREE_TABLE)
-                    and wanted <= {str(x.name) for x in desktop.nodes(n)}, dialog))
-                assert table.queryComponent().grabFocus(), 'native file list focus failed'
-                desktop.key('ctrl+a')
-                wait_for(lambda: len(table.queryTable().getSelectedRows()) == 2)
+                def archive_table(node):
+                    if node.getRole() not in (desktop.a.ROLE_TABLE, desktop.a.ROLE_TREE_TABLE):
+                        return False
+                    table = node.queryTable()
+                    return table.nRows == 2 and {str(table.getAccessibleAt(row, 0).name)
+                        for row in range(2)} == wanted
+                node = wait_for(lambda: desktop.find(archive_table, dialog))
+                table = node.queryTable()
+                report['selection_table'] = {'name': str(node.name), 'rows': table.nRows,
+                    'row_names': [str(table.getAccessibleAt(row, 0).name) for row in range(2)]}
+                for row in range(2):
+                    assert table.addRowSelection(row), 'native file row selection failed'
+                report['selected_rows'] = wait_for(lambda: (rows := table.getSelectedRows()) and
+                    set(rows) == {0, 1} and list(rows))
                 desktop.screenshot(output / 'selected.png')
                 desktop.button(dialog, ('Open', 'Select'))
             else:
