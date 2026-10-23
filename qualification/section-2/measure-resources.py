@@ -169,12 +169,19 @@ def run_probe(binary, backend, system, timeout=40):
     except (OSError, ValueError, subprocess.SubprocessError) as error:
         run['errors'].append(str(error))
     finally:
-        # Kill/reap the wrapper and descendants on every incomplete path.
-        if process.poll() is None or run['timed_out'] or run['errors']:
+        # An exited time wrapper can leave a descendant with closed output
+        # pipes. Its exit code, including zero, does not prove owned teardown.
+        if process.poll() is not None:
             try:
-                os.killpg(process.pid, signal.SIGKILL)
+                os.killpg(process.pid, 0)
             except ProcessLookupError:
                 pass
+            else:
+                run['errors'].append('owned process group survives exited wrapper')
+        try:
+            os.killpg(process.pid, signal.SIGKILL)
+        except ProcessLookupError:
+            pass
         process.wait(timeout=5)
         selector.close()
         process.stdout.close()

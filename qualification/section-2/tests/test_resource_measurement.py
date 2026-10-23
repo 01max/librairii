@@ -3,10 +3,14 @@ import hashlib
 import importlib.util
 import io
 import json
+import os
 import pathlib
 import platform
+import signal
+import subprocess
 import tarfile
 import tempfile
+import time
 import unittest
 
 spec = importlib.util.spec_from_file_location('resources', pathlib.Path(__file__).parents[1] / 'measure-resources.py')
@@ -117,6 +121,38 @@ class ResourceMeasurement(unittest.TestCase):
             self.assertTrue(run['timed_out'])
             self.assertIn('resource_probe_ready;', run['output'])
             self.assertEqual(run['analysis']['measurement'], 'fail')
+
+    def test_exited_wrapper_cannot_leave_a_running_descendant(self):
+        for code in (1, 0):
+            with self.subTest(exit_code=code), tempfile.TemporaryDirectory() as directory:
+                root = pathlib.Path(directory)
+                pid_file = root / 'child.pid'
+                binary = root / 'authored-probe'
+                binary.write_text('#!/usr/bin/env python3\nimport subprocess,sys,pathlib\n'
+                                  'child=subprocess.Popen([sys.executable,"-c","import time; time.sleep(30)"],'
+                                  'stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)\n'
+                                  f'pathlib.Path({str(pid_file)!r}).write_text(str(child.pid))\n'
+                                  f'raise SystemExit({code})\n')
+                binary.chmod(0o755)
+                run = resources.run_probe(binary, 'winit-skia-software', platform.system(), timeout=2)
+                child = int(pid_file.read_text())
+                stopped = False
+                try:
+                    deadline = time.monotonic() + 1
+                    while time.monotonic() < deadline:
+                        status = subprocess.run(['/bin/ps', '-p', str(child), '-o', 'stat='],
+                                                capture_output=True, text=True, timeout=1).stdout.strip()
+                        if not status or status.startswith('Z'):
+                            stopped = True
+                            break
+                        time.sleep(0.01)
+                finally:
+                    try:
+                        os.kill(child, signal.SIGKILL)
+                    except ProcessLookupError:
+                        pass
+                self.assertTrue(stopped, 'owned descendant must stop even after wrapper exits')
+                self.assertEqual(run['analysis']['measurement'], 'fail')
 
 
 if __name__ == '__main__':
