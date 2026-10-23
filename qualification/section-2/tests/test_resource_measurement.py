@@ -122,6 +122,39 @@ class ResourceMeasurement(unittest.TestCase):
             self.assertIn('resource_probe_ready;', run['output'])
             self.assertEqual(run['analysis']['measurement'], 'fail')
 
+    def test_distribution_requires_every_payload_member_once_with_exact_bytes(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = pathlib.Path(directory)
+            package = root / 'probe'
+            package.mkdir()
+            payload = b'authored inert executable bytes'
+            manifest = {'source': 'expected', 'files': {'binary': hashlib.sha256(payload).hexdigest()}}
+            manifest_bytes = json.dumps(manifest).encode()
+            (package / 'manifest.json').write_bytes(manifest_bytes)
+            (package / 'binary').write_bytes(payload)
+            for variant in ('complete', 'missing', 'changed', 'duplicate', 'alias'):
+                with self.subTest(variant=variant):
+                    archive = root / (variant + '.tar.gz')
+                    with tarfile.open(archive, 'x:gz') as stream:
+                        entries = [('probe/manifest.json', manifest_bytes)]
+                        if variant != 'missing':
+                            entries.append(('probe/binary', payload if variant != 'changed' else b'wrong'))
+                        if variant == 'duplicate':
+                            entries.append(('probe/binary', payload))
+                        for name, data in entries:
+                            member = tarfile.TarInfo(name)
+                            member.size = len(data)
+                            stream.addfile(member, io.BytesIO(data))
+                        if variant == 'alias':
+                            member = tarfile.TarInfo('probe/alias')
+                            member.type, member.linkname = tarfile.SYMTYPE, 'binary'
+                            stream.addfile(member)
+                    if variant == 'complete':
+                        self.assertEqual(resources.archive_identity(archive, package, manifest)['bytes'], archive.stat().st_size)
+                    else:
+                        with self.assertRaises(ValueError):
+                            resources.archive_identity(archive, package, manifest)
+
     def test_exited_wrapper_cannot_leave_a_running_descendant(self):
         for code in (1, 0):
             with self.subTest(exit_code=code), tempfile.TemporaryDirectory() as directory:

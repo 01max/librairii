@@ -38,8 +38,9 @@ insufficient idle coverage, unowned PIDs, missing surface identity, wrong explic
 CPU surfaces, incomplete workload and missing owned shutdown fail measurement.
 A failed warmup or measured run is retained without replacing it with a retry.
 Reports are saved after each run. Package payload bytes include all verified
-manifest members plus the manifest. Archive size/hash is associated by checking
-its embedded manifest against the measured package; macOS DMG size/hash records
+manifest members plus the manifest. Archive matching streams and verifies every
+regular payload member's size/digest and exact manifest bytes, rejecting missing,
+duplicate, changed, unexpected or alias members; macOS DMG size/hash records
 the supplied builder output without remounting it here.
 
 Corrected three-target execution/results are pending this revision's CI.

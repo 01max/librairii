@@ -198,13 +198,44 @@ def file_identity(path):
 
 
 def archive_identity(path, package, manifest):
-    with tarfile.open(path, 'r:gz') as archive:
-        member = archive.getmember(package.name + '/manifest.json')
-        if not member.isfile() or member.size > 1_048_576:
-            raise ValueError('invalid archive manifest')
-        embedded = json.loads(archive.extractfile(member).read())
-    if embedded != manifest:
+    package = package.resolve(strict=True)
+    manifest_path = package / 'manifest.json'
+    if json.loads(manifest_path.read_text()) != manifest:
         raise ValueError('archive manifest does not match measured package')
+    expected = {package.name + '/manifest.json': file_identity(manifest_path)}
+    for name, digest in manifest['files'].items():
+        relative = pathlib.PurePosixPath(name)
+        if relative.is_absolute() or '..' in relative.parts:
+            raise ValueError('unsafe archive payload path')
+        local = package.joinpath(*relative.parts).resolve(strict=True)
+        if not local.is_relative_to(package):
+            raise ValueError('archive payload escapes measured package')
+        expected[package.name + '/' + name] = {'bytes': local.stat().st_size, 'sha256': digest}
+    directories = {str(parent) for name in expected for parent in pathlib.PurePosixPath(name).parents
+                   if str(parent) != '.'}
+    seen = set()
+    with tarfile.open(path, 'r|gz') as archive:
+        for member in archive:
+            name = member.name.rstrip('/')
+            relative = pathlib.PurePosixPath(name)
+            if relative.is_absolute() or '..' in relative.parts or str(relative) != name or name in seen:
+                raise ValueError('unsafe or duplicate archive member')
+            seen.add(name)
+            if member.isdir() and name in directories:
+                continue
+            if not member.isfile() or name not in expected:
+                raise ValueError('unexpected or alias archive payload')
+            identity = expected[name]
+            if member.size != identity['bytes']:
+                raise ValueError('archive manifest does not match measured package' if name.endswith('/manifest.json')
+                                 else 'archive payload size changed')
+            with archive.extractfile(member) as stream:
+                digest = hashlib.file_digest(stream, 'sha256').hexdigest()
+            if digest != identity['sha256']:
+                raise ValueError('archive manifest does not match measured package' if name.endswith('/manifest.json')
+                                 else 'archive payload bytes changed')
+    if not expected.keys() <= seen:
+        raise ValueError('archive payload members missing')
     return file_identity(path)
 
 
