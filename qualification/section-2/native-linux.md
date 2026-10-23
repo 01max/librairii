@@ -73,3 +73,10 @@ through the native table interface, requiring both selected rows and exact
 returned paths. This avoids confusing an empty/falsey accessible with the whole
 desktop. Native OS key injection is still required for Settings and Search;
 no picker keyboard shortcut is claimed by these selection actions.
+
+The `50ac5cf` observer run40013478231 failed to identify the archive table
+because it assumed the first accessible column directly exposed filename text.
+The observer now inspects each table row's own bounded cell descendants across
+columns, requires exactly the two expected filenames in distinct rows, and
+retains observed cell names for diagnosis. Native row selections and exact
+returned paths remain mandatory; this changes discovery, not the pass verdict.

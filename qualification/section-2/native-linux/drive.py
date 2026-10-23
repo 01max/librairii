@@ -270,12 +270,19 @@ def one_case(desktop, name, kind, expected):
                     if node.getRole() not in (desktop.a.ROLE_TABLE, desktop.a.ROLE_TREE_TABLE):
                         return False
                     table = node.queryTable()
-                    return table.nRows == 2 and {str(table.getAccessibleAt(row, 0).name)
-                        for row in range(2)} == wanted
+                    if table.nRows != 2 or not 0 < table.nColumns <= 16:
+                        return False
+                    # GTK can put an unnamed icon/container before the text cell.
+                    rows = [{str(child.name) for column in range(table.nColumns)
+                        for child in desktop.nodes(table.getAccessibleAt(row, column))}
+                        for row in range(2)]
+                    names = [sorted(values & wanted) for values in rows]
+                    report['selection_table'] = {'name': str(node.name), 'rows': table.nRows,
+                        'columns': table.nColumns, 'row_archive_names': names,
+                        'observed_names': [sorted(values)[:32] for values in rows]}
+                    return all(len(values) == 1 for values in names) and set(sum(names, [])) == wanted
                 node = wait_for(lambda: desktop.find(archive_table, dialog))
                 table = node.queryTable()
-                report['selection_table'] = {'name': str(node.name), 'rows': table.nRows,
-                    'row_names': [str(table.getAccessibleAt(row, 0).name) for row in range(2)]}
                 for row in range(2):
                     assert table.addRowSelection(row), 'native file row selection failed'
                 report['selected_rows'] = wait_for(lambda: (rows := table.getSelectedRows()) and
