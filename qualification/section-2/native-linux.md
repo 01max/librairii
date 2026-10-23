@@ -37,8 +37,20 @@ The independent clean-runtime check runs separately; either failure fails CI.
 These are synthetic OS events and native AT-SPI actions in headless desktops.
 They do not qualify physical keyboards, IME composition, Orca speech, arbitrary
 distributions, real GPU hardware or macOS integration. Task 2.6 and the toolkit
-selection remain open until their remaining scope has evidence. Native execution
-of this new observer is pending; unit tests do not establish integration success.
+selection remain open until their remaining scope has evidence. Native execution at `230cc47` passes all eight cases on each session in
+[run40018196257](https://github.com/01max/librairii/actions/runs/40018196257).
+[Retained observations](native-linux-observations.json) bind source, binary,
+image, archive, raw report, session-file hashes and per-case results. The archive
+bytes and contained executable/manifest/source were independently rehashed.
+Independent review verifies all 16 cases, 190 session-file hashes, exact portal
+responses, X11 parent properties, six Wayland associations through normal teardown
+and all 711 archive payload hashes. Both Thunar screenshots visibly show the
+actual fixture path. Picker selected/outside-folder images precede GTK repaint
+and can retain the old highlight: they prove native-dialog/filename presence,
+not final selection. Native row observations and exact callback paths/response
+codes provide the selection proof.
+The same run preserves a separate Intel timeout-fixture failure; it does not
+constitute an all-target green CI result.
 
 The first native observer run at `3b003cf` retained failures in
 [run 40010930728](https://github.com/01max/librairii/actions/runs/40010930728).
@@ -128,3 +140,9 @@ Task2.6 subset. GTK keyboard-only operation and physical input remain open.
 Actual OS Settings/Search key events, all parent/cancel/early-command checks,
 both sessions, exact paths and normal owned shutdown remain required. Thunar is
 explicitly closed through its private session before retiring the test container.
+
+The separate timeout-fixture correction `229c68f` passes all three native lanes
+in [run40019286663](https://github.com/01max/librairii/actions/runs/40019286663),
+including both offline runtime and native Linux checks. The Intel test now waits
+for child readiness before exercising the unchanged production deadline;
+assertions and workloads remain intact. Rust quality and existing CI also pass.

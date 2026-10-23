@@ -140,3 +140,24 @@ all27 runtime hashes, eight frames and independent review are retained in
 Task 2.6 observer `00cabd1`, capture review fix `3b003cf`, and private-bus/native
 selection fix `564be95` remain pending successful native integration execution.
 The original failed runs remain preserved; no overall toolkit selection follows.
+
+## 2026-10-23 verified native Linux continuation
+
+Task 2.6 implementation `230cc47` passes all eight cases in each X11/Wayland
+session in run40018196257. Independent review approves all16 cases,190 session
+file hashes, exact portal responses, raw X11 parent properties, six Wayland
+parent associations through teardown, both actual Thunar paths and all711
+matching archive payload hashes. Picker images precede repaint; native row
+observations plus exact callback results prove selection. See
+`native-linux-observations.json` for immutable source/binary/artifact identities.
+RFD cancellation and blocking cold folder reveal are fixed in separate commits.
+
+The same run revalidates all16 offline runtime checks against the matching package.
+Independent review verifies all27 runtime hashes and eight frames, identical to
+the earlier visually reviewed French/CJK images. Task 2.11 test-only correction
+`229c68f` makes child readiness deterministic before the unchanged deadline
+assertion. All61 Python tests pass; run40019286663 passes Linux and both native
+macOS lanes, with Rust quality40019286755 and existing CI40019286676 also green.
+These outcomes belong to those recorded heads; subsequent evidence commits are
+verified separately. Physical/IME/Orca, remaining macOS integration, complete
+clean-host/package, license and toolkit-selection gates remain open.

@@ -35,3 +35,8 @@ validates the fixture path, passes separate arguments, and waits for the short
 OS launcher rather than the external file manager's lifetime. Only an actual
 observed window at the correct path can qualify reveal; request acceptance alone
 cannot. No new Cargo dependency or toolkit pin is introduced.
+
+Implementation `230cc47` now passes the automated Linux X11/Wayland matrix: all
+16 cases, with exact results and actual file-manager paths. See
+`native-linux-observations.json` for source/binary/artifact binding and scope.
+Physical/keyboard-only/cross-platform qualification remains open.
