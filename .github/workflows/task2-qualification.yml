@@ -74,15 +74,9 @@ jobs:
         run: |
           spike="$PWD/qualification/section-2/target/release/qualification-desktop"
           if [[ "$RUNNER_OS" == Linux ]]; then
-            xvfb-run -a "$spike" --controller-smoke
-            xvfb-run -a "$spike" --widget-smoke
-            xvfb-run -a "$spike" --focus-smoke
-            xvfb-run -a "$spike" --size=560x400 --french --smoke
+            xvfb-run -a python3 qualification/section-2/run-smokes.py "$spike"
           else
-            "$spike" --controller-smoke
-            "$spike" --widget-smoke
-            "$spike" --focus-smoke
-            "$spike" --size=560x400 --french --smoke
+            python3 qualification/section-2/run-smokes.py "$spike"
           fi
       - name: Assemble package and operator checklist
         run: >-
