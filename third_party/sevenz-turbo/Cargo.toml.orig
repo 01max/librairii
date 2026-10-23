@@ -1,0 +1,188 @@
+[package]
+description = "A Rust based 7z decompressor/compressor; a fork of sevenz-rust2 that focuses on raw speed and streaming consumers"
+edition = "2024"
+homepage = "https://github.com/scryer-media/sevenz-turbo"
+keywords = ["7z", "7zip", "sevenz", "decompress"]
+license = "Apache-2.0"
+name = "sevenz-turbo"
+readme = "README.md"
+repository = "https://github.com/scryer-media/sevenz-turbo"
+# Raised from upstream's 1.93: `lzma-turbo` requires 1.97.1.
+rust-version = "1.97.1"
+version = "0.29.2"
+# Repository scaffolding that has no business in the crate archive.
+exclude = [".github/", ".githooks/", ".gitleaks.toml", ".gitattributes", "renovate.json", "AGENTS.md", ".cargo/", "xtask/", "rust-toolchain.toml"]
+
+# `tools/decode-bench` is a workspace member rather than an example because it
+# depends on upstream `sevenz-rust2` to time the fork against it, and that
+# dependency must not appear in this crate's own graph at all.
+[workspace]
+members = ["tools/decode-bench", "tools/wasm-conformance", "xtask"]
+resolver = "3"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[features]
+# Diagnostic kernel comparisons; never enabled by default.
+kernel-ab = ["lzma-turbo/kernel-ab"]
+default = ["aes256", "aws-lc-crypto", "bzip2", "compress", "ppmd", "util"]
+# wasm has no C toolchain, so it takes the RustCrypto backend.
+default_wasm = ["aes256_wasm", "native-crypto", "bzip2", "compress", "ppmd", "util"]
+nt-time = ["dep:nt-time"]
+aes256 = ["dep:getrandom"]
+aes256_wasm = ["aes256", "getrandom/wasm_js"]
+# Cryptography backends for `aes256` — both SHA-256 *and* AES-256-CBC. See
+# `src/crypto_backend.rs`: the features are additive, so `native-crypto` does
+# not turn `aws-lc-crypto` off — it takes precedence over it. A build that
+# wants no AWS-LC asks for `default-features = false` plus `native-crypto`.
+# Enabling `aes256` with neither is a compile error, not a silent choice. The
+# encoder's AES follows the same choice: `aes`/`cbc` come in only through
+# `native-crypto`, so `compress` adds no RustCrypto AES to an AWS-LC build.
+aws-lc-crypto = ["dep:aws-lc-rs", "lzma-turbo/crypto"]
+native-crypto = ["dep:aes", "dep:cbc", "lzma-turbo/native-crypto"]
+# Delegate the 7z `aes256` cryptography to the embedding host (see the `hooks`
+# module) instead of running it inside the guest: the bulk AES-256-CBC
+# *decrypt* through this crate's own hook, and the key derivation's SHA-256
+# through `lzma-turbo`'s, which this forwards to. Engaged on `wasm32` only: on
+# a native target the feature is accepted but inert (AWS-LC or RustCrypto
+# stays selected and no hook is ever called), so feature unification in a
+# mixed workspace cannot silently turn a native build into a delegating one.
+# It adds no AES dependency at all — that is the point: `aes256,crypto-host`
+# on wasm carries no in-guest block cipher. `lzma-turbo/crypto-host` implies
+# `lzma-turbo/native-crypto`, which is the in-process SHA-256 a native build
+# of this feature set falls back on without needing a C toolchain.
+crypto-host = ["lzma-turbo/crypto-host"]
+# Delegate the CRC-32 every 7z header, folder and member carries to the
+# embedding host, through `lzma-turbo`'s hooks (re-exported from the `hooks`
+# module). Engaged on `wasm32` only, inert on native targets exactly as
+# `crypto-host` is. Checksums inside a bzip2 or zstd stream are those codecs'
+# own and stay in the guest.
+crc-host = ["lzma-turbo/crc-host"]
+brotli = ["dep:brotli"]
+bzip2 = ["dep:bzip2"]
+# Writing archives. LZMA and LZMA2 are encoded by `lzma-turbo`'s port of the
+# SDK encoder (see `src/codec/lzma_turbo/writer.rs`); with `aes256`, the
+# AES-256 encryptor is the selected backend's (RustCrypto under
+# `native-crypto`, AWS-LC otherwise). `crypto-host` delegates decryption only,
+# so a wasm `crypto-host` build with `compress` and `aes256` also needs
+# `native-crypto`; without it the build is a compile error.
+compress = ["lzma-turbo/enc"]
+deflate = ["dep:flate2"]
+lz4 = ["dep:lz4_flex"]
+# PPMd decodes and encodes through `ppmd-turbo`.
+ppmd = ["dep:ppmd-turbo"]
+util = ["dep:cap-std"]
+zstd = ["dep:zstd"]
+
+[dependencies]
+zeroize = { version = "1.9", features = ["alloc"] }
+aes = { version = "0.9", features = ["zeroize"], optional = true }
+# The same pin and the same features `lzma-turbo` uses, so a build that has both
+# crates resolves one copy of AWS-LC. AES-256-CBC is this crate's own (7z
+# cryptography is not `lzma-turbo`'s job), so the dependency is direct.
+aws-lc-rs = { version = "1.18", default-features = false, features = ["aws-lc-sys", "prebuilt-nasm"], optional = true }
+brotli = { version = ">= 7, < 10", default-features = false, optional = true, features = ["std"] }
+bzip2 = { version = "0.6", optional = true }
+cbc = { version = "0.2", optional = true }
+flate2 = { version = "1", optional = true, features = ["zlib-rs"] }
+getrandom = { version = "0.4", optional = true }
+# A caret requirement: the floor this crate is known to need, not a pin.
+# `Cargo.lock` fixes the exact version that was tested, and CI builds with
+# `--locked`.
+lzma-turbo = { version = "0.10.2", default-features = false, features = ["std", "asm", "crc", "filters"] }
+ppmd-turbo = { version = "0.2.0", optional = true }
+lz4_flex = { version = "0.14", optional = true }
+nt-time = { version = "0.15", optional = true }
+zstd = { version = "0.14", optional = true }
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+cap-std = { version = "4.0.3", optional = true }
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+js-sys = "0.3"
+wasm-bindgen = "0.2"
+
+[dev-dependencies]
+rand = { version = "0.10" }
+tempfile = "3"
+
+# The wasm `crypto-host` example is driven by `tools/wasm-conformance`, a
+# workspace member that owns the native `wasmtime` host supplying the reference
+# AES the example imports. It lives outside this crate so that no other
+# `cargo test` or `cargo clippy` builds wasmtime: `wasmtime` never enters this
+# crate's dependency graph, dev or otherwise.
+
+[[example]]
+name = "advance"
+required-features = ["default"]
+
+[[example]]
+name = "block_decompress"
+required-features = ["default"]
+
+[[example]]
+name = "compress"
+required-features = ["default"]
+
+[[example]]
+name = "decompress"
+required-features = ["default"]
+
+[[example]]
+name = "decompress_progress"
+required-features = ["default"]
+
+[[example]]
+name = "mt_decompress"
+required-features = ["default"]
+
+# The reference embedding of the `hooks` seams: a wasm guest that declares raw
+# imports in a `host` namespace and installs hooks forwarding to them. It only
+# makes sense with the delegating features on.
+[[example]]
+name = "wasm_host_extract_conformance"
+required-features = ["aes256", "crc-host", "crypto-host"]
+
+[package.metadata.docs.rs]
+all-features = true
+
+[profile.release]
+lto = "fat"
+codegen-units = 1
+
+# Tests need no debuginfo: a cold `cargo test --all-features --no-run` is
+# 20.7 s instead of 25.1 s (99 CPU-s instead of 132) without it, and the test
+# run is unchanged.
+[profile.test]
+debug = 0
+split-debuginfo = "off"
+incremental = false
+
+# Dev and test builds optimise only the crates that dominate test time; debug
+# assertions and overflow checks stay on. Each comment gives the measured cost
+# of leaving that crate at opt-level 0 with the other override in place (local
+# runs of `cargo test --all-features` on an Apple M5 Max). AWS-LC, crc-fast
+# (now crc-turbo), zlib-rs, libbz2-rs-sys, zstd-sys, lz4_flex and brotli were
+# measured too and left out: optimising them saved nothing measurable in the test run.
+
+# LZMA/LZMA2 coding, BCJ/delta filters and CRC: the test run takes 121 s instead
+# of 50 s, folder_parallel_tests 56 s instead of 17 s; it costs under 1 s of
+# cold compile and nothing warm.
+[profile.dev.package.lzma-turbo]
+opt-level = 3
+
+# PPMd: the test run takes 65 s instead of 50 s (190 CPU-s instead of 132),
+# differential_7zz_tests 6.7 s instead of 0.9 s; no measurable compile cost.
+[profile.dev.package.ppmd-turbo]
+opt-level = 3
+
+# sevenz-turbo itself stays at opt-level 0: optimising it would build all 29
+# test binaries optimised too, so a cold build takes 47 s instead of 21 s and an
+# incremental one 29 s instead of 4 s, against 17 s saved in the test run.
+
+# `--cfg sevenz_turbo_unthreaded` (through RUSTFLAGS) makes the LZMA and LZMA2
+# writers take the path a target without threads takes, so that it can be
+# tested and measured on a host that has them. Never set for a build that ships.
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ["cfg(sevenz_turbo_unthreaded)"] }

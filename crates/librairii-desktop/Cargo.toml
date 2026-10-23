@@ -16,3 +16,4 @@ workspace = true
 
 [dev-dependencies]
 librairii-testkit.workspace = true
+serde_json.workspace = true

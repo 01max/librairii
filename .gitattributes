@@ -3,3 +3,42 @@ frontend/wailsjs/** -whitespace
 # Admitted oracle artifacts/checker/producers are hashed as exact bytes.
 # Preserve them even under Git for Windows core.autocrlf=true.
 preservation/** -text
+
+# Authenticated upstream index and notice payloads retain their pinned bytes.
+.config/upstream-sources/** -text
+.config/upstream-notices/go-1.26.5-xtext-0.43.0-unicode15-cldr32/** -text
+
+# Private derivatives are also inventoried as exact bytes.
+crates/librairii-core/src/collection_codec/** -text
+
+# Migration SQL is an exact persisted schema contract, compared to the corpus.
+crates/librairii-storage/migrations/*.sql -text
+internal/database/migrations/*.sql -text
+
+# Authenticated JSONv1 provenance and derivative manifests hash Git bytes.
+.config/upstream-sources.json -text
+.config/upstream-sources/go-1.26.5-json-v1-studio/** -text
+.config/upstream-notices/go-1.26.5-json-v1-studio/** -text
+crates/librairii-core/src/import/studio_json/** -text
+
+# Query provenance binds exact current inline bytes and source-map metadata.
+.config/query-codec-source-map.json -text
+crates/librairii-storage/src/migrations.rs -text
+crates/librairii-core/src/query/** -text
+
+# Retained synthetic query-reference captures are hashed as exact bytes.
+crates/librairii-storage/tests/fixtures/query/*.json -text
+
+# Frozen tag category data and reference captures retain exact byte provenance.
+crates/librairii-core/src/tagging/unicode15.rs -text
+crates/librairii-storage/tests/fixtures/tags/** -text
+xtask/extract_tag_categories.py -text
+
+# Task 9 Collection reference capture and probe use exact-byte provenance.
+crates/librairii-storage/tests/fixtures/collections/** -text
+
+# Pinned archive decoder source and regression evidence retain exact bytes.
+third_party/sevenz-turbo/** -text
+.config/sevenz-turbo-patch.json -text
+.config/upstream-notices/sevenz-turbo-0.29.2/** -text
+crates/librairii-adapters/testdata/archive-parity/** -text

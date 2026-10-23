@@ -1,6 +1,6 @@
 [workspace]
 members = ["crates/*", "xtask"]
-exclude = ["fuzz", "qualification/section-2"]
+exclude = ["fuzz", "qualification/section-2", "third_party/sevenz-turbo"]
 resolver = "3"
 
 [workspace.package]
@@ -19,6 +19,10 @@ librairii-desktop = { version = "=0.0.0", path = "crates/librairii-desktop" }
 librairii-testkit = { version = "=0.0.0", path = "crates/librairii-testkit" }
 uuid = { version = "=1.28.0", default-features = false, features = ["std"] }
 thiserror = "=2.0.21"
+rusqlite = { version = "=0.40.2", default-features = false, features = ["bundled", "backup"] }
+rustix = { version = "=1.1.5", default-features = false, features = ["fs", "std"] }
+sha2 = { version = "=0.11.1", default-features = false, features = [] }
+windows-sys = { version = "=0.61.2", default-features = false, features = ["Wdk_Foundation", "Wdk_Storage_FileSystem", "Win32_Foundation", "Win32_Security", "Win32_Storage_FileSystem", "Win32_System_IO", "Win32_System_WindowsProgramming"] }
 
 tempfile = "=3.27.0"
 
@@ -30,7 +34,18 @@ proptest = { version = "=1.12.0", default-features = false, features = ["std"] }
 insta = { version = "=1.49.0", default-features = false, features = ["json"] }
 criterion = { version = "=0.8.2", default-features = false, features = ["cargo_bench_support"] }
 
-time = { version = "=0.3.55", default-features = false, features = ["std"] }
+time = { version = "=0.3.55", default-features = false, features = ["std", "parsing", "formatting"] }
+
+reqwest = { version = "=0.13.5", default-features = false, features = ["rustls-no-provider"] }
+rustls = { version = "=0.23.46", default-features = false, features = ["std", "ring", "tls12"] }
+tokio = { version = "=1.54.1", default-features = false, features = ["rt", "time", "sync", "macros"] }
+mime = "=0.3.17"
+rustls-platform-verifier = "=0.7.1"
+
+image = { version = "=0.25.10", default-features = false, features = ["png", "jpeg", "webp"] }
+rawzip = "=0.5.2"
+flate2 = { version = "=1.1.10", default-features = false, features = ["rust_backend"] }
+sevenz-turbo = { version = "=0.29.2", default-features = false, features = ["bzip2", "ppmd", "deflate", "zstd", "lz4", "brotli"] }
 
 [workspace.lints.rust]
 unsafe_code = "deny"
@@ -47,3 +62,6 @@ unimplemented = "deny"
 dbg_macro = "deny"
 undocumented_unsafe_blocks = "deny"
 missing_safety_doc = "deny"
+
+[patch.crates-io]
+sevenz-turbo = { path = "third_party/sevenz-turbo" }

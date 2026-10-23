@@ -1,0 +1,3 @@
+package main
+import("context";"encoding/json";"os";"path/filepath";"github.com/01max/librairii/internal/inspection")
+func main(){ rows:=[]map[string]any{};for _,p:=range os.Args[1:]{result,err:=inspection.NewStoryInspector().Inspect(context.Background(),inspection.Candidate{Path:p,OriginalFilename:filepath.Base(p)},inspection.DefaultLimits());row:=map[string]any{"file":filepath.Base(p),"uuid":result.UUID,"format":result.Format};if err!=nil{row["error"]=err.Error()};rows=append(rows,row)};if json.NewEncoder(os.Stdout).Encode(rows)!=nil{os.Exit(1)}}

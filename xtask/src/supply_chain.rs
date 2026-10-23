@@ -242,10 +242,13 @@ fn write_notices(package: &Value, notices: &Path, text: &mut String) -> Result {
     Ok(())
 }
 pub fn inventory() -> Result {
-    inventory_graph("workspace", "Cargo.toml", "Cargo.lock")?;
-    inventory_graph("fuzz", "fuzz/Cargo.toml", "fuzz/Cargo.lock")
+    let patch = crate::archive_patch::inventory()?;
+    inventory_graph("workspace", "Cargo.toml", "Cargo.lock", &patch)?;
+    inventory_graph("fuzz", "fuzz/Cargo.toml", "fuzz/Cargo.lock", &patch)?;
+    crate::sources::inventory()?;
+    crate::import_sources::inventory()
 }
-fn inventory_graph(graph: &str, manifest: &str, lockfile: &str) -> Result {
+fn inventory_graph(graph: &str, manifest: &str, lockfile: &str, patch: &Value) -> Result {
     let destination = root().join("target/quality");
     let notices = destination.join("notices");
     fs::create_dir_all(&notices)?;
@@ -287,22 +290,35 @@ fn inventory_graph(graph: &str, manifest: &str, lockfile: &str) -> Result {
                 .iter()
                 .find(|p| p["id"] == node["id"])
                 .ok_or("missing resolved package")?;
-            if package["source"].is_null() {
+            let vendored = package["source"].is_null() && package["name"] == patch["name"];
+            if vendored
+                && package["manifest_path"].as_str()
+                    != root().join("third_party/sevenz-turbo/Cargo.toml").to_str()
+            {
+                return Err("unexpected archive patch resolution".into());
+            }
+            if package["source"].is_null() && !vendored {
                 continue;
             }
-            let checksum = lock["package"]
-                .as_array()
-                .ok_or("missing locked packages")?
-                .iter()
-                .find(|p| {
-                    p["name"].as_str() == package["name"].as_str()
-                        && p["version"].as_str() == package["version"].as_str()
-                })
-                .and_then(|p| p.get("checksum"))
-                .and_then(toml::Value::as_str)
-                .ok_or("registry checksum missing")?;
+            let checksum = if vendored {
+                patch["tree_sha256"]
+                    .as_str()
+                    .ok_or("missing patched tree checksum")?
+            } else {
+                lock["package"]
+                    .as_array()
+                    .ok_or("missing locked packages")?
+                    .iter()
+                    .find(|p| {
+                        p["name"].as_str() == package["name"].as_str()
+                            && p["version"].as_str() == package["version"].as_str()
+                    })
+                    .and_then(|p| p.get("checksum"))
+                    .and_then(toml::Value::as_str)
+                    .ok_or("registry checksum missing")?
+            };
             inventory.push(json!({"target":target,"name":package["name"],"version":package["version"],
-                "source":package["source"],"checksum":checksum,"license":package["license"],
+                "source":if vendored { serde_json::json!(format!("vendored+{}",patch["upstream"].as_str().ok_or("missing patch upstream")?)) } else {package["source"].clone()},"checksum":checksum,"checksum_kind":if vendored {"vendored-tree-sha256"} else {"registry-archive-sha256"},"patch":if vendored {patch.clone()}else{Value::Null},"license":package["license"],
                 "repository":package["repository"],"features":node["features"],"dependencies":node["deps"]}));
             if noticed.insert(
                 package["id"]

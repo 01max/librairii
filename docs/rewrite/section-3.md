@@ -82,7 +82,7 @@ Rust Analyzer: open the repository root, use the pinned rustup compiler, enable
 required to build; `cargo fmt` provides save formatting. Editor-generated files
 are not checked in.
 
-`.config/rust-checks.toml` enumerates the four maintained native configurations,
+`.config/rust-checks.toml` enumerates the three active Linux/macOS native configurations,
 currently empty/default features for the foundations only. There are no shipping
 GUI combinations yet. Each native host runs all workspace tests/targets and
 separate doctests; do not relabel cross-compilation as native execution evidence.
@@ -90,22 +90,23 @@ separate doctests; do not relabel cross-compilation as native execution evidence
 ## Native CI and prerequisites
 
 The additive Rust workflow always runs all workspace checks, including previous
-Rust tests, on the four configurations. No path filters or continue-on-error.
+Rust tests, on the three active configurations. No path filters or continue-on-error.
+The current scheduling/cache policy is in [CI during the native rewrite](ci.md);
+the four-platform measurements below record historical foundation evidence.
 A required aggregate refuses failed, cancelled and skipped matrix outcomes.
 Official [runner labels](https://docs.github.com/en/actions/reference/runners/github-hosted-runners)
 were checked on 2026-10-20: macos-15 is ARM, macos-15-intel is Intel,
-ubuntu-24.04 is x64, windows-2025 is x64. Each job asserts the actual rustc host.
+ubuntu-24.04 is x64. Windows is deferred. Each job asserts the actual rustc host.
 Standard hosted CI headless execution does not establish real desktop/Intel GUI,
 assistive technology, GPU/software, signing, installation or packaged workflows.
 Missing physical host evidence from section2 remains incomplete.
 
 Prerequisites: macOS15 Xcode/Command Line Tools SDK and linker (deployment15.0);
-Ubuntu24.04 gcc/binutils/glibc and pkg-config; Windows x64 MSVC Build Tools and
-Windows SDK. No GUI/native-library requirements exist in this graph yet. Toolkit,
+Ubuntu24.04 gcc/binutils/glibc and pkg-config. No GUI/native-library requirements
+exist in this graph yet. Toolkit,
 SQLite/archive and renderer prerequisites must be added after qualification.
-Every host also needs Python3 with its standard-library sqlite3 module (`python3`
-on Unix, `python` on Windows). The ordinary fixture checker runs from native
-PowerShell on Windows; it does not build Go/Wails there.
+Every active host also needs `python3` with its standard-library sqlite3 module.
+The former Windows PowerShell workflow is deferred with that target.
 Ubuntu installs reuse the signed official archive helper from merged support PR40
 through integration ancestry. Its exact head3438bd9 passed native AO review and
 Linux39439305675 plus macOS39439305577 CI; the runner-feed failure was intermittent
@@ -141,10 +142,10 @@ assert the actual accepted/rejected result; no outer required assertion is skipp
 The root checkout rule `preservation/** -text` protects every admitted checker,
 producer, manifest and corpus byte from Git newline conversion, including under
 Windows `core.autocrlf=true`. Exact hashes stay unchanged; no normalization is
-performed by the gate. Native Windows CI additionally clones a fresh independent
-checkout with conversion explicitly enabled and runs the real preservation gate
-there before cumulative checks. Removing the protection makes that regression
-fail on the admitted LF text bytes. Its report joins the native CI artifact.
+performed by the gate. The former Windows CI additionally cloned a fresh independent
+checkout with conversion explicitly enabled before cumulative checks. That job is
+now deferred; the checkout protection and cross-platform Python regression tests
+remain. Its earlier reports are historical evidence for the original commits.
 
 Oracle regeneration and byte-identical export/recovery replay remain separate
 task1 procedures. They use an independent disposable Go checkout and synthetic
@@ -159,7 +160,7 @@ workflow permissions are contents:read, no signing or deployment secrets.
 ## Dependencies and notices
 
 `cargo xtask check` runs pinned cargo-deny0.20.2 plus cargo-audit0.22.2 with warnings
-denied. `deny.toml` enumerates all four target graphs, denies unknown git/registry
+denied. `deny.toml` enumerates the three active target graphs, denies unknown git/registry
 sources, wildcard versions and duplicate releases, and allows only the currently
 needed upstream MIT/Apache-2.0/Unicode-3.0 licenses, plus NCSA for the separate fuzz runtime. No advisory/license/duplicate
 exceptions exist. Unpublished local crates are excluded only from license checks:
@@ -174,8 +175,8 @@ assets require their own reviewed notice/license obligations; a permissive wrapp
 does not cover them. Toolkit/license selection remains gated.
 
 `cargo xtask inventory` emits target/quality/dependency-inventory.json with source,
-compiler, exact registry versions/checksums/features/dependency edges for all four
-resolved graphs. target/quality/notices contains copied upstream LICENSE/COPYING/
+compiler, exact registry versions/checksums/features/dependency edges for the three
+active resolved graphs. target/quality/notices contains copied upstream LICENSE/COPYING/
 NOTICE files and an index; missing upstream notice files fail generation. This is
 a dependency inventory, not a complete release SBOM or distribution clearance.
 Release packaging must include chosen toolkit/renderer/SQLite/assets/font terms
@@ -226,9 +227,11 @@ is labelled diagnostic only. Initial macOS15.7.7 Apple M4 Pro/48GiB stable1.99.1
 measurements: valid checksum19.759–19.875ns, multibyte rejection1.408–1.416ns,
 canonical UUID6.487–6.910ns. These synthetic measurements are not the retained
 5,000-story query/archive/Shelf budgets or native UI performance qualification.
-The focused CI lane runs stable coverage, benchmark harness and bounded fuzzing;
-scheduled/manual runs additionally measure diagnostic benchmarks. All original
-native/Go/React suites remain cumulative and required independently.
+The focused CI lane runs stable coverage, benchmark harness and bounded fuzzing
+after integration pushes and on PRs changing its wiring/toolchain/harnesses;
+scheduled/manual runs additionally measure diagnostic benchmarks. All active
+native suites remain cumulative; Go/React suites run for relevant changes as
+described in [the current CI policy](ci.md).
 
 Both root and fuzz lockfiles receive deny/audit and per-target inventories.
 Bundled libFuzzer source headers differ from its README's short license label:

@@ -101,6 +101,3301 @@
     {
       "suite": "xtask::bin/xtask",
       "name": "supply_chain::tests::utc_date_uses_utc_midnight_even_for_an_offset_clock_value"
+    },
+    {
+      "suite": "librairii-storage::layout_identity",
+      "name": "a_root_replaced_by_a_symlink_does_not_redirect_old_layout_paths",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::layout_identity",
+      "name": "absent_or_invalid_identity_is_never_silently_replaced"
+    },
+    {
+      "suite": "librairii-storage::layout_identity",
+      "name": "concurrent_initializers_never_replace_the_winning_identity"
+    },
+    {
+      "suite": "librairii-storage::layout_identity",
+      "name": "explicit_override_creates_exact_private_layout_without_profile_access"
+    },
+    {
+      "suite": "librairii-storage::layout_identity",
+      "name": "failed_or_repeated_initialization_keeps_existing_identity_and_bytes"
+    },
+    {
+      "suite": "librairii-storage::layout_identity",
+      "name": "identity_probe_preserves_raw_uuid_spelling_and_file_bytes"
+    },
+    {
+      "suite": "librairii-storage::layout_identity",
+      "name": "isolated_root_keeps_non_utf8_native_path_bytes",
+      "targets": [
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::layout_identity",
+      "name": "managed_paths_retain_go_text_and_resolve_only_contained_components"
+    },
+    {
+      "suite": "librairii-storage::layout_identity",
+      "name": "missing_relative_and_nonfresh_overrides_fail_without_mutation"
+    },
+    {
+      "suite": "librairii-storage::layout_identity",
+      "name": "probing_never_initializes_an_absent_directory"
+    },
+    {
+      "suite": "librairii-storage::layout_identity",
+      "name": "symlinked_root_identity_and_managed_ancestors_are_refused",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::layout_identity",
+      "name": "unrepresentable_native_root_bytes_fail_without_lossy_replacement",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin"
+      ]
+    },
+    {
+      "suite": "librairii-storage::migrations",
+      "name": "every_actual_prefix_has_the_unchanged_identity_and_contiguous_ledger"
+    },
+    {
+      "suite": "librairii-storage::migrations",
+      "name": "every_embedded_sql_byte_matches_the_admitted_corpus_and_go_source"
+    },
+    {
+      "suite": "librairii-storage::migrations",
+      "name": "foreign_empty_gapped_duplicate_unsorted_and_future_ledgers_fail_closed"
+    },
+    {
+      "suite": "librairii-storage::migrations",
+      "name": "forged_ledger_or_missing_trigger_is_rejected_without_schema_repair"
+    },
+    {
+      "suite": "librairii-storage::database_workers",
+      "name": "commit_error_is_uncertain_then_fresh_writer_readback_preserves_actual_truth"
+    },
+    {
+      "suite": "librairii-storage::database_workers",
+      "name": "completed_unacknowledged_reads_retain_bounded_result_ownership"
+    },
+    {
+      "suite": "librairii-storage::database_workers",
+      "name": "dropping_result_does_not_cancel_durable_repair_and_close_drains_it"
+    },
+    {
+      "suite": "librairii-storage::database_workers",
+      "name": "existing_foreign_database_and_sidecars_are_refused_before_sqlite_open"
+    },
+    {
+      "suite": "librairii-storage::database_workers",
+      "name": "five_owned_connections_have_actual_required_pragmas_and_close_before_reuse"
+    },
+    {
+      "suite": "librairii-storage::database_workers",
+      "name": "four_coherent_read_snapshots_run_concurrently_with_the_separate_writer"
+    },
+    {
+      "suite": "librairii-storage::database_workers",
+      "name": "injected_lost_commit_ack_preserves_committed_bytes_and_reports_uncertainty"
+    },
+    {
+      "suite": "librairii-storage::database_workers",
+      "name": "queued_work_cancel_is_proven_noncommit_without_cancelling_prior_critical_work"
+    },
+    {
+      "suite": "librairii-storage::database_workers",
+      "name": "saturated_ordinary_queue_keeps_bounded_fifo_repair_and_fresh_barrier_admission"
+    },
+    {
+      "suite": "librairii-storage::database_workers",
+      "name": "unexpected_worker_exit_wakes_queued_results_and_never_claims_closed"
+    },
+    {
+      "suite": "librairii-storage::database_workers",
+      "name": "work_cancellation_and_body_errors_rollback_but_late_cancel_preserves_commit"
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "backup::tests::backup_reservation_failure_does_not_modify_source_state"
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "backup::tests::cancellation_after_a_real_backup_chunk_keeps_the_source_unchanged",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "backup::tests::migration_failure_restores_supported_prefix_and_preserves_newer_candidate",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "backup::tests::post_backup_flush_failure_retains_verified_receipt_and_bytes_on_error_drop",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "database::initialization_tests::failed_fresh_initialization_preserves_candidate_and_restores_database_absence",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::backup",
+      "name": "aliased_or_symlinked_database_is_not_a_qualified_owned_copy",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::backup",
+      "name": "cancelled_backup_preserves_source_and_never_claims_a_snapshot"
+    },
+    {
+      "suite": "librairii-storage::backup",
+      "name": "compatible_prefix_upgrades_keep_verified_backup_and_archive_bytes"
+    },
+    {
+      "suite": "librairii-storage::backup",
+      "name": "foreign_key_corruption_is_preserved_and_never_upgraded_or_relocated"
+    },
+    {
+      "suite": "librairii-storage::backup",
+      "name": "foreign_probe_preserves_main_wal_shm_and_explicit_recovery_never_replaces"
+    },
+    {
+      "suite": "librairii-storage::backup",
+      "name": "future_and_gapped_ledgers_are_not_relocated_or_replaced"
+    },
+    {
+      "suite": "librairii-storage::backup",
+      "name": "online_backup_includes_uncheckpointed_committed_wal_and_is_standalone"
+    },
+    {
+      "suite": "librairii-storage::migrations",
+      "name": "identity_and_ledger_views_are_rejected_before_their_queries_execute"
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "platform::lock::tests::replaced_or_aliased_library_lock_cannot_refresh_old_lease_authority",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "platform::lock::tests::retained_library_lock_excludes_reopen_and_stale_file_does_not_imply_ownership"
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "profile::tests::post_replace_flush_failure_poison_blocks_cache_and_updates_until_reopen",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "profile::tests::profile_serialization_preserves_go_field_order_and_html_escaping"
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "profile::tests::staged_pre_replace_failure_retains_cache_and_cleans_owned_temp",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::library_locks",
+      "name": "changed_identity_refuses_runtime_before_database_creation"
+    },
+    {
+      "suite": "librairii-storage::library_locks",
+      "name": "library_lease_remains_owned_through_durable_repair_and_resource_close"
+    },
+    {
+      "suite": "librairii-storage::library_locks",
+      "name": "library_lock_child_entry"
+    },
+    {
+      "suite": "librairii-storage::library_locks",
+      "name": "process_kill_releases_kernel_lock_without_removing_stale_lock_file"
+    },
+    {
+      "suite": "librairii-storage::library_locks",
+      "name": "rust_lock_is_not_legacy_lifetime_exclusion_or_existing_adoption_authority"
+    },
+    {
+      "suite": "librairii-storage::library_locks",
+      "name": "substituted_lock_fences_new_admissions_without_claiming_pending_effects",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::profiles",
+      "name": "explicit_legacy_profile_read_preserves_invalid_inputs_without_initialization"
+    },
+    {
+      "suite": "librairii-storage::profiles",
+      "name": "fresh_native_namespace_keeps_legacy_read_only_and_uses_private_permissions",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::profiles",
+      "name": "host_profile_locations_are_explicit_separate_and_do_not_create_paths"
+    },
+    {
+      "suite": "librairii-storage::profiles",
+      "name": "invalid_native_settings_are_preserved_and_never_reinitialized",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::profiles",
+      "name": "invalid_update_and_cancel_preserve_effective_profile_and_staged_cleanup",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::profiles",
+      "name": "native_and_legacy_profile_aliases_are_refused_without_following_effects",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::profiles",
+      "name": "native_profile_lock_excludes_other_store_and_process_until_close",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::profiles",
+      "name": "native_store_refuses_substituted_identical_settings_and_namespace",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::profiles",
+      "name": "profile_decoder_retains_go_scalar_assignment_and_raw_identity"
+    },
+    {
+      "suite": "librairii-storage::profiles",
+      "name": "profile_lock_child_entry",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::profiles",
+      "name": "serialized_native_updates_keep_language_and_root_without_lost_snapshots",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::profiles",
+      "name": "strict_profile_wire_limit_unknown_version_and_trailing_values"
+    },
+    {
+      "suite": "librairii-storage::profiles",
+      "name": "native_windows_profile_effects_refuse_until_directory_durability_is_qualified",
+      "targets": [
+        "x86_64-pc-windows-msvc"
+      ]
+    },
+    {
+      "suite": "librairii-storage::streaming_hash",
+      "name": "complete_stream_hash_matches_nist_vectors_across_fixed_buffer_boundaries"
+    },
+    {
+      "suite": "librairii-storage::streaming_hash",
+      "name": "independent_read_error_is_not_erased_when_cancel_arrives_during_read"
+    },
+    {
+      "suite": "librairii-storage::streaming_hash",
+      "name": "interrupted_reads_resume_but_invalid_read_count_never_panics_or_yields_digest"
+    },
+    {
+      "suite": "librairii-storage::streaming_hash",
+      "name": "read_failure_after_real_chunks_returns_cause_without_partial_checksum"
+    },
+    {
+      "suite": "librairii-storage::streaming_hash",
+      "name": "stream_size_ceiling_is_exact_and_consumes_at_most_one_sentinel_byte"
+    },
+    {
+      "suite": "librairii-storage::streaming_hash",
+      "name": "streaming_cancel_stops_before_next_read_without_claiming_complete_digest"
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "platform::unix::tests::descriptor_custody_is_shared_across_instances_and_bound_to_actual_generation",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "platform::unix::tests::native_no_clobber_reuses_exact_regular_bytes_without_gaining_cleanup_ownership",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "platform::unix::tests::destination_created_after_preflight_is_never_overwritten_by_publication",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "platform::unix::tests::destination_aliases_and_same_inode_changed_bytes_do_not_pass_receipt_checks",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "platform::unix::tests::anchored_destination_survives_parent_substitution_without_touching_outside_root",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "platform::unix::tests::publish_flush_failure_retains_witnesses_readonly_bytes_and_sticky_custody_fence",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "platform::unix::tests::cancellation_before_publish_has_no_effect_but_cancel_after_rename_retains_success",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "platform::unix::tests::changed_stage_or_cleanup_container_never_grants_substituted_file_ownership",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "platform::unix::tests::atomic_config_exchange_preserves_a_racing_foreign_config_instead_of_overwriting_it",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "platform::unix::tests::absent_config_uses_no_replace_and_owned_temp_cleanup_refuses_substituted_names",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "platform::unix::tests::source_substitution_after_hash_never_receives_an_owned_published_receipt",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "platform::unix::tests::unused_temp_trash_flush_failure_preserves_bytes_and_both_location_witnesses",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "profile::tests::profile_parent_race_cannot_redirect_staging_or_owned_temp_cleanup",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "profile::tests::post_replace_parent_race_retains_actual_witnesses_and_poison_until_restart",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "profile::tests::config_stage_cleanup_failure_keeps_primary_error_and_foreign_bytes",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-core",
+      "name": "collection_codec::compatibility::normalization::tests::every_scalar_and_frozen_ccc_boundaries_match_actual_go_reference"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "collection_codec::compatibility::normalization::tests::frozen_go_streamsafe_partition_preserves_surviving_mc_order"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "collection_codec::compatibility::normalization::tests::frozen_unicode_folding_mn_space_and_hangul_keep_separate_semantics"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "collection_codec::compatibility::language::tests::bounded_default_grammar_matches_actual_go_without_dns"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "collection_codec::compatibility::language::tests::frozen_default_aliases_are_distinct_from_suppress_macro_and_cldr"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "collection_codec::compatibility::language::tests::frozen_language_lookup_retains_non_dns_region_bits_only"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "collection_codec::compatibility::language::tests::selected_default_cases_match_actual_go_and_dns_omission_reference"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "collection_codec::compatibility::normalization::tests::frozen_json_key_lowercase_and_simple_orbits_preserve_distinct_rules"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "collection_codec::tests::wire_keys_nulls_utf8_surrogates_and_integer_lexemes_are_go_compatible"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "collection_codec::tests::strict_versions_references_and_retired_broken_order_prevent_broadening"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "collection_codec::tests::canonical_wire_order_budgets_and_repeated_normalization_match_source"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "collection_codec::tests::strict_codec_decode_and_migrate_match_actual_frozen_go_cases"
+    },
+    {
+      "suite": "librairii-storage::collection_compatibility",
+      "name": "inspection_is_lazy_idempotent_and_never_heals_existing_attention"
+    },
+    {
+      "suite": "librairii-storage::collection_compatibility",
+      "name": "invalid_codec_marks_attention_but_trigger_abort_cancel_and_not_found_never_fake_commit"
+    },
+    {
+      "suite": "librairii-storage::collection_compatibility",
+      "name": "missing_and_wrong_kind_or_value_criteria_are_distinct_from_sql_failure"
+    },
+    {
+      "suite": "librairii-storage::collection_compatibility",
+      "name": "actual_reference_kinds_value_owners_recursive_branches_and_retirement_remain_distinct"
+    },
+    {
+      "suite": "librairii-storage::collection_compatibility",
+      "name": "projection_commit_failure_is_uncertain_fences_retry_and_retains_fresh_writer_readback"
+    },
+    {
+      "suite": "librairii-storage::collection_compatibility",
+      "name": "schema_only_then_explicit_same_writer_projection_matches_all_eighteen_go_prefixes",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::adoption_inputs",
+      "name": "closed_manifest_refuses_sidecars_before_source_io"
+    },
+    {
+      "suite": "librairii-storage::adoption_inputs",
+      "name": "closed_manifest_retains_bytes_and_refuses_ambiguous_or_incomplete_inputs"
+    },
+    {
+      "suite": "librairii-storage::adoption_inputs",
+      "name": "self_consistent_hashes_cannot_qualify_foreign_sqlite_or_repair_it",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::adoption_inputs",
+      "name": "unix::cancelled_input_verification_does_not_probe_missing_source_or_create_roots",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::adoption_inputs",
+      "name": "unix::closed_input_refuses_aliases_and_raw_profile_identity_mismatch",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::adoption_inputs",
+      "name": "unix::closed_input_revalidation_detects_unlisted_changed_and_missing_entries",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::adoption_inputs",
+      "name": "unix::verified_input_uses_private_sqlite_probe_and_keeps_every_source_byte",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::adoption_inputs",
+      "name": "unix::copy_refuses_existing_overlapping_changed_and_cancelled_inputs_without_clobber",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::adoption_inputs",
+      "name": "unix::independent_copy_keeps_raw_bytes_has_no_aliases_and_holds_its_own_lease",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "adoption::closed::copy_failures::failed_copy_flush_retains_real_root_lease_and_every_recoverable_byte",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "adoption::closed::copy_failures::late_copy_cancel_and_root_substitution_never_activate_or_purge_bytes",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::portability",
+      "name": "foreign_profile_syntax_is_explicit_strict_and_retained_without_path_io"
+    },
+    {
+      "suite": "librairii-storage::portability",
+      "name": "profile_rebinding_borrows_verified_copy_keeps_raw_authority_and_never_replays_paths",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "database::closure_tests::poisoned_queue_close_joins_every_owner_and_keeps_failure_and_lease_explicit"
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "profile::tests::active_binding_post_replace_uncertainty_keeps_exclusion_after_guard_drop",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::native_library",
+      "name": "active_binding_excludes_root_raw_id_and_recovery_changes_but_allows_language",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::native_library",
+      "name": "binding_refuses_unrebound_recovery_or_wrong_namespace_and_retains_copy",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::native_library",
+      "name": "changed_copy_or_profile_fences_binding_until_real_namespace_restart",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::native_library",
+      "name": "concurrent_independent_bindings_keep_one_generation_and_the_losing_copy_owned",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::native_library",
+      "name": "native_binding_retains_real_copy_and_both_leases_without_sqlite_activation",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::native_library",
+      "name": "native_commit_uncertainty_retains_repair_and_fence_across_database_close_and_drop",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::native_library",
+      "name": "native_database_directory_substitution_is_refused_before_sqlite_mutates_foreign_bytes",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::native_library",
+      "name": "native_sqlite_uses_same_five_workers_and_releases_runtime_only_after_real_close",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::native_library",
+      "name": "native_worker_failure_joins_and_never_acknowledges_closed_replacement_generation",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::native_library",
+      "name": "poisoned_native_profile_fences_queued_work_but_retains_actual_commit_and_repair",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "platform::windows::tests::windows_metadata_handles_directory_kind_wrong_type_missing_and_concurrent_queries",
+      "targets": [
+        "x86_64-pc-windows-msvc"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "platform::windows::tests::windows_metadata_pins_block_delete_rename_until_actual_handle_release",
+      "targets": [
+        "x86_64-pc-windows-msvc"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "platform::windows::tests::windows_metadata_refuses_hardlink_and_reparse_aliases_without_following_them",
+      "targets": [
+        "x86_64-pc-windows-msvc"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "platform::windows::tests::windows_query_retains_volume_and_128bit_id_across_handles_and_content_changes",
+      "targets": [
+        "x86_64-pc-windows-msvc"
+      ]
+    },
+    {
+      "suite": "librairii-storage::portability",
+      "name": "filename_diagnostics_never_normalize_or_claim_filesystem_equivalence"
+    },
+    {
+      "suite": "librairii-storage::portability",
+      "name": "windows_name_diagnostics_retain_device_control_and_directory_spelling"
+    },
+    {
+      "suite": "librairii-storage::native_library",
+      "name": "native_files_keep_owned_bytes_and_writer_repair_when_commit_becomes_uncertain",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::native_library",
+      "name": "native_files_refuse_substituted_directory_and_preserve_db_only_readback",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::native_library",
+      "name": "native_files_retain_same_database_custody_and_drain_after_intake_stop",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "platform::windows::tests::windows_relative_read_refuses_unowned_paths_aliases_and_length_without_creation",
+      "targets": [
+        "x86_64-pc-windows-msvc"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "platform::windows::tests::windows_relative_read_retains_actual_lease_and_exact_native_name",
+      "targets": [
+        "x86_64-pc-windows-msvc"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "profile::tests::admitted_profile_update_owns_state_without_holding_mutex_or_admitting_peer",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "native::owned::tests::native_activation_uncertainty_keeps_real_owner_and_admits_no_sqlite_or_managed_mutation",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "native::owned::tests::native_closed_response_loss_occurs_only_after_settlement_and_retains_frozen_old_new_owners",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "native::owned::tests::native_exact_paths_refuse_non_utf8_without_lossy_state_or_profile_strings",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "native::state::tests::native_state_atomic_response_loss_retains_old_new_records_and_never_purges_prefix",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "native::state::tests::native_state_private_codec_rejects_duplicates_unknowns_types_limits_and_epoch_mismatch",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "platform::unix::tests::owned_control_creation_failure_keeps_actual_fd_name_and_partial_bytes",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::adoption_inputs",
+      "name": "closed_manifest_reserves_only_native_root_record_and_exact_atomic_control_prefix"
+    },
+    {
+      "suite": "librairii-storage::native_library",
+      "name": "native_active_abandonment_and_unsettled_trash_never_mint_clean_restart",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::native_library",
+      "name": "native_clean_close_reopens_next_epoch_without_rematching_historical_database_hash",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::native_library",
+      "name": "native_finalizer_busy_retains_owner_until_admitted_profile_update_really_settles",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::native_library",
+      "name": "native_forgotten_pending_retains_owned_slot_and_cannot_acknowledge_clean_database_close",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::native_library",
+      "name": "native_imported_orphan_never_publishes_profile_authority_or_retargets",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::native_library",
+      "name": "native_language_update_busy_before_first_open_keeps_record_imported_and_retryable",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::native_library",
+      "name": "native_language_update_busy_refuses_database_admission_without_poisoning_generation",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::native_library",
+      "name": "native_non_utf8_copy_root_is_retained_without_lossy_record_or_profile_publication",
+      "targets": [
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::native_library",
+      "name": "native_restart_refuses_corrupt_records_controls_sidecars_and_marker_aliases_without_cleanup",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::native_library",
+      "name": "native_unacknowledged_admitted_commit_cannot_be_hidden_by_database_close",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::native_library",
+      "name": "native_same_owner_database_reopen_revalidates_active_record_before_sqlite",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "platform::unix::tests::owned_read_source_retains_readonly_fd_raw_name_and_cooperative_observations",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "platform::unix::tests::owned_read_source_refuses_aliases_replaced_names_and_partial_components",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "platform::unix::tests::owned_read_source_detects_parent_substitution_and_keeps_actual_owner",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "platform::unix::tests::owned_read_source_reports_size_changes_and_never_claims_snapshot_exclusion",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "platform::unix::tests::owned_read_source_retains_non_utf8_native_basename_without_reencoding",
+      "targets": [
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::native_library",
+      "name": "native_owned_read_source_retains_database_and_reads_after_stop_or_uncertainty",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "platform::windows::fixed_ntfs::qualification::windows_fixed_ntfs_positive_uses_same_retained_handle_and_complete_guid_root",
+      "targets": [
+        "x86_64-pc-windows-msvc"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "platform::windows::fixed_ntfs::qualification::windows_fixed_ntfs_native_short_buffers_keep_errors_or_truncation_unknown",
+      "targets": [
+        "x86_64-pc-windows-msvc"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "platform::windows::fixed_ntfs::qualification::windows_fixed_ntfs_controlled_unknown_changed_and_malformed_observations_refuse",
+      "targets": [
+        "x86_64-pc-windows-msvc"
+      ]
+    },
+    {
+      "suite": "librairii-storage::native_library",
+      "name": "native_actual_process_crash_keeps_active_and_releases_only_os_locks",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::native_library",
+      "name": "native_closed_root_relocation_refuses_unverified_retarget_without_rewriting_data",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::layout_identity",
+      "name": "identity_probe_keeps_go_uuid_middle_bytes_and_exact_wrapper_spelling"
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "platform::unix::tests::stage_creation_post_open_failure_preserves_bytes_and_fences_generation",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "platform::unix::tests::stage_creation_validation_faults_keep_every_acquired_handle_and_optional_identity",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "platform::unix::tests::stage_creation_no_allocation_and_collisions_never_own_existing_bytes",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "platform::unix::tests::stage_creation_substitution_retains_original_handles_without_replacement_authority",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "platform::unix::tests::stage_creation_payload_link_change_after_metadata_never_returns_complete_authority",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "platform::unix::tests::stage_creation_syscall_errors_keep_attempt_truth_and_missing_handles",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "platform::unix::tests::stage_creation_partial_native_owner_fences_finalization_and_preserves_active",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "platform::windows::directory_sync_qualification::windows_directory_safe_sync_owned_write_ack_requires_list_access_denied_contrast",
+      "targets": [
+        "x86_64-pc-windows-msvc"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "platform::windows::directory_sync_qualification::windows_directory_safe_sync_refuses_missing_wrong_kind_reparse_and_invalid_components",
+      "targets": [
+        "x86_64-pc-windows-msvc"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "platform::windows::directory_sync_qualification::windows_directory_safe_sync_faults_retain_acquired_handle_pins_and_independent_errors",
+      "targets": [
+        "x86_64-pc-windows-msvc"
+      ]
+    },
+    {
+      "suite": "librairii-core::operations",
+      "name": "op6_admitted_history_keeps_typed_states_raw_time_and_curated_scope"
+    },
+    {
+      "suite": "librairii-core::operations",
+      "name": "op6_aggregate_exact_kind_precedence_matches_go_manager"
+    },
+    {
+      "suite": "librairii-core::operations",
+      "name": "op6_aggregate_failure_code_sentinel_and_message_fallback_are_independent"
+    },
+    {
+      "suite": "librairii-core::operations",
+      "name": "op6_aggregate_first_failure_follows_ack_order_not_item_sort_order"
+    },
+    {
+      "suite": "librairii-core::operations",
+      "name": "op6_aggregate_rejects_unfinished_and_extra_items_without_partial_mutation"
+    },
+    {
+      "suite": "librairii-core::operations",
+      "name": "op6_all_eight_sources_keep_literal_tags_and_historical_meaning"
+    },
+    {
+      "suite": "librairii-core::operations",
+      "name": "op6_byte_total_matches_wide_sum_or_returns_overflow"
+    },
+    {
+      "suite": "librairii-core::operations",
+      "name": "op6_closed_tags_reject_aliases_case_whitespace_and_embedded_nul"
+    },
+    {
+      "suite": "librairii-core::operations",
+      "name": "op6_completion_candidate_increments_once_and_rejects_repeated_terminal_item"
+    },
+    {
+      "suite": "librairii-core::operations",
+      "name": "op6_completion_rejects_inactive_parent_nonterminal_result_and_bad_counts"
+    },
+    {
+      "suite": "librairii-core::operations",
+      "name": "op6_finish_requires_all_items_and_preserves_existing_terminal_truth"
+    },
+    {
+      "suite": "librairii-core::operations",
+      "name": "op6_history_key_uses_raw_time_and_id_tuple_order"
+    },
+    {
+      "suite": "librairii-core::operations",
+      "name": "op6_interruption_preserves_terminal_payload_ids_and_partial_bytes"
+    },
+    {
+      "suite": "librairii-core::operations",
+      "name": "op6_interruption_rejects_missing_reason_inconsistent_scope_and_terminal_parent"
+    },
+    {
+      "suite": "librairii-core::operations",
+      "name": "op6_item_identity_retains_null_empty_uuid_and_resolved_story_after_removal"
+    },
+    {
+      "suite": "librairii-core::operations",
+      "name": "op6_item_tags_are_seven_distinct_legacy_states"
+    },
+    {
+      "suite": "librairii-core::operations",
+      "name": "op6_kind_and_operation_state_tags_match_frozen_go"
+    },
+    {
+      "suite": "librairii-core::operations",
+      "name": "op6_progress_acceptance_is_exactly_running_monotone_in_bounds"
+    },
+    {
+      "suite": "librairii-core::operations",
+      "name": "op6_progress_is_running_only_monotone_and_within_total"
+    },
+    {
+      "suite": "librairii-core::operations",
+      "name": "op6_provisional_interruption_is_not_a_saved_terminal_snapshot"
+    },
+    {
+      "suite": "librairii-core::operations",
+      "name": "op6_raw_carriers_preserve_arbitrary_text_and_nullness"
+    },
+    {
+      "suite": "librairii-core::operations",
+      "name": "op6_raw_operation_identity_keeps_spelling_and_non_uuid_history"
+    },
+    {
+      "suite": "librairii-core::operations",
+      "name": "op6_raw_scope_and_open_outcomes_are_not_normalized"
+    },
+    {
+      "suite": "librairii-core::operations",
+      "name": "op6_signed_byte_totals_reject_negative_and_overflow_without_wrapping"
+    },
+    {
+      "suite": "librairii-core::operations",
+      "name": "op6_source_rejects_mixed_domains_cardinality_duplicates_and_blank_names"
+    },
+    {
+      "suite": "librairii-core::operations",
+      "name": "op6_source_validation_preserves_order_and_separates_equal_group_ids"
+    },
+    {
+      "suite": "librairii-core::operations",
+      "name": "op6_start_and_cancel_refuse_all_terminal_parents"
+    },
+    {
+      "suite": "librairii-core::operations",
+      "name": "op6_admitted_zero_item_operation_interrupts_and_finishes_without_rewriting_scope"
+    },
+    {
+      "suite": "librairii-app",
+      "name": "jobs::tests::j6_busy_returns_same_input_before_admission_and_uncertainty_retains_it"
+    },
+    {
+      "suite": "librairii-app",
+      "name": "jobs::tests::j6_created_record_survives_disconnected_reply_consumer_and_stop"
+    },
+    {
+      "suite": "librairii-app",
+      "name": "jobs::tests::j6_executor_callback_reentry_never_holds_queue_mutex"
+    },
+    {
+      "suite": "librairii-app",
+      "name": "jobs::tests::j6_finite_cursor_cycle_rotates_operations_and_keeps_each_offer_ordered"
+    },
+    {
+      "suite": "librairii-app",
+      "name": "jobs::tests::j6_full_pipeline_measures_handles_payload_and_all_blocked_call_owners"
+    },
+    {
+      "suite": "librairii-app",
+      "name": "jobs::tests::j6_import_picker_limit_does_not_truncate_export_or_clone_item_payloads"
+    },
+    {
+      "suite": "librairii-app",
+      "name": "jobs::tests::j6_one_metadata_reservation_lasts_until_report_acknowledgement"
+    },
+    {
+      "suite": "librairii-app",
+      "name": "jobs::tests::j6_proven_rejection_returns_owned_input_and_releases_metadata_reservation"
+    },
+    {
+      "suite": "librairii-app",
+      "name": "jobs::tests::j6_stop_is_independent_of_blocked_source_and_returns_unissued_start"
+    },
+    {
+      "suite": "librairii-app",
+      "name": "jobs::tests::j6_unacknowledged_reports_retain_worker_budget_until_explicit_readback"
+    },
+    {
+      "suite": "librairii-app",
+      "name": "jobs::tests::j6_worker_configuration_matches_frozen_limits"
+    },
+    {
+      "suite": "librairii-app",
+      "name": "jobs::tests::j6_cancel_is_recorded_before_signal_and_queued_skip_preserves_returned_fact"
+    },
+    {
+      "suite": "librairii-app",
+      "name": "jobs::tests::j6_progress_is_coalesced_with_one_scalar_per_worker_and_one_wake"
+    },
+    {
+      "suite": "librairii-app",
+      "name": "jobs::tests::j6_progress_rejects_wrong_identity_regression_and_preserves_export_threshold"
+    },
+    {
+      "suite": "librairii-app",
+      "name": "jobs::tests::j6_rejected_or_other_generation_control_does_not_cancel_running_work"
+    },
+    {
+      "suite": "librairii-app",
+      "name": "jobs::tests::j6_saved_terminal_and_generation_query_stamps_reject_stale_observations"
+    },
+    {
+      "suite": "librairii-app",
+      "name": "jobs::tests::j6_stop_returns_unissued_control_without_claiming_cancel_recorded"
+    },
+    {
+      "suite": "librairii-app",
+      "name": "jobs::tests::j6_uncertain_control_and_symbolic_report_owner_survive_stop_until_actual_readback"
+    },
+    {
+      "suite": "librairii-app",
+      "name": "jobs::tests::terminal_tests::j65_blocked_callback_and_tick_jump_schedule_from_observed_response_without_catchup"
+    },
+    {
+      "suite": "librairii-app",
+      "name": "jobs::tests::terminal_tests::j65_complete_retries_three_times_at_ten_ms_without_replaying_for_finish"
+    },
+    {
+      "suite": "librairii-app",
+      "name": "jobs::tests::terminal_tests::j65_finish_and_interrupt_have_separate_budgets_then_paced_reconciliation"
+    },
+    {
+      "suite": "librairii-app",
+      "name": "jobs::tests::terminal_tests::j65_full_command_payload_and_supplied_terminal_truth_are_checked_without_rewriting_raw_values"
+    },
+    {
+      "suite": "librairii-app",
+      "name": "jobs::tests::terminal_tests::j65_interrupt_commit_then_snapshot_error_is_unknown_until_matching_readback"
+    },
+    {
+      "suite": "librairii-app",
+      "name": "jobs::tests::terminal_tests::j65_lost_complete_or_finish_ack_uses_readback_without_second_write_or_count"
+    },
+    {
+      "suite": "librairii-app",
+      "name": "jobs::tests::terminal_tests::j65_saturated_stop_and_expired_wait_keep_all_required_owners_until_readback_accepts"
+    },
+    {
+      "suite": "librairii-app",
+      "name": "jobs::tests::terminal_tests::j65_saved_terminal_keeps_owned_result_until_actual_report_transfer_without_persist_replay"
+    },
+    {
+      "suite": "librairii-app",
+      "name": "jobs::tests::terminal_tests::j65_tick_regression_overflow_and_latest_diagnostics_are_bounded_without_losing_originals"
+    },
+    {
+      "suite": "librairii-app",
+      "name": "jobs::tests::terminal_tests::j65_unknown_ack_rejects_wrong_or_provisional_readback_and_keeps_terminal_conflict"
+    },
+    {
+      "suite": "librairii-app",
+      "name": "jobs::tests::terminal_tests::j65_running_sibling_is_cancelled_only_after_persistence_retry_exhaustion"
+    },
+    {
+      "suite": "librairii-core::operations",
+      "name": "op67_active_output_is_uncapped_then_appends_one_latest_terminal_export"
+    },
+    {
+      "suite": "librairii-core::operations",
+      "name": "op67_admitted_history_view_borrows_full_payload_without_snapshot_reencoding"
+    },
+    {
+      "suite": "librairii-core::operations",
+      "name": "op67_found_cursor_is_independent_and_concurrent_inserts_use_strict_raw_tuple"
+    },
+    {
+      "suite": "librairii-core::operations",
+      "name": "op67_history_boundaries_use_twenty_plus_one_borrowed_rows"
+    },
+    {
+      "suite": "librairii-core::operations",
+      "name": "op67_history_order_keeps_raw_time_case_unicode_and_non_uuid_identity"
+    },
+    {
+      "suite": "librairii-core::operations",
+      "name": "op67_latest_export_falls_back_for_null_only_and_uses_raw_id_ties"
+    },
+    {
+      "suite": "librairii-core::operations",
+      "name": "op67_reveal_eligibility_never_validates_a_directory_or_provisional_truth"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::tests::dispatch_preserves_suffix_and_content_precedence"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::tests::frozen_codes_are_exact_and_errors_preserve_presence_and_raw_entry"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::tests::misleading_suffix_container_and_disguised_studio_fail_distinctly"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::tests::suffix_matching_is_simple_lower_not_search_folding_or_lossy_name_conversion"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::tests::candidate_bytes_preserve_source_name_uuid_and_absent_vs_empty_payload"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::tests::committed_facts_and_ids_survive_late_cancel_cleanup_and_reporting_errors"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::tests::directories_count_but_do_not_satisfy_files_or_assets"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::tests::duplicate_conflict_facts_raw_fields_and_independent_compensation_error_remain_owned"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::tests::duplicate_lexical_aliases_are_terminal_and_not_unicode_composed"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::tests::import_uuid_retains_legacy_spelling_without_changing_shared_identity_parsing"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::tests::invalid_limits_and_unsigned_or_aggregate_overflow_refuse_without_wrapping"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::tests::malformed_or_nil_uuid_forms_fail_at_import_boundary"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::tests::nested_joined_causes_preserve_first_validation_order_and_optional_empty_data"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::tests::paths_use_go_lexical_keys_preserving_raw_bytes_and_unicode_forms"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::tests::plain_required_entry_order_assets_and_exact_uuid_payload_are_separate"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::tests::reported_import_and_failure_codes_match_frozen_source_without_unknown_fallback"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::tests::retained_header_limits_match_all_frozen_expected_codes"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::tests::uncertain_report_does_not_invent_ids_or_noncommit_from_error"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::tests::unsafe_link_negative_duplicate_and_nested_checks_keep_source_priority"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::tests::uuid_pack_missing_entries_and_assets_preserve_exact_root_spelling"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::tests::uuid_root_detection_uses_raw_root_count_before_required_entries"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::tests::validation_causes_retain_nested_joined_structure_and_standard_source"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::tests::zip_entry_and_sevenzip_whole_container_ratios_are_distinct"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::tests::studio_policy_assets_and_required_thumbnail_must_be_regular_inventory_files"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::tests::studio_policy_base_path_errors_keep_nested_causes_and_assets_prefix_is_literal"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::tests::studio_policy_borrowed_refs_allow_repeats_empty_nodes_and_raw_uuid_forms"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::tests::studio_policy_error_priority_is_uuid_then_node_image_audio_then_thumbnail"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::tests::studio_policy_looks_up_original_refs_without_cleaning_or_unicode_composition"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::tests::studio_policy_reference_byte_and_depth_boundaries_precede_missing_asset"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::tests::studio_policy_stage_count_is_not_the_inventory_entry_budget"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::tests::studio_policy_zero_nodes_refs_and_nonempty_whitespace_have_distinct_errors"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::studio_json::tests::studio_json_decode_uuid_refs_and_thumbnail_preserve_pipeline_error_order"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::studio_json::tests::studio_json_depth_10000_is_iterative_including_ignored_subtrees"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::studio_json::tests::studio_json_duplicate_arrays_reuse_hidden_backing_cells_after_shrink_and_growth"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::studio_json::tests::studio_json_first_value_syntax_outranks_types_but_types_precede_trailing"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::studio_json::tests::studio_json_grammar_accepts_unknown_valid_scalars_escapes_and_ascii_whitespace"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::studio_json::tests::studio_json_grammar_rejects_controls_bad_escapes_and_container_number_errors"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::studio_json::tests::studio_json_image_audio_and_node_type_errors_keep_input_order"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::studio_json::tests::studio_json_known_string_null_duplicates_and_saved_first_type_error"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::studio_json::tests::studio_json_null_and_empty_array_reset_cells_but_null_nodes_and_fields_do_not"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::studio_json::tests::studio_json_raw_invalid_utf8_and_escaped_surrogates_have_distinct_replacements"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::studio_json::tests::studio_json_reference_count_is_not_the_archive_entry_limit"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::studio_json::tests::studio_json_replacement_and_escape_decoded_references_use_exact_inventory_keys"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::studio_json::tests::studio_json_schema_casefold_uses_long_s_but_not_dotted_or_dotless_i"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::studio_json::tests::studio_json_successful_decode_checks_eof_before_uuid_or_assets"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::studio_json::tests::studio_json_supplied_byte_limits_count_original_bytes_not_replacement_output"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::studio_json::tests::studio_json_supplied_bytes_decode_then_existing_policy_preserve_identity"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::studio_json::tests::studio_json_unknown_subtrees_skip_huge_numbers_without_float_or_new_strictness"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::studio_json::optional::tests::optional_metadata_duplicates_null_folding_and_first_type_error_are_ordered"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::studio_json::optional::tests::optional_metadata_empty_uuid_is_allowed_without_changing_primary_identity"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::studio_json::optional::tests::optional_metadata_first_syntax_then_types_then_eof_then_uuid_priority"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::studio_json::optional::tests::optional_metadata_preserves_replacement_origins_and_boundary_only_text"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::studio_json::optional::tests::optional_metadata_selection_distinguishes_absence_directory_unselected_and_empty"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::studio_json::optional::tests::optional_metadata_supplied_original_byte_cap_and_depth_are_separate_from_heap_reads"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::studio_json::optional::tests::optional_metadata_three_field_shape_skips_studio_and_unknown_types"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::studio_json::optional::tests::optional_metadata_uuid_uses_untrimmed_legacy_forms_and_canonical_comparison"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::studio_json::tests::studio_text_frozen_whitespace_and_nonspace_boundaries"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::studio_json::tests::studio_text_known_duplicates_null_and_fold_keep_decoder_semantics"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::studio_json::tests::studio_text_projection_follows_uuid_refs_regular_thumbnail_presence"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::studio_json::tests::studio_text_projection_preserves_raw_identity_and_only_trims_boundaries"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "import::studio_json::tests::studio_text_replacement_origins_and_interior_composition_are_preserved"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "collection_codec::compatibility::normalization::tests::runtime_uses_input_derived_bounds_without_changing_saved_wire_refusal"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "collection_codec::runtime::tests::runtime_private_lists_use_frozen_language_and_per_node_source_limits"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "collection_codec::runtime::tests::runtime_rejects_private_retired_flags_without_retiring_or_saving"
+    },
+    {
+      "suite": "librairii-core",
+      "name": "collection_codec::runtime::tests::runtime_visits_children_then_navigation_then_node_fields_in_source_order"
+    },
+    {
+      "suite": "librairii-core::query_normalization",
+      "name": "query_runtime_choice_cardinality_is_checked_before_stable_deduplication"
+    },
+    {
+      "suite": "librairii-core::query_normalization",
+      "name": "query_runtime_definition_duplicates_include_ignored_and_cross_kind_filters"
+    },
+    {
+      "suite": "librairii-core::query_normalization",
+      "name": "query_runtime_group_limit_includes_language_and_compatibility_presence"
+    },
+    {
+      "suite": "librairii-core::query_normalization",
+      "name": "query_runtime_large_removable_names_do_not_inherit_saved_wire_byte_refusal"
+    },
+    {
+      "suite": "librairii-core::query_normalization",
+      "name": "query_runtime_mutated_decoded_value_and_payload_do_not_certify_runtime_validity"
+    },
+    {
+      "suite": "librairii-core::query_normalization",
+      "name": "query_runtime_name_limit_counts_normalized_unicode_characters"
+    },
+    {
+      "suite": "librairii-core::query_normalization",
+      "name": "query_runtime_navigation_defaults_and_exact_explicit_values_are_validated"
+    },
+    {
+      "suite": "librairii-core::query_normalization",
+      "name": "query_runtime_node_budget_counts_root_flat_branches_and_nested_descendants"
+    },
+    {
+      "suite": "librairii-core::query_normalization",
+      "name": "query_runtime_retains_ignored_filters_definition_order_and_stable_choice_deduplication"
+    },
+    {
+      "suite": "librairii-core::query_normalization",
+      "name": "query_runtime_root_and_each_child_receive_exactly_one_unicode_normalization_pass"
+    },
+    {
+      "suite": "librairii-storage::queries",
+      "name": "boolean_choice_derived_compatibility_and_live_ownership_filters",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::queries",
+      "name": "filter_plans_use_preserved_assignment_indexes",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::queries",
+      "name": "literal_unicode_search_pages_sort_ties_and_huge_page_numbers",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::queries",
+      "name": "metadata_language_is_independent_of_display_locale_and_uses_active_snapshots",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::queries",
+      "name": "nested_any_of_is_and_with_local_predicates_and_empty_branch_matches_all",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::queries",
+      "name": "invalid_nested_saved_reference_never_broadens_membership_or_changes_database",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::queries",
+      "name": "saved_membership_migrates_retired_flags_but_preserves_current_user_tag_reuse",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-core::query_urls",
+      "name": "history_hash_binding_and_typed_ids_distinguish_dynamic_and_curated_shelves"
+    },
+    {
+      "suite": "librairii-core::query_urls",
+      "name": "legacy_flags_retire_recursively_while_current_tag_reuse_survives"
+    },
+    {
+      "suite": "librairii-core::query_urls",
+      "name": "url_bounds_and_non_idempotent_unicode_are_validated_without_extra_output_passes"
+    },
+    {
+      "suite": "librairii-core::query_urls",
+      "name": "url_shared_current_and_legacy_fixtures_preserve_non_broken_criteria"
+    },
+    {
+      "suite": "librairii-core::navigation",
+      "name": "navigation_branching_bounds_and_invalid_selection_preserve_the_prior_state"
+    },
+    {
+      "suite": "librairii-core::navigation",
+      "name": "navigation_restores_scope_refinement_selection_page_and_independent_presentation"
+    },
+    {
+      "suite": "librairii-core::navigation",
+      "name": "reopen_preserves_one_pass_unicode_and_refuses_foreign_future_or_corrupt_documents"
+    },
+    {
+      "suite": "librairii-core::navigation",
+      "name": "stale_query_and_library_generation_stamps_cannot_apply_results"
+    },
+    {
+      "suite": "librairii-storage::query_preferences",
+      "name": "navigation_preferences_refuse_symlink_substitution_and_preserve_external_bytes",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::query_preferences",
+      "name": "navigation_preferences_reopen_outside_the_library_and_preserve_unknown_versions",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::queries",
+      "name": "validation_count_page_enrichment_and_scope_share_one_snapshot_during_a_writer_commit",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::query_differential",
+      "name": "all_twenty_four_frozen_count_page_and_full_scope_returns_match_without_normalization",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::query_differential",
+      "name": "streaming_scope_exceeds_picker_and_page_limits_and_stops_on_callback_failure",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-core::query_urls",
+      "name": "percent_escapes_require_two_hex_digits_and_never_turn_malformed_input_into_empty_success"
+    },
+    {
+      "suite": "librairii-core::navigation",
+      "name": "recreated_or_forked_navigation_cannot_accept_an_older_owners_query_stamp"
+    },
+    {
+      "suite": "librairii-core::query_urls",
+      "name": "every_ascii_percent_pair_agrees_with_the_two_hex_digit_grammar"
+    },
+    {
+      "suite": "librairii-core::tag_identity",
+      "name": "frozen_tag_identity_keeps_simple_lowercase_distinct_from_search_folding"
+    },
+    {
+      "suite": "librairii-storage::tags",
+      "name": "crud_preserves_stable_keys_normalized_uniqueness_and_atomic_order",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::tags",
+      "name": "bulk_assignment_mixed_states_additive_toggles_noops_and_all_target_validation",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::tags",
+      "name": "confirmed_deletion_invalidates_entire_nested_collections_and_preserves_shelf_decisions",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::tags",
+      "name": "derived_age_identity_bands_and_custom_colors_survive_reseeding_and_projection",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::tags",
+      "name": "broken_flags_are_atomic_independent_visible_and_skipped_without_a_selection_cap_on_export",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::tags",
+      "name": "undo_restores_only_changed_targets_and_atomically_rejects_stale_or_unavailable_batches",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-core::tag_identity",
+      "name": "long_mark_input_has_no_saved_query_wire_limit_for_tag_identity"
+    },
+    {
+      "suite": "librairii-core::tag_identity",
+      "name": "every_unicode_scalar_matches_the_actual_frozen_go_tag_key_digest"
+    },
+    {
+      "suite": "librairii-storage::tags",
+      "name": "deletion_inspects_valid_references_without_normalizing_unrelated_membership_fields",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-core::tag_references",
+      "name": "tag_reference_inspection_is_bounded_strict_and_distinct_from_membership_normalization"
+    },
+    {
+      "suite": "librairii-core::tag_identity",
+      "name": "configured_age_bands_are_precise_bounded_and_nonoverlapping"
+    },
+    {
+      "suite": "librairii-storage::tags",
+      "name": "actual_go_tagging_and_broken_vertical_reference_matches_every_recorded_field",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::tags",
+      "name": "precommit_cancellation_and_sql_failures_roll_back_real_tag_and_flag_writes",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::collections",
+      "name": "collection_crud_preserves_ids_namespace_query_bytes_revisions_and_atomic_order",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::collections",
+      "name": "live_counts_follow_library_tags_metadata_and_removal_without_shelf_mutation",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::collections",
+      "name": "union_preview_counts_overlap_all_pages_and_saves_independent_definition",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::collections",
+      "name": "explicit_repair_retains_invalid_bytes_rejects_stale_plans_and_rolls_back_writes",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::collections",
+      "name": "deletion_reports_links_preserves_approved_history_and_transitions_only_committed_active_view",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-core::collection_identity",
+      "name": "every_unicode_scalar_matches_frozen_go_collection_name_identity"
+    },
+    {
+      "suite": "librairii-storage::collections",
+      "name": "frozen_collection_reference_manifest_binds_probe_and_capture_bytes",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::collections",
+      "name": "frozen_go_crud_query_passes_legacy_ids_and_attention_match_after_restart",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::collections",
+      "name": "replacement_revalidates_live_references_and_failures_do_not_publish_partial_deletion",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::collections",
+      "name": "stale_navigation_and_cross_library_plans_cannot_apply_and_many_source_preview_is_not_saved_node_limited",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::shelves",
+      "name": "crud_namespace_order_unavailable_duplicate_and_restart_are_independent",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::shelves",
+      "name": "manual_curation_retention_exclusions_order_and_noops_are_explicit",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::shelves",
+      "name": "uuid_reimport_reconnects_new_numeric_id_without_rewriting_approved_state",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::shelves",
+      "name": "source_union_is_read_only_and_current_matches_do_not_rewrite_origins",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::shelves",
+      "name": "initial_creation_is_explicit_deduplicated_ordered_and_can_be_empty",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::shelves",
+      "name": "broken_only_changes_preserve_review_but_sources_availability_and_decisions_invalidate",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::shelves",
+      "name": "update_decisions_defer_keep_exclude_and_remove_atomically_with_origins",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "shelves::tickets::tests::lifetime_kind_target_eviction_and_replay_are_fail_closed"
+    },
+    {
+      "suite": "librairii-storage::shelves",
+      "name": "ticket_limit_is_shared_across_kinds_and_two_queued_applies_cannot_replay",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::shelves",
+      "name": "detachment_requires_complete_decisions_preserves_overlap_and_retains_unavailable",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::shelves",
+      "name": "warning_acknowledgements_persist_without_decisions_and_renew_on_coverage_changes",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::shelves",
+      "name": "linked_deletion_is_atomic_across_shelves_and_preserves_unavailable_origins",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::shelves",
+      "name": "five_thousand_story_union_preview_apply_and_every_model_page_meet_budget",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::shelves",
+      "name": "frozen_go_creation_curation_origins_duplication_and_detachment_match_exact_state",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::shelves",
+      "name": "frozen_shelf_reference_manifest_binds_probe_and_capture_bytes",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::shelves",
+      "name": "uncertain_remaining_coverage_only_allows_retention_and_view_refinements_never_persist",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::shelves",
+      "name": "v14_upgrade_tags_metadata_curation_unavailable_reimport_and_restart_compose",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::shelves",
+      "name": "reviewed_actions_preserve_uppercase_uuid_spelling_without_retargeting_canonical_rows",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::shelves",
+      "name": "creation_selections_preserve_legacy_spelling_and_distinguish_canonical_aliases",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::shelves",
+      "name": "deleted_shelf_reviews_cannot_target_reused_ids_and_unrelated_plans_survive",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "lunii::tests::actual_streamed_limits_apply_to_token_and_catalog_without_content_length"
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "lunii::tests::cancellation_and_total_deadline_interrupt_waiting_responses"
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "lunii::tests::guest_envelope_headers_and_exact_catalog_bytes_match_protocol"
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "lunii::tests::redirects_status_content_type_malformed_json_and_token_are_refused"
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "lunii::tests::request_admission_is_bounded_without_waiting_queue"
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "lunii::tests::tls_validates_roots_and_server_names_with_no_insecure_override"
+    },
+    {
+      "suite": "librairii-app::metadata",
+      "name": "exact_raw_hash_normalization_and_requested_same_language_available_fallback"
+    },
+    {
+      "suite": "librairii-app::metadata",
+      "name": "invalid_catalogs_never_construct_normalized_snapshots"
+    },
+    {
+      "suite": "librairii-storage::metadata",
+      "name": "staged_raw_is_exact_hashed_reopenable_and_rejected_rows_are_immutable",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-app::metadata",
+      "name": "cancellation_after_staging_rejects_but_cancellation_inside_activation_finishes_report"
+    },
+    {
+      "suite": "librairii-storage::metadata",
+      "name": "activation_is_atomic_and_failure_cancel_or_invalid_data_preserve_last_good",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::metadata",
+      "name": "resolved_fields_freshness_and_age_changes_preserve_manual_state_and_curated_members",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "lunii::tests::artwork_allowlist_stream_limit_sniffing_and_concurrent_misses"
+    },
+    {
+      "suite": "librairii-storage::metadata",
+      "name": "registered_artwork_cache_is_hashed_offline_and_refuses_corruption_or_aliases",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "thumbnails::tests::invalidation_rejects_old_work_and_fallback_is_official_then_embedded_then_placeholder"
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "thumbnails::tests::thumbnail_lru_evicts_old_results_at_the_entry_budget"
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "thumbnails::tests::thumbnails_decode_all_formats_reuse_lru_and_bound_pixels_and_output"
+    },
+    {
+      "suite": "librairii-storage::metadata",
+      "name": "embedded_legacy_cover_reads_are_bounded_and_do_not_accept_arbitrary_paths",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::metadata",
+      "name": "frozen_go_artwork_validation_bytes_hash_and_legacy_layout_match",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::metadata",
+      "name": "frozen_go_catalog_normalization_and_artwork_url_cases_match",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "metadata::owner::tests::metadata_and_artwork_partial_creation_keep_original_handles_and_custody"
+    },
+    {
+      "suite": "librairii-storage::metadata",
+      "name": "interrupted_and_dropped_refreshes_settle_without_stranding_busy_or_losing_last_good",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::metadata",
+      "name": "real_staged_cancellation_rejects_only_the_new_snapshot",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "metadata::owner::tests::known_metadata_acknowledgements_settle_stages_but_uncertainty_retains_receipts",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "metadata::owner::tests::metadata_cleanup_failure_retains_custody_without_changing_committed_acknowledgement",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "platform::unix::tests::metadata_stage_cleanup_preserves_substituted_directories_and_payloads",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "platform::unix::tests::metadata_stage_cleanup_flush_failure_keeps_actual_receipts_and_fences_custody",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::native_library",
+      "name": "metadata_refresh_and_artwork_settle_native_close_and_offline_reopen",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-app",
+      "name": "ports::operations::tests::terminal_port_accepts_borrowed_synchronous_provider_and_owned_results"
+    },
+    {
+      "suite": "librairii-app",
+      "name": "ports::operations::tests::terminal_port_barrier_results_retain_actual_conflict_and_unknown_evidence"
+    },
+    {
+      "suite": "librairii-app",
+      "name": "ports::operations::tests::terminal_port_completion_null_rules_retain_raw_input_and_terminal_bytes"
+    },
+    {
+      "suite": "librairii-app",
+      "name": "ports::operations::tests::terminal_port_confirmed_commit_survives_missing_snapshot_and_owned_cause"
+    },
+    {
+      "suite": "librairii-app",
+      "name": "ports::operations::tests::terminal_port_finish_and_interrupt_have_distinct_null_and_time_rules"
+    },
+    {
+      "suite": "librairii-app",
+      "name": "ports::operations::tests::terminal_port_full_witness_keeps_generation_scope_and_exact_payload"
+    },
+    {
+      "suite": "librairii-app",
+      "name": "ports::operations::tests::terminal_port_immutable_scope_excludes_live_state_but_keeps_resolved_input"
+    },
+    {
+      "suite": "librairii-app",
+      "name": "ports::operations::tests::terminal_port_legacy_zero_item_view_has_no_new_work_count_guard"
+    },
+    {
+      "suite": "librairii-app",
+      "name": "ports::operations::tests::terminal_port_queue_refusal_retains_original_move_only_report"
+    },
+    {
+      "suite": "librairii-app",
+      "name": "ports::operations::tests::terminal_port_raw_snapshot_keeps_non_uuid_ids_nulls_and_scope_bytes"
+    },
+    {
+      "suite": "librairii-storage::operation_lifecycle",
+      "name": "invalid_creation_rolls_back_and_changed_header_is_not_an_acknowledgement",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::operation_lifecycle",
+      "name": "real_creation_start_completion_readback_and_reopen_preserve_legacy_payloads",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::operation_lifecycle",
+      "name": "unavailable_exports_and_legacy_dynamic_names_keep_distinct_curated_identity",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::operations_repository",
+      "name": "terminal_sql_commit_error_is_unknown_then_reserved_fresh_readback_proves_state",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::operations_repository",
+      "name": "terminal_sql_completion_is_atomic_exact_and_idempotent_across_siblings",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::operations_repository",
+      "name": "terminal_sql_critical_refusal_retains_original_report_and_variable_command_bytes",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::operations_repository",
+      "name": "terminal_sql_explicit_negative_item_id_is_preserved_and_completed_once",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::operations_repository",
+      "name": "terminal_sql_explicit_zero_item_id_is_preserved_and_completed_once",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::operations_repository",
+      "name": "terminal_sql_finish_and_interrupt_preserve_legacy_zero_totals",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::operations_repository",
+      "name": "terminal_sql_finish_guard_rolls_back_and_invalid_commands_never_admit",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::operations_repository",
+      "name": "terminal_sql_interrupt_preserves_terminal_items_and_all_bytes",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::operations_repository",
+      "name": "terminal_sql_proven_commit_survives_postcommit_snapshot_refusal_and_drains",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::operations_repository",
+      "name": "terminal_sql_raw_snapshot_preserves_non_uuid_null_scope_and_row_order",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::operations_repository",
+      "name": "terminal_sql_second_guard_failure_rolls_back_first_item_mutation_and_trigger",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::operations_repository",
+      "name": "terminal_sql_two_callers_complete_distinct_siblings_on_one_writer",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::operations_repository",
+      "name": "terminal_sql_writer_barrier_matches_unacknowledged_prior_commit_without_recount",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::operations_repository",
+      "name": "terminal_sql_wrong_scope_missing_and_contradictory_counts_never_ack",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::native_jobs",
+      "name": "actual_sql_source_bounds_queue_workers_and_keeps_borrow_through_settlement",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::native_jobs",
+      "name": "import_picker_limit_export_scope_and_metadata_conflict_are_distinct",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::native_library",
+      "name": "native_job_session_borrows_actual_database_and_file_owner_until_durable_settlement",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::native_jobs",
+      "name": "progress_coalesces_persists_and_rejects_late_producers_and_stale_responses",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::operation_lifecycle",
+      "name": "snapshot_byte_limits_refuse_oversized_legacy_text_without_changing_rows",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::native_jobs",
+      "name": "queued_cancel_committed_result_and_required_compensation_keep_distinct_boundaries",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::runtime_failures",
+      "name": "lost_real_commit_ack_then_barrier_refusal_cannot_erase_unknown_or_repeat_completion",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::runtime_failures",
+      "name": "three_real_failed_writes_then_continued_interruption_retains_owner_and_metadata_reservation",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::native_library",
+      "name": "native_registered_temporaries_recover_after_process_death_and_preserve_final_files",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::operation_history",
+      "name": "active_latest_preserves_null_ordering_and_reveal_requires_retained_valid_directory",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::operation_history",
+      "name": "history_twenty_raw_key_pages_remain_stable_with_concurrent_new_inserts",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-app",
+      "name": "native_jobs::shutdown::tests::elapsed_wait_only_offers_explicit_escalation_and_never_claims_closed_or_settled"
+    },
+    {
+      "suite": "librairii-storage::native_jobs",
+      "name": "shutdown_joins_after_uncancelled_compensation_reporting_and_actual_owner_settlement",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::runtime_failures",
+      "name": "shutdown_during_admission_cancels_later_enqueued_work_without_entering_effects",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::native_library",
+      "name": "native_operation_crash_transition_matrix_reconciles_history_and_progress",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::runtime_failures",
+      "name": "completed_metadata_finishes_while_unrelated_import_still_owns_its_resources",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::runtime_failures",
+      "name": "durable_queued_cancellation_survives_transient_cancellation_read_refusals",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::runtime_failures",
+      "name": "permanent_creation_rejection_releases_admission_and_allows_shutdown",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "archives::tests::actual_container_mismatch_and_unsupported_suffix_do_not_admit_an_archive"
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "archives::tests::actual_studio_zip_disguised_as_every_pack_suffix_is_rejected"
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "archives::tests::actual_zip_and_seven_zip_dispatch_preserves_suffix_content_combinations"
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "archives::tests::indexed_archive_reads_selected_metadata_without_bulk_extraction"
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "archives::tests::actual_entry_path_and_duplicate_checks_use_preserved_normalized_keys"
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "archives::tests::actual_frozen_archive_rejections_cover_links_nested_duplicates_and_seven_ratio"
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "archives::tests::entry_actual_read_errors_and_corrupt_payload_crc_cannot_return_partial_bytes"
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "archives::tests::entry_and_expansion_limits_are_enforced_from_actual_container_headers"
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "archives::tests::actual_plain_and_uuid_root_packs_match_preserved_identity_and_format"
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "archives::tests::actual_plain_uuid_size_nil_and_missing_entry_failures_are_not_filename_identity"
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "archives::tests::actual_uuid_roots_require_one_raw_root_and_all_pack_entries"
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "archives::tests::actual_studio_json_rejects_strict_type_trailing_and_missing_references"
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "archives::tests::actual_studio_requires_readable_png_thumbnail_after_reference_validation"
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "archives::tests::actual_studio_zip_and_seven_json_assets_text_and_thumbnail_match_oracle"
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "archives::tests::actual_image_hardening_refuses_retained_previously_accepted_dimensions_and_pixels"
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "archives::tests::actual_metadata_and_rejections_match_entire_preserved_inspection_corpus"
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "archives::tests::actual_optional_metadata_does_not_replace_identity_or_ignore_invalid_selected_bytes"
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "archives::tests::actual_optional_metadata_uuid_text_absence_and_artwork_remain_independent"
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "native::owned::tests::settled_import_stages_recycle_registration_slots_in_one_session",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "platform::unix::import_source::tests::cancelled_copy_retains_owned_stage_and_never_publishes_or_changes_source",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "platform::unix::import_source::tests::selected_aliases_are_read_only_and_source_substitution_is_refused",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "platform::unix::import_source::tests::selected_source_streams_into_content_addressed_original_name_without_mutation",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::native_library",
+      "name": "retired_export_temporaries_keep_descriptor_usage_bounded",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-desktop::imports",
+      "name": "actual_catalog_failure_compensates_new_archive_and_artwork_without_partial_rows",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-desktop::imports",
+      "name": "actual_import_duplicate_and_uuid_conflict_are_atomic_and_survive_reopen",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-desktop::imports",
+      "name": "actual_inspection_failures_keep_frozen_operation_reasons_and_clean_staging",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-desktop::imports",
+      "name": "actual_effect_boundary_failures_preserve_sources_and_cleanup_only_owned_temporaries",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-desktop::imports",
+      "name": "actual_file_size_limit_short_write_preserves_source_and_retires_partial_stage",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-desktop::imports",
+      "name": "actual_import_process_death_recovers_registered_stage_and_preserves_committed_bytes",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-desktop::imports",
+      "name": "actual_native_cancellation_on_both_sides_of_commit_preserves_truth_and_bytes",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-desktop::imports",
+      "name": "actual_registered_native_import_closes_and_reopens_with_unchanged_legacy_source",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-desktop::imports",
+      "name": "actual_staged_hash_mismatch_and_missing_picker_sources_fail_per_item",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "native::owned::tests::concurrent_native_observers_do_not_refuse_each_other_as_profile_updates",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "archives::tests::constructor_budgets_can_only_reduce_production_allocation_ceilings"
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "archives::tests::independent_seven_codec_streams_preserve_studio_metadata_and_artwork"
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "archives::tests::retained_codec_and_hardening_manifest_hashes_and_expected_outcomes_are_enforced"
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "archives::tests::retained_constructor_declarations_and_hardening_fixtures_refuse_before_unbounded_work"
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "archives::tests::unsupported_go_filters_remain_rejected_when_selected_for_metadata"
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "archives::tests::zip_checks_unused_payload_crc_while_seven_zip_reads_only_selected_blocks"
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "archives::tests::unqualified_brotli_payload_decoder_remains_disabled"
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "archives::tests::encoded_header_patch_rejects_graph_mismatch_and_aggregate_memory_before_decode"
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "archives::tests::patched_header_graph_and_brotli_support_fragmented_source_reads_and_strict_windows"
+    },
+    {
+      "suite": "librairii-storage::exports",
+      "name": "full_query_selection_collection_and_approved_shelf_unions_keep_identity_order_and_overlap",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::exports",
+      "name": "preflight_verifies_bytes_and_names_without_reserving_skipped_output_names",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::exports",
+      "name": "prepared_ids_evict_consume_invalidate_and_recheck_each_queued_eligibility_boundary",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::exports",
+      "name": "passthrough_exports_all_seven_frozen_formats_with_exact_original_names_and_bytes",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::exports",
+      "name": "unicode_suffix_and_unsafe_sources_keep_per_item_preflight_reasons",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "export::preparation::tests::preparation_budget_charges_large_source_snapshots_even_with_few_rows",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "export::preparation::tests::uncertain_publication_remains_fenced_after_registry_replacement_and_drop",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "export::preparation::tests::partial_acquisition_and_cleanup_failures_also_fence_the_actual_generation",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "platform::unix::export_output::tests::native_export_copy_handles_short_writes_and_retains_exact_disk_full_prefix",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "platform::unix::export_output::tests::native_export_copy_stops_between_chunks_without_claiming_complete_hash",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "platform::unix::export_output::tests::native_export_refused_source_never_writes_destination_bytes",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::native_library",
+      "name": "native_export_cancel_during_second_copy_keeps_completed_file_and_retires_partial",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::native_library",
+      "name": "native_prepared_export_runs_durable_reports_and_preserves_racing_destinations",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-app",
+      "name": "ports::operations::native_path_tests::operation_paths_keep_exact_spelling_and_native_bytes_in_scope_equality"
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "platform::unix::export_output::tests::native_export_partial_acquisition_compensates_with_actual_owner_after_fence",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "removal::tests::native_removal_intent_invalidates_prepared_and_queued_export",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "removal::tests::native_removal_kill_at_intent_move_and_delete_recovers_before_intake",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "removal::tests::native_removal_preserves_sources_shelf_decisions_and_compensates_uncancelled",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "removal::tests::native_removal_refuses_foreign_restore_collision_and_retains_owner",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "diagnostics::tests::native_diagnostics_no_clobber_cancel_and_uncertain_publication_retain_actual_output",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "diagnostics::tests::native_diagnostics_rotation_keeps_five_bounded_owned_logs",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "diagnostics::tests::native_diagnostics_zip_has_only_sanitized_logs_and_aggregate_manifest",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "diagnostics::tests::native_diagnostics_requires_explicit_external_selection_and_localizes_safe_failures",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::native_library",
+      "name": "native_export_rechecks_broken_after_waiting_for_actual_custody",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-desktop::imports",
+      "name": "actual_native_import_inspect_export_and_reopen_preserves_all_formats_and_native_names",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "platform::unix::export_output::tests::native_export_cancellation_during_readback_retires_unpublished_temporary",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
     }
   ]
 }

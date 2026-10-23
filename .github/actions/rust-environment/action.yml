@@ -1,0 +1,45 @@
+name: Pinned Rust environment
+description: Cache exact helper binaries and compatible Cargo build inputs on each native host.
+inputs:
+  tools:
+    description: quality or focused helper set
+    required: true
+outputs:
+  tools-cache-hit:
+    description: Whether the exact compiled helper cache was restored
+    value: ${{ steps.tools-cache.outputs.cache-hit }}
+runs:
+  using: composite
+  steps:
+    - name: Install the workspace-pinned stable compiler
+      shell: bash
+      run: |
+        pin="$(python3 -c 'import tomllib; print(tomllib.load(open("rust-toolchain.toml", "rb"))["toolchain"]["channel"])')"
+        rustup toolchain install "$pin" --profile minimal --component rustfmt --component clippy --component llvm-tools-preview
+    - name: Restore Cargo dependencies and build outputs
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        key: rust-build-v1-${{ runner.os }}-${{ runner.arch }}-${{ inputs.tools }}-${{ hashFiles('rust-toolchain.toml', 'fuzz/rust-toolchain.toml', '**/Cargo.toml', '**/Cargo.lock') }}
+        path: |
+          ~/.cargo/registry/
+          ~/.cargo/git/
+          target/debug/
+          target/*/debug/
+          fuzz/target/
+    - name: Restore compiled helper tools
+      id: tools-cache
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        key: rust-tools-v1-${{ runner.os }}-${{ runner.arch }}-${{ inputs.tools }}-${{ hashFiles('rust-toolchain.toml', '.config/rust-tools.toml', '.github/scripts/install-rust-tools.py') }}
+        path: ${{ runner.tool_cache }}/librairii-cargo-tools/${{ inputs.tools }}
+    - name: Add the isolated helper binaries to PATH
+      shell: bash
+      env:
+        TOOL_ROOT: ${{ runner.tool_cache }}/librairii-cargo-tools/${{ inputs.tools }}
+      run: printf '%s\n' "$TOOL_ROOT/bin" >> "$GITHUB_PATH"
+    - name: Ensure exact helper tool versions
+      shell: bash
+      env:
+        CARGO_INSTALL_ROOT: ${{ runner.tool_cache }}/librairii-cargo-tools/${{ inputs.tools }}
+        TOOL_SET: ${{ inputs.tools }}
+      run: python3 -I -B .github/scripts/install-rust-tools.py "$TOOL_SET"

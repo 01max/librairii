@@ -70,7 +70,7 @@ func TestReleaseMatrixHasIndependentPlatformTasks(t *testing.T) {
 		"create and reopen SQLite",
 		"host-native dialog",
 		"complete headless story-library smoke",
-		".github/workflows/platform-release.yml",
+		".github/workflows/ci.yml",
 	}
 	for _, fragment := range required {
 		if !strings.Contains(matrix, fragment) {
@@ -79,7 +79,7 @@ func TestReleaseMatrixHasIndependentPlatformTasks(t *testing.T) {
 	}
 
 	implementationFiles := map[string][]string{
-		".github/workflows/platform-release.yml": {
+		".github/workflows/ci.yml": {
 			"runs-on: ubuntu-24.04",
 			"dbus-x11",
 			"pcmanfm",

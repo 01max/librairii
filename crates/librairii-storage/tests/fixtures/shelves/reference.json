@@ -1,0 +1,594 @@
+{
+  "events": [
+    {
+      "incomplete": false,
+      "initial": [
+        {
+          "manual": true,
+          "origins": [],
+          "sources": [
+            {
+              "active": true,
+              "collectionId": 1,
+              "id": 0,
+              "name": "All"
+            },
+            {
+              "active": true,
+              "collectionId": 2,
+              "id": 0,
+              "name": "Also"
+            }
+          ],
+          "title": "Story2",
+          "uuid": "10000000-0000-4000-8000-000000000002"
+        },
+        {
+          "manual": false,
+          "origins": [],
+          "sources": [
+            {
+              "active": true,
+              "collectionId": 1,
+              "id": 0,
+              "name": "All"
+            },
+            {
+              "active": true,
+              "collectionId": 2,
+              "id": 0,
+              "name": "Also"
+            }
+          ],
+          "title": "Story1",
+          "uuid": "10000000-0000-4000-8000-000000000001"
+        },
+        {
+          "manual": false,
+          "origins": [],
+          "sources": [
+            {
+              "active": true,
+              "collectionId": 1,
+              "id": 0,
+              "name": "All"
+            },
+            {
+              "active": true,
+              "collectionId": 2,
+              "id": 0,
+              "name": "Also"
+            }
+          ],
+          "title": "Story3",
+          "uuid": "10000000-0000-4000-8000-000000000003"
+        }
+      ]
+    },
+    {
+      "exclusions": [],
+      "members": [
+        {
+          "cachedTitle": "Story2",
+          "origins": [
+            {
+              "active": true,
+              "collectionId": 1,
+              "id": 1,
+              "name": "All"
+            },
+            {
+              "active": true,
+              "collectionId": 2,
+              "id": 2,
+              "name": "Also"
+            }
+          ],
+          "position": 0,
+          "protected": true,
+          "uuid": "10000000-0000-4000-8000-000000000002"
+        },
+        {
+          "cachedTitle": "Story1",
+          "origins": [
+            {
+              "active": true,
+              "collectionId": 1,
+              "id": 1,
+              "name": "All"
+            },
+            {
+              "active": true,
+              "collectionId": 2,
+              "id": 2,
+              "name": "Also"
+            }
+          ],
+          "position": 1,
+          "protected": false,
+          "uuid": "10000000-0000-4000-8000-000000000001"
+        }
+      ],
+      "shelf": {
+        "id": 1,
+        "name": "Chosen",
+        "position": 0,
+        "revision": 1,
+        "count": 2,
+        "brokenCount": 0,
+        "unavailableCount": 0,
+        "sourceCount": 2
+      },
+      "sources": [
+        {
+          "active": true,
+          "collectionId": 1,
+          "id": 1,
+          "name": "All"
+        },
+        {
+          "active": true,
+          "collectionId": 2,
+          "id": 2,
+          "name": "Also"
+        }
+      ]
+    },
+    {
+      "additions": [
+        {
+          "manual": false,
+          "origins": [],
+          "sources": [
+            {
+              "active": true,
+              "collectionId": 1,
+              "id": 1,
+              "name": "All"
+            },
+            {
+              "active": true,
+              "collectionId": 2,
+              "id": 2,
+              "name": "Also"
+            }
+          ],
+          "title": "Story3",
+          "uuid": "10000000-0000-4000-8000-000000000003"
+        }
+      ],
+      "removals": []
+    },
+    {
+      "exclusions": [
+        "10000000-0000-4000-8000-000000000003"
+      ],
+      "members": [
+        {
+          "cachedTitle": "Story2",
+          "origins": [
+            {
+              "active": true,
+              "collectionId": 1,
+              "id": 1,
+              "name": "All"
+            },
+            {
+              "active": true,
+              "collectionId": 2,
+              "id": 2,
+              "name": "Also"
+            }
+          ],
+          "position": 0,
+          "protected": true,
+          "uuid": "10000000-0000-4000-8000-000000000002"
+        },
+        {
+          "cachedTitle": "Story1",
+          "origins": [
+            {
+              "active": true,
+              "collectionId": 1,
+              "id": 1,
+              "name": "All"
+            },
+            {
+              "active": true,
+              "collectionId": 2,
+              "id": 2,
+              "name": "Also"
+            }
+          ],
+          "position": 1,
+          "protected": false,
+          "uuid": "10000000-0000-4000-8000-000000000001"
+        }
+      ],
+      "shelf": {
+        "id": 1,
+        "name": "Chosen",
+        "position": 0,
+        "revision": 2,
+        "count": 2,
+        "brokenCount": 0,
+        "unavailableCount": 0,
+        "sourceCount": 2
+      },
+      "sources": [
+        {
+          "active": true,
+          "collectionId": 1,
+          "id": 1,
+          "name": "All"
+        },
+        {
+          "active": true,
+          "collectionId": 2,
+          "id": 2,
+          "name": "Also"
+        }
+      ]
+    },
+    {
+      "exclusions": [
+        "10000000-0000-4000-8000-000000000003"
+      ],
+      "members": [
+        {
+          "cachedTitle": "Story2",
+          "origins": [
+            {
+              "active": true,
+              "collectionId": 1,
+              "id": 1,
+              "name": "All"
+            },
+            {
+              "active": true,
+              "collectionId": 2,
+              "id": 2,
+              "name": "Also"
+            }
+          ],
+          "position": 0,
+          "protected": true,
+          "uuid": "10000000-0000-4000-8000-000000000002"
+        }
+      ],
+      "shelf": {
+        "id": 1,
+        "name": "Chosen",
+        "position": 0,
+        "revision": 3,
+        "count": 1,
+        "brokenCount": 0,
+        "unavailableCount": 0,
+        "sourceCount": 2
+      },
+      "sources": [
+        {
+          "active": true,
+          "collectionId": 1,
+          "id": 1,
+          "name": "All"
+        },
+        {
+          "active": true,
+          "collectionId": 2,
+          "id": 2,
+          "name": "Also"
+        }
+      ]
+    },
+    {
+      "exclusions": [
+        "10000000-0000-4000-8000-000000000003"
+      ],
+      "members": [
+        {
+          "cachedTitle": "Story2",
+          "origins": [
+            {
+              "active": true,
+              "collectionId": 1,
+              "id": 1,
+              "name": "All"
+            },
+            {
+              "active": true,
+              "collectionId": 2,
+              "id": 2,
+              "name": "Also"
+            }
+          ],
+          "position": 0,
+          "protected": true,
+          "uuid": "10000000-0000-4000-8000-000000000002"
+        },
+        {
+          "cachedTitle": "Story1",
+          "origins": [
+            {
+              "active": true,
+              "collectionId": 1,
+              "id": 1,
+              "name": "All"
+            },
+            {
+              "active": true,
+              "collectionId": 2,
+              "id": 2,
+              "name": "Also"
+            }
+          ],
+          "position": 1,
+          "protected": false,
+          "uuid": "10000000-0000-4000-8000-000000000001"
+        }
+      ],
+      "shelf": {
+        "id": 1,
+        "name": "Chosen",
+        "position": 0,
+        "revision": 4,
+        "count": 2,
+        "brokenCount": 0,
+        "unavailableCount": 0,
+        "sourceCount": 2
+      },
+      "sources": [
+        {
+          "active": true,
+          "collectionId": 1,
+          "id": 1,
+          "name": "All"
+        },
+        {
+          "active": true,
+          "collectionId": 2,
+          "id": 2,
+          "name": "Also"
+        }
+      ]
+    },
+    {
+      "additions": [],
+      "removals": [
+        {
+          "manual": false,
+          "origins": [
+            {
+              "active": true,
+              "collectionId": 1,
+              "id": 1,
+              "name": "All"
+            },
+            {
+              "active": true,
+              "collectionId": 2,
+              "id": 2,
+              "name": "Also"
+            }
+          ],
+          "sources": [],
+          "title": "Story1",
+          "uuid": "10000000-0000-4000-8000-000000000001"
+        }
+      ]
+    },
+    {
+      "exclusions": [
+        "10000000-0000-4000-8000-000000000003"
+      ],
+      "members": [
+        {
+          "cachedTitle": "Story2",
+          "origins": [
+            {
+              "active": true,
+              "collectionId": 1,
+              "id": 1,
+              "name": "All"
+            },
+            {
+              "active": true,
+              "collectionId": 2,
+              "id": 2,
+              "name": "Also"
+            }
+          ],
+          "position": 0,
+          "protected": true,
+          "uuid": "10000000-0000-4000-8000-000000000002"
+        },
+        {
+          "cachedTitle": "Story1",
+          "origins": [
+            {
+              "active": true,
+              "collectionId": 1,
+              "id": 1,
+              "name": "All"
+            },
+            {
+              "active": true,
+              "collectionId": 2,
+              "id": 2,
+              "name": "Also"
+            }
+          ],
+          "position": 1,
+          "protected": true,
+          "uuid": "10000000-0000-4000-8000-000000000001"
+        }
+      ],
+      "shelf": {
+        "id": 1,
+        "name": "Chosen",
+        "position": 0,
+        "revision": 5,
+        "count": 2,
+        "brokenCount": 0,
+        "unavailableCount": 0,
+        "sourceCount": 2
+      },
+      "sources": [
+        {
+          "active": true,
+          "collectionId": 1,
+          "id": 1,
+          "name": "All"
+        },
+        {
+          "active": true,
+          "collectionId": 2,
+          "id": 2,
+          "name": "Also"
+        }
+      ]
+    },
+    {
+      "exclusions": [
+        "10000000-0000-4000-8000-000000000003"
+      ],
+      "members": [
+        {
+          "cachedTitle": "Story2",
+          "origins": [
+            {
+              "active": true,
+              "collectionId": 1,
+              "id": 3,
+              "name": "All"
+            },
+            {
+              "active": true,
+              "collectionId": 2,
+              "id": 4,
+              "name": "Also"
+            }
+          ],
+          "position": 0,
+          "protected": true,
+          "uuid": "10000000-0000-4000-8000-000000000002"
+        },
+        {
+          "cachedTitle": "Story1",
+          "origins": [
+            {
+              "active": true,
+              "collectionId": 1,
+              "id": 3,
+              "name": "All"
+            },
+            {
+              "active": true,
+              "collectionId": 2,
+              "id": 4,
+              "name": "Also"
+            }
+          ],
+          "position": 1,
+          "protected": true,
+          "uuid": "10000000-0000-4000-8000-000000000001"
+        }
+      ],
+      "shelf": {
+        "id": 2,
+        "name": "Independent",
+        "position": 1,
+        "revision": 1,
+        "count": 2,
+        "brokenCount": 1,
+        "unavailableCount": 1,
+        "sourceCount": 2
+      },
+      "sources": [
+        {
+          "active": true,
+          "collectionId": 1,
+          "id": 3,
+          "name": "All"
+        },
+        {
+          "active": true,
+          "collectionId": 2,
+          "id": 4,
+          "name": "Also"
+        }
+      ]
+    },
+    {
+      "exclusions": [
+        "10000000-0000-4000-8000-000000000003"
+      ],
+      "members": [
+        {
+          "cachedTitle": "Story2",
+          "origins": [
+            {
+              "active": false,
+              "collectionId": 1,
+              "id": 1,
+              "name": "All"
+            },
+            {
+              "active": false,
+              "collectionId": 2,
+              "id": 2,
+              "name": "Also"
+            }
+          ],
+          "position": 0,
+          "protected": true,
+          "uuid": "10000000-0000-4000-8000-000000000002"
+        },
+        {
+          "cachedTitle": "Story1",
+          "origins": [
+            {
+              "active": false,
+              "collectionId": 1,
+              "id": 1,
+              "name": "All"
+            },
+            {
+              "active": false,
+              "collectionId": 2,
+              "id": 2,
+              "name": "Also"
+            }
+          ],
+          "position": 1,
+          "protected": true,
+          "uuid": "10000000-0000-4000-8000-000000000001"
+        }
+      ],
+      "shelf": {
+        "id": 1,
+        "name": "Chosen",
+        "position": 0,
+        "revision": 6,
+        "count": 2,
+        "brokenCount": 1,
+        "unavailableCount": 1,
+        "sourceCount": 0
+      },
+      "sources": [
+        {
+          "active": false,
+          "collectionId": 1,
+          "id": 1,
+          "name": "All"
+        },
+        {
+          "active": false,
+          "collectionId": 2,
+          "id": 2,
+          "name": "Also"
+        }
+      ]
+    }
+  ]
+}

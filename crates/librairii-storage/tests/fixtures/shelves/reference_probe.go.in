@@ -1,0 +1,25 @@
+package shelves
+import("context";"encoding/json";"fmt";"os";"testing";"github.com/01max/librairii/internal/collections";"github.com/01max/librairii/internal/library")
+func TestTask10FrozenReference(t *testing.T){
+ s,db:=newShelfService(t);ctx:=context.Background();dynamic,e:=collections.NewService(db.Writer());if e!=nil{t.Fatal(e)}
+ id:=func(i int)string{return fmt.Sprintf("10000000-0000-4000-8000-%012d",i)}
+ for i:=1;i<=3;i++{seedStory(t,db,id(i),fmt.Sprintf("Story%d",i))}
+ all,e:=dynamic.Create(ctx,"All",library.StoryLibraryQuery{});if e!=nil{t.Fatal(e)};also,e:=dynamic.Create(ctx,"Also",library.StoryLibraryQuery{});if e!=nil{t.Fatal(e)}
+ src:=func(sources []Source)[]any{out:=[]any{};for _,v:=range sources{out=append(out,map[string]any{"id":v.ID,"collectionId":v.CollectionID,"name":v.Name,"active":v.Active})};return out}
+ candidates:=func(values []Candidate)[]any{out:=[]any{};for _,v:=range values{out=append(out,map[string]any{"uuid":v.UUID,"title":v.Title,"manual":v.Manual,"sources":src(v.Sources),"origins":src(v.Origins)})};return out}
+ events:=[]any{}
+ dump:=func(shelfID int64){t.Helper();shelf,e:=s.Get(ctx,shelfID);if e!=nil{t.Fatal(e)};tx,e:=db.Writer().BeginTx(ctx,nil);if e!=nil{t.Fatal(e)};defer tx.Rollback();members,e:=readMembers(ctx,tx,shelfID);if e!=nil{t.Fatal(e)};origins,e:=readOrigins(ctx,tx,shelfID);if e!=nil{t.Fatal(e)};sources,e:=readSources(ctx,tx,shelfID,false);if e!=nil{t.Fatal(e)};exclusions,e:=readExclusions(ctx,tx,shelfID);if e!=nil{t.Fatal(e)};ms:=[]any{};for _,m:=range members{ms=append(ms,map[string]any{"uuid":m.UUID,"position":m.Position,"protected":m.Protected,"cachedTitle":m.CachedTitle,"origins":src(origins[m.UUID])})};xs:=[]string{};for _,x:=range exclusions{xs=append(xs,x.UUID)};events=append(events,map[string]any{"shelf":shelf,"members":ms,"sources":src(sources),"exclusions":xs})}
+ p,e:=s.PreviewCreation(ctx,CreationRequest{Name:"Chosen",ManualUUIDs:[]string{id(2)},CollectionIDs:[]int64{all.ID,also.ID}});if e!=nil{t.Fatal(e)};events=append(events,map[string]any{"initial":candidates(p.Additions),"incomplete":p.Incomplete})
+ shelf,e:=s.CreateFromReview(ctx,p.Token,[]string{id(1),id(2)});if e!=nil{t.Fatal(e)};dump(shelf.ID)
+ review,e:=s.Preview(ctx,shelf.ID);if e!=nil{t.Fatal(e)};events=append(events,map[string]any{"additions":candidates(review.Additions),"removals":candidates(review.Removals)})
+ _,e=s.Apply(ctx,shelf.ID,review.Token,[]Decision{{UUID:id(3),Action:"exclude"}});if e!=nil{t.Fatal(e)};dump(shelf.ID)
+ _,e=s.RemoveStories(ctx,shelf.ID,[]string{id(1)});if e!=nil{t.Fatal(e)};dump(shelf.ID)
+ review,e=s.Preview(ctx,shelf.ID);if e!=nil{t.Fatal(e)};_,e=s.Apply(ctx,shelf.ID,review.Token,[]Decision{{UUID:id(1),Action:"add"}});if e!=nil{t.Fatal(e)};dump(shelf.ID)
+ for _,c:=range []int64{all.ID,also.ID}{if _,e=dynamic.ReplaceQuery(ctx,c,library.StoryLibraryQuery{Name:"nothing"});e!=nil{t.Fatal(e)}}
+ review,e=s.Preview(ctx,shelf.ID);if e!=nil{t.Fatal(e)};events=append(events,map[string]any{"additions":candidates(review.Additions),"removals":candidates(review.Removals)})
+ _,e=s.Apply(ctx,shelf.ID,review.Token,[]Decision{{UUID:id(1),Action:"keep"}});if e!=nil{t.Fatal(e)};dump(shelf.ID)
+ if _,e=db.Writer().Exec("DELETE FROM stories WHERE uuid=?",id(2));e!=nil{t.Fatal(e)};if _,e=db.Writer().Exec("UPDATE stories SET is_broken=1");e!=nil{t.Fatal(e)}
+ copy,e:=s.Duplicate(ctx,shelf.ID,"Independent");if e!=nil{t.Fatal(e)};dump(copy.ID)
+ change,e:=s.PreviewSourceChange(ctx,shelf.ID,nil);if e!=nil{t.Fatal(e)};_,e=s.ApplySourceChange(ctx,shelf.ID,change.Token,true,nil);if e!=nil{t.Fatal(e)};dump(shelf.ID)
+ data,e:=json.MarshalIndent(map[string]any{"events":events},"","  ");if e!=nil{t.Fatal(e)};if e=os.WriteFile(os.Getenv("TASK10_CAPTURE"),append(data,'\n'),0600);e!=nil{t.Fatal(e)}
+}
