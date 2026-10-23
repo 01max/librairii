@@ -66,3 +66,13 @@ These probes supply automated Wayland transport/rendering/component evidence onl
 open for complete minimal-package/clean-host qualification; Task 2.6's portal
 pickers/reveal, Task 2.4's Orca/AT-SPI and Task 2.5's OS-input/IME/scaling evidence
 are separate unfinished gates. Toolkit selection remains open.
+
+The Intel qualification lane at `230cc47` / run40018196257 retained a recorder
+fixture failure: the deliberately hung Python child had not printed `started`
+within the 150ms test deadline. The recorder correctly killed it and returned
+empty partial output; the fixture incorrectly required interpreter readiness
+inside that interval. A controlled 300ms startup delay reproduces the assertion.
+The corrected test establishes child readiness through a bounded factory barrier
+before starting the unchanged 150ms deadline, retaining exact kill/error/output
+assertions. Production limits, workload and verdicts are unchanged; no retry or
+skip is added. Failure during fixture setup also kills and reaps the child.

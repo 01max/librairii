@@ -7,6 +7,7 @@ import sys
 import tempfile
 import time
 import unittest
+from unittest import mock
 
 spec = importlib.util.spec_from_file_location('wayland', pathlib.Path(__file__).parents[1] / 'check-wayland.py')
 wayland = importlib.util.module_from_spec(spec)
@@ -90,8 +91,26 @@ class Wayland(unittest.TestCase):
             missing = wayland.command(['/intentionally-absent-wayland-tool'], os.environ.copy(), root / 'missing.log')
             self.assertFalse(wayland.passed(missing))
             self.assertIsNone(missing['returncode'])
-            hung = wayland.command([sys.executable, '-c', 'import time; print("started", flush=True); time.sleep(30)'],
-                                   os.environ.copy(), root / 'hung.log', timeout=0.15)
+            popen = wayland.subprocess.Popen
+            def ready_child(*args, **kwargs):
+                child = popen(*args, **kwargs)
+                try:
+                    # Establish the partial-output fixture before testing the
+                    # unchanged deadline; interpreter startup is not the gate.
+                    deadline = time.monotonic() + 5
+                    while 'started' not in (root / 'hung.log').read_text():
+                        if child.poll() is not None or time.monotonic() >= deadline:
+                            self.fail('hanging fixture did not become ready')
+                        time.sleep(0.01)
+                    return child
+                except BaseException:
+                    wayland.kill_group(child.pid)
+                    child.wait(timeout=5)
+                    raise
+            with mock.patch.object(wayland.subprocess, 'Popen', ready_child):
+                hung = wayland.command([sys.executable, '-c',
+                    'import time; time.sleep(0.3); print("started", flush=True); time.sleep(30)'],
+                    os.environ.copy(), root / 'hung.log', timeout=0.15)
             self.assertEqual(hung['returncode'], -9)
             self.assertIn('process deadline exceeded', hung['errors'])
             self.assertIn('started', hung['output'])
