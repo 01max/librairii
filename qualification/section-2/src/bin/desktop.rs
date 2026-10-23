@@ -86,7 +86,9 @@ fn install_pickers(
                     .set_parent(&ui.window().window_handle())
                     .add_filter("Archives", &["pk", "zip", "7z"])
                     .pick_files()
-            });
+            })
+            // RFD 0.17.2 maps a cancelled Linux portal response to Some([]).
+            .filter(|paths| !paths.is_empty());
             let valid = result.as_ref().is_some_and(|paths| {
                 !paths.is_empty()
                     && paths

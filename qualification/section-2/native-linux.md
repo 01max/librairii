@@ -49,3 +49,16 @@ the real dialog, but GTK's AT-SPI select-all action returned false. The driver
 now focuses the actual file list and uses its native Ctrl+A shortcut, observes
 multiple selected rows and still requires both exact returned Unicode paths.
 The failed observations remain failures; no gate was relaxed.
+
+The follow-up at `564be95` / run40011756460 proves X11 multiple/single Unicode
+selection, parenting, native Settings/Search and owned shutdown. It also exposed
+an app adapter bug: RFD0.17.2 represents portal cancellation as `Some([])`, which
+the spike displayed as rejection. The adapter now normalizes that empty result
+to cancellation. On Wayland, the raw input trace showed only a key release after
+keyboard enter, and ephemeral devices removed the seat's keyboard capability.
+The observer now keeps a keyboard device on its owned headless seat and allows
+focus entry before injecting keys, following the native virtual-keyboard path in
+[wtype0.4](https://github.com/atx/wtype/blob/v0.4/main.c).
+The multiple-selection precondition uses actual selected rows, since GTK's
+selected-child count includes table cells. Exact returned paths remain required.
+Both prior native observer runs remain failed; revalidation is required.

@@ -90,6 +90,9 @@ class Desktop:
             socket = wait_for(lambda: next((p for p in self.runtime.glob('wayland-*') if p.is_socket()), None))
             os.environ['WAYLAND_DISPLAY'] = socket.name
             self.ipc = str(wait_for(lambda: next(self.runtime.glob('sway-ipc.*.sock'), None)))
+            # Keep a keyboard device on the headless seat between injected events.
+            self.start('keyboard-seat', ['wtype', '-s', '600000'])
+            wait_for(lambda: 'keyboard' in self.run(['swaymsg', '-s', self.ipc, '-t', 'get_inputs']))
         config = self.runtime / 'config/xdg-desktop-portal'
         config.mkdir()
         (config / 'portals.conf').write_text('[preferred]\ndefault=gtk\norg.freedesktop.impl.portal.FileChooser=gtk\n')
@@ -144,15 +147,15 @@ class Desktop:
         if self.session == 'x11':
             self.run(['xdotool', 'key', '--clearmodifiers', key])
         elif key.startswith('ctrl+'):
-            self.run(['wtype', '-M', 'ctrl', '-k', key[5:], '-m', 'ctrl'])
+            self.run(['wtype', '-s', '200', '-M', 'ctrl', '-s', '50', '-k', key[5:], '-m', 'ctrl', '-s', '100'])
         else:
-            self.run(['wtype', '-k', key])
+            self.run(['wtype', '-s', '200', '-k', key, '-s', '100'])
 
     def text(self, text):
         if self.session == 'x11':
             self.run(['xdotool', 'type', '--clearmodifiers', '--delay', '10', text])
         else:
-            self.run(['wtype', '-d', '10', text])
+            self.run(['wtype', '-s', '200', '-d', '30', text, '-s', '100'])
 
     def nodes(self, root=None):
         queue = collections.deque([(root or self.a.Registry.getDesktop(0), 0)])
@@ -267,7 +270,7 @@ def one_case(desktop, name, kind, expected):
                     and wanted <= {str(x.name) for x in desktop.nodes(n)}, dialog))
                 assert table.queryComponent().grabFocus(), 'native file list focus failed'
                 desktop.key('ctrl+a')
-                wait_for(lambda: table.querySelection().nSelectedChildren >= 2)
+                wait_for(lambda: len(table.queryTable().getSelectedRows()) == 2)
                 desktop.screenshot(output / 'selected.png')
                 desktop.button(dialog, ('Open', 'Select'))
             else:
