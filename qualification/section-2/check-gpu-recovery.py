@@ -22,6 +22,16 @@ CPU = 'Skia renderer (skia backend software;'
 GPU = 'Skia renderer (skia backend opengl;'
 DONE = 'renderer_smoke=passed;'
 FAILURES = ['Failed to initialize Skia wgpu surface:', 'Failed to initialize Skia opengl surface:']
+# Pinned Slint 1.18.1 error boundaries; arbitrary application/setup failures are
+# not evidence that a compiled graphics API attempted native initialization.
+INIT_ERRORS = {
+    'opengl': ('Error creating glutin display for native display',
+               'Could not find valid OpenGL display configurations:',
+               'Unable to find suitable GL config', 'Error creating OpenGL context:',
+               'Error creating OpenGL window surface:', 'Failed to initialize OpenGL driver:'),
+    'wgpu': ('Error creating wgpu window surface:',
+             'Failed to find an appropriate adapter:', 'Failed to create device:'),
+}
 
 
 def command(argv, env, timeout=30):
@@ -53,13 +63,15 @@ def checks_for(runs):
         # Signals, missing tools and timeout are not GPU initialization evidence.
         return (runs[name]['returncode'] is not None and runs[name]['returncode'] > 0
                 and not runs[name]['timed_out'] and 'Error:' in text(name)
+                and any(marker in text(name) for marker in INIT_ERRORS[name])
+                and not any(marker in text(name).lower() for marker in
+                            ('unsupported', 'not compiled', 'not built', 'not enabled'))
                 and DONE not in text(name))
 
     return {
         'working_opengl_control': passed('baseline') and GPU in text('baseline') and DONE in text('baseline'),
-        'forced_opengl_rejected': rejected('opengl') and 'unsupported' not in text('opengl').lower(),
-        'forced_wgpu_rejected': rejected('wgpu') and 'wgpu' in text('wgpu').lower()
-                                and 'unsupported' not in text('wgpu').lower(),
+        'forced_opengl_rejected': rejected('opengl'),
+        'forced_wgpu_rejected': rejected('wgpu'),
         'default_attempted_both_gpu_candidates': all(marker in text('recovery') for marker in FAILURES),
         'default_recovered_to_skia_cpu': passed('recovery') and CPU in text('recovery'),
         'recovered_component_input_and_rendering': passed('recovery') and DONE in text('recovery'),
@@ -75,8 +87,12 @@ def inspect(package, output):
     binary = runtime.verified_binary(package, manifest)
     output.mkdir(parents=True)  # New evidence only; never overwrite an earlier run.
     missing_driver = output.resolve() / 'intentionally-absent-driver.json'
-    env = {**os.environ, 'LC_ALL': 'C', 'LANG': 'C', 'WINIT_UNIX_BACKEND': 'x11',
+    env = {**os.environ, 'LC_ALL': 'C', 'LANG': 'C',
            'SLINT_DEBUG_PERFORMANCE': 'refresh_lazy,console', 'WGPU_BACKEND': 'vulkan'}
+    # Winit 0.30 chooses Wayland before DISPLAY when either variable is present.
+    # Remove only from these child environments to actually test the Xvfb server.
+    env.pop('WAYLAND_DISPLAY', None)
+    env.pop('WAYLAND_SOCKET', None)
     # Override, rather than mutate, the host's driver discovery. GLX is disabled
     # on the injected X server; EGL and Vulkan cannot discover an ICD.
     injection = {'__EGL_VENDOR_LIBRARY_FILENAMES': str(missing_driver),
@@ -104,11 +120,15 @@ def inspect(package, output):
                         'mesa-vulkan-drivers', 'libegl1', 'libegl-mesa0', 'libglx0', 'libglx-mesa0',
                         'libgl1-mesa-dri', 'fonts-noto-cjk'], env)
     driver = command(['xvfb-run', '-a', 'glxinfo', '-B'], {**env, 'SLINT_BACKEND': 'winit-skia-opengl'})
+    checks['driver_context_recorded'] = versions['returncode'] == 0 and driver['returncode'] == 0
     report = {
         'source': manifest['source'], 'source_dirty': manifest['source_dirty'],
         'target': manifest['target'], 'binary_sha256': manifest['binary_sha256'],
         'host': platform.platform(), 'os_release': pathlib.Path('/etc/os-release').read_text(),
         'session': 'X11/Xvfb; no GLX extension in failure cases',
+        'common_overrides': {'LC_ALL': 'C', 'LANG': 'C', 'WGPU_BACKEND': 'vulkan',
+                             'SLINT_DEBUG_PERFORMANCE': 'refresh_lazy,console'},
+        'child_variables_removed': ['WAYLAND_DISPLAY', 'WAYLAND_SOCKET'],
         'driver_versions': versions, 'baseline_glx_driver': driver,
         'runs': runs, 'checks': checks, 'automated_gpu_recovery': 'pass' if all(checks.values()) else 'fail',
         'glyph_visual_review': 'pending', 'physical_input_ime_qualified': False,

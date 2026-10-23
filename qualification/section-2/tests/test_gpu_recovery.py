@@ -17,8 +17,8 @@ def run(code, text):
 class GpuRecovery(unittest.TestCase):
     def success(self):
         return {'baseline': run(0, gpu.GPU + gpu.DONE),
-                'opengl': run(1, 'Error: could not initialize EGL/GLX'),
-                'wgpu': run(1, 'Error: Could not create WGPU adapter'),
+                'opengl': run(1, 'Error: Error creating glutin display for native display Xlib: initialization failed'),
+                'wgpu': run(1, 'Error: Failed to find an appropriate adapter: no adapters'),
                 'recovery': run(0, '\n'.join(gpu.FAILURES) + gpu.CPU + gpu.DONE)}
 
     def test_real_failure_controls_and_actual_surface_are_required(self):
@@ -41,6 +41,17 @@ class GpuRecovery(unittest.TestCase):
         runs = self.success()
         runs['opengl']['timed_out'] = True
         self.assertFalse(gpu.checks_for(runs)['forced_opengl_rejected'])
+
+    def test_unrelated_errors_and_missing_build_capabilities_are_not_gpu_failures(self):
+        for name, text in [
+                ('opengl', 'Error: unrelated application setup failure'),
+                ('opengl', 'Error: renderer was not compiled in'),
+                ('wgpu', 'Error: wgpu was not compiled in'),
+                ('wgpu', 'Error: wgpu helper tool is missing')]:
+            with self.subTest(name=name, text=text):
+                runs = self.success()
+                runs[name] = run(1, text)
+                self.assertFalse(gpu.checks_for(runs)['forced_' + name + '_rejected'])
 
     def test_timeout_retains_output_and_reaps_process_group(self):
         result = gpu.command([sys.executable, '-c', 'import time; print("starting", flush=True); time.sleep(30)'],
