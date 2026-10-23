@@ -74,6 +74,24 @@ schedule without changing the deadline, progress load or assertions. The
 temporary delay/debug instrumentation was removed; only fixture coordination
 changes. Production progress/coordinator policy remains unchanged.
 
+At the corrected fixture head `0a174f2`, all three native qualification jobs
+passed again in [run 39963960217](https://github.com/01max/librairii/actions/runs/39963960217).
+Linux's cumulative run passed all 538 tests, and ARM also passed. The separate
+Intel cumulative run retained another Shelf budget failure in
+[run 39963960567](https://github.com/01max/librairii/actions/runs/39963960567):
+535/536 tests passed; worst preview was 5.371917264 s against the unchanged
+5 s ceiling, while applying 50 decisions took 3.934265908 s.
+
+Independent investigation found that the debug-mode wall-clock measurement
+shares nextest slots with storage, hashing and crash fixtures, each spawning
+additional workers. Archived Intel execution shows overlap with 44 other tests.
+The CI profile now reserves all runner slots for this exact retained-budget test
+(`threads-required = "num-test-threads"`, supported by pinned nextest 0.9.148).
+No test is skipped/retried, the workload/assertions and five-second ceilings are
+unchanged, and other tests still run. Contention is a likely explanation rather
+than a proven product root cause; new full native CI must verify the isolated
+measurement. If it still fails, the preview path needs profiling and correction.
+
 # Thumbnail measurement probe (2026-10-23)
 
 The current [continuation](continuation.md) replaces shared/generated rasters
