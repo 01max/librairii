@@ -35,3 +35,22 @@ Native observations, other target builds and independent review are separate.
 Historical decoder/Unicode reports remain unchanged. The current epic supplies
 the qualified archive adapter, recorded hardening exceptions and frozen core
 normalization; superseded candidates are not being restarted as product work.
+
+## 2.4 focus and accessibility continuation
+
+Native Computer Use now opens `dev.librairii.qualification` successfully. The
+2026-10-23 ARM observation used binary SHA256
+`c31f9b5bc013538939033c9bf9299e3612991cdd8738b4f7177f66079e07990f`:
+Settings exposed English/French/Close, background actions became disabled, four
+native Tabs stayed in Settings, Space activated French, and Escape closed it.
+The new palette renders readable text in the observed dark appearance.
+This is an AX/keyboard/visual observation, **not VoiceOver speech qualification**.
+
+That observation exposed a close-time race: the background actions could still
+be disabled when focus restoration ran. Modal state now changes synchronously
+before focus transfer. `--focus-smoke` checks actual initial Close focus, four
+Tab events, Escape, restored Settings focus and retained unsaved multilingual
+input. The corrected in-process test passes. Live status uses a polite region;
+completion/cancellation emit one terminal message, and a synthetic error action
+provides an explicit retry announcement probe. Spoken output and all other
+required targets remain open until observed by the corresponding operators.

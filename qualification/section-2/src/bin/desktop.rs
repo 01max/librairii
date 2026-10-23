@@ -68,6 +68,19 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let start = Instant::now();
     // No profile, library, network client or filesystem input exists in this spike.
     let ui = Spike::new()?;
+    if let Some(size) =
+        std::env::args().find_map(|arg| arg.strip_prefix("--size=").map(str::to_owned))
+    {
+        let (width, height) = size.split_once('x').ok_or("use --size=WIDTHxHEIGHT")?;
+        let width: u32 = width.parse()?;
+        let height: u32 = height.parse()?;
+        if !(560..=3840).contains(&width) || !(400..=2160).contains(&height) {
+            return Err("size is outside the qualification range".into());
+        }
+        ui.window()
+            .set_size(slint::LogicalSize::new(width as f32, height as f32));
+    }
+    ui.set_french(std::env::args().any(|arg| arg == "--french"));
     let fixture = tempfile::Builder::new()
         .prefix("librairii-qualification-")
         .tempdir()?;
@@ -238,11 +251,25 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     });
     let stop = cancel.clone();
     ui.on_cancel_work(move || stop.store(true, Ordering::Release));
+    let weak = ui.as_weak();
+    ui.on_simulate_error(move || {
+        if let Some(ui) = weak.upgrade() {
+            ui.set_status(
+                if ui.get_french() {
+                    "Échec synthétique — réessayez"
+                } else {
+                    "Synthetic failure — retry"
+                }
+                .into(),
+            );
+        }
+    });
 
     // One snapshot slot, polled by an owned UI timer; no unbounded progress queue.
     let timer = slint::Timer::default();
     let weak = ui.as_weak();
     let work = worker.clone();
+    let poll_cancel = cancel.clone();
     timer.start(
         slint::TimerMode::Repeated,
         Duration::from_millis(30),
@@ -250,11 +277,47 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             if let Some(ui) = weak.upgrade() {
                 update_viewport(&ui);
                 ui.set_progress(progress.load(Ordering::Acquire) as f32 / 100.0);
-                ui.set_working(work.borrow().as_ref().is_some_and(|w| !w.is_finished()));
+                let working = work.borrow().as_ref().is_some_and(|w| !w.is_finished());
+                if ui.get_working() && !working {
+                    ui.set_status(
+                        match (poll_cancel.load(Ordering::Acquire), ui.get_french()) {
+                            (true, true) => "Travail synthétique annulé",
+                            (true, false) => "Synthetic work cancelled",
+                            (false, true) => "Travail synthétique terminé",
+                            (false, false) => "Synthetic work completed",
+                        }
+                        .into(),
+                    );
+                }
+                ui.set_working(working);
             }
         },
     );
     let exit_timer = slint::Timer::default();
+    if std::env::args().any(|arg| arg == "--focus-smoke") {
+        ui.show()?;
+        ui.window()
+            .dispatch_event_with_result(slint::platform::WindowEvent::WindowActiveChanged(true))?;
+        ui.set_query("Été 日本語 · unsaved".into());
+        ui.invoke_open_dialog(1, 0);
+        assert!(ui.get_close_has_focus());
+        for _ in 0..4 {
+            press_key(ui.window(), slint::platform::Key::Tab.into())?;
+            assert!(!ui.get_settings_has_focus());
+            assert!(!ui.get_search_has_focus());
+        }
+        press_key(ui.window(), slint::platform::Key::Escape.into())?;
+        assert_eq!(ui.get_dialog(), 0);
+        assert!(
+            ui.get_settings_has_focus(),
+            "Escape must restore the invoker"
+        );
+        assert_eq!(ui.get_query(), "Été 日本語 · unsaved");
+        eprintln!(
+            "focus_smoke=passed; initial focus, Tab containment, Escape and invoker restoration"
+        );
+        return Ok(());
+    }
     if std::env::args().any(|arg| arg == "--widget-smoke") {
         // Feed Slint's public in-process event API. This does not send OS input
         // or bypass the denied native Computer Use/accessibility permission.
@@ -315,12 +378,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 fn press_space(window: &slint::Window) -> Result<(), slint::PlatformError> {
+    press_key(window, " ".into())
+}
+
+fn press_key(
+    window: &slint::Window,
+    text: slint::SharedString,
+) -> Result<(), slint::PlatformError> {
     window.dispatch_event_with_result(slint::platform::WindowEvent::KeyPressed {
-        text: " ".into(),
+        text: text.clone(),
     })?;
-    window.dispatch_event_with_result(slint::platform::WindowEvent::KeyReleased {
-        text: " ".into(),
-    })?;
+    window.dispatch_event_with_result(slint::platform::WindowEvent::KeyReleased { text })?;
     Ok(())
 }
 

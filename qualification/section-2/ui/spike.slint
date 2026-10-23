@@ -42,6 +42,7 @@ export component Spike inherits Window {
     callback select-story(int);
     callback start-work();
     callback cancel-work();
+    callback simulate-error();
     callback decide(int, bool);
     callback apply-review();
     callback change-review-page(int);
@@ -59,11 +60,13 @@ export component Spike inherits Window {
         if root.dialog == 0 {
             root.invoker = from;
             root.dialog = kind;
+            ProbeState.modal = true;
             close-button.focus();
         }
     }
     public function close-dialog() {
         root.dialog = 0;
+        ProbeState.modal = false;
         if root.invoker == 1 { details-button.focus(); }
         else if root.invoker == 2 { search-entry.focus(); }
         else { settings-button.focus(); }
@@ -76,7 +79,6 @@ export component Spike inherits Window {
         root.sidebar-open = false;
         navigation-button.focus();
     }
-    changed dialog => { ProbeState.modal = root.modal; }
     MenuBar {
         Menu {
             title: "Librairii";
@@ -227,6 +229,7 @@ export component Spike inherits Window {
             HorizontalBox {
                 Action { text: root.french ? "Travail synthétique" : "Synthetic work"; enabled: !root.modal && !root.working; clicked => { root.start-work(); } }
                 Action { text: root.french ? "Annuler" : "Cancel"; enabled: !root.modal && root.working; clicked => { root.cancel-work(); } }
+                Action { text: root.french ? "Erreur synthétique" : "Synthetic error"; clicked => { root.simulate-error(); } }
                 ProgressIndicator { progress: root.progress; }
             }
             Text { text: root.status; wrap: word-wrap; accessible-live-region: polite; }
