@@ -49,8 +49,20 @@ Failures retain raw logs and the report; output directories cannot be reused.
 Source/executable hashes, exact commands, tool versions, per-check verdicts and
 PNG hashes are retained in `wayland/wayland.json` and the native CI artifact.
 
-Execution is pending this continuation's native CI. Passing these probes supplies
-automated Wayland transport/rendering/component evidence only. Task 2.11 remains
+Native Linux execution passed at implementation `53aa12f` in
+[run 39971404114](https://github.com/01max/librairii/actions/runs/39971404114),
+built source `e82aed2ee9f8d7d36123f3620f696923cf8044af`. The
+[retained observations](wayland-observations.json) bind the package source and
+executable, artifact ZIP/raw-report/log/PNG hashes and all 13 passing checks.
+The exact installed Weston was 13.0.0-4build3 with libwayland 1.22.0-2.1build1.
+The normal request selected Skia WGPU; the CPU request selected Skia software.
+Both produced real same-toplevel Wayland submissions and fresh, distinct
+1280×900 French/CJK frames. The absent-socket control exited 1 with Winit's
+native `Could not find wayland compositor` connection error. All four component
+probes and compositor/process/runtime retirement checks passed. WGPU is an API
+observation on this hosted VM, not physical GPU qualification.
+
+These probes supply automated Wayland transport/rendering/component evidence only. Task 2.11 remains
 open for complete minimal-package/clean-host qualification; Task 2.6's portal
 pickers/reveal, Task 2.4's Orca/AT-SPI and Task 2.5's OS-input/IME/scaling evidence
 are separate unfinished gates. Toolkit selection remains open.

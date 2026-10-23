@@ -285,6 +285,10 @@ followed by a commit on the same surface, as well as component Search/model and
 fresh French/CJK snapshot checks. X11 fallback is unavailable; an absent-socket
 negative control must fail. Existing edit, modal focus, owned Quit and thumbnail
 probes also run under Wayland. Commands/output are bounded and process groups,
-compositor and temporary runtime are retired. Native CI execution is pending.
+compositor and temporary runtime are retired. Native Linux execution passed at
+`53aa12f`, CI run `39971404114` / built source
+`e82aed2ee9f8d7d36123f3620f696923cf8044af`, with all 13 checks passing. The
+[retained observations](wayland-observations.json) bind exact package/evidence
+identities, actual WGPU/CPU surfaces and all four fresh French/CJK frame hashes.
 This adds automated session evidence, leaving physical input/IME/Orca, portal
 pickers/reveal, real display scaling and clean-host package gates incomplete.

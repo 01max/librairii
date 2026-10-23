@@ -92,6 +92,15 @@ unchanged, and other tests still run. Contention is a likely explanation rather
 than a proven product root cause; new full native CI must verify the isolated
 measurement. If it still fails, the preview path needs profiling and correction.
 
+The first full native execution with that scheduling passed all three Rust
+targets at implementation `53aa12f` in
+[run 39971403712](https://github.com/01max/librairii/actions/runs/39971403712):
+Linux 538/538, Intel 536/536, zero skipped. Intel's retained Shelf test passes
+its unchanged five-second assertions. Its reported 18.416 s is the **whole
+fixture duration**, including setup and all additional checks, not preview
+latency. This supplies a passing isolated measurement without erasing either
+earlier Intel failure or proving that repeated-row metadata hydration is cheap.
+
 # Thumbnail measurement probe (2026-10-23)
 
 The current [continuation](continuation.md) replaces shared/generated rasters
