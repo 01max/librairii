@@ -39,3 +39,13 @@ They do not qualify physical keyboards, IME composition, Orca speech, arbitrary
 distributions, real GPU hardware or macOS integration. Task 2.6 and the toolkit
 selection remain open until their remaining scope has evidence. Native execution
 of this new observer is pending; unit tests do not establish integration success.
+
+The first native observer run at `3b003cf` retained failures in
+[run 40010930728](https://github.com/01max/librairii/actions/runs/40010930728).
+The X11 private bus lacked the owned display environment during service
+activation; the driver now publishes that context only to its private bus and
+waits for its GTK backend before starting the public portal. Wayland displayed
+the real dialog, but GTK's AT-SPI select-all action returned false. The driver
+now focuses the actual file list and uses its native Ctrl+A shortcut, observes
+multiple selected rows and still requires both exact returned Unicode paths.
+The failed observations remain failures; no gate was relaxed.

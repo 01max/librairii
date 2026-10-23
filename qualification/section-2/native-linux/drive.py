@@ -9,6 +9,7 @@ import re
 import threading
 import subprocess
 import time
+import traceback
 
 LIMIT = 4 * 1024 * 1024
 
@@ -93,8 +94,15 @@ class Desktop:
         config.mkdir()
         (config / 'portals.conf').write_text('[preferred]\ndefault=gtk\norg.freedesktop.impl.portal.FileChooser=gtk\n')
         self.bus = dbus.SessionBus()
+        # Only the private bus receives this owned desktop's activation context.
+        activation = {key: os.environ[key] for key in ('DISPLAY', 'WAYLAND_DISPLAY', 'GDK_BACKEND',
+            'XDG_RUNTIME_DIR', 'XDG_CONFIG_HOME', 'XDG_CACHE_HOME', 'XDG_DATA_HOME',
+            'XDG_CURRENT_DESKTOP', 'XDG_SESSION_TYPE', 'GTK_MODULES', 'LC_ALL') if key in os.environ}
+        self.bus.get_object('org.freedesktop.DBus', '/org/freedesktop/DBus').UpdateActivationEnvironment(
+            activation, dbus_interface='org.freedesktop.DBus')
         self.a.Registry.getDesktop(0)  # Activate the private accessibility bus/registry.
         self.start('gtk', ['/usr/libexec/xdg-desktop-portal-gtk'], debug=True)
+        wait_for(lambda: self.bus.name_has_owner('org.freedesktop.impl.portal.desktop.gtk'))
         self.start('portal', ['/usr/libexec/xdg-desktop-portal'])
         wait_for(lambda: self.bus.name_has_owner('org.freedesktop.portal.Desktop'))
         wait_for(lambda: self.bus.name_has_owner('org.freedesktop.impl.portal.desktop.gtk'))
@@ -257,8 +265,9 @@ def one_case(desktop, name, kind, expected):
                 wanted = {'Été 日本語 故事.zip', 'Deuxième archive 02.pk'}
                 table = wait_for(lambda: desktop.find(lambda n: n.getRole() in (desktop.a.ROLE_TABLE, desktop.a.ROLE_TREE_TABLE)
                     and wanted <= {str(x.name) for x in desktop.nodes(n)}, dialog))
-                selection = table.querySelection()
-                assert selection.selectAll(), 'native multi-selection failed'
+                assert table.queryComponent().grabFocus(), 'native file list focus failed'
+                desktop.key('ctrl+a')
+                wait_for(lambda: table.querySelection().nSelectedChildren >= 2)
                 desktop.screenshot(output / 'selected.png')
                 desktop.button(dialog, ('Open', 'Select'))
             else:
@@ -318,6 +327,10 @@ def one_case(desktop, name, kind, expected):
         report['returncode'] = app.wait(timeout=10)
         report['checks']['owned_shutdown'] = report['returncode'] == 0 and 'fixture_retired=true' in (app_dir / 'retired.txt').read_text()
         report['checks']['fixture_removed'] = not fixture.exists()
+    except Exception:
+        report['failure'] = traceback.format_exc()
+        report['last_app_state'] = state(app_dir)
+        raise
     finally:
         if app.poll() is None:
             app.kill()
