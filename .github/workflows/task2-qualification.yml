@@ -1,0 +1,102 @@
+name: Task 2 native qualification
+
+on:
+  pull_request:
+    paths:
+      - 'qualification/section-2/**'
+      - '.github/workflows/task2-qualification.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: task2-qualification-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  spike:
+    name: Task 2 spike ${{ matrix.target }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-15
+            target: aarch64-apple-darwin
+          - runner: macos-15-intel
+            target: x86_64-apple-darwin
+          - runner: ubuntu-24.04
+            target: x86_64-unknown-linux-gnu
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 45
+    defaults:
+      run:
+        shell: bash
+    env:
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_RELEASE_DEBUG: '0'
+      MACOSX_DEPLOYMENT_TARGET: '15.0'
+      SLINT_BACKEND: winit-skia-software
+      RUST_TARGET: ${{ matrix.target }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Linux desktop build and CPU smoke prerequisites
+        if: runner.os == 'Linux'
+        run: >-
+          .github/scripts/ubuntu-apt build-essential clang cmake ninja-build pkg-config python3
+          libfontconfig1-dev libfreetype6-dev libx11-dev libx11-xcb-dev libxcursor-dev
+          libxi-dev libxrandr-dev libxkbcommon-dev libxkbcommon-x11-dev libwayland-dev
+          libegl1-mesa-dev libgl1-mesa-dev libdbus-1-dev xvfb xauth fonts-noto-cjk
+      - uses: ./.github/actions/rust-environment
+        with:
+          tools: quality
+      - name: Assert native architecture and record compiler
+        run: |
+          test "$(rustc -vV | sed -n 's/^host: //p')" = "$RUST_TARGET"
+          mkdir -p target/task2-evidence
+          git rev-parse HEAD > target/task2-evidence/source.txt
+          rustc -vV > target/task2-evidence/rustc.txt
+      - name: Rust formatting, warnings and tests
+        working-directory: qualification/section-2
+        run: |
+          cargo fmt --check
+          cargo clippy --locked --features gui --all-targets -- -D warnings
+          cargo nextest run --locked --features gui --config-file ../../.config/nextest.toml --profile ci
+          cargo test --locked --features gui --doc
+          python3 -I -B -m unittest discover -s tests -p 'test_*.py'
+      - name: Build the unsigned native spike
+        working-directory: qualification/section-2
+        run: cargo build --locked --release --features gui --bin qualification-desktop
+      - name: Public controller and widget smokes
+        run: |
+          spike="$PWD/qualification/section-2/target/release/qualification-desktop"
+          if [[ "$RUNNER_OS" == Linux ]]; then
+            xvfb-run -a "$spike" --controller-smoke
+            xvfb-run -a "$spike" --widget-smoke
+            xvfb-run -a "$spike" --focus-smoke
+            xvfb-run -a "$spike" --size=560x400 --french --smoke
+          else
+            "$spike" --controller-smoke
+            "$spike" --widget-smoke
+            "$spike" --focus-smoke
+            "$spike" --size=560x400 --french --smoke
+          fi
+      - name: Assemble package and operator checklist
+        run: >-
+          python3 qualification/section-2/package.py
+          --binary qualification/section-2/target/release/qualification-desktop
+          --target "$RUST_TARGET"
+          --output "target/task2-evidence/task2-$RUST_TARGET"
+      - name: Retain unsigned packages and automated evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: task2-${{ matrix.target }}-${{ github.event.pull_request.head.sha || github.sha }}
+          path: |
+            target/task2-evidence/
+            qualification/section-2/target/nextest/ci/junit.xml
+          if-no-files-found: error
+          retention-days: 30
