@@ -32,11 +32,9 @@ impl OwnedExportTemporary<'_, '_> {
             .ok_or(StorageError::CompatibilityInvariant)?;
         file.rewind()
             .map_err(|e| StorageError::io("rewind registered export", e))?;
-        let cancel = crate::database::WorkCancellation::default();
-        let checked = hash_stream(file, bytes, &cancel)?;
-        if checked.bytes() != bytes || checked.checksum() != expected {
-            return Err(StorageError::SnapshotChanged);
-        }
+        // Readback is still before publication and can retire the temporary.
+        // Reuse the bounded verifier with the same job cancellation predicate.
+        copy_bytes(file, &mut io::sink(), expected, bytes, cancelled, |_| {})?;
         self.revalidate()
     }
     /// Returns only after both rename directory entries are durable. On a lost
@@ -366,7 +364,131 @@ impl ExportAllocation<'_, '_> {
 mod tests {
     use super::*;
     use crate::test_support::native_copy;
-    use std::cell::Cell;
+    use std::cell::{Cell, RefCell};
+    #[test]
+    fn native_export_cancellation_during_readback_retires_unpublished_temporary()
+    -> std::result::Result<(), Box<dyn std::error::Error>> {
+        use crate::{
+            database::{Database, TransactionOutcome},
+            native::NativeLibrary,
+            profile::NativeProfileStore,
+        };
+        use librairii_app::ports::creation::{NewItem, NewOperation};
+        use librairii_core::{
+            OperationKind,
+            operations::{ExportSource, ExportSourceType},
+        };
+        let (roots, copy, locations) = native_copy()?;
+        let destination = roots.profile().join("readback-output");
+        std::fs::create_dir(&destination)?;
+        let bytes = vec![73u8; 3 * crate::platform::HASH_BUFFER_BYTES];
+        let hash = librairii_core::Checksum::from_bytes(Sha256::digest(&bytes).into());
+        let relative = "archives/readback-source";
+        let source_path = copy.root().join(relative);
+        let profile = NativeProfileStore::create_fresh(&locations.native)?;
+        let native =
+            NativeLibrary::bind_independent(copy, &profile, &locations, &Default::default())
+                .map_err(|e| e.to_string())?;
+        let mut db = Database::open_native(&native)?;
+        std::fs::write(&source_path, &bytes)?;
+        let operation = "a0000000-0000-4000-8000-000000012600".to_owned();
+        let created = match db
+            .create_operation(
+                NewOperation {
+                    id: operation.clone(),
+                    kind: OperationKind::Export,
+                    source: Some(ExportSource {
+                        source_type: ExportSourceType::Selection,
+                        collection_ids: Vec::new(),
+                        collection_names: Vec::new(),
+                        shelf_ids: Vec::new(),
+                        shelf_names: Vec::new(),
+                    }),
+                    destination: Some(destination.clone().into()),
+                    items: vec![NewItem {
+                        source_name: "readback.zip".into(),
+                        output_name: "readback.zip".into(),
+                        story_uuid: "e0000000-0000-4000-8000-000000012600".into(),
+                        story_title: "Readback fixture".into(),
+                        export_skip_code: "story_unavailable".into(),
+                        ..Default::default()
+                    }],
+                },
+                "now".into(),
+                Default::default(),
+            )?
+            .wait()?
+        {
+            TransactionOutcome::Committed(v) => v,
+            _ => return Err("creation".into()),
+        };
+        if !matches!(
+            db.mark_operation_item_running(
+                operation,
+                created.items[0].identity.id,
+                "later".into(),
+                Default::default(),
+            )?
+            .wait()?,
+            TransactionOutcome::Committed(_)
+        ) {
+            return Err("start".into());
+        }
+        {
+            let files = LibraryFiles::open_native(&db)?;
+            let custody = files.try_custody()?;
+            let mut source = transfer::ArchiveSource::open(&files, relative)?;
+            let mut output = files
+                .create_export_temporary(
+                    &custody,
+                    created.operation.identity.id.clone(),
+                    created.items[0].identity.id,
+                )
+                .map_err(|failure| failure.cause)?;
+            // Duplicates share the real file offset. Cancellation starts only
+            // after the completed copy has been rewound and read back once.
+            let observer = RefCell::new(
+                output
+                    .allocation
+                    .file
+                    .as_ref()
+                    .ok_or("payload")?
+                    .try_clone()?,
+            );
+            let copied = Cell::new(false);
+            let cancelled_at = Cell::new(None);
+            let result = output.copy_verified(
+                &mut source,
+                hash,
+                bytes.len() as u64,
+                || {
+                    let position = observer.borrow_mut().stream_position().ok();
+                    let cancelled =
+                        copied.get() && position.is_some_and(|p| p > 0 && p < bytes.len() as u64);
+                    if cancelled {
+                        cancelled_at.set(position);
+                    }
+                    cancelled
+                },
+                |completed| copied.set(completed == bytes.len() as u64),
+            );
+            assert!(matches!(result, Err(StorageError::Cancelled)));
+            assert!(copied.get());
+            assert_eq!(
+                cancelled_at.get(),
+                Some(crate::platform::HASH_BUFFER_BYTES as u64)
+            );
+            assert!(!output.publication_pending());
+            output.retire_in_place(&custody)?;
+            assert!(native.registered_temporaries()?.is_empty());
+            assert!(std::fs::read_dir(&destination)?.next().is_none());
+        }
+        assert_eq!(std::fs::read(&source_path)?, bytes);
+        db.close()?;
+        drop(db);
+        native.finish().map_err(|e| e.to_string())?;
+        Ok(())
+    }
     struct Fragmented {
         bytes: Vec<u8>,
         limit: usize,

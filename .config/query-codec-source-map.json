@@ -4674,6 +4674,19 @@
           ]
         },
         "reason": "Observed additive Task 12 native import-inspect-export-reopen acceptance; preserve all original identities and target scopes."
+      },
+      {
+        "position": 550,
+        "identity": {
+          "suite": "librairii-storage",
+          "name": "platform::unix::export_output::tests::native_export_cancellation_during_readback_retires_unpublished_temporary",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Observed PR 53 regression: native export cancellation interrupts destination readback and retires only the unpublished temporary; all prior discovery identities and positions remain unchanged."
       }
     ],
     "python": [
