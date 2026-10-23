@@ -8,7 +8,10 @@ not close keyboard, Linux accessibility or the other remaining evidence gates.
 2026-10-23 update: the active scope is **three Linux/macOS targets**; the Windows
 column below is historical and does not gate this change. The owner chose the
 Slint royalty-free desktop route with top-level AboutSlint attribution. Native
-ARM access is now available, and the owner can run Intel/Linux checks. The
+ARM access is now available. The owner subsequently clarified that no Intel Mac
+or Linux desktop is available to them; interactive hosts/operators remain
+unsecured (see [hosts.md](hosts.md)). Hosted three-target native smokes and the
+Linux Xvfb renderer qualification are separate automated evidence. The
 [current continuation](continuation.md), [pins](current-pins.json) and
 [operator checklist](operator-checks.md) supersede the historical pending-access
 and rejected-data-candidate status below. Actual toolkit selection remains open.

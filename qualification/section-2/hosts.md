@@ -1,5 +1,29 @@
 # Host and SDK inventory (task 2.2)
 
+## Current availability correction (2026-10-23)
+
+The owner clarified that they have neither an Intel Mac nor a Linux desktop.
+This supersedes the earlier statement that the owner could run both sets of
+checks. No interactive operator or host is secured for either platform; do not
+assign those checks to the owner or infer access from the package downloads.
+
+The development Apple-silicon Mac remains available. Hosted CI has now actually
+built and exercised the native ARM macOS, Intel macOS and Linux x86-64 probes,
+including packaged macOS smokes and all three immediate runtime audits. Linux
+X11/Xvfb GPU-API initialization failure and multilingual Skia CPU recovery pass
+in [run 39956378956](https://github.com/01max/librairii/actions/runs/39956378956)
+at implementation revision `96f6222`. This is automated hosted execution; it
+does not provide an interactive Intel/Linux operator, physical input/IME,
+mixed-monitor, real Wayland desktop, Orca or clean-host qualification.
+
+Task 2.2 and the affected interactive gates remain incomplete. Unavailable
+hosts are not a reason to stop independent measurements, package work or
+additional automated Linux session coverage.
+VoiceOver remains skipped by the separate explicit owner decision; Windows
+remains deferred. The original inventory below is historical, not current state.
+
+## Historical initial inventory
+
 Observed 2026-10-20 by librairii-4 through local CLI and read-only GitHub API.
 No resources provisioned, VM started, credentials printed or paid runner used.
 

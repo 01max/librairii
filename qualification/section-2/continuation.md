@@ -85,9 +85,11 @@ tests reject modified bytes, outside aliases and an unlisted executable, and
 verify that a valid package cannot pre-fill passing qualification.
 
 An ARM development tarball assembled locally and its verified observation
-record was created successfully. The owner can execute Intel and Linux checks;
-actual operator results, clean-host launch and all three-target package evidence
-remain pending. The current workflow supplies matching unsigned artifacts.
+record was created successfully. The owner later clarified that they have no
+Intel Mac or Linux desktop; interactive checks on those hosts remain unavailable.
+Actual operator results and clean-host launch remain pending. The current
+workflow supplies matching unsigned artifacts and three-target automated package
+evidence, without closing those interactive checks.
 
 The macOS package also retains notices inside the application Resources and
 assembles an unsigned DMG in addition to the tarball. Repeated build profiles
