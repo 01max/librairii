@@ -24,6 +24,11 @@ For the separate packaged Wayland route, see [wayland.md](wayland.md). It owns
 a Weston headless compositor, removes X11 fallback and records actual Wayland
 configuration/buffer submission alongside the public component probes.
 
+The separate [clean Linux runtime check](clean-linux.md) launches the verified
+package offline in a pinned-base container without source or development tools,
+covering X11/Wayland normal/CPU rendering and owned-shutdown relaunch. Its
+execution/evidence scope remains distinct from full clean-desktop qualification.
+
 
 **Partial qualification; no selected toolkit or supported-platform claim.**
 Owner: librairii-4. Base: integration commit
