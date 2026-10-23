@@ -1,0 +1,45 @@
+{
+  "cases": "15.0.0",
+  "contextualRuneCount": 18019,
+  "framing": "for each metric: u32 little-endian scalar/code or sequence index, u32 UTF8 byte length, exact bytes",
+  "go": "go1.26.5",
+  "norm": "15.0.0",
+  "provenance": {
+    "authenticatedZipSha256": "b75131f628f6e2e4892fd638d33127e952a5027775e0162b94ba069cb4e13863",
+    "goToolSha256": "3f947495f00cb7f8088a5cfd694da8dc43869b33f5e7377b048fb18922ffb7e0",
+    "oracle": "73a93303a9a44cf0a92eaf525331561ed8c04460",
+    "oracleArchiveSha256": "cb64032495c4e12e94fc0332f3f0f82b3addb37eccc48fe270144143e11564ca",
+    "originalFiles": 436,
+    "scope": "disposable independent archive + external modfile; offline pinned Go1.26.5, no original input writes",
+    "sourceIndexSha256": "10ea8fe193c594ce153ae7a1734c41ab80c9d406cc7ea314c8c7c471b7a92a99",
+    "templateSha256": "2011455b23aad4701a11a086db7673d34d9899102f8841b4761cf35a0b20d455",
+    "tree": "e797e9d59926d83b73fb7c02e5c3611073e89a16",
+    "unchangedOriginalFiles": 436,
+    "unchangedZipMembers": 487
+  },
+  "representativeCount": 57,
+  "scalarCount": 1112064,
+  "scalarDigests": {
+    "asciiFieldFold": "10f8a186041aa579137e437fd6a72186eb06f8416009f2697d465586eaca7be8",
+    "ccc": "e44c609116a8acb7b7fa4e7df6ac7ffc111dd7f2d301aa6d2fd04d9b27c99290",
+    "fold": "59393122a997e3735183b895e6ee071c15078d668967d585dfb215e0922226f4",
+    "lower": "bb518bb265ad5b4eda19593744f63dcac8892d10c772d8d8e3016390de45449e",
+    "mn": "6be869f12f926829e07627bc3e1ad68ea097f2574b4ba6afb416c4fd1a4c3f62",
+    "nfkd": "e4ab08c453cc60a45b8bdff7b1232dd29d1bf656e7cc0f1872ceac2ecd5f480e",
+    "normalize": "7635e9a34febaa44e28ac14ec95ed04843aa79b87fd7a4a75ac6797bad87e115",
+    "space": "b06554ce4ee7041b658f7464f8ab8394fe3ae0bc726da4382087e2662dd013db"
+  },
+  "scope": "actual frozen Go normalization differential reference, not whole-string/platform qualification",
+  "sequenceCount": 147228,
+  "sequenceDigests": {
+    "input": "155dbe231ae1260cf9a3f58ebed227a7b82b122ef45ceffe32adae9ad906ef02",
+    "nfkd": "847fef75b724f160401cc3c0bd2e7b909de9d296f7ffeb74e2a840e27b600014",
+    "normalize": "d611e2e161216b01c5e0d44153487841714a2947ec5ed04089f5a45dd37f0808"
+  },
+  "sourceCopyright": [
+    "// Copyright 2011 The Go Authors. All rights reserved.",
+    "// Copyright 2016 The Go Authors. All rights reserved.",
+    "// Copyright 2009 The Go Authors. All rights reserved."
+  ],
+  "unicode": "15.0.0"
+}

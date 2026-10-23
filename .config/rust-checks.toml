@@ -1,0 +1,7 @@
+# Only maintained feature set: empty/default, no GUI renderer selected.
+# Do not use all-features. Add future actual renderer combinations deliberately.
+[targets]
+aarch64-apple-darwin = []
+x86_64-apple-darwin = []
+x86_64-unknown-linux-gnu = []
+# Windows is deferred to a separate follow-up; source/test history is retained.

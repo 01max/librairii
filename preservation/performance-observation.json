@@ -1,0 +1,131 @@
+{
+  "generatedAt": "2026-10-20T14:40:01Z",
+  "goVersion": "go1.26.5",
+  "operatingSystem": "darwin",
+  "architecture": "arm64",
+  "stories": 5000,
+  "collections": 6,
+  "samples": 20,
+  "fixtureGenerationMilliseconds": 322.558,
+  "metrics": {
+    "artworkLoad": {
+      "medianMilliseconds": 14.97,
+      "p95Milliseconds": 15.651,
+      "maximumMilliseconds": 15.677,
+      "budgetMilliseconds": 50,
+      "withinBudget": true,
+      "resultCount": 24
+    },
+    "collectionCounts": {
+      "medianMilliseconds": 20.062,
+      "p95Milliseconds": 20.865,
+      "maximumMilliseconds": 20.873,
+      "budgetMilliseconds": 250,
+      "withinBudget": true,
+      "resultCount": 13875
+    },
+    "collectionQuery": {
+      "medianMilliseconds": 8.517,
+      "p95Milliseconds": 8.643,
+      "maximumMilliseconds": 8.655,
+      "budgetMilliseconds": 100,
+      "withinBudget": true,
+      "resultCount": 5000
+    },
+    "combinedFilters": {
+      "medianMilliseconds": 12.35,
+      "p95Milliseconds": 13.106,
+      "maximumMilliseconds": 13.279,
+      "budgetMilliseconds": 150,
+      "withinBudget": true,
+      "resultCount": 85
+    },
+    "deepPagination": {
+      "medianMilliseconds": 17.317,
+      "p95Milliseconds": 18.339,
+      "maximumMilliseconds": 19.036,
+      "budgetMilliseconds": 120,
+      "withinBudget": true,
+      "resultCount": 24
+    },
+    "substringSearch": {
+      "medianMilliseconds": 13.674,
+      "p95Milliseconds": 14.649,
+      "maximumMilliseconds": 16.048,
+      "budgetMilliseconds": 120,
+      "withinBudget": true,
+      "resultCount": 624
+    }
+  },
+  "queryPlans": {
+    "artworkLoad": [
+      "SEARCH stories USING INTEGER PRIMARY KEY (rowid=?)"
+    ],
+    "collectionCounts": [
+      "SEARCH a USING COVERING INDEX idx_story_archives_validation_story (validation_state=?)",
+      "SEARCH s USING INTEGER PRIMARY KEY (rowid=?)",
+      "SEARCH choice_assignment EXISTS USING COVERING INDEX idx_story_tag_choice_assignment (story_id=? AND definition_id=? AND value_id=?)"
+    ],
+    "collectionQuery": [
+      "SCAN s USING INDEX idx_stories_uuid",
+      "SEARCH a USING COVERING INDEX sqlite_autoindex_story_archives_1 (story_id=?)",
+      "CORRELATED SCALAR SUBQUERY 1",
+      "SEARCH official_snapshot USING INDEX idx_catalog_snapshots_active_locale (locale=?)",
+      "SEARCH official_name USING INDEX sqlite_autoindex_official_story_metadata_1 (snapshot_id=? AND story_uuid=?)",
+      "USE TEMP B-TREE FOR ORDER BY"
+    ],
+    "combinedFilters": [
+      "SEARCH a USING COVERING INDEX idx_story_archives_validation_story (validation_state=?)",
+      "SEARCH s USING INTEGER PRIMARY KEY (rowid=?)",
+      "CORRELATED SCALAR SUBQUERY 1",
+      "SEARCH official_snapshot USING INDEX idx_catalog_snapshots_active_locale (locale=?)",
+      "SEARCH official_name USING INDEX sqlite_autoindex_official_story_metadata_1 (snapshot_id=? AND story_uuid=?)",
+      "CORRELATED SCALAR SUBQUERY 2",
+      "SEARCH official_language USING COVERING INDEX idx_official_metadata_language_story (language=? AND story_uuid=?)",
+      "SEARCH language_snapshot USING INTEGER PRIMARY KEY (rowid=?)",
+      "SEARCH choice_assignment EXISTS USING COVERING INDEX idx_story_tag_choice_assignment (story_id=? AND definition_id=? AND value_id=?)",
+      "CORRELATED SCALAR SUBQUERY 4",
+      "SEARCH official_snapshot USING INDEX idx_catalog_snapshots_active_locale (locale=?)",
+      "SEARCH official_name USING INDEX sqlite_autoindex_official_story_metadata_1 (snapshot_id=? AND story_uuid=?)",
+      "USE TEMP B-TREE FOR ORDER BY"
+    ],
+    "deepPagination": [
+      "SCAN s USING INDEX idx_stories_uuid",
+      "SEARCH a USING COVERING INDEX sqlite_autoindex_story_archives_1 (story_id=?)",
+      "CORRELATED SCALAR SUBQUERY 1",
+      "SEARCH official_snapshot USING INDEX idx_catalog_snapshots_active_locale (locale=?)",
+      "SEARCH official_name USING INDEX sqlite_autoindex_official_story_metadata_1 (snapshot_id=? AND story_uuid=?)",
+      "USE TEMP B-TREE FOR ORDER BY"
+    ],
+    "substringSearch": [
+      "SCAN s USING INDEX idx_stories_display_name_normalized",
+      "CORRELATED SCALAR SUBQUERY 1",
+      "SEARCH official_snapshot USING INDEX idx_catalog_snapshots_active_locale (locale=?)",
+      "SEARCH official_name USING INDEX sqlite_autoindex_official_story_metadata_1 (snapshot_id=? AND story_uuid=?)",
+      "SEARCH a USING COVERING INDEX sqlite_autoindex_story_archives_1 (story_id=?)",
+      "CORRELATED SCALAR SUBQUERY 2",
+      "SEARCH official_snapshot USING INDEX idx_catalog_snapshots_active_locale (locale=?)",
+      "SEARCH official_name USING INDEX sqlite_autoindex_official_story_metadata_1 (snapshot_id=? AND story_uuid=?)",
+      "USE TEMP B-TREE FOR ORDER BY"
+    ]
+  },
+  "host": {
+    "os": "macOS15.7.7 24G720",
+    "model": "Mac16,8",
+    "cpu": "Apple M4 Pro",
+    "logical_cpus": 12,
+    "memory_bytes": 51539607552
+  },
+  "oracle_commit": "73a93303a9a44cf0a92eaf525331561ed8c04460",
+  "qualification": "Current-host Go observation only; not cross-host latency comparison or Rust gate",
+  "shelf_review": {
+    "command": "go test ./internal/shelves -run '^TestLargeLibraryReviewUnionAndApplyBudget$' -count=1 -v",
+    "stories": 5000,
+    "sources": 2,
+    "preview_samples": 4,
+    "preview_max_ms": 25.29,
+    "apply50_ms": 27.35,
+    "ceiling_ms": 5000,
+    "withinBudget": true
+  }
+}

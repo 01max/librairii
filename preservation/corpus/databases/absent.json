@@ -1,0 +1,5 @@
+{
+  "expected": "fresh initialization to schema018; do not invent a prefix000 foreign file",
+  "input": "database file absent",
+  "prefix": 0
+}

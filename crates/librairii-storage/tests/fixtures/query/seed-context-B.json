@@ -1,0 +1,1077 @@
+{
+  "catalog_artworks": {
+    "columns": [
+      "id",
+      "source_url",
+      "managed_path",
+      "content_type",
+      "sha256",
+      "byte_size",
+      "etag",
+      "last_modified",
+      "cached_at",
+      "created_at",
+      "updated_at"
+    ],
+    "rows": null,
+    "schema_sql": "CREATE TABLE catalog_artworks (\n    id TEXT PRIMARY KEY\n        CHECK (\n            length(id) = 64\n            AND id = lower(id)\n            AND id NOT GLOB '*[^0-9a-f]*'\n        ),\n    source_url TEXT NOT NULL UNIQUE\n        CHECK (\n            length(trim(source_url)) \u003e 0\n            AND source_url = trim(source_url)\n        ),\n    managed_path TEXT UNIQUE\n        CHECK (\n            managed_path IS NULL\n            OR (\n                length(managed_path) \u003e 0\n                AND managed_path NOT LIKE '/%'\n                AND managed_path NOT LIKE '../%'\n                AND managed_path NOT LIKE '%/../%'\n            )\n        ),\n    content_type TEXT\n        CHECK (\n            content_type IS NULL\n            OR content_type IN ('image/png', 'image/jpeg', 'image/webp')\n        ),\n    sha256 TEXT\n        CHECK (\n            sha256 IS NULL\n            OR (\n                length(sha256) = 64\n                AND sha256 = lower(sha256)\n                AND sha256 NOT GLOB '*[^0-9a-f]*'\n            )\n        ),\n    byte_size INTEGER\n        CHECK (byte_size IS NULL OR byte_size \u003e 0),\n    etag TEXT,\n    last_modified TEXT,\n    cached_at TEXT,\n    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,\n    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,\n    CHECK (\n        (\n            managed_path IS NULL\n            AND content_type IS NULL\n            AND sha256 IS NULL\n            AND byte_size IS NULL\n            AND cached_at IS NULL\n        )\n        OR (\n            managed_path IS NOT NULL\n            AND content_type IS NOT NULL\n            AND sha256 IS NOT NULL\n            AND byte_size IS NOT NULL\n            AND cached_at IS NOT NULL\n        )\n    )\n)"
+  },
+  "catalog_snapshots": {
+    "columns": [
+      "id",
+      "sync_id",
+      "locale",
+      "raw_path",
+      "raw_sha256",
+      "byte_size",
+      "record_count",
+      "status",
+      "fetched_at",
+      "activated_at",
+      "created_at"
+    ],
+    "rows": [
+      {
+        "activated_at": "2026-01-02T04:00:00Z",
+        "byte_size": 828,
+        "created_at": "2026-01-02T04:00:00Z",
+        "fetched_at": "2026-01-02T04:00:00Z",
+        "id": 1,
+        "locale": "fr-FR",
+        "raw_path": "catalog/fr-A.json",
+        "raw_sha256": "a26d36e0a6b6a5149394a8368ed2843320f029a85cb1b90f60ccc12846556076",
+        "record_count": 3,
+        "status": "superseded",
+        "sync_id": "a0000000-0000-4000-8000-000000000001"
+      },
+      {
+        "activated_at": "2026-01-02T05:00:00Z",
+        "byte_size": 827,
+        "created_at": "2026-01-02T05:00:00Z",
+        "fetched_at": "2026-01-02T05:00:00Z",
+        "id": 2,
+        "locale": "en-GB",
+        "raw_path": "catalog/en-A.json",
+        "raw_sha256": "25f0f50c16c2386547d655b0425da2eea5281ea80541c25fbd5f625336bd9a40",
+        "record_count": 3,
+        "status": "active",
+        "sync_id": "a0000000-0000-4000-8000-000000000002"
+      },
+      {
+        "activated_at": "2026-01-03T04:00:00Z",
+        "byte_size": 823,
+        "created_at": "2026-01-03T04:00:00Z",
+        "fetched_at": "2026-01-03T04:00:00Z",
+        "id": 3,
+        "locale": "fr-FR",
+        "raw_path": "catalog/fr-B.json",
+        "raw_sha256": "53a3ecdae33122c3eb13088a5ae63e97ab726f7b1f353af26aafab92eceaf1e9",
+        "record_count": 3,
+        "status": "active",
+        "sync_id": "b0000000-0000-4000-8000-000000000001"
+      }
+    ],
+    "schema_sql": "CREATE TABLE catalog_snapshots (\n    id INTEGER PRIMARY KEY,\n    sync_id TEXT NOT NULL,\n    locale TEXT NOT NULL,\n    raw_path TEXT NOT NULL\n        CHECK (\n            length(raw_path) \u003e 0\n            AND raw_path NOT LIKE '/%'\n            AND raw_path NOT LIKE '../%'\n            AND raw_path NOT LIKE '%/../%'\n        ),\n    raw_sha256 TEXT NOT NULL\n        CHECK (\n            length(raw_sha256) = 64\n            AND raw_sha256 = lower(raw_sha256)\n            AND raw_sha256 NOT GLOB '*[^0-9a-f]*'\n        ),\n    byte_size INTEGER NOT NULL\n        CHECK (byte_size \u003e= 0),\n    record_count INTEGER NOT NULL\n        CHECK (record_count \u003e= 0),\n    status TEXT NOT NULL DEFAULT 'staged'\n        CHECK (status IN ('staged', 'active', 'superseded', 'rejected')),\n    fetched_at TEXT NOT NULL,\n    activated_at TEXT,\n    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,\n    FOREIGN KEY (sync_id, locale)\n        REFERENCES catalog_syncs(id, locale) ON DELETE CASCADE,\n    UNIQUE (sync_id),\n    UNIQUE (id, locale),\n    CHECK (\n        (status IN ('staged', 'rejected') AND activated_at IS NULL)\n        OR (status IN ('active', 'superseded') AND activated_at IS NOT NULL)\n    )\n)"
+  },
+  "catalog_syncs": {
+    "columns": [
+      "id",
+      "locale",
+      "status",
+      "matched_story_count",
+      "error_code",
+      "error_message",
+      "started_at",
+      "finished_at"
+    ],
+    "rows": [
+      {
+        "error_code": null,
+        "error_message": null,
+        "finished_at": "2026-01-02T04:00:00Z",
+        "id": "a0000000-0000-4000-8000-000000000001",
+        "locale": "fr-FR",
+        "matched_story_count": 3,
+        "started_at": "2026-01-02T04:00:00Z",
+        "status": "succeeded"
+      },
+      {
+        "error_code": null,
+        "error_message": null,
+        "finished_at": "2026-01-02T05:00:00Z",
+        "id": "a0000000-0000-4000-8000-000000000002",
+        "locale": "en-GB",
+        "matched_story_count": 3,
+        "started_at": "2026-01-02T05:00:00Z",
+        "status": "succeeded"
+      },
+      {
+        "error_code": null,
+        "error_message": null,
+        "finished_at": "2026-01-03T04:00:00Z",
+        "id": "b0000000-0000-4000-8000-000000000001",
+        "locale": "fr-FR",
+        "matched_story_count": 3,
+        "started_at": "2026-01-03T04:00:00Z",
+        "status": "succeeded"
+      }
+    ],
+    "schema_sql": "CREATE TABLE catalog_syncs (\n    id TEXT PRIMARY KEY\n        CHECK (\n            length(id) = 36\n            AND id = lower(id)\n            AND id NOT GLOB '*[^0-9a-f-]*'\n            AND substr(id, 9, 1) = '-'\n            AND substr(id, 14, 1) = '-'\n            AND substr(id, 19, 1) = '-'\n            AND substr(id, 24, 1) = '-'\n        ),\n    locale TEXT NOT NULL\n        CHECK (\n            length(trim(locale)) \u003e 0\n            AND locale = trim(locale)\n        ),\n    status TEXT NOT NULL DEFAULT 'running'\n        CHECK (status IN ('running', 'succeeded', 'failed', 'cancelled')),\n    matched_story_count INTEGER NOT NULL DEFAULT 0\n        CHECK (matched_story_count \u003e= 0),\n    error_code TEXT,\n    error_message TEXT,\n    started_at TEXT NOT NULL,\n    finished_at TEXT,\n    UNIQUE (id, locale),\n    CHECK (\n        (status = 'running' AND finished_at IS NULL)\n        OR (status != 'running' AND finished_at IS NOT NULL)\n    ),\n    CHECK (\n        status != 'failed'\n        OR (\n            length(trim(error_code)) \u003e 0\n            AND length(trim(error_message)) \u003e 0\n        )\n    ),\n    CHECK (\n        status != 'succeeded'\n        OR (error_code IS NULL AND error_message IS NULL)\n    )\n)"
+  },
+  "collections": {
+    "columns": [
+      "id",
+      "name",
+      "normalized_name",
+      "position",
+      "query_version",
+      "query_payload",
+      "validity_state",
+      "created_at",
+      "updated_at",
+      "revision"
+    ],
+    "rows": null,
+    "schema_sql": "CREATE TABLE \"collections\" (\n    id INTEGER PRIMARY KEY,\n    name TEXT NOT NULL\n        CHECK (\n            length(name) BETWEEN 1 AND 80\n            AND name = trim(name)\n        ),\n    normalized_name TEXT NOT NULL COLLATE NOCASE\n        CHECK (\n            length(normalized_name) BETWEEN 1 AND 80\n            AND normalized_name = trim(normalized_name)\n        ),\n    position INTEGER NOT NULL\n        CHECK (position \u003e= 0),\n    query_version INTEGER NOT NULL\n        CHECK (query_version \u003e 0),\n    query_payload TEXT NOT NULL\n        CHECK (\n            length(query_payload) BETWEEN 2 AND 262144\n            AND json_valid(query_payload)\n            AND json_type(query_payload) = 'object'\n        ),\n    validity_state TEXT NOT NULL DEFAULT 'valid'\n        CHECK (validity_state IN ('valid', 'needs_attention')),\n    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,\n    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP\n, revision INTEGER NOT NULL DEFAULT 1 CHECK(revision \u003e 0))"
+  },
+  "file_operation_items": {
+    "columns": [
+      "id",
+      "operation_id",
+      "story_id",
+      "source_name",
+      "status",
+      "outcome_code",
+      "outcome_message",
+      "completed_bytes",
+      "total_bytes",
+      "story_uuid",
+      "resolved_story_id",
+      "story_title",
+      "output_name",
+      "archive_relative_path",
+      "archive_sha256",
+      "export_skip_code"
+    ],
+    "rows": null,
+    "schema_sql": "CREATE TABLE file_operation_items (\n    id INTEGER PRIMARY KEY,\n    operation_id TEXT NOT NULL REFERENCES file_operations(id) ON DELETE CASCADE,\n    story_id INTEGER REFERENCES stories(id) ON DELETE SET NULL,\n    source_name TEXT NOT NULL,\n    status TEXT NOT NULL\n        CHECK (status IN (\n            'pending',\n            'running',\n            'succeeded',\n            'skipped',\n            'conflicted',\n            'failed',\n            'cancelled'\n        )),\n    outcome_code TEXT,\n    outcome_message TEXT,\n    completed_bytes INTEGER NOT NULL DEFAULT 0 CHECK (completed_bytes \u003e= 0),\n    total_bytes INTEGER NOT NULL DEFAULT 0 CHECK (total_bytes \u003e= 0), story_uuid TEXT, resolved_story_id INTEGER\n        CHECK (resolved_story_id IS NULL OR resolved_story_id \u003e 0), story_title TEXT, output_name TEXT, archive_relative_path TEXT, archive_sha256 TEXT\n        CHECK (archive_sha256 IS NULL OR length(archive_sha256) = 64), export_skip_code TEXT\n    CHECK(export_skip_code IS NULL OR export_skip_code IN ('story_marked_broken', 'story_unavailable')),\n    CHECK (completed_bytes \u003c= total_bytes)\n)"
+  },
+  "file_operations": {
+    "columns": [
+      "id",
+      "kind",
+      "status",
+      "completed_items",
+      "total_items",
+      "cancel_requested",
+      "error_code",
+      "error_message",
+      "created_at",
+      "started_at",
+      "finished_at",
+      "legacy_export_source_type",
+      "export_source_shelf_ids",
+      "export_source_shelf_names",
+      "export_destination",
+      "total_bytes",
+      "export_source_type"
+    ],
+    "rows": null,
+    "schema_sql": "CREATE TABLE file_operations (\n    id TEXT PRIMARY KEY CHECK (length(id) = 36),\n    kind TEXT NOT NULL CHECK (kind IN ('import', 'metadata_sync', 'export')),\n    status TEXT NOT NULL\n        CHECK (status IN (\n            'queued',\n            'running',\n            'succeeded',\n            'partially_succeeded',\n            'failed',\n            'cancelled',\n            'interrupted'\n        )),\n    completed_items INTEGER NOT NULL DEFAULT 0 CHECK (completed_items \u003e= 0),\n    total_items INTEGER NOT NULL DEFAULT 0 CHECK (total_items \u003e= 0),\n    cancel_requested INTEGER NOT NULL DEFAULT 0 CHECK (cancel_requested IN (0, 1)),\n    error_code TEXT,\n    error_message TEXT,\n    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,\n    started_at TEXT,\n    finished_at TEXT, legacy_export_source_type TEXT\n        CHECK (\n            legacy_export_source_type IS NULL\n            OR legacy_export_source_type IN (\n                'selection',\n                'current_query',\n                'shelf',\n                'shelves'\n            )\n        ), export_source_shelf_ids TEXT\n        CHECK (\n            export_source_shelf_ids IS NULL\n            OR json_valid(export_source_shelf_ids)\n        ), export_source_shelf_names TEXT\n        CHECK (\n            export_source_shelf_names IS NULL\n            OR json_valid(export_source_shelf_names)\n        ), export_destination TEXT, total_bytes INTEGER NOT NULL DEFAULT 0\n        CHECK (total_bytes \u003e= 0), export_source_type TEXT CHECK(\n    export_source_type IS NULL OR export_source_type IN\n    ('selection', 'current_query', 'shelf', 'shelves', 'collection', 'collections', 'curated_shelf', 'curated_shelves')\n),\n    CHECK (completed_items \u003c= total_items)\n)"
+  },
+  "legacy_broken_tag": {
+    "columns": [
+      "singleton",
+      "definition_id"
+    ],
+    "rows": null,
+    "schema_sql": "CREATE TABLE legacy_broken_tag (\n    singleton INTEGER PRIMARY KEY CHECK (singleton = 1),\n    definition_id INTEGER NOT NULL CHECK (definition_id \u003e 0)\n)"
+  },
+  "librairii_schema_identity": {
+    "columns": [
+      "singleton",
+      "product",
+      "schema_family",
+      "created_at"
+    ],
+    "rows": [
+      {
+        "created_at": "2026-10-21 04:21:05",
+        "product": "librairii",
+        "schema_family": "wails-go-sqlite",
+        "singleton": 1
+      }
+    ],
+    "schema_sql": "CREATE TABLE librairii_schema_identity (\n    singleton INTEGER PRIMARY KEY CHECK (singleton = 1),\n    product TEXT NOT NULL CHECK (product = 'librairii'),\n    schema_family TEXT NOT NULL CHECK (schema_family = 'wails-go-sqlite'),\n    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP\n)"
+  },
+  "official_story_metadata": {
+    "columns": [
+      "id",
+      "snapshot_id",
+      "story_uuid",
+      "locale",
+      "title",
+      "description",
+      "author",
+      "publisher",
+      "language",
+      "duration_seconds",
+      "minimum_age",
+      "maximum_age",
+      "artwork_id",
+      "provenance",
+      "source_record_id",
+      "source_updated_at",
+      "created_at",
+      "title_normalized"
+    ],
+    "rows": [
+      {
+        "artwork_id": null,
+        "author": null,
+        "created_at": "2026-01-02T04:00:00Z",
+        "description": null,
+        "duration_seconds": null,
+        "id": 1,
+        "language": "en-GB",
+        "locale": "fr-FR",
+        "maximum_age": null,
+        "minimum_age": null,
+        "provenance": "lunii_catalog",
+        "publisher": null,
+        "snapshot_id": 1,
+        "source_record_id": null,
+        "source_updated_at": null,
+        "story_uuid": "20000000-0000-4000-8000-00000000000b",
+        "title": "under_score",
+        "title_normalized": "under_score"
+      },
+      {
+        "artwork_id": null,
+        "author": null,
+        "created_at": "2026-01-02T04:00:00Z",
+        "description": null,
+        "duration_seconds": null,
+        "id": 2,
+        "language": "fr-FR",
+        "locale": "fr-FR",
+        "maximum_age": null,
+        "minimum_age": null,
+        "provenance": "lunii_catalog",
+        "publisher": null,
+        "snapshot_id": 1,
+        "source_record_id": null,
+        "source_updated_at": null,
+        "story_uuid": "50000000-0000-4000-8000-00000000000e",
+        "title": "Été officiel fr",
+        "title_normalized": "ete officiel fr"
+      },
+      {
+        "artwork_id": null,
+        "author": null,
+        "created_at": "2026-01-02T04:00:00Z",
+        "description": null,
+        "duration_seconds": null,
+        "id": 3,
+        "language": "fr-FR",
+        "locale": "fr-FR",
+        "maximum_age": null,
+        "minimum_age": null,
+        "provenance": "lunii_catalog",
+        "publisher": null,
+        "snapshot_id": 1,
+        "source_record_id": null,
+        "source_updated_at": null,
+        "story_uuid": "60000000-0000-4000-8000-00000000000f",
+        "title": "Château officiel A",
+        "title_normalized": "chateau officiel a"
+      },
+      {
+        "artwork_id": null,
+        "author": null,
+        "created_at": "2026-01-02T05:00:00Z",
+        "description": null,
+        "duration_seconds": null,
+        "id": 4,
+        "language": "de-DE",
+        "locale": "en-GB",
+        "maximum_age": null,
+        "minimum_age": null,
+        "provenance": "lunii_catalog",
+        "publisher": null,
+        "snapshot_id": 2,
+        "source_record_id": null,
+        "source_updated_at": null,
+        "story_uuid": "20000000-0000-4000-8000-00000000000b",
+        "title": "under_score",
+        "title_normalized": "under_score"
+      },
+      {
+        "artwork_id": null,
+        "author": null,
+        "created_at": "2026-01-02T05:00:00Z",
+        "description": null,
+        "duration_seconds": null,
+        "id": 5,
+        "language": "en-GB",
+        "locale": "en-GB",
+        "maximum_age": null,
+        "minimum_age": null,
+        "provenance": "lunii_catalog",
+        "publisher": null,
+        "snapshot_id": 2,
+        "source_record_id": null,
+        "source_updated_at": null,
+        "story_uuid": "50000000-0000-4000-8000-00000000000e",
+        "title": "Summer official en",
+        "title_normalized": "summer official en"
+      },
+      {
+        "artwork_id": null,
+        "author": null,
+        "created_at": "2026-01-02T05:00:00Z",
+        "description": null,
+        "duration_seconds": null,
+        "id": 6,
+        "language": "en-GB",
+        "locale": "en-GB",
+        "maximum_age": null,
+        "minimum_age": null,
+        "provenance": "lunii_catalog",
+        "publisher": null,
+        "snapshot_id": 2,
+        "source_record_id": null,
+        "source_updated_at": null,
+        "story_uuid": "60000000-0000-4000-8000-00000000000f",
+        "title": "Castle official A",
+        "title_normalized": "castle official a"
+      },
+      {
+        "artwork_id": null,
+        "author": null,
+        "created_at": "2026-01-03T04:00:00Z",
+        "description": null,
+        "duration_seconds": null,
+        "id": 7,
+        "language": "en-GB",
+        "locale": "fr-FR",
+        "maximum_age": null,
+        "minimum_age": null,
+        "provenance": "lunii_catalog",
+        "publisher": null,
+        "snapshot_id": 3,
+        "source_record_id": null,
+        "source_updated_at": null,
+        "story_uuid": "20000000-0000-4000-8000-00000000000b",
+        "title": "under_score",
+        "title_normalized": "under_score"
+      },
+      {
+        "artwork_id": null,
+        "author": null,
+        "created_at": "2026-01-03T04:00:00Z",
+        "description": null,
+        "duration_seconds": null,
+        "id": 8,
+        "language": "fr-FR",
+        "locale": "fr-FR",
+        "maximum_age": null,
+        "minimum_age": null,
+        "provenance": "lunii_catalog",
+        "publisher": null,
+        "snapshot_id": 3,
+        "source_record_id": null,
+        "source_updated_at": null,
+        "story_uuid": "50000000-0000-4000-8000-00000000000e",
+        "title": "Été officiel fr B",
+        "title_normalized": "ete officiel fr b"
+      },
+      {
+        "artwork_id": null,
+        "author": null,
+        "created_at": "2026-01-03T04:00:00Z",
+        "description": null,
+        "duration_seconds": null,
+        "id": 9,
+        "language": "fr-FR",
+        "locale": "fr-FR",
+        "maximum_age": null,
+        "minimum_age": null,
+        "provenance": "lunii_catalog",
+        "publisher": null,
+        "snapshot_id": 3,
+        "source_record_id": null,
+        "source_updated_at": null,
+        "story_uuid": "60000000-0000-4000-8000-00000000000f",
+        "title": "Forteresse B",
+        "title_normalized": "forteresse b"
+      }
+    ],
+    "schema_sql": "CREATE TABLE official_story_metadata (\n    id INTEGER PRIMARY KEY,\n    snapshot_id INTEGER NOT NULL,\n    story_uuid TEXT NOT NULL\n        CHECK (\n            length(story_uuid) = 36\n            AND story_uuid = lower(story_uuid)\n            AND story_uuid NOT GLOB '*[^0-9a-f-]*'\n            AND substr(story_uuid, 9, 1) = '-'\n            AND substr(story_uuid, 14, 1) = '-'\n            AND substr(story_uuid, 19, 1) = '-'\n            AND substr(story_uuid, 24, 1) = '-'\n        ),\n    locale TEXT NOT NULL\n        CHECK (\n            length(trim(locale)) \u003e 0\n            AND locale = trim(locale)\n        ),\n    title TEXT\n        CHECK (title IS NULL OR length(trim(title)) \u003e 0),\n    description TEXT\n        CHECK (description IS NULL OR length(trim(description)) \u003e 0),\n    author TEXT\n        CHECK (author IS NULL OR length(trim(author)) \u003e 0),\n    publisher TEXT\n        CHECK (publisher IS NULL OR length(trim(publisher)) \u003e 0),\n    language TEXT\n        CHECK (language IS NULL OR length(trim(language)) \u003e 0),\n    duration_seconds INTEGER\n        CHECK (duration_seconds IS NULL OR duration_seconds \u003e= 0),\n    minimum_age INTEGER\n        CHECK (minimum_age IS NULL OR minimum_age \u003e= 0),\n    maximum_age INTEGER\n        CHECK (maximum_age IS NULL OR maximum_age \u003e= 0),\n    artwork_id TEXT\n        CHECK (artwork_id IS NULL OR length(trim(artwork_id)) \u003e 0),\n    provenance TEXT NOT NULL\n        CHECK (provenance = 'lunii_catalog'),\n    source_record_id TEXT\n        CHECK (source_record_id IS NULL OR length(trim(source_record_id)) \u003e 0),\n    source_updated_at TEXT,\n    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, title_normalized TEXT NOT NULL DEFAULT '',\n    FOREIGN KEY (snapshot_id, locale)\n        REFERENCES catalog_snapshots(id, locale) ON DELETE CASCADE,\n    UNIQUE (snapshot_id, story_uuid)\n)"
+  },
+  "removal_intents": {
+    "columns": [
+      "id",
+      "story_id",
+      "managed_path",
+      "trash_path",
+      "created_at"
+    ],
+    "rows": null,
+    "schema_sql": "CREATE TABLE removal_intents (\n    id TEXT PRIMARY KEY CHECK (length(id) = 36),\n    story_id INTEGER NOT NULL UNIQUE REFERENCES stories(id) ON DELETE CASCADE,\n    managed_path TEXT NOT NULL\n        CHECK (\n            length(managed_path) \u003e 0\n            AND managed_path NOT LIKE '/%'\n            AND managed_path NOT LIKE '../%'\n            AND managed_path NOT LIKE '%/../%'\n        ),\n    trash_path TEXT NOT NULL UNIQUE\n        CHECK (\n            length(trash_path) \u003e 0\n            AND trash_path NOT LIKE '/%'\n            AND trash_path NOT LIKE '../%'\n            AND trash_path NOT LIKE '%/../%'\n        ),\n    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP\n)"
+  },
+  "schema_migrations": {
+    "columns": [
+      "version",
+      "applied_at"
+    ],
+    "rows": [
+      {
+        "applied_at": "2026-10-21 04:21:05",
+        "version": 1
+      },
+      {
+        "applied_at": "2026-10-21 04:21:05",
+        "version": 2
+      },
+      {
+        "applied_at": "2026-10-21 04:21:05",
+        "version": 3
+      },
+      {
+        "applied_at": "2026-10-21 04:21:05",
+        "version": 4
+      },
+      {
+        "applied_at": "2026-10-21 04:21:05",
+        "version": 5
+      },
+      {
+        "applied_at": "2026-10-21 04:21:05",
+        "version": 6
+      },
+      {
+        "applied_at": "2026-10-21 04:21:05",
+        "version": 7
+      },
+      {
+        "applied_at": "2026-10-21 04:21:05",
+        "version": 8
+      },
+      {
+        "applied_at": "2026-10-21 04:21:05",
+        "version": 9
+      },
+      {
+        "applied_at": "2026-10-21 04:21:05",
+        "version": 10
+      },
+      {
+        "applied_at": "2026-10-21 04:21:05",
+        "version": 11
+      },
+      {
+        "applied_at": "2026-10-21 04:21:05",
+        "version": 12
+      },
+      {
+        "applied_at": "2026-10-21 04:21:05",
+        "version": 13
+      },
+      {
+        "applied_at": "2026-10-21 04:21:05",
+        "version": 14
+      },
+      {
+        "applied_at": "2026-10-21 04:21:05",
+        "version": 15
+      },
+      {
+        "applied_at": "2026-10-21 04:21:05",
+        "version": 16
+      },
+      {
+        "applied_at": "2026-10-21 04:21:05",
+        "version": 17
+      },
+      {
+        "applied_at": "2026-10-21 04:21:05",
+        "version": 18
+      }
+    ],
+    "schema_sql": "CREATE TABLE schema_migrations (\n\t\t\tversion INTEGER PRIMARY KEY,\n\t\t\tapplied_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP\n\t\t)"
+  },
+  "shelf_exclusions": {
+    "columns": [
+      "shelf_id",
+      "story_uuid",
+      "created_at"
+    ],
+    "rows": null,
+    "schema_sql": "CREATE TABLE shelf_exclusions (\n    shelf_id INTEGER NOT NULL REFERENCES shelves(id) ON DELETE CASCADE,\n    story_uuid TEXT NOT NULL CHECK(length(story_uuid) = 36),\n    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,\n    PRIMARY KEY(shelf_id, story_uuid)\n)"
+  },
+  "shelf_sources": {
+    "columns": [
+      "id",
+      "shelf_id",
+      "collection_id",
+      "collection_name",
+      "active",
+      "created_at"
+    ],
+    "rows": null,
+    "schema_sql": "CREATE TABLE shelf_sources (\n    id INTEGER PRIMARY KEY,\n    shelf_id INTEGER NOT NULL REFERENCES shelves(id) ON DELETE CASCADE,\n    collection_id INTEGER REFERENCES collections(id),\n    collection_name TEXT NOT NULL,\n    active INTEGER NOT NULL DEFAULT 1 CHECK(active IN (0, 1)),\n    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,\n    UNIQUE(id, shelf_id),\n    CHECK(active = 0 OR collection_id IS NOT NULL)\n)"
+  },
+  "shelf_stories": {
+    "columns": [
+      "shelf_id",
+      "story_uuid",
+      "position",
+      "protected",
+      "cached_title",
+      "added_at"
+    ],
+    "rows": null,
+    "schema_sql": "CREATE TABLE shelf_stories (\n    shelf_id INTEGER NOT NULL REFERENCES shelves(id) ON DELETE CASCADE,\n    story_uuid TEXT NOT NULL CHECK(length(story_uuid) = 36),\n    position INTEGER NOT NULL CHECK(position \u003e= 0),\n    protected INTEGER NOT NULL DEFAULT 1 CHECK(protected IN (0, 1)),\n    cached_title TEXT NOT NULL DEFAULT '',\n    added_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,\n    PRIMARY KEY(shelf_id, story_uuid),\n    UNIQUE(shelf_id, position)\n)"
+  },
+  "shelf_story_origins": {
+    "columns": [
+      "shelf_id",
+      "story_uuid",
+      "source_id",
+      "accepted_at"
+    ],
+    "rows": null,
+    "schema_sql": "CREATE TABLE shelf_story_origins (\n    shelf_id INTEGER NOT NULL,\n    story_uuid TEXT NOT NULL,\n    source_id INTEGER NOT NULL,\n    accepted_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,\n    PRIMARY KEY(shelf_id, story_uuid, source_id),\n    FOREIGN KEY(shelf_id, story_uuid) REFERENCES shelf_stories(shelf_id, story_uuid) ON DELETE CASCADE,\n    FOREIGN KEY(source_id, shelf_id) REFERENCES shelf_sources(id, shelf_id)\n)"
+  },
+  "shelves": {
+    "columns": [
+      "id",
+      "name",
+      "normalized_name",
+      "position",
+      "revision",
+      "created_at",
+      "updated_at"
+    ],
+    "rows": null,
+    "schema_sql": "CREATE TABLE shelves (\n    id INTEGER PRIMARY KEY,\n    name TEXT NOT NULL CHECK(length(name) BETWEEN 1 AND 80 AND name = trim(name)),\n    normalized_name TEXT NOT NULL COLLATE NOCASE UNIQUE\n        CHECK(length(normalized_name) BETWEEN 1 AND 80 AND normalized_name = trim(normalized_name)),\n    position INTEGER NOT NULL UNIQUE CHECK(position \u003e= 0),\n    revision INTEGER NOT NULL DEFAULT 1 CHECK(revision \u003e 0),\n    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,\n    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP\n)"
+  },
+  "stories": {
+    "columns": [
+      "id",
+      "uuid",
+      "embedded_title",
+      "embedded_description",
+      "embedded_artwork_path",
+      "created_at",
+      "updated_at",
+      "display_name_normalized",
+      "is_broken"
+    ],
+    "rows": [
+      {
+        "created_at": "2026-01-01T00:00:01Z",
+        "display_name_normalized": "100% pure",
+        "embedded_artwork_path": null,
+        "embedded_description": "Owned query-only seed 1",
+        "embedded_title": "100% pure",
+        "id": 1,
+        "is_broken": 1,
+        "updated_at": "2026-01-01T00:00:01Z",
+        "uuid": "10000000-0000-4000-8000-00000000000A"
+      },
+      {
+        "created_at": "2026-01-01T00:00:02Z",
+        "display_name_normalized": "under_score",
+        "embedded_artwork_path": null,
+        "embedded_description": "Owned query-only seed 2",
+        "embedded_title": "under_score",
+        "id": 2,
+        "is_broken": 0,
+        "updated_at": "2026-01-01T00:00:02Z",
+        "uuid": "20000000-0000-4000-8000-00000000000b"
+      },
+      {
+        "created_at": "2026-01-01T00:00:03Z",
+        "display_name_normalized": "path\\trail",
+        "embedded_artwork_path": null,
+        "embedded_description": "Owned query-only seed 3",
+        "embedded_title": "path\\trail",
+        "id": 3,
+        "is_broken": 0,
+        "updated_at": "2026-01-01T00:00:03Z",
+        "uuid": "30000000-0000-4000-8000-00000000000c"
+      },
+      {
+        "created_at": "2026-01-01T00:00:04Z",
+        "display_name_normalized": "mix%_mark",
+        "embedded_artwork_path": null,
+        "embedded_description": "Owned query-only seed 4",
+        "embedded_title": "Mix%_mark",
+        "id": 4,
+        "is_broken": 0,
+        "updated_at": "2026-01-01T00:00:04Z",
+        "uuid": "40000000-0000-4000-8000-00000000000d"
+      },
+      {
+        "created_at": "2026-01-01T00:00:05Z",
+        "display_name_normalized": "l’ete lumineux",
+        "embedded_artwork_path": null,
+        "embedded_description": "Owned query-only seed 5",
+        "embedded_title": "L’Été lumineux",
+        "id": 5,
+        "is_broken": 1,
+        "updated_at": "2026-01-01T00:00:05Z",
+        "uuid": "50000000-0000-4000-8000-00000000000e"
+      },
+      {
+        "created_at": "2026-01-01T00:00:06Z",
+        "display_name_normalized": "embedded neutral",
+        "embedded_artwork_path": null,
+        "embedded_description": "Owned query-only seed 6",
+        "embedded_title": "Embedded neutral",
+        "id": 6,
+        "is_broken": 0,
+        "updated_at": "2026-01-01T00:00:06Z",
+        "uuid": "60000000-0000-4000-8000-00000000000f"
+      },
+      {
+        "created_at": "2026-01-01T00:00:07Z",
+        "display_name_normalized": "tie echo",
+        "embedded_artwork_path": null,
+        "embedded_description": "Owned query-only seed 7",
+        "embedded_title": "Tie Écho",
+        "id": 7,
+        "is_broken": 0,
+        "updated_at": "2026-01-01T00:00:07Z",
+        "uuid": "70000000-0000-4000-8000-000000000004"
+      },
+      {
+        "created_at": "2026-01-01T00:00:09Z",
+        "display_name_normalized": "tie echo",
+        "embedded_artwork_path": null,
+        "embedded_description": "Owned query-only seed 8",
+        "embedded_title": "Tie echo",
+        "id": 8,
+        "is_broken": 0,
+        "updated_at": "2026-01-01T00:00:09Z",
+        "uuid": "70000000-0000-4000-8000-000000000003"
+      },
+      {
+        "created_at": "2026-01-01T00:00:08Z",
+        "display_name_normalized": "tie echo",
+        "embedded_artwork_path": null,
+        "embedded_description": "Owned query-only seed 9",
+        "embedded_title": "TIE ECHO",
+        "id": 9,
+        "is_broken": 0,
+        "updated_at": "2026-01-01T00:00:08Z",
+        "uuid": "70000000-0000-4000-8000-000000000002"
+      },
+      {
+        "created_at": "2026-01-01T00:00:09Z",
+        "display_name_normalized": "tie echo",
+        "embedded_artwork_path": null,
+        "embedded_description": "Owned query-only seed 10",
+        "embedded_title": "Tie écho",
+        "id": 10,
+        "is_broken": 0,
+        "updated_at": "2026-01-01T00:00:09Z",
+        "uuid": "70000000-0000-4000-8000-000000000001"
+      }
+    ],
+    "schema_sql": "CREATE TABLE stories (\n    id INTEGER PRIMARY KEY,\n    uuid TEXT NOT NULL UNIQUE\n        CHECK (\n            length(uuid) = 36\n            AND substr(uuid, 9, 1) = '-'\n            AND substr(uuid, 14, 1) = '-'\n            AND substr(uuid, 19, 1) = '-'\n            AND substr(uuid, 24, 1) = '-'\n        ),\n    embedded_title TEXT,\n    embedded_description TEXT,\n    embedded_artwork_path TEXT\n        CHECK (\n            embedded_artwork_path IS NULL\n            OR (\n                embedded_artwork_path NOT LIKE '/%'\n                AND embedded_artwork_path NOT LIKE '../%'\n                AND embedded_artwork_path NOT LIKE '%/../%'\n            )\n        ),\n    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,\n    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP\n, display_name_normalized TEXT NOT NULL DEFAULT '', is_broken INTEGER NOT NULL DEFAULT 0\n    CHECK (is_broken IN (0, 1)))"
+  },
+  "story_archives": {
+    "columns": [
+      "id",
+      "story_id",
+      "original_filename",
+      "detected_format",
+      "sha256",
+      "byte_size",
+      "managed_path",
+      "validation_state",
+      "created_at"
+    ],
+    "rows": [
+      {
+        "byte_size": 175,
+        "created_at": "2026-01-01T00:00:01Z",
+        "detected_format": "zip",
+        "id": 1,
+        "managed_path": "archives/story-01.zip",
+        "original_filename": "story-01.zip",
+        "sha256": "0e20b709615eec011449d519a28af9b24a5fc2989d303504919c13368ce47527",
+        "story_id": 1,
+        "validation_state": "valid"
+      },
+      {
+        "byte_size": 177,
+        "created_at": "2026-01-01T00:00:02Z",
+        "detected_format": "zip",
+        "id": 2,
+        "managed_path": "archives/story-02.zip",
+        "original_filename": "story-02.zip",
+        "sha256": "bbef3ea799711986595ae8167ac5311f98100f1ddc6fe64644831c84b3a0c2ea",
+        "story_id": 2,
+        "validation_state": "missing"
+      },
+      {
+        "byte_size": 176,
+        "created_at": "2026-01-01T00:00:03Z",
+        "detected_format": "zip",
+        "id": 3,
+        "managed_path": "archives/story-03.zip",
+        "original_filename": "story-03.zip",
+        "sha256": "ac7222f205c985ffe90929e7d216e4d1c7c70790160e525f69207c3bd87c44c7",
+        "story_id": 3,
+        "validation_state": "invalid"
+      },
+      {
+        "byte_size": 175,
+        "created_at": "2026-01-01T00:00:04Z",
+        "detected_format": "zip",
+        "id": 4,
+        "managed_path": "archives/story-04.zip",
+        "original_filename": "story-04.zip",
+        "sha256": "33f2d1453cbe5c62e24fbcb35e5ace9d7a507d93ee4defbb37c989148f6dd15d",
+        "story_id": 4,
+        "validation_state": "valid"
+      },
+      {
+        "byte_size": 185,
+        "created_at": "2026-01-01T00:00:05Z",
+        "detected_format": "zip",
+        "id": 5,
+        "managed_path": "archives/story-05.zip",
+        "original_filename": "story-05.zip",
+        "sha256": "4a2361b0e2929556df748d0dde30c21d312776e0b67f903e0b6db1f60de1324e",
+        "story_id": 5,
+        "validation_state": "valid"
+      },
+      {
+        "byte_size": 182,
+        "created_at": "2026-01-01T00:00:06Z",
+        "detected_format": "zip",
+        "id": 6,
+        "managed_path": "archives/story-06.zip",
+        "original_filename": "story-06.zip",
+        "sha256": "725829cb6be8ca26557de33df50e1b62990c301c8a728e016811982f55d7eee1",
+        "story_id": 6,
+        "validation_state": "valid"
+      },
+      {
+        "byte_size": 175,
+        "created_at": "2026-01-01T00:00:07Z",
+        "detected_format": "zip",
+        "id": 7,
+        "managed_path": "archives/story-07.zip",
+        "original_filename": "story-07.zip",
+        "sha256": "a39488fe5a4da324990b32b00e14a16996c0c76300c434f53887d19485d7b02b",
+        "story_id": 7,
+        "validation_state": "valid"
+      },
+      {
+        "byte_size": 174,
+        "created_at": "2026-01-01T00:00:09Z",
+        "detected_format": "zip",
+        "id": 8,
+        "managed_path": "archives/story-08.zip",
+        "original_filename": "story-08.zip",
+        "sha256": "cec8ee2340aad84cb993d86cdbf49fd3fdc0efbe019de5a1fd96360f2ca8a958",
+        "story_id": 8,
+        "validation_state": "missing"
+      },
+      {
+        "byte_size": 174,
+        "created_at": "2026-01-01T00:00:08Z",
+        "detected_format": "zip",
+        "id": 9,
+        "managed_path": "archives/story-09.zip",
+        "original_filename": "story-09.zip",
+        "sha256": "ead34da474dca40c8c85cc9f3f9422620190c047a7d2f1d5d38ec1e45ab12c06",
+        "story_id": 9,
+        "validation_state": "invalid"
+      },
+      {
+        "byte_size": 177,
+        "created_at": "2026-01-01T00:00:09Z",
+        "detected_format": "zip",
+        "id": 10,
+        "managed_path": "archives/story-10.zip",
+        "original_filename": "story-10.zip",
+        "sha256": "180fe5d7778c3bf363139c53aab2eacd651e3ecfc3acf9d096a9d37c7f9c23c7",
+        "story_id": 10,
+        "validation_state": "valid"
+      }
+    ],
+    "schema_sql": "CREATE TABLE story_archives (\n    id INTEGER PRIMARY KEY,\n    story_id INTEGER NOT NULL UNIQUE REFERENCES stories(id) ON DELETE CASCADE,\n    original_filename TEXT NOT NULL CHECK (length(trim(original_filename)) \u003e 0),\n    detected_format TEXT NOT NULL\n        CHECK (detected_format IN (\n            'plain_pk',\n            'v1_pk',\n            'v2_pk',\n            'generic_pk',\n            'zip',\n            'seven_zip',\n            'studio_zip'\n        )),\n    sha256 TEXT NOT NULL UNIQUE\n        CHECK (length(sha256) = 64 AND sha256 NOT GLOB '*[^0-9a-f]*'),\n    byte_size INTEGER NOT NULL CHECK (byte_size \u003e= 0),\n    managed_path TEXT NOT NULL UNIQUE\n        CHECK (\n            length(managed_path) \u003e 0\n            AND managed_path NOT LIKE '/%'\n            AND managed_path NOT LIKE '../%'\n            AND managed_path NOT LIKE '%/../%'\n        ),\n    validation_state TEXT NOT NULL DEFAULT 'valid'\n        CHECK (validation_state IN ('valid', 'missing', 'invalid')),\n    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP\n)"
+  },
+  "story_tag_assignments": {
+    "columns": [
+      "id",
+      "story_id",
+      "definition_id",
+      "value_id",
+      "source",
+      "created_at"
+    ],
+    "rows": [
+      {
+        "created_at": "2026-01-02T03:04:05Z",
+        "definition_id": 1,
+        "id": 1,
+        "source": "manual",
+        "story_id": 1,
+        "value_id": null
+      },
+      {
+        "created_at": "2026-01-02T03:04:05Z",
+        "definition_id": 2,
+        "id": 2,
+        "source": "manual",
+        "story_id": 1,
+        "value_id": 1
+      },
+      {
+        "created_at": "2026-01-02T03:04:05Z",
+        "definition_id": 2,
+        "id": 3,
+        "source": "manual",
+        "story_id": 2,
+        "value_id": 2
+      },
+      {
+        "created_at": "2026-01-02T03:04:05Z",
+        "definition_id": 1,
+        "id": 4,
+        "source": "manual",
+        "story_id": 4,
+        "value_id": null
+      },
+      {
+        "created_at": "2026-01-02T03:04:05Z",
+        "definition_id": 2,
+        "id": 5,
+        "source": "manual",
+        "story_id": 4,
+        "value_id": 1
+      },
+      {
+        "created_at": "2026-01-02T03:04:05Z",
+        "definition_id": 1,
+        "id": 6,
+        "source": "manual",
+        "story_id": 5,
+        "value_id": null
+      },
+      {
+        "created_at": "2026-01-02T03:04:05Z",
+        "definition_id": 2,
+        "id": 7,
+        "source": "manual",
+        "story_id": 5,
+        "value_id": 2
+      },
+      {
+        "created_at": "2026-01-02T03:04:05Z",
+        "definition_id": 2,
+        "id": 8,
+        "source": "manual",
+        "story_id": 6,
+        "value_id": 1
+      },
+      {
+        "created_at": "2026-01-02T03:04:05Z",
+        "definition_id": 1,
+        "id": 9,
+        "source": "manual",
+        "story_id": 7,
+        "value_id": null
+      },
+      {
+        "created_at": "2026-01-02T03:04:05Z",
+        "definition_id": 2,
+        "id": 10,
+        "source": "manual",
+        "story_id": 7,
+        "value_id": 1
+      },
+      {
+        "created_at": "2026-01-02T03:04:05Z",
+        "definition_id": 2,
+        "id": 11,
+        "source": "manual",
+        "story_id": 8,
+        "value_id": 2
+      },
+      {
+        "created_at": "2026-01-02T03:04:05Z",
+        "definition_id": 1,
+        "id": 12,
+        "source": "manual",
+        "story_id": 9,
+        "value_id": null
+      },
+      {
+        "created_at": "2026-01-02T03:04:05Z",
+        "definition_id": 2,
+        "id": 13,
+        "source": "manual",
+        "story_id": 9,
+        "value_id": 2
+      },
+      {
+        "created_at": "2026-01-02T03:04:05Z",
+        "definition_id": 2,
+        "id": 14,
+        "source": "manual",
+        "story_id": 10,
+        "value_id": 2
+      }
+    ],
+    "schema_sql": "CREATE TABLE story_tag_assignments (\n    id INTEGER PRIMARY KEY,\n    story_id INTEGER NOT NULL\n        REFERENCES stories(id) ON DELETE CASCADE,\n    definition_id INTEGER NOT NULL\n        REFERENCES tag_definitions(id) ON DELETE CASCADE,\n    value_id INTEGER,\n    source TEXT NOT NULL\n        CHECK (source IN ('manual', 'derived')),\n    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,\n    FOREIGN KEY (value_id, definition_id)\n        REFERENCES tag_values(id, definition_id) ON DELETE CASCADE\n)"
+  },
+  "tag_definitions": {
+    "columns": [
+      "id",
+      "key",
+      "normalized_key",
+      "label",
+      "color",
+      "kind",
+      "source",
+      "presentation",
+      "position",
+      "is_protected",
+      "created_at",
+      "updated_at"
+    ],
+    "rows": [
+      {
+        "color": "#405CF5",
+        "created_at": "2026-01-02T03:04:05Z",
+        "id": 1,
+        "is_protected": 0,
+        "key": "query-flag",
+        "kind": "boolean",
+        "label": "Query flag",
+        "normalized_key": "query-flag",
+        "position": 0,
+        "presentation": "default",
+        "source": "user",
+        "updated_at": "2026-01-02T03:04:05Z"
+      },
+      {
+        "color": "#405CF5",
+        "created_at": "2026-01-02T03:04:05Z",
+        "id": 2,
+        "is_protected": 0,
+        "key": "query-color",
+        "kind": "choice",
+        "label": "Query color",
+        "normalized_key": "query-color",
+        "position": 1,
+        "presentation": "default",
+        "source": "user",
+        "updated_at": "2026-01-02T03:04:05Z"
+      },
+      {
+        "color": "#405CF5",
+        "created_at": "2026-01-02T03:04:05Z",
+        "id": 3,
+        "is_protected": 0,
+        "key": "other-choice",
+        "kind": "choice",
+        "label": "Other choice",
+        "normalized_key": "other-choice",
+        "position": 2,
+        "presentation": "default",
+        "source": "user",
+        "updated_at": "2026-01-02T03:04:05Z"
+      },
+      {
+        "color": "#267D5D",
+        "created_at": "2026-10-21 04:21:05",
+        "id": 4,
+        "is_protected": 1,
+        "key": "age",
+        "kind": "choice",
+        "label": "Age",
+        "normalized_key": "age",
+        "position": 0,
+        "presentation": "system",
+        "source": "derived",
+        "updated_at": "2026-10-21 04:21:05"
+      }
+    ],
+    "schema_sql": "CREATE TABLE tag_definitions (\n    id INTEGER PRIMARY KEY,\n    key TEXT NOT NULL\n        CHECK (length(trim(key)) \u003e 0),\n    normalized_key TEXT NOT NULL UNIQUE COLLATE NOCASE\n        CHECK (\n            length(normalized_key) \u003e 0\n            AND normalized_key = trim(normalized_key)\n        ),\n    label TEXT NOT NULL\n        CHECK (length(trim(label)) \u003e 0),\n    color TEXT NOT NULL\n        CHECK (\n            length(color) = 7\n            AND substr(color, 1, 1) = '#'\n            AND substr(color, 2) NOT GLOB '*[^0-9A-Fa-f]*'\n        ),\n    kind TEXT NOT NULL\n        CHECK (kind IN ('boolean', 'choice')),\n    source TEXT NOT NULL\n        CHECK (source IN ('user', 'builtin', 'derived')),\n    presentation TEXT NOT NULL DEFAULT 'default'\n        CHECK (presentation IN ('default', 'warning', 'system')),\n    position INTEGER NOT NULL\n        CHECK (position \u003e= 0),\n    is_protected INTEGER NOT NULL DEFAULT 0\n        CHECK (is_protected IN (0, 1)),\n    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,\n    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,\n    UNIQUE (source, position),\n    CHECK (\n        (source = 'user' AND is_protected = 0)\n        OR (source IN ('builtin', 'derived') AND is_protected = 1)\n    )\n)"
+  },
+  "tag_values": {
+    "columns": [
+      "id",
+      "definition_id",
+      "key",
+      "normalized_key",
+      "label",
+      "position",
+      "created_at",
+      "updated_at"
+    ],
+    "rows": [
+      {
+        "created_at": "2026-01-02T03:04:05Z",
+        "definition_id": 2,
+        "id": 1,
+        "key": "warm",
+        "label": "Warm",
+        "normalized_key": "warm",
+        "position": 0,
+        "updated_at": "2026-01-02T03:04:05Z"
+      },
+      {
+        "created_at": "2026-01-02T03:04:05Z",
+        "definition_id": 2,
+        "id": 2,
+        "key": "cool",
+        "label": "Cool",
+        "normalized_key": "cool",
+        "position": 1,
+        "updated_at": "2026-01-02T03:04:05Z"
+      },
+      {
+        "created_at": "2026-01-02T03:04:05Z",
+        "definition_id": 3,
+        "id": 3,
+        "key": "foreign",
+        "label": "Foreign owner",
+        "normalized_key": "foreign",
+        "position": 0,
+        "updated_at": "2026-01-02T03:04:05Z"
+      },
+      {
+        "created_at": "2026-10-21 04:21:05",
+        "definition_id": 4,
+        "id": 4,
+        "key": "3-5",
+        "label": "3–5 years",
+        "normalized_key": "3-5",
+        "position": 0,
+        "updated_at": "2026-10-21 04:21:05"
+      },
+      {
+        "created_at": "2026-10-21 04:21:05",
+        "definition_id": 4,
+        "id": 5,
+        "key": "6-8",
+        "label": "6–8 years",
+        "normalized_key": "6-8",
+        "position": 1,
+        "updated_at": "2026-10-21 04:21:05"
+      }
+    ],
+    "schema_sql": "CREATE TABLE tag_values (\n    id INTEGER PRIMARY KEY,\n    definition_id INTEGER NOT NULL\n        REFERENCES tag_definitions(id) ON DELETE CASCADE,\n    key TEXT NOT NULL\n        CHECK (length(trim(key)) \u003e 0),\n    normalized_key TEXT NOT NULL COLLATE NOCASE\n        CHECK (\n            length(normalized_key) \u003e 0\n            AND normalized_key = trim(normalized_key)\n        ),\n    label TEXT NOT NULL\n        CHECK (length(trim(label)) \u003e 0),\n    position INTEGER NOT NULL\n        CHECK (position \u003e= 0),\n    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,\n    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,\n    UNIQUE (definition_id, normalized_key),\n    UNIQUE (definition_id, position),\n    UNIQUE (id, definition_id)\n)"
+  }
+}

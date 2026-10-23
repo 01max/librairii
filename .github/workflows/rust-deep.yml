@@ -1,0 +1,73 @@
+name: Rust focused checks
+
+on:
+  # Routine Rust PRs already run the complete native suites. Exercise this
+  # lane on PRs that change its own wiring/tooling, and after integration.
+  pull_request:
+    paths:
+      - '.github/workflows/rust-deep.yml'
+      - '.github/actions/rust-environment/**'
+      - '.github/scripts/install-rust-tools.py'
+      - '.config/rust-tools.toml'
+      - 'rust-toolchain.toml'
+      - 'Cargo.toml'
+      - 'Cargo.lock'
+      - 'fuzz/rust-toolchain.toml'
+      - 'fuzz/**'
+      - 'crates/**/benches/**'
+      - 'xtask/src/deep.rs'
+  push:
+    branches: [main, rewrite-in-rust-native-desktop]
+  workflow_dispatch:
+  schedule:
+    - cron: '23 4 * * 1'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rust-focused-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  focused:
+    name: Rust coverage benchmark fuzz
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      CARGO_INCREMENTAL: '0'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install signed Ubuntu compiler prerequisites
+        run: .github/scripts/ubuntu-apt build-essential pkg-config clang
+      - uses: ./.github/actions/rust-environment
+        with:
+          tools: focused
+      - name: Install the separately pinned fuzz compiler
+        run: |
+          pin="$(python3 -c 'import tomllib; print(tomllib.load(open("fuzz/rust-toolchain.toml", "rb"))["toolchain"]["channel"])')"
+          rustup toolchain install "$pin" --profile minimal --component rustfmt
+      - name: Capture coverage evidence
+        run: cargo xtask coverage
+      - name: Exercise benchmark harness
+        run: cargo xtask bench --smoke
+      - name: Measure diagnostic benchmarks
+        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+        run: |
+          LIBRAIRII_BENCH_HARDWARE="GitHub ubuntu-24.04 $RUNNER_ARCH; $(lscpu | tr '\n' ';')"
+          export LIBRAIRII_BENCH_HARDWARE
+          cargo xtask bench
+      - name: Run bounded identity fuzzing
+        run: cargo xtask fuzz
+      - name: Retain evidence and minimized crash inputs
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: rust-focused-${{ github.sha }}
+          path: |
+            target/quality/
+            target/criterion/
+          if-no-files-found: error
+          retention-days: 30

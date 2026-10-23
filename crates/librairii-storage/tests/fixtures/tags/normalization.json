@@ -1,0 +1,61 @@
+{
+  "cases": [
+    {
+      "input": " ÉTÉ favorites ",
+      "key": "ete-favorites",
+      "valid": true
+    },
+    {
+      "input": "Straße",
+      "key": "straße",
+      "valid": true
+    },
+    {
+      "input": "𝑨",
+      "key": "A",
+      "valid": true
+    },
+    {
+      "input": "İIıi",
+      "key": "iiıi",
+      "valid": true
+    },
+    {
+      "input": "a b",
+      "key": "a-b",
+      "valid": true
+    },
+    {
+      "input": "三٣",
+      "key": "三٣",
+      "valid": true
+    },
+    {
+      "input": "áb",
+      "key": "ab",
+      "valid": true
+    },
+    {
+      "input": "one___two",
+      "key": "one-two",
+      "valid": true
+    },
+    {
+      "input": "a",
+      "key": "a",
+      "valid": true
+    },
+    {
+      "input": "!!!",
+      "key": "",
+      "valid": false
+    }
+  ],
+  "go": "go1.26.5",
+  "longMarks": {
+    "key": "a",
+    "valid": true
+  },
+  "scalarDigest": "d864c953888d4936c53236d9b3340329adefd7cb1bdd8fee4dee07ebd1974619",
+  "unicode": "15.0.0"
+}

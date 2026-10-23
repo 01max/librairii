@@ -1,0 +1,79 @@
+name: Rust quality
+
+on:
+  pull_request:
+  push:
+    branches: [main, rewrite-in-rust-native-desktop]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rust-quality-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  native:
+    name: Rust native ${{ matrix.target }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-15
+            target: aarch64-apple-darwin
+          - runner: macos-15-intel
+            target: x86_64-apple-darwin
+          - runner: ubuntu-24.04
+            target: x86_64-unknown-linux-gnu
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 40
+    defaults:
+      run:
+        shell: bash
+    env:
+      RUST_TARGET: ${{ matrix.target }}
+      MACOSX_DEPLOYMENT_TARGET: '15.0'
+      CARGO_TERM_COLOR: always
+      CARGO_INCREMENTAL: '0'
+    steps:
+      # Official signed release commits; see section-3.md for reviewed revisions.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install Ubuntu compiler prerequisites from signed Ubuntu archives
+        if: runner.os == 'Linux'
+        run: .github/scripts/ubuntu-apt build-essential pkg-config python3
+      - uses: ./.github/actions/rust-environment
+        with:
+          tools: quality
+      - name: Assert native architecture and record source/toolchain
+        run: |
+          test "$(rustc -vV | sed -n 's/^host: //p')" = "$RUST_TARGET"
+          mkdir -p target/quality
+          git rev-parse HEAD > target/quality/source.txt
+          rustc -vV > target/quality/rustc.txt
+          cargo --version > target/quality/cargo.txt
+          printf '%s\n' "$RUNNER_OS $RUNNER_ARCH $RUST_TARGET features=empty/default" > target/quality/host.txt
+      - name: Cumulative workspace check
+        run: cargo xtask check
+      - name: Retain native check evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: rust-quality-${{ matrix.target }}-${{ github.sha }}
+          path: |
+            target/quality/
+            target/nextest/ci/junit.xml
+          if-no-files-found: error
+          retention-days: 30
+  required:
+    name: Rust required targets
+    if: always()
+    needs: [native]
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Refuse failed, skipped or cancelled native checks
+        env:
+          NATIVE_RESULT: ${{ needs.native.result }}
+        run: test "$NATIVE_RESULT" = success
