@@ -50,9 +50,29 @@ jobs:
           libfontconfig1-dev libfreetype6-dev libx11-dev libx11-xcb-dev libxcursor-dev
           libxi-dev libxrandr-dev libxkbcommon-dev libxkbcommon-x11-dev libwayland-dev
           libegl1-mesa-dev libgl1-mesa-dev libdbus-1-dev xvfb xauth fonts-noto-cjk
-      - uses: ./.github/actions/rust-environment
+      - name: Install the exact candidate compiler
+        run: |
+          pin="$(python3 -c 'import tomllib; print(tomllib.load(open("qualification/section-2/rust-toolchain.toml", "rb"))["toolchain"]["channel"])')"
+          rustup toolchain install "$pin" --profile minimal --component rustfmt --component clippy
+      - name: Cache the isolated spike graph and build outputs
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
-          tools: quality
+          key: task2-build-v1-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('qualification/section-2/rust-toolchain.toml', 'qualification/section-2/Cargo.toml', 'qualification/section-2/Cargo.lock') }}
+          path: |
+            ~/.cargo/registry/
+            qualification/section-2/target/
+      - name: Restore the exact compiled helper tools
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          key: rust-tools-v1-${{ runner.os }}-${{ runner.arch }}-quality-${{ hashFiles('rust-toolchain.toml', '.config/rust-tools.toml', '.github/scripts/install-rust-tools.py') }}
+          path: ${{ runner.tool_cache }}/librairii-cargo-tools/quality
+      - name: Ensure pinned test helpers
+        env:
+          CARGO_INSTALL_ROOT: ${{ runner.tool_cache }}/librairii-cargo-tools/quality
+          TOOL_SET: quality
+        run: |
+          python3 -I -B .github/scripts/install-rust-tools.py "$TOOL_SET"
+          printf '%s\n' "$CARGO_INSTALL_ROOT/bin" >> "$GITHUB_PATH"
       - name: Assert native architecture and record compiler
         run: |
           test "$(rustc -vV | sed -n 's/^host: //p')" = "$RUST_TARGET"
