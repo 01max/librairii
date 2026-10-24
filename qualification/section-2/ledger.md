@@ -215,3 +215,16 @@ hashes, all12 exact utterance/PCM/quiet-tail stages, startup exclusion, native
 focus/text, private preferences, Wayland protocol and owned cleanup. Both filtered
 images show `0042`, one row and French/CJK. The supplementary ASR transcripts
 and pinned model bytes are verified; the explicit scope limits are preserved.
+
+
+## 2026-10-24 verified execution hosts (2.2)
+
+Independent Task2.13 scope review confirms that2.2 can close with the verified
+native execution routes, working SDK/CI prerequisites and proposed baselines.
+Existing `macos-15`, `macos-15-intel` and `ubuntu-24.04` runners repeatedly execute
+matching packages and actual OS controls; Intel uses a real i7-8700B without
+Rosetta. All three lanes pass at0c1b202/run40097549724. Updated `hosts.md` preserves
+historical access gaps while identifying current reviewed routes and limits.
+The lack of owner-operated Intel/Linux machines is not an additional host gate.
+Remaining accessibility/input/display/performance/clean-package/selection work
+stays open. No new host, paid runner, account or system permission is provisioned.

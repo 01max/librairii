@@ -1,6 +1,36 @@
 # Host and SDK inventory (task 2.2)
 
-## Current availability correction (2026-10-23)
+## Verified execution access (2026-10-24)
+
+Task2.2 is complete. The existing qualification workflow supplies actual native
+execution on all three required targets, including a real Intel CPU without
+Rosetta. Independent review confirms that this subtask requires usable hosts,
+SDK/CI availability and proposed baselines; it does not require owner-owned
+machines or human operators. The owner still has no Intel Mac or Linux desktop,
+and no checks are assigned to them.
+
+| Target / existing runner | Actual execution and prerequisites | Evidence |
+| --- | --- | --- |
+| ARM macOS / `macos-15` | Native arm64 Mach-O, macOS15.7.9; native Rust/C++/Swift/AppKit builds and public AX/CGEvent interaction work | Eight independently reviewed native cases at8a9d571/run40096186659; native-macos-observations.json |
+| Real Intel macOS / `macos-15-intel` | Native x86_64 Mach-O, Intel i7-8700B, macOS15.7.9, no Rosetta; native Rust/C++/Swift/AppKit builds and AX/CGEvent interaction work | Eight independently reviewed native cases at30614b8/run40095296249; native-macos-observations.json |
+| Linux x86-64 / `ubuntu-24.04` | Native ELF, Ubuntu24.04/glibc2.39 builder; installed X11/Wayland/portal/AT-SPI services and KVM access work | Sixteen reviewed native cases, offline reboot/reinstall VM and configured Orca sessions; native-linux-observations.json, linux-vm-observations.json, accessibility-linux-observations.json |
+
+All three qualification lanes pass again at0c1b202 in
+[run40097549724](https://github.com/01max/librairii/actions/runs/40097549724).
+The workflow pins Rust1.99.1 and sets `MACOSX_DEPLOYMENT_TARGET=15.0`; successful
+native links and Swift helper builds establish available macOS SDK prerequisites.
+The exact SDK version is not recorded by those earlier runs. Proposed support
+baselines remain macOS15+ and Ubuntu24.04/glibc2.39. Running macOS15.7.9 does not
+prove the minimum15.0 release, and those baselines are not a general support claim.
+
+These routes permit real OS interaction using synthetic events and public native
+controls. They do not complete dead-key/IME, mixed-monitor, remaining Orca
+semantics, native performance, clean macOS package or final toolkit selection
+gates. Those remain separately scoped in2.4/2.5/2.9/2.11/2.13. VoiceOver remains
+excluded by owner decision; Windows remains deferred. No new host was provisioned.
+The inventory and resource requests below are retained historical observations.
+
+## Historical availability correction (2026-10-23)
 
 The owner clarified that they have neither an Intel Mac nor a Linux desktop.
 This supersedes the earlier statement that the owner could run both sets of
