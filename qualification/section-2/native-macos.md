@@ -93,3 +93,15 @@ checks still use the real system clipboard; no IME/dead-key result is inferred.
 Intel independently passes the same five checks and retains the same unchanged
 Search state in artifact12553963227, ZIP SHA256
 `005862a6314b15040c85d0b5ff2158f1a4414cf01983846f357994c4dc2b7c9b`.
+
+At `c59c0bd` / run40079709208 both architectures complete all checks for multiple
+files, a single file and file cancellation, including native number-key Search.
+Folder acceptance returns `selected` and the correct fixture through macOS's
+`/var` alias, while the fixture rendezvous records `/private/var`. The observer's
+text-only path comparison rejects that alias. It now resolves both existing
+paths strictly before fixture retirement and records raw and canonical values;
+counts and outcome remain exact. Missing, relative and different paths remain
+invalid. ARM artifact12554623051 ZIP SHA256 is
+`e6ac3c9ca3ac4ed6341479f82317e9e85237b4304c297e5e0362d397d48e000a`;
+Intel artifact12554228106 ZIP SHA256 is
+`d116219388551aa5da7a9be2629f540ae9411f2fdae165047e91e98dceb5f512`.

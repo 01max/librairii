@@ -15,6 +15,25 @@ spec.loader.exec_module(macos)
 
 
 class NativeMacOS(unittest.TestCase):
+    def test_callback_identity_resolves_existing_aliases_without_accepting_other_paths(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = pathlib.Path(temporary)
+            fixture = root / 'fixture'
+            fixture.mkdir()
+            selected = fixture / 'Été 日本語.zip'
+            selected.touch()
+            alias = root / 'alias'
+            alias.symlink_to(fixture, target_is_directory=True)
+            self.assertEqual(macos.canonical_paths([str(alias)]), macos.canonical_paths([str(fixture)]))
+            self.assertEqual(macos.canonical_paths([str(alias / selected.name)]),
+                             macos.canonical_paths([str(selected)]))
+            self.assertNotEqual(macos.canonical_paths([str(fixture.parent)]),
+                                macos.canonical_paths([str(fixture)]))
+            with self.assertRaises(FileNotFoundError):
+                macos.canonical_paths([str(alias / 'missing')])
+            with self.assertRaises(ValueError):
+                macos.canonical_paths(['fixture'])
+
     def test_go_folder_cannot_edit_search_or_native_filename_cells(self):
         def node(role, identifier, path, **values):
             return {'role': role, 'identifier': identifier, 'selector':

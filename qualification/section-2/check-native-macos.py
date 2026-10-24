@@ -61,6 +61,19 @@ def state(directory):
         return None
 
 
+def canonical_paths(paths):
+    # AppKit may return /var while the fixture was created under /private/var.
+    # Resolve existing objects before fixture retirement; never compare suffixes
+    # or rewrite a textual prefix, which could accept another directory.
+    result = []
+    for raw in paths:
+        path = pathlib.Path(raw)
+        if not path.is_absolute():
+            raise ValueError('native callback path is not absolute')
+        result.append(str(path.resolve(strict=True)))
+    return result
+
+
 def picker_root(snapshot):
     # Public AX window->child-sheet relationship is the parenting witness.
     return next((node for node in snapshot['nodes'] if node['role'] == 'AXSheet'
@@ -280,8 +293,12 @@ def one_case(binary, helper, root, name, kind, expected):
                 [str(fixture / 'Été 日本語 故事.zip')] + ([str(fixture / 'Deuxième archive 02.pk')] if name == 'files-multiple' else [])
                 if kind == 'files' else [str(fixture)])
             report['selected_paths'] = paths
-            report['checks']['exact_native_callback'] = ((rendezvous / 'outcome.txt').read_text() == expected
-                and len(paths) == len(wanted) and set(paths) == set(wanted))
+            report['callback_outcome'] = (rendezvous / 'outcome.txt').read_text()
+            report['canonical_selected_paths'] = canonical_paths(paths)
+            report['canonical_expected_paths'] = canonical_paths(wanted)
+            report['checks']['exact_native_callback'] = (report['callback_outcome'] == expected
+                and len(paths) == len(wanted)
+                and set(report['canonical_selected_paths']) == set(report['canonical_expected_paths']))
             report['checks']['unforced_parent_focus_restored'] = observer.status()['frontmost_pid'] == app.pid
         elif kind == 'reveal':
             observer.wait(lambda: (rendezvous / 'callback-complete.txt').exists())
