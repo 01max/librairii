@@ -286,3 +286,10 @@ read-only AX selected-text/UTF-16-range readiness before Delete. One Select All
 command must establish full real selection; no forced text/focus/selection,
 command retry, relaxed deadline or inferred Japanese pass is introduced.
 See input-display.md for immutable failed artifacts and method distinction.
+
+
+Independent review P2 correction to methodv2: input-selection previously echoed
+the requested PID alongside an actual focused element. It now requires a
+successful AXUIElementGetPid on that element, exact requested-PID equality, and
+returns the observed element owner. A foreign IME/accessibility element cannot
+supply the owned-field witness; the immediate native foreground check remains.

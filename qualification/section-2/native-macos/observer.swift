@@ -301,6 +301,10 @@ do {
             throw Failure.invalid("no actual focused native input element")
         }
         let element = raw as! AXUIElement
+        var focusedPID: pid_t = -1
+        guard AXUIElementGetPid(element, &focusedPID) == .success, focusedPID == pid else {
+            throw Failure.invalid("focused native input does not belong to the requested app")
+        }
         var selected: CFTypeRef?
         let status = AXUIElementCopyAttributeValue(element, kAXSelectedTextRangeAttribute as CFString, &selected)
         var range = CFRange(location: -1, length: 0)
@@ -309,7 +313,7 @@ do {
             let value = selected as! AXValue
             if AXValueGetType(value) == .cfRange { observed = AXValueGetValue(value, .cfRange, &range) }
         }
-        try output(["pid": pid, "frontmost_pid": NSWorkspace.shared.frontmostApplication?.processIdentifier ?? -1,
+        try output(["pid": focusedPID, "frontmost_pid": NSWorkspace.shared.frontmostApplication?.processIdentifier ?? -1,
             "focused": describe(element), "selection_observed": observed, "selection_status": status.rawValue,
             "selection_location": range.location, "selection_length": range.length,
             "selected_text": text(element, kAXSelectedTextAttribute)] as [String: Any])
