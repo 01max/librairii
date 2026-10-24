@@ -37,7 +37,7 @@ impl Probe {
                     assert_ne!(before, after, "input must change rendered scene pixels");
                     observed.set(true);
                     eprintln!(
-                        "renderer_smoke=passed; french_cjk_snapshots=2; component_input=passed; physical_input_ime=not_measured"
+                        "renderer_smoke=passed; snapshots=2; glyph_visual_review=required; component_input=passed; physical_input_ime=not_measured"
                     );
                     slint::quit_event_loop().expect("quit renderer probe");
                 } else {
