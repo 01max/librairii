@@ -18,26 +18,26 @@ is included by merge `e4e110078921841301024101e4f32048c2d97667`.
 Only the integration merge brings root/shared changes; section2 makes no direct
 root edits. Current combined proof is in unicode-compat/validation.md.
 
-No external OpenSpec checkbox was changed. These statuses describe evidence,
-not completed toolkit qualification. The separate local spec repository was not
-staged or published. Task1 files and integration governance were not edited here;
-the latter changes only arrive from the authorized integration merge.
+Only Task2 lines are updated in the separate local OpenSpec repository as their
+evidence completes. Unrelated preexisting spec edits are preserved; that nested
+repository is not staged or published with this PR. Older status paragraphs below
+remain attributed to their historical source commits.
 
-| Task | Status | Evidence |
+| Task | Current status | Evidence |
 | --- | --- | --- |
-| 2.1 | Candidate graphs/source/notices recorded; bounded Unicode comparison rejects tested final-pipeline compositions; distribution/production graph decisions pending | ADR.md, candidate-releases.json, Cargo.lock, unicode-compat/ |
-| 2.2 | Incomplete: hosts/access not secured | hosts.md |
-| 2.3 | Partial: compiled/running bounded synthetic ARM slice | README.md, ui/, src/; modal/responsive/complete fixture coverage open |
-| 2.4 | Not observed: keyboard/AT | accessibility.md; native app access denied |
-| 2.5 | Not observed: IME/DPI/editing/contrast | input-display.md |
-| 2.6 | Partial: compiled picker/reveal/menu probes, no physical observations | native-adapters.md |
-| 2.7 | Partial ARM normal/explicit CPU process smoke; no GPU failure | renderers.md |
-| 2.8 | Partial: public component/controller route passes ARM | regression.md |
-| 2.9 | Diagnostic subset only; retained budgets not all measured | performance.md |
-| 2.10 | Partial:32 historical contained cases and24 SQL +6 filename observations retained; authenticated count-guard derivative has4 safe child tests and5 new Python regressions; NEW controls +two-negative/one-benign experiment NOT RUN/pending Docker | count-budget-readiness.json, decoder-budget/README.md, decoder-resources.md, decoder-observations.json, data-feasibility.md, tests/ |
-| 2.11 | Local unsigned ARM DMG only; clean-host/other packages pending | packages.md, package-macos.py |
-| 2.12 | Conditional fallback not triggered; no established mandatory toolkit failure | fallback.md |
-| 2.13 | Historical partial implementation approved/CI green at39267; new count-guard head needs fresh review/CI; mandatory qualification still pending | selection-gate.md |
+| 2.1 | Exact candidate graph and owner-approved AboutSlint licensing route recorded | ADR.md, current-pins.json, Cargo.lock, native-notices.md |
+| 2.2 | Complete: actual ARM, real Intel and Linux execution/SDK access | hosts.md |
+| 2.3 | Complete: responsive representative localized1000-story native spike | ui/, src/, continuation.md |
+| 2.4 | Complete under owner scope; expanded native Orca workflows independently approved | accessibility-linux-observations.json expanded_v5 |
+| 2.5 | French editing passes; native display correction and composed Retina/mixed-scale coverage require fresh final matrix | input-display.md, completion-evidence/ |
+| 2.6 | Complete: eight cases on each Mac and each Linux desktop | native-macos-observations.json, native-linux-observations.json |
+| 2.7 | Complete: forced native GPU-init failure/CPU recovery and matching runtime audits | renderers.md, inspect-runtime.py |
+| 2.8 | Complete: public component/controller and OS-accessibility regression route, no commercial test tool | regression.md |
+| 2.9 | Retained artwork and native input/navigation measurements implemented; fresh resource ceilings/matrix pending | performance.md |
+| 2.10 | Complete with selected merged SQLite/archive adapters; superseded experiments retained historically | data-feasibility.md, corpus-observations.json |
+| 2.11 | Linux offline KVM lifecycle approved; ARM isolated four-launch route passes; fresh final Mac matrix pending | linux-vm.md, clean-macos.md |
+| 2.12 | Conditional fallback not triggered; repairable defects addressed and no established remaining mandatory candidate failure | fallback.md |
+| 2.13 | Exact graph/backport, Orca and Retina evidence independently approved; final native matrix and decision pending | selection-gate.md |
 
 Task1 PR39 is admitted at1cd2244 and merged through9a6c1c1 with146 corrected corpus
 files. The2.10 consumer now pins that exact final input; its e7c771b observations
@@ -569,3 +569,17 @@ publishing atomic requests. Corrected before push; all tracked Task2 Python
 sources now pass AST parse, and CI parses every tracked recorder source before
 platform-specific tests. Native-only modules can no longer bypass syntax checks
 because a Linux unit suite does not import them.
+
+## 2026-10-24 final qualification corrections
+
+| Task | SHA | Concrete correction / observation |
+| --- | --- | --- |
+| 2.9 | `16c091d` | Separate30-second navigation batch bound from unchanged1-second state and3000ms p95 limits; retain partial trials and actual workload. |
+| 2.11 | `09be973` | Recognize real command schema and explicit verbose network denial; positive/denied owned loopback controls verified. |
+| 2.5 | `c94a44d` | Install actual gsettings executable in isolated Linux runtime. |
+| 2.5 | `83f688a` | Distinguish AX fitting sizes/public native requests. Run63 proves AppKit also clamps the latter; this attempt remains a failed display observation. |
+| 2.5 | `41ff363` | Fix first-line clipping using explicit scroll origin and full wrapped content extent; real native image verifies correction. |
+| 2.5 | `c36e2ba` | Record actual fitting Mac sizes; wide/Retina and mixed-scale are separate actual ARM/Linux observations, never clamped-size substitutes. |
+| 2.5 | `f5ed5d4` | Retain clean41ff363 three-size2× raw native geometry/PNG hashes, contrast and retirement. Independently reviewed. |
+| 2.4 | `ece68e8` | Close expanded Orca workflow gate after independent raw package/audio/semantic/cleanup review. |
+| 2.13 | `84ccfd7` | Align stale physical/operator metadata with active owner scope and remaining native evidence. |
