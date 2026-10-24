@@ -358,8 +358,12 @@ def record(desktop, binary, report):
     tab_to(lambda n: n.get('role') == 'list item')
     end_speech = speech_marker()
     key('End')
-    selected = native.wait_for(lambda: next((n for n in focused(read())
-        if n.get('name', '').startswith('0999 ·') and n['states'].get('selected')), None))
+    def end_selected():
+        nodes = read()
+        report['end_selection_nodes'] = nodes
+        return next((n for n in focused(nodes) if n.get('name', '').startswith('0999 ·')
+            and n['states'].get('selected')), None)
+    selected = native.wait_for(end_selected)
     report['offscreen_selected_story'] = selected
     snapshot('offscreen-selected')
     desktop.screenshot(root / 'offscreen-selected.png')

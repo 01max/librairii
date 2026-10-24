@@ -469,3 +469,15 @@ Task2.11 minimal-package route: cfd5899 Intel run40113205873 retains hdiutil
 explicitly qualifies the existing minimal sealed-app tar archive; default local
 packaging still offers the separate DMG experiment. No DMG success is inferred
 and no installer/signing claim is added. Product installer/signing remainsTask18.
+
+Task2.4 native cfd5899/run40113205873: both real Linux sessions verify repaired
+modal disabled states and allsix baseline spoken stages, then fail the strict
+focused-selected End999 readback. Actual Orca logs announce0999 and its inspector
+changes, so the failure is narrower than missing keyboard selection. Pinned
+StandardListView delegates its absolute focus index into only mounted accessible
+children; after an offscreen seek that index exceeds the visible descendants.
+The spike now uses public FocusScope/ListView controls with uniform36px rows and
+a viewport-relative focus delegate, retaining selected identity, Home/End/arrows/
+PageUp/Down, native pointer action and visible focus. All underlying candidate
+versions/features remain unchanged. Strict GUI Clippy passes. Native focused
+readback remains required; the original failed traces stay failed.

@@ -27,11 +27,74 @@ component SearchField inherits LineEdit {
     changed has-focus => { if self.has-focus && !ProbeState.modal { ProbeState.focus-key = 30; } }
     changed restore-epoch => { if !ProbeState.modal && ProbeState.focus-key == 30 { self.focus(); } }
 }
-component StoryList inherits StandardListView {
+// Uniform-height virtualization keeps the delegated accessibility focus relative
+// to the mounted rows. StandardListView1.18.1 delegates the absolute model index,
+// which falls outside its accessible descendants after an offscreen seek.
+component StoryList inherits FocusScope {
+    in property <[StandardListViewItem]> model;
+    in-out property <int> current-item: 0;
+    callback current-item-changed(int);
+    private property <int> focused-row: 0;
+    private property <length> row-height: 36px;
+    accessible-role: list;
+    accessible-label: "Stories";
     accessible-enabled: self.enabled;
+    accessible-item-count: root.model.length;
+    accessible-delegate-focus: root.focused-row - floor(-view.content-y / root.row-height);
     private property <int> restore-epoch: ProbeState.restore-epoch;
-    changed has-focus => { if self.has-focus && !ProbeState.modal { ProbeState.focus-key = 31; } }
-    changed restore-epoch => { if !ProbeState.modal && ProbeState.focus-key == 31 { self.focus(); } }
+    changed restore-epoch => { if !ProbeState.modal && ProbeState.focus-key == 31 { root.focus(); } }
+    function move(index: int, select: bool) {
+        root.focused-row = max(0, min(root.model.length - 1, index));
+        if root.focused-row * root.row-height + view.content-y < 0px {
+            view.content-y = -root.focused-row * root.row-height;
+        } else if (root.focused-row + 1) * root.row-height + view.content-y > view.visible-height {
+            view.content-y = view.visible-height - (root.focused-row + 1) * root.row-height;
+        }
+        if select {
+            root.current-item = root.focused-row;
+            root.current-item-changed(root.current-item);
+        }
+    }
+        focus-changed-event => {
+            if self.has-focus {
+                ProbeState.focus-key = 31;
+                root.move(root.current-item, false);
+            }
+        }
+        key-pressed(event) => {
+            if event.text == Key.End { root.move(root.model.length - 1, !event.modifiers.control); }
+            else if event.text == Key.Home { root.move(0, !event.modifiers.control); }
+            else if event.text == Key.DownArrow { root.move(root.focused-row + 1, !event.modifiers.control); }
+            else if event.text == Key.UpArrow { root.move(root.focused-row - 1, !event.modifiers.control); }
+            else if event.text == Key.PageDown { root.move(root.focused-row + max(1, floor(view.visible-height / root.row-height)), !event.modifiers.control); }
+            else if event.text == Key.PageUp { root.move(root.focused-row - max(1, floor(view.visible-height / root.row-height)), !event.modifiers.control); }
+            else if event.text == Key.Space { root.move(root.focused-row, true); }
+            else { return reject; }
+            return accept;
+        }
+    view := ListView {
+        width: parent.width; height: parent.height;
+        accessible-role: none;
+    for item[index] in root.model: Rectangle {
+        height: root.row-height;
+        background: index == root.current-item ? Palette.selection-background : Palette.background;
+        accessible-role: list-item;
+        accessible-label: item.text;
+        accessible-enabled: root.enabled;
+        accessible-item-selectable: true;
+        accessible-item-selected: index == root.current-item;
+        accessible-action-default => { root.move(index, true); root.focus(); }
+        Text {
+            x: 8px; width: parent.width - 16px; vertical-alignment: center; height: parent.height;
+            text: item.text; overflow: elide;
+            color: index == root.current-item ? Palette.selection-foreground : Palette.foreground;
+        }
+        if root.has-focus && index == root.focused-row: Rectangle {
+            border-width: 2px; border-color: Palette.foreground; background: transparent;
+        }
+        TouchArea { enabled: root.enabled; clicked => { root.move(index, true); root.focus(); } }
+    }
+    }
 }
 
 export component Spike inherits Window {
