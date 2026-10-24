@@ -20,10 +20,14 @@ remain separate. Fresh native v4 execution is required.
 
 The Linux native early-Settings case now has an additional French/Latin input
 route in each private X11/Wayland desktop. It sends native keysyms
-`dead_circumflex`, `e`, `eacute`, space, `a`, `z` in one keymap session and
+`dead_circumflex`, `e`, `eacute`, space, `a`, `z` in one command sequence and
 requires exact `êé az` in the real Search callback. This is XTest/Wayland virtual
 keyboard input, not physical AZERTY hardware or an injected Unicode string.
+XTest may temporarily map missing keysyms in the private X11 server and restore
+that scratch mapping; Wayland uploads one virtual-keyboard keymap.
 Native Select All/Copy/Cut/Paste must empty and restore that exact UTF-8 text.
+Copy is proved first by physical deletion and Paste before a separate Cut/Paste
+round-trip; Cut cannot overwrite the clipboard and mask a broken Copy command.
 The report retains actual typed/cut/pasted states and screenshots; both new
 checks are mandatory for fresh native-session success. The same driver runs
 in the offline VM. Earlier sixteen-case reports retain their original scope.

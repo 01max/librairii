@@ -370,3 +370,15 @@ native keysym sequence must produce `êé az`, then Copy/Cut/Paste must restore 
 actual value; no Unicode text payload supplies composition. New required checks
 reject incomplete session summaries; all eight focused Linux recorder tests pass.
 The private desktop/VM routes and existing deadlines/retirement remain unchanged.
+
+Independent review found that immediate Copy/Cut could hide a broken Copy by
+overwriting its clipboard result. The separate correction observes Copy,
+physical deletion and exact Paste before the independent Cut/Paste sequence.
+Distinct actual states and an additional screenshot retain both witnesses;
+a regression rejects no-op Copy, Cut and Paste rather than trusting the final
+string alone. No app value setter or clipboard setter supplies these results.
+Command review also distinguishes XTest's temporary private scratch mappings
+from Wayland's single uploaded keymap; exact observed composition remains required.
+Independent scoped re-review approves the correction and all15 focused Linux/VM
+tests. The updated full102-test recorder suite passes locally, including the
+VM fixture's new input witnesses. Fresh native v4/v2 execution remains pending.

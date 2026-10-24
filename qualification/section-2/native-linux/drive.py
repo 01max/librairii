@@ -192,7 +192,8 @@ class Desktop:
             self.run(['wtype', '-s', '200', '-d', '30', text, '-s', '100'])
 
     def french_dead_keys(self):
-        # One native keymap session preserves compose state across ^ then e.
+        # Send one native command sequence across ^ then e; XTest may temporarily
+        # map missing keysyms in this private X11 server, then restore the map.
         # No composed Unicode string or field-value setter supplies the result.
         keys = ['dead_circumflex', 'e', 'eacute', 'space', 'a', 'z']
         if self.session == 'x11':
@@ -304,6 +305,35 @@ def state(path):
         return rows if len(rows) == 5 else None
     except FileNotFoundError:
         return None
+
+
+def observe_utf8_input(desktop, app_dir, output, report):
+    def query(expected):
+        return wait_for(lambda: (value := state(app_dir)) and value[0] == expected and value)
+
+    desktop.key('ctrl+a')
+    desktop.key('BackSpace')
+    query('')
+    desktop.french_dead_keys()
+    report['utf8_key_input_state'] = query('êé az')
+    report['checks']['native_french_dead_key_and_utf8_input'] = True
+    desktop.screenshot(output / 'french-utf8-input.png')
+    desktop.key('ctrl+a')
+    desktop.key('ctrl+c')
+    # Cut would overwrite the clipboard and could hide a broken Copy command.
+    # Prove Copy independently, using a physical deletion before the first Paste.
+    desktop.key('BackSpace')
+    report['utf8_copy_cleared_state'] = query('')
+    desktop.key('ctrl+v')
+    report['utf8_copy_pasted_state'] = query('êé az')
+    desktop.screenshot(output / 'french-utf8-copy-pasted.png')
+    desktop.key('ctrl+a')
+    desktop.key('ctrl+x')
+    report['utf8_cut_state'] = query('')
+    desktop.key('ctrl+v')
+    report['utf8_pasted_state'] = query('êé az')
+    report['checks']['native_utf8_clipboard_roundtrip'] = True
+    desktop.screenshot(output / 'french-utf8-pasted.png')
 
 
 def one_case(desktop, name, kind, expected):
@@ -426,23 +456,7 @@ def one_case(desktop, name, kind, expected):
         wait_for(lambda: (value := state(app_dir)) and value[:2] == ['0042', '1'])
         report['checks']['native_focus_restored_and_search_input'] = True
         if kind == 'early-settings':
-            desktop.key('ctrl+a')
-            desktop.key('BackSpace')
-            wait_for(lambda: (value := state(app_dir)) and value[0] == '')
-            desktop.french_dead_keys()
-            report['utf8_key_input_state'] = wait_for(lambda:
-                (value := state(app_dir)) and value[0] == 'êé az' and value)
-            report['checks']['native_french_dead_key_and_utf8_input'] = True
-            desktop.screenshot(output / 'french-utf8-input.png')
-            desktop.key('ctrl+a')
-            desktop.key('ctrl+c')
-            desktop.key('ctrl+x')
-            report['utf8_cut_state'] = wait_for(lambda: (value := state(app_dir)) and value[0] == '' and value)
-            desktop.key('ctrl+v')
-            report['utf8_pasted_state'] = wait_for(lambda:
-                (value := state(app_dir)) and value[0] == 'êé az' and value)
-            report['checks']['native_utf8_clipboard_roundtrip'] = True
-            desktop.screenshot(output / 'french-utf8-pasted.png')
+            observe_utf8_input(desktop, app_dir, output, report)
         (app_dir / 'finish').touch()
         report['returncode'] = app.wait(timeout=10)
         report['checks']['owned_shutdown'] = report['returncode'] == 0 and 'fixture_retired=true' in (app_dir / 'retired.txt').read_text()

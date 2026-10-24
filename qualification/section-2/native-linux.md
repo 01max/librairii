@@ -182,8 +182,11 @@ performance budgets remain unqualified. Fresh native CI validates this correctio
 
 The native early-Settings case additionally sends a real dead-circumflex/e
 sequence and Latin accented/space/letter keysyms through one XTest or Wayland
-virtual-keyboard keymap session. Search must contain exact `êé az`. Native
-Select All/Copy/Cut/Paste then must empty and restore that same value. No field
+virtual-keyboard command sequence. XTest may temporarily map missing keysyms in
+the private X11 server and restore its scratch map; Wayland uploads one keymap.
+Search must contain exact `êé az`. Native
+Select All/Copy, physical BackSpace, then Paste must restore that same value.
+A separate Select All/Cut/Paste round-trip must also empty and restore it. No field
 setter or composed UTF-8 key payload provides the result. Actual state snapshots
 and before/after clipboard screenshots are retained. Both checks are required
 in the new `native-keysym-French-Latin-UTF8-v2` session method, including offline
