@@ -22,10 +22,11 @@ REQUIRED = {'app_accessibility_tree', 'keyboard_search', 'keyboard_settings_and_
 SPEECH_STEPS = {'frame', 'search', 'settings', 'close', 'english', 'restored'}
 
 
-def baseline_passed(report, binary_sha):
+def baseline_passed(report, binary_sha, expected_session):
     return (report.get('baseline') == 'pass' and report.get('errors') == []
         and report.get('observation_method') == 'per-focus-utterance-and-audio-completion-v3'
         and report.get('session') in ('x11', 'wayland')
+        and report['session'] == expected_session
         and report.get('reader_preferences') == {'enable_action_keys': report['session'] != 'x11'}
         and report.get('binary_sha256') == binary_sha and report.get('application_returncode') == 0
         and REQUIRED <= report.get('baseline_checks', {}).keys()
@@ -93,7 +94,7 @@ def inspect(package, archive, output):
             try:
                 value = json.loads((evidence / 'accessibility-session.json').read_text())
                 report['sessions'][session] = value
-                report['checks'][session] = baseline_passed(value, manifest['binary_sha256'])
+                report['checks'][session] = baseline_passed(value, manifest['binary_sha256'], session)
                 if session == 'wayland':
                     value['application_protocol_checks'] = common.wayland.protocol_checks(
                         (evidence / 'application.log').read_text())

@@ -84,6 +84,11 @@ remains a retained failure/unqualified, not a passing result. This configured
 baseline cannot complete the broader2.4 gate. References:
 [Orca46.1 action-key preference](https://github.com/GNOME/orca/blob/ORCA_46_1/src/orca/settings.py),
 [key-event presentation and focus update](https://github.com/GNOME/orca/blob/ORCA_46_1/src/orca/scripts/default.py).
+Independent review additionally requires the host to bind each report to its
+requested X11/Wayland session. Swapped otherwise-valid reports fail the retained
+regression; the first version reproduced that false acceptance. The preferences
+idle callback publishes its complete witness through an owned temporary file
+and atomic rename, so path readiness cannot observe partial JSON.
 
 The first actual run at `5de32ce` / run40081026276 records two observer setup
 failures, retained in artifact12555123864 (ZIP SHA256
