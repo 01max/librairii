@@ -51,6 +51,7 @@ jobs:
           libxi-dev libxrandr-dev libxkbcommon-dev libxkbcommon-x11-dev libwayland-dev
           libegl1-mesa-dev libgl1-mesa-dev libdbus-1-dev xvfb xauth fonts-noto-cjk
           libvulkan1 mesa-vulkan-drivers mesa-utils time weston wayland-utils dbus
+          qemu-system-x86 qemu-utils cloud-image-utils genisoimage acl
       - name: Install the exact candidate compiler
         run: |
           mkdir -p target/task2-evidence
@@ -147,6 +148,15 @@ jobs:
           --package "$RUNNER_TEMP/task2-roundtrip/task2-$RUST_TARGET"
           --archive "target/task2-evidence/task2-$RUST_TARGET.tar.gz"
           --output target/task2-evidence/native-linux
+      - name: Install, reboot and reinstall the verified package in an offline native Linux VM
+        if: runner.os == 'Linux' && !cancelled() && steps.package.outcome == 'success'
+        run: |
+          test -c /dev/kvm
+          sudo setfacl -m "u:$(id -u):rw" /dev/kvm
+          python3 qualification/section-2/check-linux-vm.py \
+            --package "$RUNNER_TEMP/task2-roundtrip/task2-$RUST_TARGET" \
+            --archive "target/task2-evidence/task2-$RUST_TARGET.tar.gz" \
+            --output target/task2-evidence/linux-vm
       - name: Measure packaged startup markers, idle CPU, peak RSS and distribution size
         run: |
           package="$RUNNER_TEMP/task2-roundtrip/task2-$RUST_TARGET"
