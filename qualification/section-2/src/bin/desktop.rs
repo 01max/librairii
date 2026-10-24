@@ -6,6 +6,8 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::time::{Duration, Instant};
 
+#[path = "desktop/artwork_probe.rs"]
+mod artwork_probe;
 #[path = "desktop/native_menus.rs"]
 mod native_menus;
 #[path = "desktop/native_probe.rs"]
@@ -163,6 +165,9 @@ fn install_pickers(
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    if std::env::args().any(|arg| arg == "--artwork-probe") {
+        return artwork_probe::run();
+    }
     let start = Instant::now();
     let native_recorder = native_probe::Recorder::from_args()?;
     if std::env::args().any(|arg| arg == "--require-opengl") {

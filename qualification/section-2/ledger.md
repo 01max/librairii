@@ -445,3 +445,9 @@ Task2.13 native notice correction: fetched exact pinned Skia SPIR-V/GLSL.std.450
 header blobs22821ed862adcf952af7b7b0acf1cf41e761ff9a and943fd8650f850e93b68cddef386eef8c3e8cf1e7.
 Preserved their identical Khronos2014–2016 permission notice in the packaged
 native supplement, with source identities and verified SHA256 inventory.
+
+Task2.9 retained artwork implementation: embed byte-identical frozen24 distinct
+320×400 originals; materialize owned local files, warm once, record20 full
+24-read/decode/pixel-consumption batches, enforce unchanged50ms nearest-rankp95.
+Native packaged release execution added on allthree matching hosts. Local strict
+GUI Clippy passes; native release measurements pending.

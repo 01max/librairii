@@ -119,6 +119,13 @@ jobs:
           tar -xzf "target/task2-evidence/task2-$RUST_TARGET.tar.gz" -C "$roundtrip"
           python3 qualification/section-2/observe.py --package "$roundtrip/task2-$RUST_TARGET" \
             --operator ci-archive-byte-verification --output target/task2-evidence/archive-verification.json
+      - name: Measure retained local artwork reads and full PNG decoding
+        run: |
+          binary="$RUNNER_TEMP/task2-roundtrip/task2-$RUST_TARGET/qualification-desktop"
+          if [[ "$RUNNER_OS" == macOS ]]; then
+            binary="$RUNNER_TEMP/task2-roundtrip/task2-$RUST_TARGET/LibrairiiQualification.app/Contents/MacOS/qualification-desktop"
+          fi
+          "$binary" --artwork-probe > target/task2-evidence/artwork-performance.log
       - name: Inspect packaged native runtime requirements
         run: >-
           python3 qualification/section-2/inspect-runtime.py

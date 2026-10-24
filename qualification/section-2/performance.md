@@ -168,3 +168,15 @@ For each renderer/target, warm once and capture enough identified samples, nativ
 input timings, startup/idle/RSS and final package sizes during actual thumbnail
 load and cancellable background work. Separate scheduler pauses from product work.
 Set additional budgets from those measurements before full feature UI rollout.
+
+## Retained artwork workload continuation
+
+`--artwork-probe` materializes the exact24 Task1 procedural320×400 PNGs in an
+owned temporary directory before measurement. One complete batch warms the
+local files/decoder, then20 measured batches each read all24 files and fully
+decode/consume every pixel. Nearest-rank p95 (19th sorted sample) must be≤50ms;
+all samples and the accumulated pixel witness are retained. The actual packaged
+release executable runs this on each native target. Fixture creation, encoding
+and cleanup are outside the measured interval; fixture retirement is mandatory.
+This is the retained load/full-decode budget, separate from synthetic48×64
+thumbnail-queue and OS-input observations. Fresh native measurements are pending.
