@@ -400,7 +400,12 @@ def one_case(binary, helper, root, name, kind, expected):
                     if destination.resolve(strict=True).is_relative_to(fixture):
                         raise ValueError('rejection fixture is inside the accepted root')
                     report['outside_folder'] = str(destination)
-                observer.go_folder(destination, root_node)
+                if kind != 'folder' or expected != 'selected':
+                    # RFD opens the folder panel at this exact fixture already.
+                    # The actual canonical callback remains the location proof;
+                    # a redundant Go-to-current-folder transition can leave the
+                    # otherwise enabled native Open action indefinitely disabled.
+                    observer.go_folder(destination, root_node)
                 if kind == 'files':
                     observer.rows(fixture, root_node, name == 'files-multiple')
                 snapshot = observer.snapshot('selection')
