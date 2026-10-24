@@ -242,5 +242,13 @@
       },
       "normalized_raw_report_sha256": "b5588ae9a9400c619703d6f8eecdb8ceae5206ba83eb13f27ad838ba06437f92"
     }
+  },
+  "final_qualification": {
+    "date": "2026-10-24",
+    "task_2_9_complete": true,
+    "implementation_head": "d145d604af917618ac6127bba8687806c5ed032a",
+    "native_workflow": "https://github.com/01max/librairii/actions/runs/40123986713",
+    "report": "completion-evidence/final-matrix.json",
+    "scope": "Native keyboard/model acknowledgement and exact artwork fullread/decode wall-p95 plus additional measured ceilings. Earlier flags/runs remain attributed to their historical source; no physical first-presentation claim."
   }
 }

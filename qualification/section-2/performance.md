@@ -1,5 +1,16 @@
 # Automated resource measurement continuation (2.9, 2026-10-23)
 
+Task2.9 is complete. All three native targets pass the64-event input/20-trial
+expansion-navigation and100-batch24-artwork gates, together with all warmup/measured
+resource ceilings. Exact samples and source/package identities are in
+completion-evidence/final-matrix.json. Input≤100ms p95, navigation≤3000ms p95 and
+24 local320×400 full PNG reads/decodes≤50ms p95 remain unchanged. Additional
+ceilings are startup marker≤1000ms, idle≤5% ofone core, peakRSS≤512MiB and
+archive≤32MiB. Startup markers are not first physical presentation; three resource
+runs are reported as min/median/max, not a fabricated p95. See [selection-gate.md](selection-gate.md).
+
+Earlier observations below retain their dates, source commits and historical scope.
+
 `measure-resources.py` measures the verified archive-round-trip executable on
 its matching native host. CI requests normal `winit-skia` and explicit
 `winit-skia-software`; actual selected surfaces are recorded rather than inferred
