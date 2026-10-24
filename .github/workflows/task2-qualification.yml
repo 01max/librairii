@@ -162,6 +162,15 @@ jobs:
         run: |
           xcrun swiftc qualification/section-2/macos-automation-access.swift -o "$RUNNER_TEMP/task2-macos-access"
           "$RUNNER_TEMP/task2-macos-access" > target/task2-evidence/macos-automation-access.json
+      - name: Observe actual native macOS sheets, menus, clipboard and folder reveal
+        if: runner.os == 'macOS' && !cancelled() && steps.package.outcome == 'success'
+        run: |
+          xcrun swiftc qualification/section-2/native-macos/observer.swift -o "$RUNNER_TEMP/task2-native-macos"
+          python3 qualification/section-2/check-native-macos.py \
+            --package "$RUNNER_TEMP/task2-roundtrip/task2-$RUST_TARGET" \
+            --archive "target/task2-evidence/task2-$RUST_TARGET.tar.gz" \
+            --helper "$RUNNER_TEMP/task2-native-macos" \
+            --output target/task2-evidence/native-macos
       - name: Measure packaged startup markers, idle CPU, peak RSS and distribution size
         run: |
           package="$RUNNER_TEMP/task2-roundtrip/task2-$RUST_TARGET"
