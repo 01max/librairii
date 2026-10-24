@@ -163,6 +163,13 @@ jobs:
         run: |
           xcrun swiftc qualification/section-2/macos-automation-access.swift -o "$RUNNER_TEMP/task2-macos-access"
           "$RUNNER_TEMP/task2-macos-access" > target/task2-evidence/macos-automation-access.json
+      - name: Record actual Orca speech and keyboard accessibility in private Linux desktops
+        if: runner.os == 'Linux' && !cancelled() && steps.package.outcome == 'success'
+        run: >-
+          python3 qualification/section-2/check-accessibility-linux.py
+          --package "$RUNNER_TEMP/task2-roundtrip/task2-$RUST_TARGET"
+          --archive "target/task2-evidence/task2-$RUST_TARGET.tar.gz"
+          --output target/task2-evidence/accessibility-linux
       - name: Observe actual native macOS sheets, menus, clipboard and folder reveal
         if: runner.os == 'macOS' && !cancelled() && steps.package.outcome == 'success'
         run: |
