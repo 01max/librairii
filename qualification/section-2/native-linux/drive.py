@@ -413,32 +413,39 @@ def observe_editing_and_performance(desktop, app_dir, output, report):
     assert geometry()['working'], 'background load ended before input measurement'
     assert sorted(samples)[60] <= 100
     report['checks']['native_input_under_load_budget'] = True
+    def wait_fast(predicate):
+        deadline = time.monotonic() + 1
+        while time.monotonic() < deadline:
+            if value := predicate():
+                return value
+            time.sleep(0.001)
+        raise TimeoutError('native performance state acknowledgment deadline')
     def focus(target, reverse=False):
         for _ in range(24):
             previous = geometry()['focus_key']
             if previous == target:
                 return
             fast_key('shift+Tab' if reverse else 'Tab')
-            wait_for(lambda: geometry()['focus_key'] != previous)
+            wait_fast(lambda: geometry()['focus_key'] != previous)
         raise AssertionError('bounded native keyboard focus not reached')
     samples, endpoints = [], []
     for index in range(21):
         assert geometry()['focus_key'] == 30
         fast_key('x')
-        wait_for(lambda: geometry()['rows'] == 0)
+        wait_fast(lambda: geometry()['rows'] == 0)
         start = time.monotonic()
         fast_key('BackSpace')
-        wait_for(lambda: geometry()['rows'] == 1000)
+        wait_fast(lambda: geometry()['rows'] == 1000)
         focus(31)
         fast_key('End')
-        selected = wait_for(lambda: (g := geometry()) and g['rows'] == 1000
+        selected = wait_fast(lambda: (g := geometry()) and g['rows'] == 1000
             and g['selected_id'] == 999 and g['selected_row'] == 999 and g)
         elapsed = (time.monotonic() - start) * 1000
         if index > 0:
             samples.append(elapsed)
             endpoints.append(selected)
         fast_key('Home')
-        wait_for(lambda: geometry()['selected_id'] == 0)
+        wait_fast(lambda: geometry()['selected_id'] == 0)
         focus(30, reverse=True)
     report['thousand_navigation'] = {'samples_ms': samples, 'p95_ms': sorted(samples)[18],
         'endpoints': endpoints, 'method': 'native Delete expands0→1000, Tab/End selects999; one warmup plus20 samples'}

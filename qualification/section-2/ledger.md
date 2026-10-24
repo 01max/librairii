@@ -491,3 +491,8 @@ filter/expansion work. The explicit native-load workload lasts20s so all samples
 can observe active work; ordinary/Orca workloads and numeric gates are unchanged.
 Optional Japanese starts only after verified native return to Search; the
 undefined Cmd+F assumption is removed. Fresh native execution required.
+
+The Linux performance-only state reader polls at1ms with a strict1s per-state
+deadline, matching the Mac observer and retaining total elapsed time. This
+avoids injecting20s of50ms observer sleeps into the20-trial workload; no event
+is reposted and no sample is excluded. Generic native-case deadlines remain.
