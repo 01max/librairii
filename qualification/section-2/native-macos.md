@@ -114,3 +114,14 @@ to a fresh, empty, owned evidence directory outside the accepted fixture root.
 The actual picker must still return that exact canonical directory and the app
 must reject it. No timeout or assertion is relaxed. ARM artifact12555145869 ZIP
 SHA256 is `32f47a1cc989b6f6e7bdd2b9bc2eb98efaba87995d75ede2ee921f6e4d520ef4`.
+
+At `5de32ce` / run40081026276 ARM completes all seven picker/early-Settings
+cases, including exact outside-root rejection and Unicode native clipboard/
+Edit-menu behavior. Reveal returns request acceptance, but the observer never
+finds a matching Finder window. Artifact12555470774 ZIP SHA256 is
+`eb8795f262023510b819fda44aab50f738a319b71f9b5640e5f30678b871a804`.
+The observer now checks both public AXDocument and AXURL local-file attributes
+against the exact fixture, rather than AXDocument alone, and retains the count
+of Finder windows plus root metadata only for the exact owned fixture title if
+URL matching fails. Title alone cannot pass; no unrelated folder is traversed
+or captured. The cause and full reveal result still require native execution.

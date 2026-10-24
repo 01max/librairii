@@ -15,6 +15,23 @@ spec.loader.exec_module(macos)
 
 
 class NativeMacOS(unittest.TestCase):
+    def test_finder_requires_an_actual_local_file_url_for_the_exact_owned_fixture(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            fixture = pathlib.Path(temporary).resolve() / 'Été 日本語'
+            fixture.mkdir()
+            window = {'role': 'AXWindow', 'title': fixture.name, 'document': '', 'url': fixture.as_uri()}
+            self.assertEqual(macos.finder_fixture_window({'nodes': [window]}, fixture), window)
+            self.assertEqual(macos.finder_fixture_window({'nodes': [{**window,
+                'document': fixture.as_uri(), 'url': ''}]}, fixture)['document'], fixture.as_uri())
+            for document in ((fixture / 'missing-old-document').as_uri(), 'file://[invalid',
+                    fixture.as_uri() + '%00'):
+                alternate = {**window, 'document': document}
+                self.assertEqual(macos.finder_fixture_window({'nodes': [alternate]}, fixture), alternate)
+            for change in ({'url': ''}, {'url': fixture.parent.as_uri()}, {'role': 'AXTextField'},
+                    {'url': 'https://example.invalid' + str(fixture)},
+                    {'url': fixture.as_uri().replace('file:///', 'file://other-host/')}):
+                self.assertIsNone(macos.finder_fixture_window({'nodes': [{**window, **change}]}, fixture))
+
     def test_callback_identity_resolves_existing_aliases_without_accepting_other_paths(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = pathlib.Path(temporary)

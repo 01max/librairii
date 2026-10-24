@@ -205,14 +205,23 @@ do {
         var onlyWindow: Int?
         if let document = request["document"] as? String {
             let target = URL(fileURLWithPath: document).resolvingSymlinksInPath().standardizedFileURL
-            let matches = elements(app, kAXWindowsAttribute).enumerated().filter { _, window in
-                let value = text(window, kAXDocumentAttribute)
-                guard let url = URL(string: value), url.isFileURL else { return false }
-                return url.resolvingSymlinksInPath().standardizedFileURL == target
+            let nativeWindows = elements(app, kAXWindowsAttribute)
+            let matches = nativeWindows.enumerated().filter { _, window in
+                [kAXDocumentAttribute, kAXURLAttribute].contains { attribute in
+                    guard let url = URL(string: text(window, attribute)), url.isFileURL else { return false }
+                    return url.resolvingSymlinksInPath().standardizedFileURL == target
+                }
             }
             guard matches.count <= 1 else { throw Failure.invalid("owned document window not unique") }
             guard let (index, window) = matches.first else {
-                try output(["pid": pid, "nodes": [], "windows": []] as [String: Any])
+                // Only root metadata with the exact owned fixture title may be
+                // retained when URL matching fails; no other folder is walked.
+                let candidates = nativeWindows.filter {
+                    text($0, kAXTitleAttribute) == target.lastPathComponent
+                }.map(describe)
+                try output(["pid": pid, "nodes": [], "windows": [],
+                    "finder_window_count": nativeWindows.count,
+                    "owned_title_candidates": candidates] as [String: Any])
                 exit(0)
             }
             onlyWindow = index

@@ -81,6 +81,25 @@ def picker_root(snapshot):
         and node.get('modal') is not False), None)
 
 
+def finder_fixture_window(snapshot, fixture):
+    for node in snapshot['nodes']:
+        if node['role'] != 'AXWindow':
+            continue
+        for value in (node.get('document'), node.get('url')):
+            if not value:
+                continue
+            try:
+                url = urllib.parse.urlparse(value)
+                if url.scheme != 'file' or url.netloc not in ('', 'localhost'):
+                    continue
+                candidate = pathlib.Path(urllib.parse.unquote(url.path)).resolve(strict=True)
+            except (OSError, ValueError, RuntimeError):
+                continue
+            if candidate == fixture:
+                return node
+    return None
+
+
 def go_folder_fields(snapshot, root):
     sheets = [n for n in snapshot['nodes'] if same_root(n, root) and n['role'] == 'AXSheet'
               and n.get('identifier') == 'GoToWindow']
@@ -315,11 +334,9 @@ def one_case(binary, helper, root, name, kind, expected):
                 for pid in observer.call('finder')['pids']:
                     finder = Observer(helper, output, pid)
                     snapshot = finder.snapshot(document=fixture)
-                    for node in snapshot['nodes']:
-                        url = node.get('document') or node.get('url')
-                        if node['role'] == 'AXWindow' and url and pathlib.Path(urllib.parse.unquote(
-                                urllib.parse.urlparse(url).path)).resolve() == fixture:
-                            return finder, snapshot, node
+                    node = finder_fixture_window(snapshot, fixture)
+                    if node is not None:
+                        return finder, snapshot, node
                 return None
             finder, snapshot, window = observer.wait(finder_window)
             owned_finder = finder
