@@ -525,3 +525,13 @@ are not first-pixel/human latency claims. Every measured process and warmup is
 enforced. Existing100/3000/50ms native input/navigation/artwork budgets stay
 unchanged and require their own actual reports. New rejection tests include
 missing/nonfinite/over-limit observations. Fresh three-target execution pending.
+
+Native b1bef10/run40114747187 Linux: native input/navigation passes both private
+desktops and offline VM routes; both actual Orca sessions pass all16 checks/
+14 speech stages, focused-selected999, preservedstory1, paging/checked/Apply,
+Cancel/progress/completion/error/retry and normal shutdown. Host aggregate fails
+its4MiB per-file bound on Wayland accessibility-session.json=4467635bytes because
+it duplicates the complete Orca transcript. Separate correction retains the raw
+log intact and records exact byte offsets/SHA256 instead of duplicating it in
+JSON; every speech assertion remains. Original host failure stays failed.
+Artifact12568292229 ZIP SHA256c1c902a3e7aa02c32e18b3e0ee3eb46136776541a6ca7db773a27c60cd9b847d.

@@ -464,7 +464,10 @@ def record(desktop, binary, report):
     report['baseline_checks']['work_completion_error_retry'] = True
     # Give real speech delivery time to finish before stopping its sink recorder.
     time.sleep(2)
-    report['orca_application_output'] = debug.read_bytes()[before:].decode('utf-8', errors='replace')
+    application_bytes = debug.read_bytes()[before:]
+    application_output = application_bytes.decode('utf-8', errors='replace')
+    report['orca_application_output'] = {'file': 'orca-debug.txt', 'start_offset': before,
+        'end_offset': before + len(application_bytes), 'sha256': hashlib.sha256(application_bytes).hexdigest()}
     report['baseline_checks'].update({'app_accessibility_tree': all(not s['observation_errors']
             for s in report['snapshots'].values()), 'keyboard_search': True,
         'keyboard_settings_and_focus_return': True,
@@ -472,7 +475,7 @@ def record(desktop, binary, report):
         'orca_settings_labels_completed': {'settings', 'close', 'english', 'restored'} <= report['speech_steps'].keys(),
         'orca_spoke_search_or_settings': any('SPEECH OUTPUT:' in line and
             any(word in line.lower() for word in ('search', 'settings', 'close'))
-            for line in report['orca_application_output'].splitlines()),
+            for line in application_output.splitlines()),
         'speech_services_alive': orca.poll() is None and dispatcher.poll() is None and audio.poll() is None})
     key('ctrl+q')
     report['application_returncode'] = app.wait(timeout=10)
