@@ -21,7 +21,7 @@ spec.loader.exec_module(native)
 
 def denied(result):
     return (type(result.get('returncode')) is int and result['returncode'] > 0
-        and result.get('errors') == [] and result.get('timed_out') is False
+        and result.get('errors') == [] and result.get('timed_out', False) is False
         and 'Operation not permitted' in result.get('output', ''))
 
 
@@ -86,7 +86,7 @@ def inspect(package, archive, helper, output):
             report['checks']['developer_execution_denied'] = denied(controls['developer-exec'])
             with socket.socket() as listener:
                 listener.bind(('127.0.0.1', 0)); listener.listen(2)
-                connect = ['/usr/bin/nc', '-z', '-G', '1', '127.0.0.1', str(listener.getsockname()[1])]
+                connect = ['/usr/bin/nc', '-v', '-z', '-G', '1', '127.0.0.1', str(listener.getsockname()[1])]
                 controls['network-positive'] = native.common.wayland.command(connect, env, output / 'network-positive.log', timeout=5)
                 controls['network-denied'] = native.common.wayland.command(parameters + connect, env, output / 'network-denied.log', timeout=5)
             report['checks']['actual_network_denied'] = (native.common.wayland.passed(controls['network-positive'])
