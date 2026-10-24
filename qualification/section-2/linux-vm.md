@@ -44,8 +44,14 @@ remove its disks fail the result. Interrupt handling also retires the VM. Raw
 serial output, QMP hardware/offline state, command results, before/after guest
 records, screenshots and hashes remain in `linux-vm/` in the CI artifact.
 
-Native execution is pending the first CI run; local unit tests are recorder
-regressions and do not qualify a VM or target. The prior container results in
+Native execution passes the limited archive lifecycle route at `da29810`,
+[run40076893068](https://github.com/01max/librairii/actions/runs/40076893068).
+[Recorded evidence](linux-vm-observations.json) binds the actual source/package,
+all15 VM controls and all16 native cases. Independent review verifies the
+artifact/archive,711 package files,712 regular archive members,228 runtime hashes,
+raw parent/callback traces, actual reboot/offline facts, all four retired desktop
+cgroups, removal/reinstallation, separate canaries and VM/disk cleanup. Local
+unit tests are recorder regressions and do not themselves qualify a host. Prior container results in
 `clean-linux.md` and `native-linux.md` remain separately attributed.
 
 Independent review corrected the reboot command's
@@ -91,3 +97,10 @@ absent). The package is now declared with the other observer tools. Reinstall
 was not reached, and no complete VM lifecycle pass is inferred. Artifact12553875558
 ZIP SHA256 `d8cab4e64475b8c74703121baf5e656ff35e5a6acd571e80e661d15d3f79a001`
 retains that failure and the successful native/protocol sub-observations.
+
+The successful route's first normal renderer image is a560×400 compact frame
+with French controls but no visible CJK/story area. The normal filtered frame
+and both CPU frames visibly show French/CJK. All four PNG hashes and both actual
+Wayland toplevel buffer traces are independently verified; do not treat the
+historical `french_cjk_snapshots=2` diagnostic as proof that both normal images
+contain CJK. The current diagnostic requests visual glyph review explicitly.
