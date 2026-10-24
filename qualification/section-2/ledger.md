@@ -311,3 +311,9 @@ inspecting its children. This addresses lazy AppKit menu accessibility lookup;
 it never retries Select All. Item metadata and the open-before-lookup fact are
 retained, while absent/ambiguous submenus/items still fail. Existing adapter
 menu lookups preserve their behavior. Native execution remains required.
+
+Independent review correction: the new explicit-submenu route now finishes its
+bounded read-only item traversal and requires one exact matching item before
+the action. Missing/duplicate items or incomplete traversal fail before the
+single item press, making the documented ambiguity guarantee concrete. The
+legacy no-submenu route retains its original first-match behavior.

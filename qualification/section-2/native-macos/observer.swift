@@ -231,26 +231,38 @@ func menu(_ app: AXUIElement, title: String, submenu: String? = nil) throws -> [
             Thread.sleep(forTimeInterval: 0.1)
         }
         var queue = elements(top, kAXChildrenAttribute)
+        var items: [AXUIElement] = []
+        var truncated = queue.count > 1000
         var next = 0
         while next < queue.count && next < 300 {
             let element = queue[next]
             next += 1
             if text(element, kAXTitleAttribute) == title {
-                let before = describe(element)
-                if submenu == nil {
-                    guard AXUIElementPerformAction(top, kAXPressAction as CFString) == .success else {
-                        throw Failure.invalid("cannot open native menu")
-                    }
-                    Thread.sleep(forTimeInterval: 0.1)
-                }
-                let after = describe(element)
-                guard AXUIElementPerformAction(element, kAXPressAction as CFString) == .success else {
-                    throw Failure.invalid("cannot activate native menu item")
-                }
-                return ["performed": true, "menu_item_before": before, "menu_item_after_open": after,
-                    "submenu_opened_before_lookup": submenu != nil]
+                items.append(element)
+                if submenu == nil { break }
             }
-            queue.append(contentsOf: elements(element, kAXChildrenAttribute).prefix(max(0, 1000 - queue.count)))
+            let children = elements(element, kAXChildrenAttribute)
+            let capacity = max(0, 1000 - queue.count)
+            truncated = truncated || children.count > capacity
+            queue.append(contentsOf: children.prefix(capacity))
+        }
+        if submenu != nil && (truncated || next < queue.count || items.count != 1) {
+            throw Failure.invalid("requested native menu item is missing, ambiguous or traversal incomplete")
+        }
+        if let element = items.first {
+            let before = describe(element)
+            if submenu == nil {
+                guard AXUIElementPerformAction(top, kAXPressAction as CFString) == .success else {
+                    throw Failure.invalid("cannot open native menu")
+                }
+                Thread.sleep(forTimeInterval: 0.1)
+            }
+            let after = describe(element)
+            guard AXUIElementPerformAction(element, kAXPressAction as CFString) == .success else {
+                throw Failure.invalid("cannot activate native menu item")
+            }
+            return ["performed": true, "menu_item_before": before, "menu_item_after_open": after,
+                "submenu_opened_before_lookup": submenu != nil]
         }
     }
     throw Failure.invalid("native menu item missing: " + title)
