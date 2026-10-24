@@ -8,6 +8,7 @@ import os
 import pathlib
 import re
 import shutil
+import signal
 import subprocess
 import threading
 import time
@@ -117,7 +118,11 @@ def record(desktop, binary, report):
         '--format=s16le', '--rate=16000', '--channels=1', '--raw'])
     prefs = runtime / 'orca'
     prefs.mkdir()
+    trace_ready = root / 'orca-stack-handler-ready.txt'
     (prefs / 'orca-customizations.py').write_text('from orca import debug, settings\n'
+        'import faulthandler, pathlib, signal, sys\n'
+        'faulthandler.register(signal.SIGUSR1, file=sys.stderr, all_threads=True)\n'
+        'pathlib.Path(' + repr(str(trace_ready)) + ').write_text("ready\\n")\n'
         'debug.debugLevel = debug.LEVEL_INFO\nsettings.enableMouseReview = False\n'
         'settings.speakProgressBarUpdates = True\nsettings.progressBarUpdateInterval = 1\n')
     orca_argv = ['orca', '--user-prefs', str(prefs), '--enable=speech', '--disable=braille',
@@ -145,8 +150,29 @@ def record(desktop, binary, report):
     def speech_marker():
         return {'debug_offset': debug.stat().st_size, 'audio_offset': pcm.stat().st_size}
     def announced(name, text, marker):
-        native.wait_for(lambda: utterance_observed(
-            debug.read_bytes()[marker['debug_offset']:].decode('utf-8', errors='replace'), text))
+        try:
+            native.wait_for(lambda: utterance_observed(
+                debug.read_bytes()[marker['debug_offset']:].decode('utf-8', errors='replace'), text))
+        except Exception:
+            # Failure-only diagnostics in this owned reader. They never replace
+            # an utterance, change focus or extend the announcement deadline.
+            diagnostic = {'stage': name, 'expected_utterance': text,
+                          'handler_ready': trace_ready.is_file(), 'stack_observed': False}
+            report['announcement_failure'] = diagnostic
+            try:
+                if diagnostic['handler_ready'] and orca.poll() is None:
+                    log = root / 'orca.log'
+                    offset = log.stat().st_size if log.exists() else 0
+                    orca.send_signal(signal.SIGUSR1)
+                    deadline = time.monotonic() + 1
+                    while time.monotonic() < deadline:
+                        if log.exists() and 'Current thread' in log.read_text(errors='replace')[offset:]:
+                            diagnostic['stack_observed'] = True
+                            break
+                        time.sleep(0.01)
+            except Exception as error:
+                diagnostic['diagnostic_error'] = type(error).__name__ + ': ' + str(error)
+            raise
         def completed():
             data = pcm.read_bytes()[marker['audio_offset']:]
             return (len(data) >= 16000 and audio_facts(data)['nonzero_samples'] > 1600

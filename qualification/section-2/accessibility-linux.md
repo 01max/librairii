@@ -42,6 +42,19 @@ before navigating onward. Raw byte offsets and per-stage audio facts are retaine
 The existing deadlines and required scopes remain unchanged. This stronger method
 is pending actual execution and does not retroactively accept earlier recordings.
 
+The stronger method's first execution at `6da2838` / run40093774916 fails both
+Search-announcement waits. Each session records its completed frame utterance
+and audio, then the native Tab genuinely focuses the named Search entry. Neither
+records the required Search utterance before the unchanged deadline. X11 logs
+Orca's key-echo focus update before the actual focus event; Wayland reaches speech
+generation but emits no Search speech record. This does not yet distinguish
+event ordering from an accessibility-query stall. Artifact12559919058 ZIP SHA256
+is `b2a7750a509674735de19fefbed0442a67731697e7e3af61ac510a0530142f73`.
+The next diagnostic method registers a stack handler only in the private owned
+Orca instance and requests a bounded failure-only stack when an utterance wait
+fails. It performs no accessibility action, changes no focus and cannot qualify
+missing speech. No failed result is retried or upgraded.
+
 The first actual run at `5de32ce` / run40081026276 records two observer setup
 failures, retained in artifact12555123864 (ZIP SHA256
 `8c130cd4ddb3ecd4c92bc7d9ad88053653aff35b85b23302c475f058de570bc9`).
