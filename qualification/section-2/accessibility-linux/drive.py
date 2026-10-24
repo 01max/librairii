@@ -120,9 +120,13 @@ def record(desktop, binary, report):
     prefs.mkdir()
     trace_ready = root / 'orca-stack-handler-ready.txt'
     (prefs / 'orca-customizations.py').write_text('from orca import debug, settings\n'
-        'import faulthandler, pathlib, signal, sys\n'
+        'import faulthandler, json, pathlib, signal, sys\n'
         'faulthandler.register(signal.SIGUSR1, file=sys.stderr, all_threads=True)\n'
         'pathlib.Path(' + repr(str(trace_ready)) + ').write_text("ready\\n")\n'
+        'assert debug.debugFile is not None\n'
+        'debug.debugFile.reconfigure(line_buffering=True, write_through=True)\n'
+        'pathlib.Path(' + repr(str(root / 'orca-log-mode.json')) + ').write_text(json.dumps('
+        '{"line_buffering": debug.debugFile.line_buffering, "write_through": debug.debugFile.write_through}))\n'
         'debug.debugLevel = debug.LEVEL_INFO\nsettings.enableMouseReview = False\n'
         'settings.speakProgressBarUpdates = True\nsettings.progressBarUpdateInterval = 1\n')
     orca_argv = ['orca', '--user-prefs', str(prefs), '--enable=speech', '--disable=braille',
@@ -138,6 +142,8 @@ def record(desktop, binary, report):
     orca = desktop.start('orca', orca_argv)
     debug = root / 'orca-debug.txt'
     native.wait_for(lambda: debug.exists() and 'Starting Atspi main event loop' in debug.read_text())
+    report['debug_log_configuration'] = json.loads((root / 'orca-log-mode.json').read_text())
+    assert report['debug_log_configuration'] == {'line_buffering': True, 'write_through': True}
     pcm = root / 'speech.pcm'
     def startup_speech_finished():
         data = pcm.read_bytes() if pcm.exists() else b''

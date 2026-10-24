@@ -55,6 +55,20 @@ Orca instance and requests a bounded failure-only stack when an utterance wait
 fails. It performs no accessibility action, changes no focus and cannot qualify
 missing speech. No failed result is retried or upgraded.
 
+The diagnostic run at `30614b8` / run40095296249 captures both owned reader
+stacks during the failed Search wait. Both main threads are in Orca's event-loop
+entry point, with no speech-generation/text-query Python frames. Artifact12560638054
+ZIP SHA256 is `9509effaebbaea058483c867cb1e20dc2a63cd131a4f9f097f728d7db7a64632`.
+The inspected [Orca46.1 debug writer](https://github.com/GNOME/orca/blob/ORCA_46_1/src/orca/debug.py)
+uses buffered `writelines` without a per-record flush. A local open-file
+reproduction retains an entire completed speech line invisibly until flushing;
+line buffering makes the next complete line immediately visible. The private
+reader configuration now uses standard text-stream line buffering/write-through,
+records and asserts the actual modes, and keeps all utterance/audio/deadline
+requirements. This corrects transcript visibility; it does not force an
+announcement or resolve the separate X11 key-echo ordering question. Fresh
+native execution must establish the effect.
+
 The first actual run at `5de32ce` / run40081026276 records two observer setup
 failures, retained in artifact12555123864 (ZIP SHA256
 `8c130cd4ddb3ecd4c92bc7d9ad88053653aff35b85b23302c475f058de570bc9`).
