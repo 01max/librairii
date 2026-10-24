@@ -79,3 +79,17 @@ callbacks, parenting, unforced focus and every required case remain mandatory;
 neither the12-second command bound nor45-second app bound is extended.
 Artifact12553653602 ZIP SHA256 is
 `fba4a11aab2bc8a9d55e912ec4acfb274cc21e7377ccb17bd46084efe54eac12`.
+
+At `4e63cc0` / run40078900422, ARM proves parenting, both exact selected paths,
+unforced focus restoration, Command-comma and the native Settings menu. Search
+remains unchanged after the observer posts Unicode payloads on a synthetic A
+key. This delivery method is unqualified; the result is retained in
+artifact12554487269, ZIP SHA256
+`328344a40e11b25e027153834b040e0062fb7c6d8d1f485628658fce0bce25cc`.
+The numeric Search check now posts actual native number-key down/up events with
+explicitly empty modifiers and records the current public keyboard-source ID.
+Exact `0042`/one-row observation remains required. Unicode paste/cut/Edit-menu
+checks still use the real system clipboard; no IME/dead-key result is inferred.
+Intel independently passes the same five checks and retains the same unchanged
+Search state in artifact12553963227, ZIP SHA256
+`005862a6314b15040c85d0b5ff2158f1a4414cf01983846f357994c4dc2b7c9b`.

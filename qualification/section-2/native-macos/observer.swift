@@ -1,10 +1,17 @@
 // External CI observer using public macOS accessibility and event APIs only.
 import AppKit
 import ApplicationServices
+import Carbon
 import CoreGraphics
 import Foundation
 
 enum Failure: Error { case invalid(String) }
+
+func inputSource() -> String {
+    let source = TISCopyCurrentKeyboardInputSource().takeRetainedValue()
+    guard let value = TISGetInputSourceProperty(source, kTISPropertyInputSourceID) else { return "unavailable" }
+    return Unmanaged<CFString>.fromOpaque(value).takeUnretainedValue() as String
+}
 
 func attribute(_ element: AXUIElement, _ name: String) -> CFTypeRef? {
     var value: CFTypeRef?
@@ -187,7 +194,7 @@ do {
     let operation = CommandLine.arguments[1]
     let app = AXUIElementCreateApplication(pid)
     AXUIElementSetMessagingTimeout(app, 1)
-    if ["key", "text", "menu"].contains(operation), NSWorkspace.shared.frontmostApplication?.processIdentifier != pid {
+    if ["key", "digits", "menu"].contains(operation), NSWorkspace.shared.frontmostApplication?.processIdentifier != pid {
         throw Failure.invalid("target app is not frontmost; native input refused")
     }
     switch operation {
@@ -214,6 +221,7 @@ do {
             guard windows.count <= 1 else { throw Failure.invalid("document capture window not unique") }
         }
         try output(["pid": pid, "frontmost_pid": NSWorkspace.shared.frontmostApplication?.processIdentifier ?? -1,
+                    "keyboard_input_source": inputSource(),
                     "nodes": operation == "status" ? [] : tree(app, onlyWindow: onlyWindow,
                         sheetsOnly: request["document"] == nil,
                         rootsOnly: request["summary"] as? Bool ?? false), "windows": windows])
@@ -225,17 +233,13 @@ do {
     case "key":
         try key(request["key"] as? String ?? "")
         try output(["posted": true])
-    case "text":
-        let text = request["text"] as? String ?? ""
-        for character in text {
-            var units = Array(String(character).utf16)
-            guard let event = CGEvent(keyboardEventSource: nil, virtualKey: 0, keyDown: true) else {
-                throw Failure.invalid("cannot create text event")
-            }
-            event.keyboardSetUnicodeString(stringLength: units.count, unicodeString: &units)
-            event.post(tap: .cghidEventTap)
-            event.type = .keyUp
-            event.post(tap: .cghidEventTap)
+    case "digits":
+        let codes: [Character: CGKeyCode] = ["0": 29, "1": 18, "2": 19, "3": 20, "4": 21,
+            "5": 23, "6": 22, "7": 26, "8": 28, "9": 25]
+        for character in request["text"] as? String ?? "" {
+            guard let code = codes[character] else { throw Failure.invalid("native number keys only") }
+            try post(code, down: true, flags: [])
+            try post(code, down: false, flags: [])
         }
         try output(["posted": true])
     case "press", "set", "select":

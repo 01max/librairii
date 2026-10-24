@@ -336,7 +336,8 @@ def one_case(binary, helper, root, name, kind, expected):
             observer.wait(lambda: (s := state(rendezvous)) and s[0] == text)
             report['checks']['native_unicode_clipboard_and_edit_menu'] = True
             observer.call('key', key='cmd+a')
-        observer.call('text', text='0042')
+        report['keyboard_input_source'] = observer.status()['keyboard_input_source']
+        observer.call('digits', text='0042')
         observer.wait(lambda: (s := state(rendezvous)) and s[:2] == ['0042', '1'])
         report['checks']['native_search_input'] = True
         (rendezvous / 'finish').touch()
