@@ -36,8 +36,11 @@ The independent clean-runtime check runs separately; either failure fails CI.
 
 These are synthetic OS events and native AT-SPI actions in headless desktops.
 They do not qualify physical keyboards, IME composition, Orca speech, arbitrary
-distributions, real GPU hardware or macOS integration. Task 2.6 and the toolkit
-selection remain open until their remaining scope has evidence. Native execution at `230cc47` passes all eight cases on each session in
+distributions, real GPU hardware or macOS integration. The bounded cross-target
+Task 2.6 native-adapter gate is now complete with the independently reviewed
+[macOS evidence](native-macos-observations.json). Toolkit selection and the
+separate physical/IME, accessibility and clean-host gates remain open.
+Native execution at `230cc47` passes all eight cases on each session in
 [run40018196257](https://github.com/01max/librairii/actions/runs/40018196257).
 [Retained observations](native-linux-observations.json) bind source, binary,
 image, archive, raw report, session-file hashes and per-case results. The archive
