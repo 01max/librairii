@@ -295,7 +295,7 @@
     "path": "notices/Slint-Royalty-free-2.0.md",
     "sha256": "5167f5056e850419106ab6265efbdca7cba4d99c849d1445ca0bbf6a1e2315fe"
   },
-  "toolkit_selection": "pending physical gates and independent 2.13 review",
+  "toolkit_selection": "pending remaining native evidence and independent 2.13 review",
   "historical_data_candidates": "zip/sevenz-rust2 and rejected Unicode compositions retained as historical experiments only",
   "native_menu_adapter": "Direct macOS muda=0.19.3, defaults disabled, existing locked package; no root graph change",
   "thumbnail_probe": {
