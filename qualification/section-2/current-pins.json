@@ -310,5 +310,17 @@
     "pending_cap": 33,
     "deferred_cap": 1000,
     "decode_sample_cap": 512
-  }
+  },
+  "gui_local_backports": [
+    {
+      "name": "accesskit_atspi_common",
+      "version": "0.19.1",
+      "path": "vendor/accesskit-atspi-common",
+      "original_registry_checksum": "023da0e5097f46df7092d5280b02efb9bbf8d93298daeced42652463e357d636",
+      "source_commit": "c88605b96d04431f9c3c792464a0f2f253480e94",
+      "upstream_backport": "6ee0558b6315b3ef1594db24ce45a030ecac7cb5",
+      "reason": "Correct disabled Enabled/Sensitive AT-SPI states; exact upstream correction and real adapter regressions.",
+      "provenance": "vendor/accesskit-atspi-common/UPSTREAM.json"
+    }
+  ]
 }

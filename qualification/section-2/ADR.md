@@ -21,6 +21,17 @@ reviewed pinned sevenz-turbo derivative, plus the frozen core query codec.
 The rejected sevenz-rust2/Unicode experiments are not production dependencies.
 Windows is deferred; current qualification covers three Linux/macOS targets.
 
+The Linux accessibility graph includes one local backport of
+`accesskit_atspi_common=0.19.1`. Its disabled-state translation incorrectly
+advertised disabled buttons as enabled/sensitive in retained native modal
+evidence. The real NodeWrapper regression fails on the original code and passes
+with upstream correction `6ee0558b6315b3ef1594db24ce45a030ecac7cb5`. The selected
+candidate keeps every dependency version/feature, records original registry and
+source hashes, and preserves MIT/Apache/Chromium texts plus a modification notice.
+The workspace runs the adapter's seven existing tests and two new regressions.
+Fresh native modal-state evidence is required; this repair alone does not
+complete accessibility or toolkit selection.
+
 Date: 2026-10-20. Owner: librairii-4. Status: **proposed candidates; toolkit not selected**.
 Scope: P02–P07, P13, P18–P19, P27–P38, P53, P56–P59.
 

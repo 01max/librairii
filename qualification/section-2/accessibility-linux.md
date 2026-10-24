@@ -1,5 +1,19 @@
 # Private Orca baseline (2.4, partial)
 
+## Disabled-state continuation, 2026-10-24
+
+Retained native `4189ecb` Settings snapshots expose background buttons as enabled
+while the app's actual modal binding disables them. The pinned AccessKit AT-SPI
+translation contains the known upstream disabled-state bug. A real NodeWrapper
+unit reproduction fails for disabled Button, then passes all nine adapter tests
+after backporting upstream `6ee0558b6315b3ef1594db24ce45a030ecac7cb5` into the
+versioned, licensed local source. No app semantic value or recorder state is
+substituted. Method v4 now records both actual Enabled and Sensitive states and
+requires all visible background buttons/checks disabled while Close/English/
+Français remain enabled and Close owns focus. Missing nodes/states fail the
+guard. The previous v3 reports retain their original limited scope. Fresh native
+v4 execution is required; selection/review/workflow coverage remains separate.
+
 `check-accessibility-linux.py` verifies the matching archive and runs the native
 packaged spike in separate offline X11/Openbox and Wayland/Sway containers.
 Each owns its D-Bus, accessibility registry, home/configuration, PulseAudio null

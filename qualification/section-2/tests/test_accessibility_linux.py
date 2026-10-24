@@ -20,6 +20,22 @@ driver = load('orca_driver', 'accessibility-linux/drive.py')
 
 
 class AccessibilityLinux(unittest.TestCase):
+    def test_modal_state_rejects_enabled_or_missing_background_and_disabled_dialog_controls(self):
+        def button(name, enabled, focus=False):
+            return {'name': name, 'role': 'push button', 'states': {
+                'enabled': enabled, 'sensitive': enabled, 'showing': True, 'focused': focus}}
+        nodes = [button('Settings', False), button('List', False), button('English', True),
+            button('Français', True), button('Close', True, True)]
+        self.assertTrue(driver.modal_controls_confined(nodes))
+        for index in range(len(nodes)):
+            changed = copy.deepcopy(nodes)
+            changed[index]['states']['enabled'] = not changed[index]['states']['enabled']
+            self.assertFalse(driver.modal_controls_confined(changed))
+            self.assertFalse(driver.modal_controls_confined(nodes[:index] + nodes[index + 1:]))
+        changed = copy.deepcopy(nodes)
+        changed[0]['states']['sensitive'] = True
+        self.assertFalse(driver.modal_controls_confined(changed))
+
     def test_key_echo_and_other_labels_cannot_replace_a_focus_announcement(self):
         text = "12:00:00 - SPEECH OUTPUT: 'Settings push button.' {'established': False}\n"
         self.assertTrue(driver.utterance_observed(text, 'Settings push button.'))
@@ -56,7 +72,7 @@ class AccessibilityLinux(unittest.TestCase):
 
     def test_speech_and_every_baseline_witness_are_required_without_full_qualification(self):
         report = {'baseline': 'pass', 'errors': [], 'binary_sha256': 'expected',
-            'observation_method': 'per-focus-utterance-and-audio-completion-v3',
+            'observation_method': 'per-focus-utterance-audio-and-modal-state-v4',
             'session': 'x11', 'reader_preferences': {'enable_action_keys': False},
             'application_returncode': 0, 'baseline_checks': dict.fromkeys(observer.REQUIRED, True),
             'speech_steps': {name: {'audio': {'nonzero_samples': 1601}} for name in observer.SPEECH_STEPS},

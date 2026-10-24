@@ -18,13 +18,13 @@ spec.loader.exec_module(common)
 REQUIRED = {'app_accessibility_tree', 'keyboard_search', 'keyboard_settings_and_focus_return',
     'orca_spoke_search_or_settings', 'speech_services_alive', 'normal_application_quit',
     'actual_synthesized_audio', 'owned_fixture_removed', 'orca_search_label_completed',
-    'orca_settings_labels_completed'}
+    'orca_settings_labels_completed', 'modal_background_disabled'}
 SPEECH_STEPS = {'frame', 'search', 'settings', 'close', 'english', 'restored'}
 
 
 def baseline_passed(report, binary_sha, expected_session):
     return (report.get('baseline') == 'pass' and report.get('errors') == []
-        and report.get('observation_method') == 'per-focus-utterance-and-audio-completion-v3'
+        and report.get('observation_method') == 'per-focus-utterance-audio-and-modal-state-v4'
         and report.get('session') in ('x11', 'wayland')
         and report['session'] == expected_session
         and report.get('reader_preferences') == {'enable_action_keys': report['session'] != 'x11'}

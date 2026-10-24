@@ -91,6 +91,7 @@ jobs:
           cargo fmt --check
           cargo clippy --locked --features gui --all-targets -- -D warnings
           cargo nextest run --locked --features gui --config-file ../../.config/nextest.toml --profile ci
+          cargo test --locked -p accesskit_atspi_common --lib
           cargo test --locked --features gui --doc
           python3 -I -B -m unittest discover -s tests -p 'test_*.py'
       - name: Build the native spike

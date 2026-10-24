@@ -71,7 +71,7 @@ def tree(desktop, app):
             states = node.getState()
             row = {'name': str(node.name), 'role': node.getRoleName(),
                 'states': {name: states.contains(getattr(desktop.a, 'STATE_' + name.upper()))
-                    for name in ('focused', 'focusable', 'enabled', 'showing', 'selected', 'checked', 'editable')}}
+                    for name in ('focused', 'focusable', 'enabled', 'sensitive', 'showing', 'selected', 'checked', 'editable')}}
             if states.contains(desktop.a.STATE_EDITABLE):
                 row['text'] = node.queryText().getText(0, -1)
             result.append(row)
@@ -86,6 +86,19 @@ def focused(nodes):
 
 def utterance_observed(log, expected):
     return expected in re.findall(r"SPEECH OUTPUT: '([^']*)' \{", log)
+
+
+def modal_controls_confined(nodes):
+    buttons = [n for n in nodes if n.get('role') in ('push button', 'check box')
+        and n.get('states', {}).get('showing')]
+    dialog_names = {'English', 'Français', 'Close'}
+    dialog = [n for n in buttons if n['name'] in dialog_names]
+    background = [n for n in buttons if n['name'] not in dialog_names]
+    return (set(n['name'] for n in dialog) == dialog_names
+        and all(n['states'].get('enabled') is True and n['states'].get('sensitive') is True for n in dialog)
+        and {'Settings', 'List'} <= {n['name'] for n in background}
+        and all(n['states'].get('enabled') is False and n['states'].get('sensitive') is False for n in background)
+        and len(focused(nodes)) == 1 and focused(nodes)[0]['name'] == 'Close')
 
 
 def record(desktop, binary, report):
@@ -267,7 +280,9 @@ def record(desktop, binary, report):
     close_speech = speech_marker()
     key('space')
     native.wait_for(lambda: any(n['name'] == 'Close' for n in focused(tree(desktop, accessible))))
-    snapshot('settings-open')
+    modal = snapshot('settings-open')
+    assert modal_controls_confined(modal), 'modal background controls are not disabled in AT-SPI'
+    report['baseline_checks']['modal_background_disabled'] = True
     announced('close', 'Close push button.', close_speech)
     english_speech = speech_marker()
     key('Tab')
@@ -281,7 +296,7 @@ def record(desktop, binary, report):
     # Give real speech delivery time to finish before stopping its sink recorder.
     time.sleep(2)
     report['orca_application_output'] = debug.read_bytes()[before:].decode('utf-8', errors='replace')
-    report['baseline_checks'] = {'app_accessibility_tree': all(not s['observation_errors']
+    report['baseline_checks'].update({'app_accessibility_tree': all(not s['observation_errors']
             for s in report['snapshots'].values()), 'keyboard_search': True,
         'keyboard_settings_and_focus_return': True,
         'orca_search_label_completed': 'search' in report['speech_steps'],
@@ -289,7 +304,7 @@ def record(desktop, binary, report):
         'orca_spoke_search_or_settings': any('SPEECH OUTPUT:' in line and
             any(word in line.lower() for word in ('search', 'settings', 'close'))
             for line in report['orca_application_output'].splitlines()),
-        'speech_services_alive': orca.poll() is None and dispatcher.poll() is None and audio.poll() is None}
+        'speech_services_alive': orca.poll() is None and dispatcher.poll() is None and audio.poll() is None})
     key('ctrl+q')
     report['application_returncode'] = app.wait(timeout=10)
     report['baseline_checks']['normal_application_quit'] = app.returncode == 0
@@ -309,7 +324,7 @@ def main():
     assert binary_sha == os.environ['EXPECTED_BINARY_SHA256']
     report = {'schema': 1, 'session': args.session, 'binary_sha256': binary_sha, 'errors': [],
         'baseline_checks': {}, 'baseline': 'fail', 'full_accessibility_qualified': False,
-        'observation_method': 'per-focus-utterance-and-audio-completion-v3',
+        'observation_method': 'per-focus-utterance-audio-and-modal-state-v4',
         'scope': 'Private Orca/eSpeak-NG speech and AT-SPI baseline; keyboard Search and Settings only. '
             'X11 action-key echo is disabled in this private reader profile; its default-echo route stays unqualified. '
             'Virtualized selection, review, progress/error speech and complete pointer-free flows remain unqualified.'}

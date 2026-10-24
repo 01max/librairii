@@ -382,3 +382,17 @@ from Wayland's single uploaded keymap; exact observed composition remains requir
 Independent scoped re-review approves the correction and all15 focused Linux/VM
 tests. The updated full102-test recorder suite passes locally, including the
 VM fixture's new input witnesses. Fresh native v4/v2 execution remains pending.
+
+## 2026-10-24 disabled native accessibility states (2.4)
+
+A replay of the retained4189ecb native modal snapshot rejects nine background
+buttons incorrectly exposed as enabled. Slint's compiled bindings carry the
+actual disabled state; the pinned AT-SPI translation mishandles non-read-only
+roles. A real NodeWrapper test reproduces Button: Enabled|Sensitive while disabled
+(eight adapter tests pass, one fails). The exact upstream6ee0558 backport makes
+all nine pass, including original adapter tests and readonly/control regressions.
+The original crate/source/file identities, licenses and modification notice are
+retained in vendor/accesskit-atspi-common. The Cargo graph changes only this
+package's source; versions/features remain pinned. Native methodv4 requires
+actual disabled background and enabled/focused dialog witnesses. Local recorder
+checks reject missing and incorrect states; native execution remains required.

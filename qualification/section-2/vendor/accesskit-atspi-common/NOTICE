@@ -1,0 +1,21 @@
+Librairii toolkit qualification: local AccessKit AT-SPI backport
+
+Original: accesskit_atspi_common 0.19.1, MIT OR Apache-2.0.
+Registry archive SHA-256:
+023da0e5097f46df7092d5280b02efb9bbf8d93298daeced42652463e357d636
+Original source commit: c88605b96d04431f9c3c792464a0f2f253480e94
+Original source directory: platforms/atspi-common
+
+The AccessKit Authors retain their copyrights and licensing. Portions derived
+from Chromium retain the separate LICENSE.chromium notice. All three original
+license texts are included beside this notice.
+
+Modified files: src/node.rs backports the upstream disabled-state correction
+6ee0558b6315b3ef1594db24ce45a030ecac7cb5 and adds NodeWrapper regression tests.
+Cargo.toml removes its package-level resolver because the enclosing spike
+workspace owns that setting. No dependency version or feature is upgraded.
+UPSTREAM.json records the original source-file hashes. The source patch and
+its regression tests must be requalified when the Slint/AccessKit pins change.
+
+Upstream correction:
+https://github.com/AccessKit/accesskit/commit/6ee0558b6315b3ef1594db24ce45a030ecac7cb5
