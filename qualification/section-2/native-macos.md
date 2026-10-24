@@ -1,14 +1,17 @@
-# Native macOS interaction observer (2.6, partial)
+# Native macOS interaction observer (2.6 automated integration)
 
 Current scoped result, 2026-10-24: native Intel completes all eight cases at
 `30614b8` / run40095296249/job120876133943, and its entire qualification lane is
 green. Independent review verifies all1117 manifest payloads,1118 regular archive
 members,265 native evidence hashes, actual parenting/callback/focus/clipboard
 checks, exact Finder location and owned CG198 retirement, representative images
-and normal owned shutdown. The unrelated untitled Finder window remains untouched.
+and normal owned shutdown. Native ARM independently completes all eight cases at
+`8a9d571` / run40096186659/job120878834926, with1117 manifest payloads,1118 regular
+archive members,264 native hashes and exact CG191 retirement independently
+verified. Its explicit reveal start follows the actual initial OS-focus check.
+Both entire qualification lanes pass. Unrelated untitled Finder windows remain untouched.
 Source/binary/archive identities and limits are in
-[native-macos-observations.json](native-macos-observations.json). Full ARM execution
-and review remain pending; this is automated native integration, with no physical,
+[native-macos-observations.json](native-macos-observations.json). This is automated native integration, with no physical,
 VoiceOver, IME, clean-host or overall toolkit qualification claim.
 
 The observer runs only against the byte-verified, native packaged spike. The
@@ -37,7 +40,7 @@ Only that freshly reverified Finder window is closed, and absence is observed. T
 observer explicitly returns to the application afterward; it does not label
 that external-file-manager return as automatic picker focus restoration.
 
-Complete successful execution on both architectures remains pending. Compilation/recorder tests are not
+The recorded complete executions qualify this bounded native-adapter route. Compilation/recorder tests are not
 interaction evidence. These are synthetic OS events/native control actions,
 not physical keyboard latency, dead keys, IME composition, VoiceOver speech,
 mixed-monitor or clean-host qualification. VoiceOver remains excluded from the
