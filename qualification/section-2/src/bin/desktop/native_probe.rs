@@ -11,6 +11,7 @@ use std::time::{Duration, Instant};
 pub struct Recorder {
     directory: PathBuf,
     case: String,
+    wait_for_start: bool,
 }
 
 impl Recorder {
@@ -33,7 +34,12 @@ impl Recorder {
             return Err("native probe needs an absolute fresh evidence directory".into());
         }
         std::fs::create_dir(&directory)?;
-        Ok(Some(Rc::new(Self { directory, case })))
+        let wait_for_start = std::env::args().any(|arg| arg == "--native-wait-for-start");
+        Ok(Some(Rc::new(Self {
+            directory,
+            case,
+            wait_for_start,
+        })))
     }
 
     pub fn write(&self, name: &str, text: &str) {
@@ -80,6 +86,7 @@ impl Probe {
         let timer = slint::Timer::default();
         let started = Instant::now();
         let phase = Cell::new(0);
+        let action_queued = Cell::new(false);
         let last = RefCell::new(String::new());
         timer.start(
             slint::TimerMode::Repeated,
@@ -107,7 +114,14 @@ impl Probe {
                     if recorder.case != "early-settings" {
                         ui.invoke_focus_search();
                     }
-                    recorder.write("ready.txt", "parent shown; native callback follows");
+                    recorder.write("ready.txt", "parent shown; native handles observed");
+                }
+                if phase.get() == 1
+                    && !action_queued.get()
+                    && (!recorder.wait_for_start
+                        || recorder.directory.join("start-native-case").is_file())
+                {
+                    action_queued.set(true);
                     // AppKit's modal panel pumps the OS loop. Invoke from a
                     // queued event after this Slint timer has returned, as a
                     // real input callback does, rather than re-entering timers.

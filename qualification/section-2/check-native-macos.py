@@ -357,6 +357,8 @@ def one_case(binary, helper, root, name, kind, expected):
     argv = [str(binary), '--native-probe=' + str(rendezvous), '--native-case=' + kind]
     if kind == 'early-settings':
         argv.append('--settings-early')
+    if kind == 'reveal':
+        argv.append('--native-wait-for-start')
     env = {**os.environ, 'SLINT_BACKEND': 'winit-skia-software'}
     app = subprocess.Popen(argv, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, start_new_session=True)
     capture = capture_output(app, output / 'app.log')
@@ -369,6 +371,8 @@ def one_case(binary, helper, root, name, kind, expected):
         report['fixture'] = str(fixture)
         observer.call('activate')  # Initial launch only; picker restoration is never forced.
         observer.wait(lambda: observer.status()['frontmost_pid'] == app.pid)
+        if kind == 'reveal':
+            (rendezvous / 'start-native-case').touch()
         if kind in ('files', 'folder'):
             snapshot = observer.wait(lambda: (s := observer.snapshot(summary=True)) and picker_root(s) and s)
             root_node = picker_root(snapshot)

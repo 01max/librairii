@@ -192,3 +192,15 @@ CG window. Readiness now waits for both exact AX content and unique owned CG
 identity before capture; ambiguity remains fatal and no failed action is retried.
 Intel artifact12560069276 ZIP SHA256 is
 `4ebf360b49abc95f789b7e895be6a4e04fc0be8454f985ed13a110b0e501e073`.
+
+At `30614b8` / run40095296249 ARM's reveal case fails earlier, waiting for the
+app's initial foreground state while the automatically queued external reveal
+can take focus concurrently. No Finder-path/closure result is reached in that
+case. Artifact12560881523 ZIP SHA256 is
+`3d3074a14ac64072615a616990dd1136666a9bdecd0809beb6a1ae6ea9058305`.
+The test-only rendezvous now offers an explicit start gate: the macOS reveal
+observer waits for native handles, activates the app and verifies actual OS
+foreground before publishing the start signal. Only then is the same public
+reveal callback queued outside the timer. The initial focus check,45-second
+guard and all subsequent path/closure checks remain mandatory. Other observers
+retain their existing automatic callback route.
