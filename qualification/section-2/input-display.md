@@ -29,6 +29,25 @@ existing45-second app deadline remain required. First actual native execution
 and independent evidence review are pending; this method alone is not a pass.
 Linux composition and the broader display/contrast/scaling gates remain open.
 
+First execution at `3cef8c1` in
+[run40100102140](https://github.com/01max/librairii/actions/runs/40100102140)
+retains the same observer setup failure on ARM and Intel, before source mutation
+or text input. The optional legacy Kotoeri bundle has no matches, and Carbon
+returns nil rather than an empty array. Both existing eight-case native-adapter
+runs pass; ARM's failed input run still exits0 and retires its fixture. ARM
+artifact12562189090 has ZIP SHA256
+`a9d14f40ec6490d12f504f4e5147af46a2e57b23364f4e5b93f38f1455968ef6`;
+Intel artifact12562706182 has published ZIP SHA256
+`2b619a34ac18b9359368e53cf04ad892340254d3a60b9c27a1b0d220cf3b9191`.
+
+The separate `0ad3f29` correction treats nil as an empty inventory, while exact
+French/Japanese identity and availability remain mandatory. A real read-only
+Carbon regression exercises an absent family, the installed French layout and
+unchanged original selection. All91 recorder tests pass on macOS; the one Carbon
+test is explicitly native-only on other platforms. Independent review approves
+the correction; fresh native input execution remains required. No failed run is
+retried into a pass or treated as a toolkit failure.
+
 ## Historical initial checklist
 
 Status: **pending actual observation on A/I/L/W**, 2026-10-20, librairii-4.
