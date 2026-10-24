@@ -79,7 +79,13 @@ class Desktop:
             os.environ.update({'DISPLAY': ':91', 'GDK_BACKEND': 'x11'})
             self.start('xvfb', ['Xvfb', ':91', '-screen', '0', '1280x900x24', '-nolisten', 'tcp'])
             wait_for(lambda: pathlib.Path('/tmp/.X11-unix/X91').is_socket())
-            self.start('openbox', ['openbox'])
+            # A published X socket can precede successful client handshakes.
+            # Do not lose the one WM process by launching into that interval.
+            connection = wait_for(self.x11_server_ready)
+            manager = self.start('openbox', ['openbox'])
+            registered = wait_for(lambda: self.x11_manager_ready(manager))
+            (self.root / 'x11-readiness.json').write_text(json.dumps({
+                'server_root_read': connection, 'manager_pid': manager.pid, **registered}, indent=2) + '\n')
         else:
             os.environ.pop('DISPLAY', None)
             os.environ.update({'GDK_BACKEND': 'wayland', 'WLR_BACKENDS': 'headless', 'WLR_RENDERER': 'pixman',
@@ -148,6 +154,27 @@ class Desktop:
 
     def run(self, argv):
         return subprocess.check_output(argv, text=True, timeout=10, stderr=subprocess.STDOUT)
+
+    def x11_server_ready(self):
+        try:
+            return self.run(['xprop', '-root', '_NET_SUPPORTING_WM_CHECK'])
+        except subprocess.CalledProcessError as error:
+            if 'unable to open display' in str(error.output).lower():
+                return None
+            raise
+
+    def x11_manager_ready(self, manager):
+        if manager.poll() is not None:
+            raise RuntimeError('owned X11 window manager exited before registration')
+        root = self.run(['xprop', '-root', '_NET_SUPPORTING_WM_CHECK'])
+        match = re.search(r'window id # (0x[0-9a-fA-F]+)', root)
+        if match is None or int(match[1], 16) == 0:
+            return None
+        window = self.run(['xprop', '-id', match[1], '_NET_SUPPORTING_WM_CHECK', '_NET_WM_NAME'])
+        child = re.search(r'window id # (0x[0-9a-fA-F]+)', window)
+        if child and int(child[1], 16) == int(match[1], 16) and '= "Openbox"' in window:
+            return {'manager_root_check': root, 'manager_window_check': window}
+        return None
 
     def key(self, key):
         if self.session == 'x11':

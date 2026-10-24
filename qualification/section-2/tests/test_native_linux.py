@@ -24,6 +24,32 @@ def monitor(parent):
 
 
 class NativeLinux(unittest.TestCase):
+    def test_x11_readiness_requires_a_client_handshake_and_live_registered_manager(self):
+        desktop = driver.Desktop.__new__(driver.Desktop)
+        unavailable = subprocess.CalledProcessError(1, ['xprop'], output='xprop: unable to open display :91')
+        with mock.patch.object(desktop, 'run', side_effect=unavailable):
+            self.assertIsNone(desktop.x11_server_ready())
+        broken = subprocess.CalledProcessError(1, ['xprop'], output='unexpected X11 protocol error')
+        with mock.patch.object(desktop, 'run', side_effect=broken), self.assertRaises(subprocess.CalledProcessError):
+            desktop.x11_server_ready()
+        root = '_NET_SUPPORTING_WM_CHECK(WINDOW): window id # 0x123\n'
+        with mock.patch.object(desktop, 'run', return_value=root):
+            self.assertEqual(desktop.x11_server_ready(), root)
+        manager = mock.Mock()
+        manager.poll.return_value = None
+        for window in ('_NET_SUPPORTING_WM_CHECK: no such atom',
+                '_NET_SUPPORTING_WM_CHECK(WINDOW): window id # 0x456\n_NET_WM_NAME(UTF8_STRING) = "Openbox"',
+                root + '_NET_WM_NAME(UTF8_STRING) = "different manager"'):
+            with mock.patch.object(desktop, 'run', side_effect=[root, window]):
+                self.assertIsNone(desktop.x11_manager_ready(manager))
+        window = root + '_NET_WM_NAME(UTF8_STRING) = "Openbox"\n'
+        with mock.patch.object(desktop, 'run', side_effect=[root, window]):
+            self.assertEqual(desktop.x11_manager_ready(manager)['manager_window_check'], window)
+        manager.poll.return_value = 1
+        with mock.patch.object(desktop, 'run') as query, self.assertRaises(RuntimeError):
+            desktop.x11_manager_ready(manager)
+        query.assert_not_called()
+
     def test_focus_handoff_absence_cannot_be_a_pid_or_hide_other_errors(self):
         desktop = driver.Desktop.__new__(driver.Desktop)
         desktop.session = 'x11'

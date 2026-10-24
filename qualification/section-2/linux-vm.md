@@ -1,5 +1,20 @@
 # Fresh Linux VM package qualification (2.11, partial)
 
+At5f1606d/run40103474086, the first X11 VM case returns the correct native
+selection but fails unforced focus restoration. Its retained Openbox log says
+`Failed to open the display from the DISPLAY environment variable.` The Xvfb
+socket existed before an X client could connect, so the one WM process exited
+during desktop setup. Artifact12564285754 ZIP SHA256 is
+`bfdd88fad43bc26d1daf57fa358f415dc3de3aec43180a6775145deb0b51c5cd`.
+This run stays failed and does not supersede the separately reviewed VM pass.
+
+Desktop setup now waits for an actual successful X root-property query before
+starting Openbox, then requires a live WM process and matching root/window
+`_NET_SUPPORTING_WM_CHECK` registration with its native Openbox name. The raw
+readiness properties are retained. It never restarts the manager, retries a
+picker, forces restored focus or changes the existing observation deadlines.
+Fresh native execution remains required.
+
 `check-linux-vm.py` starts one owned Ubuntu24.04 x86-64 guest on the existing
 Linux CI runner. It requires usable KVM and a positive QMP `query-kvm` result;
 TCG/emulation is not a substitute. The immutable
