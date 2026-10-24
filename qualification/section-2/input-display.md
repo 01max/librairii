@@ -115,6 +115,27 @@ No Unicode payload, application text setter, IME API shortcut or weakened
 expected text replaces physical key input. Candidate `日本` commit, a fresh
 cancelled composition, full restoration and normal retirement remain required.
 
+## Input method service readiness (method v3)
+
+The5f1606d Intel run also verifies exact French full selection and clearing,
+then records TIS Japanese selection but native Winit `Disabled` followed by
+ordinary Latin `nihon` input, without Japanese preedit. This is distinct from
+ARM's pending final Roman n. Intel artifact12564410621 ZIP SHA256 is
+`5368681dc1517cee901825ed6bbdea3bb842f325b0f9ec8db0979d41fddc7165`.
+It retains the same-stage timeout, restoration and normal retirement.
+
+The v3 observer separately records public NSRunningApplication state for the
+exact Japanese Roman-input service identities in a two-second read-only launch
+observation window before typing. It records selected TIS mode plus any actual
+live application which has posted its launch notification. Apple's source
+family identifier and application bundle identifier differ; both exact known
+identities are read, and no process is launched or killed through this check.
+Some applications never post that notification. Its absence is recorded as an
+incomplete optional observation and does not veto or qualify IME capability.
+Every actual preedit/candidate/commit/cancel assertion still runs afterward.
+This setup diagnostic requires fresh native execution and does not claim that
+service startup caused Intel's failure. No additional capability gate is added.
+
 ## Historical initial checklist
 
 Status: **pending actual observation on A/I/L/W**, 2026-10-20, librairii-4.

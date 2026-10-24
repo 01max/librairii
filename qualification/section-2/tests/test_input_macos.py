@@ -13,6 +13,21 @@ spec.loader.exec_module(observer)
 
 
 class InputMacOS(unittest.TestCase):
+    def test_selected_source_alone_cannot_supply_a_live_application_launch_notice(self):
+        source = 'com.apple.inputmethod.Kotoeri.RomajiTyping.Japanese'
+        family = 'com.apple.inputmethod.Kotoeri.RomajiTyping'
+        process = {'pid': 321, 'bundle': 'com.apple.JapaneseIM.RomajiTyping',
+            'finished_launching': True, 'terminated': False}
+        observed = {'current': source, 'source': {'id': source, 'selected': True, 'bundle': family},
+            'processes': [process]}
+        self.assertTrue(observer.japanese_launch_notice(observed, source))
+        for change in ({'current': 'other'}, {'source': {**observed['source'], 'selected': False}},
+                {'source': {**observed['source'], 'bundle': 'unrelated'}}, {'processes': []}):
+            self.assertFalse(observer.japanese_launch_notice({**observed, **change}, source))
+        for change in ({'pid': True}, {'pid': -1}, {'bundle': 'unrelated'},
+                {'finished_launching': False}, {'terminated': True}):
+            self.assertFalse(observer.japanese_launch_notice({**observed, 'processes': [{**process, **change}]}, source))
+
     def test_full_native_selection_requires_exact_foreground_field_text_and_utf16_range(self):
         text = 'êé 日本語 🦊'
         snapshot = {'pid': 12, 'frontmost_pid': 12, 'focused': {'role': 'AXTextField', 'value': text, 'focused': True},

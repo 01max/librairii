@@ -316,6 +316,22 @@ do {
         }
         guard status == noErr else { throw Failure.invalid("input-source operation failed: " + String(status)) }
         try output(["current": inputSource(), "source": sourceDescription(source)])
+    case "input-method-status":
+        guard let id = request["source"] as? String else { throw Failure.invalid("exact input mode required") }
+        let source = try sourceWithID(id)
+        guard inputProperty(source, kTISPropertyBundleID) as? String == "com.apple.inputmethod.Kotoeri.RomajiTyping" else {
+            throw Failure.invalid("only the observed Japanese Roman-input family may be inspected")
+        }
+        // Apple's TIS source-family identifier and the application bundle ID
+        // differ. Read both exact public identities, never launch/kill a service.
+        let bundles = ["com.apple.inputmethod.Kotoeri.RomajiTyping", "com.apple.JapaneseIM.RomajiTyping"]
+        let processes = bundles.flatMap { NSRunningApplication.runningApplications(withBundleIdentifier: $0) }
+        guard processes.count <= 8 else { throw Failure.invalid("input-method process inventory limit") }
+        try output(["current": inputSource(), "source": sourceDescription(source),
+            "processes": processes.map { process in
+                ["pid": process.processIdentifier, "bundle": process.bundleIdentifier ?? "",
+                    "finished_launching": process.isFinishedLaunching, "terminated": process.isTerminated] as [String: Any]
+            }] as [String: Any])
     case "keycodes":
         guard let codes = request["codes"] as? [Int], !codes.isEmpty, codes.count <= 32,
               codes.allSatisfy({ $0 >= 0 && $0 < 128 }) else {

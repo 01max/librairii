@@ -336,3 +336,18 @@ headers (Git blobs64e0428cd2fc2d965cf18c2af9212df68d2ea8c8 and
 260b8268029a8c0bc03055ba2ac2dcb19c277c9d) are preserved verbatim in a separate
 source-notice file, both source paths/blob identities are inventoried, and all
 affected payload hashes are refreshed. No source-graph or license change occurs.
+
+## 2026-10-24 native input and desktop readiness follow-up
+
+The5f1606d ARM/Intel runs both prove exact French full AX selection and clearing.
+ARM emits Japanese preedit endingにほn; the separate09f6f76 correction types the
+additional final physical n. Intel instead commits Latin input after a Disabled
+transition. The v3 observer records an optional two-second public application
+launch-notification observation, without adding a capability prerequisite;
+actual IME assertions remain decisive. Independent review corrected the initial
+interpretation of finishedLaunching before publication. All100 recorder tests
+pass after removing only a generated Swift cache which caused a confirmed local
+ENOSPC compile failure; Swift compilation also passes. Fresh native CI remains
+required. Separately reviewed desktop setup corrections are da73c0e (real X11
+handshake/live Openbox registration) and ce35c7c (incomplete busy Finder reads).
+See linux-vm.md, native-macos.md and input-display.md for preserved failures.

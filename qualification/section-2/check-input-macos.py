@@ -37,6 +37,16 @@ def composition_cancelled(phase, after_escape):
     return bool(preedits) and preedits[-1] == 'Preedit("", None)' and 'Commit(' not in phase
 
 
+def japanese_launch_notice(observed, source):
+    return (observed.get('current') == source and observed.get('source', {}).get('id') == source
+        and observed['source'].get('selected') is True
+        and observed['source'].get('bundle') == 'com.apple.inputmethod.Kotoeri.RomajiTyping'
+        and any(type(process.get('pid')) is int and process['pid'] > 0
+            and process.get('bundle') in ('com.apple.inputmethod.Kotoeri.RomajiTyping', 'com.apple.JapaneseIM.RomajiTyping')
+            and process.get('finished_launching') is True and process.get('terminated') is False
+            for process in observed.get('processes', [])))
+
+
 def all_text_selected(observed, text, pid):
     return (bool(text) and observed.get('pid') == pid and observed.get('frontmost_pid') == pid
         and observed.get('focused', {}).get('role') == 'AXTextField'
@@ -90,7 +100,7 @@ def inspect(package, archive, helper, output):
     report = {'schema': 1, 'source': manifest['source'], 'target': manifest['target'],
         'binary_sha256': manifest['binary_sha256'], 'archive': archive_id,
         'checks': {}, 'errors': [], 'returncode': None, 'full_input_display_qualified': False,
-        'toolkit_selected': False, 'method': 'native-CGEvent-TIS-Winit-IME-and-AX-selection-v2'}
+        'toolkit_selected': False, 'method': 'native-CGEvent-TIS-Winit-IME-AX-and-service-readiness-v3'}
     app = subprocess.Popen([str(binary), '--native-probe=' + str(rendezvous), '--native-case=input'],
         env={**os.environ, 'SLINT_BACKEND': 'winit-skia-software'}, stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT, start_new_session=True)
@@ -154,6 +164,18 @@ def inspect(package, archive, helper, output):
         if not sources_by_id(observer.call('input-sources'))[parent['id']]['enabled']:
             observer.call('input-source', source=parent['id'], operation='enable')
         select(japanese)
+        report['japanese_method_observations'] = []
+        def method_launched():
+            observed = observer.call('input-method-status', source=japanese['id'])
+            if len(report['japanese_method_observations']) < 16:
+                report['japanese_method_observations'].append(observed)
+            return observed if japanese_launch_notice(observed, japanese['id']) else None
+        try:
+            report['japanese_launch_notice'] = observer.wait(method_launched, timeout=2)
+        except TimeoutError:
+            # Some applications never post DidFinishLaunching. This optional
+            # diagnostic cannot substitute for, or veto, actual IME behavior.
+            report['japanese_launch_notice'] = None
         offset = len(trace())
         # n i h o n n through the actual OS input method. The final doubled n
         # completes ん; one trailing n remains live Roman input (にほn).
