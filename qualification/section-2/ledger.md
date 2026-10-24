@@ -161,3 +161,16 @@ macOS lanes, with Rust quality40019286755 and existing CI40019286676 also green.
 These outcomes belong to those recorded heads; subsequent evidence commits are
 verified separately. Physical/IME/Orca, remaining macOS integration, complete
 clean-host/package, license and toolkit-selection gates remain open.
+
+## 2026-10-24 disposable Git fixture cleanup
+
+Existing CI at `5de32ce`, run40081026303/job120834442189, retains a failure in
+`test_legacy_and_unknown_paths_run`: all decision assertions execute, then
+TemporaryDirectory cleanup reports `Directory not empty: '.git'` on hosted
+Git2.55.0. A background repository writer is consistent with that failure;
+the log does not identify the writer. The disposable test repository now sets
+local `maintenance.auto=false` and `gc.auto=0` before its first commit, preventing
+automatic maintenance from outliving a fixture command. Cleanup errors remain
+fatal, all seven decision tests and their assertions are preserved, and neither
+the production decision nor any real repository's configuration is changed.
+All seven tests pass locally; fresh hosted execution must verify the correction.

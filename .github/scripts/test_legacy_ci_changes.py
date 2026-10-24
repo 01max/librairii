@@ -20,6 +20,11 @@ class LegacyChangesTest(unittest.TestCase):
         os.chdir(self.temp.name)
         self.addCleanup(os.chdir, self.previous)
         self.git('init', '-q')
+        # These tiny, disposable histories need no background maintenance. A
+        # maintenance process can still write .git after commit returns and
+        # race TemporaryDirectory cleanup on the hosted Git version.
+        self.git('config', '--local', 'maintenance.auto', 'false')
+        self.git('config', '--local', 'gc.auto', '0')
         self.write('crates/core/original.rs')
         self.base = self.commit()
 
