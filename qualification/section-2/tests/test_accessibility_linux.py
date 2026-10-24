@@ -20,6 +20,13 @@ driver = load('orca_driver', 'accessibility-linux/drive.py')
 
 
 class AccessibilityLinux(unittest.TestCase):
+    def test_key_echo_and_other_labels_cannot_replace_a_focus_announcement(self):
+        text = "12:00:00 - SPEECH OUTPUT: 'Settings push button.' {'established': False}\n"
+        self.assertTrue(driver.utterance_observed(text, 'Settings push button.'))
+        for log in ("12:00 SPEECH OUTPUT: 'tab' {'established':False}",
+                'Settings push button.', text.replace('push button', 'panel')):
+            self.assertFalse(driver.utterance_observed(log, 'Settings push button.'))
+
     def test_audio_diagnostics_are_separate_and_cannot_turn_silence_into_speech(self):
         with tempfile.TemporaryDirectory() as temporary:
             desktop = driver.native.Desktop.__new__(driver.native.Desktop)
@@ -49,9 +56,15 @@ class AccessibilityLinux(unittest.TestCase):
 
     def test_speech_and_every_baseline_witness_are_required_without_full_qualification(self):
         report = {'baseline': 'pass', 'errors': [], 'binary_sha256': 'expected',
+            'observation_method': 'per-focus-utterance-and-audio-completion-v2',
             'application_returncode': 0, 'baseline_checks': dict.fromkeys(observer.REQUIRED, True),
+            'speech_steps': {name: {'audio': {'nonzero_samples': 1601}} for name in observer.SPEECH_STEPS},
             'audio': {'nonzero_samples': 1601}, 'full_accessibility_qualified': False}
         self.assertTrue(observer.baseline_passed(report, 'expected'))
+        for name in observer.SPEECH_STEPS:
+            changed = copy.deepcopy(report)
+            del changed['speech_steps'][name]
+            self.assertFalse(observer.baseline_passed(changed, 'expected'))
         for key in observer.REQUIRED:
             changed = copy.deepcopy(report)
             del changed['baseline_checks'][key]

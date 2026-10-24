@@ -24,9 +24,23 @@ and do not prevent observing the other protocol.
 
 This is a baseline, not the complete 2.4 gate. Virtualized selection/checked
 semantics, review paging, progress/error announcements and full pointer-free
-completion remain unqualified even if this baseline passes. Actual execution is
-pending; compilation/unit tests do not qualify Orca speech. No toolkit selection
+completion remain unqualified even if this baseline passes. Actual first-method
+execution passes at `4ea1e4b` / run40081851994, with independent verification of
+both eight-check baselines, all45 session hashes, actual AT-SPI focus/text,
+same-toplevel Wayland trace, startup-excluded PCM/WAV and owned shutdown. Exact
+identities and limits are in `accessibility-linux-observations.json`.
+Compilation/unit tests alone do not qualify Orca speech. No toolkit selection
 is recorded. VoiceOver remains excluded and Windows deferred by owner decision.
+
+That first method observes speech generation but moves between controls fast
+enough to interrupt individual labels. Unprompted offline tiny.en ASR produces
+`(Music)` for X11 and an unreliable partial phrase for Wayland; this supplies no
+positive intelligibility proof. No human listening is claimed. The next method
+requires an exact actual Orca utterance and nonzero audio followed by a half-second
+quiet tail for each frame/Search/Settings/Close/English/restored-Settings stage
+before navigating onward. Raw byte offsets and per-stage audio facts are retained.
+The existing deadlines and required scopes remain unchanged. This stronger method
+is pending actual execution and does not retroactively accept earlier recordings.
 
 The first actual run at `5de32ce` / run40081026276 records two observer setup
 failures, retained in artifact12555123864 (ZIP SHA256

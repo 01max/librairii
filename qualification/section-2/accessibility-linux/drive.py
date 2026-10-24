@@ -6,6 +6,7 @@ import importlib.util
 import json
 import os
 import pathlib
+import re
 import shutil
 import subprocess
 import threading
@@ -82,6 +83,10 @@ def focused(nodes):
     return [n for n in nodes if n.get('states', {}).get('focused')]
 
 
+def utterance_observed(log, expected):
+    return expected in re.findall(r"SPEECH OUTPUT: '([^']*)' \{", log)
+
+
 def record(desktop, binary, report):
     root, runtime = desktop.root, desktop.runtime
     os.environ['HOME'] = str(runtime / 'outside')
@@ -136,6 +141,22 @@ def record(desktop, binary, report):
     native.wait_for(startup_speech_finished)
     report['application_audio_start_offset'] = pcm.stat().st_size
     before = debug.stat().st_size
+    report['speech_steps'] = {}
+    def speech_marker():
+        return {'debug_offset': debug.stat().st_size, 'audio_offset': pcm.stat().st_size}
+    def announced(name, text, marker):
+        native.wait_for(lambda: utterance_observed(
+            debug.read_bytes()[marker['debug_offset']:].decode('utf-8', errors='replace'), text))
+        def completed():
+            data = pcm.read_bytes()[marker['audio_offset']:]
+            return (len(data) >= 16000 and audio_facts(data)['nonzero_samples'] > 1600
+                and audio_facts(data[-16000:])['nonzero_samples'] == 0)
+        native.wait_for(completed)
+        end = pcm.stat().st_size
+        report['speech_steps'][name] = {**marker, 'expected_utterance': text,
+            'debug_end_offset': debug.stat().st_size, 'audio_end_offset': end,
+            'audio': audio_facts(pcm.read_bytes()[marker['audio_offset']:end])}
+    frame_speech = speech_marker()
     before_fixtures = set(pathlib.Path('/tmp').glob('librairii-qualification-*'))
     report['application_environment'] = {key: os.environ.get(key) for key in
         ('DISPLAY', 'WAYLAND_DISPLAY', 'GDK_BACKEND', 'SLINT_BACKEND')}
@@ -160,6 +181,7 @@ def record(desktop, binary, report):
     accessible = native.wait_for(lambda: desktop.find(lambda n: n.getRole() == desktop.a.ROLE_APPLICATION
         and n.get_process_id() == app.pid))
     report['application_pid'] = app.pid
+    announced('frame', 'Librairii · qualification frame.', frame_speech)
     report['snapshots'] = {}
     def snapshot(label):
         nodes = tree(desktop, accessible)
@@ -173,6 +195,7 @@ def record(desktop, binary, report):
     # Observe keyboard navigation only. Do not call an accessibility action or
     # programmatically set focus/text to make a missing semantic witness pass.
     navigation = []
+    search_speech = speech_marker()
     def key(value):
         assert desktop.active_pid() == app.pid, 'keyboard target lost foreground'
         desktop.key(value)
@@ -185,28 +208,39 @@ def record(desktop, binary, report):
             break
     report['tab_navigation'] = navigation
     assert navigation and any(n.get('states', {}).get('editable') for n in navigation[-1]), 'no keyboard-focused editable control'
+    announced('search', 'Search stories entry.', search_speech)
     assert desktop.active_pid() == app.pid, 'text target lost foreground'
     desktop.text('0042')
     native.wait_for(lambda: any(n.get('text') == '0042' for n in tree(desktop, accessible)))
     snapshot('filtered')
     desktop.screenshot(root / 'filtered.png')
+    settings_speech = speech_marker()
     key('Tab')
     settings_focus = snapshot('settings-invoker')
     assert any(n['name'] == 'Settings' for n in focused(settings_focus)), 'Settings invoker not keyboard-focused'
+    announced('settings', 'Settings push button.', settings_speech)
+    close_speech = speech_marker()
     key('space')
     native.wait_for(lambda: any(n['name'] == 'Close' for n in focused(tree(desktop, accessible))))
     snapshot('settings-open')
+    announced('close', 'Close push button.', close_speech)
+    english_speech = speech_marker()
     key('Tab')
     snapshot('settings-tab')
+    announced('english', 'English push button.', english_speech)
+    restored_speech = speech_marker()
     key('Escape')
     native.wait_for(lambda: focused(tree(desktop, accessible)) == focused(settings_focus))
     snapshot('settings-restored')
+    announced('restored', 'Settings push button.', restored_speech)
     # Give real speech delivery time to finish before stopping its sink recorder.
     time.sleep(2)
     report['orca_application_output'] = debug.read_bytes()[before:].decode('utf-8', errors='replace')
     report['baseline_checks'] = {'app_accessibility_tree': all(not s['observation_errors']
             for s in report['snapshots'].values()), 'keyboard_search': True,
         'keyboard_settings_and_focus_return': True,
+        'orca_search_label_completed': 'search' in report['speech_steps'],
+        'orca_settings_labels_completed': {'settings', 'close', 'english', 'restored'} <= report['speech_steps'].keys(),
         'orca_spoke_search_or_settings': any('SPEECH OUTPUT:' in line and
             any(word in line.lower() for word in ('search', 'settings', 'close'))
             for line in report['orca_application_output'].splitlines()),
@@ -230,6 +264,7 @@ def main():
     assert binary_sha == os.environ['EXPECTED_BINARY_SHA256']
     report = {'schema': 1, 'session': args.session, 'binary_sha256': binary_sha, 'errors': [],
         'baseline_checks': {}, 'baseline': 'fail', 'full_accessibility_qualified': False,
+        'observation_method': 'per-focus-utterance-and-audio-completion-v2',
         'scope': 'Private Orca/eSpeak-NG speech and AT-SPI baseline; keyboard Search and Settings only. '
             'Virtualized selection, review, progress/error speech and complete pointer-free flows remain unqualified.'}
     desktop, guard = None, None

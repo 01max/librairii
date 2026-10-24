@@ -17,13 +17,19 @@ common = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(common)
 REQUIRED = {'app_accessibility_tree', 'keyboard_search', 'keyboard_settings_and_focus_return',
     'orca_spoke_search_or_settings', 'speech_services_alive', 'normal_application_quit',
-    'actual_synthesized_audio', 'owned_fixture_removed'}
+    'actual_synthesized_audio', 'owned_fixture_removed', 'orca_search_label_completed',
+    'orca_settings_labels_completed'}
+SPEECH_STEPS = {'frame', 'search', 'settings', 'close', 'english', 'restored'}
 
 
 def baseline_passed(report, binary_sha):
     return (report.get('baseline') == 'pass' and report.get('errors') == []
+        and report.get('observation_method') == 'per-focus-utterance-and-audio-completion-v2'
         and report.get('binary_sha256') == binary_sha and report.get('application_returncode') == 0
         and REQUIRED <= report.get('baseline_checks', {}).keys()
+        and set(report.get('speech_steps', {})) == SPEECH_STEPS
+        and all(step.get('audio', {}).get('nonzero_samples', 0) > 1600
+            for step in report['speech_steps'].values())
         and all(report['baseline_checks'].values())
         and report.get('audio', {}).get('nonzero_samples', 0) > 1600
         and report.get('full_accessibility_qualified') is False)
