@@ -80,12 +80,12 @@ def inspect(package, archive, output):
                     '--session', session, '--display-only'], 180)
             except RuntimeError as error:
                 report['errors'].append(str(error))
-            value = json.loads((evidence / 'display/display-session.json').read_text())
-            report['sessions'][session] = value
-            report['checks'][session] = qualified(value, session)
             files = [p for p in evidence.rglob('*') if p.is_file()]
             if len(files) > 256 or any(p.stat().st_size > native.wayland.LIMIT for p in files):
                 raise ValueError('bounded display evidence limit')
+            value = json.loads((evidence / 'display/display-session.json').read_text())
+            report['sessions'][session] = value
+            report['checks'][session] = qualified(value, session)
             value['file_hashes'] = {str(p.relative_to(evidence)): hashlib.sha256(p.read_bytes()).hexdigest() for p in files}
     except (OSError, ValueError, RuntimeError) as error:
         report['errors'].append(str(error))

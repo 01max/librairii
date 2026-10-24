@@ -543,3 +543,7 @@ settled idle frames and actual1×↔2× owned Wayland output movement. Local ARM
 Retina runtime readback is2×/1800×1520 for900×760, normal exit and readable French
 frame; dirty-development source observation only, final-source repeat pending.
 New display rejection tests pass. Fresh native execution/review remains required.
+
+Independent2.5 display review correction: the Linux host now checks the complete
+evidence count/per-file bound before reading/parsing the session JSON. Oversized
+failed reports fail before allocation, matching existing native observers.
