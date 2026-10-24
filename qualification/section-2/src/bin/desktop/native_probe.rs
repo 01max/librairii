@@ -26,7 +26,7 @@ impl Recorder {
             .ok_or("native probe requires an explicit case")?;
         if !matches!(
             case.as_str(),
-            "files" | "folder" | "reveal" | "early-settings"
+            "files" | "folder" | "reveal" | "early-settings" | "input"
         ) {
             return Err("unknown native probe case".into());
         }
@@ -80,6 +80,24 @@ pub struct Probe {
 impl Probe {
     pub fn start(ui: &Spike, fixture: &Path, recorder: Rc<Recorder>) -> Self {
         recorder.write("fixture.txt", &fixture.to_string_lossy());
+        if recorder.case == "input" {
+            use slint::winit_030::{EventResult, WinitWindowAccessor, winit};
+            let events = RefCell::new(String::new());
+            let output = recorder.clone();
+            // Observe real OS IME delivery through Slint's versioned public
+            // Winit hook. Always propagate; never synthesize composition or
+            // modify the text widget to satisfy an external input assertion.
+            ui.window().on_winit_window_event(move |_, event| {
+                if let winit::event::WindowEvent::Ime(ime) = event {
+                    use std::fmt::Write;
+                    let mut trace = events.borrow_mut();
+                    writeln!(trace, "{ime:?}").expect("format native IME event");
+                    assert!(trace.len() <= 65_536, "native IME trace limit");
+                    output.write("ime-events.txt", &trace);
+                }
+                EventResult::Propagate
+            });
+        }
         let completed = Rc::new(Cell::new(false));
         let done = completed.clone();
         let weak = ui.as_weak();
@@ -132,7 +150,7 @@ impl Probe {
                                 "files" => ui.invoke_pick_files(),
                                 "folder" => ui.invoke_pick_folder(),
                                 "reveal" => ui.invoke_reveal_fixture(),
-                                "early-settings" => {}
+                                "early-settings" | "input" => {}
                                 _ => unreachable!(),
                             }
                             callback.write("callback-complete.txt", &ui.get_status());

@@ -13,6 +13,33 @@ func inputSource() -> String {
     return Unmanaged<CFString>.fromOpaque(value).takeUnretainedValue() as String
 }
 
+func inputProperty(_ source: TISInputSource, _ name: CFString) -> Any? {
+    guard let value = TISGetInputSourceProperty(source, name) else { return nil }
+    return Unmanaged<AnyObject>.fromOpaque(value).takeUnretainedValue()
+}
+
+func sourceDescription(_ source: TISInputSource) -> [String: Any] {
+    var result: [String: Any] = [:]
+    for (key, name) in [("id", kTISPropertyInputSourceID), ("type", kTISPropertyInputSourceType),
+                        ("bundle", kTISPropertyBundleID), ("enabled", kTISPropertyInputSourceIsEnabled),
+                        ("selected", kTISPropertyInputSourceIsSelected),
+                        ("enable_capable", kTISPropertyInputSourceIsEnableCapable),
+                        ("select_capable", kTISPropertyInputSourceIsSelectCapable)] {
+        if let value = inputProperty(source, name!) { result[key] = value }
+    }
+    return result
+}
+
+func inputSources(_ filter: [String: Any]) -> [TISInputSource] {
+    TISCreateInputSourceList(filter as CFDictionary, true).takeRetainedValue() as! [TISInputSource]
+}
+
+func sourceWithID(_ id: String) throws -> TISInputSource {
+    let sources = inputSources([kTISPropertyInputSourceID as String: id])
+    guard sources.count == 1 else { throw Failure.invalid("input source ID not unique: " + id) }
+    return sources[0]
+}
+
 func attribute(_ element: AXUIElement, _ name: String) -> CFTypeRef? {
     var value: CFTypeRef?
     guard AXUIElementCopyAttributeValue(element, name as CFString, &value) == .success else { return nil }
@@ -161,7 +188,8 @@ func post(_ code: CGKeyCode, down: Bool, flags: CGEventFlags, modifier: Bool = f
 
 func key(_ name: String) throws {
     let codes: [String: CGKeyCode] = ["a": 0, "g": 5, "c": 8, "v": 9, "x": 7, "z": 6,
-        "q": 12, "2": 19, "comma": 43, "escape": 53, "return": 36, "tab": 48]
+        "q": 12, "2": 19, "comma": 43, "escape": 53, "return": 36, "tab": 48,
+        "delete": 51, "space": 49]
     let parts = name.split(separator: "+").map(String.init)
     guard let last = parts.last, let code = codes[last] else { throw Failure.invalid("unknown key") }
     var flags = CGEventFlags()
@@ -215,10 +243,53 @@ do {
     let operation = CommandLine.arguments[1]
     let app = AXUIElementCreateApplication(pid)
     AXUIElementSetMessagingTimeout(app, 1)
-    if ["key", "digits", "menu"].contains(operation), NSWorkspace.shared.frontmostApplication?.processIdentifier != pid {
+    if ["key", "digits", "menu", "keycodes"].contains(operation), NSWorkspace.shared.frontmostApplication?.processIdentifier != pid {
         throw Failure.invalid("target app is not frontmost; native input refused")
     }
     switch operation {
+    case "input-sources":
+        // Exact French layout and the installed Japanese family only. No
+        // unbounded all-installed input-source walk on a developer desktop.
+        var sources = ["com.apple.inputmethod.Kotoeri.RomajiTyping", "com.apple.inputmethod.Kotoeri"]
+            .flatMap { inputSources([kTISPropertyBundleID as String: $0]) }
+        sources.append(try sourceWithID("com.apple.keylayout.French"))
+        sources.append(TISCopyCurrentKeyboardInputSource().takeRetainedValue())
+        guard sources.count <= 64 else { throw Failure.invalid("input-source inventory limit") }
+        var seen = Set<String>()
+        try output(["current": inputSource(), "sources": sources.compactMap { source -> [String: Any]? in
+            let value = sourceDescription(source)
+            guard let id = value["id"] as? String, seen.insert(id).inserted else { return nil }
+            return value
+        }])
+    case "input-source":
+        // This operation is reserved for the disposable hosted qualification
+        // account. Normal local observer use cannot change keyboard settings.
+        guard ProcessInfo.processInfo.environment["GITHUB_ACTIONS"] == "true",
+              ProcessInfo.processInfo.environment["TASK2_INPUT_CI"] == "1",
+              let id = request["source"] as? String else {
+            throw Failure.invalid("input-source mutation requires the explicit hosted-CI route")
+        }
+        let source = try sourceWithID(id)
+        let operation = request["operation"] as? String ?? ""
+        let status: OSStatus
+        switch operation {
+        case "enable": status = TISEnableInputSource(source)
+        case "disable": status = TISDisableInputSource(source)
+        case "select": status = TISSelectInputSource(source)
+        default: throw Failure.invalid("unknown input-source mutation")
+        }
+        guard status == noErr else { throw Failure.invalid("input-source operation failed: " + String(status)) }
+        try output(["current": inputSource(), "source": sourceDescription(source)])
+    case "keycodes":
+        guard let codes = request["codes"] as? [Int], !codes.isEmpty, codes.count <= 32,
+              codes.allSatisfy({ $0 >= 0 && $0 < 128 }) else {
+            throw Failure.invalid("bounded physical key-code sequence required")
+        }
+        for code in codes {
+            try post(CGKeyCode(code), down: true, flags: [])
+            try post(CGKeyCode(code), down: false, flags: [])
+        }
+        try output(["posted": true, "source": inputSource()])
     case "snapshot", "status":
         trace("reading owned CG windows and foreground status")
         var windows = (CGWindowListCopyWindowInfo([.optionOnScreenOnly, .excludeDesktopElements], kCGNullWindowID)

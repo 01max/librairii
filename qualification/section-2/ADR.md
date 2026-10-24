@@ -8,6 +8,13 @@ or declaring the toolkit qualified. Ordinary public component/event APIs remain
 the test route; no commercial test tooling is enabled. The tagged terms are
 retained verbatim in [notices/](notices/Slint-Royalty-free-2.0.md).
 
+The2.5 composition observer additionally enables Slint's versioned public
+`unstable-winit-030` feature. It records delivered IME events, always returns
+`Propagate`, and never creates composition events. This feature is explicitly
+unstable across minor releases: the exact1.18.1/0.30.13 pins and hook behavior
+require requalification on upgrade. No added production input mechanism or
+paid automation entitlement follows.
+
 The record below is historical research. The production data graph has since
 been implemented in merged Tasks 4/5/7: bundled SQLite, rawzip/flate2 and the
 reviewed pinned sevenz-turbo derivative, plus the frozen core query codec.

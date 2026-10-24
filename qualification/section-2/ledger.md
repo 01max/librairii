@@ -228,3 +228,14 @@ historical access gaps while identifying current reviewed routes and limits.
 The lack of owner-operated Intel/Linux machines is not an additional host gate.
 Remaining accessibility/input/display/performance/clean-package/selection work
 stays open. No new host, paid runner, account or system permission is provisioned.
+
+
+## 2026-10-24 native macOS composition method (2.5)
+
+The disposable-CI-only input observer uses public TIS/CGEvent calls and Slint's
+pinned versioned public Winit hook, always propagating actual IME events.
+It requires exact French dead-key/AZERTY output and Japanese preedit,
+candidate/commit/cancel, then restores original input-source selection and all
+enable states even on failure. The method preserves normal shutdown and bounds.
+First actual ARM/Intel native execution and independent evidence review remain
+pending; Linux composition and display/contrast/scaling gates stay open.

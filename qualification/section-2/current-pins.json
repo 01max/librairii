@@ -20,7 +20,8 @@
     "backend-winit-x11",
     "backend-winit-wayland",
     "renderer-skia",
-    "raw-window-handle-06"
+    "raw-window-handle-06",
+    "unstable-winit-030"
   ],
   "gui_candidates": [
     {

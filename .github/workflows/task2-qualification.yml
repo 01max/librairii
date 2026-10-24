@@ -179,6 +179,17 @@ jobs:
             --archive "target/task2-evidence/task2-$RUST_TARGET.tar.gz" \
             --helper "$RUNNER_TEMP/task2-native-macos" \
             --output target/task2-evidence/native-macos
+      - name: Observe French dead-key and Japanese IME input on the disposable macOS account
+        if: runner.os == 'macOS' && !cancelled() && steps.package.outcome == 'success'
+        env:
+          TASK2_INPUT_CI: '1'
+        run: |
+          xcrun swiftc qualification/section-2/native-macos/observer.swift -o "$RUNNER_TEMP/task2-input-macos"
+          python3 qualification/section-2/check-input-macos.py \
+            --package "$RUNNER_TEMP/task2-roundtrip/task2-$RUST_TARGET" \
+            --archive "target/task2-evidence/task2-$RUST_TARGET.tar.gz" \
+            --helper "$RUNNER_TEMP/task2-input-macos" \
+            --output target/task2-evidence/input-macos
       - name: Measure packaged startup markers, idle CPU, peak RSS and distribution size
         run: |
           package="$RUNNER_TEMP/task2-roundtrip/task2-$RUST_TARGET"
