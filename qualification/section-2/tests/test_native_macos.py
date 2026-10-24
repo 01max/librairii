@@ -15,6 +15,28 @@ spec.loader.exec_module(macos)
 
 
 class NativeMacOS(unittest.TestCase):
+    def test_go_folder_uses_native_editing_and_exact_readback_before_one_return(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            directory = pathlib.Path(temporary)
+            observer = macos.Observer(directory / 'helper', directory, 123)
+            root = {'role': 'AXSheet', 'identifier': 'open-panel',
+                'selector': {'window': 0, 'sheet': 0, 'path': []}}
+            sheet = {**root, 'identifier': 'GoToWindow',
+                'selector': {'window': 0, 'sheet': 0, 'path': [9]}}
+            field = {'role': 'AXTextField', 'identifier': 'PathTextField',
+                'selector': {'window': 0, 'sheet': 0, 'path': [9, 2]},
+                'value_settable': True, 'enabled': True, 'focused': True, 'value': 'previous path'}
+            opened = {'nodes': [root, sheet, field]}
+            edited = {'nodes': [root, sheet, {**field, 'value': str(directory)}]}
+            with mock.patch.object(observer, 'snapshot', side_effect=[opened, edited, {'nodes': [root]}]), \
+                    mock.patch.object(observer, 'call', return_value={'value': str(directory)}) as call:
+                observer.go_folder(directory, root)
+            self.assertNotIn('set', [v.args[0] for v in call.call_args_list])
+            self.assertEqual([v.kwargs['key'] for v in call.call_args_list if v.args[0] == 'key'],
+                ['cmd+shift+g', 'cmd+a', 'cmd+v', 'return'])
+            self.assertEqual([v.kwargs['text'] for v in call.call_args_list if v.args[0] == 'clipboard-set'],
+                [str(directory)])
+
     def test_explicit_batch_deadline_does_not_enter_native_request_payload(self):
         observer = macos.Observer(pathlib.Path('/owned/helper'), pathlib.Path('/owned/output'), 123)
         with mock.patch.object(macos.common.wayland, 'command', return_value={

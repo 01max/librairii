@@ -272,12 +272,17 @@ class Observer:
         def location():
             snapshot = self.snapshot()
             fields = go_folder_fields(snapshot, root)
-            return (snapshot, fields[0]) if len(fields) == 1 else None
+            return (snapshot, fields[0]) if len(fields) == 1 and fields[0].get('focused') is True else None
         snapshot, field = self.wait(location)
         (self.output / 'go-folder.json').write_text(json.dumps(snapshot, ensure_ascii=False, indent=2) + '\n')
-        reply = self.call('set', selector=selector(field), value=str(directory))
-        if reply.get('value') != str(directory):
-            raise ValueError('native Go to Folder value readback differs')
+        # An AX value assignment can move the panel without completing AppKit's
+        # edit/validation lifecycle. Deliver one real native edit sequence and
+        # require exact owned-field readback before accepting the path.
+        self.call('clipboard-set', text=str(directory))
+        self.call('key', key='cmd+a')
+        self.call('key', key='cmd+v')
+        entered, _ = self.wait(lambda: (v := location()) and v[1].get('value') == str(directory) and v)
+        (self.output / 'go-folder-entered.json').write_text(json.dumps(entered, ensure_ascii=False, indent=2) + '\n')
         self.call('key', key='return')
         self.wait(lambda: not any(same_root(n, root) and n.get('identifier') == 'GoToWindow'
             for n in self.snapshot()['nodes']))
