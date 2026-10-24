@@ -82,3 +82,12 @@ existed. It now waits for the public native window/display handles before
 invoking the callback and retains both raw handle descriptions. RFD's parent
 setter silently ignores unavailable handles. No actual dialog is retried and
 every original parent/PID/transient/protocol assertion remains mandatory.
+
+At `b71dcb2` / run40075891289, all eight X11 cases, actual reboot and all eight
+Wayland native cases pass in the offline VM. Normal/CPU renderer and component
+probes also pass; the phase correctly fails the compositor inventory because the
+VM seed omitted its `wayland-utils` observation package (`wayland-info` is
+absent). The package is now declared with the other observer tools. Reinstall
+was not reached, and no complete VM lifecycle pass is inferred. Artifact12553875558
+ZIP SHA256 `d8cab4e64475b8c74703121baf5e656ff35e5a6acd571e80e661d15d3f79a001`
+retains that failure and the successful native/protocol sub-observations.
