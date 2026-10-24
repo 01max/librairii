@@ -21,6 +21,8 @@ Modified files: src/node.rs backports the upstream disabled-state correction
 6ee0558b6315b3ef1594db24ce45a030ecac7cb5 and adds NodeWrapper regression tests.
 Cargo.toml removes its package-level resolver because the enclosing spike
 workspace owns that setting. No dependency version or feature is upgraded.
+The added clippy.toml retains the upstream crate's declared Rust 1.85 MSRV for
+style suggestions; the application continues to use its own Rust 1.99.1 policy.
 UPSTREAM.json records the original source-file hashes. The source patch and
 its regression tests must be requalified when the Slint/AccessKit pins change.
 
