@@ -1,5 +1,14 @@
 # Input / display gate (2.5, P14/P53/P56)
 
+Task2.5 is complete: native French dead keys, full selection/Delete, NFC/NFD
+caret/Undo/Redo, long clipboard text and source restoration pass. Native resizing,
+localized modals, compact Review reachability, contrast and reduced-motion checks
+pass; exact-source ARM2× frames and Linux2×/1×/2×/1× same-window movement supply
+Retina/mixed-scale coverage. See [selection-gate.md](selection-gate.md) and completion-evidence/.
+The owner language/VoiceOver/Windows scope below remains unchanged.
+
+Earlier observations below retain their dates, source commits and historical scope.
+
 ## Active owner scope, 2026-10-24
 
 The owner prioritizes correct UTF-8 data handling and French/Latin desktop input.
