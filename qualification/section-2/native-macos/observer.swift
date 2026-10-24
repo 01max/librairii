@@ -61,9 +61,10 @@ func text(_ element: AXUIElement, _ name: String) -> String {
     return ""
 }
 
-func checkedWindows(_ app: AXUIElement) throws -> [AXUIElement] {
+func checkedWindows(_ app: AXUIElement) throws -> [AXUIElement]? {
     var value: CFTypeRef?
     let status = AXUIElementCopyAttributeValue(app, kAXWindowsAttribute as CFString, &value)
+    if status == .cannotComplete { return nil }
     guard status == .success, let result = value as? [AXUIElement] else {
         throw Failure.invalid("Finder AXWindows query failed: " + String(status.rawValue))
     }
@@ -370,7 +371,16 @@ do {
         var documentObservation: [String: Any] = [:]
         if let document = request["document"] as? String {
             let target = URL(fileURLWithPath: document).resolvingSymlinksInPath().standardizedFileURL
-            let nativeWindows = try checkedWindows(app)
+            guard let nativeWindows = try checkedWindows(app) else {
+                // A busy Finder may temporarily reject the read. Preserve the
+                // exact result for the existing bounded read-only poll, never
+                // as an empty successful inventory or a closed-window witness.
+                try output(["pid": pid, "nodes": [], "windows": [],
+                    "document_window_query_status": AXError.cannotComplete.rawValue,
+                    "document_window_list_observed": false,
+                    "document_windows_observed": false] as [String: Any])
+                exit(0)
+            }
             // A newly opening Finder window can expose AXTitle=noValue before
             // its title exists. Keep this as incomplete read-only observation,
             // never as proof that our previously verified window has closed.

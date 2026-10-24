@@ -15,6 +15,14 @@ spec.loader.exec_module(macos)
 
 
 class NativeMacOS(unittest.TestCase):
+    def test_busy_finder_read_is_neither_a_ready_window_nor_retirement(self):
+        pending = {'pid': 123, 'nodes': [], 'windows': [], 'document_window_query_status': -25204,
+            'document_window_list_observed': False, 'document_windows_observed': False}
+        with tempfile.TemporaryDirectory() as temporary:
+            self.assertIsNone(macos.ready_finder_snapshot(pending, pathlib.Path(temporary), 123))
+        absent = {'observed': True, 'pid': 123, 'window_id': 184, 'present': False}
+        self.assertFalse(macos.finder_window_retired(pending, absent, 123, 184))
+
     def test_retirement_requires_the_verified_window_id_to_be_absent_even_offscreen(self):
         snapshot = {'document_window_list_observed': True, 'document_windows_observed': False,
             'unresolved_title_window_count': 1, 'owned_document_window_present': False,

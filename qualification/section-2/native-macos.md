@@ -218,3 +218,16 @@ foreground before publishing the start signal. Only then is the same public
 reveal callback queued outside the timer. The initial focus check,45-second
 guard and all subsequent path/closure checks remain mandatory. Other observers
 retain their existing automatic callback route.
+
+## 2026-10-24 Finder read readiness correction
+
+The Intel native runs atf462e38 and5f1606d retain a Finder AXWindows
+`cannotComplete` (-25204) result while locating the newly revealed folder.
+The5f1606d artifact12564410621 ZIP SHA256 is
+`5368681dc1517cee901825ed6bbdea3bb842f325b0f9ec8db0979d41fddc7165`.
+The failure remains recorded. The observer now returns that exact transient
+status with both document/window inventory-observed flags false, allowing only
+the existing bounded read-only poll to continue. It never represents the error
+as a successful empty inventory or proof of retirement. Other query errors and
+unexpected types remain fatal; exact path, unique public window ID and native
+retirement requirements are unchanged. Fresh Intel execution is required.
