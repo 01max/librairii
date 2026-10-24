@@ -1,6 +1,6 @@
 # Section 2 subtask-to-SHA ledger
 
-Owner: librairii-4. Draft [PR38](https://github.com/01max/librairii/pull/38).
+Owner: librairii-4. [PR38](https://github.com/01max/librairii/pull/38).
 Branch `rust/rewrite-02-feasibility-toolkit`, targeting only
 `rewrite-in-rust-native-desktop`; no merge authorized. Initial base
 `1419f1d7c5236016c0e330056c9eff45931ddf48`. Integration CI support through
@@ -634,3 +634,17 @@ completion-evidence/. Toolkit selection is complete under the explicit owner sco
 Task2.13 records the independently approved combined matrix and Slint decision in
 the following commit. The implementation evidence remains bound to d145d604 /
 run40123986713; subsequent closure metadata does not rewrite those artifacts.
+
+## Final revalidation after run68
+
+Run68 at f166d78 /40125909364 retains the failed Intel artwork wall/CPU trace.
+Task2.9 scratch optimization `edb25646f658` and packaged method metadata correction
+`e9ab1bad1b5e` preserve every read/decode/pixel/sample and50ms wall ceiling.
+Run69 was superseded by the metadata correction; no qualification is inferred.
+Implementation `e9ab1bad1b5ef9797877f1aa3a8cf577bbc6ffda` now passes [all three native targets](https://github.com/01max/librairii/actions/runs/40127878713), Rust quality
+and existing CI with exact raw artifact/source/notices/budget/cleanup review.
+Tasks2.9/2.13 are closed again after fresh independent approval. Prior run67
+matrix/review and all earlier failed observations stay attributed and preserved.
+The Intel68 and Wayland66 sporadic causes remain unknown. See selection-gate.md.
+
+Task 2.9 revalidation closure is committed separately as `3acd66f2fecf8cfa44d0d2bf361abd7eb580a445`; the following Task 2.13 commit records the approved combined matrix and selection.

@@ -1,55 +1,694 @@
 {
   "schema": 1,
   "date": "2026-10-24",
-  "implementation_head": "d145d604af917618ac6127bba8687806c5ed032a",
-  "native_workflow": "https://github.com/01max/librairii/actions/runs/40123986713",
+  "implementation_head": "e9ab1bad1b5ef9797877f1aa3a8cf577bbc6ffda",
+  "native_workflow": "https://github.com/01max/librairii/actions/runs/40127878713",
   "workflows": [
     {
-      "id": 40123986515,
+      "conclusion": "success",
+      "head_sha": "e9ab1bad1b5ef9797877f1aa3a8cf577bbc6ffda",
+      "id": 40127878646,
       "name": "CI",
-      "head_sha": "d145d604af917618ac6127bba8687806c5ed032a",
-      "status": "completed",
-      "conclusion": "success",
-      "run_number": 363
+      "run_number": 366,
+      "status": "completed"
     },
     {
-      "id": 40123986730,
+      "conclusion": "success",
+      "head_sha": "e9ab1bad1b5ef9797877f1aa3a8cf577bbc6ffda",
+      "id": 40127878625,
       "name": "Rust quality",
-      "head_sha": "d145d604af917618ac6127bba8687806c5ed032a",
-      "status": "completed",
-      "conclusion": "success",
-      "run_number": 227
+      "run_number": 230,
+      "status": "completed"
     },
     {
-      "id": 40123986713,
-      "name": "Task 2 native qualification",
-      "head_sha": "d145d604af917618ac6127bba8687806c5ed032a",
-      "status": "completed",
       "conclusion": "success",
-      "run_number": 67
+      "head_sha": "e9ab1bad1b5ef9797877f1aa3a8cf577bbc6ffda",
+      "id": 40127878713,
+      "name": "Task 2 native qualification",
+      "run_number": 70,
+      "status": "completed"
     }
   ],
   "jobs": [
     {
-      "id": 120961364552,
+      "id": 120973166976,
       "name": "Task 2 spike x86_64-apple-darwin",
       "status": "completed",
       "conclusion": "success",
-      "run_id": 40123986713
+      "run_id": 40127878713,
+      "logs_url": null,
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1
+        },
+        {
+          "name": "Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2
+        },
+        {
+          "name": "Linux desktop build and CPU smoke prerequisites",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 3
+        },
+        {
+          "name": "Install the exact candidate compiler",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4
+        },
+        {
+          "name": "Cache the isolated spike graph and build outputs",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5
+        },
+        {
+          "name": "Restore the exact compiled helper tools",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6
+        },
+        {
+          "name": "Ensure pinned test helpers",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 7
+        },
+        {
+          "name": "Assert native architecture and record compiler",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 8
+        },
+        {
+          "name": "Rust formatting, warnings and tests",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 9
+        },
+        {
+          "name": "Build the native spike",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 10
+        },
+        {
+          "name": "Public controller and widget smokes",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 11
+        },
+        {
+          "name": "Assemble package and operator checklist",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 12
+        },
+        {
+          "name": "Verify archive round-trip bytes and native host",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 13
+        },
+        {
+          "name": "Measure retained local artwork reads and full PNG decoding",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 14
+        },
+        {
+          "name": "Inspect packaged native runtime requirements",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 15
+        },
+        {
+          "name": "Force Linux GPU initialization failure and prove Skia CPU recovery",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 16
+        },
+        {
+          "name": "Record actual Orca speech and keyboard accessibility in private Linux desktops",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 17
+        },
+        {
+          "name": "Exercise the packaged Linux app on isolated Wayland without X11 fallback",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 18
+        },
+        {
+          "name": "Launch the verified Linux package offline without source or development tools",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 19
+        },
+        {
+          "name": "Observe real portal pickers, parent association, native focus and folder reveal",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 20
+        },
+        {
+          "name": "Retain native Linux traces before the independent VM checks",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 21
+        },
+        {
+          "name": "Install, reboot and reinstall the verified package in an offline native Linux VM",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 22
+        },
+        {
+          "name": "Inventory macOS native observer access without requesting privacy permissions",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 23
+        },
+        {
+          "name": "Observe actual native macOS sheets, menus, clipboard and folder reveal",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 24
+        },
+        {
+          "name": "Observe French UTF-8 dead keys and native editing on the disposable macOS account",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 25
+        },
+        {
+          "name": "Observe native Linux window sizes, contrast and mixed-scale transitions",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 26
+        },
+        {
+          "name": "Observe native Mac window sizes, localized dialogs and contrast",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 27
+        },
+        {
+          "name": "Launch and relaunch the Mac package with denied source and development access",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 28
+        },
+        {
+          "name": "Measure packaged startup markers, idle CPU, peak RSS and distribution size",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 29
+        },
+        {
+          "name": "Verify and exercise the packaged macOS app",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 30
+        },
+        {
+          "name": "Retain qualification packages and automated evidence",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 31
+        },
+        {
+          "name": "Post Restore the exact compiled helper tools",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 60
+        },
+        {
+          "name": "Post Cache the isolated spike graph and build outputs",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 61
+        },
+        {
+          "name": "Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 62
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 63
+        }
+      ]
     },
     {
-      "id": 120961364709,
-      "name": "Task 2 spike x86_64-unknown-linux-gnu",
-      "status": "completed",
-      "conclusion": "success",
-      "run_id": 40123986713
-    },
-    {
-      "id": 120961364772,
+      "id": 120973167139,
       "name": "Task 2 spike aarch64-apple-darwin",
       "status": "completed",
       "conclusion": "success",
-      "run_id": 40123986713
+      "run_id": 40127878713,
+      "logs_url": null,
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1
+        },
+        {
+          "name": "Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2
+        },
+        {
+          "name": "Linux desktop build and CPU smoke prerequisites",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 3
+        },
+        {
+          "name": "Install the exact candidate compiler",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4
+        },
+        {
+          "name": "Cache the isolated spike graph and build outputs",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5
+        },
+        {
+          "name": "Restore the exact compiled helper tools",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6
+        },
+        {
+          "name": "Ensure pinned test helpers",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 7
+        },
+        {
+          "name": "Assert native architecture and record compiler",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 8
+        },
+        {
+          "name": "Rust formatting, warnings and tests",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 9
+        },
+        {
+          "name": "Build the native spike",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 10
+        },
+        {
+          "name": "Public controller and widget smokes",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 11
+        },
+        {
+          "name": "Assemble package and operator checklist",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 12
+        },
+        {
+          "name": "Verify archive round-trip bytes and native host",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 13
+        },
+        {
+          "name": "Measure retained local artwork reads and full PNG decoding",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 14
+        },
+        {
+          "name": "Inspect packaged native runtime requirements",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 15
+        },
+        {
+          "name": "Force Linux GPU initialization failure and prove Skia CPU recovery",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 16
+        },
+        {
+          "name": "Record actual Orca speech and keyboard accessibility in private Linux desktops",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 17
+        },
+        {
+          "name": "Exercise the packaged Linux app on isolated Wayland without X11 fallback",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 18
+        },
+        {
+          "name": "Launch the verified Linux package offline without source or development tools",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 19
+        },
+        {
+          "name": "Observe real portal pickers, parent association, native focus and folder reveal",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 20
+        },
+        {
+          "name": "Retain native Linux traces before the independent VM checks",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 21
+        },
+        {
+          "name": "Install, reboot and reinstall the verified package in an offline native Linux VM",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 22
+        },
+        {
+          "name": "Inventory macOS native observer access without requesting privacy permissions",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 23
+        },
+        {
+          "name": "Observe actual native macOS sheets, menus, clipboard and folder reveal",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 24
+        },
+        {
+          "name": "Observe French UTF-8 dead keys and native editing on the disposable macOS account",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 25
+        },
+        {
+          "name": "Observe native Linux window sizes, contrast and mixed-scale transitions",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 26
+        },
+        {
+          "name": "Observe native Mac window sizes, localized dialogs and contrast",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 27
+        },
+        {
+          "name": "Launch and relaunch the Mac package with denied source and development access",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 28
+        },
+        {
+          "name": "Measure packaged startup markers, idle CPU, peak RSS and distribution size",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 29
+        },
+        {
+          "name": "Verify and exercise the packaged macOS app",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 30
+        },
+        {
+          "name": "Retain qualification packages and automated evidence",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 31
+        },
+        {
+          "name": "Post Restore the exact compiled helper tools",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 60
+        },
+        {
+          "name": "Post Cache the isolated spike graph and build outputs",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 61
+        },
+        {
+          "name": "Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 62
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 63
+        }
+      ]
+    },
+    {
+      "id": 120973167149,
+      "name": "Task 2 spike x86_64-unknown-linux-gnu",
+      "status": "completed",
+      "conclusion": "success",
+      "run_id": 40127878713,
+      "logs_url": null,
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1
+        },
+        {
+          "name": "Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2
+        },
+        {
+          "name": "Linux desktop build and CPU smoke prerequisites",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3
+        },
+        {
+          "name": "Install the exact candidate compiler",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4
+        },
+        {
+          "name": "Cache the isolated spike graph and build outputs",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5
+        },
+        {
+          "name": "Restore the exact compiled helper tools",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6
+        },
+        {
+          "name": "Ensure pinned test helpers",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 7
+        },
+        {
+          "name": "Assert native architecture and record compiler",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 8
+        },
+        {
+          "name": "Rust formatting, warnings and tests",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 9
+        },
+        {
+          "name": "Build the native spike",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 10
+        },
+        {
+          "name": "Public controller and widget smokes",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 11
+        },
+        {
+          "name": "Assemble package and operator checklist",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 12
+        },
+        {
+          "name": "Verify archive round-trip bytes and native host",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 13
+        },
+        {
+          "name": "Measure retained local artwork reads and full PNG decoding",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 14
+        },
+        {
+          "name": "Inspect packaged native runtime requirements",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 15
+        },
+        {
+          "name": "Force Linux GPU initialization failure and prove Skia CPU recovery",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 16
+        },
+        {
+          "name": "Record actual Orca speech and keyboard accessibility in private Linux desktops",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 17
+        },
+        {
+          "name": "Exercise the packaged Linux app on isolated Wayland without X11 fallback",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 18
+        },
+        {
+          "name": "Launch the verified Linux package offline without source or development tools",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 19
+        },
+        {
+          "name": "Observe real portal pickers, parent association, native focus and folder reveal",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 20
+        },
+        {
+          "name": "Retain native Linux traces before the independent VM checks",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 21
+        },
+        {
+          "name": "Install, reboot and reinstall the verified package in an offline native Linux VM",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 22
+        },
+        {
+          "name": "Inventory macOS native observer access without requesting privacy permissions",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 23
+        },
+        {
+          "name": "Observe actual native macOS sheets, menus, clipboard and folder reveal",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 24
+        },
+        {
+          "name": "Observe French UTF-8 dead keys and native editing on the disposable macOS account",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 25
+        },
+        {
+          "name": "Observe native Linux window sizes, contrast and mixed-scale transitions",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 26
+        },
+        {
+          "name": "Observe native Mac window sizes, localized dialogs and contrast",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 27
+        },
+        {
+          "name": "Launch and relaunch the Mac package with denied source and development access",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 28
+        },
+        {
+          "name": "Measure packaged startup markers, idle CPU, peak RSS and distribution size",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 29
+        },
+        {
+          "name": "Verify and exercise the packaged macOS app",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 30
+        },
+        {
+          "name": "Retain qualification packages and automated evidence",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 31
+        },
+        {
+          "name": "Post Restore the exact compiled helper tools",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 60
+        },
+        {
+          "name": "Post Cache the isolated spike graph and build outputs",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 61
+        },
+        {
+          "name": "Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 62
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 63
+        }
+      ]
     }
   ],
   "all_native_lanes_pass": true,
@@ -57,221 +696,221 @@
   "gui_lock_sha256": "613fcd9b99a9debd0fe125eea159fd63c3e075d77bb322b8b001ec7bb41bd2a3",
   "targets": {
     "aarch64-apple-darwin": {
-      "source": "a506cd5490ca6f262d23b297822d71901e1309cf",
-      "binary_sha256": "9c8255e31659e4af328d91adff93789d2660601d75afbfc5b119dd3f3ab16c39",
-      "artifact_sha256": "30a11b6eb45d45f8025aaf60d527133dc2421a7b09dc018cb2e4a5535aca0b25",
+      "source": "cf1208919018f881e2b9769d3d6563eb8516481d",
+      "binary_sha256": "1e5d243d6a781d8477bee8a61ee93e1fa7fcc018b969f69a8353470583b808ac",
+      "artifact_sha256": "a45e2164db23cf3711fcfd4341d7115f80d9df56624652aff26d2cf0ff68aaa3",
       "package_payloads_verified": 1301,
       "tar_members_verified": 1302,
       "native_notice_copies_verified": 28,
-      "hashes_verified": 433,
-      "artwork_p95_ms": 12.483292,
-      "artwork_method": "read-full-decode-v2-fixed100",
+      "hashes_verified": 435,
+      "artwork_p95_ms": 17.063041,
+      "artwork_method": "read-full-decode-v3-scratch-fixed100",
       "artwork_samples": 100,
       "artwork_wall_samples_ms": [
-        11.6975,
-        11.697291,
-        11.765042,
-        11.686375,
-        11.591916000000001,
-        11.67725,
-        11.855042,
-        11.839709000000001,
-        11.883625,
-        12.174624999999999,
-        12.153208000000001,
-        12.250791000000001,
-        12.483292,
-        12.19725,
-        12.384375,
-        12.130833,
-        12.003290999999999,
-        11.88575,
-        12.203958,
-        11.914667,
-        11.850917,
-        12.01075,
-        11.848875,
-        11.849917,
-        13.258667,
-        11.937,
-        12.330583,
-        11.799958,
-        12.369959,
-        11.848917,
-        12.072750000000001,
-        12.1175,
-        12.007708000000001,
-        11.884625,
-        11.977791,
-        12.128625000000001,
-        12.120709,
-        12.102375,
-        11.921917,
-        11.990459,
-        11.975917,
-        12.057791,
-        13.258167,
-        12.206916,
-        12.085749999999999,
-        11.781125,
-        11.971125,
-        12.639459,
-        13.596499999999999,
-        12.068458000000001,
-        12.055541,
-        11.819292,
-        11.809417,
-        12.120042,
-        11.822291,
-        12.137084,
-        12.22375,
-        12.273709,
-        11.958208999999998,
-        12.050042000000001,
-        12.081542,
-        12.002792,
-        11.753375,
-        11.717458,
-        11.703667,
-        11.932625,
-        11.76675,
-        11.859542000000001,
-        11.742167,
-        11.886167,
-        11.701167,
-        11.799208,
-        11.673,
-        11.750083,
-        11.702833,
-        11.596334,
-        11.562584000000001,
-        11.525292,
-        11.628958,
-        11.779708,
-        11.827041,
-        11.854750000000001,
-        11.838125,
-        11.813625,
-        11.797500000000001,
-        11.928167,
-        12.062375,
-        11.646458,
-        11.6855,
-        11.729042,
-        11.77775,
-        11.587667,
-        11.945625,
-        11.773125,
-        11.812209000000001,
-        11.805916,
-        11.8285,
-        11.759583000000001,
-        11.732875,
-        22.74775
+        12.245167,
+        12.091167,
+        12.67275,
+        12.285,
+        12.0225,
+        11.898875,
+        12.043417000000002,
+        13.7035,
+        14.44525,
+        13.670167000000001,
+        13.708791999999999,
+        14.07325,
+        12.863167,
+        12.151917,
+        12.368875,
+        14.952834,
+        17.305708,
+        12.001417,
+        12.874042000000001,
+        16.83225,
+        16.1385,
+        15.388625,
+        14.292375,
+        13.536459,
+        13.525416,
+        14.19975,
+        13.495083,
+        13.380125,
+        12.036417,
+        12.384792000000001,
+        11.839,
+        11.857332999999999,
+        12.043999999999999,
+        11.869875,
+        11.870624999999999,
+        11.90925,
+        11.820541,
+        13.112208,
+        14.744208,
+        14.286040999999999,
+        14.322583999999999,
+        15.904166,
+        14.517166,
+        12.720125000000001,
+        11.863292,
+        11.857667000000001,
+        11.986833,
+        11.891583,
+        12.024875000000002,
+        11.992792,
+        11.818667,
+        12.14775,
+        12.508917,
+        13.595875,
+        13.795125,
+        13.669,
+        14.206583,
+        15.446207999999999,
+        14.271291,
+        11.892542,
+        11.797291999999999,
+        11.731708000000001,
+        12.102125000000001,
+        11.860333,
+        11.783667,
+        12.92375,
+        11.90825,
+        16.948083999999998,
+        16.803124999999998,
+        18.388458,
+        19.351375,
+        14.581541999999999,
+        14.122582999999999,
+        13.781666,
+        13.412792,
+        13.095834,
+        13.98575,
+        13.843417,
+        13.81225,
+        13.867125,
+        14.670417,
+        13.7105,
+        13.741292,
+        13.617584,
+        13.915958000000002,
+        13.925625,
+        14.03975,
+        12.503375,
+        12.767916000000001,
+        12.230583,
+        16.017875,
+        14.721167,
+        11.864625,
+        14.9275,
+        19.800584,
+        14.652917,
+        17.023708,
+        17.063041000000002,
+        15.779083,
+        17.825582999999998
       ],
       "artwork_cpu_samples_ms": [
-        11.698,
-        11.697,
-        11.764999999999997,
-        11.687000000000003,
-        11.591999999999992,
-        11.655999999999999,
-        11.856000000000005,
-        11.83999999999999,
-        11.884999999999993,
-        12.084000000000012,
-        12.153999999999998,
-        12.241000000000001,
-        12.382000000000005,
-        12.198999999999987,
-        12.369999999999992,
-        12.131000000000004,
-        11.995000000000006,
-        11.886999999999981,
-        12.175000000000018,
-        11.906,
-        11.841999999999963,
-        12.010999999999994,
-        11.850000000000026,
-        11.834999999999985,
-        12.942999999999982,
-        11.938000000000004,
-        12.284000000000017,
-        11.801000000000005,
-        12.370999999999965,
-        11.849999999999971,
-        12.006000000000016,
-        12.077999999999978,
-        12.008000000000019,
-        11.885999999999953,
-        11.977999999999989,
-        12.122999999999994,
-        12.102000000000002,
-        12.073,
-        11.911000000000005,
-        11.966000000000033,
-        11.94400000000001,
-        12.054999999999927,
-        12.917999999999985,
-        12.156999999999973,
-        12.083999999999984,
-        11.772000000000006,
-        11.95999999999997,
-        12.60300000000003,
-        12.641000000000012,
-        12.047999999999949,
-        11.940000000000062,
-        11.807000000000013,
-        11.74900000000001,
-        11.854000000000031,
-        11.822,
-        12.136999999999954,
-        12.224000000000013,
-        12.257999999999992,
-        11.941000000000091,
-        12.050000000000004,
-        11.964000000000086,
-        12.002000000000068,
-        11.753000000000014,
-        11.712000000000057,
-        11.704999999999966,
-        11.934000000000001,
-        11.768,
-        11.859000000000064,
-        11.744000000000089,
-        11.870000000000047,
-        11.697999999999986,
-        11.746000000000034,
-        11.672999999999934,
-        11.750999999999955,
-        11.703000000000019,
-        11.59699999999997,
-        11.561999999999962,
-        11.525999999999925,
-        11.61599999999996,
-        11.753000000000014,
-        11.823999999999945,
-        11.841999999999908,
-        11.834000000000122,
-        11.781000000000041,
+        12.240999999999998,
+        12.091999999999999,
+        12.618999999999998,
+        12.285999999999998,
+        12.021999999999991,
+        11.899000000000006,
+        12.045,
+        13.677000000000008,
+        14.447000000000001,
+        13.647999999999993,
+        13.622999999999996,
+        14.058999999999989,
+        12.795000000000002,
+        12.101,
+        12.33200000000001,
+        14.952999999999994,
+        17.099000000000004,
+        11.97899999999999,
+        12.876999999999972,
+        16.836000000000016,
+        16.135000000000012,
+        15.388999999999985,
+        14.190000000000037,
+        13.535999999999992,
+        13.488,
+        14.16299999999998,
+        13.491000000000032,
+        13.33300000000004,
+        11.97999999999999,
+        12.295999999999975,
+        11.795999999999973,
+        11.859000000000009,
+        12.043999999999999,
+        11.869999999999992,
+        11.869000000000018,
+        11.884000000000006,
+        11.815999999999994,
+        13.05999999999996,
+        14.745000000000008,
+        14.279000000000043,
+        14.324000000000003,
+        15.905999999999976,
+        14.51800000000003,
+        12.720000000000065,
+        11.859999999999982,
+        11.858999999999952,
+        11.98700000000008,
+        11.858999999999952,
+        12.021999999999977,
+        11.991000000000085,
+        11.816000000000049,
+        12.109999999999953,
+        12.392999999999986,
+        13.597999999999999,
+        13.789999999999969,
+        13.669000000000043,
+        14.206999999999969,
+        15.44600000000007,
+        14.271999999999952,
+        11.816000000000049,
         11.797999999999975,
-        11.928999999999856,
-        11.956999999999995,
-        11.646999999999963,
-        11.682999999999888,
-        11.728999999999878,
-        11.778000000000066,
-        11.588000000000154,
-        11.737000000000108,
-        11.773999999999951,
-        11.789999999999967,
-        11.806999999999901,
-        11.82900000000009,
-        11.75399999999982,
-        11.714000000000002,
-        12.202999999999964
+        11.732999999999993,
+        12.086000000000041,
+        11.854000000000031,
+        11.784000000000017,
+        12.919000000000015,
+        11.897000000000046,
+        15.301999999999927,
+        16.80400000000004,
+        18.369999999999997,
+        19.313000000000024,
+        14.583000000000013,
+        14.098999999999972,
+        13.783999999999907,
+        13.382999999999923,
+        13.070000000000137,
+        13.956999999999997,
+        13.845000000000107,
+        13.806999999999903,
+        13.86899999999991,
+        14.670999999999879,
+        13.597999999999999,
+        13.741999999999921,
+        13.617999999999908,
+        13.892000000000015,
+        13.905000000000056,
+        14.026000000000094,
+        12.50400000000007,
+        12.76900000000003,
+        12.23099999999988,
+        16.019000000000005,
+        14.706999999999804,
+        11.819999999999942,
+        14.883000000000202,
+        19.770999999999983,
+        14.654999999999863,
+        17.02500000000007,
+        17.033999999999992,
+        15.62000000000019,
+        17.81900000000003
       ],
-      "artifact_url": "https://github.com/01max/librairii/actions/runs/40123986713/artifacts/12572243518",
+      "artifact_url": "https://github.com/01max/librairii/actions/runs/40127878713/artifacts/12574455518",
       "host": {
         "platform": "macOS-15.7.9-arm64-arm-64bit-Mach-O",
         "machine": "arm64",
@@ -280,12 +919,12 @@
         "memory_bytes": 7516192768
       },
       "distribution": {
-        "executable_bytes": 25672864,
-        "manifest_payload_bytes": 32893646,
+        "executable_bytes": 25668784,
+        "manifest_payload_bytes": 32891508,
         "archive": {
           "file": "task2-aarch64-apple-darwin.tar.gz",
-          "bytes": 10897443,
-          "sha256": "416c71b711abc66d1fd46f10147383143462ae2002e111bb51a847761f41622c"
+          "bytes": 10897715,
+          "sha256": "b5bb425a808e25b3677fee6e49332c5d826222d6b52880f6080a1c6a938234ed"
         },
         "disk_image": null,
         "disk_image_scope": "supplied builder output size/hash; contents not re-mounted here"
@@ -297,37 +936,37 @@
         "winit-skia": {
           "samples": 3,
           "launch_to_ready_marker_ms": {
-            "min": 171.19833399999607,
-            "median": 183.73933300000544,
-            "max": 260.47087500001
+            "min": 237.63091699998995,
+            "median": 310.0820410001006,
+            "max": 318.91683300000295
           },
           "idle_cpu_percent_one_core": {
-            "min": 0.8789554346653078,
-            "median": 0.8844546205801452,
-            "max": 1.047931929568841
+            "min": 1.3076553456634687,
+            "median": 1.319022633870031,
+            "max": 1.3891330747637574
           },
           "peak_rss_bytes": {
-            "min": 247922688,
-            "median": 250183680,
-            "max": 250544128
+            "min": 247300096,
+            "median": 248610816,
+            "max": 248807424
           }
         },
         "winit-skia-software": {
           "samples": 3,
           "launch_to_ready_marker_ms": {
-            "min": 102.83079199996337,
-            "median": 134.84375000001592,
-            "max": 211.88808399995196
+            "min": 193.69266599994717,
+            "median": 288.7559999999212,
+            "max": 372.3931669999274
           },
           "idle_cpu_percent_one_core": {
-            "min": 0.8871785609671392,
-            "median": 0.8894634583483305,
-            "max": 0.971583106926641
+            "min": 1.2101436418316984,
+            "median": 1.380937661711912,
+            "max": 1.5642694940619
           },
           "peak_rss_bytes": {
-            "min": 240484352,
-            "median": 240680960,
-            "max": 240730112
+            "min": 240156672,
+            "median": 240648192,
+            "max": 274137088
           }
         }
       },
@@ -384,53 +1023,53 @@
             "winit-skia": {
               "samples": 3,
               "launch_to_ready_marker_ms": {
-                "min": 171.19833399999607,
-                "median": 183.73933300000544,
-                "max": 260.47087500001
+                "min": 237.63091699998995,
+                "median": 310.0820410001006,
+                "max": 318.91683300000295
               },
               "idle_cpu_percent_one_core": {
-                "min": 0.8789554346653078,
-                "median": 0.8844546205801452,
-                "max": 1.047931929568841
+                "min": 1.3076553456634687,
+                "median": 1.319022633870031,
+                "max": 1.3891330747637574
               },
               "peak_rss_bytes": {
-                "min": 247922688,
-                "median": 250183680,
-                "max": 250544128
+                "min": 247300096,
+                "median": 248610816,
+                "max": 248807424
               }
             },
             "winit-skia-software": {
               "samples": 3,
               "launch_to_ready_marker_ms": {
-                "min": 102.83079199996337,
-                "median": 134.84375000001592,
-                "max": 211.88808399995196
+                "min": 193.69266599994717,
+                "median": 288.7559999999212,
+                "max": 372.3931669999274
               },
               "idle_cpu_percent_one_core": {
-                "min": 0.8871785609671392,
-                "median": 0.8894634583483305,
-                "max": 0.971583106926641
+                "min": 1.2101436418316984,
+                "median": 1.380937661711912,
+                "max": 1.5642694940619
               },
               "peak_rss_bytes": {
-                "min": 240484352,
-                "median": 240680960,
-                "max": 240730112
+                "min": 240156672,
+                "median": 240648192,
+                "max": 274137088
               }
             }
           }
         }
       },
       "native_performance": {
-        "native_input_performance": 31.087791,
-        "thousand_navigation": 303.063875
+        "native_input_performance": 33.137042,
+        "thousand_navigation": 303.944583
       },
       "report_sha256": {
-        "runtime-requirements.json": "3ea3562443b563a8c019d97956f79bb5649a9bf3e63098d2af5b486eb60da19a",
-        "resources/resource-measurements.json": "480fd460bb62a2b6ca229e49f746496f05626587a8509701fdb1722d9b0e94ea",
-        "native-macos/native-macos.json": "ef6af1b9be00532017cfc855e4145c6a1e05dcccf77c711a77859bc7333ab9ae",
-        "input-macos/input-macos.json": "07cb5b957d4df9ecde8b8e71f58e5419f393eb814cc72aeb66c05897ed8a0fd2",
-        "display-macos/display-macos.json": "4abe316e6cfbc8d95017d8768c742d9826c4deba60a3141046a9475d5be2bd0d",
-        "clean-macos/clean-macos.json": "c77c6438111e3a0083f026906158d97c30bef2f72b1e603500cd11c234814b09"
+        "runtime-requirements.json": "911f7602e832b7c6093fd72d843d7095240ffa9f87332c3685242939d3737340",
+        "resources/resource-measurements.json": "d1a9084a21cef570ec34c76a57a7f595b6625ea2160dcfda1047d0af8c999a98",
+        "native-macos/native-macos.json": "54fd8fa9d53cf3c285496f0c63979cdac2bbf86340f1c0dab7365c94a1ab3bad",
+        "input-macos/input-macos.json": "5e8f16f13a344d9e7fda43c8a7f83c6adc8d96914bf98535c6dd444b82809d9b",
+        "display-macos/display-macos.json": "b68d63722234d692d23d523f63dc751fdbc9e9625952ea9f4b532142be73dd67",
+        "clean-macos/clean-macos.json": "edce218c7ba49a17bd4720c14a6ee8c0d405ed763c5651d7a04bbd70052ed874"
       },
       "display": {
         "checks": {
@@ -449,7 +1088,7 @@
               400
             ],
             "native_resize": {
-              "old_outer_height": 682,
+              "old_outer_height": 681,
               "old_outer_width": 1024,
               "performed": true,
               "requested_outer_height": 428,
@@ -525,221 +1164,221 @@
       }
     },
     "x86_64-apple-darwin": {
-      "source": "a506cd5490ca6f262d23b297822d71901e1309cf",
-      "binary_sha256": "188af9308056e56c62797cfc7926b6db6793dd4c2216b74d7eadc78efba6369a",
-      "artifact_sha256": "62c06c5357af0cb2301547488a3a4570f4c3df6aafee32593aa6a1cef2ec68f3",
+      "source": "cf1208919018f881e2b9769d3d6563eb8516481d",
+      "binary_sha256": "77f26033562236810d60f971bd1d6b237bdc9650830077c4d7fa1d297a3f653f",
+      "artifact_sha256": "14da6ddfbce828e668b3177a205072850f2c7d100cc81cef210265b768e37e74",
       "package_payloads_verified": 1301,
       "tar_members_verified": 1302,
       "native_notice_copies_verified": 28,
-      "hashes_verified": 443,
-      "artwork_p95_ms": 15.903972,
-      "artwork_method": "read-full-decode-v2-fixed100",
+      "hashes_verified": 447,
+      "artwork_p95_ms": 16.792325,
+      "artwork_method": "read-full-decode-v3-scratch-fixed100",
       "artwork_samples": 100,
       "artwork_wall_samples_ms": [
-        13.373839,
-        13.564053,
-        13.36173,
-        13.144725,
-        13.103614,
-        13.504456,
-        13.559130000000001,
-        13.192535999999999,
-        13.447241,
-        16.846717,
-        15.32315,
-        14.603431,
-        13.524283,
-        14.950476,
-        15.118994,
-        15.559833000000001,
-        13.827928,
-        14.339759,
-        14.784429,
-        14.120917,
-        13.601063,
-        13.226368,
-        14.661121,
-        19.592916,
-        13.935550999999998,
-        13.48542,
-        14.058103000000001,
-        13.700341,
-        13.591422000000001,
-        15.585994000000001,
-        14.01979,
-        14.505289,
-        13.990269,
-        15.089328,
-        13.317623000000001,
-        13.264605000000001,
-        13.493197,
-        14.535619,
-        13.860742,
-        13.451184,
-        13.330769,
-        14.262436999999998,
-        13.789067000000001,
-        14.427895,
-        14.545728,
-        13.933638,
-        13.737749,
-        14.911622,
-        14.215296,
-        13.715154,
-        14.408558,
-        17.108496000000002,
-        13.887536,
-        13.972083999999999,
-        14.46391,
-        14.011979,
-        13.990053000000001,
-        14.538257,
-        14.80692,
-        14.112871,
-        13.816805,
-        15.220717,
-        13.869114,
-        13.852998999999999,
-        14.080936000000001,
-        15.559807,
-        13.43174,
-        13.726985,
-        14.072206,
-        13.426041999999999,
-        13.665106,
-        13.436153,
-        13.266821,
-        13.318699,
-        13.659405,
-        13.905918999999999,
-        14.036405,
-        13.399167,
-        13.563578999999999,
-        13.98992,
-        15.903972,
-        15.311998,
-        13.787605,
-        13.881933,
-        13.30748,
-        14.100244,
-        13.679645,
-        13.43057,
-        13.574447,
-        15.997158,
-        19.011966,
-        13.869183999999999,
-        14.020766,
-        14.241887,
-        13.754499,
-        14.417665,
-        15.689804000000002,
-        13.584097,
-        13.532069,
-        13.625942
+        11.198784,
+        11.237461000000001,
+        11.32399,
+        11.632282,
+        11.805064,
+        11.621785000000001,
+        11.363363,
+        11.633234,
+        11.472687,
+        11.309139,
+        11.437790999999999,
+        11.362841,
+        11.374603,
+        11.466978,
+        11.562843999999998,
+        11.810124,
+        11.192173,
+        11.197644,
+        12.138085,
+        11.53269,
+        12.545443,
+        12.155077,
+        11.604291,
+        11.412722,
+        11.261537,
+        11.235610999999999,
+        11.415408,
+        20.127117,
+        15.344573,
+        11.262173,
+        11.542582,
+        11.944996,
+        11.36009,
+        11.273531,
+        11.290505,
+        14.444275,
+        16.792325,
+        13.545822000000001,
+        13.931238,
+        12.931769,
+        11.388169999999999,
+        11.341199999999999,
+        13.242885,
+        12.189791999999999,
+        14.810820000000001,
+        14.896153,
+        15.825771999999999,
+        20.550461,
+        16.064552,
+        13.197554,
+        13.165972,
+        12.407159,
+        14.779029000000001,
+        12.839728,
+        14.592206,
+        12.422542,
+        14.855368,
+        12.13447,
+        31.678217,
+        26.698249,
+        14.200476,
+        13.250313,
+        13.202753,
+        16.890777999999997,
+        12.09896,
+        13.17114,
+        14.871870000000001,
+        11.921854000000002,
+        11.548126,
+        11.739797,
+        11.913898,
+        12.130346,
+        12.481986000000001,
+        16.696604,
+        13.005605,
+        12.636181,
+        13.470144,
+        12.306438,
+        16.403709,
+        14.499099,
+        14.228171,
+        12.312593999999999,
+        11.98409,
+        11.619137,
+        12.833303,
+        11.607774,
+        11.754198,
+        11.681308,
+        11.66501,
+        12.498739,
+        11.807777999999999,
+        13.907833,
+        11.562324,
+        11.634745,
+        11.761472,
+        11.610673,
+        11.509197,
+        11.922077999999999,
+        11.689831,
+        11.490456
       ],
       "artwork_cpu_samples_ms": [
-        13.376,
-        13.549999999999999,
-        13.364000000000008,
-        13.145000000000003,
-        13.105000000000006,
-        13.477000000000002,
-        13.560000000000002,
-        13.193999999999983,
-        13.449000000000016,
-        16.259999999999998,
-        15.325000000000005,
-        14.429999999999998,
-        13.494000000000007,
-        14.950999999999992,
-        15.119999999999994,
-        15.518000000000004,
-        13.828000000000007,
-        14.341999999999967,
-        14.784999999999993,
-        14.122999999999998,
-        13.578000000000035,
-        13.22699999999999,
-        14.662999999999982,
-        19.595000000000027,
-        13.891000000000043,
-        13.424999999999965,
-        14.025999999999982,
-        13.702000000000048,
-        13.574999999999948,
-        15.565000000000051,
-        14.022000000000034,
-        14.506999999999993,
-        13.99200000000006,
-        15.029000000000071,
-        13.319999999999999,
-        13.264999999999972,
-        13.494000000000007,
-        14.535999999999994,
-        13.799000000000007,
-        13.404000000000082,
-        13.332000000000011,
-        14.263000000000027,
-        13.789999999999969,
-        14.429000000000025,
-        14.546999999999976,
-        13.92799999999994,
-        13.738999999999946,
-        14.912999999999954,
-        14.217000000000034,
-        13.717000000000091,
-        14.409000000000006,
-        17.10899999999993,
-        13.88900000000004,
-        13.974000000000043,
-        14.46499999999995,
-        14.013999999999971,
-        13.990999999999975,
-        14.53899999999997,
-        14.809000000000072,
-        14.114999999999988,
-        13.817999999999998,
-        15.221999999999959,
-        13.871000000000077,
-        13.813999999999993,
-        14.08200000000004,
-        15.442999999999984,
-        13.433000000000028,
-        13.721000000000094,
-        14.073000000000002,
-        13.427999999999995,
-        13.666999999999874,
-        13.438000000000061,
-        13.268000000000058,
-        13.319999999999999,
-        13.58400000000004,
-        13.908000000000031,
-        14.037000000000077,
-        13.352999999999948,
-        13.537999999999828,
-        13.991000000000087,
-        15.12099999999994,
-        14.485999999999999,
-        13.790000000000191,
-        13.884000000000007,
-        13.309000000000015,
-        14.101999999999837,
-        13.679999999999914,
-        13.431000000000193,
-        13.576000000000032,
-        15.664000000000122,
-        18.337000000000046,
-        13.871000000000189,
-        13.990999999999865,
-        14.243000000000006,
-        13.756000000000101,
-        14.366000000000101,
-        15.69200000000004,
-        13.584999999999958,
-        13.533999999999935,
-        13.627999999999973
+        11.201000000000002,
+        11.238999999999999,
+        11.324999999999994,
+        11.634000000000006,
+        11.778999999999998,
+        11.623000000000008,
+        11.363999999999999,
+        11.635000000000007,
+        11.472999999999997,
+        11.310000000000015,
+        11.438999999999977,
+        11.364000000000013,
+        11.375999999999998,
+        11.468000000000005,
+        11.563999999999991,
+        11.810999999999988,
+        11.19400000000001,
+        11.200000000000015,
+        12.108000000000008,
+        11.480999999999991,
+        12.25599999999999,
+        11.996000000000006,
+        11.606000000000005,
+        11.388999999999982,
+        11.261999999999993,
+        11.236000000000024,
+        11.41700000000001,
+        11.707000000000022,
+        12.458999999999998,
+        11.262999999999968,
+        11.54299999999997,
+        11.924999999999963,
+        11.36100000000001,
+        11.275000000000034,
+        11.29199999999997,
+        11.998999999999981,
+        12.523000000000007,
+        12.845999999999968,
+        12.005000000000043,
+        11.969000000000008,
+        11.389000000000038,
+        11.342000000000073,
+        12.866000000000044,
+        12.083000000000066,
+        11.943999999999955,
+        14.185000000000002,
+        15.348999999999947,
+        13.569999999999972,
+        12.083999999999984,
+        12.858999999999954,
+        12.816999999999968,
+        12.187999999999978,
+        12.36499999999996,
+        12.47100000000001,
+        13.56500000000005,
+        12.263000000000023,
+        12.330000000000062,
+        11.953000000000102,
+        13.170000000000016,
+        13.913000000000064,
+        12.626999999999944,
+        12.256000000000045,
+        12.809999999999988,
+        12.623999999999969,
+        11.780999999999931,
+        12.626999999999944,
+        12.708000000000052,
+        11.90900000000006,
+        11.549000000000031,
+        11.741000000000001,
+        11.83499999999993,
+        12.093000000000021,
+        12.483000000000022,
+        12.940999999999981,
+        12.104000000000003,
+        12.201999999999934,
+        12.707999999999942,
+        12.079000000000061,
+        13.734000000000023,
+        13.252000000000042,
+        12.712999999999974,
+        12.10700000000009,
+        11.86699999999985,
+        11.620000000000186,
+        12.098000000000164,
+        11.60899999999998,
+        11.75499999999996,
+        11.68300000000011,
+        11.665999999999954,
+        12.499999999999956,
+        11.808999999999958,
+        13.910000000000089,
+        11.56400000000013,
+        11.63599999999998,
+        11.762999999999968,
+        11.612000000000178,
+        11.508999999999991,
+        11.79600000000014,
+        11.691999999999814,
+        11.492000000000058
       ],
-      "artifact_url": "https://github.com/01max/librairii/actions/runs/40123986713/artifacts/12572054305",
+      "artifact_url": "https://github.com/01max/librairii/actions/runs/40127878713/artifacts/12574070368",
       "host": {
         "platform": "macOS-15.7.9-x86_64-i386-64bit-Mach-O",
         "machine": "x86_64",
@@ -748,12 +1387,12 @@
         "memory_bytes": 15032385536
       },
       "distribution": {
-        "executable_bytes": 26460656,
-        "manifest_payload_bytes": 33681438,
+        "executable_bytes": 26470416,
+        "manifest_payload_bytes": 33693140,
         "archive": {
           "file": "task2-x86_64-apple-darwin.tar.gz",
-          "bytes": 11439858,
-          "sha256": "f59d1f5ea4c8ec6e5d5184f1b3e49ca50d36b0e397d96905956d5328b88c65a2"
+          "bytes": 11451736,
+          "sha256": "76e6c8ae333985b2bb40022c7c02af96fec46a8ec88f83a54ee955e09d2bbe7c"
         },
         "disk_image": null,
         "disk_image_scope": "supplied builder output size/hash; contents not re-mounted here"
@@ -765,37 +1404,37 @@
         "winit-skia": {
           "samples": 3,
           "launch_to_ready_marker_ms": {
-            "min": 218.41080100000454,
-            "median": 224.54389300003186,
-            "max": 247.94950699993024
+            "min": 191.67702499998995,
+            "median": 191.77942099997836,
+            "max": 206.9240499999978
           },
           "idle_cpu_percent_one_core": {
-            "min": 0.8033855386431866,
-            "median": 1.3116294264163104,
-            "max": 1.3682590439745457
+            "min": 0.651605912790742,
+            "median": 0.9699793753317779,
+            "max": 1.1269091834284812
           },
           "peak_rss_bytes": {
-            "min": 225632256,
-            "median": 226115584,
-            "max": 227049472
+            "min": 225476608,
+            "median": 225599488,
+            "max": 225697792
           }
         },
         "winit-skia-software": {
           "samples": 3,
           "launch_to_ready_marker_ms": {
-            "min": 231.58647699995072,
-            "median": 231.83494900001733,
-            "max": 233.69411499993475
+            "min": 193.69684200000847,
+            "median": 193.92668499995125,
+            "max": 197.74839199999406
           },
           "idle_cpu_percent_one_core": {
-            "min": 0.7353985941151366,
-            "median": 1.0662967779165482,
-            "max": 1.6265292926267527
+            "min": 0.6553884218364587,
+            "median": 1.2148990251885827,
+            "max": 1.3749808914558226
           },
           "peak_rss_bytes": {
-            "min": 215805952,
-            "median": 215834624,
-            "max": 238882816
+            "min": 215941120,
+            "median": 239050752,
+            "max": 239063040
           }
         }
       },
@@ -852,53 +1491,53 @@
             "winit-skia": {
               "samples": 3,
               "launch_to_ready_marker_ms": {
-                "min": 218.41080100000454,
-                "median": 224.54389300003186,
-                "max": 247.94950699993024
+                "min": 191.67702499998995,
+                "median": 191.77942099997836,
+                "max": 206.9240499999978
               },
               "idle_cpu_percent_one_core": {
-                "min": 0.8033855386431866,
-                "median": 1.3116294264163104,
-                "max": 1.3682590439745457
+                "min": 0.651605912790742,
+                "median": 0.9699793753317779,
+                "max": 1.1269091834284812
               },
               "peak_rss_bytes": {
-                "min": 225632256,
-                "median": 226115584,
-                "max": 227049472
+                "min": 225476608,
+                "median": 225599488,
+                "max": 225697792
               }
             },
             "winit-skia-software": {
               "samples": 3,
               "launch_to_ready_marker_ms": {
-                "min": 231.58647699995072,
-                "median": 231.83494900001733,
-                "max": 233.69411499993475
+                "min": 193.69684200000847,
+                "median": 193.92668499995125,
+                "max": 197.74839199999406
               },
               "idle_cpu_percent_one_core": {
-                "min": 0.7353985941151366,
-                "median": 1.0662967779165482,
-                "max": 1.6265292926267527
+                "min": 0.6553884218364587,
+                "median": 1.2148990251885827,
+                "max": 1.3749808914558226
               },
               "peak_rss_bytes": {
-                "min": 215805952,
-                "median": 215834624,
-                "max": 238882816
+                "min": 215941120,
+                "median": 239050752,
+                "max": 239063040
               }
             }
           }
         }
       },
       "native_performance": {
-        "native_input_performance": 35.132345,
-        "thousand_navigation": 313.636671
+        "native_input_performance": 34.253094,
+        "thousand_navigation": 303.181033
       },
       "report_sha256": {
-        "runtime-requirements.json": "0cb4975136bac544a9a5bc03064e2e788965cb2153744150f52d805a15336046",
-        "resources/resource-measurements.json": "a07560dcde46c21bfc88f783b0c57f099c09c3355b72cfc649c3ee9dd6ab28d8",
-        "native-macos/native-macos.json": "9b4be203823c03a419aa1fcf29603c348b2739aab4d6da48400c75d826771e5c",
-        "input-macos/input-macos.json": "c74e4ef3516e44d02bea948fa62934ca59739cdac9a746e26806d8386d806ea7",
-        "display-macos/display-macos.json": "f48bf96843324ad6ff25efccc04a2b46dd67911b45776675b12b9885d69b06d5",
-        "clean-macos/clean-macos.json": "d3aa95392ec32b676c1de7c482d90171e53b0782c0f6a63307f720e521da2f60"
+        "runtime-requirements.json": "fe1aca4c5268a359a4c28d3c4b03b0ffd990a5856149fcfe23f710add55393e1",
+        "resources/resource-measurements.json": "079fbba857b456331c5fbee9a0ff68b93f95f7240435097170086ec72b637a9b",
+        "native-macos/native-macos.json": "0f9781928e8d10743fc0bf6ad93b35cc2da5927c4499dc51a912aaf1ff313976",
+        "input-macos/input-macos.json": "3ba59fb7f082919bfe4bb4162dd3e0a4293ff212db046365aaa385f3ee7fc01f",
+        "display-macos/display-macos.json": "14878196e345f961760c99ecba70f9ad540642eace119cac4a86f56fe755755a",
+        "clean-macos/clean-macos.json": "6bb9b55819ff99e82cd5a687502501dddf37564448221300fa99a0e78f513189"
       },
       "display": {
         "checks": {
@@ -993,221 +1632,221 @@
       }
     },
     "x86_64-unknown-linux-gnu": {
-      "source": "a506cd5490ca6f262d23b297822d71901e1309cf",
-      "binary_sha256": "0b7dc32208040b87b6cda43059ee5c9acd8f1b13536a4aed65d71f39d6dfabf9",
-      "artifact_sha256": "146ad8c63544b6a07aeb2c0e17abf5b8928b92f390e3df04fa230463a76a90e6",
+      "source": "cf1208919018f881e2b9769d3d6563eb8516481d",
+      "binary_sha256": "20500cd024f6ec7bbf92613af40e068739c81d493c8e8149de3e69f9cb0b4f56",
+      "artifact_sha256": "fe90c524e2e93edc3a99f90969d7fedbf8c737f980ef6c41aa64da27e77bad9d",
       "package_payloads_verified": 729,
       "tar_members_verified": 730,
       "native_notice_copies_verified": 14,
       "hashes_verified": 692,
-      "artwork_p95_ms": 11.820579,
-      "artwork_method": "read-full-decode-v2-fixed100",
+      "artwork_p95_ms": 11.90765,
+      "artwork_method": "read-full-decode-v3-scratch-fixed100",
       "artwork_samples": 100,
       "artwork_wall_samples_ms": [
-        11.338285,
-        11.338054999999999,
-        11.291063000000001,
-        11.325125,
-        11.353168,
-        11.33469,
-        11.277873000000001,
-        11.284003,
-        11.329911999999998,
-        11.286275999999999,
-        11.218905,
-        11.142904999999999,
-        11.144357000000001,
-        11.095383,
-        11.937496000000001,
-        11.788300999999999,
-        11.345301000000001,
-        11.204117,
-        11.191849,
-        11.065929,
-        11.176566000000001,
-        11.200672,
-        11.267774,
-        11.310228,
-        11.32481,
-        11.314744,
-        11.283007,
-        11.303357,
-        11.302657,
-        11.254624,
-        11.266131,
-        11.196716,
-        11.281654,
-        11.310298,
-        11.259001,
-        11.226882,
-        11.300493,
-        11.315196,
-        11.26501,
-        11.262937,
-        11.275806,
-        11.287384,
-        11.317018,
-        11.280824,
-        11.243708,
-        11.352462000000001,
-        11.283177,
-        11.417289,
-        11.392062,
-        11.287524,
-        11.321154,
-        11.554577,
-        11.303868999999999,
-        11.276447000000001,
-        11.293703,
-        11.403488999999999,
-        11.268044,
-        11.304029,
-        11.263036000000001,
-        11.284799,
-        11.335466,
-        11.285261,
-        11.55606,
-        11.898818,
-        11.926479,
-        11.820578999999999,
-        11.872248,
-        11.874191,
-        11.74147,
-        11.779948000000001,
-        11.583941000000001,
-        11.449688,
-        11.379062000000001,
-        11.522639,
-        11.611443000000001,
-        11.479063,
-        11.373313,
-        11.378041,
-        11.332592,
-        11.308265,
-        11.353353,
-        11.306122,
-        11.303177,
-        11.240773,
-        11.304228,
-        11.289376,
-        11.373383,
-        11.401897,
-        11.471622,
-        11.44403,
-        11.469889,
-        11.397079,
-        11.446414,
-        11.447395,
-        11.391801,
-        11.519133,
-        11.475147,
-        11.532874,
-        11.526625000000001,
-        11.439824
+        11.877284,
+        11.889022,
+        11.908181,
+        11.792316000000001,
+        11.74223,
+        11.783762999999999,
+        11.806728000000001,
+        11.805746000000001,
+        11.78181,
+        11.764524,
+        11.803121999999998,
+        11.790393,
+        11.790714000000001,
+        11.788208999999998,
+        11.836062,
+        11.853909,
+        11.820288,
+        11.791715,
+        11.800468,
+        11.822040000000001,
+        11.90765,
+        11.825315,
+        11.796562,
+        11.804224,
+        11.797764,
+        11.788699999999999,
+        11.816362,
+        11.789150999999999,
+        11.789702,
+        11.800899,
+        11.779675999999998,
+        11.792916,
+        11.796943,
+        11.775781,
+        11.818986,
+        11.808089,
+        11.834439,
+        11.766166,
+        11.806197,
+        11.829803,
+        11.87493,
+        11.847329,
+        11.836152,
+        12.941202,
+        11.872027000000001,
+        11.912628,
+        11.869652,
+        11.823231999999999,
+        11.824895,
+        11.805204999999999,
+        11.824364000000001,
+        11.809662,
+        11.799967,
+        11.822712000000001,
+        11.790102000000001,
+        11.773597,
+        12.189917,
+        11.898216,
+        11.838957,
+        12.003054,
+        11.783933,
+        11.843413,
+        11.810714,
+        11.790422999999999,
+        11.789001,
+        11.256847,
+        11.405791,
+        11.215022999999999,
+        11.171066999999999,
+        11.152277999999999,
+        11.181072,
+        11.155573,
+        11.132729,
+        11.15368,
+        11.12695,
+        11.083664,
+        11.162623,
+        11.169154,
+        11.167321,
+        11.133069,
+        11.10035,
+        11.245279,
+        11.213811,
+        11.182053000000002,
+        11.169144000000001,
+        11.114410999999999,
+        11.111697,
+        11.125968,
+        11.141801999999998,
+        11.145208,
+        11.134731,
+        11.116964999999999,
+        11.128332,
+        11.119669,
+        11.106950000000001,
+        11.104045,
+        11.141732,
+        11.161202,
+        11.145939,
+        11.119659
       ],
       "artwork_cpu_samples_ms": [
-        11.339879,
-        11.339859,
-        11.292559,
-        11.326709999999997,
-        11.354901999999994,
-        11.335933000000006,
-        11.279329000000004,
-        11.285348,
-        11.331747000000004,
-        11.287872000000004,
-        11.219969999999996,
-        11.144178000000004,
-        11.145809999999978,
-        11.096606999999981,
-        11.940514999999985,
-        11.791072000000014,
-        11.347550999999983,
-        11.205379000000015,
-        11.193621000000014,
-        11.067051999999993,
-        11.179139999999975,
-        11.202213999999987,
-        11.268924000000013,
-        11.311427000000041,
-        11.326369000000003,
-        11.315983999999945,
-        11.284267000000014,
-        11.304777000000044,
-        11.304156999999982,
-        11.25585499999998,
-        11.267841999999973,
-        11.197977999999997,
-        11.282765000000028,
-        11.311726999999994,
-        11.26020099999997,
-        11.227971999999975,
-        11.301612000000016,
-        11.316224000000041,
-        11.26596000000002,
-        11.263796999999965,
-        11.27665499999997,
-        11.288132000000006,
-        11.318296999999976,
-        11.281792999999984,
-        11.244726999999898,
-        11.354110999999945,
-        11.284527000000043,
-        11.419487999999923,
-        11.395682999999934,
-        11.288662999999977,
-        11.322893999999973,
-        11.556031999999995,
-        11.30526799999998,
-        11.27758599999995,
-        11.294782000000003,
-        11.40566799999998,
-        11.26968500000003,
-        11.30530800000007,
-        11.264286000000068,
-        11.286139999999945,
-        11.336465000000073,
-        11.286871000000032,
-        11.558114000000064,
-        11.900145000000029,
-        11.927534999999988,
-        11.822259000000003,
-        11.874927000000035,
-        11.875579000000025,
-        11.742840000000033,
-        11.781959000000008,
-        11.585495999999917,
-        11.436474000000029,
-        11.380429999999997,
-        11.523814000000021,
-        11.612646999999976,
-        11.480549000000062,
-        11.375041999999947,
-        11.359118000000002,
-        11.334300999999991,
-        11.309444000000003,
-        11.354842000000032,
-        11.307311000000041,
-        11.286180000000034,
-        11.241983999999983,
-        11.305577999999983,
-        11.290476000000105,
-        11.37471099999987,
-        11.404065000000019,
-        11.473048000000041,
-        11.445446999999831,
-        11.47146599999993,
-        11.398355999999943,
-        11.447509999999994,
-        11.448832000000131,
-        11.39322900000006,
-        11.520498999999962,
-        11.476692999999871,
-        11.519897999999973,
-        11.52814000000002,
-        11.425177000000009
+        11.878046000000001,
+        11.889793,
+        11.908911999999994,
+        11.792877000000008,
+        11.742782000000007,
+        11.784314999999989,
+        11.80727899999999,
+        11.806297999999993,
+        11.782371,
+        11.765075999999999,
+        11.803682999999982,
+        11.790944999999997,
+        11.791264999999996,
+        11.788770999999976,
+        11.836604000000001,
+        11.854670000000011,
+        11.820880000000006,
+        11.792297000000007,
+        11.80113000000002,
+        11.822602000000016,
+        11.89731500000002,
+        11.825927000000014,
+        11.797123999999993,
+        11.804784999999985,
+        11.798326000000026,
+        11.789242000000034,
+        11.807239999999997,
+        11.789702000000013,
+        11.79027399999999,
+        11.80146999999998,
+        11.780239000000027,
+        11.783692999999984,
+        11.79754500000002,
+        11.776363000000012,
+        11.819558000000008,
+        11.808680999999988,
+        11.835021000000001,
+        11.766737999999998,
+        11.806778000000017,
+        11.830363999999982,
+        11.875742000000022,
+        11.847939999999946,
+        11.836724000000022,
+        12.942613999999963,
+        11.872706999999982,
+        11.91326799999992,
+        11.8703240000001,
+        11.823804000000049,
+        11.825466000000006,
+        11.805787000000013,
+        11.825026000000015,
+        11.810242999999998,
+        11.80052900000006,
+        11.823373999999998,
+        11.790634000000022,
+        11.774169000000057,
+        12.190805000000026,
+        11.898915999999925,
+        11.839617999999996,
+        12.003933999999994,
+        11.784534999999984,
+        11.844073999999981,
+        11.811295,
+        11.790984999999976,
+        11.789542000000042,
+        11.258215000000016,
+        11.406968000000074,
+        11.215619999999982,
+        11.17158500000004,
+        11.139655000000026,
+        11.181580000000025,
+        11.156080999999984,
+        11.133206999999977,
+        11.15419900000003,
+        11.127467999999974,
+        11.084212999999954,
+        11.163171999999943,
+        11.169702000000004,
+        11.167829000000019,
+        11.133567999999983,
+        11.100847999999996,
+        11.239716999999928,
+        11.214339000000017,
+        11.182581000000024,
+        11.169682000000014,
+        11.114958999999924,
+        11.107639000000002,
+        11.126506999999952,
+        11.14237100000004,
+        11.145724999999995,
+        11.13523999999999,
+        11.121440000000149,
+        11.128880000000008,
+        11.12016799999993,
+        11.107468000000065,
+        11.104553999999878,
+        11.14225999999996,
+        11.161720000000042,
+        11.135541000000027,
+        11.12013700000003
       ],
-      "artifact_url": "https://github.com/01max/librairii/actions/runs/40123986713/artifacts/12572890732",
+      "artifact_url": "https://github.com/01max/librairii/actions/runs/40127878713/artifacts/12574486375",
       "host": {
         "platform": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.39",
         "machine": "x86_64",
@@ -1216,12 +1855,12 @@
         "memory_bytes": 16766414848
       },
       "distribution": {
-        "executable_bytes": 40692920,
-        "manifest_payload_bytes": 44574432,
+        "executable_bytes": 40694072,
+        "manifest_payload_bytes": 44577526,
         "archive": {
           "file": "task2-x86_64-unknown-linux-gnu.tar.gz",
-          "bytes": 14782130,
-          "sha256": "b0734c5b9185a3ca628675052d4f6e0dadc72617abc948862e918b4ac7971ca2"
+          "bytes": 14782325,
+          "sha256": "34a8cdcf94c194eabb637480eaf01166c7e78ebf2f13b07ccf44e3a9359f827a"
         },
         "disk_image": null,
         "disk_image_scope": "supplied builder output size/hash; contents not re-mounted here"
@@ -1233,37 +1872,37 @@
         "winit-skia": {
           "samples": 3,
           "launch_to_ready_marker_ms": {
-            "min": 95.95666699999583,
-            "median": 103.14984699994056,
-            "max": 138.37805100001788
+            "min": 98.96927399995548,
+            "median": 100.60561600005258,
+            "max": 102.12598600003275
           },
           "idle_cpu_percent_one_core": {
-            "min": 0.40476374701326195,
-            "median": 0.4048006764974468,
-            "max": 0.40481496249809057
+            "min": 0.24289232390181986,
+            "median": 0.32383979434877697,
+            "max": 0.4048096817884685
           },
           "peak_rss_bytes": {
-            "min": 205254656,
-            "median": 213876736,
-            "max": 215670784
+            "min": 194293760,
+            "median": 194854912,
+            "max": 194977792
           }
         },
         "winit-skia-software": {
           "samples": 3,
           "launch_to_ready_marker_ms": {
-            "min": 38.13137999998162,
-            "median": 38.432521999993696,
-            "max": 39.59193800005778
+            "min": 39.31405900004847,
+            "median": 39.3417180000597,
+            "max": 40.52787300008731
           },
           "idle_cpu_percent_one_core": {
-            "min": 0.16191650313503403,
-            "median": 0.16193446131497002,
-            "max": 0.24290081604332178
+            "min": 0.2428973624605548,
+            "median": 0.32388099627922423,
+            "max": 0.4048370801005611
           },
           "peak_rss_bytes": {
-            "min": 74465280,
-            "median": 74510336,
-            "max": 74686464
+            "min": 74309632,
+            "median": 74567680,
+            "max": 74706944
           }
         }
       },
@@ -1276,8 +1915,8 @@
             "x11": true,
             "wayland": true,
             "native_wayland_application": true,
-            "retired-librairii-orca-x11-f5b8a743a0414c5d938563126f232dbb": true,
-            "retired-librairii-orca-wayland-f5b8a743a0414c5d938563126f232dbb": true,
+            "retired-librairii-orca-x11-d0748a05716246ecb2cd32cb9afd1ff2": true,
+            "retired-librairii-orca-wayland-d0748a05716246ecb2cd32cb9afd1ff2": true,
             "image_retired": true
           }
         },
@@ -1287,8 +1926,8 @@
           "checks": {
             "x11": true,
             "wayland": true,
-            "retired-librairii-display-a5bda033094543e9bb05a0b7a849b403-x11": true,
-            "retired-librairii-display-a5bda033094543e9bb05a0b7a849b403-wayland": true,
+            "retired-librairii-display-d72ddae1b57348219ea847ffc48cc340-x11": true,
+            "retired-librairii-display-d72ddae1b57348219ea847ffc48cc340-wayland": true,
             "image_retired": true
           }
         },
@@ -1319,8 +1958,8 @@
           "checks": {
             "x11": true,
             "wayland": true,
-            "retired-librairii-native-x11-45dd8f82fd0b41a182fcfe63715cfc6f": true,
-            "retired-librairii-native-wayland-45dd8f82fd0b41a182fcfe63715cfc6f": true,
+            "retired-librairii-native-x11-52cedf59a4c14aa698cdabd8caae9614": true,
+            "retired-librairii-native-wayland-52cedf59a4c14aa698cdabd8caae9614": true,
             "image_retired": true
           }
         },
@@ -1330,37 +1969,37 @@
             "winit-skia": {
               "samples": 3,
               "launch_to_ready_marker_ms": {
-                "min": 95.95666699999583,
-                "median": 103.14984699994056,
-                "max": 138.37805100001788
+                "min": 98.96927399995548,
+                "median": 100.60561600005258,
+                "max": 102.12598600003275
               },
               "idle_cpu_percent_one_core": {
-                "min": 0.40476374701326195,
-                "median": 0.4048006764974468,
-                "max": 0.40481496249809057
+                "min": 0.24289232390181986,
+                "median": 0.32383979434877697,
+                "max": 0.4048096817884685
               },
               "peak_rss_bytes": {
-                "min": 205254656,
-                "median": 213876736,
-                "max": 215670784
+                "min": 194293760,
+                "median": 194854912,
+                "max": 194977792
               }
             },
             "winit-skia-software": {
               "samples": 3,
               "launch_to_ready_marker_ms": {
-                "min": 38.13137999998162,
-                "median": 38.432521999993696,
-                "max": 39.59193800005778
+                "min": 39.31405900004847,
+                "median": 39.3417180000597,
+                "max": 40.52787300008731
               },
               "idle_cpu_percent_one_core": {
-                "min": 0.16191650313503403,
-                "median": 0.16193446131497002,
-                "max": 0.24290081604332178
+                "min": 0.2428973624605548,
+                "median": 0.32388099627922423,
+                "max": 0.4048370801005611
               },
               "peak_rss_bytes": {
-                "min": 74465280,
-                "median": 74510336,
-                "max": 74686464
+                "min": 74309632,
+                "median": 74567680,
+                "max": 74706944
               }
             }
           }
@@ -1368,115 +2007,115 @@
       },
       "linux_native_performance": {
         "linux-vm/after/evidence/wayland/native-session.json": {
-          "native_input_performance": 19.63493799999938,
-          "thousand_navigation": 263.3175059999999
+          "native_input_performance": 20.094973000002625,
+          "thousand_navigation": 241.87751799999901
         },
         "linux-vm/after/evidence/x11/native-session.json": {
-          "native_input_performance": 18.19616599999563,
-          "thousand_navigation": 241.85198300000366
+          "native_input_performance": 18.522993000004817,
+          "thousand_navigation": 242.0867019999946
         },
         "linux-vm/before/evidence/x11/native-session.json": {
-          "native_input_performance": 18.19616599999563,
-          "thousand_navigation": 241.85198300000366
+          "native_input_performance": 18.522993000004817,
+          "thousand_navigation": 242.0867019999946
         },
         "native-linux/wayland/native-session.json": {
-          "native_input_performance": 20.577651999929003,
-          "thousand_navigation": 241.14746099996864
+          "native_input_performance": 20.63247900002807,
+          "thousand_navigation": 241.41388699990785
         },
         "native-linux/x11/native-session.json": {
-          "native_input_performance": 18.449142000008578,
-          "thousand_navigation": 241.24769000002289
+          "native_input_performance": 19.38921799990112,
+          "thousand_navigation": 241.5639519999786
         }
       },
       "linux_input_diagnostics": {
         "linux-vm/after/evidence/wayland/native-session.json": {
           "foreground_check_ms": {
-            "p95_ms": 2.242162999998243,
-            "max_ms": 3.526448999998877
+            "p95_ms": 1.5232370000006767,
+            "max_ms": 2.3045410000008815
           },
           "event_post_ms": {
-            "p95_ms": 11.490624000000338,
-            "max_ms": 11.83331500000051
+            "p95_ms": 10.840938000001188,
+            "max_ms": 11.631795999999639
           },
           "acknowledgment_wait_ms": {
-            "p95_ms": 9.932671999997922,
-            "max_ms": 10.924199999998052
+            "p95_ms": 10.900928000001642,
+            "max_ms": 10.96749799999941
           },
           "total_with_foreground_ms": {
-            "p95_ms": 21.03032899999846,
-            "max_ms": 21.615903000000714
+            "p95_ms": 21.106601999999697,
+            "max_ms": 21.223067000001095
           }
         },
         "linux-vm/after/evidence/x11/native-session.json": {
           "foreground_check_ms": {
-            "p95_ms": 3.8108379999926,
-            "max_ms": 4.60603499999479
+            "p95_ms": 3.3898399999969797,
+            "max_ms": 3.6487990000040327
           },
           "event_post_ms": {
-            "p95_ms": 3.450141999991274,
-            "max_ms": 4.3325799999962555
+            "p95_ms": 3.30886800000485,
+            "max_ms": 3.7973219999969388
           },
           "acknowledgment_wait_ms": {
-            "p95_ms": 15.54925799999296,
-            "max_ms": 16.449531000006345
+            "p95_ms": 16.275278000009052,
+            "max_ms": 16.367826000006858
           },
           "total_with_foreground_ms": {
-            "p95_ms": 20.928708999989,
-            "max_ms": 21.15876799999228
+            "p95_ms": 20.90755300000069,
+            "max_ms": 21.589056000010487
           }
         },
         "linux-vm/before/evidence/x11/native-session.json": {
           "foreground_check_ms": {
-            "p95_ms": 3.8108379999926,
-            "max_ms": 4.60603499999479
+            "p95_ms": 3.3898399999969797,
+            "max_ms": 3.6487990000040327
           },
           "event_post_ms": {
-            "p95_ms": 3.450141999991274,
-            "max_ms": 4.3325799999962555
+            "p95_ms": 3.30886800000485,
+            "max_ms": 3.7973219999969388
           },
           "acknowledgment_wait_ms": {
-            "p95_ms": 15.54925799999296,
-            "max_ms": 16.449531000006345
+            "p95_ms": 16.275278000009052,
+            "max_ms": 16.367826000006858
           },
           "total_with_foreground_ms": {
-            "p95_ms": 20.928708999989,
-            "max_ms": 21.15876799999228
+            "p95_ms": 20.90755300000069,
+            "max_ms": 21.589056000010487
           }
         },
         "native-linux/wayland/native-session.json": {
           "foreground_check_ms": {
-            "p95_ms": 1.3836519999586017,
-            "max_ms": 1.4567619999752424
+            "p95_ms": 1.4108509999459784,
+            "max_ms": 1.5486890000602216
           },
           "event_post_ms": {
-            "p95_ms": 9.115847999964899,
-            "max_ms": 9.660091000000648
+            "p95_ms": 9.292043999948874,
+            "max_ms": 9.393316000000596
           },
           "acknowledgment_wait_ms": {
-            "p95_ms": 11.976732999983142,
-            "max_ms": 14.12534099995355
+            "p95_ms": 11.951171999953658,
+            "max_ms": 14.202997999973377
           },
           "total_with_foreground_ms": {
-            "p95_ms": 22.015816000021005,
-            "max_ms": 24.567805000060616
+            "p95_ms": 21.864461000063784,
+            "max_ms": 24.29406500004916
           }
         },
         "native-linux/x11/native-session.json": {
           "foreground_check_ms": {
-            "p95_ms": 3.248889000019517,
-            "max_ms": 3.3752589999949123
+            "p95_ms": 3.148232999933498,
+            "max_ms": 3.3710179999388856
           },
           "event_post_ms": {
-            "p95_ms": 2.3982330000080765,
-            "max_ms": 2.5879989999566533
+            "p95_ms": 2.3751350000793536,
+            "max_ms": 3.1186879999722805
           },
           "acknowledgment_wait_ms": {
-            "p95_ms": 16.32390099996428,
-            "max_ms": 19.41060399997241
+            "p95_ms": 17.33551699999225,
+            "max_ms": 18.34722600005989
           },
           "total_with_foreground_ms": {
-            "p95_ms": 21.21262699995441,
-            "max_ms": 23.973998000087704
+            "p95_ms": 21.92791999993915,
+            "max_ms": 23.177476000000752
           }
         }
       },
@@ -1484,7 +2123,7 @@
         "wayland": {
           "checks": 16,
           "completed_audio_steps": 14,
-          "samples": 1759849,
+          "samples": 1761371,
           "offscreen": {
             "name": "0999 · Étoiles — 日本語 — 故事",
             "role": "list item",
@@ -1517,7 +2156,7 @@
         "x11": {
           "checks": 16,
           "completed_audio_steps": 14,
-          "samples": 1106948,
+          "samples": 1105991,
           "offscreen": {
             "name": "0999 · Étoiles — 日本語 — 故事",
             "role": "list item",
@@ -1549,15 +2188,15 @@
         }
       },
       "report_sha256": {
-        "runtime-requirements.json": "a4f39407b2270a71874d7af216a3f7953d0303232f8da2167adaaa5599b651a8",
-        "resources/resource-measurements.json": "273865dadf6d241f782759dc53d77987466ef37f67e8671f9e030379f9c143ac",
-        "native-linux/native-linux.json": "315b31d7cb9ae49122c4f63961a33133fac9f3addd2d0f55609d07550dda5e95",
-        "accessibility-linux/accessibility-linux.json": "3e61b86d38a1405800a051020574b84c797633297d30ff97477c272aad11ebfb",
-        "display-linux/display-linux.json": "768c08f4b24a863e7404f346ec41dde9844f3f0ad3bb1c1ae60f730393a7c5ec",
-        "linux-vm/linux-vm.json": "2af315edc04b3ae8811a805952bd45cd958e012914c9bd4279b3fae8eec4f0b0",
-        "clean-linux/clean-linux.json": "f24dd05ea42d7508e91589a929c78a452c3fe93363258007b9cc794af7cb1f09",
-        "wayland/wayland.json": "e1d9feeb412f74703ca8563de01c8bb772bc3d25c589fce504559ec088088751",
-        "gpu-recovery/gpu-recovery.json": "d6b7deca9a2b0f6978924371ce780804c8cddea07ab84066057a9d1d802f5a7f"
+        "runtime-requirements.json": "ce3928267ffc7abf00cc3e3fa50c0cd556604ace22491b4a582aca29501fc34e",
+        "resources/resource-measurements.json": "9ed89e9fe00bcc4874bc9c82d9e07c69d7bb744c6a0fd3331f56ad2c3aeeef34",
+        "native-linux/native-linux.json": "7ae29d533a1c6db9d36fa543dc3dd83d847de4452081e62b22030eecc3519a10",
+        "accessibility-linux/accessibility-linux.json": "fb9114a8f173d02e0515c12c72d4356ef168dec10fd545da98d58876fbf9dd7b",
+        "display-linux/display-linux.json": "6e3bd1047026a79f60a9059232c73a3de80214af1f82d8d89702bb78572b8188",
+        "linux-vm/linux-vm.json": "67822d1d80ad9857dddae5d343ac4cd47b4deb521d89a4219d11a5edef5cb378",
+        "clean-linux/clean-linux.json": "c9f513eb53682be05f5a79d3b438f4f28b8151686799669f3313c876daca9665",
+        "wayland/wayland.json": "09b39ff9cee471b655105d1fe338bec54094610b076e2074ae6e296105b75bc8",
+        "gpu-recovery/gpu-recovery.json": "44d3bae42d9ce971d2ffb7c4dcdbc000cb9d6a6296e114aadfa2e4f5b451aba6"
       },
       "display": {
         "x11": {
@@ -1839,8 +2478,12 @@
   "independent_review": {
     "reviewer": "task2_continuation_review",
     "date": "2026-10-24",
-    "result": "approved; no remaining actionable findings",
-    "report": "review.md",
-    "scope": "Exact three-target packages, raw observations, retained budgets, selected license graph and owner-approved qualification limits; PR merge not authorized."
+    "implementation_head": "e9ab1bad1b5ef9797877f1aa3a8cf577bbc6ffda",
+    "built_source": "cf1208919018f881e2b9769d3d6563eb8516481d",
+    "result": "approved; no remaining actionable findings; all13 scoped Task2 subtasks complete or conditionally handled",
+    "scope": "Linux/macOS; French/Latin native input; unrestricted valid UTF-8 data/filenames; owner waivers retained",
+    "record": "review.md",
+    "historical_failures": "Intel run68 artwork and Wayland run66 dispatch causes remain unknown; no robust scratch speedup or proven sporadic repair inferred",
+    "merge_authorized": false
   }
 }

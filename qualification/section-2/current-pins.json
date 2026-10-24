@@ -346,10 +346,20 @@
   "qualification_decision": {
     "date": "2026-10-24",
     "status": "selected",
-    "implementation_head": "d145d604af917618ac6127bba8687806c5ed032a",
-    "native_workflow": "https://github.com/01max/librairii/actions/runs/40123986713",
+    "implementation_head": "e9ab1bad1b5ef9797877f1aa3a8cf577bbc6ffda",
+    "native_workflow": "https://github.com/01max/librairii/actions/runs/40127878713",
     "evidence": "completion-evidence/final-matrix.json",
-    "independent_review": "completion-evidence/review.md",
-    "current_revalidation": "Pending fresh three-target native qualification after run68 failure; the selected run67 decision remains attributed to its implementation head."
-  }
+    "independent_review": "completion-evidence/review.md"
+  },
+  "qualification_decision_history": [
+    {
+      "date": "2026-10-24",
+      "status": "selected",
+      "implementation_head": "d145d604af917618ac6127bba8687806c5ed032a",
+      "native_workflow": "https://github.com/01max/librairii/actions/runs/40123986713",
+      "evidence": "completion-evidence/run67-matrix.json",
+      "independent_review": "completion-evidence/run67-review.md",
+      "current_revalidation": "Pending fresh three-target native qualification after run68 failure; the selected run67 decision remains attributed to its implementation head."
+    }
+  ]
 }
