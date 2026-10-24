@@ -51,15 +51,31 @@ def inspect(package, archive, helper, output):
             request.replace(app_dir / 'capture-request')
             observer.wait(lambda: (app_dir / (name + '.png')).is_file())
             observer.capture(name)
-        for width, height in ((560, 400), (900, 760), (1280, 900)):
+        # AX obeys the actual screen's visible frame. Exercise compact and
+        # intermediate sizes that fit even the hosted 1024x768 desktop first.
+        report['ax_sizes'] = []
+        for width, height in ((560, 400), (900, 600)):
             old = geometry()
             resize = observer.call('resize', width=width, height=height,
                 content_width=old['logical_width'], content_height=old['logical_height'])
             value = observer.wait(lambda: (g := geometry()) and abs(g['logical_width'] - width) <= 1
+                and abs(g['logical_height'] - height) <= 1 and g)
+            report['ax_sizes'].append({'requested': [width, height], 'native_resize': resize, 'geometry': value})
+            frame('ax-size-' + str(width))
+        report['checks']['native_ax_resize'] = len(report['ax_sizes']) == 2
+        # The public Slint Window API requests a real AppKit content size even
+        # beyond the hosted screen. Retain full renderer frames and actual CG
+        # captures separately: a screen crop does not establish a visible panel.
+        for width, height in ((560, 400), (900, 760), (1280, 900)):
+            request = app_dir / '.size-request.tmp'
+            request.write_text(f'{width}x{height}')
+            request.replace(app_dir / 'size-request')
+            value = observer.wait(lambda: (g := geometry()) and abs(g['logical_width'] - width) <= 1
                 and abs(g['logical_height'] - height) <= 1 and g['compact'] == (width < 850)
                 and g['wide'] == (width >= 1180) and g)
             assert len(value['contrast_ratios']) == 3 and min(value['contrast_ratios']) >= 4.5
-            report['sizes'].append({'requested': [width, height], 'native_resize': resize, 'geometry': value})
+            report['sizes'].append({'requested': [width, height],
+                'method': 'public Window.set_size; actual native geometry readback', 'geometry': value})
             frame('size-' + str(width))
             observer.call('key', key='cmd+comma')
             observer.wait(lambda: (s := native.state(app_dir)) and s[2] == '1' and s[4] == 'true')

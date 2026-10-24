@@ -136,6 +136,7 @@ impl Probe {
         let last = RefCell::new(String::new());
         let last_geometry = RefCell::new(String::new());
         let last_capture = RefCell::new(String::new());
+        let last_size_request = RefCell::new(String::new());
         timer.start(
             slint::TimerMode::Repeated,
             Duration::from_millis(20),
@@ -188,6 +189,21 @@ impl Probe {
                         .expect("queue native probe outside timer");
                 }
                 if phase.get() == 1 {
+                    // Exercise the public native Window API when a CI screen
+                    // is smaller than the wide layout. Geometry is still read
+                    // back from the actual OS-backed window, never fabricated.
+                    if recorder.case == "input"
+                        && std::env::args().any(|arg| arg == "--display-long-text")
+                        && let Ok(request) = std::fs::read_to_string(recorder.directory.join("size-request"))
+                        && request != *last_size_request.borrow()
+                    {
+                        let (width, height) = request.split_once('x').expect("bounded size request");
+                        let width: u32 = width.parse().expect("native window width");
+                        let height: u32 = height.parse().expect("native window height");
+                        assert!((560..=1600).contains(&width) && (400..=1000).contains(&height));
+                        ui.window().set_size(slint::LogicalSize::new(width as f32, height as f32));
+                        *last_size_request.borrow_mut() = request;
+                    }
                     if !load_started.get() && recorder.directory.join("start-load").is_file() {
                         load_started.set(true);
                         ui.invoke_start_work();

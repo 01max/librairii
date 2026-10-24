@@ -352,7 +352,7 @@ export component Spike inherits Window {
                         Text { text: root.french ? "HISTOIRE SÉLECTIONNÉE" : "STORY INSPECTOR"; wrap: word-wrap; }
                         ScrollView {
                             min-height: 0px; vertical-stretch: 1;
-                            Text { width: parent.width; text: root.selected; wrap: word-wrap; }
+                            Text { width: parent.width; text: root.selected; wrap: word-wrap; vertical-alignment: top; }
                         }
                         Text { text: root.french ? "Français · 4–6 ans" : "French · Ages 4–6"; }
                         Text { text: root.french ? "Avertissement : indisponible" : "Warning: unavailable"; wrap: word-wrap; }
