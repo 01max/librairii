@@ -191,3 +191,22 @@ not claims of p95 from three runs or physical first-presentation measurements.
 Every warmup and measured run must satisfy them; failures remain in the report
 without sample substitution. Actual native keyboard100ms p95, expansion/usable
 navigation3000ms and retained24-artwork50ms p95 remain separate unchanged gates.
+
+
+## Fixed100 artwork method (2026-10-24)
+
+Run40118957740 Intel preserves a failed20-sample wall-p95 observation:
+72.528676ms against50ms. Two adjacent samples are125.260460/72.528676ms;
+the remaining18 span17.894621–35.377489ms. The exact pixel witness remains
+24651767616. This is a failed measurement, not a scheduler diagnosis or retry.
+
+Method read-full-decode-v2-fixed100 predeclares one warmup and100 measured
+batches on every native target. Each batch performs the same24 frozen320×400
+local reads, complete PNG decodes and consumption of every pixel. All100 wall
+samples remain; nearest-rank p95 is sorted[94] and the unchanged ceiling is50ms.
+CPU time from CLOCK_PROCESS_CPUTIME_ID is recorded separately per batch to help
+distinguish decode cost from stalls; it never replaces the wall-time gate.
+The already selected libc0.2.191 supplies that public process clock; no dependency
+version/source/feature was upgraded. Independent review approves the measurement
+refinement, with fresh execution required. The original20-sample failure is not
+rescored. The101-iteration pixel witness includes the single declared warmup.

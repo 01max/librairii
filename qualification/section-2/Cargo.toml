@@ -15,9 +15,10 @@ accesskit_atspi_common = { path = "vendor/accesskit-atspi-common" }
 
 [features]
 default = []
-gui = ["dep:slint", "dep:slint-build", "dep:rfd", "dep:tempfile", "dep:muda", "dep:image", "dep:raw-window-handle"]
+gui = ["dep:slint", "dep:slint-build", "dep:rfd", "dep:tempfile", "dep:muda", "dep:image", "dep:raw-window-handle", "dep:libc"]
 
 [dependencies]
+libc = { version = "=0.2.191", optional = true }
 raw-window-handle = { version = "=0.6.2", optional = true }
 image = { version = "=0.25.10", optional = true, default-features = false, features = ["png"] }
 slint = { version = "=1.18.1", optional = true, default-features = false, features = ["std", "compat-1-18", "accessibility", "backend-winit-x11", "backend-winit-wayland", "renderer-skia", "raw-window-handle-06", "unstable-winit-030"] }

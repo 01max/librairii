@@ -286,7 +286,7 @@
     "cargo-llvm-cov": "0.9.1",
     "cargo-fuzz": "0.13.2"
   },
-  "gui_lock_sha256": "7216b820feb2d0306f5aa6a64b5bb8e493d991586823c3e611c4fb4a94ca9601",
+  "gui_lock_sha256": "613fcd9b99a9debd0fe125eea159fd63c3e075d77bb322b8b001ec7bb41bd2a3",
   "slint_license": {
     "route": "LicenseRef-Slint-Royalty-free-2.0",
     "attribution": "AboutSlint in a top-level About screen",
@@ -322,5 +322,15 @@
       "reason": "Correct disabled Enabled/Sensitive AT-SPI states; exact upstream correction and real adapter regressions.",
       "provenance": "vendor/accesskit-atspi-common/UPSTREAM.json"
     }
-  ]
+  ],
+  "artwork_probe": {
+    "method": "read-full-decode-v2-fixed100",
+    "measured_batches": 100,
+    "warmup_batches": 1,
+    "covers_per_batch": 24,
+    "dimensions": "320x400",
+    "p95": "nearest rank sorted[94], wall milliseconds, unchanged50ms ceiling",
+    "cpu_diagnostics": "CLOCK_PROCESS_CPUTIME_ID via already-selected libc=0.2.191; diagnostic only, never replaces wall gate",
+    "retained_failure": "run40118957740 Intel20sample p95=72.528676ms stays failed"
+  }
 }
