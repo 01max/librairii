@@ -154,6 +154,69 @@ class Wayland(unittest.TestCase):
                     except ProcessLookupError:
                         pass
 
+    @unittest.skipUnless(sys.platform == 'darwin', 'Darwin killpg rejects an unreaped zombie group')
+    def test_output_limit_exit_race_reaps_the_owned_zombie_before_retiring_its_group(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = pathlib.Path(directory)
+            popen = wayland.subprocess.Popen
+            children = []
+            def exited_child(*args, **kwargs):
+                child = popen(*args, **kwargs)
+                children.append(child)
+                deadline = time.monotonic() + 5
+                while True:
+                    with popen(['ps', '-p', str(child.pid), '-o', 'stat='],
+                               stdout=wayland.subprocess.PIPE, text=True) as probe:
+                        status = probe.communicate(timeout=2)[0].strip()
+                    if status.startswith('Z'):
+                        break
+                    if time.monotonic() >= deadline:
+                        self.fail('exited fixture did not reach its unreaped state')
+                    time.sleep(0.01)
+                real_poll, calls = child.poll, iter((None, None))
+                # Hold the two observations immediately before cleanup at their
+                # pre-exit value, reproducing the real output-limit/exit race.
+                def delayed_poll():
+                    try:
+                        return next(calls)
+                    except StopIteration:
+                        return real_poll()
+                child.poll = delayed_poll
+                return child
+            try:
+                with mock.patch.object(wayland.subprocess, 'Popen', exited_child):
+                    result = wayland.command([sys.executable, '-c', 'print("x" * 10000)'],
+                        os.environ.copy(), root / 'large.log', limit=100)
+                self.assertEqual(result['returncode'], 0)
+                self.assertIn('output limit exceeded', result['errors'])
+                self.assertFalse(wayland.group_alive(children[0].pid))
+                self.assertEqual((root / 'large.log').stat().st_size, 100)
+            finally:
+                for child in children:
+                    child.wait(timeout=5)
+
+    def test_permission_denied_for_a_live_group_is_never_accepted_as_cleanup(self):
+        with tempfile.TemporaryDirectory() as directory:
+            popen, killpg = wayland.subprocess.Popen, os.killpg
+            children = []
+            def owned_child(*args, **kwargs):
+                child = popen(*args, **kwargs)
+                children.append(child)
+                return child
+            try:
+                with mock.patch.object(wayland.subprocess, 'Popen', owned_child), \
+                        mock.patch.object(wayland.os, 'killpg', side_effect=PermissionError(1, 'denied')), \
+                        self.assertRaises(PermissionError):
+                    wayland.command([sys.executable, '-c', 'import time; time.sleep(30)'],
+                        os.environ.copy(), pathlib.Path(directory) / 'live.log', timeout=0.05)
+            finally:
+                for child in children:
+                    try:
+                        killpg(child.pid, signal.SIGKILL)
+                    except ProcessLookupError:
+                        pass
+                    child.wait(timeout=5)
+
 
 if __name__ == '__main__':
     unittest.main()

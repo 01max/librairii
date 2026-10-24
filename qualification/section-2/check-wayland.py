@@ -73,7 +73,16 @@ def command(argv, env, log, timeout=30, limit=LIMIT):
                 if child.poll() is not None and group_alive(child.pid):
                     result['errors'].append('descendant survived exited child')
             finally:
-                kill_group(child.pid)
+                try:
+                    kill_group(child.pid)
+                except PermissionError:
+                    # Darwin can reject SIGKILL for a group containing only an
+                    # unreaped zombie. Reap our own exited child, then still
+                    # require group retirement; a live/unsignalable member is
+                    # never accepted on the strength of EPERM alone.
+                    if child.poll() is None:
+                        raise
+                    kill_group(child.pid)
                 child.wait(timeout=5)
                 result['returncode'] = child.returncode
         if os.fstat(stream.fileno()).st_size > limit:

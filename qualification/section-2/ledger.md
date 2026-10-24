@@ -174,3 +174,20 @@ automatic maintenance from outliving a fixture command. Cleanup errors remain
 fatal, all seven decision tests and their assertions are preserved, and neither
 the production decision nor any real repository's configuration is changed.
 All seven tests pass locally; fresh hosted execution must verify the correction.
+
+## 2026-10-24 native recorder exit race (2.8)
+
+At `6da2838`, run40093774916/job120871675095, Intel's recorder suite fails
+before native interaction: the excess-output child exits between its observed
+running state and group cleanup, and Darwin `killpg` returns EPERM. A local
+owned-child reproduction observes state Z, the same EPERM, exit0 on reap and
+ESRCH for the retired group afterward. The deterministic regression reproduces
+that failure before the correction and passes afterward. Cleanup now reaps an
+actually exited owned child on EPERM and still requires the subsequent group
+signal to succeed or report ESRCH. Live permission denial remains fatal; output
+limits, deadlines and descendant checks are unchanged. All nine focused tests
+pass locally. This correction is not native interaction evidence.
+
+Apple's [XNU group-signalling implementation](https://github.com/apple-oss-distributions/xnu/blob/main/bsd/kern/kern_sig.c)
+filters zombie members before deciding EPERM/ESRCH. The retained failed run is
+not retried or relabelled as passing.
