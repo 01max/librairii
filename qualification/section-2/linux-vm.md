@@ -104,3 +104,12 @@ and both CPU frames visibly show French/CJK. All four PNG hashes and both actual
 Wayland toplevel buffer traces are independently verified; do not treat the
 historical `french_cjk_snapshots=2` diagnostic as proof that both normal images
 contain CJK. The current diagnostic requests visual glyph review explicitly.
+
+The later `4ea1e4b` / run40081851994 VM experiment retains a failed X11 reveal
+focus handoff: Thunar displays the exact fixture path, then `xdotool` reports no
+active window while it exits. The observer now reads the actual X11 active-window
+and PID properties, treating a missing/zero/destroyed window as no focus during
+the unchanged bounded wait. Only the exact app PID can pass restoration; other
+command and malformed-property errors remain fatal. This is not a retry or a
+forced activation. Artifact12555288839 ZIP SHA256 is
+`77ff977a692770fc69b86e2883c8ac508143c3516eee4f7c4a752c84a5104b9d`.

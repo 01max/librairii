@@ -215,7 +215,28 @@ class Desktop:
 
     def active_pid(self):
         if self.session == 'x11':
-            return int(self.run(['xdotool', 'getactivewindow', 'getwindowpid']).strip())
+            # Focus handoff can temporarily have no active window. Absence is
+            # not a PID, and must not abort the bounded restoration wait.
+            prop = self.run(['xprop', '-root', '_NET_ACTIVE_WINDOW'])
+            match = re.search(r'window id # (0x[0-9a-fA-F]+)', prop)
+            if match is None:
+                if 'not found' in prop or 'no such atom' in prop:
+                    return None
+                raise ValueError('unexpected X11 active-window property: ' + prop)
+            if int(match[1], 16) == 0:
+                return None
+            try:
+                prop = self.run(['xprop', '-id', match[1], '_NET_WM_PID'])
+            except subprocess.CalledProcessError as error:
+                if 'BadWindow' in str(error.output):
+                    return None  # The previous focused window was destroyed.
+                raise
+            match = re.search(r'_NET_WM_PID\(CARDINAL\) = (\d+)', prop)
+            if match:
+                return int(match[1])
+            if 'not found' in prop or 'no such atom' in prop:
+                return None
+            raise ValueError('unexpected X11 active-window PID property: ' + prop)
         tree = json.loads(self.run(['swaymsg', '-s', self.ipc, '-t', 'get_tree']))
         def focused(node):
             if node.get('focused') and node.get('pid'):

@@ -4,6 +4,8 @@ import pathlib
 import unittest
 import tempfile
 import sys
+import subprocess
+from unittest import mock
 
 
 def load(name, path):
@@ -22,6 +24,26 @@ def monitor(parent):
 
 
 class NativeLinux(unittest.TestCase):
+    def test_focus_handoff_absence_cannot_be_a_pid_or_hide_other_errors(self):
+        desktop = driver.Desktop.__new__(driver.Desktop)
+        desktop.session = 'x11'
+        for prop in ('_NET_ACTIVE_WINDOW:  not found.', '_NET_ACTIVE_WINDOW:  no such atom on any window.',
+                '_NET_ACTIVE_WINDOW(WINDOW): window id # 0x0'):
+            with mock.patch.object(desktop, 'run', return_value=prop):
+                self.assertIsNone(desktop.active_pid())
+        active = '_NET_ACTIVE_WINDOW(WINDOW): window id # 0x123abc'
+        with mock.patch.object(desktop, 'run', side_effect=[active, '_NET_WM_PID(CARDINAL) = 123']):
+            self.assertEqual(desktop.active_pid(), 123)
+        destroyed = subprocess.CalledProcessError(1, ['xprop'], output='BadWindow (invalid Window parameter)')
+        with mock.patch.object(desktop, 'run', side_effect=[active, destroyed]):
+            self.assertIsNone(desktop.active_pid())
+        for value in ('malformed property', '_NET_WM_PID(CARDINAL) = invalid'):
+            with mock.patch.object(desktop, 'run', side_effect=[active, value]), self.assertRaises(ValueError):
+                desktop.active_pid()
+        unavailable = subprocess.CalledProcessError(1, ['xprop'], output='unable to open display')
+        with mock.patch.object(desktop, 'run', side_effect=unavailable), self.assertRaises(subprocess.CalledProcessError):
+            desktop.active_pid()
+
     def test_x11_parent_requires_the_real_app_pid_and_actual_dialog_transient(self):
         args = ('x11', monitor('x11:123abc'), '', '', 123)
         self.assertTrue(all(driver.parent_proof(*args, parent_pid=123, transient=0x123abc).values()))
