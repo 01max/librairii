@@ -255,6 +255,7 @@ do {
                 } ?? []
                 guard candidateWindows.count <= 1 else { throw Failure.invalid("owned Finder capture not unique") }
                 try output(["pid": pid, "nodes": [], "windows": [],
+                    "document_window_list_observed": true,
                     "document_windows_observed": unresolvedTitles == 0,
                     "unresolved_title_window_count": unresolvedTitles,
                     "owned_document_window_present": !candidates.isEmpty,
@@ -266,6 +267,7 @@ do {
             }
             onlyWindow = index
             documentObservation = ["document_windows_observed": unresolvedTitles == 0,
+                "document_window_list_observed": true,
                 "unresolved_title_window_count": unresolvedTitles, "owned_document_window_present": true]
             let title = titles[index]
             windows = windows.filter { !title.isEmpty && $0[kCGWindowName as String] as? String == title }
@@ -277,6 +279,16 @@ do {
                         sheetsOnly: request["document"] == nil,
                         rootsOnly: request["summary"] as? Bool ?? false), "windows": windows]
         try output(response.merging(documentObservation) { _, new in new })
+    case "window-status":
+        guard let number = request["window_id"] as? Int, number > 0,
+              let wanted = CGWindowID(exactly: number),
+              let windows = CGWindowListCopyWindowInfo([.excludeDesktopElements], kCGNullWindowID)
+                as? [[String: Any]] else {
+            throw Failure.invalid("complete CG window query and explicit window ID required")
+        }
+        try output(["observed": true, "pid": pid, "window_id": number,
+            "present": windows.contains { ($0[kCGWindowOwnerPID as String] as? Int) == Int(pid)
+                && ($0[kCGWindowNumber as String] as? Int) == Int(wanted) }] as [String: Any])
     case "activate":
         guard NSRunningApplication(processIdentifier: pid)?.activate(options: [.activateAllWindows]) == true else {
             throw Failure.invalid("cannot activate owned app")

@@ -171,3 +171,24 @@ means the requested value or element does not exist. This readiness correction
 still requires fresh native execution; the earlier reveal case stays failed.
 The same run's Intel lane stops in the recorder suite before packaging or
 interaction; its separately reproduced process-cleanup race is in `ledger.md`.
+
+At `4260059` / run40094467972 ARM verifies the exact native content-file URLs
+and executes the verified window's Close control. The remaining untitled Finder
+window makes the all-titles-known absence method time out. Artifact12560695759
+ZIP SHA256 is `5aec94e5648bb03ffa3b48326af685694628a6cb21313ba5baab3b8ee34c63d9`.
+The closure method now retains the unique public CG window ID from the already
+path-verified window, rechecks that same identity before Close, and requires its
+absence from a successful complete CG window list, including offscreen/minimized
+windows. A successful AXWindows query must also find no exact document candidate
+or path witness. An unrelated unresolved title cannot replace this independent
+window-retirement proof. Missing/failed queries, a changed ID or a still-present
+window fail. The original timeout remains failed; fresh native execution is
+required. No untitled window is acted on or traversed for this correction.
+
+Intel independently completes all seven picker/early cases in the same run.
+It proves the exact Finder content path before CG publishes the matching window,
+so its first capture has no target. Its next retained snapshot has that unique
+CG window. Readiness now waits for both exact AX content and unique owned CG
+identity before capture; ambiguity remains fatal and no failed action is retried.
+Intel artifact12560069276 ZIP SHA256 is
+`4ebf360b49abc95f789b7e895be6a4e04fc0be8454f985ed13a110b0e501e073`.

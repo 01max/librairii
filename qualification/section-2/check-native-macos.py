@@ -143,11 +143,31 @@ def verified_finder_snapshot(snapshot, fixture):
         'directory': str(fixture), 'content_view': views[0], 'observed_files': images}
 
 
-def finder_window_absent(snapshot):
-    return (snapshot.get('document_windows_observed') is True
-        and snapshot.get('unresolved_title_window_count') == 0
+def finder_window_retired(snapshot, status, pid, window_id):
+    # An unrelated untitled Finder window cannot identify our document. Its
+    # verified public CG window ID must be gone from the complete window list,
+    # including offscreen/minimized windows, alongside a successful AX query.
+    return (snapshot.get('document_window_list_observed') is True
         and snapshot.get('owned_document_window_present') is False
-        and not snapshot.get('nodes') and not snapshot.get('owned_title_candidates'))
+        and not snapshot.get('nodes') and not snapshot.get('owned_title_candidates')
+        and status.get('observed') is True and status.get('present') is False
+        and status.get('pid') == pid and status.get('window_id') == window_id)
+
+
+def finder_window_id(snapshot, pid):
+    windows = snapshot.get('windows', [])
+    if (len(windows) != 1 or windows[0].get('kCGWindowOwnerPID') != pid
+            or type(windows[0].get('kCGWindowNumber')) is not int
+            or windows[0]['kCGWindowNumber'] <= 0):
+        raise ValueError('verified owned Finder capture window ID required')
+    return windows[0]['kCGWindowNumber']
+
+
+def ready_finder_snapshot(snapshot, fixture, pid):
+    result = verified_finder_snapshot(snapshot, fixture)
+    if result is None or not result[0].get('windows'):
+        return None  # AX content can precede CG window registration.
+    return *result, finder_window_id(result[0], pid)
 
 
 def go_folder_fields(snapshot, root):
@@ -302,14 +322,23 @@ class Observer:
             raise RuntimeError('actual native window capture failed')
 
 
-def close_finder(finder, fixture):
+def close_finder(finder, fixture, window_id):
+    def retired(snapshot):
+        status = finder.call('window-status', window_id=window_id)
+        if finder_window_retired(snapshot, status, finder.pid, window_id):
+            return {'window_status': status, 'document_window_list_observed': True,
+                'owned_document_window_present': False,
+                'unresolved_title_window_count': snapshot.get('unresolved_title_window_count')}
+        return None
     observed = finder.snapshot(document=fixture)
     result = verified_finder_snapshot(observed, fixture)
     if result is None:
-        if finder_window_absent(observed):
-            return  # The verified document window has already closed.
+        if proof := retired(observed):
+            return proof  # The verified document window has already closed.
         raise ValueError('owned Finder path no longer verified during cleanup')
     snapshot, window, _ = result
+    if finder_window_id(snapshot, finder.pid) != window_id:
+        raise ValueError('owned Finder window ID changed during cleanup')
     controls = [n for n in snapshot['nodes'] if same_root(n, window) and
         n.get('subrole') == 'AXCloseButton']
     if len(controls) != 1:
@@ -317,8 +346,8 @@ def close_finder(finder, fixture):
     finder.call('press', selector=selector(controls[0]))
     def closed():
         value = finder.snapshot(document=fixture)
-        return finder_window_absent(value)
-    finder.wait(closed)
+        return retired(value)
+    return finder.wait(closed)
 
 
 def one_case(binary, helper, root, name, kind, expected):
@@ -392,19 +421,19 @@ def one_case(binary, helper, root, name, kind, expected):
                 for pid in observer.call('finder')['pids']:
                     finder = Observer(helper, output, pid)
                     snapshot = finder.snapshot(document=fixture)
-                    verified = verified_finder_snapshot(snapshot, fixture)
+                    verified = ready_finder_snapshot(snapshot, fixture, pid)
                     if verified is not None:
                         return finder, *verified
                 return None
-            finder, snapshot, window, location = observer.wait(finder_window)
-            owned_finder = finder
+            finder, snapshot, window, location, window_id = observer.wait(finder_window)
+            owned_finder = finder, window_id
             report['observed_finder_window'] = window
             report['observed_finder_location'] = location
             report['checks']['actual_finder_path'] = ((rendezvous / 'outcome.txt').read_text() == 'requested'
                 and location['directory'] == str(fixture))
             finder.capture('revealed', snapshot)
             # Finder has OS lifetime. Only the window opened at our fixture is closed.
-            close_finder(finder, fixture)
+            report['observed_finder_retirement'] = close_finder(finder, fixture, window_id)
             report['checks']['verified_finder_window_closed'] = True
             owned_finder = None
             observer.call('activate')  # Explicit user return from the external file manager.
@@ -461,7 +490,7 @@ def one_case(binary, helper, root, name, kind, expected):
         report['errors'] += retire(app, capture)
         if owned_finder is not None:
             try:
-                close_finder(owned_finder, fixture)
+                close_finder(owned_finder[0], fixture, owned_finder[1])
             except Exception as error:
                 report['errors'].append('owned Finder cleanup: ' + str(error))
         (output / 'case.json').write_text(json.dumps(report, ensure_ascii=False, indent=2) + '\n')

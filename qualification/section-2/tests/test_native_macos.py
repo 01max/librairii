@@ -15,17 +15,29 @@ spec.loader.exec_module(macos)
 
 
 class NativeMacOS(unittest.TestCase):
-    def test_failed_or_ambiguous_window_queries_cannot_prove_finder_closed(self):
-        absent = {'document_windows_observed': True, 'owned_document_window_present': False,
-                  'unresolved_title_window_count': 0, 'nodes': [], 'owned_title_candidates': []}
-        self.assertTrue(macos.finder_window_absent(absent))
-        for value in ({}, {**absent, 'document_windows_observed': False},
-                {**absent, 'owned_document_window_present': True},
-                {**absent, 'unresolved_title_window_count': 1},
-                {key: value for key, value in absent.items() if key != 'unresolved_title_window_count'},
-                {**absent, 'owned_title_candidates': [{'title': 'owned'}]},
-                {**absent, 'nodes': [{'role': 'AXWindow'}]}):
-            self.assertFalse(macos.finder_window_absent(value))
+    def test_retirement_requires_the_verified_window_id_to_be_absent_even_offscreen(self):
+        snapshot = {'document_window_list_observed': True, 'document_windows_observed': False,
+            'unresolved_title_window_count': 1, 'owned_document_window_present': False,
+            'nodes': [], 'owned_title_candidates': []}
+        status = {'observed': True, 'pid': 123, 'window_id': 184, 'present': False}
+        self.assertTrue(macos.finder_window_retired(snapshot, status, 123, 184))
+        for changed in ({}, {**status, 'observed': False}, {**status, 'present': True},
+                {**status, 'pid': 456}, {**status, 'window_id': 185}):
+            self.assertFalse(macos.finder_window_retired(snapshot, changed, 123, 184))
+        for changed in ({}, {**snapshot, 'document_window_list_observed': False},
+                {**snapshot, 'owned_document_window_present': True},
+                {**snapshot, 'owned_title_candidates': [{'title': 'owned'}]},
+                {**snapshot, 'nodes': [{'role': 'AXWindow'}]}):
+            self.assertFalse(macos.finder_window_retired(changed, status, 123, 184))
+
+    def test_only_one_verified_owned_window_can_supply_the_retirement_identity(self):
+        window = {'kCGWindowOwnerPID': 123, 'kCGWindowNumber': 184}
+        self.assertEqual(macos.finder_window_id({'windows': [window]}, 123), 184)
+        for windows in ([], [window, window], [{**window, 'kCGWindowOwnerPID': 456}],
+                [{**window, 'kCGWindowNumber': 0}], [{**window, 'kCGWindowNumber': True}],
+                [{**window, 'kCGWindowNumber': '184'}]):
+            with self.assertRaises(ValueError):
+                macos.finder_window_id({'windows': windows}, 123)
 
     def test_picker_button_waits_for_enabled_state_but_never_retries_an_ambiguous_action(self):
         root = {'selector': {'window': 0, 'sheet': 0, 'path': []}}
@@ -59,6 +71,13 @@ class NativeMacOS(unittest.TestCase):
             self.assertIsNotNone(result)
             self.assertEqual(result[2]['method'], 'exact-native-icon-view-file-urls')
             self.assertEqual(result[2]['directory'], str(fixture))
+            self.assertIsNone(macos.ready_finder_snapshot(snapshot, fixture, 123))
+            ready = {**snapshot, 'owned_candidate_cg_windows': [
+                {'kCGWindowOwnerPID': 123, 'kCGWindowNumber': 184}]}
+            self.assertEqual(macos.ready_finder_snapshot(ready, fixture, 123)[3], 184)
+            with self.assertRaises(ValueError):
+                macos.ready_finder_snapshot({**ready,
+                    'owned_candidate_cg_windows': ready['owned_candidate_cg_windows'] * 2}, fixture, 123)
             for nodes in ([window], [window, view, files[0]], [window, view, files[0], files[0]],
                     [window, view, *[{**f, 'selector': {'window': 1, 'path': f['selector']['path']}} for f in files]],
                     [window, view, files[0], {**files[1], 'url': fixture.parent.as_uri()}],
