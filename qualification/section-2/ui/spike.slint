@@ -50,6 +50,7 @@ export component Spike inherits Window {
     private property <int> invoker: 0;
     in-out property <bool> compact: false;
     in-out property <bool> wide: true;
+    out property <int> observed-focus-key: ProbeState.focus-key;
     out property <bool> modal: root.dialog != 0;
     in-out property <string> query;
     in-out property <string> selected: "Étoiles — 日本語 — 故事";

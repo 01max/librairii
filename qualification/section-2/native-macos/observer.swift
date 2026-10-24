@@ -193,7 +193,7 @@ func post(_ code: CGKeyCode, down: Bool, flags: CGEventFlags, modifier: Bool = f
 func key(_ name: String) throws {
     let codes: [String: CGKeyCode] = ["a": 0, "g": 5, "c": 8, "v": 9, "x": 7, "z": 6,
         "q": 12, "2": 19, "comma": 43, "escape": 53, "return": 36, "tab": 48,
-        "delete": 51, "space": 49]
+        "delete": 51, "space": 49, "left": 123, "right": 124, "home": 115, "end": 119, "f": 3]
     let parts = name.split(separator: "+").map(String.init)
     guard let last = parts.last, let code = codes[last] else { throw Failure.invalid("unknown key") }
     var flags = CGEventFlags()
@@ -279,7 +279,7 @@ do {
     let operation = CommandLine.arguments[1]
     let app = AXUIElementCreateApplication(pid)
     AXUIElementSetMessagingTimeout(app, 1)
-    if ["key", "digits", "menu", "keycodes"].contains(operation), NSWorkspace.shared.frontmostApplication?.processIdentifier != pid {
+    if ["key", "digits", "menu", "keycodes", "performance-input"].contains(operation), NSWorkspace.shared.frontmostApplication?.processIdentifier != pid {
         throw Failure.invalid("target app is not frontmost; native input refused")
     }
     switch operation {
@@ -342,6 +342,39 @@ do {
             try post(CGKeyCode(code), down: false, flags: [])
         }
         try output(["posted": true, "source": inputSource()])
+    case "performance-input":
+        guard let directory = request["directory"] as? String, directory.hasPrefix("/"),
+              ProcessInfo.processInfo.environment["GITHUB_ACTIONS"] == "true" else {
+            throw Failure.invalid("performance input requires an owned CI rendezvous")
+        }
+        let stateURL = URL(fileURLWithPath: directory).appendingPathComponent("state.txt")
+        var samples: [Double] = []
+        for sample in 0..<64 {
+            guard NSWorkspace.shared.frontmostApplication?.processIdentifier == pid else {
+                throw Failure.invalid("performance input lost foreground target")
+            }
+            let expected = sample % 2 == 0 ? "e" : ""
+            let code = CGKeyCode(sample % 2 == 0 ? 14 : 51)
+            let start = DispatchTime.now().uptimeNanoseconds
+            for down in [true, false] {
+                guard let event = CGEvent(keyboardEventSource: nil, virtualKey: code, keyDown: down) else {
+                    throw Failure.invalid("cannot create performance keyboard event")
+                }
+                event.post(tap: .cghidEventTap)
+            }
+            while true {
+                let value = try String(contentsOf: stateURL, encoding: .utf8).components(separatedBy: "\n")
+                let elapsed = Double(DispatchTime.now().uptimeNanoseconds - start) / 1_000_000
+                guard elapsed < 1000 else { throw Failure.invalid("native input acknowledgment deadline") }
+                if value.count == 5 && value[0] == expected {
+                    samples.append(elapsed)
+                    break
+                }
+                Thread.sleep(forTimeInterval: 0.001)
+            }
+        }
+        try output(["samples_ms": samples, "p95_ms": samples.sorted()[60],
+            "method": "pre-CGEvent-post to actual edited-query/model/20ms-rendezvous acknowledgment"])
     case "input-selection":
         var raw: CFTypeRef?
         let focusStatus = AXUIElementCopyAttributeValue(app, kAXFocusedUIElementAttribute as CFString, &raw)

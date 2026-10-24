@@ -339,6 +339,96 @@ def observe_utf8_input(desktop, app_dir, output, report):
     desktop.screenshot(output / 'french-utf8-pasted.png')
 
 
+def observe_editing_and_performance(desktop, app_dir, output, report):
+    def query(expected):
+        return wait_for(lambda: (value := state(app_dir)) and value[0] == expected and value)
+    def geometry():
+        return json.loads((app_dir / 'geometry.json').read_text())
+    def fast_key(key):
+        assert desktop.active_pid() == report['app_pid'], 'native input lost foreground target'
+        desktop.run(['xdotool', 'key', '--clearmodifiers', '--delay', '0', key]
+            if desktop.session == 'x11' else ['wtype', '-k', key])
+    def paste(text, name):
+        if desktop.session == 'x11':
+            path = output / (name + '.txt')
+            path.write_text(text)
+            desktop.start(name, ['xclip', '-selection', 'clipboard', '-i', str(path), '-loops', '8', '-quiet'])
+        else:
+            desktop.start(name, ['wl-copy', '--foreground', '--', text])
+        # Observe the actual native clipboard owner before issuing one Paste.
+        expected = text
+        wait_for(lambda: desktop.run(['xclip', '-selection', 'clipboard', '-o']
+            if desktop.session == 'x11' else ['wl-paste', '--no-newline']) == expected)
+        desktop.key('ctrl+v')
+        return query(text)
+    desktop.key('ctrl+a')
+    desktop.key('BackSpace')
+    query('')
+    text = 'Été e\u0301 Z'
+    report['editing_states'] = [paste(text, 'latin-clipboard')]
+    desktop.key('Left')
+    desktop.key('BackSpace')
+    report['editing_states'].append(query('Été e\u0301Z'))
+    desktop.key('ctrl+z')
+    report['editing_states'].append(query(text))
+    desktop.key('ctrl+a')
+    desktop.key('BackSpace')
+    query('')
+    report['checks']['native_composed_decomposed_editing'] = True
+    long_text = 'Été, façade et bibliothèque : l’histoire très longue. ' * 16
+    report['long_french_states'] = [paste(long_text, 'long-clipboard')]
+    desktop.key('ctrl+z')
+    report['long_french_states'].append(query(''))
+    # Ctrl+Shift+Z is posted through native modifier/key events on both routes.
+    if desktop.session == 'x11':
+        desktop.key('ctrl+shift+z')
+    else:
+        desktop.run(['wtype', '-M', 'ctrl', '-M', 'shift', '-k', 'z', '-m', 'shift', '-m', 'ctrl'])
+    report['long_french_states'].append(query(long_text))
+    desktop.screenshot(output / 'long-french-input.png')
+    desktop.key('ctrl+a')
+    desktop.key('BackSpace')
+    query('')
+    report['checks']['native_long_french_clipboard_undo_redo'] = True
+    (app_dir / 'start-load').touch()
+    wait_for(lambda: geometry()['working'])
+    samples = []
+    for index in range(64):
+        expected = 'e' if index % 2 == 0 else ''
+        start = time.monotonic()
+        fast_key('e' if expected else 'BackSpace')
+        while True:
+            value = state(app_dir)
+            elapsed = (time.monotonic() - start) * 1000
+            assert elapsed < 1000, 'native input acknowledgment deadline'
+            if value and value[0] == expected:
+                samples.append(elapsed)
+                break
+            time.sleep(0.001)
+    report['native_input_performance'] = {'samples_ms': samples, 'p95_ms': sorted(samples)[60],
+        'method': 'pre-native-post to actual edited-query/model/20ms-rendezvous acknowledgment'}
+    assert geometry()['working'], 'background load ended before input measurement'
+    assert sorted(samples)[60] <= 100
+    report['checks']['native_input_under_load_budget'] = True
+    start = time.monotonic()
+    for _ in range(24):
+        previous = geometry()['focus_key']
+        if previous == 31:
+            break
+        fast_key('Tab')
+        wait_for(lambda: geometry()['focus_key'] != previous)
+    else:
+        raise AssertionError('native keyboard list focus not reached')
+    fast_key('End')
+    selected = wait_for(lambda: (g := geometry()) and g['rows'] == 1000
+        and g['selected_id'] == 999 and g['selected_row'] == 999 and g)
+    report['thousand_navigation'] = {'elapsed_ms': (time.monotonic() - start) * 1000,
+        'geometry': selected, 'endpoint': 'native Tab/End selects last actual row of1000'}
+    assert report['thousand_navigation']['elapsed_ms'] <= 3000
+    desktop.screenshot(output / 'thousand-last-selected.png')
+    report['checks']['native_thousand_navigation_budget'] = True
+
+
 def one_case(desktop, name, kind, expected):
     output = desktop.root / name
     app_dir = output / 'app'
@@ -347,7 +437,7 @@ def one_case(desktop, name, kind, expected):
     before_gtk = (desktop.root / 'gtk.log').stat().st_size
     flags = ['--native-probe=' + str(app_dir), '--native-case=' + kind]
     if kind == 'early-settings':
-        flags += ['--settings-early']
+        flags += ['--settings-early', '--native-load', '--slow-synthetic-work']
     app = desktop.start(name, ['/opt/librairii/qualification-desktop', *flags], debug=True)
     report = {'checks': {}, 'expected': expected, 'app_pid': app.pid}
     try:
@@ -460,6 +550,7 @@ def one_case(desktop, name, kind, expected):
         report['checks']['native_focus_restored_and_search_input'] = True
         if kind == 'early-settings':
             observe_utf8_input(desktop, app_dir, output, report)
+            observe_editing_and_performance(desktop, app_dir, output, report)
         (app_dir / 'finish').touch()
         report['returncode'] = app.wait(timeout=10)
         report['checks']['owned_shutdown'] = report['returncode'] == 0 and 'fixture_retired=true' in (app_dir / 'retired.txt').read_text()

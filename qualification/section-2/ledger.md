@@ -451,3 +451,10 @@ Task2.9 retained artwork implementation: embed byte-identical frozen24 distinct
 24-read/decode/pixel-consumption batches, enforce unchanged50ms nearest-rankp95.
 Native packaged release execution added on allthree matching hosts. Local strict
 GUI Clippy passes; native release measurements pending.
+
+Task2.5/2.9 native continuation: exact NFD/NFC caret/deletion/Undo and long French
+Paste/Undo/Redo;64 real OS-key dispatch acknowledgments under actual work/
+bounded thumbnail load, unchanged100ms p95; native Tab/End last-row endpoint
+within3000ms. No direct selection/focus setter, event timestamp subtraction,
+sample rejection or retry. Local GUI Clippy and Swift compilation pass; native
+execution and independent review pending.

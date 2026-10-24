@@ -388,6 +388,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         ui.invoke_start_work();
     }
     let thumbnail_poll = thumbnails.clone();
+    let native_load = std::env::args().any(|arg| arg == "--native-load");
+    let next_load = Cell::new(0usize);
     let timer = slint::Timer::default();
     let weak = ui.as_weak();
     let work = worker.clone();
@@ -398,6 +400,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         move || {
             if let Some(ui) = weak.upgrade() {
                 thumbnails::Loader::poll(&thumbnail_poll);
+                if native_load && ui.get_working() {
+                    for _ in 0..16 {
+                        let next = next_load.get();
+                        if !thumbnail_poll.borrow_mut().request(next) {
+                            break;
+                        }
+                        next_load.set((next + 1) % 1_000);
+                    }
+                }
                 update_viewport(&ui);
                 menus.update(
                     ui.get_french(),

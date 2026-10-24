@@ -141,7 +141,9 @@ class NativeLinux(unittest.TestCase):
         cases = {}
         for name in native.CASES:
             required = common | ({'early_settings_delivered', 'native_french_dead_key_and_utf8_input',
-                'native_utf8_clipboard_roundtrip'} if name == 'early-settings' else
+                'native_utf8_clipboard_roundtrip', 'native_composed_decomposed_editing',
+                'native_long_french_clipboard_undo_redo', 'native_input_under_load_budget',
+                'native_thousand_navigation_budget'} if name == 'early-settings' else
                 {'actual_file_manager_window_path', 'os_settings_accelerator'} if name == 'reveal' else
                 {'real_modal_dialog', 'one_real_portal_call', 'parent_identified', 'parent_associated',
                  'no_parent_rejection', 'actual_picker_result', 'os_settings_accelerator'})

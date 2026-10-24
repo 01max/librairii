@@ -8,6 +8,7 @@ import os
 import pathlib
 import platform
 import subprocess
+import time
 import traceback
 
 HERE = pathlib.Path(__file__).resolve().parent
@@ -15,7 +16,8 @@ spec = importlib.util.spec_from_file_location('input_native_macos', HERE / 'chec
 native = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(native)
 REQUIRED = {'french_dead_key_and_azerty', 'native_select_all_and_clear',
-    'input_sources_restored', 'normal_shutdown', 'fixture_removed'}
+    'input_sources_restored', 'normal_shutdown', 'fixture_removed', 'native_composed_decomposed_editing',
+    'native_long_french_clipboard_undo_redo', 'native_input_under_load_budget', 'native_thousand_navigation_budget'}
 JAPANESE_REQUIRED = {'japanese_preedit', 'japanese_candidate_commit', 'japanese_cancel_without_commit'}
 
 
@@ -105,7 +107,7 @@ def inspect(package, archive, helper, output, *, include_japanese=False):
         'toolkit_selected': False, 'method': 'native-French-Latin-UTF8-and-AX-editing-v4',
         'include_japanese': include_japanese,
         'deferred_qualification': ['Japanese IME', 'Chinese IME', 'Arabic input/shaping']}
-    app = subprocess.Popen([str(binary), '--native-probe=' + str(rendezvous), '--native-case=input'],
+    app = subprocess.Popen([str(binary), '--native-probe=' + str(rendezvous), '--native-case=input', '--native-load', '--slow-synthetic-work'],
         env={**os.environ, 'SLINT_BACKEND': 'winit-skia-software'}, stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT, start_new_session=True)
     capture = native.capture_output(app, output / 'app.log')
@@ -166,7 +168,57 @@ def inspect(package, archive, helper, output, *, include_japanese=False):
         # the actual native menu so clearing cannot accidentally post Quit.
         clear_search('êé az', 'french')
         report['checks']['native_select_all_and_clear'] = True
+        text = 'Été e\u0301 Z'
+        observer.call('clipboard-set', text=text)
+        observer.call('menu', title='Paste', submenu='Edit')
+        report['editing_states'] = [query(text)]
+        observer.call('key', key='left')
+        observer.call('key', key='delete')
+        report['editing_states'].append(query('Été e\u0301Z'))
+        observer.call('menu', title='Undo', submenu='Edit')
+        report['editing_states'].append(query(text))
+        observer.call('menu', title='Redo', submenu='Edit')
+        report['editing_states'].append(query('Été e\u0301Z'))
+        clear_search('Été e\u0301Z', 'composed-decomposed')
+        report['checks']['native_composed_decomposed_editing'] = True
+        long_text = 'Été, façade et bibliothèque : l’histoire très longue. ' * 16
+        observer.call('clipboard-set', text=long_text)
+        observer.call('menu', title='Paste', submenu='Edit')
+        report['long_french_states'] = [query(long_text)]
+        observer.call('menu', title='Undo', submenu='Edit')
+        report['long_french_states'].append(query(''))
+        observer.call('menu', title='Redo', submenu='Edit')
+        report['long_french_states'].append(query(long_text))
+        observer.capture('long-french-input')
+        clear_search(long_text, 'long-french')
+        report['checks']['native_long_french_clipboard_undo_redo'] = True
+        (rendezvous / 'start-load').touch()
+        observer.wait(lambda: json.loads((rendezvous / 'geometry.json').read_text())['working'])
+        report['native_input_performance'] = observer.call('performance-input', directory=str(rendezvous))
+        assert len(report['native_input_performance']['samples_ms']) == 64
+        assert json.loads((rendezvous / 'geometry.json').read_text())['working'], 'background load ended before measurement'
+        assert report['native_input_performance']['p95_ms'] <= 100
+        report['checks']['native_input_under_load_budget'] = True
+        # Time native keyboard navigation from the complete1000-row Search state
+        # to the last real selected row. No direct select/focus setter is used.
+        start = time.monotonic()
+        for _ in range(24):
+            if json.loads((rendezvous / 'geometry.json').read_text())['focus_key'] == 31:
+                break
+            observer.call('key', key='tab')
+        else:
+            raise AssertionError('native keyboard list focus not reached')
+        observer.call('key', key='end')
+        geometry = observer.wait(lambda: (g := json.loads((rendezvous / 'geometry.json').read_text()))
+            and g['rows'] == 1000 and g['selected_id'] == 999 and g['selected_row'] == 999 and g)
+        report['thousand_navigation'] = {'elapsed_ms': (time.monotonic() - start) * 1000, 'geometry': geometry,
+            'endpoint': 'native Tab/End selects last actual row of1000; includes OS dispatch and observer overhead'}
+        assert report['thousand_navigation']['elapsed_ms'] <= 3000
+        observer.capture('thousand-last-selected')
+        report['checks']['native_thousand_navigation_budget'] = True
         if include_japanese:
+            # Restore Search by the native OS accelerator before optional input.
+            observer.call('key', key='cmd+f')
             parent = parents[0]
             if not sources_by_id(observer.call('input-sources'))[parent['id']]['enabled']:
                 observer.call('input-source', source=parent['id'], operation='enable')

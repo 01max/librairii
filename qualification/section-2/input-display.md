@@ -182,3 +182,18 @@ source restored and normal fixture retirement. All retained ARM input hashes
 verify. Artifact12564064382 ZIP SHA256 is
 `2949ca7c350a46b1a168e21050f2b40397caf27ad9182121fd4a1fe5adc5588a`.
 NSRunningApplication's empty list does not establish that no IME service exists.
+
+## Native editing and responsiveness continuation
+
+The matching ARM/Intel and Linux X11/Wayland runs now require exact composed/
+decomposed Latin clipboard text, a native caret move/deletion and Undo, plus
+long French Paste/Undo/Redo. No normalization or text setter supplies expected
+values. Input measurement posts64 native e/Delete pairs while the actual
+synthetic worker and bounded thumbnail loader run. Every sample starts before
+native posting and ends after the edited query/model reaches the20ms recorder;
+observer overhead is included. Nearest-rankp95 must be≤100ms, without rejected
+samples or retries. Actual worker state must span the measurement. Native
+Tab/End navigation selects row999 of1000 within≤3000ms, including keyboard/
+observer overhead. Raw samples, states and screenshot endpoints are retained.
+These additions require fresh native execution; earlier input passes do not
+supply the new evidence. The bounded Winit trace cap is256KiB for64 key pairs.

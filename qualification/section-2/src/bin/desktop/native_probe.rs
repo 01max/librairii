@@ -118,7 +118,7 @@ impl Probe {
                     use std::fmt::Write;
                     let mut trace = events.borrow_mut();
                     writeln!(trace, "{entry}").expect("format native IME event");
-                    assert!(trace.len() <= 65_536, "native IME trace limit");
+                    assert!(trace.len() <= 262_144, "native IME trace limit");
                     output.write("ime-events.txt", &trace);
                 }
                 EventResult::Propagate
@@ -130,8 +130,10 @@ impl Probe {
         let timer = slint::Timer::default();
         let started = Instant::now();
         let phase = Cell::new(0);
+        let load_started = Cell::new(false);
         let action_queued = Cell::new(false);
         let last = RefCell::new(String::new());
+        let last_geometry = RefCell::new(String::new());
         timer.start(
             slint::TimerMode::Repeated,
             Duration::from_millis(20),
@@ -184,6 +186,22 @@ impl Probe {
                         .expect("queue native probe outside timer");
                 }
                 if phase.get() == 1 {
+                    if !load_started.get() && recorder.directory.join("start-load").is_file() {
+                        load_started.set(true);
+                        ui.invoke_start_work();
+                    }
+                    let physical = ui.window().size();
+                    let scale = ui.window().scale_factor();
+                    let logical = physical.to_logical(scale);
+                    let geometry = format!(
+                        "{{\"width\":{},\"height\":{},\"logical_width\":{},\"logical_height\":{},\"scale\":{},\"compact\":{},\"wide\":{},\"focus_key\":{},\"selected_id\":{},\"selected_row\":{},\"rows\":{},\"working\":{}}}",
+                        physical.width, physical.height, logical.width, logical.height, scale,
+                        ui.get_compact(), ui.get_wide(), ui.get_observed_focus_key(),
+                        ui.get_selected_id(), ui.get_selected_row_index(), ui.get_stories().row_count(), ui.get_working());
+                    if *last_geometry.borrow() != geometry {
+                        recorder.write("geometry.json", &geometry);
+                        *last_geometry.borrow_mut() = geometry;
+                    }
                     let state = format!(
                         "{}\n{}\n{}\n{}\n{}",
                         ui.get_query(),

@@ -29,7 +29,7 @@ IMAGE_SHA = '04e8f2461a16a44e78a370284471f29616cdd9baf1893df25807b71f985b6c94'
 PACKAGES = ('qemu-guest-agent libfontconfig1 libfreetype6 libxkbcommon-x11-0 libxcursor1 libxi6 libxrandr2 '
             'libegl1 libgl1 libvulkan1 mesa-vulkan-drivers fonts-noto-cjk python3-pyatspi python3-dbus '
             'python3-gi dbus-x11 at-spi2-core xdg-desktop-portal xdg-desktop-portal-gtk xdg-utils file '
-            'util-linux xfconf thunar xvfb xauth openbox xdotool x11-utils scrot sway wtype grim procps weston wayland-utils').split()
+            'util-linux xfconf thunar xvfb xauth openbox xdotool x11-utils scrot sway wtype grim procps xclip wl-clipboard weston wayland-utils').split()
 
 
 TOOLS = {'rustc', 'cargo', 'go', 'node', 'npm', 'gcc', 'g++', 'clang'}
