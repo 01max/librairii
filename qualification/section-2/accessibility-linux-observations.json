@@ -456,6 +456,674 @@
     "Speech Dispatcher retains nonfatal module-debug-file-open warnings; logs are not described as error-free.",
     "The Wayland app uses no DISPLAY; Orca46.1 itself uses an isolated X11 compatibility display.",
     "Virtualized selection/review/progress/error and complete pointer-free workflows remain unqualified.",
-    "The stronger per-stage utterance/audio-completion method requires new native evidence."
-  ]
+    "The first-method audio does not pass the stronger per-stage method. Separately recorded configured-v3 execution is under configured_v3."
+  ],
+  "configured_v3": {
+    "implementation": "0c1b202b5a677f91e50136b9e513b8e24c48b7e7",
+    "run": 40097549724,
+    "job": 120882860176,
+    "artifact": {
+      "id": 12562215393,
+      "zip_sha256": "072a7e190016c3cd0fbc80994e77a566e7325ec54c98f83df35a85cdb697b34c"
+    },
+    "report_sha256": "bbeb48faef4caf27615ab32d8417010bd1415a7901528eb61201aefc8b58761f",
+    "manifest_sha256": "a7d5c285c0630b5cf03ca77a4bffe4b2d4127c35e7bf0019e489429add36e6cc",
+    "observation_method": "per-focus-utterance-and-audio-completion-v3",
+    "source": "98b990a6b464443096e96d4bdf7a15653efc0b89",
+    "binary_sha256": "56e2ea9803c57def1d975e13bbbdc9e4f4436d56ba5911b3145c506d0c7f836d",
+    "archive": {
+      "file": "task2-x86_64-unknown-linux-gnu.tar.gz",
+      "bytes": 14630007,
+      "sha256": "4cc75592bfa54e303d7e93b14f8bb877173c3b590e09d4f26d395e094a65713d"
+    },
+    "image": "sha256:f7e4ce851adfb5d4c6bdf8037fda6e65aad7b4224badf68eb40ad995bee185f2",
+    "checks": {
+      "x11": true,
+      "wayland": true,
+      "native_wayland_application": true,
+      "retired-librairii-orca-x11-f9d466c2ba3e44419e5915480c3902bc": true,
+      "retired-librairii-orca-wayland-f9d466c2ba3e44419e5915480c3902bc": true,
+      "image_retired": true
+    },
+    "errors": [],
+    "full_accessibility_qualified": false,
+    "default_echo_x11_qualified": false,
+    "spoken_label_intelligibility_qualified": false,
+    "wayland_reader_global_key_grabs_qualified": false,
+    "toolkit_selected": false,
+    "sessions": {
+      "x11": {
+        "binary_sha256": "56e2ea9803c57def1d975e13bbbdc9e4f4436d56ba5911b3145c506d0c7f836d",
+        "baseline": "pass",
+        "baseline_checks": {
+          "app_accessibility_tree": true,
+          "keyboard_search": true,
+          "keyboard_settings_and_focus_return": true,
+          "orca_search_label_completed": true,
+          "orca_settings_labels_completed": true,
+          "orca_spoke_search_or_settings": true,
+          "speech_services_alive": true,
+          "normal_application_quit": true,
+          "owned_fixture_removed": true,
+          "actual_synthesized_audio": true
+        },
+        "observation_method": "per-focus-utterance-and-audio-completion-v3",
+        "scope": "Private Orca/eSpeak-NG speech and AT-SPI baseline; keyboard Search and Settings only. X11 action-key echo is disabled in this private reader profile; its default-echo route stays unqualified. Virtualized selection, review, progress/error speech and complete pointer-free flows remain unqualified.",
+        "versions": "at-spi2-core 2.52.0-1build1\norca 46.1-1ubuntu1\npulseaudio 1:16.1+dfsg1-2ubuntu10.1\nspeech-dispatcher 0.12.0~rc2-2build3\nspeech-dispatcher-espeak-ng 0.12.0~rc2-2build3\n",
+        "debug_log_configuration": {
+          "line_buffering": true,
+          "write_through": true
+        },
+        "reader_preferences": {
+          "enable_action_keys": false
+        },
+        "application_environment": {
+          "DISPLAY": ":91",
+          "WAYLAND_DISPLAY": null,
+          "GDK_BACKEND": "x11",
+          "SLINT_BACKEND": "winit-skia-software"
+        },
+        "application_pid": 131,
+        "application_returncode": 0,
+        "fixtures": [
+          "/tmp/librairii-qualification-QVghdg"
+        ],
+        "audio": {
+          "format": "s16le",
+          "sample_rate": 16000,
+          "channels": 1,
+          "samples": 231973,
+          "nonzero_samples": 120208,
+          "peak": 32768,
+          "duration_seconds": 14.4983125
+        },
+        "application_audio_start_offset": 44660,
+        "speech_steps": {
+          "frame": {
+            "debug_offset": 30331,
+            "audio_offset": 44660,
+            "expected_utterance": "Librairii · qualification frame.",
+            "debug_end_offset": 84816,
+            "audio_end_offset": 124318,
+            "audio": {
+              "format": "s16le",
+              "sample_rate": 16000,
+              "channels": 1,
+              "samples": 39829,
+              "nonzero_samples": 27780,
+              "peak": 32768,
+              "duration_seconds": 2.4893125
+            }
+          },
+          "search": {
+            "debug_offset": 84816,
+            "audio_offset": 125956,
+            "expected_utterance": "Search stories entry.",
+            "debug_end_offset": 103272,
+            "audio_end_offset": 181204,
+            "audio": {
+              "format": "s16le",
+              "sample_rate": 16000,
+              "channels": 1,
+              "samples": 27624,
+              "nonzero_samples": 16555,
+              "peak": 32768,
+              "duration_seconds": 1.7265
+            }
+          },
+          "settings": {
+            "debug_offset": 193069,
+            "audio_offset": 186572,
+            "expected_utterance": "Settings push button.",
+            "debug_end_offset": 269551,
+            "audio_end_offset": 244394,
+            "audio": {
+              "format": "s16le",
+              "sample_rate": 16000,
+              "channels": 1,
+              "samples": 28911,
+              "nonzero_samples": 17092,
+              "peak": 32768,
+              "duration_seconds": 1.8069375
+            }
+          },
+          "close": {
+            "debug_offset": 269551,
+            "audio_offset": 244472,
+            "expected_utterance": "Close push button.",
+            "debug_end_offset": 290211,
+            "audio_end_offset": 335068,
+            "audio": {
+              "format": "s16le",
+              "sample_rate": 16000,
+              "channels": 1,
+              "samples": 45298,
+              "nonzero_samples": 26846,
+              "peak": 32768,
+              "duration_seconds": 2.831125
+            }
+          },
+          "english": {
+            "debug_offset": 290211,
+            "audio_offset": 335146,
+            "expected_utterance": "English push button.",
+            "debug_end_offset": 304286,
+            "audio_end_offset": 386666,
+            "audio": {
+              "format": "s16le",
+              "sample_rate": 16000,
+              "channels": 1,
+              "samples": 25760,
+              "nonzero_samples": 14898,
+              "peak": 32768,
+              "duration_seconds": 1.61
+            }
+          },
+          "restored": {
+            "debug_offset": 304286,
+            "audio_offset": 386744,
+            "expected_utterance": "Settings push button.",
+            "debug_end_offset": 322075,
+            "audio_end_offset": 442934,
+            "audio": {
+              "format": "s16le",
+              "sample_rate": 16000,
+              "channels": 1,
+              "samples": 28095,
+              "nonzero_samples": 16016,
+              "peak": 32768,
+              "duration_seconds": 1.7559375
+            }
+          }
+        },
+        "snapshots": {
+          "initial": {
+            "nodes": 51,
+            "focused": [
+              {
+                "name": "Librairii · qualification",
+                "role": "frame",
+                "states": {
+                  "focused": true,
+                  "focusable": true,
+                  "enabled": true,
+                  "showing": true,
+                  "selected": false,
+                  "checked": false,
+                  "editable": false
+                }
+              }
+            ],
+            "observation_errors": [],
+            "audio_byte_offset": 125956
+          },
+          "filtered": {
+            "nodes": 35,
+            "focused": [
+              {
+                "name": "Search stories",
+                "role": "entry",
+                "states": {
+                  "focused": true,
+                  "focusable": true,
+                  "enabled": true,
+                  "showing": true,
+                  "selected": false,
+                  "checked": false,
+                  "editable": true
+                },
+                "text": "0042"
+              }
+            ],
+            "observation_errors": [],
+            "audio_byte_offset": 184748
+          },
+          "settings-invoker": {
+            "nodes": 34,
+            "focused": [
+              {
+                "name": "Settings",
+                "role": "push button",
+                "states": {
+                  "focused": true,
+                  "focusable": true,
+                  "enabled": true,
+                  "showing": true,
+                  "selected": false,
+                  "checked": false,
+                  "editable": false
+                }
+              }
+            ],
+            "observation_errors": [],
+            "audio_byte_offset": 188238
+          },
+          "settings-open": {
+            "nodes": 39,
+            "focused": [
+              {
+                "name": "Close",
+                "role": "push button",
+                "states": {
+                  "focused": true,
+                  "focusable": true,
+                  "enabled": true,
+                  "showing": true,
+                  "selected": false,
+                  "checked": false,
+                  "editable": false
+                }
+              }
+            ],
+            "observation_errors": [],
+            "audio_byte_offset": 248068
+          },
+          "settings-tab": {
+            "nodes": 39,
+            "focused": [
+              {
+                "name": "English",
+                "role": "push button",
+                "states": {
+                  "focused": true,
+                  "focusable": true,
+                  "enabled": true,
+                  "showing": true,
+                  "selected": false,
+                  "checked": false,
+                  "editable": false
+                }
+              }
+            ],
+            "observation_errors": [],
+            "audio_byte_offset": 337286
+          },
+          "settings-restored": {
+            "nodes": 34,
+            "focused": [
+              {
+                "name": "Settings",
+                "role": "push button",
+                "states": {
+                  "focused": true,
+                  "focusable": true,
+                  "enabled": true,
+                  "showing": true,
+                  "selected": false,
+                  "checked": false,
+                  "editable": false
+                }
+              }
+            ],
+            "observation_errors": [],
+            "audio_byte_offset": 390002
+          }
+        },
+        "file_hashes": {
+          "orca-reader-preferences.json": "4e7f3369c20b93e4d5cc0d9efdfaefcabe2d31d35f936260c6558b6cd4b0942a",
+          "orca-log-mode.json": "7994af15e22201a96d5ecf39650ad7323b09c7f3c573465954546f63ae56c7d6",
+          "speech.wav": "7bad2bbc6b40abe32502730b563298f71dc528db7c54d39598b78c2d03291287",
+          "orca.log": "34837ec5e7e91dff86400112b40ddeb3f82bee81bfded76224309454b343ff8a",
+          "initial.json": "3014fccc8cc75b6c98ec68aa077c233e22103fd138b15ddf6d6c9a4cf2a5e6da",
+          "orca-stack-handler-ready.txt": "ed1a545bb85e55816bbf9566b028b2a0bc456b88f49f6f266c0401048824194b",
+          "xvfb.log": "6d73d78138c41bea466314919237a4fe998e5b670a356ab2012f328fff769a7b",
+          "speech-dispatcher.log": "81496c01aba9ba965e71f6935cd2222a6e42a9dacfc2968d6c58ecee6d77e0c0",
+          "application.log": "1862bebe454d369a3d114df76571da3bc0221ee1bf458bdd3e47b4bd38e8c2d1",
+          "filtered.json": "c6993c512df301dfc755aa0e07b9a0018c2be659dd1f8894fc8182353d41f83b",
+          "settings-open.json": "1e9e0916560b8f613d2329df3eca06fee0ae84815910221f650d740bf1ad4667",
+          "settings-invoker.json": "1205fbd7d2d17152b7691344799176321499f5a7616572b259937d8e6e2fcbd9",
+          "accessibility-session.json": "b9e2f5e5344bd19a34ce6d01501a03c7469de54258fde760ffb945f5110e45d0",
+          "gtk.log": "0418a4366bc274f69e483464cc7a2bb7b838de9721b38856ba19e626995fab7f",
+          "orca-debug.txt": "d4d1289b836c85389934e2d3d352c27f68d519e3cd81b2c138fdf5f385e40eac",
+          "speech.pcm": "16adc2dd6a8c697f4e44e04d28255310cd2701c46fbee8d59ac7a59d9b59edd3",
+          "filtered.png": "3edecd09820ceca898b9e3c69c41cc11476e8e2fbe0fcc473b6bd55cb1c70938",
+          "portal.log": "f191b3aef39504209053193b1fccdb64392f612a52c705ee576f07f5d06c8483",
+          "monitor.log": "ee63ecbc860c8c7801a69512d5bcae8a143f2bd3fb2528737596303f8a65b21e",
+          "speech-audio-stderr.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "settings-restored.json": "1205fbd7d2d17152b7691344799176321499f5a7616572b259937d8e6e2fcbd9",
+          "settings-tab.json": "5b98ffb36854439584d4da660104d8a819f1375ae1d949af540eecb19168f85f",
+          "pulse.log": "3e63a1838f1d175b2104a96fb55a4cb77478f2664125feb7200313057526e6eb",
+          "openbox.log": "a7622f569751c2abf1d4fb5e26343b67779d81880a10414e18dc96b37614515a",
+          "file-manager-preference.txt": "7ed6f305faa6c9e88fc980496274c79d16bf9031972d149ee19f3ec5c8a49417"
+        },
+        "raw_session_sha256": "b9e2f5e5344bd19a34ce6d01501a03c7469de54258fde760ffb945f5110e45d0",
+        "wav_sha256": "7bad2bbc6b40abe32502730b563298f71dc528db7c54d39598b78c2d03291287",
+        "offline_asr": {
+          "engine": "whisper.cpp v1.7.6; CPU; four threads; unprompted English; base.en",
+          "source_archive_sha256": "166140e9a6d8a36f787a2bd77f8f44dd64874f12dd8359ff7c1f4f9acb86202e",
+          "model_revision": "5359861c739e955e79d9a303bcbc70fb988958b1",
+          "model_sha256": "a03779c86df3323075f5e796cb2ce5029f00ec8869eee3fdfb897afe36c6d002",
+          "transcript": "library like qualification frame search story entry to settings push button settings panel global button english push button settings push button",
+          "transcript_sha256": "42a6956f4affaeb19e237e07e7cd51723fbc0ae9dffb2f05298d0b3c5aa5e304",
+          "positive_intelligibility_proof": false
+        }
+      },
+      "wayland": {
+        "binary_sha256": "56e2ea9803c57def1d975e13bbbdc9e4f4436d56ba5911b3145c506d0c7f836d",
+        "baseline": "pass",
+        "baseline_checks": {
+          "app_accessibility_tree": true,
+          "keyboard_search": true,
+          "keyboard_settings_and_focus_return": true,
+          "orca_search_label_completed": true,
+          "orca_settings_labels_completed": true,
+          "orca_spoke_search_or_settings": true,
+          "speech_services_alive": true,
+          "normal_application_quit": true,
+          "owned_fixture_removed": true,
+          "actual_synthesized_audio": true
+        },
+        "observation_method": "per-focus-utterance-and-audio-completion-v3",
+        "scope": "Private Orca/eSpeak-NG speech and AT-SPI baseline; keyboard Search and Settings only. X11 action-key echo is disabled in this private reader profile; its default-echo route stays unqualified. Virtualized selection, review, progress/error speech and complete pointer-free flows remain unqualified.",
+        "versions": "at-spi2-core 2.52.0-1build1\norca 46.1-1ubuntu1\npulseaudio 1:16.1+dfsg1-2ubuntu10.1\nspeech-dispatcher 0.12.0~rc2-2build3\nspeech-dispatcher-espeak-ng 0.12.0~rc2-2build3\n",
+        "debug_log_configuration": {
+          "line_buffering": true,
+          "write_through": true
+        },
+        "reader_preferences": {
+          "enable_action_keys": true
+        },
+        "application_environment": {
+          "DISPLAY": null,
+          "WAYLAND_DISPLAY": "wayland-1",
+          "GDK_BACKEND": "wayland",
+          "SLINT_BACKEND": "winit-skia-software"
+        },
+        "orca_xkb_compatibility_display": ":92",
+        "application_pid": 133,
+        "application_returncode": 0,
+        "fixtures": [
+          "/tmp/librairii-qualification-CDqeSJ"
+        ],
+        "audio": {
+          "format": "s16le",
+          "sample_rate": 16000,
+          "channels": 1,
+          "samples": 256683,
+          "nonzero_samples": 117321,
+          "peak": 32768,
+          "duration_seconds": 16.0426875
+        },
+        "application_audio_start_offset": 44674,
+        "speech_steps": {
+          "frame": {
+            "debug_offset": 30335,
+            "audio_offset": 44752,
+            "expected_utterance": "Librairii · qualification frame.",
+            "debug_end_offset": 84928,
+            "audio_end_offset": 123372,
+            "audio": {
+              "format": "s16le",
+              "sample_rate": 16000,
+              "channels": 1,
+              "samples": 39310,
+              "nonzero_samples": 27748,
+              "peak": 32768,
+              "duration_seconds": 2.456875
+            }
+          },
+          "search": {
+            "debug_offset": 84928,
+            "audio_offset": 125010,
+            "expected_utterance": "Search stories entry.",
+            "debug_end_offset": 99589,
+            "audio_end_offset": 186260,
+            "audio": {
+              "format": "s16le",
+              "sample_rate": 16000,
+              "channels": 1,
+              "samples": 30625,
+              "nonzero_samples": 16555,
+              "peak": 32768,
+              "duration_seconds": 1.9140625
+            }
+          },
+          "settings": {
+            "debug_offset": 288074,
+            "audio_offset": 203654,
+            "expected_utterance": "Settings push button.",
+            "debug_end_offset": 325054,
+            "audio_end_offset": 266042,
+            "audio": {
+              "format": "s16le",
+              "sample_rate": 16000,
+              "channels": 1,
+              "samples": 31194,
+              "nonzero_samples": 16021,
+              "peak": 32768,
+              "duration_seconds": 1.949625
+            }
+          },
+          "close": {
+            "debug_offset": 325054,
+            "audio_offset": 266120,
+            "expected_utterance": "Close push button.",
+            "debug_end_offset": 360656,
+            "audio_end_offset": 362582,
+            "audio": {
+              "format": "s16le",
+              "sample_rate": 16000,
+              "channels": 1,
+              "samples": 48231,
+              "nonzero_samples": 26059,
+              "peak": 32768,
+              "duration_seconds": 3.0144375
+            }
+          },
+          "english": {
+            "debug_offset": 360656,
+            "audio_offset": 362660,
+            "expected_utterance": "English push button.",
+            "debug_end_offset": 390105,
+            "audio_end_offset": 420262,
+            "audio": {
+              "format": "s16le",
+              "sample_rate": 16000,
+              "channels": 1,
+              "samples": 28801,
+              "nonzero_samples": 14918,
+              "peak": 32768,
+              "duration_seconds": 1.8000625
+            }
+          },
+          "restored": {
+            "debug_offset": 390105,
+            "audio_offset": 420340,
+            "expected_utterance": "Settings push button.",
+            "debug_end_offset": 423457,
+            "audio_end_offset": 482224,
+            "audio": {
+              "format": "s16le",
+              "sample_rate": 16000,
+              "channels": 1,
+              "samples": 30942,
+              "nonzero_samples": 16020,
+              "peak": 32768,
+              "duration_seconds": 1.933875
+            }
+          }
+        },
+        "snapshots": {
+          "initial": {
+            "nodes": 51,
+            "focused": [
+              {
+                "name": "Librairii · qualification",
+                "role": "frame",
+                "states": {
+                  "focused": true,
+                  "focusable": true,
+                  "enabled": true,
+                  "showing": true,
+                  "selected": false,
+                  "checked": false,
+                  "editable": false
+                }
+              }
+            ],
+            "observation_errors": [],
+            "audio_byte_offset": 125010
+          },
+          "filtered": {
+            "nodes": 35,
+            "focused": [
+              {
+                "name": "Search stories",
+                "role": "entry",
+                "states": {
+                  "focused": true,
+                  "focusable": true,
+                  "enabled": true,
+                  "showing": true,
+                  "selected": false,
+                  "checked": false,
+                  "editable": true
+                },
+                "text": "0042"
+              }
+            ],
+            "observation_errors": [],
+            "audio_byte_offset": 202562
+          },
+          "settings-invoker": {
+            "nodes": 34,
+            "focused": [
+              {
+                "name": "Settings",
+                "role": "push button",
+                "states": {
+                  "focused": true,
+                  "focusable": true,
+                  "enabled": true,
+                  "showing": true,
+                  "selected": false,
+                  "checked": false,
+                  "editable": false
+                }
+              }
+            ],
+            "observation_errors": [],
+            "audio_byte_offset": 214498
+          },
+          "settings-open": {
+            "nodes": 39,
+            "focused": [
+              {
+                "name": "Close",
+                "role": "push button",
+                "states": {
+                  "focused": true,
+                  "focusable": true,
+                  "enabled": true,
+                  "showing": true,
+                  "selected": false,
+                  "checked": false,
+                  "editable": false
+                }
+              }
+            ],
+            "observation_errors": [],
+            "audio_byte_offset": 278484
+          },
+          "settings-tab": {
+            "nodes": 39,
+            "focused": [
+              {
+                "name": "English",
+                "role": "push button",
+                "states": {
+                  "focused": true,
+                  "focusable": true,
+                  "enabled": true,
+                  "showing": true,
+                  "selected": false,
+                  "checked": false,
+                  "editable": false
+                }
+              }
+            ],
+            "observation_errors": [],
+            "audio_byte_offset": 373834
+          },
+          "settings-restored": {
+            "nodes": 34,
+            "focused": [
+              {
+                "name": "Settings",
+                "role": "push button",
+                "states": {
+                  "focused": true,
+                  "focusable": true,
+                  "enabled": true,
+                  "showing": true,
+                  "selected": false,
+                  "checked": false,
+                  "editable": false
+                }
+              }
+            ],
+            "observation_errors": [],
+            "audio_byte_offset": 432330
+          }
+        },
+        "application_protocol_checks": {
+          "xdg_window_configured": true,
+          "window_buffer_submitted": true
+        },
+        "file_hashes": {
+          "orca-reader-preferences.json": "e732a88732aea80aeb160300342b4d8aefead2da2d8024303f2577dbaef5541b",
+          "orca-log-mode.json": "7994af15e22201a96d5ecf39650ad7323b09c7f3c573465954546f63ae56c7d6",
+          "speech.wav": "a9d05413765f164a9d2ed64eeadfba96cd9776f5c88e293bd2d25a19ed7688fe",
+          "orca.log": "9b77f14241941ca9cedb880d3c10ee4e89633b780b7f17f5b8114950576b418e",
+          "initial.json": "3014fccc8cc75b6c98ec68aa077c233e22103fd138b15ddf6d6c9a4cf2a5e6da",
+          "orca-stack-handler-ready.txt": "ed1a545bb85e55816bbf9566b028b2a0bc456b88f49f6f266c0401048824194b",
+          "keyboard-seat.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "speech-dispatcher.log": "2a344f5234162f166cb0fb80daf49c56447d2e708927f3596730abe158fb62e2",
+          "application.log": "3d0ba6f1d7e3f991c9823decaa569789a1d3f1875313f446a2008a31a2c0a813",
+          "filtered.json": "c6993c512df301dfc755aa0e07b9a0018c2be659dd1f8894fc8182353d41f83b",
+          "settings-open.json": "1e9e0916560b8f613d2329df3eca06fee0ae84815910221f650d740bf1ad4667",
+          "settings-invoker.json": "1205fbd7d2d17152b7691344799176321499f5a7616572b259937d8e6e2fcbd9",
+          "accessibility-session.json": "964a81633b287b513bc0094b724580d27b7b3a9c57bdc4c24fcaadf5d8055cf0",
+          "gtk.log": "b2ea3572e70f31e53cf60aae83e9a7171d465f869a82778d162c2a826260c6a5",
+          "orca-debug.txt": "c1e53cd4b6b30cf6aaeae45decf610ee1b63564e26df3ed7e7e0e640a972bf21",
+          "speech.pcm": "fa1b5e5670529cde578a354cbd9a18ec0f08bf89d9a8baf07ae7e6f4f62d59ff",
+          "sway.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "orca-xkb-display.log": "0bac115c5580e35921d81254a7da3faf4a2bcbffe9063af638a27e97a1471a01",
+          "filtered.png": "a0438723c36c0c8d65a428f6135607caf2b496fa12ffc91d970a6511852bd484",
+          "portal.log": "30b01726e9e6f92b3ea650b78d71db1af16726576ca31628adab1020c073f14a",
+          "monitor.log": "b034f17aafe38e48225578fe1c1d889632eb3f9e2b4d90b9702159e75c6f7979",
+          "speech-audio-stderr.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "settings-restored.json": "1205fbd7d2d17152b7691344799176321499f5a7616572b259937d8e6e2fcbd9",
+          "settings-tab.json": "5b98ffb36854439584d4da660104d8a819f1375ae1d949af540eecb19168f85f",
+          "pulse.log": "3e63a1838f1d175b2104a96fb55a4cb77478f2664125feb7200313057526e6eb",
+          "file-manager-preference.txt": "7ed6f305faa6c9e88fc980496274c79d16bf9031972d149ee19f3ec5c8a49417"
+        },
+        "raw_session_sha256": "964a81633b287b513bc0094b724580d27b7b3a9c57bdc4c24fcaadf5d8055cf0",
+        "wav_sha256": "a9d05413765f164a9d2ed64eeadfba96cd9776f5c88e293bd2d25a19ed7688fe",
+        "offline_asr": {
+          "engine": "whisper.cpp v1.7.6; CPU; four threads; unprompted English; base.en",
+          "source_archive_sha256": "166140e9a6d8a36f787a2bd77f8f44dd64874f12dd8359ff7c1f4f9acb86202e",
+          "model_revision": "5359861c739e955e79d9a303bcbc70fb988958b1",
+          "model_sha256": "a03779c86df3323075f5e796cb2ce5029f00ec8869eee3fdfb897afe36c6d002",
+          "transcript": "Library like qualification frame Search story entry Settings push button Settings panel Close push button English push button Settings push button",
+          "transcript_sha256": "d7fe7ff2d7b82de7969a318d4cc83eebbde379825927774dbc218184899ba9bf",
+          "positive_intelligibility_proof": false
+        }
+      }
+    },
+    "independent_review": {
+      "status": "approved",
+      "archive_payloads_verified": 712,
+      "manifest_payloads_verified": 711,
+      "session_files_verified": 51,
+      "scope": "Archive/source/native binary, all711 payloads/712 regular tar members,51 session hashes, all12 exact utterance/PCM/quiet-tail stages, actual private preferences, startup-excluded WAV, raw native focus/text snapshots, same-toplevel Wayland sequence and owned cleanup. Supplementary unprompted offline ASR retains mishearings; no full intelligibility or complete accessibility qualification."
+    },
+    "limitations": [
+      "Configured baseline only; private X11 action-key echo is disabled. The default-echo X11 v2 failure remains retained and unqualified.",
+      "Wayland action-key echo remains enabled. The native Wayland app has no DISPLAY; Orca46.1 itself uses an isolated X11 compatibility display.",
+      "No human hearing is claimed. Unprompted offline ASR recognizes the main labels but mishears some words and does not establish complete intelligibility.",
+      "Speech Dispatcher retains nonfatal module-debug-file-open warnings; logs are not described as error-free.",
+      "Virtualized selection/checked states, review paging, progress/error announcements and complete pointer-free workflows remain unqualified."
+    ]
+  }
 }

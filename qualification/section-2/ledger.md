@@ -191,3 +191,27 @@ pass locally. This correction is not native interaction evidence.
 Apple's [XNU group-signalling implementation](https://github.com/apple-oss-distributions/xnu/blob/main/bsd/kern/kern_sig.c)
 filters zombie members before deciding EPERM/ESRCH. The retained failed run is
 not retried or relabelled as passing.
+
+
+## 2026-10-24 configured Orca baseline (2.4, partial)
+
+Implementation `0c1b202b5a677f91e50136b9e513b8e24c48b7e7` passes all three
+native qualification lanes in run40097549724, Rust quality40097549732 and
+existing CI40097549800. Linux job120882860176 records both configured-v3
+Orca sessions passing all ten baseline checks and all six completed speech
+stages. Artifact12562215393 retains the original report,51 session hashes,
+startup-excluded PCM/WAV, native focus/text snapshots and effective preferences.
+See `accessibility-linux-observations.json` / `configured_v3` for exact identities.
+
+X11 action-key echo is disabled only in this private reader profile; its earlier
+default-echo failure is retained. Wayland retains action-key echo and the app
+has no DISPLAY; the reader uses an isolated XKB compatibility display. Secondary
+unprompted offline base.en transcription recognizes main labels with some
+misheard words. No human hearing, complete intelligibility, virtualized review,
+progress/error, full pointer-free workflow or toolkit qualification is inferred.
+
+Independent scoped review approves the original archive/package, all51 session
+hashes, all12 exact utterance/PCM/quiet-tail stages, startup exclusion, native
+focus/text, private preferences, Wayland protocol and owned cleanup. Both filtered
+images show `0042`, one row and French/CJK. The supplementary ASR transcripts
+and pinned model bytes are verified; the explicit scope limits are preserved.

@@ -90,6 +90,25 @@ regression; the first version reproduced that false acceptance. The preferences
 idle callback publishes its complete witness through an owned temporary file
 and atomic rename, so path readiness cannot observe partial JSON.
 
+The configured-v3 execution at `0c1b202` passes both sessions in
+[run40097549724](https://github.com/01max/librairii/actions/runs/40097549724),
+Linux job120882860176. All six required utterances per session have their own
+nonzero PCM segment and half-second quiet tail. Search contains native `0042`
+input; Settings opens, traps focus and restores its invoker through keyboard
+events. Both apps quit normally and retire their fixture; both private containers
+and the image are removed. Actual reader preferences are X11 action-key echo
+false and Wayland true. The native Wayland application remains independent of
+the reader's isolated X11 compatibility display.
+
+The separate `configured_v3` record in
+[accessibility-linux-observations.json](accessibility-linux-observations.json)
+binds the original report, manifest, archive and all51 session-file hashes to
+artifact12562215393. The earlier first-method record and failed default-echo X11
+route retain their original verdicts. Unprompted offline whisper.cpp1.7.6/base.en
+transcription recognizes the main labels in both recordings, with several
+misheard words. This is supplementary evidence, not human listening or complete
+spoken-label intelligibility. Full2.4 and toolkit selection remain open.
+
 The first actual run at `5de32ce` / run40081026276 records two observer setup
 failures, retained in artifact12555123864 (ZIP SHA256
 `8c130cd4ddb3ecd4c92bc7d9ad88053653aff35b85b23302c475f058de570bc9`).
