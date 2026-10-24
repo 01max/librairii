@@ -99,6 +99,22 @@ submenu opened before lookup; an absent/ambiguous menu or missing item still
 fails. General adapter-menu behavior is unchanged. Fresh ARM/Intel execution
 must establish delivery and selection; the f462e38 Intel failure remains.
 
+At5f1606d/run40103474086 the ARM reader first records native `noValue`, then
+the actual focused Search field with exact selected `êé az` and UTF-16 range
+0+5; one physical Delete clears the query. Japanese input now reaches real
+Winit preedit `n` → `に` → `にh` → `にほ` → `にほn`, but the driver incorrectly
+waits for `にほん` before finishing the pending final Roman n. It times out,
+restores every original source/enable bit and exits0 with its fixture removed.
+All retained input file hashes verify. Artifact12562714907 ZIP SHA256 is
+`39c94122d498169a76d61148c4e36b43eb770c24c3459d10a54dfa6c8d4c83c8`.
+This is actual Japanese preedit evidence, not a completed conversion/cancel pass.
+
+The separate sequence correction types `nihonn` in both Japanese phases so
+the input method completes the final kana before the exact `にほん` assertion.
+No Unicode payload, application text setter, IME API shortcut or weakened
+expected text replaces physical key input. Candidate `日本` commit, a fresh
+cancelled composition, full restoration and normal retirement remain required.
+
 ## Historical initial checklist
 
 Status: **pending actual observation on A/I/L/W**, 2026-10-20, librairii-4.

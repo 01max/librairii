@@ -155,9 +155,11 @@ def inspect(package, archive, helper, output):
             observer.call('input-source', source=parent['id'], operation='enable')
         select(japanese)
         offset = len(trace())
-        # n i h o n through the actual OS input method. The public Winit trace
+        # n i h o n n through the actual OS input method. The final doubled n
+        # completes ん; one trailing n remains live Roman input (にほn).
+        # The public Winit trace
         # must show preedit before commit; final Unicode text alone cannot pass.
-        observer.call('keycodes', codes=[45, 34, 4, 31, 45])
+        observer.call('keycodes', codes=[45, 34, 4, 31, 45, 45])
         preedit = observer.wait(lambda: (t := trace()[offset:]) and 'Preedit("にほん"' in t and t)
         report['japanese_preedit_trace'] = preedit
         report['japanese_preedit_state'] = native.state(rendezvous)
@@ -175,7 +177,7 @@ def inspect(package, archive, helper, output):
         observer.capture('japanese-committed')
         clear_search('日本', 'japanese')
         offset = len(trace())
-        observer.call('keycodes', codes=[45, 34, 4, 31, 45])
+        observer.call('keycodes', codes=[45, 34, 4, 31, 45, 45])
         observer.wait(lambda: 'Preedit("にほん"' in trace()[offset:])
         escape_offset = len(trace())
         observer.call('key', key='escape')
