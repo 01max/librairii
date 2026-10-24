@@ -23,12 +23,12 @@ The exact SDK version is not recorded by those earlier runs. Proposed support
 baselines remain macOS15+ and Ubuntu24.04/glibc2.39. Running macOS15.7.9 does not
 prove the minimum15.0 release, and those baselines are not a general support claim.
 
-These routes permit real OS interaction using synthetic events and public native
-controls. They do not complete dead-key/IME, mixed-monitor, remaining Orca
-semantics, native performance, clean macOS package or final toolkit selection
-gates. Those remain separately scoped in2.4/2.5/2.9/2.11/2.13. VoiceOver remains
-excluded by owner decision; Windows remains deferred. No new host was provisioned.
-The inventory and resource requests below are retained historical observations.
+These routes supply actual OS interaction through synthetic events and public native
+controls. The scoped remaining gates now pass as recorded in
+[selection-gate.md](selection-gate.md). VoiceOver remains excluded by owner decision;
+Windows is deferred. Existing CI hosts supply execution; the offline KVM guest is
+an owned temporary fixture. No additional paid/external host or owner check was needed.
+The inventory/resource requests below are retained historical observations.
 
 ## Historical availability correction (2026-10-23)
 

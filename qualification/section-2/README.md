@@ -1,14 +1,16 @@
 # Section 2 qualification spike
 
-**Current continuation (2026-10-23):** Linux/macOS only. See
-[continuation.md](continuation.md), [current-pins.json](current-pins.json) and the
-[runnable operator checklist](operator-checks.md). The owner chose Slint with
-About-screen attribution; Intel/Linux interactive hosts are unavailable. Toolkit
-selection still awaits mandatory physical/AT/input/rendering/performance/clean-host gates.
-PR38's **Task 2 native qualification** workflow produces matching probe packages.
-macOS bundles now have verified ad-hoc integrity seals, without Developer ID or
-notarization; their public API tests do not substitute for operator observations.
-The original reports below retain their historical source attribution.
+**Task 2 complete (2026-10-24): Slint selected for Linux/macOS.** See
+[selection-gate.md](selection-gate.md) for the independent decision, exact three-target
+matrix, retained budgets and deferred scope. All native qualification lanes, Rust
+quality and existing CI pass. Subtask implementation and review fixes retain separate
+commits on PR38 targeting `rewrite-in-rust-native-desktop`.
+
+The older observations below retain their original source/dates and failed outcomes;
+they do not describe the current gate status. Windows and script-specific CJK/Arabic
+input qualification are deferred; VoiceOver was excluded by owner decision. Valid
+UTF-8 data and filenames remain unrestricted. Mac packages have ad-hoc integrity
+seals; public signing/notarization/product installers remain later release work.
 
 Current public GUI regression command, on an eligible desktop:
 
@@ -30,7 +32,7 @@ covering X11/Wayland normal/CPU rendering and owned-shutdown relaunch. Its
 execution/evidence scope remains distinct from full clean-desktop qualification.
 
 
-**Partial qualification; no selected toolkit or supported-platform claim.**
+**Historical initial experiment; superseded by the current selection gate above.**
 Owner: librairii-4. Base: integration commit
 `1419f1d7c5236016c0e330056c9eff45931ddf48`.
 Only this directory belongs to section 2; it is an independent Cargo workspace.

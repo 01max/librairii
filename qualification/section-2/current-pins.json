@@ -295,7 +295,7 @@
     "path": "notices/Slint-Royalty-free-2.0.md",
     "sha256": "5167f5056e850419106ab6265efbdca7cba4d99c849d1445ca0bbf6a1e2315fe"
   },
-  "toolkit_selection": "pending remaining native evidence and independent 2.13 review",
+  "toolkit_selection": "selected for the scoped Linux/macOS native rewrite; see selection-gate.md",
   "historical_data_candidates": "zip/sevenz-rust2 and rejected Unicode compositions retained as historical experiments only",
   "native_menu_adapter": "Direct macOS muda=0.19.3, defaults disabled, existing locked package; no root graph change",
   "thumbnail_probe": {
@@ -332,5 +332,13 @@
     "p95": "nearest rank sorted[94], wall milliseconds, unchanged50ms ceiling",
     "cpu_diagnostics": "CLOCK_PROCESS_CPUTIME_ID via already-selected libc=0.2.191; diagnostic only, never replaces wall gate",
     "retained_failure": "run40118957740 Intel20sample p95=72.528676ms stays failed"
+  },
+  "qualification_decision": {
+    "date": "2026-10-24",
+    "status": "selected",
+    "implementation_head": "d145d604af917618ac6127bba8687806c5ed032a",
+    "native_workflow": "https://github.com/01max/librairii/actions/runs/40123986713",
+    "evidence": "completion-evidence/final-matrix.json",
+    "independent_review": "completion-evidence/review.md"
   }
 }

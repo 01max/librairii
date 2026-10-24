@@ -1,5 +1,14 @@
 # Native notice supplement (2.13)
 
+Task2.13 independently reviews the exact selected locked/native graph and the
+conservative11-component Skia supplement, including Khronos SPIR-V/GLSL terms,
+and verifies every packaged notice copy on all three targets. AccessKit retains
+MIT/Apache/Chromium notices and exact upstream-backport provenance. See
+completion-evidence/review.md and [selection-gate.md](selection-gate.md). Per-probe flags do not assert a
+future finished-product distribution audit; Task18 repeats it for final product bytes.
+
+Earlier observations below retain their dates, source commits and historical scope.
+
 The Rust registry notice inventory did not cover Skia's bundled native source
 graph. The pinned ARM `libskia.a` archive contains codec, XML, color-management
 and compression objects. Archive membership alone does not prove linkage into

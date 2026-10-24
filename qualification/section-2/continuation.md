@@ -1,5 +1,12 @@
 # Linux/macOS qualification continuation
 
+Task2 is complete under the owner-approved scope. The current toolkit decision,
+three-target evidence and explicit deferred scope are in [selection-gate.md](selection-gate.md).
+Slint1.18.1/Winit0.30.13/Skia0.153.3 on Rust1.99.1 is selected; subsequent feature UI
+can use that qualified graph. This remains a synthetic feasibility spike.
+
+Earlier observations below retain their dates, source commits and historical scope.
+
 Task 2 resumes from PR38 on 2026-10-23, with the epic through
 `ccee9e8` merged without rewriting the original subtask commits. The active
 targets are macOS ARM, real Intel macOS, and Linux x86-64 (X11 and Wayland).

@@ -1,93 +1,64 @@
-# Independent selection gate (2.13)
+# Task 2 toolkit selection
 
-Owner scope decision, 2026-10-24: prioritize UTF-8 correctness and French/Latin
-input. Japanese, Chinese and Arabic-specific input/IME/shaping qualification is
-deferred and no longer gates this Task2 PR. UTF-8 data and filename preservation
-remain required for all valid strings. Earlier CJK observations and failures
-below are historical evidence, without a new qualification claim. Current input
-scope and method are in [input-display.md](input-display.md).
+2026-10-24: **Slint is selected for the scoped Linux/macOS native rewrite. Task 2 is complete.**
+The final implementation matrix and independent review pass. Detailed artifact/source
+identities and gate results are in [completion-evidence/final-matrix.json](completion-evidence/final-matrix.json)
+and [completion-evidence/review.md](completion-evidence/review.md).
 
-Owner scope exception, 2026-10-23: VoiceOver execution is excluded from the
-current Task 2 qualification/merge gate at the owner's explicit request. Record
-it as skipped, with spoken macOS accessibility unqualified. The exception does
-not close keyboard, Linux accessibility or the other remaining evidence gates.
+Implementation `d145d604af917618ac6127bba8687806c5ed032a`: [native qualification run 67](https://github.com/01max/librairii/actions/runs/40123986713).
+Historical experiments remain in [selection-gate-history.md](selection-gate-history.md) and
+[ledger.md](ledger.md); they do not override the attributed completion evidence.
 
-2026-10-23 update: the active scope is **three Linux/macOS targets**; the Windows
-column below is historical and does not gate this change. The owner chose the
-Slint royalty-free desktop route with top-level AboutSlint attribution. Native
-ARM access is now available. The owner subsequently clarified that no Intel Mac
-or Linux desktop is available to them; interactive hosts/operators remain
-unsecured (see [hosts.md](hosts.md)). Hosted three-target native smokes and the
-Linux Xvfb renderer qualification are separate automated evidence. The
-[current continuation](continuation.md), [pins](current-pins.json) and
-[operator checklist](operator-checks.md) supersede the historical pending-access
-and rejected-data-candidate status below. Actual toolkit selection remains open.
+The selected GUI candidate is Slint 1.18.1, Winit 0.30.13 and Skia 0.153.3 on Rust 1.99.1,
+with the pinned AccessKit graph and the tested upstream disabled-state backport.
+The owner approved the royalty-free desktop route with the top-level AboutSlint
+attribution. Librairii's own license is unchanged. Tests use public component/controller,
+Winit and OS accessibility APIs; no commercial GUI test tool is required.
 
-A fresh independent code/evidence review found two P2 defects (native Quit and
-menu focus restoration), both corrected in separate commits. Re-review confirmed
-those fixes and found one P3 Linux Quit/menu issue, also separately corrected.
-That review approves the implemented continuation only. Automated CI/builds,
-package manifests and the local AX observations do not supply missing spoken AT,
-IME, real Intel/Linux interaction, GPU-failure, input/thumbnail or clean-host
-results. Keep missing gates visibly incomplete; do not start full feature UI.
+The qualification scope covers ARM macOS, native Intel macOS and Linux x86-64
+X11/Wayland. UTF-8 data remains unrestricted; French/Latin editing is the current
+input target. Windows and Japanese/Chinese/Arabic-specific IME/shaping are deferred.
+VoiceOver execution is excluded by the owner's decision, without a spoken macOS
+accessibility claim.
 
+| Gate | Qualified evidence |
+| --- | --- |
+| 2.1–2.3 | Exact pins/features/notices, actual native builders/SDK access, representative responsive localized 1,000-story spike |
+| 2.4 | Independently approved native Orca semantics, keyboard focus, offscreen selection, review paging/Apply and real progress/error/retry speech/audio |
+| 2.5 | French dead keys, full selection/Delete, composed/decomposed caret/Undo/Redo, long clipboard text, actual native resizing/contrast/reduced motion; ARM Retina and Linux mixed-scale movement |
+| 2.6–2.8 | Native picker/menu/clipboard/reveal cases, forced GPU-init failure/CPU recovery, supported public regression route |
+| 2.9 | 64 actual native input samples, 20 expansion/navigation samples under thumbnail/background load, 100 read/full-decode batches of 24 artwork files and measured additional resource ceilings |
+| 2.10 | Reviewed bundled SQLite feasibility plus merged Task 5 rawzip/flate2/sevenz-turbo and Task 7 query graph; accepted/rejected corpus retained; Task 4 storage/profile work remains pending |
+| 2.11 | Matching sealed minimal packages; fresh offline Linux KVM launch/reboot/reinstall and Mac process-isolated normal/CPU launch/relaunch without development access |
+| 2.12 | Conditional fallback is not triggered when the selected candidate passes the scoped mandatory gates after repairs |
+| 2.13 | Independent review of exact package/locked/native notices, raw observations and three-target coverage, followed by the recorded decision |
 
-**PENDING FINAL QUALIFICATION REVIEW. TOOLKIT NOT SELECTED.**
-Draft task PR38 targets `rewrite-in-rust-native-desktop` only. No merge authorized.
-Source research/builds/controller tests and a local unsigned ARM image are useful
-partial evidence, not completion. Exact supporting commits are in ledger.md.
+Raw package/probe records retain `toolkit_selected:false`: individual probes do not
+declare overall selection. The independent decision here covers the combined scope.
+Their hashes and failed outcomes are
+preserved; this decision never edits historical evidence into a pass.
 
-| Mandatory evidence | ARM macOS | Real Intel | Linux X11 / Wayland | Windows11 x64 |
-| --- | --- | --- | --- | --- |
-| Native candidate build | Local build | Pending | Pending / pending | Pending |
-| Mockup visual/native semantics | Interaction access denied | Pending host | Pending hosts | Pending host |
-| Keyboard + VoiceOver/NVDA/Orca | Not observed | Not observed | Not observed | Not observed |
-| Dead keys / CJK IME / clipboard / mixed DPI | Not observed | Not observed | Not observed | Not observed |
-| Pickers / parenting / menus / reveal | Compiled probes only | Pending | Pending / pending | Pending |
-| Actual GPU failure + multilingual CPU | Explicit CPU process smoke only | Pending | Pending / pending | Pending |
-| Public controller automation | Local controller smoke | Pending | Pending / pending | Pending |
-| Actual input/thumbnail budgets + additional ceilings | Diagnostics only | Pending | Pending / pending | Pending |
-| SQLite/full archive corpus parity | Independent subset only | Pending | Pending | Pending |
-| Clean-host packages / installer / signing | Local unsigned DMG only | Pending | Pending | Pending |
+The Mac CI AX checks use the host's available content sizes. Wide/Retina frames
+are independently retained from the actual ARM development window; Intel's larger
+run63 screen also passes all three layouts. Linux must move the same window through
+2×/1×/2×/1× while retaining its 1280 × 800 logical size and 1,000-story model. These are
+actual geometry/rendering and OS-event observations, not a physical-HID/first-pixel
+or universal accessibility claim.
 
-Distribution/license route is proposed, not final. Product terms, complete native
-third-party notices and any paid GUI-tool entitlements remain owner decisions.
-Host/access questions are with the user/orchestrator; signing secrets were not
-examined. Keep every missing gate open. Eligible headless sections3–4 can proceed
-on isolated data with independent module boundaries and frozen behavioral inputs.
+Minimal spike runtime qualification does not claim erased macOS installation,
+minimum 15.0 execution, public Gatekeeper trust, signing/notarization or the finished
+product installer/data-upgrade lifecycle. Those release concerns remain with Task 18.
+The identified native macOS execution is 15.7.9; Linux is Ubuntu 24.04 / glibc 2.39.
+The headless merged backend budgets remain unchanged; this task does not duplicate
+future feature UI or depend on Tasks 14/16.
 
-The orchestrator may request AO native review of this partial PR; do not trigger
-one without that request. Native review approval alone cannot supply missing
-physical evidence or authorize merging. Final2.13 review must assess the final
-head, exact locked/native graph, full evidence, licensing and all four actual
-targets after mandatory gates pass. Review fixes need separate commits and their
-threads resolved. Do not mark this gate or external task checkboxes complete.
+Linux display traversal waits for each actual focus change before the next Tab.
+Input method v3 checks foreground ownership before timing, then includes the full
+injector process and actual edited-model acknowledgement. It retains all 64 wall
+samples and the unchanged 100 ms p95 limit, with separate foreground/posting/wait
+diagnostics. Earlier failed observations remain failed in the evidence history.
 
-Historical implemented scope through `3131fb68109a0f82caeba1af84500ef86f20e9e5`
-received partial AO approval (ea416650), including the actual-widget and pinned
-wrapper fixes. Both inline threads are resolved with evidence. This supplies code
-review only. New independent Zstd/resource experiments require fresh final-head
-review and CI. The observed pre-callback OOM is an open decoder-resource gate;
-the container only bounds the qualification experiment. Neither code approval
-nor the small payload/dictionary successes complete2.13, product admission,
-production isolation, physical, licensing or full-corpus qualification.
-Section1 corpus admission is now complete at1cd2244 through integration9a6c1c1;
-it supplies the frozen input, not section2 parity or decoder-resource proof.
-
-The subsequent Unicode15 follow-up is separate candidate research. All-scalar
-agreement and earlier bounded sequence agreement did not establish equivalence:
-the surviving-Mc investigation rejects both tested final search pipelines in120
-of160 cases. Reports, their measured source commits and the comparator regression
-are preserved in unicode-compat/. No production fallback algorithm was implemented
-or selected here. The new head requires fresh partial native review and CI;
-abdb318 approval remains historical. Admitted wrapper repair4383373 is merged
-history-preservingly before combined validation. Every mandatory gate above stays
-open, and this PR remains draft/unmerged.
-
-The subsequent count-allocation derivative is qualification-only source work.
-Historical39267 partial approval (74ee1baa/GH5589862600) and eight successful
-checks remain attributed to39267. The new derivative/supervisor needs a fresh
-exact-head review and current CI. Safe source/arithmetic/fail-closed checks do
-not supply constructor execution evidence: new controls and the three retained
-cases are **NOT RUN/pending Docker availability**. No general resource bound,
-global cancellation, accepted-codec qualification or production decision follows.
+The native notice audit covers the exact selected Linux/macOS graph and conservative
+11-component Skia supplement, including Khronos SPIR-V/GLSL header terms. The bundled
+MIT/Apache/Chromium AccessKit notices and upstream backport provenance are preserved.
+Host fonts are not redistributed. Future graph/platform changes require a new audit.

@@ -1,12 +1,13 @@
 # Candidate toolkit and dependency qualification (task 2.1)
 
-Current 2026-10-23 decision: see [current-pins.json](current-pins.json) and
-[continuation.md](continuation.md). The owner explicitly chose Slint with
-About-screen attribution under the pinned royalty-free desktop route. This
-selects the candidate licensing route, without changing Librairii’s own license
-or declaring the toolkit qualified. Ordinary public component/event APIs remain
-the test route; no commercial test tooling is enabled. The tagged terms are
-retained verbatim in [notices/](notices/Slint-Royalty-free-2.0.md).
+Current 2026-10-24 decision: **Slint 1.18.1 is selected for the scoped Linux/macOS
+native rewrite** after the final native matrix and independent Task 2.13 review.
+See [selection-gate.md](selection-gate.md), [current-pins.json](current-pins.json)
+and completion-evidence/. The owner approved the royalty-free desktop route with
+actual top-level AboutSlint attribution; Librairii's own license is unchanged.
+Public component/controller, Winit and OS-accessibility APIs supply the regression
+route without commercial GUI test tooling. Tagged license terms remain verbatim
+in [notices/](notices/Slint-Royalty-free-2.0.md).
 
 The2.5 composition observer additionally enables Slint's versioned public
 `unstable-winit-030` feature. It records delivered IME events, always returns
@@ -15,9 +16,10 @@ unstable across minor releases: the exact1.18.1/0.30.13 pins and hook behavior
 require requalification on upgrade. No added production input mechanism or
 paid automation entitlement follows.
 
-The record below is historical research. The production data graph has since
-been implemented in merged Tasks 4/5/7: bundled SQLite, rawzip/flate2 and the
-reviewed pinned sevenz-turbo derivative, plus the frozen core query codec.
+The record below is historical research. Current data qualification combines
+reviewed bundled SQLite feasibility with the merged Task 5 archive adapter
+(rawzip/flate2 and the reviewed sevenz-turbo derivative) and Task 7 query codec.
+Task 4's storage/profile port remains pending.
 The rejected sevenz-rust2/Unicode experiments are not production dependencies.
 Windows is deferred; current qualification covers three Linux/macOS targets.
 

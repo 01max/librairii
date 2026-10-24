@@ -29,15 +29,15 @@ remain attributed to their historical source commits.
 | 2.2 | Complete: actual ARM, real Intel and Linux execution/SDK access | hosts.md |
 | 2.3 | Complete: responsive representative localized1000-story native spike | ui/, src/, continuation.md |
 | 2.4 | Complete under owner scope; expanded native Orca workflows independently approved | accessibility-linux-observations.json expanded_v5 |
-| 2.5 | French editing passes; native display correction and composed Retina/mixed-scale coverage require fresh final matrix | input-display.md, completion-evidence/ |
-| 2.6 | Prior eight-case review retained; fresh Intel folder-reject setup failed and the native-editing correction requires fresh execution | native-macos-observations.json, native-linux-observations.json |
+| 2.5 | Complete: independently reviewed French editing, native sizes/contrast/reduced motion, Retina and actual mixed-scale transitions | input-display.md, completion-evidence/ |
+| 2.6 | Complete: all fresh Mac/Linux native eight-case matrices independently approved, including outside-root rejection after real native path editing | native-macos-observations.json, native-linux-observations.json |
 | 2.7 | Complete: forced native GPU-init failure/CPU recovery and matching runtime audits | renderers.md, inspect-runtime.py |
 | 2.8 | Complete: public component/controller and OS-accessibility regression route, no commercial test tool | regression.md |
-| 2.9 | Retained artwork and native input/navigation measurements implemented; fresh resource ceilings/matrix pending | performance.md |
+| 2.9 | Complete: native input/navigation, retained24-artwork p95 and measured additional resource ceilings pass on all three targets | performance.md |
 | 2.10 | Complete with selected merged SQLite/archive adapters; superseded experiments retained historically | data-feasibility.md, corpus-observations.json |
-| 2.11 | Linux offline KVM lifecycle approved; ARM isolated four-launch route passes; fresh final Mac matrix pending | linux-vm.md, clean-macos.md |
-| 2.12 | Conditional fallback not triggered; repairable defects addressed and no established remaining mandatory candidate failure | fallback.md |
-| 2.13 | Exact graph/backport, Orca and Retina evidence independently approved; final native matrix and decision pending | selection-gate.md |
+| 2.11 | Complete: offline Linux KVM lifecycle and both Mac four-launch isolated-runtime routes independently approved | linux-vm.md, clean-macos.md |
+| 2.12 | Handled: fallback not triggered; selected Slint candidate passes the scoped mandatory gates after reviewed repairs | fallback.md |
+| 2.13 | Complete: exact graph/notices/backport, full native matrix and scoped evidence independently approved; Slint selected | selection-gate.md |
 
 Task1 PR39 is admitted at1cd2244 and merged through9a6c1c1 with146 corrected corpus
 files. The2.10 consumer now pins that exact final input; its e7c771b observations
@@ -615,3 +615,22 @@ Linux artifact12572570911 ZIP SHA256
 The next source adds only bounded read-only slow-thread/scheduler diagnostics,
 preserving all64 samples and budgets. CI additionally publishes native traces
 before the independent VM stage, tightening diagnosis without skipping any gate.
+
+Final implementation d145d604af917618ac6127bba8687806c5ed032a and native workflow https://github.com/01max/librairii/actions/runs/40123986713 pass.
+The independent decision and exact evidence matrix are in selection-gate.md and
+completion-evidence/. Toolkit selection is complete under the explicit owner scope.
+
+## Final scoped closure commits
+
+| Task | Commit | Result |
+| --- | --- | --- |
+| 2.4 | `76a41fa947fa` | Independently reviewed gate closure and attributed evidence. |
+| 2.5 | `ce62adb16e4f` | Independently reviewed gate closure and attributed evidence. |
+| 2.6 | `2734f5cb40aa` | Independently reviewed gate closure and attributed evidence. |
+| 2.9 | `3dffb86894f7` | Independently reviewed gate closure and attributed evidence. |
+| 2.11 | `3cdcffc13748` | Independently reviewed gate closure and attributed evidence. |
+| 2.12 | `17b2f175ba9d` | Independently reviewed gate closure and attributed evidence. |
+
+Task2.13 records the independently approved combined matrix and Slint decision in
+the following commit. The implementation evidence remains bound to d145d604 /
+run40123986713; subsequent closure metadata does not rewrite those artifacts.

@@ -118,7 +118,7 @@ def main():
         'features': ['gui'], 'executable': str(executable.relative_to(output)),
         'binary_sha256': sha(executable), 'lock_sha256': sha(HERE / 'Cargo.lock'),
         'architecture': architecture.strip(), 'toolkit_selected': False,
-        'qualification': 'pending remaining native evidence and independent final gate',
+        'qualification': 'Per-package observations; see selection-gate.md for the independent toolkit decision',
         'native_notices': native_notice_inventory,
         'notice_scope': 'registry top-level/declared notices plus a pinned conservative native Skia supplement; final per-target native distribution audit remains open'}
     if platform.system() == 'Darwin':

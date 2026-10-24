@@ -1,11 +1,17 @@
 # Task 2 native operator checks
 
+Task2 automated qualification is complete; no checks are assigned to the owner.
+This is an optional manual observation template for additional configurations,
+not a list of pending merge gates. See [selection-gate.md](selection-gate.md).
+
 This package is a synthetic qualification spike, not the Librairii product.
 It never opens your library/profile, imports archives, or contacts production
 services. Pickers accept only this run's disposable fixture directory. Closing
 the app cancels and joins its synthetic worker before retiring that directory.
-No system accessibility, keyboard, display, privacy, or security setting is
-changed by the scripts. Use an already configured reader/IME/session or record
+The manual observe.py recorder changes no system setting. The separately guarded
+disposable-CI French input method restores original source/enable states; private
+Linux display preferences exist only in the owned ephemeral desktop. The owner
+desktop/privacy/security settings are untouched. Use an already configured reader/IME/session or record
 that check as not run. Keep macOS security prompts visible and record them;
 the scripts never remove quarantine or change Gatekeeper settings.
 
