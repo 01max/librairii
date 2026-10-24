@@ -244,3 +244,12 @@ pending; Linux composition and display/contrast/scaling gates stay open.
 The versioned Winit feature adds one direct Slint→i-slint-backend-winit lockfile
 edge, without changing a package version/checksum. The follow-up refreshes the
 recorded GUI lock digest and resolved Slint dependency list to that actual lock.
+
+
+Independent review P2 correction: the IME cancellation check previously accepted
+an empty preedit emitted before the live composition. It now takes a fresh trace
+offset immediately before Escape and requires the final preedit after that
+offset to be empty, with no commit anywhere in the cancellation phase. The
+negative early-reset→live trace reproduced false acceptance before the fix;
+all four focused tests pass afterward. The raw full and post-Escape traces are
+retained separately. First actual native execution is still pending.

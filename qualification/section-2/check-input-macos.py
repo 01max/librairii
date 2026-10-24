@@ -32,6 +32,11 @@ def sources_by_id(inventory):
     return result
 
 
+def composition_cancelled(phase, after_escape):
+    preedits = [line for line in after_escape.splitlines() if line.startswith('Preedit(')]
+    return bool(preedits) and preedits[-1] == 'Preedit("", None)' and 'Commit(' not in phase
+
+
 def restore_sources(observer, before):
     # Re-read effective states after every mutation: enabling a parent can also
     # enable its modes. Restore modes before their parent, then verify all bits.
@@ -147,13 +152,14 @@ def inspect(package, archive, helper, output):
         offset = len(trace())
         observer.call('keycodes', codes=[45, 34, 4, 31, 45])
         observer.wait(lambda: 'Preedit("にほん"' in trace()[offset:])
+        escape_offset = len(trace())
         observer.call('key', key='escape')
         observer.call('key', key='escape')
-        cancelled = observer.wait(lambda: (t := trace()[offset:]) and 'Preedit("", None)' in t and t)
-        if 'Commit(' in cancelled:
-            raise ValueError('cancelled Japanese composition committed text')
+        cancelled = observer.wait(lambda: (t := trace())
+            and composition_cancelled(t[offset:], t[escape_offset:]) and t[offset:])
         report['japanese_cancelled_state'] = query('')
         report['japanese_cancel_trace'] = cancelled
+        report['japanese_post_escape_trace'] = trace()[escape_offset:]
         report['checks']['japanese_cancel_without_commit'] = True
     except Exception:
         report['errors'].append(traceback.format_exc())

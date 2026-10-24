@@ -10,6 +10,14 @@ spec.loader.exec_module(observer)
 
 
 class InputMacOS(unittest.TestCase):
+    def test_escape_requires_a_new_final_clear_after_the_live_preedit(self):
+        live = 'Preedit("", None)\nPreedit("にほん", Some((0, 3)))\n'
+        clear = 'Preedit("", None)\n'
+        self.assertFalse(observer.composition_cancelled(live, ''))
+        self.assertFalse(observer.composition_cancelled(live + clear + live, clear + live))
+        self.assertFalse(observer.composition_cancelled(live + 'Commit("日本")\n' + clear, clear))
+        self.assertTrue(observer.composition_cancelled(live + clear, clear))
+
     def test_missing_or_failed_input_or_restoration_witness_refuses_qualification(self):
         report = {'binary_sha256': 'expected', 'errors': [], 'returncode': 0,
             'checks': dict.fromkeys(observer.REQUIRED, True), 'full_input_display_qualified': False}
