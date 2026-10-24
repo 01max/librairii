@@ -198,6 +198,14 @@ jobs:
             --archive "target/task2-evidence/task2-$RUST_TARGET.tar.gz" \
             --helper "$RUNNER_TEMP/task2-input-macos" \
             --output target/task2-evidence/input-macos
+      - name: Launch and relaunch the Mac package with denied source and development access
+        if: runner.os == 'macOS' && !cancelled() && steps.package.outcome == 'success'
+        run: >-
+          python3 qualification/section-2/check-clean-macos.py
+          --package "$RUNNER_TEMP/task2-roundtrip/task2-$RUST_TARGET"
+          --archive "target/task2-evidence/task2-$RUST_TARGET.tar.gz"
+          --helper "$RUNNER_TEMP/task2-native-macos"
+          --output target/task2-evidence/clean-macos
       - name: Measure packaged startup markers, idle CPU, peak RSS and distribution size
         run: |
           package="$RUNNER_TEMP/task2-roundtrip/task2-$RUST_TARGET"

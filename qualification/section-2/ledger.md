@@ -496,3 +496,14 @@ The Linux performance-only state reader polls at1ms with a strict1s per-state
 deadline, matching the Mac observer and retaining total elapsed time. This
 avoids injecting20s of50ms observer sleeps into the20-trial workload; no event
 is reposted and no sample is excluded. Generic native-case deadlines remain.
+
+Task2.11 Mac clean-runtime implementation: matching verified package copied into
+an owned installation; freshHOME/TMPDIR, denied source/build/development reads,
+restricted executable graph and network. Real denial/positive controls precede
+four native window/render/input/shutdown launches across normal/CPU backends.
+Explicit slower renderer timing permits observing actual owned windows, without
+changing any performance probe. All evidence/children/fixtures are bounded and
+retired. No erased-OS, Gatekeeper, signing or installer claim. Native execution
+and independent review required. Full106 recorder suite passes after removal of
+only402MiB superseded generated Task3 compiler cache; the prior fresh Swift-cache
+disk failure remains failed rather than being counted as a test pass.

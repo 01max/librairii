@@ -686,6 +686,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         assert!(!fixture_root.exists(), "resource fixture must be retired");
         eprintln!("resource_probe_complete; workers_joined=true; fixture_retired=true");
     }
+    if std::env::args().any(|arg| arg == "--clean-runtime-probe") {
+        assert!(worker.borrow().is_none());
+        assert!(!fixture_root.exists());
+        eprintln!("clean_runtime_complete; workers_joined=true; fixture_retired=true");
+    }
     if quit_smoke {
         assert!(quit_during_work.get());
         assert!(worker.borrow().is_none(), "all workers must be joined");

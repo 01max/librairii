@@ -22,7 +22,7 @@ impl Probe {
         ui.set_french(true);
         timer.start(
             slint::TimerMode::Repeated,
-            Duration::from_millis(400),
+            Duration::from_millis(if std::env::args().any(|arg| arg == "--clean-runtime-probe") { 1500 } else { 400 }),
             move || {
                 if observed.get() {
                     return;
