@@ -15,6 +15,57 @@ spec.loader.exec_module(macos)
 
 
 class NativeMacOS(unittest.TestCase):
+    def test_failed_or_ambiguous_window_queries_cannot_prove_finder_closed(self):
+        absent = {'document_windows_observed': True, 'owned_document_window_present': False,
+                  'nodes': [], 'owned_title_candidates': []}
+        self.assertTrue(macos.finder_window_absent(absent))
+        for value in ({}, {**absent, 'document_windows_observed': False},
+                {**absent, 'owned_document_window_present': True},
+                {**absent, 'owned_title_candidates': [{'title': 'owned'}]},
+                {**absent, 'nodes': [{'role': 'AXWindow'}]}):
+            self.assertFalse(macos.finder_window_absent(value))
+
+    def test_picker_button_waits_for_enabled_state_but_never_retries_an_ambiguous_action(self):
+        root = {'selector': {'window': 0, 'sheet': 0, 'path': []}}
+        button = {'role': 'AXButton', 'title': 'Open', 'enabled': False,
+                  'selector': {'window': 0, 'sheet': 0, 'path': [9]}}
+        observer = macos.Observer(pathlib.Path('/owned/helper'), pathlib.Path('/owned/output'), 123)
+        with mock.patch.object(observer, 'snapshot', return_value={'nodes': [{**button, 'enabled': True}]}), \
+                mock.patch.object(observer, 'call') as call:
+            observer.button({'nodes': [button]}, root, ('Open',))
+            self.assertEqual(call.call_count, 1)
+            self.assertEqual(call.call_args.args[0], 'press')
+        with mock.patch.object(observer, 'call') as call, self.assertRaises(ValueError):
+            observer.button({'nodes': [button, button]}, root, ('Open',))
+        call.assert_not_called()
+
+    def test_finder_icon_view_requires_both_exact_existing_file_urls_in_the_owned_window(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            fixture = pathlib.Path(temporary).resolve()
+            def node(role, path, **values):
+                return {'role': role, 'selector': {'window': 0, 'path': path}, **values}
+            window = node('AXWindow', [], identifier='FinderWindow', title=fixture.name)
+            view = node('AXList', [0, 2], identifier='IconView', subrole='AXCollectionList')
+            files = []
+            for i, name in enumerate(('Été 日本語 故事.zip', 'Deuxième archive 02.pk')):
+                path = fixture / name
+                path.touch()
+                files.append(node('AXImage', [0, 2, i, 0], title=name, url=path.as_uri()))
+            snapshot = {'nodes': [], 'windows': [], 'owned_title_candidates': [window],
+                'owned_candidate_diagnostic_tree': [window, view, *files], 'owned_candidate_cg_windows': []}
+            result = macos.verified_finder_snapshot(snapshot, fixture)
+            self.assertIsNotNone(result)
+            self.assertEqual(result[2]['method'], 'exact-native-icon-view-file-urls')
+            self.assertEqual(result[2]['directory'], str(fixture))
+            for nodes in ([window], [window, view, files[0]], [window, view, files[0], files[0]],
+                    [window, view, *[{**f, 'selector': {'window': 1, 'path': f['selector']['path']}} for f in files]],
+                    [window, view, files[0], {**files[1], 'url': fixture.parent.as_uri()}],
+                    [window, view, files[0], {**files[1], 'selector': {'window': 0, 'path': [9, 1]}}]):
+                self.assertIsNone(macos.verified_finder_snapshot(
+                    {**snapshot, 'owned_candidate_diagnostic_tree': nodes}, fixture))
+            (fixture / files[0]['title']).unlink()
+            self.assertIsNone(macos.verified_finder_snapshot(snapshot, fixture))
+
     def test_finder_requires_an_actual_local_file_url_for_the_exact_owned_fixture(self):
         with tempfile.TemporaryDirectory() as temporary:
             fixture = pathlib.Path(temporary).resolve() / 'Été 日本語'
@@ -104,7 +155,7 @@ class NativeMacOS(unittest.TestCase):
             checks = {'native_settings_accelerator', 'native_settings_menu', 'native_search_input',
                       'owned_shutdown', 'fixture_removed'}
             checks |= ({'real_parented_modal_sheet', 'exact_native_callback', 'unforced_parent_focus_restored'}
-                if kind in ('files', 'folder') else {'actual_finder_path', 'explicit_return_from_finder'}
+                if kind in ('files', 'folder') else {'actual_finder_path', 'verified_finder_window_closed', 'explicit_return_from_finder'}
                 if kind == 'reveal' else {'early_settings_delivered', 'native_unicode_clipboard_and_edit_menu'})
             cases[name] = {'errors': [], 'returncode': 0, 'checks': dict.fromkeys(checks, True)}
         return {'binary_sha256': 'expected', 'errors': [], 'cases': cases}

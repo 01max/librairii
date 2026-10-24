@@ -31,6 +31,27 @@ func text(_ element: AXUIElement, _ name: String) -> String {
     return ""
 }
 
+func checkedWindows(_ app: AXUIElement) throws -> [AXUIElement] {
+    var value: CFTypeRef?
+    let status = AXUIElementCopyAttributeValue(app, kAXWindowsAttribute as CFString, &value)
+    guard status == .success, let result = value as? [AXUIElement] else {
+        throw Failure.invalid("Finder AXWindows query failed: " + String(status.rawValue))
+    }
+    return result
+}
+
+func checkedText(_ element: AXUIElement, _ name: String, optional: Bool = false) throws -> String {
+    var value: CFTypeRef?
+    let status = AXUIElementCopyAttributeValue(element, name as CFString, &value)
+    if optional && (status == .attributeUnsupported || status == .noValue) { return "" }
+    guard status == .success else {
+        throw Failure.invalid("Finder " + name + " query failed: " + String(status.rawValue))
+    }
+    if let result = value as? String { return result }
+    if let value, CFGetTypeID(value) == CFURLGetTypeID() { return (value as! URL).absoluteString }
+    throw Failure.invalid("Finder attribute has unexpected type: " + name)
+}
+
 func describe(_ element: AXUIElement) -> [String: Any] {
     var result: [String: Any] = [:]
     for (key, name) in [("role", kAXRoleAttribute), ("subrole", kAXSubroleAttribute),
@@ -203,42 +224,53 @@ do {
         var windows = (CGWindowListCopyWindowInfo([.optionOnScreenOnly, .excludeDesktopElements], kCGNullWindowID)
             as? [[String: Any]] ?? []).filter { ($0[kCGWindowOwnerPID as String] as? Int) == Int(pid) }
         var onlyWindow: Int?
+        var documentObservation: [String: Any] = [:]
         if let document = request["document"] as? String {
             let target = URL(fileURLWithPath: document).resolvingSymlinksInPath().standardizedFileURL
-            let nativeWindows = elements(app, kAXWindowsAttribute)
-            let matches = nativeWindows.enumerated().filter { _, window in
-                [kAXDocumentAttribute, kAXURLAttribute].contains { attribute in
-                    guard let url = URL(string: text(window, attribute)), url.isFileURL else { return false }
+            let nativeWindows = try checkedWindows(app)
+            let titles = try nativeWindows.map { try checkedText($0, kAXTitleAttribute) }
+            let matches = try nativeWindows.enumerated().filter { _, window in
+                try [kAXDocumentAttribute, kAXURLAttribute].contains { attribute in
+                    guard let url = URL(string: try checkedText(window, attribute, optional: true)), url.isFileURL else { return false }
                     return url.resolvingSymlinksInPath().standardizedFileURL == target
                 }
             }
             guard matches.count <= 1 else { throw Failure.invalid("owned document window not unique") }
-            guard let (index, window) = matches.first else {
+            guard let (index, _) = matches.first else {
                 // Only root metadata with the exact owned fixture title may be
                 // retained when URL matching fails; no other folder is walked.
-                let candidates = nativeWindows.enumerated().filter { _, window in
-                    text(window, kAXTitleAttribute) == target.lastPathComponent
+                let candidates = nativeWindows.enumerated().filter { index, _ in
+                    titles[index] == target.lastPathComponent
                 }
                 guard candidates.count <= 1 else { throw Failure.invalid("owned Finder title not unique") }
                 let diagnostic = candidates.first.map { index, _ in
                     tree(app, onlyWindow: index, sheetsOnly: false)
                 } ?? []
+                let candidateWindows = candidates.first.map { _, window in
+                    windows.filter { $0[kCGWindowName as String] as? String == text(window, kAXTitleAttribute) }
+                } ?? []
+                guard candidateWindows.count <= 1 else { throw Failure.invalid("owned Finder capture not unique") }
                 try output(["pid": pid, "nodes": [], "windows": [],
+                    "document_windows_observed": true,
+                    "owned_document_window_present": !candidates.isEmpty,
                     "finder_window_count": nativeWindows.count,
                     "owned_title_candidates": candidates.map { describe($0.element) },
+                    "owned_candidate_cg_windows": candidateWindows,
                     "owned_candidate_diagnostic_tree": diagnostic] as [String: Any])
                 exit(0)
             }
             onlyWindow = index
-            let title = text(window, kAXTitleAttribute)
+            documentObservation = ["document_windows_observed": true, "owned_document_window_present": true]
+            let title = titles[index]
             windows = windows.filter { !title.isEmpty && $0[kCGWindowName as String] as? String == title }
             guard windows.count <= 1 else { throw Failure.invalid("document capture window not unique") }
         }
-        try output(["pid": pid, "frontmost_pid": NSWorkspace.shared.frontmostApplication?.processIdentifier ?? -1,
+        let response: [String: Any] = ["pid": pid, "frontmost_pid": NSWorkspace.shared.frontmostApplication?.processIdentifier ?? -1,
                     "keyboard_input_source": inputSource(),
                     "nodes": operation == "status" ? [] : tree(app, onlyWindow: onlyWindow,
                         sheetsOnly: request["document"] == nil,
-                        rootsOnly: request["summary"] as? Bool ?? false), "windows": windows])
+                        rootsOnly: request["summary"] as? Bool ?? false), "windows": windows]
+        try output(response.merging(documentObservation) { _, new in new })
     case "activate":
         guard NSRunningApplication(processIdentifier: pid)?.activate(options: [.activateAllWindows]) == true else {
             throw Failure.invalid("cannot activate owned app")

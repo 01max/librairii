@@ -36,7 +36,7 @@ def session_passed(report, binary_sha):
         required = {'native_settings_accelerator', 'native_settings_menu', 'native_search_input',
                     'owned_shutdown', 'fixture_removed'}
         required |= ({'real_parented_modal_sheet', 'exact_native_callback', 'unforced_parent_focus_restored'}
-            if kind in ('files', 'folder') else {'actual_finder_path', 'explicit_return_from_finder'}
+            if kind in ('files', 'folder') else {'actual_finder_path', 'verified_finder_window_closed', 'explicit_return_from_finder'}
             if kind == 'reveal' else {'early_settings_delivered', 'native_unicode_clipboard_and_edit_menu'})
         if (case.get('errors') != [] or case.get('returncode') != 0
                 or not required <= case.get('checks', {}).keys() or not all(case['checks'].values())):
@@ -98,6 +98,55 @@ def finder_fixture_window(snapshot, fixture):
             if candidate == fixture:
                 return node
     return None
+
+
+def verified_finder_snapshot(snapshot, fixture):
+    window = finder_fixture_window(snapshot, fixture)
+    if window is not None:
+        return snapshot, window, {'method': 'root-file-url', 'directory': str(fixture)}
+    # Finder15 exposes file URLs on its actual content images but no URL on the
+    # window. A title identifies only a candidate; both exact existing fixture
+    # children in one native IconView are the independent location witness.
+    nodes = snapshot.get('owned_candidate_diagnostic_tree', [])
+    windows = [n for n in nodes if n['role'] == 'AXWindow' and not n['selector']['path']
+        and n.get('identifier') == 'FinderWindow' and n.get('title') == fixture.name]
+    if len(windows) != 1:
+        return None
+    window = windows[0]
+    views = [n for n in nodes if same_root(n, window) and n['role'] == 'AXList'
+        and n.get('identifier') == 'IconView' and n.get('subrole') == 'AXCollectionList']
+    if len(views) != 1:
+        return None
+    view_path = views[0]['selector']['path']
+    expected = {fixture / name for name in ('Été 日本語 故事.zip', 'Deuxième archive 02.pk')}
+    images = [n for n in nodes if same_root(n, window) and n['role'] == 'AXImage'
+        and n['selector']['path'][:len(view_path)] == view_path
+        and n.get('title') in {p.name for p in expected}]
+    if len(images) != 2:
+        return None
+    observed = []
+    for node in images:
+        try:
+            url = urllib.parse.urlparse(node.get('url', ''))
+            if url.scheme != 'file' or url.netloc not in ('', 'localhost'):
+                return None
+            path = pathlib.Path(urllib.parse.unquote(url.path)).resolve(strict=True)
+            if not path.is_file() or path.parent != fixture or path.name != node['title']:
+                return None
+            observed.append(path)
+        except (OSError, ValueError, RuntimeError):
+            return None
+    if set(observed) != expected:
+        return None
+    verified = {**snapshot, 'nodes': nodes, 'windows': snapshot.get('owned_candidate_cg_windows', [])}
+    return verified, window, {'method': 'exact-native-icon-view-file-urls',
+        'directory': str(fixture), 'content_view': views[0], 'observed_files': images}
+
+
+def finder_window_absent(snapshot):
+    return (snapshot.get('document_windows_observed') is True
+        and snapshot.get('owned_document_window_present') is False
+        and not snapshot.get('nodes') and not snapshot.get('owned_title_candidates'))
 
 
 def go_folder_fields(snapshot, root):
@@ -188,11 +237,14 @@ class Observer:
         raise TimeoutError('native macOS observation deadline')
 
     def button(self, snapshot, root, titles):
-        matches = [n for n in snapshot['nodes'] if same_root(n, root) and n['role'] == 'AXButton'
-            and n.get('enabled') is not False and n.get('title') in titles]
-        if len(matches) != 1:
-            raise ValueError('native button not unique: ' + repr(titles))
-        self.call('press', selector=selector(matches[0]))
+        def ready(value):
+            matches = [n for n in value['nodes'] if same_root(n, root) and n['role'] == 'AXButton'
+                and n.get('title') in titles]
+            if len(matches) > 1:
+                raise ValueError('native button not unique: ' + repr(titles))
+            return matches[0] if matches and matches[0].get('enabled') is True else None
+        button = ready(snapshot) or self.wait(lambda: ready(self.snapshot()))
+        self.call('press', selector=selector(button))
 
     def go_folder(self, directory, root):
         self.call('key', key='cmd+shift+g')
@@ -250,17 +302,22 @@ class Observer:
 
 
 def close_finder(finder, fixture):
-    snapshot = finder.snapshot(document=fixture)
-    windows = [n for n in snapshot['nodes'] if n['role'] == 'AXWindow' and not n['selector']['path']]
-    if not windows:
-        return  # The verified document window has already closed.
-    if len(windows) != 1:
-        raise ValueError('owned Finder window not unique during cleanup')
-    controls = [n for n in snapshot['nodes'] if same_root(n, windows[0]) and
+    observed = finder.snapshot(document=fixture)
+    result = verified_finder_snapshot(observed, fixture)
+    if result is None:
+        if finder_window_absent(observed):
+            return  # The verified document window has already closed.
+        raise ValueError('owned Finder path no longer verified during cleanup')
+    snapshot, window, _ = result
+    controls = [n for n in snapshot['nodes'] if same_root(n, window) and
         n.get('subrole') == 'AXCloseButton']
     if len(controls) != 1:
         raise ValueError('owned Finder close control not unique')
     finder.call('press', selector=selector(controls[0]))
+    def closed():
+        value = finder.snapshot(document=fixture)
+        return finder_window_absent(value)
+    finder.wait(closed)
 
 
 def one_case(binary, helper, root, name, kind, expected):
@@ -334,17 +391,20 @@ def one_case(binary, helper, root, name, kind, expected):
                 for pid in observer.call('finder')['pids']:
                     finder = Observer(helper, output, pid)
                     snapshot = finder.snapshot(document=fixture)
-                    node = finder_fixture_window(snapshot, fixture)
-                    if node is not None:
-                        return finder, snapshot, node
+                    verified = verified_finder_snapshot(snapshot, fixture)
+                    if verified is not None:
+                        return finder, *verified
                 return None
-            finder, snapshot, window = observer.wait(finder_window)
+            finder, snapshot, window, location = observer.wait(finder_window)
             owned_finder = finder
             report['observed_finder_window'] = window
-            report['checks']['actual_finder_path'] = (rendezvous / 'outcome.txt').read_text() == 'requested'
+            report['observed_finder_location'] = location
+            report['checks']['actual_finder_path'] = ((rendezvous / 'outcome.txt').read_text() == 'requested'
+                and location['directory'] == str(fixture))
             finder.capture('revealed', snapshot)
             # Finder has OS lifetime. Only the window opened at our fixture is closed.
             close_finder(finder, fixture)
+            report['checks']['verified_finder_window_closed'] = True
             owned_finder = None
             observer.call('activate')  # Explicit user return from the external file manager.
             observer.wait(lambda: observer.status()['frontmost_pid'] == app.pid)

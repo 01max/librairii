@@ -18,8 +18,11 @@ Native Command-comma, Settings menu, Escape and Search are exercised on every
 case. The early case also checks native Unicode paste/cut/clipboard restoration
 and the Edit menu. Every app must normally join workers and remove its fixture.
 
-Reveal requires Finder's actual document URL at the owned fixture, rather than
-successful request acceptance. Only that opened Finder window is closed. The
+Reveal requires an actual native filesystem location witness in the owned Finder
+window: either its root file URL or both exact existing fixture files' absolute
+URLs inside one native IconView with the exact fresh fixture title. The latter
+handles Finder15's empty root URL attributes; a title alone never qualifies.
+Only that freshly reverified Finder window is closed, and absence is observed. The
 observer explicitly returns to the application afterward; it does not label
 that external-file-manager return as automatic picker focus restoration.
 
@@ -134,3 +137,24 @@ cannot pass reveal or authorize cleanup without an actual path witness. It will
 identify the native path control rather than treating the title as a path.
 Artifact12555656307 ZIP SHA256 is
 `6ec1cdaf9c523374e36b8c95398c1da1d177132a6e54323dec3f14f065fb3f77`.
+
+At `eca64c4` / run40092596117 the owned107-node ARM Finder tree identifies both
+fixture files as native AXImage children of the same IconView, each with its
+exact full file URL. The current observer verifies both existing canonical paths,
+their shared fixture parent, titles, owning window and native content-view
+relationship before using the candidate tree or capture metadata. Duplicate,
+missing, cross-window, wrong-directory and out-of-content witnesses fail. Cleanup
+rechecks that same path proof before pressing its Close control and waits for
+that owned window to disappear. This is a content-file-URL location witness,
+not a claim that Finder exposes a root AXDocument URL.
+ARM artifact12560040145 ZIP SHA256 is
+`a0c2b0395a476c16344384af31ff489f8a6b1f8d58ab9aa4acf7f265a235698a`.
+
+The same run's Intel folder-acceptance snapshot records an Open button still
+disabled after Go to Folder closes. The observer now waits for the unique actual
+button to become enabled before its single press, within the unchanged bound;
+multiple matching buttons fail immediately. Intel artifact12559661407 ZIP SHA256
+is `808face7e282934af6df43be67ebd40ac7f3cb926748e3fe2f4dfb482037a0db`.
+Independent review also requires a successful AXWindows/title query before
+recording Finder absence. Query failures remain command failures, and an explicit
+present flag prevents an empty traversal from masquerading as a closed window.
