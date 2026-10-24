@@ -667,7 +667,8 @@ def observe_display(desktop, root):
             for output, scale in (('HEADLESS-2', 2), ('HEADLESS-1', 1), ('HEADLESS-2', 2), ('HEADLESS-1', 1)):
                 sway(f'[pid={app.pid}] move container to output {output}')
                 value = wait_for(lambda: (g := geometry()) and g['scale'] == scale and g['rows'] == 1000
-                    and abs(g['logical_width'] - 1280) <= 1 and abs(g['logical_height'] - 800) <= 1 and g)
+                    and abs(g['logical_width'] - 1280) <= 1 and abs(g['logical_height'] - 800) <= 1
+                    and not g['compact'] and g['wide'] and g)
                 report['scale_transitions'].append(value)
                 frame('scale-' + str(len(report['scale_transitions'])))
             report['checks']['actual_mixed_scale_transitions'] = len(report['scale_transitions']) == 4

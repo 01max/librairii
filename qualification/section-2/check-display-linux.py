@@ -38,6 +38,7 @@ def qualified(value, session):
         for g, scale in zip(transitions, (2, 1, 2, 1)):
             if (g.get('scale') != scale or g.get('rows') != 1000
                     or abs(g.get('logical_width', 0) - 1280) > 1 or abs(g.get('logical_height', 0) - 800) > 1
+                    or g.get('compact') is not False or g.get('wide') is not True
                     or abs(g.get('width', 0) - g.get('logical_width', -100) * scale) > 1
                     or abs(g.get('height', 0) - g.get('logical_height', -100) * scale) > 1):
                 return False

@@ -16,16 +16,17 @@ class DisplayLinux(unittest.TestCase):
             'sizes': [{'logical_width': w, 'logical_height': h, 'compact': w < 850, 'wide': w >= 1180,
                 'contrast_ratios': [7, 5, 4.6]} for w,h in ((560,400), (900,760), (1280,800))],
             'scale_transitions': [{'scale': scale, 'width': 1280 * scale, 'height': 800 * scale,
-                'logical_width': 1280, 'logical_height': 800, 'rows': 1000} for scale in (2,1,2,1)]}
+                'logical_width': 1280, 'logical_height': 800, 'rows': 1000, 'compact': False, 'wide': True} for scale in (2,1,2,1)]}
 
     def test_real_sizes_contrast_and_each_scale_transition_are_required(self):
         report = self.fixture()
         self.assertTrue(observer.qualified(report, 'wayland'))
-        for defect in ('missing', 'static', 'wrong_pixels', 'wrong_rows', 'low_contrast', 'nonfinite', 'wide', 'failed'):
+        for defect in ('missing', 'static', 'wrong_pixels', 'halved_logical', 'wrong_rows', 'low_contrast', 'nonfinite', 'wide', 'failed'):
             changed = copy.deepcopy(report)
             if defect == 'missing': changed['scale_transitions'].pop()
             elif defect == 'static': changed['scale_transitions'][0]['scale'] = 1
             elif defect == 'wrong_pixels': changed['scale_transitions'][0]['width'] = 900
+            elif defect == 'halved_logical': changed['scale_transitions'][0].update(width=1280, height=800, logical_width=640, logical_height=400)
             elif defect == 'wrong_rows': changed['scale_transitions'][0]['rows'] = 0
             elif defect == 'low_contrast': changed['sizes'][0]['contrast_ratios'][0] = 4.4
             elif defect == 'nonfinite': changed['sizes'][0]['contrast_ratios'][0] = float('nan')

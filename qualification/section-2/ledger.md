@@ -558,3 +558,8 @@ Independent2.5 display protocol correction: external snapshot requests now use
 an owned sibling temporary file and atomic replace. The20ms reader can no longer
 observe truncation/partial names; its strict name guard and completed-frame
 publication remain unchanged.
+
+Independent2.5 mixed-scale review correction additionally requires the wide/
+noncompact view state and rejects the explicit unchanged-physical/halved-logical
+control. Fixed expected1280×800 dimensions (introduced with the decoration fix)
+are independent of the arithmetic physical/scale identity.
