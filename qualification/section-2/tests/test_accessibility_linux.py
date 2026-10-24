@@ -56,11 +56,15 @@ class AccessibilityLinux(unittest.TestCase):
 
     def test_speech_and_every_baseline_witness_are_required_without_full_qualification(self):
         report = {'baseline': 'pass', 'errors': [], 'binary_sha256': 'expected',
-            'observation_method': 'per-focus-utterance-and-audio-completion-v2',
+            'observation_method': 'per-focus-utterance-and-audio-completion-v3',
+            'session': 'x11', 'reader_preferences': {'enable_action_keys': False},
             'application_returncode': 0, 'baseline_checks': dict.fromkeys(observer.REQUIRED, True),
             'speech_steps': {name: {'audio': {'nonzero_samples': 1601}} for name in observer.SPEECH_STEPS},
             'audio': {'nonzero_samples': 1601}, 'full_accessibility_qualified': False}
         self.assertTrue(observer.baseline_passed(report, 'expected'))
+        wayland = {**report, 'session': 'wayland', 'reader_preferences': {'enable_action_keys': True}}
+        self.assertTrue(observer.baseline_passed(wayland, 'expected'))
+        self.assertFalse(observer.baseline_passed({**wayland, 'reader_preferences': {'enable_action_keys': False}}, 'expected'))
         for name in observer.SPEECH_STEPS:
             changed = copy.deepcopy(report)
             del changed['speech_steps'][name]
@@ -71,5 +75,7 @@ class AccessibilityLinux(unittest.TestCase):
             self.assertFalse(observer.baseline_passed(changed, 'expected'))
         for change in ({'errors': ['failure']}, {'application_returncode': 1},
                 {'audio': {'nonzero_samples': 0}}, {'full_accessibility_qualified': True},
+                {'reader_preferences': {}}, {'reader_preferences': {'enable_action_keys': True}},
+                {'session': 'unknown'}, {'observation_method': 'per-focus-utterance-and-audio-completion-v2'},
                 {'binary_sha256': 'different'}):
             self.assertFalse(observer.baseline_passed({**report, **change}, 'expected'))

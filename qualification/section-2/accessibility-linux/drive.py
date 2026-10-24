@@ -128,7 +128,16 @@ def record(desktop, binary, report):
         'pathlib.Path(' + repr(str(root / 'orca-log-mode.json')) + ').write_text(json.dumps('
         '{"line_buffering": debug.debugFile.line_buffering, "write_through": debug.debugFile.write_through}))\n'
         'debug.debugLevel = debug.LEVEL_INFO\nsettings.enableMouseReview = False\n'
-        'settings.speakProgressBarUpdates = True\nsettings.progressBarUpdateInterval = 1\n')
+        'settings.speakProgressBarUpdates = True\nsettings.progressBarUpdateInterval = 1\n'
+        + ('settings.enableActionKeys = False\n' if desktop.session == 'x11' else '')
+        + 'from gi.repository import GLib\n'
+        'def qualification_record_reader_preferences():\n'
+        '    path = pathlib.Path(' + repr(str(root / 'orca-reader-preferences.json')) + ')\n'
+        '    temporary = path.with_suffix(".tmp")\n'
+        '    temporary.write_text(json.dumps({"enable_action_keys": settings.enableActionKeys}))\n'
+        '    temporary.replace(path)\n'
+        '    return False\n'
+        'GLib.idle_add(qualification_record_reader_preferences)\n')
     orca_argv = ['orca', '--user-prefs', str(prefs), '--enable=speech', '--disable=braille',
         '--debug-file', str(root / 'orca-debug.txt')]
     if desktop.session == 'wayland':
@@ -144,6 +153,10 @@ def record(desktop, binary, report):
     native.wait_for(lambda: debug.exists() and 'Starting Atspi main event loop' in debug.read_text())
     report['debug_log_configuration'] = json.loads((root / 'orca-log-mode.json').read_text())
     assert report['debug_log_configuration'] == {'line_buffering': True, 'write_through': True}
+    preferences = root / 'orca-reader-preferences.json'
+    native.wait_for(preferences.is_file)
+    report['reader_preferences'] = json.loads(preferences.read_text())
+    assert report['reader_preferences'] == {'enable_action_keys': desktop.session != 'x11'}
     pcm = root / 'speech.pcm'
     def startup_speech_finished():
         data = pcm.read_bytes() if pcm.exists() else b''
@@ -296,8 +309,9 @@ def main():
     assert binary_sha == os.environ['EXPECTED_BINARY_SHA256']
     report = {'schema': 1, 'session': args.session, 'binary_sha256': binary_sha, 'errors': [],
         'baseline_checks': {}, 'baseline': 'fail', 'full_accessibility_qualified': False,
-        'observation_method': 'per-focus-utterance-and-audio-completion-v2',
+        'observation_method': 'per-focus-utterance-and-audio-completion-v3',
         'scope': 'Private Orca/eSpeak-NG speech and AT-SPI baseline; keyboard Search and Settings only. '
+            'X11 action-key echo is disabled in this private reader profile; its default-echo route stays unqualified. '
             'Virtualized selection, review, progress/error speech and complete pointer-free flows remain unqualified.'}
     desktop, guard = None, None
     stop = threading.Event()

@@ -69,6 +69,22 @@ requirements. This corrects transcript visibility; it does not force an
 announcement or resolve the separate X11 key-echo ordering question. Fresh
 native execution must establish the effect.
 
+At `8a9d571` / run40096186659 the line-buffered Wayland session completes all
+six exact utterance/audio stages and all ten baseline checks. X11 still fails
+Search: its flushed transcript contains only the Tab key echo after the frame,
+and records Orca's echo path setting Search as its locus with notification
+disabled before the native focus event. Artifact12561087872 ZIP SHA256 is
+`0d4eba32ef5b5c37df952666980bdd25f3e7d9f94e01b75824d12b55d6c173fd`.
+The next v3 configured baseline disables only the supported action-key-echo
+preference in the private X11 reader; all native keys, focus events, exact labels,
+audio completion and deadlines remain required. Effective preferences are
+recorded from the reader's first event-loop idle callback and checked by both
+driver and host; Wayland retains action-key echo. The default-echo X11 route
+remains a retained failure/unqualified, not a passing result. This configured
+baseline cannot complete the broader2.4 gate. References:
+[Orca46.1 action-key preference](https://github.com/GNOME/orca/blob/ORCA_46_1/src/orca/settings.py),
+[key-event presentation and focus update](https://github.com/GNOME/orca/blob/ORCA_46_1/src/orca/scripts/default.py).
+
 The first actual run at `5de32ce` / run40081026276 records two observer setup
 failures, retained in artifact12555123864 (ZIP SHA256
 `8c130cd4ddb3ecd4c92bc7d9ad88053653aff35b85b23302c475f058de570bc9`).

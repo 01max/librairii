@@ -24,7 +24,9 @@ SPEECH_STEPS = {'frame', 'search', 'settings', 'close', 'english', 'restored'}
 
 def baseline_passed(report, binary_sha):
     return (report.get('baseline') == 'pass' and report.get('errors') == []
-        and report.get('observation_method') == 'per-focus-utterance-and-audio-completion-v2'
+        and report.get('observation_method') == 'per-focus-utterance-and-audio-completion-v3'
+        and report.get('session') in ('x11', 'wayland')
+        and report.get('reader_preferences') == {'enable_action_keys': report['session'] != 'x11'}
         and report.get('binary_sha256') == binary_sha and report.get('application_returncode') == 0
         and REQUIRED <= report.get('baseline_checks', {}).keys()
         and set(report.get('speech_steps', {})) == SPEECH_STEPS
