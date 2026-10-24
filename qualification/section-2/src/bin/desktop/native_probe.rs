@@ -7,6 +7,7 @@ use std::path::{Path, PathBuf};
 use std::rc::Rc;
 use std::time::{Duration, Instant};
 
+#[derive(Clone)]
 pub struct Recorder {
     directory: PathBuf,
     case: String,
@@ -107,14 +108,22 @@ impl Probe {
                         ui.invoke_focus_search();
                     }
                     recorder.write("ready.txt", "parent shown; native callback follows");
-                    match recorder.case.as_str() {
-                        "files" => ui.invoke_pick_files(),
-                        "folder" => ui.invoke_pick_folder(),
-                        "reveal" => ui.invoke_reveal_fixture(),
-                        "early-settings" => {}
-                        _ => unreachable!(),
-                    }
-                    recorder.write("callback-complete.txt", &ui.get_status());
+                    // AppKit's modal panel pumps the OS loop. Invoke from a
+                    // queued event after this Slint timer has returned, as a
+                    // real input callback does, rather than re-entering timers.
+                    let callback = recorder.as_ref().clone();
+                    ui.as_weak()
+                        .upgrade_in_event_loop(move |ui| {
+                            match callback.case.as_str() {
+                                "files" => ui.invoke_pick_files(),
+                                "folder" => ui.invoke_pick_folder(),
+                                "reveal" => ui.invoke_reveal_fixture(),
+                                "early-settings" => {}
+                                _ => unreachable!(),
+                            }
+                            callback.write("callback-complete.txt", &ui.get_status());
+                        })
+                        .expect("queue native probe outside timer");
                 }
                 if phase.get() == 1 {
                     let state = format!(

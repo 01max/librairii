@@ -28,3 +28,14 @@ interaction evidence. These are synthetic OS events/native control actions,
 not physical keyboard latency, dead keys, IME composition, VoiceOver speech,
 mixed-monitor or clean-host qualification. VoiceOver remains excluded from the
 current gate by the owner's decision; Windows remains deferred.
+
+The first ARM experiment at `b71dcb2`,
+[run40075891289](https://github.com/01max/librairii/actions/runs/40075891289),
+retains an actual pre-dialog failure: invoking AppKit's modal panel directly
+inside the automatic Slint timer re-enters timer processing and panics with
+`Recursion in timer code`. Artifact12552957741 ZIP SHA256 is
+`ff06abb6ecf7b583ea3e53513c1213f3abbda380e79321aabaf3d7458b6a99cb`.
+The test rendezvous now queues its native callback through Slint's public
+event-loop API after the timer returns. Native parenting, exact callbacks,
+OS events and every observer assertion remain required; fresh native execution
+must establish whether that correction works.
