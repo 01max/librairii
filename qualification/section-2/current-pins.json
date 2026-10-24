@@ -286,7 +286,7 @@
     "cargo-llvm-cov": "0.9.1",
     "cargo-fuzz": "0.13.2"
   },
-  "gui_lock_sha256": "bb71390afff05f51d2ed79a81424687263224c6608c097a1f1c9f81813d3471e",
+  "gui_lock_sha256": "7216b820feb2d0306f5aa6a64b5bb8e493d991586823c3e611c4fb4a94ca9601",
   "slint_license": {
     "route": "LicenseRef-Slint-Royalty-free-2.0",
     "attribution": "AboutSlint in a top-level About screen",

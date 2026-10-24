@@ -396,3 +396,15 @@ retained in vendor/accesskit-atspi-common. The Cargo graph changes only this
 package's source; versions/features remain pinned. Native methodv4 requires
 actual disabled background and enabled/focused dialog witnesses. Local recorder
 checks reject missing and incorrect states; native execution remains required.
+
+Independent scoped review approves the functional upstream hunk, original source
+identities and native-state guard. Separate review corrections refresh the exact
+GUI lock checksum and preserve AccessKit2022/2023/2024/2026 plus Chromium2017
+source attributions in the distributed NOTICE, alongside the unchanged original
+license texts. Local full recorder execution encountered a Swift compiler
+failure/timeout during exhausted disk space; only superseded generated GUI
+executables were removed (651737024 bytes), preserving the current binary and
+all source/raw/package evidence. Fresh verification follows with space restored.
+With space restored, all103 recorder tests pass in30.831s. Independent re-review
+confirms both corrections; formatting and all nine adapter tests pass. Fresh
+native v4 execution remains required before accepting modal-state qualification.
