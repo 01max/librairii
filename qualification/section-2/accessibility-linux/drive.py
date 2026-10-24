@@ -166,7 +166,7 @@ def record(desktop, binary, report):
                     orca.send_signal(signal.SIGUSR1)
                     deadline = time.monotonic() + 1
                     while time.monotonic() < deadline:
-                        if log.exists() and 'Current thread' in log.read_text(errors='replace')[offset:]:
+                        if log.exists() and b'Current thread' in log.read_bytes()[offset:]:
                             diagnostic['stack_observed'] = True
                             break
                         time.sleep(0.01)
