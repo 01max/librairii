@@ -137,8 +137,8 @@ class Observer:
         # a killed AX command still identifies where observation stopped.
         return json.loads(result['output'].splitlines()[-1])
 
-    def snapshot(self, name=None, document=None):
-        value = self.call('snapshot', **({'document': str(document)} if document else {}))
+    def snapshot(self, name=None, document=None, summary=False):
+        value = self.call('snapshot', summary=summary, **({'document': str(document)} if document else {}))
         if name:
             (self.output / (name + '.json')).write_text(json.dumps(value, ensure_ascii=False, indent=2) + '\n')
         return value
@@ -170,21 +170,14 @@ class Observer:
             return (snapshot, fields[0]) if len(fields) == 1 else None
         snapshot, field = self.wait(location)
         (self.output / 'go-folder.json').write_text(json.dumps(snapshot, ensure_ascii=False, indent=2) + '\n')
-        self.call('set', selector=selector(field), value=str(directory))
-        self.wait(lambda: any(n.get('value') == str(directory)
-            for n in go_folder_fields(self.snapshot(), root)))
-        snapshot = self.snapshot()
-        go = [n for n in snapshot['nodes'] if same_root(n, root) and n['role'] == 'AXButton'
-            and n.get('title') == 'Go' and n.get('enabled') is not False]
-        if len(go) == 1:
-            self.call('press', selector=selector(go[0]))
-        else:
-            self.call('key', key='return')
+        reply = self.call('set', selector=selector(field), value=str(directory))
+        if reply.get('value') != str(directory):
+            raise ValueError('native Go to Folder value readback differs')
+        self.call('key', key='return')
         self.wait(lambda: not any(same_root(n, root) and n.get('identifier') == 'GoToWindow'
             for n in self.snapshot()['nodes']))
 
     def rows(self, fixture, root, multiple):
-        self.call('key', key='cmd+2')
         wanted = ['Été 日本語 故事.zip'] + (['Deuxième archive 02.pk'] if multiple else [])
         def candidates():
             snapshot = self.snapshot()
@@ -258,12 +251,19 @@ def one_case(binary, helper, root, name, kind, expected):
         observer.call('activate')  # Initial launch only; picker restoration is never forced.
         observer.wait(lambda: observer.status()['frontmost_pid'] == app.pid)
         if kind in ('files', 'folder'):
-            snapshot = observer.wait(lambda: (s := observer.snapshot()) and picker_root(s) and s)
+            snapshot = observer.wait(lambda: (s := observer.snapshot(summary=True)) and picker_root(s) and s)
             root_node = picker_root(snapshot)
             report['parent_sheet'] = root_node
             report['checks']['real_parented_modal_sheet'] = True
-            observer.snapshot('picker')
-            observer.capture('picker')
+            if expected != 'cancelled':
+                observer.call('key', key='cmd+2')
+                snapshot = observer.wait(lambda: (s := observer.snapshot()) and any(
+                    same_root(n, root_node) and n.get('identifier') == 'View Options'
+                    and n.get('description') == 'List' for n in s['nodes']) and s)
+            else:
+                snapshot = observer.snapshot()
+            (output / 'picker.json').write_text(json.dumps(snapshot, ensure_ascii=False, indent=2) + '\n')
+            observer.capture('picker', snapshot)
             if expected == 'cancelled':
                 observer.button(snapshot, root_node, ('Cancel',))
             else:
@@ -304,6 +304,7 @@ def one_case(binary, helper, root, name, kind, expected):
             close_finder(finder, fixture)
             owned_finder = None
             observer.call('activate')  # Explicit user return from the external file manager.
+            observer.wait(lambda: observer.status()['frontmost_pid'] == app.pid)
             report['checks']['explicit_return_from_finder'] = True
         else:
             observer.wait(lambda: (s := state(rendezvous)) and s[2] == '1' and s[4] == 'true')

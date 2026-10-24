@@ -96,7 +96,8 @@ func resolve(_ app: AXUIElement, _ selector: [String: Any]) throws -> AXUIElemen
     return element
 }
 
-func tree(_ app: AXUIElement, onlyWindow: Int? = nil, sheetsOnly: Bool = true) -> [[String: Any]] {
+func tree(_ app: AXUIElement, onlyWindow: Int? = nil, sheetsOnly: Bool = true,
+          rootsOnly: Bool = false) -> [[String: Any]] {
     var result: [[String: Any]] = []
     for (root, location) in roots(app, sheetsOnly: sheetsOnly) {
         if let onlyWindow, location["window"] as? Int != onlyWindow { continue }
@@ -109,7 +110,7 @@ func tree(_ app: AXUIElement, onlyWindow: Int? = nil, sheetsOnly: Bool = true) -
             var node = describe(element)
             node["selector"] = location.merging(["path": path]) { _, new in new }
             result.append(node)
-            if path.count < 25 {
+            if !rootsOnly && path.count < 25 {
                 for (index, child) in elements(element, kAXChildrenAttribute).prefix(1000).enumerated() {
                     if queue.count >= 5000 { break }
                     queue.append((child, path + [index]))
@@ -214,7 +215,8 @@ do {
         }
         try output(["pid": pid, "frontmost_pid": NSWorkspace.shared.frontmostApplication?.processIdentifier ?? -1,
                     "nodes": operation == "status" ? [] : tree(app, onlyWindow: onlyWindow,
-                        sheetsOnly: request["document"] == nil), "windows": windows])
+                        sheetsOnly: request["document"] == nil,
+                        rootsOnly: request["summary"] as? Bool ?? false), "windows": windows])
     case "activate":
         guard NSRunningApplication(processIdentifier: pid)?.activate(options: [.activateAllWindows]) == true else {
             throw Failure.invalid("cannot activate owned app")
@@ -256,7 +258,9 @@ do {
             }
         }
         guard status == .success else { throw Failure.invalid("native control action failed: " + String(status.rawValue)) }
-        try output(["performed": true])
+        var reply: [String: Any] = ["performed": true]
+        if operation == "set" { reply["value"] = text(element, kAXValueAttribute) }
+        try output(reply)
     case "menu":
         try menu(app, title: request["title"] as? String ?? "")
         try output(["performed": true])

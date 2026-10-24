@@ -68,3 +68,14 @@ for that sheet to close before selecting files. Search and filename cells are
 explicitly rejected by a regression. No failed dialog is retried.
 Artifact12553273734 ZIP SHA256 is
 `450067c082d23c1aeb61a9f5a31724b596e2ee6fbf088bb0c1ced78a772bbff3`.
+
+At `4861fe7` / run40078264703, ARM selects both exact Unicode paths successfully,
+then the unchanged45-second probe guard expires before later Settings checks.
+The observer repeatedly traversed a572–582-node column browser, including all
+ancestor-directory columns. It now proves the attached sheet from native roots,
+switches to the observed133-node List view before navigation, reuses snapshots,
+and reads the actual path value directly after setting it. Native row sets,
+callbacks, parenting, unforced focus and every required case remain mandatory;
+neither the12-second command bound nor45-second app bound is extended.
+Artifact12553653602 ZIP SHA256 is
+`fba4a11aab2bc8a9d55e912ec4acfb274cc21e7377ccb17bd46084efe54eac12`.
