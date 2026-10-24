@@ -563,3 +563,9 @@ Independent2.5 mixed-scale review correction additionally requires the wide/
 noncompact view state and rejects the explicit unchanged-physical/halved-logical
 control. Fixed expected1280×800 dimensions (introduced with the decoration fix)
 are independent of the arithmetic physical/scale identity.
+
+Independent2.5 review catches a Mac-only indentation error introduced while
+publishing atomic requests. Corrected before push; all tracked Task2 Python
+sources now pass AST parse, and CI parses every tracked recorder source before
+platform-specific tests. Native-only modules can no longer bypass syntax checks
+because a Linux unit suite does not import them.

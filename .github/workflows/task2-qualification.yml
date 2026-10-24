@@ -93,6 +93,7 @@ jobs:
           cargo nextest run --locked --features gui --config-file ../../.config/nextest.toml --profile ci
           cargo test --locked -p accesskit_atspi_common --lib
           cargo test --locked --features gui --doc
+          python3 -I -B -c 'import ast,pathlib,subprocess; [ast.parse(pathlib.Path(p).read_bytes(), filename=p) for p in subprocess.check_output(["git","ls-files","--","*.py"], text=True).splitlines()]'
           python3 -I -B -m unittest discover -s tests -p 'test_*.py'
       - name: Build the native spike
         working-directory: qualification/section-2
