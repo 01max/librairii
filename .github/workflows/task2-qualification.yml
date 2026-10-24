@@ -157,6 +157,11 @@ jobs:
             --package "$RUNNER_TEMP/task2-roundtrip/task2-$RUST_TARGET" \
             --archive "target/task2-evidence/task2-$RUST_TARGET.tar.gz" \
             --output target/task2-evidence/linux-vm
+      - name: Inventory macOS native observer access without requesting privacy permissions
+        if: runner.os == 'macOS' && !cancelled() && steps.package.outcome == 'success'
+        run: |
+          xcrun swiftc qualification/section-2/macos-automation-access.swift -o "$RUNNER_TEMP/task2-macos-access"
+          "$RUNNER_TEMP/task2-macos-access" > target/task2-evidence/macos-automation-access.json
       - name: Measure packaged startup markers, idle CPU, peak RSS and distribution size
         run: |
           package="$RUNNER_TEMP/task2-roundtrip/task2-$RUST_TARGET"
