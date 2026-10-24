@@ -31,7 +31,10 @@ func sourceDescription(_ source: TISInputSource) -> [String: Any] {
 }
 
 func inputSources(_ filter: [String: Any]) -> [TISInputSource] {
-    TISCreateInputSourceList(filter as CFDictionary, true).takeRetainedValue() as! [TISInputSource]
+    // TIS returns nil for an installed-family filter with no matches. This is
+    // an empty inventory, never a selected/available source or a passing gate.
+    guard let result = TISCreateInputSourceList(filter as CFDictionary, true)?.takeRetainedValue() else { return [] }
+    return result as! [TISInputSource]
 }
 
 func sourceWithID(_ id: String) throws -> TISInputSource {

@@ -262,3 +262,16 @@ Select All menu followed by physical Delete to clear Search, avoiding the
 existing ABC-specific Cmd-A keycode under French or its underlying IME layout.
 The required physical French/Japanese input and exact text assertions remain.
 No local source selection or keyboard event was used to establish that mapping.
+
+
+Task2.5 first native ARM execution at3cef8c1/run40100102140/job120890317005
+fails before any source mutation or text input: the absent legacy Kotoeri bundle
+filter returns nil and the helper force-unwraps it. The package's existing eight
+native cases pass; the failed input app still exits0 and removes its fixture.
+Artifact12562189090 ZIP SHA256a9d14f40ec6490d12f504f4e5147af46a2e57b23364f4e5b93f38f1455968ef6
+retains the exact failure. A local read-only TIS reproduction finds six current
+RomanTyping sources, nil for the legacy bundle, and the French layout; selected
+ABC is unchanged. The observer now treats nil as an empty inventory; Japanese
+availability/selection and all input requirements remain mandatory. A native-only
+regression compiles the real TIS helpers, verifies a missing family is empty and
+French exists, and confirms original selection is unchanged, without AX/actions.

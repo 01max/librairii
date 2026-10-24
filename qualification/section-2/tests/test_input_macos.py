@@ -2,6 +2,9 @@
 import copy
 import importlib.util
 import pathlib
+import subprocess
+import sys
+import tempfile
 import unittest
 
 spec = importlib.util.spec_from_file_location('input_macos', pathlib.Path(__file__).parents[1] / 'check-input-macos.py')
@@ -10,6 +13,29 @@ spec.loader.exec_module(observer)
 
 
 class InputMacOS(unittest.TestCase):
+    @unittest.skipUnless(sys.platform == 'darwin', 'Carbon input-source lookup requires native macOS')
+    def test_actual_missing_carbon_source_filter_is_empty_without_mutating_selection(self):
+        # Compile the real read-only TIS helpers, excluding the later AX/event
+        # command dispatcher. No helper settings mutation or UI action can run.
+        source = pathlib.Path(__file__).parents[1] / 'native-macos/observer.swift'
+        preamble = source.read_text().split('func attribute(', 1)[0]
+        with tempfile.TemporaryDirectory() as temporary:
+            root = pathlib.Path(temporary)
+            fixture = root / 'main.swift'
+            fixture.write_text(preamble + '''
+let before = inputSource()
+let absent = inputSources([kTISPropertyBundleID as String: "dev.librairii.qualification.missing-source"])
+guard absent.isEmpty else { fatalError("missing family returned a source") }
+let french = inputSources([kTISPropertyInputSourceID as String: "com.apple.keylayout.French"])
+guard french.count == 1, before == inputSource() else { fatalError("source lookup changed selection") }
+print("missing family empty; installed French present; selected source unchanged")
+''')
+            subprocess.run(['xcrun', 'swiftc', '-module-cache-path', str(root / 'modules'),
+                str(fixture), '-o', str(root / 'probe')], check=True, capture_output=True, timeout=90)
+            result = subprocess.run([str(root / 'probe')], capture_output=True, text=True, timeout=10)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertIn('selected source unchanged', result.stdout)
+
     def test_escape_requires_a_new_final_clear_after_the_live_preedit(self):
         live = 'Preedit("", None)\nPreedit("にほん", Some((0, 3)))\n'
         clear = 'Preedit("", None)\n'
