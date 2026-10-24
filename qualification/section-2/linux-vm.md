@@ -47,3 +47,10 @@ records, screenshots and hashes remain in `linux-vm/` in the CI artifact.
 Native execution is pending the first CI run; local unit tests are recorder
 regressions and do not qualify a VM or target. The prior container results in
 `clean-linux.md` and `native-linux.md` remain separately attributed.
+
+Independent review corrected the reboot command's
+[no-success-reply protocol](https://www.qemu.org/docs/master/interop/qemu-ga-ref.html#command-guest-shutdown).
+Only that operation may omit a response; changed boot identity and successful
+reconnection remain mandatory. Monitor reads also have a whole-message deadline
+so a peer cannot extend the bound by trickling partial JSON. These transport
+controls have local regressions; they do not stand in for actual VM execution.

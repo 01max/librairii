@@ -4,10 +4,12 @@ import importlib.util
 import io
 import json
 import pathlib
+import socket
 import tarfile
 import tempfile
 import time
 import unittest
+from unittest import mock
 
 spec = importlib.util.spec_from_file_location('vm', pathlib.Path(__file__).parents[1] / 'check-linux-vm.py')
 vm = importlib.util.module_from_spec(spec)
@@ -15,6 +17,50 @@ spec.loader.exec_module(vm)
 
 
 class LinuxVM(unittest.TestCase):
+    def test_partial_monitor_line_has_a_whole_reply_deadline_and_preserves_following_lines(self):
+        reader, writer = socket.socketpair()
+        with reader, writer:
+            writer.sendall(b'{')
+            lines = vm.SocketLines(reader, time.monotonic() + 0.02)
+            with self.assertRaises(TimeoutError):
+                lines.readline(100)
+        reader, writer = socket.socketpair()
+        with reader, writer:
+            writer.sendall(b'first\nsecond\n')
+            lines = vm.SocketLines(reader, time.monotonic() + 1)
+            self.assertEqual(lines.readline(100), b'first\n')
+            self.assertEqual(lines.readline(100), b'second\n')
+
+    def test_reboot_has_no_success_reply_and_other_commands_cannot_skip_replies(self):
+        class AgentSocket:
+            def __init__(self):
+                self.requests = []
+            def __enter__(self):
+                return self
+            def __exit__(self, *args):
+                pass
+            def connect(self, path):
+                pass
+            def settimeout(self, timeout):
+                pass
+            def sendall(self, data):
+                self.requests.append(json.loads(data.lstrip(b'\xff')))
+            def recv(self, size):
+                request = self.requests[-1]
+                if request['execute'] != 'guest-sync-delimited':
+                    raise AssertionError('accepted guest-shutdown must not wait for a reply')
+                return (json.dumps({'id': 'sync', 'return': request['arguments']['id']}) + '\n').encode()
+        client = AgentSocket()
+        with mock.patch.object(vm.socket, 'socket', return_value=client), \
+                mock.patch.object(vm.select, 'select', side_effect=lambda readers, *_: (readers, [], [])):
+            self.assertIsNone(vm.Monitor('/owned-agent', guest=True).call(
+                'guest-shutdown', {'mode': 'reboot'}, expect_reply=False))
+        self.assertEqual(client.requests[-1]['arguments'], {'mode': 'reboot'})
+        for monitor, command in ((vm.Monitor('/agent', guest=True), 'guest-ping'),
+                                 (vm.Monitor('/qmp'), 'quit')):
+            with self.assertRaises(ValueError):
+                monitor.call(command, expect_reply=False)
+
     def test_rpc_requires_the_matching_id_and_successful_result(self):
         stream = io.BytesIO(b'{"event":"RESET"}\n{"id":"other","return":true}\n'
                             b'\xff{"id":"owned","return":{"enabled":true}}\n')

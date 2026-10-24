@@ -9,6 +9,7 @@ import json
 import os
 import pathlib
 import platform
+import select
 import shutil
 import signal
 import socket
@@ -57,31 +58,60 @@ def receive(stream, expected, deadline):
     raise TimeoutError('monitor reply deadline')
 
 
+class SocketLines:
+    """A whole-line deadline also bounds a peer that keeps trickling bytes."""
+    def __init__(self, client, deadline):
+        self.client, self.deadline, self.buffer = client, deadline, bytearray()
+
+    def readline(self, limit):
+        while b'\n' not in self.buffer:
+            if len(self.buffer) >= limit:
+                raise ValueError('oversized monitor reply')
+            remaining = self.deadline - time.monotonic()
+            if remaining <= 0 or not select.select([self.client], [], [], remaining)[0]:
+                raise TimeoutError('whole monitor reply deadline')
+            chunk = self.client.recv(min(65536, limit - len(self.buffer)))
+            if not chunk:
+                raise ValueError('monitor disconnected before complete reply')
+            self.buffer.extend(chunk)
+        line, following = self.buffer.split(b'\n', 1)
+        self.buffer = bytearray(following)
+        if len(line) + 1 > limit:
+            raise ValueError('oversized monitor reply')
+        return bytes(line) + b'\n'
+
+
 class Monitor:
     def __init__(self, path, guest=False):
         self.path, self.guest = str(path), guest
 
-    def call(self, command, arguments=None, timeout=10):
+    def call(self, command, arguments=None, timeout=10, expect_reply=True):
+        if not expect_reply and not (self.guest and command == 'guest-shutdown'):
+            raise ValueError('only guest shutdown has a no-success-reply protocol')
         deadline = time.monotonic() + timeout
         with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as client:
             client.settimeout(timeout)
             client.connect(self.path)
-            with client.makefile('rwb', buffering=0) as stream:
-                if self.guest:
-                    token = uuid.uuid4().int & ((1 << 53) - 1)
-                    stream.write(b'\xff' + json.dumps({'execute': 'guest-sync-delimited',
-                        'arguments': {'id': token}, 'id': 'sync'}).encode() + b'\n')
-                    if receive(stream, 'sync', deadline) != token:
-                        raise ValueError('guest-agent synchronization mismatch')
-                else:
-                    greeting = stream.readline(LIMIT + 1)
-                    if len(greeting) > LIMIT or 'QMP' not in json.loads(greeting):
-                        raise ValueError('invalid QMP greeting')
-                    stream.write(b'{"execute":"qmp_capabilities","id":"caps"}\n')
-                    receive(stream, 'caps', deadline)
-                request = {'execute': command, 'id': 'request', 'arguments': arguments or {}}
-                stream.write(json.dumps(request).encode() + b'\n')
-                return receive(stream, 'request', deadline)
+            stream = SocketLines(client, deadline)
+            if self.guest:
+                token = uuid.uuid4().int & ((1 << 53) - 1)
+                client.sendall(b'\xff' + json.dumps({'execute': 'guest-sync-delimited',
+                    'arguments': {'id': token}, 'id': 'sync'}).encode() + b'\n')
+                if receive(stream, 'sync', deadline) != token:
+                    raise ValueError('guest-agent synchronization mismatch')
+            else:
+                greeting = stream.readline(LIMIT + 1)
+                if len(greeting) > LIMIT or 'QMP' not in json.loads(greeting):
+                    raise ValueError('invalid QMP greeting')
+                client.sendall(b'{"execute":"qmp_capabilities","id":"caps"}\n')
+                receive(stream, 'caps', deadline)
+            request = {'execute': command, 'id': 'request', 'arguments': arguments or {}}
+            client.sendall(json.dumps(request).encode() + b'\n')
+            if not expect_reply:
+                # Success intentionally has no reply. A changed boot ID and
+                # successful reconnection below are the required reboot proof.
+                return None
+            return receive(stream, 'request', deadline)
 
 
 def guest_result(result):
@@ -300,7 +330,7 @@ def inspect(package, archive, output):
             finally:
                 collect('before')
             old_boot = report['before_reboot']['facts']['boot_id']
-            agent.call('guest-shutdown', {'mode': 'reboot'})
+            agent.call('guest-shutdown', {'mode': 'reboot'}, expect_reply=False)
             wait_guest(lambda: (value := guest_exec('/bin/cat', ['/proc/sys/kernel/random/boot_id']).strip()) != old_boot and value, 180)
             try:
                 report['after_reboot'] = json.loads(guest_exec('/usr/bin/python3', ['-I', '-B', '/opt/qualification/guest.py', 'after-reboot'], 900))
