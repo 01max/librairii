@@ -1,5 +1,14 @@
 # Accessibility / keyboard gate (2.4, P56–P57)
 
+Task2.4 is complete under the owner scope: expanded X11/Wayland Orca workflows,
+actual keyboard/focus/modal/virtualized/review/progress/error/retry states and
+all28 completed speech/audio stages are independently verified. See
+accessibility-linux-observations.json expanded_v5 and [selection-gate.md](selection-gate.md).
+VoiceOver execution remains skipped by the explicit owner decision; full-product
+accessibility and human intelligibility are not claimed.
+
+Earlier observations below retain their dates, source commits and historical scope.
+
 2026-10-23 scope update: the owner explicitly declined VoiceOver testing.
 VoiceOver execution is skipped for this Task 2 qualification and does not block
 this task's current selection/merge gate. Spoken macOS accessibility remains
