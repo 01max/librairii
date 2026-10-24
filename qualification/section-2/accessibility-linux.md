@@ -1,4 +1,16 @@
-# Private Orca baseline (2.4, partial)
+# Linux accessibility qualification (2.4)
+
+2026-10-24: the expanded methodv5 passes both native X11/Wayland sessions at
+`8ccc953` / run40116433434 and independently closes the bounded Task2.4 gate.
+All16 checks per session and all28 completed speech/audio stages are verified,
+including native focus, modal disabled states, offscreen999, view-preserved1,
+Review0+25/Apply/reset, numeric progress, cancellation, completion, error/retry
+and owned shutdown. Exact identities and review are in
+[accessibility-linux-observations.json](accessibility-linux-observations.json),
+`expanded_v5`. This records configured private Orca behavior; VoiceOver is
+excluded by owner decision and human intelligibility/full-product accessibility
+are not claimed. Earlier pending/failed observations below retain their source
+and historical scope.
 
 ## Disabled-state continuation, 2026-10-24
 
@@ -16,7 +28,7 @@ v4 execution is required; selection/review/workflow coverage remains separate.
 
 ## Native semantic workflows, method v5
 
-The list uses the public StandardListView: actual native End must focus/select
+The list uses a custom uniform-row public FocusScope/ListView: native End must focus/select
 story0999, absent from the initial virtualized tree. The selected story must
 survive Small covers/List transitions. Custom cover buttons expose selected-item
 metadata tied to the same selected ID; selection and menu focus restoration are

@@ -1125,5 +1125,87 @@
       "Speech Dispatcher retains nonfatal module-debug-file-open warnings; logs are not described as error-free.",
       "Virtualized selection/checked states, review paging, progress/error announcements and complete pointer-free workflows remain unqualified."
     ]
+  },
+  "expanded_v5": {
+    "implementation": "8ccc953b19553affbf2f87abda9b4226032c9405",
+    "source": "607af27476e7a126a24cf65daeaed880c94ff57b",
+    "run": "https://github.com/01max/librairii/actions/runs/40116433434",
+    "artifact": "https://github.com/01max/librairii/actions/runs/40116433434/artifacts/12570006249",
+    "artifact_sha256": "6164d73b0169c3f47336410bfab7af539c6d5a08c88ecada8f58de5591d52d64",
+    "binary_sha256": "15b9614a7f825da17c938c86f422b7ea918e0c70cddd19ca3dd31c52c958dd66",
+    "package_payloads_verified": 729,
+    "tar_regular_members_verified": 730,
+    "native_notice_copies_verified": 14,
+    "sessions": {
+      "wayland": {
+        "checks": 16,
+        "completed_audio_steps": 14,
+        "samples": 1873806,
+        "offscreen": {
+          "name": "0999 · Étoiles — 日本語 — 故事",
+          "role": "list item",
+          "states": {
+            "focused": true,
+            "focusable": true,
+            "enabled": true,
+            "sensitive": true,
+            "showing": true,
+            "selected": true,
+            "checked": false,
+            "editable": false
+          }
+        },
+        "preserved": {
+          "name": "0001 · Étoiles — 日本語 — 故事",
+          "role": "list item",
+          "states": {
+            "focused": true,
+            "focusable": true,
+            "enabled": true,
+            "sensitive": true,
+            "showing": true,
+            "selected": true,
+            "checked": false,
+            "editable": false
+          }
+        }
+      },
+      "x11": {
+        "checks": 16,
+        "completed_audio_steps": 14,
+        "samples": 1188036,
+        "offscreen": {
+          "name": "0999 · Étoiles — 日本語 — 故事",
+          "role": "list item",
+          "states": {
+            "focused": true,
+            "focusable": true,
+            "enabled": true,
+            "sensitive": true,
+            "showing": true,
+            "selected": true,
+            "checked": false,
+            "editable": false
+          }
+        },
+        "preserved": {
+          "name": "0001 · Étoiles — 日本語 — 故事",
+          "role": "list item",
+          "states": {
+            "focused": true,
+            "focusable": true,
+            "enabled": true,
+            "sensitive": true,
+            "showing": true,
+            "selected": true,
+            "checked": false,
+            "editable": false
+          }
+        }
+      }
+    },
+    "independent_review": "Approved Task2.4: exact package/archive sets,80 session hashes, all28 completed speech/audio stages, native semantic/focus/modal/review/progress/error/retry, startup-excluded PCM/WAV, normal retirement and container/image cleanup independently recomputed. No actionable findings.",
+    "task_2_4_complete_under_owner_scope": true,
+    "scope": "Native keyboard and configured private Orca/eSpeak-NG X11/Wayland. VoiceOver waived by owner; human intelligibility, default X11 action-key echo and full-product accessibility are not claimed."
   }
 }
