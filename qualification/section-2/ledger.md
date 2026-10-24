@@ -535,3 +535,11 @@ it duplicates the complete Orca transcript. Separate correction retains the raw
 log intact and records exact byte offsets/SHA256 instead of duplicating it in
 JSON; every speech assertion remains. Original host failure stays failed.
 Artifact12568292229 ZIP SHA256c1c902a3e7aa02c32e18b3e0ee3eb46136776541a6ca7db773a27c60cd9b847d.
+
+Task2.5 display implementation: native AX/X11/Sway resizing, three actual geometry
+witnesses (including minimum560×400), localized modal focus, compact Review,
+bounded long-text scrolling, actual palette alpha-composited4.5:1 text contrast,
+settled idle frames and actual1×↔2× owned Wayland output movement. Local ARM
+Retina runtime readback is2×/1800×1520 for900×760, normal exit and readable French
+frame; dirty-development source observation only, final-source repeat pending.
+New display rejection tests pass. Fresh native execution/review remains required.

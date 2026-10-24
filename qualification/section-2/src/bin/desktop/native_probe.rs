@@ -109,9 +109,10 @@ impl Probe {
                 let entry = match event {
                     winit::event::WindowEvent::Ime(ime) => Some(format!("{ime:?}")),
                     winit::event::WindowEvent::Focused(value) => Some(format!("Focused({value})")),
-                    winit::event::WindowEvent::KeyboardInput { event, .. } => {
-                        Some(format!("KeyboardInput(state={:?}, physical={:?}, key={:?}, repeat={})", event.state, event.physical_key, event.logical_key, event.repeat))
-                    }
+                    winit::event::WindowEvent::KeyboardInput { event, .. } => Some(format!(
+                        "KeyboardInput(state={:?}, physical={:?}, key={:?}, repeat={})",
+                        event.state, event.physical_key, event.logical_key, event.repeat
+                    )),
                     _ => None,
                 };
                 if let Some(entry) = entry {
@@ -134,6 +135,7 @@ impl Probe {
         let action_queued = Cell::new(false);
         let last = RefCell::new(String::new());
         let last_geometry = RefCell::new(String::new());
+        let last_capture = RefCell::new(String::new());
         timer.start(
             slint::TimerMode::Repeated,
             Duration::from_millis(20),
@@ -193,11 +195,24 @@ impl Probe {
                     let physical = ui.window().size();
                     let scale = ui.window().scale_factor();
                     let logical = physical.to_logical(scale);
+                    let contrasts = [
+                        contrast(ui.get_observed_foreground().color(), ui.get_observed_background().color(), ui.get_observed_background().color()),
+                        contrast(ui.get_observed_control_foreground().color(), ui.get_observed_control_background().color(), ui.get_observed_background().color()),
+                        contrast(ui.get_observed_selection_foreground().color(), ui.get_observed_selection_background().color(), ui.get_observed_background().color()),
+                    ];
+                    if let Ok(capture) = std::fs::read_to_string(recorder.directory.join("capture-request"))
+                        && capture != *last_capture.borrow() {
+                            assert!(!capture.is_empty() && capture.len() <= 64 && capture.bytes().all(|b| b.is_ascii_alphanumeric() || b == b'-'));
+                            let temporary = recorder.directory.join(format!(".{capture}.png.tmp"));
+                            super::renderer_probe::snapshot(&ui, &temporary);
+                            std::fs::rename(temporary, recorder.directory.join(format!("{capture}.png"))).expect("publish complete display frame");
+                            *last_capture.borrow_mut() = capture;
+                    }
                     let geometry = format!(
-                        "{{\"width\":{},\"height\":{},\"logical_width\":{},\"logical_height\":{},\"scale\":{},\"compact\":{},\"wide\":{},\"focus_key\":{},\"selected_id\":{},\"selected_row\":{},\"rows\":{},\"working\":{}}}",
+                        "{{\"width\":{},\"height\":{},\"logical_width\":{},\"logical_height\":{},\"scale\":{},\"compact\":{},\"wide\":{},\"focus_key\":{},\"selected_id\":{},\"selected_row\":{},\"rows\":{},\"working\":{},\"review_visible\":{},\"contrast_ratios\":{:?}}}",
                         physical.width, physical.height, logical.width, logical.height, scale,
                         ui.get_compact(), ui.get_wide(), ui.get_observed_focus_key(),
-                        ui.get_selected_id(), ui.get_selected_row_index(), ui.get_stories().row_count(), ui.get_working());
+                        ui.get_selected_id(), ui.get_selected_row_index(), ui.get_stories().row_count(), ui.get_working(), ui.get_review_visible(), contrasts);
                     if *last_geometry.borrow() != geometry {
                         recorder.write("geometry.json", &geometry);
                         *last_geometry.borrow_mut() = geometry;
@@ -234,4 +249,33 @@ impl Probe {
             "native probe ended before observer completed"
         );
     }
+}
+
+fn contrast(foreground: slint::Color, background: slint::Color, window: slint::Color) -> f64 {
+    fn rgb(color: slint::Color) -> [f64; 3] {
+        [
+            f64::from(color.red()),
+            f64::from(color.green()),
+            f64::from(color.blue()),
+        ]
+    }
+    fn blend(color: slint::Color, background: [f64; 3]) -> [f64; 3] {
+        let alpha = f64::from(color.alpha()) / 255.0;
+        let rgb = rgb(color);
+        std::array::from_fn(|i| (rgb[i] * alpha + background[i] * (1.0 - alpha)) / 255.0)
+    }
+    fn luminance(rgb: [f64; 3]) -> f64 {
+        let linear = rgb.map(|value| {
+            if value <= 0.04045 {
+                value / 12.92
+            } else {
+                ((value + 0.055) / 1.055).powf(2.4)
+            }
+        });
+        linear[0] * 0.2126 + linear[1] * 0.7152 + linear[2] * 0.0722
+    }
+    let background = blend(background, rgb(window));
+    let foreground = blend(foreground, background.map(|value| value * 255.0));
+    let (first, second) = (luminance(foreground), luminance(background));
+    (first.max(second) + 0.05) / (first.min(second) + 0.05)
 }

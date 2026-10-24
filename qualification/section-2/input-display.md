@@ -197,3 +197,28 @@ Tab/End navigation selects row999 of1000 within≤3000ms, including keyboard/
 observer overhead. Raw samples, states and screenshot endpoints are retained.
 These additions require fresh native execution; earlier input passes do not
 supply the new evidence. The bounded Winit trace cap is256KiB for64 key pairs.
+
+## Native display continuation
+
+The new display observers resize the actual owned OS window through AX or the
+private native window manager at560×400,900×760 and1280-wide sizes. They require
+matching actual physical/logical geometry and compact/wide UI states, localized
+Settings focus/dismissal, keyboard access to compact Review and rendered frames.
+Long inspector/detail text scrolls inside its bounded pane; compact Review scales
+to available height. Contrast is computed from the actual public Palette values
+with alpha compositing for body/control/selection text, requiring≥4.5:1 in every
+observed size. Native and public-rendered images remain available for visual QA.
+
+The Wayland observer creates two owned headless outputs at native scales1 and2,
+then moves the same app between them four times. Actual Winit physical/logical
+geometry and scale must change consistently while1000 rows remain present.
+Static scale requests or screenshots from separate launches cannot pass.
+Private Linux settings request HighContrast and disable decorative animation.
+The library has no decorative spatial animation/indeterminate progress; two
+settled frames without a text caret must be identical. Built-in focus/hover color
+transitions may settle. Mac records the actual public OS accessibility preference
+and screen scales; it does not change the owner's settings. Local actual ARM
+Retina observation additionally renders1800×1520 pixels for900×760 logical units
+at2×, exits0 and preserves legible French text; exact final-source evidence will
+be retained before qualification closes. No CJK/Arabic shaping claim follows.
+Native CI and independent evidence review remain required for the new method.

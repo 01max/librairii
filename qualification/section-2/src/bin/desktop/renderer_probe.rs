@@ -68,7 +68,7 @@ impl Probe {
     }
 }
 
-fn snapshot(ui: &Spike, path: &Path) -> Vec<u8> {
+pub(super) fn snapshot(ui: &Spike, path: &Path) -> Vec<u8> {
     // Slint re-renders into CPU pixels here. The separate backend performance
     // trace, not this snapshot, identifies the actual on-screen surface.
     let pixels = ui.window().take_snapshot().expect("Skia scene snapshot");

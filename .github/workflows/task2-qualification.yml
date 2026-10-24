@@ -137,6 +137,13 @@ jobs:
           python3 qualification/section-2/check-gpu-recovery.py
           --package "$RUNNER_TEMP/task2-roundtrip/task2-$RUST_TARGET"
           --output target/task2-evidence/gpu-recovery
+      - name: Record actual Orca speech and keyboard accessibility in private Linux desktops
+        if: runner.os == 'Linux' && !cancelled() && steps.package.outcome == 'success'
+        run: >-
+          python3 qualification/section-2/check-accessibility-linux.py
+          --package "$RUNNER_TEMP/task2-roundtrip/task2-$RUST_TARGET"
+          --archive "target/task2-evidence/task2-$RUST_TARGET.tar.gz"
+          --output target/task2-evidence/accessibility-linux
       - name: Exercise the packaged Linux app on isolated Wayland without X11 fallback
         if: runner.os == 'Linux'
         run: >-
@@ -171,13 +178,6 @@ jobs:
         run: |
           xcrun swiftc qualification/section-2/macos-automation-access.swift -o "$RUNNER_TEMP/task2-macos-access"
           "$RUNNER_TEMP/task2-macos-access" > target/task2-evidence/macos-automation-access.json
-      - name: Record actual Orca speech and keyboard accessibility in private Linux desktops
-        if: runner.os == 'Linux' && !cancelled() && steps.package.outcome == 'success'
-        run: >-
-          python3 qualification/section-2/check-accessibility-linux.py
-          --package "$RUNNER_TEMP/task2-roundtrip/task2-$RUST_TARGET"
-          --archive "target/task2-evidence/task2-$RUST_TARGET.tar.gz"
-          --output target/task2-evidence/accessibility-linux
       - name: Observe actual native macOS sheets, menus, clipboard and folder reveal
         if: runner.os == 'macOS' && !cancelled() && steps.package.outcome == 'success'
         run: |
@@ -198,6 +198,21 @@ jobs:
             --archive "target/task2-evidence/task2-$RUST_TARGET.tar.gz" \
             --helper "$RUNNER_TEMP/task2-input-macos" \
             --output target/task2-evidence/input-macos
+      - name: Observe native Linux window sizes, contrast and mixed-scale transitions
+        if: runner.os == 'Linux' && !cancelled() && steps.package.outcome == 'success'
+        run: >-
+          python3 qualification/section-2/check-display-linux.py
+          --package "$RUNNER_TEMP/task2-roundtrip/task2-$RUST_TARGET"
+          --archive "target/task2-evidence/task2-$RUST_TARGET.tar.gz"
+          --output target/task2-evidence/display-linux
+      - name: Observe native Mac window sizes, localized dialogs and contrast
+        if: runner.os == 'macOS' && !cancelled() && steps.package.outcome == 'success'
+        run: >-
+          python3 qualification/section-2/check-display-macos.py
+          --package "$RUNNER_TEMP/task2-roundtrip/task2-$RUST_TARGET"
+          --archive "target/task2-evidence/task2-$RUST_TARGET.tar.gz"
+          --helper "$RUNNER_TEMP/task2-native-macos"
+          --output target/task2-evidence/display-macos
       - name: Launch and relaunch the Mac package with denied source and development access
         if: runner.os == 'macOS' && !cancelled() && steps.package.outcome == 'success'
         run: >-

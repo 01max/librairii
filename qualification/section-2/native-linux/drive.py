@@ -594,9 +594,105 @@ def one_case(desktop, name, kind, expected):
     return report
 
 
+def observe_display(desktop, root):
+    evidence, app_dir = root / 'display', root / 'display/app'
+    evidence.mkdir()
+    report = {'checks': {}, 'sizes': [], 'scale_transitions': [], 'errors': []}
+    desktop.run(['gsettings', 'set', 'org.gnome.desktop.interface', 'enable-animations', 'false'])
+    desktop.run(['gsettings', 'set', 'org.gnome.desktop.interface', 'gtk-theme', 'HighContrast'])
+    report['private_os_preferences'] = {
+        'enable_animations': desktop.run(['gsettings', 'get', 'org.gnome.desktop.interface', 'enable-animations']).strip(),
+        'gtk_theme': desktop.run(['gsettings', 'get', 'org.gnome.desktop.interface', 'gtk-theme']).strip()}
+    assert report['private_os_preferences'] == {'enable_animations': 'false', 'gtk_theme': "'HighContrast'"}
+    app = desktop.start('display-app', ['/opt/librairii/qualification-desktop',
+        '--native-probe=' + str(app_dir), '--native-case=input', '--french', '--display-long-text'], debug=True)
+    fixture = None
+    def geometry():
+        return json.loads((app_dir / 'geometry.json').read_text())
+    def frame(name):
+        (app_dir / 'capture-request').write_text(name)
+        wait_for(lambda: (app_dir / (name + '.png')).is_file())
+        desktop.screenshot(evidence / (name + '-native.png'))
+    def sway(command):
+        value = json.loads(desktop.run(['swaymsg', '-s', desktop.ipc, command]))
+        assert value and all(v.get('success') is True for v in value), value
+    try:
+        wait_for(lambda: (app_dir / 'ready.txt').is_file())
+        fixture = pathlib.Path((app_dir / 'fixture.txt').read_text())
+        wait_for(lambda: desktop.active_pid() == app.pid)
+        xid = None
+        if desktop.session == 'x11':
+            xid = desktop.run(['xdotool', 'search', '--onlyvisible', '--pid', str(app.pid)]).splitlines()[-1]
+        for width, height in ((560, 400), (900, 760), (1280, 800)):
+            if xid:
+                desktop.run(['xdotool', 'windowsize', '--sync', xid, str(width), str(height)])
+            else:
+                sway(f'[pid={app.pid}] resize set width {width} px height {height} px')
+            value = wait_for(lambda: (g := geometry()) and abs(g['logical_width'] - width) <= 1
+                and abs(g['logical_height'] - height) <= 1 and g['compact'] == (width < 850)
+                and g['wide'] == (width >= 1180) and g)
+            assert len(value['contrast_ratios']) == 3 and min(value['contrast_ratios']) >= 4.5
+            report['sizes'].append(value)
+            frame('size-' + str(width))
+            desktop.key('ctrl+comma')
+            wait_for(lambda: (s := state(app_dir)) and s[2] == '1' and s[4] == 'true')
+            frame('settings-' + str(width))
+            desktop.key('Escape')
+            wait_for(lambda: (s := state(app_dir)) and s[2] == '0')
+            if width == 560:
+                for _ in range(20):
+                    if geometry()['focus_key'] == 10:
+                        break
+                    desktop.key('Tab')
+                else:
+                    raise AssertionError('compact Review not keyboard reachable')
+                desktop.key('space')
+                wait_for(lambda: geometry()['review_visible'])
+                frame('compact-review')
+                desktop.key('space')
+                wait_for(lambda: not geometry()['review_visible'])
+                report['checks']['compact_review_keyboard_reachable'] = True
+        report['checks']['native_compact_intermediate_wide'] = True
+        report['checks']['localized_modal_focus_and_dismiss'] = True
+        report['checks']['actual_text_control_selection_contrast'] = True
+        if desktop.session == 'wayland':
+            sway('create_output')
+            sway('output HEADLESS-2 mode 2560x1800 scale 2 position 1280 0')
+            report['outputs'] = json.loads(desktop.run(['swaymsg', '-s', desktop.ipc, '-t', 'get_outputs']))
+            assert {v['name']: v['scale'] for v in report['outputs']} == {'HEADLESS-1': 1, 'HEADLESS-2': 2}
+            for output, scale in (('HEADLESS-2', 2), ('HEADLESS-1', 1), ('HEADLESS-2', 2), ('HEADLESS-1', 1)):
+                sway(f'[pid={app.pid}] move container to output {output}')
+                value = wait_for(lambda: (g := geometry()) and g['scale'] == scale and g['rows'] == 1000 and g)
+                report['scale_transitions'].append(value)
+                frame('scale-' + str(len(report['scale_transitions'])))
+            report['checks']['actual_mixed_scale_transitions'] = len(report['scale_transitions']) == 4
+        # Remove the caret; the library has no decorative spatial animation.
+        desktop.key('Tab')
+        time.sleep(0.3)
+        frame('motion-first')
+        time.sleep(0.4)
+        frame('motion-second')
+        report['checks']['idle_without_nonessential_motion'] = (
+            (app_dir / 'motion-first.png').read_bytes() == (app_dir / 'motion-second.png').read_bytes())
+        (app_dir / 'finish').touch()
+        report['returncode'] = app.wait(timeout=10)
+        report['checks']['normal_shutdown'] = app.returncode == 0 and (app_dir / 'retired.txt').is_file()
+        report['checks']['fixture_retired'] = fixture is not None and not fixture.exists()
+        assert all(report['checks'].values())
+    except Exception:
+        report['errors'].append(traceback.format_exc())
+        raise
+    finally:
+        if app.poll() is None:
+            app.kill(); app.wait(timeout=5)
+        (evidence / 'display-session.json').write_text(json.dumps(report, indent=2) + '\n')
+    return report
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--session', choices=('x11', 'wayland'), required=True)
+    parser.add_argument('--display-only', action='store_true')
     args = parser.parse_args()
     root = pathlib.Path('/evidence')
     assert os.uname().machine == 'x86_64' and os.geteuid() != 0
@@ -608,11 +704,13 @@ def main():
     try:
         desktop = Desktop(args.session, root)
         (root / 'versions.txt').write_text(desktop.run(['dpkg-query', '-W', '-f=${Package} ${Version}\n']))
-        for name, kind, expected in [('files-multiple', 'files', 'selected'), ('files-single', 'files', 'selected'),
+        for name, kind, expected in ([] if args.display_only else [('files-multiple', 'files', 'selected'), ('files-single', 'files', 'selected'),
                 ('files-cancel', 'files', 'cancelled'), ('folder-accept', 'folder', 'selected'),
                 ('folder-cancel', 'folder', 'cancelled'), ('folder-reject', 'folder', 'rejected'),
-                ('early-settings', 'early-settings', 'delivered'), ('reveal', 'reveal', 'requested')]:
+                ('early-settings', 'early-settings', 'delivered'), ('reveal', 'reveal', 'requested')]):
             report['cases'][name] = one_case(desktop, name, kind, expected)
+        if args.display_only:
+            report['display'] = observe_display(desktop, root)
         report['native_integration'] = 'pass'
     except Exception as error:
         report['errors'].append(type(error).__name__ + ': ' + str(error))

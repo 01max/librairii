@@ -49,11 +49,9 @@ fn show_rows(ui: &Spike, query: &str, loader: &Rc<RefCell<thumbnails::Loader>>) 
 fn update_viewport(ui: &Spike) {
     // Sample actual window geometry instead of feeding layout minimums back into
     // Slint's width constraints. No self-dependent layout binding is introduced.
-    let width = ui
-        .window()
-        .size()
-        .to_logical(ui.window().scale_factor())
-        .width;
+    let size = ui.window().size().to_logical(ui.window().scale_factor());
+    let width = size.width;
+    ui.set_observed_height(size.height);
     ui.set_compact(width < 850.0);
     ui.set_wide(width >= 1180.0);
 }
@@ -195,6 +193,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             .set_size(slint::LogicalSize::new(width as f32, height as f32));
     }
     ui.set_french(std::env::args().any(|arg| arg == "--french"));
+    if std::env::args().any(|arg| arg == "--display-long-text") {
+        ui.set_selected(
+            "Été, façade et bibliothèque — une histoire française très longue. "
+                .repeat(16)
+                .into(),
+        );
+    }
     let fixture = tempfile::Builder::new()
         .prefix("librairii-qualification-")
         .tempdir()?;

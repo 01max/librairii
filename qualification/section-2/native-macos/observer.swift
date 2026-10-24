@@ -574,6 +574,31 @@ do {
             throw Failure.invalid("cannot activate owned app")
         }
         try output(["activated": true])
+    case "display-preferences":
+        try output(["reduce_motion": NSWorkspace.shared.accessibilityDisplayShouldReduceMotion,
+            "increase_contrast": NSWorkspace.shared.accessibilityDisplayShouldIncreaseContrast,
+            "screens": NSScreen.screens.map { ["scale": $0.backingScaleFactor,
+                "width": $0.frame.width, "height": $0.frame.height] }])
+    case "resize":
+        let windows = elements(app, kAXWindowsAttribute)
+        guard windows.count == 1, let width = request["width"] as? Double,
+              let height = request["height"] as? Double,
+              let oldWidth = request["content_width"] as? Double,
+              let oldHeight = request["content_height"] as? Double,
+              (560...1600).contains(width), (400...1000).contains(height),
+              let raw = attribute(windows[0], kAXSizeAttribute), CFGetTypeID(raw) == AXValueGetTypeID() else {
+            throw Failure.invalid("one owned window and bounded display dimensions required")
+        }
+        let value = raw as! AXValue
+        var old = CGSize.zero
+        guard AXValueGetValue(value, .cgSize, &old) else { throw Failure.invalid("native size unavailable") }
+        var size = CGSize(width: width + old.width - oldWidth, height: height + old.height - oldHeight)
+        guard let updated = AXValueCreate(.cgSize, &size),
+              AXUIElementSetAttributeValue(windows[0], kAXSizeAttribute as CFString, updated) == .success else {
+            throw Failure.invalid("native window resize failed")
+        }
+        try output(["performed": true, "old_outer_width": old.width, "old_outer_height": old.height,
+            "requested_outer_width": size.width, "requested_outer_height": size.height])
     case "key":
         try key(request["key"] as? String ?? "")
         try output(["posted": true])

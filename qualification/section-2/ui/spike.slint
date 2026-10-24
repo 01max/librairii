@@ -90,7 +90,7 @@ component StoryList inherits FocusScope {
             color: index == root.current-item ? Palette.selection-foreground : Palette.foreground;
         }
         if root.has-focus && index == root.focused-row: Rectangle {
-            border-width: 2px; border-color: Palette.foreground; background: transparent;
+            border-width: 2px; border-color: index == root.current-item ? Palette.selection-foreground : Palette.foreground; background: transparent;
         }
         TouchArea { enabled: root.enabled; clicked => { root.move(index, true); root.focus(); } }
     }
@@ -104,6 +104,12 @@ export component Spike inherits Window {
     min-width: 560px;
     min-height: 400px;
     background: Palette.background;
+    out property <brush> observed-foreground: Palette.foreground;
+    out property <brush> observed-background: Palette.background;
+    out property <brush> observed-control-foreground: Palette.control-foreground;
+    out property <brush> observed-control-background: Palette.control-background;
+    out property <brush> observed-selection-foreground: Palette.selection-foreground;
+    out property <brush> observed-selection-background: Palette.selection-background;
     in-out property <bool> french: false;
     in-out property <int> mode: 0;
     in-out property <bool> review-visible: false;
@@ -111,6 +117,7 @@ export component Spike inherits Window {
     in-out property <int> dialog: 0;
     in-out property <bool> native-dialog-open: false;
     private property <int> invoker: 0;
+    in-out property <length> observed-height: 760px;
     in-out property <bool> compact: false;
     in-out property <bool> wide: true;
     out property <int> observed-focus-key: ProbeState.focus-key;
@@ -304,7 +311,7 @@ export component Spike inherits Window {
                     }
                     review-pane := VerticalBox {
                         visible: root.review-visible;
-                        height: root.review-visible ? 220px : 0px;
+                        height: root.review-visible ? min(220px, max(100px, root.observed-height - 300px)) : 0px;
                         min-width: 0px;
                         Text { text: root.french ? "Révision séparée — aucune approbation implicite" : "Separate review — no implicit approvals"; wrap: word-wrap; }
                         HorizontalBox {
@@ -343,7 +350,10 @@ export component Spike inherits Window {
                     VerticalBox {
                         min-width: 0px;
                         Text { text: root.french ? "HISTOIRE SÉLECTIONNÉE" : "STORY INSPECTOR"; wrap: word-wrap; }
-                        Text { text: root.selected; wrap: word-wrap; }
+                        ScrollView {
+                            min-height: 0px; vertical-stretch: 1;
+                            Text { width: parent.width; text: root.selected; wrap: word-wrap; }
+                        }
                         Text { text: root.french ? "Français · 4–6 ans" : "French · Ages 4–6"; }
                         Text { text: root.french ? "Avertissement : indisponible" : "Warning: unavailable"; wrap: word-wrap; }
                         Rectangle { vertical-stretch: 1; }
@@ -375,7 +385,7 @@ export component Spike inherits Window {
                 min-width: 0px; min-height: 0px; padding: 18px;
                 Text { text: dialog-panel.accessible-label; font-size: 24px; }
                 if root.dialog == 2: AboutSlint { }
-                if root.dialog == 3: Text { text: root.selected; wrap: word-wrap; }
+                if root.dialog == 3: ScrollView { min-height: 0px; vertical-stretch: 1; Text { width: parent.width; text: root.selected; wrap: word-wrap; } }
                 HorizontalBox {
                     visible: root.dialog == 1;
                     english-button := Button { text: "English"; clicked => { root.french = false; } }

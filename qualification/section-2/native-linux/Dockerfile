@@ -11,7 +11,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libegl1 libgl1 libvulkan1 mesa-vulkan-drivers fonts-noto-cjk \
     python3 python3-pyatspi python3-dbus python3-gi dbus-x11 at-spi2-core \
     xdg-desktop-portal xdg-desktop-portal-gtk xdg-utils file util-linux xfconf thunar \
-    xvfb openbox xdotool x11-utils scrot sway wtype grim procps xclip wl-clipboard \
+    xvfb openbox xdotool x11-utils scrot sway wtype grim procps xclip wl-clipboard gsettings-desktop-schemas \
     && rm -rf /var/lib/apt/lists/*
 COPY drive.py /checks/drive.py
 ENTRYPOINT ["/usr/bin/dbus-run-session", "--", "/usr/bin/python3", "-I", "-B", "/checks/drive.py"]
