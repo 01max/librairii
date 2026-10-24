@@ -68,6 +68,15 @@ def picker_root(snapshot):
         and node.get('modal') is not False), None)
 
 
+def go_folder_fields(snapshot, root):
+    sheets = [n for n in snapshot['nodes'] if same_root(n, root) and n['role'] == 'AXSheet'
+              and n.get('identifier') == 'GoToWindow']
+    return [n for n in snapshot['nodes'] if same_root(n, root) and n['role'] == 'AXTextField'
+        and n.get('identifier') == 'PathTextField' and n.get('value_settable')
+        and n.get('enabled') is not False and any(
+            n['selector']['path'][:len(s['selector']['path'])] == s['selector']['path'] for s in sheets)]
+
+
 def capture_output(app, path):
     stop, errors = threading.Event(), []
     descriptor = app.stdout.fileno()
@@ -157,14 +166,13 @@ class Observer:
         self.call('key', key='cmd+shift+g')
         def location():
             snapshot = self.snapshot()
-            fields = [n for n in snapshot['nodes'] if same_root(n, root)
-                and n['role'] in ('AXTextField', 'AXComboBox') and n.get('value_settable')
-                and n.get('enabled') is not False]
-            preferred = [n for n in fields if 'go to' in (n.get('title', '') + n.get('description', '')).lower()]
-            return (snapshot, (preferred or fields)[-1]) if fields else None
+            fields = go_folder_fields(snapshot, root)
+            return (snapshot, fields[0]) if len(fields) == 1 else None
         snapshot, field = self.wait(location)
         (self.output / 'go-folder.json').write_text(json.dumps(snapshot, ensure_ascii=False, indent=2) + '\n')
         self.call('set', selector=selector(field), value=str(directory))
+        self.wait(lambda: any(n.get('value') == str(directory)
+            for n in go_folder_fields(self.snapshot(), root)))
         snapshot = self.snapshot()
         go = [n for n in snapshot['nodes'] if same_root(n, root) and n['role'] == 'AXButton'
             and n.get('title') == 'Go' and n.get('enabled') is not False]
@@ -172,7 +180,8 @@ class Observer:
             self.call('press', selector=selector(go[0]))
         else:
             self.call('key', key='return')
-        time.sleep(0.2)
+        self.wait(lambda: not any(same_root(n, root) and n.get('identifier') == 'GoToWindow'
+            for n in self.snapshot()['nodes']))
 
     def rows(self, fixture, root, multiple):
         self.call('key', key='cmd+2')

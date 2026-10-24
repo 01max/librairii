@@ -15,6 +15,20 @@ spec.loader.exec_module(macos)
 
 
 class NativeMacOS(unittest.TestCase):
+    def test_go_folder_cannot_edit_search_or_native_filename_cells(self):
+        def node(role, identifier, path, **values):
+            return {'role': role, 'identifier': identifier, 'selector':
+                {'window': 0, 'sheet': 0, 'path': path}, **values}
+        root = node('AXSheet', 'open-panel', [])
+        sheet = node('AXSheet', 'GoToWindow', [9])
+        field = node('AXTextField', 'PathTextField', [9, 2], value_settable=True)
+        other = [node('AXTextField', 'Search', [6], value_settable=True),
+                 node('AXTextField', '', [0, 2, 1, 1], value_settable=True),
+                 node('AXTextField', 'PathTextField', [8], value_settable=True)]
+        self.assertEqual(macos.go_folder_fields({'nodes': [root, sheet, field, *other]}, root), [field])
+        self.assertEqual(macos.go_folder_fields({'nodes': [root, field, *other]}, root), [])
+        self.assertEqual(macos.go_folder_fields({'nodes': [sheet, {**field, 'enabled': False}]}, root), [])
+
     def test_diagnostics_cannot_turn_a_failed_native_command_into_a_pass(self):
         observer = macos.Observer(pathlib.Path('/owned/helper'), pathlib.Path('/owned/output'), 123)
         result = {'returncode': 0, 'errors': [],

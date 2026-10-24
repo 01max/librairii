@@ -58,3 +58,13 @@ to the exact fixture document. Captures choose the frontmost visible owned
 window, including modal levels. Full Slint accessibility-tree traversal and
 spoken semantics are separate, still-open2.4 evidence; no result is inferred
 for them from this targeted native-adapter observer.
+
+At `cf58c8e` / run40077600508 the ARM observer reaches and proves the actual
+parented native sheet, then fails file selection. Its raw tree identifies the
+observer's broad editable-field fallback selecting a filename cell while the
+Go-to-Folder sheet remains open. The fresh-case observer now requires the actual
+`GoToWindow` child sheet's `PathTextField`, verifies its exact value and waits
+for that sheet to close before selecting files. Search and filename cells are
+explicitly rejected by a regression. No failed dialog is retried.
+Artifact12553273734 ZIP SHA256 is
+`450067c082d23c1aeb61a9f5a31724b596e2ee6fbf088bb0c1ced78a772bbff3`.
