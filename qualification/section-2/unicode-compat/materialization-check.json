@@ -1,0 +1,96 @@
+{
+  "scope": "focused required P2 materialization verification; build plus provenance mode only, no scalar/sequence/language comparison or compatibility remeasurement",
+  "oracle": "73a93303a9a44cf0a92eaf525331561ed8c04460",
+  "tree": "e797e9d59926d83b73fb7c02e5c3611073e89a16",
+  "go": "go version go1.26.5 darwin/arm64",
+  "materializedTextSource": {
+    "module": "golang.org/x/text v0.43.0",
+    "h1": "h1:1QivrlhwAsnMOcqgOdl9my7s9OyZl8O5/UGUTJVXoWc=",
+    "zipSha256": "b75131f628f6e2e4892fd638d33127e952a5027775e0162b94ba069cb4e13863",
+    "verifiedMembers": 487,
+    "materializedMembers": 487,
+    "materialization": "authenticated ZIP regular members only; exact owned-tree verification"
+  },
+  "goProvenance": {
+    "build": {
+      "GoVersion": "go1.26.5",
+      "Path": "github.com/01max/librairii/cmd/qualification-unicode",
+      "Main": {
+        "Path": "github.com/01max/librairii",
+        "Version": "v0.5.1-0.20261020084116-73a93303a9a4+dirty"
+      },
+      "Deps": [
+        {
+          "Path": "golang.org/x/text",
+          "Version": "v0.43.0",
+          "Sum": "h1:1QivrlhwAsnMOcqgOdl9my7s9OyZl8O5/UGUTJVXoWc="
+        }
+      ],
+      "Settings": [
+        {
+          "Key": "-buildmode",
+          "Value": "exe"
+        },
+        {
+          "Key": "-compiler",
+          "Value": "gc"
+        },
+        {
+          "Key": "-trimpath",
+          "Value": "true"
+        },
+        {
+          "Key": "CGO_ENABLED",
+          "Value": "0"
+        },
+        {
+          "Key": "GOARCH",
+          "Value": "arm64"
+        },
+        {
+          "Key": "GOOS",
+          "Value": "darwin"
+        },
+        {
+          "Key": "GOARM64",
+          "Value": "v8.0"
+        },
+        {
+          "Key": "vcs",
+          "Value": "git"
+        },
+        {
+          "Key": "vcs.revision",
+          "Value": "73a93303a9a44cf0a92eaf525331561ed8c04460"
+        },
+        {
+          "Key": "vcs.time",
+          "Value": "2026-10-20T08:41:16Z"
+        },
+        {
+          "Key": "vcs.modified",
+          "Value": "true"
+        }
+      ]
+    },
+    "cases": "15.0.0",
+    "cldr": "32",
+    "go": "go1.26.5",
+    "norm": "15.0.0",
+    "unicode": "15.0.0"
+  },
+  "sourceSha256": {
+    "probe.py": "cf488a3d31c2fc516411869db65606f24693b2894135c9a96110dd6b924bcf42",
+    "oracle.go.in": "9d9a8b44ab3ea1c6f2e49d4563152b1e9053dae84c5a5130a1c2a92237c900d3",
+    "tests/test_supervision.py": "76b2c7835c4aa363fef5699541fef69e84d0dc89a03865bc1cd61b0668596fb8"
+  },
+  "originalSourceChecks": {
+    "persistentBefore": 436,
+    "cloneBefore": 436,
+    "cloneAfter": 436,
+    "persistentAfter": 436,
+    "cloneGitStatusAfter": "?? cmd/qualification-unicode/\n"
+  },
+  "result": "PASS",
+  "historicalReportsRegenerated": false
+}
