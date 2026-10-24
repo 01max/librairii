@@ -1,5 +1,10 @@
 # Task 2 toolkit selection
 
+Current-head revalidation pending: run68 at `f166d78` retains an Intel artwork
+timing failure. Tasks 2.9 and 2.13 are reopened while the complete wall/CPU trace
+is reviewed. The reviewed run67 decision below remains an attributed observation;
+it does not override this new failed validation. PR38 remains draft.
+
 2026-10-24: **Slint is selected for the scoped Linux/macOS native rewrite. Task 2 is complete.**
 The final implementation matrix and independent review pass. Detailed artifact/source
 identities and gate results are in [completion-evidence/final-matrix.json](completion-evidence/final-matrix.json)

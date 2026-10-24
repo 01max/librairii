@@ -1,5 +1,44 @@
 //! Retained Task 1 artwork workload: local reads and complete PNG decodes.
-use std::time::Instant;
+use image::{ImageDecoder, codecs::png::PngDecoder};
+use std::{io::Read, path::Path, time::Instant};
+
+const PIXEL_BYTES: usize = 320 * 400 * 3;
+
+fn decode_into(bytes: &[u8], pixels: &mut [u8]) -> Result<(), Box<dyn std::error::Error>> {
+    // A fresh decoder retains the pinned PNG implementation and its CRC checks.
+    let decoder = PngDecoder::new(std::io::Cursor::new(bytes))?;
+    if decoder.dimensions() != (320, 400)
+        || decoder.color_type() != image::ColorType::Rgb8
+        || decoder.total_bytes() != PIXEL_BYTES as u64
+        || pixels.len() != PIXEL_BYTES
+    {
+        return Err("retained artwork must fully decode to 320x400 RGB8".into());
+    }
+    decoder.read_image(pixels)?;
+    Ok(())
+}
+
+struct Scratch {
+    encoded: Vec<u8>,
+    pixels: Vec<u8>,
+}
+
+impl Scratch {
+    fn new(encoded_capacity: usize) -> Self {
+        Self {
+            encoded: Vec::with_capacity(encoded_capacity),
+            pixels: vec![0; PIXEL_BYTES],
+        }
+    }
+
+    fn read_decode(&mut self, path: &Path) -> Result<&[u8], Box<dyn std::error::Error>> {
+        self.encoded.clear();
+        // Every cover is reopened, read to EOF and decoded again, even in warm batches.
+        std::fs::File::open(path)?.read_to_end(&mut self.encoded)?;
+        decode_into(&self.encoded, &mut self.pixels)?;
+        Ok(&self.pixels)
+    }
+}
 
 #[cfg(unix)]
 fn process_cpu_seconds() -> std::io::Result<f64> {
@@ -75,15 +114,16 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
     let mut durations = Vec::new();
     let mut cpu_durations = Vec::new();
     let mut pixel_witness = 0u64;
+    // Reuse bounded fixture scratch, never decoded-image results. The warmup and
+    // every measured batch still include all 24 reads, decodes and pixel visits.
+    let mut scratch = Scratch::new(covers.iter().map(|cover| cover.len()).max().unwrap());
     for sample in 0..=SAMPLES {
         let cpu_start = process_cpu_seconds()?;
         let start = Instant::now();
         for path in &paths {
-            let bytes = std::fs::read(path)?;
-            let decoded = image::load_from_memory_with_format(&bytes, image::ImageFormat::Png)?;
-            assert_eq!((decoded.width(), decoded.height()), (320, 400));
+            let decoded = scratch.read_decode(path)?;
             // Consume every decoded byte; lazy header/thumbnail reads cannot pass.
-            pixel_witness = std::hint::black_box(decoded.as_bytes())
+            pixel_witness = std::hint::black_box(decoded)
                 .iter()
                 .fold(pixel_witness, |sum, value| {
                     sum.wrapping_add(u64::from(*value))
@@ -103,7 +143,7 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
     ordered.sort_by(f64::total_cmp);
     let p95 = ordered[(SAMPLES * 95).div_ceil(100) - 1];
     println!(
-        "artwork_probe; covers=24; size=320x400; samples_ms={durations:?}; p95_ms={p95:.6}; pixel_witness={pixel_witness}; cpu_samples_ms={cpu_durations:?}; method=read-full-decode-v2-fixed100"
+        "artwork_probe; covers=24; size=320x400; samples_ms={durations:?}; p95_ms={p95:.6}; pixel_witness={pixel_witness}; cpu_samples_ms={cpu_durations:?}; method=read-full-decode-v3-scratch-fixed100"
     );
     fixture.close()?;
     println!("artwork_probe_complete; fixture_retired=true");
@@ -111,4 +151,70 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
         return Err("retained 24-read/full-PNG-decode p95 exceeds 50ms".into());
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use image::ImageEncoder;
+
+    #[test]
+    fn scratch_reopens_files_and_matches_every_dynamic_image_byte() {
+        let fixture = tempfile::tempdir().unwrap();
+        let path = fixture.path().join("replaced.png");
+        let mut scratch = Scratch::new(0);
+        let mut previous = Vec::new();
+        for index in 1..=24 {
+            let bytes = std::fs::read(
+                Path::new(env!("CARGO_MANIFEST_DIR"))
+                    .join("../../preservation/corpus/performance/catalog/embedded")
+                    .join(format!("performance-cover-{index:02}.png")),
+            )
+            .unwrap();
+            let original =
+                image::load_from_memory_with_format(&bytes, image::ImageFormat::Png).unwrap();
+            std::fs::write(&path, &bytes).unwrap();
+            let actual = scratch.read_decode(&path).unwrap();
+            assert_eq!(actual, original.as_bytes());
+            assert_ne!(actual, previous);
+            previous = actual.to_vec();
+        }
+        std::fs::write(&path, b"not a PNG").unwrap();
+        assert!(scratch.read_decode(&path).is_err());
+    }
+
+    #[test]
+    fn rejects_idat_crc_corruption_and_truncated_pixel_stream() {
+        let original = cover!("01");
+        let mut corrupt = original.to_vec();
+        let mut offset = 8;
+        loop {
+            let length =
+                u32::from_be_bytes(corrupt[offset..offset + 4].try_into().unwrap()) as usize;
+            if &corrupt[offset + 4..offset + 8] == b"IDAT" {
+                corrupt[offset + 8 + length] ^= 1; // CRC only; pixels remain otherwise valid.
+                break;
+            }
+            offset += 12 + length;
+        }
+        let mut pixels = vec![0; PIXEL_BYTES];
+        assert!(decode_into(&corrupt, &mut pixels).is_err());
+        assert!(decode_into(&original[..original.len() / 2], &mut pixels).is_err());
+    }
+
+    #[test]
+    fn rejects_wrong_dimensions_color_and_short_output() {
+        for (width, color) in [
+            (319, image::ExtendedColorType::Rgb8),
+            (320, image::ExtendedColorType::Rgba8),
+        ] {
+            let mut encoded = Vec::new();
+            let bytes = vec![0; width as usize * 400 * color.channel_count() as usize];
+            image::codecs::png::PngEncoder::new(&mut encoded)
+                .write_image(&bytes, width, 400, color)
+                .unwrap();
+            assert!(decode_into(&encoded, &mut vec![0; PIXEL_BYTES]).is_err());
+        }
+        assert!(decode_into(cover!("01"), &mut vec![0; PIXEL_BYTES - 1]).is_err());
+    }
 }
