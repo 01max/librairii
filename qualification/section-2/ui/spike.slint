@@ -350,9 +350,15 @@ export component Spike inherits Window {
                     VerticalBox {
                         min-width: 0px;
                         Text { text: root.french ? "HISTOIRE SÉLECTIONNÉE" : "STORY INSPECTOR"; wrap: word-wrap; }
-                        ScrollView {
+                        inspector-scroll := ScrollView {
                             min-height: 0px; vertical-stretch: 1;
-                            Text { width: parent.width; text: root.selected; wrap: word-wrap; vertical-alignment: top; }
+                            content-width: self.visible-width;
+                            content-height: inspector-text.height;
+                            inspector-text := Text {
+                                x: 0px; y: 0px; width: inspector-scroll.visible-width;
+                                height: self.preferred-height;
+                                text: root.selected; wrap: word-wrap; vertical-alignment: top;
+                            }
                         }
                         Text { text: root.french ? "Français · 4–6 ans" : "French · Ages 4–6"; }
                         Text { text: root.french ? "Avertissement : indisponible" : "Warning: unavailable"; wrap: word-wrap; }
