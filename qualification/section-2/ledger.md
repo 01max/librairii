@@ -605,3 +605,13 @@ afterward. Native execution remains required; this does not rescore either
 failure. Both fresh Mac lanes pass, including native focused folder path editing.
 Linux artifact12571716340 ZIP SHA256
 2d33f84de03e96b36dacf236a6cf19f7e4c7ab7ca29065deca5a7b06183b8ce9.
+
+Run66 at892319c/40122322247 passes both independently reviewed Mac lanes and
+both Linux display routes after the bounded focus correction. Private X11 input
+passes49.431676ms; private Wayland retains148.690334ms failure with posting near9ms
+and four late acknowledgements. Both offline-VM routes pass near17–19ms.
+Linux artifact12572570911 ZIP SHA256
+5811c481cbcacfae24d5dce8340624e29d79581a0e9e1f7f900ce8ebfbbd86b7.
+The next source adds only bounded read-only slow-thread/scheduler diagnostics,
+preserving all64 samples and budgets. CI additionally publishes native traces
+before the independent VM stage, tightening diagnosis without skipping any gate.

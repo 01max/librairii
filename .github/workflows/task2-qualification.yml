@@ -165,6 +165,14 @@ jobs:
           --package "$RUNNER_TEMP/task2-roundtrip/task2-$RUST_TARGET"
           --archive "target/task2-evidence/task2-$RUST_TARGET.tar.gz"
           --output target/task2-evidence/native-linux
+      - name: Retain native Linux traces before the independent VM checks
+        if: runner.os == 'Linux' && !cancelled() && steps.package.outcome == 'success'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: task2-native-linux-${{ github.event.pull_request.head.sha || github.sha }}
+          path: target/task2-evidence/native-linux/
+          if-no-files-found: error
+          retention-days: 30
       - name: Install, reboot and reinstall the verified package in an offline native Linux VM
         if: runner.os == 'Linux' && !cancelled() && steps.package.outcome == 'success'
         run: |
