@@ -296,9 +296,23 @@ do {
         }
         try output(["posted": true, "source": inputSource()])
     case "input-selection":
-        guard let raw = attribute(app, kAXFocusedUIElementAttribute),
-              CFGetTypeID(raw) == AXUIElementGetTypeID() else {
-            throw Failure.invalid("no actual focused native input element")
+        var raw: CFTypeRef?
+        let focusStatus = AXUIElementCopyAttributeValue(app, kAXFocusedUIElementAttribute as CFString, &raw)
+        if focusStatus != .success || raw == nil {
+            // AccessKit requests its initial tree asynchronously when AppKit
+            // first asks for accessible children/focus. Preserve the native
+            // result and let the existing bounded reader poll; absence is
+            // never a successful selection and no focus/selection is set.
+            guard [.success, .noValue, .attributeUnsupported, .cannotComplete].contains(focusStatus) else {
+                throw Failure.invalid("native input focus query failed: " + String(focusStatus.rawValue))
+            }
+            try output(["pid": -1, "frontmost_pid": NSWorkspace.shared.frontmostApplication?.processIdentifier ?? -1,
+                "focus_status": focusStatus.rawValue, "focused": [:], "selection_observed": false,
+                "activation_tree": tree(app, sheetsOnly: false)] as [String: Any])
+            break
+        }
+        guard let raw, CFGetTypeID(raw) == AXUIElementGetTypeID() else {
+            throw Failure.invalid("native input focus query returned an unexpected type")
         }
         let element = raw as! AXUIElement
         var focusedPID: pid_t = -1
@@ -314,7 +328,8 @@ do {
             if AXValueGetType(value) == .cfRange { observed = AXValueGetValue(value, .cfRange, &range) }
         }
         try output(["pid": focusedPID, "frontmost_pid": NSWorkspace.shared.frontmostApplication?.processIdentifier ?? -1,
-            "focused": describe(element), "selection_observed": observed, "selection_status": status.rawValue,
+            "focus_status": focusStatus.rawValue, "focused": describe(element),
+            "selection_observed": observed, "selection_status": status.rawValue,
             "selection_location": range.location, "selection_length": range.length,
             "selected_text": text(element, kAXSelectedTextAttribute)] as [String: Any])
     case "snapshot", "status":

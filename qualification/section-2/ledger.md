@@ -293,3 +293,14 @@ the requested PID alongside an actual focused element. It now requires a
 successful AXUIElementGetPid on that element, exact requested-PID equality, and
 returns the observed element owner. A foreign IME/accessibility element cannot
 supply the owned-field witness; the immediate native foreground check remains.
+
+Task2.5 native runf462e38 retains two different input failures: ARM delivers the
+menu command and passes the actual widget guard but aborts on the first empty AX
+focus response; Intel cannot find Select All. Full Linux and quality CI pass.
+The reader correction records the native status and bounded owned activation
+tree as an incomplete observation, permits read-only bounded polling for lazy
+AccessKit initialization, and requires actual AXFocused=true before accepting
+the full text/UTF-16 range. No action retry or selection/focus mutation is added.
+The focused seven-test suite and Swift compilation pass; fresh execution remains
+required. Immutable artifact identities and raw-hash verification are recorded
+in input-display.md; earlier failed verdicts remain unchanged.

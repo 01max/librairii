@@ -40,9 +40,19 @@ def composition_cancelled(phase, after_escape):
 def all_text_selected(observed, text, pid):
     return (bool(text) and observed.get('pid') == pid and observed.get('frontmost_pid') == pid
         and observed.get('focused', {}).get('role') == 'AXTextField'
+        and observed['focused'].get('focused') is True
         and observed['focused'].get('value') == text and observed.get('selected_text') == text
         and observed.get('selection_observed') is True and observed.get('selection_location') == 0
         and observed.get('selection_length') == len(text.encode('utf-16-le')) // 2)
+
+
+def wait_for_selection(observer, observations, value, pid):
+    def selected():
+        snapshot = observer.call('input-selection')
+        if len(observations) < 16:
+            observations.append(snapshot)
+        return snapshot if all_text_selected(snapshot, value, pid) else None
+    return observer.wait(selected)
 
 
 def restore_sources(observer, before):
@@ -125,12 +135,7 @@ def inspect(package, archive, helper, output):
             # Select All again to turn missing command delivery into a pass.
             report.setdefault('native_select_all_commands', {})[stage] = observer.call('menu', title='Select All')
             observations = report.setdefault('native_selection_observations', {}).setdefault(stage, [])
-            def selected():
-                snapshot = observer.call('input-selection')
-                if len(observations) < 16:
-                    observations.append(snapshot)
-                return snapshot if all_text_selected(snapshot, value, app.pid) else None
-            report.setdefault('native_full_selections', {})[stage] = observer.wait(selected)
+            report.setdefault('native_full_selections', {})[stage] = wait_for_selection(observer, observations, value, app.pid)
             observer.call('key', key='delete')
             query('')
 

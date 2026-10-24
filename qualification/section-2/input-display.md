@@ -69,7 +69,28 @@ cannot pass. It never sets selection through AX, retries the action, changes
 focus to satisfy a check or bypasses the edit guard. This distinguishes missing
 command delivery, a guarded no-op and later selection loss before changing app
 behavior. Existing deadlines, output bounds and restoration remain required.
-Actual v2 execution is pending; earlier v1 failures retain their verdicts.
+Atf462e38/run40102132125, ARM proves native Muda receipt, enqueue, execution
+and an allowed Search edit guard after exact French input. The first app-root
+AX focused-element query returns no element, and the observer aborts before
+Delete. This does not establish a Slint selection defect. The raw31 ARM input
+file hashes and29 Intel input file hashes verify against their reports.
+ARM artifact12563427274 ZIP SHA256 is
+`ff8a293a3becdf13c61101adcf83ec5c19c0db570ded9d290bf425f4f394cffd`;
+Intel artifact12562987657 ZIP SHA256 is
+`1b3d70b7e46c5056bf450a4d025e13805946a8fa8cdb312edc71908bc60870af`.
+Both input runs restore original source states, exit0 and retire their fixtures.
+Intel separately fails Select All lookup, and its adapter run retains a Finder
+AXWindows `cannotComplete` failure; neither result is relabelled a pass. Linux's
+full lane and both quality workflows pass at this head.
+
+The focused-element reader now preserves exact native status and a bounded,
+read-only owned-window tree snapshot when initial focus is absent. AccessKit's
+pinned macOS adapter can request its initial tree asynchronously on first
+access. The existing bounded poll may observe the later tree; it never treats
+absence as selection, changes focus, sets selection or repeats Select All.
+Actual `AXFocused=true` is required in addition to the full text/range/PID checks.
+This observer correction still requires fresh native execution; the original
+failed runs and the earlier partial-delete symptom retain their verdicts.
 
 ## Historical initial checklist
 

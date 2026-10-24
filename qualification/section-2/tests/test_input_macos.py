@@ -15,14 +15,41 @@ spec.loader.exec_module(observer)
 class InputMacOS(unittest.TestCase):
     def test_full_native_selection_requires_exact_foreground_field_text_and_utf16_range(self):
         text = 'êé 日本語 🦊'
-        snapshot = {'pid': 12, 'frontmost_pid': 12, 'focused': {'role': 'AXTextField', 'value': text},
+        snapshot = {'pid': 12, 'frontmost_pid': 12, 'focused': {'role': 'AXTextField', 'value': text, 'focused': True},
             'selected_text': text, 'selection_observed': True, 'selection_location': 0,
             'selection_length': len(text.encode('utf-16-le')) // 2}
         self.assertTrue(observer.all_text_selected(snapshot, text, 12))
         for change in ({'pid': 13}, {'frontmost_pid': 13}, {'focused': {}},
+                {'focused': {**snapshot['focused'], 'focused': False}},
                 {'selected_text': text[:-1]}, {'selection_observed': False},
                 {'selection_location': 1}, {'selection_length': len(text)}):
             self.assertFalse(observer.all_text_selected({**snapshot, **change}, text, 12))
+
+    def test_initial_native_focus_absence_is_polled_without_repeating_a_menu_action(self):
+        absent = {'pid': -1, 'focus_status': -25212, 'focused': {}, 'selection_observed': False}
+        partial = {'pid': 12, 'frontmost_pid': 12, 'focused': {'role': 'AXTextField', 'value': 'êé az', 'focused': True},
+            'selected_text': 'z', 'selection_observed': True, 'selection_location': 4, 'selection_length': 1}
+        complete = {**partial, 'selected_text': 'êé az', 'selection_location': 0, 'selection_length': 5}
+
+        class Effective:
+            def __init__(self):
+                self.calls = []
+                self.values = iter([absent, partial, complete])
+
+            def call(self, action):
+                self.calls.append(action)
+                return next(self.values)
+
+            def wait(self, predicate):
+                self.result = predicate()
+                while not self.result:
+                    self.result = predicate()
+                return self.result
+
+        effective, observations = Effective(), []
+        self.assertEqual(observer.wait_for_selection(effective, observations, 'êé az', 12), complete)
+        self.assertEqual(observations, [absent, partial, complete])
+        self.assertEqual(effective.calls, ['input-selection'] * 3)
 
     @unittest.skipUnless(sys.platform == 'darwin', 'Carbon input-source lookup requires native macOS')
     def test_actual_missing_carbon_source_filter_is_empty_without_mutating_selection(self):
