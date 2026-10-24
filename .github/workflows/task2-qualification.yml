@@ -111,7 +111,7 @@ jobs:
           python3 qualification/section-2/package.py
           --binary qualification/section-2/target/release/qualification-desktop
           --target "$RUST_TARGET"
-          --output "target/task2-evidence/task2-$RUST_TARGET"
+          --output "target/task2-evidence/task2-$RUST_TARGET" --no-disk-image
       - name: Verify archive round-trip bytes and native host
         run: |
           roundtrip="$RUNNER_TEMP/task2-roundtrip"
@@ -208,8 +208,7 @@ jobs:
               --package "$package" --archive "$archive" --output "$output"
           else
             python3 qualification/section-2/measure-resources.py \
-              --package "$package" --archive "$archive" --output "$output" \
-              --disk-image "$PWD/target/task2-evidence/task2-$RUST_TARGET.dmg"
+              --package "$package" --archive "$archive" --output "$output"
           fi
       - name: Verify and exercise the packaged macOS app
         if: runner.os == 'macOS'

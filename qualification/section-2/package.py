@@ -42,6 +42,7 @@ def main():
     parser.add_argument('--binary', type=pathlib.Path, required=True)
     parser.add_argument('--target', choices=TARGETS, required=True)
     parser.add_argument('--output', type=pathlib.Path, required=True)
+    parser.add_argument('--no-disk-image', action='store_true', help='Qualify the minimal sealed-app tar archive; keep the DMG experiment separate')
     args = parser.parse_args()
     if (platform.system(), platform.machine()) != TARGETS[args.target]:
         parser.error('packages must be assembled on the matching native target')
@@ -133,7 +134,7 @@ def main():
     with tarfile.open(archive, 'x:gz') as stream:
         stream.add(output, arcname=output.name)
     archive.with_suffix(archive.suffix + '.sha256').write_text(sha(archive) + '  ' + archive.name + '\n')
-    if platform.system() == 'Darwin':
+    if platform.system() == 'Darwin' and not args.no_disk_image:
         dmg = output.parent / (output.name + '.dmg')
         if dmg.exists():
             raise FileExistsError(dmg)

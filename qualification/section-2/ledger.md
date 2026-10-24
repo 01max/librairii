@@ -463,3 +463,9 @@ Independent2.5 review correction: Wayland Redo now posts actual Control_L and
 Shift_L press/release events as well as modifier masks, matching the already
 qualified pinned Slint/Winit modifier route. Exact native redo text remains
 mandatory. No committed failed execution is relabelled.
+
+Task2.11 minimal-package route: cfd5899 Intel run40113205873 retains hdiutil
+“Resource busy” after sealed app/archive creation, before interaction. CI now
+explicitly qualifies the existing minimal sealed-app tar archive; default local
+packaging still offers the separate DMG experiment. No DMG success is inferred
+and no installer/signing claim is added. Product installer/signing remainsTask18.
