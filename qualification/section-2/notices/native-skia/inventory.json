@@ -162,10 +162,28 @@
         "vulkan_core.h": "e57cd25a9fb72417b3de4056ca5e0e464f9b67ee"
       },
       "source_note": "Header SPDX Apache-2.0 and Khronos copyright determine these terms. The neighboring Google BSD wrapper LICENSE is not substituted for the header license."
+    },
+    {
+      "name": "Khronos SPIR-V headers",
+      "revision": "m153-0.101.2",
+      "source": "https://github.com/rust-skia/skia/tree/m153-0.101.2/src/sksl",
+      "upstream_paths": [
+        "src/sksl/spirv.h",
+        "src/sksl/GLSL.std.450.h"
+      ],
+      "notices": [
+        "Khronos-SPIRV-NOTICE",
+        "ATTRIBUTIONS.md"
+      ],
+      "source_git_blobs": {
+        "spirv.h": "22821ed862adcf952af7b7b0acf1cf41e761ff9a",
+        "GLSL.std.450.h": "943fd8650f850e93b68cddef386eef8c3e8cf1e7"
+      },
+      "source_note": "Exact common first comment in both pinned headers, included by compiled SkSLSPIRVCodeGenerator.cpp. Not the unrelated Vulkan Apache notice."
     }
   ],
   "files": {
-    "ATTRIBUTIONS.md": "e4c6909e1eae21f100a1f6707fccaff30508a4a6339be77ca95378171fd87236",
+    "ATTRIBUTIONS.md": "5226899d58076b6a22d09cc59f1ca80060aeb8b44e53f02ea0497175841b12be",
     "Apache-2.0": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
     "Chromium-LICENSE": "368cca1106be99d39ecd32a38d8305585d802a475effb66380b91ffc9bcf709b",
     "Chromium-zlib-source-notices.txt": "6cb6643a391e8dbe40c75cefb91720040802365cb35598401a99891d16100fb3",
@@ -176,6 +194,7 @@
     "libjpeg-turbo-README.ijg": "75815e3bf6484201a3c3d17a1bbf10f2e8e3237f84df10a2357ea896db2a81d6",
     "libpng-LICENSE": "bdb0a645ea18c60507d0368379b1ac5474b92255fcc2d115e07486a7672ba526",
     "skcms-LICENSE": "e59bb5c5c6ba426a9ac4ba9fe667ad14c5166b12aa25be8af1d122b14fbe2e36",
-    "zlib-LICENSE": "e1cfcc55c325b3f78cf55df9664abaa066e2271dffe8213347d9fccdfbac8f2c"
+    "zlib-LICENSE": "e1cfcc55c325b3f78cf55df9664abaa066e2271dffe8213347d9fccdfbac8f2c",
+    "Khronos-SPIRV-NOTICE": "44eef8282899b0998ab8374e4bd2f69fd5aacd4707b05998175d286f5672ee6c"
   }
 }

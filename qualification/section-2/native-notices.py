@@ -6,7 +6,7 @@ import shutil
 
 IJG_ACKNOWLEDGMENT = 'This software is based in part on the work of the Independent JPEG Group.'
 COMPONENTS = {'Skia', 'skcms', 'libpng', 'libjpeg-turbo', 'zlib', 'Chromium zlib extensions',
-    'Expat', 'Wuffs', 'Vulkan Memory Allocator', 'Khronos Vulkan headers'}
+    'Expat', 'Wuffs', 'Vulkan Memory Allocator', 'Khronos Vulkan headers', 'Khronos SPIR-V headers'}
 
 
 def sha(path):

@@ -440,3 +440,8 @@ recorder tests pass; fresh actual workflow qualification remains pending.
 Task2.4 independent review corrections: reject unchecked/negative reader output;
 require actual selected visible non-default story1 across both view switches.
 Eight focused recorder regressions pass; fresh native workflow evidence pending.
+
+Task2.13 native notice correction: fetched exact pinned Skia SPIR-V/GLSL.std.450
+header blobs22821ed862adcf952af7b7b0acf1cf41e761ff9a and943fd8650f850e93b68cddef386eef8c3e8cf1e7.
+Preserved their identical Khronos2014–2016 permission notice in the packaged
+native supplement, with source identities and verified SHA256 inventory.

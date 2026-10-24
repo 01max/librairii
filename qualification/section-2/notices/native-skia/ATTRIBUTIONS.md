@@ -24,6 +24,9 @@ source revisions, notice paths and hashes are recorded in `inventory.json`.
   Copyright (C) 2013 Intel Corporation. All rights reserved., under zlib terms.
 - Vulkan Memory Allocator: Copyright (c) 2017-2026 Advanced Micro Devices, Inc.
   All rights reserved. See `VMA-LICENSE`.
+- SPIR-V / GLSL.std.450 headers: Copyright (c) 2014-2016 The Khronos Group Inc.
+  See the exact shared header notice in `Khronos-SPIRV-NOTICE`. These MIT-style
+  terms are separate from the Vulkan headers below.
 - Vulkan headers: Copyright 2014-2026 The Khronos Group Inc. See `Apache-2.0`.
 
 This supplement does not change Librairii's license. The selected Slint terms

@@ -30,3 +30,9 @@ check matches binding0.153.3/Skia m153-0.101.2 and both available local native
 license outputs. These checks do not replace fresh three-target packaged-byte
 verification and independent final distribution review. Task2.13 and final
 toolkit selection remain open.
+
+2026-10-24 Task2.13 review correction: compiled SkSL includes the pinned SPIR-V
+and GLSL.std.450 headers. Their exact common Khronos2014–2016 notice is now
+packaged separately from the Vulkan Apache terms. Both immutable Git blob
+identities and the notice digest are in the native inventory. No selected
+Linux/macOS graph basis was found for Windows/D3D SPIRV-Cross.
