@@ -383,7 +383,8 @@ def observe_editing_and_performance(desktop, app_dir, output, report):
     if desktop.session == 'x11':
         desktop.key('ctrl+shift+z')
     else:
-        desktop.run(['wtype', '-M', 'ctrl', '-M', 'shift', '-k', 'z', '-m', 'shift', '-m', 'ctrl'])
+        desktop.run(['wtype', '-M', 'ctrl', '-P', 'Control_L', '-M', 'shift', '-P', 'Shift_L',
+            '-k', 'z', '-p', 'Shift_L', '-m', 'shift', '-p', 'Control_L', '-m', 'ctrl'])
     report['long_french_states'].append(query(long_text))
     desktop.screenshot(output / 'long-french-input.png')
     desktop.key('ctrl+a')

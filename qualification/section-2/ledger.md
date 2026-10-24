@@ -458,3 +458,8 @@ bounded thumbnail load, unchanged100ms p95; native Tab/End last-row endpoint
 within3000ms. No direct selection/focus setter, event timestamp subtraction,
 sample rejection or retry. Local GUI Clippy and Swift compilation pass; native
 execution and independent review pending.
+
+Independent2.5 review correction: Wayland Redo now posts actual Control_L and
+Shift_L press/release events as well as modifier masks, matching the already
+qualified pinned Slint/Winit modifier route. Exact native redo text remains
+mandatory. No committed failed execution is relabelled.
