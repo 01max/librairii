@@ -225,3 +225,12 @@ The original failure is not rescored and host contention is not a proven cause.
 A delayed-preflight regression rejects the former boundary; slow native posting
 still produces a failed gate after the correction. Fresh native execution is
 required before qualification.
+
+Run40122322247 preserves a distinct private Wayland v3 failure148.690334ms;
+X11 passes49.431676ms and both offline-VM routes pass. Posting remains near9ms,
+while four actual acknowledgements stall140–239ms. Wayland callbacks generated
+16ms apart are dispatched233ms apart and then catch up, localizing the stall to
+the client without proving computation, recorder I/O or scheduler cause.
+Bounded read-only diagnostics now retain the owned main thread's CPU/runtime,
+runqueue and kernel wait state during slow acknowledgements, plus cgroup CPU/I/O
+facts. They change no scheduling setting, workload, sample count or gate.

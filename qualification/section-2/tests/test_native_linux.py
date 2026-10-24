@@ -24,6 +24,17 @@ def monitor(parent):
 
 
 class NativeLinux(unittest.TestCase):
+    def test_main_thread_diagnostics_preserve_cpu_wait_and_runqueue_facts(self):
+        fields = ['S'] + ['0'] * 10 + ['12', '7'] + ['0'] * 8
+        contents = ['123 (owned app) ' + ' '.join(fields), '23000000 45000000 8', 'do_fsync\n']
+        with mock.patch.object(pathlib.Path, 'read_text', side_effect=contents):
+            result = driver.thread_observation(123)
+        self.assertEqual(result, {'state': 'S', 'cpu_ticks': 19, 'runtime_ns': 23000000,
+            'runqueue_ns': 45000000, 'timeslices': 8, 'wait_channel': 'do_fsync'})
+        for error in (FileNotFoundError(), ValueError()):
+            with mock.patch.object(pathlib.Path, 'read_text', side_effect=error):
+                self.assertEqual(driver.thread_observation(123), {'unavailable': type(error).__name__})
+
     def test_input_times_real_post_and_acknowledgment_after_foreground_preflight(self):
         for session in ('x11', 'wayland'):
             for posting in (0.005, 0.125):
@@ -45,6 +56,8 @@ class NativeLinux(unittest.TestCase):
                     result = driver.measure_native_input(desktop, pathlib.Path('/owned/app'), 123)
                 self.assertEqual(len(result['samples_ms']), 64)
                 self.assertEqual(desktop.run.call_count, 64)
+                self.assertEqual(len(result['slow_dispatch_completions']), 64 if posting > 0.1 else 0)
+                self.assertEqual(result['slow_dispatch_observations'], [])
                 for sample, preflight, posted, ack in zip(result['samples_ms'], result['foreground_check_ms'],
                         result['event_post_ms'], result['acknowledgment_wait_ms']):
                     self.assertAlmostEqual(preflight, 200)

@@ -339,10 +339,39 @@ def observe_utf8_input(desktop, app_dir, output, report):
     desktop.screenshot(output / 'french-utf8-pasted.png')
 
 
+def thread_observation(pid):
+    """Read only the owned app's main thread; no attach or scheduling changes."""
+    root = pathlib.Path('/proc') / str(pid) / 'task' / str(pid)
+    try:
+        fields = (root / 'stat').read_text().rsplit(')', 1)[1].split()
+        runtime, queued, slices = map(int, (root / 'schedstat').read_text().split())
+        return {'state': fields[0], 'cpu_ticks': int(fields[11]) + int(fields[12]),
+            'runtime_ns': runtime, 'runqueue_ns': queued, 'timeslices': slices,
+            'wait_channel': (root / 'wchan').read_text().strip()[:128]}
+    except (OSError, ValueError, IndexError) as error:
+        return {'unavailable': type(error).__name__}
+
+
+def scheduler_observation():
+    result = {}
+    files = {name: pathlib.Path('/sys/fs/cgroup') / name
+        for name in ('cpu.max', 'cpu.stat', 'cpu.pressure', 'io.pressure')}
+    files['sched_schedstats'] = pathlib.Path('/proc/sys/kernel/sched_schedstats')
+    for name, path in files.items():
+        try:
+            with path.open() as stream:
+                result[name] = stream.read(4096)
+        except OSError as error:
+            result[name] = {'unavailable': type(error).__name__}
+    return result
+
+
 def measure_native_input(desktop, app_dir, app_pid):
     samples, foreground_ms, posting_ms, acknowledgment_ms = [], [], [], []
+    slow, completed_slow, scheduler_before = [], [], scheduler_observation()
     for index in range(64):
         expected = 'x' if index % 2 == 0 else ''
+        thread_before = thread_observation(app_pid)
         guard_start = time.monotonic()
         assert desktop.active_pid() == app_pid, 'native input lost foreground target'
         start = time.monotonic()
@@ -352,6 +381,7 @@ def measure_native_input(desktop, app_dir, app_pid):
             if desktop.session == 'x11' else ['wtype', '-k', key])
         posted = time.monotonic()
         posting_ms.append((posted - start) * 1000)
+        next_diagnostic_ms = 40
         while True:
             value = state(app_dir)
             elapsed = (time.monotonic() - start) * 1000
@@ -359,12 +389,24 @@ def measure_native_input(desktop, app_dir, app_pid):
             if value and value[0] == expected:
                 samples.append(elapsed)
                 acknowledgment_ms.append((time.monotonic() - posted) * 1000)
+                if elapsed >= 40:
+                    # Capture after the measured endpoint even if this observer
+                    # resumed only after the app had already acknowledged.
+                    completed_slow.append({'sample': index, 'elapsed_ms': elapsed,
+                        'before': thread_before, 'after': thread_observation(app_pid)})
                 break
+            if elapsed >= next_diagnostic_ms and len(slow) < 128:
+                slow.append({'sample': index, 'elapsed_ms': elapsed,
+                    'before': thread_before, 'during': thread_observation(app_pid)})
+                next_diagnostic_ms = elapsed + 10
             time.sleep(0.001)
     return {'samples_ms': samples, 'p95_ms': sorted(samples)[60],
         'foreground_check_ms': foreground_ms, 'event_post_ms': posting_ms,
         'acknowledgment_wait_ms': acknowledgment_ms,
         'total_with_foreground_ms': [sample + guard for sample, guard in zip(samples, foreground_ms)],
+        'slow_dispatch_observations': slow, 'slow_dispatch_limit': 128,
+        'slow_dispatch_completions': completed_slow,
+        'scheduler_before': scheduler_before, 'scheduler_after': scheduler_observation(),
         'method': 'native-input-v3: pre-native-post (including injector process) to actual edited-query/model/20ms-rendezvous acknowledgment; foreground checked before timing'}
 
 
