@@ -1,5 +1,5 @@
 {
-  "date": "2026-10-23",
+  "date": "2026-10-24",
   "targets": [
     "aarch64-apple-darwin",
     "x86_64-apple-darwin",
@@ -65,6 +65,12 @@
         "thiserror 2.0.21",
         "windows-sys 0.61.2"
       ]
+    },
+    {
+      "name": "raw-window-handle",
+      "version": "0.6.2",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "checksum": "20675572f6f24e9e76ef639bc5552774ed45f1c30e2951e1e99c59888861c539"
     },
     {
       "name": "rfd",
@@ -278,7 +284,7 @@
     "cargo-llvm-cov": "0.9.1",
     "cargo-fuzz": "0.13.2"
   },
-  "gui_lock_sha256": "abd9ff36a4ca272f07253d0103edbd70ac369462d46ebb81f641fbc9d6b66a76",
+  "gui_lock_sha256": "55d6029b8285f1e126703eb4e9baa677b9f8008e841ac9d74a2d34802ae8aeee",
   "slint_license": {
     "route": "LicenseRef-Slint-Royalty-free-2.0",
     "attribution": "AboutSlint in a top-level About screen",

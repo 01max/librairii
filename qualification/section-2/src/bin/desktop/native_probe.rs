@@ -1,5 +1,6 @@
 //! Test-only rendezvous for observing real native dialogs from another process.
 use super::Spike;
+use raw_window_handle::{HasDisplayHandle, HasWindowHandle};
 use slint::{ComponentHandle, Model};
 use std::cell::{Cell, RefCell};
 use std::path::{Path, PathBuf};
@@ -89,6 +90,18 @@ impl Probe {
                 );
                 let ui = weak.upgrade().expect("native probe component");
                 if phase.get() == 0 && started.elapsed() >= Duration::from_millis(300) {
+                    // show() and an elapsed timer do not establish native-window
+                    // readiness. RFD silently drops unavailable parent handles.
+                    let parent = ui.window().window_handle();
+                    let (Ok(window), Ok(display)) =
+                        (parent.window_handle(), parent.display_handle())
+                    else {
+                        return;
+                    };
+                    recorder.write(
+                        "parent-handle.txt",
+                        &format!("{:?}\n{:?}", window.as_raw(), display.as_raw()),
+                    );
                     phase.set(1);
                     if recorder.case != "early-settings" {
                         ui.invoke_focus_search();

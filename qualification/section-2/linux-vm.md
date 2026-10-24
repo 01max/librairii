@@ -71,3 +71,14 @@ It does not open a PAM/login scope. All four exact services must return success
 and their observed cgroups must disappear; failure also stops only that owned
 unit. The original command process-group guard and all application worker/fixture
 checks remain intact. Fresh native execution must validate the correction.
+
+The follow-up at `73db6d2` / run40074390813 retires the desktop service correctly
+but retains an unparented folder-cancel dialog: its real portal request has an
+empty parent, so the strict parent checks fail despite correct cancellation and
+normal app shutdown. Artifact12552876859 ZIP SHA256 is
+`cbe1667b20c23fa3326ab8d4febef4ceed654abdd47e932bb24ff4dbeaaa72e6`.
+The automatic probe previously assumed300ms after startup meant a native window
+existed. It now waits for the public native window/display handles before
+invoking the callback and retains both raw handle descriptions. RFD's parent
+setter silently ignores unavailable handles. No actual dialog is retried and
+every original parent/PID/transient/protocol assertion remains mandatory.

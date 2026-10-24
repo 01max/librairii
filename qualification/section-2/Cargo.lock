@@ -2360,6 +2360,7 @@ version = "0.0.0"
 dependencies = [
  "image",
  "muda",
+ "raw-window-handle",
  "rfd",
  "rusqlite",
  "serde_json",
