@@ -180,3 +180,14 @@ release executable runs this on each native target. Fixture creation, encoding
 and cleanup are outside the measured interval; fixture retirement is mandatory.
 This is the retained load/full-decode budget, separate from synthetic48×64
 thumbnail-queue and OS-input observations. Fresh native measurements are pending.
+
+## Additional initial regression ceilings
+
+The identified-host measurements above support additional startup-marker≤1000ms,
+sustained idleCPU≤5% ofone core, peakRSS≤512MiB and verified tar archive≤32MiB.
+These round ceilings leave roughly2–3× margin over the recorded maxima (normal
+andCPU backends, ARM/Intel/Linux). They are initial spike regression ceilings,
+not claims of p95 from three runs or physical first-presentation measurements.
+Every warmup and measured run must satisfy them; failures remain in the report
+without sample substitution. Actual native keyboard100ms p95, expansion/usable
+navigation3000ms and retained24-artwork50ms p95 remain separate unchanged gates.

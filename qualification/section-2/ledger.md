@@ -517,3 +517,11 @@ retains the panic and failed report. The separate observer repair records only
 actual key state/physical/logical identity/repeat plus full IME events, with a
 finite1MiB cap sized for21 full keyboard-navigation trials. All events still
 propagate unchanged; no timing deadline, sample or assertion is removed.
+
+Task2.9 additional ceilings: startup owned readiness marker1000ms, sustained idle
+5% ofone core, peakRSS512MiB, verified tar32MiB. These round regression ceilings
+use the identified historical normal/CPU host maxima and explicit margin; they
+are not first-pixel/human latency claims. Every measured process and warmup is
+enforced. Existing100/3000/50ms native input/navigation/artwork budgets stay
+unchanged and require their own actual reports. New rejection tests include
+missing/nonfinite/over-limit observations. Fresh three-target execution pending.

@@ -32,6 +32,18 @@ class ResourceMeasurement(unittest.TestCase):
                              'cpu_seconds': n / 40, 'rss_bytes': 90_000_000, 'collection_seconds': 0.002}
                             for n in range(0, 49)]}
 
+    def test_additional_budgets_reject_missing_nonfinite_and_over_limit_observations(self):
+        analysis = {'launch_to_ready_marker_ms': 300, 'idle': {'cpu_percent_one_core': 1.5},
+            'native_time': {'peak_rss_bytes': 280000000}}
+        distribution = {'archive': {'bytes': 16000000}}
+        self.assertTrue(all(resources.budget_checks(analysis, distribution).values()))
+        for name, value in (('launch_to_ready_marker_ms', 1001), ('launch_to_ready_marker_ms', float('nan'))):
+            self.assertFalse(all(resources.budget_checks({**analysis, name: value}, distribution).values()))
+        self.assertFalse(all(resources.budget_checks({**analysis, 'idle': {'cpu_percent_one_core': 5.1}}, distribution).values()))
+        self.assertFalse(all(resources.budget_checks({**analysis, 'native_time': {'peak_rss_bytes': 536870913}}, distribution).values()))
+        self.assertFalse(all(resources.budget_checks(analysis, {'archive': {'bytes': 33554433}}).values()))
+        self.assertFalse(all(resources.budget_checks({}, distribution).values()))
+
     def test_native_peak_units_are_converted_to_bytes(self):
         for system in ('Darwin', 'Linux'):
             report = resources.analyze(self.fixture(system), system)

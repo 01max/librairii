@@ -4,6 +4,7 @@ import argparse
 import hashlib
 import importlib.util
 import json
+import math
 import os
 import pathlib
 import platform
@@ -100,6 +101,22 @@ def analyze(run, system):
     return {'checks': checks, 'measurement': 'pass' if all(checks.values()) else 'fail',
             'native_time': native, 'idle': idle, 'active_surface': surface,
             'launch_to_ready_marker_ms': run['launch_to_ready_marker_ms']}
+
+
+# Initial regression ceilings derived from the recorded identified-host maxima,
+# not replacements for retained input/artwork/query/Shelf budgets.
+ADDITIONAL_BUDGETS = {'launch_to_ready_marker_ms': 1000,
+    'idle_cpu_percent_one_core': 5, 'peak_rss_bytes': 512 * 1024 * 1024,
+    'archive_bytes': 32 * 1024 * 1024}
+
+
+def budget_checks(analysis, distribution):
+    values = {'launch_to_ready_marker_ms': analysis.get('launch_to_ready_marker_ms'),
+        'idle_cpu_percent_one_core': (analysis.get('idle') or {}).get('cpu_percent_one_core'),
+        'peak_rss_bytes': analysis.get('native_time', {}).get('peak_rss_bytes'),
+        'archive_bytes': distribution.get('archive', {}).get('bytes')}
+    return {name: type(value) in (int, float) and math.isfinite(value)
+        and 0 <= value <= ADDITIONAL_BUDGETS[name] for name, value in values.items()}
 
 
 def run_probe(binary, backend, system, timeout=40):
@@ -295,20 +312,21 @@ def measure(package, output, archive, disk_image, samples, backends):
                          'diagnostics': 'SLINT_DEBUG_PERFORMANCE=refresh_lazy,console'},
               'runs': {}, 'summary': {}, 'automated_resource_measurement': 'pending',
               'physical_input_qualified': False, 'first_presentation_qualified': False,
-              'retained_performance_budgets_qualified': False, 'additional_budgets_set': False,
+              'retained_performance_budgets_qualified': False, 'additional_budgets_set': True, 'additional_budgets': ADDITIONAL_BUDGETS,
               'toolkit_selected': False}
     destination = output / 'resource-measurements.json'
     for backend in backends:
         runs = report['runs'][backend] = []
         for index in range(samples + 1):
             run = run_probe(binary, backend, system)
+            run['additional_budget_checks'] = budget_checks(run['analysis'], distribution)
             run['kind'] = 'warmup' if index == 0 else 'measured'
             runs.append(run)
             destination.write_text(json.dumps(report, indent=2) + '\n')
             print(f'{backend} {run["kind"]} {index}: {run["analysis"]["measurement"]}', flush=True)
-            if run['analysis']['measurement'] != 'pass':
+            if run['analysis']['measurement'] != 'pass' or not all(run['additional_budget_checks'].values()):
                 break  # Keep the failure, do not substitute a retry/sample.
-        measured = [run for run in runs if run['kind'] == 'measured' and run['analysis']['measurement'] == 'pass']
+        measured = [run for run in runs if run['kind'] == 'measured' and run['analysis']['measurement'] == 'pass' and all(run['additional_budget_checks'].values())]
         if len(measured) == samples:
             summary = report['summary'][backend] = {'samples': samples}
             values = {
