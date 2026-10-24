@@ -2,6 +2,7 @@
 """Package the synthetic spike with local macOS bundle sealing; no Developer ID or notarization."""
 import argparse
 import hashlib
+import importlib.util
 import json
 import pathlib
 import platform
@@ -12,6 +13,9 @@ import tarfile
 
 HERE = pathlib.Path(__file__).resolve().parent
 REPO = HERE.parent.parent
+spec = importlib.util.spec_from_file_location('native_notices', HERE / 'native-notices.py')
+native_notices = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(native_notices)
 TARGETS = {
     'aarch64-apple-darwin': ('Darwin', 'arm64'),
     'x86_64-apple-darwin': ('Darwin', 'x86_64'),
@@ -93,11 +97,12 @@ def main():
             entries.append({'file': str((dest / item.name).relative_to(output)), 'sha256': sha(item)})
         inventory.append({'name': package['name'], 'version': package['version'],
             'license': package.get('license'), 'source': package.get('source'), 'notices': entries})
-    # rust-skia distributes the native library's BSD notice in the build output.
+    # Cargo's Rust notices do not inventory Skia's native dependencies. Include
+    # the pinned conservative supplement before the final macOS resource seal.
     native = list(binary.parent.glob('build/skia-bindings-*/out/skia/LICENSE_SKIA'))
-    if not native or len({sha(path) for path in native}) != 1:
-        raise RuntimeError('missing or conflicting native Skia licenses beside the build output')
-    shutil.copy2(native[0], notices / 'LICENSE_SKIA')
+    bindings = [package for package in metadata['packages']
+        if package['id'] in resolved and package['name'] == 'skia-bindings']
+    native_notice_inventory = native_notices.include(HERE / 'notices' / 'native-skia', notices, bindings, native)
     (output / 'dependencies.json').write_text(json.dumps(inventory, indent=2) + '\n')
     if platform.system() == 'Darwin':
         resources = app / 'Resources'
@@ -113,7 +118,8 @@ def main():
         'binary_sha256': sha(executable), 'lock_sha256': sha(HERE / 'Cargo.lock'),
         'architecture': architecture.strip(), 'toolkit_selected': False,
         'qualification': 'pending operator observations and independent final gate',
-        'notice_scope': 'registry top-level/declared notices plus native Skia BSD; full production native notice audit remains open'}
+        'native_notices': native_notice_inventory,
+        'notice_scope': 'registry top-level/declared notices plus a pinned conservative native Skia supplement; final per-target native distribution audit remains open'}
     if platform.system() == 'Darwin':
         manifest['macos_signing'] = {'identity': 'ad-hoc', 'bundle_integrity_verified': True,
             'developer_id': False, 'notarized': False, 'gatekeeper_acceptance': 'not_claimed'}

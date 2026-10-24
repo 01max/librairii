@@ -317,3 +317,15 @@ bounded read-only item traversal and requires one exact matching item before
 the action. Missing/duplicate items or incomplete traversal fail before the
 single item press, making the documented ambiguity guarantee concrete. The
 legacy no-submenu route retains its original first-match behavior.
+
+## 2026-10-24 conservative native notice supplement (2.13)
+
+Cargo's Rust notices plus one Skia BSD text omitted the native source-graph
+supplement. The new offline inventory/helper packages pinned original notices
+and the IJG binary acknowledgment for ten native components, including separate
+skcms, Chromium/ARM/Intel, VMA and Khronos terms. It verifies the actual binding
+version/Skia ref, native build BSD and complete notice bytes before copying;
+macOS resources are sealed afterward. Four focused tests and a real offline
+Cargo/native-output verification pass. Archive member presence is not treated
+as final-executable linkage, and final per-target distribution review remains
+open. See native-notices.md for scope and source inventory.
