@@ -553,3 +553,8 @@ Sway border before native resizing, so requested container/client dimensions
 match the exact content-size assertion. Actual mixed-scale witnesses additionally
 require preserved1280×800 logical size and corresponding physical pixels; a
 shrunken viewport cannot pass as a successful transition.
+
+Independent2.5 display protocol correction: external snapshot requests now use
+an owned sibling temporary file and atomic replace. The20ms reader can no longer
+observe truncation/partial names; its strict name guard and completed-frame
+publication remain unchanged.

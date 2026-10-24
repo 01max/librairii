@@ -46,7 +46,9 @@ def inspect(package, archive, helper, output):
         def geometry():
             return json.loads((app_dir / 'geometry.json').read_text())
         def frame(name):
-            (app_dir / 'capture-request').write_text(name)
+            request = app_dir / '.capture-request.tmp'
+        request.write_text(name)
+        request.replace(app_dir / 'capture-request')
             observer.wait(lambda: (app_dir / (name + '.png')).is_file())
             observer.capture(name)
         for width, height in ((560, 400), (900, 760), (1280, 900)):

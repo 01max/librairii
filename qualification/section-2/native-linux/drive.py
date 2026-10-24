@@ -610,7 +610,9 @@ def observe_display(desktop, root):
     def geometry():
         return json.loads((app_dir / 'geometry.json').read_text())
     def frame(name):
-        (app_dir / 'capture-request').write_text(name)
+        request = app_dir / '.capture-request.tmp'
+        request.write_text(name)
+        request.replace(app_dir / 'capture-request')
         wait_for(lambda: (app_dir / (name + '.png')).is_file())
         desktop.screenshot(evidence / (name + '-native.png'))
     def sway(command):
