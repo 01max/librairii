@@ -122,7 +122,8 @@ class Observer:
             json.dumps({'pid': self.pid, **request}, ensure_ascii=False)], os.environ.copy(),
             self.output / f'command-{sequence:04}-{action}.log', timeout=12)
         if not common.wayland.passed(result):
-            raise RuntimeError(action + ' failed: ' + result['output'][:2000])
+            raise RuntimeError(action + ' failed: ' + json.dumps({key: result[key]
+                for key in ('returncode', 'errors')}) + '; ' + result['output'][:2000])
         return json.loads(result['output'])
 
     def snapshot(self, name=None, document=None):

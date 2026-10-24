@@ -39,3 +39,10 @@ The test rendezvous now queues its native callback through Slint's public
 event-loop API after the timer returns. Native parenting, exact callbacks,
 OS events and every observer assertion remain required; fresh native execution
 must establish whether that correction works.
+
+The same run's Intel observer also fails before observing an attached sheet:
+its bounded AX snapshot command times out while the app remains blocked. No
+timer panic is present in its retained app log, so that separate failure is not
+attributed to the ARM panic. Both its permission inventory and native result
+are retained in artifact12553497370, ZIP SHA256
+`625322f3ea8f936995d41cafa4600eb68b168d816c49efda24b63aa791cd8ea5`.
