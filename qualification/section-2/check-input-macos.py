@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Observe dead-key and Japanese IME input on the disposable native CI account."""
+"""Qualify French/Latin UTF-8 editing; Japanese IME is an explicit optional diagnostic."""
 import argparse
 import hashlib
 import importlib.util
@@ -14,13 +14,15 @@ HERE = pathlib.Path(__file__).resolve().parent
 spec = importlib.util.spec_from_file_location('input_native_macos', HERE / 'check-native-macos.py')
 native = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(native)
-REQUIRED = {'french_dead_key_and_azerty', 'japanese_preedit', 'japanese_candidate_commit',
-    'japanese_cancel_without_commit', 'input_sources_restored', 'normal_shutdown', 'fixture_removed'}
+REQUIRED = {'french_dead_key_and_azerty', 'native_select_all_and_clear',
+    'input_sources_restored', 'normal_shutdown', 'fixture_removed'}
+JAPANESE_REQUIRED = {'japanese_preedit', 'japanese_candidate_commit', 'japanese_cancel_without_commit'}
 
 
 def passed(report, binary_sha):
+    required = REQUIRED | (JAPANESE_REQUIRED if report.get('include_japanese') is True else set())
     return (report.get('binary_sha256') == binary_sha and report.get('errors') == []
-        and report.get('returncode') == 0 and REQUIRED <= report.get('checks', {}).keys()
+        and report.get('returncode') == 0 and type(report.get('include_japanese')) is bool and required <= report.get('checks', {}).keys()
         and all(report['checks'].values()) and report.get('full_input_display_qualified') is False)
 
 
@@ -86,7 +88,7 @@ def restore_sources(observer, before):
     return after
 
 
-def inspect(package, archive, helper, output):
+def inspect(package, archive, helper, output, *, include_japanese=False):
     manifest = json.loads((package / 'manifest.json').read_text())
     if (platform.system() != 'Darwin' or os.environ.get('GITHUB_ACTIONS') != 'true'
             or os.environ.get('TASK2_INPUT_CI') != '1'
@@ -100,7 +102,9 @@ def inspect(package, archive, helper, output):
     report = {'schema': 1, 'source': manifest['source'], 'target': manifest['target'],
         'binary_sha256': manifest['binary_sha256'], 'archive': archive_id,
         'checks': {}, 'errors': [], 'returncode': None, 'full_input_display_qualified': False,
-        'toolkit_selected': False, 'method': 'native-CGEvent-TIS-Winit-IME-AX-and-service-readiness-v3'}
+        'toolkit_selected': False, 'method': 'native-French-Latin-UTF8-and-AX-editing-v4',
+        'include_japanese': include_japanese,
+        'deferred_qualification': ['Japanese IME', 'Chinese IME', 'Arabic input/shaping']}
     app = subprocess.Popen([str(binary), '--native-probe=' + str(rendezvous), '--native-case=input'],
         env={**os.environ, 'SLINT_BACKEND': 'winit-skia-software'}, stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT, start_new_session=True)
@@ -116,15 +120,16 @@ def inspect(package, archive, helper, output):
         before = observer.call('input-sources')
         report['input_sources_before'] = before
         sources = sources_by_id(before)
-        japanese = [s for s in sources.values() if s['id'].startswith('com.apple.inputmethod.Kotoeri.')
-            and s['id'].endswith('.Japanese') and s['select_capable']]
-        if len(japanese) != 1:
-            raise ValueError('exact installed Japanese Roman-input mode required')
-        japanese = japanese[0]
-        parents = [s for s in sources.values() if s.get('bundle') == japanese.get('bundle')
-            and 'InputMethodModeEnabled' in s['type']]
-        if len(parents) != 1:
-            raise ValueError('Japanese input method parent is not unique')
+        if include_japanese:
+            japanese = [s for s in sources.values() if s['id'].startswith('com.apple.inputmethod.Kotoeri.')
+                and s['id'].endswith('.Japanese') and s['select_capable']]
+            if len(japanese) != 1:
+                raise ValueError('exact installed Japanese Roman-input mode required')
+            japanese = japanese[0]
+            parents = [s for s in sources.values() if s.get('bundle') == japanese.get('bundle')
+                and 'InputMethodModeEnabled' in s['type']]
+            if len(parents) != 1:
+                raise ValueError('Japanese input method parent is not unique')
 
         def select(source):
             current = sources_by_id(observer.call('input-sources'))[source['id']]
@@ -160,56 +165,59 @@ def inspect(package, archive, helper, output):
         # The French layout maps physical0 to Q even with Command held. Use
         # the actual native menu so clearing cannot accidentally post Quit.
         clear_search('êé az', 'french')
-        parent = parents[0]
-        if not sources_by_id(observer.call('input-sources'))[parent['id']]['enabled']:
-            observer.call('input-source', source=parent['id'], operation='enable')
-        select(japanese)
-        report['japanese_method_observations'] = []
-        def method_launched():
-            observed = observer.call('input-method-status', source=japanese['id'])
-            if len(report['japanese_method_observations']) < 16:
-                report['japanese_method_observations'].append(observed)
-            return observed if japanese_launch_notice(observed, japanese['id']) else None
-        try:
-            report['japanese_launch_notice'] = observer.wait(method_launched, timeout=2)
-        except TimeoutError:
-            # Some applications never post DidFinishLaunching. This optional
-            # diagnostic cannot substitute for, or veto, actual IME behavior.
-            report['japanese_launch_notice'] = None
-        offset = len(trace())
-        # n i h o n n through the actual OS input method. The final doubled n
-        # completes ん; one trailing n remains live Roman input (にほn).
-        # The public Winit trace
-        # must show preedit before commit; final Unicode text alone cannot pass.
-        observer.call('keycodes', codes=[45, 34, 4, 31, 45, 45])
-        preedit = observer.wait(lambda: (t := trace()[offset:]) and 'Preedit("にほん"' in t and t)
-        report['japanese_preedit_trace'] = preedit
-        report['japanese_preedit_state'] = native.state(rendezvous)
-        if report['japanese_preedit_state'][0] != '' or 'Commit(' in preedit:
-            raise ValueError('Japanese preedit prematurely changed committed Search text')
-        observer.capture('japanese-preedit')
-        report['checks']['japanese_preedit'] = True
-        observer.call('key', key='space')
-        observer.capture('japanese-candidate')
-        observer.call('key', key='return')
-        report['japanese_committed_state'] = query('日本')
-        report['japanese_commit_trace'] = observer.wait(lambda:
-            (t := trace()[offset:]) and 'Commit("日本")' in t and t)
-        report['checks']['japanese_candidate_commit'] = True
-        observer.capture('japanese-committed')
-        clear_search('日本', 'japanese')
-        offset = len(trace())
-        observer.call('keycodes', codes=[45, 34, 4, 31, 45, 45])
-        observer.wait(lambda: 'Preedit("にほん"' in trace()[offset:])
-        escape_offset = len(trace())
-        observer.call('key', key='escape')
-        observer.call('key', key='escape')
-        cancelled = observer.wait(lambda: (t := trace())
-            and composition_cancelled(t[offset:], t[escape_offset:]) and t[offset:])
-        report['japanese_cancelled_state'] = query('')
-        report['japanese_cancel_trace'] = cancelled
-        report['japanese_post_escape_trace'] = trace()[escape_offset:]
-        report['checks']['japanese_cancel_without_commit'] = True
+        report['checks']['native_select_all_and_clear'] = True
+        if include_japanese:
+            parent = parents[0]
+            if not sources_by_id(observer.call('input-sources'))[parent['id']]['enabled']:
+                observer.call('input-source', source=parent['id'], operation='enable')
+            select(japanese)
+            report['japanese_method_observations'] = []
+            def method_launched():
+                observed = observer.call('input-method-status', source=japanese['id'])
+                if len(report['japanese_method_observations']) < 16:
+                    report['japanese_method_observations'].append(observed)
+                return observed if japanese_launch_notice(observed, japanese['id']) else None
+            try:
+                report['japanese_launch_notice'] = observer.wait(method_launched, timeout=2)
+            except TimeoutError:
+                # Some applications never post DidFinishLaunching. This optional
+                # diagnostic cannot substitute for, or veto, actual IME behavior.
+                report['japanese_launch_notice'] = None
+            offset = len(trace())
+            # n i h o n n through the actual OS input method. The final doubled n
+            # completes ん; one trailing n remains live Roman input (にほn).
+            # The public Winit trace
+            # must show preedit before commit; final Unicode text alone cannot pass.
+            observer.call('keycodes', codes=[45, 34, 4, 31, 45, 45])
+            preedit = observer.wait(lambda: (t := trace()[offset:]) and 'Preedit("にほん"' in t and t)
+            report['japanese_preedit_trace'] = preedit
+            report['japanese_preedit_state'] = native.state(rendezvous)
+            if report['japanese_preedit_state'][0] != '' or 'Commit(' in preedit:
+                raise ValueError('Japanese preedit prematurely changed committed Search text')
+            observer.capture('japanese-preedit')
+            report['checks']['japanese_preedit'] = True
+            observer.call('key', key='space')
+            observer.capture('japanese-candidate')
+            observer.call('key', key='return')
+            report['japanese_committed_state'] = query('日本')
+            report['japanese_commit_trace'] = observer.wait(lambda:
+                (t := trace()[offset:]) and 'Commit("日本")' in t and t)
+            report['checks']['japanese_candidate_commit'] = True
+            observer.capture('japanese-committed')
+            clear_search('日本', 'japanese')
+            offset = len(trace())
+            observer.call('keycodes', codes=[45, 34, 4, 31, 45, 45])
+            observer.wait(lambda: 'Preedit("にほん"' in trace()[offset:])
+            escape_offset = len(trace())
+            observer.call('key', key='escape')
+            observer.call('key', key='escape')
+            cancelled = observer.wait(lambda: (t := trace())
+                and composition_cancelled(t[offset:], t[escape_offset:]) and t[offset:])
+            report['japanese_cancelled_state'] = query('')
+            report['japanese_cancel_trace'] = cancelled
+            report['japanese_post_escape_trace'] = trace()[escape_offset:]
+            report['checks']['japanese_cancel_without_commit'] = True
+
     except Exception:
         report['errors'].append(traceback.format_exc())
         report['last_app_state'] = native.state(rendezvous)
@@ -250,8 +258,9 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     for name in ('package', 'archive', 'helper', 'output'):
         parser.add_argument('--' + name, type=pathlib.Path, required=True)
+    parser.add_argument('--include-japanese', action='store_true', help='Run the deferred Japanese diagnostic explicitly; not part of the default gate')
     args = parser.parse_args()
     result = inspect(args.package.resolve(strict=True), args.archive.resolve(strict=True),
-        args.helper.resolve(strict=True), args.output.resolve())
+        args.helper.resolve(strict=True), args.output.resolve(), include_japanese=args.include_japanese)
     print(json.dumps({'result': result['result'], 'errors': result['errors']}))
     raise SystemExit(0 if result['result'] == 'pass' else 1)

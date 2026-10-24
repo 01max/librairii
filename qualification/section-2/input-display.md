@@ -1,5 +1,40 @@
 # Input / display gate (2.5, P14/P53/P56)
 
+## Active owner scope, 2026-10-24
+
+The owner prioritizes correct UTF-8 data handling and French/Latin desktop input.
+Japanese, Chinese and Arabic-specific input, composition and shaping
+qualification are deferred and do not gate this Task2 PR. Valid UTF-8 strings,
+filenames and clipboard data remain lossless; no character restrictions or
+normalization/storage changes follow from this qualification scope decision.
+
+The default native Mac method v4 requires exact French dead-key/AZERTY `êé az`,
+actual owned full AX selection and Delete clearing, complete source restoration
+and normal worker/fixture retirement. Japanese installation, selection and
+composition are not prerequisites. The earlier diagnostic remains explicitly
+available with `--include-japanese`; it must satisfy its original assertions
+when requested. The uncommitted native reference experiment was withdrawn.
+Historical Japanese failures below stay failed under their original methods;
+they are not reclassified as passes. Broader display and Linux input coverage
+remain separate. Fresh native v4 execution is required.
+
+The Linux native early-Settings case now has an additional French/Latin input
+route in each private X11/Wayland desktop. It sends native keysyms
+`dead_circumflex`, `e`, `eacute`, space, `a`, `z` in one keymap session and
+requires exact `êé az` in the real Search callback. This is XTest/Wayland virtual
+keyboard input, not physical AZERTY hardware or an injected Unicode string.
+Native Select All/Copy/Cut/Paste must empty and restore that exact UTF-8 text.
+The report retains actual typed/cut/pasted states and screenshots; both new
+checks are mandatory for fresh native-session success. The same driver runs
+in the offline VM. Earlier sixteen-case reports retain their original scope.
+Fresh native execution is required for this additional input/clipboard evidence.
+
+Remaining active checks include composed/decomposed Latin text, whitespace,
+undo/redo, caret and selection behavior; long French labels and reachable actions
+at compact/intermediate/wide sizes; supported display scales and mixed-monitor
+transitions; contrast, visible focus and OS reduced-motion behavior. Current
+input checks alone do not qualify these display and editing cases.
+
 ## Automated macOS composition continuation (2026-10-24)
 
 `check-input-macos.py` is restricted to the disposable hosted native macOS CI
@@ -136,29 +171,10 @@ Every actual preedit/candidate/commit/cancel assertion still runs afterward.
 This setup diagnostic requires fresh native execution and does not claim that
 service startup caused Intel's failure. No additional capability gate is added.
 
-## Historical initial checklist
-
-Status: **pending actual observation on A/I/L/W**, 2026-10-20, librairii-4.
-Native input access was rejected for the spike app (see accessibility.md).
-Synthetic French/Japanese/Chinese strings exist in memory and the process runs;
-this does not establish rendered glyph correctness, composition or text editing.
-
-Record OS, keyboard layout and IME exact versions, monitor models/scales, renderer,
-app commit/hash and operator. Use only synthetic filenames such as
-`Été é 日本語 故事.zip` in a temporary folder. Observe and retain:
-
-* French AZERTY and dead-key sequences, composed/decomposed text, Japanese/Chinese
-  preedit/candidate selection/commit/cancel; typing whitespace must remain intact.
-* Select all, copy/cut/paste/undo/redo, caret movement, selection and clipboard
-  roundtrip through the native editor. Pasting Unicode is not an IME test.
-* Long French labels; narrow 560 px / intermediate 850 and 1180 px / short windows;
-  independently scrolling areas and reachable navigation. The current spike keeps
-  desktop panels present; narrow disclosure is unfinished, not a passing layout.
-* 100/125/150/200% text/display scaling as applicable, real mixed-monitor moves,
-  resizing during work and dialog ownership; record clipping and scale transitions.
-* High contrast, focus visibility, non-color identification and OS reduced motion.
-  Static source/no animation does not verify OS preference integration.
-
-Do not change the user's system settings or keyboard configuration without the
-agreed interactive test setup. Missing monitors/IME/operator access remains an
-explicit resource requirement, not a simulated pass.
+At199c440/run40105190455 both Mac lanes still fail Japanese input; native
+adapter checks pass and Linux's full lane passes. Inspected ARM evidence records
+no application launch notice and ordinary Latin `nihonn`, with every original
+source restored and normal fixture retirement. All retained ARM input hashes
+verify. Artifact12564064382 ZIP SHA256 is
+`2949ca7c350a46b1a168e21050f2b40397caf27ad9182121fd4a1fe5adc5588a`.
+NSRunningApplication's empty list does not establish that no IME service exists.

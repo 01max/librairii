@@ -99,7 +99,8 @@ print("missing family empty; installed French present; selected source unchanged
 
     def test_missing_or_failed_input_or_restoration_witness_refuses_qualification(self):
         report = {'binary_sha256': 'expected', 'errors': [], 'returncode': 0,
-            'checks': dict.fromkeys(observer.REQUIRED, True), 'full_input_display_qualified': False}
+            'checks': dict.fromkeys(observer.REQUIRED, True), 'full_input_display_qualified': False,
+            'include_japanese': False}
         self.assertTrue(observer.passed(report, 'expected'))
         for key in observer.REQUIRED:
             changed = copy.deepcopy(report)
@@ -108,8 +109,22 @@ print("missing family empty; installed French present; selected source unchanged
             changed['checks'][key] = False
             self.assertFalse(observer.passed(changed, 'expected'))
         for changed in ({'binary_sha256': 'other'}, {'errors': ['restore failure']},
-                {'returncode': 1}, {'full_input_display_qualified': True}):
+                {'returncode': 1}, {'full_input_display_qualified': True}, {'include_japanese': None}):
             self.assertFalse(observer.passed({**report, **changed}, 'expected'))
+
+    def test_deferred_japanese_does_not_gate_latin_but_an_explicit_diagnostic_cannot_claim_missing_evidence(self):
+        report = {'binary_sha256': 'expected', 'errors': [], 'returncode': 0,
+            'checks': dict.fromkeys(observer.REQUIRED, True), 'full_input_display_qualified': False,
+            'include_japanese': False}
+        self.assertTrue(observer.passed(report, 'expected'))
+        report['include_japanese'] = True
+        self.assertFalse(observer.passed(report, 'expected'))
+        report['checks'].update(dict.fromkeys(observer.JAPANESE_REQUIRED, True))
+        self.assertTrue(observer.passed(report, 'expected'))
+        for name in observer.JAPANESE_REQUIRED:
+            changed = copy.deepcopy(report)
+            del changed['checks'][name]
+            self.assertFalse(observer.passed(changed, 'expected'))
 
     def test_source_inventory_requires_unique_identities_and_the_actual_current_source(self):
         source = {'id': 'original'}

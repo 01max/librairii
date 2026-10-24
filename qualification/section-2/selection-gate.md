@@ -1,5 +1,12 @@
 # Independent selection gate (2.13)
 
+Owner scope decision, 2026-10-24: prioritize UTF-8 correctness and French/Latin
+input. Japanese, Chinese and Arabic-specific input/IME/shaping qualification is
+deferred and no longer gates this Task2 PR. UTF-8 data and filename preservation
+remain required for all valid strings. Earlier CJK observations and failures
+below are historical evidence, without a new qualification claim. Current input
+scope and method are in [input-display.md](input-display.md).
+
 Owner scope exception, 2026-10-23: VoiceOver execution is excluded from the
 current Task 2 qualification/merge gate at the owner's explicit request. Record
 it as skipped, with spoken macOS accessibility unqualified. The exception does

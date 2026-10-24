@@ -351,3 +351,22 @@ ENOSPC compile failure; Swift compilation also passes. Fresh native CI remains
 required. Separately reviewed desktop setup corrections are da73c0e (real X11
 handshake/live Openbox registration) and ce35c7c (incomplete busy Finder reads).
 See linux-vm.md, native-macos.md and input-display.md for preserved failures.
+
+## 2026-10-24 owner language qualification scope (2.5)
+
+The owner prioritizes UTF-8/French-Latin and defers Japanese/Chinese/Arabic
+input/IME/shaping qualification. The default Mac v4 gate retains actual French
+dead-key/AZERTY input, explicitly required native full selection/clearing,
+restoration and normal retirement; Japanese setup/input runs only when the
+deferred diagnostic is explicitly requested. Tests distinguish the default
+scope from an explicitly requested diagnostic and reject missing witnesses.
+All101 recorder tests pass. The uncommitted native reference was withdrawn.
+Earlier failed runs retain their methods/verdicts; UTF-8 data handling and
+existing valid-string fixtures are unchanged. Fresh scoped native CI is required.
+
+The same2.5 continuation adds explicit Linux X11/Wayland dead-key/accent input
+and native UTF-8 clipboard round-trip checks to the early-Settings case. One
+native keysym sequence must produce `êé az`, then Copy/Cut/Paste must restore the
+actual value; no Unicode text payload supplies composition. New required checks
+reject incomplete session summaries; all eight focused Linux recorder tests pass.
+The private desktop/VM routes and existing deadlines/retirement remain unchanged.

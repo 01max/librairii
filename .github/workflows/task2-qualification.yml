@@ -179,7 +179,7 @@ jobs:
             --archive "target/task2-evidence/task2-$RUST_TARGET.tar.gz" \
             --helper "$RUNNER_TEMP/task2-native-macos" \
             --output target/task2-evidence/native-macos
-      - name: Observe French dead-key and Japanese IME input on the disposable macOS account
+      - name: Observe French UTF-8 dead keys and native editing on the disposable macOS account
         if: runner.os == 'macOS' && !cancelled() && steps.package.outcome == 'success'
         env:
           TASK2_INPUT_CI: '1'

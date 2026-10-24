@@ -191,6 +191,16 @@ class Desktop:
         else:
             self.run(['wtype', '-s', '200', '-d', '30', text, '-s', '100'])
 
+    def french_dead_keys(self):
+        # One native keymap session preserves compose state across ^ then e.
+        # No composed Unicode string or field-value setter supplies the result.
+        keys = ['dead_circumflex', 'e', 'eacute', 'space', 'a', 'z']
+        if self.session == 'x11':
+            self.run(['xdotool', 'key', '--clearmodifiers', '--delay', '30', *keys])
+        else:
+            self.run(['wtype', '-s', '200', '-d', '30',
+                *[argument for key in keys for argument in ('-k', key)], '-s', '100'])
+
     def nodes(self, root=None):
         context = getattr(self, 'context', None)
         if context is not None:
@@ -415,6 +425,24 @@ def one_case(desktop, name, kind, expected):
         desktop.text('0042')
         wait_for(lambda: (value := state(app_dir)) and value[:2] == ['0042', '1'])
         report['checks']['native_focus_restored_and_search_input'] = True
+        if kind == 'early-settings':
+            desktop.key('ctrl+a')
+            desktop.key('BackSpace')
+            wait_for(lambda: (value := state(app_dir)) and value[0] == '')
+            desktop.french_dead_keys()
+            report['utf8_key_input_state'] = wait_for(lambda:
+                (value := state(app_dir)) and value[0] == 'êé az' and value)
+            report['checks']['native_french_dead_key_and_utf8_input'] = True
+            desktop.screenshot(output / 'french-utf8-input.png')
+            desktop.key('ctrl+a')
+            desktop.key('ctrl+c')
+            desktop.key('ctrl+x')
+            report['utf8_cut_state'] = wait_for(lambda: (value := state(app_dir)) and value[0] == '' and value)
+            desktop.key('ctrl+v')
+            report['utf8_pasted_state'] = wait_for(lambda:
+                (value := state(app_dir)) and value[0] == 'êé az' and value)
+            report['checks']['native_utf8_clipboard_roundtrip'] = True
+            desktop.screenshot(output / 'french-utf8-pasted.png')
         (app_dir / 'finish').touch()
         report['returncode'] = app.wait(timeout=10)
         report['checks']['owned_shutdown'] = report['returncode'] == 0 and 'fixture_retired=true' in (app_dir / 'retired.txt').read_text()
@@ -442,7 +470,8 @@ def main():
     binary_sha = hashlib.sha256(pathlib.Path('/opt/librairii/qualification-desktop').read_bytes()).hexdigest()
     assert binary_sha == os.environ['EXPECTED_BINARY_SHA256']
     desktop = None
-    report = {'session': args.session, 'binary_sha256': binary_sha, 'cases': {}, 'errors': [], 'native_integration': 'fail'}
+    report = {'session': args.session, 'binary_sha256': binary_sha, 'cases': {}, 'errors': [], 'native_integration': 'fail',
+        'input_method': 'native-keysym-French-Latin-UTF8-v2'}
     try:
         desktop = Desktop(args.session, root)
         (root / 'versions.txt').write_text(desktop.run(['dpkg-query', '-W', '-f=${Package} ${Version}\n']))

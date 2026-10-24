@@ -13,6 +13,14 @@ Owner scope decision (2026-10-23): skip VoiceOver execution on macOS for this
 qualification. Record it as skipped by owner decision; no spoken macOS
 accessibility pass is inferred. Other checks below retain their scope.
 
+Owner scope decision (2026-10-24): UTF-8 correctness and French/Latin input are
+the active language qualification target. Japanese/Chinese/Arabic-specific
+input, IME and shaping checks below are deferred and non-gating. Preserve valid
+UTF-8 filenames/data; do not restrict characters. The native Mac CI input
+observer now changes/restores only the French layout by default. Its explicit
+Japanese diagnostic is optional. Existing CI-only source mutation remains
+restricted to disposable hosted accounts, with complete restoration required.
+
 Use a separate record for ARM macOS, **real Intel macOS**, Linux **X11**, and
 Linux **Wayland**. A hosted build or Rosetta run does not supply physical/AT
 qualification. macOS apps have an ad-hoc bundle integrity seal; they have no

@@ -120,7 +120,8 @@ class LinuxVM(unittest.TestCase):
         cases = {}
         for name in vm.native.CASES:
             required = {'owned_shutdown', 'fixture_removed', 'native_focus_restored_and_search_input'}
-            required |= ({'early_settings_delivered'} if name == 'early-settings' else
+            required |= ({'early_settings_delivered', 'native_french_dead_key_and_utf8_input',
+                'native_utf8_clipboard_roundtrip'} if name == 'early-settings' else
                 {'actual_file_manager_window_path', 'os_settings_accelerator'} if name == 'reveal' else
                 {'real_modal_dialog', 'one_real_portal_call', 'parent_identified', 'parent_associated',
                  'no_parent_rejection', 'actual_picker_result', 'os_settings_accelerator'})

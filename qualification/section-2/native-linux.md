@@ -177,3 +177,16 @@ Independent scoped review recomputes the18-sample failure and approves the
 longer fixed observation window with unchanged thresholds/deadline. All10
 resource-recorder regressions and Rust formatting pass locally. Product
 performance budgets remain unqualified. Fresh native CI validates this correction.
+
+## French/Latin UTF-8 input continuation (2.5, 2026-10-24)
+
+The native early-Settings case additionally sends a real dead-circumflex/e
+sequence and Latin accented/space/letter keysyms through one XTest or Wayland
+virtual-keyboard keymap session. Search must contain exact `êé az`. Native
+Select All/Copy/Cut/Paste then must empty and restore that same value. No field
+setter or composed UTF-8 key payload provides the result. Actual state snapshots
+and before/after clipboard screenshots are retained. Both checks are required
+in the new `native-keysym-French-Latin-UTF8-v2` session method, including offline
+VM reuse. This does not relabel earlier native-adapter reports or claim physical
+AZERTY hardware, CJK/Arabic input or broader display qualification. Fresh native
+execution remains required.
