@@ -210,3 +210,18 @@ The already selected libc0.2.191 supplies that public process clock; no dependen
 version/source/feature was upgraded. Independent review approves the measurement
 refinement, with fresh execution required. The original20-sample failure is not
 rescored. The101-iteration pixel witness includes the single declared warmup.
+
+## Linux native input measurement boundary (v3)
+
+Run40120658865 retains a private X11 input64 p95 failure154.590690ms against
+100ms. Its previous measurement included two foreground-inspection xprop
+processes before native posting; macOS checks foreground ownership before its
+clock. V3 checks the exact foreground PID immediately before starting the clock,
+then includes the complete injector process/post and actual edited-state20ms
+rendezvous. All64 wall samples, the1000ms per-event deadline,100ms p95 ceiling
+and active-workload guards remain. Foreground, posting, acknowledgment and total
+including foreground are retained separately; no diagnostic replaces the gate.
+The original failure is not rescored and host contention is not a proven cause.
+A delayed-preflight regression rejects the former boundary; slow native posting
+still produces a failed gate after the correction. Fresh native execution is
+required before qualification.

@@ -339,6 +339,35 @@ def observe_utf8_input(desktop, app_dir, output, report):
     desktop.screenshot(output / 'french-utf8-pasted.png')
 
 
+def measure_native_input(desktop, app_dir, app_pid):
+    samples, foreground_ms, posting_ms, acknowledgment_ms = [], [], [], []
+    for index in range(64):
+        expected = 'x' if index % 2 == 0 else ''
+        guard_start = time.monotonic()
+        assert desktop.active_pid() == app_pid, 'native input lost foreground target'
+        start = time.monotonic()
+        foreground_ms.append((start - guard_start) * 1000)
+        key = 'x' if expected else 'BackSpace'
+        desktop.run(['xdotool', 'key', '--clearmodifiers', '--delay', '0', key]
+            if desktop.session == 'x11' else ['wtype', '-k', key])
+        posted = time.monotonic()
+        posting_ms.append((posted - start) * 1000)
+        while True:
+            value = state(app_dir)
+            elapsed = (time.monotonic() - start) * 1000
+            assert elapsed < 1000, 'native input acknowledgment deadline'
+            if value and value[0] == expected:
+                samples.append(elapsed)
+                acknowledgment_ms.append((time.monotonic() - posted) * 1000)
+                break
+            time.sleep(0.001)
+    return {'samples_ms': samples, 'p95_ms': sorted(samples)[60],
+        'foreground_check_ms': foreground_ms, 'event_post_ms': posting_ms,
+        'acknowledgment_wait_ms': acknowledgment_ms,
+        'total_with_foreground_ms': [sample + guard for sample, guard in zip(samples, foreground_ms)],
+        'method': 'native-input-v3: pre-native-post (including injector process) to actual edited-query/model/20ms-rendezvous acknowledgment; foreground checked before timing'}
+
+
 def observe_editing_and_performance(desktop, app_dir, output, report):
     def query(expected):
         return wait_for(lambda: (value := state(app_dir)) and value[0] == expected and value)
@@ -395,23 +424,9 @@ def observe_editing_and_performance(desktop, app_dir, output, report):
     report['checks']['native_long_french_clipboard_undo_redo'] = True
     (app_dir / 'start-load').touch()
     wait_for(lambda: geometry()['working'])
-    samples = []
-    for index in range(64):
-        expected = 'x' if index % 2 == 0 else ''
-        start = time.monotonic()
-        fast_key('x' if expected else 'BackSpace')
-        while True:
-            value = state(app_dir)
-            elapsed = (time.monotonic() - start) * 1000
-            assert elapsed < 1000, 'native input acknowledgment deadline'
-            if value and value[0] == expected:
-                samples.append(elapsed)
-                break
-            time.sleep(0.001)
-    report['native_input_performance'] = {'samples_ms': samples, 'p95_ms': sorted(samples)[60],
-        'method': 'pre-native-post to actual edited-query/model/20ms-rendezvous acknowledgment'}
+    report['native_input_performance'] = measure_native_input(desktop, app_dir, report['app_pid'])
     assert geometry()['working'], 'background load ended before input measurement'
-    assert sorted(samples)[60] <= 100
+    assert report['native_input_performance']['p95_ms'] <= 100
     report['checks']['native_input_under_load_budget'] = True
     def wait_fast(predicate):
         deadline = time.monotonic() + 1

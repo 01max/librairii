@@ -24,6 +24,42 @@ def monitor(parent):
 
 
 class NativeLinux(unittest.TestCase):
+    def test_input_times_real_post_and_acknowledgment_after_foreground_preflight(self):
+        for session in ('x11', 'wayland'):
+            for posting in (0.005, 0.125):
+                now, query = [0.0], ['']
+                desktop = mock.Mock(session=session)
+                def foreground():
+                    now[0] += 0.2
+                    return 123
+                def post(argv):
+                    self.assertEqual(argv[0], 'xdotool' if session == 'x11' else 'wtype')
+                    now[0] += posting
+                    query[0] = 'x' if argv[-1] == 'x' else ''
+                def acknowledged(_):
+                    now[0] += 0.02
+                    return [query[0], '0', '0', 'true', 'true']
+                desktop.active_pid.side_effect, desktop.run.side_effect = foreground, post
+                with mock.patch.object(driver.time, 'monotonic', side_effect=lambda: now[0]), \
+                        mock.patch.object(driver, 'state', side_effect=acknowledged):
+                    result = driver.measure_native_input(desktop, pathlib.Path('/owned/app'), 123)
+                self.assertEqual(len(result['samples_ms']), 64)
+                self.assertEqual(desktop.run.call_count, 64)
+                for sample, preflight, posted, ack in zip(result['samples_ms'], result['foreground_check_ms'],
+                        result['event_post_ms'], result['acknowledgment_wait_ms']):
+                    self.assertAlmostEqual(preflight, 200)
+                    self.assertAlmostEqual(posted, posting * 1000)
+                    self.assertAlmostEqual(ack, 20)
+                    self.assertAlmostEqual(sample, posted + ack)
+                self.assertEqual(result['p95_ms'] <= 100, posting < 0.1)
+                for total in result['total_with_foreground_ms']:
+                    self.assertAlmostEqual(total, 200 + posting * 1000 + 20)
+        desktop.active_pid.side_effect = lambda: 124
+        desktop.run.reset_mock()
+        with self.assertRaisesRegex(AssertionError, 'lost foreground'):
+            driver.measure_native_input(desktop, pathlib.Path('/owned/app'), 123)
+        desktop.run.assert_not_called()
+
     def test_display_tabs_wait_for_each_actual_focus_change(self):
         class DelayedFocus:
             def __init__(self):
