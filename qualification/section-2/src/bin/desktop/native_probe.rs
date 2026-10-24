@@ -82,16 +82,42 @@ impl Probe {
         recorder.write("fixture.txt", &fixture.to_string_lossy());
         if recorder.case == "input" {
             use slint::winit_030::{EventResult, WinitWindowAccessor, winit};
+            let output = recorder.clone();
+            let edits = RefCell::new(String::new());
+            let weak = ui.as_weak();
+            ui.on_edit_observed(move |action, allowed| {
+                use std::fmt::Write;
+                let ui = weak.upgrade().expect("observed native edit target");
+                let mut trace = edits.borrow_mut();
+                writeln!(
+                    trace,
+                    "{action:?}; allowed={allowed}; search_focus={}; dialog={}; native_dialog={}",
+                    ui.get_search_has_focus(),
+                    ui.get_dialog(),
+                    ui.get_native_dialog_open()
+                )
+                .expect("format native edit observation");
+                assert!(trace.len() <= 65_536, "native edit trace limit");
+                output.write("edit-events.txt", &trace);
+            });
             let events = RefCell::new(String::new());
             let output = recorder.clone();
             // Observe real OS IME delivery through Slint's versioned public
             // Winit hook. Always propagate; never synthesize composition or
             // modify the text widget to satisfy an external input assertion.
             ui.window().on_winit_window_event(move |_, event| {
-                if let winit::event::WindowEvent::Ime(ime) = event {
+                let entry = match event {
+                    winit::event::WindowEvent::Ime(ime) => Some(format!("{ime:?}")),
+                    winit::event::WindowEvent::Focused(value) => Some(format!("Focused({value})")),
+                    winit::event::WindowEvent::KeyboardInput { event, .. } => {
+                        Some(format!("KeyboardInput({event:?})"))
+                    }
+                    _ => None,
+                };
+                if let Some(entry) = entry {
                     use std::fmt::Write;
                     let mut trace = events.borrow_mut();
-                    writeln!(trace, "{ime:?}").expect("format native IME event");
+                    writeln!(trace, "{entry}").expect("format native IME event");
                     assert!(trace.len() <= 65_536, "native IME trace limit");
                     output.write("ime-events.txt", &trace);
                 }

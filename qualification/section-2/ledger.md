@@ -275,3 +275,14 @@ ABC is unchanged. The observer now treats nil as an empty inventory; Japanese
 availability/selection and all input requirements remain mandatory. A native-only
 regression compiles the real TIS helpers, verifies a missing family is empty and
 French exists, and confirms original selection is unchanged, without AX/actions.
+
+
+Task2.5 native editing diagnosis:0c6c073/run40100937198 passes the full Linux
+lane; both Mac input runs fail after native Select All/Delete. ARM raw evidence
+proves French dead-key/AZERTY exactêéaz and Preedit(^)/Commit(ê), then only the
+last z is deleted. Full source restoration and owned normal shutdown pass.
+Methodv2 adds bounded input-only native command/guard/focus/key observations and
+read-only AX selected-text/UTF-16-range readiness before Delete. One Select All
+command must establish full real selection; no forced text/focus/selection,
+command retry, relaxed deadline or inferred Japanese pass is introduced.
+See input-display.md for immutable failed artifacts and method distinction.

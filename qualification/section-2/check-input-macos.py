@@ -37,6 +37,14 @@ def composition_cancelled(phase, after_escape):
     return bool(preedits) and preedits[-1] == 'Preedit("", None)' and 'Commit(' not in phase
 
 
+def all_text_selected(observed, text, pid):
+    return (bool(text) and observed.get('pid') == pid and observed.get('frontmost_pid') == pid
+        and observed.get('focused', {}).get('role') == 'AXTextField'
+        and observed['focused'].get('value') == text and observed.get('selected_text') == text
+        and observed.get('selection_observed') is True and observed.get('selection_location') == 0
+        and observed.get('selection_length') == len(text.encode('utf-16-le')) // 2)
+
+
 def restore_sources(observer, before):
     # Re-read effective states after every mutation: enabling a parent can also
     # enable its modes. Restore modes before their parent, then verify all bits.
@@ -72,7 +80,7 @@ def inspect(package, archive, helper, output):
     report = {'schema': 1, 'source': manifest['source'], 'target': manifest['target'],
         'binary_sha256': manifest['binary_sha256'], 'archive': archive_id,
         'checks': {}, 'errors': [], 'returncode': None, 'full_input_display_qualified': False,
-        'toolkit_selected': False, 'method': 'native-CGEvent-TIS-and-propagated-Winit-IME-v1'}
+        'toolkit_selected': False, 'method': 'native-CGEvent-TIS-Winit-IME-and-AX-selection-v2'}
     app = subprocess.Popen([str(binary), '--native-probe=' + str(rendezvous), '--native-case=input'],
         env={**os.environ, 'SLINT_BACKEND': 'winit-skia-software'}, stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT, start_new_session=True)
@@ -112,6 +120,20 @@ def inspect(package, archive, helper, output):
             path = rendezvous / 'ime-events.txt'
             return path.read_text() if path.exists() else ''
 
+        def clear_search(value, stage):
+            # Observe native selection after one menu command. Never invoke
+            # Select All again to turn missing command delivery into a pass.
+            report.setdefault('native_select_all_commands', {})[stage] = observer.call('menu', title='Select All')
+            observations = report.setdefault('native_selection_observations', {}).setdefault(stage, [])
+            def selected():
+                snapshot = observer.call('input-selection')
+                if len(observations) < 16:
+                    observations.append(snapshot)
+                return snapshot if all_text_selected(snapshot, value, app.pid) else None
+            report.setdefault('native_full_selections', {})[stage] = observer.wait(selected)
+            observer.call('key', key='delete')
+            query('')
+
         french = sources['com.apple.keylayout.French']
         select(french)
         # Physical ANSI positions: ^ then e, é, space, a/z on French AZERTY.
@@ -122,9 +144,7 @@ def inspect(package, archive, helper, output):
         report['checks']['french_dead_key_and_azerty'] = True
         # The French layout maps physical0 to Q even with Command held. Use
         # the actual native menu so clearing cannot accidentally post Quit.
-        observer.call('menu', title='Select All')
-        observer.call('key', key='delete')
-        query('')
+        clear_search('êé az', 'french')
         parent = parents[0]
         if not sources_by_id(observer.call('input-sources'))[parent['id']]['enabled']:
             observer.call('input-source', source=parent['id'], operation='enable')
@@ -148,9 +168,7 @@ def inspect(package, archive, helper, output):
             (t := trace()[offset:]) and 'Commit("日本")' in t and t)
         report['checks']['japanese_candidate_commit'] = True
         observer.capture('japanese-committed')
-        observer.call('menu', title='Select All')
-        observer.call('key', key='delete')
-        query('')
+        clear_search('日本', 'japanese')
         offset = len(trace())
         observer.call('keycodes', codes=[45, 34, 4, 31, 45])
         observer.wait(lambda: 'Preedit("にほん"' in trace()[offset:])

@@ -48,6 +48,29 @@ test is explicitly native-only on other platforms. Independent review approves
 the correction; fresh native input execution remains required. No failed run is
 retried into a pass or treated as a toolkit failure.
 
+## Native editing diagnostic method v2
+
+At0c6c073/run40100937198 both Mac input runs progress past inventory and fail
+clearing the French text after native Select All/Delete. The inspected ARM raw
+record proves exact `êé az`, real Winit `Preedit("^")` / `Commit("ê")`, then
+`êé a` after Delete. All original source/enable bits restore and the app exits0
+with its fixture gone. ARM artifact12563420242 ZIP SHA256 is
+`a3e3bfa15f997e322bf02b34b7a1f20528678fa191f920bbde226a35e6a508b9`.
+Intel's same-stage failure is retained in artifact12563016813, published ZIP SHA256
+`d0dee38fd4e6311f3fae221155eba477293dce15a92b958d9788ad45bbfcb158`.
+Linux's full lane passes. The failed Mac runs do not establish Japanese input.
+
+The v2 method records native menu enabled metadata, Muda event receipt/enqueue/
+execution, the actual widget edit guard, and propagated native focus/key/IME
+transitions. Before posting Delete it reads the owned app's focused AX text,
+selected text and UTF-16 selection range, requiring one complete selection from
+one Select All command. Wrong/partial text, range, focus PID or missing selection
+cannot pass. It never sets selection through AX, retries the action, changes
+focus to satisfy a check or bypasses the edit guard. This distinguishes missing
+command delivery, a guarded no-op and later selection loss before changing app
+behavior. Existing deadlines, output bounds and restoration remain required.
+Actual v2 execution is pending; earlier v1 failures retain their verdicts.
+
 ## Historical initial checklist
 
 Status: **pending actual observation on A/I/L/W**, 2026-10-20, librairii-4.

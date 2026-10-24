@@ -80,10 +80,13 @@ export component Spike inherits Window {
     focus-apply => { apply-button.focus(); }
     callback focus-search();
     focus-search => { search-entry.focus(); }
+    callback edit-observed(EditAction, bool);
     // AppKit's predefined edit selectors do not reach the Winit text input.
     // Keep editing inside the focused widget, including its selection/undo state.
     public function edit-search(action: EditAction) {
-        if !root.modal && !root.native-dialog-open && search-entry.has-focus {
+        let allowed = !root.modal && !root.native-dialog-open && search-entry.has-focus;
+        root.edit-observed(action, allowed);
+        if allowed {
             if action == EditAction.undo { search-entry.undo(); }
             else if action == EditAction.redo { search-entry.redo(); }
             else if action == EditAction.cut { search-entry.cut(); }

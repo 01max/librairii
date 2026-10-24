@@ -13,6 +13,17 @@ spec.loader.exec_module(observer)
 
 
 class InputMacOS(unittest.TestCase):
+    def test_full_native_selection_requires_exact_foreground_field_text_and_utf16_range(self):
+        text = 'êé 日本語 🦊'
+        snapshot = {'pid': 12, 'frontmost_pid': 12, 'focused': {'role': 'AXTextField', 'value': text},
+            'selected_text': text, 'selection_observed': True, 'selection_location': 0,
+            'selection_length': len(text.encode('utf-16-le')) // 2}
+        self.assertTrue(observer.all_text_selected(snapshot, text, 12))
+        for change in ({'pid': 13}, {'frontmost_pid': 13}, {'focused': {}},
+                {'selected_text': text[:-1]}, {'selection_observed': False},
+                {'selection_location': 1}, {'selection_length': len(text)}):
+            self.assertFalse(observer.all_text_selected({**snapshot, **change}, text, 12))
+
     @unittest.skipUnless(sys.platform == 'darwin', 'Carbon input-source lookup requires native macOS')
     def test_actual_missing_carbon_source_filter_is_empty_without_mutating_selection(self):
         # Compile the real read-only TIS helpers, excluding the later AX/event

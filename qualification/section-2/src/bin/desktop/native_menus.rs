@@ -134,7 +134,11 @@ impl Menus {
             ])?;
             native_dialog_bar.append_items(&[&app, &native_edit])?;
             let pending = commands.clone();
+            let observe_edits = std::env::args().any(|arg| arg == "--native-case=input");
             muda::MenuEvent::set_event_handler(Some(move |event: muda::MenuEvent| {
+                if observe_edits {
+                    eprintln!("native_menu_received={:?}", event.id);
+                }
                 if event.id == "qualification.settings" {
                     pending.settings();
                 } else if event.id == "qualification.about" {
@@ -152,7 +156,15 @@ impl Menus {
                         "qualification.edit.select-all" => EditAction::SelectAll,
                         _ => return,
                     };
-                    let _ = _target.upgrade_in_event_loop(move |ui| ui.invoke_edit_search(action));
+                    let queued = _target.upgrade_in_event_loop(move |ui| {
+                        if observe_edits {
+                            eprintln!("native_edit_executing={action:?}");
+                        }
+                        ui.invoke_edit_search(action);
+                    });
+                    if observe_edits {
+                        eprintln!("native_edit_enqueue={queued:?}");
+                    }
                 }
             }));
             bar.init_for_nsapp();

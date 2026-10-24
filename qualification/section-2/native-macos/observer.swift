@@ -211,7 +211,7 @@ func key(_ name: String) throws {
     }
 }
 
-func menu(_ app: AXUIElement, title: String) throws {
+func menu(_ app: AXUIElement, title: String) throws -> [String: Any] {
     guard let bar = attribute(app, kAXMenuBarAttribute) else { throw Failure.invalid("no native menu bar") }
     let barElement = bar as! AXUIElement
     for top in elements(barElement, kAXChildrenAttribute) {
@@ -221,14 +221,16 @@ func menu(_ app: AXUIElement, title: String) throws {
             let element = queue[next]
             next += 1
             if text(element, kAXTitleAttribute) == title {
+                let before = describe(element)
                 guard AXUIElementPerformAction(top, kAXPressAction as CFString) == .success else {
                     throw Failure.invalid("cannot open native menu")
                 }
                 Thread.sleep(forTimeInterval: 0.1)
+                let after = describe(element)
                 guard AXUIElementPerformAction(element, kAXPressAction as CFString) == .success else {
                     throw Failure.invalid("cannot activate native menu item")
                 }
-                return
+                return ["performed": true, "menu_item_before": before, "menu_item_after_open": after]
             }
             queue.append(contentsOf: elements(element, kAXChildrenAttribute).prefix(max(0, 1000 - queue.count)))
         }
@@ -293,6 +295,24 @@ do {
             try post(CGKeyCode(code), down: false, flags: [])
         }
         try output(["posted": true, "source": inputSource()])
+    case "input-selection":
+        guard let raw = attribute(app, kAXFocusedUIElementAttribute),
+              CFGetTypeID(raw) == AXUIElementGetTypeID() else {
+            throw Failure.invalid("no actual focused native input element")
+        }
+        let element = raw as! AXUIElement
+        var selected: CFTypeRef?
+        let status = AXUIElementCopyAttributeValue(element, kAXSelectedTextRangeAttribute as CFString, &selected)
+        var range = CFRange(location: -1, length: 0)
+        var observed = false
+        if status == .success, let selected, CFGetTypeID(selected) == AXValueGetTypeID() {
+            let value = selected as! AXValue
+            if AXValueGetType(value) == .cfRange { observed = AXValueGetValue(value, .cfRange, &range) }
+        }
+        try output(["pid": pid, "frontmost_pid": NSWorkspace.shared.frontmostApplication?.processIdentifier ?? -1,
+            "focused": describe(element), "selection_observed": observed, "selection_status": status.rawValue,
+            "selection_location": range.location, "selection_length": range.length,
+            "selected_text": text(element, kAXSelectedTextAttribute)] as [String: Any])
     case "snapshot", "status":
         trace("reading owned CG windows and foreground status")
         var windows = (CGWindowListCopyWindowInfo([.optionOnScreenOnly, .excludeDesktopElements], kCGNullWindowID)
@@ -404,8 +424,7 @@ do {
         if operation == "set" { reply["value"] = text(element, kAXValueAttribute) }
         try output(reply)
     case "menu":
-        try menu(app, title: request["title"] as? String ?? "")
-        try output(["performed": true])
+        try output(menu(app, title: request["title"] as? String ?? ""))
     case "clipboard-set":
         NSPasteboard.general.clearContents()
         guard NSPasteboard.general.setString(request["text"] as? String ?? "", forType: .string) else {
