@@ -110,7 +110,7 @@ impl Probe {
                     winit::event::WindowEvent::Ime(ime) => Some(format!("{ime:?}")),
                     winit::event::WindowEvent::Focused(value) => Some(format!("Focused({value})")),
                     winit::event::WindowEvent::KeyboardInput { event, .. } => {
-                        Some(format!("KeyboardInput({event:?})"))
+                        Some(format!("KeyboardInput(state={:?}, physical={:?}, key={:?}, repeat={})", event.state, event.physical_key, event.logical_key, event.repeat))
                     }
                     _ => None,
                 };
@@ -118,7 +118,7 @@ impl Probe {
                     use std::fmt::Write;
                     let mut trace = events.borrow_mut();
                     writeln!(trace, "{entry}").expect("format native IME event");
-                    assert!(trace.len() <= 262_144, "native IME trace limit");
+                    assert!(trace.len() <= 1_048_576, "native IME trace limit");
                     output.write("ime-events.txt", &trace);
                 }
                 EventResult::Propagate

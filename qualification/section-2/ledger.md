@@ -507,3 +507,13 @@ retired. No erased-OS, Gatekeeper, signing or installer claim. Native execution
 and independent review required. Full106 recorder suite passes after removal of
 only402MiB superseded generated Task3 compiler cache; the prior fresh Swift-cache
 disk failure remains failed rather than being counted as a test pass.
+
+Native b1bef10/run40114747187 ARM: French composition, exact NFD caret/Undo,
+long French Paste/Undo/Redo and64 OS-input samples pass (p95=30.941459ms).
+The repeated navigation then triggers the explicit256KiB Winit trace cap and
+aborts the app, so normal retirement/full gate fail. Artifact12568276221 ZIP
+SHA2562396f9b1c5ef46a7647064938b4d18182509390602323feb6cb83f47e2c12116
+retains the panic and failed report. The separate observer repair records only
+actual key state/physical/logical identity/repeat plus full IME events, with a
+finite1MiB cap sized for21 full keyboard-navigation trials. All events still
+propagate unchanged; no timing deadline, sample or assertion is removed.
