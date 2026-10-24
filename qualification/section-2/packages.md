@@ -1,5 +1,15 @@
 # Package feasibility (2.11, P57/P59)
 
+Task2.11 is complete for the minimal spike packages. The exact three-target
+archive round-trips/native bytes are verified. A fresh offline Linux KVM guest
+proves launch/reboot/removal/reinstall with independent canaries; both Mac targets
+prove normal/CPU launch/relaunch in a fresh HOME with actual source/toolchain/network
+denial controls. See clean-macos.md, linux-vm.md and [selection-gate.md](selection-gate.md).
+The selected Mac package is the sealed.app in the tar archive; signing/notarization,
+Gatekeeper trust and product installer/upgrade lifecycle remain Task18 work.
+
+Earlier observations below retain their dates, source commits and historical scope.
+
 Status: **ARM local unsigned experiment only; no clean-host qualification**.
 Observer librairii-4, 2026-10-20, host in hosts.md. `package-macos.py` creates a
 new minimal bundle around the embedded-resource executable, distinct bundle ID

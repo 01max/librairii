@@ -22,4 +22,6 @@ acceptance, notarization or a finished product installer. Task18 owns public
 release signing/installer lifecycle; existing signing credential requirements
 remain documented. The minimal selected package is the sealed `.app` inside the
 verified tar archive; the optional DMG experiment is separate. Native execution
-and independent evidence review are pending.
+and independent evidence review pass on both ARM and real Intel. Exact identities,
+all four normal/CPU launch/relaunch results and actual isolation/retirement controls
+are in completion-evidence/final-matrix.json and selection-gate.md.
