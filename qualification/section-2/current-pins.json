@@ -324,14 +324,24 @@
     }
   ],
   "artwork_probe": {
-    "method": "read-full-decode-v2-fixed100",
+    "method": "read-full-decode-v3-scratch-fixed100",
     "measured_batches": 100,
     "warmup_batches": 1,
     "covers_per_batch": 24,
     "dimensions": "320x400",
     "p95": "nearest rank sorted[94], wall milliseconds, unchanged50ms ceiling",
     "cpu_diagnostics": "CLOCK_PROCESS_CPUTIME_ID via already-selected libc=0.2.191; diagnostic only, never replaces wall gate",
-    "retained_failure": "run40118957740 Intel20sample p95=72.528676ms stays failed"
+    "retained_failure": "run40118957740 Intel20sample p95=72.528676ms stays failed",
+    "scratch": "Reuse compressed and 384000-byte RGB8 output storage; every cover still opens/reads to EOF and fully decodes with CRC checks; every output byte consumed.",
+    "retained_run68_failure": {
+      "head": "f166d7851f667483e1dcee8a68be8533d62f86b4",
+      "run": 40125909364,
+      "target": "x86_64-apple-darwin",
+      "wall_p95_ms": 61.13101,
+      "cpu_p95_ms": 51.246,
+      "verdict": "failed; root cause unknown; not rescored",
+      "evidence": "completion-evidence/artwork-scratch/"
+    }
   },
   "qualification_decision": {
     "date": "2026-10-24",
@@ -339,6 +349,7 @@
     "implementation_head": "d145d604af917618ac6127bba8687806c5ed032a",
     "native_workflow": "https://github.com/01max/librairii/actions/runs/40123986713",
     "evidence": "completion-evidence/final-matrix.json",
-    "independent_review": "completion-evidence/review.md"
+    "independent_review": "completion-evidence/review.md",
+    "current_revalidation": "Pending fresh three-target native qualification after run68 failure; the selected run67 decision remains attributed to its implementation head."
   }
 }
