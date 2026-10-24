@@ -1,5 +1,11 @@
 # Conditional fallback (2.12)
 
+Task2.12 is handled: the selected Slint candidate passes the scoped mandatory gates
+with reviewed repairs. The fallback condition is not triggered; no egui experiment
+is required or claimed. See [selection-gate.md](selection-gate.md).
+
+Earlier observations below retain their dates, source commits and historical scope.
+
 Status: **not triggered; toolkit selection remains open**.
 No mandatory Slint failure has yet been established by a complete representative
 test. Missing Intel/Linux/Windows resources, denied ARM interaction and unfinished
