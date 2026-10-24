@@ -54,3 +54,20 @@ Only that operation may omit a response; changed boot identity and successful
 reconnection remain mandatory. Monitor reads also have a whole-message deadline
 so a peer cannot extend the bound by trickling partial JSON. These transport
 controls have local regressions; they do not stand in for actual VM execution.
+
+The first actual KVM run at `aac46f4`,
+[run40073555181](https://github.com/01max/librairii/actions/runs/40073555181),
+boots/provisions successfully, removes its NIC and passes all eight native X11
+cases. The phase correctly fails its observer teardown guard because a desktop
+service survives the exiting command wrapper. Artifact12552153382, ZIP SHA256
+`a74c5edd79edadb7e639537be63daee5b7b1f1203b2e3e647a84c5aa8c0bc3c6`,
+retains the failure; it is not a passing VM lifecycle result.
+
+Each desktop now runs in its own
+[transient systemd service](https://www.freedesktop.org/software/systemd/man/latest/systemd-run.html)
+with an ordinary User/Group, bounded runtime and
+[control-group ownership](https://www.freedesktop.org/software/systemd/man/latest/systemd.kill.html).
+It does not open a PAM/login scope. All four exact services must return success
+and their observed cgroups must disappear; failure also stops only that owned
+unit. The original command process-group guard and all application worker/fixture
+checks remain intact. Fresh native execution must validate the correction.

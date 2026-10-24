@@ -117,7 +117,8 @@ class Monitor:
 def guest_result(result):
     if (result.get('exitcode') != 0 or result.get('signal') is not None
             or result.get('out-truncated') or result.get('err-truncated')):
-        raise ValueError('guest command failed: ' + repr(result))
+        detail = base64.b64decode(result.get('out-data', ''), validate=True).decode('utf-8', errors='replace')
+        raise ValueError('guest command failed: exit=' + str(result.get('exitcode')) + '; ' + detail[:4000])
     return base64.b64decode(result.get('out-data', ''), validate=True).decode('utf-8')
 
 
@@ -171,6 +172,15 @@ def analyze(root, identity, kvm, network_removed):
                   and all(value == a['retained_files'] for value in (b.get('retained_files'),
                       after.get('before_removal'), after.get('after_removal'), after.get('after_reinstall'))),
               'reinstalled_owned_shutdown': 'quit_smoke=passed;' in (root / 'reinstalled.log').read_text()}
+    expected = {'before-reboot': {'x11'}, 'after-reboot': {'wayland', 'wayland-runtime', 'reinstalled'}}
+    checks['all_owned_desktop_service_groups_retired'] = all(
+        {u.get('unit') for u in phase.get('desktop_units', [])} ==
+        {'librairii-qualification-' + name + '.service' for name in expected[phase['phase']]}
+        and len(phase['desktop_units']) == len(expected[phase['phase']])
+        and all(u.get('command_returncode') == 0 and u.get('command_errors') == []
+            and u.get('cgroup_removed') is True and u.get('stop_returncode') in (None, 0)
+            and u.get('cgroup') == '/sys/fs/cgroup/system.slice/' + u['unit']
+            for u in phase['desktop_units']) for phase in (before, after))
     for session in ('x11', 'wayland'):
         report = json.loads((root / session / 'native-session.json').read_text())
         checks[session + '_all_native_cases'] = native.session_passed(report, identity['binary_sha256'])

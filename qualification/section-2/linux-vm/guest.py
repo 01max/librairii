@@ -15,6 +15,7 @@ EVIDENCE = ROOT / 'evidence'
 PACKAGE = pathlib.Path('/opt/librairii')
 CANARY = pathlib.Path('/home/qualification/retained-data')
 LIMIT = 4 * 1024 * 1024
+UNITS = []
 
 
 def sha(path):
@@ -55,7 +56,13 @@ def user_run(name, args, identity, timeout=600):
     link.symlink_to(destination)
     # The earlier private desktop is fully retired before another starts.
     shutil.rmtree('/tmp/native-runtime', ignore_errors=True)
-    argv = ['/usr/sbin/runuser', '-u', 'qualification', '--', '/usr/bin/env', '-i',
+    unit = 'librairii-qualification-' + name + '.service'
+    cgroup = pathlib.Path('/sys/fs/cgroup/system.slice') / unit
+    argv = ['/usr/bin/systemd-run', '--quiet', '--wait', '--pipe', '--collect', '--unit=' + unit,
+            '--property=Type=exec', '--property=User=qualification', '--property=Group=qualification',
+            '--property=Slice=system.slice', '--property=WorkingDirectory=/tmp',
+            '--property=KillMode=control-group', '--property=TimeoutStopSec=3s',
+            '--property=RuntimeMaxSec=' + str(timeout - 15) + 's', '/usr/bin/env', '-i',
             'PATH=/usr/bin:/bin', 'HOME=/home/qualification', 'TMPDIR=/tmp', 'LC_ALL=C.UTF-8',
             'EXPECTED_BINARY_SHA256=' + identity['binary_sha256'], 'SLINT_BACKEND=winit-skia-software',
             '/usr/bin/dbus-run-session', '--', *args]
@@ -64,9 +71,24 @@ def user_run(name, args, identity, timeout=600):
     spec = importlib.util.spec_from_file_location('wayland', '/opt/qualification/check-wayland.py')
     wayland = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(wayland)
-    result = wayland.command(argv, os.environ.copy(), EVIDENCE / (name + '.log'), timeout=timeout)
-    if not wayland.passed(result):
-        raise RuntimeError(name + ' failed: ' + repr(result['errors']))
+    record = {'unit': unit, 'cgroup': str(cgroup), 'command_returncode': None,
+              'command_errors': [], 'cgroup_removed': False, 'stop_returncode': None}
+    UNITS.append(record)
+    try:
+        result = wayland.command(argv, os.environ.copy(), EVIDENCE / (name + '.log'), timeout=timeout)
+        record['command_returncode'] = result['returncode']
+        record['command_errors'] = result['errors']
+        if not wayland.passed(result):
+            raise RuntimeError(name + ' failed: ' + repr(result['errors']))
+    finally:
+        # A service owns even double-forked/private D-Bus desktop helpers. Stop
+        # this exact owned unit on failures too; no process-name/global cleanup.
+        if cgroup.exists():
+            stop = subprocess.run(['/usr/bin/systemctl', 'stop', unit], capture_output=True, timeout=8)
+            record['stop_returncode'] = stop.returncode
+        record['cgroup_removed'] = not cgroup.exists()
+        if not record['cgroup_removed'] or record['stop_returncode'] not in (None, 0):
+            raise RuntimeError(name + ' owned desktop service did not retire')
 
 
 def facts(identity):
@@ -118,6 +140,7 @@ def main(phase):
     except Exception as error:
         result['errors'].append(type(error).__name__ + ': ' + str(error))
     finally:
+        result['desktop_units'] = UNITS
         (EVIDENCE / (phase + '.json')).write_text(json.dumps(result, indent=2) + '\n')
         with tarfile.open(ROOT / 'results.tar.gz', 'w:gz') as stream:
             stream.add(EVIDENCE, arcname='evidence')

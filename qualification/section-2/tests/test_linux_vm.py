@@ -112,6 +112,11 @@ class LinuxVM(unittest.TestCase):
         after = {'phase': 'after-reboot', 'errors': [], 'facts': {**facts, 'boot_id': 'boot-two'},
                  'removed': True, 'reinstalled_sha256': 'expected', 'before_removal': retained,
                  'after_removal': retained, 'after_reinstall': retained}
+        for phase, names in ((before, ['x11']), (after, ['wayland', 'wayland-runtime', 'reinstalled'])):
+            phase['desktop_units'] = [{'unit': 'librairii-qualification-' + name + '.service',
+                'cgroup': '/sys/fs/cgroup/system.slice/librairii-qualification-' + name + '.service',
+                'command_returncode': 0, 'command_errors': [], 'cgroup_removed': True,
+                'stop_returncode': None} for name in names]
         cases = {}
         for name in vm.native.CASES:
             required = {'owned_shutdown', 'fixture_removed', 'native_focus_restored_and_search_input'}
@@ -153,6 +158,14 @@ class LinuxVM(unittest.TestCase):
                 self.assertFalse(all(verdict(last={**after, field: value}).values()))
             self.assertFalse(all(verdict(kvm={'enabled': False, 'present': True}).values()))
             self.assertFalse(all(verdict(offline=False).values()))
+            for field, value in [('command_returncode', 1), ('command_errors', ['descendant survived']),
+                    ('cgroup_removed', False), ('stop_returncode', 1), ('cgroup', '/unowned')]:
+                changed = copy.deepcopy(after)
+                changed['desktop_units'][0][field] = value
+                self.assertFalse(all(verdict(last=changed).values()))
+            changed = copy.deepcopy(after)
+            changed['desktop_units'].pop()
+            self.assertFalse(all(verdict(last=changed).values()))
             path = root / 'wayland-rendering/wayland.json'
             report = json.loads(path.read_text())
             for check in vm.WAYLAND_CHECKS:
