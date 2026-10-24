@@ -30,7 +30,7 @@ remain attributed to their historical source commits.
 | 2.3 | Complete: responsive representative localized1000-story native spike | ui/, src/, continuation.md |
 | 2.4 | Complete under owner scope; expanded native Orca workflows independently approved | accessibility-linux-observations.json expanded_v5 |
 | 2.5 | French editing passes; native display correction and composed Retina/mixed-scale coverage require fresh final matrix | input-display.md, completion-evidence/ |
-| 2.6 | Complete: eight cases on each Mac and each Linux desktop | native-macos-observations.json, native-linux-observations.json |
+| 2.6 | Prior eight-case review retained; fresh Intel folder-reject setup failed and the native-editing correction requires fresh execution | native-macos-observations.json, native-linux-observations.json |
 | 2.7 | Complete: forced native GPU-init failure/CPU recovery and matching runtime audits | renderers.md, inspect-runtime.py |
 | 2.8 | Complete: public component/controller and OS-accessibility regression route, no commercial test tool | regression.md |
 | 2.9 | Retained artwork and native input/navigation measurements implemented; fresh resource ceilings/matrix pending | performance.md |
@@ -583,3 +583,14 @@ because a Linux unit suite does not import them.
 | 2.5 | `f5ed5d4` | Retain clean41ff363 three-size2× raw native geometry/PNG hashes, contrast and retirement. Independently reviewed. |
 | 2.4 | `ece68e8` | Close expanded Orca workflow gate after independent raw package/audio/semantic/cleanup review. |
 | 2.13 | `84ccfd7` | Align stale physical/operator metadata with active owner scope and remaining native evidence. |
+
+
+Run64 at071b01c/40118957740 preserves an Intel20-sample artwork wall-p95 failure
+72.528676ms and a native folder-reject panel with disabled Open before callback.
+Both are retained failures. All independent ARM observations pass. Separate
+20ec9ea uses focused native path editing/exact readback rather than an AX value
+setter;70276bf predeclares fixed100 artwork samples, records CPU diagnostics and
+keeps the50ms wall-p95 ceiling. Neither repair claims the root cause proved
+before fresh execution. Local ENOSPC compiler failures are also preserved in the
+session: sequential rerun after removing only obsolete compiler outputs passes
+all111 recorder tests; strict Clippy passes. No source/evidence was removed.
