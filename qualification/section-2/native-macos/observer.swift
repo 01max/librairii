@@ -216,12 +216,17 @@ do {
             guard let (index, window) = matches.first else {
                 // Only root metadata with the exact owned fixture title may be
                 // retained when URL matching fails; no other folder is walked.
-                let candidates = nativeWindows.filter {
-                    text($0, kAXTitleAttribute) == target.lastPathComponent
-                }.map(describe)
+                let candidates = nativeWindows.enumerated().filter { _, window in
+                    text(window, kAXTitleAttribute) == target.lastPathComponent
+                }
+                guard candidates.count <= 1 else { throw Failure.invalid("owned Finder title not unique") }
+                let diagnostic = candidates.first.map { index, _ in
+                    tree(app, onlyWindow: index, sheetsOnly: false)
+                } ?? []
                 try output(["pid": pid, "nodes": [], "windows": [],
                     "finder_window_count": nativeWindows.count,
-                    "owned_title_candidates": candidates] as [String: Any])
+                    "owned_title_candidates": candidates.map { describe($0.element) },
+                    "owned_candidate_diagnostic_tree": diagnostic] as [String: Any])
                 exit(0)
             }
             onlyWindow = index

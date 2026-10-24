@@ -125,3 +125,12 @@ against the exact fixture, rather than AXDocument alone, and retains the count
 of Finder windows plus root metadata only for the exact owned fixture title if
 URL matching fails. Title alone cannot pass; no unrelated folder is traversed
 or captured. The cause and full reveal result still require native execution.
+
+At `4ea1e4b` / run40081851994 ARM again passes all seven preceding cases. Finder
+has an actual window with the exact fresh fixture title, but both public root
+URL attributes are empty. The observer now retains a diagnostic tree only for
+that unique owned-title window, separately from qualifying nodes/captures; this
+cannot pass reveal or authorize cleanup without an actual path witness. It will
+identify the native path control rather than treating the title as a path.
+Artifact12555656307 ZIP SHA256 is
+`6ec1cdaf9c523374e36b8c95398c1da1d177132a6e54323dec3f14f065fb3f77`.
