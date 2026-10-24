@@ -46,3 +46,15 @@ timer panic is present in its retained app log, so that separate failure is not
 attributed to the ARM panic. Both its permission inventory and native result
 are retained in artifact12553497370, ZIP SHA256
 `625322f3ea8f936995d41cafa4600eb68b168d816c49efda24b63aa791cd8ea5`.
+
+The next ARM case at `da29810` / run40076893068 no longer records a timer panic,
+but its first full AX-tree snapshot exceeds the12-second command bound. The
+app's rendezvous still reports live Search state. Artifact12553935368 ZIP SHA256
+`94734586dd77c9227adbb292caf785140fca48f6ddcb25fe13f122a21fc8bc40`
+retains this failure. Foreground/window status now uses only public OS metadata;
+the picker observer traverses attached native sheets rather than redundantly
+walking the full Slint content tree and its sheet again. Finder remains limited
+to the exact fixture document. Captures choose the frontmost visible owned
+window, including modal levels. Full Slint accessibility-tree traversal and
+spoken semantics are separate, still-open2.4 evidence; no result is inferred
+for them from this targeted native-adapter observer.

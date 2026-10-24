@@ -124,13 +124,18 @@ class Observer:
         if not common.wayland.passed(result):
             raise RuntimeError(action + ' failed: ' + json.dumps({key: result[key]
                 for key in ('returncode', 'errors')}) + '; ' + result['output'][:2000])
-        return json.loads(result['output'])
+        # The helper retains stage diagnostics before its final JSON reply, so
+        # a killed AX command still identifies where observation stopped.
+        return json.loads(result['output'].splitlines()[-1])
 
     def snapshot(self, name=None, document=None):
         value = self.call('snapshot', **({'document': str(document)} if document else {}))
         if name:
             (self.output / (name + '.json')).write_text(json.dumps(value, ensure_ascii=False, indent=2) + '\n')
         return value
+
+    def status(self):
+        return self.call('status')
 
     def wait(self, predicate, timeout=12):
         deadline = time.monotonic() + timeout
@@ -199,12 +204,11 @@ class Observer:
         self.call('select', selector=selector(parent), rows=[selector(n) for n in selected])
 
     def capture(self, name, snapshot=None):
-        snapshot = snapshot or self.snapshot()
-        windows = [w for w in snapshot['windows'] if w.get('kCGWindowLayer') == 0]
+        snapshot = snapshot or self.status()
+        windows = [w for w in snapshot['windows'] if w.get('kCGWindowAlpha', 0) > 0]
         if not windows:
             raise ValueError('no actual target window for screenshot')
-        window = max(windows, key=lambda w: w.get('kCGWindowBounds', {}).get('Width', 0)
-                     * w.get('kCGWindowBounds', {}).get('Height', 0))
+        window = windows[0]  # CoreGraphics supplies front-to-back order for the owned PID.
         result = common.wayland.command(['/usr/sbin/screencapture', '-x', '-l', str(window['kCGWindowNumber']),
             str(self.output / (name + '.png'))], os.environ.copy(), self.output / (name + '-capture.log'), timeout=10)
         if not common.wayland.passed(result) or not (self.output / (name + '.png')).is_file():
@@ -243,7 +247,7 @@ def one_case(binary, helper, root, name, kind, expected):
         fixture = pathlib.Path((rendezvous / 'fixture.txt').read_text())
         report['fixture'] = str(fixture)
         observer.call('activate')  # Initial launch only; picker restoration is never forced.
-        observer.wait(lambda: observer.snapshot()['frontmost_pid'] == app.pid)
+        observer.wait(lambda: observer.status()['frontmost_pid'] == app.pid)
         if kind in ('files', 'folder'):
             snapshot = observer.wait(lambda: (s := observer.snapshot()) and picker_root(s) and s)
             root_node = picker_root(snapshot)
@@ -269,7 +273,7 @@ def one_case(binary, helper, root, name, kind, expected):
             report['selected_paths'] = paths
             report['checks']['exact_native_callback'] = ((rendezvous / 'outcome.txt').read_text() == expected
                 and len(paths) == len(wanted) and set(paths) == set(wanted))
-            report['checks']['unforced_parent_focus_restored'] = observer.snapshot()['frontmost_pid'] == app.pid
+            report['checks']['unforced_parent_focus_restored'] = observer.status()['frontmost_pid'] == app.pid
         elif kind == 'reveal':
             observer.wait(lambda: (rendezvous / 'callback-complete.txt').exists())
             def finder_window():

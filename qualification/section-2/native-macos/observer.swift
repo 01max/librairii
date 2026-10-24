@@ -50,17 +50,23 @@ func output(_ value: Any) throws {
     FileHandle.standardOutput.write(Data([10]))
 }
 
+func trace(_ stage: String) {
+    FileHandle.standardError.write(Data(("observer-stage: " + stage + "\n").utf8))
+}
+
 func sheets(_ window: AXUIElement) -> [AXUIElement] {
     elements(window, kAXChildrenAttribute).filter { text($0, kAXRoleAttribute) == kAXSheetRole }
 }
 
-func roots(_ app: AXUIElement) -> [(AXUIElement, [String: Any])] {
+func roots(_ app: AXUIElement, sheetsOnly: Bool) -> [(AXUIElement, [String: Any])] {
     var result: [(AXUIElement, [String: Any])] = []
+    trace("reading AXWindows")
     for (index, window) in elements(app, kAXWindowsAttribute).enumerated() {
+        trace("reading child sheets of window " + String(index))
         for (sheetIndex, sheet) in sheets(window).enumerated() {
             result.append((sheet, ["window": index, "sheet": sheetIndex]))
         }
-        result.append((window, ["window": index]))
+        if !sheetsOnly { result.append((window, ["window": index])) }
     }
     return result
 }
@@ -90,10 +96,11 @@ func resolve(_ app: AXUIElement, _ selector: [String: Any]) throws -> AXUIElemen
     return element
 }
 
-func tree(_ app: AXUIElement, onlyWindow: Int? = nil) -> [[String: Any]] {
+func tree(_ app: AXUIElement, onlyWindow: Int? = nil, sheetsOnly: Bool = true) -> [[String: Any]] {
     var result: [[String: Any]] = []
-    for (root, location) in roots(app) {
+    for (root, location) in roots(app, sheetsOnly: sheetsOnly) {
         if let onlyWindow, location["window"] as? Int != onlyWindow { continue }
+        trace("traversing native root " + String(describing: location))
         var queue: [(AXUIElement, [Int])] = [(root, [])]
         var next = 0
         while next < queue.count && result.count < 2500 {
@@ -183,7 +190,8 @@ do {
         throw Failure.invalid("target app is not frontmost; native input refused")
     }
     switch operation {
-    case "snapshot":
+    case "snapshot", "status":
+        trace("reading owned CG windows and foreground status")
         var windows = (CGWindowListCopyWindowInfo([.optionOnScreenOnly, .excludeDesktopElements], kCGNullWindowID)
             as? [[String: Any]] ?? []).filter { ($0[kCGWindowOwnerPID as String] as? Int) == Int(pid) }
         var onlyWindow: Int?
@@ -205,7 +213,8 @@ do {
             guard windows.count <= 1 else { throw Failure.invalid("document capture window not unique") }
         }
         try output(["pid": pid, "frontmost_pid": NSWorkspace.shared.frontmostApplication?.processIdentifier ?? -1,
-                    "nodes": tree(app, onlyWindow: onlyWindow), "windows": windows])
+                    "nodes": operation == "status" ? [] : tree(app, onlyWindow: onlyWindow,
+                        sheetsOnly: request["document"] == nil), "windows": windows])
     case "activate":
         guard NSRunningApplication(processIdentifier: pid)?.activate(options: [.activateAllWindows]) == true else {
             throw Failure.invalid("cannot activate owned app")

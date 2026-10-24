@@ -7,6 +7,7 @@ import sys
 import tempfile
 import time
 import unittest
+from unittest import mock
 
 spec = importlib.util.spec_from_file_location('macos', pathlib.Path(__file__).parents[1] / 'check-native-macos.py')
 macos = importlib.util.module_from_spec(spec)
@@ -14,6 +15,17 @@ spec.loader.exec_module(macos)
 
 
 class NativeMacOS(unittest.TestCase):
+    def test_diagnostics_cannot_turn_a_failed_native_command_into_a_pass(self):
+        observer = macos.Observer(pathlib.Path('/owned/helper'), pathlib.Path('/owned/output'), 123)
+        result = {'returncode': 0, 'errors': [],
+                  'output': 'observer-stage: reading AXWindows\n{"pid":123,"nodes":[]}\n'}
+        with mock.patch.object(macos.common.wayland, 'command', return_value=result):
+            self.assertEqual(observer.call('snapshot')['pid'], 123)
+        for change in ({'returncode': -9}, {'errors': ['process deadline exceeded']}):
+            with self.subTest(change=change), mock.patch.object(macos.common.wayland, 'command',
+                    return_value={**result, **change}), self.assertRaises(RuntimeError):
+                observer.call('snapshot')
+
     def test_exited_parent_cannot_leave_a_pipe_reader_or_owned_descendant(self):
         with tempfile.TemporaryDirectory() as temporary:
             output = pathlib.Path(temporary) / 'app.log'
