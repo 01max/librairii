@@ -253,3 +253,12 @@ offset to be empty, with no commit anywhere in the cancellation phase. The
 negative early-reset→live trace reproduced false acceptance before the fix;
 all four focused tests pass afterward. The raw full and post-Escape traces are
 retained separately. First actual native execution is still pending.
+
+
+Independent review P2 setup correction: read-only UCKeyTranslate on Apple's
+French layout proves physical0 maps to q with plain/Command modifiers, while12
+maps to a. The new composition probe therefore uses the actual native Edit→
+Select All menu followed by physical Delete to clear Search, avoiding the
+existing ABC-specific Cmd-A keycode under French or its underlying IME layout.
+The required physical French/Japanese input and exact text assertions remain.
+No local source selection or keyboard event was used to establish that mapping.

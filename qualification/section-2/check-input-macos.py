@@ -120,7 +120,9 @@ def inspect(package, archive, helper, output):
         report['french_state'] = query('êé az')
         observer.capture('french-dead-key')
         report['checks']['french_dead_key_and_azerty'] = True
-        observer.call('key', key='cmd+a')
+        # The French layout maps physical0 to Q even with Command held. Use
+        # the actual native menu so clearing cannot accidentally post Quit.
+        observer.call('menu', title='Select All')
         observer.call('key', key='delete')
         query('')
         parent = parents[0]
@@ -146,7 +148,7 @@ def inspect(package, archive, helper, output):
             (t := trace()[offset:]) and 'Commit("日本")' in t and t)
         report['checks']['japanese_candidate_commit'] = True
         observer.capture('japanese-committed')
-        observer.call('key', key='cmd+a')
+        observer.call('menu', title='Select All')
         observer.call('key', key='delete')
         query('')
         offset = len(trace())
