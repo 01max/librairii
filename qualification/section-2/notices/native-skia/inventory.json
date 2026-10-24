@@ -87,16 +87,23 @@
         "contrib/optimizations/inffast_chunk.c",
         "contrib/optimizations/chunkcopy.h",
         "slide_hash_simd.h",
-        "crc_folding.c"
+        "crc_folding.c",
+        "cpu_features.c",
+        "contrib/optimizations/insert_string.h"
       ],
       "notices": [
         "Chromium-LICENSE",
         "zlib-LICENSE",
-        "ATTRIBUTIONS.md"
+        "ATTRIBUTIONS.md",
+        "Chromium-zlib-source-notices.txt"
       ],
       "bsd_text_source": "https://api.github.com/repos/chromium/chromium/git/blobs/2249a28657f86c645f8978b75babc1bd52aca318",
       "bsd_text_git_blob": "2249a28657f86c645f8978b75babc1bd52aca318",
-      "source_note": "The generic Chromium BSD text is retained by immutable blob identity. It is not asserted to come from the zlib revision. Per-file Chromium/ARM/Intel copyrights are preserved in ATTRIBUTIONS.md."
+      "source_note": "The generic Chromium BSD text is retained by immutable blob identity. It is not asserted to come from the zlib revision. Per-file Chromium/ARM/Intel copyrights are preserved in ATTRIBUTIONS.md.",
+      "source_git_blobs": {
+        "cpu_features.c": "64e0428cd2fc2d965cf18c2af9212df68d2ea8c8",
+        "contrib/optimizations/insert_string.h": "260b8268029a8c0bc03055ba2ac2dcb19c277c9d"
+      }
     },
     {
       "name": "Expat",
@@ -158,9 +165,10 @@
     }
   ],
   "files": {
-    "ATTRIBUTIONS.md": "a5c5a63647206d2ff34d45c3d575de76710f9be3a81f7f8c2c3a04e1e51ba893",
+    "ATTRIBUTIONS.md": "e4c6909e1eae21f100a1f6707fccaff30508a4a6339be77ca95378171fd87236",
     "Apache-2.0": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
     "Chromium-LICENSE": "368cca1106be99d39ecd32a38d8305585d802a475effb66380b91ffc9bcf709b",
+    "Chromium-zlib-source-notices.txt": "6cb6643a391e8dbe40c75cefb91720040802365cb35598401a99891d16100fb3",
     "Expat-COPYING": "31b15de82aa19a845156169a17a5488bf597e561b2c318d159ed583139b25e87",
     "LICENSE_SKIA": "5f787c1dee3c56547f09ccc2906ab5f5293c4d8dd6c8654e573216c38e908dbd",
     "VMA-LICENSE": "52df2c03d6cfc9ffec13c9d3626c530fc9ce0cbe41d5ea3d10cd46edeb1aeb38",

@@ -15,9 +15,11 @@ source revisions, notice paths and hashes are recorded in `inventory.json`.
 - Expat: See `Expat-COPYING`.
 - Wuffs: Copyright 2017 The Wuffs Authors. See `Apache-2.0`.
 - zlib: See `zlib-LICENSE`. The selected Chromium extensions additionally contain
-  Copyright 2017 The Chromium Authors; Copyright 2022 The Chromium Authors;
+  Copyright 2017 The Chromium Authors; Copyright 2018 The Chromium Authors;
+  Copyright 2019 The Chromium Authors; Copyright 2022 The Chromium Authors;
   Copyright 2023 The Chromium Authors; and Copyright (C) 2017 ARM, Inc.
-  See `Chromium-LICENSE` for the BSD portions and `zlib-LICENSE` for the portions
+  The two reviewed processor/string header notices are preserved verbatim in
+  `Chromium-zlib-source-notices.txt`. See `Chromium-LICENSE` for the BSD portions and `zlib-LICENSE` for the portions
   retaining zlib terms. The CRC folding implementation also credits
   Copyright (C) 2013 Intel Corporation. All rights reserved., under zlib terms.
 - Vulkan Memory Allocator: Copyright (c) 2017-2026 Advanced Micro Devices, Inc.

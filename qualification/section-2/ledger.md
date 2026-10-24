@@ -329,3 +329,10 @@ macOS resources are sealed afterward. Four focused tests and a real offline
 Cargo/native-output verification pass. Archive member presence is not treated
 as final-executable linkage, and final per-target distribution review remains
 open. See native-notices.md for scope and source inventory.
+
+Independent review P2 correction: the Chromium zlib attribution list omitted
+the2018 cpu_features.c and2019 insert_string.h copyrights. Exact pinned primary
+headers (Git blobs64e0428cd2fc2d965cf18c2af9212df68d2ea8c8 and
+260b8268029a8c0bc03055ba2ac2dcb19c277c9d) are preserved verbatim in a separate
+source-notice file, both source paths/blob identities are inventoried, and all
+affected payload hashes are refreshed. No source-graph or license change occurs.
