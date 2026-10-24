@@ -1,5 +1,12 @@
 # Native adapter probes (2.6, P05/P48/P53/P57)
 
+Task2.6 is complete: all eight native cases pass on each Mac target and each
+Linux desktop, including exact UTF-8 selections/cancel/reject, parent association,
+Settings/early commands, native clipboard and validated Finder/Thunar reveal.
+See the attributed native-macos/native-linux records and [selection-gate.md](selection-gate.md).
+
+Earlier observations below retain their dates, source commits and historical scope.
+
 Status: **probe implemented; actual dialog/menu/reveal behavior pending**.
 The GUI now has rfd multiple-file/folder probes parented with Slint's public
 `Window::window_handle`, a native Slint menu with Settings/About, a simulated
