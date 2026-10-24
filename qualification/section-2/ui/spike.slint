@@ -1,4 +1,4 @@
-import { Button, LineEdit, VerticalBox, HorizontalBox, ListView, ProgressIndicator, CheckBox, AboutSlint, Palette, ScrollView } from "std-widgets.slint";
+import { Button, LineEdit, VerticalBox, HorizontalBox, ListView, StandardListView, ProgressIndicator, CheckBox, AboutSlint, Palette, ScrollView } from "std-widgets.slint";
 
 export struct StoryRow { id: int, title: string, cover: image }
 export struct DecisionRow { id: int, added: bool }
@@ -27,6 +27,12 @@ component SearchField inherits LineEdit {
     changed has-focus => { if self.has-focus && !ProbeState.modal { ProbeState.focus-key = 30; } }
     changed restore-epoch => { if !ProbeState.modal && ProbeState.focus-key == 30 { self.focus(); } }
 }
+component StoryList inherits StandardListView {
+    accessible-enabled: self.enabled;
+    private property <int> restore-epoch: ProbeState.restore-epoch;
+    changed has-focus => { if self.has-focus && !ProbeState.modal { ProbeState.focus-key = 31; } }
+    changed restore-epoch => { if !ProbeState.modal && ProbeState.focus-key == 31 { self.focus(); } }
+}
 
 export component Spike inherits Window {
     title: "Librairii · qualification";
@@ -47,6 +53,9 @@ export component Spike inherits Window {
     out property <bool> modal: root.dialog != 0;
     in-out property <string> query;
     in-out property <string> selected: "Étoiles — 日本語 — 故事";
+    in-out property <int> selected-id: 0;
+    in-out property <int> selected-row-index: 0;
+    in property <[StandardListViewItem]> story-list;
     in property <[StoryRow]> stories;
     in property <[[StoryRow]]> grid;
     in-out property <[DecisionRow]> decisions;
@@ -201,9 +210,15 @@ export component Spike inherits Window {
                         Action { focus-key: 10; text: root.french ? "Révision" : "Review"; clicked => { root.review-visible = !root.review-visible; } }
                         details-button := Action { focus-key: 11; text: root.french ? "Détails" : "Details"; clicked => { root.open-dialog(3, 1); } }
                     }
-                    if root.mode == 0: ListView {
+                    if root.mode == 0: StoryList {
                         min-width: 0px; min-height: 0px;
-                        for story in root.stories: Action { focus-key: 1000 + story.id; text: story.title; clicked => { root.select-story(story.id); } }
+                        enabled: !root.modal;
+                        accessible-label: root.french ? "Histoires" : "Stories";
+                        model: root.story-list;
+                        current-item <=> root.selected-row-index;
+                        current-item-changed(index) => {
+                            if index >= 0 && index < root.stories.length { root.select-story(root.stories[index].id); }
+                        }
                     }
                     if root.mode != 0: ListView {
                         min-width: 0px; min-height: 0px;
@@ -212,7 +227,14 @@ export component Spike inherits Window {
                             for story in row: VerticalBox {
                                 min-width: 0px;
                                 Image { source: story.cover; height: root.mode == 1 ? 75px : 130px; image-fit: contain; }
-                                Action { focus-key: 1000 + story.id; min-width: 0px; text: story.title; clicked => { root.select-story(story.id); } }
+                                Action {
+                                    focus-key: 1000 + story.id; min-width: 0px; text: story.title;
+                                    checked: story.id == root.selected-id;
+                                    accessible-role: list-item;
+                                    accessible-item-selectable: true;
+                                    accessible-item-selected: story.id == root.selected-id;
+                                    clicked => { root.select-story(story.id); }
+                                }
                             }
                         }
                     }

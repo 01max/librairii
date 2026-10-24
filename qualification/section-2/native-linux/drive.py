@@ -182,6 +182,9 @@ class Desktop:
         elif key.startswith('ctrl+'):
             self.run(['wtype', '-s', '200', '-M', 'ctrl', '-P', 'Control_L', '-s', '50',
                       '-k', key[5:], '-p', 'Control_L', '-m', 'ctrl', '-s', '100'])
+        elif key.startswith('shift+'):
+            self.run(['wtype', '-s', '200', '-M', 'shift', '-P', 'Shift_L', '-s', '50',
+                      '-k', key[6:], '-p', 'Shift_L', '-m', 'shift', '-s', '100'])
         else:
             self.run(['wtype', '-s', '200', '-k', key, '-s', '100'])
 

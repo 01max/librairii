@@ -14,6 +14,38 @@ Français remain enabled and Close owns focus. Missing nodes/states fail the
 guard. The previous v3 reports retain their original limited scope. Fresh native
 v4 execution is required; selection/review/workflow coverage remains separate.
 
+## Native semantic workflows, method v5
+
+The list uses the public StandardListView: actual native End must focus/select
+story0999, absent from the initial virtualized tree. The selected story must
+survive Small covers/List transitions. Custom cover buttons expose selected-item
+metadata tied to the same selected ID; selection and menu focus restoration are
+preserved without an accessibility setter.
+
+The keyboard observer then opens Review, observes unchecked Add0 and disabled
+Apply0, checks Add0, moves to page2, checks Add25, returns to page1 with Add0 still
+checked, and explicitly applies exactly two choices before observing reset.
+Actual Orca checked-state utterances and completed audio accompany both toggles;
+the Apply status is a real polite announcement. No implicit approval qualifies.
+
+The observer starts work, records a real bounded progress Value interface and
+disabled Start/enabled Cancel, then cancels through native keys and waits for
+its actual terminal announcement/audio. A second run completes with at least
+one actual percentage utterance and one terminal utterance. A synthetic failure
+and subsequent retry must announce their actual error/completion. The explicit
+`--slow-synthetic-work` flag gives this synthetic reader experiment six seconds
+per completed run; the normal workload and performance budgets are unchanged.
+
+Fourteen required speech stages retain exact utterances or recorded required/
+forbidden fragments, distinct offsets, nonzero audio and a quiet completion tail.
+Semantic states, observations and screenshots bind each action to its real
+target. Native keyboard delivery always requires the app's foreground PID;
+there is no AT-SPI action/focus/text mutation. The existing180-second per-session
+bound remains. The longer workflow has explicit8MiB PCM/WAV and16MiB reader
+debug caps; every other file retains4MiB and the512-file bound. Missing stages,
+wrong checkbox speech, inactive/out-of-range progress and wrong states fail.
+Fresh native execution and independent evidence review remain required.
+
 `check-accessibility-linux.py` verifies the matching archive and runs the native
 packaged spike in separate offline X11/Openbox and Wayland/Sway containers.
 Each owns its D-Bus, accessibility registry, home/configuration, PulseAudio null

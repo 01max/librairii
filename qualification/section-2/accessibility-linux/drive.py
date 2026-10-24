@@ -22,6 +22,12 @@ if not pathlib.Path(spec.origin).exists():
     spec = importlib.util.spec_from_file_location('native', pathlib.Path(__file__).parents[1] / 'native-linux/drive.py')
     native = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(native)
+EVIDENCE_LIMITS = {'speech.pcm': 8 * 1024 * 1024, 'speech.wav': 8 * 1024 * 1024,
+    'orca-debug.txt': 16 * 1024 * 1024}
+
+
+def evidence_limit(path):
+    return EVIDENCE_LIMITS.get(path.name, native.LIMIT)
 
 
 def start_audio(desktop, argv):
@@ -33,10 +39,11 @@ def start_audio(desktop, argv):
             size = 0
             with stream, (desktop.root / name).open('xb') as output:
                 while data := stream.read1(65536):
-                    output.write(data[:max(0, native.LIMIT - size)])
+                    limit = evidence_limit(desktop.root / name)
+                    output.write(data[:max(0, limit - size)])
                     output.flush()
                     size += len(data)
-                    if size >= native.LIMIT:
+                    if size >= limit:
                         desktop.overflow.append(name + ': output limit')
                         child.kill()
                         break
@@ -74,6 +81,11 @@ def tree(desktop, app):
                     for name in ('focused', 'focusable', 'enabled', 'sensitive', 'showing', 'selected', 'checked', 'editable')}}
             if states.contains(desktop.a.STATE_EDITABLE):
                 row['text'] = node.queryText().getText(0, -1)
+            if row['role'] == 'progress bar':
+                value = node.queryValue()
+                row['numeric_value'] = value.currentValue
+                row['minimum_value'] = value.minimumValue
+                row['maximum_value'] = value.maximumValue
             result.append(row)
         except Exception as error:
             result.append({'observation_error': type(error).__name__ + ': ' + str(error)})
@@ -85,7 +97,24 @@ def focused(nodes):
 
 
 def utterance_observed(log, expected):
-    return expected in re.findall(r"SPEECH OUTPUT: '([^']*)' \{", log)
+    utterances = re.findall(r"SPEECH OUTPUT: '([^']*)' \{", log)
+    if isinstance(expected, str):
+        return expected in utterances
+    text = ' '.join(utterances)
+    return (isinstance(expected, dict) and bool(expected.get('contains'))
+        and all(part in text for part in expected['contains'])
+        and not any(part in text for part in expected.get('excludes', [])))
+
+
+def named(nodes, name, role=None):
+    found = [n for n in nodes if n.get('name') == name and (role is None or n.get('role') == role)]
+    return found[0] if len(found) == 1 else None
+
+
+def active_progress(nodes):
+    return next((n for n in nodes if n.get('role') == 'progress bar'
+        and n.get('minimum_value') == 0 and n.get('maximum_value') == 1
+        and 0 < n.get('numeric_value', -1) < 1), None)
 
 
 def modal_controls_confined(nodes):
@@ -218,7 +247,7 @@ def record(desktop, binary, report):
     before_fixtures = set(pathlib.Path('/tmp').glob('librairii-qualification-*'))
     report['application_environment'] = {key: os.environ.get(key) for key in
         ('DISPLAY', 'WAYLAND_DISPLAY', 'GDK_BACKEND', 'SLINT_BACKEND')}
-    app = desktop.start('application', [str(binary), '--size=1280x900'], debug=True)
+    app = desktop.start('application', [str(binary), '--size=1280x900', '--slow-synthetic-work'], debug=True)
     report['launch_focus_observations'] = []
     def foreground_ready():
         if app.poll() is not None:
@@ -249,7 +278,8 @@ def record(desktop, binary, report):
             'observation_errors': [n['observation_error'] for n in nodes if 'observation_error' in n],
             'audio_byte_offset': pcm.stat().st_size}
         return nodes
-    snapshot('initial')
+    initial = snapshot('initial')
+    assert not any(n.get('name', '').startswith('0999 ·') for n in initial), 'last story was not initially offscreen'
     # Observe keyboard navigation only. Do not call an accessibility action or
     # programmatically set focus/text to make a missing semantic witness pass.
     navigation = []
@@ -293,6 +323,126 @@ def record(desktop, binary, report):
     native.wait_for(lambda: focused(tree(desktop, accessible)) == focused(settings_focus))
     snapshot('settings-restored')
     announced('restored', 'Settings push button.', restored_speech)
+    def read():
+        return tree(desktop, accessible)
+    def tab_to(predicate, reverse=False, limit=80):
+        navigation = []
+        for _ in range(limit):
+            current = focused(read())
+            navigation.append(current)
+            if len(current) == 1 and predicate(current[0]):
+                report.setdefault('workflow_navigation', []).append(navigation)
+                return current[0]
+            key('shift+Tab' if reverse else 'Tab')
+        report.setdefault('workflow_navigation', []).append(navigation)
+        raise AssertionError('bounded native keyboard target not reached')
+    def focus_name(name, reverse=False):
+        return tab_to(lambda n: n.get('name') == name, reverse)
+    def wait_named(name, role=None, **states):
+        return native.wait_for(lambda: (n := named(read(), name, role))
+            and all(n.get('states', {}).get(k) is v for k,v in states.items()) and n)
+
+    # Native End must scroll to and select a row absent from the initial tree.
+    focus_name('Search stories', reverse=True)
+    key('ctrl+a')
+    key('BackSpace')
+    native.wait_for(lambda: (n := named(read(), 'Search stories')) and n.get('text') == '')
+    tab_to(lambda n: n.get('role') == 'list item')
+    end_speech = speech_marker()
+    key('End')
+    selected = native.wait_for(lambda: next((n for n in focused(read())
+        if n.get('name', '').startswith('0999 ·') and n['states'].get('selected')), None))
+    report['offscreen_selected_story'] = selected
+    snapshot('offscreen-selected')
+    desktop.screenshot(root / 'offscreen-selected.png')
+    announced('story-end', {'contains': ['0999', 'Étoiles']}, end_speech)
+    report['baseline_checks']['virtualized_offscreen_selection'] = True
+    focus_name('Small covers', reverse=True)
+    key('space')
+    native.wait_for(lambda: any(n.get('name') == selected['name'] and n.get('role') == 'label' for n in read()))
+    snapshot('covers-selection-preserved')
+    focus_name('List', reverse=True)
+    key('space')
+    native.wait_for(lambda: any(n.get('name') == selected['name'] and n.get('role') == 'label' for n in read()))
+    snapshot('list-selection-preserved')
+    report['baseline_checks']['view_preserved_selection'] = True
+
+    # Default unchecked, two pages, explicit Apply, then reset: no implicit Add.
+    focus_name('Review')
+    key('space')
+    first = 'Add 0 · Otherwise: Not now'
+    second = 'Add 25 · Otherwise: Not now'
+    wait_named(first, 'check box', checked=False)
+    wait_named('Apply 0', 'push button', enabled=False)
+    focus_name(first)
+    check_speech = speech_marker()
+    key('space')
+    wait_named(first, 'check box', checked=True)
+    wait_named('Apply 1', 'push button', enabled=True)
+    snapshot('review-page-one-checked')
+    announced('review-checked-0', {'contains': ['checked'], 'excludes': ['not checked']}, check_speech)
+    focus_name('Next', reverse=True)
+    key('space')
+    wait_named(second, 'check box', checked=False)
+    focus_name(second)
+    check_speech = speech_marker()
+    key('space')
+    wait_named(second, 'check box', checked=True)
+    wait_named('Apply 2', 'push button', enabled=True)
+    snapshot('review-page-two-checked')
+    announced('review-checked-25', {'contains': ['checked'], 'excludes': ['not checked']}, check_speech)
+    focus_name('Previous', reverse=True)
+    key('space')
+    wait_named(first, 'check box', checked=True)
+    snapshot('review-page-one-restored')
+    focus_name('Apply 2')
+    apply_speech = speech_marker()
+    key('space')
+    wait_named(first, 'check box', checked=False)
+    wait_named('Apply 0', 'push button', enabled=False)
+    snapshot('review-applied')
+    announced('review-applied', {'contains': ['2 synthetic decisions']}, apply_speech)
+    report['baseline_checks']['review_checked_paging_apply'] = True
+
+    # Actual progress, enabled/disabled actions, Cancel, completion, error/retry.
+    focus_name('Synthetic work')
+    cancel_speech = speech_marker()
+    key('space')
+    progress = native.wait_for(lambda: active_progress(read()))
+    report['cancel_progress'] = progress
+    wait_named('Synthetic work', 'push button', enabled=False)
+    wait_named('Cancel', 'push button', enabled=True)
+    focus_name('Cancel')
+    snapshot('work-before-cancel')
+    key('space')
+    wait_named('Synthetic work', 'push button', enabled=True)
+    wait_named('Cancel', 'push button', enabled=False)
+    snapshot('work-cancelled')
+    announced('work-cancelled', {'contains': ['Synthetic work cancelled']}, cancel_speech)
+    report['baseline_checks']['work_progress_and_cancel'] = True
+    focus_name('Synthetic work', reverse=True)
+    complete_speech = speech_marker()
+    key('space')
+    native.wait_for(lambda: active_progress(read()))
+    announced('work-completed', {'contains': ['Synthetic work completed']}, complete_speech)
+    snapshot('work-completed')
+    completed_output = debug.read_bytes()[complete_speech['debug_offset']:].decode('utf-8', errors='replace')
+    spoken = re.findall(r"SPEECH OUTPUT: '([^']*)' \{", completed_output)
+    report['progress_utterances'] = [s for s in spoken if re.search(r'\d+\s*(?:percent|%)', s)]
+    assert report['progress_utterances'], 'no actual Orca percentage announcement'
+    assert sum('Synthetic work completed' in s for s in spoken) == 1, 'terminal speech flooded'
+    focus_name('Synthetic error')
+    error_speech = speech_marker()
+    key('space')
+    announced('synthetic-error', {'contains': ['Synthetic failure', 'retry']}, error_speech)
+    snapshot('synthetic-error')
+    focus_name('Synthetic work', reverse=True)
+    retry_speech = speech_marker()
+    key('space')
+    native.wait_for(lambda: active_progress(read()))
+    announced('retry-completed', {'contains': ['Synthetic work completed']}, retry_speech)
+    snapshot('retry-completed')
+    report['baseline_checks']['work_completion_error_retry'] = True
     # Give real speech delivery time to finish before stopping its sink recorder.
     time.sleep(2)
     report['orca_application_output'] = debug.read_bytes()[before:].decode('utf-8', errors='replace')
@@ -324,10 +474,11 @@ def main():
     assert binary_sha == os.environ['EXPECTED_BINARY_SHA256']
     report = {'schema': 1, 'session': args.session, 'binary_sha256': binary_sha, 'errors': [],
         'baseline_checks': {}, 'baseline': 'fail', 'full_accessibility_qualified': False,
-        'observation_method': 'per-focus-utterance-audio-and-modal-state-v4',
+        'observation_method': 'native-keyboard-semantic-workflows-and-completed-audio-v5',
         'scope': 'Private Orca/eSpeak-NG speech and AT-SPI baseline; keyboard Search and Settings only. '
             'X11 action-key echo is disabled in this private reader profile; its default-echo route stays unqualified. '
-            'Virtualized selection, review, progress/error speech and complete pointer-free flows remain unqualified.'}
+            'Native virtualized End/selection, view preservation, review paging/Apply, modal state, '
+            'progress/cancel/completion/error/retry are required. Final toolkit review remains separate.'}
     desktop, guard = None, None
     stop = threading.Event()
     try:
@@ -336,7 +487,7 @@ def main():
             while not stop.wait(0.1):
                 try:
                     files = list(root.rglob('*'))
-                    if len(files) <= 512 and all(not p.is_file() or p.stat().st_size <= native.LIMIT for p in files):
+                    if len(files) <= 512 and all(not p.is_file() or p.stat().st_size <= evidence_limit(p) for p in files):
                         continue
                     reason = 'direct evidence output limit'
                 except Exception as error:

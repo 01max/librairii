@@ -408,3 +408,31 @@ all source/raw/package evidence. Fresh verification follows with space restored.
 With space restored, all103 recorder tests pass in30.831s. Independent re-review
 confirms both corrections; formatting and all nine adapter tests pass. Fresh
 native v4 execution remains required before accepting modal-state qualification.
+
+The actual4b2f64b/run40111517408 passes ARM and retains two independent failures.
+Linux's strict Clippy run applies the application's Rust1.99.1 policy to the
+otherwise verbatim MSRV1.85 upstream adapter and rejects13 newer-style suggestions.
+A crate-local clippy.toml preserves its declared MSRV; the exact strict vendor
+Clippy command then passes with no source rewrite or disabled lint.
+Intel's folder-accept panel has Open enabled initially at the fixture, then
+disabled throughout the observation after redundant Go-to-the-same-directory.
+The observer now accepts that initially configured folder directly; canonical
+callback equality, parent relationship, unforced focus and retirement remain
+required. The failure is retained in artifact12567071801 (ZIP SHA256
+c2a44ac8e66219828948dd104d03c146736fa57c285988d33dc3f10d4452ac56).
+Fresh native execution must validate the changed interaction; no retry or
+unverified path can qualify it.
+
+## Native keyboard/semantic workflow continuation (2.4)
+
+The spike now uses Slint's public virtualized StandardListView for real keyboard
+End/selection semantics. One selected ID and current model index preserve
+selection in cover/list views and native-menu focus restoration. Native Orca
+methodv5 adds offscreen selection, two-page explicit review/check/apply/reset,
+numeric progress, cancellation, completion/percentage, error and retry witnesses.
+Fourteen speech stages retain real completed app audio. No accessibility action
+or focus/value setter drives the flow. Focused recorder tests reject false
+checked-state speech and invalid/inactive numeric progress. Extended recording
+has only bounded per-kind audio/debug cap increases; deadlines, all other output
+caps and owned cleanup remain. Current compilation/Clippy and seven focused
+recorder tests pass; fresh actual workflow qualification remains pending.

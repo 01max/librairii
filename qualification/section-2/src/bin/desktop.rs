@@ -30,6 +30,16 @@ fn show_rows(ui: &Spike, query: &str, loader: &Rc<RefCell<thumbnails::Loader>>) 
         .chunks(3)
         .map(|row| thumbnails::Loader::rows(loader, row.to_vec()))
         .collect();
+    ui.set_selected_row_index(
+        rows.iter()
+            .position(|row| row.id == ui.get_selected_id())
+            .map_or(-1, |index| index as i32),
+    );
+    ui.set_story_list(ModelRc::new(VecModel::from(
+        rows.iter()
+            .map(|row| slint::language::StandardListViewItem::from(row.title.clone()))
+            .collect::<Vec<_>>(),
+    )));
     ui.set_stories(thumbnails::Loader::rows(loader, rows));
     ui.set_grid(ModelRc::new(VecModel::from(grid)));
 }
@@ -236,6 +246,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let weak = ui.as_weak();
     ui.on_select_story(move |id| {
         if let Some(ui) = weak.upgrade() {
+            ui.set_selected_id(id);
+            ui.set_selected_row_index(
+                ui.get_stories()
+                    .iter()
+                    .position(|row| row.id == id)
+                    .map_or(-1, |index| index as i32),
+            );
             ui.set_selected(format!("{id:04} · Étoiles — 日本語 — 故事").into());
         }
     });
@@ -285,6 +302,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let stop = cancel.clone();
     let done = progress.clone();
     let weak = ui.as_weak();
+    let work_step = if std::env::args().any(|arg| arg == "--slow-synthetic-work") {
+        // Give a real screen reader time to finish the start label before Cancel.
+        // This changes only the explicit qualification workload, never a budget.
+        Duration::from_millis(60)
+    } else {
+        Duration::from_millis(20)
+    };
     ui.on_start_work(move || {
         if worker_slot
             .borrow()
@@ -306,12 +330,21 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     return;
                 }
                 // Artificial workload, never an archive import or a measured budget.
-                std::thread::sleep(Duration::from_millis(20));
+                std::thread::sleep(work_step);
                 done.store(step, Ordering::Release);
             }
         }));
         if let Some(ui) = weak.upgrade() {
+            ui.set_progress(0.0);
             ui.set_working(true);
+            ui.set_status(
+                if ui.get_french() {
+                    "Travail synthétique démarré"
+                } else {
+                    "Synthetic work started"
+                }
+                .into(),
+            );
         }
     });
     let stop = cancel.clone();

@@ -18,13 +18,17 @@ spec.loader.exec_module(common)
 REQUIRED = {'app_accessibility_tree', 'keyboard_search', 'keyboard_settings_and_focus_return',
     'orca_spoke_search_or_settings', 'speech_services_alive', 'normal_application_quit',
     'actual_synthesized_audio', 'owned_fixture_removed', 'orca_search_label_completed',
-    'orca_settings_labels_completed', 'modal_background_disabled'}
-SPEECH_STEPS = {'frame', 'search', 'settings', 'close', 'english', 'restored'}
+    'orca_settings_labels_completed', 'modal_background_disabled', 'virtualized_offscreen_selection',
+    'view_preserved_selection', 'review_checked_paging_apply', 'work_progress_and_cancel',
+    'work_completion_error_retry'}
+SPEECH_STEPS = {'frame', 'search', 'settings', 'close', 'english', 'restored', 'story-end',
+    'review-checked-0', 'review-checked-25', 'review-applied', 'work-cancelled', 'work-completed',
+    'synthetic-error', 'retry-completed'}
 
 
 def baseline_passed(report, binary_sha, expected_session):
     return (report.get('baseline') == 'pass' and report.get('errors') == []
-        and report.get('observation_method') == 'per-focus-utterance-audio-and-modal-state-v4'
+        and report.get('observation_method') == 'native-keyboard-semantic-workflows-and-completed-audio-v5'
         and report.get('session') in ('x11', 'wayland')
         and report['session'] == expected_session
         and report.get('reader_preferences') == {'enable_action_keys': report['session'] != 'x11'}
@@ -89,7 +93,9 @@ def inspect(package, archive, output):
             except RuntimeError as error:
                 report['errors'].append(str(error))
             files = [p for p in evidence.rglob('*') if p.is_file()]
-            if len(files) > 512 or any(p.stat().st_size > common.wayland.LIMIT for p in files):
+            limits = {'speech.pcm': 8 * 1024 * 1024, 'speech.wav': 8 * 1024 * 1024,
+                'orca-debug.txt': 16 * 1024 * 1024}
+            if len(files) > 512 or any(p.stat().st_size > limits.get(p.name, common.wayland.LIMIT) for p in files):
                 raise ValueError('accessibility evidence size/count limit')
             try:
                 value = json.loads((evidence / 'accessibility-session.json').read_text())

@@ -20,6 +20,23 @@ driver = load('orca_driver', 'accessibility-linux/drive.py')
 
 
 class AccessibilityLinux(unittest.TestCase):
+    def test_workflow_utterance_fragments_require_reader_output_and_reject_the_wrong_check_state(self):
+        expected = {'contains': ['checked'], 'excludes': ['not checked']}
+        self.assertTrue(driver.utterance_observed("SPEECH OUTPUT: 'checked.' {'x':True}", expected))
+        for text in ("SPEECH OUTPUT: 'not checked.' {'x':True}", 'checked.',
+                "SPEECH OUTPUT: 'space' {'x':True}"):
+            self.assertFalse(driver.utterance_observed(text, expected))
+        selected = {'contains': ['0999', 'Étoiles']}
+        self.assertTrue(driver.utterance_observed("SPEECH OUTPUT: '0999 · Étoiles' {'x':True}", selected))
+        self.assertFalse(driver.utterance_observed("SPEECH OUTPUT: '0000 · Étoiles' {'x':True}", selected))
+
+    def test_active_progress_requires_the_actual_bounded_numeric_interface(self):
+        progress = {'role': 'progress bar', 'minimum_value': 0, 'maximum_value': 1, 'numeric_value': 0.2}
+        self.assertEqual(driver.active_progress([progress]), progress)
+        for change in ({'role': 'label'}, {'minimum_value': 1}, {'maximum_value': 100},
+                {'numeric_value': 0}, {'numeric_value': 1}, {'numeric_value': -1}):
+            self.assertIsNone(driver.active_progress([{**progress, **change}]))
+
     def test_modal_state_rejects_enabled_or_missing_background_and_disabled_dialog_controls(self):
         def button(name, enabled, focus=False):
             return {'name': name, 'role': 'push button', 'states': {
@@ -72,7 +89,7 @@ class AccessibilityLinux(unittest.TestCase):
 
     def test_speech_and_every_baseline_witness_are_required_without_full_qualification(self):
         report = {'baseline': 'pass', 'errors': [], 'binary_sha256': 'expected',
-            'observation_method': 'per-focus-utterance-audio-and-modal-state-v4',
+            'observation_method': 'native-keyboard-semantic-workflows-and-completed-audio-v5',
             'session': 'x11', 'reader_preferences': {'enable_action_keys': False},
             'application_returncode': 0, 'baseline_checks': dict.fromkeys(observer.REQUIRED, True),
             'speech_steps': {name: {'audio': {'nonzero_samples': 1601}} for name in observer.SPEECH_STEPS},
