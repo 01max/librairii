@@ -133,7 +133,7 @@ def inspect(package, archive, helper, output):
         def clear_search(value, stage):
             # Observe native selection after one menu command. Never invoke
             # Select All again to turn missing command delivery into a pass.
-            report.setdefault('native_select_all_commands', {})[stage] = observer.call('menu', title='Select All')
+            report.setdefault('native_select_all_commands', {})[stage] = observer.call('menu', title='Select All', submenu='Edit')
             observations = report.setdefault('native_selection_observations', {}).setdefault(stage, [])
             report.setdefault('native_full_selections', {})[stage] = wait_for_selection(observer, observations, value, app.pid)
             observer.call('key', key='delete')

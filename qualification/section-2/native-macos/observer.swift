@@ -211,10 +211,25 @@ func key(_ name: String) throws {
     }
 }
 
-func menu(_ app: AXUIElement, title: String) throws -> [String: Any] {
+func menu(_ app: AXUIElement, title: String, submenu: String? = nil) throws -> [String: Any] {
     guard let bar = attribute(app, kAXMenuBarAttribute) else { throw Failure.invalid("no native menu bar") }
     let barElement = bar as! AXUIElement
-    for top in elements(barElement, kAXChildrenAttribute) {
+    let tops = elements(barElement, kAXChildrenAttribute)
+    let matches = submenu.map { title in tops.filter { text($0, kAXTitleAttribute) == title } } ?? tops
+    if submenu != nil && matches.count != 1 {
+        trace("native menu titles: " + String(describing: tops.map { text($0, kAXTitleAttribute) }))
+        throw Failure.invalid("requested native submenu is not unique")
+    }
+    for top in matches {
+        // AppKit may populate submenu accessibility children only after the
+        // menu opens. An explicit top-level menu is pressed once before lookup,
+        // exactly as a user opens Edit, never by retrying the requested action.
+        if submenu != nil {
+            guard AXUIElementPerformAction(top, kAXPressAction as CFString) == .success else {
+                throw Failure.invalid("cannot open requested native submenu")
+            }
+            Thread.sleep(forTimeInterval: 0.1)
+        }
         var queue = elements(top, kAXChildrenAttribute)
         var next = 0
         while next < queue.count && next < 300 {
@@ -222,15 +237,18 @@ func menu(_ app: AXUIElement, title: String) throws -> [String: Any] {
             next += 1
             if text(element, kAXTitleAttribute) == title {
                 let before = describe(element)
-                guard AXUIElementPerformAction(top, kAXPressAction as CFString) == .success else {
-                    throw Failure.invalid("cannot open native menu")
+                if submenu == nil {
+                    guard AXUIElementPerformAction(top, kAXPressAction as CFString) == .success else {
+                        throw Failure.invalid("cannot open native menu")
+                    }
+                    Thread.sleep(forTimeInterval: 0.1)
                 }
-                Thread.sleep(forTimeInterval: 0.1)
                 let after = describe(element)
                 guard AXUIElementPerformAction(element, kAXPressAction as CFString) == .success else {
                     throw Failure.invalid("cannot activate native menu item")
                 }
-                return ["performed": true, "menu_item_before": before, "menu_item_after_open": after]
+                return ["performed": true, "menu_item_before": before, "menu_item_after_open": after,
+                    "submenu_opened_before_lookup": submenu != nil]
             }
             queue.append(contentsOf: elements(element, kAXChildrenAttribute).prefix(max(0, 1000 - queue.count)))
         }
@@ -443,7 +461,7 @@ do {
         if operation == "set" { reply["value"] = text(element, kAXValueAttribute) }
         try output(reply)
     case "menu":
-        try output(menu(app, title: request["title"] as? String ?? ""))
+        try output(menu(app, title: request["title"] as? String ?? "", submenu: request["submenu"] as? String))
     case "clipboard-set":
         NSPasteboard.general.clearContents()
         guard NSPasteboard.general.setString(request["text"] as? String ?? "", forType: .string) else {

@@ -92,6 +92,13 @@ Actual `AXFocused=true` is required in addition to the full text/range/PID check
 This observer correction still requires fresh native execution; the original
 failed runs and the earlier partial-delete symptom retain their verdicts.
 
+The separate Intel menu-reader correction explicitly opens the one native Edit
+menu before looking for its Select All child, allowing AppKit to expose lazy
+submenu children. It performs the item action once and records whether the
+submenu opened before lookup; an absent/ambiguous menu or missing item still
+fails. General adapter-menu behavior is unchanged. Fresh ARM/Intel execution
+must establish delivery and selection; the f462e38 Intel failure remains.
+
 ## Historical initial checklist
 
 Status: **pending actual observation on A/I/L/W**, 2026-10-20, librairii-4.

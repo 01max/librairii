@@ -304,3 +304,10 @@ the full text/UTF-16 range. No action retry or selection/focus mutation is added
 The focused seven-test suite and Swift compilation pass; fresh execution remains
 required. Immutable artifact identities and raw-hash verification are recorded
 in input-display.md; earlier failed verdicts remain unchanged.
+
+Task2.5 separate menu-reader correction: the composition driver names the native
+Edit submenu, and the helper opens that exact unique submenu once before
+inspecting its children. This addresses lazy AppKit menu accessibility lookup;
+it never retries Select All. Item metadata and the open-before-lookup fact are
+retained, while absent/ambiguous submenus/items still fail. Existing adapter
+menu lookups preserve their behavior. Native execution remains required.
