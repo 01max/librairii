@@ -105,3 +105,12 @@ invalid. ARM artifact12554623051 ZIP SHA256 is
 `e6ac3c9ca3ac4ed6341479f82317e9e85237b4304c297e5e0362d397d48e000a`;
 Intel artifact12554228106 ZIP SHA256 is
 `d116219388551aa5da7a9be2629f540ae9411f2fdae165047e91e98dceb5f512`.
+
+At `aab701c` / run40080362178 ARM completes the five file and folder
+acceptance/cancellation cases. Folder rejection times out during AX traversal
+after Go to Folder navigates into the system temporary parent, whose unrelated
+contents exceed the bounded observation route. The rejection case now navigates
+to a fresh, empty, owned evidence directory outside the accepted fixture root.
+The actual picker must still return that exact canonical directory and the app
+must reject it. No timeout or assertion is relaxed. ARM artifact12555145869 ZIP
+SHA256 is `32f47a1cc989b6f6e7bdd2b9bc2eb98efaba87995d75ede2ee921f6e4d520ef4`.

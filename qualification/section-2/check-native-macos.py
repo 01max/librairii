@@ -280,7 +280,16 @@ def one_case(binary, helper, root, name, kind, expected):
             if expected == 'cancelled':
                 observer.button(snapshot, root_node, ('Cancel',))
             else:
-                destination = fixture.parent if expected == 'rejected' else fixture
+                destination = fixture
+                if expected == 'rejected':
+                    # The system temporary parent can contain thousands of
+                    # unrelated rows. Use a fresh owned directory outside the
+                    # fixture, retaining the same actual rejection contract.
+                    destination = output / 'outside-folder'
+                    destination.mkdir()
+                    if destination.resolve(strict=True).is_relative_to(fixture):
+                        raise ValueError('rejection fixture is inside the accepted root')
+                    report['outside_folder'] = str(destination)
                 observer.go_folder(destination, root_node)
                 if kind == 'files':
                     observer.rows(fixture, root_node, name == 'files-multiple')
@@ -289,7 +298,7 @@ def one_case(binary, helper, root, name, kind, expected):
                 observer.button(snapshot, root_node, ('Open', 'Choose', 'Select'))
             observer.wait(lambda: (rendezvous / 'callback-complete.txt').exists())
             paths = (rendezvous / 'selected-paths.txt').read_text().splitlines()
-            wanted = [] if expected == 'cancelled' else [str(fixture.parent)] if expected == 'rejected' else (
+            wanted = [] if expected == 'cancelled' else [str(destination)] if expected == 'rejected' else (
                 [str(fixture / 'Été 日本語 故事.zip')] + ([str(fixture / 'Deuxième archive 02.pk')] if name == 'files-multiple' else [])
                 if kind == 'files' else [str(fixture)])
             report['selected_paths'] = paths
