@@ -5,8 +5,8 @@ Intel macOS. Its complete raw log and paired vectors are retained here with
 artifact/source/binary hashes. Wall p95 was 61.131010 ms; process CPU p95 was
 51.246 ms. Nine wall samples exceeded 50 ms, including six CPU samples. This
 mixed trace does not establish a root cause or justify host settling alone.
-The prior reviewed run-67 decision remains historical evidence. Tasks 2.9 and
-2.13 stay open pending fresh native qualification.
+The prior reviewed run-67 decision remains historical evidence. At this experiment checkpoint, Tasks 2.9 and
+2.13 stayed open pending fresh native qualification.
 
 The experiment reuses compressed/output scratch across covers while opening
 every file and reading to EOF, creating a fresh pinned image 0.25.10 PNG decoder
@@ -32,3 +32,8 @@ sporadic Intel CPU spikes. `local-comparison-with-clippy-overlap.json` retains a
 earlier diagnostic whose first old run overlapped a 2.66-second Clippy check; it
 is not a controlled performance comparison. Neither local comparison is packaged
 qualification or a replacement for fresh ARM Mac, Intel Mac and Linux gates.
+
+Final qualification: `e9ab1bad1b5ef9797877f1aa3a8cf577bbc6ffda` / [run70](https://github.com/01max/librairii/actions/runs/40127878713) passes all three native targets,
+including unchanged full artwork/input/navigation/resource gates, independently
+verified in ../final-matrix.json and ../review.md. The prior failed trace remains
+failed; this passing matrix does not prove the sporadic Intel cause repaired.

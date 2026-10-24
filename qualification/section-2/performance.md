@@ -1,13 +1,18 @@
 # Automated resource measurement continuation (2.9, 2026-10-23)
 
-Task2.9 is complete. All three native targets pass the64-event input/20-trial
-expansion-navigation and100-batch24-artwork gates, together with all warmup/measured
-resource ceilings. Exact samples and source/package identities are in
-completion-evidence/final-matrix.json. Input≤100ms p95, navigation≤3000ms p95 and
-24 local320×400 full PNG reads/decodes≤50ms p95 remain unchanged. Additional
-ceilings are startup marker≤1000ms, idle≤5% ofone core, peakRSS≤512MiB and
-archive≤32MiB. Startup markers are not first physical presentation; three resource
-runs are reported as min/median/max, not a fabricated p95. See [selection-gate.md](selection-gate.md).
+Task 2.9 is complete at `e9ab1ba` / native run 70, independently reviewed. Artwork
+method v3 reuses compressed/output scratch with a fresh full CRC-checked decode
+for every actual read. Run 68 remains failed; its mixed CPU/wall cause is unknown.
+See [the retained failure and experiment](completion-evidence/artwork-scratch/).
+
+All three native targets pass the 64-event input, 20-trial expansion/navigation
+and 100-batch artwork gates, together with all warmup/measured resource ceilings.
+Exact samples and source/package identities are in completion-evidence/final-matrix.json.
+Input ≤100 ms p95, navigation ≤3000 ms p95 and 24 local 320×400 full PNG
+reads/decodes ≤50 ms p95 remain unchanged. Additional ceilings are startup marker
+≤1000 ms, idle ≤5% of one core, peak RSS ≤512 MiB and archive ≤32 MiB. Startup
+markers are not first physical presentation; three resource runs are reported as
+min/median/max, not a fabricated p95. See [selection-gate.md](selection-gate.md).
 
 Earlier observations below retain their dates, source commits and historical scope.
 

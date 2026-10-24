@@ -246,9 +246,19 @@
   "final_qualification": {
     "date": "2026-10-24",
     "task_2_9_complete": true,
-    "implementation_head": "d145d604af917618ac6127bba8687806c5ed032a",
-    "native_workflow": "https://github.com/01max/librairii/actions/runs/40123986713",
+    "implementation_head": "e9ab1bad1b5ef9797877f1aa3a8cf577bbc6ffda",
+    "native_workflow": "https://github.com/01max/librairii/actions/runs/40127878713",
     "report": "completion-evidence/final-matrix.json",
     "scope": "Native keyboard/model acknowledgement and exact artwork fullread/decode wall-p95 plus additional measured ceilings. Earlier flags/runs remain attributed to their historical source; no physical first-presentation claim."
-  }
+  },
+  "final_qualification_history": [
+    {
+      "date": "2026-10-24",
+      "task_2_9_complete": true,
+      "implementation_head": "d145d604af917618ac6127bba8687806c5ed032a",
+      "native_workflow": "https://github.com/01max/librairii/actions/runs/40123986713",
+      "report": "completion-evidence/run67-matrix.json",
+      "scope": "Native keyboard/model acknowledgement and exact artwork fullread/decode wall-p95 plus additional measured ceilings. Earlier flags/runs remain attributed to their historical source; no physical first-presentation claim."
+    }
+  ]
 }
