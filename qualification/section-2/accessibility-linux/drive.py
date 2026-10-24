@@ -115,8 +115,17 @@ def record(desktop, binary, report):
     (prefs / 'orca-customizations.py').write_text('from orca import debug, settings\n'
         'debug.debugLevel = debug.LEVEL_INFO\nsettings.enableMouseReview = False\n'
         'settings.speakProgressBarUpdates = True\nsettings.progressBarUpdateInterval = 1\n')
-    orca = desktop.start('orca', ['orca', '--user-prefs', str(prefs), '--enable=speech', '--disable=braille',
-        '--debug-file', str(root / 'orca-debug.txt')])
+    orca_argv = ['orca', '--user-prefs', str(prefs), '--enable=speech', '--disable=braille',
+        '--debug-file', str(root / 'orca-debug.txt')]
+    if desktop.session == 'wayland':
+        # Ubuntu's Orca46.1 unconditionally invokes xkbcomp using DISPLAY.
+        # Only the reader receives this isolated XKB compatibility display;
+        # the application still has no DISPLAY and Sway disables Xwayland.
+        desktop.start('orca-xkb-display', ['Xvfb', ':92', '-screen', '0', '640x480x24', '-nolisten', 'tcp'])
+        native.wait_for(lambda: pathlib.Path('/tmp/.X11-unix/X92').is_socket())
+        orca_argv = ['env', 'DISPLAY=:92', 'GDK_BACKEND=x11', *orca_argv]
+        report['orca_xkb_compatibility_display'] = ':92'
+    orca = desktop.start('orca', orca_argv)
     debug = root / 'orca-debug.txt'
     native.wait_for(lambda: debug.exists() and 'Starting Atspi main event loop' in debug.read_text())
     pcm = root / 'speech.pcm'
@@ -128,8 +137,23 @@ def record(desktop, binary, report):
     report['application_audio_start_offset'] = pcm.stat().st_size
     before = debug.stat().st_size
     before_fixtures = set(pathlib.Path('/tmp').glob('librairii-qualification-*'))
-    app = desktop.start('application', [str(binary), '--size=1280x900'])
-    native.wait_for(lambda: desktop.active_pid() == app.pid)
+    report['application_environment'] = {key: os.environ.get(key) for key in
+        ('DISPLAY', 'WAYLAND_DISPLAY', 'GDK_BACKEND', 'SLINT_BACKEND')}
+    app = desktop.start('application', [str(binary), '--size=1280x900'], debug=True)
+    report['launch_focus_observations'] = []
+    def foreground_ready():
+        if app.poll() is not None:
+            raise RuntimeError('application exited before acquiring a native window')
+        try:
+            return desktop.active_pid() == app.pid
+        except subprocess.CalledProcessError as error:
+            # Before the first X11 window, _NET_ACTIVE_WINDOW may not exist.
+            # Poll only this launch-readiness witness within its existing bound;
+            # every later key still requires an immediate exact foreground PID.
+            if len(report['launch_focus_observations']) < 16:
+                report['launch_focus_observations'].append(str(error) + ': ' + str(error.output)[:1000])
+            return False
+    native.wait_for(foreground_ready)
     fixtures = native.wait_for(lambda: set(pathlib.Path('/tmp').glob('librairii-qualification-*')) - before_fixtures)
     assert len(fixtures) == 1, 'owned fixture is not unique'
     report['fixtures'] = [str(path) for path in fixtures]

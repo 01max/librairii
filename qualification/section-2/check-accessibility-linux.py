@@ -86,6 +86,14 @@ def inspect(package, archive, output):
                 value = json.loads((evidence / 'accessibility-session.json').read_text())
                 report['sessions'][session] = value
                 report['checks'][session] = baseline_passed(value, manifest['binary_sha256'])
+                if session == 'wayland':
+                    value['application_protocol_checks'] = common.wayland.protocol_checks(
+                        (evidence / 'application.log').read_text())
+                    application_env = value.get('application_environment', {})
+                    report['checks']['native_wayland_application'] = (
+                        application_env.get('DISPLAY') is None and bool(application_env.get('WAYLAND_DISPLAY'))
+                        and application_env.get('GDK_BACKEND') == 'wayland'
+                        and all(value['application_protocol_checks'].values()))
                 value['file_hashes'] = {str(p.relative_to(evidence)): hashlib.sha256(p.read_bytes()).hexdigest()
                     for p in files}
             except (OSError, ValueError) as error:

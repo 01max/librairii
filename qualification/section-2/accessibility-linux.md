@@ -28,9 +28,23 @@ completion remain unqualified even if this baseline passes. Actual execution is
 pending; compilation/unit tests do not qualify Orca speech. No toolkit selection
 is recorded. VoiceOver remains excluded and Windows deferred by owner decision.
 
+The first actual run at `5de32ce` / run40081026276 records two observer setup
+failures, retained in artifact12555123864 (ZIP SHA256
+`8c130cd4ddb3ecd4c92bc7d9ad88053653aff35b85b23302c475f058de570bc9`).
+X11 reaches actual startup speech, then asks for the active PID before any app
+window exists; initial readiness now polls that observation within the unchanged
+deadline, retaining command errors. Every later key still requires exact focus.
+Ubuntu Orca46.1 fails on Wayland at its unconditional `xkbcomp $DISPLAY` lookup.
+The reader now receives a separate private Xvfb compatibility display. The app
+receives no DISPLAY, Sway still disables Xwayland, and the host requires its
+actual same-toplevel Wayland configure/ack/buffer/commit trace. This does not
+qualify Orca global keyboard grabs or a reader with no X11 compatibility service.
+Neither failed baseline is retroactively accepted.
+
 The observer uses Orca's documented private preferences and debug configuration
 and Speech Dispatcher's private socket/configuration options. Source references:
 [Orca 46.2 settings manager](https://github.com/GNOME/orca/blob/ORCA_46_2/src/orca/settings_manager.py),
 [Orca debug levels](https://github.com/GNOME/orca/blob/ORCA_46_2/src/orca/debug.py),
+[Orca46.1 XKB initialization](https://github.com/GNOME/orca/blob/ORCA_46_1/src/orca/orca_modifier_manager.py),
 [Speech Dispatcher options](https://manpages.ubuntu.com/manpages/noble/man1/speech-dispatcher.1.html),
 [Speech Dispatcher configuration](https://github.com/brailcom/speechd/blob/0.12.0/config/speechd.conf).
