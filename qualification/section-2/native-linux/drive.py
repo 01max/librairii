@@ -594,6 +594,18 @@ def one_case(desktop, name, kind, expected):
     return report
 
 
+def focus_display_control(desktop, geometry, target):
+    for _ in range(20):
+        previous = geometry()['focus_key']
+        if previous == target:
+            return
+        desktop.key('Tab')
+        # Native key delivery can precede the 20ms geometry recorder. Sending
+        # another Tab against its stale snapshot can skip the intended control.
+        wait_for(lambda: geometry()['focus_key'] != previous, timeout=1)
+    raise AssertionError('compact Review not keyboard reachable')
+
+
 def observe_display(desktop, root):
     evidence, app_dir = root / 'display', root / 'display/app'
     evidence.mkdir()
@@ -644,12 +656,7 @@ def observe_display(desktop, root):
             desktop.key('Escape')
             wait_for(lambda: (s := state(app_dir)) and s[2] == '0')
             if width == 560:
-                for _ in range(20):
-                    if geometry()['focus_key'] == 10:
-                        break
-                    desktop.key('Tab')
-                else:
-                    raise AssertionError('compact Review not keyboard reachable')
+                focus_display_control(desktop, geometry, 10)
                 desktop.key('space')
                 wait_for(lambda: geometry()['review_visible'])
                 frame('compact-review')

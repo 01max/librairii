@@ -24,6 +24,30 @@ def monitor(parent):
 
 
 class NativeLinux(unittest.TestCase):
+    def test_display_tabs_wait_for_each_actual_focus_change(self):
+        class DelayedFocus:
+            def __init__(self):
+                self.focus, self.pending, self.tabs, self.reads = 8, None, 0, 0
+            def key(self, key):
+                self.assert_ready()
+                assert key == 'Tab'
+                self.pending, self.reads = self.focus + 1, 0
+                self.tabs += 1
+            def assert_ready(self):
+                assert self.pending is None, 'Tab posted before previous native focus acknowledgement'
+            def geometry(self):
+                if self.pending is not None:
+                    self.reads += 1
+                    if self.reads == 3:
+                        self.focus, self.pending = self.pending, None
+                return {'focus_key': self.focus}
+        desktop = DelayedFocus()
+        with mock.patch.object(driver.time, 'sleep'):
+            driver.focus_display_control(desktop, desktop.geometry, 10)
+        self.assertEqual(desktop.tabs, 2)
+        self.assertEqual(desktop.focus, 10)
+        desktop.assert_ready()
+
     def test_utf8_clipboard_observation_rejects_noop_copy_cut_or_paste(self):
         class Editor:
             def __init__(self, broken=None):

@@ -594,3 +594,14 @@ keeps the50ms wall-p95 ceiling. Neither repair claims the root cause proved
 before fresh execution. Local ENOSPC compiler failures are also preserved in the
 session: sequential rerun after removing only obsolete compiler outputs passes
 all111 recorder tests; strict Clippy passes. No source/evidence was removed.
+
+Run65 at9fdb955/40120658865 retains two Linux X11 failures. Private native
+input64 p95 is154.590690ms against100ms; both clean-VM routes pass near21ms
+and private Wayland passes84.635123ms. The X11 display driver posts another Tab
+against a stale20ms geometry snapshot and activates Details instead of Review.
+The bounded traversal now waits for each actual focus change before posting the
+next Tab. Its delayed-recorder regression fails on the former loop and passes
+afterward. Native execution remains required; this does not rescore either
+failure. Both fresh Mac lanes pass, including native focused folder path editing.
+Linux artifact12571716340 ZIP SHA256
+2d33f84de03e96b36dacf236a6cf19f7e4c7ab7ca29065deca5a7b06183b8ce9.
