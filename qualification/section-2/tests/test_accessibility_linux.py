@@ -21,14 +21,25 @@ driver = load('orca_driver', 'accessibility-linux/drive.py')
 
 class AccessibilityLinux(unittest.TestCase):
     def test_workflow_utterance_fragments_require_reader_output_and_reject_the_wrong_check_state(self):
-        expected = {'contains': ['checked'], 'excludes': ['not checked']}
+        expected = {'words': ['checked'], 'excludes': ['not checked', 'unchecked']}
         self.assertTrue(driver.utterance_observed("SPEECH OUTPUT: 'checked.' {'x':True}", expected))
-        for text in ("SPEECH OUTPUT: 'not checked.' {'x':True}", 'checked.',
+        for text in ("SPEECH OUTPUT: 'unchecked.' {'x':True}",
+                "SPEECH OUTPUT: 'Not checked.' {'x':True}", "SPEECH OUTPUT: 'not checked.' {'x':True}", 'checked.',
                 "SPEECH OUTPUT: 'space' {'x':True}"):
             self.assertFalse(driver.utterance_observed(text, expected))
         selected = {'contains': ['0999', 'Étoiles']}
         self.assertTrue(driver.utterance_observed("SPEECH OUTPUT: '0999 · Étoiles' {'x':True}", selected))
         self.assertFalse(driver.utterance_observed("SPEECH OUTPUT: '0000 · Étoiles' {'x':True}", selected))
+
+    def test_view_witness_requires_exactly_one_actual_selected_item(self):
+        selected = {'name': '0001 · Visible story', 'role': 'list item',
+            'states': {'selected': True, 'showing': True}}
+        self.assertEqual(driver.selected_story([selected], selected['name']), selected)
+        for nodes in ([{**selected, 'role': 'label'}],
+                [{**selected, 'states': {'selected': False, 'showing': True}}],
+                [{**selected, 'states': {'selected': True, 'showing': False}}],
+                [{**selected, 'name': '0000 · Different story'}], [selected, selected], []):
+            self.assertIsNone(driver.selected_story(nodes, selected['name']))
 
     def test_active_progress_requires_the_actual_bounded_numeric_interface(self):
         progress = {'role': 'progress bar', 'minimum_value': 0, 'maximum_value': 1, 'numeric_value': 0.2}

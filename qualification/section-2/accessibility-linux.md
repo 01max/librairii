@@ -175,3 +175,9 @@ and Speech Dispatcher's private socket/configuration options. Source references:
 [Orca46.1 XKB initialization](https://github.com/GNOME/orca/blob/ORCA_46_1/src/orca/orca_modifier_manager.py),
 [Speech Dispatcher options](https://manpages.ubuntu.com/manpages/noble/man1/speech-dispatcher.1.html),
 [Speech Dispatcher configuration](https://github.com/brailcom/speechd/blob/0.12.0/config/speechd.conf).
+
+Review correction: the independent End999 witness is followed by native Home/Down
+selection of visible, non-default story1. Both cover and list snapshots must
+contain exactly that selected list-item; stale inspector text cannot pass.
+Spoken checked states require a standalone positive word and reject both
+“unchecked” and “not checked”, including case variants.

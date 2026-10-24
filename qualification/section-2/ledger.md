@@ -436,3 +436,7 @@ checked-state speech and invalid/inactive numeric progress. Extended recording
 has only bounded per-kind audio/debug cap increases; deadlines, all other output
 caps and owned cleanup remain. Current compilation/Clippy and seven focused
 recorder tests pass; fresh actual workflow qualification remains pending.
+
+Task2.4 independent review corrections: reject unchecked/negative reader output;
+require actual selected visible non-default story1 across both view switches.
+Eight focused recorder regressions pass; fresh native workflow evidence pending.

@@ -101,14 +101,22 @@ def utterance_observed(log, expected):
     if isinstance(expected, str):
         return expected in utterances
     text = ' '.join(utterances)
-    return (isinstance(expected, dict) and bool(expected.get('contains'))
-        and all(part in text for part in expected['contains'])
-        and not any(part in text for part in expected.get('excludes', [])))
+    return (isinstance(expected, dict) and bool(expected.get('contains') or expected.get('words'))
+        and all(part in text for part in expected.get('contains', []))
+        and all(re.search(r'\b' + re.escape(word) + r'\b', text, re.IGNORECASE)
+            for word in expected.get('words', []))
+        and not any(part.casefold() in text.casefold() for part in expected.get('excludes', [])))
 
 
 def named(nodes, name, role=None):
     found = [n for n in nodes if n.get('name') == name and (role is None or n.get('role') == role)]
     return found[0] if len(found) == 1 else None
+
+
+def selected_story(nodes, name):
+    selected = [n for n in nodes if n.get('role') == 'list item'
+        and n.get('states', {}).get('selected') and n.get('states', {}).get('showing')]
+    return selected[0] if len(selected) == 1 and selected[0].get('name') == name else None
 
 
 def active_progress(nodes):
@@ -357,13 +365,20 @@ def record(desktop, binary, report):
     desktop.screenshot(root / 'offscreen-selected.png')
     announced('story-end', {'contains': ['0999', 'Étoiles']}, end_speech)
     report['baseline_checks']['virtualized_offscreen_selection'] = True
+    key('Home')
+    key('Down')
+    visible = native.wait_for(lambda: next((n for n in focused(read())
+        if n.get('name', '').startswith('0001 ·') and n['states'].get('selected')), None))
+    report['view_selected_story'] = visible
+    assert selected_story(read(), visible['name'])
+    snapshot('visible-selected')
     focus_name('Small covers', reverse=True)
     key('space')
-    native.wait_for(lambda: any(n.get('name') == selected['name'] and n.get('role') == 'label' for n in read()))
+    native.wait_for(lambda: selected_story(read(), visible['name']))
     snapshot('covers-selection-preserved')
     focus_name('List', reverse=True)
     key('space')
-    native.wait_for(lambda: any(n.get('name') == selected['name'] and n.get('role') == 'label' for n in read()))
+    native.wait_for(lambda: selected_story(read(), visible['name']))
     snapshot('list-selection-preserved')
     report['baseline_checks']['view_preserved_selection'] = True
 
@@ -380,7 +395,7 @@ def record(desktop, binary, report):
     wait_named(first, 'check box', checked=True)
     wait_named('Apply 1', 'push button', enabled=True)
     snapshot('review-page-one-checked')
-    announced('review-checked-0', {'contains': ['checked'], 'excludes': ['not checked']}, check_speech)
+    announced('review-checked-0', {'words': ['checked'], 'excludes': ['not checked', 'unchecked']}, check_speech)
     focus_name('Next', reverse=True)
     key('space')
     wait_named(second, 'check box', checked=False)
@@ -390,7 +405,7 @@ def record(desktop, binary, report):
     wait_named(second, 'check box', checked=True)
     wait_named('Apply 2', 'push button', enabled=True)
     snapshot('review-page-two-checked')
-    announced('review-checked-25', {'contains': ['checked'], 'excludes': ['not checked']}, check_speech)
+    announced('review-checked-25', {'words': ['checked'], 'excludes': ['not checked', 'unchecked']}, check_speech)
     focus_name('Previous', reverse=True)
     key('space')
     wait_named(first, 'check box', checked=True)
