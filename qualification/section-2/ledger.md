@@ -481,3 +481,13 @@ a viewport-relative focus delegate, retaining selected identity, Home/End/arrows
 PageUp/Down, native pointer action and visible focus. All underlying candidate
 versions/features remain unchanged. Strict GUI Clippy passes. Native focused
 readback remains required; the original failed traces stay failed.
+
+Independent2.9 review correction: navigation timing now begins before native
+Delete expands zero filtered rows to1000, includes actual model preparation,
+Tab/End delivery and row999 acknowledgment. Real Home resets selection between
+trials; one warmup plus20 measured endpoints/p95 prevent preexisting999 or a
+single fast trial from passing. The64-key test uses x/Backspace, including real
+filter/expansion work. The explicit native-load workload lasts20s so all samples
+can observe active work; ordinary/Orca workloads and numeric gates are unchanged.
+Optional Japanese starts only after verified native return to Search; the
+undefined Cmd+F assumption is removed. Fresh native execution required.

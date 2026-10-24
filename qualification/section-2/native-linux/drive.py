@@ -347,7 +347,9 @@ def observe_editing_and_performance(desktop, app_dir, output, report):
     def fast_key(key):
         assert desktop.active_pid() == report['app_pid'], 'native input lost foreground target'
         desktop.run(['xdotool', 'key', '--clearmodifiers', '--delay', '0', key]
-            if desktop.session == 'x11' else ['wtype', '-k', key])
+            if desktop.session == 'x11' else ['wtype', '-M', 'shift', '-P', 'Shift_L',
+                '-k', key[6:], '-p', 'Shift_L', '-m', 'shift'] if key.startswith('shift+')
+                else ['wtype', '-k', key])
     def paste(text, name):
         if desktop.session == 'x11':
             path = output / (name + '.txt')
@@ -395,9 +397,9 @@ def observe_editing_and_performance(desktop, app_dir, output, report):
     wait_for(lambda: geometry()['working'])
     samples = []
     for index in range(64):
-        expected = 'e' if index % 2 == 0 else ''
+        expected = 'x' if index % 2 == 0 else ''
         start = time.monotonic()
-        fast_key('e' if expected else 'BackSpace')
+        fast_key('x' if expected else 'BackSpace')
         while True:
             value = state(app_dir)
             elapsed = (time.monotonic() - start) * 1000
@@ -411,22 +413,37 @@ def observe_editing_and_performance(desktop, app_dir, output, report):
     assert geometry()['working'], 'background load ended before input measurement'
     assert sorted(samples)[60] <= 100
     report['checks']['native_input_under_load_budget'] = True
-    start = time.monotonic()
-    for _ in range(24):
-        previous = geometry()['focus_key']
-        if previous == 31:
-            break
-        fast_key('Tab')
-        wait_for(lambda: geometry()['focus_key'] != previous)
-    else:
-        raise AssertionError('native keyboard list focus not reached')
-    fast_key('End')
-    selected = wait_for(lambda: (g := geometry()) and g['rows'] == 1000
-        and g['selected_id'] == 999 and g['selected_row'] == 999 and g)
-    report['thousand_navigation'] = {'elapsed_ms': (time.monotonic() - start) * 1000,
-        'geometry': selected, 'endpoint': 'native Tab/End selects last actual row of1000'}
-    assert report['thousand_navigation']['elapsed_ms'] <= 3000
-    desktop.screenshot(output / 'thousand-last-selected.png')
+    def focus(target, reverse=False):
+        for _ in range(24):
+            previous = geometry()['focus_key']
+            if previous == target:
+                return
+            fast_key('shift+Tab' if reverse else 'Tab')
+            wait_for(lambda: geometry()['focus_key'] != previous)
+        raise AssertionError('bounded native keyboard focus not reached')
+    samples, endpoints = [], []
+    for index in range(21):
+        assert geometry()['focus_key'] == 30
+        fast_key('x')
+        wait_for(lambda: geometry()['rows'] == 0)
+        start = time.monotonic()
+        fast_key('BackSpace')
+        wait_for(lambda: geometry()['rows'] == 1000)
+        focus(31)
+        fast_key('End')
+        selected = wait_for(lambda: (g := geometry()) and g['rows'] == 1000
+            and g['selected_id'] == 999 and g['selected_row'] == 999 and g)
+        elapsed = (time.monotonic() - start) * 1000
+        if index > 0:
+            samples.append(elapsed)
+            endpoints.append(selected)
+        fast_key('Home')
+        wait_for(lambda: geometry()['selected_id'] == 0)
+        focus(30, reverse=True)
+    report['thousand_navigation'] = {'samples_ms': samples, 'p95_ms': sorted(samples)[18],
+        'endpoints': endpoints, 'method': 'native Delete expands0→1000, Tab/End selects999; one warmup plus20 samples'}
+    assert sorted(samples)[18] <= 3000
+    assert all(g['working'] for g in endpoints), 'background work ended before navigation samples'
     report['checks']['native_thousand_navigation_budget'] = True
 
 

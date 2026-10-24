@@ -307,7 +307,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let stop = cancel.clone();
     let done = progress.clone();
     let weak = ui.as_weak();
-    let work_step = if std::env::args().any(|arg| arg == "--slow-synthetic-work") {
+    let work_step = if std::env::args().any(|arg| arg == "--native-load") {
+        Duration::from_millis(200)
+    } else if std::env::args().any(|arg| arg == "--slow-synthetic-work") {
         // Give a real screen reader time to finish the start label before Cancel.
         // This changes only the explicit qualification workload, never a budget.
         Duration::from_millis(60)

@@ -279,7 +279,7 @@ do {
     let operation = CommandLine.arguments[1]
     let app = AXUIElementCreateApplication(pid)
     AXUIElementSetMessagingTimeout(app, 1)
-    if ["key", "digits", "menu", "keycodes", "performance-input"].contains(operation), NSWorkspace.shared.frontmostApplication?.processIdentifier != pid {
+    if ["key", "digits", "menu", "keycodes", "performance-input", "performance-navigation"].contains(operation), NSWorkspace.shared.frontmostApplication?.processIdentifier != pid {
         throw Failure.invalid("target app is not frontmost; native input refused")
     }
     switch operation {
@@ -353,8 +353,8 @@ do {
             guard NSWorkspace.shared.frontmostApplication?.processIdentifier == pid else {
                 throw Failure.invalid("performance input lost foreground target")
             }
-            let expected = sample % 2 == 0 ? "e" : ""
-            let code = CGKeyCode(sample % 2 == 0 ? 14 : 51)
+            let expected = sample % 2 == 0 ? "x" : ""
+            let code = CGKeyCode(sample % 2 == 0 ? 7 : 51)
             let start = DispatchTime.now().uptimeNanoseconds
             for down in [true, false] {
                 guard let event = CGEvent(keyboardEventSource: nil, virtualKey: code, keyDown: down) else {
@@ -375,6 +375,84 @@ do {
         }
         try output(["samples_ms": samples, "p95_ms": samples.sorted()[60],
             "method": "pre-CGEvent-post to actual edited-query/model/20ms-rendezvous acknowledgment"])
+    case "performance-navigation":
+        guard let directory = request["directory"] as? String, directory.hasPrefix("/"),
+              ProcessInfo.processInfo.environment["GITHUB_ACTIONS"] == "true" else {
+            throw Failure.invalid("navigation requires an owned CI rendezvous")
+        }
+        let root = URL(fileURLWithPath: directory)
+        func geometry() throws -> [String: Any] {
+            guard let value = try JSONSerialization.jsonObject(with: Data(contentsOf:
+                root.appendingPathComponent("geometry.json"))) as? [String: Any] else {
+                throw Failure.invalid("invalid actual navigation geometry")
+            }
+            return value
+        }
+        func pulse(_ code: CGKeyCode, reverse: Bool = false) throws {
+            guard NSWorkspace.shared.frontmostApplication?.processIdentifier == pid else {
+                throw Failure.invalid("navigation lost foreground target")
+            }
+            func shift(_ down: Bool) throws {
+                guard let event = CGEvent(keyboardEventSource: nil, virtualKey: 56, keyDown: down) else {
+                    throw Failure.invalid("cannot create native Shift event")
+                }
+                event.type = .flagsChanged
+                event.flags = down ? .maskShift : []
+                event.post(tap: .cghidEventTap)
+            }
+            if reverse { try shift(true) }
+            for down in [true, false] {
+                guard let event = CGEvent(keyboardEventSource: nil, virtualKey: code, keyDown: down) else {
+                    throw Failure.invalid("cannot create navigation key event")
+                }
+                event.flags = reverse ? .maskShift : []
+                event.post(tap: .cghidEventTap)
+            }
+            if reverse { try shift(false) }
+        }
+        func awaitGeometry(_ predicate: ([String: Any]) -> Bool) throws -> [String: Any] {
+            let start = DispatchTime.now().uptimeNanoseconds
+            while true {
+                let value = try geometry()
+                if predicate(value) { return value }
+                guard DispatchTime.now().uptimeNanoseconds - start < 1_000_000_000 else {
+                    throw Failure.invalid("navigation state acknowledgment deadline")
+                }
+                Thread.sleep(forTimeInterval: 0.001)
+            }
+        }
+        func focus(_ target: Int, reverse: Bool) throws {
+            for _ in 0..<24 {
+                let previous = try geometry()["focus_key"] as? Int
+                if previous == target { return }
+                try pulse(48, reverse: reverse)
+                _ = try awaitGeometry { $0["focus_key"] as? Int != previous }
+            }
+            throw Failure.invalid("bounded native navigation focus not reached")
+        }
+        var samples: [Double] = []
+        var endpoints: [[String: Any]] = []
+        for sample in 0..<21 {
+            guard try geometry()["focus_key"] as? Int == 30 else {
+                throw Failure.invalid("Search must be natively focused before expansion")
+            }
+            try pulse(7) // French physical X; no fixture title contains x.
+            _ = try awaitGeometry { $0["rows"] as? Int == 0 }
+            let start = DispatchTime.now().uptimeNanoseconds
+            try pulse(51)
+            _ = try awaitGeometry { $0["rows"] as? Int == 1000 }
+            try focus(31, reverse: false)
+            try pulse(119)
+            let end = try awaitGeometry { $0["rows"] as? Int == 1000
+                && $0["selected_id"] as? Int == 999 && $0["selected_row"] as? Int == 999 }
+            let elapsed = Double(DispatchTime.now().uptimeNanoseconds - start) / 1_000_000
+            if sample > 0 { samples.append(elapsed); endpoints.append(end) }
+            try pulse(115) // Real Home resets selection before the next trial.
+            _ = try awaitGeometry { $0["selected_id"] as? Int == 0 }
+            try focus(30, reverse: true)
+        }
+        try output(["samples_ms": samples, "p95_ms": samples.sorted()[18], "endpoints": endpoints,
+            "method": "native Delete expands0→1000, then Tab/End selects999; one warmup plus20 samples"])
     case "input-selection":
         var raw: CFTypeRef?
         let focusStatus = AXUIElementCopyAttributeValue(app, kAXFocusedUIElementAttribute as CFString, &raw)

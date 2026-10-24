@@ -8,7 +8,6 @@ import os
 import pathlib
 import platform
 import subprocess
-import time
 import traceback
 
 HERE = pathlib.Path(__file__).resolve().parent
@@ -199,26 +198,14 @@ def inspect(package, archive, helper, output, *, include_japanese=False):
         assert json.loads((rendezvous / 'geometry.json').read_text())['working'], 'background load ended before measurement'
         assert report['native_input_performance']['p95_ms'] <= 100
         report['checks']['native_input_under_load_budget'] = True
-        # Time native keyboard navigation from the complete1000-row Search state
-        # to the last real selected row. No direct select/focus setter is used.
-        start = time.monotonic()
-        for _ in range(24):
-            if json.loads((rendezvous / 'geometry.json').read_text())['focus_key'] == 31:
-                break
-            observer.call('key', key='tab')
-        else:
-            raise AssertionError('native keyboard list focus not reached')
-        observer.call('key', key='end')
-        geometry = observer.wait(lambda: (g := json.loads((rendezvous / 'geometry.json').read_text()))
-            and g['rows'] == 1000 and g['selected_id'] == 999 and g['selected_row'] == 999 and g)
-        report['thousand_navigation'] = {'elapsed_ms': (time.monotonic() - start) * 1000, 'geometry': geometry,
-            'endpoint': 'native Tab/End selects last actual row of1000; includes OS dispatch and observer overhead'}
-        assert report['thousand_navigation']['elapsed_ms'] <= 3000
-        observer.capture('thousand-last-selected')
+        report['thousand_navigation'] = observer.call('performance-navigation', directory=str(rendezvous))
+        assert len(report['thousand_navigation']['samples_ms']) == 20
+        assert report['thousand_navigation']['p95_ms'] <= 3000
+        assert all(g['working'] for g in report['thousand_navigation']['endpoints'])
         report['checks']['native_thousand_navigation_budget'] = True
         if include_japanese:
             # Restore Search by the native OS accelerator before optional input.
-            observer.call('key', key='cmd+f')
+            observer.wait(lambda: json.loads((rendezvous / 'geometry.json').read_text())['focus_key'] == 30)
             parent = parents[0]
             if not sources_by_id(observer.call('input-sources'))[parent['id']]['enabled']:
                 observer.call('input-source', source=parent['id'], operation='enable')
