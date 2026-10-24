@@ -227,11 +227,11 @@ class Observer:
     def __init__(self, binary, output, pid):
         self.binary, self.output, self.pid = binary, output, pid
 
-    def call(self, action, **request):
+    def call(self, action, *, command_timeout=12, **request):
         sequence = next(COMMAND_IDS)
         result = common.wayland.command([str(self.binary), action,
             json.dumps({'pid': self.pid, **request}, ensure_ascii=False)], os.environ.copy(),
-            self.output / f'command-{sequence:04}-{action}.log', timeout=12)
+            self.output / f'command-{sequence:04}-{action}.log', timeout=command_timeout)
         if not common.wayland.passed(result):
             raise RuntimeError(action + ' failed: ' + json.dumps({key: result[key]
                 for key in ('returncode', 'errors')}) + '; ' + result['output'][:2000])

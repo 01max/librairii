@@ -433,6 +433,9 @@ do {
         var samples: [Double] = []
         var endpoints: [[String: Any]] = []
         for sample in 0..<21 {
+            try JSONSerialization.data(withJSONObject: ["next_trial": sample,
+                "samples_ms": samples, "endpoints": endpoints, "last_geometry": try geometry()],
+                options: [.sortedKeys]).write(to: root.appendingPathComponent("navigation-observations.json"), options: .atomic)
             guard try geometry()["focus_key"] as? Int == 30 else {
                 throw Failure.invalid("Search must be natively focused before expansion")
             }

@@ -198,7 +198,8 @@ def inspect(package, archive, helper, output, *, include_japanese=False):
         assert json.loads((rendezvous / 'geometry.json').read_text())['working'], 'background load ended before measurement'
         assert report['native_input_performance']['p95_ms'] <= 100
         report['checks']['native_input_under_load_budget'] = True
-        report['thousand_navigation'] = observer.call('performance-navigation', directory=str(rendezvous))
+        report['thousand_navigation'] = observer.call('performance-navigation',
+            command_timeout=30, directory=str(rendezvous))
         assert len(report['thousand_navigation']['samples_ms']) == 20
         assert report['thousand_navigation']['p95_ms'] <= 3000
         assert all(g['working'] for g in report['thousand_navigation']['endpoints'])

@@ -15,6 +15,14 @@ spec.loader.exec_module(macos)
 
 
 class NativeMacOS(unittest.TestCase):
+    def test_explicit_batch_deadline_does_not_enter_native_request_payload(self):
+        observer = macos.Observer(pathlib.Path('/owned/helper'), pathlib.Path('/owned/output'), 123)
+        with mock.patch.object(macos.common.wayland, 'command', return_value={
+                'returncode': 0, 'errors': [], 'output': '{}'}) as command:
+            observer.call('performance-navigation', command_timeout=30, directory='/owned/app')
+        self.assertEqual(command.call_args.kwargs['timeout'], 30)
+        self.assertNotIn('command_timeout', command.call_args.args[0][-1])
+
     def test_busy_finder_read_is_neither_a_ready_window_nor_retirement(self):
         pending = {'pid': 123, 'nodes': [], 'windows': [], 'document_window_query_status': -25204,
             'document_window_list_observed': False, 'document_windows_observed': False}
