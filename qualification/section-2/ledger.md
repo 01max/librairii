@@ -239,3 +239,8 @@ candidate/commit/cancel, then restores original input-source selection and all
 enable states even on failure. The method preserves normal shutdown and bounds.
 First actual ARM/Intel native execution and independent evidence review remain
 pending; Linux composition and display/contrast/scaling gates stay open.
+
+
+The versioned Winit feature adds one direct Slint→i-slint-backend-winit lockfile
+edge, without changing a package version/checksum. The follow-up refreshes the
+recorded GUI lock digest and resolved Slint dependency list to that actual lock.

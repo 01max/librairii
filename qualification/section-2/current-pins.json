@@ -136,6 +136,7 @@
       "dependencies": [
         "const-field-offset",
         "i-slint-backend-selector",
+        "i-slint-backend-winit",
         "i-slint-common",
         "i-slint-core",
         "i-slint-core-macros",
@@ -285,7 +286,7 @@
     "cargo-llvm-cov": "0.9.1",
     "cargo-fuzz": "0.13.2"
   },
-  "gui_lock_sha256": "55d6029b8285f1e126703eb4e9baa677b9f8008e841ac9d74a2d34802ae8aeee",
+  "gui_lock_sha256": "bb71390afff05f51d2ed79a81424687263224c6608c097a1f1c9f81813d3471e",
   "slint_license": {
     "route": "LicenseRef-Slint-Royalty-free-2.0",
     "attribution": "AboutSlint in a top-level About screen",
