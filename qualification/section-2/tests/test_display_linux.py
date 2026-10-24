@@ -15,8 +15,8 @@ class DisplayLinux(unittest.TestCase):
             'errors': [], 'returncode': 0,
             'sizes': [{'logical_width': w, 'logical_height': h, 'compact': w < 850, 'wide': w >= 1180,
                 'contrast_ratios': [7, 5, 4.6]} for w,h in ((560,400), (900,760), (1280,800))],
-            'scale_transitions': [{'scale': scale, 'width': 900 * scale, 'height': 760 * scale,
-                'logical_width': 900, 'logical_height': 760, 'rows': 1000} for scale in (2,1,2,1)]}
+            'scale_transitions': [{'scale': scale, 'width': 1280 * scale, 'height': 800 * scale,
+                'logical_width': 1280, 'logical_height': 800, 'rows': 1000} for scale in (2,1,2,1)]}
 
     def test_real_sizes_contrast_and_each_scale_transition_are_required(self):
         report = self.fixture()

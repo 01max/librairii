@@ -547,3 +547,9 @@ New display rejection tests pass. Fresh native execution/review remains required
 Independent2.5 display review correction: the Linux host now checks the complete
 evidence count/per-file bound before reading/parsing the session JSON. Oversized
 failed reports fail before allocation, matching existing native observers.
+
+Independent2.5 display review correction: remove only the owned display app’s
+Sway border before native resizing, so requested container/client dimensions
+match the exact content-size assertion. Actual mixed-scale witnesses additionally
+require preserved1280×800 logical size and corresponding physical pixels; a
+shrunken viewport cannot pass as a successful transition.

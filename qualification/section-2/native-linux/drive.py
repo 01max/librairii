@@ -621,6 +621,8 @@ def observe_display(desktop, root):
         fixture = pathlib.Path((app_dir / 'fixture.txt').read_text())
         wait_for(lambda: desktop.active_pid() == app.pid)
         xid = None
+        if desktop.session == 'wayland':
+            sway(f'[pid={app.pid}] border none')
         if desktop.session == 'x11':
             xid = desktop.run(['xdotool', 'search', '--onlyvisible', '--pid', str(app.pid)]).splitlines()[-1]
         for width, height in ((560, 400), (900, 760), (1280, 800)):
@@ -662,7 +664,8 @@ def observe_display(desktop, root):
             assert {v['name']: v['scale'] for v in report['outputs']} == {'HEADLESS-1': 1, 'HEADLESS-2': 2}
             for output, scale in (('HEADLESS-2', 2), ('HEADLESS-1', 1), ('HEADLESS-2', 2), ('HEADLESS-1', 1)):
                 sway(f'[pid={app.pid}] move container to output {output}')
-                value = wait_for(lambda: (g := geometry()) and g['scale'] == scale and g['rows'] == 1000 and g)
+                value = wait_for(lambda: (g := geometry()) and g['scale'] == scale and g['rows'] == 1000
+                    and abs(g['logical_width'] - 1280) <= 1 and abs(g['logical_height'] - 800) <= 1 and g)
                 report['scale_transitions'].append(value)
                 frame('scale-' + str(len(report['scale_transitions'])))
             report['checks']['actual_mixed_scale_transitions'] = len(report['scale_transitions']) == 4
