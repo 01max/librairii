@@ -17,10 +17,12 @@ spec.loader.exec_module(macos)
 class NativeMacOS(unittest.TestCase):
     def test_failed_or_ambiguous_window_queries_cannot_prove_finder_closed(self):
         absent = {'document_windows_observed': True, 'owned_document_window_present': False,
-                  'nodes': [], 'owned_title_candidates': []}
+                  'unresolved_title_window_count': 0, 'nodes': [], 'owned_title_candidates': []}
         self.assertTrue(macos.finder_window_absent(absent))
         for value in ({}, {**absent, 'document_windows_observed': False},
                 {**absent, 'owned_document_window_present': True},
+                {**absent, 'unresolved_title_window_count': 1},
+                {key: value for key, value in absent.items() if key != 'unresolved_title_window_count'},
                 {**absent, 'owned_title_candidates': [{'title': 'owned'}]},
                 {**absent, 'nodes': [{'role': 'AXWindow'}]}):
             self.assertFalse(macos.finder_window_absent(value))

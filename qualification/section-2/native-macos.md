@@ -158,3 +158,16 @@ is `808face7e282934af6df43be67ebd40ac7f3cb926748e3fe2f4dfb482037a0db`.
 Independent review also requires a successful AXWindows/title query before
 recording Finder absence. Query failures remain command failures, and an explicit
 present flag prevents an empty traversal from masquerading as a closed window.
+
+At `6da2838` / run40093774916 ARM again completes the seven picker/early cases,
+then Finder's initial AXTitle read returns `noValue` (-25212) before path
+verification. ARM artifact12560037740 ZIP SHA256 is
+`305bf1d16aae3435d4483bba7d69893bfdd50aab2576ab831b31b4b8365359eb`.
+The observer now records unresolved titles as incomplete read-only observations
+within the existing wait. It cannot record window absence while any title is
+unresolved; real AX query failures remain fatal. Exact path proof and verified
+closure remain required. Apple's [AXError.noValue](https://developer.apple.com/documentation/applicationservices/axerror/novalue)
+means the requested value or element does not exist. This readiness correction
+still requires fresh native execution; the earlier reveal case stays failed.
+The same run's Intel lane stops in the recorder suite before packaging or
+interaction; its separately reproduced process-cleanup race is in `ledger.md`.

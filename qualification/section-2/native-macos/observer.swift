@@ -228,7 +228,11 @@ do {
         if let document = request["document"] as? String {
             let target = URL(fileURLWithPath: document).resolvingSymlinksInPath().standardizedFileURL
             let nativeWindows = try checkedWindows(app)
-            let titles = try nativeWindows.map { try checkedText($0, kAXTitleAttribute) }
+            // A newly opening Finder window can expose AXTitle=noValue before
+            // its title exists. Keep this as incomplete read-only observation,
+            // never as proof that our previously verified window has closed.
+            let titles = try nativeWindows.map { try checkedText($0, kAXTitleAttribute, optional: true) }
+            let unresolvedTitles = titles.filter(\.isEmpty).count
             let matches = try nativeWindows.enumerated().filter { _, window in
                 try [kAXDocumentAttribute, kAXURLAttribute].contains { attribute in
                     guard let url = URL(string: try checkedText(window, attribute, optional: true)), url.isFileURL else { return false }
@@ -251,7 +255,8 @@ do {
                 } ?? []
                 guard candidateWindows.count <= 1 else { throw Failure.invalid("owned Finder capture not unique") }
                 try output(["pid": pid, "nodes": [], "windows": [],
-                    "document_windows_observed": true,
+                    "document_windows_observed": unresolvedTitles == 0,
+                    "unresolved_title_window_count": unresolvedTitles,
                     "owned_document_window_present": !candidates.isEmpty,
                     "finder_window_count": nativeWindows.count,
                     "owned_title_candidates": candidates.map { describe($0.element) },
@@ -260,7 +265,8 @@ do {
                 exit(0)
             }
             onlyWindow = index
-            documentObservation = ["document_windows_observed": true, "owned_document_window_present": true]
+            documentObservation = ["document_windows_observed": unresolvedTitles == 0,
+                "unresolved_title_window_count": unresolvedTitles, "owned_document_window_present": true]
             let title = titles[index]
             windows = windows.filter { !title.isEmpty && $0[kCGWindowName as String] as? String == title }
             guard windows.count <= 1 else { throw Failure.invalid("document capture window not unique") }

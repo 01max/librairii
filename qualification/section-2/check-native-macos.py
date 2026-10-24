@@ -145,6 +145,7 @@ def verified_finder_snapshot(snapshot, fixture):
 
 def finder_window_absent(snapshot):
     return (snapshot.get('document_windows_observed') is True
+        and snapshot.get('unresolved_title_window_count') == 0
         and snapshot.get('owned_document_window_present') is False
         and not snapshot.get('nodes') and not snapshot.get('owned_title_candidates'))
 
