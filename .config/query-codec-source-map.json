@@ -4687,6 +4687,19 @@
           ]
         },
         "reason": "Observed PR 53 regression: native export cancellation interrupts destination readback and retires only the unpublished temporary; all prior discovery identities and positions remain unchanged."
+      },
+      {
+        "position": 551,
+        "identity": {
+          "suite": "librairii-storage",
+          "name": "adoption::closed::copy_failures::native_case_and_unicode_name_conflicts_report_the_item_and_retain_copy",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Task 4.10 native case/Unicode target-name conflict regression; retains all prior discovery identities."
       }
     ],
     "python": [
@@ -4749,6 +4762,16 @@
         "position": 49,
         "identity": "test_archive_patch.ArchivePatchPolicy.test_root_nested_and_source_aliases_fail",
         "reason": "Observed additive Task 5 pinned decoder provenance failure assertions on owned copies; preserves every admitted identity and ordering."
+      },
+      {
+        "position": 50,
+        "identity": "test_frozen_go.FrozenGoTests.test_extra_checkout_sources_and_inherited_overlays_cannot_enter_oracle",
+        "reason": "Task 4.7 isolated frozen-Go materialization safety regressions; retains all prior discovery identities."
+      },
+      {
+        "position": 51,
+        "identity": "test_frozen_go.FrozenGoTests.test_changed_manifest_member_refuses_without_compiling",
+        "reason": "Task 4.7 isolated frozen-Go materialization safety regressions; retains all prior discovery identities."
       }
     ]
   },
