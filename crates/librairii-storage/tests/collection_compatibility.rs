@@ -6,6 +6,8 @@ use librairii_storage::{
 use librairii_testkit::TestRoots;
 use rusqlite::{Connection, types::ValueRef};
 use serde_json::{Value, json};
+#[cfg(unix)]
+use sha2::{Digest, Sha256};
 use std::error::Error;
 
 type TestResult<T = ()> = Result<T, Box<dyn Error>>;
@@ -119,6 +121,63 @@ fn producer_times(db: &Database<'_>) -> TestResult {
 #[cfg(unix)]
 fn corpus_root() -> std::path::PathBuf {
     std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../preservation/corpus/databases")
+}
+
+#[cfg(unix)]
+fn prefix_query_outcomes(db: &Database<'_>, prefix: usize, input: &[u8]) -> TestResult {
+    let captured: Value =
+        serde_json::from_slice(include_bytes!("fixtures/compatibility/prefix-queries.json"))?;
+    assert_eq!(
+        captured["oracleCommit"],
+        "73a93303a9a44cf0a92eaf525331561ed8c04460"
+    );
+    let digest = |bytes: &[u8]| {
+        librairii_core::Checksum::from_bytes(Sha256::digest(bytes).into()).to_string()
+    };
+    assert_eq!(
+        captured["generatorSha256"],
+        digest(include_bytes!(
+            "../../../scripts/storage-query-oracle.go.in"
+        ))
+    );
+    assert_eq!(
+        captured["oracleSourceManifestSha256"],
+        digest(include_bytes!("../../../preservation/oracle-source.json"))
+    );
+    let prefixes = captured["prefixes"].as_array().ok_or("prefixes missing")?;
+    assert_eq!(prefixes.len(), 18);
+    let reference = &prefixes[prefix - 1];
+    assert_eq!(reference["prefix"], prefix);
+    assert_eq!(reference["inputSha256"], digest(input));
+    let cases = reference["cases"].as_array().ok_or("cases missing")?;
+    assert_eq!(cases.len(), 6);
+    for case in cases {
+        let raw = case["request"].as_str().ok_or("request missing")?;
+        let request = librairii_core::collection_codec::url::restore_request(raw.as_bytes())?;
+        let count = db.count(request.clone(), "en-GB".into())?.wait();
+        let page = db.search(request, "en-GB".into())?.wait();
+        if case["error"] == "invalid_query" {
+            for result in [count.map(|_| ()), page.map(|_| ())] {
+                assert!(
+                    matches!(result, Err(StorageError::QueryInput(_))),
+                    "prefix{prefix} {raw}: {result:?}"
+                );
+            }
+        } else {
+            assert!(case.get("error").is_none(), "unknown oracle error");
+            assert_eq!(
+                serde_json::to_value(count?)?,
+                case["count"],
+                "prefix{prefix} {raw}"
+            );
+            assert_eq!(
+                serde_json::to_value(page?)?,
+                case["page"],
+                "prefix{prefix} {raw}"
+            );
+        }
+    }
+    Ok(())
 }
 
 #[test]
@@ -242,6 +301,7 @@ fn schema_only_then_explicit_same_writer_projection_matches_all_eighteen_go_pref
             oracle["afterGoOpen"],
             "prefix{prefix}: explicit service-open phase must close EVERY delta"
         );
+        prefix_query_outcomes(&db, prefix, &original)?;
         db.close()?;
         assert_eq!(
             std::fs::read(&source)?,
