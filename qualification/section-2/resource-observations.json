@@ -1,0 +1,264 @@
+{
+  "schema": 1,
+  "implementation_revision": "b6016f1f6586f4caf4191108c966a56c812558e2",
+  "built_source": "ecbdcb7b9fea00455dd7c33baf6a32605925aefa",
+  "native_workflow": "https://github.com/01max/librairii/actions/runs/39961452717",
+  "evidence_kind": "three-target automated resource diagnostics; not performance acceptance",
+  "samples_per_backend": 3,
+  "warmups_per_backend": 1,
+  "task_2_9_complete": false,
+  "physical_input_qualified": false,
+  "first_presentation_qualified": false,
+  "retained_budgets_qualified": false,
+  "additional_budgets_set": false,
+  "targets": {
+    "aarch64-apple-darwin": {
+      "artifact": "https://github.com/01max/librairii/actions/runs/39961452717/artifacts/12504499138",
+      "binary_sha256": "0018b27dc0fdbd2734fcf7ed7e5bdf8678bdacdd3dcfd150eec70a09a7717d86",
+      "host": {
+        "platform": "macOS-15.7.9-arm64-arm-64bit-Mach-O",
+        "machine": "arm64",
+        "logical_cpus": 3,
+        "cpu": "Apple M1 (Virtual)",
+        "memory_bytes": 7516192768
+      },
+      "session": {
+        "DISPLAY": null,
+        "WAYLAND_DISPLAY": null,
+        "XDG_SESSION_TYPE": null
+      },
+      "distribution": {
+        "executable_bytes": 25266544,
+        "manifest_payload_bytes": 31552646,
+        "archive": {
+          "file": "task2-aarch64-apple-darwin.tar.gz",
+          "bytes": 10676944,
+          "sha256": "0ebef53b7eed75cba59229f911f9b95f66101e498a6627af5d04866e8b7c8e49"
+        },
+        "disk_image": {
+          "file": "task2-aarch64-apple-darwin.dmg",
+          "bytes": 13447821,
+          "sha256": "061d463b4fb557fbc36027b04a6a801cd7bfb19897345274f618f304433ce35c"
+        },
+        "disk_image_scope": "supplied builder output size/hash; contents not re-mounted here"
+      },
+      "summary": {
+        "winit-skia": {
+          "samples": 3,
+          "launch_to_ready_marker_ms": {
+            "min": 220.1432500000351,
+            "median": 287.2012920000202,
+            "max": 292.58729200000744
+          },
+          "idle_cpu_percent_one_core": {
+            "min": 1.2486130423667234,
+            "median": 1.364447054567379,
+            "max": 1.3765475506671412
+          },
+          "peak_rss_bytes": {
+            "min": 249249792,
+            "median": 249839616,
+            "max": 255967232
+          }
+        },
+        "winit-skia-software": {
+          "samples": 3,
+          "launch_to_ready_marker_ms": {
+            "min": 270.4094169999962,
+            "median": 301.67387500000586,
+            "max": 338.09320800003206
+          },
+          "idle_cpu_percent_one_core": {
+            "min": 1.0991871002881886,
+            "median": 1.4974453837000419,
+            "max": 1.65609823940972
+          },
+          "peak_rss_bytes": {
+            "min": 240959488,
+            "median": 273907712,
+            "max": 274923520
+          }
+        }
+      },
+      "observed_surfaces": {
+        "winit-skia": [
+          "wgpu"
+        ],
+        "winit-skia-software": [
+          "software"
+        ]
+      },
+      "normalized_raw_report_sha256": "ab715c2c2b7fbbe90f4343cda8b13e5561e45853d6e7f61ad279af66bd632ff0"
+    },
+    "x86_64-apple-darwin": {
+      "artifact": "https://github.com/01max/librairii/actions/runs/39961452717/artifacts/12505835308",
+      "binary_sha256": "42eca92b9a6be0b3e52aa08fc9d6baa5dcd2f129412d7909cf690b4d170e90e3",
+      "host": {
+        "platform": "macOS-15.7.9-x86_64-i386-64bit-Mach-O",
+        "machine": "x86_64",
+        "logical_cpus": 4,
+        "cpu": "Intel(R) Core(TM) i7-8700B CPU @ 3.20GHz",
+        "memory_bytes": 15032385536
+      },
+      "session": {
+        "DISPLAY": null,
+        "WAYLAND_DISPLAY": null,
+        "XDG_SESSION_TYPE": null
+      },
+      "distribution": {
+        "executable_bytes": 26066368,
+        "manifest_payload_bytes": 32352470,
+        "archive": {
+          "file": "task2-x86_64-apple-darwin.tar.gz",
+          "bytes": 11215538,
+          "sha256": "5a0062bb791796dbc2af20d1641deccd81eb25f634b6e1e39360a60a0e3c9445"
+        },
+        "disk_image": {
+          "file": "task2-x86_64-apple-darwin.dmg",
+          "bytes": 15011635,
+          "sha256": "06da1487abb8f359d68031cbdd04925d7efe325658072290946d401d81f59f5c"
+        },
+        "disk_image_scope": "supplied builder output size/hash; contents not re-mounted here"
+      },
+      "summary": {
+        "winit-skia": {
+          "samples": 3,
+          "launch_to_ready_marker_ms": {
+            "min": 191.4040899999918,
+            "median": 215.61215000002676,
+            "max": 216.21499399998356
+          },
+          "idle_cpu_percent_one_core": {
+            "min": 0.6790499124974385,
+            "median": 0.801359475257029,
+            "max": 0.8045292390556771
+          },
+          "peak_rss_bytes": {
+            "min": 224657408,
+            "median": 224845824,
+            "max": 225165312
+          }
+        },
+        "winit-skia-software": {
+          "samples": 3,
+          "launch_to_ready_marker_ms": {
+            "min": 258.7552009999854,
+            "median": 301.90582399995947,
+            "max": 324.5833010000183
+          },
+          "idle_cpu_percent_one_core": {
+            "min": 0.810522036267238,
+            "median": 0.9765131794090585,
+            "max": 1.239567988287929
+          },
+          "peak_rss_bytes": {
+            "min": 216252416,
+            "median": 216297472,
+            "max": 216338432
+          }
+        }
+      },
+      "observed_surfaces": {
+        "winit-skia": [
+          "wgpu"
+        ],
+        "winit-skia-software": [
+          "software"
+        ]
+      },
+      "normalized_raw_report_sha256": "4f1b4f419bcadd026829d6ab956897d22b77439b18ae49d3275a516b52ac7bf3"
+    },
+    "x86_64-unknown-linux-gnu": {
+      "artifact": "https://github.com/01max/librairii/actions/runs/39961452717/artifacts/12504533174",
+      "binary_sha256": "441456ed75fcfeaf62c1111c87856cb5c15879d66a3194d59e119c0d16a1427d",
+      "host": {
+        "platform": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.39",
+        "machine": "x86_64",
+        "logical_cpus": 4,
+        "cpu": "AMD EPYC 9V74 80-Core Processor",
+        "memory_bytes": 16766414848
+      },
+      "session": {
+        "DISPLAY": ":99",
+        "WAYLAND_DISPLAY": null,
+        "XDG_SESSION_TYPE": null
+      },
+      "distribution": {
+        "executable_bytes": 40261320,
+        "manifest_payload_bytes": 44066729,
+        "archive": {
+          "file": "task2-x86_64-unknown-linux-gnu.tar.gz",
+          "bytes": 14615761,
+          "sha256": "5eac344c2594bb1f64a0f01fe4fd8d70bf0d7949174307090559fe4589dae31d"
+        },
+        "disk_image": null,
+        "disk_image_scope": "supplied builder output size/hash; contents not re-mounted here"
+      },
+      "summary": {
+        "winit-skia": {
+          "samples": 3,
+          "launch_to_ready_marker_ms": {
+            "min": 115.25797100000545,
+            "median": 115.6292560000054,
+            "max": 116.47353899999757
+          },
+          "idle_cpu_percent_one_core": {
+            "min": 0.2721028574596541,
+            "median": 0.4080610995760475,
+            "max": 0.40814304828728604
+          },
+          "peak_rss_bytes": {
+            "min": 195850240,
+            "median": 205115392,
+            "max": 205201408
+          }
+        },
+        "winit-skia-software": {
+          "samples": 3,
+          "launch_to_ready_marker_ms": {
+            "min": 48.268342000000075,
+            "median": 48.87777599998344,
+            "max": 49.064786000002414
+          },
+          "idle_cpu_percent_one_core": {
+            "min": 0.408052354733,
+            "median": 0.40807001014933764,
+            "max": 0.4080703762186239
+          },
+          "peak_rss_bytes": {
+            "min": 74076160,
+            "median": 74080256,
+            "max": 74117120
+          }
+        }
+      },
+      "observed_surfaces": {
+        "winit-skia": [
+          "wgpu"
+        ],
+        "winit-skia-software": [
+          "software"
+        ]
+      },
+      "normalized_raw_report_sha256": "b5588ae9a9400c619703d6f8eecdb8ceae5206ba83eb13f27ad838ba06437f92"
+    }
+  },
+  "final_qualification": {
+    "date": "2026-10-24",
+    "task_2_9_complete": true,
+    "implementation_head": "e9ab1bad1b5ef9797877f1aa3a8cf577bbc6ffda",
+    "native_workflow": "https://github.com/01max/librairii/actions/runs/40127878713",
+    "report": "completion-evidence/final-matrix.json",
+    "scope": "Native keyboard/model acknowledgement and exact artwork fullread/decode wall-p95 plus additional measured ceilings. Earlier flags/runs remain attributed to their historical source; no physical first-presentation claim."
+  },
+  "final_qualification_history": [
+    {
+      "date": "2026-10-24",
+      "task_2_9_complete": true,
+      "implementation_head": "d145d604af917618ac6127bba8687806c5ed032a",
+      "native_workflow": "https://github.com/01max/librairii/actions/runs/40123986713",
+      "report": "completion-evidence/run67-matrix.json",
+      "scope": "Native keyboard/model acknowledgement and exact artwork fullread/decode wall-p95 plus additional measured ceilings. Earlier flags/runs remain attributed to their historical source; no physical first-presentation claim."
+    }
+  ]
+}
