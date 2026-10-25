@@ -102,6 +102,50 @@ The new 4.4 six-test suite passed, including all eighteen prefixes and 216 API
 comparisons. The affected portability/copy suite passed 89 tests with zero skips,
 and storage all-target Clippy passed. Two Python checks prove changed source
 refusal, exclusion of added Go files/build overlays and owned materialization
-cleanup. Final-head cumulative/native/provider results and independent review
-are recorded when complete; these affected-host results do not qualify Intel
-or Linux by inference.
+cleanup. These affected-host results are separate from the native provider
+results below.
+
+Committed implementation `15be09a700fb1b7d70aeb0113332eeff57b3157a` passes the
+full ARM gate: **537 nextest tests, zero skips/failures**, all doctests and
+preservation/source/dependency/format/build/Clippy checks. Actual nextest UUID:
+`4a5b7cce-06e2-4d64-ba8a-86f54862ef3c`; JUnit SHA-256:
+`1d9026a4d306f9e0f1930f34e84c11c2b9b10f3860862371eb32c134c4dfc8cc`.
+All **52** strict Python policy tests execute, including the two new isolation
+regressions. The full gate initially refused three unrecorded additive discovery
+identities; `15be09a` registers those additions without changing historical pins
+or checker logic. The original failed invocation is not treated as a pass.
+
+The retained local `make check` also passes on this source, including Go tests,
+207 frontend unit tests, responsive/release checks and the 1,000-story performance
+gate (expansion p95 361.4ms; input p95 4.8ms). These retained Go/browser results
+do not qualify the future Rust UI. The current committed-source storage rehearsal
+passes all assertions and five archive hashes on ARM.
+
+The [independent review receipt](section-4-review.md) records both axes and
+resolved findings. Required remaining findings: Standards **0**, Spec **0**.
+
+## Three-target provider receipt
+
+The [native quality run](https://github.com/01max/librairii/actions/runs/40194884349)
+and required-target aggregate passed for implementation head
+`15be09a700fb1b7d70aeb0113332eeff57b3157a`. GitHub tested merge source
+`18827d126f09272a576b00de651a865b9a01409b` against integration
+`244f4494e2bf1fcc5cc31c8caba61171ca5f8771`.
+
+| Native target | Executed cumulative tests | Skips/failures/errors | Schema-018 storage rehearsal |
+| --- | ---: | --- | --- |
+| ARM macOS (`aarch64-apple-darwin`) | 537 | 0 / 0 / 0 | Pass; all five archive hashes retained |
+| Intel macOS (`x86_64-apple-darwin`) | 537 | 0 / 0 / 0 | Pass; all five archive hashes retained |
+| Linux (`x86_64-unknown-linux-gnu`) | 539 | 0 / 0 / 0 | Pass; all five archive hashes retained |
+
+All three artifacts were downloaded and their provider SHA-256 digests verified.
+The [machine-readable receipt](section-4-native-evidence.json) retains each job,
+artifact, JUnit identity/hash, current package working directory, native pinned
+tool identity and storage-rehearsal assertion. The actual new filename regression
+executes on each target; no native result is inferred from compilation or another
+host. The [retained Go/frontend workflow](https://github.com/01max/librairii/actions/runs/40194884354)
+also passes on the implementation head.
+
+This evidence commit changes documentation only. Its final PR checks must pass
+again before admission; the receipts above continue to name their actual tested
+implementation/merge source rather than claiming a self-referential commit.
