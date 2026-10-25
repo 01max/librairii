@@ -220,10 +220,68 @@ fn profile_rebinding_borrows_verified_copy_keeps_raw_authority_and_never_replays
         ClosedManifest::decode(bytes)?,
         &WorkCancellation::default(),
     )?;
+    use librairii_storage::portability::{PathReferenceKind, relocation_path_references};
+    let source_db = fs::read(source.join("db/librairii.sqlite3"))?;
+    let mut references = Vec::new();
+    input.visit_portability_paths(&WorkCancellation::default(), |reference| {
+        references.push(reference);
+        Ok(())
+    })?;
+    assert_eq!(references.len(), 2);
+    assert_eq!(references[0].kind, PathReferenceKind::ProfileRoot);
+    assert_eq!(
+        references[0].raw_path,
+        source.as_os_str().as_encoded_bytes()
+    );
+    assert_eq!(references[1].kind, PathReferenceKind::ExportDestination);
+    assert_eq!(references[1].raw_path, b"/fixture/export");
+    assert_eq!(
+        references[1].owner_id,
+        b"90000000-0000-4000-8000-000000000003"
+    );
+    assert_eq!(references[1].syntax(), Some(ProfilePathSyntax::Posix));
+    let cancelled = WorkCancellation::default();
+    cancelled.cancel();
+    assert!(matches!(
+        input.visit_portability_paths(&cancelled, |_| {
+            Err(StorageError::CompatibilityInvariant)
+        }),
+        Err(StorageError::Cancelled)
+    ));
+    assert!(matches!(
+        input.visit_portability_paths(&WorkCancellation::default(), |_| {
+            Err(StorageError::CompatibilityInvariant)
+        }),
+        Err(StorageError::CompatibilityInvariant)
+    ));
+    assert_eq!(fs::read(source.join("db/librairii.sqlite3"))?, source_db);
+    assert!(!source.join("db/librairii.sqlite3-wal").exists());
+    assert!(!source.join("db/librairii.sqlite3-shm").exists());
+    let journal_bytes = br#"{"id":"foreign-move","source":"Z:\\old-system\\source","destination":"/foreign/destination","entries":[{"path":"never replay"}]}"#;
+    let journal = relocation_path_references(journal_bytes)?;
+    assert_eq!(journal[0].kind, PathReferenceKind::RelocationSource);
+    assert_eq!(journal[0].raw_path, br"Z:\old-system\source");
+    assert_eq!(journal[0].syntax(), Some(ProfilePathSyntax::Windows));
+    assert_eq!(journal[1].kind, PathReferenceKind::RelocationDestination);
+    assert_eq!(journal[1].raw_path, b"/foreign/destination");
+    assert_eq!(journal[1].syntax(), Some(ProfilePathSyntax::Posix));
+    assert!(
+        relocation_path_references(br#"{"id":"x","source":"/a","source":"/b","destination":"/c"}"#)
+            .is_err()
+    );
+    assert!(relocation_path_references(&[journal_bytes.as_slice(), b" {}"].concat()).is_err());
     let target = roots.library().join("copied Éte # %2F");
     let copy = input.copy_to_new_root(&target, &WorkCancellation::default())?;
     let foreign_bytes = br#"{"version":1,"language":"fr","root":"Z:\\old-system\\library","libraryId":"a0000000-0000-4000-8000-000000000001","complete":true,"recovering":true}"#;
     let foreign = ForeignProfile::decode(foreign_bytes, ProfilePathSyntax::Windows)?;
+    assert_eq!(
+        foreign.root_path_reference().raw_path,
+        br"Z:\old-system\library"
+    );
+    assert_eq!(
+        foreign.root_path_reference().syntax(),
+        Some(ProfilePathSyntax::Windows)
+    );
     let rebinding = foreign.prepare_rebinding(&copy, &WorkCancellation::default())?;
     assert_eq!(rebinding.original().original_bytes(), foreign_bytes);
     let next = rebinding.proposed_document().profile();

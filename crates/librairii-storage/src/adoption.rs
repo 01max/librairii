@@ -181,57 +181,7 @@ mod closed {
             // Probe only a NEW private copy. A valid known main snapshot with
             // WAL header bytes is accepted when complete and sidecar-free;
             // the presence/absence of an old PID/lock file never proves that.
-            let scratch = tempfile::tempdir()
-                .map_err(|e| StorageError::io("create independent input probe", e))?;
-            let staging = scratch.path().join("staging");
-            fs::create_dir(&staging)
-                .map_err(|e| StorageError::io("create private probe staging", e))?;
-            let db = manifest
-                .entries
-                .iter()
-                .find(|e| e.path == "db/librairii.sqlite3")
-                .ok_or(StorageError::AdoptionInputInvalid)?;
-            let parent = directory.child(OsStr::new("db"))?;
-            let mut source = parent
-                .read_regular(OsStr::new("librairii.sqlite3"))?
-                .ok_or(StorageError::AdoptionInputChanged)?;
-            verify_file(&mut source, db, cancellation)?;
-            source
-                .seek(SeekFrom::Start(0))
-                .map_err(|e| StorageError::io("rewind verified input database", e))?;
-            let probe = scratch.path().join("input.sqlite3");
-            let mut options = fs::OpenOptions::new();
-            use std::os::unix::fs::OpenOptionsExt;
-            options.write(true).create_new(true).mode(0o600);
-            let mut output = options
-                .open(&probe)
-                .map_err(|e| StorageError::io("create independent input database", e))?;
-            let limit = u64::try_from(db.size).map_err(|_| StorageError::AdoptionInputInvalid)?;
-            let mut reader = InputCopyReader {
-                file: &mut source,
-                cancellation,
-                cancelled: false,
-            };
-            let count = match std::io::copy(&mut reader.by_ref().take(limit + 1), &mut output) {
-                Ok(count) => count,
-                Err(_) if reader.cancelled => return Err(StorageError::Cancelled),
-                Err(error) => {
-                    return Err(StorageError::io("copy independent input database", error));
-                }
-            };
-            if count != limit {
-                return Err(StorageError::AdoptionInputChanged);
-            }
-            output
-                .flush()
-                .map_err(|e| StorageError::io("flush private probe stream", e))?;
-            drop(output);
-            // Hash the COPY too; the source may have changed during copying.
-            let mut copy = File::open(&probe)
-                .map_err(|e| StorageError::io("read independent input database", e))?;
-            verify_file(&mut copy, db, cancellation)?;
-            drop(copy);
-            let prefix = crate::backup::probe_owned(&probe, &staging)?;
+            let (_, _, prefix) = probe_input_database(&directory, &manifest, cancellation)?;
             scan(&directory, &manifest, cancellation)?;
             directory.matches_metadata(
                 &fs::symlink_metadata(layout.root())
@@ -246,6 +196,90 @@ mod closed {
                 prefix,
             })
         }
+        /// Read diagnostic data only from another verified private snapshot.
+        /// Even a readonly SQLite connection must never touch source sidecars.
+        pub(crate) fn with_portability_database<T>(
+            &self,
+            cancellation: &WorkCancellation,
+            inspect: impl FnOnce(&rusqlite::Connection) -> Result<T>,
+        ) -> Result<T> {
+            self.revalidate(cancellation)?;
+            let (_scratch, path, prefix) =
+                probe_input_database(&self.directory, &self.manifest, cancellation)?;
+            if prefix != self.prefix {
+                return Err(StorageError::AdoptionInputChanged);
+            }
+            let connection = rusqlite::Connection::open_with_flags(
+                path,
+                rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY,
+            )?;
+            let result = inspect(&connection)?;
+            connection.close().map_err(|(_, error)| error)?;
+            self.revalidate(cancellation)?;
+            Ok(result)
+        }
+    }
+
+    fn probe_input_database(
+        directory: &Directory,
+        manifest: &ClosedManifest,
+        cancellation: &WorkCancellation,
+    ) -> Result<(tempfile::TempDir, PathBuf, SchemaPrefix)> {
+        let scratch = tempfile::tempdir()
+            .map_err(|e| StorageError::io("create independent input probe", e))?;
+        let staging = scratch.path().join("staging");
+        fs::create_dir(&staging)
+            .map_err(|e| StorageError::io("create private probe staging", e))?;
+        let db = manifest
+            .entries
+            .iter()
+            .find(|e| e.path == "db/librairii.sqlite3")
+            .ok_or(StorageError::AdoptionInputInvalid)?;
+        let parent = directory.child(OsStr::new("db"))?;
+        let mut source = parent
+            .read_regular(OsStr::new("librairii.sqlite3"))?
+            .ok_or(StorageError::AdoptionInputChanged)?;
+        verify_file(&mut source, db, cancellation)?;
+        source
+            .seek(SeekFrom::Start(0))
+            .map_err(|e| StorageError::io("rewind verified input database", e))?;
+        let probe = scratch.path().join("input.sqlite3");
+        let mut options = fs::OpenOptions::new();
+        use std::os::unix::fs::OpenOptionsExt;
+        options.write(true).create_new(true).mode(0o600);
+        let mut output = options
+            .open(&probe)
+            .map_err(|e| StorageError::io("create independent input database", e))?;
+        let limit = u64::try_from(db.size).map_err(|_| StorageError::AdoptionInputInvalid)?;
+        let mut reader = InputCopyReader {
+            file: &mut source,
+            cancellation,
+            cancelled: false,
+        };
+        let count = match std::io::copy(&mut reader.by_ref().take(limit + 1), &mut output) {
+            Ok(count) => count,
+            Err(_) if reader.cancelled => return Err(StorageError::Cancelled),
+            Err(error) => {
+                return Err(StorageError::io("copy independent input database", error));
+            }
+        };
+        if count != limit {
+            return Err(StorageError::AdoptionInputChanged);
+        }
+        output
+            .flush()
+            .map_err(|e| StorageError::io("flush private probe stream", e))?;
+        drop(output);
+        // Hash the COPY too; the source may have changed during copying.
+        let mut copy = File::open(&probe)
+            .map_err(|e| StorageError::io("read independent input database", e))?;
+        verify_file(&mut copy, db, cancellation)?;
+        drop(copy);
+        let prefix = crate::backup::probe_owned(&probe, &staging)?;
+        Ok((scratch, probe, prefix))
+    }
+
+    impl ClosedLibraryInput {
         pub fn root(&self) -> &Path {
             &self.root
         }
@@ -344,6 +378,7 @@ mod closed {
                     name,
                     working_directories: BTreeMap::new(),
                     working_files: BTreeMap::new(),
+                    current_path: None,
                     lease: None,
                 });
                 let candidate = retained
@@ -441,6 +476,8 @@ mod closed {
         // actual witnesses, including unlinked/substituted objects.
         working_directories: BTreeMap<String, Directory>,
         working_files: BTreeMap<String, File>,
+        // Diagnostic spelling only; never grants a file/recovery capability.
+        current_path: Option<String>,
         // Last: the copy lease outlives every retained object/stream.
         lease: Option<LibraryLease>,
     }
@@ -594,6 +631,12 @@ mod closed {
         pub fn retains_lease(&self) -> bool {
             self.retained.as_ref().is_some_and(|c| c.lease.is_some())
         }
+
+        /// Exact declared relative item being processed when copying refused.
+        /// The original cause and all acquired owners remain available.
+        pub fn refused_relative_path(&self) -> Option<&str> {
+            self.retained.as_ref()?.current_path.as_deref()
+        }
     }
     impl std::fmt::Display for IndependentCopyFailure {
         fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -679,6 +722,7 @@ mod closed {
             .get(path)
             .ok_or(StorageError::AdoptionInputInvalid)?;
         for entry in entries {
+            candidate.current_path = Some(entry.path.clone());
             if cancellation.is_cancelled() {
                 return Err(StorageError::Cancelled);
             }
@@ -697,6 +741,7 @@ mod closed {
                     cancellation,
                     before_payload,
                 )?;
+                candidate.current_path = Some(entry.path.clone());
                 // Child data/names are flushed by copy_tree; persist its name
                 // and recheck while the original directory is still held.
                 target_directory_at(candidate, path, cancellation)?.flush()?;
@@ -773,10 +818,26 @@ mod closed {
         }
         expected.sort();
         let directory = target_directory_at(candidate, path, cancellation)?;
-        if directory.entries(expected.len(), cancellation)? != expected {
+        let actual = directory.entries(expected.len().saturating_add(1), cancellation)?;
+        if actual != expected {
+            if let Some(name) = expected
+                .iter()
+                .find(|name| !actual.contains(name))
+                .or_else(|| actual.iter().find(|name| !expected.contains(name)))
+            {
+                candidate.current_path = name.to_str().map(|name| {
+                    if path.is_empty() {
+                        name.to_owned()
+                    } else {
+                        format!("{path}/{name}")
+                    }
+                });
+            }
             return Err(StorageError::AdoptionInputChanged);
         }
-        directory.flush()
+        directory.flush()?;
+        candidate.current_path = None;
+        Ok(())
     }
     fn scan(
         root: &Directory,
@@ -973,6 +1034,68 @@ mod closed {
                 ClosedManifest::decode(&serde_json::to_vec(&entries)?)?,
                 &WorkCancellation::default(),
             )?)
+        }
+
+        #[test]
+        fn native_case_and_unicode_name_conflicts_report_the_item_and_retain_copy()
+        -> std::result::Result<(), Box<dyn Error>> {
+            let roots = TestRoots::new()?;
+            let input = input(&roots)?;
+            let original = fs::read(input.root.join("db/librairii.sqlite3"))?;
+            let declared = "raw Éte # %2F : ?.bin";
+            for (index, conflicting) in ["RAW Éte # %2F : ?.bin", "raw E\u{301}te # %2F : ?.bin"]
+                .into_iter()
+                .enumerate()
+            {
+                let target = roots
+                    .library()
+                    .join(format!("native-name-conflict-{index}"));
+                let mut inserted = false;
+                let failure = input
+                    .copy_with_checkpoints(
+                        &target,
+                        &WorkCancellation::default(),
+                        |candidate| {
+                            if !inserted {
+                                // An actual target-filesystem name race. On a
+                                // folding FS it aliases the declared name; on a
+                                // literal FS it is an extra unowned entry. Neither
+                                // outcome can be normalized into an admitted copy.
+                                let mut file = fs::OpenOptions::new()
+                                    .write(true)
+                                    .create_new(true)
+                                    .open(candidate.root.join(conflicting))
+                                    .map_err(|e| StorageError::io("create conflict sentinel", e))?;
+                                file.write_all(b"unowned target sentinel")
+                                    .map_err(|e| StorageError::io("write conflict sentinel", e))?;
+                                inserted = true;
+                            }
+                            Ok(())
+                        },
+                        || Ok(()),
+                    )
+                    .err()
+                    .ok_or("target name conflict activated a copy")?;
+                assert!(inserted);
+                assert!(failure.retains_lease());
+                assert_eq!(failure.retained_root(), Some(target.as_path()));
+                assert!(
+                    matches!(failure.refused_relative_path(), Some(path) if path == declared || path == conflicting)
+                );
+                assert_eq!(
+                    fs::read(target.join(conflicting))?,
+                    b"unowned target sentinel"
+                );
+                assert_eq!(fs::read(input.root.join("db/librairii.sqlite3"))?, original);
+                input.revalidate(&WorkCancellation::default())?;
+                assert!(!target.join(".librairii-native-state.json").exists());
+                drop(failure);
+                assert_eq!(
+                    fs::read(target.join(conflicting))?,
+                    b"unowned target sentinel"
+                );
+            }
+            Ok(())
         }
 
         #[test]

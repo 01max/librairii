@@ -97,6 +97,112 @@ pub enum ProfilePathSyntax {
     Windows,
 }
 
+/// A path encountered during preflight, never permission to open or clean it.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum PathReferenceKind {
+    ProfileRoot,
+    ExportDestination,
+    RelocationSource,
+    RelocationDestination,
+}
+
+/// Exact historical bytes. IDs and paths can contain non-UTF-8 SQLite data.
+/// Presentation must not turn a diagnostic into local recovery authority.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct PathReference {
+    pub kind: PathReferenceKind,
+    pub owner_id: Vec<u8>,
+    pub raw_path: Vec<u8>,
+}
+
+impl PathReference {
+    /// Recognize syntax only; even a local absolute path needs fresh validation.
+    pub fn syntax(&self) -> Option<ProfilePathSyntax> {
+        let root = std::str::from_utf8(&self.raw_path).ok()?;
+        [ProfilePathSyntax::Posix, ProfilePathSyntax::Windows]
+            .into_iter()
+            .find(|syntax| absolute(root, *syntax))
+    }
+}
+
+#[cfg(any(target_os = "macos", target_os = "linux"))]
+impl crate::adoption::ClosedLibraryInput {
+    /// Stream profile/history path diagnostics from a freshly verified PRIVATE
+    /// SQLite snapshot. No source SQLite open, path rewriting, recovery replay,
+    /// or collected history vector. Each row retains the existing 16 MiB read
+    /// budget; oversize/cancel/visitor failure preserves all original bytes.
+    pub fn visit_portability_paths(
+        &self,
+        cancellation: &crate::database::WorkCancellation,
+        mut visit: impl FnMut(PathReference) -> Result<()>,
+    ) -> Result<()> {
+        self.with_portability_database(cancellation, |connection| {
+            visit(PathReference {
+                kind: PathReferenceKind::ProfileRoot,
+                owner_id: self.identity().spelling().as_bytes().to_vec(),
+                raw_path: self.profile().profile().root.as_bytes().to_vec(),
+            })?;
+            if self.prefix().version() < 12 {
+                return Ok(());
+            }
+            let mut statement = connection.prepare(
+                "SELECT length(CAST(id AS BLOB)),length(CAST(export_destination AS BLOB)),CAST(id AS BLOB),CAST(export_destination AS BLOB) FROM file_operations WHERE export_destination IS NOT NULL ORDER BY id",
+            )?;
+            let mut rows = statement.query([])?;
+            while let Some(row) = rows.next()? {
+                if cancellation.is_cancelled() {
+                    return Err(StorageError::Cancelled);
+                }
+                let id_bytes: i64 = row.get(0)?;
+                let path_bytes: i64 = row.get(1)?;
+                if id_bytes < 0 || path_bytes < 0
+                    || id_bytes.checked_add(path_bytes).is_none_or(|n| n > 16 * 1024 * 1024)
+                {
+                    return Err(StorageError::OperationInput(
+                        librairii_app::ports::creation::InputError::ResourceLimit,
+                    ));
+                }
+                visit(PathReference {
+                    kind: PathReferenceKind::ExportDestination,
+                    owner_id: row.get(2)?,
+                    raw_path: row.get(3)?,
+                })?;
+            }
+            Ok(())
+        })
+    }
+}
+
+/// Inspect supplied foreign journal bytes as DATA. Known fields are decoded
+/// strictly (including duplicate refusal); unknown fields/entries are skipped
+/// without allocating their trees. This grants no journal validity or cleanup.
+/// The caller retains the original document; unsupported/corrupt input refuses.
+pub fn relocation_path_references(bytes: &[u8]) -> Result<[PathReference; 2]> {
+    #[derive(serde::Deserialize)]
+    struct Paths {
+        id: String,
+        source: String,
+        destination: String,
+    }
+    if bytes.len() > 64 * 1024 * 1024 {
+        return Err(StorageError::RecoveryBindingRequired);
+    }
+    let paths: Paths =
+        serde_json::from_slice(bytes).map_err(|_| StorageError::RecoveryBindingRequired)?;
+    Ok([
+        PathReference {
+            kind: PathReferenceKind::RelocationSource,
+            owner_id: paths.id.as_bytes().to_vec(),
+            raw_path: paths.source.into_bytes(),
+        },
+        PathReference {
+            kind: PathReferenceKind::RelocationDestination,
+            owner_id: paths.id.into_bytes(),
+            raw_path: paths.destination.into_bytes(),
+        },
+    ])
+}
+
 #[derive(Clone, Debug)]
 pub struct ForeignProfile {
     original: Vec<u8>,
@@ -134,6 +240,13 @@ impl ForeignProfile {
     }
     pub const fn syntax(&self) -> ProfilePathSyntax {
         self.syntax
+    }
+    pub fn root_path_reference(&self) -> PathReference {
+        PathReference {
+            kind: PathReferenceKind::ProfileRoot,
+            owner_id: self.profile.library_id.as_bytes().to_vec(),
+            raw_path: self.profile.root.as_bytes().to_vec(),
+        }
     }
 
     /// Apply relocation from a verified closed input to its actual independently
