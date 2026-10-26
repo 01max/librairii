@@ -14,7 +14,7 @@ use std::{
 #[derive(Debug)]
 pub enum RelocationPreview {
     Unchanged,
-    Destination(TargetPreview),
+    Destination(Box<TargetPreview>),
 }
 
 /// Retained target observation, not permission to initialize, publish, clean up

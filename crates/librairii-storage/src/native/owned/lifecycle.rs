@@ -53,9 +53,9 @@ impl<'profile> NativeLibrary<'profile> {
         if let Some(policy) = &document.root_policy {
             excluded.extend(policy.legacy_roots.iter().map(Path::new));
         }
-        Ok(RelocationPreview::Destination(TargetPreview::inspect(
-            selected, &excluded, cancel,
-        )?))
+        Ok(RelocationPreview::Destination(Box::new(
+            TargetPreview::inspect(selected, &excluded, cancel)?,
+        )))
     }
     pub fn close_for_relocation(
         mut self,
