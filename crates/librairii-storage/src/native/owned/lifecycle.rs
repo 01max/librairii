@@ -17,6 +17,46 @@ pub struct ClosedNativeLibrary<'profile> {
     pub(super) library: NativeLibrary<'profile>,
 }
 impl<'profile> NativeLibrary<'profile> {
+    pub fn preview_relocation(
+        &self,
+        selected: &Path,
+        locations: &ProfileLocations,
+        cancel: &WorkCancellation,
+    ) -> Result<crate::settings::RelocationPreview> {
+        use crate::settings::{RelocationPreview, TargetPreview};
+        self.revalidate(cancel)?;
+        match fs::canonicalize(selected) {
+            Ok(path) => {
+                if Directory::open(&path)?.identity() == self.root.identity() {
+                    self.revalidate(cancel)?;
+                    return Ok(RelocationPreview::Unchanged);
+                }
+            }
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => (),
+            Err(e) => return Err(StorageError::io("resolve relocation selection", e)),
+        }
+        let record = self
+            .record
+            .lock()
+            .map_err(|_| StorageError::RuntimeFenced)?;
+        let document = &record.document;
+        let mut excluded = vec![
+            self.layout.root(),
+            Path::new(&document.native_profile_root),
+            Path::new(&document.source_root),
+        ];
+        let default = legacy_default_root(locations)?;
+        excluded.push(&default);
+        if let Some(legacy) = &locations.legacy {
+            excluded.push(legacy);
+        }
+        if let Some(policy) = &document.root_policy {
+            excluded.extend(policy.legacy_roots.iter().map(Path::new));
+        }
+        Ok(RelocationPreview::Destination(TargetPreview::inspect(
+            selected, &excluded, cancel,
+        )?))
+    }
     pub fn close_for_relocation(
         mut self,
     ) -> std::result::Result<ClosedNativeLibrary<'profile>, Box<NativeCloseFailure<'profile>>> {
@@ -81,6 +121,58 @@ mod tests {
     use super::*;
     use crate::{database::Database, profile::NativeProfileStore};
     type TestResult = std::result::Result<(), Box<dyn std::error::Error>>;
+
+    #[test]
+    fn current_root_selection_through_alias_is_unchanged_without_profile_or_lifecycle_effects()
+    -> TestResult {
+        use crate::settings::RelocationPreview;
+        let (roots, copy, locations) = crate::test_support::native_copy()?;
+        let store = NativeProfileStore::create_fresh(&locations.native)?;
+        let native = NativeLibrary::bind_independent(copy, &store, &locations, &Default::default())
+            .map_err(|f| f.to_string())?;
+        let mut db = Database::open_native(&native)?;
+        let before = store.load()?.ok_or("profile")?.original_bytes().to_vec();
+        let state = fs::read(native.layout().root().join(NATIVE_STATE_FILE))?;
+        let alias = roots.library().join("alias to current library");
+        std::os::unix::fs::symlink(native.layout().root(), &alias)?;
+        for selected in [
+            native.layout().root(),
+            alias.as_path(),
+            native.layout().root().join(".").as_path(),
+        ] {
+            assert!(matches!(
+                native.preview_relocation(selected, &locations, &Default::default())?,
+                RelocationPreview::Unchanged
+            ));
+        }
+        assert_eq!(store.load()?.ok_or("profile")?.original_bytes(), before);
+        assert_eq!(
+            fs::read(native.layout().root().join(NATIVE_STATE_FILE))?,
+            state
+        );
+        assert!(matches!(
+            native.preview_relocation(
+                &roots.library().join("a new target"),
+                &locations,
+                &Default::default()
+            )?,
+            RelocationPreview::Destination(_)
+        ));
+        assert!(
+            native
+                .preview_relocation(&locations.native, &locations, &Default::default())
+                .is_err()
+        );
+        db.read(|c| {
+            c.query_row("SELECT 1", [], |r| r.get::<_, i64>(0))
+                .map_err(StorageError::from)
+        })?
+        .wait()?;
+        db.close()?;
+        drop(db);
+        native.finish().map_err(|f| f.to_string())?;
+        Ok(())
+    }
 
     #[test]
     fn closed_relocation_owner_retains_real_exclusion_allows_language_and_reopens_new_epoch()

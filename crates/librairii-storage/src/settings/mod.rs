@@ -1,6 +1,6 @@
 //! Explicit setup/relocation inputs; profile data alone never grants root authority.
 pub(crate) mod target;
-pub use target::TargetPreview;
+pub use target::{RelocationPreview, TargetPreview};
 pub(crate) mod manifest;
 pub use manifest::{ManifestSummary, RelocationManifest};
 mod startup;

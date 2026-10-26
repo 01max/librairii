@@ -5177,6 +5177,19 @@
           ]
         },
         "reason": "Task 13.1 confirms the returned native default from a wholly absent account and rejects invalid/legacy preparation before effects."
+      },
+      {
+        "position": 591,
+        "identity": {
+          "suite": "librairii-storage",
+          "name": "native::owned::lifecycle::tests::current_root_selection_through_alias_is_unchanged_without_profile_or_lifecycle_effects",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Task 13.4 treats selection of the actual current root through an alias as an unchanged operation while the database remains live."
       }
     ],
     "python": [

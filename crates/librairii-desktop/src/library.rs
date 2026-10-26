@@ -16,7 +16,7 @@ use librairii_storage::{
     operations_repository::TerminalRepository,
     platform::unix::LibraryFiles,
     profile::ProfileLocations,
-    settings::TargetPreview,
+    settings::{RelocationPreview, TargetPreview},
 };
 use std::{path::Path, sync::Mutex, thread, time::Duration};
 
@@ -94,8 +94,19 @@ pub struct Runtime<'gate, 'db, 'library> {
     root: &'db Path,
     exports: &'db Mutex<librairii_storage::export::Exports<'db, 'library>>,
     move_notice: Option<&'db MoveNotice>,
+    library: &'db NativeLibrary<'library>,
+    locations: &'db ProfileLocations,
 }
 impl<'gate> Runtime<'gate, '_, '_> {
+    pub fn preview_relocation(
+        &self,
+        selected: &Path,
+        cancel: &WorkCancellation,
+    ) -> Result<RelocationPreview> {
+        let _use = self.use_library().map_err(|_| StorageError::RuntimeInUse)?;
+        self.library
+            .preview_relocation(selected, self.locations, cancel)
+    }
     pub fn root(&self) -> &Path {
         self.root
     }
@@ -225,6 +236,8 @@ impl<'profile> LibrarySession<'profile> {
                             root: native.layout().root(),
                             exports: &exports,
                             move_notice: self.move_notice.as_ref(),
+                            library: native,
+                            locations,
                         };
                         run(&runtime)
                     },

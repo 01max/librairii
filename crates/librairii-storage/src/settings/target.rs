@@ -9,6 +9,14 @@ use std::{
     path::{Component, Path, PathBuf},
 };
 
+/// Selecting the actual current folder (including an alias) changes nothing
+/// and never starts a lifecycle switch or requires an empty directory.
+#[derive(Debug)]
+pub enum RelocationPreview {
+    Unchanged,
+    Destination(TargetPreview),
+}
+
 /// Retained target observation, not permission to initialize, publish, clean up
 /// or commit a profile. Revalidation is mandatory at each later effect boundary.
 /// No directories are created by inspection; cancellation/picker dismissal has
