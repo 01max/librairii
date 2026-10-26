@@ -59,3 +59,22 @@ Unavailable approved UUID members retain their cached title and explicit warning
 Mode changes keep selection and criteria independent and persist to the existing
 library-bound native navigation file. The real-library controller test exercises
 all modes, independently reads the durable preference and reopens after shutdown.
+
+## Accessible shared controls
+
+Application controls and native application/Edit menus provide English/French
+names. Native edit accelerators operate on the focused text widget and retain
+its selection and undo stack. Menu changes are coalesced; handlers execute on
+the main thread without an unbounded UI event queue. Custom story rows expose
+list/item counts, selection, enabled state, actionable selection and a visible
+focus border, including virtualized offscreen keyboard seeks. Broken and
+unavailable warnings carry explicit text independent of color. Shared tag chips
+include their definition/value text; decoration does not supply their identity.
+
+The pinned toolkit has Boolean checkbox accessibility, so the shared mixed
+assignment control uses an explicitly labeled Mixed/Set/Clear choice with a
+truthful current value instead of presenting Mixed as unchecked. Progress has
+a named semantic range/value and static indeterminate presentation. Application
+panels, covers and progress introduce no animated movement; the OS/toolkit owns
+standard transient control feedback. These are permitted accessibility/control
+adaptations of the approved hierarchy, checked by native fixtures below.

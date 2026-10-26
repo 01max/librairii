@@ -1,0 +1,35 @@
+import { ComboBox, Palette } from "std-widgets.slint";
+// Slint 1.18.1 exposes Boolean checked state. An explicit native choice preserves
+// Mixed truthfully rather than announcing a partly assigned value as unchecked.
+export component MixedChoice inherits ComboBox {
+    in property <bool> french;
+    in property <string> label;
+    model: root.french ? ["Mixte — ne pas modifier", "Définir", "Effacer"] : ["Mixed — leave unchanged", "Set", "Clear"];
+    accessible-label: root.label;
+    accessible-value: self.current-value;
+}
+export component TagChip inherits Rectangle {
+    in property <string> label;
+    in property <color> tag-color: Palette.foreground;
+    accessible-role: text;
+    accessible-label: root.label;
+    background: Palette.background;
+    border-color: Palette.border; border-width: 1px; border-radius: 5px;
+    height: 28px;
+    Rectangle { x: 7px; y: 9px; width: 10px; height: 10px; background: root.tag-color; border-color: Palette.foreground; border-width: 1px; }
+    Text { x: 23px; y: 4px; width: parent.width - 29px; text: root.label; color: Palette.foreground; overflow: elide; }
+}
+export component ProgressState inherits Rectangle {
+    in property <float> progress;
+    in property <bool> indeterminate;
+    in property <string> label;
+    accessible-role: progress-indicator;
+    accessible-label: root.label;
+    accessible-value: root.indeterminate ? "" : root.progress;
+    accessible-value-minimum: 0; accessible-value-maximum: 1;
+    height: 6px;
+    background: Palette.border;
+    // Static indeterminate status has no perpetual motion. Status remains
+    // textual, including when operating-system reduced motion is requested.
+    Rectangle { width: parent.width * (root.indeterminate ? 1 : min(1,max(0,root.progress))); height: parent.height; background: Palette.accent-background; }
+}

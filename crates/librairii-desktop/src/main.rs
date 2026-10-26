@@ -25,7 +25,7 @@ fn launch() -> Result<(), Box<dyn std::error::Error>> {
         std::thread::sleep(Duration::from_millis(2));
     };
     let ui = DesktopWindow::new()?;
-    let menus = menus::Menus::install()?;
+    let menus = menus::Menus::install(ui.as_weak())?;
     ui.set_french(first.language == librairii_app::localization::Language::French);
     let view = view::install(&ui, worker.clone(), first);
     let pending = worker.clone();
@@ -44,9 +44,13 @@ fn launch() -> Result<(), Box<dyn std::error::Error>> {
         move || {
             if let Some(ui) = weak.upgrade() {
                 view.borrow_mut().resize(&ui);
+                menus.update(ui.get_french(), false, ui.get_query_focused());
                 let command = menus.commands.take();
                 if command & 1 != 0 {
                     ui.set_about_open(true);
+                }
+                if command & 4 != 0 {
+                    ui.invoke_show_panel(5);
                 }
                 if command & 2 != 0 {
                     pending.borrow().request_shutdown();
