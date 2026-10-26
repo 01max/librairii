@@ -1730,22 +1730,8 @@ mod owned {
         // ProfileLocations is DATA and its public fields are not authority.
         // Enforce the selected native names independently; a caller cannot
         // label an empty Go-discoverable config directory as "native".
-        #[cfg(target_os = "macos")]
-        let (native_name, data_name, legacy_name) = (
-            "io.github.librairii.native",
-            "LibrairiiNative",
-            "io.github.librairii.app",
-        );
-        #[cfg(target_os = "linux")]
-        let (native_name, data_name, legacy_name) =
-            ("librairii-native", "librairii-native", "librairii");
-        if locations.native.file_name() != Some(OsStr::new(native_name))
-            || locations.data.file_name() != Some(OsStr::new(data_name))
-            || locations.legacy.as_ref().and_then(|path| path.file_name())
-                != Some(OsStr::new(legacy_name))
-        {
-            return Err(StorageError::PathEscape);
-        }
+        locations.validate_native_names()?;
+        let (native_name, data_name, _) = ProfileLocations::native_names();
         let resolve = |path: &Path| {
             if !path.is_absolute() {
                 return Err(StorageError::RootNotAbsolute);

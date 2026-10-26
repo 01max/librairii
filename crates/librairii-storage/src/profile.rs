@@ -418,6 +418,50 @@ impl Drop for StateReservation<'_> {
 }
 
 impl NativeProfileStore {
+    /// Finish a newly prepared namespace through its retained directory, rather
+    /// than reopening an ambient pathname after creating its parents.
+    #[cfg(any(target_os = "macos", target_os = "linux"))]
+    pub(crate) fn create_prepared(
+        directory: &Path,
+        namespace: Directory,
+        parent: &Directory,
+        cancel: &crate::database::WorkCancellation,
+    ) -> Result<Self> {
+        backup::require_directory_durability()?;
+        let directory_metadata = fs::symlink_metadata(directory)
+            .map_err(|e| StorageError::io("inspect prepared namespace", e))?;
+        namespace.matches_metadata(&directory_metadata)?;
+        namespace.entries(0, cancel)?;
+        let mut marker = namespace.open_regular(
+            std::ffi::OsStr::new(MARKER),
+            rustix::fs::OFlags::RDWR | rustix::fs::OFlags::CREATE | rustix::fs::OFlags::EXCL,
+        )?;
+        marker.try_lock().map_err(|e| match e {
+            fs::TryLockError::WouldBlock => StorageError::ProfileInUse,
+            fs::TryLockError::Error(e) => StorageError::io("lock prepared profile", e),
+        })?;
+        marker
+            .write_all(MARKER_BYTES)
+            .map_err(|e| StorageError::io("write prepared profile marker", e))?;
+        durable_file_flush(&marker)?;
+        namespace.flush()?;
+        parent.flush()?;
+        namespace.entries(1, cancel)?;
+        let marker_metadata = marker
+            .metadata()
+            .map_err(|e| StorageError::io("retain prepared marker", e))?;
+        let store = Self {
+            move_journal: Mutex::new(None),
+            directory: directory.to_path_buf(),
+            directory_metadata,
+            marker,
+            marker_metadata,
+            namespace,
+            state: Mutex::new(Some(State::default())),
+        };
+        store.revalidate_namespace()?;
+        Ok(store)
+    }
     fn reserve(&self) -> Result<StateReservation<'_>> {
         self.reserve_inner(false)
     }
@@ -1128,6 +1172,33 @@ pub struct ProfileLocations {
 }
 
 impl ProfileLocations {
+    #[cfg(any(target_os = "macos", target_os = "linux"))]
+    pub(crate) fn native_names() -> (&'static str, &'static str, &'static str) {
+        #[cfg(target_os = "macos")]
+        {
+            (
+                "io.github.librairii.native",
+                "LibrairiiNative",
+                "io.github.librairii.app",
+            )
+        }
+        #[cfg(target_os = "linux")]
+        {
+            ("librairii-native", "librairii-native", "librairii")
+        }
+    }
+    #[cfg(any(target_os = "macos", target_os = "linux"))]
+    pub(crate) fn validate_native_names(&self) -> Result<()> {
+        use std::ffi::OsStr;
+        let (native, data, legacy) = Self::native_names();
+        if self.native.file_name() != Some(OsStr::new(native))
+            || self.data.file_name() != Some(OsStr::new(data))
+            || self.legacy.as_ref().and_then(|p| p.file_name()) != Some(OsStr::new(legacy))
+        {
+            return Err(StorageError::PathEscape);
+        }
+        Ok(())
+    }
     pub fn for_host(
         home: &Path,
         config_base: Option<&Path>,

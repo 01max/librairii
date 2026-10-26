@@ -24,6 +24,117 @@ pub enum Startup {
         cause: StorageError,
     },
 }
+
+/// Called after an explicit setup or language choice, never by startup
+/// inspection or picker cancellation. Creates only native configuration/data
+/// containers; a library identity and database still require confirmation.
+pub fn prepare_native_profile(
+    locations: &ProfileLocations,
+    cancel: &WorkCancellation,
+) -> Result<profile::NativeProfileStore> {
+    use super::target::{physical_overlap, resolve};
+    if cancel.is_cancelled() {
+        return Err(StorageError::Cancelled);
+    }
+    locations.validate_native_names()?;
+    validate_native_namespace(locations, cancel)?;
+    let saved = profile::read_legacy(&locations.native)?;
+    if let Some(document) = &saved {
+        let p = document.profile();
+        if p.recovering || (!p.complete && (!p.root.is_empty() || !p.library_id.is_empty())) {
+            return Err(StorageError::RecoveryBindingRequired);
+        }
+        if p.complete {
+            // Reopening preferences must not replace a missing data volume.
+            return profile::NativeProfileStore::open_native(&locations.native);
+        }
+    }
+    let native = resolve(&locations.native, true)?.0;
+    let data = resolve(&locations.data, true)?.0;
+    let (native_name, data_name, _) = ProfileLocations::native_names();
+    if native.file_name() != Some(std::ffi::OsStr::new(native_name))
+        || data.file_name() != Some(std::ffi::OsStr::new(data_name))
+        || physical_overlap(&native, &data)?
+    {
+        return Err(StorageError::PathEscape);
+    }
+    let mut excluded = vec![default_legacy_root(locations)?];
+    if let Some(legacy) = &locations.legacy {
+        if let Some(document) = profile::read_legacy(legacy)? {
+            let p = document.profile();
+            if p.recovering || (!p.complete && (!p.root.is_empty() || !p.library_id.is_empty())) {
+                return Err(StorageError::RecoveryBindingRequired);
+            }
+            if p.complete {
+                excluded.push(PathBuf::from(&p.root));
+            }
+        }
+        match fs::symlink_metadata(legacy.join("relocation.json")) {
+            Ok(_) => return Err(StorageError::RecoveryBindingRequired),
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => (),
+            Err(e) => return Err(StorageError::io("inspect legacy recovery before setup", e)),
+        }
+        excluded.push(legacy.clone());
+    }
+    for root in excluded {
+        let root = resolve(&root, false)?.0;
+        if physical_overlap(&root, &native)? || physical_overlap(&root, &data)? {
+            return Err(StorageError::PathEscape);
+        }
+    }
+    let (data_directory, _) = prepare_directory(&locations.data, cancel)?;
+    let (namespace, parent) = prepare_directory(&locations.native, cancel)?;
+    data_directory.matches_metadata(
+        &fs::symlink_metadata(&locations.data)
+            .map_err(|e| StorageError::io("revalidate prepared data container", e))?,
+    )?;
+    let store = if namespace.entries(4, cancel)?.is_empty() {
+        profile::NativeProfileStore::create_prepared(&native, namespace, &parent, cancel)?
+    } else {
+        profile::NativeProfileStore::open_native(&native)?
+    };
+    store.load()?;
+    Ok(store)
+}
+
+fn prepare_directory(path: &Path, cancel: &WorkCancellation) -> Result<(Directory, Directory)> {
+    let (_, anchor, missing) = super::target::resolve(path, true)?;
+    let mut parents = vec![(anchor.clone(), Directory::open(&anchor)?)];
+    for name in missing {
+        if cancel.is_cancelled() {
+            return Err(StorageError::Cancelled);
+        }
+        let (path, parent) = parents.last().ok_or(StorageError::PathEscape)?;
+        parent.matches_metadata(
+            &fs::symlink_metadata(path)
+                .map_err(|e| StorageError::io("revalidate setup parent", e))?,
+        )?;
+        let child = parent.create_child(&name)?;
+        child.flush()?;
+        parent.flush()?;
+        parents.push((path.join(name), child));
+    }
+    for (path, directory) in &parents {
+        directory.matches_metadata(
+            &fs::symlink_metadata(path)
+                .map_err(|e| StorageError::io("revalidate prepared setup directory", e))?,
+        )?;
+        if fs::canonicalize(path)
+            .map_err(|e| StorageError::io("resolve prepared setup directory", e))?
+            != *path
+        {
+            return Err(StorageError::SnapshotChanged);
+        }
+    }
+    let (path, directory) = parents.pop().ok_or(StorageError::PathEscape)?;
+    let parent = if let Some((_, parent)) = parents.pop() {
+        parent
+    } else {
+        Directory::open(path.parent().ok_or(StorageError::PathEscape)?)?
+    };
+    Ok((directory, parent))
+}
+
 pub fn inspect_startup(locations: &ProfileLocations, cancellation: &WorkCancellation) -> Startup {
     let mut configured = None;
     let result = (|| -> Result<Startup> {
@@ -80,12 +191,16 @@ pub fn inspect_startup(locations: &ProfileLocations, cancellation: &WorkCancella
         };
         match fs::read_dir(&root) {
             Err(e) if e.kind() == std::io::ErrorKind::NotFound && document.is_none() => {
-                return Ok(Startup::ConfirmFolder { suggested: default });
+                return Ok(Startup::ConfirmFolder {
+                    suggested: locations.data.join("library"),
+                });
             }
             Err(e) => return Err(StorageError::io("inspect selected startup root", e)),
             Ok(mut entries) => {
                 if entries.next().is_none() && document.is_none() {
-                    return Ok(Startup::ConfirmFolder { suggested: default });
+                    return Ok(Startup::ConfirmFolder {
+                        suggested: locations.data.join("library"),
+                    });
                 }
             }
         }
@@ -257,6 +372,102 @@ pub fn confirm_adoption<'profile>(
 mod tests {
     use super::*;
     type TestResult = std::result::Result<(), Box<dyn std::error::Error>>;
+    #[test]
+    fn cold_start_confirms_suggested_native_root_without_precreated_parents() -> TestResult {
+        let roots = librairii_testkit::TestRoots::new()?;
+        let locations =
+            ProfileLocations::for_host(&roots.profile().join("new account"), None, None)?;
+        let cancel = WorkCancellation::default();
+        let Startup::ConfirmFolder { suggested } = inspect_startup(&locations, &cancel) else {
+            return Err("fresh folder confirmation".into());
+        };
+        assert_eq!(suggested, locations.data.join("library"));
+        assert_ne!(suggested, default_legacy_root(&locations)?);
+        assert!(!locations.native.exists());
+        assert!(!locations.data.exists());
+        cancel.cancel();
+        assert!(matches!(
+            prepare_native_profile(&locations, &cancel),
+            Err(StorageError::Cancelled)
+        ));
+        assert!(!locations.native.exists());
+        assert!(!locations.data.exists());
+        let cancel = WorkCancellation::default();
+        let store = prepare_native_profile(&locations, &cancel)?;
+        assert!(!suggested.exists());
+        assert!(store.load()?.is_none());
+        let target = super::super::TargetPreview::inspect(&suggested, &[], &cancel)?;
+        let native = crate::native::NativeLibrary::initialize_confirmed(
+            target,
+            &store,
+            &locations,
+            "b0000000-0000-4000-8000-000000000013".parse()?,
+            librairii_app::localization::Language::French,
+            &cancel,
+        )
+        .map_err(|f| f.to_string())?;
+        assert_eq!(native.layout().root(), suggested);
+        let mut db = crate::database::Database::open_native(&native)?;
+        db.close()?;
+        drop(db);
+        native.finish().map_err(|f| f.to_string())?;
+        drop(store);
+        let store = prepare_native_profile(&locations, &cancel)?;
+        let native = crate::native::NativeLibrary::reopen(&store, &locations, &cancel)?;
+        let mut db = crate::database::Database::open_native(&native)?;
+        db.close()?;
+        drop(db);
+        native.finish().map_err(|f| f.to_string())?;
+        assert_eq!(store.load()?.ok_or("saved")?.profile().language, "fr");
+        assert!(!default_legacy_root(&locations)?.exists());
+        Ok(())
+    }
+    #[test]
+    fn preparation_preserves_invalid_and_legacy_state_before_creating_native_containers()
+    -> TestResult {
+        let roots = librairii_testkit::TestRoots::new()?;
+        let locations = ProfileLocations::for_host(&roots.profile().join("account"), None, None)?;
+        let legacy = locations.legacy.as_ref().ok_or("legacy")?;
+        fs::create_dir_all(legacy)?;
+        fs::write(legacy.join("settings.json"), b"invalid")?;
+        assert!(prepare_native_profile(&locations, &Default::default()).is_err());
+        assert_eq!(fs::read(legacy.join("settings.json"))?, b"invalid");
+        assert!(!locations.native.exists());
+        assert!(!locations.data.exists());
+        fs::write(
+            legacy.join("settings.json"),
+            serde_json::to_vec(&Profile {
+                version: 1,
+                language: "en".into(),
+                root: locations
+                    .data
+                    .parent()
+                    .ok_or("data")?
+                    .to_str()
+                    .ok_or("root")?
+                    .into(),
+                library_id: "b0000000-0000-4000-8000-000000000013".into(),
+                complete: true,
+                recovering: false,
+            })?,
+        )?;
+        assert!(prepare_native_profile(&locations, &Default::default()).is_err());
+        assert!(!locations.native.exists());
+        assert!(!locations.data.exists());
+        fs::remove_file(legacy.join("settings.json"))?;
+        fs::create_dir_all(&locations.native)?;
+        fs::write(
+            locations.native.join("settings.json"),
+            b"keep invalid native",
+        )?;
+        assert!(prepare_native_profile(&locations, &Default::default()).is_err());
+        assert_eq!(
+            fs::read(locations.native.join("settings.json"))?,
+            b"keep invalid native"
+        );
+        assert!(!locations.data.exists());
+        Ok(())
+    }
     #[test]
     fn startup_is_readonly_and_invalid_or_missing_profiles_never_silently_replace() -> TestResult {
         let (roots, _copy, locations) = crate::test_support::native_copy()?;

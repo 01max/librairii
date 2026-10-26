@@ -5151,6 +5151,32 @@
           ]
         },
         "reason": "Task13.7 actual restart retry, conservative cancellation, corruption, ownership and retirement acknowledgement"
+      },
+      {
+        "position": 589,
+        "identity": {
+          "suite": "librairii-storage",
+          "name": "settings::startup::tests::cold_start_confirms_suggested_native_root_without_precreated_parents",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Task 13.1 confirms the returned native default from a wholly absent account and rejects invalid/legacy preparation before effects."
+      },
+      {
+        "position": 590,
+        "identity": {
+          "suite": "librairii-storage",
+          "name": "settings::startup::tests::preparation_preserves_invalid_and_legacy_state_before_creating_native_containers",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Task 13.1 confirms the returned native default from a wholly absent account and rejects invalid/legacy preparation before effects."
       }
     ],
     "python": [

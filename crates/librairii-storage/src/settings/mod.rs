@@ -6,4 +6,5 @@ pub use manifest::{ManifestSummary, RelocationManifest};
 mod startup;
 pub use startup::{
     AdoptionSetupFailure, Startup, confirm_adoption, default_legacy_root, inspect_startup,
+    prepare_native_profile,
 };
