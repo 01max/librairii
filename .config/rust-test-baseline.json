@@ -3396,6 +3396,15 @@
         "x86_64-apple-darwin",
         "x86_64-unknown-linux-gnu"
       ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "adoption::closed::copy_failures::native_case_and_unicode_name_conflicts_report_the_item_and_retain_copy",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
     }
   ]
 }

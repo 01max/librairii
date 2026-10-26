@@ -49,6 +49,8 @@
     "test_archive_patch.ArchivePatchPolicy.test_new_patched_file_and_duplicate_manifest_fields_fail",
     "test_archive_patch.ArchivePatchPolicy.test_original_source_and_upstream_identity_cannot_self_repin",
     "test_archive_patch.ArchivePatchPolicy.test_pinned_tree_and_both_graph_overrides_pass_without_writes",
-    "test_archive_patch.ArchivePatchPolicy.test_root_nested_and_source_aliases_fail"
+    "test_archive_patch.ArchivePatchPolicy.test_root_nested_and_source_aliases_fail",
+    "test_frozen_go.FrozenGoTests.test_extra_checkout_sources_and_inherited_overlays_cannot_enter_oracle",
+    "test_frozen_go.FrozenGoTests.test_changed_manifest_member_refuses_without_compiling"
   ]
 }

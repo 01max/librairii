@@ -1,5 +1,9 @@
 # Section 4 storage compatibility evidence
 
+Current continuation/admission: see `docs/rewrite/section-4.md`. The dated
+foundation and partial-gate statements below remain historical evidence; they
+must not override subsequent admitted implementation or current native results.
+
 Scope: generic storage only. Import and operation/history domain repositories,
 their reserved tests, root graph/shared ports and Go bridge17 are excluded.
 Release: `ROOT4-4ea2caf`; approved base

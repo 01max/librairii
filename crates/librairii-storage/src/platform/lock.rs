@@ -8,8 +8,12 @@ use std::{
     path::{Path, PathBuf},
 };
 
-/// Shared with a future explicitly coordinated compatibility bridge. The file
-/// is never deleted on unlock; presence or PID contents are not ownership.
+/// Shared protocol for the compatibility bridge: on Linux/macOS, exclusive
+/// nonblocking flock on this retained regular File, acquired before recovery or
+/// mutation and held through resource closure. Never unlink on unlock; presence
+/// or PID contents are not ownership. `examples/storage_handover.rs` exercises
+/// both language directions and actual Go-owner process death. Integrating the
+/// bridge into the complete legacy application remains Section 17.
 pub const LIBRARY_LOCK_FILE: &str = ".librairii-library.lock";
 
 /// Retained by the library authority, beyond DB/read/artwork drain. Dropping
