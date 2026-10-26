@@ -179,16 +179,15 @@ mod rehearsal {
         if Path::new(&configured.root) != expected || configured.language != "fr" {
             return Err("wrong recovery authority/language".into());
         }
-        if let Some(recovery) = &recovery {
-            if recovery.authoritative
+        if let Some(recovery) = &recovery
+            && recovery.authoritative
                 != if committed {
                     RecoveredRoot::Destination
                 } else {
                     RecoveredRoot::Source
                 }
-            {
-                return Err("journal authority disagrees".into());
-            }
+        {
+            return Err("journal authority disagrees".into());
         }
         if !committed && stage != "Workspace" {
             let outcome = retry_relocation(&store, &locations, &Default::default())
@@ -243,10 +242,10 @@ mod rehearsal {
                     }
                     file.sync_all()
                 })();
-                if let Err(error) = result {
-                    if let Ok(mut cause) = self.cause.lock() {
-                        *cause = error.raw_os_error();
-                    }
+                if let Err(error) = result
+                    && let Ok(mut cause) = self.cause.lock()
+                {
+                    *cause = error.raw_os_error();
                 }
             }
         }
