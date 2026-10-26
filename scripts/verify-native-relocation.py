@@ -12,11 +12,28 @@ from pathlib import Path
 import platform
 import subprocess
 import tempfile
+import time
 
 ROOT = Path(__file__).resolve().parents[1]
 
 def run(argv, **kwargs):
     return subprocess.run(argv, check=True, text=True, **kwargs)
+
+
+def detach_owned_image(mount):
+    # macOS indexing/disk arbitration can retain the just-tested image after
+    # every rehearsal process has exited. Only our fresh image's mountpoint is
+    # accepted here; no ambient device/volume discovery or detach is performed.
+    for attempt in range(3):
+        result = subprocess.run(["hdiutil", "detach", str(mount)], text=True,
+                                capture_output=True, timeout=30)
+        if result.returncode == 0:
+            return False
+        if result.returncode != 16:
+            raise RuntimeError(f"owned image detach failed: {result.stderr.strip()}")
+        time.sleep(attempt + 1)
+    run(["hdiutil", "detach", "-force", str(mount)], stdout=subprocess.PIPE, timeout=30)
+    return True
 
 
 def main():
@@ -78,16 +95,19 @@ def main():
                 raise RuntimeError("incomplete mandatory native rehearsal")
             if evidence["volume_root"]["volume_root"] != "exact_root_verified":
                 raise RuntimeError("mandatory exact mount-root qualification did not execute")
-            output = ROOT / "target/quality/native-relocation.json"
-            output.parent.mkdir(parents=True, exist_ok=True)
-            output.write_text(json.dumps(evidence, indent=2) + "\n")
-            print(f"Native relocation: 8 SIGKILL boundaries, actual EACCES/ENOSPC, {evidence['filesystem']}, exact-root/reopen verified.")
         finally:
             if mounted:
                 if system == "Darwin":
-                    run(["hdiutil", "detach", str(mount)], stdout=subprocess.PIPE)
+                    forced = detach_owned_image(mount)
                 else:
                     run(["sudo", "-n", "umount", str(mount)])
+                    forced = False
+        evidence["owned_volume_detached"] = True
+        evidence["owned_volume_detach_forced"] = forced
+        output = ROOT / "target/quality/native-relocation.json"
+        output.parent.mkdir(parents=True, exist_ok=True)
+        output.write_text(json.dumps(evidence, indent=2) + "\n")
+        print(f"Native relocation: 8 SIGKILL boundaries, actual EACCES/ENOSPC, {evidence['filesystem']}, exact-root/reopen and owned-volume disposal verified.")
 
 
 if __name__ == "__main__":
