@@ -79,6 +79,19 @@ pub(super) struct Shared {
 #[derive(Clone, Debug)]
 pub struct Handle(pub(super) Arc<Shared>);
 impl Handle {
+    /// Exact admission/worker quiescence for lifecycle switching. Queue and
+    /// running counts alone omit an input being durably admitted.
+    pub fn idle_for_relocation(&self) -> bool {
+        let s = self.0.state.lock().unwrap_or_else(|e| e.into_inner());
+        s.ready
+            && !s.failed
+            && !s.stopping
+            && s.ingress.is_none()
+            && !s.admitting
+            && s.queue.is_empty()
+            && s.running == 0
+            && s.inflight.is_empty()
+    }
     pub fn generation(&self) -> Generation {
         self.0.generation.clone()
     }

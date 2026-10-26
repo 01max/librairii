@@ -5021,6 +5021,32 @@
           ]
         },
         "reason": "Task13.6 complete relocation and profile-commit boundary custody"
+      },
+      {
+        "position": 579,
+        "identity": {
+          "suite": "librairii-desktop::lifecycle",
+          "name": "override_selection_reads_no_production_inputs_and_keeps_language_in_memory",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Task13.5 actual scoped runtime reconstruction and Task13.8 override isolation"
+      },
+      {
+        "position": 580,
+        "identity": {
+          "suite": "librairii-desktop::lifecycle",
+          "name": "desktop_move_reconstructs_real_services_and_invalidates_old_results",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Task13.5 actual scoped runtime reconstruction and Task13.8 override isolation"
       }
     ],
     "python": [
