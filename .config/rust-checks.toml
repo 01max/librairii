@@ -1,5 +1,5 @@
-# Only maintained feature set: empty/default, no GUI renderer selected.
-# Do not use all-features. Add future actual renderer combinations deliberately.
+# Maintained default graph: qualified Slint/Winit/Skia with accessibility.
+# Do not use all-features. Renderer changes reopen toolkit qualification.
 [targets]
 aarch64-apple-darwin = []
 x86_64-apple-darwin = []

@@ -10,6 +10,11 @@ librairii-app.workspace = true
 librairii-storage.workspace = true
 librairii-adapters.workspace = true
 librairii-ui.workspace = true
+librairii-core.workspace = true
+slint.workspace = true
+
+[target.'cfg(target_os = "macos")'.dependencies]
+muda = { version = "=0.19.3", default-features = false }
 
 [lints]
 workspace = true

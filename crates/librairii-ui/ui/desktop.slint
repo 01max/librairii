@@ -1,0 +1,28 @@
+import { Button, VerticalBox, HorizontalBox, AboutSlint, Palette } from "std-widgets.slint";
+export component DesktopWindow inherits Window {
+    title: "Librairii";
+    preferred-width: 1180px;
+    preferred-height: 760px;
+    min-width: 560px;
+    min-height: 400px;
+    background: Palette.background;
+    in property <bool> french;
+    in property <string> status;
+    in-out property <bool> about-open;
+    callback quit();
+    MenuBar {
+        Menu {
+            title: "Librairii";
+            MenuItem { title: root.french ? "À propos de Slint…" : "About Slint…"; activated => { root.about-open = true; } }
+            MenuItem { title: root.french ? "Quitter" : "Quit"; activated => { root.quit(); } }
+        }
+    }
+    VerticalBox {
+        padding: 20px;
+        Image { source: @image-url("../assets/library.svg"); width: 48px; height: 48px; }
+        Text { text: "Librairii"; font-size: 24px; color: Palette.foreground; }
+        Text { text: root.status; color: Palette.foreground; wrap: word-wrap; }
+        if root.about-open: AboutSlint { }
+        Button { text: root.french ? "Fermer" : "Close"; clicked => { root.quit(); } }
+    }
+}
