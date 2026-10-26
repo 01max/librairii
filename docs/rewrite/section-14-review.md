@@ -56,3 +56,22 @@ storage handover and relocation rehearsals. Local component review does not
 claim physical HID, VoiceOver, full workflow, resource-budget or package acceptance.
 
 Standards: 0 remaining findings. Spec: 0 remaining findings.
+
+## Hosted Mac capture correction
+
+The first current-source ARM job passed all 593 cumulative tests but correctly
+failed the exact screenshot geometry gate: AppKit constrained requested wide
+760-pixel content to 653/656 pixels on the hosted display. Failed artifact
+[12686898244](https://github.com/01max/librairii/actions/runs/40395097742/artifacts/12686898244)
+has ZIP SHA256 `ecccd32c3bc1df1d5a701aaaac9fded2b5cc7cabdf25e15fa8fe1e4cb229988c`.
+It is retained as failed evidence, not substituted for a passing receipt.
+
+The content fixture now disables pointer resizing before programmatic macOS size
+requests and records observed native resizability/window/monitor geometry. An
+isolated local AppKit probe reproduced the constraint with a resizable window
+and retained the exact oversized request after disabling resizing. The Spec
+review accepts this fixture scope: actual full Skia content may extend beyond
+the physical CI display, so the capture does not claim compositor visibility,
+physical input or production live-resize coverage. Exact content dimensions and
+all existing geometry/keyboard assertions remain required; fresh three-host
+execution supplies the platform acceptance.

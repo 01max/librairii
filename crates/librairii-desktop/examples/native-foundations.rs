@@ -361,7 +361,7 @@ fn capture_step(
                     page.pages = 1;
                 }
             }
-            resize(ui, width, height);
+            resize(ui, width, height)?;
             state.snapshot.language = if french {
                 Language::French
             } else {
@@ -400,6 +400,7 @@ fn capture_step(
                 capture(ui, &destination.join("workspace-review-compact-fr.png"))?;
             }
             let size = ui.window().size();
+            let native_window = native_window_state(ui)?;
             report.borrow_mut().push(serde_json::json!({
                 "concept": if workspace { "Desktop workspace" } else { "Story shelves" },
                 "density": density, "mode": mode, "french": french, "width": size.width, "height": size.height,
@@ -407,6 +408,7 @@ fn capture_step(
                 "compact": ui.get_compact(), "wide": ui.get_wide(), "decisions": ui.get_decisions(),
                 "story_viewport_height": ui.get_observed_browser_height(), "story_row_height": ui.get_observed_story_row_height(),
                 "approved_viewport_height": ui.get_observed_approved_height(), "review_viewport_height": ui.get_observed_review_height(),
+                "native_window": native_window,
             }));
         }
     } else if index == 48 {
@@ -425,7 +427,7 @@ fn capture_step(
             page.total = 1324;
             page.pages = 56;
         }
-        resize(ui, 560., 400.);
+        resize(ui, 560., 400.)?;
         state.snapshot.language = Language::French;
         state.project(ui);
     } else if index == 49 {
@@ -556,12 +558,39 @@ fn capture_step(
             serde_json::to_vec_pretty(&serde_json::json!({
                 "schema": 1, "host": std::env::consts::OS, "architecture": std::env::consts::ARCH,
                 "frames": *report.borrow(), "keyboard_checks": "passed",
+                "macos_programmatic_fixed_window": cfg!(target_os = "macos"),
                 "scope": "shown native component/public window events and Skia capture; not physical HID or packaged workflow qualification",
             }))?,
         )?;
         let _quit = slint::quit_event_loop();
     }
     Ok(())
+}
+
+fn native_window_state(ui: &DesktopWindow) -> Result<serde_json::Value> {
+    use slint::winit_030::WinitWindowAccessor;
+    let (resizable, size, monitor) = ui
+        .window()
+        .with_winit_window(|window| {
+            (
+                window.is_resizable(),
+                window.inner_size(),
+                window
+                    .current_monitor()
+                    .map(|monitor| (monitor.size(), monitor.scale_factor())),
+            )
+        })
+        .ok_or("native fixture has no Winit window")?;
+    let (monitor_size, monitor_scale) = monitor.ok_or("native fixture has no current monitor")?;
+    check(
+        !cfg!(target_os = "macos") || !resizable,
+        "macOS content fixture unexpectedly permits pointer resizing",
+    )?;
+    Ok(serde_json::json!({
+        "resizable": resizable, "width": size.width, "height": size.height,
+        "monitor_width": monitor_size.width, "monitor_height": monitor_size.height,
+        "monitor_scale": monitor_scale,
+    }))
 }
 fn proposals(ui: &DesktopWindow, french: bool) {
     ui.set_proposals(ModelRc::new(VecModel::from(vec![
@@ -588,7 +617,17 @@ fn proposals(ui: &DesktopWindow, french: bool) {
     ])));
 }
 
-fn resize(ui: &DesktopWindow, width: f32, height: f32) {
+fn resize(ui: &DesktopWindow, width: f32, height: f32) -> Result {
+    #[cfg(target_os = "macos")]
+    {
+        use slint::winit_030::WinitWindowAccessor;
+        // AppKit shrinks resizable titled windows to the CI display's height.
+        // This content-snapshot fixture uses programmatic resizing, so retain
+        // the title bar but allow its native backing surface beyond the screen.
+        ui.window()
+            .with_winit_window(|window| window.set_resizable(false))
+            .ok_or("native fixture has no Winit window")?;
+    }
     // Winit logical sizing follows the OS backing scale, while an explicit
     // SLINT_SCALE_FACTOR changes rendering. Set the observed physical size so
     // the fixture's intended render-space dimensions are truthful on both.
@@ -597,4 +636,5 @@ fn resize(ui: &DesktopWindow, width: f32, height: f32) {
         (width * scale).round() as u32,
         (height * scale).round() as u32,
     ));
+    Ok(())
 }

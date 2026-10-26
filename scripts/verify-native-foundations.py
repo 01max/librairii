@@ -68,11 +68,18 @@ def main():
         with (output / 'execution.log').open('w') as log:
             run([str(binary), str(output)], env=environment, stdout=log, stderr=subprocess.STDOUT, timeout=90)
         report = json.loads((output / 'report.json').read_text())
+        if report['macos_programmatic_fixed_window'] != (sys.platform == 'darwin'):
+            raise ValueError('native fixture window policy differs from the host')
         frames = report['frames']
         expected = {(concept, density, mode, french) for concept in ['Story shelves', 'Desktop workspace'] for density in range(3) for mode in (range(3) if concept == 'Story shelves' else [0]) for french in [False, True]}
         if {(f['concept'], f['density'], f['mode'], f['french']) for f in frames} != expected or len(frames) != len(expected):
             raise ValueError('native reference/language/density/mode coverage incomplete')
         for frame in frames:
+            native = frame['native_window']
+            if native['width'] != frame['width'] or native['height'] != frame['height'] or min(native['monitor_width'], native['monitor_height'], native['monitor_scale']) <= 0:
+                raise ValueError('native window/monitor observations are inconsistent')
+            if sys.platform == 'darwin' and native['resizable']:
+                raise ValueError('macOS content fixture permits pointer resizing')
             density = frame['density']
             logical_width, logical_height = [(1180, 760), (980, 600), (560, 400)][density]
             if abs(frame['width'] / frame['scale'] - logical_width) > 1 or abs(frame['height'] / frame['scale'] - logical_height) > 1:

@@ -172,6 +172,17 @@ full domain workflow transactions, installed packages or the section-16 budgets.
 The required matrix executes it on Apple silicon, Intel macOS and Linux x86-64;
 Task 2's existing Wayland qualification remains separate from these X11 fixtures.
 
+The hosted ARM Mac display clamps a resizable titled window to about 656 pixels
+high. The fixture therefore disables pointer resizing on its macOS window before
+each programmatic size request, retaining the native title bar and exact required
+content geometry. This follows AppKit's documented
+[resizable-window height constraint](https://developer.apple.com/documentation/appkit/nswindow/constrainframerect(_:to:)).
+The backing surface may extend beyond the CI display: captures are the actual
+native window's Skia content snapshots, rather than compositor screenshots. The
+report records this policy and observes native resizability, window and monitor
+dimensions/scale; production window resizing and all geometry, scale,
+layout and keyboard assertions remain unchanged.
+
 Startup inspection now reports an opening view before expensive read-only work,
 with cancellable inspection and override-first isolation. Invalid native UI state
 is preserved before library activation. Active preference failures fence queries
