@@ -30,9 +30,11 @@ fn launch() -> Result<(), Box<dyn std::error::Error>> {
     let view = view::install(&ui, worker.clone(), first);
     let pending = worker.clone();
     ui.on_quit(move || pending.borrow().request_shutdown());
-    let pending = worker.clone();
+    let weak_close = ui.as_weak();
     ui.window().on_close_requested(move || {
-        pending.borrow().request_shutdown();
+        if let Some(ui) = weak_close.upgrade() {
+            ui.invoke_request_quit();
+        }
         slint::CloseRequestResponse::KeepWindowShown
     });
     let weak = ui.as_weak();
@@ -44,16 +46,16 @@ fn launch() -> Result<(), Box<dyn std::error::Error>> {
         move || {
             if let Some(ui) = weak.upgrade() {
                 view.borrow_mut().resize(&ui);
-                menus.update(ui.get_french(), false, ui.get_query_focused());
+                menus.update(ui.get_french(), ui.get_modal(), ui.get_query_focused());
                 let command = menus.commands.take();
                 if command & 1 != 0 {
-                    ui.set_about_open(true);
+                    ui.invoke_open_dialog(1);
                 }
                 if command & 4 != 0 {
                     ui.invoke_show_panel(5);
                 }
                 if command & 2 != 0 {
-                    pending.borrow().request_shutdown();
+                    ui.invoke_request_quit();
                 }
                 if let Some(snapshot) = pending.borrow().take_snapshot() {
                     view.borrow_mut().snapshot = snapshot;

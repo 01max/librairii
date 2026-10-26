@@ -169,11 +169,19 @@ pub(crate) fn run(
         )
         .map_err(|_| StorageError::InvalidNavigation)?,
     );
+    let metadata_language = language;
+    let mut language = language;
+    let mut settings = crate::settings::restore_language(&store, language)?;
     let catalogs = Catalogs::embedded().map_err(|_| StorageError::InvalidProfile)?;
     let mut session = LibrarySession::new(native);
     let result = session.drive(locations, &WorkCancellation::default(), |runtime| {
         while !stop.load(Ordering::Acquire) {
-            let loaded = page(runtime, &navigation.current().location, language, stop);
+            let loaded = page(
+                runtime,
+                &navigation.current().location,
+                metadata_language,
+                stop,
+            );
             let (page, status) = match loaded {
                 Ok(page) => (Some(page), String::new()),
                 Err(StorageError::Cancelled) if stop.load(Ordering::Acquire) => {
@@ -206,6 +214,10 @@ pub(crate) fn run(
                 let mut next = navigation.clone();
                 match command {
                     Command::Refresh => {}
+                    Command::Language(requested) => {
+                        crate::settings::change_language(&store, &mut settings, requested.code())?;
+                        language = requested;
+                    }
                     Command::Presentation(mode) => next.set_presentation(mode),
                     Command::Request(request) => next
                         .push(Frame {

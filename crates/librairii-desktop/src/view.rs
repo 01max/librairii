@@ -59,6 +59,12 @@ impl View {
     pub fn project(&mut self, ui: &DesktopWindow) {
         let french = self.snapshot.language == Language::French;
         ui.set_french(french);
+        ui.set_startup_phase(match self.snapshot.phase {
+            librairii_desktop::presentation::Phase::Setup => 0,
+            librairii_desktop::presentation::Phase::Adoption => 1,
+            librairii_desktop::presentation::Phase::Recovery => 2,
+            librairii_desktop::presentation::Phase::Library => 3,
+        });
         ui.set_status(self.snapshot.status.clone().into());
         let Some(page) = &self.snapshot.page else {
             return;
@@ -236,6 +242,12 @@ pub fn install(
                 .max(1);
                 offer(&pending.borrow(), Command::Request(request), &ui);
             }
+        }
+    });
+    let (weak, pending) = (ui.as_weak(), worker.clone());
+    ui.on_change_language(move |code| {
+        if let (Some(ui), Ok(language)) = (weak.upgrade(), Language::explicit(&code)) {
+            offer(&pending.borrow(), Command::Language(language), &ui);
         }
     });
     let (state, weak, pending) = (view.clone(), ui.as_weak(), worker);

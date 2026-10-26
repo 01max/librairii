@@ -11,6 +11,7 @@ export component StoryBrowser inherits FocusScope {
     private property <int> focused-index: 0;
     private property <length> row-height: root.mode == 0 ? 82px : root.mode == 1 ? 230px : 310px;
     callback select(int);
+    callback focus-entered();
     accessible-role: list;
     accessible-label: root.label;
     accessible-item-count: root.count;
@@ -22,7 +23,7 @@ export component StoryBrowser inherits FocusScope {
         else if (row + 1) * root.row-height + view.content-y > view.visible-height { view.content-y = view.visible-height - (row + 1) * root.row-height; }
         if select && root.count > 0 { root.selected-index = root.focused-index; root.select(root.selected-index); }
     }
-    focus-changed-event => { if self.has-focus { root.move(max(0,root.selected-index),false); } }
+    focus-changed-event => { if self.has-focus { root.focus-entered(); root.move(max(0,root.selected-index),false); } }
     key-pressed(event) => {
         if event.text == Key.End { root.move(root.count - 1,!event.modifiers.control); }
         else if event.text == Key.Home { root.move(0,!event.modifiers.control); }

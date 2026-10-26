@@ -17,6 +17,7 @@ pub enum Command {
     Presentation(librairii_core::navigation::Presentation),
     Request(librairii_core::query::QueryRequest),
     Select(i64),
+    Language(Language),
 }
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum Phase {
@@ -93,7 +94,7 @@ fn run(
     stop: Arc<AtomicBool>,
 ) -> Result<(), String> {
     let catalogs = Catalogs::embedded().map_err(|e| e.to_string())?;
-    let selection =
+    let mut selection =
         select_startup(&environment, &WorkCancellation::default()).map_err(|e| e.to_string())?;
     if let StartupSelection::Production {
         locations,
@@ -136,7 +137,7 @@ fn run(
             ),
         },
     };
-    let snapshot = Snapshot {
+    let mut snapshot = Snapshot {
         navigation: None,
         page: None,
         phase,
@@ -155,6 +156,41 @@ fn run(
                 return Ok(());
             }
             match receiver.recv_timeout(std::time::Duration::from_millis(20)) {
+                Ok(Command::Language(language)) => {
+                    let result = match &mut selection {
+                        StartupSelection::Override(settings) => {
+                            settings.change_language(language.code())
+                        }
+                        StartupSelection::Production { locations, .. } => {
+                            librairii_storage::settings::prepare_native_profile(
+                                locations,
+                                &Default::default(),
+                            )
+                            .and_then(|store| {
+                                let mut presentation =
+                                    crate::settings::restore_language(&store, snapshot.language)?;
+                                crate::settings::change_language(
+                                    &store,
+                                    &mut presentation,
+                                    language.code(),
+                                )
+                            })
+                        }
+                    };
+                    if result.is_ok() {
+                        snapshot.language = language;
+                        snapshot.status = catalogs
+                            .text(language, key)
+                            .map_err(|e| e.to_string())?
+                            .into();
+                    } else {
+                        snapshot.status = catalogs
+                            .text(snapshot.language, "settings.restart_required")
+                            .map_err(|e| e.to_string())?
+                            .into();
+                    }
+                    break;
+                }
                 Ok(_) => break,
                 Err(mpsc::RecvTimeoutError::Timeout) => {}
                 Err(mpsc::RecvTimeoutError::Disconnected) => return Ok(()),

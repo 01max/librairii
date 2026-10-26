@@ -78,3 +78,20 @@ a named semantic range/value and static indeterminate presentation. Application
 panels, covers and progress introduce no animated movement; the OS/toolkit owns
 standard transient control feedback. These are permitted accessibility/control
 adaptations of the approved hierarchy, checked by native fixtures below.
+
+## Modal and pending-operation behavior
+
+Dialogs overlay the existing layout. They record the invoking focus target,
+choose initial focus, contain Tab/Shift-Tab, dismiss on Escape/backdrop, and
+restore the invoker. Opening settings from a compact sidebar suspends that
+sidebar; dismissing settings returns to its settings button, and a subsequent
+Escape closes navigation and returns to the disclosure. Background controls
+and native edit actions are disabled while a dialog owns focus.
+
+Close during pending work offers Keep working and Stop and close; the latter
+requests the owned runtime's safe shutdown rather than terminating a worker.
+It is disabled while the caller reports a non-cancellable commit. Backdrop or
+Escape means return to work and never confirms a mutation. Settings language
+commands persist before updating labels and retain the active metadata locale.
+Setup/recovery entry buttons stay available; complete folder/adoption/recovery
+transactions and workflow-specific dialogs remain section 15.
