@@ -207,3 +207,17 @@ Winit logical resizing follows the OS backing scale. Fixture resizing now sets
 physical dimensions using the observed effective Slint scale. Its verifier
 requires observed render bounds, compact/wide flags and scale to match each
 claimed density. The earlier failed run supplies no acceptance evidence.
+
+
+At the supported 560×400 minimum, title/count share one row and search/mode
+share another; paging and Details share one footer. Compact Back/Forward remain
+available in the native Navigation menu and their keyboard accelerators. This
+retains enough content space for a complete story row with external captions
+and a complete approved member plus scrollable review controls. Cover row height
+adapts to the available viewport, with intrinsic image fitting unchanged.
+Fixtures assert the observed full-row and workspace viewport bounds, capture a
+compact review choice after keyboard focus, and reveal that control using its
+actual window coordinates. The static-motion assertion compares the application
+progress region; transient OS/toolkit scrollbar feedback is outside that region.
+The exact Cargo executable is copied, executed and retained with its digest for
+independent artifact verification, so a later build cannot erase its bytes.

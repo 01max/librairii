@@ -4,8 +4,10 @@ import { MixedChoice, TagChip } from "states.slint";
 export struct ProposalRow { title:string, warning:string, decision:int }
 component ReviewChoice inherits ComboBox {
     in property <int> proposal-index;
-    callback focus-row(int);
-    changed has-focus => { if self.has-focus { root.focus-row(root.proposal-index); } }
+    in property <int> focus-epoch;
+    callback focus-row(length,length);
+    changed focus-epoch => { if root.proposal-index == 0 { self.focus(); } }
+    changed has-focus => { if self.has-focus { root.focus-row(self.absolute-position.y,self.height); } }
 }
 component ReviewPane inherits FocusScope {
     in property <bool> french;
@@ -18,6 +20,12 @@ component ReviewPane inherits FocusScope {
     callback apply();
     accessible-role: groupbox;
     accessible-label: root.french ? "Révision en attente" : "Pending review";
+    private property <int> focus-epoch;
+    public function focus-first() { root.focus-epoch += 1; }
+    function reveal(top: length, height: length) {
+        let offset = top < scroll.absolute-position.y ? scroll.absolute-position.y - top : top + height > scroll.absolute-position.y + scroll.visible-height ? scroll.absolute-position.y + scroll.visible-height - top - height : 0px;
+        scroll.content-y = max(min(0px,scroll.visible-height - scroll.content-height),min(0px,scroll.content-y + offset));
+    }
     function scroll-end() { scroll.content-y = min(0px,scroll.visible-height - scroll.content-height); }
     key-pressed(event) => {
         if event.text == Key.PageDown { scroll.content-y = max(scroll.visible-height - scroll.content-height,scroll.content-y - scroll.visible-height / 2); return accept; }
@@ -35,7 +43,7 @@ component ReviewPane inherits FocusScope {
                 padding: 0px; spacing: 4px;
                 Text { text: proposal.title; color: Palette.foreground; wrap: word-wrap; }
                 Text { text: proposal.warning; color: Palette.foreground; wrap: word-wrap; }
-                ReviewChoice { enabled: root.interactive && !root.pending; proposal-index: index; focus-row(row) => { scroll.content-y = max(scroll.visible-height - scroll.content-height,min(0px,-row * 94px - 100px)); } accessible-label: proposal.title; model: root.french ? ["Pas maintenant", "Ajouter", "Exclure", "Conserver"] : ["Not now", "Add", "Exclude", "Keep"]; current-index: proposal.decision; selected(_) => { root.decide(index,self.current-index); } }
+                ReviewChoice { enabled: root.interactive && !root.pending; proposal-index: index; focus-epoch: root.focus-epoch; focus-row(top,height) => { root.reveal(top,height); } accessible-label: proposal.title; model: root.french ? ["Pas maintenant", "Ajouter", "Exclure", "Conserver"] : ["Not now", "Add", "Exclude", "Keep"]; current-index: proposal.decision; selected(_) => { root.decide(index,self.current-index); } }
             }
             MixedChoice { enabled: root.interactive; french: root.french; label: root.french ? "Étiquette de la sélection" : "Selection tag"; changed has-focus => { if self.has-focus { root.scroll-end(); } } }
             Button { enabled: root.interactive && root.decisions > 0 && !root.pending; text: root.french ? "Appliquer les décisions" : "Apply decisions"; changed has-focus => { if self.has-focus { root.scroll-end(); } } clicked => { root.apply(); } }
@@ -59,17 +67,20 @@ export component Workspace inherits Rectangle {
     callback select(int);
     callback decide(int,int);
     callback apply();
+    out property <length> approved-height: approved-list.height;
+    out property <length> review-height: review.height;
+    public function focus-review() { review.focus-first(); }
     approved := Rectangle {
-        x: 0px; y: 0px; width: root.wide ? parent.width * 0.54 : parent.width; height: root.wide ? parent.height : parent.height * 0.46;
+        x: 0px; y: 0px; width: root.wide ? parent.width * 0.54 : parent.width; height: root.wide ? parent.height : min(parent.height - 88px,max(110px,parent.height * 0.46));
         VerticalBox { padding: 0px;
             Text { text: root.french ? "Histoires approuvées" : "Approved stories"; color: Palette.foreground; font-weight: 600; }
-            StoryBrowser { enabled: root.interactive; groups: root.members; count: root.count; columns: 1; mode: 0; label: root.french ? "Membres approuvés" : "Approved members"; selected-index <=> root.selected-index; select(index) => { root.select(index); } }
+            approved-list := StoryBrowser { enabled: root.interactive; groups: root.members; count: root.count; columns: 1; mode: 0; label: root.french ? "Membres approuvés" : "Approved members"; selected-index <=> root.selected-index; select(index) => { root.select(index); } }
         }
     }
     Rectangle {
         x: root.wide ? approved.width + 12px : 0px; y: root.wide ? 0px : approved.height + 8px;
         width: parent.width - self.x; height: parent.height - self.y;
         background: Palette.alternate-background;
-        ReviewPane { interactive: root.interactive; x: 0px; y: 0px; width: parent.width; height: parent.height; french: root.french; sources: root.sources; proposals <=> root.proposals; pending: root.pending; decisions: root.decisions; decide(index,value) => { root.decide(index,value); } apply => { root.apply(); } }
+        review := ReviewPane { interactive: root.interactive; x: 0px; y: 0px; width: parent.width; height: parent.height; french: root.french; sources: root.sources; proposals <=> root.proposals; pending: root.pending; decisions: root.decisions; decide(index,value) => { root.decide(index,value); } apply => { root.apply(); } }
     }
 }

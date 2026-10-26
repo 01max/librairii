@@ -93,6 +93,18 @@ def main():
                     if apply.getState().contains(a.STATE_ENABLED) or apply.getState().contains(a.STATE_SENSITIVE):
                         raise RuntimeError('zero-decision Apply is enabled or sensitive')
                     named(root, 'Selection tag')
+                    subprocess.run(['xdotool', 'windowsize', '--sync', xid, '560', '400'], check=True, timeout=10)
+                    choice = wait(lambda: find(root, lambda n: n.name == 'The next adventure' and n.getRole() == a.ROLE_COMBO_BOX), 'compact review choice missing')
+                    if not choice.queryComponent().grabFocus():
+                        raise RuntimeError('compact review choice refused keyboard focus')
+                    def choice_fits():
+                        pane = named(root, 'Pending review').queryComponent().getExtents(0)
+                        bounds = choice.queryComponent().getExtents(0)
+                        return pane.width < 600 and 80 <= pane.height <= 180 and bounds.height >= 28 and bounds.y >= pane.y and bounds.y + bounds.height <= pane.y + pane.height
+                    wait(choice_fits, 'compact review choice remains clipped after focus')
+                    reports.append({'concept': 'workspace-compact', 'state': tree(root), 'focused_choice_bounds': {field: getattr(choice.queryComponent().getExtents(0), field) for field in ['x', 'y', 'width', 'height']}})
+                    subprocess.run(['xdotool', 'windowsize', '--sync', xid, '1180', '760'], check=True, timeout=10)
+                    time.sleep(0.2)
                 before = tree(root)
                 action(named(root, 'Settings…'))
                 named(root, 'Settings')

@@ -52,11 +52,13 @@ def main():
     artifacts = [event for event in artifacts if event.get('reason') == 'compiler-artifact' and event.get('target', {}).get('name') == 'native-foundations' and event['target']['kind'] == ['example'] and event.get('executable')]
     if len(artifacts) != 1:
         raise ValueError('Cargo must report exactly one native fixture executable')
-    binary = Path(artifacts[0]['executable']).resolve(strict=True)
+    cargo_binary = Path(artifacts[0]['executable']).resolve(strict=True)
+    binary = DESTINATION / 'native-foundations'
+    shutil.copy2(cargo_binary, binary)
     if not binary.is_file():
         raise ValueError('Cargo native fixture executable is not a regular file')
     binary_digest = hashlib.sha256(binary.read_bytes()).hexdigest()
-    executable = {'path': str(binary), 'sha256': binary_digest, 'bytes': binary.stat().st_size, 'compiler_fresh': artifacts[0]['fresh']}
+    executable = {'path': str(binary), 'cargo_path': str(cargo_binary), 'retained_path': 'native-foundations', 'sha256': binary_digest, 'bytes': binary.stat().st_size, 'compiler_fresh': artifacts[0]['fresh']}
     reports = []
     for scale in ['1', '2']:
         output = DESTINATION / ('scale-' + scale)
@@ -77,6 +79,10 @@ def main():
                 raise ValueError('native frame observed bounds differ from the requested render density')
             if frame['compact'] != (density == 2) or frame['wide'] != (density == 0) or frame['items'] != 24 or abs(frame['scale'] - float(scale)) > 0.01:
                 raise ValueError('native frame did not exercise its claimed geometry/scale/model')
+            if frame['concept'] == 'Story shelves' and frame['story_viewport_height'] + 0.5 < frame['story_row_height']:
+                raise ValueError('story viewport cannot display its row and external captions')
+            if frame['concept'] == 'Desktop workspace' and (frame['approved_viewport_height'] < 76 or frame['review_viewport_height'] < 80):
+                raise ValueError('workspace panes cannot display full interaction targets')
             if frame['concept'] == 'Desktop workspace' and frame['decisions'] != 0:
                 raise ValueError('fixture approved a review decision implicitly')
         if report['keyboard_checks'] != 'passed':

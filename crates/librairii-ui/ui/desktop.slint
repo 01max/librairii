@@ -101,6 +101,11 @@ export component DesktopWindow inherits Window {
     in property <bool> pending;
     in property <float> progress;
     in property <bool> indeterminate;
+    out property <length> observed-browser-height: browser.height;
+    out property <length> observed-story-row-height: browser.mounted-row-height;
+    out property <length> observed-approved-height: workspace-panel.approved-height;
+    out property <length> observed-review-height: workspace-panel.review-height;
+    public function focus-review() { workspace-panel.focus-review(); }
     public function focus-browser() { browser.focus(); }
     out property <bool> close-focused: close-dialog-button.has-focus;
     out property <bool> attribution-focused: attribution-button.has-focus;
@@ -210,7 +215,7 @@ export component DesktopWindow inherits Window {
     base := VerticalBox {
         padding: 0px; spacing: 0px;
         HorizontalBox {
-            padding: 10px; spacing: 8px;
+            padding: root.compact ? 4px : 10px; spacing: 8px;
             navigation-button := Action { width: root.compact ? 96px : 0px; focus-key: 10; text: root.french ? "Navigation" : "Navigation"; visible: root.compact; clicked => { root.open-sidebar(); } }
             Image { visible: !root.compact; source: @image-url("../assets/library.svg"); width: 28px; height: 28px; }
             library-button := Action { focus-key: 11; text: root.french ? "Bibliothèque" : "Library"; clicked => { root.show-panel(0); } }
@@ -232,28 +237,30 @@ export component DesktopWindow inherits Window {
                 width: parent.width - self.x; height: parent.height;
                 enabled: !root.compact || !root.sidebar-open;
                 VerticalBox {
-                    padding: 20px; spacing: 12px;
-                    Caption { text: root.scope-title != "" ? root.scope-title : root.panel == 0 ? (root.french ? "Bibliothèque" : "Library") : root.panel == 4 ? (root.french ? "Historique" : "History") : root.panel == 5 ? (root.french ? "Réglages" : "Settings") : (root.french ? "Bibliothèque" : "Library"); font-size: 24px; font-weight: 600; }
-                    search-entry := SearchField { text <=> root.query; accessible-label: root.french ? "Rechercher des histoires" : "Search stories"; placeholder-text: root.french ? "Rechercher des histoires" : "Search stories"; edited => { root.search(self.text); } }
-                    HorizontalBox {
-                        Caption { text: root.counts; horizontal-stretch: 1; }
-                        ModeChoice { horizontal-stretch: 0; max-width: 230px; accessible-label: root.french ? "Présentation" : "Presentation"; model: root.french ? ["Liste", "Petites couvertures", "Grandes couvertures"] : ["List", "Small covers", "Large covers"]; current-index <=> root.mode; selected(_) => { root.mode-selected(self.current-index); } }
+                    padding: root.compact ? 8px : 20px; spacing: 8px;
+                    HorizontalBox { padding: 0px; spacing: 8px;
+                        Caption { text: root.scope-title != "" ? root.scope-title : root.panel == 0 ? (root.french ? "Bibliothèque" : "Library") : root.panel == 4 ? (root.french ? "Historique" : "History") : root.panel == 5 ? (root.french ? "Réglages" : "Settings") : (root.french ? "Bibliothèque" : "Library"); horizontal-stretch: 1; font-size: root.compact ? 20px : 24px; font-weight: 600; }
+                        Caption { text: root.counts; horizontal-stretch: 0; }
                     }
-                    HorizontalBox {
-                        VerticalBox { padding: 0px; max-width: root.workspace ? 0px : 100000px; visible: !root.workspace;
-                            Caption { accessible-live-region: polite; text: root.status; visible: root.status != ""; }
+                    HorizontalBox { padding: 0px; spacing: 8px;
+                        search-entry := SearchField { horizontal-stretch: 1; text <=> root.query; accessible-label: root.french ? "Rechercher des histoires" : "Search stories"; placeholder-text: root.french ? "Rechercher des histoires" : "Search stories"; edited => { root.search(self.text); } }
+                        ModeChoice { horizontal-stretch: 0; width: root.compact ? 180px : 230px; accessible-label: root.french ? "Présentation" : "Presentation"; model: root.french ? ["Liste", "Petites couvertures", "Grandes couvertures"] : ["List", "Small covers", "Large covers"]; current-index <=> root.mode; selected(_) => { root.mode-selected(self.current-index); } }
+                    }
+                    body := HorizontalBox { padding: 0px; spacing: 12px; vertical-stretch: 1; min-height: 0px;
+                        VerticalBox { padding: 0px; spacing: root.status == "" ? 0px : 8px; max-width: root.workspace ? 0px : 100000px; visible: !root.workspace;
+                            Caption { accessible-live-region: polite; text: root.status; visible: root.status != ""; height: root.status == "" ? 0px : self.preferred-height; }
                             browser := StoryBrowser { visible: !root.workspace; enabled: root.startup-phase == 3 && !root.closing && !root.workspace && !root.modal && !FocusState.sidebar; focus-entered => { FocusState.key = 31; } groups: root.story-groups; count: root.story-count; columns: root.columns; mode: root.mode; label: root.french ? "Histoires" : "Stories"; selected-index <=> root.selected-index; select(index) => { root.select-story(index); } }
                         }
-                        if root.workspace: Workspace { interactive: !root.closing && !root.modal && !FocusState.sidebar; wide: root.wide; french: root.french; members: root.story-groups; count: root.story-count; sources: root.sources; proposals <=> root.proposals; pending: root.pending; decisions: root.decisions; selected-index <=> root.selected-index; select(index) => { root.select-story(index); } decide(index,value) => { root.decide(index,value); } apply => { root.apply-decisions(); } }
+                        workspace-panel := Workspace { visible: root.workspace; max-width: root.workspace ? 100000px : 0px; interactive: root.workspace && !root.closing && !root.modal && !FocusState.sidebar; wide: root.wide; french: root.french; members: root.story-groups; count: root.story-count; sources: root.sources; proposals <=> root.proposals; pending: root.pending; decisions: root.decisions; selected-index <=> root.selected-index; select(index) => { root.select-story(index); } decide(index,value) => { root.decide(index,value); } apply => { root.apply-decisions(); } }
                         if root.wide && !root.workspace: Inspector { width: 264px; french: root.french; story: root.selected-story; }
                     }
-                    HorizontalBox {
-            Action { focus-key: 19; text: root.french ? "Retour" : "Back"; available: root.back-enabled; clicked => { root.history-step(-1); } }
-            Action { focus-key: 20; text: root.french ? "Suivant" : "Forward"; available: root.forward-enabled; clicked => { root.history-step(1); } }
+                    HorizontalBox { padding: 0px; spacing: 8px;
+                        Action { visible: !root.compact; width: root.compact ? 0px : 76px; focus-key: 19; text: root.french ? "Retour" : "Back"; available: root.back-enabled; clicked => { root.history-step(-1); } }
+                        Action { visible: !root.compact; width: root.compact ? 0px : 76px; focus-key: 20; text: root.french ? "Suivant" : "Forward"; available: root.forward-enabled; clicked => { root.history-step(1); } }
                         Action { focus-key: 16; text: root.french ? "Page précédente" : "Previous page"; available: root.previous-enabled; clicked => { root.change-page(-1); } }
                         Action { focus-key: 17; text: root.french ? "Page suivante" : "Next page"; available: root.next-enabled; clicked => { root.change-page(1); } }
+                        Action { focus-key: 14; text: root.french ? "Détails…" : "Details…"; available: root.selected-index >= 0; clicked => { root.show-panel(8); } }
                     }
-                    Action { focus-key: 14; text: root.french ? "Détails…" : "Details…"; available: root.selected-index >= 0; clicked => { root.show-panel(8); } }
                 }
             }
             if root.compact && root.sidebar-open: Rectangle { width: parent.width; height: parent.height; background: #0008;

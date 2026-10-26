@@ -11,7 +11,8 @@ export component StoryBrowser inherits FocusScope {
     in property <string> label;
     in-out property <int> selected-index: -1;
     private property <int> focused-index: 0;
-    private property <length> row-height: root.mode == 0 ? 82px : root.mode == 1 ? 230px : 310px;
+    private property <length> row-height: root.mode == 0 ? min(82px,max(76px,root.height)) : min(root.mode == 1 ? 230px : 310px,max(148px,root.height));
+    out property <length> mounted-row-height: root.row-height;
     callback select(int);
     callback focus-entered();
     accessible-role: list;

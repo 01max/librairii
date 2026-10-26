@@ -382,13 +382,31 @@ fn capture_step(
                     if french { "fr" } else { "en" }
                 )
             };
+            if workspace {
+                check(
+                    ui.get_observed_approved_height() >= 76.0
+                        && ui.get_observed_review_height() >= 80.0,
+                    "workspace panes cannot display a full interaction target",
+                )?;
+            } else {
+                check(
+                    ui.get_observed_browser_height() + 0.5 >= ui.get_observed_story_row_height(),
+                    "story viewport cannot display a full row with its external captions",
+                )?;
+            }
             capture(ui, &destination.join(name))?;
+            if workspace && density == 2 && french {
+                ui.invoke_focus_review();
+                capture(ui, &destination.join("workspace-review-compact-fr.png"))?;
+            }
             let size = ui.window().size();
             report.borrow_mut().push(serde_json::json!({
                 "concept": if workspace { "Desktop workspace" } else { "Story shelves" },
                 "density": density, "mode": mode, "french": french, "width": size.width, "height": size.height,
                 "scale": ui.window().scale_factor(), "items": ui.get_story_count(), "columns": ui.get_columns(),
                 "compact": ui.get_compact(), "wide": ui.get_wide(), "decisions": ui.get_decisions(),
+                "story_viewport_height": ui.get_observed_browser_height(), "story_row_height": ui.get_observed_story_row_height(),
+                "approved_viewport_height": ui.get_observed_approved_height(), "review_viewport_height": ui.get_observed_review_height(),
             }));
         }
     } else if index == 48 {
@@ -483,10 +501,17 @@ fn capture_step(
         capture(ui, &destination.join("motion-first.png"))?;
     } else if index == 52 {
         capture(ui, &destination.join("motion-second.png"))?;
+        let first = image::open(destination.join("motion-first.png"))?.into_rgba8();
+        let second = image::open(destination.join("motion-second.png"))?.into_rgba8();
         check(
-            std::fs::read(destination.join("motion-first.png"))?
-                == std::fs::read(destination.join("motion-second.png"))?,
-            "indeterminate progress introduces nonessential motion",
+            first.dimensions() == second.dimensions(),
+            "progress frame dimensions changed",
+        )?;
+        let band = (6.0 * ui.window().scale_factor()).ceil() as u32;
+        let start = ((first.height() - band.min(first.height())) * first.width() * 4) as usize;
+        check(
+            first.as_raw()[start..] == second.as_raw()[start..],
+            "application progress introduces nonessential motion",
         )?;
         ui.set_pending(false);
         ui.set_commit_pending(false);
