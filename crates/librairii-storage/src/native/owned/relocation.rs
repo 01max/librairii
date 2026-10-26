@@ -1175,11 +1175,7 @@ pub fn recover_relocation(
                 &fs::canonicalize(store.directory())
                     .map_err(|e| StorageError::io("resolve recovery namespace", e))?,
             )?
-        || d.native_data_root
-            != exact_path(
-                &fs::canonicalize(&locations.data)
-                    .map_err(|e| StorageError::io("resolve recovery data", e))?,
-            )?
+        || d.native_data_root != exact_path(&resolved_native_data(locations)?)?
     {
         return Err(StorageError::RecoveryBindingRequired);
     }

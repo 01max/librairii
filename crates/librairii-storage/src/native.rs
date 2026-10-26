@@ -857,10 +857,7 @@ mod owned {
                         &fs::canonicalize(store.directory())
                             .map_err(|e| StorageError::io("resolve native profile root", e))?,
                     )?,
-                    native_data_root: exact_path(
-                        &fs::canonicalize(&locations.data)
-                            .map_err(|e| StorageError::io("resolve native data root", e))?,
-                    )?,
+                    native_data_root: exact_path(&resolved_native_data(locations)?)?,
                     library_root: exact_path(copy.root())?,
                     source_root: exact_path(copy.source_root())?,
                     library_id_raw: copy.identity().spelling().into(),
@@ -1024,11 +1021,7 @@ mod owned {
                         &fs::canonicalize(store.directory())
                             .map_err(|e| StorageError::io("resolve existing native profile", e))?,
                     )?
-                || d.native_data_root
-                    != exact_path(
-                        &fs::canonicalize(&locations.data)
-                            .map_err(|e| StorageError::io("resolve existing native data", e))?,
-                    )?
+                || d.native_data_root != exact_path(&resolved_native_data(locations)?)?
                 || d.profile_marker_sha256 != store.marker_digest()?
             {
                 return Err(StorageError::RecoveryBindingRequired);
@@ -1722,6 +1715,12 @@ mod owned {
         }
         Ok(())
     }
+    // Explicit roots do not use this container as a file capability. Resolve
+    // existing ancestors and retain its logical exclusion even when absent;
+    // version-1 roots still must be actual descendants of it.
+    fn resolved_native_data(locations: &ProfileLocations) -> Result<PathBuf> {
+        Ok(crate::settings::target::resolve(&locations.data, false)?.0)
+    }
     fn namespace_roots(
         store: &NativeProfileStore,
         locations: &ProfileLocations,
@@ -1741,7 +1740,7 @@ mod owned {
         };
         let native = resolve(&locations.native)?;
         let store_root = resolve(store.directory())?;
-        let data = resolve(&locations.data)?;
+        let data = resolved_native_data(locations)?;
         if native != store_root
             || native.file_name() != Some(OsStr::new(native_name))
             || data.file_name() != Some(OsStr::new(data_name))

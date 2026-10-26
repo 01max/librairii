@@ -63,11 +63,7 @@ impl<'profile> NativeLibrary<'profile> {
                     &fs::canonicalize(store.directory())
                         .map_err(|e| StorageError::io("resolve recovery profile", e))?,
                 )?
-            || d.native_data_root
-                != exact_path(
-                    &fs::canonicalize(&locations.data)
-                        .map_err(|e| StorageError::io("resolve recovery data namespace", e))?,
-                )?
+            || d.native_data_root != exact_path(&resolved_native_data(locations)?)?
         {
             return Err(StorageError::RecoveryBindingRequired);
         }
@@ -155,6 +151,66 @@ mod tests {
     use super::*;
     use crate::database::Database;
     type TestResult = std::result::Result<(), Box<dyn std::error::Error>>;
+    #[test]
+    fn explicit_root_reopen_and_locate_do_not_create_missing_unused_data_container() -> TestResult {
+        let roots = librairii_testkit::TestRoots::new()?;
+        let locations = ProfileLocations::for_host(&roots.profile().join("account"), None, None)?;
+        let store = crate::settings::prepare_native_profile(&locations, &Default::default())?;
+        let old = roots.library().join("outside native data");
+        let native = NativeLibrary::initialize_confirmed(
+            crate::settings::TargetPreview::inspect(&old, &[], &Default::default())?,
+            &store,
+            &locations,
+            "b0000000-0000-4000-8000-000000000013".parse()?,
+            librairii_app::localization::Language::French,
+            &Default::default(),
+        )
+        .map_err(|e| e.to_string())?;
+        let mut db = Database::open_native(&native)?;
+        db.close()?;
+        drop(db);
+        native.finish().map_err(|e| e.to_string())?;
+        fs::remove_dir(&locations.data)?;
+        let data_parent = locations.data.parent().ok_or("data parent")?;
+        fs::remove_dir(data_parent)?;
+        let native = NativeLibrary::reopen(&store, &locations, &Default::default())?;
+        let mut db = Database::open_native(&native)?;
+        db.close()?;
+        drop(db);
+        native.finish().map_err(|e| e.to_string())?;
+        let selected = roots.library().join("externally moved explicit root");
+        fs::rename(&old, &selected)?;
+        let native =
+            NativeLibrary::locate_same_uuid(&store, &locations, &selected, &Default::default())?;
+        assert_eq!(
+            store.load()?.ok_or("profile")?.profile().root,
+            selected.to_str().ok_or("selected")?
+        );
+        assert_eq!(store.load()?.ok_or("profile")?.profile().language, "fr");
+        let mut db = Database::open_native(&native)?;
+        db.close()?;
+        drop(db);
+        let destination = roots.library().join("moved again without data container");
+        let outcome = native
+            .close_for_relocation()
+            .map_err(|e| e.to_string())?
+            .relocate(
+                crate::settings::TargetPreview::inspect(&destination, &[], &Default::default())?,
+                &locations,
+                "c0000000-0000-4000-8000-000000000013".parse()?,
+                &Default::default(),
+            )
+            .map_err(|e| e.to_string())?;
+        let mut db = Database::open_native(&outcome.library)?;
+        db.close()?;
+        drop(db);
+        outcome.library.finish().map_err(|e| e.to_string())?;
+        assert!(!locations.data.exists());
+        assert!(!data_parent.exists());
+        assert!(!old.exists());
+        assert!(!selected.exists());
+        Ok(())
+    }
     #[test]
     fn locate_refuses_foreign_root_controls_before_sqlite_or_profile_changes() -> TestResult {
         let roots = librairii_testkit::TestRoots::new()?;

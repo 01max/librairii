@@ -434,10 +434,7 @@ impl<'profile> NewInstallAttempt<'profile> {
                     &fs::canonicalize(self.store.directory())
                         .map_err(|e| StorageError::io("resolve setup profile namespace", e))?,
                 )?,
-                native_data_root: exact_path(
-                    &fs::canonicalize(&self.locations.data)
-                        .map_err(|e| StorageError::io("resolve setup data namespace", e))?,
-                )?,
+                native_data_root: exact_path(&resolved_native_data(&self.locations)?)?,
                 library_root: exact_path(path)?,
                 source_root: exact_path(
                     self.source

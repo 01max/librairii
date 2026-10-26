@@ -5216,6 +5216,19 @@
           ]
         },
         "reason": "Task 13.8 independent review requires located v2 candidates to refuse foreign journals/reserved controls before any SQLite/profile mutation, while preserving ordinary additional files."
+      },
+      {
+        "position": 594,
+        "identity": {
+          "suite": "librairii-storage",
+          "name": "native::owned::locate::tests::explicit_root_reopen_and_locate_do_not_create_missing_unused_data_container",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Task 13.8 independent review requires reopen, same-UUID locate and later relocation of explicit roots to retain logical exclusions without recreating an absent unused data-container volume."
       }
     ],
     "python": [
