@@ -3457,6 +3457,51 @@
         "x86_64-apple-darwin",
         "x86_64-unknown-linux-gnu"
       ]
+    },
+    {
+      "suite": "librairii-storage::settings_target",
+      "name": "target_preview_preserves_exact_empty_or_missing_selection_and_probes_actual_writes",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::settings_target",
+      "name": "target_preview_refuses_overlap_aliases_links_nonempty_and_special_files",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::settings_target",
+      "name": "target_revalidation_detects_replacement_new_files_and_changed_ancestors",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::settings_target",
+      "name": "target_preflight_observes_readonly_storage_and_cancellation_without_initialization",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::settings_target",
+      "name": "native_case_and_decomposition_aliases_cannot_bypass_excluded_root_ancestry",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
     }
   ]
 }

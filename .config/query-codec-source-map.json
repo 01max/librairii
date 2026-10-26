@@ -4784,6 +4784,71 @@
           ]
         },
         "reason": "Task 13.2 real OS language adapter and saved-choice precedence regressions; preserves prior discovery history."
+      },
+      {
+        "position": 560,
+        "identity": {
+          "suite": "librairii-storage::settings_target",
+          "name": "target_preview_preserves_exact_empty_or_missing_selection_and_probes_actual_writes",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Task 13.4 target ancestry, actual filesystem aliases, permissions and revalidation regressions; retains all earlier identities."
+      },
+      {
+        "position": 561,
+        "identity": {
+          "suite": "librairii-storage::settings_target",
+          "name": "target_preview_refuses_overlap_aliases_links_nonempty_and_special_files",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Task 13.4 target ancestry, actual filesystem aliases, permissions and revalidation regressions; retains all earlier identities."
+      },
+      {
+        "position": 562,
+        "identity": {
+          "suite": "librairii-storage::settings_target",
+          "name": "target_revalidation_detects_replacement_new_files_and_changed_ancestors",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Task 13.4 target ancestry, actual filesystem aliases, permissions and revalidation regressions; retains all earlier identities."
+      },
+      {
+        "position": 563,
+        "identity": {
+          "suite": "librairii-storage::settings_target",
+          "name": "target_preflight_observes_readonly_storage_and_cancellation_without_initialization",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Task 13.4 target ancestry, actual filesystem aliases, permissions and revalidation regressions; retains all earlier identities."
+      },
+      {
+        "position": 564,
+        "identity": {
+          "suite": "librairii-storage::settings_target",
+          "name": "native_case_and_decomposition_aliases_cannot_bypass_excluded_root_ancestry",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Task 13.4 target ancestry, actual filesystem aliases, permissions and revalidation regressions; retains all earlier identities."
       }
     ],
     "python": [
