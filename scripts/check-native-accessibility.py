@@ -72,6 +72,7 @@ def main():
         environment = dict(os.environ, SLINT_BACKEND='winit-skia-software', SLINT_SCALE_FACTOR='1', WINIT_UNIX_BACKEND='x11')
         with (output / 'execution.log').open('w') as log:
             process = subprocess.Popen([str(BINARY), str(output), '--ax-server'] + (['--workspace'] if concept == 'workspace' else []), env=environment, stdout=log, stderr=subprocess.STDOUT)
+            root = None
             try:
                 root = wait(lambda: find(desktop, lambda n: n.getRole() == a.ROLE_APPLICATION and find(n, lambda child: child.name == 'Librairii') is not None), 'native fixture did not register with AT-SPI')
                 xid = subprocess.check_output(['xdotool', 'search', '--sync', '--onlyvisible', '--pid', str(process.pid)], text=True, timeout=15).splitlines()[-1]
@@ -94,9 +95,17 @@ def main():
                         raise RuntimeError('zero-decision Apply is enabled or sensitive')
                     named(root, 'Selection tag')
                     subprocess.run(['xdotool', 'windowsize', '--sync', xid, '560', '400'], check=True, timeout=10)
-                    choice = wait(lambda: find(root, lambda n: n.name == 'The next adventure' and n.getRole() == a.ROLE_COMBO_BOX), 'compact review choice missing')
-                    if not choice.queryComponent().grabFocus():
-                        raise RuntimeError('compact review choice refused keyboard focus')
+                    # Slint deliberately marks fully clipped items hidden in
+                    # AccessKit. Tab traversal can reach Flickable descendants;
+                    # focus then reveals the control and publishes its semantics.
+                    choice = None
+                    for _ in range(64):
+                        key('Tab')
+                        choice = find(root, lambda n: n.name == 'The next adventure' and n.getRole() == a.ROLE_COMBO_BOX and n.getState().contains(a.STATE_FOCUSED))
+                        if choice:
+                            break
+                    if choice is None:
+                        raise RuntimeError('compact review choice is not reachable with Tab')
                     def choice_fits():
                         pane = named(root, 'Pending review').queryComponent().getExtents(0)
                         bounds = choice.queryComponent().getExtents(0)
@@ -134,6 +143,13 @@ def main():
                 process.wait(timeout=10)
                 if process.returncode != 0:
                     raise RuntimeError('native fixture did not close cleanly')
+            except Exception:
+                if root is not None:
+                    try:
+                        (output / 'failure-tree.json').write_text(json.dumps(tree(root), indent=2) + '\n')
+                    except (dbus.DBusException, RuntimeError):
+                        pass
+                raise
             finally:
                 if process.poll() is None:
                     process.terminate()

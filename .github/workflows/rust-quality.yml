@@ -81,6 +81,8 @@ jobs:
             target/nextest/ci/junit.xml
           if-no-files-found: error
           retention-days: 30
+          # The sealed native fixture includes owned dotfile markers.
+          include-hidden-files: true
   required:
     name: Rust required targets
     if: always()
