@@ -230,3 +230,48 @@ impl<'profile> ProfileBinding<'profile> {
         })
     }
 }
+
+impl NativeProfileStore {
+    pub(crate) fn commit_located<'profile>(
+        &'profile self,
+        verified: &crate::native::VerifiedMoveTarget,
+        previous: &Profile,
+    ) -> Result<ProfileBinding<'profile>> {
+        self.require_unrecovered_namespace()?;
+        let mut state = self.reserve()?;
+        self.load_locked(&mut state)?;
+        self.revalidate_settings(&state)?;
+        if state.binding.is_some() {
+            return Err(StorageError::ProfileBindingActive);
+        }
+        let mut next = state
+            .document
+            .as_ref()
+            .ok_or(StorageError::ProfileChanged)?
+            .profile()
+            .clone();
+        if next.root != previous.root
+            || next.library_id != previous.library_id
+            || next.library_id != verified.raw_id()
+            || !next.complete
+            || next.recovering
+        {
+            return Err(StorageError::ProfileChanged);
+        }
+        next.root = verified.root().into();
+        let bytes = encode(&next)?;
+        self.update_unix(&mut state, next.clone(), bytes, |_| Ok(()), |_| Ok(()))?;
+        let binding = Arc::new(BindingState {
+            root: next.root,
+            raw_id: next.library_id,
+            fenced: Arc::new(AtomicBool::new(false)),
+            frozen: AtomicBool::new(false),
+        });
+        state.binding = Some(binding.clone());
+        Ok(ProfileBinding {
+            store: self,
+            state: binding,
+            released: false,
+        })
+    }
+}

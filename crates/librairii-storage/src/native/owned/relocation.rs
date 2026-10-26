@@ -1574,3 +1574,49 @@ pub fn cancel_relocation(
     store.retire_move_journal()?;
     Ok((recovery, retained))
 }
+
+pub(super) fn validate_locate_role(
+    store: &NativeProfileStore,
+    previous: &crate::profile::Profile,
+    selected: &Document,
+    bytes: &[u8],
+) -> Result<()> {
+    let intent = Intent::decode(bytes)?;
+    if intent.profile_sha256 != store.marker_digest()?
+        || intent.raw_id != previous.library_id
+        || selected.library_root != previous.root
+        || selected.library_id_raw != previous.library_id
+    {
+        return Err(StorageError::RecoveryBindingRequired);
+    }
+    if previous.root == intent.target {
+        if selected
+            .root_policy
+            .as_ref()
+            .and_then(|p| p.relocation.as_ref())
+            != Some(&intent.proof())
+        {
+            return Err(StorageError::RecoveryBindingRequired);
+        }
+    } else if previous.root != intent.source {
+        return Err(StorageError::RecoveryBindingRequired);
+    }
+    Ok(())
+}
+
+pub(super) fn abandon_for_locate(
+    store: &NativeProfileStore,
+    previous: &crate::profile::Profile,
+    selected: &Document,
+    bytes: &[u8],
+) -> Result<Vec<PathBuf>> {
+    validate_locate_role(store, previous, selected, bytes)?;
+    let intent = Intent::decode(bytes)?;
+    store.admit_move_journal(bytes)?;
+    store.retire_move_journal()?;
+    Ok(vec![
+        PathBuf::from(intent.source),
+        PathBuf::from(intent.target),
+        PathBuf::from(intent.workspace),
+    ])
+}

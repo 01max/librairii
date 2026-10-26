@@ -627,6 +627,8 @@ mod owned {
     mod fresh;
     pub use fresh::NewInstallFailure;
     mod lifecycle;
+    mod locate;
+    pub use locate::LocatedLibrary;
     mod relocation;
     use super::{
         NATIVE_STATE_FILE, NATIVE_STATE_TEMP, digest,
@@ -2237,7 +2239,7 @@ mod owned {
 pub(crate) use owned::VerifiedMoveTarget;
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 pub use owned::{
-    CleanupReport, ClosedNativeLibrary, CommitStatus, NativeBindingFailure,
+    CleanupReport, ClosedNativeLibrary, CommitStatus, LocatedLibrary, NativeBindingFailure,
     NativeCloseFailure, NativeLibrary, NewInstallFailure, RecoveredRoot, RecoveryLibrary,
     RelocatedLibrary, RelocationFailure, RelocationRecovery, recover_relocation,
 };
