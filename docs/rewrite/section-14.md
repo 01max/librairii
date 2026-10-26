@@ -182,6 +182,9 @@ native window's Skia content snapshots, rather than compositor screenshots. The
 report records this policy and observes native resizability, window and monitor
 dimensions/scale; production window resizing and all geometry, scale,
 layout and keyboard assertions remain unchanged.
+The capture timer waits for Winit's actual native window before its first step;
+a slow Intel startup can dispatch a timer before the window exists. The parent
+driver's deadline bounds that wait, and no capture or geometry check is skipped.
 
 Startup inspection now reports an opening view before expensive read-only work,
 with cancellable inspection and override-first isolation. Invalid native UI state

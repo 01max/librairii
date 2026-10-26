@@ -75,3 +75,12 @@ the physical CI display, so the capture does not claim compositor visibility,
 physical input or production live-resize coverage. Exact content dimensions and
 all existing geometry/keyboard assertions remain required; fresh three-host
 execution supplies the platform acceptance.
+
+At the next head, ARM and Linux passed the complete native gate. Intel passed
+the 593-test cumulative gate but its capture timer reached the first resize
+before Winit had created the native window (zero captured frames). Failed
+[artifact 12689507765](https://github.com/01max/librairii/actions/runs/40398767983/artifacts/12689507765),
+ZIP SHA256 `b9c0ad4d82a27877267e1b03e0b24a85949fa43d983fb32eea8d2ca7e458299c`,
+retains that observation. The timer now waits for `has_winit_window()` before
+advancing any fixture step; the existing parent deadline remains the hard limit.
+All required captures and assertions still run once the window exists.

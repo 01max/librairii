@@ -14,7 +14,7 @@ use librairii_desktop::{
     presentation::{Phase, Snapshot},
 };
 use librairii_ui::native::{DesktopWindow, ProposalRow};
-use slint::{ComponentHandle, ModelRc, VecModel};
+use slint::{ComponentHandle, ModelRc, VecModel, winit_030::WinitWindowAccessor};
 use std::{
     cell::RefCell,
     path::{Path, PathBuf},
@@ -284,6 +284,12 @@ fn main() -> Result {
             let Some(ui) = weak.upgrade() else {
                 return;
             };
+            // A timer may fire before Winit resumes and creates the OS window.
+            // Keep the same fixture step until that observable lifecycle event;
+            // the parent driver's deadline still bounds a missing window.
+            if !ui.window().has_winit_window() {
+                return;
+            }
             let result = (|| -> Result {
                 view.borrow_mut().resize(&ui);
                 if server {
@@ -568,7 +574,6 @@ fn capture_step(
 }
 
 fn native_window_state(ui: &DesktopWindow) -> Result<serde_json::Value> {
-    use slint::winit_030::WinitWindowAccessor;
     let (resizable, size, monitor) = ui
         .window()
         .with_winit_window(|window| {
@@ -620,7 +625,6 @@ fn proposals(ui: &DesktopWindow, french: bool) {
 fn resize(ui: &DesktopWindow, width: f32, height: f32) -> Result {
     #[cfg(target_os = "macos")]
     {
-        use slint::winit_030::WinitWindowAccessor;
         // AppKit shrinks resizable titled windows to the CI display's height.
         // This content-snapshot fixture uses programmatic resizing, so retain
         // the title bar but allow its native backing surface beyond the screen.
