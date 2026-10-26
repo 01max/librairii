@@ -5203,6 +5203,19 @@
           ]
         },
         "reason": "Task 13.8 revalidates both complete trees at the final precommit boundary and preserves newly changed source/destination files without changing authority."
+      },
+      {
+        "position": 593,
+        "identity": {
+          "suite": "librairii-storage",
+          "name": "native::owned::locate::tests::locate_refuses_foreign_root_controls_before_sqlite_or_profile_changes",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Task 13.8 independent review requires located v2 candidates to refuse foreign journals/reserved controls before any SQLite/profile mutation, while preserving ordinary additional files."
       }
     ],
     "python": [

@@ -74,6 +74,9 @@ impl<'profile> NativeLibrary<'profile> {
         if let Some(bytes) = &journal {
             relocation::validate_locate_role(store, &previous, d, bytes)?;
         }
+        // A matching UUID/record is not authority to replay or overlook a
+        // foreign journal. Match ordinary reopen before SQLite can write.
+        require_root_entries(&root, d.version == 2)?;
         let policy = d.root_policy.clone().unwrap_or(RootPolicy::for_source(
             Path::new(&d.source_root),
             locations,
@@ -152,6 +155,64 @@ mod tests {
     use super::*;
     use crate::database::Database;
     type TestResult = std::result::Result<(), Box<dyn std::error::Error>>;
+    #[test]
+    fn locate_refuses_foreign_root_controls_before_sqlite_or_profile_changes() -> TestResult {
+        let roots = librairii_testkit::TestRoots::new()?;
+        let locations = ProfileLocations::for_host(&roots.profile().join("account"), None, None)?;
+        let store = crate::settings::prepare_native_profile(&locations, &Default::default())?;
+        let old = locations.data.join("library");
+        let native = NativeLibrary::initialize_confirmed(
+            crate::settings::TargetPreview::inspect(&old, &[], &Default::default())?,
+            &store,
+            &locations,
+            "b0000000-0000-4000-8000-000000000013".parse()?,
+            librairii_app::localization::Language::English,
+            &Default::default(),
+        )
+        .map_err(|e| e.to_string())?;
+        let mut db = Database::open_native(&native)?;
+        db.close()?;
+        drop(db);
+        fs::write(
+            old.join("ordinary user notes.txt"),
+            b"retained additional file",
+        )?;
+        native.finish().map_err(|e| e.to_string())?;
+        let selected = roots.library().join("moved native v2");
+        fs::rename(&old, &selected)?;
+        let before_profile = store.load()?.ok_or("profile")?.original_bytes().to_vec();
+        let before_db = fs::read(selected.join("db/librairii.sqlite3"))?;
+        for name in [
+            "relocation.json",
+            ".librairii-foreign-control",
+            ".librairii-native-state.json.tmp-unknown",
+        ] {
+            fs::write(selected.join(name), b"unverified control bytes")?;
+            assert!(
+                NativeLibrary::locate_same_uuid(&store, &locations, &selected, &Default::default())
+                    .is_err()
+            );
+            assert_eq!(
+                store.load()?.ok_or("profile")?.original_bytes(),
+                before_profile
+            );
+            assert_eq!(fs::read(selected.join("db/librairii.sqlite3"))?, before_db);
+            assert_eq!(fs::read(selected.join(name))?, b"unverified control bytes");
+            assert!(!selected.join("db/librairii.sqlite3-wal").exists());
+            fs::remove_file(selected.join(name))?;
+        }
+        let native =
+            NativeLibrary::locate_same_uuid(&store, &locations, &selected, &Default::default())?;
+        let mut db = Database::open_native(&native)?;
+        db.close()?;
+        drop(db);
+        native.finish().map_err(|e| e.to_string())?;
+        assert_eq!(
+            fs::read(selected.join("ordinary user notes.txt"))?,
+            b"retained additional file"
+        );
+        Ok(())
+    }
     #[test]
     fn locating_same_uuid_preserves_language_and_refuses_wrong_or_missing_database() -> TestResult {
         let (roots, copy, locations) = crate::test_support::native_copy()?;
