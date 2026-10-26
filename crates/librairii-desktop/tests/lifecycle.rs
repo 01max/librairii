@@ -200,3 +200,153 @@ fn desktop_move_reconstructs_real_services_and_invalidates_old_results() -> Test
 fn session_cleanup_pending(store: &NativeProfileStore) -> Result<bool, StorageError> {
     Ok(store.directory().join("native-relocation-v1.json").exists())
 }
+
+#[test]
+fn active_domain_mutation_and_relocation_have_one_winner_while_readers_drain() -> TestResult {
+    use librairii_app::lifecycle::LifecycleError;
+    use librairii_storage::{collections, database::TransactionOutcome};
+    use std::{
+        sync::{
+            atomic::{AtomicBool, Ordering},
+            mpsc,
+        },
+        thread,
+        time::{Duration, Instant},
+    };
+    let roots = TestRoots::new()?;
+    let locations = ProfileLocations::for_host(&roots.profile().join("account"), None, None)?;
+    let store =
+        librairii_storage::settings::prepare_native_profile(&locations, &Default::default())?;
+    let old = roots.library().join("before concurrent edit");
+    let target = roots.library().join("after concurrent edit");
+    let native = NativeLibrary::initialize_confirmed(
+        TargetPreview::inspect(&old, &[], &Default::default())?,
+        &store,
+        &locations,
+        "e0000000-0000-4000-8000-000000000013".parse()?,
+        Language::French,
+        &Default::default(),
+    )
+    .map_err(|e| e.to_string())?;
+    let mut session = LibrarySession::new(native);
+    let mut iteration = 0;
+    session
+        .drive(&locations, &Default::default(), |runtime| {
+            if iteration != 0 {
+                assert_eq!(runtime.root(), target);
+                runtime.command(|db, _, _| {
+                    let saved = db.collections()?.wait()?;
+                    assert_eq!(saved.len(), 1);
+                    assert_eq!(saved[0].name, b"Admitted edit");
+                    Ok(())
+                })?;
+                return Ok(Action::finish(()));
+            }
+            iteration += 1;
+            let generation = runtime
+                .generation()
+                .map_err(|_| StorageError::RuntimeFenced)?;
+            // The admitted command is paused before a real domain write. Relocation
+            // must refuse without waiting for that command to finish or losing its generation.
+            thread::scope(|scope| -> librairii_storage::Result<()> {
+                let (entered, admitted) = mpsc::sync_channel(1);
+                let (release, released) = mpsc::sync_channel(1);
+                let mutation = scope.spawn(move || {
+                    runtime.command(|db, _, _| {
+                        entered.send(()).map_err(|_| StorageError::WorkerStopped)?;
+                        released.recv().map_err(|_| StorageError::WorkerStopped)?;
+                        let result = db
+                            .edit_collections(
+                                collections::Command::Create {
+                                    name: "Admitted edit".into(),
+                                    criteria: Default::default(),
+                                },
+                                Default::default(),
+                            )?
+                            .wait()?;
+                        assert!(matches!(result, TransactionOutcome::Committed(_)));
+                        Ok(())
+                    })
+                });
+                admitted
+                    .recv_timeout(Duration::from_secs(5))
+                    .map_err(|_| StorageError::WorkerStopped)?;
+                let (sent, received) = mpsc::sync_channel(1);
+                let target_ref = &target;
+                let mover = scope.spawn(move || {
+                    let result = runtime.move_library::<()>(
+                        TargetPreview::inspect(target_ref, &[], &Default::default())?,
+                        "c0000000-0000-4000-8000-000000000013".into(),
+                    );
+                    sent.send(matches!(result, Err(LifecycleError::Busy)))
+                        .map_err(|_| StorageError::WorkerStopped)
+                });
+                let busy = received.recv_timeout(Duration::from_secs(2));
+                release.send(()).map_err(|_| StorageError::WorkerStopped)?;
+                mutation.join().map_err(|_| StorageError::WorkerStopped)??;
+                mover.join().map_err(|_| StorageError::WorkerStopped)??;
+                assert!(
+                    busy.is_ok_and(|busy| busy),
+                    "move must immediately refuse an admitted mutator"
+                );
+                assert!(runtime.accepts(&generation));
+                Ok(())
+            })?;
+            assert_eq!(
+                store
+                    .load()?
+                    .ok_or(StorageError::InvalidProfile)?
+                    .profile()
+                    .root,
+                old.to_str().ok_or(StorageError::InvalidProfile)?
+            );
+            // A reader/artwork owner is drainable. Once the move wins admission,
+            // a later mutation must refuse before its callback or SQL executes.
+            thread::scope(|scope| {
+                let reader = runtime
+                    .use_library()
+                    .map_err(|_| StorageError::RuntimeInUse)?;
+                let target_ref = &target;
+                let mover = scope.spawn(move || {
+                    runtime
+                        .move_library::<()>(
+                            TargetPreview::inspect(target_ref, &[], &Default::default())?,
+                            "c0000000-0000-4000-8000-000000000013".into(),
+                        )
+                        .map_err(|_| StorageError::RuntimeInUse)
+                });
+                let deadline = Instant::now() + Duration::from_secs(5);
+                while runtime.accepts(&generation)
+                    && !mover.is_finished()
+                    && Instant::now() < deadline
+                {
+                    thread::yield_now();
+                }
+                assert!(
+                    !runtime.accepts(&generation),
+                    "move must close mutation admission while draining reader"
+                );
+                let entered = AtomicBool::new(false);
+                let refused = runtime.command(|db, _, _| {
+                    entered.store(true, Ordering::Release);
+                    db.edit_collections(
+                        collections::Command::Create {
+                            name: "Must not execute".into(),
+                            criteria: Default::default(),
+                        },
+                        Default::default(),
+                    )?
+                    .wait()?;
+                    Ok(())
+                });
+                assert!(matches!(refused, Err(StorageError::RuntimeInUse)));
+                assert!(!entered.load(Ordering::Acquire));
+                drop(reader);
+                mover.join().map_err(|_| StorageError::WorkerStopped)?
+            })
+        })
+        .map_err(|e| e.to_string())?;
+    session.finish().map_err(|e| e.to_string())?;
+    assert_eq!(store.load()?.ok_or("profile")?.profile().language, "fr");
+    Ok(())
+}

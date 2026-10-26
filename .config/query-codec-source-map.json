@@ -5229,6 +5229,19 @@
           ]
         },
         "reason": "Task 13.8 independent review requires reopen, same-UUID locate and later relocation of explicit roots to retain logical exclusions without recreating an absent unused data-container volume."
+      },
+      {
+        "position": 595,
+        "identity": {
+          "suite": "librairii-desktop::lifecycle",
+          "name": "active_domain_mutation_and_relocation_have_one_winner_while_readers_drain",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Task 13.5 independently reviewed mutation/move race has one winner in both deterministic orderings, preserves the winning Collection mutation, and still drains actual reader ownership."
       }
     ],
     "python": [

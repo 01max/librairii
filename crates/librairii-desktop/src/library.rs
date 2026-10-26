@@ -126,14 +126,17 @@ impl<'gate> Runtime<'gate, '_, '_> {
         &self,
         work: impl FnOnce(&Database<'_>, &LibraryFiles<'_>, &ThumbnailCache) -> Result<T>,
     ) -> Result<T> {
-        let _use = self.use_library().map_err(|_| StorageError::RuntimeInUse)?;
+        let _use = self
+            .gate
+            .enter_mutation()
+            .map_err(|_| StorageError::RuntimeInUse)?;
         work(self.database, self.files, self.thumbnails)
     }
     pub fn offer_import(
         &self,
         prepared: PreparedImport,
     ) -> std::result::Result<(), (PrepareError, PreparedImport)> {
-        let Ok(_use) = self.use_library() else {
+        let Ok(_use) = self.gate.enter_mutation() else {
             return Err((PrepareError::Busy, prepared));
         };
         self.imports.offer(&self.jobs, prepared)
@@ -142,7 +145,10 @@ impl<'gate> Runtime<'gate, '_, '_> {
         &self,
         work: impl FnOnce(&mut librairii_storage::export::Exports<'_, '_>) -> Result<T>,
     ) -> Result<T> {
-        let _use = self.use_library().map_err(|_| StorageError::RuntimeInUse)?;
+        let _use = self
+            .gate
+            .enter_mutation()
+            .map_err(|_| StorageError::RuntimeInUse)?;
         let mut exports = self
             .exports
             .lock()

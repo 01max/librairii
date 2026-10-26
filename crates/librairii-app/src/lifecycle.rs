@@ -37,6 +37,7 @@ impl std::error::Error for LifecycleError {}
 struct State {
     phase: Phase,
     uses: usize,
+    mutators: usize,
     generation: LibraryGeneration,
 }
 #[derive(Debug)]
@@ -55,6 +56,7 @@ impl LifecycleGate {
             state: Mutex::new(State {
                 phase: Phase::Active,
                 uses: 0,
+                mutators: 0,
                 generation: LibraryGeneration(Arc::new(())),
             }),
             drained: Condvar::new(),
@@ -67,6 +69,14 @@ impl LifecycleGate {
             .map_err(|_| LifecycleError::RecoveryRequired)
     }
     pub fn enter(&self) -> Result<LibraryUse<'_>, LifecycleError> {
+        self.enter_kind(false)
+    }
+    /// Mutation-capable callbacks are admitted separately from drainable
+    /// readers/artwork. A concurrent move must lose immediately to a mutator.
+    pub fn enter_mutation(&self) -> Result<LibraryUse<'_>, LifecycleError> {
+        self.enter_kind(true)
+    }
+    fn enter_kind(&self, mutation: bool) -> Result<LibraryUse<'_>, LifecycleError> {
         let mut state = self
             .state
             .lock()
@@ -74,10 +84,17 @@ impl LifecycleGate {
         if state.phase != Phase::Active {
             return Err(LifecycleError::Busy);
         }
-        state.uses = state.uses.checked_add(1).ok_or(LifecycleError::Busy)?;
+        let uses = state.uses.checked_add(1).ok_or(LifecycleError::Busy)?;
+        let mutators = state
+            .mutators
+            .checked_add(usize::from(mutation))
+            .ok_or(LifecycleError::Busy)?;
+        state.uses = uses;
+        state.mutators = mutators;
         Ok(LibraryUse {
             gate: self,
             generation: state.generation.clone(),
+            mutation,
         })
     }
     pub fn accepts(&self, generation: &LibraryGeneration) -> bool {
@@ -85,21 +102,34 @@ impl LifecycleGate {
             .lock()
             .is_ok_and(|state| state.phase == Phase::Active && state.generation == *generation)
     }
-    /// Stop intake before waiting for every admitted root-bound callback. The
-    /// idle query runs after drain, outside the mutex, while intake stays closed.
+    /// Refuse admitted mutators, then stop intake before draining readers.
+    /// Idle queries run before and after drain, outside the mutex with intake closed.
     /// Errors are not mistaken for idle: callers must return false on read failure.
     pub fn begin_switch(
         &self,
-        operations_idle: impl FnOnce() -> bool,
+        mut operations_idle: impl FnMut() -> bool,
     ) -> Result<Switch<'_>, LifecycleError> {
         let mut state = self
             .state
             .lock()
             .map_err(|_| LifecycleError::RecoveryRequired)?;
-        if state.phase != Phase::Active {
+        if state.phase != Phase::Active || state.mutators != 0 {
             return Err(LifecycleError::Busy);
         }
         state.phase = Phase::Draining;
+        drop(state);
+        let guard = Switch {
+            gate: self,
+            settled: false,
+        };
+        if !operations_idle() {
+            guard.restore_unchanged()?;
+            return Err(LifecycleError::Busy);
+        }
+        let mut state = self
+            .state
+            .lock()
+            .map_err(|_| LifecycleError::RecoveryRequired)?;
         while state.uses != 0 {
             state = self
                 .drained
@@ -107,10 +137,6 @@ impl LifecycleGate {
                 .map_err(|_| LifecycleError::RecoveryRequired)?;
         }
         drop(state);
-        let guard = Switch {
-            gate: self,
-            settled: false,
-        };
         if !operations_idle() {
             guard.restore_unchanged()?;
             return Err(LifecycleError::Busy);
@@ -139,6 +165,7 @@ impl LifecycleGate {
 pub struct LibraryUse<'gate> {
     gate: &'gate LifecycleGate,
     generation: LibraryGeneration,
+    mutation: bool,
 }
 impl LibraryUse<'_> {
     pub fn generation(&self) -> &LibraryGeneration {
@@ -154,6 +181,7 @@ impl Drop for LibraryUse<'_> {
             .unwrap_or_else(std::sync::PoisonError::into_inner);
         // A use is move-only; exactly one decrement corresponds to each entry.
         state.uses = state.uses.saturating_sub(1);
+        state.mutators = state.mutators.saturating_sub(usize::from(self.mutation));
         self.gate.drained.notify_all();
     }
 }

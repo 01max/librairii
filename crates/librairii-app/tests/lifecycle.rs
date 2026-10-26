@@ -28,6 +28,7 @@ fn lifecycle_exclusion_waits_for_actual_uses_and_rejects_old_generations()
         }
         assert_eq!(gate.phase()?, Phase::Draining);
         assert!(gate.enter().is_err());
+        assert!(gate.enter_mutation().is_err());
         assert!(!gate.accepts(&old));
         assert!(result.try_recv().is_err());
         drop(active);
@@ -47,10 +48,19 @@ fn busy_operations_keep_original_generation_and_unsettled_switches_require_recov
 -> Result<(), Box<dyn Error>> {
     let gate = LifecycleGate::new();
     let original = gate.enter()?.generation().clone();
+    let mutation = gate.enter_mutation()?;
+    assert!(matches!(
+        gate.begin_switch(|| true),
+        Err(LifecycleError::Busy)
+    ));
+    assert!(gate.accepts(&original));
+    drop(mutation);
+    let reader = gate.enter()?;
     assert!(matches!(
         gate.begin_switch(|| false),
         Err(LifecycleError::Busy)
     ));
+    drop(reader);
     assert!(gate.accepts(&original));
     drop(gate.begin_switch(|| true)?);
     assert_eq!(gate.phase()?, Phase::Recovery);
