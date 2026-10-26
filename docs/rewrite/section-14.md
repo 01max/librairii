@@ -28,3 +28,19 @@ that boundary, rather than a claim that the new native runtime is absent.
 
 Section 14 supplies shared presentation behavior; complete domain workflow
 views and final installed-package acceptance remain sections 15 and 18.
+
+## Native layout adaptations
+
+The OS owns title bars and window buttons on macOS/Linux; no simulated macOS
+chrome is painted. Slint's system palette and standard controls supply native
+contrast, font fallback and widget metrics. The approved labeled action rail,
+separate Collections/Shelves navigation, catalog panel, central stories and
+right inspector retain their hierarchy. Wide starts at 1180 logical pixels;
+850–1179 retains navigation and opens details separately; below 850 navigation
+is a dismissible overlay. The supported minimum is 560×400 logical pixels.
+Navigation, results and inspector scroll independently without horizontal
+scrolling. A toolbar disclosure remains available when navigation collapses;
+Escape/backdrop restore its focus. Layout thresholds use observed window size,
+not self-dependent layout constraints. Selection and query belong to the Rust
+presentation owner, independently of panel visibility. Full workflow-specific
+controls remain section 15.

@@ -42,6 +42,9 @@ fn launch() -> Result<(), Box<dyn std::error::Error>> {
         Duration::from_millis(16),
         move || {
             if let Some(ui) = weak.upgrade() {
+                let size = ui.window().size().to_logical(ui.window().scale_factor());
+                ui.set_compact(size.width < 850.0);
+                ui.set_wide(size.width >= 1180.0);
                 let command = menus.commands.take();
                 if command & 1 != 0 {
                     ui.set_about_open(true);

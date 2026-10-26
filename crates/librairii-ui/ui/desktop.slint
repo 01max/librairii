@@ -1,28 +1,127 @@
-import { Button, VerticalBox, HorizontalBox, AboutSlint, Palette } from "std-widgets.slint";
+import { Button, LineEdit, VerticalBox, HorizontalBox, AboutSlint, Palette, ScrollView } from "std-widgets.slint";
+
+global FocusState {
+    in-out property <bool> modal: false;
+    in-out property <int> key: 10;
+    in-out property <int> restore-epoch;
+}
+component Action inherits Button {
+    in property <int> focus-key;
+    private property <int> epoch: FocusState.restore-epoch;
+    changed has-focus => { if self.has-focus { FocusState.key = root.focus-key; } }
+    changed epoch => { if !FocusState.modal && FocusState.key == root.focus-key { self.focus(); } }
+}
+component Caption inherits Text {
+    color: Palette.foreground;
+    wrap: word-wrap;
+}
+component Navigation inherits Rectangle {
+    in property <bool> french;
+    in property <bool> compact;
+    callback close();
+    callback open-panel(int);
+    background: Palette.alternate-background;
+    ScrollView {
+        width: parent.width; height: parent.height;
+        content-width: self.visible-width;
+        VerticalBox {
+            padding: 14px; spacing: 10px;
+            Caption { text: "Librairii"; font-size: 21px; font-weight: 700; }
+            if root.compact: Action { focus-key: 201; text: root.french ? "Fermer la navigation" : "Close navigation"; clicked => { root.close(); } }
+            Action { focus-key: 202; text: root.french ? "Bibliothèque" : "Library"; clicked => { root.open-panel(0); } }
+            Caption { text: root.french ? "COLLECTIONS" : "COLLECTIONS"; font-weight: 600; }
+            Caption { text: root.french ? "Recherches enregistrées" : "Saved searches"; color: Palette.foreground; }
+            Caption { text: root.french ? "ÉTAGÈRES" : "SHELVES"; font-weight: 600; }
+            Caption { text: root.french ? "Histoires approuvées" : "Approved stories"; }
+            Action { focus-key: 203; text: root.french ? "Étiquettes" : "Tags"; clicked => { root.open-panel(1); } }
+            Action { focus-key: 204; text: root.french ? "Historique" : "History"; clicked => { root.open-panel(4); } }
+            Rectangle { height: 1px; background: Palette.border; }
+            Caption { text: root.french ? "Catalogue officiel" : "Official catalog"; font-weight: 600; }
+            Caption { text: root.french ? "Métadonnées facultatives. Vos archives restent locales." : "Optional metadata. Your archives stay local."; }
+            Action { focus-key: 205; text: root.french ? "Réglages…" : "Settings…"; clicked => { root.open-panel(5); } }
+        }
+    }
+}
 export component DesktopWindow inherits Window {
     title: "Librairii";
-    preferred-width: 1180px;
-    preferred-height: 760px;
-    min-width: 560px;
-    min-height: 400px;
+    preferred-width: 1180px; preferred-height: 760px;
+    min-width: 560px; min-height: 400px;
     background: Palette.background;
     in property <bool> french;
     in property <string> status;
     in-out property <bool> about-open;
+    in-out property <bool> compact;
+    in-out property <bool> wide: true;
+    in-out property <bool> sidebar-open;
+    in-out property <int> panel;
+    in-out property <string> query;
+    out property <int> focused-key: FocusState.key;
     callback quit();
+    callback request-panel(int);
+    callback search(string);
+    public function open-sidebar() { root.sidebar-open = true; sidebar-focus.focus(); }
+    public function close-sidebar() { root.sidebar-open = false; navigation-button.focus(); }
+    public function show-panel(kind: int) {
+        root.panel = kind;
+        root.request-panel(kind);
+        if root.compact { root.close-sidebar(); }
+    }
     MenuBar {
         Menu {
             title: "Librairii";
+            MenuItem { title: root.french ? "Réglages…" : "Settings…"; activated => { root.show-panel(5); } }
             MenuItem { title: root.french ? "À propos de Slint…" : "About Slint…"; activated => { root.about-open = true; } }
             MenuItem { title: root.french ? "Quitter" : "Quit"; activated => { root.quit(); } }
         }
     }
     VerticalBox {
-        padding: 20px;
-        Image { source: @image-url("../assets/library.svg"); width: 48px; height: 48px; }
-        Text { text: "Librairii"; font-size: 24px; color: Palette.foreground; }
-        Text { text: root.status; color: Palette.foreground; wrap: word-wrap; }
+        padding: 0px; spacing: 0px;
+        HorizontalBox {
+            padding: 10px; spacing: 8px;
+            navigation-button := Action { focus-key: 10; text: root.french ? "Navigation" : "Navigation"; visible: root.compact; clicked => { root.open-sidebar(); } }
+            Image { source: @image-url("../assets/library.svg"); width: 28px; height: 28px; }
+            Action { focus-key: 11; text: root.french ? "Bibliothèque" : "Library"; clicked => { root.show-panel(0); } }
+            Action { focus-key: 12; text: root.french ? "Importer…" : "Import…"; clicked => { root.show-panel(2); } }
+            Action { focus-key: 13; text: root.french ? "Exporter…" : "Export…"; clicked => { root.show-panel(3); } }
+        }
+        Rectangle { height: 1px; background: Palette.border; }
+        Rectangle {
+            vertical-stretch: 1;
+            main := FocusScope {
+                x: root.compact ? 0px : 216px;
+                width: parent.width - self.x; height: parent.height;
+                enabled: !root.compact || !root.sidebar-open;
+                VerticalBox {
+                    padding: 20px; spacing: 12px;
+                    Caption { text: root.panel == 0 ? (root.french ? "Bibliothèque" : "Library") : root.panel == 4 ? (root.french ? "Historique" : "History") : root.panel == 5 ? (root.french ? "Réglages" : "Settings") : (root.french ? "Bibliothèque" : "Library"); font-size: 24px; font-weight: 600; }
+                    LineEdit { text <=> root.query; placeholder-text: root.french ? "Rechercher des histoires" : "Search stories"; edited => { root.search(self.text); } }
+                    HorizontalBox {
+                        Rectangle { horizontal-stretch: 1;
+                            ScrollView { width: parent.width; height: parent.height; content-width: self.visible-width;
+                                VerticalBox { Caption { text: root.status; } }
+                            }
+                        }
+                        if root.wide: Rectangle { width: 264px; background: Palette.alternate-background;
+                            ScrollView { width: parent.width; height: parent.height; content-width: self.visible-width;
+                                VerticalBox { padding: 14px; Caption { text: root.french ? "Détails de l’histoire" : "Story details"; font-weight: 600; } Caption { text: root.french ? "Sélectionnez une histoire pour afficher ses détails." : "Select a story to see its details."; } }
+                            }
+                        }
+                    }
+                    Action { focus-key: 14; text: root.french ? "Détails…" : "Details…"; visible: !root.wide; clicked => { root.show-panel(8); } }
+                }
+            }
+            if root.compact && root.sidebar-open: Rectangle { width: parent.width; height: parent.height; background: #0008;
+                TouchArea { clicked => { root.close-sidebar(); } }
+            }
+            Rectangle {
+                visible: !root.compact || root.sidebar-open;
+                width: root.compact ? 280px : 216px; height: parent.height;
+                sidebar-focus := FocusScope { width: parent.width; height: parent.height;
+                    key-pressed(event) => { if event.text == Key.Escape && root.compact { root.close-sidebar(); return accept; } return reject; }
+                    Navigation { width: parent.width; height: parent.height; french: root.french; compact: root.compact; close => { root.close-sidebar(); } open-panel(kind) => { root.show-panel(kind); } }
+                }
+            }
+        }
         if root.about-open: AboutSlint { }
-        Button { text: root.french ? "Fermer" : "Close"; clicked => { root.quit(); } }
     }
 }
