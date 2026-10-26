@@ -760,7 +760,7 @@ impl NativeProfileStore {
         self.revalidate_namespace()?;
         let entries = self
             .namespace
-            .entries(4, &crate::database::WorkCancellation::default())
+            .entries(5, &crate::database::WorkCancellation::default())
             .map_err(|error| match error {
                 StorageError::AdoptionInputChanged => StorageError::RecoveryBindingRequired,
                 error => error,
@@ -769,6 +769,7 @@ impl NativeProfileStore {
             entry != MARKER
                 && entry != SETTINGS
                 && entry != "navigation.json"
+                && entry != "shelf-warnings.json"
                 && entry != relocation::JOURNAL
         }) {
             return Err(StorageError::RecoveryBindingRequired);
@@ -776,14 +777,15 @@ impl NativeProfileStore {
         if entries.iter().any(|entry| entry == relocation::JOURNAL) {
             self.revalidate_move_journal()?;
         }
-        if entries.iter().any(|entry| entry == "navigation.json") {
+        for name in ["navigation.json", "shelf-warnings.json"] {
+            if !entries.iter().any(|entry| entry == name) {
+                continue;
+            }
             // Independent UI preferences grant no binding/recovery authority.
             // Refuse links/special files; malformed bytes are reported only by
             // the UI preference reader and never authorize cleanup or replay.
-            self.namespace.open_regular(
-                std::ffi::OsStr::new("navigation.json"),
-                rustix::fs::OFlags::RDONLY,
-            )?;
+            self.namespace
+                .open_regular(std::ffi::OsStr::new(name), rustix::fs::OFlags::RDONLY)?;
         }
         Ok(())
     }

@@ -79,7 +79,7 @@ fn groups(runtime: &Runtime<'_, '_, '_>) -> Result<Vec<Group>> {
 }
 fn page(runtime: &Runtime<'_, '_, '_>, location: &Location, stop: &AtomicBool) -> Result<Page> {
     runtime.command(|db, _, cache| {
-        let request = location.request.clone();
+        let mut request = location.request.clone();
         let locale = "en-GB".to_owned();
         let (mut result, page, pages, total) = match location.scope {
             Scope::Library | Scope::Custom | Scope::Collection(_) => {
@@ -101,7 +101,10 @@ fn page(runtime: &Runtime<'_, '_, '_>, location: &Location, stop: &AtomicBool) -
                     p.total_items,
                 )
             }
-            Scope::Shelf { id, .. } => {
+            Scope::Shelf { id, manual_order } => {
+                if manual_order {
+                    request.sort.clear();
+                }
                 let p = db.shelf_page(id, request, locale)?.wait()?;
                 (
                     p.members

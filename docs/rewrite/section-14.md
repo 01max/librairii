@@ -180,3 +180,30 @@ runtime cleanup closes resources before releasing ownership. Valid Shelf warning
 preferences are recognized alongside settings/navigation. First-run language
 selection creates independent preference containers without creating a library.
 These real isolated-profile cases are admitted in the cumulative test baseline.
+
+
+## Independent review corrections
+
+The Standards review identified a second profile namespace guard that rejected
+valid Shelf warning preferences and a hardcoded fixture executable path that
+could select stale output under `CARGO_TARGET_DIR`. Both guards now validate the
+same recognized UI documents as regular files. Native evidence resolves the
+executable from Cargo's compiler-artifact JSON, records its bytes/SHA-256 and
+rechecks that executable and the clean source at completion.
+
+The Spec review identified dynamic group-row modal focus restoration, keyboard
+access to the AboutSlint website, application-owned tag localization and manual
+Shelf ordering. Dialog restoration now uses each mounted Action's recorded key,
+including virtualized groups. The original attribution remains visible alongside
+a localized keyboard-accessible website action; fixtures focus but never activate
+that external link. Native tag DTOs retain definition source so the embedded
+catalog translates only system labels/values and preserves user-authored
+lookalikes. Manual Shelf queries clear only their disposable sort, preserving
+the durable sort preference and history frame. Real library and catalog tests
+cover the ordering and localization regressions.
+
+A Retina fixture run exposed that `SLINT_SCALE_FACTOR` affects rendering while
+Winit logical resizing follows the OS backing scale. Fixture resizing now sets
+physical dimensions using the observed effective Slint scale. Its verifier
+requires observed render bounds, compact/wide flags and scale to match each
+claimed density. The earlier failed run supplies no acceptance evidence.

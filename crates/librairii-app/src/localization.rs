@@ -176,6 +176,26 @@ impl Catalogs {
             .map(String::as_str)
             .ok_or(LocalizationError)
     }
+    /// Preserve authored labels verbatim; only application-owned definitions and
+    /// values use the product catalog, matching the frozen system-label policy.
+    pub fn tag_label(
+        &self,
+        language: Language,
+        tag: &librairii_core::tagging::DisplayTag,
+    ) -> String {
+        let label = |text: &str| {
+            if tag.source == "user" {
+                text.to_owned()
+            } else {
+                self.text(language, text).unwrap_or(text).to_owned()
+            }
+        };
+        let definition = label(&tag.definition);
+        tag.value.as_ref().map_or_else(
+            || definition.clone(),
+            |value| format!("{definition}: {}", label(value)),
+        )
+    }
     /// Scan the template once, so a brace sequence in authored input cannot be
     /// substituted as another argument. Text is plain native text, never markup.
     pub fn render(

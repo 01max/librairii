@@ -5367,6 +5367,27 @@
           ]
         },
         "reason": "Section 14 native dependency notices preserve recursive upstream payload and refuse symlinks"
+      },
+      {
+        "position": 606,
+        "identity": {
+          "suite": "librairii-app::localization",
+          "name": "native_tag_labels_translate_system_values_without_translating_authored_lookalikes"
+        },
+        "reason": "Section 14 independent review: native system tags translate while authored lookalikes remain unchanged"
+      },
+      {
+        "position": 607,
+        "identity": {
+          "suite": "librairii-desktop::presentation",
+          "name": "manual_shelf_navigation_retains_sort_preference_across_history_and_reopen",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Section 14 independent review: manual Shelf navigation retains the saved sort without reordering approved membership"
       }
     ],
     "python": [

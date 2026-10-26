@@ -1,5 +1,5 @@
 //! Main-thread projection of owned bounded worker values into native models.
-use librairii_app::localization::Language;
+use librairii_app::localization::{Catalogs, Language, LocalizationError};
 use librairii_core::navigation::Presentation;
 use librairii_desktop::{
     browsing::Story,
@@ -9,12 +9,13 @@ use librairii_ui::native::{DesktopWindow, NavigationRow, StoryGroup, StoryRow, T
 use slint::{ComponentHandle, ModelRc, VecModel};
 use std::{cell::RefCell, rc::Rc};
 pub struct View {
+    pub catalogs: Catalogs,
     pub snapshot: Snapshot,
     pub selected: Option<String>,
     pub columns: usize,
     pub guard: librairii_ui::responses::ResponseGuard,
 }
-fn row(index: usize, story: &Story, language: Language) -> StoryRow {
+fn row(index: usize, story: &Story, language: Language, catalogs: &Catalogs) -> StoryRow {
     let (broken, available) = story
         .summary
         .as_ref()
@@ -49,12 +50,7 @@ fn row(index: usize, story: &Story, language: Language) -> StoryRow {
                 })
                 .unwrap_or_else(|| slint::Color::from_rgb_u8(80, 80, 80));
             TagRow {
-                label: tag
-                    .value
-                    .as_ref()
-                    .map(|value| format!("{}: {}", tag.definition, value))
-                    .unwrap_or_else(|| tag.definition.clone())
-                    .into(),
+                label: catalogs.tag_label(language, tag).into(),
                 color,
             }
         })
@@ -237,7 +233,7 @@ impl View {
             .stories
             .iter()
             .enumerate()
-            .map(|(i, s)| row(i, s, self.snapshot.language))
+            .map(|(i, s)| row(i, s, self.snapshot.language, &self.catalogs))
             .collect::<Vec<_>>();
         let groups = rows
             .chunks(self.columns.max(1))
@@ -318,8 +314,9 @@ pub fn install(
     ui: &DesktopWindow,
     worker: Rc<RefCell<Worker>>,
     initial: Snapshot,
-) -> Rc<RefCell<View>> {
+) -> Result<Rc<RefCell<View>>, LocalizationError> {
     let view = Rc::new(RefCell::new(View {
+        catalogs: Catalogs::embedded()?,
         snapshot: initial,
         selected: None,
         columns: 1,
@@ -375,6 +372,7 @@ pub fn install(
                     index as usize,
                     &story,
                     state.borrow().snapshot.language,
+                    &state.borrow().catalogs,
                 ));
                 if let Some(summary) = story.summary
                     && let Some(n) = state.borrow().snapshot.navigation.as_ref()
@@ -464,5 +462,5 @@ pub fn install(
             offer(&pending.borrow(), Command::Request(request), &ui);
         }
     });
-    view
+    Ok(view)
 }

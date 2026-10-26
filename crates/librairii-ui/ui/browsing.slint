@@ -82,9 +82,9 @@ export component Inspector inherits Rectangle {
     in property <StoryRow> story;
     background: Palette.alternate-background;
     public function scroll(key: string) {
-        if key == Key.Home { details.viewport-y = 0px; }
-        else if key == Key.End { details.viewport-y = min(0px, details.visible-height - details.content-height); }
-        else { details.viewport-y = max(min(0px, details.visible-height - details.content-height), min(0px, details.viewport-y + (key == Key.PageUp ? 1 : -1) * details.visible-height)); }
+        if key == Key.Home { details.content-y = 0px; }
+        else if key == Key.End { details.content-y = min(0px, details.visible-height - details.content-height); }
+        else { details.content-y = max(min(0px, details.visible-height - details.content-height), min(0px, details.content-y + (key == Key.PageUp ? 1 : -1) * details.visible-height)); }
     }
     details := ScrollView { width: parent.width; height: parent.height; content-width: self.visible-width; content-height: inspector-layout.preferred-height;
         inspector-layout := VerticalBox { height: self.preferred-height; padding: 14px; spacing: 12px;

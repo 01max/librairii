@@ -70,8 +70,8 @@ fn snapshot() -> Result<Snapshot> {
             imported_at: "2026-10-20T12:00:00Z".into(), official: None,
         };
         Story { uuid: summary.uuid.clone(), title, summary: Some(summary), thumbnail: Some(thumbnail(i as usize)), provenance: "Weekend favorites".into(), tags: vec![
-            librairii_core::tagging::DisplayTag { definition: "Adventure".into(), value: None, color: "#405cf5".into() },
-            librairii_core::tagging::DisplayTag { definition: "Age".into(), value: Some("4–6".into()), color: "#286350".into() },
+            librairii_core::tagging::DisplayTag { source: "user".into(), definition: "Adventure".into(), value: None, color: "#405cf5".into() },
+            librairii_core::tagging::DisplayTag { source: "derived".into(), definition: "Age".into(), value: Some("3–5 years".into()), color: "#286350".into() },
         ] }
     }).collect();
     let gate = LifecycleGate::new();
@@ -212,6 +212,7 @@ fn main() -> Result {
     let ui = DesktopWindow::new()?;
     let initial = snapshot()?;
     let view = Rc::new(RefCell::new(view::View {
+        catalogs: librairii_app::localization::Catalogs::embedded()?,
         snapshot: initial,
         selected: Some("f0000000-0000-4000-8000-000000000000".into()),
         columns: 1,
@@ -306,13 +307,13 @@ fn main() -> Result {
     );
     ui.run()?;
     timer.stop();
+    if let Some(error) = errors.borrow_mut().take() {
+        return Err(error.into());
+    }
     check(
         server || *step.borrow() > 57,
         "native fixture ended before completing its checks",
     )?;
-    if let Some(error) = errors.borrow_mut().take() {
-        return Err(error.into());
-    }
     Ok(())
 }
 
@@ -360,7 +361,7 @@ fn capture_step(
                     page.pages = 1;
                 }
             }
-            ui.window().set_size(slint::LogicalSize::new(width, height));
+            resize(ui, width, height);
             state.snapshot.language = if french {
                 Language::French
             } else {
@@ -406,7 +407,7 @@ fn capture_step(
             page.total = 1324;
             page.pages = 56;
         }
-        ui.window().set_size(slint::LogicalSize::new(560., 400.));
+        resize(ui, 560., 400.);
         state.snapshot.language = Language::French;
         state.project(ui);
     } else if index == 49 {
@@ -427,8 +428,23 @@ fn capture_step(
     } else if index == 50 {
         ui.invoke_open_sidebar();
         check(ui.get_sidebar_open(), "compact sidebar did not open")?;
+        for _ in 0..40 {
+            if ui.get_focused_key() >= 220 {
+                break;
+            }
+            key(ui, slint::platform::Key::Tab.into())?;
+        }
+        let group_invoker = ui.get_focused_key();
+        check(
+            group_invoker >= 220,
+            "dynamic sidebar group is not keyboard reachable",
+        )?;
         ui.invoke_show_panel(5);
         key(ui, slint::platform::Key::Escape.into())?;
+        check(
+            ui.get_focused_key() == group_invoker,
+            "dialog did not restore dynamic group invoker",
+        )?;
         check(
             ui.get_sidebar_open() && !ui.get_modal(),
             "dialog discarded underlying sidebar or remained open",
@@ -436,7 +452,11 @@ fn capture_step(
         key(ui, slint::platform::Key::Escape.into())?;
         check(
             !ui.get_sidebar_open(),
-            "nested Escape failed to dismiss sidebar",
+            &format!(
+                "nested Escape failed: compact={}, focused key={}",
+                ui.get_compact(),
+                ui.get_focused_key()
+            ),
         )?;
         ui.invoke_focus_browser();
         key(ui, slint::platform::Key::End.into())?;
@@ -472,6 +492,11 @@ fn capture_step(
         ui.set_commit_pending(false);
         ui.invoke_open_dialog(1);
     } else if index == 53 {
+        key(ui, slint::platform::Key::Tab.into())?;
+        check(
+            ui.get_attribution_focused(),
+            "attribution website is not keyboard reachable",
+        )?;
         capture(ui, &destination.join("about-slint-fr.png"))?;
         key(ui, slint::platform::Key::Escape.into())?;
     } else if (54..=56).contains(&index) {
@@ -536,4 +561,15 @@ fn proposals(ui: &DesktopWindow, french: bool) {
             decision: 0,
         },
     ])));
+}
+
+fn resize(ui: &DesktopWindow, width: f32, height: f32) {
+    // Winit logical sizing follows the OS backing scale, while an explicit
+    // SLINT_SCALE_FACTOR changes rendering. Set the observed physical size so
+    // the fixture's intended render-space dimensions are truthful on both.
+    let scale = ui.window().scale_factor();
+    ui.window().set_size(slint::PhysicalSize::new(
+        (width * scale).round() as u32,
+        (height * scale).round() as u32,
+    ));
 }

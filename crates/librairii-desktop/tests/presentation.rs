@@ -80,7 +80,7 @@ fn library_worker() -> Result<
                 name: "My collection".into(),
                 criteria: {
                     let mut query = librairii_core::collection_codec::Query::default();
-                    query.name = "Saved membership".into();
+                    query.name = "saved membership".into();
                     query
                 },
             },
@@ -187,7 +187,7 @@ fn native_history_reopens_typed_groups_and_discards_superseded_search_snapshots(
         if matches!(scope, Scope::Collection(_)) {
             assert_eq!(
                 opened.current().location.request.criteria.name,
-                "Saved membership"
+                "saved membership"
             );
             let mut edited = opened.current().location.request.clone();
             edited.criteria.name = "Edited membership".into();
@@ -208,7 +208,7 @@ fn native_history_reopens_typed_groups_and_discards_superseded_search_snapshots(
                     .request
                     .criteria
                     .name,
-                "Saved membership"
+                "saved membership"
             );
         }
     }
@@ -362,5 +362,114 @@ fn active_preference_failure_retains_actual_session_until_safe_shutdown() -> Tes
         fs::read(&navigation)?,
         b"unconfirmed external preference bytes"
     );
+    Ok(())
+}
+
+#[test]
+fn manual_shelf_navigation_retains_sort_preference_across_history_and_reopen() -> TestResult {
+    use librairii_core::{
+        collection_codec::url::{Location, Scope},
+        navigation::Navigation,
+        query::QueryRequest,
+    };
+    let (roots, locations, id, mut worker) = library_worker()?;
+    receive(&worker)?;
+    worker.finish()?;
+    let store = NativeProfileStore::open_native(&locations.native)?;
+    let native = NativeLibrary::reopen(&store, &locations, &Default::default())?;
+    let mut database = librairii_storage::database::Database::open_native(&native)?;
+    let seeded = database.transaction(Default::default(), |tx| {
+        for (id, title) in [(1, "Zebra"), (2, "Alpha")] {
+            tx.execute("INSERT INTO stories(id,uuid,embedded_title,display_name_normalized) VALUES(?1,printf('10000000-0000-4000-8000-%012d',?1),?2,lower(?2))", (id, title))?;
+            tx.execute("INSERT INTO story_archives(story_id,original_filename,detected_format,sha256,byte_size,managed_path,validation_state) VALUES(?1,'story.zip','zip',printf('%064d',?1),1,'archives/'||?1,'valid')", [id])?;
+            tx.execute("INSERT INTO shelf_stories(shelf_id,story_uuid,position,cached_title) VALUES(1,printf('10000000-0000-4000-8000-%012d',?1),?1-1,?2)", (id, title))?;
+        }
+        Ok(())
+    })?.wait()?;
+    assert!(matches!(
+        seeded,
+        librairii_storage::database::TransactionOutcome::Committed(())
+    ));
+    database.close()?;
+    drop(database);
+    native.finish().map_err(|e| e.to_string())?;
+    let shelf = librairii_core::ShelfId::new(1)?;
+    let request = QueryRequest {
+        sort: "name_asc".into(),
+        ..Default::default()
+    };
+    store.save_navigation(&Navigation::new(
+        id,
+        1,
+        Location {
+            scope: Scope::Shelf {
+                id: shelf,
+                manual_order: true,
+            },
+            request: request.clone(),
+        },
+    )?)?;
+    drop(store);
+    let mut worker = Worker::start_with(Environment {
+        home: roots.profile().join("home").into_os_string(),
+        config: roots.profile().join("config").into_os_string(),
+        data: roots.library().join("data").into_os_string(),
+    })?;
+    let manual = receive(&worker)?;
+    assert_eq!(
+        manual
+            .page
+            .ok_or("manual page")?
+            .stories
+            .iter()
+            .map(|s| s.title.as_str())
+            .collect::<Vec<_>>(),
+        ["Zebra", "Alpha"]
+    );
+    assert_eq!(
+        manual
+            .navigation
+            .ok_or("manual navigation")?
+            .current()
+            .location
+            .request
+            .sort,
+        "name_asc"
+    );
+    worker.offer(Command::Navigate(Scope::Shelf {
+        id: shelf,
+        manual_order: false,
+    }))?;
+    receive(&worker)?;
+    worker.offer(Command::Request(request))?;
+    assert_eq!(
+        receive(&worker)?
+            .page
+            .ok_or("sorted page")?
+            .stories
+            .iter()
+            .map(|s| s.title.as_str())
+            .collect::<Vec<_>>(),
+        ["Alpha", "Zebra"]
+    );
+    worker.offer(Command::Back)?;
+    receive(&worker)?;
+    worker.offer(Command::Back)?;
+    let restored = receive(&worker)?;
+    assert_eq!(
+        restored.page.ok_or("restored page")?.stories[0].title,
+        "Zebra"
+    );
+    assert_eq!(
+        restored
+            .navigation
+            .ok_or("restored sort")?
+            .current()
+            .location
+            .request
+            .sort,
+        "name_asc"
+    );
+    worker.finish()?;
     Ok(())
 }

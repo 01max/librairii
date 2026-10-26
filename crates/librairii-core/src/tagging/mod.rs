@@ -197,6 +197,7 @@ pub struct AssignmentWorkspace {
 /// Read-only native display data; labels and color grant no assignment authority.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct DisplayTag {
+    pub source: String,
     pub definition: String,
     pub value: Option<String>,
     pub color: String,

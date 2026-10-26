@@ -27,7 +27,7 @@ fn launch() -> Result<(), Box<dyn std::error::Error>> {
     let ui = DesktopWindow::new()?;
     let menus = menus::Menus::install(ui.as_weak())?;
     ui.set_french(first.language == librairii_app::localization::Language::French);
-    let view = view::install(&ui, worker.clone(), first);
+    let view = view::install(&ui, worker.clone(), first)?;
     let pending = worker.clone();
     let closing_ui = ui.as_weak();
     ui.on_quit(move || {

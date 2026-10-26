@@ -25,6 +25,7 @@ def main():
     for entry in original['files']:
         if hashlib.sha256((source / entry['path']).read_bytes()).hexdigest() != entry['sha256']:
             raise ValueError('approved native editable/export source changed')
+    source_commit = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip()
     target = os.environ.get('RUST_TARGET')
     if not target:
         target = subprocess.check_output(['rustc', '-vV'], text=True).split('host: ')[1].splitlines()[0]
@@ -45,9 +46,17 @@ def main():
         shutil.rmtree(DESTINATION)
     DESTINATION.mkdir(parents=True)
     (DESTINATION / '.native-fixture-root').write_text('native-foundations-14\n')
-    with (DESTINATION / 'build.log').open('w') as log:
-        run(['cargo', 'build', '--locked', '--target', target, '-p', 'librairii-desktop', '--example', 'native-foundations'], stdout=log, stderr=subprocess.STDOUT)
-    binary = ROOT / 'target' / target / 'debug/examples/native-foundations'
+    with (DESTINATION / 'build.log').open('w') as log, (DESTINATION / 'compiler-artifacts.jsonl').open('w') as events:
+        run(['cargo', 'build', '--locked', '--target', target, '-p', 'librairii-desktop', '--example', 'native-foundations', '--message-format=json'], stdout=events, stderr=log)
+    artifacts = [json.loads(line) for line in (DESTINATION / 'compiler-artifacts.jsonl').read_text().splitlines()]
+    artifacts = [event for event in artifacts if event.get('reason') == 'compiler-artifact' and event.get('target', {}).get('name') == 'native-foundations' and event['target']['kind'] == ['example'] and event.get('executable')]
+    if len(artifacts) != 1:
+        raise ValueError('Cargo must report exactly one native fixture executable')
+    binary = Path(artifacts[0]['executable']).resolve(strict=True)
+    if not binary.is_file():
+        raise ValueError('Cargo native fixture executable is not a regular file')
+    binary_digest = hashlib.sha256(binary.read_bytes()).hexdigest()
+    executable = {'path': str(binary), 'sha256': binary_digest, 'bytes': binary.stat().st_size, 'compiler_fresh': artifacts[0]['fresh']}
     reports = []
     for scale in ['1', '2']:
         output = DESTINATION / ('scale-' + scale)
@@ -63,6 +72,9 @@ def main():
             raise ValueError('native reference/language/density/mode coverage incomplete')
         for frame in frames:
             density = frame['density']
+            logical_width, logical_height = [(1180, 760), (980, 600), (560, 400)][density]
+            if abs(frame['width'] / frame['scale'] - logical_width) > 1 or abs(frame['height'] / frame['scale'] - logical_height) > 1:
+                raise ValueError('native frame observed bounds differ from the requested render density')
             if frame['compact'] != (density == 2) or frame['wide'] != (density == 0) or frame['items'] != 24 or abs(frame['scale'] - float(scale)) > 0.01:
                 raise ValueError('native frame did not exercise its claimed geometry/scale/model')
             if frame['concept'] == 'Desktop workspace' and frame['decisions'] != 0:
@@ -72,8 +84,12 @@ def main():
         reports.append({'scale': scale, 'report': str((output / 'report.json').relative_to(DESTINATION))})
     if sys.platform.startswith('linux'):
         run(['/usr/bin/python3', '-I', '-B', 'scripts/check-native-accessibility.py', str(binary), str(DESTINATION / 'accessibility')], timeout=90)
+    if subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip() != source_commit or subprocess.check_output(['git', 'status', '--porcelain', '--untracked-files=normal'], cwd=ROOT, text=True).strip():
+        raise ValueError('native evidence source changed during execution')
+    if hashlib.sha256(binary.read_bytes()).hexdigest() != binary_digest:
+        raise ValueError('native fixture executable changed during execution')
     files = {str(path.relative_to(DESTINATION)): hashlib.sha256(path.read_bytes()).hexdigest() for path in sorted(DESTINATION.rglob('*')) if path.is_file()}
-    value = {'schema': 1, 'source_commit': subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(), 'target': target, 'host': platform.platform(), 'hardware': subprocess.check_output(['sysctl', '-n', 'machdep.cpu.brand_string'], text=True).strip() if sys.platform == 'darwin' else platform.machine(), 'reference': json.loads((ROOT / 'docs/rewrite/native-reference.json').read_text()), 'runs': reports, 'files': files, 'scope': 'shown native UI/public component keyboard events, observed scales and Skia snapshots; physical HID, full workflow acceptance and packages remain tasks 15/18'}
+    value = {'schema': 1, 'source_commit': source_commit, 'executable': executable, 'target': target, 'host': platform.platform(), 'hardware': subprocess.check_output(['sysctl', '-n', 'machdep.cpu.brand_string'], text=True).strip() if sys.platform == 'darwin' else platform.machine(), 'reference': json.loads((ROOT / 'docs/rewrite/native-reference.json').read_text()), 'runs': reports, 'files': files, 'scope': 'shown native UI/public component keyboard events, observed scales and Skia snapshots; physical HID, full workflow acceptance and packages remain tasks 15/18'}
     (DESTINATION / 'manifest.json').write_text(json.dumps(value, indent=2) + '\n')
     print('Native foundations passed: both approved concepts, English/French, three densities, all story modes, two observed scales and keyboard/modal checks.')
 if __name__ == '__main__':

@@ -3856,6 +3856,19 @@
         "x86_64-apple-darwin",
         "x86_64-unknown-linux-gnu"
       ]
+    },
+    {
+      "suite": "librairii-app::localization",
+      "name": "native_tag_labels_translate_system_values_without_translating_authored_lookalikes"
+    },
+    {
+      "suite": "librairii-desktop::presentation",
+      "name": "manual_shelf_navigation_retains_sort_preference_across_history_and_reopen",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
     }
   ]
 }

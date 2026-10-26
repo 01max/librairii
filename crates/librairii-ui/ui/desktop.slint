@@ -49,11 +49,8 @@ component Navigation inherits FocusScope {
     callback open-panel(int);
     public function activate() { close-navigation.focus(); }
     public function restore(key: int) {
-        if key == 205 { settings-action.focus(); }
-        else if key == 203 { tags-action.focus(); }
-        else if key == 204 { history-action.focus(); }
-        else if key == 202 { library-action.focus(); }
-        else { close-navigation.focus(); }
+        FocusState.key = key;
+        FocusState.restore-epoch += 1;
     }
     key-pressed(event) => {
         if root.compact && event.text == Key.Escape { root.close(); return accept; }
@@ -106,6 +103,7 @@ export component DesktopWindow inherits Window {
     in property <bool> indeterminate;
     public function focus-browser() { browser.focus(); }
     out property <bool> close-focused: close-dialog-button.has-focus;
+    out property <bool> attribution-focused: attribution-button.has-focus;
     out property <bool> query-focused: search-entry.has-focus;
     public function focus-search() { search-entry.focus(); }
     public function edit-search(action: EditAction) {
@@ -293,13 +291,17 @@ export component DesktopWindow inherits Window {
                 if event.text == Key.PageDown || event.text == Key.PageUp || event.text == Key.Home || event.text == Key.End {
                     if root.dialog == 3 { dialog-inspector.scroll(event.text); }
                     else {
-                        if event.text == Key.Home { dialog-scroll.viewport-y = 0px; }
-                        else if event.text == Key.End { dialog-scroll.viewport-y = min(0px, dialog-scroll.visible-height - dialog-scroll.content-height); }
-                        else { dialog-scroll.viewport-y = max(min(0px, dialog-scroll.visible-height - dialog-scroll.content-height), min(0px, dialog-scroll.viewport-y + (event.text == Key.PageUp ? 1 : -1) * dialog-scroll.visible-height)); }
+                        if event.text == Key.Home { dialog-scroll.content-y = 0px; }
+                        else if event.text == Key.End { dialog-scroll.content-y = min(0px, dialog-scroll.visible-height - dialog-scroll.content-height); }
+                        else { dialog-scroll.content-y = max(min(0px, dialog-scroll.visible-height - dialog-scroll.content-height), min(0px, dialog-scroll.content-y + (event.text == Key.PageUp ? 1 : -1) * dialog-scroll.visible-height)); }
                     }
                     return accept;
                 }
                 if event.text == Key.Tab {
+                    if root.dialog == 1 {
+                        if close-dialog-button.has-focus { attribution-button.focus(); } else { close-dialog-button.focus(); }
+                        return accept;
+                    }
                     if root.dialog == 7 && !root.commit-pending {
                         if close-dialog-button.has-focus { stop-close-button.focus(); } else { close-dialog-button.focus(); }
                         return accept;
@@ -322,6 +324,7 @@ export component DesktopWindow inherits Window {
                         if root.dialog == 7: Caption { text: root.commit-pending ? (root.french ? "Enregistrement en cours. Attendez la fin de cette étape avant de fermer." : "Saving changes. Wait for this step to finish before closing.") : (root.french ? "Vous pouvez continuer ou demander l’arrêt. Les effets déjà enregistrés sont conservés." : "Keep working or request a safe stop. Already committed changes are preserved."); }
                     }
                 }
+                attribution-button := Button { visible: root.dialog == 1; enabled: !root.closing && root.dialog == 1; text: root.french ? "Site web de Slint" : "Slint website"; clicked => { Platform.open-url("https://slint.dev"); } }
                 HorizontalBox { visible: root.dialog == 2;
                     english-button := Button { text: "English"; enabled: !root.closing && root.dialog == 2; clicked => { root.change-language("en"); } }
                     Button { text: "Français"; enabled: !root.closing && root.dialog == 2; clicked => { root.change-language("fr"); } }

@@ -836,6 +836,7 @@ fn native_display_labels_preserve_boolean_choice_color_and_assignment_independen
     assert_eq!(
         labels.get(&1).ok_or("story one")?[0],
         librairii_core::tagging::DisplayTag {
+            source: "user".into(),
             definition: "broken".into(),
             value: None,
             color: "#405CF5".into()
