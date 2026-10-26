@@ -1,7 +1,9 @@
 use crate::{
     Result, StorageError,
     database::WorkCancellation,
-    platform::unix::{ConfigTemp, ControlAllocation, Directory, EntryName, durable_file_flush},
+    platform::unix::{
+        ConfigTemp, ControlAllocation, Directory, EntryName, FileIdentity, durable_file_flush,
+    },
 };
 use std::{
     ffi::OsString,
@@ -47,8 +49,13 @@ impl TargetPreview {
         Ok(())
     }
     // Recovery still validates the actual journal/root/lease in storage. This
-    // retained path observation grants no empty-target deletion permission.
-    pub(crate) fn recovery_observation(target: &Path) -> Result<Self> {
+    // An original empty target is retained only after its journaled identity
+    // and current emptiness match; a path alone grants no deletion permission.
+    pub(crate) fn recovery_observation(
+        target: &Path,
+        empty_target: Option<FileIdentity>,
+        cancel: &WorkCancellation,
+    ) -> Result<Self> {
         let (resolved, _, _) = resolve(target, true)?;
         if resolved != target {
             return Err(StorageError::SnapshotChanged);
@@ -66,13 +73,34 @@ impl TargetPreview {
             .as_os_str()
             .to_owned(),
         ];
+        let existing = empty_target
+            .map(|identity| {
+                let directory = match Directory::open(target) {
+                    Ok(directory) => directory,
+                    // Publication may have removed the original empty folder
+                    // before a crash. Absence needs no deletion authority.
+                    Err(StorageError::Io { source, .. })
+                        if source.kind() == std::io::ErrorKind::NotFound =>
+                    {
+                        return Ok(None);
+                    }
+                    Err(error) => return Err(error),
+                };
+                if directory.identity() != identity {
+                    return Err(StorageError::SnapshotChanged);
+                }
+                directory.entries(0, cancel)?;
+                Ok(Some(directory))
+            })
+            .transpose()?
+            .flatten();
         Ok(Self {
             requested: target.to_path_buf(),
             resolved,
             anchor: Directory::open(&anchor_path)?,
             anchor_path,
             missing,
-            existing: None,
+            existing,
             exclusions: Vec::new(),
             probes: Vec::new(),
             allocations: Vec::new(),

@@ -41,6 +41,8 @@ struct Intent {
     selected_workspace: bool,
     source_directory: FileIdentity,
     workspace_directory: FileIdentity,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    empty_target_directory: Option<FileIdentity>,
     source_state_sha256: String,
     manifest_sha256: String,
     copied_epoch: u64,
@@ -443,6 +445,11 @@ impl<'profile> Attempt<'profile> {
                 selected_workspace,
                 source_directory: source.library.root.identity(),
                 workspace_directory: root.identity(),
+                empty_target_directory: if selected_workspace {
+                    None
+                } else {
+                    self.target.existing.as_ref().map(Directory::identity)
+                },
                 source_state_sha256,
                 manifest_sha256,
                 copied_epoch: source_document.epoch,
@@ -1638,7 +1645,13 @@ mod tests {
     }
     #[test]
     fn restart_retry_and_explicit_cancel_preserve_source_and_allow_future_moves() -> TestResult {
-        for retry in [false, true] {
+        for (retry, existing, removed) in [
+            (false, false, false),
+            (true, false, false),
+            (false, true, false),
+            (true, true, false),
+            (true, true, true),
+        ] {
             let (roots, copy, locations) = crate::test_support::native_copy()?;
             let store = NativeProfileStore::create_fresh(&locations.native)?;
             let native =
@@ -1647,6 +1660,9 @@ mod tests {
             let old = native.layout().root().to_path_buf();
             let closed = close(native)?;
             let target = roots.library().join("restart destination");
+            if existing {
+                fs::create_dir(&target)?;
+            }
             let failure = interrupted(
                 closed,
                 TargetPreview::inspect(&target, &[], &Default::default())?,
@@ -1661,6 +1677,22 @@ mod tests {
             drop(store);
             let store = NativeProfileStore::open_native(&locations.native)?;
             if retry {
+                if existing {
+                    let retained_target = roots.library().join("retained empty target");
+                    fs::rename(&target, &retained_target)?;
+                    fs::create_dir(&target)?;
+                    assert!(retry_relocation(&store, &locations, &Default::default()).is_err());
+                    assert!(target.is_dir());
+                    fs::remove_dir(&target)?;
+                    fs::rename(&retained_target, &target)?;
+                    fs::write(target.join("new user file"), b"preserve")?;
+                    assert!(retry_relocation(&store, &locations, &Default::default()).is_err());
+                    assert_eq!(fs::read(target.join("new user file"))?, b"preserve");
+                    fs::remove_file(target.join("new user file"))?;
+                    if removed {
+                        fs::remove_dir(&target)?;
+                    }
+                }
                 let outcome = retry_relocation(&store, &locations, &Default::default())
                     .map_err(|f| f.to_string())?;
                 assert_eq!(outcome.library.layout().root(), target);
@@ -1943,7 +1975,15 @@ pub fn retry_relocation<'profile>(
                 .file_name()
                 .ok_or(StorageError::SettingsDestination)?,
         )?;
-        let preview = TargetPreview::recovery_observation(target)?;
+        let preview = TargetPreview::recovery_observation(
+            target,
+            if published || intent.selected_workspace {
+                None
+            } else {
+                intent.empty_target_directory
+            },
+            cancel,
+        )?;
         Ok((
             intent,
             Workspace {
