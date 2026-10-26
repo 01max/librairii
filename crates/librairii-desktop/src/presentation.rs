@@ -6,17 +6,25 @@ use librairii_storage::{database::WorkCancellation, settings::Startup};
 use std::sync::{
     Arc, Mutex,
     atomic::{AtomicBool, Ordering},
-    mpsc,
 };
 use std::thread::{self, JoinHandle};
 
+pub(crate) mod intake;
+use intake::Intake;
+pub use intake::OfferError;
 pub const COMMAND_CAPACITY: usize = 16;
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum Command {
     Refresh,
+    Back,
+    Forward,
+    Navigate(librairii_core::collection_codec::url::Scope),
     Presentation(librairii_core::navigation::Presentation),
     Request(librairii_core::query::QueryRequest),
-    Select(i64),
+    Select {
+        id: i64,
+        query: librairii_core::navigation::QueryStamp,
+    },
     Language(Language),
 }
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -28,6 +36,10 @@ pub enum Phase {
 }
 #[derive(Clone, Debug)]
 pub struct Snapshot {
+    pub groups: Vec<crate::browsing::Group>,
+    pub revision: u64,
+    pub restore_navigation: bool,
+    pub generation: Option<librairii_app::lifecycle::LibraryGeneration>,
     pub phase: Phase,
     pub language: Language,
     pub status: String,
@@ -36,7 +48,7 @@ pub struct Snapshot {
 }
 #[derive(Debug)]
 pub struct Worker {
-    pub commands: mpsc::SyncSender<Command>,
+    commands: Arc<Intake>,
     latest: Arc<Mutex<Option<Snapshot>>>,
     stop: Arc<AtomicBool>,
     join: Option<JoinHandle<Result<(), String>>>,
@@ -48,7 +60,8 @@ impl Worker {
     pub fn start_with(
         environment: impl crate::startup::StartupEnvironment + Send + 'static,
     ) -> Result<Self, std::io::Error> {
-        let (commands, receiver) = mpsc::sync_channel(COMMAND_CAPACITY);
+        let commands = Arc::new(Intake::default());
+        let receiver = commands.clone();
         let latest = Arc::new(Mutex::new(None));
         let stop = Arc::new(AtomicBool::new(false));
         let mailbox = latest.clone();
@@ -63,8 +76,21 @@ impl Worker {
             join: Some(join),
         })
     }
+    pub fn offer(&self, command: Command) -> Result<u64, OfferError> {
+        if self.stop.load(Ordering::Acquire) {
+            return Err(OfferError::Closed);
+        }
+        self.commands.offer(command)
+    }
+    pub fn revision(&self) -> u64 {
+        self.commands.latest()
+    }
     pub fn take_snapshot(&self) -> Option<Snapshot> {
-        self.latest.lock().ok()?.take()
+        self.latest
+            .lock()
+            .ok()?
+            .take()
+            .filter(|snapshot| snapshot.revision == self.commands.latest())
     }
     pub fn request_shutdown(&self) {
         self.stop.store(true, Ordering::Release);
@@ -89,7 +115,7 @@ impl Drop for Worker {
 }
 fn run(
     environment: impl crate::startup::StartupEnvironment,
-    receiver: mpsc::Receiver<Command>,
+    receiver: Arc<Intake>,
     mailbox: Arc<Mutex<Option<Snapshot>>>,
     stop: Arc<AtomicBool>,
 ) -> Result<(), String> {
@@ -138,6 +164,10 @@ fn run(
         },
     };
     let mut snapshot = Snapshot {
+        groups: Vec::new(),
+        revision: 0,
+        restore_navigation: true,
+        generation: None,
         navigation: None,
         page: None,
         phase,
@@ -155,8 +185,12 @@ fn run(
             if stop.load(Ordering::Acquire) {
                 return Ok(());
             }
-            match receiver.recv_timeout(std::time::Duration::from_millis(20)) {
-                Ok(Command::Language(language)) => {
+            let Some(envelope) = receiver.receive().map_err(|e| e.to_string())? else {
+                continue;
+            };
+            snapshot.revision = envelope.revision;
+            match envelope.command {
+                Command::Language(language) => {
                     let result = match &mut selection {
                         StartupSelection::Override(settings) => {
                             settings.change_language(language.code())
@@ -191,9 +225,7 @@ fn run(
                     }
                     break;
                 }
-                Ok(_) => break,
-                Err(mpsc::RecvTimeoutError::Timeout) => {}
-                Err(mpsc::RecvTimeoutError::Disconnected) => return Ok(()),
+                _ => break,
             }
         }
     }

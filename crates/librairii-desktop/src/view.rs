@@ -5,13 +5,14 @@ use librairii_desktop::{
     browsing::Story,
     presentation::{Command, Snapshot, Worker},
 };
-use librairii_ui::native::{DesktopWindow, StoryGroup, StoryRow};
+use librairii_ui::native::{DesktopWindow, NavigationRow, StoryGroup, StoryRow};
 use slint::{ComponentHandle, ModelRc, VecModel};
 use std::{cell::RefCell, rc::Rc};
 pub struct View {
     pub snapshot: Snapshot,
     pub selected: Option<String>,
     pub columns: usize,
+    pub guard: librairii_ui::responses::ResponseGuard,
 }
 fn row(index: usize, story: &Story, language: Language) -> StoryRow {
     let (broken, available) = story
@@ -56,6 +57,34 @@ fn row(index: usize, story: &Story, language: Language) -> StoryRow {
     }
 }
 impl View {
+    pub fn accept(&mut self, ui: &DesktopWindow, snapshot: Snapshot, revision: u64) -> bool {
+        if let Some(generation) = &snapshot.generation {
+            if self.snapshot.generation.is_none() {
+                self.guard.activate(generation.clone());
+            }
+            self.guard.expect(revision);
+            if !self.guard.accepts(generation, snapshot.revision) {
+                return false;
+            }
+        }
+        if let Some(n) = &snapshot.navigation {
+            ui.set_mode(match n.presentation() {
+                Presentation::List => 0,
+                Presentation::SmallCovers => 1,
+                Presentation::LargeCovers => 2,
+            });
+            if snapshot.restore_navigation {
+                ui.set_query(n.current().location.request.criteria.name.clone().into());
+                self.selected = None;
+            }
+            ui.set_back_enabled(n.can_back());
+            ui.set_forward_enabled(n.can_forward());
+        }
+        self.snapshot = snapshot;
+        self.resize(ui);
+        self.project(ui);
+        true
+    }
     pub fn project(&mut self, ui: &DesktopWindow) {
         let french = self.snapshot.language == Language::French;
         ui.set_french(french);
@@ -66,6 +95,40 @@ impl View {
             librairii_desktop::presentation::Phase::Library => 3,
         });
         ui.set_status(self.snapshot.status.clone().into());
+        let nav_rows = |shelves: bool| {
+            self.snapshot
+                .groups
+                .iter()
+                .enumerate()
+                .filter(|(_, g)| {
+                    matches!(
+                        g.scope,
+                        librairii_core::collection_codec::url::Scope::Shelf { .. }
+                    ) == shelves
+                })
+                .map(|(index, g)| NavigationRow {
+                    index: index as i32,
+                    label: format!("{} ({})", g.name, self.snapshot.language.number(g.count))
+                        .into(),
+                    enabled: g.available,
+                })
+                .collect::<Vec<_>>()
+        };
+        ui.set_collection_rows(ModelRc::new(VecModel::from(nav_rows(false))));
+        ui.set_shelf_rows(ModelRc::new(VecModel::from(nav_rows(true))));
+        let title = self
+            .snapshot
+            .navigation
+            .as_ref()
+            .and_then(|n| {
+                self.snapshot
+                    .groups
+                    .iter()
+                    .find(|g| g.scope == n.current().location.scope)
+            })
+            .map(|g| g.name.as_str())
+            .unwrap_or(if french { "Bibliothèque" } else { "Library" });
+        ui.set_scope_title(title.into());
         let Some(page) = &self.snapshot.page else {
             return;
         };
@@ -152,7 +215,7 @@ impl View {
     }
 }
 fn offer(worker: &Worker, command: Command, ui: &DesktopWindow) {
-    if worker.commands.try_send(command).is_err() {
+    if worker.offer(command).is_err() {
         ui.set_status(
             if ui.get_french() {
                 "La bibliothèque est occupée. Réessayez."
@@ -172,6 +235,7 @@ pub fn install(
         snapshot: initial,
         selected: None,
         columns: 1,
+        guard: Default::default(),
     }));
     if let Some(navigation) = &view.borrow().snapshot.navigation {
         ui.set_mode(match navigation.presentation() {
@@ -189,6 +253,10 @@ pub fn install(
                 .clone()
                 .into(),
         );
+    }
+    let generation = view.borrow().snapshot.generation.clone();
+    if let Some(generation) = generation {
+        view.borrow_mut().guard.activate(generation);
     }
     view.borrow_mut().project(ui);
     let (state, weak, pending) = (view.clone(), ui.as_weak(), worker.clone());
@@ -221,7 +289,16 @@ pub fn install(
                     state.borrow().snapshot.language,
                 ));
                 if let Some(summary) = story.summary {
-                    offer(&pending.borrow(), Command::Select(summary.id), &ui);
+                    if let Some(n) = state.borrow().snapshot.navigation.as_ref() {
+                        offer(
+                            &pending.borrow(),
+                            Command::Select {
+                                id: summary.id,
+                                query: n.stamp(),
+                            },
+                            &ui,
+                        );
+                    }
                 }
             }
         }
@@ -241,6 +318,44 @@ pub fn install(
                     + i64::from(delta))
                 .max(1);
                 offer(&pending.borrow(), Command::Request(request), &ui);
+            }
+        }
+    });
+    let (state, weak, pending) = (view.clone(), ui.as_weak(), worker.clone());
+    ui.on_navigate_group(move |index| {
+        if let Some(ui) = weak.upgrade() {
+            if let Some(group) = state.borrow().snapshot.groups.get(index as usize) {
+                offer(
+                    &pending.borrow(),
+                    Command::Navigate(group.scope.clone()),
+                    &ui,
+                );
+            }
+        }
+    });
+    let (weak, pending) = (ui.as_weak(), worker.clone());
+    ui.on_history_step(move |step| {
+        if let Some(ui) = weak.upgrade() {
+            offer(
+                &pending.borrow(),
+                if step < 0 {
+                    Command::Back
+                } else {
+                    Command::Forward
+                },
+                &ui,
+            );
+        }
+    });
+    let (weak, pending) = (ui.as_weak(), worker.clone());
+    ui.on_request_panel(move |panel| {
+        if panel == 0 {
+            if let Some(ui) = weak.upgrade() {
+                offer(
+                    &pending.borrow(),
+                    Command::Navigate(librairii_core::collection_codec::url::Scope::Library),
+                    &ui,
+                );
             }
         }
     });

@@ -3780,6 +3780,28 @@
         "x86_64-apple-darwin",
         "x86_64-unknown-linux-gnu"
       ]
+    },
+    {
+      "suite": "librairii-desktop",
+      "name": "presentation::intake::tests::pending_queries_coalesce_without_reordering_history_or_losing_shutdown_capacity",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-ui",
+      "name": "responses::tests::obsolete_activation_and_superseded_query_cannot_publish_into_current_view"
+    },
+    {
+      "suite": "librairii-desktop::presentation",
+      "name": "native_history_reopens_typed_groups_and_discards_superseded_search_snapshots",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
     }
   ]
 }

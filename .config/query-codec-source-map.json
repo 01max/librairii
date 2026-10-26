@@ -5255,6 +5255,40 @@
           ]
         },
         "reason": "Task 14.3 real native controller persists all three display modes in independent preferences and joins storage before reopening."
+      },
+      {
+        "position": 597,
+        "identity": {
+          "suite": "librairii-desktop",
+          "name": "presentation::intake::tests::pending_queries_coalesce_without_reordering_history_or_losing_shutdown_capacity",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Task 14.6 bounded ordered native intake coalesces pending queries while preserving history command order and backpressure."
+      },
+      {
+        "position": 598,
+        "identity": {
+          "suite": "librairii-ui",
+          "name": "responses::tests::obsolete_activation_and_superseded_query_cannot_publish_into_current_view"
+        },
+        "reason": "Task 14.6 native presentation rejects obsolete activation tokens and superseded query revisions."
+      },
+      {
+        "position": 599,
+        "identity": {
+          "suite": "librairii-desktop::presentation",
+          "name": "native_history_reopens_typed_groups_and_discards_superseded_search_snapshots",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Task 14.6 real native history retains typed group identity and durable display preferences and rejects superseded search snapshots."
       }
     ],
     "python": [

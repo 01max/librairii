@@ -95,3 +95,24 @@ Escape means return to work and never confirms a mutation. Settings language
 commands persist before updating labels and retain the active metadata locale.
 Setup/recovery entry buttons stay available; complete folder/adoption/recovery
 transactions and workflow-specific dialogs remain section 15.
+
+## Semantic navigation and response acceptance
+
+Back/Forward, Library, Collection and Shelf commands use core typed navigation;
+Collection and curated Shelf IDs remain distinct even with the same numeric ID.
+The existing versioned library-bound `navigation.json` retains frames, criteria,
+sort/page, selection and the independent mode preference, with 100-frame and
+8 MiB limits. Every accepted transition persists before projection. There is no
+URL/address bar, browser history or frontend event bridge. Official metadata
+uses the frozen provider's `en-GB` default independently of interface language.
+
+The 16-entry ordered intake coalesces only adjacent, unstarted search requests.
+History, selection and language commands retain order and report backpressure;
+shutdown closes intake through its independent path. Responses carry the admitted
+request revision and actual library activation token. A superseded query cannot
+replace the current view, and a token from a different activation is rejected
+even when an independent clone preserves the same library UUID. Selection
+commands carry the originating query stamp and stale selections are ignored.
+The one latest snapshot remains bounded. Native tests exercise persisted history,
+mode independence, overlapping group IDs, a burst of searches, shutdown/reopen,
+queue ordering/backpressure and obsolete activation/query rejection.

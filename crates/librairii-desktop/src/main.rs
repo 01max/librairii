@@ -58,8 +58,8 @@ fn launch() -> Result<(), Box<dyn std::error::Error>> {
                     ui.invoke_request_quit();
                 }
                 if let Some(snapshot) = pending.borrow().take_snapshot() {
-                    view.borrow_mut().snapshot = snapshot;
-                    view.borrow_mut().project(&ui);
+                    view.borrow_mut()
+                        .accept(&ui, snapshot, pending.borrow().revision());
                 }
                 if pending.borrow().finished() {
                     let _quit = slint::quit_event_loop();
