@@ -4732,6 +4732,32 @@
           "name": "historical_results_translate_known_messages_and_keep_unknown_original_details"
         },
         "reason": "Task 13.2 embedded English/French language and historical outcome behavior; preserves all admitted discovery identities."
+      },
+      {
+        "position": 556,
+        "identity": {
+          "suite": "librairii-desktop::settings",
+          "name": "language_persistence_updates_existing_projection_and_pending_native_menus",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Task 13.3 persisted language and bounded settings/menu projection assertions; preserves all admitted identities and scope."
+      },
+      {
+        "position": 557,
+        "identity": {
+          "suite": "librairii-desktop::settings",
+          "name": "rejected_or_failed_language_updates_preserve_effective_text_and_durable_bytes",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Task 13.3 persisted language and bounded settings/menu projection assertions; preserves all admitted identities and scope."
       }
     ],
     "python": [
