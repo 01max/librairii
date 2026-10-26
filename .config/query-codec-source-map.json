@@ -5190,6 +5190,19 @@
           ]
         },
         "reason": "Task 13.4 treats selection of the actual current root through an alias as an unchanged operation while the database remains live."
+      },
+      {
+        "position": 592,
+        "identity": {
+          "suite": "librairii-storage",
+          "name": "native::owned::relocation::tests::final_commit_revalidation_preserves_changed_source_and_destination_without_committing",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Task 13.8 revalidates both complete trees at the final precommit boundary and preserves newly changed source/destination files without changing authority."
       }
     ],
     "python": [

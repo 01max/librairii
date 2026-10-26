@@ -179,6 +179,17 @@ mod tests {
             old.to_str().ok_or("root")?
         );
         fs::write(selected.join(crate::identity::IDENTITY_FILE), id)?;
+        let database = selected.join("db/librairii.sqlite3");
+        let preserved = selected.join("db/held-original.sqlite3");
+        fs::rename(&database, &preserved)?;
+        let before = store.load()?.ok_or("profile")?.original_bytes().to_vec();
+        assert!(
+            NativeLibrary::locate_same_uuid(&store, &locations, &selected, &Default::default())
+                .is_err()
+        );
+        assert!(!database.exists());
+        assert_eq!(store.load()?.ok_or("profile")?.original_bytes(), before);
+        fs::rename(&preserved, &database)?;
         let native =
             NativeLibrary::locate_same_uuid(&store, &locations, &selected, &Default::default())?;
         assert_eq!(store.load()?.ok_or("profile")?.profile().language, "fr");

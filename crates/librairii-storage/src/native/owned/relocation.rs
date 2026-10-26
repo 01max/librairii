@@ -681,6 +681,20 @@ impl<'profile> Attempt<'profile> {
             directories.push((name, workspace.root.child(OsStr::new(name))?));
         }
         checkpoint(RelocationStage::BeforeCommit)?;
+        verify_copy(&workspace.root, &intent.manifest, cancel)?;
+        if source.relocation_manifest(cancel)? != intent.manifest {
+            return Err(StorageError::SnapshotChanged);
+        }
+        workspace
+            .record
+            .as_ref()
+            .ok_or(StorageError::CompatibilityInvariant)?
+            .revalidate(&workspace.root)?;
+        workspace
+            .lease
+            .as_ref()
+            .ok_or(StorageError::CompatibilityInvariant)?
+            .revalidate()?;
         if cancel.is_cancelled() {
             return Err(StorageError::Cancelled);
         }
@@ -1404,6 +1418,60 @@ mod tests {
         Ok(())
     }
     #[test]
+    fn final_commit_revalidation_preserves_changed_source_and_destination_without_committing()
+    -> TestResult {
+        struct ChangeBeforeCommit {
+            path: PathBuf,
+            wrote: std::sync::atomic::AtomicBool,
+        }
+        impl RelocationObserver for ChangeBeforeCommit {
+            fn observe(&self, stage: RelocationStage) {
+                if stage == RelocationStage::BeforeCommit {
+                    self.wrote.store(
+                        fs::write(&self.path, b"new external bytes").is_ok(),
+                        Ordering::Release,
+                    );
+                }
+            }
+        }
+        for change_source in [false, true] {
+            let (roots, copy, locations) = crate::test_support::native_copy()?;
+            let store = NativeProfileStore::create_fresh(&locations.native)?;
+            let native =
+                NativeLibrary::bind_independent(copy, &store, &locations, &Default::default())
+                    .map_err(|f| f.to_string())?;
+            let old = native.layout().root().to_path_buf();
+            let closed = close(native)?;
+            let target = roots.library().join("changed at commit");
+            let observer = ChangeBeforeCommit {
+                path: if change_source { &old } else { &target }
+                    .join("archives/new external file.pk"),
+                wrote: std::sync::atomic::AtomicBool::new(false),
+            };
+            let failure = closed
+                .relocate_observed(
+                    TargetPreview::inspect(&target, &[], &Default::default())?,
+                    &locations,
+                    MOVE.parse()?,
+                    &Default::default(),
+                    &observer,
+                )
+                .err()
+                .ok_or("changed copy must refuse commitment")?;
+            assert!(observer.wrote.load(Ordering::Acquire));
+            assert_eq!(failure.commit_status(), CommitStatus::BeforeCommit);
+            assert_eq!(
+                store.load()?.ok_or("profile")?.profile().root,
+                old.to_str().ok_or("root")?
+            );
+            assert_eq!(fs::read(&observer.path)?, b"new external bytes");
+            let (native, _) = failure.resume_source().map_err(|f| f.to_string())?;
+            finish(native)?;
+            assert_eq!(fs::read(&observer.path)?, b"new external bytes");
+        }
+        Ok(())
+    }
+    #[test]
     fn committed_failure_recovers_destination_and_preserves_changed_and_new_source_files()
     -> TestResult {
         let (roots, copy, locations) = crate::test_support::native_copy()?;
@@ -1680,6 +1748,18 @@ mod tests {
                 _ => fs::rename(&target, &held)?,
             }
             let store = NativeProfileStore::open_native(&locations.native)?;
+            if mode == "destination-drive" {
+                // Same UUID alone cannot roll back a committed move to its
+                // stale source. Refusal must precede any SQLite activation.
+                assert!(
+                    NativeLibrary::locate_same_uuid(&store, &locations, &old, &Default::default())
+                        .is_err()
+                );
+                assert_eq!(
+                    RelocationManifest::capture(&Directory::open(&old)?, &Default::default())?,
+                    before
+                );
+            }
             let result = recover_relocation(&store, &locations, &Default::default());
             if mode == "source-drive" {
                 assert!(result?.ok_or("journal")?.cleanup.pending);
