@@ -9,6 +9,7 @@ impl MenuCommands {
 }
 pub struct Menus {
     pub commands: MenuCommands,
+    #[cfg(target_os = "macos")]
     state: std::cell::Cell<Option<(bool, bool, bool)>>,
     #[cfg(target_os = "macos")]
     _bar: muda::Menu,
@@ -114,19 +115,16 @@ impl Menus {
             })
         }
         #[cfg(not(target_os = "macos"))]
-        Ok(Self {
-            commands,
-            state: Default::default(),
-        })
+        Ok(Self { commands })
     }
     pub fn update(&self, _french: bool, _modal: bool, _editing: bool) {
-        if self.state.replace(Some((_french, _modal, _editing)))
-            == Some((_french, _modal, _editing))
-        {
-            return;
-        }
         #[cfg(target_os = "macos")]
         {
+            if self.state.replace(Some((_french, _modal, _editing)))
+                == Some((_french, _modal, _editing))
+            {
+                return;
+            }
             self.edit.set_text(if _french { "Édition" } else { "Edit" });
             let labels = if _french {
                 [
