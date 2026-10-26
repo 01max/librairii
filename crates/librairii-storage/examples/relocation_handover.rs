@@ -316,8 +316,8 @@ mod rehearsal {
     }
     fn volume_root(case: &Path, volume: &Path) -> Result<Value> {
         if fs::read_dir(volume)?.next().is_some() {
-            return Ok(
-                json!({"volume_root":"rejected_nonempty_system_entries","external_folder_test_required":true}),
+            return Err(
+                "mandatory exact mount-root rehearsal requires an empty owned volume".into(),
             );
         }
         setup(case)?;

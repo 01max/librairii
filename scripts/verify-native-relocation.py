@@ -5,6 +5,7 @@ Only this process-created image is formatted/mounted. The image, mountpoint,
 source fixtures and privileged operations stay under one fresh temp directory.
 No production home/profile discovery is used by the Rust rehearsal.
 """
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -19,8 +20,16 @@ def run(argv, **kwargs):
 
 
 def main():
-    run(["cargo", "build", "--locked", "-p", "librairii-storage", "--example", "relocation_handover"], cwd=ROOT)
-    binary = ROOT / "target/debug/examples/relocation_handover"
+    build = run(["cargo", "build", "--locked", "-p", "librairii-storage", "--example", "relocation_handover", "--message-format=json-render-diagnostics"], cwd=ROOT, stdout=subprocess.PIPE)
+    artifacts = [message["executable"] for line in build.stdout.splitlines()
+                 if (message := json.loads(line)).get("reason") == "compiler-artifact"
+                 and message.get("target", {}).get("name") == "relocation_handover"
+                 and "example" in message.get("target", {}).get("kind", [])
+                 and message.get("executable")]
+    if len(artifacts) != 1:
+        raise RuntimeError("expected one executable from this Cargo build")
+    binary = Path(artifacts[0]).resolve(strict=True)
+    binary_digest = hashlib.sha256(binary.read_bytes()).hexdigest()
     system = platform.system()
     if system not in ("Darwin", "Linux"):
         raise RuntimeError("native macOS/Linux host required")
@@ -52,6 +61,12 @@ def main():
                 raise RuntimeError("mounted target is not a separate filesystem")
             result = run([str(binary), str(source), str(mount)], cwd=ROOT, stdout=subprocess.PIPE, timeout=600)
             evidence = json.loads(result.stdout)
+            if hashlib.sha256(binary.read_bytes()).hexdigest() != binary_digest:
+                raise RuntimeError("Cargo executable changed during rehearsal")
+            evidence["cargo_artifact_executable"] = str(binary)
+            evidence["executable_sha256"] = binary_digest
+            evidence["driver_sha256"] = hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
+            evidence["example_sha256"] = hashlib.sha256((ROOT / "crates/librairii-storage/examples/relocation_handover.rs").read_bytes()).hexdigest()
             evidence["checkout_sha"] = run(["git", "rev-parse", "HEAD"], cwd=ROOT, stdout=subprocess.PIPE).stdout.strip()
             evidence["working_tree_dirty"] = bool(run(["git", "status", "--porcelain"], cwd=ROOT, stdout=subprocess.PIPE).stdout.strip())
             evidence["host_system"] = platform.platform()
@@ -61,6 +76,8 @@ def main():
             evidence["volume_owned_by_rehearsal"] = True
             if len(evidence["forced_termination"]) != 8 or len(evidence["filesystem_failures"]) != 2:
                 raise RuntimeError("incomplete mandatory native rehearsal")
+            if evidence["volume_root"]["volume_root"] != "exact_root_verified":
+                raise RuntimeError("mandatory exact mount-root qualification did not execute")
             output = ROOT / "target/quality/native-relocation.json"
             output.parent.mkdir(parents=True, exist_ok=True)
             output.write_text(json.dumps(evidence, indent=2) + "\n")
