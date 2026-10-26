@@ -3405,6 +3405,22 @@
         "x86_64-apple-darwin",
         "x86_64-unknown-linux-gnu"
       ]
+    },
+    {
+      "suite": "librairii-app::localization",
+      "name": "only_two_explicit_languages_and_ordered_supported_system_preferences"
+    },
+    {
+      "suite": "librairii-app::localization",
+      "name": "embedded_catalogs_render_numbers_plural_forms_and_authored_parameters"
+    },
+    {
+      "suite": "librairii-app::localization",
+      "name": "localized_dates_use_the_supplied_offset_and_locale_without_mutating_the_instant"
+    },
+    {
+      "suite": "librairii-app::localization",
+      "name": "historical_results_translate_known_messages_and_keep_unknown_original_details"
     }
   ]
 }

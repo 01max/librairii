@@ -4700,6 +4700,38 @@
           ]
         },
         "reason": "Task 4.10 native case/Unicode target-name conflict regression; retains all prior discovery identities."
+      },
+      {
+        "position": 552,
+        "identity": {
+          "suite": "librairii-app::localization",
+          "name": "only_two_explicit_languages_and_ordered_supported_system_preferences"
+        },
+        "reason": "Task 13.2 embedded English/French language and historical outcome behavior; preserves all admitted discovery identities."
+      },
+      {
+        "position": 553,
+        "identity": {
+          "suite": "librairii-app::localization",
+          "name": "embedded_catalogs_render_numbers_plural_forms_and_authored_parameters"
+        },
+        "reason": "Task 13.2 embedded English/French language and historical outcome behavior; preserves all admitted discovery identities."
+      },
+      {
+        "position": 554,
+        "identity": {
+          "suite": "librairii-app::localization",
+          "name": "localized_dates_use_the_supplied_offset_and_locale_without_mutating_the_instant"
+        },
+        "reason": "Task 13.2 embedded English/French language and historical outcome behavior; preserves all admitted discovery identities."
+      },
+      {
+        "position": 555,
+        "identity": {
+          "suite": "librairii-app::localization",
+          "name": "historical_results_translate_known_messages_and_keep_unknown_original_details"
+        },
+        "reason": "Task 13.2 embedded English/French language and historical outcome behavior; preserves all admitted discovery identities."
       }
     ],
     "python": [
