@@ -27,23 +27,19 @@ impl Language {
             _ => Err(LocalizationError),
         }
     }
-    /// The first supported system preference wins. A saved explicit choice is
-    /// resolved separately and never replaced by an operating-system change.
+    /// Match the frozen first effective system preference: French when it
+    /// resolves to French, English otherwise. Later preferences cannot override
+    /// an unsupported preferred language. A saved explicit choice wins separately.
     pub fn from_system<'a>(preferences: impl IntoIterator<Item = &'a str>) -> Self {
-        for preference in preferences {
-            let primary = preference
-                .trim()
-                .split(['-', '_', '.', '@'])
-                .next()
-                .unwrap_or_default();
-            if primary.eq_ignore_ascii_case("fr") {
-                return Self::French;
-            }
-            if primary.eq_ignore_ascii_case("en") {
-                return Self::English;
-            }
+        if preferences
+            .into_iter()
+            .find(|p| !p.trim().is_empty())
+            .is_some_and(|p| p.trim().to_ascii_lowercase().starts_with("fr"))
+        {
+            Self::French
+        } else {
+            Self::English
         }
-        Self::English
     }
     /// The two supported languages' cardinal one/other rules for integral counts.
     pub const fn singular(self, count: u64) -> bool {
@@ -134,6 +130,7 @@ pub enum Argument<'a> {
 pub struct Catalogs {
     english: BTreeMap<String, String>,
     french: BTreeMap<String, String>,
+    french_reverse: BTreeMap<String, String>,
 }
 impl Catalogs {
     pub fn embedded() -> Result<Self, LocalizationError> {
@@ -141,10 +138,19 @@ impl Catalogs {
             "../../../internal/localization/locales/en.json"
         ))
         .map_err(|_| LocalizationError)?;
-        let french: BTreeMap<String, String> = serde_json::from_str(include_str!(
+        let french_entries: OrderedCatalog = serde_json::from_str(include_str!(
             "../../../internal/localization/locales/fr.json"
         ))
         .map_err(|_| LocalizationError)?;
+        // The frozen JS Map is insertion ordered and keeps the LAST key for a
+        // duplicate translated value. Sorting keys before this projection would
+        // change identities such as Annuler (Undo) and Terminé (Done).
+        let french_reverse = french_entries
+            .0
+            .iter()
+            .map(|(key, text)| (text.clone(), key.clone()))
+            .collect();
+        let french: BTreeMap<String, String> = french_entries.0.into_iter().collect();
         if english.is_empty()
             || !english.keys().eq(french.keys())
             || english
@@ -154,7 +160,11 @@ impl Catalogs {
         {
             return Err(LocalizationError);
         }
-        Ok(Self { english, french })
+        Ok(Self {
+            english,
+            french,
+            french_reverse,
+        })
     }
     pub fn text(&self, language: Language, key: &str) -> Result<&str, LocalizationError> {
         let catalog = match language {
@@ -217,12 +227,7 @@ impl Catalogs {
             .english
             .get_key_value(message)
             .map(|(key, _)| key)
-            .or_else(|| {
-                self.french
-                    .iter()
-                    .find(|(_, text)| text.as_str() == message)
-                    .map(|(key, _)| key)
-            });
+            .or_else(|| self.french_reverse.get(message));
         if let Some(key) = known {
             return Ok(LocalizedOutcome {
                 summary: self.text(language, key)?.into(),
@@ -245,9 +250,37 @@ impl Catalogs {
             });
         }
         Ok(LocalizedOutcome {
-            summary: self.text(language, status.key())?.into(),
+            summary: if language == Language::English {
+                message.into()
+            } else {
+                self.text(language, status.key())?.into()
+            },
             technical_detail: Some(message),
         })
+    }
+}
+
+struct OrderedCatalog(Vec<(String, String)>);
+impl<'de> Deserialize<'de> for OrderedCatalog {
+    fn deserialize<D: serde::Deserializer<'de>>(decoder: D) -> Result<Self, D::Error> {
+        struct Visitor;
+        impl<'de> serde::de::Visitor<'de> for Visitor {
+            type Value = OrderedCatalog;
+            fn expecting(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+                f.write_str("an ordered product catalog")
+            }
+            fn visit_map<A: serde::de::MapAccess<'de>>(
+                self,
+                mut map: A,
+            ) -> Result<Self::Value, A::Error> {
+                let mut entries = Vec::new();
+                while let Some(entry) = map.next_entry::<String, String>()? {
+                    entries.push(entry);
+                }
+                Ok(OrderedCatalog(entries))
+            }
+        }
+        decoder.deserialize_map(Visitor)
     }
 }
 

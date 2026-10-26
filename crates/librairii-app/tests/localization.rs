@@ -10,9 +10,10 @@ fn only_two_explicit_languages_and_ordered_supported_system_preferences() -> Tes
     }
     assert_eq!(Language::explicit("fr")?, Language::French);
     assert_eq!(
-        Language::from_system(["de-DE", "fr_CA.UTF-8", "en"]),
+        Language::from_system(["fr_CA.UTF-8", "en"]),
         Language::French
     );
+    assert_eq!(Language::from_system(["de-DE", "fr"]), Language::English);
     assert_eq!(Language::from_system(["en-GB", "fr"]), Language::English);
     assert_eq!(Language::from_system(["ja", "ar"]), Language::English);
     assert_eq!(Language::from_system([]), Language::English);
@@ -87,8 +88,20 @@ fn historical_results_translate_known_messages_and_keep_unknown_original_details
     assert_eq!(result.summary, "Terminé");
     assert_eq!(result.technical_detail, Some(raw));
     let english = catalogs.historical(Language::English, raw, OutcomeStatus::Succeeded)?;
-    assert_eq!(english.summary, "Completed");
+    assert_eq!(english.summary, raw);
     assert_eq!(english.technical_detail, Some(raw));
+    assert_eq!(
+        catalogs
+            .historical(Language::English, "Annuler", OutcomeStatus::Cancelled)?
+            .summary,
+        "Undo"
+    );
+    assert_eq!(
+        catalogs
+            .historical(Language::English, "Terminé", OutcomeStatus::Succeeded)?
+            .summary,
+        "Done"
+    );
     assert_eq!(
         catalogs
             .historical(

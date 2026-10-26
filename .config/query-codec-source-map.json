@@ -4758,6 +4758,32 @@
           ]
         },
         "reason": "Task 13.3 persisted language and bounded settings/menu projection assertions; preserves all admitted identities and scope."
+      },
+      {
+        "position": 558,
+        "identity": {
+          "suite": "librairii-desktop::system_language",
+          "name": "os_language_adapter_retains_first_preference_and_frozen_variable_precedence",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Task 13.2 real OS language adapter and saved-choice precedence regressions; preserves prior discovery history."
+      },
+      {
+        "position": 559,
+        "identity": {
+          "suite": "librairii-desktop::system_language",
+          "name": "settings_startup_uses_os_adapter_only_until_a_saved_language_exists",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Task 13.2 real OS language adapter and saved-choice precedence regressions; preserves prior discovery history."
       }
     ],
     "python": [
