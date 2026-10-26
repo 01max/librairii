@@ -84,3 +84,36 @@ ZIP SHA256 `b9c0ad4d82a27877267e1b03e0b24a85949fa43d983fb32eea8d2ca7e458299c`,
 retains that observation. The timer now waits for `has_winit_window()` before
 advancing any fixture step; the existing parent deadline remains the hard limit.
 All required captures and assertions still run once the window exists.
+
+## Production macOS menu composition correction
+
+A final Spec review found that the application's Muda bar/handler competed with
+Slint's own MenuBar and text context menu initialization. The earlier component
+fixture did not install the production menus, so its successful captures did
+not establish application-menu ownership or delivery.
+
+The production entry point and native fixture now share one process policy and
+window/menu factory. Before threads or toolkit initialization, same-PID `exec`
+sets Slint's documented non-Muda context-menu fallback without unsafe global
+environment mutation. The qualified Winit builder disables its default bar,
+and the macOS Slint component omits its toolkit MenuBar. One application owner
+retains localized App/Edit/Navigation actions and standard application commands.
+A bounded ordered native-command FIFO preserves repeated history actions; Quit
+has an independent atomic path.
+
+Independent Standards and Spec source review found zero required findings in
+this correction. The regression now inspects actual `NSApplication.mainMenu`
+identity/hierarchy and sends AppKit key equivalents/actions through the real
+handler for Settings in both languages, focused Select All/Undo/Redo, ordered
+Back/Back/Forward, disabled history, AboutSlint and pending-work Quit. Its report
+requires those assertions before publishing successful composition evidence.
+Actual local execution also exposed the locked Muda lower-case/Shift Redo
+encoding: a canonical uppercase AppKit key equivalent now accepts shifted events
+and restores both editor replacement steps. The synthetic event retains Shift
+in its characters, as AppKit requires, and asserts actual text effects.
+The final label review also corrected Muda's hardcoded Hide/Hide Others/Show All
+defaults. Retained predefined items now follow English/French selection, with
+actual AppKit title assertions; system-populated Services contents retain OS
+presentation.
+Fresh source-labelled execution supplies acceptance of this composition; older
+component-only receipts remain historical evidence.

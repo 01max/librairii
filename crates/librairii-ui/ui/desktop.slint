@@ -112,7 +112,7 @@ export component DesktopWindow inherits Window {
     out property <bool> query-focused: search-entry.has-focus;
     public function focus-search() { search-entry.focus(); }
     public function edit-search(action: EditAction) {
-        if !FocusState.modal && search-entry.has-focus {
+        if !FocusState.modal && !FocusState.closing && search-entry.has-focus {
             if action == EditAction.undo { search-entry.undo(); }
             else if action == EditAction.redo { search-entry.redo(); }
             else if action == EditAction.cut { search-entry.cut(); }
@@ -199,7 +199,8 @@ export component DesktopWindow inherits Window {
         else if kind == 8 { root.open-dialog(3); }
         else { root.panel = kind; root.open-dialog(6); root.request-panel(kind); }
     }
-    MenuBar {
+    in property <bool> platform-menu: false;
+    if !root.platform-menu: MenuBar {
         Menu {
             title: "Navigation";
             MenuItem { title: root.french ? "Retour" : "Back"; enabled: root.back-enabled && !root.modal; shortcut: @keys(Alt + LeftArrow); activated => { root.history-step(-1); } }

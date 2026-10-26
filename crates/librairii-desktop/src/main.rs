@@ -1,10 +1,8 @@
 //! The native event loop and every window/menu stay on the process main thread.
 #![forbid(unsafe_code)]
-use librairii_desktop::presentation::Worker;
-use librairii_ui::native::DesktopWindow;
+use librairii_desktop::{menus, presentation::Worker};
 use slint::ComponentHandle;
 use std::{cell::RefCell, process::ExitCode, rc::Rc, time::Duration};
-mod menus;
 mod view;
 
 fn launch() -> Result<(), Box<dyn std::error::Error>> {
@@ -24,8 +22,7 @@ fn launch() -> Result<(), Box<dyn std::error::Error>> {
         }
         std::thread::sleep(Duration::from_millis(2));
     };
-    let ui = DesktopWindow::new()?;
-    let menus = menus::Menus::install(ui.as_weak())?;
+    let (ui, menus) = menus::create_window()?;
     ui.set_french(first.language == librairii_app::localization::Language::French);
     let view = view::install(&ui, worker.clone(), first)?;
     let pending = worker.clone();
@@ -62,21 +59,7 @@ fn launch() -> Result<(), Box<dyn std::error::Error>> {
         move || {
             if let Some(ui) = weak.upgrade() {
                 view.borrow_mut().resize(&ui);
-                menus.update(
-                    ui.get_french(),
-                    ui.get_modal() || ui.get_closing(),
-                    ui.get_query_focused(),
-                );
-                let command = menus.commands.take();
-                if command & 1 != 0 {
-                    ui.invoke_open_dialog(1);
-                }
-                if command & 4 != 0 {
-                    ui.invoke_show_panel(5);
-                }
-                if command & 2 != 0 {
-                    ui.invoke_request_quit();
-                }
+                menus.dispatch(&ui);
                 if let Some(snapshot) = pending.borrow().take_snapshot()
                     && !ui.get_closing()
                 {
@@ -97,7 +80,7 @@ fn launch() -> Result<(), Box<dyn std::error::Error>> {
     closed.map_err(Into::into)
 }
 fn main() -> ExitCode {
-    match launch() {
+    match menus::prepare_process().and_then(|()| launch()) {
         Ok(()) => ExitCode::SUCCESS,
         Err(error) => {
             eprintln!("{error}");

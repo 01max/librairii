@@ -1,4 +1,7 @@
 //! Native presentation fixtures only: no startup/profile/library/network access.
+#[cfg(target_os = "macos")]
+#[path = "native-foundations/native_menu.rs"]
+mod native_menu;
 #[allow(dead_code)]
 #[path = "../src/view.rs"]
 mod view;
@@ -200,6 +203,7 @@ fn capture(ui: &DesktopWindow, path: &Path) -> Result {
     Ok(())
 }
 fn main() -> Result {
+    librairii_desktop::menus::prepare_process()?;
     let output = std::env::args_os()
         .nth(1)
         .map(PathBuf::from)
@@ -209,7 +213,7 @@ fn main() -> Result {
         std::fs::read(output.join(".librairii-native-fixture"))? == b"native-foundations-14\n",
         "isolated fixture marker missing",
     )?;
-    let ui = DesktopWindow::new()?;
+    let (ui, menus) = librairii_desktop::menus::create_window()?;
     let initial = snapshot()?;
     let view = Rc::new(RefCell::new(view::View {
         catalogs: librairii_app::localization::Catalogs::embedded()?,
@@ -291,6 +295,12 @@ fn main() -> Result {
                 return;
             }
             let result = (|| -> Result {
+                menus.dispatch(&ui);
+                #[cfg(target_os = "macos")]
+                check(
+                    menus.owns_native_menu(),
+                    "native application menu owner changed",
+                )?;
                 view.borrow_mut().resize(&ui);
                 if server {
                     return Ok(());
@@ -301,6 +311,7 @@ fn main() -> Result {
                     *fixture_step.borrow(),
                     &destination,
                     &captured_report,
+                    &menus,
                 )?;
                 *fixture_step.borrow_mut() += 1;
                 Ok(())
@@ -329,6 +340,7 @@ fn capture_step(
     index: usize,
     destination: &Path,
     report: &RefCell<Vec<serde_json::Value>>,
+    _menus: &librairii_desktop::menus::Menus,
 ) -> Result {
     if index < 48 {
         let workspace = index >= 36;
@@ -436,6 +448,8 @@ fn capture_step(
         resize(ui, 560., 400.)?;
         state.snapshot.language = Language::French;
         state.project(ui);
+        #[cfg(target_os = "macos")]
+        native_menu::verify(ui, _menus)?;
     } else if index == 49 {
         ui.invoke_focus_search();
         key(ui, "Étoile".into())?;
@@ -496,6 +510,9 @@ fn capture_step(
         ui.set_pending(true);
         ui.set_indeterminate(true);
         ui.set_commit_pending(true);
+        #[cfg(target_os = "macos")]
+        native_menu::request_quit(ui, _menus)?;
+        #[cfg(not(target_os = "macos"))]
         ui.invoke_request_quit();
         check(
             ui.get_dialog() == 7,
@@ -523,6 +540,9 @@ fn capture_step(
         )?;
         ui.set_pending(false);
         ui.set_commit_pending(false);
+        #[cfg(target_os = "macos")]
+        native_menu::about(ui, _menus)?;
+        #[cfg(not(target_os = "macos"))]
         ui.invoke_open_dialog(1);
     } else if index == 53 {
         key(ui, slint::platform::Key::Tab.into())?;
@@ -565,6 +585,7 @@ fn capture_step(
                 "schema": 1, "host": std::env::consts::OS, "architecture": std::env::consts::ARCH,
                 "frames": *report.borrow(), "keyboard_checks": "passed",
                 "macos_programmatic_fixed_window": cfg!(target_os = "macos"),
+                "native_menu_composition": if cfg!(target_os = "macos") { "passed" } else { "not-applicable" },
                 "scope": "shown native component/public window events and Skia capture; not physical HID or packaged workflow qualification",
             }))?,
         )?;

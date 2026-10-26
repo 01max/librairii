@@ -2750,6 +2750,7 @@ dependencies = [
 name = "librairii-desktop"
 version = "0.0.0"
 dependencies = [
+ "i-slint-backend-winit",
  "image",
  "librairii-adapters",
  "librairii-app",
@@ -2758,6 +2759,9 @@ dependencies = [
  "librairii-testkit",
  "librairii-ui",
  "muda",
+ "objc2 0.6.5",
+ "objc2-app-kit 0.3.2",
+ "objc2-foundation 0.3.2",
  "serde_json",
  "slint",
 ]

@@ -62,7 +62,7 @@ all modes, independently reads the durable preference and reopens after shutdown
 
 ## Accessible shared controls
 
-Application controls and native application/Edit menus provide English/French
+Application controls and native application/Edit/Navigation menus provide English/French
 names. Native edit accelerators operate on the focused text widget and retain
 its selection and undo stack. Menu changes are coalesced; handlers execute on
 the main thread without an unbounded UI event queue. Custom story rows expose
@@ -78,6 +78,18 @@ a named semantic range/value and static indeterminate presentation. Application
 panels, covers and progress introduce no animated movement; the OS/toolkit owns
 standard transient control feedback. These are permitted accessibility/control
 adaptations of the approved hierarchy, checked by native fixtures below.
+
+On macOS the application owns the single native menu bar and Muda handler. The
+production entry point and capture fixture share the same window/menu factory.
+Before creating any thread or toolkit object, the process uses same-PID Unix
+`exec` to preserve its arguments/environment while enabling Slint's documented
+`SLINT_NO_MUDA` fallback. The explicit qualified Winit backend disables its
+default menu bar; Slint renders text context menus itself. This avoids the
+toolkit replacing the application menu or claiming Muda's first-writer handler.
+The application retains Settings with Command-comma, AboutSlint, standard
+application actions, focused editing and ordered Back/Forward commands. Native
+commands use a 16-entry FIFO with visible overflow and an independent Quit
+signal. Linux retains the toolkit's existing menu composition.
 
 ## Modal and pending-operation behavior
 
@@ -163,7 +175,15 @@ keyboard-seek and static-progress frames. Model/keyboard assertions cover text
 palette contrast >=4.5, zero implicit review decisions, literal UTF-8 input, modal
 Tab containment/Escape/restoration, nested sidebar dismissal, offscreen selection,
 pending commit close safety, empty first-run/recovery projections and static
-progress. Intrinsic portrait/square/landscape fitting and external captions are
+progress. The macOS fixture additionally checks actual `NSApplication.mainMenu`
+ownership after showing the window and changing language/focus. AppKit key
+equivalents/actions exercise localized Settings, Select All, Undo/Redo, repeated
+Back/Back/Forward, disabled navigation, AboutSlint and safe pending-work Quit
+through the production handler. Shifted event characters follow
+[AppKit's documented behavior](https://developer.apple.com/documentation/appkit/nsevent/charactersignoringmodifiers).
+Redo uses the canonical uppercase native key equivalent for Command-Shift-Z;
+the regression checks both removal/insertion undo steps and their redo effects.
+Intrinsic portrait/square/landscape fitting and external captions are
 checked against the source/layout and actual captures; they are not pixel-diff
 assertions against HTML. The Linux private-bus fixture additionally
 inspects actual AT-SPI roles/names/enabled/sensitive/selection/focus state and uses
