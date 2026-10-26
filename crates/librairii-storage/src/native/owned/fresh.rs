@@ -33,6 +33,7 @@ struct NewInstallAttempt<'profile> {
     record: Option<Record>,
     allocation: Option<ControlAllocation>,
     // Last: retained even after any partial initialization/publication failure.
+    lease_attempted: bool,
     lease: Option<LibraryLease>,
 }
 
@@ -231,6 +232,7 @@ impl<'profile> NativeLibrary<'profile> {
             initialized: false,
             record: None,
             allocation: None,
+            lease_attempted: false,
             lease: None,
         }
         .complete(cancellation)
@@ -267,9 +269,10 @@ impl<'profile> NewInstallAttempt<'profile> {
                 && crate::profile::read_legacy(legacy)?.is_some_and(|document| {
                     let p = document.profile();
                     p.complete || p.recovering || !p.root.is_empty() || !p.library_id.is_empty()
-                }) {
-                    return Err(StorageError::RecoveryBindingRequired);
-                }
+                })
+            {
+                return Err(StorageError::RecoveryBindingRequired);
+            }
             match fs::read_dir(&source) {
                 Ok(mut entries) => {
                     if entries.next().is_some() {
@@ -302,13 +305,25 @@ impl<'profile> NewInstallAttempt<'profile> {
             .ok_or(StorageError::CompatibilityInvariant)?;
         let path = self.target.resolved();
         if self.lease.is_none() {
-            root.entries(0, cancellation)?;
-            self.lease = Some(LibraryLease::create_fresh_in(path, root)?);
+            if !self.lease_attempted {
+                root.entries(0, cancellation)?;
+                self.lease_attempted = true;
+                self.lease = Some(LibraryLease::create_fresh_in(path, root)?);
+            } else {
+                self.lease = Some(LibraryLease::acquire_existing_in(path, root)?);
+            }
         }
         self.lease
             .as_ref()
             .ok_or(StorageError::CompatibilityInvariant)?
             .revalidate()?;
+        if self.marker.is_none()
+            && let Some(allocation) = &self.allocation
+            && allocation.name == OsStr::new(crate::identity::IDENTITY_FILE)
+        {
+            self.marker = Some(root.recover_control(allocation)?);
+            self.allocation = None;
+        }
         if self.marker.is_none() {
             self.marker = Some(
                 root.create_control_record(OsStr::new(crate::identity::IDENTITY_FILE))
@@ -436,11 +451,18 @@ impl<'profile> NewInstallAttempt<'profile> {
                 root_policy: self.policy.clone(),
                 temporaries: Vec::new(),
             };
-            self.record = Some(Record::create(root, document).map_err(|failure| {
-                let failure = *failure;
-                self.allocation = failure.allocation;
-                failure.cause
-            })?);
+            self.record = Some(if let Some(allocation) = &self.allocation {
+                if allocation.name != OsStr::new(NATIVE_STATE_FILE) {
+                    return Err(StorageError::RecoveryBindingRequired);
+                }
+                Record::from_owned_allocation(root, document, allocation)?
+            } else {
+                Record::create(root, document).map_err(|failure| {
+                    let failure = *failure;
+                    self.allocation = failure.allocation;
+                    failure.cause
+                })?
+            });
         }
         let record = self
             .record
@@ -473,7 +495,7 @@ impl<'profile> NewInstallAttempt<'profile> {
         } else {
             record.revalidate(root)?;
         }
-        require_root_entries(root)?;
+        require_root_entries(root, true)?;
         crate::settings::RelocationManifest::capture(root, cancellation)?;
         self.revalidate_root()?;
         if cancellation.is_cancelled() {

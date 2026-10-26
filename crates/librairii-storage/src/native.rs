@@ -27,7 +27,7 @@ mod state {
     use serde::{Deserialize, Serialize};
     use std::{
         ffi::OsStr,
-        io::{Read, Write},
+        io::{Read, Seek, Write},
         path::{Component, Path},
     };
 
@@ -117,9 +117,9 @@ mod state {
                                         .bytes()
                                         .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
                             }))
-                    {
-                        return Err(StorageError::RecoveryBindingRequired);
-                    }
+                {
+                    return Err(StorageError::RecoveryBindingRequired);
+                }
             }
             if self.state != Phase::Active && !self.temporaries.is_empty() {
                 return Err(StorageError::RecoveryBindingRequired);
@@ -235,7 +235,45 @@ mod state {
                 uncertain: true,
             })
         }
+        pub fn from_owned_allocation(
+            root: &Directory,
+            document: Document,
+            allocation: &ControlAllocation,
+        ) -> Result<Self> {
+            let bytes = document.bytes()?;
+            Ok(Self {
+                current: root.recover_control(allocation)?,
+                document,
+                bytes,
+                retained: Vec::new(),
+                retained_allocations: Vec::new(),
+                uncertain: true,
+            })
+        }
         pub fn initialize(&mut self, root: &Directory) -> Result<()> {
+            // Retrying a failed initial write repairs only this retained file
+            // and a prefix of its own exact expected bytes.
+            let named = root.read_config(OsStr::new(NATIVE_STATE_FILE))?;
+            if !crate::settings::manifest::same_file(&named.file, &self.current.file)? {
+                return Err(StorageError::SnapshotChanged);
+            }
+            self.current
+                .file
+                .rewind()
+                .map_err(|e| StorageError::io("rewind owned initial state", e))?;
+            let mut current = Vec::new();
+            (&mut self.current.file)
+                .take((MAX_PROFILE_BYTES + 1) as u64)
+                .read_to_end(&mut current)
+                .map_err(|e| StorageError::io("read owned incomplete state", e))?;
+            if !self.bytes.starts_with(&current) {
+                return Err(StorageError::RecoveryBindingRequired);
+            }
+            self.current
+                .file
+                .rewind()
+                .map_err(|e| StorageError::io("rewind initial state for retry", e))?;
+
             self.current
                 .file
                 .write_all(&self.bytes)
@@ -589,6 +627,7 @@ mod owned {
     mod fresh;
     pub use fresh::NewInstallFailure;
     mod lifecycle;
+    mod relocation;
     use super::{
         NATIVE_STATE_FILE, NATIVE_STATE_TEMP, digest,
         state::{Document, Phase, Record, RootPolicy},
@@ -604,6 +643,12 @@ mod owned {
         profile::{FrozenProfile, NativeProfileStore, ProfileBinding, ProfileLocations},
     };
     pub use lifecycle::ClosedNativeLibrary;
+    pub(crate) use relocation::VerifiedMoveTarget;
+    pub use relocation::{
+        CleanupReport, CommitStatus, RecoveredRoot, RelocatedLibrary, RelocationFailure,
+        RelocationRecovery, recover_relocation,
+    };
+    pub use relocation::{RestartMoveFailure, cancel_relocation, retry_relocation};
     use std::{
         ffi::OsStr,
         fs::{self, File},
@@ -685,6 +730,7 @@ mod owned {
         layout: LibraryLayout,
         root: Directory,
         database: Directory,
+        allow_additions: bool,
         marker: File,
         identity: LibraryIdentity,
         record: Mutex<Record>,
@@ -899,6 +945,7 @@ mod owned {
                 layout,
                 root,
                 database,
+                allow_additions: record.document.version == 2,
                 marker,
                 identity,
                 record: Mutex::new(record),
@@ -997,7 +1044,7 @@ mod owned {
             if digest(identity.original_bytes()) != d.library_marker_sha256 {
                 return Err(StorageError::RecoveryBindingRequired);
             }
-            require_root_entries(&root)?;
+            require_root_entries(&root, d.version == 2)?;
             let database = root.child(OsStr::new("db"))?;
             let mut directories = Vec::new();
             for name in ["db", "archives", "catalog", "staging", "trash", "logs"] {
@@ -1299,7 +1346,7 @@ mod owned {
             let result = (|| {
                 self.binding()?.revalidate()?;
                 self.revalidate_database_ownership()?;
-                require_root_entries(&self.root)?;
+                require_root_entries(&self.root, self.allow_additions)?;
                 let recovery = self.recovery_pending.swap(false, Ordering::AcqRel);
                 if !recovery {
                     require_no_sidecars(&self.database)?;
@@ -1354,7 +1401,7 @@ mod owned {
                 // This durable ACK is BEFORE managed mkdir and SQLite open,
                 // including schema migration/initialization and sidecar writes.
                 record.transition_with(&self.root, next, after_active_replace)?;
-                require_root_entries(&self.root)?;
+                require_root_entries(&self.root, self.allow_additions)?;
                 *managed = Some(Vec::new());
                 let directories = managed.as_mut().ok_or(StorageError::RuntimeFenced)?;
                 for name in ["db", "archives", "catalog", "staging", "trash", "logs"] {
@@ -1467,7 +1514,7 @@ mod owned {
                 )?;
             }
             drop(managed);
-            require_root_entries(&self.root)?;
+            require_root_entries(&self.root, self.allow_additions)?;
             require_no_sidecars(&self.database)?;
             // Durable removals retain product data in their bounded namespace.
             // Other trash owners remain unsettled and cannot certify closure.
@@ -1501,7 +1548,7 @@ mod owned {
             let mut next = record.document.clone();
             next.state = Phase::Closed;
             record.transition_with(&self.root, next, after_closed_replace)?;
-            require_root_entries(&self.root)?;
+            require_root_entries(&self.root, self.allow_additions)?;
             self.revalidate_database_ownership()?;
             self.frozen
                 .as_ref()
@@ -1630,8 +1677,15 @@ mod owned {
         }
         Ok(())
     }
-    fn require_root_entries(root: &Directory) -> Result<()> {
-        for name in root.entries(14, &WorkCancellation::default())? {
+    fn require_root_entries(root: &Directory, allow_additions: bool) -> Result<()> {
+        for name in root.entries(
+            if allow_additions {
+                crate::settings::manifest::MAX_MANIFEST_BYTES / 128
+            } else {
+                14
+            },
+            &WorkCancellation::default(),
+        )? {
             let known = [
                 crate::identity::IDENTITY_FILE,
                 crate::platform::lock::LIBRARY_LOCK_FILE,
@@ -1648,9 +1702,19 @@ mod owned {
             if name
                 .as_encoded_bytes()
                 .starts_with(NATIVE_STATE_TEMP.as_bytes())
-                || !known.iter().any(|allowed| name == OsStr::new(allowed))
+                || (!allow_additions && !known.iter().any(|allowed| name == OsStr::new(allowed)))
             {
                 return Err(StorageError::RecoveryBindingRequired);
+            }
+            if !known.iter().any(|allowed| name == OsStr::new(allowed)) {
+                if name.as_encoded_bytes().starts_with(b".librairii-")
+                    || name == OsStr::new("relocation.json")
+                {
+                    return Err(StorageError::RecoveryBindingRequired);
+                }
+                if root.child(&name).is_err() {
+                    root.open_regular(&name, rustix::fs::OFlags::RDONLY)?;
+                }
             }
         }
         Ok(())
@@ -1808,9 +1872,10 @@ mod owned {
             return Err(StorageError::PathEscape);
         }
         if let Some(legacy) = &locations.legacy
-            && physical_overlap(root, &resolve(legacy, false)?.0)? {
-                return Err(StorageError::PathEscape);
-            }
+            && physical_overlap(root, &resolve(legacy, false)?.0)?
+        {
+            return Err(StorageError::PathEscape);
+        }
         for legacy in &policy.legacy_roots {
             if physical_overlap(root, &resolve(Path::new(legacy), false)?.0)? {
                 return Err(StorageError::PathEscape);
@@ -2169,7 +2234,12 @@ mod owned {
 }
 
 #[cfg(any(target_os = "macos", target_os = "linux"))]
+pub(crate) use owned::VerifiedMoveTarget;
+#[cfg(any(target_os = "macos", target_os = "linux"))]
 pub use owned::{
-    ClosedNativeLibrary, NativeBindingFailure, NativeCloseFailure, NativeLibrary,
-    NewInstallFailure, RecoveryLibrary,
+    CleanupReport, ClosedNativeLibrary, CommitStatus, NativeBindingFailure,
+    NativeCloseFailure, NativeLibrary, NewInstallFailure, RecoveredRoot, RecoveryLibrary,
+    RelocatedLibrary, RelocationFailure, RelocationRecovery, recover_relocation,
 };
+#[cfg(any(target_os = "macos", target_os = "linux"))]
+pub use owned::{RestartMoveFailure, cancel_relocation, retry_relocation};

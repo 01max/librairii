@@ -1173,3 +1173,32 @@ impl Database<'_> {
         self.jobs_active.store(false, Ordering::Release);
     }
 }
+
+#[cfg(any(target_os = "macos", target_os = "linux"))]
+pub(crate) fn ready_closed_move(path: &Path) -> Result<()> {
+    // This runs only inside owned relocation, with intake gated and both real
+    // root leases retained. Exercise the actual destination, including WAL and
+    // every reader connection; a private snapshot alone cannot prove writable
+    // destination readiness. No domain command is admitted here.
+    let mut writer = Connection::open_with_flags(
+        path,
+        OpenFlags::SQLITE_OPEN_READ_WRITE | OpenFlags::SQLITE_OPEN_NO_MUTEX,
+    )?;
+    configure_writer(&writer)?;
+    crate::backup::verify_integrity(&writer)?;
+    crate::migrations::SchemaPrefix::inspect(&mut writer)?;
+    let mut readers = Vec::new();
+    for _ in 0..4 {
+        readers.push(open_reader(&path.to_path_buf())?);
+    }
+    for reader in readers {
+        reader
+            .close()
+            .map_err(|(_, error)| StorageError::Sqlite(error))?;
+    }
+    writer.execute_batch("PRAGMA wal_checkpoint(TRUNCATE)")?;
+    writer
+        .close()
+        .map_err(|(_, error)| StorageError::Sqlite(error))?;
+    Ok(())
+}

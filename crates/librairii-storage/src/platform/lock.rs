@@ -37,6 +37,29 @@ pub struct LibraryLease {
 }
 
 impl LibraryLease {
+    #[cfg(any(target_os = "macos", target_os = "linux"))]
+    pub(crate) fn retarget_published(
+        &mut self,
+        root: &Path,
+        directory: &super::unix::Directory,
+    ) -> Result<()> {
+        let metadata = fs::symlink_metadata(root)
+            .map_err(|e| StorageError::io("observe published root lease", e))?;
+        directory.matches_metadata(&metadata)?;
+        require_same(&self.root_metadata, &metadata)?;
+        let named = directory.open_regular(
+            std::ffi::OsStr::new(LIBRARY_LOCK_FILE),
+            rustix::fs::OFlags::RDONLY,
+        )?;
+        require_same(
+            &self.file_metadata,
+            &named
+                .metadata()
+                .map_err(|e| StorageError::io("observe published lease file", e))?,
+        )?;
+        self.root = root.to_path_buf();
+        self.revalidate()
+    }
     #[cfg(windows)]
     pub(crate) fn read_child(
         &self,

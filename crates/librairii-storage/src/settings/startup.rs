@@ -33,6 +33,7 @@ pub fn inspect_startup(locations: &ProfileLocations, cancellation: &WorkCancella
         if let Some(document) = profile::read_legacy(&locations.native)? {
             configured = Some(document.profile().clone());
             let p = document.profile();
+            validate_native_namespace(locations, cancellation)?;
             if p.complete && !p.recovering {
                 let root = Directory::open(Path::new(&p.root))?;
                 let mut marker = root.open_regular(
@@ -45,12 +46,17 @@ pub fn inspect_startup(locations: &ProfileLocations, cancellation: &WorkCancella
                     .read_to_end(&mut bytes)
                     .map_err(|e| StorageError::io("read configured identity", e))?;
                 LibraryIdentity::from_bytes(bytes)?.require_spelling(&p.library_id)?;
+                root.child(std::ffi::OsStr::new("db"))?.open_regular(
+                    std::ffi::OsStr::new("librairii.sqlite3"),
+                    rustix::fs::OFlags::RDONLY,
+                )?;
                 return Ok(Startup::Native(document));
             }
             if p.recovering || !p.root.is_empty() || !p.library_id.is_empty() {
                 return Err(StorageError::RecoveryBindingRequired);
             }
         }
+        validate_native_namespace(locations, cancellation)?;
         let default = default_legacy_root(locations)?;
         let legacy = locations
             .legacy
@@ -101,8 +107,15 @@ pub fn inspect_startup(locations: &ProfileLocations, cancellation: &WorkCancella
         let document = if let Some(document) = document {
             document
         } else {
-            let bytes = fs::read(root.join(crate::identity::IDENTITY_FILE))
-                .map_err(|e| StorageError::io("read default identity", e))?;
+            let mut marker = directory.open_regular(
+                std::ffi::OsStr::new(crate::identity::IDENTITY_FILE),
+                rustix::fs::OFlags::RDONLY,
+            )?;
+            let mut bytes = Vec::new();
+            (&mut marker)
+                .take(1025)
+                .read_to_end(&mut bytes)
+                .map_err(|e| StorageError::io("read bounded default identity", e))?;
             let identity = LibraryIdentity::from_bytes(bytes)?;
             ProfileDocument::decode(
                 &serde_json::to_vec(&Profile {
@@ -124,6 +137,41 @@ pub fn inspect_startup(locations: &ProfileLocations, cancellation: &WorkCancella
         )?))
     })();
     result.unwrap_or_else(|cause| Startup::Recovery { configured, cause })
+}
+fn validate_native_namespace(
+    locations: &ProfileLocations,
+    cancel: &WorkCancellation,
+) -> Result<()> {
+    let root = match Directory::open(&locations.native) {
+        Ok(root) => root,
+        Err(StorageError::Io { source, .. }) if source.kind() == std::io::ErrorKind::NotFound => {
+            return Ok(());
+        }
+        Err(e) => return Err(e),
+    };
+    let entries = root.entries(4, cancel)?;
+    if entries.is_empty() {
+        return Ok(());
+    }
+    if entries
+        .iter()
+        .any(|name| name != profile::MARKER && name != "settings.json" && name != "navigation.json")
+    {
+        return Err(StorageError::RecoveryBindingRequired);
+    }
+    let mut marker = root.open_regular(
+        std::ffi::OsStr::new(profile::MARKER),
+        rustix::fs::OFlags::RDONLY,
+    )?;
+    let mut bytes = Vec::new();
+    (&mut marker)
+        .take((profile::MARKER_BYTES.len() + 1) as u64)
+        .read_to_end(&mut bytes)
+        .map_err(|e| StorageError::io("read bounded native namespace marker", e))?;
+    if bytes != profile::MARKER_BYTES {
+        return Err(StorageError::RecoveryBindingRequired);
+    }
+    Ok(())
 }
 pub fn default_legacy_root(locations: &ProfileLocations) -> Result<PathBuf> {
     let name = if cfg!(target_os = "macos") {

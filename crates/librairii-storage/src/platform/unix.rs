@@ -95,11 +95,63 @@ pub(crate) struct Directory {
     identity: FileIdentity,
 }
 impl Directory {
+    pub(crate) fn available_bytes(&self) -> Result<Option<u64>> {
+        let stat = native::fstatvfs(&self.file)
+            .map_err(|e| StorageError::io("observe destination free space", e.into()))?;
+        Ok(if stat.f_frsize == 0 {
+            None
+        } else {
+            stat.f_bavail.checked_mul(stat.f_frsize)
+        })
+    }
+    pub(crate) fn recover_control(&self, allocation: &ControlAllocation) -> Result<ConfigTemp> {
+        let file = allocation
+            .file
+            .as_ref()
+            .ok_or(StorageError::RecoveryBindingRequired)?;
+        require_regular(file)?;
+        let identity = FileIdentity::from_file(file)?;
+        self.require_name(&allocation.name, identity)?;
+        Ok(ConfigTemp {
+            file: file
+                .try_clone()
+                .map_err(|e| StorageError::io("retain incomplete owned control", e))?,
+            name: allocation.name.clone(),
+            identity,
+        })
+    }
+    pub(crate) fn remove_file_matching(&self, name: &OsStr, file: &File) -> Result<()> {
+        require_regular(file)?;
+        self.require_name(name, FileIdentity::from_file(file)?)?;
+        native::unlinkat(&self.file, name, AtFlags::empty())
+            .map_err(|e| StorageError::io("retire verified owned file", e.into()))?;
+        self.flush()
+    }
     pub(crate) fn remove_empty_child(&self, name: &OsStr, child: &Self) -> Result<()> {
         child.entries(0, &WorkCancellation::default())?;
         self.require_name(name, child.identity)?;
         native::unlinkat(&self.file, name, AtFlags::REMOVEDIR)
             .map_err(|e| StorageError::io("retire verified empty directory", e.into()))?;
+        self.flush()
+    }
+    pub(crate) fn publish_directory(
+        &self,
+        source: &OsStr,
+        child: &Self,
+        destination: &OsStr,
+    ) -> Result<()> {
+        EntryName::parse(source)?;
+        EntryName::parse(destination)?;
+        self.require_name(source, child.identity)?;
+        native::renameat_with(
+            &self.file,
+            source,
+            &self.file,
+            destination,
+            native::RenameFlags::NOREPLACE,
+        )
+        .map_err(|e| StorageError::io("publish directory without replacement", e.into()))?;
+        self.require_name(destination, child.identity)?;
         self.flush()
     }
     pub(crate) fn metadata(&self) -> Result<std::fs::Metadata> {

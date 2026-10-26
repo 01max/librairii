@@ -6,6 +6,8 @@
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 mod navigation;
 #[cfg(any(target_os = "macos", target_os = "linux"))]
+pub(crate) mod relocation;
+#[cfg(any(target_os = "macos", target_os = "linux"))]
 use crate::platform::unix::{ConfigTemp, ControlAllocation, Directory, durable_file_flush};
 use crate::{Result, StorageError, backup};
 use serde::{Deserialize, Serialize, de};
@@ -25,8 +27,8 @@ use std::fs::OpenOptions;
 
 pub const MAX_PROFILE_BYTES: usize = 64 * 1024;
 const SETTINGS: &str = "settings.json";
-const MARKER: &str = ".librairii-native-profile";
-const MARKER_BYTES: &[u8] = b"librairii-native-profile-v1\n";
+pub(crate) const MARKER: &str = ".librairii-native-profile";
+pub(crate) const MARKER_BYTES: &[u8] = b"librairii-native-profile-v1\n";
 
 /// Wire data, not a library lease, identity proof, or recovery permission.
 /// `library_id` retains the exact legacy spelling; it is deliberately not UUID
@@ -370,6 +372,8 @@ impl<'profile> BindingReservation<'profile> {
 /// This grants no production library adoption authority; Windows remains4.9.
 #[derive(Debug)]
 pub struct NativeProfileStore {
+    #[cfg(any(target_os = "macos", target_os = "linux"))]
+    move_journal: Mutex<Option<relocation::JournalWitness>>,
     directory: PathBuf,
     directory_metadata: Metadata,
     marker: File,
@@ -568,6 +572,8 @@ impl NativeProfileStore {
             return Err(StorageError::InvalidProfile);
         }
         let store = Self {
+            #[cfg(any(target_os = "macos", target_os = "linux"))]
+            move_journal: Mutex::new(None),
             directory: directory.to_path_buf(),
             directory_metadata,
             marker,
@@ -710,16 +716,21 @@ impl NativeProfileStore {
         self.revalidate_namespace()?;
         let entries = self
             .namespace
-            .entries(3, &crate::database::WorkCancellation::default())
+            .entries(4, &crate::database::WorkCancellation::default())
             .map_err(|error| match error {
                 StorageError::AdoptionInputChanged => StorageError::RecoveryBindingRequired,
                 error => error,
             })?;
-        if entries
-            .iter()
-            .any(|entry| entry != MARKER && entry != SETTINGS && entry != "navigation.json")
-        {
+        if entries.iter().any(|entry| {
+            entry != MARKER
+                && entry != SETTINGS
+                && entry != "navigation.json"
+                && entry != relocation::JOURNAL
+        }) {
             return Err(StorageError::RecoveryBindingRequired);
+        }
+        if entries.iter().any(|entry| entry == relocation::JOURNAL) {
+            self.revalidate_move_journal()?;
         }
         if entries.iter().any(|entry| entry == "navigation.json") {
             // Independent UI preferences grant no binding/recovery authority.

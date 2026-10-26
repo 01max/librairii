@@ -26,6 +26,50 @@ pub struct TargetPreview {
     allocations: Vec<(Directory, ControlAllocation)>,
 }
 impl TargetPreview {
+    pub fn check_capacity(&self, bytes: u64) -> Result<()> {
+        if self
+            .existing
+            .as_ref()
+            .unwrap_or(&self.anchor)
+            .available_bytes()?
+            .is_some_and(|available| available < bytes)
+        {
+            return Err(StorageError::SettingsDestination);
+        }
+        Ok(())
+    }
+    // Recovery still validates the actual journal/root/lease in storage. This
+    // retained path observation grants no empty-target deletion permission.
+    pub(crate) fn recovery_observation(target: &Path) -> Result<Self> {
+        let (resolved, _, _) = resolve(target, true)?;
+        if resolved != target {
+            return Err(StorageError::SnapshotChanged);
+        }
+        let anchor_path = target
+            .parent()
+            .ok_or(StorageError::SettingsDestination)?
+            .to_path_buf();
+        let missing = vec![
+            EntryName::parse(
+                target
+                    .file_name()
+                    .ok_or(StorageError::SettingsDestination)?,
+            )?
+            .as_os_str()
+            .to_owned(),
+        ];
+        Ok(Self {
+            requested: target.to_path_buf(),
+            resolved,
+            anchor: Directory::open(&anchor_path)?,
+            anchor_path,
+            missing,
+            existing: None,
+            exclusions: Vec::new(),
+            probes: Vec::new(),
+            allocations: Vec::new(),
+        })
+    }
     pub(crate) fn protect(
         &mut self,
         roots: &[&Path],
