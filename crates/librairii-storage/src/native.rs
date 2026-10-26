@@ -650,6 +650,7 @@ mod owned {
         CleanupReport, CommitStatus, RecoveredRoot, RelocatedLibrary, RelocationFailure,
         RelocationRecovery, recover_relocation,
     };
+    pub use relocation::{RelocationObserver, RelocationStage};
     pub use relocation::{RestartMoveFailure, cancel_relocation, retry_relocation};
     use std::{
         ffi::OsStr,
@@ -2245,3 +2246,6 @@ pub use owned::{
 };
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 pub use owned::{RestartMoveFailure, cancel_relocation, retry_relocation};
+
+#[cfg(any(target_os = "macos", target_os = "linux"))]
+pub use owned::{RelocationObserver, RelocationStage};

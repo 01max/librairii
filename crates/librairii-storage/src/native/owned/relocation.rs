@@ -43,6 +43,7 @@ struct Intent {
     workspace_directory: FileIdentity,
     source_state_sha256: String,
     manifest_sha256: String,
+    copied_epoch: u64,
     manifest: RelocationManifest,
 }
 impl Intent {
@@ -88,6 +89,7 @@ impl Intent {
         LibraryIdentity::from_bytes(self.raw_id.as_bytes().to_vec())?;
         if self.format != "librairii.native-relocation"
             || self.version != 1
+            || self.copied_epoch == 0
             || digest(&self.manifest.bytes()?) != self.manifest_sha256
         {
             return Err(StorageError::RecoveryBindingRequired);
@@ -147,13 +149,22 @@ pub struct RelocatedLibrary<'profile> {
     pub cleanup: CleanupReport,
 }
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-enum Point {
+pub enum RelocationStage {
+    Workspace,
     Journal,
     File,
     Published,
     BeforeCommit,
     Committed,
     Retired,
+    SourceRetired,
+}
+pub trait RelocationObserver: Sync {
+    fn observe(&self, stage: RelocationStage);
+}
+struct QuietObserver;
+impl RelocationObserver for QuietObserver {
+    fn observe(&self, _: RelocationStage) {}
 }
 #[derive(Debug)]
 struct Workspace {
@@ -258,6 +269,16 @@ impl<'profile> ClosedNativeLibrary<'profile> {
         id: LibraryId,
         cancel: &WorkCancellation,
     ) -> std::result::Result<RelocatedLibrary<'profile>, Box<RelocationFailure<'profile>>> {
+        self.relocate_observed(target, locations, id, cancel, &QuietObserver)
+    }
+    pub fn relocate_observed(
+        self,
+        target: TargetPreview,
+        locations: &ProfileLocations,
+        id: LibraryId,
+        cancel: &WorkCancellation,
+        observer: &impl RelocationObserver,
+    ) -> std::result::Result<RelocatedLibrary<'profile>, Box<RelocationFailure<'profile>>> {
         Attempt {
             publication_uncertain: false,
             source: Some(self),
@@ -270,14 +291,17 @@ impl<'profile> ClosedNativeLibrary<'profile> {
             journal: false,
             parents: Vec::new(),
         }
-        .complete(cancel, |_| Ok(()))
+        .complete(cancel, |stage| {
+            observer.observe(stage);
+            Ok(())
+        })
     }
 }
 impl<'profile> Attempt<'profile> {
     fn complete(
         mut self,
         cancel: &WorkCancellation,
-        mut checkpoint: impl FnMut(Point) -> Result<()>,
+        mut checkpoint: impl FnMut(RelocationStage) -> Result<()>,
     ) -> std::result::Result<RelocatedLibrary<'profile>, Box<RelocationFailure<'profile>>> {
         match self.run(cancel, &mut checkpoint) {
             Ok(outcome) => Ok(outcome),
@@ -290,7 +314,7 @@ impl<'profile> Attempt<'profile> {
     fn run(
         &mut self,
         cancel: &WorkCancellation,
-        checkpoint: &mut impl FnMut(Point) -> Result<()>,
+        checkpoint: &mut impl FnMut(RelocationStage) -> Result<()>,
     ) -> Result<RelocatedLibrary<'profile>> {
         if self.publication_uncertain {
             return Err(StorageError::ProfileRestartRequired);
@@ -421,6 +445,7 @@ impl<'profile> Attempt<'profile> {
                 workspace_directory: root.identity(),
                 source_state_sha256,
                 manifest_sha256,
+                copied_epoch: source_document.epoch,
                 manifest,
             };
             let mut document = source_document;
@@ -443,6 +468,7 @@ impl<'profile> Attempt<'profile> {
                 lease_attempted: false,
                 published: false,
             });
+            checkpoint(RelocationStage::Workspace)?;
         }
         let intent = self
             .intent
@@ -528,7 +554,7 @@ impl<'profile> Attempt<'profile> {
         if !self.journal {
             store.create_move_journal(&intent.bytes()?)?;
             self.journal = true;
-            checkpoint(Point::Journal)?;
+            checkpoint(RelocationStage::Journal)?;
         }
         workspace
             .lease
@@ -547,7 +573,7 @@ impl<'profile> Attempt<'profile> {
                 }
                 copy_entry(&source.library.root, &workspace.root, entry, cancel)?;
                 if !entry.directory {
-                    checkpoint(Point::File)?;
+                    checkpoint(RelocationStage::File)?;
                 }
             }
             verify_copy(&workspace.root, &intent.manifest, cancel)?;
@@ -597,7 +623,7 @@ impl<'profile> Attempt<'profile> {
                     .ok_or(StorageError::CompatibilityInvariant)?
                     .retarget_published(Path::new(&intent.target), &workspace.root)?;
             }
-            checkpoint(Point::Published)?;
+            checkpoint(RelocationStage::Published)?;
         }
         workspace
             .record
@@ -654,7 +680,7 @@ impl<'profile> Attempt<'profile> {
         for name in ["db", "archives", "catalog", "staging", "trash", "logs"] {
             directories.push((name, workspace.root.child(OsStr::new(name))?));
         }
-        checkpoint(Point::BeforeCommit)?;
+        checkpoint(RelocationStage::BeforeCommit)?;
         if cancel.is_cancelled() {
             return Err(StorageError::Cancelled);
         }
@@ -701,12 +727,12 @@ impl<'profile> Attempt<'profile> {
             binding,
         );
         self.destination = Some(native);
-        checkpoint(Point::Committed)?;
+        checkpoint(RelocationStage::Committed)?;
         self.finish(checkpoint)
     }
     fn finish(
         &mut self,
-        checkpoint: &mut impl FnMut(Point) -> Result<()>,
+        checkpoint: &mut impl FnMut(RelocationStage) -> Result<()>,
     ) -> Result<RelocatedLibrary<'profile>> {
         let source = self
             .source
@@ -717,16 +743,42 @@ impl<'profile> Attempt<'profile> {
             .intent
             .as_ref()
             .ok_or(StorageError::CompatibilityInvariant)?;
-        let cleanup = cleanup_tree(
-            &source.library.root,
-            &intent.manifest,
-            Some((&intent.source_state_sha256, None)),
-            false,
-            || {
-                store.acknowledge_move_retirement(&intent.bytes()?)?;
-                checkpoint(Point::Retired)
-            },
-        )
+        let destination = self
+            .destination
+            .as_ref()
+            .ok_or(StorageError::CompatibilityInvariant)?;
+        let verified = (|| -> Result<()> {
+            verify_copy(
+                &destination.root,
+                &intent.manifest,
+                &WorkCancellation::default(),
+            )?;
+            require_no_sidecars(&destination.database)?;
+            let scratch = tempfile::tempdir()
+                .map_err(|e| StorageError::io("create committed destination integrity probe", e))?;
+            crate::backup::probe_owned(&destination.layout().database(), scratch.path())?;
+            Ok(())
+        })();
+        verified?;
+        let retired = store
+            .read_move_journal()?
+            .map(|bytes| Intent::decode_journal(&bytes).map(|(_, retired)| retired))
+            .transpose()?
+            .unwrap_or(false);
+        let cleanup = if retired && source.library.root.metadata()?.nlink() == 0 {
+            Ok(CleanupReport::default())
+        } else {
+            cleanup_tree(
+                &source.library.root,
+                &intent.manifest,
+                Some((&intent.source_state_sha256, None)),
+                retired,
+                || {
+                    store.acknowledge_move_retirement(&intent.bytes()?)?;
+                    checkpoint(RelocationStage::Retired)
+                },
+            )
+        }
         .unwrap_or(CleanupReport {
             pending: true,
             preserved_files: 1,
@@ -745,7 +797,13 @@ impl<'profile> Attempt<'profile> {
                 report.pending = true;
             }
         }
-        if !report.pending {
+        checkpoint(RelocationStage::SourceRetired)?;
+        let acknowledged = store
+            .read_move_journal()?
+            .map(|bytes| Intent::decode_journal(&bytes).map(|(_, retired)| retired))
+            .transpose()?
+            .unwrap_or(false);
+        if !report.pending || acknowledged {
             store.retire_move_journal()?;
         }
         source.library.finalized = true;
@@ -1131,6 +1189,17 @@ pub fn recover_relocation(
         return Err(StorageError::RecoveryBindingRequired);
     }
     require_root_entries(&root, d.version == 2)?;
+    if committed {
+        if d.epoch < intent.copied_epoch {
+            return Err(StorageError::RecoveryBindingRequired);
+        }
+        if d.epoch == intent.copied_epoch {
+            verify_copy(&root, &intent.manifest, cancel)?;
+        }
+        let scratch = tempfile::tempdir()
+            .map_err(|e| StorageError::io("create authoritative destination probe", e))?;
+        crate::backup::probe_owned(&path.join("db/librairii.sqlite3"), scratch.path())?;
+    }
     store.admit_move_journal(&bytes)?;
     let mut cleanup = CleanupReport {
         pending: true,
@@ -1192,6 +1261,10 @@ pub fn recover_relocation(
         })();
         if let Ok(report) = result {
             cleanup = report;
+        } else if retired
+            && matches!(fs::symlink_metadata(&intent.source),Err(e) if e.kind()==std::io::ErrorKind::NotFound)
+        {
+            cleanup = CleanupReport::default();
         }
         // A durable retirement receipt proves all old product data was
         // retired before any control deletion. A disconnected/changed skeleton
@@ -1306,7 +1379,7 @@ mod tests {
         };
         let failure = attempt
             .complete(&Default::default(), |point| {
-                if point == Point::BeforeCommit {
+                if point == RelocationStage::BeforeCommit {
                     Err(StorageError::Cancelled)
                 } else {
                     Ok(())
@@ -1355,7 +1428,7 @@ mod tests {
         };
         let failure = attempt
             .complete(&Default::default(), |point| {
-                if point == Point::Committed {
+                if point == RelocationStage::Committed {
                     Err(StorageError::Cancelled)
                 } else {
                     Ok(())
@@ -1404,7 +1477,7 @@ mod tests {
         };
         let failure = attempt
             .complete(&Default::default(), |point| {
-                if point == Point::File {
+                if point == RelocationStage::File {
                     Err(StorageError::Cancelled)
                 } else {
                     Ok(())
@@ -1431,6 +1504,292 @@ mod tests {
         assert!(recover_relocation(&store, &locations, &Default::default()).is_err());
         assert!(NativeLibrary::reopen(&store, &locations, &Default::default()).is_err());
         assert_eq!(fs::read(old.join("db/librairii.sqlite3"))?, before);
+        Ok(())
+    }
+    fn interrupted<'p>(
+        closed: ClosedNativeLibrary<'p>,
+        target: TargetPreview,
+        locations: &ProfileLocations,
+        point: RelocationStage,
+    ) -> std::result::Result<Box<RelocationFailure<'p>>, Box<dyn std::error::Error>> {
+        let failure = Attempt {
+            publication_uncertain: false,
+            source: Some(closed),
+            destination: None,
+            target,
+            locations: locations.clone(),
+            id: MOVE.parse()?,
+            workspace: None,
+            intent: None,
+            journal: false,
+            parents: Vec::new(),
+        }
+        .complete(&Default::default(), |stage| {
+            if stage == point {
+                Err(StorageError::Cancelled)
+            } else {
+                Ok(())
+            }
+        })
+        .err()
+        .ok_or("checkpoint did not interrupt")?;
+        Ok(failure)
+    }
+    #[test]
+    fn workspace_allocation_failure_retains_owner_and_retries_without_recreating_it() -> TestResult
+    {
+        let (roots, copy, locations) = crate::test_support::native_copy()?;
+        let store = NativeProfileStore::create_fresh(&locations.native)?;
+        let native = NativeLibrary::bind_independent(copy, &store, &locations, &Default::default())
+            .map_err(|f| f.to_string())?;
+        let target = roots.library().join("allocation retry");
+        let failure = interrupted(
+            close(native)?,
+            TargetPreview::inspect(&target, &[], &Default::default())?,
+            &locations,
+            RelocationStage::Workspace,
+        )?;
+        let owned = failure
+            .attempt
+            .workspace
+            .as_ref()
+            .ok_or("owner")?
+            .root
+            .identity();
+        assert!(
+            failure
+                .attempt
+                .workspace
+                .as_ref()
+                .ok_or("owner")?
+                .lease
+                .is_none()
+        );
+        let outcome = failure
+            .retry(&Default::default())
+            .map_err(|f| f.to_string())?;
+        assert_eq!(outcome.library.root.identity(), owned);
+        finish(outcome.library)?;
+        Ok(())
+    }
+    #[test]
+    fn restart_retry_and_explicit_cancel_preserve_source_and_allow_future_moves() -> TestResult {
+        for retry in [false, true] {
+            let (roots, copy, locations) = crate::test_support::native_copy()?;
+            let store = NativeProfileStore::create_fresh(&locations.native)?;
+            let native =
+                NativeLibrary::bind_independent(copy, &store, &locations, &Default::default())
+                    .map_err(|f| f.to_string())?;
+            let old = native.layout().root().to_path_buf();
+            let closed = close(native)?;
+            let target = roots.library().join("restart destination");
+            let failure = interrupted(
+                closed,
+                TargetPreview::inspect(&target, &[], &Default::default())?,
+                &locations,
+                RelocationStage::File,
+            )?;
+            let retained = failure
+                .retained_destination()
+                .ok_or("workspace")?
+                .to_path_buf();
+            drop(failure);
+            drop(store);
+            let store = NativeProfileStore::open_native(&locations.native)?;
+            if retry {
+                let outcome = retry_relocation(&store, &locations, &Default::default())
+                    .map_err(|f| f.to_string())?;
+                assert_eq!(outcome.library.layout().root(), target);
+                assert!(
+                    !outcome.cleanup.pending,
+                    "retry={retry}: {:?}; remaining={:?}",
+                    outcome.cleanup,
+                    fs::read_dir(&old).map(|r| r
+                        .filter_map(|e| e.ok().map(|e| e.file_name()))
+                        .collect::<Vec<_>>())
+                );
+                finish(outcome.library)?;
+            } else {
+                let (recovery, path) = cancel_relocation(&store, &locations, &Default::default())?;
+                assert!(recovery.cleanup.pending);
+                assert_eq!(path, retained);
+                assert!(retained.exists());
+                let native = NativeLibrary::reopen(&store, &locations, &Default::default())?;
+                let closed = close(native)?;
+                let next = roots.library().join("next destination");
+                let outcome = closed
+                    .relocate(
+                        TargetPreview::inspect(&next, &[], &Default::default())?,
+                        &locations,
+                        "c0000000-0000-4000-8000-000000000014".parse()?,
+                        &Default::default(),
+                    )
+                    .map_err(|f| f.to_string())?;
+                assert!(
+                    !outcome.cleanup.pending,
+                    "retry={retry}: {:?}; remaining={:?}",
+                    outcome.cleanup,
+                    fs::read_dir(&old).map(|r| r
+                        .filter_map(|e| e.ok().map(|e| e.file_name()))
+                        .collect::<Vec<_>>())
+                );
+                finish(outcome.library)?;
+                assert!(retained.exists());
+            }
+            assert!(!old.exists());
+        }
+        Ok(())
+    }
+    #[test]
+    fn committed_corruption_or_missing_drive_never_deletes_source_or_reverts_authority()
+    -> TestResult {
+        for mode in ["database", "archive", "source-drive", "destination-drive"] {
+            let (roots, copy, locations) = crate::test_support::native_copy()?;
+            let store = NativeProfileStore::create_fresh(&locations.native)?;
+            let native =
+                NativeLibrary::bind_independent(copy, &store, &locations, &Default::default())
+                    .map_err(|f| f.to_string())?;
+            let old = native.layout().root().to_path_buf();
+            let target = roots.library().join("committed");
+            let failure = interrupted(
+                close(native)?,
+                TargetPreview::inspect(&target, &[], &Default::default())?,
+                &locations,
+                RelocationStage::Committed,
+            )?;
+            let before = failure
+                .attempt
+                .intent
+                .as_ref()
+                .ok_or("intent")?
+                .manifest
+                .clone();
+            drop(failure);
+            drop(store);
+            let held = roots.library().join("disconnected");
+            match mode {
+                "database" => fs::write(target.join("db/librairii.sqlite3"), b"corrupt database")?,
+                "archive" => {
+                    let path = fs::read_dir(target.join("archives"))?
+                        .next()
+                        .ok_or("archive")??
+                        .path();
+                    fs::write(path, b"corrupt archive")?;
+                }
+                "source-drive" => fs::rename(&old, &held)?,
+                _ => fs::rename(&target, &held)?,
+            }
+            let store = NativeProfileStore::open_native(&locations.native)?;
+            let result = recover_relocation(&store, &locations, &Default::default());
+            if mode == "source-drive" {
+                assert!(result?.ok_or("journal")?.cleanup.pending);
+            } else {
+                assert!(result.is_err());
+            }
+            let source = if mode == "source-drive" { &held } else { &old };
+            assert_eq!(
+                RelocationManifest::capture(&Directory::open(source)?, &Default::default())?,
+                before
+            );
+            assert_eq!(
+                store.load()?.ok_or("profile")?.profile().root,
+                target.to_str().ok_or("root")?
+            );
+        }
+        Ok(())
+    }
+    #[test]
+    fn durable_retirement_receipt_recovers_missing_controls_and_final_source_removal() -> TestResult
+    {
+        for missing in ["lock", "all"] {
+            let (roots, copy, locations) = crate::test_support::native_copy()?;
+            let store = NativeProfileStore::create_fresh(&locations.native)?;
+            let native =
+                NativeLibrary::bind_independent(copy, &store, &locations, &Default::default())
+                    .map_err(|f| f.to_string())?;
+            let old = native.layout().root().to_path_buf();
+            let target = roots.library().join("retirement");
+            let failure = interrupted(
+                close(native)?,
+                TargetPreview::inspect(&target, &[], &Default::default())?,
+                &locations,
+                RelocationStage::Committed,
+            )?;
+            let intent = failure.attempt.intent.as_ref().ok_or("intent")?;
+            let source = &failure
+                .attempt
+                .source
+                .as_ref()
+                .ok_or("source")?
+                .library
+                .root;
+            let result = cleanup_tree(
+                source,
+                &intent.manifest,
+                Some((&intent.source_state_sha256, None)),
+                false,
+                || {
+                    store.acknowledge_move_retirement(&intent.bytes()?)?;
+                    Err(StorageError::Cancelled)
+                },
+            );
+            assert!(result.is_err());
+            drop(failure);
+            drop(store);
+            if missing == "lock" {
+                fs::remove_file(old.join(crate::platform::lock::LIBRARY_LOCK_FILE))?;
+            } else {
+                fs::remove_dir_all(&old)?;
+            }
+            let store = NativeProfileStore::open_native(&locations.native)?;
+            let recovery =
+                recover_relocation(&store, &locations, &Default::default())?.ok_or("journal")?;
+            assert_eq!(recovery.authoritative, RecoveredRoot::Destination);
+            assert!(!recovery.cleanup.pending);
+            assert!(!old.exists());
+            assert!(store.read_move_journal()?.is_none());
+            finish(NativeLibrary::reopen(
+                &store,
+                &locations,
+                &Default::default(),
+            )?)?;
+        }
+        Ok(())
+    }
+    #[test]
+    fn locate_committed_native_copy_preserves_all_other_copies_and_finishes_recovery() -> TestResult
+    {
+        let (roots, copy, locations) = crate::test_support::native_copy()?;
+        let store = NativeProfileStore::create_fresh(&locations.native)?;
+        let native = NativeLibrary::bind_independent(copy, &store, &locations, &Default::default())
+            .map_err(|f| f.to_string())?;
+        let old = native.layout().root().to_path_buf();
+        let target = roots.library().join("committed");
+        let failure = interrupted(
+            close(native)?,
+            TargetPreview::inspect(&target, &[], &Default::default())?,
+            &locations,
+            RelocationStage::Committed,
+        )?;
+        drop(failure);
+        drop(store);
+        let selected = roots.library().join("externally moved committed root");
+        fs::rename(&target, &selected)?;
+        let before = RelocationManifest::capture(&Directory::open(&old)?, &Default::default())?;
+        let store = NativeProfileStore::open_native(&locations.native)?;
+        let outcome = NativeLibrary::locate_same_uuid_with_report(
+            &store,
+            &locations,
+            &selected,
+            &Default::default(),
+        )?;
+        assert!(!outcome.retained_move_locations.is_empty());
+        assert!(store.read_move_journal()?.is_none());
+        finish(outcome.library)?;
+        assert_eq!(
+            RelocationManifest::capture(&Directory::open(&old)?, &Default::default())?,
+            before
+        );
         Ok(())
     }
 }
@@ -1619,4 +1978,40 @@ pub(super) fn abandon_for_locate(
         PathBuf::from(intent.target),
         PathBuf::from(intent.workspace),
     ])
+}
+
+impl ClosedNativeLibrary<'_> {
+    /// Explicitly keep remaining old files after a committed move. No root data
+    /// is deleted; only this native profile's verified old intent is retired.
+    /// This permits another relocation while preserving the reported locations.
+    pub fn keep_pending_cleanup(&self) -> Result<Vec<PathBuf>> {
+        self.revalidate()?;
+        let store = self.library.binding()?.store();
+        let Some(bytes) = store.read_move_journal()? else {
+            return Ok(Vec::new());
+        };
+        let intent = Intent::decode(&bytes)?;
+        let record = self
+            .library
+            .record
+            .lock()
+            .map_err(|_| StorageError::RuntimeFenced)?;
+        if intent.target != exact_path(self.layout().root())?
+            || intent.raw_id != self.identity().spelling()
+            || intent.profile_sha256 != store.marker_digest()?
+            || record
+                .document
+                .root_policy
+                .as_ref()
+                .and_then(|p| p.relocation.as_ref())
+                != Some(&intent.proof())
+        {
+            return Err(StorageError::RecoveryBindingRequired);
+        }
+        store.retire_move_journal()?;
+        Ok(vec![
+            PathBuf::from(intent.source),
+            PathBuf::from(intent.workspace),
+        ])
+    }
 }

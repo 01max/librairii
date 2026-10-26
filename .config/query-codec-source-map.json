@@ -5073,6 +5073,84 @@
           ]
         },
         "reason": "Task13.8 explicit same-UUID location and independence from the historical legacy drive"
+      },
+      {
+        "position": 583,
+        "identity": {
+          "suite": "librairii-storage",
+          "name": "native::owned::relocation::tests::workspace_allocation_failure_retains_owner_and_retries_without_recreating_it",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Task13.7 actual restart retry, conservative cancellation, corruption, ownership and retirement acknowledgement"
+      },
+      {
+        "position": 584,
+        "identity": {
+          "suite": "librairii-storage",
+          "name": "native::owned::relocation::tests::restart_retry_and_explicit_cancel_preserve_source_and_allow_future_moves",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Task13.7 actual restart retry, conservative cancellation, corruption, ownership and retirement acknowledgement"
+      },
+      {
+        "position": 585,
+        "identity": {
+          "suite": "librairii-storage",
+          "name": "native::owned::relocation::tests::committed_corruption_or_missing_drive_never_deletes_source_or_reverts_authority",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Task13.7 actual restart retry, conservative cancellation, corruption, ownership and retirement acknowledgement"
+      },
+      {
+        "position": 586,
+        "identity": {
+          "suite": "librairii-storage",
+          "name": "native::owned::relocation::tests::durable_retirement_receipt_recovers_missing_controls_and_final_source_removal",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Task13.7 actual restart retry, conservative cancellation, corruption, ownership and retirement acknowledgement"
+      },
+      {
+        "position": 587,
+        "identity": {
+          "suite": "librairii-storage",
+          "name": "native::owned::relocation::tests::locate_committed_native_copy_preserves_all_other_copies_and_finishes_recovery",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Task13.7 actual restart retry, conservative cancellation, corruption, ownership and retirement acknowledgement"
+      },
+      {
+        "position": 588,
+        "identity": {
+          "suite": "librairii-storage",
+          "name": "profile::relocation::tests::partial_owned_journal_allows_independent_language_and_repairs_only_its_prefix",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Task13.7 actual restart retry, conservative cancellation, corruption, ownership and retirement acknowledgement"
       }
     ],
     "python": [

@@ -133,7 +133,9 @@ impl NativeProfileStore {
         if self.read_move_journal()?.as_deref() != Some(expected) {
             return Err(StorageError::RecoveryBindingRequired);
         }
-        let file = self.namespace.read_config(OsStr::new(JOURNAL))?;
+        let file = self
+            .namespace
+            .writable_control(self.namespace.read_config(OsStr::new(JOURNAL))?)?;
         *self
             .move_journal
             .lock()
@@ -230,7 +232,6 @@ impl<'profile> ProfileBinding<'profile> {
         })
     }
 }
-
 impl NativeProfileStore {
     pub(crate) fn commit_located<'profile>(
         &'profile self,
@@ -273,5 +274,51 @@ impl NativeProfileStore {
             state: binding,
             released: false,
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    type TestResult = std::result::Result<(), Box<dyn std::error::Error>>;
+    #[test]
+    fn partial_owned_journal_allows_independent_language_and_repairs_only_its_prefix() -> TestResult
+    {
+        let roots = librairii_testkit::TestRoots::new()?;
+        let store = NativeProfileStore::create_fresh(&roots.profile().join("native"))?;
+        let expected = b"{\"format\":\"test-only-journal-prefix\"}";
+        let mut file = store.namespace.create_control_record(OsStr::new(JOURNAL))?;
+        file.file.write_all(&expected[..9])?;
+        durable_file_flush(&file.file)?;
+        store.namespace.flush()?;
+        *store.move_journal.lock().map_err(|_| "lock")? = Some(JournalWitness {
+            file,
+            bytes: expected.to_vec(),
+            initialized: false,
+        });
+        store.require_unrecovered_namespace()?;
+        store.update(|p| {
+            p.language = "fr".into();
+            Ok(())
+        })?;
+        store.create_move_journal(expected)?;
+        assert_eq!(
+            store.read_move_journal()?.as_deref(),
+            Some(expected.as_slice())
+        );
+        assert_eq!(store.load()?.ok_or("profile")?.profile().language, "fr");
+        // A substituted name cannot be overwritten or cleaned by the witness.
+        fs::rename(
+            store.directory().join(JOURNAL),
+            roots.profile().join("retained-original"),
+        )?;
+        fs::write(store.directory().join(JOURNAL), b"unrelated")?;
+        assert!(store.create_move_journal(expected).is_err());
+        assert_eq!(fs::read(store.directory().join(JOURNAL))?, b"unrelated");
+        assert_eq!(
+            fs::read(roots.profile().join("retained-original"))?,
+            expected
+        );
+        Ok(())
     }
 }

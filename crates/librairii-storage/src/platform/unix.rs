@@ -95,6 +95,17 @@ pub(crate) struct Directory {
     identity: FileIdentity,
 }
 impl Directory {
+    pub(crate) fn writable_control(&self, observed: ConfigTemp) -> Result<ConfigTemp> {
+        let file = self.open_regular(&observed.name, OFlags::RDWR)?;
+        if FileIdentity::from_file(&file)? != observed.identity {
+            return Err(StorageError::SnapshotChanged);
+        }
+        Ok(ConfigTemp {
+            file,
+            name: observed.name,
+            identity: observed.identity,
+        })
+    }
     pub(crate) fn available_bytes(&self) -> Result<Option<u64>> {
         let stat = native::fstatvfs(&self.file)
             .map_err(|e| StorageError::io("observe destination free space", e.into()))?;
