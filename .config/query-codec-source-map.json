@@ -4904,6 +4904,71 @@
           ]
         },
         "reason": "Task 13.5 closed-root ownership, complete manifest and retained OS exclusion regressions; no historical identities changed."
+      },
+      {
+        "position": 570,
+        "identity": {
+          "suite": "librairii-storage",
+          "name": "native::owned::fresh::tests::confirmed_setup_uses_exact_empty_or_missing_root_and_reopens_without_legacy_source",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Task13.1 explicit setup and default-root independent adoption"
+      },
+      {
+        "position": 571,
+        "identity": {
+          "suite": "librairii-storage",
+          "name": "native::owned::fresh::tests::setup_cancellation_invalid_profile_and_existing_default_never_initialize_or_replace",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Task13.1 explicit setup and default-root independent adoption"
+      },
+      {
+        "position": 572,
+        "identity": {
+          "suite": "librairii-storage",
+          "name": "native::owned::fresh::tests::setup_retries_busy_profile_preserving_newer_language",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Task13.1 explicit setup and default-root independent adoption"
+      },
+      {
+        "position": 573,
+        "identity": {
+          "suite": "librairii-storage",
+          "name": "settings::startup::tests::startup_is_readonly_and_invalid_or_missing_profiles_never_silently_replace",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Task13.1 explicit setup and default-root independent adoption"
+      },
+      {
+        "position": 574,
+        "identity": {
+          "suite": "librairii-storage",
+          "name": "settings::startup::tests::default_legacy_library_requires_confirmed_independent_clone_at_exact_choice",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Task13.1 explicit setup and default-root independent adoption"
       }
     ],
     "python": [

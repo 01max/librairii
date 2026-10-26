@@ -95,6 +95,13 @@ pub(crate) struct Directory {
     identity: FileIdentity,
 }
 impl Directory {
+    pub(crate) fn remove_empty_child(&self, name: &OsStr, child: &Self) -> Result<()> {
+        child.entries(0, &WorkCancellation::default())?;
+        self.require_name(name, child.identity)?;
+        native::unlinkat(&self.file, name, AtFlags::REMOVEDIR)
+            .map_err(|e| StorageError::io("retire verified empty directory", e.into()))?;
+        self.flush()
+    }
     pub(crate) fn metadata(&self) -> Result<std::fs::Metadata> {
         self.file
             .metadata()

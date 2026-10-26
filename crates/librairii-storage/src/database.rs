@@ -918,7 +918,10 @@ fn open_writer(path: &Path, staging: &Path) -> Result<Connection> {
     initialize_new(path, &MIGRATIONS)
 }
 
-fn initialize_new(path: &Path, plan: &[crate::migrations::Migration]) -> Result<Connection> {
+pub(crate) fn initialize_new(
+    path: &Path,
+    plan: &[crate::migrations::Migration],
+) -> Result<Connection> {
     let mut connection = match Connection::open_with_flags(
         path,
         OpenFlags::SQLITE_OPEN_READ_WRITE | OpenFlags::SQLITE_OPEN_NO_MUTEX,

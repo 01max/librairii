@@ -53,8 +53,26 @@ mod state {
         pub library_marker_sha256: String,
         pub profile_marker_sha256: String,
         pub source_manifest_sha256: String,
+        /// Version 2 records explicit selected-root authority; old version-1
+        /// bytes and their strict data-container scope remain unchanged.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        pub root_policy: Option<RootPolicy>,
         #[serde(default, skip_serializing_if = "Vec::is_empty")]
         pub temporaries: Vec<crate::native_effects::Temporary>,
+    }
+    #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+    #[serde(deny_unknown_fields)]
+    pub(super) struct RootPolicy {
+        pub legacy_roots: Vec<String>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        pub relocation: Option<MoveProof>,
+    }
+    #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+    #[serde(deny_unknown_fields)]
+    pub(super) struct MoveProof {
+        pub id: String,
+        pub manifest_sha256: String,
+        pub source_state_sha256: String,
     }
     impl Document {
         pub fn decode(bytes: &[u8]) -> Result<Self> {
@@ -68,11 +86,40 @@ mod state {
         }
         pub fn validate(&self) -> Result<()> {
             if self.format != "librairii.native-library"
-                || self.version != 1
+                || !matches!(self.version, 1 | 2)
+                || (self.version == 2) != self.root_policy.is_some()
                 || (self.state == Phase::ImportedClosed) != (self.epoch == 0)
                 || crate::identity::parse_spelling(&self.library_id_raw).is_err()
             {
                 return Err(StorageError::RecoveryBindingRequired);
+            }
+            if let Some(policy) = &self.root_policy {
+                if policy.legacy_roots.is_empty()
+                    || policy.legacy_roots.len() > 2
+                    || !policy.legacy_roots.contains(&self.source_root)
+                    || policy.legacy_roots.iter().any(|path| {
+                        !Path::new(path).is_absolute()
+                            || path.contains('\0')
+                            || Path::new(path)
+                                .components()
+                                .any(|c| matches!(c, Component::ParentDir | Component::CurDir))
+                    })
+                {
+                    return Err(StorageError::RecoveryBindingRequired);
+                }
+                if let Some(proof) = &policy.relocation
+                    && (proof.id.parse::<librairii_core::JobId>().is_err()
+                        || [&proof.manifest_sha256, &proof.source_state_sha256]
+                            .into_iter()
+                            .any(|hash| {
+                                hash.len() != 64
+                                    || !hash
+                                        .bytes()
+                                        .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
+                            }))
+                    {
+                        return Err(StorageError::RecoveryBindingRequired);
+                    }
             }
             if self.state != Phase::Active && !self.temporaries.is_empty() {
                 return Err(StorageError::RecoveryBindingRequired);
@@ -443,6 +490,7 @@ mod state {
                 library_marker_sha256: "a".repeat(64),
                 profile_marker_sha256: "b".repeat(64),
                 source_manifest_sha256: "c".repeat(64),
+                root_policy: None,
                 temporaries: Vec::new(),
             }
         }
@@ -538,10 +586,12 @@ mod state {
 
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 mod owned {
+    mod fresh;
+    pub use fresh::NewInstallFailure;
     mod lifecycle;
     use super::{
         NATIVE_STATE_FILE, NATIVE_STATE_TEMP, digest,
-        state::{Document, Phase, Record},
+        state::{Document, Phase, Record, RootPolicy},
     };
     use crate::{
         LibraryIdentity, LibraryLayout, Result, StorageError,
@@ -681,7 +731,7 @@ mod owned {
             locations: &ProfileLocations,
             cancellation: &WorkCancellation,
         ) -> std::result::Result<Self, Box<NativeBindingFailure<'profile>>> {
-            Self::bind_with_profile(copy, store, locations, None, cancellation)
+            Self::bind_with_profile(copy, store, locations, None, false, cancellation)
         }
         pub(crate) fn bind_rebound(
             copy: IndependentCopy,
@@ -690,13 +740,22 @@ mod owned {
             foreign: &crate::profile::Profile,
             cancellation: &WorkCancellation,
         ) -> std::result::Result<Self, Box<NativeBindingFailure<'profile>>> {
-            Self::bind_with_profile(copy, store, locations, Some(foreign), cancellation)
+            Self::bind_with_profile(copy, store, locations, Some(foreign), false, cancellation)
+        }
+        pub(crate) fn bind_selected_copy(
+            copy: IndependentCopy,
+            store: &'profile NativeProfileStore,
+            locations: &ProfileLocations,
+            cancellation: &WorkCancellation,
+        ) -> std::result::Result<Self, Box<NativeBindingFailure<'profile>>> {
+            Self::bind_with_profile(copy, store, locations, None, true, cancellation)
         }
         fn bind_with_profile(
             mut copy: IndependentCopy,
             store: &'profile NativeProfileStore,
             locations: &ProfileLocations,
             foreign: Option<&crate::profile::Profile>,
+            explicit: bool,
             cancellation: &WorkCancellation,
         ) -> std::result::Result<Self, Box<NativeBindingFailure<'profile>>> {
             let mut record = None;
@@ -717,7 +776,22 @@ mod owned {
                 }
                 copy.identity().require_spelling(&proposed.library_id)?;
                 proposed.root = exact_path(copy.root())?;
-                require_paths(copy.root(), copy.source_root(), store, locations)?;
+                let policy = if explicit {
+                    Some(RootPolicy::for_source(copy.source_root(), locations)?)
+                } else {
+                    None
+                };
+                if let Some(policy) = &policy {
+                    require_explicit_paths(
+                        copy.root(),
+                        copy.source_root(),
+                        policy,
+                        store,
+                        locations,
+                    )?;
+                } else {
+                    require_paths(copy.root(), copy.source_root(), store, locations)?;
+                }
                 let layout = LibraryLayout::probe(copy.root())?;
                 let root = copy.retain_root()?;
                 let database = root.child(OsStr::new("db"))?;
@@ -727,7 +801,7 @@ mod owned {
                 )?;
                 let document = Document {
                     format: "librairii.native-library".into(),
-                    version: 1,
+                    version: if explicit { 2 } else { 1 },
                     state: Phase::ImportedClosed,
                     epoch: 0,
                     native_profile_root: exact_path(
@@ -744,6 +818,7 @@ mod owned {
                     library_marker_sha256: digest(copy.identity().original_bytes()),
                     profile_marker_sha256: store.marker_digest()?,
                     source_manifest_sha256: copy.manifest_digest(),
+                    root_policy: policy,
                     temporaries: Vec::new(),
                 };
                 record = Some(match Record::create(&root, document) {
@@ -908,7 +983,11 @@ mod owned {
             {
                 return Err(StorageError::RecoveryBindingRequired);
             }
-            require_paths(&path, Path::new(&d.source_root), store, locations)?;
+            if let Some(policy) = &d.root_policy {
+                require_explicit_paths(&path, Path::new(&d.source_root), policy, store, locations)?;
+            } else {
+                require_reopened_paths(&path, Path::new(&d.source_root), store, locations)?;
+            }
             let mut marker = root.open_regular(
                 OsStr::new(crate::identity::IDENTITY_FILE),
                 rustix::fs::OFlags::RDONLY,
@@ -1576,12 +1655,11 @@ mod owned {
         }
         Ok(())
     }
-    fn require_paths(
-        root: &Path,
-        source: &Path,
+    fn namespace_roots(
         store: &NativeProfileStore,
         locations: &ProfileLocations,
-    ) -> Result<()> {
+    ) -> Result<(PathBuf, PathBuf)> {
+        use crate::settings::target::physical_overlap;
         // ProfileLocations is DATA and its public fields are not authority.
         // Enforce the selected native names independently; a caller cannot
         // label an empty Go-discoverable config directory as "native".
@@ -1608,21 +1686,13 @@ mod owned {
             fs::canonicalize(path)
                 .map_err(|error| StorageError::io("resolve explicit native namespace", error))
         };
-        let source_actual = resolve(source)?;
-        if source_actual != source {
-            return Err(StorageError::PathEscape);
-        }
         let native = resolve(&locations.native)?;
         let store_root = resolve(store.directory())?;
         let data = resolve(&locations.data)?;
         if native != store_root
             || native.file_name() != Some(OsStr::new(native_name))
             || data.file_name() != Some(OsStr::new(data_name))
-            || overlaps(&native, &data)
-            || !root.starts_with(&data)
-            || root == data
-            || overlaps(&native, source)
-            || overlaps(&data, source)
+            || physical_overlap(&native, &data)?
         {
             return Err(StorageError::PathEscape);
         }
@@ -1639,7 +1709,7 @@ mod owned {
                     return Err(StorageError::io("inspect explicit legacy namespace", error));
                 }
             };
-            if overlaps(&legacy, &native) || overlaps(&legacy, &data) {
+            if physical_overlap(&legacy, &native)? || physical_overlap(&legacy, &data)? {
                 return Err(StorageError::PathEscape);
             }
             match fs::symlink_metadata(legacy.join("relocation.json")) {
@@ -1653,10 +1723,100 @@ mod owned {
                 }
             }
         }
+        Ok((native, data))
+    }
+    fn require_paths(
+        root: &Path,
+        source: &Path,
+        store: &NativeProfileStore,
+        locations: &ProfileLocations,
+    ) -> Result<()> {
+        use crate::settings::target::physical_overlap;
+        let (native, data) = namespace_roots(store, locations)?;
+        let source_actual = fs::canonicalize(source)
+            .map_err(|e| StorageError::io("resolve original legacy source", e))?;
+        if source_actual != source
+            || !root.starts_with(&data)
+            || root == data
+            || physical_overlap(&native, source)?
+            || physical_overlap(&data, source)?
+        {
+            return Err(StorageError::PathEscape);
+        }
         Ok(())
     }
-    fn overlaps(a: &Path, b: &Path) -> bool {
-        a.starts_with(b) || b.starts_with(a)
+    fn require_reopened_paths(
+        root: &Path,
+        source: &Path,
+        store: &NativeProfileStore,
+        locations: &ProfileLocations,
+    ) -> Result<()> {
+        let (native, data) = namespace_roots(store, locations)?;
+        let resolved = crate::settings::target::resolve(source, false)?.0;
+        if resolved != source
+            || !root.starts_with(&data)
+            || root == data
+            || crate::settings::target::physical_overlap(&native, source)?
+            || crate::settings::target::physical_overlap(&data, source)?
+        {
+            return Err(StorageError::PathEscape);
+        }
+        Ok(())
+    }
+    fn legacy_default_root(locations: &ProfileLocations) -> Result<PathBuf> {
+        #[cfg(target_os = "macos")]
+        let name = "Librairii";
+        #[cfg(target_os = "linux")]
+        let name = "librairii";
+        let root = locations
+            .data
+            .parent()
+            .ok_or(StorageError::PathEscape)?
+            .join(name);
+        Ok(crate::settings::target::resolve(&root, false)?.0)
+    }
+    impl RootPolicy {
+        fn for_source(source: &Path, locations: &ProfileLocations) -> Result<Self> {
+            let mut legacy_roots = vec![
+                exact_path(&legacy_default_root(locations)?)?,
+                exact_path(source)?,
+            ];
+            legacy_roots.sort();
+            legacy_roots.dedup();
+            Ok(Self {
+                legacy_roots,
+                relocation: None,
+            })
+        }
+    }
+    fn require_explicit_paths(
+        root: &Path,
+        source: &Path,
+        policy: &RootPolicy,
+        store: &NativeProfileStore,
+        locations: &ProfileLocations,
+    ) -> Result<()> {
+        use crate::settings::target::{physical_contains, physical_overlap, resolve};
+        let (native, data) = namespace_roots(store, locations)?;
+        if !policy
+            .legacy_roots
+            .contains(&exact_path(&legacy_default_root(locations)?)?)
+            || !policy.legacy_roots.contains(&exact_path(source)?)
+            || physical_overlap(root, &native)?
+            || physical_contains(root, &data)?
+        {
+            return Err(StorageError::PathEscape);
+        }
+        if let Some(legacy) = &locations.legacy
+            && physical_overlap(root, &resolve(legacy, false)?.0)? {
+                return Err(StorageError::PathEscape);
+            }
+        for legacy in &policy.legacy_roots {
+            if physical_overlap(root, &resolve(Path::new(legacy), false)?.0)? {
+                return Err(StorageError::PathEscape);
+            }
+        }
+        Ok(())
     }
     #[cfg(test)]
     mod tests {
@@ -2010,5 +2170,6 @@ mod owned {
 
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 pub use owned::{
-    ClosedNativeLibrary, NativeBindingFailure, NativeCloseFailure, NativeLibrary, RecoveryLibrary,
+    ClosedNativeLibrary, NativeBindingFailure, NativeCloseFailure, NativeLibrary,
+    NewInstallFailure, RecoveryLibrary,
 };

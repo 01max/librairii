@@ -26,6 +26,17 @@ pub struct TargetPreview {
     allocations: Vec<(Directory, ControlAllocation)>,
 }
 impl TargetPreview {
+    pub(crate) fn protect(
+        &mut self,
+        roots: &[&Path],
+        cancellation: &WorkCancellation,
+    ) -> Result<()> {
+        for root in roots {
+            self.exclusions
+                .push((root.to_path_buf(), resolve(root, false)?.0));
+        }
+        self.revalidate(cancellation)
+    }
     pub fn inspect(
         requested: &Path,
         excluded_roots: &[&Path],
@@ -143,6 +154,7 @@ impl TargetPreview {
     /// This establishes capabilities at observation time, not future free space.
     pub fn check_writable(&mut self, cancellation: &WorkCancellation) -> Result<()> {
         self.revalidate(cancellation)?;
+        self.check_missing_aliases(cancellation)?;
         let mut directories = vec![self.anchor.duplicate()?];
         if let Some(existing) = &self.existing {
             directories.push(existing.duplicate()?);
@@ -183,36 +195,105 @@ impl TargetPreview {
         }
         self.revalidate(cancellation)
     }
-}
-
-pub(crate) fn overlaps(a: &Path, b: &Path) -> bool {
-    a.starts_with(b) || b.starts_with(a)
+    fn check_missing_aliases(&mut self, cancellation: &WorkCancellation) -> Result<()> {
+        use std::os::unix::ffi::OsStringExt;
+        let (_, _, target_tail) = resolve(&self.requested, true)?;
+        let Some(target_name) = target_tail.first() else {
+            return Ok(());
+        };
+        for (excluded, _) in self.exclusions.clone() {
+            if cancellation.is_cancelled() {
+                return Err(StorageError::Cancelled);
+            }
+            let (_, parent, missing) = resolve(&excluded, false)?;
+            // A missing immediate protected root (the old automatic default)
+            // can alias the selected first component on a folding filesystem.
+            // Probe the actual parent, using private names, before mkdir effects.
+            if missing.len() != 1 || Directory::open(&parent)?.identity() != self.anchor.identity()
+            {
+                continue;
+            }
+            let Some(protected) = missing.first() else {
+                continue;
+            };
+            if protected == target_name {
+                return Err(StorageError::SettingsDestination);
+            }
+            let protected = protected
+                .to_str()
+                .ok_or(StorageError::SettingsDestination)?;
+            let prefix = format!(".librairii-alias-{protected}-");
+            let directory = self.anchor.duplicate()?;
+            let temporary = match directory.create_control_temp(&prefix) {
+                Ok(temporary) => temporary,
+                Err(failure) => {
+                    let failure = *failure;
+                    if failure.allocation.file.is_some() {
+                        self.allocations.push((directory, failure.allocation));
+                    }
+                    return Err(failure.cause);
+                }
+            };
+            let mut alternate = OsString::from(".librairii-alias-");
+            alternate.push(target_name);
+            alternate.push("-");
+            alternate.push(OsString::from_vec(
+                temporary.name.as_encoded_bytes()[prefix.len()..].to_vec(),
+            ));
+            self.probes.push((directory, temporary));
+            let (directory, temporary) = self
+                .probes
+                .last()
+                .ok_or(StorageError::SettingsDestination)?;
+            let alias = match directory.read_regular(&alternate)? {
+                Some(file) => crate::settings::manifest::same_file(&file, &temporary.file)?,
+                None => false,
+            };
+            if temporary
+                .file
+                .metadata()
+                .map_err(|e| StorageError::io("observe private alias probe", e))?
+                .len()
+                != 0
+            {
+                return Err(StorageError::SnapshotChanged);
+            }
+            directory.remove_config_temp(temporary)?;
+            directory.flush()?;
+            self.probes.pop();
+            if alias {
+                return Err(StorageError::SettingsDestination);
+            }
+        }
+        Ok(())
+    }
 }
 
 /// realpath may preserve alternate case/decomposition spellings on a folding
 /// volume. Compare actual ancestor identities as well as lexical containment.
 /// For nonexistent paths, effects must recheck after exclusive creation too.
 pub(crate) fn physical_overlap(a: &Path, b: &Path) -> Result<bool> {
+    Ok(physical_contains(a, b)? || physical_contains(b, a)?)
+}
+pub(crate) fn physical_contains(root: &Path, descendant: &Path) -> Result<bool> {
     use std::os::unix::fs::MetadataExt;
-    if overlaps(a, b) {
+    if descendant.starts_with(root) {
         return Ok(true);
     }
-    for (root, descendant) in [(a, b), (b, a)] {
-        let root_metadata = match fs::metadata(root) {
-            Ok(metadata) => metadata,
-            Err(error) if error.kind() == std::io::ErrorKind::NotFound => continue,
-            Err(error) => return Err(StorageError::io("inspect excluded root identity", error)),
-        };
-        let mut ancestor = resolve(descendant, false)?.1;
-        loop {
-            let metadata = fs::metadata(&ancestor)
-                .map_err(|e| StorageError::io("inspect target ancestry identity", e))?;
-            if metadata.dev() == root_metadata.dev() && metadata.ino() == root_metadata.ino() {
-                return Ok(true);
-            }
-            if !ancestor.pop() {
-                break;
-            }
+    let root_metadata = match fs::metadata(root) {
+        Ok(metadata) => metadata,
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(false),
+        Err(error) => return Err(StorageError::io("inspect excluded root identity", error)),
+    };
+    let mut ancestor = resolve(descendant, false)?.1;
+    loop {
+        let metadata = fs::metadata(&ancestor)
+            .map_err(|e| StorageError::io("inspect target ancestry identity", e))?;
+        if metadata.dev() == root_metadata.dev() && metadata.ino() == root_metadata.ino() {
+            return Ok(true);
+        }
+        if !ancestor.pop() {
+            break;
         }
     }
     Ok(false)
