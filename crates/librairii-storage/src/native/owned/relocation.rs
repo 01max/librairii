@@ -358,7 +358,7 @@ impl<'profile> Attempt<'profile> {
             }
             if self.parents.is_empty() {
                 self.target.protect(&excluded, cancel)?;
-                self.target.check_writable(cancel)?;
+                self.target.check_relocation_writable(cancel)?;
             }
             require_explicit_paths(
                 self.target.resolved(),
@@ -408,11 +408,7 @@ impl<'profile> Attempt<'profile> {
                     .last()
                     .ok_or(StorageError::SettingsDestination)?,
             )?;
-            let selected_workspace = if let Some(existing) = &self.target.existing {
-                existing.metadata()?.dev() != self.target.anchor.metadata()?.dev()
-            } else {
-                false
-            };
+            let selected_workspace = self.target.selected_workspace()?;
             let name = if selected_workspace {
                 target_name.clone()
             } else {

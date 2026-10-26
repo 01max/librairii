@@ -233,9 +233,34 @@ impl TargetPreview {
     /// retirement at the retained parent and (when present) selected directory.
     /// This establishes capabilities at observation time, not future free space.
     pub fn check_writable(&mut self, cancellation: &WorkCancellation) -> Result<()> {
+        self.probe_writable(cancellation, true)
+    }
+    pub(crate) fn selected_workspace(&self) -> Result<bool> {
+        use std::os::unix::fs::MetadataExt;
+        match &self.existing {
+            Some(existing) => Ok(existing.metadata()?.dev() != self.anchor.metadata()?.dev()),
+            None => Ok(false),
+        }
+    }
+    pub(crate) fn check_relocation_writable(
+        &mut self,
+        cancellation: &WorkCancellation,
+    ) -> Result<()> {
+        self.probe_writable(cancellation, !self.selected_workspace()?)
+    }
+    fn probe_writable(
+        &mut self,
+        cancellation: &WorkCancellation,
+        probe_parent: bool,
+    ) -> Result<()> {
         self.revalidate(cancellation)?;
         self.check_missing_aliases(cancellation)?;
-        let mut directories = vec![self.anchor.duplicate()?];
+        // A selected mount root is its own workspace. Its mount parent is
+        // retained for identity checks but receives no child publications.
+        let mut directories = Vec::new();
+        if probe_parent {
+            directories.push(self.anchor.duplicate()?);
+        }
         if let Some(existing) = &self.existing {
             directories.push(existing.duplicate()?);
         }

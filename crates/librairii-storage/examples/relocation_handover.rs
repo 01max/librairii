@@ -384,7 +384,16 @@ mod rehearsal {
         }
         let source_device = root.metadata()?.dev();
         let destination_device = volume.metadata()?.dev();
-        let root_case = volume_root(&root.join("volume-root"), &volume)?;
+        // Match a writable volume mounted beneath /Volumes or /mnt: the
+        // selected root is writable, but its mount parent is not. Always
+        // restore the wrapper-owned parent's permissions before disposal.
+        let mount_parent = volume.parent().ok_or("mount parent")?;
+        let permissions = fs::metadata(mount_parent)?.permissions();
+        fs::set_permissions(mount_parent, fs::Permissions::from_mode(0o500))?;
+        let root_case = volume_root(&root.join("volume-root"), &volume);
+        fs::set_permissions(mount_parent, permissions)?;
+        let mut root_case = root_case?;
+        root_case["mount_parent_readonly"] = json!(true);
         let mut crashes = Vec::new();
         for stage in [
             "Workspace",
