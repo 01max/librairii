@@ -1,4 +1,5 @@
-import { Button, LineEdit, VerticalBox, HorizontalBox, AboutSlint, Palette, ScrollView } from "std-widgets.slint";
+import { StoryRow, StoryGroup, StoryBrowser, Inspector } from "browsing.slint";
+import { Button, LineEdit, VerticalBox, HorizontalBox, AboutSlint, Palette, ScrollView, ComboBox } from "std-widgets.slint";
 
 global FocusState {
     in-out property <bool> modal: false;
@@ -56,6 +57,18 @@ export component DesktopWindow inherits Window {
     in-out property <int> panel;
     in-out property <string> query;
     out property <int> focused-key: FocusState.key;
+    in property <[StoryGroup]> story-groups;
+    in property <int> story-count;
+    in property <int> columns: 1;
+    in-out property <int> mode;
+    in-out property <int> selected-index: -1;
+    in property <StoryRow> selected-story;
+    in property <string> counts;
+    in property <bool> previous-enabled;
+    in property <bool> next-enabled;
+    callback select-story(int);
+    callback mode-selected(int);
+    callback change-page(int);
     callback quit();
     callback request-panel(int);
     callback search(string);
@@ -96,16 +109,19 @@ export component DesktopWindow inherits Window {
                     Caption { text: root.panel == 0 ? (root.french ? "Bibliothèque" : "Library") : root.panel == 4 ? (root.french ? "Historique" : "History") : root.panel == 5 ? (root.french ? "Réglages" : "Settings") : (root.french ? "Bibliothèque" : "Library"); font-size: 24px; font-weight: 600; }
                     LineEdit { text <=> root.query; placeholder-text: root.french ? "Rechercher des histoires" : "Search stories"; edited => { root.search(self.text); } }
                     HorizontalBox {
-                        Rectangle { horizontal-stretch: 1;
-                            ScrollView { width: parent.width; height: parent.height; content-width: self.visible-width;
-                                VerticalBox { Caption { text: root.status; } }
-                            }
+                        Caption { text: root.counts; horizontal-stretch: 1; }
+                        ComboBox { model: root.french ? ["Liste", "Petites couvertures", "Grandes couvertures"] : ["List", "Small covers", "Large covers"]; current-index <=> root.mode; selected(_) => { root.mode-selected(self.current-index); } }
+                    }
+                    HorizontalBox {
+                        VerticalBox { padding: 0px;
+                            Caption { text: root.status; visible: root.status != ""; }
+                            browser := StoryBrowser { groups: root.story-groups; count: root.story-count; columns: root.columns; mode: root.mode; label: root.french ? "Histoires" : "Stories"; selected-index <=> root.selected-index; select(index) => { root.select-story(index); } }
                         }
-                        if root.wide: Rectangle { width: 264px; background: Palette.alternate-background;
-                            ScrollView { width: parent.width; height: parent.height; content-width: self.visible-width;
-                                VerticalBox { padding: 14px; Caption { text: root.french ? "Détails de l’histoire" : "Story details"; font-weight: 600; } Caption { text: root.french ? "Sélectionnez une histoire pour afficher ses détails." : "Select a story to see its details."; } }
-                            }
-                        }
+                        if root.wide: Inspector { width: 264px; french: root.french; story: root.selected-story; }
+                    }
+                    HorizontalBox {
+                        Action { focus-key: 16; text: root.french ? "Page précédente" : "Previous page"; enabled: root.previous-enabled; clicked => { root.change-page(-1); } }
+                        Action { focus-key: 17; text: root.french ? "Page suivante" : "Next page"; enabled: root.next-enabled; clicked => { root.change-page(1); } }
                     }
                     Action { focus-key: 14; text: root.french ? "Détails…" : "Details…"; visible: !root.wide; clicked => { root.show-panel(8); } }
                 }

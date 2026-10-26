@@ -44,3 +44,18 @@ Escape/backdrop restore its focus. Layout thresholds use observed window size,
 not self-dependent layout constraints. Selection and query belong to the Rust
 presentation owner, independently of panel visibility. Full workflow-specific
 controls remain section 15.
+
+## Bounded browsing and selection
+
+The native list and both cover densities use the toolkit's virtualized ListView.
+The model is grouped into responsive cover rows; list uses one story per row.
+Only the current SQL page is projected (existing default 24; request ceiling
+100, Shelf participant ceiling 25). No all-library artwork/model allocation is
+introduced. Counts and page commands retain full result totals. Artwork is read
+by opaque story/artwork IDs and decoded through the existing per-library bounded
+thumbnail cache on the controller worker; the UI receives at most one bounded
+page of RGBA previews. Images use contain fitting and captions remain outside.
+Unavailable approved UUID members retain their cached title and explicit warning.
+Mode changes keep selection and criteria independent and persist to the existing
+library-bound native navigation file. The real-library controller test exercises
+all modes, independently reads the durable preference and reopens after shutdown.

@@ -5242,6 +5242,19 @@
           ]
         },
         "reason": "Task 13.5 independently reviewed mutation/move race has one winner in both deterministic orderings, preserves the winning Collection mutation, and still drains actual reader ownership."
+      },
+      {
+        "position": 596,
+        "identity": {
+          "suite": "librairii-desktop::presentation",
+          "name": "real_native_library_restores_and_persists_each_mode_before_joined_shutdown",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Task 14.3 real native controller persists all three display modes in independent preferences and joins storage before reopening."
       }
     ],
     "python": [

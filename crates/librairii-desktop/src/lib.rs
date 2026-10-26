@@ -10,3 +10,6 @@ pub mod presentation;
 pub mod settings;
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 pub mod startup;
+
+#[cfg(any(target_os = "macos", target_os = "linux"))]
+pub mod browsing;

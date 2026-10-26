@@ -5,6 +5,7 @@ use librairii_ui::native::DesktopWindow;
 use slint::ComponentHandle;
 use std::{cell::RefCell, process::ExitCode, rc::Rc, time::Duration};
 mod menus;
+mod view;
 
 fn launch() -> Result<(), Box<dyn std::error::Error>> {
     let worker = Rc::new(RefCell::new(Worker::start()?));
@@ -26,7 +27,7 @@ fn launch() -> Result<(), Box<dyn std::error::Error>> {
     let ui = DesktopWindow::new()?;
     let menus = menus::Menus::install()?;
     ui.set_french(first.language == librairii_app::localization::Language::French);
-    ui.set_status(first.status.into());
+    let view = view::install(&ui, worker.clone(), first);
     let pending = worker.clone();
     ui.on_quit(move || pending.borrow().request_shutdown());
     let pending = worker.clone();
@@ -42,9 +43,7 @@ fn launch() -> Result<(), Box<dyn std::error::Error>> {
         Duration::from_millis(16),
         move || {
             if let Some(ui) = weak.upgrade() {
-                let size = ui.window().size().to_logical(ui.window().scale_factor());
-                ui.set_compact(size.width < 850.0);
-                ui.set_wide(size.width >= 1180.0);
+                view.borrow_mut().resize(&ui);
                 let command = menus.commands.take();
                 if command & 1 != 0 {
                     ui.set_about_open(true);
@@ -53,7 +52,8 @@ fn launch() -> Result<(), Box<dyn std::error::Error>> {
                     pending.borrow().request_shutdown();
                 }
                 if let Some(snapshot) = pending.borrow().take_snapshot() {
-                    ui.set_status(snapshot.status.into());
+                    view.borrow_mut().snapshot = snapshot;
+                    view.borrow_mut().project(&ui);
                 }
                 if pending.borrow().finished() {
                     let _quit = slint::quit_event_loop();

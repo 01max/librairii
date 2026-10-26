@@ -11,9 +11,12 @@ use std::sync::{
 use std::thread::{self, JoinHandle};
 
 pub const COMMAND_CAPACITY: usize = 16;
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub enum Command {
     Refresh,
+    Presentation(librairii_core::navigation::Presentation),
+    Request(librairii_core::query::QueryRequest),
+    Select(i64),
 }
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum Phase {
@@ -27,6 +30,8 @@ pub struct Snapshot {
     pub phase: Phase,
     pub language: Language,
     pub status: String,
+    pub navigation: Option<librairii_core::navigation::Navigation>,
+    pub page: Option<crate::browsing::Page>,
 }
 #[derive(Debug)]
 pub struct Worker {
@@ -37,6 +42,11 @@ pub struct Worker {
 }
 impl Worker {
     pub fn start() -> Result<Self, std::io::Error> {
+        Self::start_with(NativeEnvironment)
+    }
+    pub fn start_with(
+        environment: impl crate::startup::StartupEnvironment + Send + 'static,
+    ) -> Result<Self, std::io::Error> {
         let (commands, receiver) = mpsc::sync_channel(COMMAND_CAPACITY);
         let latest = Arc::new(Mutex::new(None));
         let stop = Arc::new(AtomicBool::new(false));
@@ -44,7 +54,7 @@ impl Worker {
         let cancelled = stop.clone();
         let join = thread::Builder::new()
             .name("native-controller".into())
-            .spawn(move || run(receiver, mailbox, cancelled))?;
+            .spawn(move || run(environment, receiver, mailbox, cancelled))?;
         Ok(Self {
             commands,
             latest,
@@ -77,13 +87,26 @@ impl Drop for Worker {
     }
 }
 fn run(
+    environment: impl crate::startup::StartupEnvironment,
     receiver: mpsc::Receiver<Command>,
     mailbox: Arc<Mutex<Option<Snapshot>>>,
     stop: Arc<AtomicBool>,
 ) -> Result<(), String> {
     let catalogs = Catalogs::embedded().map_err(|e| e.to_string())?;
-    let selection = select_startup(&NativeEnvironment, &WorkCancellation::default())
-        .map_err(|e| e.to_string())?;
+    let selection =
+        select_startup(&environment, &WorkCancellation::default()).map_err(|e| e.to_string())?;
+    if let StartupSelection::Production {
+        locations,
+        decision,
+    } = &selection
+    {
+        if let Startup::Native(document) = decision.as_ref() {
+            let language =
+                Language::explicit(&document.profile().language).map_err(|e| e.to_string())?;
+            return crate::browsing::run(locations, language, &receiver, &mailbox, &stop)
+                .map_err(|e| e.to_string());
+        }
+    }
     let (phase, language, key) = match &selection {
         StartupSelection::Override(settings) => {
             if settings.root().exists() {
@@ -114,6 +137,8 @@ fn run(
         },
     };
     let snapshot = Snapshot {
+        navigation: None,
+        page: None,
         phase,
         language,
         status: catalogs
@@ -130,7 +155,7 @@ fn run(
                 return Ok(());
             }
             match receiver.recv_timeout(std::time::Duration::from_millis(20)) {
-                Ok(Command::Refresh) => break,
+                Ok(_) => break,
                 Err(mpsc::RecvTimeoutError::Timeout) => {}
                 Err(mpsc::RecvTimeoutError::Disconnected) => return Ok(()),
             }
