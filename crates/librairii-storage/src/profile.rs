@@ -309,6 +309,14 @@ impl<'profile> ProfileBinding<'profile> {
 }
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 impl FrozenProfile<'_> {
+    pub(crate) fn thaw(self) {
+        // A positively closed library still retains its binding and OS lease.
+        // Only release the short publication reservation so independent
+        // language updates remain possible during the long relocation copy.
+        if let Some(binding) = &self.reservation.binding {
+            binding.frozen.store(false, Ordering::Release);
+        }
+    }
     pub(crate) fn revalidate(&self) -> Result<()> {
         let store = self.reservation.store;
         if self.reservation.poisoned {

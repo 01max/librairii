@@ -538,6 +538,7 @@ mod state {
 
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 mod owned {
+    mod lifecycle;
     use super::{
         NATIVE_STATE_FILE, NATIVE_STATE_TEMP, digest,
         state::{Document, Phase, Record},
@@ -552,6 +553,7 @@ mod owned {
         },
         profile::{FrozenProfile, NativeProfileStore, ProfileBinding, ProfileLocations},
     };
+    pub use lifecycle::ClosedNativeLibrary;
     use std::{
         ffi::OsStr,
         fs::{self, File},
@@ -1236,6 +1238,18 @@ mod owned {
                     .map_err(|_| StorageError::RuntimeFenced)?;
                 record.revalidate(&self.root)?;
                 if let Some(directories) = managed.as_ref() {
+                    // A consuming relocation handoff can return the original
+                    // positively closed owner on cancellation. It needs a new
+                    // durable Active epoch before any SQLite work resumes.
+                    if record.document.state == Phase::Closed && prior_closed {
+                        let mut next = record.document.clone();
+                        next.epoch = next
+                            .epoch
+                            .checked_add(1)
+                            .ok_or(StorageError::RecoveryBindingRequired)?;
+                        next.state = Phase::Active;
+                        record.transition_with(&self.root, next, after_active_replace)?;
+                    }
                     if record.document.state != Phase::Active {
                         return Err(StorageError::RecoveryBindingRequired);
                     }
@@ -1320,28 +1334,11 @@ mod owned {
             mut self,
             after_closed_replace: impl FnOnce() -> Result<()>,
         ) -> std::result::Result<(), Box<NativeCloseFailure<'profile>>> {
-            if self.frozen.is_none() {
-                let freeze = self.binding().and_then(ProfileBinding::freeze);
-                match freeze {
-                    Ok(frozen) => self.frozen = Some(frozen),
-                    Err(StorageError::ProfileBusy) => {
-                        return Err(Box::new(NativeCloseFailure {
-                            cause: StorageError::ProfileBusy,
-                            library: self,
-                        }));
-                    }
-                    Err(cause) => {
-                        self.fence();
-                        return Err(Box::new(NativeCloseFailure {
-                            cause,
-                            library: self,
-                        }));
-                    }
-                }
-            }
-            let result = self.finish_closed(after_closed_replace);
+            let result = self.seal_closed(after_closed_replace);
             if let Err(cause) = result {
-                self.fence();
+                if !matches!(&cause, StorageError::ProfileBusy) {
+                    self.fence();
+                }
                 return Err(Box::new(NativeCloseFailure {
                     cause,
                     library: self,
@@ -1355,6 +1352,12 @@ mod owned {
                 frozen.release(binding);
             }
             Ok(())
+        }
+        fn seal_closed(&mut self, after_closed_replace: impl FnOnce() -> Result<()>) -> Result<()> {
+            if self.frozen.is_none() {
+                self.frozen = Some(self.binding()?.freeze()?);
+            }
+            self.finish_closed(after_closed_replace)
         }
         fn finish_closed(
             &mut self,
@@ -2006,4 +2009,6 @@ mod owned {
 }
 
 #[cfg(any(target_os = "macos", target_os = "linux"))]
-pub use owned::{NativeBindingFailure, NativeCloseFailure, NativeLibrary, RecoveryLibrary};
+pub use owned::{
+    ClosedNativeLibrary, NativeBindingFailure, NativeCloseFailure, NativeLibrary, RecoveryLibrary,
+};

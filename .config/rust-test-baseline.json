@@ -3502,6 +3502,41 @@
         "x86_64-apple-darwin",
         "x86_64-unknown-linux-gnu"
       ]
+    },
+    {
+      "suite": "librairii-app::lifecycle",
+      "name": "lifecycle_exclusion_waits_for_actual_uses_and_rejects_old_generations"
+    },
+    {
+      "suite": "librairii-app::lifecycle",
+      "name": "busy_operations_keep_original_generation_and_unsettled_switches_require_recovery"
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "native::owned::lifecycle::tests::closed_relocation_owner_retains_real_exclusion_allows_language_and_reopens_new_epoch",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "native::owned::lifecycle::tests::relocation_manifest_captures_all_managed_areas_and_refuses_shared_or_changed_inputs",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "native::owned::lifecycle::tests::unopened_library_cannot_create_relocation_or_release_profile_authority",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
     }
   ]
 }

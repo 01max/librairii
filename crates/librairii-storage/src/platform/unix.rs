@@ -95,6 +95,11 @@ pub(crate) struct Directory {
     identity: FileIdentity,
 }
 impl Directory {
+    pub(crate) fn metadata(&self) -> Result<std::fs::Metadata> {
+        self.file
+            .metadata()
+            .map_err(|e| StorageError::io("observe anchored directory metadata", e))
+    }
     pub(crate) fn identity(&self) -> FileIdentity {
         self.identity
     }
