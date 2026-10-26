@@ -27,7 +27,7 @@ mod state {
     use serde::{Deserialize, Serialize};
     use std::{
         ffi::OsStr,
-        io::{Read, Write},
+        io::{Read, Seek, Write},
         path::{Component, Path},
     };
 
@@ -53,8 +53,26 @@ mod state {
         pub library_marker_sha256: String,
         pub profile_marker_sha256: String,
         pub source_manifest_sha256: String,
+        /// Version 2 records explicit selected-root authority; old version-1
+        /// bytes and their strict data-container scope remain unchanged.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        pub root_policy: Option<RootPolicy>,
         #[serde(default, skip_serializing_if = "Vec::is_empty")]
         pub temporaries: Vec<crate::native_effects::Temporary>,
+    }
+    #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+    #[serde(deny_unknown_fields)]
+    pub(super) struct RootPolicy {
+        pub legacy_roots: Vec<String>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        pub relocation: Option<MoveProof>,
+    }
+    #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+    #[serde(deny_unknown_fields)]
+    pub(super) struct MoveProof {
+        pub id: String,
+        pub manifest_sha256: String,
+        pub source_state_sha256: String,
     }
     impl Document {
         pub fn decode(bytes: &[u8]) -> Result<Self> {
@@ -68,11 +86,40 @@ mod state {
         }
         pub fn validate(&self) -> Result<()> {
             if self.format != "librairii.native-library"
-                || self.version != 1
+                || !matches!(self.version, 1 | 2)
+                || (self.version == 2) != self.root_policy.is_some()
                 || (self.state == Phase::ImportedClosed) != (self.epoch == 0)
                 || crate::identity::parse_spelling(&self.library_id_raw).is_err()
             {
                 return Err(StorageError::RecoveryBindingRequired);
+            }
+            if let Some(policy) = &self.root_policy {
+                if policy.legacy_roots.is_empty()
+                    || policy.legacy_roots.len() > 2
+                    || !policy.legacy_roots.contains(&self.source_root)
+                    || policy.legacy_roots.iter().any(|path| {
+                        !Path::new(path).is_absolute()
+                            || path.contains('\0')
+                            || Path::new(path)
+                                .components()
+                                .any(|c| matches!(c, Component::ParentDir | Component::CurDir))
+                    })
+                {
+                    return Err(StorageError::RecoveryBindingRequired);
+                }
+                if let Some(proof) = &policy.relocation
+                    && (proof.id.parse::<librairii_core::JobId>().is_err()
+                        || [&proof.manifest_sha256, &proof.source_state_sha256]
+                            .into_iter()
+                            .any(|hash| {
+                                hash.len() != 64
+                                    || !hash
+                                        .bytes()
+                                        .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
+                            }))
+                {
+                    return Err(StorageError::RecoveryBindingRequired);
+                }
             }
             if self.state != Phase::Active && !self.temporaries.is_empty() {
                 return Err(StorageError::RecoveryBindingRequired);
@@ -188,7 +235,45 @@ mod state {
                 uncertain: true,
             })
         }
+        pub fn from_owned_allocation(
+            root: &Directory,
+            document: Document,
+            allocation: &ControlAllocation,
+        ) -> Result<Self> {
+            let bytes = document.bytes()?;
+            Ok(Self {
+                current: root.recover_control(allocation)?,
+                document,
+                bytes,
+                retained: Vec::new(),
+                retained_allocations: Vec::new(),
+                uncertain: true,
+            })
+        }
         pub fn initialize(&mut self, root: &Directory) -> Result<()> {
+            // Retrying a failed initial write repairs only this retained file
+            // and a prefix of its own exact expected bytes.
+            let named = root.read_config(OsStr::new(NATIVE_STATE_FILE))?;
+            if !crate::settings::manifest::same_file(&named.file, &self.current.file)? {
+                return Err(StorageError::SnapshotChanged);
+            }
+            self.current
+                .file
+                .rewind()
+                .map_err(|e| StorageError::io("rewind owned initial state", e))?;
+            let mut current = Vec::new();
+            (&mut self.current.file)
+                .take((MAX_PROFILE_BYTES + 1) as u64)
+                .read_to_end(&mut current)
+                .map_err(|e| StorageError::io("read owned incomplete state", e))?;
+            if !self.bytes.starts_with(&current) {
+                return Err(StorageError::RecoveryBindingRequired);
+            }
+            self.current
+                .file
+                .rewind()
+                .map_err(|e| StorageError::io("rewind initial state for retry", e))?;
+
             self.current
                 .file
                 .write_all(&self.bytes)
@@ -443,6 +528,7 @@ mod state {
                 library_marker_sha256: "a".repeat(64),
                 profile_marker_sha256: "b".repeat(64),
                 source_manifest_sha256: "c".repeat(64),
+                root_policy: None,
                 temporaries: Vec::new(),
             }
         }
@@ -538,9 +624,15 @@ mod state {
 
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 mod owned {
+    mod fresh;
+    pub use fresh::NewInstallFailure;
+    mod lifecycle;
+    mod locate;
+    pub use locate::LocatedLibrary;
+    mod relocation;
     use super::{
         NATIVE_STATE_FILE, NATIVE_STATE_TEMP, digest,
-        state::{Document, Phase, Record},
+        state::{Document, Phase, Record, RootPolicy},
     };
     use crate::{
         LibraryIdentity, LibraryLayout, Result, StorageError,
@@ -552,6 +644,14 @@ mod owned {
         },
         profile::{FrozenProfile, NativeProfileStore, ProfileBinding, ProfileLocations},
     };
+    pub use lifecycle::ClosedNativeLibrary;
+    pub(crate) use relocation::VerifiedMoveTarget;
+    pub use relocation::{
+        CleanupReport, CommitStatus, RecoveredRoot, RelocatedLibrary, RelocationFailure,
+        RelocationRecovery, recover_relocation,
+    };
+    pub use relocation::{RelocationObserver, RelocationStage};
+    pub use relocation::{RestartMoveFailure, cancel_relocation, retry_relocation};
     use std::{
         ffi::OsStr,
         fs::{self, File},
@@ -633,6 +733,7 @@ mod owned {
         layout: LibraryLayout,
         root: Directory,
         database: Directory,
+        allow_additions: bool,
         marker: File,
         identity: LibraryIdentity,
         record: Mutex<Record>,
@@ -679,7 +780,7 @@ mod owned {
             locations: &ProfileLocations,
             cancellation: &WorkCancellation,
         ) -> std::result::Result<Self, Box<NativeBindingFailure<'profile>>> {
-            Self::bind_with_profile(copy, store, locations, None, cancellation)
+            Self::bind_with_profile(copy, store, locations, None, false, cancellation)
         }
         pub(crate) fn bind_rebound(
             copy: IndependentCopy,
@@ -688,13 +789,22 @@ mod owned {
             foreign: &crate::profile::Profile,
             cancellation: &WorkCancellation,
         ) -> std::result::Result<Self, Box<NativeBindingFailure<'profile>>> {
-            Self::bind_with_profile(copy, store, locations, Some(foreign), cancellation)
+            Self::bind_with_profile(copy, store, locations, Some(foreign), false, cancellation)
+        }
+        pub(crate) fn bind_selected_copy(
+            copy: IndependentCopy,
+            store: &'profile NativeProfileStore,
+            locations: &ProfileLocations,
+            cancellation: &WorkCancellation,
+        ) -> std::result::Result<Self, Box<NativeBindingFailure<'profile>>> {
+            Self::bind_with_profile(copy, store, locations, None, true, cancellation)
         }
         fn bind_with_profile(
             mut copy: IndependentCopy,
             store: &'profile NativeProfileStore,
             locations: &ProfileLocations,
             foreign: Option<&crate::profile::Profile>,
+            explicit: bool,
             cancellation: &WorkCancellation,
         ) -> std::result::Result<Self, Box<NativeBindingFailure<'profile>>> {
             let mut record = None;
@@ -715,7 +825,22 @@ mod owned {
                 }
                 copy.identity().require_spelling(&proposed.library_id)?;
                 proposed.root = exact_path(copy.root())?;
-                require_paths(copy.root(), copy.source_root(), store, locations)?;
+                let policy = if explicit {
+                    Some(RootPolicy::for_source(copy.source_root(), locations)?)
+                } else {
+                    None
+                };
+                if let Some(policy) = &policy {
+                    require_explicit_paths(
+                        copy.root(),
+                        copy.source_root(),
+                        policy,
+                        store,
+                        locations,
+                    )?;
+                } else {
+                    require_paths(copy.root(), copy.source_root(), store, locations)?;
+                }
                 let layout = LibraryLayout::probe(copy.root())?;
                 let root = copy.retain_root()?;
                 let database = root.child(OsStr::new("db"))?;
@@ -725,23 +850,21 @@ mod owned {
                 )?;
                 let document = Document {
                     format: "librairii.native-library".into(),
-                    version: 1,
+                    version: if explicit { 2 } else { 1 },
                     state: Phase::ImportedClosed,
                     epoch: 0,
                     native_profile_root: exact_path(
                         &fs::canonicalize(store.directory())
                             .map_err(|e| StorageError::io("resolve native profile root", e))?,
                     )?,
-                    native_data_root: exact_path(
-                        &fs::canonicalize(&locations.data)
-                            .map_err(|e| StorageError::io("resolve native data root", e))?,
-                    )?,
+                    native_data_root: exact_path(&resolved_native_data(locations)?)?,
                     library_root: exact_path(copy.root())?,
                     source_root: exact_path(copy.source_root())?,
                     library_id_raw: copy.identity().spelling().into(),
                     library_marker_sha256: digest(copy.identity().original_bytes()),
                     profile_marker_sha256: store.marker_digest()?,
                     source_manifest_sha256: copy.manifest_digest(),
+                    root_policy: policy,
                     temporaries: Vec::new(),
                 };
                 record = Some(match Record::create(&root, document) {
@@ -822,6 +945,7 @@ mod owned {
                 layout,
                 root,
                 database,
+                allow_additions: record.document.version == 2,
                 marker,
                 identity,
                 record: Mutex::new(record),
@@ -897,16 +1021,16 @@ mod owned {
                         &fs::canonicalize(store.directory())
                             .map_err(|e| StorageError::io("resolve existing native profile", e))?,
                     )?
-                || d.native_data_root
-                    != exact_path(
-                        &fs::canonicalize(&locations.data)
-                            .map_err(|e| StorageError::io("resolve existing native data", e))?,
-                    )?
+                || d.native_data_root != exact_path(&resolved_native_data(locations)?)?
                 || d.profile_marker_sha256 != store.marker_digest()?
             {
                 return Err(StorageError::RecoveryBindingRequired);
             }
-            require_paths(&path, Path::new(&d.source_root), store, locations)?;
+            if let Some(policy) = &d.root_policy {
+                require_explicit_paths(&path, Path::new(&d.source_root), policy, store, locations)?;
+            } else {
+                require_reopened_paths(&path, Path::new(&d.source_root), store, locations)?;
+            }
             let mut marker = root.open_regular(
                 OsStr::new(crate::identity::IDENTITY_FILE),
                 rustix::fs::OFlags::RDONLY,
@@ -916,7 +1040,7 @@ mod owned {
             if digest(identity.original_bytes()) != d.library_marker_sha256 {
                 return Err(StorageError::RecoveryBindingRequired);
             }
-            require_root_entries(&root)?;
+            require_root_entries(&root, d.version == 2)?;
             let database = root.child(OsStr::new("db"))?;
             let mut directories = Vec::new();
             for name in ["db", "archives", "catalog", "staging", "trash", "logs"] {
@@ -1218,7 +1342,7 @@ mod owned {
             let result = (|| {
                 self.binding()?.revalidate()?;
                 self.revalidate_database_ownership()?;
-                require_root_entries(&self.root)?;
+                require_root_entries(&self.root, self.allow_additions)?;
                 let recovery = self.recovery_pending.swap(false, Ordering::AcqRel);
                 if !recovery {
                     require_no_sidecars(&self.database)?;
@@ -1236,6 +1360,18 @@ mod owned {
                     .map_err(|_| StorageError::RuntimeFenced)?;
                 record.revalidate(&self.root)?;
                 if let Some(directories) = managed.as_ref() {
+                    // A consuming relocation handoff can return the original
+                    // positively closed owner on cancellation. It needs a new
+                    // durable Active epoch before any SQLite work resumes.
+                    if record.document.state == Phase::Closed && prior_closed {
+                        let mut next = record.document.clone();
+                        next.epoch = next
+                            .epoch
+                            .checked_add(1)
+                            .ok_or(StorageError::RecoveryBindingRequired)?;
+                        next.state = Phase::Active;
+                        record.transition_with(&self.root, next, after_active_replace)?;
+                    }
                     if record.document.state != Phase::Active {
                         return Err(StorageError::RecoveryBindingRequired);
                     }
@@ -1261,7 +1397,7 @@ mod owned {
                 // This durable ACK is BEFORE managed mkdir and SQLite open,
                 // including schema migration/initialization and sidecar writes.
                 record.transition_with(&self.root, next, after_active_replace)?;
-                require_root_entries(&self.root)?;
+                require_root_entries(&self.root, self.allow_additions)?;
                 *managed = Some(Vec::new());
                 let directories = managed.as_mut().ok_or(StorageError::RuntimeFenced)?;
                 for name in ["db", "archives", "catalog", "staging", "trash", "logs"] {
@@ -1320,28 +1456,11 @@ mod owned {
             mut self,
             after_closed_replace: impl FnOnce() -> Result<()>,
         ) -> std::result::Result<(), Box<NativeCloseFailure<'profile>>> {
-            if self.frozen.is_none() {
-                let freeze = self.binding().and_then(ProfileBinding::freeze);
-                match freeze {
-                    Ok(frozen) => self.frozen = Some(frozen),
-                    Err(StorageError::ProfileBusy) => {
-                        return Err(Box::new(NativeCloseFailure {
-                            cause: StorageError::ProfileBusy,
-                            library: self,
-                        }));
-                    }
-                    Err(cause) => {
-                        self.fence();
-                        return Err(Box::new(NativeCloseFailure {
-                            cause,
-                            library: self,
-                        }));
-                    }
-                }
-            }
-            let result = self.finish_closed(after_closed_replace);
+            let result = self.seal_closed(after_closed_replace);
             if let Err(cause) = result {
-                self.fence();
+                if !matches!(&cause, StorageError::ProfileBusy) {
+                    self.fence();
+                }
                 return Err(Box::new(NativeCloseFailure {
                     cause,
                     library: self,
@@ -1355,6 +1474,12 @@ mod owned {
                 frozen.release(binding);
             }
             Ok(())
+        }
+        fn seal_closed(&mut self, after_closed_replace: impl FnOnce() -> Result<()>) -> Result<()> {
+            if self.frozen.is_none() {
+                self.frozen = Some(self.binding()?.freeze()?);
+            }
+            self.finish_closed(after_closed_replace)
         }
         fn finish_closed(
             &mut self,
@@ -1385,7 +1510,7 @@ mod owned {
                 )?;
             }
             drop(managed);
-            require_root_entries(&self.root)?;
+            require_root_entries(&self.root, self.allow_additions)?;
             require_no_sidecars(&self.database)?;
             // Durable removals retain product data in their bounded namespace.
             // Other trash owners remain unsettled and cannot certify closure.
@@ -1419,7 +1544,7 @@ mod owned {
             let mut next = record.document.clone();
             next.state = Phase::Closed;
             record.transition_with(&self.root, next, after_closed_replace)?;
-            require_root_entries(&self.root)?;
+            require_root_entries(&self.root, self.allow_additions)?;
             self.revalidate_database_ownership()?;
             self.frozen
                 .as_ref()
@@ -1548,8 +1673,15 @@ mod owned {
         }
         Ok(())
     }
-    fn require_root_entries(root: &Directory) -> Result<()> {
-        for name in root.entries(14, &WorkCancellation::default())? {
+    fn require_root_entries(root: &Directory, allow_additions: bool) -> Result<()> {
+        for name in root.entries(
+            if allow_additions {
+                crate::settings::manifest::MAX_MANIFEST_BYTES / 128
+            } else {
+                14
+            },
+            &WorkCancellation::default(),
+        )? {
             let known = [
                 crate::identity::IDENTITY_FILE,
                 crate::platform::lock::LIBRARY_LOCK_FILE,
@@ -1566,38 +1698,39 @@ mod owned {
             if name
                 .as_encoded_bytes()
                 .starts_with(NATIVE_STATE_TEMP.as_bytes())
-                || !known.iter().any(|allowed| name == OsStr::new(allowed))
+                || (!allow_additions && !known.iter().any(|allowed| name == OsStr::new(allowed)))
             {
                 return Err(StorageError::RecoveryBindingRequired);
+            }
+            if !known.iter().any(|allowed| name == OsStr::new(allowed)) {
+                if name.as_encoded_bytes().starts_with(b".librairii-")
+                    || name == OsStr::new("relocation.json")
+                {
+                    return Err(StorageError::RecoveryBindingRequired);
+                }
+                if root.child(&name).is_err() {
+                    root.open_regular(&name, rustix::fs::OFlags::RDONLY)?;
+                }
             }
         }
         Ok(())
     }
-    fn require_paths(
-        root: &Path,
-        source: &Path,
+    // Explicit roots do not use this container as a file capability. Resolve
+    // existing ancestors and retain its logical exclusion even when absent;
+    // version-1 roots still must be actual descendants of it.
+    fn resolved_native_data(locations: &ProfileLocations) -> Result<PathBuf> {
+        Ok(crate::settings::target::resolve(&locations.data, false)?.0)
+    }
+    fn namespace_roots(
         store: &NativeProfileStore,
         locations: &ProfileLocations,
-    ) -> Result<()> {
+    ) -> Result<(PathBuf, PathBuf)> {
+        use crate::settings::target::physical_overlap;
         // ProfileLocations is DATA and its public fields are not authority.
         // Enforce the selected native names independently; a caller cannot
         // label an empty Go-discoverable config directory as "native".
-        #[cfg(target_os = "macos")]
-        let (native_name, data_name, legacy_name) = (
-            "io.github.librairii.native",
-            "LibrairiiNative",
-            "io.github.librairii.app",
-        );
-        #[cfg(target_os = "linux")]
-        let (native_name, data_name, legacy_name) =
-            ("librairii-native", "librairii-native", "librairii");
-        if locations.native.file_name() != Some(OsStr::new(native_name))
-            || locations.data.file_name() != Some(OsStr::new(data_name))
-            || locations.legacy.as_ref().and_then(|path| path.file_name())
-                != Some(OsStr::new(legacy_name))
-        {
-            return Err(StorageError::PathEscape);
-        }
+        locations.validate_native_names()?;
+        let (native_name, data_name, _) = ProfileLocations::native_names();
         let resolve = |path: &Path| {
             if !path.is_absolute() {
                 return Err(StorageError::RootNotAbsolute);
@@ -1605,21 +1738,13 @@ mod owned {
             fs::canonicalize(path)
                 .map_err(|error| StorageError::io("resolve explicit native namespace", error))
         };
-        let source_actual = resolve(source)?;
-        if source_actual != source {
-            return Err(StorageError::PathEscape);
-        }
         let native = resolve(&locations.native)?;
         let store_root = resolve(store.directory())?;
-        let data = resolve(&locations.data)?;
+        let data = resolved_native_data(locations)?;
         if native != store_root
             || native.file_name() != Some(OsStr::new(native_name))
             || data.file_name() != Some(OsStr::new(data_name))
-            || overlaps(&native, &data)
-            || !root.starts_with(&data)
-            || root == data
-            || overlaps(&native, source)
-            || overlaps(&data, source)
+            || physical_overlap(&native, &data)?
         {
             return Err(StorageError::PathEscape);
         }
@@ -1636,7 +1761,7 @@ mod owned {
                     return Err(StorageError::io("inspect explicit legacy namespace", error));
                 }
             };
-            if overlaps(&legacy, &native) || overlaps(&legacy, &data) {
+            if physical_overlap(&legacy, &native)? || physical_overlap(&legacy, &data)? {
                 return Err(StorageError::PathEscape);
             }
             match fs::symlink_metadata(legacy.join("relocation.json")) {
@@ -1650,10 +1775,101 @@ mod owned {
                 }
             }
         }
+        Ok((native, data))
+    }
+    fn require_paths(
+        root: &Path,
+        source: &Path,
+        store: &NativeProfileStore,
+        locations: &ProfileLocations,
+    ) -> Result<()> {
+        use crate::settings::target::physical_overlap;
+        let (native, data) = namespace_roots(store, locations)?;
+        let source_actual = fs::canonicalize(source)
+            .map_err(|e| StorageError::io("resolve original legacy source", e))?;
+        if source_actual != source
+            || !root.starts_with(&data)
+            || root == data
+            || physical_overlap(&native, source)?
+            || physical_overlap(&data, source)?
+        {
+            return Err(StorageError::PathEscape);
+        }
         Ok(())
     }
-    fn overlaps(a: &Path, b: &Path) -> bool {
-        a.starts_with(b) || b.starts_with(a)
+    fn require_reopened_paths(
+        root: &Path,
+        source: &Path,
+        store: &NativeProfileStore,
+        locations: &ProfileLocations,
+    ) -> Result<()> {
+        let (native, data) = namespace_roots(store, locations)?;
+        let resolved = crate::settings::target::resolve(source, false)?.0;
+        if resolved != source
+            || !root.starts_with(&data)
+            || root == data
+            || crate::settings::target::physical_overlap(&native, source)?
+            || crate::settings::target::physical_overlap(&data, source)?
+        {
+            return Err(StorageError::PathEscape);
+        }
+        Ok(())
+    }
+    fn legacy_default_root(locations: &ProfileLocations) -> Result<PathBuf> {
+        #[cfg(target_os = "macos")]
+        let name = "Librairii";
+        #[cfg(target_os = "linux")]
+        let name = "librairii";
+        let root = locations
+            .data
+            .parent()
+            .ok_or(StorageError::PathEscape)?
+            .join(name);
+        Ok(crate::settings::target::resolve(&root, false)?.0)
+    }
+    impl RootPolicy {
+        fn for_source(source: &Path, locations: &ProfileLocations) -> Result<Self> {
+            let mut legacy_roots = vec![
+                exact_path(&legacy_default_root(locations)?)?,
+                exact_path(source)?,
+            ];
+            legacy_roots.sort();
+            legacy_roots.dedup();
+            Ok(Self {
+                legacy_roots,
+                relocation: None,
+            })
+        }
+    }
+    fn require_explicit_paths(
+        root: &Path,
+        source: &Path,
+        policy: &RootPolicy,
+        store: &NativeProfileStore,
+        locations: &ProfileLocations,
+    ) -> Result<()> {
+        use crate::settings::target::{physical_contains, physical_overlap, resolve};
+        let (native, data) = namespace_roots(store, locations)?;
+        if !policy
+            .legacy_roots
+            .contains(&exact_path(&legacy_default_root(locations)?)?)
+            || !policy.legacy_roots.contains(&exact_path(source)?)
+            || physical_overlap(root, &native)?
+            || physical_contains(root, &data)?
+        {
+            return Err(StorageError::PathEscape);
+        }
+        if let Some(legacy) = &locations.legacy
+            && physical_overlap(root, &resolve(legacy, false)?.0)?
+        {
+            return Err(StorageError::PathEscape);
+        }
+        for legacy in &policy.legacy_roots {
+            if physical_overlap(root, &resolve(Path::new(legacy), false)?.0)? {
+                return Err(StorageError::PathEscape);
+            }
+        }
+        Ok(())
     }
     #[cfg(test)]
     mod tests {
@@ -2006,4 +2222,15 @@ mod owned {
 }
 
 #[cfg(any(target_os = "macos", target_os = "linux"))]
-pub use owned::{NativeBindingFailure, NativeCloseFailure, NativeLibrary, RecoveryLibrary};
+pub(crate) use owned::VerifiedMoveTarget;
+#[cfg(any(target_os = "macos", target_os = "linux"))]
+pub use owned::{
+    CleanupReport, ClosedNativeLibrary, CommitStatus, LocatedLibrary, NativeBindingFailure,
+    NativeCloseFailure, NativeLibrary, NewInstallFailure, RecoveredRoot, RecoveryLibrary,
+    RelocatedLibrary, RelocationFailure, RelocationRecovery, recover_relocation,
+};
+#[cfg(any(target_os = "macos", target_os = "linux"))]
+pub use owned::{RestartMoveFailure, cancel_relocation, retry_relocation};
+
+#[cfg(any(target_os = "macos", target_os = "linux"))]
+pub use owned::{RelocationObserver, RelocationStage};

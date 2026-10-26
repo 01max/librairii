@@ -43,7 +43,7 @@ jobs:
           persist-credentials: false
       - name: Install Ubuntu compiler prerequisites from signed Ubuntu archives
         if: runner.os == 'Linux'
-        run: .github/scripts/ubuntu-apt build-essential pkg-config python3
+        run: .github/scripts/ubuntu-apt build-essential pkg-config python3 e2fsprogs
       - uses: ./.github/actions/rust-environment
         with:
           tools: quality
@@ -63,6 +63,8 @@ jobs:
           cache: true
       - name: Shared Go/Rust lock and isolated legacy storage rehearsal
         run: python3 -I -B scripts/verify-storage-handover.py
+      - name: Native relocation crash and external-volume rehearsal
+        run: python3 -I -B scripts/verify-native-relocation.py
       - name: Retain native check evidence
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2

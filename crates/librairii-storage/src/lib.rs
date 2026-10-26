@@ -27,6 +27,8 @@ pub mod profile;
 pub mod query;
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 pub mod removal;
+#[cfg(any(target_os = "macos", target_os = "linux"))]
+pub mod settings;
 pub mod shelves;
 pub mod tagging;
 

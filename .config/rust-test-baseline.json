@@ -3405,6 +3405,372 @@
         "x86_64-apple-darwin",
         "x86_64-unknown-linux-gnu"
       ]
+    },
+    {
+      "suite": "librairii-app::localization",
+      "name": "only_two_explicit_languages_and_ordered_supported_system_preferences"
+    },
+    {
+      "suite": "librairii-app::localization",
+      "name": "embedded_catalogs_render_numbers_plural_forms_and_authored_parameters"
+    },
+    {
+      "suite": "librairii-app::localization",
+      "name": "localized_dates_use_the_supplied_offset_and_locale_without_mutating_the_instant"
+    },
+    {
+      "suite": "librairii-app::localization",
+      "name": "historical_results_translate_known_messages_and_keep_unknown_original_details"
+    },
+    {
+      "suite": "librairii-desktop::settings",
+      "name": "language_persistence_updates_existing_projection_and_pending_native_menus",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-desktop::settings",
+      "name": "rejected_or_failed_language_updates_preserve_effective_text_and_durable_bytes",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-desktop::system_language",
+      "name": "os_language_adapter_retains_first_preference_and_frozen_variable_precedence",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-desktop::system_language",
+      "name": "settings_startup_uses_os_adapter_only_until_a_saved_language_exists",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::settings_target",
+      "name": "target_preview_preserves_exact_empty_or_missing_selection_and_probes_actual_writes",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::settings_target",
+      "name": "target_preview_refuses_overlap_aliases_links_nonempty_and_special_files",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::settings_target",
+      "name": "target_revalidation_detects_replacement_new_files_and_changed_ancestors",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::settings_target",
+      "name": "target_preflight_observes_readonly_storage_and_cancellation_without_initialization",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage::settings_target",
+      "name": "native_case_and_decomposition_aliases_cannot_bypass_excluded_root_ancestry",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-app::lifecycle",
+      "name": "lifecycle_exclusion_waits_for_actual_uses_and_rejects_old_generations"
+    },
+    {
+      "suite": "librairii-app::lifecycle",
+      "name": "busy_operations_keep_original_generation_and_unsettled_switches_require_recovery"
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "native::owned::lifecycle::tests::closed_relocation_owner_retains_real_exclusion_allows_language_and_reopens_new_epoch",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "native::owned::lifecycle::tests::relocation_manifest_captures_all_managed_areas_and_refuses_shared_or_changed_inputs",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "native::owned::lifecycle::tests::unopened_library_cannot_create_relocation_or_release_profile_authority",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "native::owned::fresh::tests::confirmed_setup_uses_exact_empty_or_missing_root_and_reopens_without_legacy_source",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "native::owned::fresh::tests::setup_cancellation_invalid_profile_and_existing_default_never_initialize_or_replace",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "native::owned::fresh::tests::setup_retries_busy_profile_preserving_newer_language",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "settings::startup::tests::startup_is_readonly_and_invalid_or_missing_profiles_never_silently_replace",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "settings::startup::tests::default_legacy_library_requires_confirmed_independent_clone_at_exact_choice",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "native::owned::relocation::tests::relocation_streams_complete_tree_commits_exact_root_and_reopens",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "native::owned::relocation::tests::before_commit_failure_keeps_source_authority_and_retry_preserves_new_language",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "native::owned::relocation::tests::committed_failure_recovers_destination_and_preserves_changed_and_new_source_files",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "native::owned::relocation::tests::crash_before_commit_and_corrupt_journal_never_replace_source_or_follow_foreign_paths",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-desktop::lifecycle",
+      "name": "override_selection_reads_no_production_inputs_and_keeps_language_in_memory",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-desktop::lifecycle",
+      "name": "desktop_move_reconstructs_real_services_and_invalidates_old_results",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "native::owned::locate::tests::locating_same_uuid_preserves_language_and_refuses_wrong_or_missing_database",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "native::owned::locate::tests::independent_native_restart_does_not_require_original_legacy_drive",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "native::owned::relocation::tests::workspace_allocation_failure_retains_owner_and_retries_without_recreating_it",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "native::owned::relocation::tests::restart_retry_and_explicit_cancel_preserve_source_and_allow_future_moves",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "native::owned::relocation::tests::committed_corruption_or_missing_drive_never_deletes_source_or_reverts_authority",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "native::owned::relocation::tests::durable_retirement_receipt_recovers_missing_controls_and_final_source_removal",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "native::owned::relocation::tests::locate_committed_native_copy_preserves_all_other_copies_and_finishes_recovery",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "profile::relocation::tests::partial_owned_journal_allows_independent_language_and_repairs_only_its_prefix",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "settings::startup::tests::cold_start_confirms_suggested_native_root_without_precreated_parents",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "settings::startup::tests::preparation_preserves_invalid_and_legacy_state_before_creating_native_containers",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "native::owned::lifecycle::tests::current_root_selection_through_alias_is_unchanged_without_profile_or_lifecycle_effects",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "native::owned::relocation::tests::final_commit_revalidation_preserves_changed_source_and_destination_without_committing",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "native::owned::locate::tests::locate_refuses_foreign_root_controls_before_sqlite_or_profile_changes",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "native::owned::locate::tests::explicit_root_reopen_and_locate_do_not_create_missing_unused_data_container",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-desktop::lifecycle",
+      "name": "active_domain_mutation_and_relocation_have_one_winner_while_readers_drain",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
     }
   ]
 }

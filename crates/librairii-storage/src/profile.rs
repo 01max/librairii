@@ -6,6 +6,8 @@
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 mod navigation;
 #[cfg(any(target_os = "macos", target_os = "linux"))]
+pub(crate) mod relocation;
+#[cfg(any(target_os = "macos", target_os = "linux"))]
 use crate::platform::unix::{ConfigTemp, ControlAllocation, Directory, durable_file_flush};
 use crate::{Result, StorageError, backup};
 use serde::{Deserialize, Serialize, de};
@@ -25,8 +27,8 @@ use std::fs::OpenOptions;
 
 pub const MAX_PROFILE_BYTES: usize = 64 * 1024;
 const SETTINGS: &str = "settings.json";
-const MARKER: &str = ".librairii-native-profile";
-const MARKER_BYTES: &[u8] = b"librairii-native-profile-v1\n";
+pub(crate) const MARKER: &str = ".librairii-native-profile";
+pub(crate) const MARKER_BYTES: &[u8] = b"librairii-native-profile-v1\n";
 
 /// Wire data, not a library lease, identity proof, or recovery permission.
 /// `library_id` retains the exact legacy spelling; it is deliberately not UUID
@@ -309,6 +311,14 @@ impl<'profile> ProfileBinding<'profile> {
 }
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 impl FrozenProfile<'_> {
+    pub(crate) fn thaw(self) {
+        // A positively closed library still retains its binding and OS lease.
+        // Only release the short publication reservation so independent
+        // language updates remain possible during the long relocation copy.
+        if let Some(binding) = &self.reservation.binding {
+            binding.frozen.store(false, Ordering::Release);
+        }
+    }
     pub(crate) fn revalidate(&self) -> Result<()> {
         let store = self.reservation.store;
         if self.reservation.poisoned {
@@ -362,6 +372,8 @@ impl<'profile> BindingReservation<'profile> {
 /// This grants no production library adoption authority; Windows remains4.9.
 #[derive(Debug)]
 pub struct NativeProfileStore {
+    #[cfg(any(target_os = "macos", target_os = "linux"))]
+    move_journal: Mutex<Option<relocation::JournalWitness>>,
     directory: PathBuf,
     directory_metadata: Metadata,
     marker: File,
@@ -406,6 +418,50 @@ impl Drop for StateReservation<'_> {
 }
 
 impl NativeProfileStore {
+    /// Finish a newly prepared namespace through its retained directory, rather
+    /// than reopening an ambient pathname after creating its parents.
+    #[cfg(any(target_os = "macos", target_os = "linux"))]
+    pub(crate) fn create_prepared(
+        directory: &Path,
+        namespace: Directory,
+        parent: &Directory,
+        cancel: &crate::database::WorkCancellation,
+    ) -> Result<Self> {
+        backup::require_directory_durability()?;
+        let directory_metadata = fs::symlink_metadata(directory)
+            .map_err(|e| StorageError::io("inspect prepared namespace", e))?;
+        namespace.matches_metadata(&directory_metadata)?;
+        namespace.entries(0, cancel)?;
+        let mut marker = namespace.open_regular(
+            std::ffi::OsStr::new(MARKER),
+            rustix::fs::OFlags::RDWR | rustix::fs::OFlags::CREATE | rustix::fs::OFlags::EXCL,
+        )?;
+        marker.try_lock().map_err(|e| match e {
+            fs::TryLockError::WouldBlock => StorageError::ProfileInUse,
+            fs::TryLockError::Error(e) => StorageError::io("lock prepared profile", e),
+        })?;
+        marker
+            .write_all(MARKER_BYTES)
+            .map_err(|e| StorageError::io("write prepared profile marker", e))?;
+        durable_file_flush(&marker)?;
+        namespace.flush()?;
+        parent.flush()?;
+        namespace.entries(1, cancel)?;
+        let marker_metadata = marker
+            .metadata()
+            .map_err(|e| StorageError::io("retain prepared marker", e))?;
+        let store = Self {
+            move_journal: Mutex::new(None),
+            directory: directory.to_path_buf(),
+            directory_metadata,
+            marker,
+            marker_metadata,
+            namespace,
+            state: Mutex::new(Some(State::default())),
+        };
+        store.revalidate_namespace()?;
+        Ok(store)
+    }
     fn reserve(&self) -> Result<StateReservation<'_>> {
         self.reserve_inner(false)
     }
@@ -560,6 +616,8 @@ impl NativeProfileStore {
             return Err(StorageError::InvalidProfile);
         }
         let store = Self {
+            #[cfg(any(target_os = "macos", target_os = "linux"))]
+            move_journal: Mutex::new(None),
             directory: directory.to_path_buf(),
             directory_metadata,
             marker,
@@ -702,16 +760,21 @@ impl NativeProfileStore {
         self.revalidate_namespace()?;
         let entries = self
             .namespace
-            .entries(3, &crate::database::WorkCancellation::default())
+            .entries(4, &crate::database::WorkCancellation::default())
             .map_err(|error| match error {
                 StorageError::AdoptionInputChanged => StorageError::RecoveryBindingRequired,
                 error => error,
             })?;
-        if entries
-            .iter()
-            .any(|entry| entry != MARKER && entry != SETTINGS && entry != "navigation.json")
-        {
+        if entries.iter().any(|entry| {
+            entry != MARKER
+                && entry != SETTINGS
+                && entry != "navigation.json"
+                && entry != relocation::JOURNAL
+        }) {
             return Err(StorageError::RecoveryBindingRequired);
+        }
+        if entries.iter().any(|entry| entry == relocation::JOURNAL) {
+            self.revalidate_move_journal()?;
         }
         if entries.iter().any(|entry| entry == "navigation.json") {
             // Independent UI preferences grant no binding/recovery authority.
@@ -1109,6 +1172,33 @@ pub struct ProfileLocations {
 }
 
 impl ProfileLocations {
+    #[cfg(any(target_os = "macos", target_os = "linux"))]
+    pub(crate) fn native_names() -> (&'static str, &'static str, &'static str) {
+        #[cfg(target_os = "macos")]
+        {
+            (
+                "io.github.librairii.native",
+                "LibrairiiNative",
+                "io.github.librairii.app",
+            )
+        }
+        #[cfg(target_os = "linux")]
+        {
+            ("librairii-native", "librairii-native", "librairii")
+        }
+    }
+    #[cfg(any(target_os = "macos", target_os = "linux"))]
+    pub(crate) fn validate_native_names(&self) -> Result<()> {
+        use std::ffi::OsStr;
+        let (native, data, legacy) = Self::native_names();
+        if self.native.file_name() != Some(OsStr::new(native))
+            || self.data.file_name() != Some(OsStr::new(data))
+            || self.legacy.as_ref().and_then(|p| p.file_name()) != Some(OsStr::new(legacy))
+        {
+            return Err(StorageError::PathEscape);
+        }
+        Ok(())
+    }
     pub fn for_host(
         home: &Path,
         config_base: Option<&Path>,
