@@ -28,6 +28,7 @@ pub struct Story {
     pub summary: Option<StorySummary>,
     pub thumbnail: Option<Thumbnail>,
     pub provenance: String,
+    pub tags: Vec<librairii_core::tagging::DisplayTag>,
 }
 #[derive(Clone, Debug)]
 pub struct Page {
@@ -81,7 +82,7 @@ fn page(runtime: &Runtime<'_, '_, '_>, location: &Location, stop: &AtomicBool) -
         let request = location.request.clone();
         let locale = "en-GB".to_owned();
         let (mut result, page, pages, total) = match location.scope {
-            Scope::Library | Scope::Custom => {
+            Scope::Library | Scope::Custom | Scope::Collection(_) => {
                 let p = db.search(request, locale)?.wait()?;
                 (
                     p.stories
@@ -92,34 +93,9 @@ fn page(runtime: &Runtime<'_, '_, '_>, location: &Location, stop: &AtomicBool) -
                             summary: Some(s),
                             thumbnail: None,
                             provenance: String::new(),
+                            tags: Vec::new(),
                         })
                         .collect::<Vec<_>>(),
-                    p.page,
-                    p.total_pages,
-                    p.total_items,
-                )
-            }
-            Scope::Collection(id) => {
-                let p = match db
-                    .evaluate_collection(id.get(), request, locale, WorkCancellation::default())?
-                    .wait()?
-                {
-                    librairii_storage::database::TransactionOutcome::Committed(
-                        librairii_storage::collections::Observation::Ready(e),
-                    ) => e.page,
-                    _ => return Err(StorageError::InvalidNavigation),
-                };
-                (
-                    p.stories
-                        .into_iter()
-                        .map(|s| Story {
-                            uuid: s.uuid.clone(),
-                            title: s.title.clone(),
-                            summary: Some(s),
-                            thumbnail: None,
-                            provenance: String::new(),
-                        })
-                        .collect(),
                     p.page,
                     p.total_pages,
                     p.total_items,
@@ -139,6 +115,7 @@ fn page(runtime: &Runtime<'_, '_, '_>, location: &Location, stop: &AtomicBool) -
                                 .unwrap_or(m.member.cached_title),
                             summary: m.story,
                             thumbnail: None,
+                            tags: Vec::new(),
                             provenance: m
                                 .member
                                 .origins
@@ -154,12 +131,21 @@ fn page(runtime: &Runtime<'_, '_, '_>, location: &Location, stop: &AtomicBool) -
                 )
             }
         };
+        let mut labels = db
+            .story_tag_labels(
+                result
+                    .iter()
+                    .filter_map(|s| s.summary.as_ref().map(|s| s.id))
+                    .collect(),
+            )?
+            .wait()?;
         let generation = cache.generation()?;
         for story in &mut result {
             if stop.load(Ordering::Acquire) {
                 return Err(StorageError::Cancelled);
             }
             if let Some(summary) = &story.summary {
+                story.tags = labels.remove(&summary.id).unwrap_or_default();
                 let official = summary
                     .artwork_id
                     .parse()
@@ -190,8 +176,11 @@ pub(crate) fn run(
     stop: &AtomicBool,
 ) -> Result<()> {
     let store = NativeProfileStore::open_native(&locations.native)?;
-    let native = NativeLibrary::reopen(&store, locations, &WorkCancellation::default())?;
-    let id = native.identity().typed();
+    let profile = store.load()?.ok_or(StorageError::InvalidProfile)?;
+    let id = librairii_storage::LibraryIdentity::from_bytes(
+        profile.profile().library_id.as_bytes().to_vec(),
+    )?
+    .typed();
     let mut navigation = store.load_navigation(id, 1)?.unwrap_or(
         Navigation::new(
             id,
@@ -203,113 +192,160 @@ pub(crate) fn run(
         )
         .map_err(|_| StorageError::InvalidNavigation)?,
     );
+    store.load_shelf_warnings(id)?;
+    let native = NativeLibrary::reopen(&store, locations, &WorkCancellation::default())?;
     let mut language = language;
     let mut settings = crate::settings::restore_language(&store, language)?;
     let catalogs = Catalogs::embedded().map_err(|_| StorageError::InvalidProfile)?;
     let mut session = LibrarySession::new(native);
     let mut revision = 0;
     let mut restore_navigation = true;
+    let mut invalid_query = false;
     let result = session.drive(locations, &WorkCancellation::default(), |runtime| {
-        let generation = runtime
-            .generation()
-            .map_err(|_| StorageError::RuntimeFenced)?;
-        let mut group_rows = groups(runtime)?;
-        while !stop.load(Ordering::Acquire) {
-            let loaded = page(runtime, &navigation.current().location, stop);
-            let (page, status) = match loaded {
-                Ok(page) => (Some(page), String::new()),
-                Err(StorageError::Cancelled) if stop.load(Ordering::Acquire) => {
-                    return Ok(Action::finish(()));
-                }
-                Err(_) => (
-                    None,
-                    catalogs
-                        .text(language, "The story collection could not be loaded.")
-                        .map_err(|_| StorageError::InvalidProfile)?
-                        .into(),
-                ),
-            };
-            if !runtime.accepts(&generation) {
-                return Err(StorageError::RuntimeFenced);
-            }
-            *mailbox.lock().map_err(|_| StorageError::RuntimeFenced)? = Some(Snapshot {
-                groups: group_rows.clone(),
-                revision,
-                restore_navigation,
-                generation: Some(generation.clone()),
-                phase: Phase::Library,
-                language,
-                status,
-                navigation: Some(navigation.clone()),
-                page,
-            });
-            loop {
-                if stop.load(Ordering::Acquire) {
-                    return Ok(Action::finish(()));
-                }
-                let Some(envelope) = receiver
-                    .receive()
-                    .map_err(|_| StorageError::RuntimeFenced)?
-                else {
-                    continue;
+        let active = (|| -> Result<()> {
+            let generation = runtime
+                .generation()
+                .map_err(|_| StorageError::RuntimeFenced)?;
+            let mut group_rows = groups(runtime)?;
+            while !stop.load(Ordering::Acquire) {
+                let loaded = if invalid_query {
+                    Err(StorageError::InvalidNavigation)
+                } else {
+                    page(runtime, &navigation.current().location, stop)
                 };
-                revision = envelope.revision;
-                let command = envelope.command;
-                restore_navigation = matches!(
-                    command,
-                    Command::Back | Command::Forward | Command::Navigate(_)
-                );
-                let mut next = navigation.clone();
-                match command {
-                    Command::Refresh => {
-                        group_rows = groups(runtime)?;
+                let (page, status) = match loaded {
+                    Ok(page) => (Some(page), String::new()),
+                    Err(StorageError::Cancelled) if stop.load(Ordering::Acquire) => {
+                        return Ok(());
                     }
-                    Command::Back => {
-                        next.back().map_err(|_| StorageError::InvalidNavigation)?;
+                    Err(_) => (
+                        None,
+                        catalogs
+                            .text(language, "The story collection could not be loaded.")
+                            .map_err(|_| StorageError::InvalidProfile)?
+                            .into(),
+                    ),
+                };
+                if !runtime.accepts(&generation) {
+                    return Err(StorageError::RuntimeFenced);
+                }
+                *mailbox.lock().map_err(|_| StorageError::RuntimeFenced)? = Some(Snapshot {
+                    groups: group_rows.clone(),
+                    revision,
+                    restore_navigation,
+                    generation: Some(generation.clone()),
+                    phase: Phase::Library,
+                    language,
+                    status,
+                    navigation: Some(navigation.clone()),
+                    page,
+                });
+                loop {
+                    if stop.load(Ordering::Acquire) {
+                        return Ok(());
                     }
-                    Command::Forward => {
-                        next.forward()
-                            .map_err(|_| StorageError::InvalidNavigation)?;
-                    }
-                    Command::Navigate(scope) => {
-                        next.push(Frame {
-                            location: Location {
-                                scope,
-                                request: Default::default(),
-                            },
-                            selection: Vec::new(),
-                        })
-                        .map_err(|_| StorageError::InvalidNavigation)?;
-                    }
-                    Command::Language(requested) => {
-                        crate::settings::change_language(&store, &mut settings, requested.code())?;
-                        language = requested;
-                    }
-                    Command::Presentation(mode) => next.set_presentation(mode),
-                    Command::Request(request) => next
-                        .push(Frame {
-                            location: Location {
-                                scope: next.current().location.scope.clone(),
-                                request,
-                            },
-                            selection: Vec::new(),
-                        })
-                        .map_err(|_| StorageError::InvalidNavigation)?,
-                    Command::Select { id, query } => {
-                        if next.accepts(&query) {
-                            next.select(vec![id])
+                    let Some(envelope) = receiver
+                        .receive()
+                        .map_err(|_| StorageError::RuntimeFenced)?
+                    else {
+                        continue;
+                    };
+                    revision = envelope.revision;
+                    let command = envelope.command;
+                    restore_navigation = matches!(
+                        command,
+                        Command::Back | Command::Forward | Command::Navigate(_)
+                    );
+                    let mut next = navigation.clone();
+                    invalid_query = false;
+                    match command {
+                        Command::Refresh => {
+                            group_rows = groups(runtime)?;
+                        }
+                        Command::Back => {
+                            next.back().map_err(|_| StorageError::InvalidNavigation)?;
+                        }
+                        Command::Forward => {
+                            next.forward()
                                 .map_err(|_| StorageError::InvalidNavigation)?;
                         }
+                        Command::Navigate(scope) => {
+                            let mut request = QueryRequest::default();
+                            if let Scope::Collection(id) = scope {
+                                let evaluation = runtime.command(|db, _, _| {
+                                    db.evaluate_collection(
+                                        id.get(),
+                                        request.clone(),
+                                        "en-GB".into(),
+                                        WorkCancellation::default(),
+                                    )?
+                                    .wait()
+                                })?;
+                                let librairii_storage::database::TransactionOutcome::Committed(
+                                    librairii_storage::collections::Observation::Ready(evaluation),
+                                ) = evaluation
+                                else {
+                                    return Err(StorageError::InvalidNavigation);
+                                };
+                                request.criteria = evaluation.criteria;
+                            }
+                            next.push(Frame {
+                                location: Location { scope, request },
+                                selection: Vec::new(),
+                            })
+                            .map_err(|_| StorageError::InvalidNavigation)?;
+                        }
+                        Command::Language(requested) => {
+                            crate::settings::change_language(
+                                &store,
+                                &mut settings,
+                                requested.code(),
+                            )?;
+                            language = requested;
+                        }
+                        Command::Presentation(mode) => next.set_presentation(mode),
+                        Command::Request(request) => {
+                            invalid_query = next
+                                .push(Frame {
+                                    location: Location {
+                                        scope: next.current().location.scope.clone(),
+                                        request,
+                                    },
+                                    selection: Vec::new(),
+                                })
+                                .is_err();
+                        }
+                        Command::Select { id, query } => {
+                            if next.accepts(&query) {
+                                next.select(vec![id])
+                                    .map_err(|_| StorageError::InvalidNavigation)?;
+                            }
+                        }
                     }
+                    if !invalid_query {
+                        store.save_navigation(&next)?;
+                        navigation = next;
+                    }
+                    break;
                 }
-                store.save_navigation(&next)?;
-                navigation = next;
-                break;
             }
+            Ok(())
+        })();
+        if active.is_err() {
+            crate::presentation::recovery(receiver, mailbox, stop, language, |requested| {
+                crate::settings::change_language(&store, &mut settings, requested.code())
+            })?;
         }
         Ok(Action::finish(()))
     });
     let closed = session.finish();
+    if let Err(retained) = closed {
+        crate::presentation::recovery(receiver, mailbox, stop, language, |requested| {
+            crate::settings::change_language(&store, &mut settings, requested.code())
+        })?;
+        drop(retained);
+        return Err(StorageError::RuntimeFenced);
+    }
     result.map_err(|_| StorageError::RuntimeFenced)?;
-    closed.map_err(|_| StorageError::RuntimeFenced)
+    Ok(())
 }

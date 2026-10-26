@@ -5,7 +5,7 @@ use librairii_desktop::{
     browsing::Story,
     presentation::{Command, Snapshot, Worker},
 };
-use librairii_ui::native::{DesktopWindow, NavigationRow, StoryGroup, StoryRow};
+use librairii_ui::native::{DesktopWindow, NavigationRow, StoryGroup, StoryRow, TagRow};
 use slint::{ComponentHandle, ModelRc, VecModel};
 use std::{cell::RefCell, rc::Rc};
 pub struct View {
@@ -36,7 +36,61 @@ fn row(index: usize, story: &Story, language: Language) -> StoryRow {
             ))
         })
         .unwrap_or_default();
+    let tags = story
+        .tags
+        .iter()
+        .map(|tag| {
+            let color = tag
+                .color
+                .strip_prefix('#')
+                .and_then(|hex| u32::from_str_radix(hex, 16).ok())
+                .map(|rgb| {
+                    slint::Color::from_rgb_u8((rgb >> 16) as u8, (rgb >> 8) as u8, rgb as u8)
+                })
+                .unwrap_or_else(|| slint::Color::from_rgb_u8(80, 80, 80));
+            TagRow {
+                label: tag
+                    .value
+                    .as_ref()
+                    .map(|value| format!("{}: {}", tag.definition, value))
+                    .unwrap_or_else(|| tag.definition.clone())
+                    .into(),
+                color,
+            }
+        })
+        .collect::<Vec<_>>();
+    let metadata = story
+        .summary
+        .as_ref()
+        .map(|s| {
+            format!(
+                "{} · {} {}",
+                match s.detected_format.as_str() {
+                    "studio_zip" => "STUdio ZIP",
+                    "seven_zip" => "7z",
+                    "zip" => "ZIP",
+                    "v1_pk" => "PK v1",
+                    "v2_pk" => "PK v2",
+                    _ => "PK",
+                },
+                language.number(s.byte_size),
+                if language == Language::French {
+                    if language.singular(s.byte_size as u64) {
+                        "octet"
+                    } else {
+                        "octets"
+                    }
+                } else if s.byte_size == 1 {
+                    "byte"
+                } else {
+                    "bytes"
+                }
+            )
+        })
+        .unwrap_or_default();
     StoryRow {
+        tags: ModelRc::new(VecModel::from(tags)),
+        metadata: metadata.into(),
         index: index as i32,
         title: story.title.clone().into(),
         author: story
@@ -52,7 +106,20 @@ fn row(index: usize, story: &Story, language: Language) -> StoryRow {
             .unwrap_or_default()
             .into(),
         warning: warning.into(),
-        provenance: story.provenance.clone().into(),
+        provenance: if story.provenance.is_empty() {
+            String::new()
+        } else {
+            format!(
+                "{}: {}",
+                if language == Language::French {
+                    "Origine"
+                } else {
+                    "Source"
+                },
+                story.provenance
+            )
+        }
+        .into(),
         cover,
     }
 }
@@ -89,6 +156,7 @@ impl View {
         let french = self.snapshot.language == Language::French;
         ui.set_french(french);
         ui.set_startup_phase(match self.snapshot.phase {
+            librairii_desktop::presentation::Phase::Opening => 4,
             librairii_desktop::presentation::Phase::Setup => 0,
             librairii_desktop::presentation::Phase::Adoption => 1,
             librairii_desktop::presentation::Phase::Recovery => 2,
@@ -121,15 +189,33 @@ impl View {
             .navigation
             .as_ref()
             .and_then(|n| {
-                self.snapshot
-                    .groups
-                    .iter()
-                    .find(|g| g.scope == n.current().location.scope)
+                self.snapshot.groups.iter().find(|g| {
+                    match (&g.scope, &n.current().location.scope) {
+                        (
+                            librairii_core::collection_codec::url::Scope::Collection(a),
+                            librairii_core::collection_codec::url::Scope::Collection(b),
+                        ) => a == b,
+                        (
+                            librairii_core::collection_codec::url::Scope::Shelf { id: a, .. },
+                            librairii_core::collection_codec::url::Scope::Shelf { id: b, .. },
+                        ) => a == b,
+                        _ => false,
+                    }
+                })
             })
             .map(|g| g.name.as_str())
             .unwrap_or(if french { "Bibliothèque" } else { "Library" });
         ui.set_scope_title(title.into());
         let Some(page) = &self.snapshot.page else {
+            ui.set_story_groups(ModelRc::new(VecModel::from(Vec::<StoryGroup>::new())));
+            ui.set_story_count(0);
+            ui.set_selected_index(-1);
+            ui.set_selected_story(StoryRow::default());
+            ui.set_counts("".into());
+            ui.set_previous_enabled(false);
+            ui.set_next_enabled(false);
+            ui.set_back_enabled(false);
+            ui.set_forward_enabled(false);
             return;
         };
         let selected = self
@@ -144,7 +230,9 @@ impl View {
                             .is_some_and(|s| n.current().selection.contains(&s.id))
                     })
                 })
-            });
+            })
+            .or_else(|| (!page.stories.is_empty()).then_some(0));
+        self.selected = selected.map(|index| page.stories[index].uuid.clone());
         let rows = page
             .stories
             .iter()
@@ -185,7 +273,7 @@ impl View {
                     "stories"
                 },
                 self.snapshot.language.number(page.page),
-                self.snapshot.language.number(page.pages)
+                self.snapshot.language.number(page.pages.max(1))
             )
             .into(),
         );
@@ -288,49 +376,49 @@ pub fn install(
                     &story,
                     state.borrow().snapshot.language,
                 ));
-                if let Some(summary) = story.summary {
-                    if let Some(n) = state.borrow().snapshot.navigation.as_ref() {
-                        offer(
-                            &pending.borrow(),
-                            Command::Select {
-                                id: summary.id,
-                                query: n.stamp(),
-                            },
-                            &ui,
-                        );
-                    }
+                if let Some(summary) = story.summary
+                    && let Some(n) = state.borrow().snapshot.navigation.as_ref()
+                {
+                    offer(
+                        &pending.borrow(),
+                        Command::Select {
+                            id: summary.id,
+                            query: n.stamp(),
+                        },
+                        &ui,
+                    );
                 }
             }
         }
     });
     let (state, weak, pending) = (view.clone(), ui.as_weak(), worker.clone());
     ui.on_change_page(move |delta| {
-        if let Some(ui) = weak.upgrade() {
-            if let Some(n) = &state.borrow().snapshot.navigation {
-                let mut request = n.current().location.request.clone();
-                request.page = (state
-                    .borrow()
-                    .snapshot
-                    .page
-                    .as_ref()
-                    .map(|p| p.page)
-                    .unwrap_or(1)
-                    + i64::from(delta))
-                .max(1);
-                offer(&pending.borrow(), Command::Request(request), &ui);
-            }
+        if let Some(ui) = weak.upgrade()
+            && let Some(n) = &state.borrow().snapshot.navigation
+        {
+            let mut request = n.current().location.request.clone();
+            request.page = (state
+                .borrow()
+                .snapshot
+                .page
+                .as_ref()
+                .map(|p| p.page)
+                .unwrap_or(1)
+                + i64::from(delta))
+            .max(1);
+            offer(&pending.borrow(), Command::Request(request), &ui);
         }
     });
     let (state, weak, pending) = (view.clone(), ui.as_weak(), worker.clone());
     ui.on_navigate_group(move |index| {
-        if let Some(ui) = weak.upgrade() {
-            if let Some(group) = state.borrow().snapshot.groups.get(index as usize) {
-                offer(
-                    &pending.borrow(),
-                    Command::Navigate(group.scope.clone()),
-                    &ui,
-                );
-            }
+        if let Some(ui) = weak.upgrade()
+            && let Some(group) = state.borrow().snapshot.groups.get(index as usize)
+        {
+            offer(
+                &pending.borrow(),
+                Command::Navigate(group.scope.clone()),
+                &ui,
+            );
         }
     });
     let (weak, pending) = (ui.as_weak(), worker.clone());
@@ -349,14 +437,14 @@ pub fn install(
     });
     let (weak, pending) = (ui.as_weak(), worker.clone());
     ui.on_request_panel(move |panel| {
-        if panel == 0 {
-            if let Some(ui) = weak.upgrade() {
-                offer(
-                    &pending.borrow(),
-                    Command::Navigate(librairii_core::collection_codec::url::Scope::Library),
-                    &ui,
-                );
-            }
+        if panel == 0
+            && let Some(ui) = weak.upgrade()
+        {
+            offer(
+                &pending.borrow(),
+                Command::Navigate(librairii_core::collection_codec::url::Scope::Library),
+                &ui,
+            );
         }
     });
     let (weak, pending) = (ui.as_weak(), worker.clone());
@@ -367,13 +455,13 @@ pub fn install(
     });
     let (state, weak, pending) = (view.clone(), ui.as_weak(), worker);
     ui.on_search(move |text| {
-        if let Some(ui) = weak.upgrade() {
-            if let Some(n) = &state.borrow().snapshot.navigation {
-                let mut request = n.current().location.request.clone();
-                request.criteria.name = text.into();
-                request.page = 1;
-                offer(&pending.borrow(), Command::Request(request), &ui);
-            }
+        if let Some(ui) = weak.upgrade()
+            && let Some(n) = &state.borrow().snapshot.navigation
+        {
+            let mut request = n.current().location.request.clone();
+            request.criteria.name = text.into();
+            request.page = 1;
+            offer(&pending.borrow(), Command::Request(request), &ui);
         }
     });
     view

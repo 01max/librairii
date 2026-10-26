@@ -35,7 +35,9 @@ impl StartupEnvironment for Environment {
 fn receive(worker: &Worker) -> Result<Snapshot, Box<dyn std::error::Error>> {
     let deadline = Instant::now() + Duration::from_secs(10);
     loop {
-        if let Some(snapshot) = worker.take_snapshot() {
+        if let Some(snapshot) = worker.take_snapshot()
+            && snapshot.phase != librairii_desktop::presentation::Phase::Opening
+        {
             return Ok(snapshot);
         }
         if worker.finished() || Instant::now() > deadline {
@@ -76,7 +78,11 @@ fn library_worker() -> Result<
         .edit_collections(
             librairii_storage::collections::Command::Create {
                 name: "My collection".into(),
-                criteria: Default::default(),
+                criteria: {
+                    let mut query = librairii_core::collection_codec::Query::default();
+                    query.name = "Saved membership".into();
+                    query
+                },
             },
             Default::default(),
         )?
@@ -176,15 +182,35 @@ fn native_history_reopens_typed_groups_and_discards_superseded_search_snapshots(
     };
     for scope in [collection, shelf.clone()] {
         worker.offer(Command::Navigate(scope.clone()))?;
-        assert_eq!(
-            receive(&worker)?
-                .navigation
-                .ok_or("scope")?
-                .current()
-                .location
-                .scope,
-            scope
-        );
+        let opened = receive(&worker)?.navigation.ok_or("scope")?;
+        assert_eq!(opened.current().location.scope, scope);
+        if matches!(scope, Scope::Collection(_)) {
+            assert_eq!(
+                opened.current().location.request.criteria.name,
+                "Saved membership"
+            );
+            let mut edited = opened.current().location.request.clone();
+            edited.criteria.name = "Edited membership".into();
+            worker.offer(Command::Request(edited))?;
+            let edited = receive(&worker)?.navigation.ok_or("edited Collection")?;
+            assert_eq!(edited.current().location.scope, scope);
+            assert_eq!(
+                edited.current().location.request.criteria.name,
+                "Edited membership"
+            );
+            worker.offer(Command::Back)?;
+            assert_eq!(
+                receive(&worker)?
+                    .navigation
+                    .ok_or("saved membership")?
+                    .current()
+                    .location
+                    .request
+                    .criteria
+                    .name,
+                "Saved membership"
+            );
+        }
     }
     for index in 0..100 {
         let mut request = QueryRequest::default();
@@ -209,5 +235,132 @@ fn native_history_reopens_typed_groups_and_discards_superseded_search_snapshots(
     assert_eq!(saved.current().location.scope, shelf);
     assert_eq!(saved.current().location.request.criteria.name, "query 99");
     assert_eq!(saved.presentation(), Presentation::SmallCovers);
+    Ok(())
+}
+
+#[test]
+fn corrupt_navigation_reaches_recovery_without_touching_library_and_language_remains_independent()
+-> TestResult {
+    use librairii_desktop::presentation::Phase;
+    let (roots, locations, _id, mut worker) = library_worker()?;
+    receive(&worker)?;
+    worker.finish()?;
+    let profile = fs::read(locations.native.join("settings.json"))?;
+    let database = roots.library().join("native/db/librairii.sqlite3");
+    let original = fs::read(&database)?;
+    let navigation = locations.native.join("navigation.json");
+    fs::write(&navigation, b"future or corrupt native navigation")?;
+    let mut worker = Worker::start_with(Environment {
+        home: roots.profile().join("home").into_os_string(),
+        config: roots.profile().join("config").into_os_string(),
+        data: roots.library().join("data").into_os_string(),
+    })?;
+    let recovery = receive(&worker)?;
+    assert_eq!(recovery.phase, Phase::Recovery);
+    assert!(recovery.navigation.is_none() && recovery.page.is_none());
+    assert_eq!(
+        fs::read(&navigation)?,
+        b"future or corrupt native navigation"
+    );
+    assert_eq!(fs::read(locations.native.join("settings.json"))?, profile);
+    assert_eq!(fs::read(&database)?, original);
+    assert!(worker.offer(Command::Request(Default::default())).is_err());
+    worker.offer(Command::Language(Language::English))?;
+    assert_eq!(receive(&worker)?.language, Language::English);
+    worker.finish()?;
+    assert_eq!(
+        fs::read(&navigation)?,
+        b"future or corrupt native navigation"
+    );
+    assert_eq!(fs::read(&database)?, original);
+    let store = NativeProfileStore::open_native(&locations.native)?;
+    assert_eq!(store.load()?.ok_or("profile")?.profile().language, "en");
+    Ok(())
+}
+#[test]
+fn first_run_inspection_is_readonly_and_explicit_language_never_initializes_a_library() -> TestResult
+{
+    use librairii_desktop::presentation::Phase;
+    let roots = TestRoots::new()?;
+    let home = roots.profile().join("new-home");
+    let config = roots.profile().join("new-config");
+    let data = roots.library().join("new-data");
+    let locations = ProfileLocations::for_host(&home, Some(&config), Some(&data))?;
+    let mut worker = Worker::start_with(Environment {
+        home: home.into_os_string(),
+        config: config.into_os_string(),
+        data: data.into_os_string(),
+    })?;
+    assert_eq!(receive(&worker)?.phase, Phase::Setup);
+    assert!(!locations.native.exists());
+    assert!(!locations.data.exists());
+    worker.offer(Command::Language(Language::French))?;
+    let snapshot = receive(&worker)?;
+    assert_eq!(snapshot.phase, Phase::Setup);
+    assert_eq!(snapshot.language, Language::French);
+    worker.finish()?;
+    let store = NativeProfileStore::open_native(&locations.native)?;
+    let saved = store.load()?.ok_or("saved")?;
+    assert_eq!(saved.profile().language, "fr");
+    assert!(!saved.profile().complete);
+    assert!(saved.profile().root.is_empty());
+    assert!(!locations.data.join("library").exists());
+    Ok(())
+}
+
+#[test]
+fn saved_shelf_warning_preferences_are_recognized_as_native_state() -> TestResult {
+    let (roots, locations, id, mut worker) = library_worker()?;
+    receive(&worker)?;
+    worker.offer(Command::Presentation(Presentation::SmallCovers))?;
+    receive(&worker)?;
+    worker.finish()?;
+    let store = NativeProfileStore::open_native(&locations.native)?;
+    store.save_shelf_warnings(&librairii_core::shelves::WarningAcknowledgements::new(id))?;
+    drop(store);
+    let mut worker = Worker::start_with(Environment {
+        home: roots.profile().join("home").into_os_string(),
+        config: roots.profile().join("config").into_os_string(),
+        data: roots.library().join("data").into_os_string(),
+    })?;
+    let snapshot = receive(&worker)?;
+    assert_eq!(
+        snapshot.phase,
+        librairii_desktop::presentation::Phase::Library
+    );
+    assert!(snapshot.page.is_some());
+    worker.finish()?;
+    Ok(())
+}
+
+#[test]
+fn active_preference_failure_retains_actual_session_until_safe_shutdown() -> TestResult {
+    let (_roots, locations, _id, mut worker) = library_worker()?;
+    receive(&worker)?;
+    worker.offer(Command::Presentation(Presentation::SmallCovers))?;
+    receive(&worker)?;
+    let navigation = locations.native.join("navigation.json");
+    fs::write(&navigation, b"unconfirmed external preference bytes")?;
+    worker.offer(Command::Presentation(Presentation::LargeCovers))?;
+    assert_eq!(
+        receive(&worker)?.phase,
+        librairii_desktop::presentation::Phase::Recovery
+    );
+    assert!(matches!(
+        NativeProfileStore::open_native(&locations.native),
+        Err(librairii_storage::StorageError::ProfileInUse)
+    ));
+    assert!(worker.offer(Command::Request(Default::default())).is_err());
+    assert_eq!(
+        fs::read(&navigation)?,
+        b"unconfirmed external preference bytes"
+    );
+    worker.finish()?;
+    let store = NativeProfileStore::open_native(&locations.native)?;
+    assert!(store.load()?.ok_or("profile")?.profile().complete);
+    assert_eq!(
+        fs::read(&navigation)?,
+        b"unconfirmed external preference bytes"
+    );
     Ok(())
 }

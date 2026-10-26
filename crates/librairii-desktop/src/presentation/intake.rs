@@ -5,7 +5,7 @@ use std::{
     fmt,
     sync::{
         Condvar, Mutex,
-        atomic::{AtomicU64, Ordering},
+        atomic::{AtomicBool, AtomicU64, Ordering},
     },
     time::Duration,
 };
@@ -38,10 +38,16 @@ pub(crate) struct Intake {
     pending: Mutex<Pending>,
     available: Condvar,
     latest: AtomicU64,
+    fenced: AtomicBool,
 }
 impl Intake {
     pub fn offer(&self, command: Command) -> Result<u64, OfferError> {
         let mut pending = self.pending.lock().map_err(|_| OfferError::Closed)?;
+        if self.fenced.load(Ordering::Acquire)
+            && !matches!(command, Command::Language(_) | Command::Refresh)
+        {
+            return Err(OfferError::Closed);
+        }
         let coalesce = matches!(command, Command::Request(_))
             && pending
                 .queue
@@ -59,6 +65,14 @@ impl Intake {
         self.latest.store(revision, Ordering::Release);
         self.available.notify_one();
         Ok(revision)
+    }
+    pub fn fence(&self) -> Result<(), OfferError> {
+        let mut pending = self.pending.lock().map_err(|_| OfferError::Closed)?;
+        self.fenced.store(true, Ordering::Release);
+        pending
+            .queue
+            .retain(|entry| matches!(entry.command, Command::Language(_) | Command::Refresh));
+        Ok(())
     }
     pub fn latest(&self) -> u64 {
         self.latest.load(Ordering::Acquire)

@@ -800,3 +800,55 @@ fn deletion_inspects_valid_references_without_normalizing_unrelated_membership_f
     db.close()?;
     Ok(())
 }
+
+#[test]
+fn native_display_labels_preserve_boolean_choice_color_and_assignment_independence() -> TestResult {
+    let roots = TestRoots::new()?;
+    let library = IsolatedLibrary::initialize_from_override(
+        Some(roots.library().as_os_str()),
+        "e0000000-0000-4000-8000-000000000014".parse()?,
+    )?;
+    let mut db = Database::open_isolated(&library)?;
+    seed_stories(&db, 2)?;
+    let flag = create(&db, "broken", Kind::Boolean)?;
+    let genre = create(&db, "Genre", Kind::Choice)?;
+    let summer = value(&db, genre, "Summer")?;
+    edit(
+        &db,
+        Command::Boolean {
+            story_ids: vec![1],
+            definition_id: flag,
+            assigned: true,
+        },
+    )?;
+    edit(
+        &db,
+        Command::ChoiceToggle {
+            story_ids: vec![1, 2],
+            definition_id: genre,
+            value_id: summer,
+            assigned: true,
+        },
+    )?;
+    let before = db.assignment_workspace(vec![1, 2])?.wait()?;
+    let labels = db.story_tag_labels(vec![1, 2])?.wait()?;
+    assert_eq!(labels.get(&1).ok_or("story one")?.len(), 2);
+    assert_eq!(
+        labels.get(&1).ok_or("story one")?[0],
+        librairii_core::tagging::DisplayTag {
+            definition: "broken".into(),
+            value: None,
+            color: "#405CF5".into()
+        }
+    );
+    assert_eq!(labels.get(&2).ok_or("story two")?[0].definition, "Genre");
+    assert_eq!(
+        labels.get(&2).ok_or("story two")?[0].value.as_deref(),
+        Some("Summer")
+    );
+    assert_eq!(db.assignment_workspace(vec![1, 2])?.wait()?, before);
+    assert!(db.story_tag_labels(Vec::new())?.wait()?.is_empty());
+    assert!(db.story_tag_labels(vec![0]).is_err());
+    db.close()?;
+    Ok(())
+}

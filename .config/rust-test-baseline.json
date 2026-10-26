@@ -3802,6 +3802,60 @@
         "x86_64-apple-darwin",
         "x86_64-unknown-linux-gnu"
       ]
+    },
+    {
+      "suite": "librairii-storage::tags",
+      "name": "native_display_labels_preserve_boolean_choice_color_and_assignment_independence",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-desktop::presentation",
+      "name": "corrupt_navigation_reaches_recovery_without_touching_library_and_language_remains_independent",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-desktop::presentation",
+      "name": "first_run_inspection_is_readonly_and_explicit_language_never_initializes_a_library",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-desktop::presentation",
+      "name": "saved_shelf_warning_preferences_are_recognized_as_native_state",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "librairii-desktop::presentation",
+      "name": "active_preference_failure_retains_actual_session_until_safe_shutdown",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
+    },
+    {
+      "suite": "xtask::bin/xtask",
+      "name": "supply_chain::tests::recursive_notices_retain_original_bytes_and_refuse_source_or_output_symlinks",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
     }
   ]
 }

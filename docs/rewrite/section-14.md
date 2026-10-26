@@ -102,7 +102,12 @@ Back/Forward, Library, Collection and Shelf commands use core typed navigation;
 Collection and curated Shelf IDs remain distinct even with the same numeric ID.
 The existing versioned library-bound `navigation.json` retains frames, criteria,
 sort/page, selection and the independent mode preference, with 100-frame and
-8 MiB limits. Every accepted transition persists before projection. There is no
+8 MiB limits. Every accepted transition persists before projection. Opening a Collection reads
+its saved membership into the navigation frame; later search edits use that
+frame's actual criteria while retaining the named context, matching the preserved
+frontend. Back/Forward restore those criteria without silently replacing them
+with the saved definition. Empty saved selection falls back to the first visible
+story, matching the preserved frontend's inspector behavior. There is no
 URL/address bar, browser history or frontend event bridge. Official metadata
 uses the frozen provider's `en-GB` default independently of interface language.
 
@@ -116,3 +121,62 @@ commands carry the originating query stamp and stale selections are ignored.
 The one latest snapshot remains bounded. Native tests exercise persisted history,
 mode independence, overlapping group IDs, a burst of searches, shutdown/reopen,
 queue ordering/backpressure and obsolete activation/query rejection.
+
+## Source and notice promotion
+
+The production/tooling dependency inventory retains the exact vendored AccessKit
+source checksum and its original license/Chromium notices. The native Skia notice
+supplement is verified against its pinned source ref and payload hashes before
+copying. Published `LICENSES/` directories are retained recursively. Dependencies
+whose registry archives omit license texts have `.config/upstream-notices/`
+supplements fetched from immutable official upstream revisions, with URLs and
+SHA-256 provenance. Most match the registry VCS revision; drm-fourcc explicitly
+records a later original upstream notice. dispatch publishes only an MIT manifest
+declaration: retain that declaration/author verbatim plus the attributed standard
+SPDX MIT text without inventing copyright details. Its installed redistribution
+notice review remains section 18. The selected Slint royalty-free route is explicit; its
+alternative upstream texts do not assign a license to Librairii.
+
+Exact duplicate/license/maintenance decisions in the dependency registry expire
+2027-01-24. Informational maintenance notices retain the qualified graph; no
+vulnerability advisory is suppressed. Bincode is locked optional support of
+typed-index-collections and is not selected by the active graph. The yanked
+Windows-only clipboard-win 5.4.1 entry is replaced by compatible 5.4.2; Windows
+remains deferred. Native Slint/Winit/Skia versions/features are unchanged.
+
+## Fixture contract
+
+`docs/rewrite/native-reference.json` records the original approval, concept names,
+renderer identity and editable/export digests. Byte-identical original reference
+files are retained under `docs/rewrite/ui-reference/` and verified before capture. The approved HTML remains design
+evidence; it is never imported by the native executable. Native evidence compares
+the saved source/manifest hierarchy with directly rendered captures. The browser's
+local-file URL policy prevented opening the HTML preview during this task; no
+alternate browser route or production HTML engine was introduced.
+
+`verify-native-foundations.py` builds the actual desktop projection/example on a
+matching host, displays both concepts in English/French at wide/intermediate/
+compact sizes, exercises all three story modes and observes scale factors 1/2.
+It requires clean committed source and retains 24 concept/mode/density/language
+frames per scale plus opening, setup, recovery, actual Slint attribution,
+keyboard-seek and static-progress frames. Model/keyboard assertions cover text
+palette contrast >=4.5, zero implicit review decisions, literal UTF-8 input, modal
+Tab containment/Escape/restoration, nested sidebar dismissal, offscreen selection,
+pending commit close safety, empty first-run/recovery projections and static
+progress. Intrinsic portrait/square/landscape fitting and external captions are
+checked against the source/layout and actual captures; they are not pixel-diff
+assertions against HTML. The Linux private-bus fixture additionally
+inspects actual AT-SPI roles/names/enabled/sensitive/selection/focus state and uses
+X11 keyboard input. This is native component evidence, not physical HID, VoiceOver,
+full domain workflow transactions, installed packages or the section-16 budgets.
+The required matrix executes it on Apple silicon, Intel macOS and Linux x86-64;
+Task 2's existing Wayland qualification remains separate from these X11 fixtures.
+
+Startup inspection now reports an opening view before expensive read-only work,
+with cancellable inspection and override-first isolation. Invalid native UI state
+is preserved before library activation. Active preference failures fence queries
+and hold the actual profile/library session until the user closes; then joined
+runtime cleanup closes resources before releasing ownership. Valid Shelf warning
+preferences are recognized alongside settings/navigation. First-run language
+selection creates independent preference containers without creating a library.
+These real isolated-profile cases are admitted in the cumulative test baseline.

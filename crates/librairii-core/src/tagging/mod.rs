@@ -194,6 +194,13 @@ pub struct AssignmentWorkspace {
     pub requested_stories: usize,
     pub states: Vec<DefinitionState>,
 }
+/// Read-only native display data; labels and color grant no assignment authority.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct DisplayTag {
+    pub definition: String,
+    pub value: Option<String>,
+    pub color: String,
+}
 /// Raw selection cap applies before deduplication, matching the frozen API.
 pub fn story_ids(ids: &[i64]) -> Result<Vec<i64>, TagError> {
     if ids.is_empty() || ids.len() > 1000 || ids.iter().any(|&id| id <= 0) {

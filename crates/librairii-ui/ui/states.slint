@@ -6,7 +6,6 @@ export component MixedChoice inherits ComboBox {
     in property <string> label;
     model: root.french ? ["Mixte — ne pas modifier", "Définir", "Effacer"] : ["Mixed — leave unchanged", "Set", "Clear"];
     accessible-label: root.label;
-    accessible-value: self.current-value;
 }
 export component TagChip inherits Rectangle {
     in property <string> label;

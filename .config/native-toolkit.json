@@ -34,5 +34,17 @@
       "src/text_attributes.rs": "bd20841018e863c108d9a25ef6c5324951f4fba02c582e19943bdccdd052a744",
       "src/util.rs": "e831407f6e9b05e403fb4256f037e040d813168716bb1ae3d56f8f0441b58a52"
     }
-  }
+  },
+  "skia_source_ref": "m153-0.101.2",
+  "native_notice_inventory_sha256": "add12c2345c1f36fd3cc82ba85014e115a633564c9cfc47c62dcd7cbd663c0ba",
+  "features": [
+    "std",
+    "compat-1-18",
+    "accessibility",
+    "backend-winit-x11",
+    "backend-winit-wayland",
+    "renderer-skia",
+    "raw-window-handle-06",
+    "unstable-winit-030"
+  ]
 }

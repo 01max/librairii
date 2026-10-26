@@ -70,6 +70,13 @@ pub fn select_startup(
     environment: &impl StartupEnvironment,
     cancel: &WorkCancellation,
 ) -> Result<StartupSelection> {
+    select_startup_with_progress(environment, cancel, || Ok(()))
+}
+pub(crate) fn select_startup_with_progress(
+    environment: &impl StartupEnvironment,
+    cancel: &WorkCancellation,
+    opening: impl FnOnce() -> Result<()>,
+) -> Result<StartupSelection> {
     if let Some(root) = environment.variable(librairii_storage::DATA_ROOT_OVERRIDE) {
         let root = PathBuf::from(root);
         if !root.is_absolute() {
@@ -89,6 +96,7 @@ pub fn select_startup(
     let config = environment.variable("XDG_CONFIG_HOME").map(PathBuf::from);
     let data = environment.variable("XDG_DATA_HOME").map(PathBuf::from);
     let locations = ProfileLocations::for_host(&home, config.as_deref(), data.as_deref())?;
+    opening()?;
     let decision = inspect_startup(&locations, cancel);
     Ok(StartupSelection::Production {
         locations,

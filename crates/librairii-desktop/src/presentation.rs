@@ -1,6 +1,6 @@
 //! One owned controller worker. Only bounded, owned presentation values cross
 //! the native event-loop boundary; storage owners never enter a UI callback.
-use crate::startup::{NativeEnvironment, StartupSelection, select_startup};
+use crate::startup::{NativeEnvironment, StartupSelection, select_startup_with_progress};
 use librairii_app::localization::{Catalogs, Language};
 use librairii_storage::{database::WorkCancellation, settings::Startup};
 use std::sync::{
@@ -29,6 +29,7 @@ pub enum Command {
 }
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum Phase {
+    Opening,
     Setup,
     Adoption,
     Recovery,
@@ -51,6 +52,7 @@ pub struct Worker {
     commands: Arc<Intake>,
     latest: Arc<Mutex<Option<Snapshot>>>,
     stop: Arc<AtomicBool>,
+    startup_cancel: WorkCancellation,
     join: Option<JoinHandle<Result<(), String>>>,
 }
 impl Worker {
@@ -66,13 +68,16 @@ impl Worker {
         let stop = Arc::new(AtomicBool::new(false));
         let mailbox = latest.clone();
         let cancelled = stop.clone();
+        let startup_cancel = WorkCancellation::default();
+        let probe_cancel = startup_cancel.clone();
         let join = thread::Builder::new()
             .name("native-controller".into())
-            .spawn(move || run(environment, receiver, mailbox, cancelled))?;
+            .spawn(move || run(environment, receiver, mailbox, cancelled, probe_cancel))?;
         Ok(Self {
             commands,
             latest,
             stop,
+            startup_cancel,
             join: Some(join),
         })
     }
@@ -86,14 +91,13 @@ impl Worker {
         self.commands.latest()
     }
     pub fn take_snapshot(&self) -> Option<Snapshot> {
-        self.latest
-            .lock()
-            .ok()?
-            .take()
-            .filter(|snapshot| snapshot.revision == self.commands.latest())
+        self.latest.lock().ok()?.take().filter(|snapshot| {
+            snapshot.phase == Phase::Recovery || snapshot.revision == self.commands.latest()
+        })
     }
     pub fn request_shutdown(&self) {
         self.stop.store(true, Ordering::Release);
+        self.startup_cancel.cancel();
     }
     pub fn finished(&self) -> bool {
         self.join.as_ref().is_none_or(JoinHandle::is_finished)
@@ -118,21 +122,47 @@ fn run(
     receiver: Arc<Intake>,
     mailbox: Arc<Mutex<Option<Snapshot>>>,
     stop: Arc<AtomicBool>,
+    startup_cancel: WorkCancellation,
 ) -> Result<(), String> {
     let catalogs = Catalogs::embedded().map_err(|e| e.to_string())?;
-    let mut selection =
-        select_startup(&environment, &WorkCancellation::default()).map_err(|e| e.to_string())?;
+    let mut selection = select_startup_with_progress(&environment, &startup_cancel, || {
+        *mailbox
+            .lock()
+            .map_err(|_| librairii_storage::StorageError::RuntimeFenced)? = Some(Snapshot {
+            revision: 0,
+            restore_navigation: false,
+            generation: None,
+            phase: Phase::Opening,
+            language: Language::English,
+            status: "Librairii".into(),
+            groups: Vec::new(),
+            navigation: None,
+            page: None,
+        });
+        Ok(())
+    })
+    .map_err(|e| e.to_string())?;
+    if stop.load(Ordering::Acquire) {
+        return Ok(());
+    }
     if let StartupSelection::Production {
         locations,
         decision,
     } = &selection
+        && let Startup::Native(document) = decision.as_ref()
     {
-        if let Startup::Native(document) = decision.as_ref() {
-            let language =
-                Language::explicit(&document.profile().language).map_err(|e| e.to_string())?;
-            return crate::browsing::run(locations, language, &receiver, &mailbox, &stop)
-                .map_err(|e| e.to_string());
+        let language =
+            Language::explicit(&document.profile().language).map_err(|e| e.to_string())?;
+        if crate::browsing::run(locations, language, &receiver, &mailbox, &stop).is_ok() {
+            return Ok(());
         }
+        return recovery(&receiver, &mailbox, &stop, language, |requested| {
+            let store =
+                librairii_storage::profile::NativeProfileStore::open_native(&locations.native)?;
+            let mut settings = crate::settings::restore_language(&store, language)?;
+            crate::settings::change_language(&store, &mut settings, requested.code())
+        })
+        .map_err(|e| e.to_string());
     }
     let (phase, language, key) = match &selection {
         StartupSelection::Override(settings) => {
@@ -141,13 +171,31 @@ fn run(
             }
             (Phase::Setup, Language::English, "settings.setup_required")
         }
-        StartupSelection::Production { decision, .. } => match decision.as_ref() {
+        StartupSelection::Production {
+            decision,
+            locations,
+        } => match decision.as_ref() {
             Startup::ConfirmFolder { .. } => {
-                (Phase::Setup, Language::English, "settings.setup_required")
+                let saved = librairii_storage::profile::read_legacy(&locations.native)
+                    .ok()
+                    .flatten()
+                    .or_else(|| {
+                        locations
+                            .legacy
+                            .as_ref()
+                            .and_then(|p| librairii_storage::profile::read_legacy(p).ok().flatten())
+                    });
+                let language = saved
+                    .and_then(|d| Language::explicit(&d.profile().language).ok())
+                    .unwrap_or_else(crate::settings::system_language);
+                (Phase::Setup, language, "settings.setup_required")
             }
-            Startup::AdoptIndependent(_) => {
-                (Phase::Adoption, Language::English, "Choose library folder")
-            }
+            Startup::AdoptIndependent(input) => (
+                Phase::Adoption,
+                Language::explicit(&input.profile().profile().language)
+                    .map_err(|e| e.to_string())?,
+                "Choose library folder",
+            ),
             Startup::Recovery { configured, .. } => (
                 Phase::Recovery,
                 configured
@@ -227,6 +275,64 @@ fn run(
                 }
                 _ => break,
             }
+        }
+    }
+    Ok(())
+}
+
+/// Keep failure reachable while retained session/profile owners remain in scope.
+/// Ordinary queries/history are fenced; language changes retain independent
+/// settings authority. Recovery never initializes/replaces a library.
+pub(crate) fn recovery(
+    intake: &Intake,
+    mailbox: &Mutex<Option<Snapshot>>,
+    stop: &AtomicBool,
+    initial_language: Language,
+    mut change_language: impl FnMut(Language) -> librairii_storage::Result<()>,
+) -> librairii_storage::Result<()> {
+    intake
+        .fence()
+        .map_err(|_| librairii_storage::StorageError::RuntimeFenced)?;
+    let catalogs =
+        Catalogs::embedded().map_err(|_| librairii_storage::StorageError::InvalidProfile)?;
+    let mut language = initial_language;
+    let mut key = "Local library needs recovery";
+    while !stop.load(Ordering::Acquire) {
+        *mailbox
+            .lock()
+            .map_err(|_| librairii_storage::StorageError::RuntimeFenced)? = Some(Snapshot {
+            revision: intake.latest(),
+            restore_navigation: false,
+            generation: None,
+            phase: Phase::Recovery,
+            language,
+            status: catalogs
+                .text(language, key)
+                .map_err(|_| librairii_storage::StorageError::InvalidProfile)?
+                .into(),
+            groups: Vec::new(),
+            navigation: None,
+            page: None,
+        });
+        loop {
+            if stop.load(Ordering::Acquire) {
+                return Ok(());
+            }
+            let Some(envelope) = intake
+                .receive()
+                .map_err(|_| librairii_storage::StorageError::RuntimeFenced)?
+            else {
+                continue;
+            };
+            if let Command::Language(requested) = envelope.command {
+                if change_language(requested).is_ok() {
+                    language = requested;
+                    key = "Local library needs recovery";
+                } else {
+                    key = "settings.restart_required";
+                }
+            }
+            break;
         }
     }
     Ok(())
