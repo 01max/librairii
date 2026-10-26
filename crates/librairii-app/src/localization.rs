@@ -113,7 +113,7 @@ impl Language {
 pub struct LocalizationError;
 impl fmt::Display for LocalizationError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str("settings.language_invalid")
+        f.write_str("settings.invalid")
     }
 }
 impl std::error::Error for LocalizationError {}
