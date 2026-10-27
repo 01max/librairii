@@ -3,6 +3,8 @@
 mod collection_checks;
 #[path = "flags.rs"]
 mod flag_checks;
+#[path = "operations.rs"]
+mod operation_checks;
 #[path = "shelf_reviews.rs"]
 mod review_checks;
 #[path = "shelves.rs"]
@@ -23,6 +25,7 @@ use librairii_storage::{
 };
 use librairii_testkit::TestRoots;
 use librairii_ui::native::DesktopWindow;
+pub use operation_checks::{Surface as OperationSurface, checks as operations};
 pub use review_checks::{Surface as ReviewSurface, checks as shelf_reviews};
 pub use shelf_checks::{Surface as ShelfSurface, checks as shelves};
 use slint::ComponentHandle;
@@ -237,6 +240,12 @@ impl Fixture {
 impl Drop for Fixture {
     fn drop(&mut self) {
         if let Some(ui) = self.ui.upgrade() {
+            ui.on_pick_import(|| {});
+            ui.on_retry_import(|| {});
+            ui.on_select_operation(|_| {});
+            ui.on_cancel_operation(|| {});
+            ui.on_operation_page(|_| {});
+            ui.on_refresh_operations(|| {});
             ui.on_review_updates(|| {});
             ui.on_preview_shelf_sources(|| {});
             ui.on_review_delete_shelf(|| {});

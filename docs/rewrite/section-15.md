@@ -338,9 +338,54 @@ independent source review axes have zero
 remaining required findings; full spoken/current-source three-host acceptance
 remains15.13.
 
+## 15.8 — Native imports and concurrent operation reports
+
+The native multi-file picker uses pinned rfd0.17.2 over AppKit or the Linux
+XDG portal, with PK/ZIP/7z, uppercase and all-files filters. Selection cancellation
+creates no work. The controller validates 1–1,000 paths and a retained-path budget
+before preparing the real archive inputs; paths remain session-only picker grants.
+Retry explicitly selects sources again and creates a new operation identity while
+retaining the earlier report. Neither persisted source labels nor opaque staging
+slots become file authority after reopening.
+
+The existing shared two-worker scheduler owns every import. Admission preparation,
+queued/running states, cancellation requests, item outcomes and terminal summaries
+are distinct. Progress slots coalesce outside the UI command FIFO. Throttled
+observations run while typing and navigating as well as during idle intervals;
+progress-only publications preserve mounted browser widgets and focus. A named
+persistent operation summary returns to the cancel/report pane while browsing.
+Counts distinguish operations from queued file work; byte totals are derived from
+immutable item data without rewriting legacy header fields. The pane pages at25
+items and retains stable codes, localized reasons and unknown technical details.
+Selection/backpressure failures remain visible during progress updates.
+
+Successful import effects refresh current Library, Collection/union and Shelf
+availability and stale any open review without changing approved membership or
+browser history. Durable reports and actual resource owners survive later failures;
+a failed job runtime immediately fences intake into Recovery.
+
+A real import→cancel→close→reopen regression exposed an older close predicate that
+accepted only removal trash. Settled unused import stages already move durably to
+recoverable trash before their registration is forgotten. Close now recognizes
+those exact generated containers through bounded, descriptor-relative read-only
+checks: canonical decimal names, one regular single-link payload, no symlinks or
+extra files. It grants no cleanup, deletion or repair authority. All original live
+runtime/custody, fence, empty-staging, registration and closed-state checks remain.
+The existing stage-registration test now proves66 retired containers close/reopen,
+and rejects malformed, foreign, linked, extra-file and unsettled cases without
+changing their bytes. No Rust test identity or frozen baseline is removed.
+
+Production callback fixtures cover actual import/duplicate/UUID-conflict/failure
+reasons, original-byte preservation, picker cancellation, new-ID retry, unchanged
+search/navigation, two concurrent32-file batches, cancellation, the1,001-file
+selection refusal surviving progress,25-row paging and restart persistence. Native
+English/French wide/compact frames include Tab into operation selection and Escape
+back to browsing. The original24-frame matrices and every earlier workflow remain
+mandatory. Full spoken and fresh three-host acceptance remain15.13.
+
 ## Remaining workflow work
 
-15.8–15.12 compose imports/sync/exports, durable History/notices and complete native
+15.9–15.12 compose imports/sync/exports, durable History/notices and complete native
 setup/settings/recovery/diagnostics. 15.13 independently reviews the complete
 native surfaces and refreshes visual/accessibility evidence. Resource budgets,
 handover, installed packages and cutover retain their later task boundaries.

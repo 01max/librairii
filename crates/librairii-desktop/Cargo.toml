@@ -12,6 +12,7 @@ librairii-adapters.workspace = true
 librairii-ui.workspace = true
 librairii-core.workspace = true
 slint.workspace = true
+rfd = { version = "=0.17.2", default-features = false, features = ["xdg-portal", "wayland"] }
 
 [target.'cfg(target_os = "macos")'.dependencies]
 muda = { version = "=0.19.3", default-features = false }

@@ -97,7 +97,33 @@ pub struct Runtime<'gate, 'db, 'library> {
     library: &'db NativeLibrary<'library>,
     locations: &'db ProfileLocations,
 }
+#[derive(Debug)]
+pub struct JobObservation {
+    pub status: native_jobs::RuntimeStatus,
+    pub dirty: bool,
+    pub progress: Vec<native_jobs::ProgressUpdate>,
+    pub admissions: Vec<native_jobs::Admission>,
+}
 impl<'gate> Runtime<'gate, '_, '_> {
+    pub fn observe_jobs(&self) -> JobObservation {
+        let mut admissions = Vec::new();
+        while let Some(admission) = self.jobs.take_admission() {
+            admissions.push(admission);
+        }
+        JobObservation {
+            status: self.jobs.status(),
+            dirty: self.jobs.take_dirty(),
+            progress: self.jobs.take_progress(),
+            admissions,
+        }
+    }
+    pub fn cancel_operation(&self, id: String) -> Result<()> {
+        let _use = self
+            .gate
+            .enter_mutation()
+            .map_err(|_| StorageError::RuntimeInUse)?;
+        self.jobs.cancel(id).map_err(|_| StorageError::QueueFull)
+    }
     pub fn preview_relocation(
         &self,
         selected: &Path,

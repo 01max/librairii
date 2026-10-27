@@ -171,6 +171,28 @@ pub(super) fn snapshot(tx: &Transaction<'_>, id: &str) -> Result<Option<Operatio
         .collect::<rusqlite::Result<Vec<_>>>()?;
     Ok(Some(OperationSnapshot { operation, items }))
 }
+pub(super) fn items_page(
+    tx: &Transaction<'_>,
+    id: &str,
+    offset: usize,
+) -> Result<Vec<OperationItem>> {
+    let offset = i64::try_from(offset).map_err(|_| {
+        crate::StorageError::from(librairii_app::ports::creation::InputError::ResourceLimit)
+    })?;
+    let predicate = "id IN (SELECT id FROM file_operation_items WHERE operation_id=? ORDER BY id LIMIT 25 OFFSET ?)";
+    budget(
+        tx,
+        "file_operation_items",
+        ITEM_TEXT,
+        predicate,
+        rusqlite::params![id, offset],
+        std::mem::size_of::<OperationItem>(),
+        MAX_SNAPSHOT - MAX_ROW_TEXT,
+    )?;
+    let mut q = tx.prepare(&format!("{ITEMS} WHERE {predicate} ORDER BY id"))?;
+    Ok(q.query_map(rusqlite::params![id, offset], item_row)?
+        .collect::<rusqlite::Result<_>>()?)
+}
 
 pub(super) fn view(
     tx: &Transaction<'_>,

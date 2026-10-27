@@ -241,8 +241,10 @@ fn main() -> Result {
     callback_checks::collections(&ui)?;
     callback_checks::shelves(&ui)?;
     callback_checks::shelf_reviews(&ui)?;
+    callback_checks::operations(&ui)?;
     let initial = snapshot()?;
     let view = Rc::new(RefCell::new(view::View {
+        operations: Default::default(),
         shelf_reviews: Default::default(),
         shelves: Default::default(),
         collections: Default::default(),
@@ -362,6 +364,8 @@ fn main() -> Result {
                     surface.poll(&ui);
                 } else if let Some(surface) = surfaces.collections.borrow().as_ref() {
                     surface.poll(&ui);
+                } else if let Some(surface) = surfaces.operations.borrow().as_ref() {
+                    surface.poll(&ui);
                 } else {
                     view.borrow_mut().resize(&ui);
                 }
@@ -393,7 +397,7 @@ fn main() -> Result {
         return Err(error.into());
     }
     check(
-        server || *step.borrow() > 106,
+        server || *step.borrow() > 109,
         "native fixture ended before completing its checks",
     )?;
     Ok(())
@@ -401,6 +405,7 @@ fn main() -> Result {
 
 #[derive(Debug, Default)]
 struct Surfaces {
+    operations: RefCell<Option<callback_checks::OperationSurface>>,
     collections: RefCell<Option<callback_checks::CollectionSurface>>,
     shelves: RefCell<Option<callback_checks::ShelfSurface>>,
     reviews: RefCell<Option<callback_checks::ReviewSurface>>,
@@ -1065,6 +1070,37 @@ fn capture_step(
             &destination.join("shelf-linked-deletion-keyboard-fr.png"),
         )?;
         surfaces.reviews.borrow_mut().take();
+    } else if index == 107 {
+        resize(ui, 1180., 760.)?;
+        *surfaces.operations.borrow_mut() = Some(callback_checks::OperationSurface::open(ui)?);
+    } else if index == 108 {
+        capture(ui, &destination.join("imports-results-wide-en.png"))?;
+        surfaces
+            .operations
+            .borrow()
+            .as_ref()
+            .ok_or("operation surface missing")?
+            .french(ui)?;
+        resize(ui, 560., 400.)?;
+    } else if index == 109 {
+        check(
+            ui.get_operation_displayed_choice()
+                .starts_with("Import · Terminée"),
+            "operation choice did not re-localize its native displayed value",
+        )?;
+        check(
+            ui.get_operation_first_focused(),
+            "import picker action lost native focus",
+        )?;
+        key(ui, slint::platform::Key::Tab.into())?;
+        check(
+            ui.get_operation_selector_focused(),
+            "native Tab did not reach operation selection",
+        )?;
+        capture(ui, &destination.join("imports-results-compact-fr.png"))?;
+        key(ui, slint::platform::Key::Escape.into())?;
+        check(!ui.get_modal(), "import Escape did not return to browsing")?;
+        surfaces.operations.borrow_mut().take();
     } else {
         std::fs::write(
             destination.join("report.json"),
@@ -1083,6 +1119,7 @@ fn capture_step(
                 "collection_callbacks": "passed",
                 "shelf_callbacks": "passed",
                 "shelf_review_callbacks": "passed",
+                "operation_callbacks":"passed",
                 "scope": "shown native component/public window events and Skia capture; not physical HID or packaged workflow qualification",
             }))?,
         )?;

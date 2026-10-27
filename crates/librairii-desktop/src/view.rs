@@ -7,6 +7,8 @@ pub(crate) mod details;
 pub(crate) mod filters;
 #[path = "view/flags.rs"]
 pub(crate) mod flags;
+#[path = "view/operations.rs"]
+pub(crate) mod operations;
 #[path = "view/shelf_reviews.rs"]
 pub(crate) mod shelf_reviews;
 #[path = "view/shelves.rs"]
@@ -66,6 +68,7 @@ fn update_previews(ui: &DesktopWindow, mut next: Vec<CollectionPreview>) -> bool
     false
 }
 pub struct View {
+    pub operations: operations::State,
     pub shelf_reviews: shelf_reviews::State,
     pub shelves: shelves::State,
     pub collections: collections::State,
@@ -288,6 +291,19 @@ impl View {
                 return false;
             }
         }
+        if snapshot.generation == self.snapshot.generation
+            && snapshot.revision == self.snapshot.revision
+            && snapshot.phase == self.snapshot.phase
+            && snapshot.language == self.snapshot.language
+            && snapshot.workflows.operations.observation
+                != self.snapshot.workflows.operations.observation
+            && snapshot.workflows.operations.effects_revision
+                == self.snapshot.workflows.operations.effects_revision
+        {
+            self.snapshot = snapshot;
+            self.operations.project(ui, &self.snapshot, &self.catalogs);
+            return true;
+        }
         if let Some(n) = &snapshot.navigation {
             ui.set_mode(match n.presentation() {
                 Presentation::List => 0,
@@ -318,6 +334,7 @@ impl View {
         true
     }
     pub fn project(&mut self, ui: &DesktopWindow) {
+        self.operations.project(ui, &self.snapshot, &self.catalogs);
         self.tags.retain_visible(&self.snapshot);
         self.flags.project(
             ui,
@@ -609,6 +626,7 @@ pub fn install(
     initial: Snapshot,
 ) -> Result<Rc<RefCell<View>>, LocalizationError> {
     let view = Rc::new(RefCell::new(View {
+        operations: Default::default(),
         shelf_reviews: Default::default(),
         shelves: Default::default(),
         collections: Default::default(),
@@ -792,6 +810,7 @@ pub fn install(
         }
     });
     collections::install(ui, view.clone(), worker.clone());
+    operations::install(ui, view.clone(), worker.clone());
     shelves::install(ui, view.clone(), worker.clone());
     shelf_reviews::install(ui, view.clone(), worker.clone());
     flags::install(ui, view.clone(), worker.clone());

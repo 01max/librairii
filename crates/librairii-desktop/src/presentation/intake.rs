@@ -42,6 +42,9 @@ pub(crate) struct Intake {
 }
 impl Intake {
     pub fn offer(&self, command: Command) -> Result<u64, OfferError> {
+        if matches!(&command,Command::Operations{action,..} if !action.bounded()) {
+            return Err(OfferError::Busy);
+        }
         let mut pending = self.pending.lock().map_err(|_| OfferError::Closed)?;
         if self.fenced.load(Ordering::Acquire)
             && !matches!(command, Command::Language(_) | Command::Refresh)

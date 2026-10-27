@@ -396,6 +396,7 @@ pub(crate) fn run(
     let mut collection_controller = crate::workflows::collections::Controller::default();
     let mut shelf_controller = crate::workflows::shelves::Controller::default();
     let mut review_controller = crate::workflows::shelf_reviews::Controller::default();
+    let mut operation_controller = crate::workflows::operations::Controller::default();
     let result = session.drive(locations, &WorkCancellation::default(), |runtime| {
         let active = (|| -> Result<()> {
             let generation = runtime
@@ -403,8 +404,20 @@ pub(crate) fn run(
                 .map_err(|_| StorageError::RuntimeFenced)?;
             let mut group_rows = groups(runtime)?;
             let mut query_facets = facets(runtime)?;
+            operation_controller.poll(runtime,true)?;
+            workflows.operations=operation_controller.snapshot.clone();
             let mut check_entry = true;
             while !stop.load(Ordering::Acquire) {
+                // Job progress does not depend on the UI command FIFO becoming
+                // empty while a user types or navigates continuously.
+                let (_,effects)=operation_controller.poll(runtime,false)?;
+                workflows.operations=operation_controller.snapshot.clone();
+                if effects {
+                    group_rows=groups(runtime)?;query_facets=facets(runtime)?;
+                    collection_controller.refresh_union(runtime,&group_rows)?;
+                    workflows.collections=collection_controller.snapshot.clone();
+                    review_controller.invalidate();workflows.shelf_reviews=review_controller.snapshot.clone();
+                }
                 if check_entry {
                     review_controller.enter(runtime, &store, &navigation)?;
                     workflows.shelf_reviews = review_controller.snapshot.clone();
@@ -466,6 +479,20 @@ pub(crate) fn run(
                         .receive()
                         .map_err(|_| StorageError::RuntimeFenced)?
                     else {
+                        let (changed,effects)=operation_controller.poll(runtime,false)?;
+                        if changed {
+                            workflows.operations=operation_controller.snapshot.clone();
+                            if effects {
+                                group_rows=groups(runtime)?;
+                                query_facets=facets(runtime)?;
+                                collection_controller.refresh_union(runtime,&group_rows)?;
+                                workflows.collections=collection_controller.snapshot.clone();
+                                review_controller.invalidate();
+                                workflows.shelf_reviews=review_controller.snapshot.clone();
+                            }
+                            check_entry=false;
+                            break;
+                        }
                         continue;
                     };
                     revision = envelope.revision;
@@ -483,6 +510,12 @@ pub(crate) fn run(
                     invalid_query = false;
                     let mut invalidates_review=matches!(&command,Command::Refresh);
                     match command {
+                        Command::Operations{generation,action}=>{
+                            invalidates_review=operation_controller.handle(runtime,generation,action,revision);
+                            workflows.operations=operation_controller.snapshot.clone();
+                            if workflows.operations.recovery_required {workflows.recovery_required=true;receiver.fence().map_err(|_|StorageError::RuntimeFenced)?;return Err(StorageError::RuntimeFenced);}
+                            if invalidates_review {group_rows=groups(runtime)?;query_facets=facets(runtime)?;}
+                        }
                         Command::ShelfReview{generation,action}=>{
                             review_controller.handle(runtime,&store,crate::workflows::shelf_reviews::Request{generation,action},revision,&mut next);
                             workflows.shelf_reviews=review_controller.snapshot.clone();
@@ -669,7 +702,7 @@ pub(crate) fn run(
                         }
                     }
                     if invalidates_review {review_controller.invalidate();workflows.shelf_reviews=review_controller.snapshot.clone();}
-                    if refresh_union && !workflows.recovery_required {
+                    if (refresh_union || invalidates_review) && !workflows.recovery_required {
                         let refreshed=collection_controller.refresh_union(runtime,&group_rows);
                         workflows.collections=collection_controller.snapshot.clone();
                         refreshed?;

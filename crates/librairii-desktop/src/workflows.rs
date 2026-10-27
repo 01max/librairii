@@ -2,6 +2,7 @@
 //! authority without the actual generation/query/UUID checks on the controller.
 pub mod collections;
 pub mod flags;
+pub mod operations;
 pub mod shelf_reviews;
 pub mod shelves;
 pub mod tags;
@@ -36,6 +37,7 @@ pub struct Details {
 }
 #[derive(Clone, Debug, Default)]
 pub struct Snapshot {
+    pub operations: operations::Snapshot,
     pub shelf_reviews: shelf_reviews::Snapshot,
     pub shelves: shelves::Snapshot,
     pub collections: collections::Snapshot,
