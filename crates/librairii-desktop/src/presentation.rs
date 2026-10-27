@@ -21,6 +21,7 @@ pub enum Command {
     Navigate(librairii_core::collection_codec::url::Scope),
     Presentation(librairii_core::navigation::Presentation),
     Request(librairii_core::query::QueryRequest),
+    ChangePage(i32),
     Select {
         id: i64,
         query: librairii_core::navigation::QueryStamp,

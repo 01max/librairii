@@ -171,6 +171,17 @@ fn page(runtime: &Runtime<'_, '_, '_>, location: &Location, stop: &AtomicBool) -
         })
     })
 }
+fn push_query(navigation: &mut Navigation, request: QueryRequest) -> Result<()> {
+    navigation
+        .push(Frame {
+            location: Location {
+                scope: navigation.current().location.scope.clone(),
+                request,
+            },
+            selection: Vec::new(),
+        })
+        .map_err(|_| StorageError::InvalidNavigation)
+}
 pub(crate) fn run(
     locations: &ProfileLocations,
     language: Language,
@@ -232,6 +243,7 @@ pub(crate) fn run(
                 if !runtime.accepts(&generation) {
                     return Err(StorageError::RuntimeFenced);
                 }
+                let current_page = page.as_ref().map_or(1, |page| page.page);
                 *mailbox.lock().map_err(|_| StorageError::RuntimeFenced)? = Some(Snapshot {
                     groups: group_rows.clone(),
                     revision,
@@ -307,16 +319,13 @@ pub(crate) fn run(
                             language = requested;
                         }
                         Command::Presentation(mode) => next.set_presentation(mode),
+                        Command::ChangePage(delta) => {
+                            let mut request = next.current().location.request.clone();
+                            request.page = current_page.saturating_add(i64::from(delta)).max(1);
+                            invalid_query = push_query(&mut next, request).is_err();
+                        }
                         Command::Request(request) => {
-                            invalid_query = next
-                                .push(Frame {
-                                    location: Location {
-                                        scope: next.current().location.scope.clone(),
-                                        request,
-                                    },
-                                    selection: Vec::new(),
-                                })
-                                .is_err();
+                            invalid_query = push_query(&mut next, request).is_err();
                         }
                         Command::Select { id, query } => {
                             if next.accepts(&query) {

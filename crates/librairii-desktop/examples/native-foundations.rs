@@ -1,4 +1,6 @@
-//! Native presentation fixtures only: no startup/profile/library/network access.
+//! Native presentation fixtures use only explicitly owned synthetic library data.
+#[path = "native-foundations/presentation.rs"]
+mod callback_checks;
 #[cfg(target_os = "macos")]
 #[path = "native-foundations/native_menu.rs"]
 mod native_menu;
@@ -214,6 +216,7 @@ fn main() -> Result {
         "isolated fixture marker missing",
     )?;
     let (ui, menus) = librairii_desktop::menus::create_window()?;
+    callback_checks::paging(&ui)?;
     let initial = snapshot()?;
     let view = Rc::new(RefCell::new(view::View {
         catalogs: librairii_app::localization::Catalogs::embedded()?,
@@ -586,6 +589,7 @@ fn capture_step(
                 "frames": *report.borrow(), "keyboard_checks": "passed",
                 "macos_programmatic_fixed_window": cfg!(target_os = "macos"),
                 "native_menu_composition": if cfg!(target_os = "macos") { "passed" } else { "not-applicable" },
+                "search_paging_callbacks": "passed",
                 "scope": "shown native component/public window events and Skia capture; not physical HID or packaged workflow qualification",
             }))?,
         )?;

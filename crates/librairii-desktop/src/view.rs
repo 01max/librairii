@@ -389,22 +389,10 @@ pub fn install(
             }
         }
     });
-    let (state, weak, pending) = (view.clone(), ui.as_weak(), worker.clone());
+    let (weak, pending) = (ui.as_weak(), worker.clone());
     ui.on_change_page(move |delta| {
-        if let Some(ui) = weak.upgrade()
-            && let Some(n) = &state.borrow().snapshot.navigation
-        {
-            let mut request = n.current().location.request.clone();
-            request.page = (state
-                .borrow()
-                .snapshot
-                .page
-                .as_ref()
-                .map(|p| p.page)
-                .unwrap_or(1)
-                + i64::from(delta))
-            .max(1);
-            offer(&pending.borrow(), Command::Request(request), &ui);
+        if let Some(ui) = weak.upgrade() {
+            offer(&pending.borrow(), Command::ChangePage(delta), &ui);
         }
     });
     let (state, weak, pending) = (view.clone(), ui.as_weak(), worker.clone());

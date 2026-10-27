@@ -72,6 +72,8 @@ def main():
             raise ValueError('native fixture window policy differs from the host')
         if report['native_menu_composition'] != ('passed' if sys.platform == 'darwin' else 'not-applicable'):
             raise ValueError('native production menu composition checks incomplete')
+        if report['search_paging_callbacks'] != 'passed':
+            raise ValueError('production search/paging callback checks incomplete')
         frames = report['frames']
         expected = {(concept, density, mode, french) for concept in ['Story shelves', 'Desktop workspace'] for density in range(3) for mode in (range(3) if concept == 'Story shelves' else [0]) for french in [False, True]}
         if {(f['concept'], f['density'], f['mode'], f['french']) for f in frames} != expected or len(frames) != len(expected):
