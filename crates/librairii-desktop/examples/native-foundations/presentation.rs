@@ -118,6 +118,12 @@ impl Fixture {
         ui.invoke_search(text.into());
         self.settle(ui)
     }
+    fn select(&self, ui: &DesktopWindow, index: i32) -> Result {
+        ui.set_selected_index(index);
+        ui.invoke_select_story(index);
+        self.settle(ui)?;
+        Ok(())
+    }
     fn saved_navigation(&self) -> Result<Navigation> {
         Ok(Navigation::decode(
             &std::fs::read(self.locations.native.join("navigation.json"))?,
@@ -194,6 +200,57 @@ pub fn paging(ui: &DesktopWindow) -> Result {
     check(
         repeated.page.as_ref().is_some_and(|page| page.page == 2),
         "queued page changes lost their order",
+    )?;
+    fixture.finish()
+}
+
+pub fn history(ui: &DesktopWindow) -> Result {
+    let fixture = Fixture::open(ui)?;
+    fixture.search(ui, "Alpha")?;
+    fixture.select(ui, 2)?;
+    fixture.search(ui, "Al")?;
+    fixture.select(ui, 4)?;
+    // Both frames contain these stories, so stale local selection cannot hide
+    // behind the fallback for a story absent from the restored page.
+    for (step, mode, language, query, selection) in [
+        (-1, Some(1), None, "Alpha", 2),
+        (1, None, Some("fr"), "Al", 4),
+        (-1, None, Some("en"), "Alpha", 2),
+        (1, Some(0), None, "Al", 4),
+    ] {
+        ui.invoke_history_step(step);
+        if let Some(mode) = mode {
+            ui.set_mode(mode);
+            ui.invoke_mode_selected(mode);
+        }
+        if let Some(language) = language {
+            ui.invoke_change_language(language.into());
+        }
+        fixture.settle(ui)?;
+        check(
+            ui.get_query() == query && ui.get_selected_index() == selection,
+            "superseding snapshot lost history query or selection restoration",
+        )?;
+    }
+    ui.set_query("unsent editor text".into());
+    ui.invoke_change_language("fr".into());
+    fixture.settle(ui)?;
+    check(
+        ui.get_query() == "unsent editor text" && ui.get_selected_index() == 4,
+        "an already observed history transition reset unsaved input or selection",
+    )?;
+    ui.invoke_history_step(-1);
+    ui.set_query("Alp".into());
+    ui.invoke_search("Alp".into());
+    ui.set_mode(1);
+    ui.invoke_mode_selected(1);
+    let latest = fixture.settle(ui)?;
+    check(
+        ui.get_query() == "Alp"
+            && latest.navigation.as_ref().is_some_and(|navigation| {
+                navigation.current().location.request.criteria.name == "Alp"
+            }),
+        "history restoration overwrote a newer search",
     )?;
     fixture.finish()
 }

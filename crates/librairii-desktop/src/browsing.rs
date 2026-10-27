@@ -213,7 +213,7 @@ pub(crate) fn run(
     let catalogs = Catalogs::embedded().map_err(|_| StorageError::InvalidProfile)?;
     let mut session = LibrarySession::new(native);
     let mut revision = 0;
-    let mut restore_navigation = true;
+    let mut restore_revision = 0;
     let mut invalid_query = false;
     let result = session.drive(locations, &WorkCancellation::default(), |runtime| {
         let active = (|| -> Result<()> {
@@ -247,7 +247,7 @@ pub(crate) fn run(
                 *mailbox.lock().map_err(|_| StorageError::RuntimeFenced)? = Some(Snapshot {
                     groups: group_rows.clone(),
                     revision,
-                    restore_navigation,
+                    restore_revision,
                     generation: Some(generation.clone()),
                     phase: Phase::Library,
                     language,
@@ -267,10 +267,12 @@ pub(crate) fn run(
                     };
                     revision = envelope.revision;
                     let command = envelope.command;
-                    restore_navigation = matches!(
+                    if matches!(
                         command,
                         Command::Back | Command::Forward | Command::Navigate(_)
-                    );
+                    ) {
+                        restore_revision = revision;
+                    }
                     let mut next = navigation.clone();
                     invalid_query = false;
                     match command {

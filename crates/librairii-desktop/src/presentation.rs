@@ -40,7 +40,8 @@ pub enum Phase {
 pub struct Snapshot {
     pub groups: Vec<crate::browsing::Group>,
     pub revision: u64,
-    pub restore_navigation: bool,
+    /// Last scope/history command revision, retained across superseding snapshots.
+    pub restore_revision: u64,
     pub generation: Option<librairii_app::lifecycle::LibraryGeneration>,
     pub phase: Phase,
     pub language: Language,
@@ -131,7 +132,7 @@ fn run(
             .lock()
             .map_err(|_| librairii_storage::StorageError::RuntimeFenced)? = Some(Snapshot {
             revision: 0,
-            restore_navigation: false,
+            restore_revision: 0,
             generation: None,
             phase: Phase::Opening,
             language: Language::English,
@@ -215,7 +216,7 @@ fn run(
     let mut snapshot = Snapshot {
         groups: Vec::new(),
         revision: 0,
-        restore_navigation: true,
+        restore_revision: 0,
         generation: None,
         navigation: None,
         page: None,
@@ -303,7 +304,7 @@ pub(crate) fn recovery(
             .lock()
             .map_err(|_| librairii_storage::StorageError::RuntimeFenced)? = Some(Snapshot {
             revision: intake.latest(),
-            restore_navigation: false,
+            restore_revision: 0,
             generation: None,
             phase: Phase::Recovery,
             language,

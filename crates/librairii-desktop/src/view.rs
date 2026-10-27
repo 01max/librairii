@@ -136,7 +136,9 @@ impl View {
                 Presentation::SmallCovers => 1,
                 Presentation::LargeCovers => 2,
             });
-            if snapshot.restore_navigation {
+            if self.snapshot.navigation.is_none()
+                || snapshot.restore_revision != self.snapshot.restore_revision
+            {
                 ui.set_query(n.current().location.request.criteria.name.clone().into());
                 self.selected = None;
             }

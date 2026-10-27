@@ -83,7 +83,7 @@ fn snapshot() -> Result<Snapshot> {
     let generation = gate.enter()?.generation().clone();
     Ok(Snapshot {
         revision: 0,
-        restore_navigation: true,
+        restore_revision: 0,
         generation: Some(generation),
         phase: Phase::Library,
         language: Language::English,
@@ -217,6 +217,7 @@ fn main() -> Result {
     )?;
     let (ui, menus) = librairii_desktop::menus::create_window()?;
     callback_checks::paging(&ui)?;
+    callback_checks::history(&ui)?;
     let initial = snapshot()?;
     let view = Rc::new(RefCell::new(view::View {
         catalogs: librairii_app::localization::Catalogs::embedded()?,
@@ -590,6 +591,7 @@ fn capture_step(
                 "macos_programmatic_fixed_window": cfg!(target_os = "macos"),
                 "native_menu_composition": if cfg!(target_os = "macos") { "passed" } else { "not-applicable" },
                 "search_paging_callbacks": "passed",
+                "history_restoration_callbacks": "passed",
                 "scope": "shown native component/public window events and Skia capture; not physical HID or packaged workflow qualification",
             }))?,
         )?;
