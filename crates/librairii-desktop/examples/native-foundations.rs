@@ -7,6 +7,7 @@ mod native_menu;
 #[allow(dead_code)]
 #[path = "../src/view.rs"]
 mod view;
+use image::ImageEncoder;
 use librairii_adapters::thumbnails::Thumbnail;
 use librairii_app::{lifecycle::LifecycleGate, localization::Language};
 use librairii_core::{
@@ -201,13 +202,21 @@ fn capture(ui: &DesktopWindow, path: &Path) -> Result {
             .any(|p| p != &pixels.as_bytes()[..4]),
         "native frame is flat",
     )?;
-    image::save_buffer(
-        path,
+    // Lossless Sub filtering avoids evaluating five filters per scanline in
+    // this debug fixture. Preserve every captured pixel and the same deadline.
+    let mut output = std::io::BufWriter::new(std::fs::File::create(path)?);
+    image::codecs::png::PngEncoder::new_with_quality(
+        &mut output,
+        image::codecs::png::CompressionType::Fast,
+        image::codecs::png::FilterType::Sub,
+    )
+    .write_image(
         pixels.as_bytes(),
         pixels.width(),
         pixels.height(),
-        image::ColorType::Rgba8,
+        image::ExtendedColorType::Rgba8,
     )?;
+    std::io::Write::flush(&mut output)?;
     Ok(())
 }
 fn main() -> Result {

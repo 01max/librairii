@@ -331,7 +331,10 @@ detachment, mismatch restart, linked deletion, independent Shelf deletion, A-to-
 entry, read-only-profile Recovery and recoverable preference retry. Shown EN/FR
 frames exercise actual native ComboBox Keep, Tab/Space into linked deletion and
 Escape back to the exact invoker. The original24-frame matrices and all earlier
-workflow callbacks remain mandatory. Both independent source review axes have zero
+workflow callbacks remain mandatory. Screenshot PNGs use lossless Sub filtering
+instead of evaluating five filters per scanline; a decoded double-scale sample
+retains every RGBA byte, and the per-run90-second gate is unchanged. Both
+independent source review axes have zero
 remaining required findings; full spoken/current-source three-host acceptance
 remains15.13.
 
