@@ -159,7 +159,7 @@ export component DesktopWindow inherits Window {
     out property <bool> attribution-focused: attribution-button.has-focus;
     out property <bool> query-focused: search-entry.has-focus;
     out property <bool> text-edit-focused: !root.closing && ((!root.modal && search-entry.has-focus) || (root.dialog == 8 && filters.first-focused) || (root.dialog == 10 && tag-manager.editing) || (root.dialog == 13 && collection-manager.editing) || (root.dialog == 15 && shelf-manager.editing));
-    public function focus-search() { search-entry.focus(); }
+    public function focus-search() { FocusState.key=30; search-entry.focus(); }
     public function edit-search(action: EditAction) {
         if !FocusState.modal && !FocusState.closing && search-entry.has-focus {
             if action == EditAction.undo { search-entry.undo(); }

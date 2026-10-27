@@ -98,7 +98,9 @@ def run_case(desktop, binary, case, language, mark, announced, pcm, report):
         snapshot('focused')
         before=state()
         if case=='browse':
-            key('ctrl+a');key('BackSpace');desktop.french_dead_keys()
+            key('ctrl+a');key('BackSpace')
+            native.wait_for(lambda:(s:=alive()) and s['query']=='')
+            desktop.french_dead_keys()
             native.wait_for(lambda: (s:=alive()) and s['query']=='êé az' and s)
             result['utf8_native_keys']=True
         elif case=='details':
@@ -107,8 +109,11 @@ def run_case(desktop, binary, case, language, mark, announced, pcm, report):
             key('ctrl+a');desktop.text('Été à garder')
             native.wait_for(lambda:any(n.get('text')=='Été à garder' and n['states']['focused'] for n in tree()))
         elif case=='tag-assignment':
-            assert any('Mixed' in n['name'] or 'Mixte' in n['name'] for n in tree()),'mixed assignment missing'
-            key('Up');native.wait_for(lambda:(s:=alive()) and s['revision']>before['revision'])
+            assert before['assignment_requested']==2 and before['bedtime_assigned']==1,'mixed assignment missing'
+            key('Up')
+            native.wait_for(lambda:(s:=alive()) and s['revision']>before['revision'] and s['bedtime_assigned']==2
+                and s['assignment_result']=={'requested':2,'changed':1,'added':1,'removed':0})
+            assert state()['selected_uuid']==before['selected_uuid'],'assignment changed inspection'
         elif case=='flag-bulk':
             assert before['mixed'] and not before['broken'],'batch initial mixed state is false'
             key('Down');native.wait_for(lambda:(s:=alive()) and s['broken'] and s['undo'] and not s['flag_pending'])
@@ -121,7 +126,13 @@ def run_case(desktop, binary, case, language, mark, announced, pcm, report):
             focus(label);key('shift+Tab');quiet();marker=mark();key('Tab')
             announced(name+'-mixed-restored',{'contains':['Mixte' if language=='fr' else 'Mixed']},marker)
             result['set_and_actual_undo']=True
-        elif case=='shelf-members': key('Down')
+        elif case=='shelf-members':
+            order=before['member_order'];assert len(order)>1 and before['selected_uuid']==order[1]
+            key('Down')
+            focus('Exécuter' if language=='fr' else 'Run');key('space')
+            expected=[order[1],order[0],*order[2:]]
+            native.wait_for(lambda:(s:=alive()) and s['revision']>before['revision'] and s['member_order']==expected
+                and s['selected_uuid']==before['selected_uuid'])
         elif case=='export':
             assert before['export_start'];key('space')
             native.wait_for(lambda:(s:=alive()) and s['dialog']==19)
@@ -129,16 +140,27 @@ def run_case(desktop, binary, case, language, mark, announced, pcm, report):
             assert before['phase']=='Setup';key('space')
             native.wait_for(lambda:(s:=alive()) and s['phase']=='Library')
         elif case=='relocation':
+            assert before['settings_proposed'] and before['settings_current']!=before['settings_proposed']
             key('space');native.wait_for(lambda:(s:=alive()) and s['revision']>before['revision'] and not s['settings_busy'])
+            native.wait_for(lambda:(s:=alive()) and s['phase']=='Library' and s['settings_current']==before['settings_proposed']
+                and s['settings_activation']>before['settings_activation'] and s['settings_result'] in ('Moved','CleanupPending')
+                and s['settings_error'] is None)
         elif case=='schema':
             assert before['dialog']==22 and before['schema'];key('Escape')
-            after=state();assert after['revision']==before['revision'] and after['phase']=='Recovery'
+            after=native.wait_for(lambda:(s:=alive()) and s['dialog']==5 and s)
+            assert after['revision']==before['revision'] and after['phase']=='Recovery' and after['schema']
+            expected='Conserver la base étrangère' if language=='fr' else 'Preserve foreign database'
+            native.wait_for(lambda:(f:=speech.focused(tree())) and len(f)==1 and f[0]['name'].startswith(expected))
         elif case=='review-delete':
             assert before['review_shown'];key('space')
             native.wait_for(lambda:(s:=alive()) and not s['review_shown'])
         elif case in ('removal','tag-delete','collection-impact','shelf-create'):
             key('space');native.wait_for(lambda:(s:=alive()) and s['dialog']!=before['dialog'])
-        elif case in ('filters','collection-union','settings'):key('Escape')
+        elif case in ('filters','collection-union','settings'):
+            assert before['dialog']=={'filters':8,'collection-union':13,'settings':2}[case]
+            key('Escape');native.wait_for(lambda:(s:=alive()) and s['dialog']==0 and s['focused_key']==30)
+            expected='Rechercher des histoires' if language=='fr' else 'Search stories'
+            native.wait_for(lambda:(f:=speech.focused(tree())) and len(f)==1 and f[0]['name'].startswith(expected))
         else:
             key('space');native.wait_for(lambda:(s:=alive()) and s['revision']>before['revision'])
         native.wait_for(lambda:(s:=alive()) and s['revision']==s['offered_revision'])

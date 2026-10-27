@@ -389,6 +389,7 @@ fn main() -> Result {
     // Native menu dispatch can run a nested event loop. A fixture step owns
     // its command/response pair until it returns; do not execute it twice.
     let ticking = std::cell::Cell::new(false);
+    let geometry_wait = std::cell::Cell::new(None);
     timer.start(
         slint::TimerMode::Repeated,
         Duration::from_millis(100),
@@ -410,6 +411,14 @@ fn main() -> Result {
                     ui.window().size().width != w || ui.window().size().height != h
                 })
             }) {
+                let step = *fixture_step.borrow();
+                if geometry_wait.replace(Some(step)) != Some(step) {
+                    eprintln!(
+                        "native geometry pending at step {step}: actual={:?}, requested={:?}",
+                        ui.window().size(),
+                        REQUESTED_SIZE.with(|size| size.get())
+                    );
+                }
                 return;
             }
             if captured_errors.borrow().is_some() || ticking.replace(true) {
@@ -452,6 +461,7 @@ fn main() -> Result {
                 if server {
                     return Ok(());
                 }
+                eprintln!("native frame step: {}", *fixture_step.borrow());
                 capture_step(
                     &ui,
                     &view,

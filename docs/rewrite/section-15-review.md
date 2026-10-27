@@ -41,6 +41,13 @@ The spoken harness review corrected false-positive review-close predicates,
 offered-versus-accepted revision confusion and source/binary provenance gaps.
 The resulting observer uses native keyboard input and checks actual accepted
 states before positive worker shutdown. Accessibility queries only observe.
+Assignment actions require the actual two-story workspace and exact added/changed
+counts. Shelf keyboard moves require the observed UUID-order swap and retained
+inspection. Relocation requires a newer activation at the exact proposed root,
+with a successful result and no error. Escape requires dialog closure and the
+actual expected focus target; an unchanged command revision cannot stand in for
+these outcomes. Fresh batch/tag focus must speak Mixed/Mixte, and Set must speak
+the full All Broken/Toutes défectueuses state.
 
 ## Approved concept source and omissions
 

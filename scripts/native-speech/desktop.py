@@ -56,6 +56,10 @@ class Desktop:
             # A published X socket can precede successful client handshakes.
             # Do not lose the one WM process by launching into that interval.
             connection = wait_for(self.x11_server_ready)
+            # Stable French keysyms avoid XTest reusing one temporary keycode
+            # for both the dead key and eacute before the client reads its map.
+            self.run(['setxkbmap', '-layout', 'fr'])
+            (self.root / 'x11-keyboard-map.txt').write_text(self.run(['setxkbmap', '-query']))
             manager = self.start('openbox', ['openbox'])
             registered = wait_for(lambda: self.x11_manager_ready(manager))
             (self.root / 'x11-readiness.json').write_text(json.dumps({
@@ -153,8 +157,7 @@ class Desktop:
             self.run(['wtype', '-s', '200', '-d', '30', text, '-s', '100'])
 
     def french_dead_keys(self):
-        # Send one native command sequence across ^ then e; XTest may temporarily
-        # map missing keysyms in this private X11 server, then restore the map.
+        # Send one native command sequence across ^ then e on the owned keymap.
         # No composed Unicode string or field-value setter supplies the result.
         keys = ['dead_circumflex', 'e', 'eacute', 'space', 'a', 'z']
         if self.session == 'x11':

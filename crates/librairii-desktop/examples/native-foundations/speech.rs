@@ -98,6 +98,9 @@ impl Surface {
             }
             "shelf-members" | "shelf-create" | "shelf-exclusions" => {
                 let s = ShelfSurface::open(ui)?;
+                if case == "shelf-members" {
+                    s.0.select(ui, 1)?;
+                }
                 if case == "shelf-create" {
                     s.creation(ui)?;
                 }
@@ -155,6 +158,16 @@ impl Surface {
         };
         ui.invoke_change_language(code.into());
         surface.fixture().settle(ui)?;
+        // Give dismissible workflow dialogs one explicit, enabled invoker.
+        // The external reader must prove Escape returns to that same control.
+        if matches!(case, "filters" | "collection-union" | "settings") {
+            let dialog = ui.get_dialog();
+            ui.invoke_close_dialog();
+            check(ui.get_dialog() == 0, "spoken dialog could not close")?;
+            ui.invoke_focus_search();
+            check(ui.get_focused_key() == 30, "spoken dialog invoker missing")?;
+            ui.invoke_open_dialog(dialog);
+        }
         Ok(surface)
     }
     fn poll(&self, ui: &DesktopWindow) -> Result {
@@ -170,8 +183,22 @@ impl Surface {
 fn receipt(ui: &DesktopWindow, surface: &Surface) -> serde_json::Value {
     let f = surface.fixture();
     let view = f.view.borrow();
+    let workspace = view.snapshot.workflows.tags.workspace.as_ref();
+    let assignment = match &view.snapshot.workflows.tags.feedback {
+        Some(librairii_desktop::workflows::tags::Feedback::Assignment(result)) => Some(
+            serde_json::json!({"requested":result.requested_stories,"changed":result.changed_stories,"added":result.assignments_added,"removed":result.assignments_removed}),
+        ),
+        _ => None,
+    };
+    let settings = &view.snapshot.workflows.settings;
     serde_json::json!({"revision":view.snapshot.revision, "offered_revision":f.worker.borrow().revision(), "phase":format!("{:?}",view.snapshot.phase),
         "dialog":ui.get_dialog(), "french":ui.get_french(), "query":ui.get_query().as_str(),
+        "focused_key":ui.get_focused_key(),
+        "selected_uuid":view.selected,
+        "member_order":view.snapshot.page.as_ref().map(|p|p.stories.iter().map(|s|s.uuid.as_str()).collect::<Vec<_>>()),
+        "assignment_requested":workspace.map(|w|w.requested_stories),
+        "bedtime_assigned":workspace.and_then(|w|w.states.iter().find(|s|s.definition_id==101).map(|s|s.assigned_stories)),
+        "assignment_result":assignment,
         "mixed":ui.get_bulk_flag_mixed(), "broken":ui.get_bulk_flag_checked(),
         "flag_pending":ui.get_flag_pending(), "undo":ui.get_flag_undo_enabled(),
         "flag_summary":ui.get_bulk_flag_summary().as_str(),
@@ -180,6 +207,8 @@ fn receipt(ui: &DesktopWindow, surface: &Surface) -> serde_json::Value {
         "export_start":ui.get_export_data().can_start,
         "settings_busy":ui.get_settings_data().busy,
         "settings_notice":ui.get_settings_data().notice.as_str(),
+        "settings_current":settings.current,"settings_proposed":settings.proposed,
+        "settings_activation":settings.activation,"settings_result":settings.notice.map(|n|format!("{n:?}")),"settings_error":settings.error,
         "schema":ui.get_settings_data().can_preserve,
             "review_shown":ui.get_review_shown(),
         "page_total":view.snapshot.page.as_ref().map(|p|p.total)})
