@@ -42,6 +42,7 @@ def main():
     image_id=subprocess.check_output(['docker','image','inspect','--format','{{.Id}}',image],text=True).strip()
     binding={'source_commit':commit,'binary_sha256':binary_digest,'native_visual_passed':visual_passed,'host':platform.platform(),'machine':platform.machine(),'image_id':image_id,'observer_files':{str(p.relative_to(ROOT)):sha(p) for p in sorted((ROOT/'scripts/native-speech').glob('*')) if p.is_file()},'sessions':{}}
     verified=False
+    failures=[]
     try:
         for session in ('x11','wayland'):
             output=evidence/session;output.mkdir();(output/'.workflow-speech-fixture').write_text('workflow-speech-v1\n')
@@ -52,13 +53,22 @@ def main():
                 '--mount','type=bind,src='+str(output)+',dst=/evidence',image,
                 '--session',session,'--binary',str(binary),'--output','/evidence']
             if args.case:argv+=['--case',args.case]
-            run(argv,timeout=1800)
+            try:
+                run(argv,timeout=1800)
+            except subprocess.CalledProcessError as error:
+                # Each session owns a separate completed container. Retain its
+                # failure and still inspect the other native windowing path.
+                failures.append(session+': '+str(error))
+                report_path=output/'report.json'
+                binding['sessions'][session]={'passed':False,'report_sha256':sha(report_path) if report_path.is_file() else None}
+                continue
             report=json.loads((output/'report.json').read_text())
             assert report['passed'] and not report['overflow'] and report['binary_sha256']==binding['binary_sha256']
             expected=2 if args.case else 56
             assert len(report['cases'])==expected and all(c['passed'] and c['closed']['actual_worker_joined'] for c in report['cases'])
             assert report['speech_steps'] and all(s['audio']['nonzero_samples']>1600 for s in report['speech_steps'].values())
             binding['sessions'][session]={'report_sha256':sha(output/'report.json'),'cases':len(report['cases']),'speech_steps':len(report['speech_steps'])}
+        assert not failures,'native speech sessions failed: '+'; '.join(failures)
         assert subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip()==commit,'source commit changed'
         assert not subprocess.check_output(['git','status','--porcelain','--untracked-files=normal'],cwd=ROOT,text=True).strip(),'source changed during spoken execution'
         assert sha(binary)==binding['binary_sha256'],'retained executable changed'

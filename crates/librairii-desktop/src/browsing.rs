@@ -243,7 +243,15 @@ fn page(runtime: &Runtime<'_, '_, '_>, location: &Location, stop: &AtomicBool) -
                         }
                         a.cached
                     });
-                let embedded = db.read_embedded_artwork(summary.id).ok().flatten();
+                // The same query snapshot resolved fallback only when both
+                // artwork sources were absent. Retain the owned lookup for
+                // embedded/official stories, including official-load fallback.
+                let embedded =
+                    if summary.artwork_id.is_empty() && summary.sources.artwork == "fallback" {
+                        None
+                    } else {
+                        db.read_embedded_artwork(summary.id).ok().flatten()
+                    };
                 if let librairii_adapters::thumbnails::ArtworkModel::Ready { thumbnail, .. } =
                     cache.resolve(&generation, official.as_ref(), embedded.as_ref())?
                 {

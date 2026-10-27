@@ -36,3 +36,10 @@ After a visual-step failure, CI still records spoken diagnostics when the retain
 binary matches Cargo's compiler-artifact receipt. Those diagnostics explicitly
 record native_visual_passed=false and complete=false. The visual failure remains
 a failing CI step. Final complete acceptance requires its sealed visual manifest.
+
+An independent case can continue after a failure only if the failed process
+positively joined its actual worker and the real speech pipeline is still alive.
+Every failure is retained and keeps the session failing. Both isolated sessions
+are attempted after an ordinary session failure; timeouts remain fatal. Speech
+Dispatcher retains warning/error diagnostics at level2; Orca INFO output and
+per-utterance PCM remain the required speech evidence.

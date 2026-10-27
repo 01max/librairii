@@ -122,13 +122,14 @@ def start(desktop, report):
     speech = runtime / 'speech'
     (speech / 'modules').mkdir(parents=True)
     shutil.copyfile('/etc/speech-dispatcher/modules/espeak-ng.conf', speech / 'modules/espeak-ng.conf')
-    (speech / 'speechd.conf').write_text('LogLevel 4\nLogDir "stdout"\n'
+    (speech / 'speechd.conf').write_text('LogLevel 2\nLogDir "stdout"\n'
         'CommunicationMethod "unix_socket"\nSocketPath "' + str(speech / 'speechd.sock') + '"\n'
         'Timeout 0\nAudioOutputMethod "pulse"\nAudioPulseDevice "qualification"\n'
         'AddModule "espeak-ng" "sd_espeak-ng" "espeak-ng.conf"\nDefaultModule "espeak-ng"\n')
     os.environ['SPEECHD_ADDRESS'] = 'unix_socket:' + str(speech / 'speechd.sock')
     dispatcher = desktop.start('speech-dispatcher', ['speech-dispatcher', '--run-single',
         '--config-dir', str(speech), '--log-dir', 'stdout', '--pid-file', str(speech / 'speechd.pid')])
+    desktop.dispatcher = dispatcher
     native.wait_for(lambda: (speech / 'speechd.sock').is_socket())
     # Capture the actual synthesizer sink, without a host audio device or service.
     audio = start_audio(desktop, ['parec', '--device=qualification.monitor',
@@ -166,6 +167,7 @@ def start(desktop, report):
         orca_argv = ['env', 'DISPLAY=:92', 'GDK_BACKEND=x11', *orca_argv]
         report['orca_xkb_compatibility_display'] = ':92'
     orca = desktop.start('orca', orca_argv)
+    desktop.reader = orca
     debug = root / 'orca-debug.txt'
     native.wait_for(lambda: debug.exists() and 'Starting Atspi main event loop' in debug.read_text())
     report['debug_log_configuration'] = json.loads((root / 'orca-log-mode.json').read_text())

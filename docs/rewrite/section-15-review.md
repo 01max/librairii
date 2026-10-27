@@ -65,6 +65,20 @@ change supplies evidence in place of the real workflow actions. X11 configures
 and verifies its private French keymap after Openbox registration so a server
 reset cannot replace it before application launch.
 
+The query's empty-ID/fallback artwork result now skips a redundant embedded
+lookup. Official, embedded and unknown source values retain the actual owned
+lookup, including embedded fallback after official failure. The complete local
+sequence passes88 captures/all callbacks in85.18 seconds after this correction
+(`librairii-task15-collections-dev-33urnkbb`); final sealed receipts remain required.
+
+Spoken diagnostics retain errors and failed-state captures. Independent cases
+continue only after that exact case positively joins its real worker and the
+reader/dispatcher/audio processes remain alive. Any failed case still fails the
+session; either failed session prevents complete acceptance. Timeouts remain
+fatal. Dispatcher warning/error logging uses level2 within the unchanged4MiB
+diagnostic cap; mandatory Orca INFO utterances, raw PCM and all speech predicates
+are unchanged.
+
 ## Approved concept source and omissions
 
 Both canonical saved concepts and their tracked copies were independently checked:

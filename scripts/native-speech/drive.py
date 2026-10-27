@@ -166,6 +166,11 @@ def run_case(desktop, binary, case, language, mark, announced, pcm, report):
         native.wait_for(lambda:(s:=alive()) and s['revision']==s['offered_revision'])
         snapshot('after-keyboard-action')
         result['passed']=True
+    except Exception:
+        result['error']=traceback.format_exc()
+        try:snapshot('failed')
+        except Exception:result['failure_snapshot_error']=traceback.format_exc()
+        raise
     finally:
         # Typed fixture-only shutdown asks the real worker to stop and join.
         (output/'finish.tmp').write_text('workflow-finish-v1\n')
@@ -188,12 +193,25 @@ def main():
         desktop=native.Desktop(args.session,root)
         report['application_environment']={k:os.environ.get(k) for k in ('DISPLAY','WAYLAND_DISPLAY','GDK_BACKEND','SLINT_BACKEND')}
         mark,announced,pcm,audio=speech.start(desktop,report)
+        failures=[]
         for case in ([args.case] if args.case else CASES):
             for language in ('en','fr'):
                 print(case,language,flush=True)
-                run_case(desktop,args.binary,case,language,mark,announced,pcm,report)
+                try:
+                    run_case(desktop,args.binary,case,language,mark,announced,pcm,report)
+                except Exception:
+                    failures.append({'name':case+'-'+language,'error':traceback.format_exc()})
+                    report['case_failures']=failures
+                    print(failures[-1]['error'],flush=True)
+                    # Independent cases may continue only after actual native
+                    # shutdown and while the same real speech pipeline lives.
+                    if (not report['cases'] or report['cases'][-1]['name']!=case+'-'+language
+                        or report['cases'][-1].get('closed')!={'actual_worker_joined':True}
+                        or desktop.reader.poll() is not None or desktop.dispatcher.poll() is not None
+                        or audio.poll() is not None):raise
                 assert not desktop.overflow,desktop.overflow
                 assert (root/'orca-debug.txt').stat().st_size<speech.evidence_limit(root/'orca-debug.txt')
+        assert not failures,'native workflow cases failed: '+', '.join(f['name'] for f in failures)
         report['passed']=True
     except Exception:
         report['error']=traceback.format_exc();raise
