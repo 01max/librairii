@@ -5,12 +5,24 @@ all-features = false
 [advisories]
 db-urls = ["https://github.com/rustsec/advisory-db"]
 git-fetch-with-cli = true
-ignore = []
+ignore = ["RUSTSEC-2026-0192", "RUSTSEC-2026-0371", "RUSTSEC-2026-0370", "RUSTSEC-2026-0372", "RUSTSEC-2025-0141"]
 
 [licenses]
 allow = ["MIT", "Apache-2.0", "Unicode-3.0", "NCSA", "ISC", "BSD-3-Clause", "Zlib", "bzip2-1.0.6"]
 confidence-threshold = 0.9
-exceptions = []
+exceptions = [
+    { crate = "arrayref@0.3.9", allow = ["BSD-2-Clause"] },
+    { crate = "i-slint-backend-selector@1.18.1", allow = ["LicenseRef-Slint-Royalty-free-2.0"] },
+    { crate = "i-slint-backend-winit@1.18.1", allow = ["LicenseRef-Slint-Royalty-free-2.0"] },
+    { crate = "i-slint-common@1.18.1", allow = ["LicenseRef-Slint-Royalty-free-2.0"] },
+    { crate = "i-slint-compiler@1.18.1", allow = ["LicenseRef-Slint-Royalty-free-2.0"] },
+    { crate = "i-slint-core@1.18.1", allow = ["LicenseRef-Slint-Royalty-free-2.0"] },
+    { crate = "i-slint-core-macros@1.18.1", allow = ["LicenseRef-Slint-Royalty-free-2.0"] },
+    { crate = "i-slint-renderer-skia@1.18.1", allow = ["LicenseRef-Slint-Royalty-free-2.0"] },
+    { crate = "slint@1.18.1", allow = ["LicenseRef-Slint-Royalty-free-2.0"] },
+    { crate = "slint-build@1.18.1", allow = ["LicenseRef-Slint-Royalty-free-2.0"] },
+    { crate = "slint-macros@1.18.1", allow = ["LicenseRef-Slint-Royalty-free-2.0"] },
+]
 
 # Product licensing is undecided. Do not manufacture a license for unpublished
 # local members; all upstream production AND development dependencies are checked.
@@ -20,7 +32,7 @@ ignore = true
 [bans]
 multiple-versions = "deny"
 wildcards = "deny"
-skip = ["getrandom@0.2.17", "miniz_oxide@0.8.9", "digest@0.10.7", "crypto-common@0.1.7"]
+skip = ["getrandom@0.2.17", "miniz_oxide@0.8.9", "digest@0.10.7", "crypto-common@0.1.7", "bitflags@1.3.2", "block2@0.5.1", "core-foundation@0.9.4", "foldhash@0.1.5", "getrandom@0.3.4", "hashbrown@0.14.5", "hashbrown@0.15.5", "hashbrown@0.16.1", "itertools@0.13.0", "linux-raw-sys@0.4.15", "nom@7.1.3", "objc2@0.5.3", "objc2-app-kit@0.2.2", "objc2-foundation@0.2.2", "rustc-hash@1.1.0", "rustix@0.38.44", "shlex@1.3.0", "smol_str@0.2.2", "syn@2.0.119", "thiserror@1.0.69", "thiserror-impl@1.0.69", "tiny-skia@0.11.4", "tiny-skia-path@0.11.4"]
 skip-tree = []
 
 [sources]

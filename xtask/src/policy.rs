@@ -27,6 +27,7 @@ fn allowed(from: &str, to: &str, dev: bool) -> bool {
             &["librairii-app", "librairii-core"]
         }
         "librairii-desktop" => &[
+            "librairii-core",
             "librairii-app",
             "librairii-storage",
             "librairii-adapters",

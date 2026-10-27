@@ -10,10 +10,20 @@ librairii-app.workspace = true
 librairii-storage.workspace = true
 librairii-adapters.workspace = true
 librairii-ui.workspace = true
+librairii-core.workspace = true
+slint.workspace = true
+
+[target.'cfg(target_os = "macos")'.dependencies]
+muda = { version = "=0.19.3", default-features = false }
+i-slint-backend-winit = { version = "=1.18.1", default-features = false }
+objc2 = { version = "=0.6.5", default-features = false }
+objc2-app-kit = { version = "=0.3.2", default-features = false, features = ["NSApplication", "NSMenu", "NSMenuItem", "NSEvent", "NSGraphicsContext"] }
+objc2-foundation = { version = "=0.3.2", default-features = false, features = ["NSString", "NSGeometry"] }
 
 [lints]
 workspace = true
 
 [dev-dependencies]
+image.workspace = true
 librairii-testkit.workspace = true
 serde_json.workspace = true

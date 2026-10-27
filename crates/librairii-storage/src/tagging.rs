@@ -102,6 +102,30 @@ impl Database<'_> {
     ) -> Result<Pending<'_, librairii_core::tagging::AssignmentWorkspace>> {
         self.read(move |tx| workspace(tx, &ids))
     }
+    /// One bounded-page projection on the owned reader. Boolean and choice
+    /// labels remain independent of color and never reconstruct assignments.
+    pub fn story_tag_labels(
+        &self,
+        ids: Vec<i64>,
+    ) -> Result<Pending<'_, std::collections::BTreeMap<i64, Vec<tagging::DisplayTag>>>> {
+        let ids = if ids.is_empty() {
+            ids
+        } else {
+            tagging::story_ids(&ids)?
+        };
+        self.read(move |tx| {
+            let mut labels = std::collections::BTreeMap::<i64, Vec<tagging::DisplayTag>>::new();
+            let targets = serde_json::to_string(&ids).map_err(|_| TagError::InvalidAssignment)?;
+            let mut statement = tx.prepare("SELECT a.story_id,d.label,v.label,d.color,d.source FROM story_tag_assignments a JOIN tag_definitions d ON d.id=a.definition_id LEFT JOIN tag_values v ON v.id=a.value_id WHERE a.story_id IN (SELECT value FROM json_each(?)) ORDER BY CASE d.source WHEN 'builtin' THEN 0 WHEN 'user' THEN 1 ELSE 2 END,d.position,d.id,v.position,v.id")?;
+            for row in statement.query_map([targets], |row| Ok((row.get::<_, i64>(0)?, tagging::DisplayTag {
+                definition: row.get(1)?, value: row.get(2)?, color: row.get(3)?, source: row.get(4)?,
+            })))? {
+                let (id, label) = row?;
+                labels.entry(id).or_default().push(label);
+            }
+            Ok(labels)
+        })
+    }
     pub fn tag_catalog(&self) -> Result<Pending<'_, Vec<CatalogEntry>>> {
         self.read(catalog)
     }

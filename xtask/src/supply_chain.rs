@@ -185,6 +185,39 @@ pub fn check() -> Result {
     inventory()
 }
 
+// License directories are part of published crates (notably Slint). Retain
+// their complete original layout and refuse links rather than omitting texts.
+fn copy_notice_directory(source: &Path, destination: &Path) -> Result<usize> {
+    if source.symlink_metadata()?.file_type().is_symlink()
+        || destination
+            .symlink_metadata()
+            .is_ok_and(|m| m.file_type().is_symlink())
+    {
+        return Err("notice directories must not be symlinks".into());
+    }
+    fs::create_dir_all(destination)?;
+    let mut count = 0;
+    for entry in fs::read_dir(source)? {
+        let entry = entry?;
+        let kind = entry.file_type()?;
+        let target = destination.join(entry.file_name());
+        if kind.is_dir() {
+            count += copy_notice_directory(&entry.path(), &target)?;
+        } else if kind.is_file() {
+            if target
+                .symlink_metadata()
+                .is_ok_and(|m| m.file_type().is_symlink())
+            {
+                return Err("notice output must not be a symlink".into());
+            }
+            fs::copy(entry.path(), target)?;
+            count += 1;
+        } else {
+            return Err("notice payload must be a regular file or directory".into());
+        }
+    }
+    Ok(count)
+}
 fn write_notices(package: &Value, notices: &Path, text: &mut String) -> Result {
     let name = package["name"].as_str().ok_or("missing dependency name")?;
     let version = package["version"]
@@ -203,6 +236,13 @@ fn write_notices(package: &Value, notices: &Path, text: &mut String) -> Result {
         let entry = entry?;
         let filename = entry.file_name();
         let upper = filename.to_string_lossy().to_ascii_uppercase();
+        if entry.file_type()?.is_dir()
+            && (upper.starts_with("LICENSE")
+                || upper.starts_with("COPYING")
+                || upper.starts_with("NOTICE"))
+        {
+            count += copy_notice_directory(&entry.path(), &directory.join(&filename))?;
+        }
         if entry.file_type()?.is_file()
             && (upper.starts_with("LICENSE")
                 || upper.starts_with("COPYING")
@@ -242,13 +282,30 @@ fn write_notices(package: &Value, notices: &Path, text: &mut String) -> Result {
     Ok(())
 }
 pub fn inventory() -> Result {
-    let patch = crate::archive_patch::inventory()?;
-    inventory_graph("workspace", "Cargo.toml", "Cargo.lock", &patch)?;
-    inventory_graph("fuzz", "fuzz/Cargo.toml", "fuzz/Cargo.lock", &patch)?;
+    let mut patch = crate::archive_patch::inventory()?;
+    patch["directory"] = json!("third_party/sevenz-turbo");
+    let native: Value = serde_json::from_str(&output(
+        "python3",
+        &["-I", "-B", "xtask/check_native_toolkit.py"],
+    )?)?;
+    inventory_graph("workspace", "Cargo.toml", "Cargo.lock", &patch, &native)?;
+    inventory_graph(
+        "fuzz",
+        "fuzz/Cargo.toml",
+        "fuzz/Cargo.lock",
+        &patch,
+        &native,
+    )?;
     crate::sources::inventory()?;
     crate::import_sources::inventory()
 }
-fn inventory_graph(graph: &str, manifest: &str, lockfile: &str, patch: &Value) -> Result {
+fn inventory_graph(
+    graph: &str,
+    manifest: &str,
+    lockfile: &str,
+    archive: &Value,
+    native: &Value,
+) -> Result {
     let destination = root().join("target/quality");
     let notices = destination.join("notices");
     fs::create_dir_all(&notices)?;
@@ -290,10 +347,27 @@ fn inventory_graph(graph: &str, manifest: &str, lockfile: &str, patch: &Value) -
                 .iter()
                 .find(|p| p["id"] == node["id"])
                 .ok_or("missing resolved package")?;
+            let patch = if package["name"] == native["name"] {
+                native
+            } else {
+                archive
+            };
+            if package["name"] == "skia-bindings"
+                && package["metadata"]["skia"] != native["skia_source_ref"]
+            {
+                return Err("native Skia source ref does not match qualified notices".into());
+            }
             let vendored = package["source"].is_null() && package["name"] == patch["name"];
             if vendored
                 && package["manifest_path"].as_str()
-                    != root().join("third_party/sevenz-turbo/Cargo.toml").to_str()
+                    != root()
+                        .join(
+                            patch["directory"]
+                                .as_str()
+                                .ok_or("missing patch directory")?,
+                        )
+                        .join("Cargo.toml")
+                        .to_str()
             {
                 return Err("unexpected archive patch resolution".into());
             }
@@ -348,6 +422,31 @@ fn inventory_graph(graph: &str, manifest: &str, lockfile: &str, patch: &Value) -
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[cfg(unix)]
+    #[test]
+    fn recursive_notices_retain_original_bytes_and_refuse_source_or_output_symlinks() -> Result {
+        use std::os::unix::fs::symlink;
+        let root = tempfile::tempdir()?;
+        let source = root.path().join("source");
+        let output = root.path().join("output");
+        fs::create_dir_all(source.join("LICENSES"))?;
+        fs::write(source.join("LICENSES/MIT.txt"), b"original upstream text\n")?;
+        assert_eq!(copy_notice_directory(&source, &output)?, 1);
+        assert_eq!(
+            fs::read(output.join("LICENSES/MIT.txt"))?,
+            b"original upstream text\n"
+        );
+        let outside = root.path().join("outside");
+        fs::write(&outside, b"must remain untouched")?;
+        fs::remove_file(output.join("LICENSES/MIT.txt"))?;
+        symlink(&outside, output.join("LICENSES/MIT.txt"))?;
+        assert!(copy_notice_directory(&source, &output).is_err());
+        assert_eq!(fs::read(&outside)?, b"must remain untouched");
+        fs::remove_file(output.join("LICENSES/MIT.txt"))?;
+        symlink(&outside, source.join("LICENSES/linked.txt"))?;
+        assert!(copy_notice_directory(&source, &output).is_err());
+        Ok(())
+    }
     #[test]
     fn utc_date_uses_utc_midnight_even_for_an_offset_clock_value() -> Result {
         let before = time::Date::from_calendar_date(2026, time::Month::October, 19)?

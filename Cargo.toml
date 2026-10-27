@@ -1,6 +1,6 @@
 [workspace]
 members = ["crates/*", "xtask"]
-exclude = ["fuzz", "qualification/section-2", "third_party/sevenz-turbo"]
+exclude = ["fuzz", "qualification/section-2", "third_party/sevenz-turbo", "third_party/accesskit-atspi-common"]
 resolver = "3"
 
 [workspace.package]
@@ -46,6 +46,8 @@ image = { version = "=0.25.10", default-features = false, features = ["png", "jp
 rawzip = "=0.5.2"
 flate2 = { version = "=1.1.10", default-features = false, features = ["rust_backend"] }
 sevenz-turbo = { version = "=0.29.2", default-features = false, features = ["bzip2", "ppmd", "deflate", "zstd", "lz4", "brotli"] }
+slint = { version = "=1.18.1", default-features = false, features = ["std", "compat-1-18", "accessibility", "backend-winit-x11", "backend-winit-wayland", "renderer-skia", "raw-window-handle-06", "unstable-winit-030"] }
+slint-build = { version = "=1.18.1", default-features = false, features = ["compat-1-18"] }
 
 [workspace.lints.rust]
 unsafe_code = "deny"
@@ -65,3 +67,12 @@ missing_safety_doc = "deny"
 
 [patch.crates-io]
 sevenz-turbo = { path = "third_party/sevenz-turbo" }
+accesskit_atspi_common = { path = "third_party/accesskit-atspi-common" }
+
+# Native renderer symbols are supplied by reviewed upstream libraries. Keep the
+# routine multi-target build small enough for the native CI host disk budget.
+[profile.dev]
+debug = 0
+
+[profile.test]
+debug = 0

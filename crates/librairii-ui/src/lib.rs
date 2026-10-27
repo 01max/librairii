@@ -1,3 +1,5 @@
-//! Toolkit-independent presentation boundary. No views or workflows implemented.
-#![forbid(unsafe_code)]
+//! Pure presentation models and compiled native views; no storage effects.
+#![deny(unsafe_code)]
+pub mod native;
+pub mod responses;
 pub mod settings;

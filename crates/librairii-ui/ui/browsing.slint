@@ -1,0 +1,103 @@
+import { TagChip } from "states.slint";
+import { ListView, Palette, ScrollView, VerticalBox } from "std-widgets.slint";
+export struct TagRow { label:string, color:color }
+export struct StoryRow { tags:[TagRow], metadata:string, index: int, title: string, author: string, description: string, warning: string, provenance: string, cover: image }
+export struct StoryGroup { cards: [StoryRow] }
+export component StoryBrowser inherits FocusScope {
+    in property <[StoryGroup]> groups;
+    in property <int> count;
+    in property <int> mode;
+    in property <int> columns: 1;
+    in property <string> label;
+    in-out property <int> selected-index: -1;
+    private property <int> focused-index: 0;
+    private property <length> row-height: root.mode == 0 ? min(82px,max(76px,root.height)) : min(root.mode == 1 ? 230px : 310px,max(148px,root.height));
+    out property <length> mounted-row-height: root.row-height;
+    callback select(int);
+    callback focus-entered();
+    accessible-role: list;
+    accessible-label: root.label;
+    accessible-item-count: root.count;
+    accessible-delegate-focus: root.focused-index - floor(-view.content-y / root.row-height) * root.columns;
+    function move(index: int, select: bool) {
+        root.focused-index = max(0, min(root.count - 1, index));
+        let row = floor(root.focused-index / root.columns);
+        if row * root.row-height + view.content-y < 0px { view.content-y = -row * root.row-height; }
+        else if (row + 1) * root.row-height + view.content-y > view.visible-height { view.content-y = view.visible-height - (row + 1) * root.row-height; }
+        if select && root.count > 0 { root.selected-index = root.focused-index; root.select(root.selected-index); }
+    }
+    focus-changed-event => { if self.has-focus { root.focus-entered(); root.move(max(0,root.selected-index),false); } }
+    key-pressed(event) => {
+        if event.text == Key.End { root.move(root.count - 1,!event.modifiers.control); }
+        else if event.text == Key.Home { root.move(0,!event.modifiers.control); }
+        else if event.text == Key.DownArrow { root.move(root.focused-index + root.columns,!event.modifiers.control); }
+        else if event.text == Key.UpArrow { root.move(root.focused-index - root.columns,!event.modifiers.control); }
+        else if event.text == Key.RightArrow { root.move(root.focused-index + 1,!event.modifiers.control); }
+        else if event.text == Key.LeftArrow { root.move(root.focused-index - 1,!event.modifiers.control); }
+        else if event.text == Key.PageDown { root.move(root.focused-index + max(1,floor(view.visible-height / root.row-height)) * root.columns,!event.modifiers.control); }
+        else if event.text == Key.PageUp { root.move(root.focused-index - max(1,floor(view.visible-height / root.row-height)) * root.columns,!event.modifiers.control); }
+        else if event.text == Key.Space || event.text == Key.Return { root.move(root.focused-index,true); }
+        else { return reject; }
+        return accept;
+    }
+    view := ListView {
+        width: parent.width; height: parent.height;
+        accessible-role: none;
+        for group[row] in root.groups: Rectangle {
+            height: root.row-height;
+            accessible-role: none;
+            for card[column] in group.cards: Rectangle {
+                x: column * parent.width / root.columns;
+                width: parent.width / root.columns - 8px;
+                height: parent.height - 8px;
+                border-radius: 6px;
+                background: card.index == root.selected-index ? Palette.selection-background : Palette.background;
+                border-width: root.has-focus && card.index == root.focused-index ? 2px : 1px;
+                border-color: root.has-focus && card.index == root.focused-index ? Palette.foreground : Palette.border;
+                accessible-role: list-item;
+                accessible-label: card.title + (card.warning == "" ? "" : ", " + card.warning) + (card.provenance == "" ? "" : ", " + card.provenance);
+                accessible-item-index: card.index;
+                accessible-item-selectable: true;
+                accessible-item-selected: card.index == root.selected-index;
+                accessible-enabled: root.enabled;
+                accessible-action-default => { root.move(card.index,true); root.focus(); }
+                Image { x: 8px; y: 8px; width: root.mode == 0 ? 64px : parent.width - 16px; height: root.mode == 0 ? parent.height - 16px : parent.height - 82px;
+                    source: card.cover.width > 0 ? card.cover : @image-url("../assets/library.svg"); image-fit: contain;
+                }
+                Text { x: root.mode == 0 ? 84px : 8px; y: root.mode == 0 ? 7px : parent.height - 72px;
+                    width: parent.width - self.x - 8px; height: 38px;
+                    text: card.title; wrap: word-wrap; overflow: elide; font-weight: 600;
+                    color: card.index == root.selected-index ? Palette.selection-foreground : Palette.foreground;
+                }
+                Text { x: root.mode == 0 ? 84px : 8px; y: parent.height - 28px; width: parent.width - self.x - 8px; height: 22px;
+                    text: (card.warning != "" ? card.warning : card.author) + (card.provenance != "" ? " · " + card.provenance : ""); overflow: elide;
+                    color: card.index == root.selected-index ? Palette.selection-foreground : Palette.foreground;
+                }
+                TouchArea { enabled: root.enabled; clicked => { root.move(card.index,true); root.focus(); } }
+            }
+        }
+    }
+}
+export component Inspector inherits Rectangle {
+    in property <bool> french;
+    in property <StoryRow> story;
+    background: Palette.alternate-background;
+    public function scroll(key: string) {
+        if key == Key.Home { details.content-y = 0px; }
+        else if key == Key.End { details.content-y = min(0px, details.visible-height - details.content-height); }
+        else { details.content-y = max(min(0px, details.visible-height - details.content-height), min(0px, details.content-y + (key == Key.PageUp ? 1 : -1) * details.visible-height)); }
+    }
+    details := ScrollView { width: parent.width; height: parent.height; content-width: self.visible-width; content-height: inspector-layout.preferred-height;
+        inspector-layout := VerticalBox { height: self.preferred-height; padding: 14px; spacing: 12px;
+            Text { vertical-stretch: 0; text: root.french ? "Détails de l’histoire" : "Story details"; color: Palette.foreground; font-weight: 600; }
+            Image { source: root.story.cover; image-fit: contain; height: root.story.cover.width > 0 ? 160px : 0px; }
+            Text { vertical-stretch: 0; text: root.story.title != "" ? root.story.title : (root.french ? "Sélectionnez une histoire pour afficher ses détails." : "Select a story to see its details."); wrap: word-wrap; color: Palette.foreground; font-size: 18px; }
+            Text { vertical-stretch: 0; text: root.story.warning; wrap: word-wrap; color: Palette.foreground; font-weight: 600; }
+            Text { vertical-stretch: 0; text: root.story.metadata; wrap: word-wrap; color: Palette.foreground; }
+            for tag in root.story.tags: TagChip { label: tag.label; tag-color: tag.color; }
+            Text { vertical-stretch: 0; text: root.story.author; wrap: word-wrap; color: Palette.foreground; }
+            Text { vertical-stretch: 0; text: root.story.description; wrap: word-wrap; color: Palette.foreground; }
+            Text { vertical-stretch: 0; text: root.story.provenance; wrap: word-wrap; color: Palette.foreground; }
+        }
+    }
+}

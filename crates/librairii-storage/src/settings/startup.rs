@@ -268,10 +268,12 @@ fn validate_native_namespace(
     if entries.is_empty() {
         return Ok(());
     }
-    if entries
-        .iter()
-        .any(|name| name != profile::MARKER && name != "settings.json" && name != "navigation.json")
-    {
+    if entries.iter().any(|name| {
+        name != profile::MARKER
+            && name != "settings.json"
+            && name != "navigation.json"
+            && name != "shelf-warnings.json"
+    }) {
         return Err(StorageError::RecoveryBindingRequired);
     }
     let mut marker = root.open_regular(

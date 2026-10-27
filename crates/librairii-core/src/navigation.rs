@@ -127,6 +127,12 @@ impl Navigation {
         *self = next;
         Ok(())
     }
+    pub fn can_back(&self) -> bool {
+        self.position > 0
+    }
+    pub fn can_forward(&self) -> bool {
+        self.position + 1 < self.frames.len()
+    }
     pub fn back(&mut self) -> Result<bool> {
         if self.position == 0 {
             return Ok(false);

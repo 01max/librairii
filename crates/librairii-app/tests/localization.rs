@@ -155,3 +155,25 @@ fn historical_results_translate_known_messages_and_keep_unknown_original_details
     }
     Ok(())
 }
+
+#[test]
+fn native_tag_labels_translate_system_values_without_translating_authored_lookalikes() -> TestResult
+{
+    let catalogs = Catalogs::embedded()?;
+    let mut tag = librairii_core::tagging::DisplayTag {
+        source: "derived".into(),
+        definition: "Age".into(),
+        value: Some("3–5 years".into()),
+        color: "#123456".into(),
+    };
+    assert_eq!(
+        catalogs.tag_label(Language::English, &tag),
+        "Age: 3–5 years"
+    );
+    assert_eq!(catalogs.tag_label(Language::French, &tag), "Âge: 3–5 ans");
+    tag.source = "user".into();
+    assert_eq!(catalogs.tag_label(Language::French, &tag), "Age: 3–5 years");
+    tag.value = None;
+    assert_eq!(catalogs.tag_label(Language::French, &tag), "Age");
+    Ok(())
+}
