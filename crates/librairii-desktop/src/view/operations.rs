@@ -177,6 +177,13 @@ impl State {
                 .and_then(|id| self.keys.iter().position(|key| key == id))
                 .map_or(-1, |i| i as i32),
         );
+        ui.set_operation_choice(
+            usize::try_from(ui.get_operation_index())
+                .ok()
+                .and_then(|index| ui.get_operation_choices().row_data(index))
+                .unwrap_or_default(),
+        );
+        ui.invoke_sync_operation_choice();
         let mut notice=data.error.as_ref().map(|error|format!("{}\n{error}",words(language,"The operation could not be started or updated. Refresh and try again.","L’opération n’a pas pu être démarrée ou actualisée. Actualisez puis réessayez."))).unwrap_or_default();
         if data.preparing.is_some() {
             notice = words(
