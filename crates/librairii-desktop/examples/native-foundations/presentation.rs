@@ -74,6 +74,7 @@ impl Fixture {
                     tx.execute("INSERT INTO story_archives(story_id,original_filename,detected_format,sha256,byte_size,managed_path,validation_state) VALUES(?1,'story.zip','zip',printf('%064d',?1),1,'archives/'||?1,'valid')", [id])?;
                 }
                 tx.execute_batch("INSERT INTO tag_definitions(id,key,normalized_key,label,color,kind,source,presentation,position,is_protected) VALUES(101,'bedtime','bedtime','Bedtime','#334455','boolean','user','default',0,0),(102,'theme','theme','Theme','#334455','choice','user','default',1,0); INSERT INTO tag_values(id,definition_id,key,normalized_key,label,position) VALUES(201,102,'forest','forest','Forest',0),(202,102,'ocean','ocean','Ocean',1); INSERT INTO story_tag_assignments(story_id,definition_id,value_id,source) SELECT id,101,NULL,'manual' FROM stories WHERE id<=30; INSERT INTO story_tag_assignments(story_id,definition_id,value_id,source) SELECT id,102,CASE WHEN id<=30 THEN 201 ELSE 202 END,'manual' FROM stories;")?;
+                tx.execute_batch("INSERT INTO shelves(id,name,normalized_name,position) VALUES(1,'Reverse','reverse',0); INSERT INTO shelf_stories(shelf_id,story_uuid,position,cached_title) SELECT 1,uuid,60-id,embedded_title FROM stories;")?;
                 Ok(())
             })?
             .wait()?;
@@ -149,6 +150,7 @@ impl Drop for Fixture {
             ui.on_change_language(|_| {});
             ui.on_search(|_| {});
             ui.on_filter_search(|_| {});
+            ui.on_filter_collapse(|_| {});
             ui.on_filter_edit(|_, _| {});
             ui.on_filter_remove(|_| {});
             ui.on_filter_clear(|| {});
@@ -181,6 +183,10 @@ fn receive(worker: &Worker) -> Result<Snapshot> {
 pub fn filters(ui: &DesktopWindow, output: Option<&std::path::Path>) -> Result {
     use slint::Model;
     let fixture = Fixture::open(ui)?;
+    check(
+        ui.get_sort_index() == 1,
+        "fresh default sort does not match name ordering",
+    )?;
     fixture.search(ui, "Alpha ")?;
     ui.invoke_open_dialog(8);
     ui.invoke_sort_selected(1);
@@ -189,12 +195,36 @@ pub fn filters(ui: &DesktopWindow, output: Option<&std::path::Path>) -> Result {
         let rows = ui.get_filter_rows();
         (0..rows.row_count())
             .filter_map(|i| rows.row_data(i))
-            .find(|r| r.label.contains(label))
+            .find(|r| !r.heading && r.label.contains(label))
             .map(|r| r.index)
             .ok_or_else(|| format!("missing native filter {label}").into())
     };
     ui.invoke_filter_edit(option("Bedtime")?, 1);
     let tagged = fixture.settle(ui)?;
+    let group = ui.get_filter_rows();
+    let heading = (0..group.row_count())
+        .filter_map(|i| group.row_data(i))
+        .find(|r| r.heading && r.label == "Bedtime")
+        .ok_or("tag heading missing")?;
+    let saved = fixture.saved_navigation()?;
+    ui.invoke_filter_collapse(heading.index);
+    check(
+        fixture.saved_navigation()?.current() == saved.current(),
+        "collapsing a group changed the query",
+    )?;
+    check(
+        !(0..ui.get_filter_rows().row_count())
+            .filter_map(|i| ui.get_filter_rows().row_data(i))
+            .any(|r| !r.heading && r.label == "Bedtime"),
+        "collapsed tag remains exposed",
+    )?;
+    ui.invoke_filter_collapse(heading.index);
+    check(
+        (0..ui.get_filter_rows().row_count())
+            .filter_map(|i| ui.get_filter_rows().row_data(i))
+            .any(|r| !r.heading && r.label == "Bedtime" && r.state == 1),
+        "expanded tag lost its selection",
+    )?;
     check(
         tagged.page.as_ref().is_some_and(|p| p.total == 30),
         "boolean filter lost its full SQL scope",
@@ -269,6 +299,52 @@ pub fn filters(ui: &DesktopWindow, output: Option<&std::path::Path>) -> Result {
         super::capture(ui, &output.join("filters-compact-fr.png"))?;
     }
     ui.invoke_close_dialog();
+    let scope = fixture
+        .view
+        .borrow()
+        .snapshot
+        .groups
+        .iter()
+        .find(|g| g.name == "Reverse")
+        .ok_or("manual shelf missing")?
+        .scope
+        .clone();
+    fixture.worker.borrow().offer(Command::Navigate(scope))?;
+    let manual = fixture.settle(ui)?;
+    check(
+        ui.get_sort_index() == 2
+            && manual
+                .page
+                .as_ref()
+                .is_some_and(|p| p.stories[0].title == "Beta"),
+        "manual Shelf sort is misrepresented",
+    )?;
+    ui.invoke_sort_selected(1);
+    let sorted = fixture.settle(ui)?;
+    check(
+        sorted
+            .page
+            .as_ref()
+            .is_some_and(|p| p.stories[0].title == "Alpha")
+            && ui.get_sort_index() == 1,
+        "Shelf sort did not enter view order",
+    )?;
+    fixture.worker.borrow().offer(Command::Back)?;
+    fixture.settle(ui)?;
+    check(ui.get_sort_index() == 2, "Back lost Shelf manual order")?;
+    fixture.worker.borrow().offer(Command::Forward)?;
+    fixture.settle(ui)?;
+    let restored = fixture.saved_navigation()?;
+    check(
+        matches!(
+            restored.current().location.scope,
+            librairii_core::collection_codec::url::Scope::Shelf {
+                manual_order: false,
+                ..
+            }
+        ) && ui.get_sort_index() == 1,
+        "Forward/reopen lost Shelf view order",
+    )?;
     fixture.finish()
 }
 

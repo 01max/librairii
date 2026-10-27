@@ -20,7 +20,7 @@ The active summary remains visible while filters are collapsed. The dialog
 lists removable criteria, including unavailable saved references and combined
 queries. Clear one/all resets the page while retaining explicit sort; clearing
 tags retains other groups. Clear all returns to search; individual removal
-returns to the filter search field. Closing preserves criteria. Storage query
+returns to the filter search field. Closing preserves criteria. Each tag definition, language and import-status group has a keyboard-operable collapse button that retains selected values; searching reveals matching options. Empty query sorts display the frozen name default. Shelf sorting explicitly switches between manual and view order in the same navigation frame, including Back/Forward and persisted restoration. Language choices come from a storage-owned facet API. Storage query
 failures remain errors with history recovery, never unfiltered success.
 
 The form and its lists scroll independently. Native Tab focus reveals lower

@@ -21,6 +21,10 @@ pub enum Command {
     Navigate(librairii_core::collection_codec::url::Scope),
     Presentation(librairii_core::navigation::Presentation),
     Request(librairii_core::query::QueryRequest),
+    Sort {
+        request: librairii_core::query::QueryRequest,
+        manual_order: bool,
+    },
     ChangePage(i32),
     Select {
         id: i64,

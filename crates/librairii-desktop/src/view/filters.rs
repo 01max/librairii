@@ -4,7 +4,7 @@ use librairii_app::localization::Catalogs;
 use librairii_core::query::QueryRequest;
 use librairii_desktop::presentation::{Command, Snapshot, Worker};
 use librairii_ui::{
-    filters::{self, Active, BooleanState, Edit, OptionRow, Sort, Target},
+    filters::{self, Active, BooleanState, Edit, Group, OptionRow, Sort, Target},
     native::{ActiveFilterRow, DesktopWindow, FilterRow},
 };
 use slint::{ComponentHandle, ModelRc, VecModel};
@@ -16,6 +16,7 @@ pub struct State {
     search: String,
     options: Vec<OptionRow>,
     active: Vec<Active>,
+    collapsed: Vec<Group>,
 }
 impl State {
     pub fn new(request: QueryRequest) -> Self {
@@ -39,19 +40,33 @@ impl State {
             catalogs,
         );
         let search = self.search.trim().to_lowercase();
-        ui.set_filter_rows(ModelRc::new(VecModel::from(
-            self.options
-                .iter()
-                .enumerate()
-                .filter(|(_, r)| r.label.to_lowercase().contains(&search))
-                .map(|(index, row)| FilterRow {
+        let mut rows = Vec::new();
+        let mut group = None;
+        for (index, row) in self.options.iter().enumerate().filter(|(_, r)| {
+            r.label.to_lowercase().contains(&search) || r.heading.to_lowercase().contains(&search)
+        }) {
+            let expanded = !self.collapsed.contains(&row.group) || !search.is_empty();
+            if group != Some(&row.group) {
+                rows.push(FilterRow {
+                    index: index as i32,
+                    label: row.heading.clone().into(),
+                    heading: true,
+                    expanded,
+                    ..Default::default()
+                });
+                group = Some(&row.group);
+            }
+            if expanded {
+                rows.push(FilterRow {
                     index: index as i32,
                     label: row.label.clone().into(),
                     boolean: matches!(row.target, Target::Boolean(_)),
                     state: row.state,
-                })
-                .collect::<Vec<_>>(),
-        )));
+                    ..Default::default()
+                });
+            }
+        }
+        ui.set_filter_rows(ModelRc::new(VecModel::from(rows)));
         ui.set_active_filter_rows(ModelRc::new(VecModel::from(
             self.active
                 .iter()
@@ -82,7 +97,21 @@ impl State {
             )
             .into(),
         );
-        ui.set_sort_index(i32::from(self.request.sort == "name_asc"));
+        let shelf = snapshot
+            .navigation
+            .as_ref()
+            .and_then(|n| match n.current().location.scope {
+                librairii_core::collection_codec::url::Scope::Shelf { manual_order, .. } => {
+                    Some(manual_order)
+                }
+                _ => None,
+            });
+        ui.set_sort_manual_available(shelf.is_some());
+        ui.set_sort_index(if shelf == Some(true) {
+            2
+        } else {
+            i32::from(self.request.sort != "imported_desc")
+        });
     }
 }
 fn apply(
@@ -93,6 +122,7 @@ fn apply(
 ) -> bool {
     let mut borrowed = view.borrow_mut();
     let view = &mut *borrowed;
+    let sorting = matches!(edit, Edit::Sort(_));
     let Ok(request) = filters::edit(&view.filters.request, edit) else {
         ui.set_status(
             if ui.get_french() {
@@ -104,7 +134,15 @@ fn apply(
         );
         return false;
     };
-    let accepted = offer(&worker.borrow(), Command::Request(request.clone()), ui);
+    let command = if sorting {
+        Command::Sort {
+            request: request.clone(),
+            manual_order: false,
+        }
+    } else {
+        Command::Request(request.clone())
+    };
+    let accepted = offer(&worker.borrow(), command, ui);
     if accepted {
         view.filters.request = request;
     }
@@ -134,6 +172,25 @@ pub fn install(ui: &DesktopWindow, view: Rc<RefCell<View>>, worker: Rc<RefCell<W
             let state = &mut *state;
             state.filters.search = text.into();
             state.filters.project(&ui, &state.snapshot, &state.catalogs);
+        }
+    });
+    let (state, weak) = (view.clone(), ui.as_weak());
+    ui.on_filter_collapse(move |index| {
+        if let Some(ui) = weak.upgrade() {
+            let mut state = state.borrow_mut();
+            let state = &mut *state;
+            if let Some(group) = usize::try_from(index)
+                .ok()
+                .and_then(|i| state.filters.options.get(i))
+                .map(|r| r.group.clone())
+            {
+                if state.filters.collapsed.contains(&group) {
+                    state.filters.collapsed.retain(|g| g != &group);
+                } else {
+                    state.filters.collapsed.push(group);
+                }
+                state.filters.project(&ui, &state.snapshot, &state.catalogs);
+            }
         }
     });
     let (state, weak, pending) = (view.clone(), ui.as_weak(), worker.clone());
@@ -203,6 +260,18 @@ pub fn install(ui: &DesktopWindow, view: Rc<RefCell<View>>, worker: Rc<RefCell<W
     let (state, weak, pending) = (view, ui.as_weak(), worker);
     ui.on_sort_selected(move |index| {
         if let Some(ui) = weak.upgrade() {
+            if index == 2 {
+                let request = state.borrow().filters.request.clone();
+                offer(
+                    &pending.borrow(),
+                    Command::Sort {
+                        request,
+                        manual_order: true,
+                    },
+                    &ui,
+                );
+                return;
+            }
             apply(
                 &state,
                 &pending,

@@ -1,6 +1,6 @@
 import { Button, CheckBox, ComboBox, LineEdit, ListView, Palette, VerticalBox, HorizontalBox } from "std-widgets.slint";
 import { EditAction } from "states.slint";
-export struct FilterRow { index:int, label:string, boolean:bool, state:int }
+export struct FilterRow { index:int, label:string, boolean:bool, state:int, heading:bool, expanded:bool }
 export struct ActiveFilterRow { index:int, label:string }
 export component Filters inherits FocusScope {
     in property <bool> french;
@@ -8,6 +8,7 @@ export component Filters inherits FocusScope {
     in property <[ActiveFilterRow]> active;
     in-out property <string> search;
     in-out property <int> sort-index;
+    in property <bool> sort-manual-available;
     out property <int> displayed-sort-index: sort-choice.current-index;
     out property <bool> clear-focused: clear-button.has-focus;
     out property <length> clear-window-y: clear-button.absolute-position.y;
@@ -15,6 +16,7 @@ export component Filters inherits FocusScope {
     out property <bool> first-focused: filter-search.has-focus;
     callback search-edited(string);
     callback option-edited(int,int);
+    callback collapse(int);
     callback remove(int);
     callback clear-all();
     callback clear-tags();
@@ -45,7 +47,7 @@ export component Filters inherits FocusScope {
     }
     VerticalBox { width: parent.width; height: parent.height; padding: 0px; spacing: 8px;
         filter-search := LineEdit { text <=> root.search; accessible-label: root.french ? "Rechercher un filtre" : "Search filters"; placeholder-text: self.accessible-label; edited => { root.search-edited(self.text); } changed has-focus => { if self.has-focus { root.reveal(self.absolute-position.y,self.height); } } }
-        sort-choice := ComboBox { accessible-label: root.french ? "Trier les histoires" : "Sort stories"; model: root.french ? ["Ajout récent", "Nom de A à Z"] : ["Recently added", "Name A–Z"]; current-index <=> root.sort-index; selected(_) => { root.sort-selected(self.current-index); } changed has-focus => { if self.has-focus { root.reveal(self.absolute-position.y,self.height); } } }
+        sort-choice := ComboBox { accessible-label: root.french ? "Trier les histoires" : "Sort stories"; model: root.sort-manual-available ? (root.french ? ["Ajout récent", "Nom de A à Z", "Ordre manuel"] : ["Recently added", "Name A–Z", "Manual order"]) : (root.french ? ["Ajout récent", "Nom de A à Z"] : ["Recently added", "Name A–Z"]); current-index <=> root.sort-index; selected(_) => { root.sort-selected(self.current-index); } changed has-focus => { if self.has-focus { root.reveal(self.absolute-position.y,self.height); } } }
         Text { visible: root.active.length > 0; height: root.active.length > 0 ? 22px : 0px; text: root.french ? "Filtres actifs" : "Active filters"; color: Palette.foreground; }
         active-list := ListView { height: root.active.length > 0 ? 72px : 0px;
             for entry in root.active: Button { text: (root.french ? "Retirer · " : "Remove · ") + entry.label; clicked => { root.activate(); root.remove(entry.index); } changed has-focus => { if self.has-focus { root.reveal-option(self.absolute-position.y,self.height,true); } } }
@@ -53,8 +55,9 @@ export component Filters inherits FocusScope {
         options-list := ListView { vertical-stretch: 1; min-height: 120px;
             for entry in root.options: HorizontalBox { height: 38px; padding: 0px;
                 property <int> state: entry.state;
-                if entry.boolean: ComboBox { horizontal-stretch: 1; accessible-label: entry.label; model: root.french ? [entry.label + " · Tous", entry.label + " · Attribué", entry.label + " · Non attribué"] : [entry.label + " · Any", entry.label + " · Tagged", entry.label + " · Not tagged"]; current-index <=> parent.state; selected(_) => { root.option-edited(entry.index,self.current-index); } changed has-focus => { if self.has-focus { root.reveal-option(self.absolute-position.y,self.height,false); } } }
-                if !entry.boolean: CheckBox { horizontal-stretch: 1; text: entry.label; checked: entry.state == 1; toggled => { root.option-edited(entry.index,self.checked ? 1 : 0); } changed has-focus => { if self.has-focus { root.reveal-option(self.absolute-position.y,self.height,false); } } }
+                if entry.heading: Button { horizontal-stretch: 1; text: (entry.expanded ? "▾ " : "▸ ") + entry.label; accessible-label: entry.label + (entry.expanded ? (root.french ? " · Réduire" : " · Collapse") : (root.french ? " · Développer" : " · Expand")); clicked => { root.activate(); root.collapse(entry.index); } changed has-focus => { if self.has-focus { root.reveal-option(self.absolute-position.y,self.height,false); } } }
+                if !entry.heading && entry.boolean: ComboBox { horizontal-stretch: 1; accessible-label: entry.label; model: root.french ? [entry.label + " · Tous", entry.label + " · Attribué", entry.label + " · Non attribué"] : [entry.label + " · Any", entry.label + " · Tagged", entry.label + " · Not tagged"]; current-index <=> parent.state; selected(_) => { root.option-edited(entry.index,self.current-index); } changed has-focus => { if self.has-focus { root.reveal-option(self.absolute-position.y,self.height,false); } } }
+                if !entry.heading && !entry.boolean: CheckBox { horizontal-stretch: 1; text: entry.label; checked: entry.state == 1; toggled => { root.option-edited(entry.index,self.checked ? 1 : 0); } changed has-focus => { if self.has-focus { root.reveal-option(self.absolute-position.y,self.height,false); } } }
             }
         }
         Text { visible: root.options.length == 0; height: root.options.length == 0 ? 24px : 0px; text: root.french ? "Aucun filtre correspondant." : "No matching filters."; color: Palette.foreground; }

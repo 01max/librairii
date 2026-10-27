@@ -38,8 +38,16 @@ pub enum Edit {
     ClearTags,
     Sort(Sort),
 }
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum Group {
+    Language,
+    Compatibility,
+    Tag(i64),
+}
 #[derive(Clone, Debug)]
 pub struct OptionRow {
+    pub group: Group,
+    pub heading: String,
     pub target: Target,
     pub label: String,
     /// Any/off=0, tagged/on=1, not-tagged=2.
@@ -238,6 +246,8 @@ pub fn options(
     let mut rows = locales
         .into_iter()
         .map(|value| OptionRow {
+            group: Group::Language,
+            heading: translated(catalogs, language, "Language"),
             state: i32::from(q.languages().contains(&value)),
             label: format!(
                 "{} · {}",
@@ -251,6 +261,8 @@ pub fn options(
         ["compatible", "missing", "invalid"]
             .into_iter()
             .map(|value| OptionRow {
+                group: Group::Compatibility,
+                heading: translated(catalogs, language, "Import status"),
                 state: i32::from(q.compatibilities().iter().any(|v| v == value)),
                 label: format!(
                     "{} · {}",
@@ -268,6 +280,8 @@ pub fn options(
         let label = definition_label(entry, language, catalogs);
         match entry.definition.kind {
             Kind::Boolean => rows.push(OptionRow {
+                group: Group::Tag(definition),
+                heading: label.clone(),
                 target: Target::Boolean(definition),
                 label,
                 state: q
@@ -283,6 +297,8 @@ pub fn options(
             Kind::Choice => {
                 for value in &entry.values {
                     rows.push(OptionRow {
+                        group: Group::Tag(definition),
+                        heading: label.clone(),
                         target: Target::Choice {
                             definition,
                             value: value.id,

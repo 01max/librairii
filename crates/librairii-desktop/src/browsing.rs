@@ -50,14 +50,12 @@ pub struct Facets {
     pub languages: Vec<String>,
 }
 fn facets(runtime: &Runtime<'_, '_, '_>) -> Result<Facets> {
-    runtime.command(|db, _, _| Ok(Facets {
-        tags: db.tag_catalog()?.wait()?,
-        languages: db.read(|tx| {
-            let mut statement=tx.prepare("SELECT DISTINCT m.language FROM official_story_metadata m JOIN catalog_snapshots c ON c.id=m.snapshot_id WHERE c.status='active' AND m.language<>'' ORDER BY m.language")?;
-            let rows=statement.query_map([],|row|row.get::<_,String>(0))?.collect::<std::result::Result<Vec<_>,_>>()?;
-            Ok(rows)
-        })?.wait()?,
-    }))
+    runtime.command(|db, _, _| {
+        Ok(Facets {
+            tags: db.tag_catalog()?.wait()?,
+            languages: db.available_languages()?.wait()?,
+        })
+    })
 }
 fn groups(runtime: &Runtime<'_, '_, '_>) -> Result<Vec<Group>> {
     runtime.command(|db, _, _| {
@@ -346,6 +344,21 @@ pub(crate) fn run(
                         }
                         Command::Request(request) => {
                             invalid_query = push_query(&mut next, request).is_err();
+                        }
+                        Command::Sort {
+                            request,
+                            manual_order,
+                        } => {
+                            let scope = match next.current().location.scope.clone() {
+                                Scope::Shelf { id, .. } => Scope::Shelf { id, manual_order },
+                                scope => scope,
+                            };
+                            invalid_query = next
+                                .push(Frame {
+                                    location: Location { scope, request },
+                                    selection: Vec::new(),
+                                })
+                                .is_err();
                         }
                         Command::Select { id, query } => {
                             if next.accepts(&query) {

@@ -199,6 +199,7 @@ export component DesktopWindow inherits Window {
     in property <string> active-filter-summary;
     in property <string> filter-label;
     in-out property <int> sort-index;
+    in property <bool> sort-manual-available;
     out property <int> displayed-sort-index: filters.displayed-sort-index;
     out property <bool> filter-clear-focused: filters.clear-focused;
     out property <length> filter-clear-window-y: filters.clear-window-y;
@@ -208,6 +209,7 @@ export component DesktopWindow inherits Window {
     callback filter-search(string);
     in-out property <string> filter-search-query;
     callback filter-edit(int,int);
+    callback filter-collapse(int);
     callback filter-remove(int);
     callback filter-clear();
     callback filter-clear-tags();
@@ -363,9 +365,10 @@ export component DesktopWindow inherits Window {
                         if root.dialog == 4: Caption { text: root.french ? "Choisissez où conserver votre bibliothèque. Votre bibliothèque n’est créée qu’après la confirmation de son emplacement. Vous pouvez d’abord choisir la langue dans les réglages." : "Choose where to keep your library. Your library is created only after you confirm its location. You can choose your language in Settings first."; }
                         if root.dialog == 5: Caption { text: root.french ? "La bibliothèque attendue est indisponible ou nécessite une récupération. Ses fichiers sont conservés. Reconnectez son volume puis réessayez ; ne remplacez pas votre bibliothèque." : "The expected library is unavailable or needs recovery. Its files are preserved. Reconnect its volume and retry; keep your existing library."; }
                         if root.dialog == 6: Caption { text: root.status != "" ? root.status : (root.french ? "Vos histoires et leurs archives restent dans votre bibliothèque locale." : "Your stories and archives stay in your local library."); }
-                        filters := Filters { visible: root.dialog == 8; height: root.dialog == 8 ? max(480px,dialog-scroll.visible-height) : 0px; french: root.french; options: root.filter-rows; active: root.active-filter-rows; sort-index <=> root.sort-index; search <=> root.filter-search-query;
+                        filters := Filters { visible: root.dialog == 8; height: root.dialog == 8 ? max(480px,dialog-scroll.visible-height) : 0px; french: root.french; options: root.filter-rows; sort-manual-available: root.sort-manual-available; active: root.active-filter-rows; sort-index <=> root.sort-index; search <=> root.filter-search-query;
                             search-edited(text) => { root.filter-search(text); }
                             option-edited(index,value) => { root.filter-edit(index,value); }
+                            collapse(index) => { root.filter-collapse(index); }
                             remove(index) => { root.filter-remove(index); }
                             clear-all => { root.filter-clear(); }
                             clear-tags => { root.filter-clear-tags(); }

@@ -28,6 +28,14 @@ fn text(value: &str) -> Value {
 }
 
 impl Database<'_> {
+    /// Facet choices observe active metadata independently of the display locale.
+    pub fn available_languages(&self) -> Result<Pending<'_, Vec<String>>> {
+        self.read(|tx| {
+            let mut statement=tx.prepare("SELECT DISTINCT m.language FROM official_story_metadata m JOIN catalog_snapshots c ON c.id=m.snapshot_id WHERE c.status='active' AND m.language<>'' ORDER BY m.language")?;
+            let rows=statement.query_map([],|row|row.get::<_,String>(0))?.collect::<std::result::Result<Vec<_>,_>>()?;
+            Ok(rows)
+        })
+    }
     pub fn search(&self, request: QueryRequest, locale: String) -> Result<Pending<'_, Page>> {
         self.read(move |tx| search(tx, request, &locale))
     }
