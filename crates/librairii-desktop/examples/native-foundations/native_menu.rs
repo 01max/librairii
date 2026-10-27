@@ -68,6 +68,27 @@ pub fn verify(ui: &DesktopWindow, menus: &Menus) -> Result {
                 "native application visibility action is not localized",
             )?;
         }
+        for (index, label) in (if french {
+            [
+                "Historique…",
+                "Emplacement de la bibliothèque…",
+                "Enregistrer le ZIP de diagnostic…",
+            ]
+        } else {
+            ["History…", "Library Location…", "Save Diagnostic ZIP…"]
+        })
+        .into_iter()
+        .enumerate()
+        {
+            check(
+                app.itemAtIndex(9 + index as isize)
+                    .ok_or("native maintenance menu item missing")?
+                    .title()
+                    .to_string()
+                    == label,
+                "native maintenance menu is not localized",
+            )?;
+        }
         check(
             shortcut(",", Flags::Command, 43)?,
             "Command-comma was not handled natively",

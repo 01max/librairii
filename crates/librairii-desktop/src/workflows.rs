@@ -38,6 +38,7 @@ pub struct Details {
 }
 #[derive(Clone, Debug, Default)]
 pub struct Snapshot {
+    pub settings: crate::maintenance::Snapshot,
     pub exports: exports::Snapshot,
     pub operations: operations::Snapshot,
     pub shelf_reviews: shelf_reviews::Snapshot,

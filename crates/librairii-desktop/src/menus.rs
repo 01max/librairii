@@ -51,6 +51,8 @@ struct State {
     editing: bool,
     back: bool,
     forward: bool,
+    ready: bool,
+    library: bool,
 }
 #[derive(Clone, Copy, Debug)]
 pub enum NativeCommand {
@@ -59,6 +61,9 @@ pub enum NativeCommand {
     Quit,
     Back,
     Forward,
+    History,
+    Location,
+    Diagnostics,
 }
 #[derive(Clone, Debug, Default)]
 pub struct MenuCommands {
@@ -82,11 +87,12 @@ impl MenuCommands {
                 .store(true, std::sync::atomic::Ordering::Release);
         }
     }
-    fn drain(&self) -> Vec<NativeCommand> {
-        self.queue
-            .lock()
-            .map(|mut queue| queue.drain(..).collect())
-            .unwrap_or_default()
+    fn next(&self, mut ready: impl FnMut(NativeCommand) -> bool) -> Option<NativeCommand> {
+        let mut queue = self.queue.lock().ok()?;
+        // Preserve FIFO among commands that can run. A stale Library-only
+        // command must not prevent opening Settings during recovery.
+        let index = queue.iter().position(|command| ready(*command))?;
+        queue.remove(index)
     }
 }
 pub struct Menus {
@@ -139,6 +145,11 @@ impl Menus {
                 Standard::hide_others(None),
                 Standard::show_all(None),
             ];
+            let additions = [
+                MenuItem::with_id("history", "History…", false, None),
+                MenuItem::with_id("location", "Library Location…", true, None),
+                MenuItem::with_id("diagnostics", "Save Diagnostic ZIP…", false, None),
+            ];
             app.append_items(&[
                 &about,
                 &Standard::separator(),
@@ -148,6 +159,10 @@ impl Menus {
                 &visibility[0],
                 &visibility[1],
                 &visibility[2],
+                &Standard::separator(),
+                &additions[0],
+                &additions[1],
+                &additions[2],
                 &Standard::separator(),
                 &quit,
             ])?;
@@ -198,6 +213,7 @@ impl Menus {
                 labels.push(item);
             }
             bar.append_items(&[&app, &edit, &navigation])?;
+            labels.extend(additions);
             let pending = commands.clone();
             muda::MenuEvent::set_event_handler(Some(move |event: muda::MenuEvent| {
                 use librairii_ui::native::EditAction;
@@ -207,6 +223,9 @@ impl Menus {
                     "settings" => Some(NativeCommand::Settings),
                     "back" => Some(NativeCommand::Back),
                     "forward" => Some(NativeCommand::Forward),
+                    "history" => Some(NativeCommand::History),
+                    "location" => Some(NativeCommand::Location),
+                    "diagnostics" => Some(NativeCommand::Diagnostics),
                     _ => None,
                 };
                 if let Some(command) = command {
@@ -242,7 +261,6 @@ impl Menus {
     }
     pub fn dispatch(&self, ui: &DesktopWindow) {
         self.update(ui);
-        let commands = self.commands.drain();
         if self
             .commands
             .quit
@@ -251,10 +269,35 @@ impl Menus {
             ui.invoke_request_quit();
             return;
         }
-        for command in commands {
+        // Keep early or temporarily blocked commands in their bounded FIFO.
+        // Delivery occurs only when the exact native panel can accept focus.
+        while let Some(command) = self.commands.next(|command| {
+            if ui.get_closing() || ui.get_startup_phase() == 4 || ui.get_picker_open() {
+                return false;
+            }
+            match command {
+                NativeCommand::Settings | NativeCommand::Location => {
+                    ui.get_settings_command_ready()
+                }
+                NativeCommand::Diagnostics => {
+                    ui.get_settings_command_ready() && ui.get_startup_phase() == 3
+                }
+                NativeCommand::About => !ui.get_modal(),
+                _ => !ui.get_modal() && ui.get_startup_phase() == 3,
+            }
+        }) {
             match command {
                 NativeCommand::About => ui.invoke_open_dialog(1),
                 NativeCommand::Settings => ui.invoke_show_panel(5),
+                NativeCommand::Location => {
+                    ui.invoke_show_panel(5);
+                    ui.invoke_focus_settings_choose();
+                }
+                NativeCommand::Diagnostics => {
+                    ui.invoke_show_panel(5);
+                    ui.invoke_focus_settings_diagnostics();
+                }
+                NativeCommand::History => ui.invoke_show_panel(4),
                 NativeCommand::Back | NativeCommand::Forward
                     if !ui.get_modal() && !ui.get_closing() =>
                 {
@@ -294,6 +337,8 @@ impl Menus {
                 editing: _ui.get_text_edit_focused(),
                 back: _ui.get_back_enabled(),
                 forward: _ui.get_forward_enabled(),
+                ready: _ui.get_settings_command_ready(),
+                library: _ui.get_startup_phase() == 3,
             };
             if self.state.replace(Some(state)) == Some(state) {
                 return;
@@ -322,6 +367,9 @@ impl Menus {
                     "Tout sélectionner",
                     "Retour",
                     "Suivant",
+                    "Historique…",
+                    "Emplacement de la bibliothèque…",
+                    "Enregistrer le ZIP de diagnostic…",
                 ]
             } else {
                 [
@@ -336,19 +384,28 @@ impl Menus {
                     "Select All",
                     "Back",
                     "Forward",
+                    "History…",
+                    "Library Location…",
+                    "Save Diagnostic ZIP…",
                 ]
             };
             for (index, (item, label)) in self.labels.iter().zip(labels).enumerate() {
                 item.set_text(label);
                 item.set_enabled(match index {
-                    0 | 1 => !state.modal,
+                    0 => !state.modal,
+                    1 | 12 => state.ready,
                     2 => true,
                     9 => !state.modal && state.back,
                     10 => !state.modal && state.forward,
+                    11 => !state.modal && state.library,
+                    13 => state.ready && state.library,
                     _ => state.editing,
                 });
             }
         }
+    }
+    pub fn commands(&self) -> MenuCommands {
+        self.commands.clone()
     }
     #[cfg(target_os = "macos")]
     pub fn owns_native_menu(&self) -> bool {

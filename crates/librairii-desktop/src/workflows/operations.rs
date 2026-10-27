@@ -108,7 +108,7 @@ impl Controller {
     }
     pub fn restore_preferences(
         &mut self,
-        store: &librairii_storage::profile::NativeProfileStore,
+        store: &dyn crate::preferences::Preferences,
         library: librairii_core::LibraryId,
     ) -> Result<()> {
         match store.load_interface(library) {
@@ -131,7 +131,7 @@ impl Controller {
     pub fn handle(
         &mut self,
         runtime: &Runtime<'_, '_, '_>,
-        store: &librairii_storage::profile::NativeProfileStore,
+        store: &dyn crate::preferences::Preferences,
         generation: LibraryGeneration,
         action: Action,
         revision: u64,
@@ -198,7 +198,7 @@ impl Controller {
                             if let Err(error) = store.save_interface(&next) {
                                 self.snapshot.preference_error = true;
                                 self.snapshot.recovery_required |= matches!(
-                                    store.load(),
+                                    store.require_alive(),
                                     Err(StorageError::ProfileRestartRequired)
                                 );
                                 return Err(error);
@@ -279,8 +279,10 @@ impl Controller {
                             self.snapshot.dismissed_operations.clone();
                         if let Err(error) = store.save_interface(&preferences) {
                             self.snapshot.preference_error = true;
-                            self.snapshot.recovery_required |=
-                                matches!(store.load(), Err(StorageError::ProfileRestartRequired));
+                            self.snapshot.recovery_required |= matches!(
+                                store.require_alive(),
+                                Err(StorageError::ProfileRestartRequired)
+                            );
                             return Err(error);
                         }
                         self.preferences = Some(preferences);

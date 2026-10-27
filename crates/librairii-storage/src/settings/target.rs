@@ -36,6 +36,11 @@ pub struct TargetPreview {
     allocations: Vec<(Directory, ControlAllocation)>,
 }
 impl TargetPreview {
+    /// Native composition must keep this actual target in recovery if a probe
+    /// publication/retirement has not settled. A path or error is insufficient.
+    pub fn has_retained_probes(&self) -> bool {
+        !self.probes.is_empty() || !self.allocations.is_empty()
+    }
     pub fn check_capacity(&self, bytes: u64) -> Result<()> {
         if self
             .existing
@@ -242,10 +247,7 @@ impl TargetPreview {
             None => Ok(false),
         }
     }
-    pub(crate) fn check_relocation_writable(
-        &mut self,
-        cancellation: &WorkCancellation,
-    ) -> Result<()> {
+    pub fn check_relocation_writable(&mut self, cancellation: &WorkCancellation) -> Result<()> {
         self.probe_writable(cancellation, !self.selected_workspace()?)
     }
     fn probe_writable(

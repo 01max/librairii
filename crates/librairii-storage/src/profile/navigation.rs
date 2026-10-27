@@ -111,8 +111,10 @@ impl NativeProfileStore {
             Ok(stage) => stage,
             Err(failure) => {
                 let failure = *failure;
-                state.poison();
-                state.recovery_allocations.push(failure.allocation);
+                if !failure.creation_refused || failure.allocation.file.is_some() {
+                    state.poison();
+                    state.recovery_allocations.push(failure.allocation);
+                }
                 return Err(failure.cause);
             }
         };

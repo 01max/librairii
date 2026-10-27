@@ -25,7 +25,12 @@ impl InterfacePreferences {
             dismissed_operations: BTreeSet::new(),
         }
     }
-    fn decode(bytes: &[u8], library: LibraryId) -> Result<Self> {
+    pub fn library_id(&self) -> Result<LibraryId> {
+        self.library
+            .parse()
+            .map_err(|_| StorageError::InvalidNavigation)
+    }
+    pub fn decode(bytes: &[u8], library: LibraryId) -> Result<Self> {
         let value: Self =
             serde_json::from_slice(bytes).map_err(|_| StorageError::InvalidNavigation)?;
         if bytes.len() > MAX_STATE_BYTES

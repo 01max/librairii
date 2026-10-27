@@ -356,20 +356,78 @@ fn push_query(navigation: &mut Navigation, request: QueryRequest) -> Result<()> 
         })
         .map_err(|_| StorageError::InvalidNavigation)
 }
+pub(crate) struct Context<'a> {
+    pub receiver: &'a Arc<Intake>,
+    pub mailbox: &'a Arc<Mutex<Option<Snapshot>>>,
+    pub stop: &'a AtomicBool,
+    pub catalog_client: Option<librairii_adapters::lunii::CatalogClient>,
+    pub control: crate::maintenance::Control,
+    pub initial_revision: u64,
+    pub initial_settings: &'a crate::maintenance::Snapshot,
+}
 pub(crate) fn run(
     locations: &ProfileLocations,
+    store: &NativeProfileStore,
     language: Language,
-    receiver: &Arc<Intake>,
-    mailbox: &Arc<Mutex<Option<Snapshot>>>,
-    stop: &AtomicBool,
-    catalog_client: Option<librairii_adapters::lunii::CatalogClient>,
+    context: Context<'_>,
 ) -> Result<()> {
-    let store = NativeProfileStore::open_native(&locations.native)?;
     let profile = store.load()?.ok_or(StorageError::InvalidProfile)?;
     let id = librairii_storage::LibraryIdentity::from_bytes(
         profile.profile().library_id.as_bytes().to_vec(),
     )?
     .typed();
+    run_session(
+        || {
+            NativeLibrary::reopen(store, locations, &WorkCancellation::default())
+                .map(LibrarySession::new)
+        },
+        Some((locations, store)),
+        store,
+        id,
+        language,
+        context,
+    )
+}
+pub(crate) fn run_override(
+    settings: crate::startup::OverrideSettings,
+    context: Context<'_>,
+) -> Result<()> {
+    let id = librairii_adapters::identities::job_id().map_err(|_| StorageError::InvalidIdentity)?;
+    let library_id = id
+        .to_string()
+        .parse()
+        .map_err(|_| StorageError::InvalidIdentity)?;
+    let preferences = crate::preferences::Memory::default();
+    run_session(
+        || {
+            settings
+                .initialize(&id.to_string())
+                .map(LibrarySession::isolated)
+        },
+        None,
+        &preferences,
+        library_id,
+        Language::English,
+        context,
+    )
+}
+fn run_session<'p>(
+    initialize: impl FnOnce() -> Result<LibrarySession<'p>>,
+    production: Option<(&ProfileLocations, &'p NativeProfileStore)>,
+    store: &dyn crate::preferences::Preferences,
+    id: librairii_core::LibraryId,
+    language: Language,
+    context: Context<'_>,
+) -> Result<()> {
+    let Context {
+        receiver,
+        mailbox,
+        stop,
+        catalog_client,
+        control,
+        initial_revision,
+        initial_settings,
+    } = context;
     let mut navigation = store.load_navigation(id, 1)?.unwrap_or(
         Navigation::new(
             id,
@@ -382,12 +440,11 @@ pub(crate) fn run(
         .map_err(|_| StorageError::InvalidNavigation)?,
     );
     store.load_shelf_warnings(id)?;
-    let native = NativeLibrary::reopen(&store, locations, &WorkCancellation::default())?;
     let mut language = language;
-    let mut settings = crate::settings::restore_language(&store, language)?;
+    let mut settings = librairii_ui::settings::SettingsPresentation::new(language)
+        .map_err(|_| StorageError::InvalidProfile)?;
     let catalogs = Catalogs::embedded().map_err(|_| StorageError::InvalidProfile)?;
-    let mut session = LibrarySession::new(native).with_catalog_client(catalog_client);
-    let mut revision = 0;
+    let mut revision = initial_revision;
     let mut restore_revision = 0;
     let mut invalid_query = false;
     let mut preview_page = 0usize;
@@ -399,18 +456,56 @@ pub(crate) fn run(
     let mut review_controller = crate::workflows::shelf_reviews::Controller::default();
     let mut export_controller = crate::workflows::exports::Controller::default();
     let mut operation_controller = crate::workflows::operations::Controller::default();
-    operation_controller.restore_preferences(&store, id)?;
-    let result = session.drive(locations, &WorkCancellation::default(), |runtime| {
-        let active = (|| -> Result<()> {
+    let mut maintenance_controller = crate::maintenance::Controller::default();
+    let mut activation = 0u64;
+    operation_controller.restore_preferences(store, id)?;
+    let close_language = std::cell::Cell::new(language);
+    let close_revision = std::cell::Cell::new(revision);
+    let close_context = crate::maintenance::recovery::CloseContext {
+        preferences: store,
+        receiver,
+        mailbox,
+        stop,
+        control: &control,
+        language: &close_language,
+        revision: &close_revision,
+    };
+    let mut session = Some(
+        initialize()?
+            .with_catalog_client(catalog_client.clone())
+            .with_cleanup_notice(if initial_settings.cleanup_pending {
+                initial_settings.retained.clone()
+            } else {
+                Vec::new()
+            }),
+    );
+    loop {
+        let mut current = session.take().ok_or(StorageError::RuntimeFenced)?;
+        let result = current.drive_inner(production.map(|(locations,_)|locations),&WorkCancellation::default(),|error,root|close_context.observe(error,root),|runtime| {
+        let active = (|| -> Result<Option<Action<'_, ()>>> {
             let generation = runtime
                 .generation()
                 .map_err(|_| StorageError::RuntimeFenced)?;
+            activation = activation.checked_add(1).ok_or(StorageError::RuntimeFenced)?;
+            if activation > 1 {
+                navigation = Navigation::decode(&navigation.encode().map_err(|_|StorageError::InvalidNavigation)?, id, activation).map_err(|_|StorageError::InvalidNavigation)?;
+                workflows = Default::default();
+                tag_controller = Default::default(); flag_controller = Default::default();
+                collection_controller = Default::default(); shelf_controller = Default::default();
+                review_controller = Default::default(); export_controller = Default::default();
+                operation_controller = Default::default();
+            }
+            operation_controller.restore_preferences(store, id)?;
+            maintenance_controller.activate(runtime, activation);
+            control.finish();
+            workflows.settings = maintenance_controller.snapshot.clone();
             let mut group_rows = groups(runtime)?;
             let mut query_facets = facets(runtime)?;
             operation_controller.poll(runtime,true)?;
             workflows.operations=operation_controller.snapshot.clone();
             let mut check_entry = true;
             while !stop.load(Ordering::Acquire) {
+                close_language.set(language);close_revision.set(revision);
                 // Job progress does not depend on the UI command FIFO becoming
                 // empty while a user types or navigates continuously.
                 let prepared=export_controller.poll(runtime);workflows.exports=export_controller.snapshot.clone();prepared?;
@@ -424,7 +519,7 @@ pub(crate) fn run(
                     review_controller.invalidate();workflows.shelf_reviews=review_controller.snapshot.clone();
                 }
                 if check_entry {
-                    review_controller.enter(runtime, &store, &navigation)?;
+                    review_controller.enter(runtime, store, &navigation)?;
                     workflows.shelf_reviews = review_controller.snapshot.clone();
                 }
                 let loaded = if invalid_query || workflows.recovery_required {
@@ -436,7 +531,7 @@ pub(crate) fn run(
                     Ok(page) => (Some(page), String::new()),
                     Err(StorageError::RuntimeFenced) => return Err(StorageError::RuntimeFenced),
                     Err(StorageError::Cancelled) if stop.load(Ordering::Acquire) => {
-                        return Ok(());
+                        return Ok(None);
                     }
                     Err(_) => (
                         None,
@@ -478,7 +573,7 @@ pub(crate) fn run(
                 });
                 loop {
                     if stop.load(Ordering::Acquire) {
-                        return Ok(());
+                        return Ok(None);
                     }
                     let Some(envelope) = receiver
                         .receive()
@@ -517,6 +612,12 @@ pub(crate) fn run(
                     invalid_query = false;
                     let mut invalidates_review=matches!(&command,Command::Refresh);
                     match command {
+                        Command::Maintenance{generation,action} => {
+                            let action = maintenance_controller.handle(runtime,&control,generation,action,revision)?;
+                            workflows.settings = maintenance_controller.snapshot.clone();
+                            if workflows.settings.recovery_required { workflows.recovery_required=true; return Err(StorageError::RuntimeFenced); }
+                            if let Some(action) = action { return Ok(Some(action)); }
+                        }
                         Command::Exports{generation,action}=>{
                             operation_controller.poll(runtime,true)?;workflows.operations=operation_controller.snapshot.clone();
                             if let Some(id)=export_controller.handle(runtime,&next,generation,action,revision) {operation_controller.watch(id,revision);operation_controller.poll(runtime,true)?;workflows.operations=operation_controller.snapshot.clone();}
@@ -525,13 +626,13 @@ pub(crate) fn run(
                         }
 
                         Command::Operations{generation,action}=>{
-                            invalidates_review=operation_controller.handle(runtime,&store,generation,action,revision);
+                            invalidates_review=operation_controller.handle(runtime,store,generation,action,revision);
                             workflows.operations=operation_controller.snapshot.clone();
                             if workflows.operations.recovery_required {workflows.recovery_required=true;receiver.fence().map_err(|_|StorageError::RuntimeFenced)?;return Err(StorageError::RuntimeFenced);}
                             if invalidates_review {crate::workflows::refresh_details(runtime,&next,&mut workflows);group_rows=groups(runtime)?;query_facets=facets(runtime)?;}
                         }
                         Command::ShelfReview{generation,action}=>{
-                            review_controller.handle(runtime,&store,crate::workflows::shelf_reviews::Request{generation,action},revision,&mut next);
+                            review_controller.handle(runtime,store,crate::workflows::shelf_reviews::Request{generation,action},revision,&mut next);
                             workflows.shelf_reviews=review_controller.snapshot.clone();
                             if matches!(&workflows.shelf_reviews.feedback,Some(crate::workflows::shelf_reviews::Feedback::Error{uncertain:true,..})) {
                                 workflows.recovery_required=true;receiver.fence().map_err(|_|StorageError::RuntimeFenced)?;return Err(StorageError::RuntimeFenced);
@@ -662,11 +763,7 @@ pub(crate) fn run(
                             .map_err(|_| StorageError::InvalidNavigation)?;
                         }
                         Command::Language(requested) => {
-                            crate::settings::change_language(
-                                &store,
-                                &mut settings,
-                                requested.code(),
-                            )?;
+                            store.save_language(&mut settings,requested)?;
                             language = requested;
                         }
                         Command::Presentation(mode) => next.set_presentation(mode),
@@ -728,28 +825,43 @@ pub(crate) fn run(
                     break;
                 }
             }
-            Ok(())
+            Ok(None)
         })();
-        if active.is_err() {
-            crate::presentation::recovery_with_workflows(receiver, mailbox, stop, language, workflows.clone(), |requested| {
-                crate::settings::change_language(&store, &mut settings, requested.code())
-            })?;
+        match active {
+            Ok(Some(action)) => return Ok(action),
+            Ok(None) => {},
+            Err(_) => {
+                crate::presentation::recovery_with_workflows(receiver, mailbox, stop, language, workflows.clone(), |requested| {
+                    store.save_language(&mut settings, requested)
+                })?;
+            }
         }
         Ok(Action::finish(()))
     });
-    let closed = session.finish();
-    if let Err(retained) = closed {
-        crate::presentation::recovery_with_workflows(
+        let (failure, retained) = match result {
+            Ok(()) => match current.finish() {
+                Ok(()) => return Ok(()),
+                Err(failure) => (failure, None),
+            },
+            Err(failure) => (failure, Some(current)),
+        };
+        let mut recovery = crate::maintenance::recovery::Context {
+            production,
+            preferences: store,
             receiver,
             mailbox,
             stop,
-            language,
-            workflows.clone(),
-            |requested| crate::settings::change_language(&store, &mut settings, requested.code()),
-        )?;
-        drop(retained);
-        return Err(StorageError::RuntimeFenced);
+            control: &control,
+            language: &mut language,
+            settings: &mut settings,
+            workflows: &mut workflows,
+            navigation: &navigation,
+            revision: &mut revision,
+            catalog: catalog_client.clone(),
+        };
+        match crate::maintenance::recovery::settle(failure, retained, &mut recovery)? {
+            Some(resumed) => session = Some(resumed),
+            None => return Ok(()),
+        }
     }
-    result.map_err(|_| StorageError::RuntimeFenced)?;
-    Ok(())
 }

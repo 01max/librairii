@@ -519,9 +519,88 @@ These captures are development evidence;15.13 reseals final source/binary and
 runs both scales and fresh host/spoken acceptance.
 
 
+## Setup, Settings, location, recovery and diagnostics — 15.12
+
+The common native Settings panel serves first run, independent legacy adoption,
+active-library location and missing-library recovery. It shows exact paths,
+complete-root file/byte totals, explicit confirmation, progress/cancellation,
+retained locations and bounded diagnostic saving in English/French. Folder/save
+pickers are parented to the actual Winit window; cancellation issues no command.
+Language remains independent and saves through the single retained native profile
+lease. Startup inspection and folder previews never initialize a library.
+
+The controller retains actual target previews and setup/adoption/relocation/close
+failures. A successful initial/retried setup or Locate first opens and positively
+closes the real database before sealing the root. The active runtime joins jobs,
+invalidates preparations/artwork, flushes logging and closes all database owners
+before the qualified closed-library relocation protocol. The manifest is captured
+again after closure; preview counts are observations. Copy/retry cancellation uses
+the same real token and commit observer; commitment disables cancellation. New
+runtime generations invalidate old UI responses, query stamps and prepared work.
+Successful moves clear earlier failure notices; pending old-source cleanup is
+shown independently. Committed recovery observes the actual destination; uncertain
+commitment claims no current root. Recovery never substitutes a different UUID.
+
+Every failed database close retains that actual Database and its root on the
+worker stack. Permanently fenced owners have honest nonretryable recovery;
+retryable native/move failures retain and retry their original qualified owner.
+Language stays reachable. Adoption preparation failures retain both their input
+and actual target preview and return to actionable selection when no unsettled
+probe remains. Unknown allocations and publication errors keep their fences.
+A narrow preference fix refuses an explicitly read-only held directory *before*
+calling openat. Only that no-attempt proof with no file bypasses poisoning; a
+kernel error or missing returned descriptor alone is never no-effect evidence
+([Linux open security boundary](https://github.com/torvalds/linux/blob/v6.8/fs/open.c#L886-L900)).
+
+An explicit fresh development override now runs the actual isolated library and
+shared job/runtime services, starts in English without production discovery or
+onboarding, and uses bounded in-memory preferences. Relocation remains disabled;
+existing roots cannot gain adoption authority through this fresh-only route.
+Diagnostics use the existing bounded/sanitized ZIP protocol with the native Save
+filename, no replacement, no database/archive/private-path payload and actual
+retained output ownership on uncertainty.
+
+macOS owns one AppKit menu; Linux exposes corresponding native menu entries.
+Settings/Location commands received before readiness are retained. Eligible
+Settings delivery can pass a temporarily blocked Library-only intent without
+reordering eligible navigation commands. Focus moves from a disappearing
+Confirm/Retry/Cancel to a surviving Settings anchor before the data changes,
+while preserving later user-selected focus. Quit observes real cancellation and
+commit/ownership boundaries.
+
+Native regression coverage includes read-only setup/picker cancellation, an unsafe
+folder refusal, explicit French setup/restart, current-root no-op, target changed
+after preview, complete-root relocation with exact source data counts and an
+extra root file, stale-generation rejection, diagnostic bounds/no-clobber,
+missing-volume recovery, wrong-UUID refusal, same-UUID Locate and isolated override.
+The preexisting read-only warning fixture now verifies its truthful no-attempt
+failure, unchanged membership and explicit successful retry; its original late
+publication poison checks remain. Direct test SQLite writers close before the
+fixture asks for positive native shutdown. Historical test identities and all
+foundation assertions/deadlines remain intact.
+
+The complete local Rust gate passes601 tests with zero skips, plus formatting,
+strict lint/build, doctests, preservation and dependency checks. The full normal
+shown-window sequence passes90 PNGs and all production callbacks at
+`librairii-task15-collections-dev-fymy8ov6`; compact French setup/location/recovery
+and wide settings were visually inspected. These are local development receipts;
+current-source sealed three-host and spoken workflow acceptance remains15.13.
+Strict OpenSpec validation passes. Independent15.12 Standards review has zero
+required findings; the broader15.13 parity review is still in progress.
+
+A native regression exposed Slint1.18.1's disabled FocusScope ignoring FocusOut,
+leaving both Settings and Close navigation with `has-focus=true`. The compact
+sidebar wraps only when the application's current owned key matches that endpoint,
+and establishes the target key before programmatic focus. The unchanged group
+reachability check now also exercises reverse Tab, Space to Settings, exact invoker
+restoration and forward wrap. Pinned toolkit sources remain unchanged:
+`i-slint-core/items/input_items.rs` SHA256
+`a0751f45adce49259b3b12d56b1ca72bc222ee0015e2bb042b3876126a0e1229`,
+`i-slint-compiler/widgets/cupertino/button.slint` SHA256
+`ffeb029d4b9493a6ca0a6b462c4ced443e6f1dcad954db3391448668abee62ac`.
+
 ## Remaining workflow work
 
-15.12 composes complete native
-setup/settings/recovery/diagnostics. 15.13 independently reviews the complete
-native surfaces and refreshes visual/accessibility evidence. Resource budgets,
-handover, installed packages and cutover retain their later task boundaries.
+15.13 independently reviews every complete native workflow and refreshes final
+visual/accessibility evidence. Resource budgets, handover, installed packages
+and cutover retain their later task boundaries.

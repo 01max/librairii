@@ -651,7 +651,9 @@ mod owned {
         RelocationRecovery, recover_relocation,
     };
     pub use relocation::{RelocationObserver, RelocationStage};
-    pub use relocation::{RestartMoveFailure, cancel_relocation, retry_relocation};
+    pub use relocation::{
+        RestartMoveFailure, cancel_relocation, retry_relocation, retry_relocation_observed,
+    };
     use std::{
         ffi::OsStr,
         fs::{self, File},
@@ -1426,6 +1428,13 @@ mod owned {
                 self.fence();
             }
             result
+        }
+        /// Observes whether a new runtime claim is possible; grants no authority
+        /// and never clears a persistent fence or unclosed runtime claim.
+        pub fn runtime_reusable(&self) -> bool {
+            !self.runtime_active.load(Ordering::Acquire)
+                && !self.fenced.load(Ordering::Acquire)
+                && !self.custody_active.load(Ordering::Acquire)
         }
         pub(crate) fn release_runtime(&self, fully_opened: bool) {
             // Called ONLY by Database after every actual reader/writer join,
@@ -2311,7 +2320,9 @@ pub use owned::{
     RelocatedLibrary, RelocationFailure, RelocationRecovery, recover_relocation,
 };
 #[cfg(any(target_os = "macos", target_os = "linux"))]
-pub use owned::{RestartMoveFailure, cancel_relocation, retry_relocation};
+pub use owned::{
+    RestartMoveFailure, cancel_relocation, retry_relocation, retry_relocation_observed,
+};
 
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 pub use owned::{RelocationObserver, RelocationStage};

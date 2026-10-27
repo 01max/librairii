@@ -230,6 +230,19 @@ impl<'profile> RelocationFailure<'profile> {
             }
         })
     }
+    /// Display observation from actual retained owners; never cleanup authority.
+    pub fn authoritative_root(&self) -> Option<&Path> {
+        if let Some(destination) = &self.attempt.destination {
+            Some(destination.layout().root())
+        } else if self.attempt.publication_uncertain {
+            None
+        } else {
+            self.attempt
+                .source
+                .as_ref()
+                .map(|source| source.layout().root())
+        }
+    }
     pub fn commit_status(&self) -> CommitStatus {
         if self.attempt.destination.is_some() {
             CommitStatus::Committed
@@ -243,7 +256,17 @@ impl<'profile> RelocationFailure<'profile> {
         self: Box<Self>,
         cancel: &WorkCancellation,
     ) -> std::result::Result<RelocatedLibrary<'profile>, Box<Self>> {
-        self.attempt.complete(cancel, |_| Ok(()))
+        self.retry_observed(cancel, &QuietObserver)
+    }
+    pub fn retry_observed(
+        self: Box<Self>,
+        cancel: &WorkCancellation,
+        observer: &impl RelocationObserver,
+    ) -> std::result::Result<RelocatedLibrary<'profile>, Box<Self>> {
+        self.attempt.complete(cancel, |stage| {
+            observer.observe(stage);
+            Ok(())
+        })
     }
     pub fn resume_source(
         mut self: Box<Self>,
@@ -1115,6 +1138,8 @@ pub enum RecoveredRoot {
 pub struct RelocationRecovery {
     pub authoritative: RecoveredRoot,
     pub cleanup: CleanupReport,
+    /// Display only; this path alone cannot authorize old-source cleanup.
+    pub previous_root: PathBuf,
 }
 /// Reconcile a native intent before ordinary open. Actual namespace/root locks,
 /// raw identity and native control proof qualify the profile-selected root.
@@ -1295,6 +1320,7 @@ pub fn recover_relocation(
             RecoveredRoot::Source
         },
         cleanup,
+        previous_root: PathBuf::from(&intent.source),
     }))
 }
 
@@ -1920,6 +1946,14 @@ pub fn retry_relocation<'profile>(
     locations: &ProfileLocations,
     cancel: &WorkCancellation,
 ) -> std::result::Result<RelocatedLibrary<'profile>, RestartMoveFailure<'profile>> {
+    retry_relocation_observed(store, locations, cancel, &QuietObserver)
+}
+pub fn retry_relocation_observed<'profile>(
+    store: &'profile NativeProfileStore,
+    locations: &ProfileLocations,
+    cancel: &WorkCancellation,
+    observer: &impl RelocationObserver,
+) -> std::result::Result<RelocatedLibrary<'profile>, RestartMoveFailure<'profile>> {
     let prepared = (|| -> Result<(Intent, Workspace, TargetPreview)> {
         let recovery = recover_relocation(store, locations, cancel)?
             .ok_or(StorageError::RecoveryBindingRequired)?;
@@ -2017,7 +2051,10 @@ pub fn retry_relocation<'profile>(
         journal: true,
         parents: Vec::new(),
     }
-    .complete(cancel, |_| Ok(()))
+    .complete(cancel, |stage| {
+        observer.observe(stage);
+        Ok(())
+    })
     .map_err(RestartMoveFailure::Move)
 }
 /// Explicit cancellation before commitment. Preserve any unproven destination

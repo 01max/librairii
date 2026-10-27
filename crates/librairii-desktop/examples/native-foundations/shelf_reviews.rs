@@ -473,9 +473,17 @@ fn dismissal(ui: &DesktopWindow) -> Result {
         "immediate reopen hid warning dismissal failure or changed membership",
     )?;
     check(
-        failed.phase == librairii_desktop::presentation::Phase::Recovery
-            && ui.get_status().contains("warning could not be saved"),
-        "fenced preference failure lost its visible Recovery explanation",
+        failed.phase == librairii_desktop::presentation::Phase::Library
+            && failed.workflows.shelf_reviews.warning_preference_error
+            && !failed.workflows.recovery_required,
+        "proven pre-create preference refusal was misreported as uncertain library ownership",
+    )?;
+    ui.invoke_review_acknowledge();
+    let retried = f.settle(ui)?;
+    check(
+        !retried.workflows.shelf_reviews.warning_preference_error
+            && count(&c, "SELECT count(*) FROM shelf_stories WHERE shelf_id=2")? == 30,
+        "explicit warning retry did not recover without membership changes",
     )?;
     drop(c);
     ui.on_quit(|| {});

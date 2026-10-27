@@ -1000,8 +1000,10 @@ impl NativeProfileStore {
             Ok(staged) => staged,
             Err(failure) => {
                 let failure = *failure;
-                state.poison();
-                state.recovery_allocations.push(failure.allocation);
+                if !failure.creation_refused || failure.allocation.file.is_some() {
+                    state.poison();
+                    state.recovery_allocations.push(failure.allocation);
+                }
                 return Err(failure.cause);
             }
         };
@@ -1270,6 +1272,31 @@ mod tests {
         let directory = roots.profile().join("native");
         let store = NativeProfileStore::create_fresh(&directory)?;
         store.update(|_| Ok(()))?;
+        use std::os::unix::fs::PermissionsExt;
+        let permissions = fs::metadata(&directory)?.permissions();
+        fs::set_permissions(&directory, fs::Permissions::from_mode(0o500))?;
+        let refused = store.update(|p| {
+            p.language = "fr".into();
+            Ok(())
+        });
+        fs::set_permissions(&directory, permissions)?;
+        assert!(refused.is_err());
+        assert_eq!(
+            store
+                .load()?
+                .ok_or("refusal lost profile")?
+                .profile()
+                .language,
+            "en"
+        );
+        assert!(
+            store
+                .state
+                .lock()
+                .map_err(|_| "test state")?
+                .as_ref()
+                .is_some_and(|s| !s.poisoned && s.recovery_allocations.is_empty())
+        );
         let result = store.update_with_flush(
             |p| {
                 p.language = "fr".into();

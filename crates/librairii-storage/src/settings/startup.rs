@@ -307,14 +307,18 @@ pub fn default_legacy_root(locations: &ProfileLocations) -> Result<PathBuf> {
 
 #[derive(Debug)]
 pub enum AdoptionSetupFailure<'profile> {
-    Preparation(StorageError),
+    Preparation {
+        error: StorageError,
+        input: Box<ClosedLibraryInput>,
+        target: Box<super::TargetPreview>,
+    },
     Copy(Box<crate::adoption::IndependentCopyFailure>),
     Binding(Box<crate::native::NativeBindingFailure<'profile>>),
 }
 impl std::fmt::Display for AdoptionSetupFailure<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::Preparation(e) => e.fmt(f),
+            Self::Preparation { error, .. } => error.fmt(f),
             Self::Copy(e) => e.fmt(f),
             Self::Binding(e) => e.fmt(f),
         }
@@ -364,7 +368,13 @@ pub fn confirm_adoption<'profile>(
         }
         Ok(())
     })();
-    prepared.map_err(AdoptionSetupFailure::Preparation)?;
+    if let Err(error) = prepared {
+        return Err(AdoptionSetupFailure::Preparation {
+            error,
+            input: Box::new(input),
+            target: Box::new(target),
+        });
+    }
     let copy = input
         .copy_to_new_root(target.resolved(), cancel)
         .map_err(AdoptionSetupFailure::Copy)?;

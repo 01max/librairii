@@ -9,6 +9,8 @@ pub(crate) mod exports;
 pub(crate) mod filters;
 #[path = "view/flags.rs"]
 pub(crate) mod flags;
+#[path = "view/maintenance.rs"]
+pub(crate) mod maintenance;
 #[path = "view/operations.rs"]
 pub(crate) mod operations;
 #[path = "view/shelf_reviews.rs"]
@@ -72,6 +74,8 @@ fn update_previews(ui: &DesktopWindow, mut next: Vec<CollectionPreview>) -> bool
     false
 }
 pub struct View {
+    pub maintenance: maintenance::State,
+    pub activation: u64,
     pub operations: operations::State,
     pub exports: exports::State,
     pub shelf_reviews: shelf_reviews::State,
@@ -288,7 +292,12 @@ fn row(index: usize, story: &Story, language: Language, catalogs: &Catalogs) -> 
 impl View {
     pub fn accept(&mut self, ui: &DesktopWindow, snapshot: Snapshot, revision: u64) -> bool {
         if let Some(generation) = &snapshot.generation {
-            if self.snapshot.generation.is_none() {
+            if self.snapshot.generation.as_ref() != Some(generation) {
+                let activation = snapshot.workflows.settings.activation;
+                if self.activation > 0 && activation <= self.activation {
+                    return false;
+                }
+                self.activation = activation;
                 self.guard.activate(generation.clone());
             }
             self.guard.expect(revision);
@@ -309,6 +318,7 @@ impl View {
             self.snapshot = snapshot;
             self.operations.project(ui, &self.snapshot, &self.catalogs);
             sync::project(ui, &self.snapshot);
+            self.maintenance.project(ui, &self.snapshot);
             return true;
         }
         if let Some(n) = &snapshot.navigation {
@@ -324,6 +334,11 @@ impl View {
                 self.filters.request = n.current().location.request.clone();
                 self.selected = None;
             }
+        }
+        if snapshot.phase == librairii_desktop::presentation::Phase::Library
+            && self.snapshot.phase != snapshot.phase
+        {
+            ui.invoke_finish_settings_startup();
         }
         self.snapshot = snapshot;
         if self.exports.accept(ui, &self.snapshot) {
@@ -379,6 +394,7 @@ impl View {
             &self.tags.selection,
         );
         self.shelf_reviews.project(ui, &self.snapshot);
+        self.maintenance.project(ui, &self.snapshot);
         ui.set_back_enabled(
             self.snapshot
                 .navigation
@@ -564,6 +580,7 @@ impl View {
             &self.tags.selection,
         );
         self.shelf_reviews.project(ui, &self.snapshot);
+        self.maintenance.project(ui, &self.snapshot);
         ui.set_previous_enabled(page.page > 1);
         ui.set_next_enabled(page.page < page.pages);
         ui.set_counts(
@@ -588,6 +605,7 @@ impl View {
         );
     }
     pub fn resize(&mut self, ui: &DesktopWindow) {
+        self.maintenance.poll(ui, &self.snapshot);
         let size = ui.window().size().to_logical(ui.window().scale_factor());
         ui.set_compact(size.width < 850.0);
         ui.set_wide(size.width >= 1180.0);
@@ -638,6 +656,8 @@ pub fn install(
     initial: Snapshot,
 ) -> Result<Rc<RefCell<View>>, LocalizationError> {
     let view = Rc::new(RefCell::new(View {
+        maintenance: Default::default(),
+        activation: initial.workflows.settings.activation,
         operations: Default::default(),
         exports: Default::default(),
         shelf_reviews: Default::default(),
@@ -682,6 +702,12 @@ pub fn install(
     }
     view.borrow_mut().project(ui);
     view.borrow_mut().shelf_reviews.restore_focus(ui);
+    match view.borrow().snapshot.phase {
+        librairii_desktop::presentation::Phase::Setup
+        | librairii_desktop::presentation::Phase::Adoption => ui.invoke_open_dialog(4),
+        librairii_desktop::presentation::Phase::Recovery => ui.invoke_open_dialog(5),
+        _ => {}
+    }
     let (state, weak, pending) = (view.clone(), ui.as_weak(), worker.clone());
     ui.on_mode_selected(move |mode| {
         if let Some(ui) = weak.upgrade() {
@@ -822,6 +848,7 @@ pub fn install(
             offer(&pending.borrow(), Command::Language(language), &ui);
         }
     });
+    maintenance::install(ui, view.clone(), worker.clone());
     collections::install(ui, view.clone(), worker.clone());
     operations::install(ui, view.clone(), worker.clone());
     sync::install(ui, view.clone(), worker.clone());

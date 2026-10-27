@@ -8,6 +8,9 @@ mod flag_checks;
 #[path = "history.rs"]
 mod history_checks;
 pub use history_checks::{Surface as HistorySurface, checks as activity_history};
+#[path = "maintenance.rs"]
+mod maintenance_checks;
+pub use maintenance_checks::{Surface as MaintenanceSurface, checks as maintenance};
 #[path = "operations.rs"]
 mod operation_checks;
 #[path = "shelf_reviews.rs"]
@@ -208,6 +211,7 @@ impl Fixture {
             data: data.into_os_string(),
         })?));
         let initial = receive(&worker.borrow())?;
+
         let view = view::install(ui, worker.clone(), initial)?;
         Ok(Self {
             catalog,
@@ -224,6 +228,7 @@ impl Fixture {
         let caller = std::panic::Location::caller();
         let snapshot =
             receive(&self.worker.borrow()).map_err(|error| format!("{error} at {caller}"))?;
+
         check(
             self.view
                 .borrow_mut()
@@ -263,13 +268,21 @@ impl Fixture {
         )?)
     }
     fn finish(self) -> Result {
-        let closed = self.worker.borrow_mut().finish();
-        closed.map_err(Into::into)
+        self.worker.borrow_mut().finish()?;
+        Ok(())
     }
 }
 impl Drop for Fixture {
     fn drop(&mut self) {
         if let Some(ui) = self.ui.upgrade() {
+            ui.on_settings_choose(|| {});
+            ui.on_settings_confirm(|| {});
+            ui.on_settings_retry(|| {});
+            ui.on_settings_locate(|| {});
+            ui.on_settings_diagnostics(|| {});
+            ui.on_settings_cancel(|| {});
+            ui.on_settings_retry_move(|| {});
+            ui.on_settings_keep_source(|| {});
             ui.on_start_sync(|| {});
             ui.on_cancel_sync(|| {});
             ui.on_hide_sync(|_| {});

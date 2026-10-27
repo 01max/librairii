@@ -302,6 +302,7 @@ pub fn checks(ui: &DesktopWindow) -> Result {
         !ui.get_selected_story().uuid.is_empty() && ui.get_detail_flag_enabled(),
         "preview selection could not inspect/flag its real story",
     )?;
+    drop(connection);
     fixture.finish()?;
     repair_checks(ui)
 }

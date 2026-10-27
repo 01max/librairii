@@ -146,7 +146,51 @@ pub struct IsolatedLibrary {
     lease: crate::platform::lock::LibraryLease,
 }
 
+/// A failed explicit shutdown retains the actual isolated authority and lease.
+#[derive(Debug)]
+pub struct IsolatedCloseFailure {
+    library: IsolatedLibrary,
+    error: StorageError,
+}
+impl IsolatedCloseFailure {
+    pub fn storage_error(&self) -> &StorageError {
+        &self.error
+    }
+    pub fn into_library(self) -> IsolatedLibrary {
+        self.library
+    }
+}
+impl std::fmt::Display for IsolatedCloseFailure {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.error.fmt(f)
+    }
+}
+impl std::error::Error for IsolatedCloseFailure {}
+
 impl IsolatedLibrary {
+    /// A successful close requires positively drained runtime/custody owners and
+    /// the original lease/identities. An uncertain owner remains in the error.
+    pub fn finish(self) -> std::result::Result<(), Box<IsolatedCloseFailure>> {
+        let result = (|| {
+            if self.runtime_active.load(Ordering::Acquire) {
+                return Err(StorageError::RuntimeInUse);
+            }
+            #[cfg(any(target_os = "macos", target_os = "linux"))]
+            if self.custody_active.load(Ordering::Acquire) {
+                return Err(StorageError::RuntimeInUse);
+            }
+            if self.custody_fenced.load(Ordering::Acquire) {
+                return Err(StorageError::CustodyRecoveryRequired);
+            }
+            self.revalidate_ownership()
+        })();
+        result.map_err(|error| {
+            Box::new(IsolatedCloseFailure {
+                library: self,
+                error,
+            })
+        })
+    }
     /// The caller supplies the override value and a fresh typed identity. Neither
     /// global environment nor production preferences are read or modified here.
     pub fn initialize_from_override(value: Option<&OsStr>, identity: LibraryId) -> Result<Self> {
@@ -260,6 +304,9 @@ impl IsolatedLibrary {
             return Err(StorageError::SnapshotChanged);
         }
         Ok(())
+    }
+    pub fn runtime_reusable(&self) -> bool {
+        !self.runtime_active.load(Ordering::Acquire) && !self.custody_fenced.load(Ordering::Acquire)
     }
     pub(crate) fn claim_runtime(&self) -> Result<()> {
         self.revalidate_ownership()?;

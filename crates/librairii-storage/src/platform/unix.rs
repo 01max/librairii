@@ -349,6 +349,9 @@ pub(crate) struct ControlAllocation {
 pub(crate) struct ControlCreateFailure {
     pub(crate) cause: StorageError,
     pub(crate) allocation: ControlAllocation,
+    /// This mechanism refused before attempting openat. A missing returned FD
+    /// or a kernel errno alone never proves that creation had no effect.
+    pub(crate) creation_refused: bool,
 }
 impl std::fmt::Display for ControlCreateFailure {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -377,8 +380,23 @@ impl Directory {
             file: None,
             name: name.to_os_string(),
         };
+        let mut creation_refused = false;
         let result = (|| {
             EntryName::parse(name)?;
+            // Refuse an explicitly read-only held directory BEFORE a mutating
+            // syscall. Later kernel failures can occur after inode creation.
+            let metadata = self
+                .file
+                .metadata()
+                .map_err(|e| StorageError::io("inspect control directory permissions", e))?;
+            use std::os::unix::fs::PermissionsExt;
+            if metadata.permissions().mode() & 0o222 == 0 {
+                creation_refused = true;
+                return Err(StorageError::io(
+                    "control directory has no write permission",
+                    io::Error::from(io::ErrorKind::PermissionDenied),
+                ));
+            }
             let fd = native::openat(
                 &self.file,
                 name,
@@ -412,9 +430,14 @@ impl Directory {
                 None => Err(Box::new(ControlCreateFailure {
                     cause: StorageError::CompatibilityInvariant,
                     allocation,
+                    creation_refused: false,
                 })),
             },
-            Err(cause) => Err(Box::new(ControlCreateFailure { cause, allocation })),
+            Err(cause) => Err(Box::new(ControlCreateFailure {
+                cause,
+                allocation,
+                creation_refused,
+            })),
         }
     }
     pub(crate) fn read_config(&self, name: &OsStr) -> Result<ConfigTemp> {
@@ -458,6 +481,7 @@ impl Directory {
                 file: None,
                 name: OsString::from(prefix),
             },
+            creation_refused: false,
         }))
     }
     pub(crate) fn remove_config_temp(&self, temporary: &ConfigTemp) -> Result<()> {

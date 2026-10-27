@@ -12,7 +12,6 @@ use librairii_core::{
 use librairii_storage::{
     Result, StorageError,
     database::TransactionOutcome,
-    profile::NativeProfileStore,
     shelves::{self, Decision},
 };
 use std::{collections::BTreeMap, sync::Arc};
@@ -501,7 +500,7 @@ impl Controller {
     pub fn enter(
         &mut self,
         runtime: &Runtime<'_, '_, '_>,
-        store: &NativeProfileStore,
+        store: &dyn crate::preferences::Preferences,
         navigation: &Navigation,
     ) -> Result<()> {
         self.entry = None;
@@ -582,7 +581,7 @@ impl Controller {
     pub fn handle(
         &mut self,
         runtime: &Runtime<'_, '_, '_>,
-        store: &NativeProfileStore,
+        store: &dyn crate::preferences::Preferences,
         request: Request,
         revision: u64,
         navigation: &mut Navigation,
@@ -633,7 +632,7 @@ impl Controller {
     fn apply(
         &mut self,
         runtime: &Runtime<'_, '_, '_>,
-        store: &NativeProfileStore,
+        store: &dyn crate::preferences::Preferences,
         action: Action,
         navigation: &mut Navigation,
     ) -> Result<Feedback> {

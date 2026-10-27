@@ -42,6 +42,9 @@ pub(crate) struct Intake {
 }
 impl Intake {
     pub fn offer(&self, command: Command) -> Result<u64, OfferError> {
+        if matches!(&command, Command::Maintenance{action,..} if !action.bounded()) {
+            return Err(OfferError::Busy);
+        }
         if matches!(&command,Command::Operations{action,..} if !action.bounded()) {
             return Err(OfferError::Busy);
         }
@@ -50,7 +53,10 @@ impl Intake {
         }
         let mut pending = self.pending.lock().map_err(|_| OfferError::Closed)?;
         if self.fenced.load(Ordering::Acquire)
-            && !matches!(command, Command::Language(_) | Command::Refresh)
+            && !matches!(
+                command,
+                Command::Language(_) | Command::Refresh | Command::Maintenance { .. }
+            )
         {
             return Err(OfferError::Closed);
         }
@@ -75,9 +81,18 @@ impl Intake {
     pub fn fence(&self) -> Result<(), OfferError> {
         let mut pending = self.pending.lock().map_err(|_| OfferError::Closed)?;
         self.fenced.store(true, Ordering::Release);
-        pending
-            .queue
-            .retain(|entry| matches!(entry.command, Command::Language(_) | Command::Refresh));
+        pending.queue.retain(|entry| {
+            matches!(
+                entry.command,
+                Command::Language(_) | Command::Refresh | Command::Maintenance { .. }
+            )
+        });
+        Ok(())
+    }
+    /// Called only after an actual qualified native owner has reopened/closed.
+    pub(crate) fn resume(&self) -> Result<(), OfferError> {
+        let _pending = self.pending.lock().map_err(|_| OfferError::Closed)?;
+        self.fenced.store(false, Ordering::Release);
         Ok(())
     }
     pub fn latest(&self) -> u64 {

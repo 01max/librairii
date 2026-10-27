@@ -215,6 +215,7 @@ pub fn checks(ui: &DesktopWindow) -> Result {
         !ui.get_bulk_flag_enabled() && ui.get_bulk_flag_summary().contains("Unavailable"),
         "unavailable bulk target offered flagging",
     )?;
+    drop(connection);
     fixture.finish()
 }
 

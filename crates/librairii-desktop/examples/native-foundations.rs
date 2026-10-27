@@ -30,7 +30,12 @@ use std::{
 };
 type Result<T = ()> = std::result::Result<T, Box<dyn std::error::Error>>;
 fn check(ok: bool, message: &str) -> Result {
-    if ok { Ok(()) } else { Err(message.into()) }
+    if ok {
+        Ok(())
+    } else {
+        eprintln!("native check failed: {message}");
+        Err(message.into())
+    }
 }
 fn thumbnail(index: usize) -> Thumbnail {
     let (width, height) = match index % 3 {
@@ -231,22 +236,61 @@ fn main() -> Result {
         "isolated fixture marker missing",
     )?;
     let (ui, menus) = librairii_desktop::menus::create_window()?;
+    eprintln!("native callbacks: paging");
     callback_checks::paging(&ui)?;
+    eprintln!("native callbacks: history");
     callback_checks::history(&ui)?;
+    eprintln!("native callbacks: failed_query");
     callback_checks::failed_query(&ui)?;
     callback_checks::filters(&ui, None)?;
+    eprintln!("native callbacks: details");
     callback_checks::details(&ui)?;
+    eprintln!("native callbacks: tags");
     callback_checks::tags(&ui)?;
+    eprintln!("native callbacks: flags");
     callback_checks::flags(&ui)?;
+    eprintln!("native callbacks: collections");
     callback_checks::collections(&ui)?;
+    eprintln!("native callbacks: shelves");
     callback_checks::shelves(&ui)?;
+    eprintln!("native callbacks: shelf_reviews");
     callback_checks::shelf_reviews(&ui)?;
+    eprintln!("native callbacks: operations");
     callback_checks::operations(&ui)?;
+    eprintln!("native callbacks: sync");
     callback_checks::sync(&ui)?;
+    eprintln!("native callbacks: exports");
     callback_checks::exports(&ui)?;
+    eprintln!("native callbacks: activity_history");
     callback_checks::activity_history(&ui)?;
+    eprintln!("native callbacks: maintenance");
+    callback_checks::maintenance(&ui)?;
+    while ui.get_dialog() != 0 {
+        ui.invoke_close_dialog();
+    }
+    ui.set_startup_phase(4);
+    menus
+        .commands()
+        .enqueue(librairii_desktop::menus::NativeCommand::History);
+    menus
+        .commands()
+        .enqueue(librairii_desktop::menus::NativeCommand::Settings);
+    menus.dispatch(&ui);
+    check(!ui.get_modal(), "startup menu command ran before readiness")?;
+    ui.set_startup_phase(0);
+    menus.dispatch(&ui);
+    check(
+        ui.get_dialog() == 2,
+        "buffered native Settings command was discarded",
+    )?;
+    ui.invoke_close_dialog();
+    ui.set_startup_phase(3);
+    menus.dispatch(&ui);
+    ui.invoke_close_dialog();
     let initial = snapshot()?;
     let view = Rc::new(RefCell::new(view::View {
+        maintenance: Default::default(),
+        activation: initial.workflows.settings.activation,
         operations: Default::default(),
         exports: Default::default(),
         shelf_reviews: Default::default(),
@@ -376,6 +420,8 @@ fn main() -> Result {
                     surface.poll(&ui);
                 } else if let Some(surface) = surfaces.history.borrow().as_ref() {
                     surface.poll(&ui);
+                } else if let Some(surface) = surfaces.maintenance.borrow().as_ref() {
+                    surface.poll(&ui);
                 } else {
                     view.borrow_mut().resize(&ui);
                 }
@@ -407,7 +453,7 @@ fn main() -> Result {
         return Err(error.into());
     }
     check(
-        server || *step.borrow() > 126,
+        server || *step.borrow() > 136,
         "native fixture ended before completing its checks",
     )?;
     Ok(())
@@ -415,6 +461,7 @@ fn main() -> Result {
 
 #[derive(Debug, Default)]
 struct Surfaces {
+    maintenance: RefCell<Option<callback_checks::MaintenanceSurface>>,
     sync: RefCell<Option<callback_checks::SyncSurface>>,
     exports: RefCell<Option<callback_checks::ExportSurface>>,
     history: RefCell<Option<callback_checks::HistorySurface>>,
@@ -565,6 +612,34 @@ fn capture_step(
     } else if index == 50 {
         ui.invoke_open_sidebar();
         check(ui.get_sidebar_open(), "compact sidebar did not open")?;
+        ui.window()
+            .dispatch_event_with_result(slint::platform::WindowEvent::KeyPressed {
+                text: slint::platform::Key::Shift.into(),
+            })?;
+        key(ui, slint::platform::Key::Tab.into())?;
+        ui.window()
+            .dispatch_event_with_result(slint::platform::WindowEvent::KeyReleased {
+                text: slint::platform::Key::Shift.into(),
+            })?;
+        check(
+            ui.get_focused_key() == 205,
+            "reverse sidebar wrap lost the owned Settings focus",
+        )?;
+        key(ui, " ".into())?;
+        check(
+            ui.get_dialog() == 2,
+            "keyboard Settings endpoint did not open",
+        )?;
+        key(ui, slint::platform::Key::Escape.into())?;
+        check(
+            ui.get_focused_key() == 205,
+            "Settings did not restore its exact sidebar invoker",
+        )?;
+        key(ui, slint::platform::Key::Tab.into())?;
+        check(
+            ui.get_focused_key() == 201,
+            "forward sidebar wrap lost the owned Close focus",
+        )?;
         for _ in 0..40 {
             if ui.get_focused_key() >= 220 {
                 break;
@@ -572,6 +647,9 @@ fn capture_step(
             key(ui, slint::platform::Key::Tab.into())?;
         }
         let group_invoker = ui.get_focused_key();
+        if group_invoker < 220 {
+            capture(ui, &destination.join("sidebar-failure.png"))?;
+        }
         check(
             group_invoker >= 220,
             "dynamic sidebar group is not keyboard reachable",
@@ -1310,6 +1388,80 @@ fn capture_step(
             "History late-focus Escape did not restore browsing",
         )?;
         surfaces.history.borrow_mut().take();
+    } else if index == 127 {
+        resize(ui, 1180., 760.)?;
+        *surfaces.maintenance.borrow_mut() = Some(callback_checks::MaintenanceSurface::open(ui)?);
+    } else if index == 128 {
+        check(
+            ui.get_dialog() == 4 && ui.get_settings_first_focused(),
+            "setup did not focus first native setting",
+        )?;
+        capture(ui, &destination.join("setup-wide-en.png"))?;
+        key(ui, slint::platform::Key::Tab.into())?;
+        key(ui, " ".into())?;
+        surfaces
+            .maintenance
+            .borrow()
+            .as_ref()
+            .ok_or("settings surface")?
+            .french(ui)?;
+        resize(ui, 560., 400.)?;
+    } else if index == 129 {
+        capture(ui, &destination.join("setup-compact-fr.png"))?;
+        surfaces
+            .maintenance
+            .borrow_mut()
+            .as_mut()
+            .ok_or("settings surface")?
+            .confirmed(ui)?;
+        resize(ui, 1180., 760.)?;
+    } else if index == 130 {
+        check(
+            ui.get_dialog() == 2 && ui.get_settings_first_focused(),
+            "setup completion left focus on a hidden confirmation",
+        )?;
+        capture(ui, &destination.join("settings-wide-fr.png"))?;
+        surfaces
+            .maintenance
+            .borrow()
+            .as_ref()
+            .ok_or("settings surface")?
+            .preview(ui)?;
+    } else if index == 131 {
+        capture(ui, &destination.join("location-preview-wide-fr.png"))?;
+        ui.invoke_focus_settings_confirm();
+        check(
+            ui.get_settings_confirm_focused(),
+            "move confirmation could not receive native focus",
+        )?;
+        key(ui, slint::platform::Key::Escape.into())?;
+        check(!ui.get_modal(), "Settings Escape did not return to library")?;
+        ui.invoke_show_panel(5);
+        resize(ui, 560., 400.)?;
+    } else if index == 132 {
+        capture(ui, &destination.join("location-preview-compact-fr.png"))?;
+        surfaces
+            .maintenance
+            .borrow_mut()
+            .as_mut()
+            .ok_or("settings surface")?
+            .recover(ui)?;
+        resize(ui, 1180., 760.)?;
+    } else if index == 133 {
+        capture(ui, &destination.join("recovery-wide-fr.png"))?;
+        ui.invoke_focus_settings_retry();
+        check(
+            ui.get_settings_retry_focused(),
+            "Recovery Retry could not receive focus",
+        )?;
+        key(ui, " ".into())?;
+    } else if index == 134 {
+        capture(ui, &destination.join("recovery-retry-wide-fr.png"))?;
+        resize(ui, 560., 400.)?;
+    } else if index == 135 {
+        capture(ui, &destination.join("recovery-compact-fr.png"))?;
+    } else if index == 136 {
+        surfaces.maintenance.borrow_mut().take();
     } else {
         std::fs::write(
             destination.join("report.json"),
@@ -1332,6 +1484,7 @@ fn capture_step(
                 "sync_callbacks":"passed",
                 "export_callbacks":"passed",
                 "activity_history_callbacks":"passed",
+                "maintenance_callbacks":"passed",
                 "scope": "shown native component/public window events and Skia capture; not physical HID or packaged workflow qualification",
             }))?,
         )?;
