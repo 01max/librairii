@@ -135,8 +135,14 @@ pub(crate) fn run(
             )
         }
         Startup::AdoptIndependent(source) => {
-            let language = Language::explicit(&source.profile().profile().language)
-                .map_err(|_| StorageError::InvalidProfile)?;
+            let language = librairii_storage::profile::read_legacy(&locations.native)
+                .ok()
+                .flatten()
+                .and_then(|d| Language::explicit(&d.profile().language).ok())
+                .unwrap_or(
+                    Language::explicit(&source.profile().profile().language)
+                        .map_err(|_| StorageError::InvalidProfile)?,
+                );
             let path = Some(source.root().into());
             input = Some(source);
             (
@@ -212,7 +218,6 @@ pub(crate) fn run(
                     match crate::browsing::run(
                         &locations,
                         store,
-                        snapshot.language,
                         crate::browsing::Context {
                             receiver,
                             mailbox,

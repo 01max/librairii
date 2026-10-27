@@ -28,4 +28,6 @@ mod export_preparation;
 
 mod startup_flow;
 
+#[cfg(any(target_os = "macos", target_os = "linux"))]
+mod artwork;
 pub mod preferences;

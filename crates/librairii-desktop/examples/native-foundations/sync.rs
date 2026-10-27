@@ -16,6 +16,7 @@ use std::{
 struct Server {
     address: String,
     count: Arc<AtomicUsize>,
+    artwork: Arc<AtomicUsize>,
     mode: Arc<AtomicU8>,
     hold: Arc<AtomicBool>,
     stop: Arc<AtomicBool>,
@@ -27,10 +28,20 @@ impl Server {
         listener.set_nonblocking(true)?;
         let address = format!("http://{}/", listener.local_addr()?);
         let count = Arc::new(AtomicUsize::new(0));
+        let artwork = Arc::new(AtomicUsize::new(0));
         let mode = Arc::new(AtomicU8::new(0));
         let hold = Arc::new(AtomicBool::new(false));
         let stop = Arc::new(AtomicBool::new(false));
         let (c, m, h, s) = (count.clone(), mode.clone(), hold.clone(), stop.clone());
+        let artwork_count = artwork.clone();
+        let mut cover = Vec::new();
+        image::ImageEncoder::write_image(
+            image::codecs::png::PngEncoder::new(&mut cover),
+            &vec![73u8; 64 * 40 * 4],
+            64,
+            40,
+            image::ExtendedColorType::Rgba8,
+        )?;
         let raw = std::fs::read(
             std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
                 .join("../librairii-app/tests/fixtures/lunii-catalog.json"),
@@ -60,7 +71,13 @@ impl Server {
                         Ok(n) => request.extend_from_slice(&buffer[..n]),
                     }
                 }
-                c.fetch_add(1, Ordering::AcqRel);
+                let is_artwork =
+                    request.starts_with(b"GET /lunii-data-prod/fixture/clockwork-mountain.png ");
+                if is_artwork {
+                    artwork_count.fetch_add(1, Ordering::AcqRel);
+                } else {
+                    c.fetch_add(1, Ordering::AcqRel);
+                }
                 let catalog = request.starts_with(b"GET /v2/packs ");
                 while catalog && h.load(Ordering::Acquire) && !s.load(Ordering::Acquire) {
                     thread::sleep(Duration::from_millis(2));
@@ -68,14 +85,21 @@ impl Server {
                 let failure = m.load(Ordering::Acquire) == 1;
                 let body = if failure {
                     b"{}".as_slice()
+                } else if is_artwork {
+                    cover.as_slice()
                 } else if catalog {
                     raw.as_slice()
                 } else {
                     br#"{"response":{"token":{"server":"owned-fixture-token"}}}"#.as_slice()
                 };
                 let header = format!(
-                    "HTTP/1.1 {}\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n",
+                    "HTTP/1.1 {}\r\nContent-Type: {}\r\nContent-Length: {}\r\nConnection: close\r\n\r\n",
                     if failure { "503 Unavailable" } else { "200 OK" },
+                    if is_artwork {
+                        "image/png"
+                    } else {
+                        "application/json"
+                    },
                     body.len()
                 );
                 let _sent = stream
@@ -86,6 +110,7 @@ impl Server {
         Ok(Self {
             address,
             count,
+            artwork,
             mode,
             hold,
             stop,
@@ -187,6 +212,28 @@ pub fn checks(ui: &DesktopWindow) -> Result {
         "metadata activation left owned Details stale",
     )?;
     ui.invoke_close_dialog();
+    let cover_deadline = Instant::now() + Duration::from_secs(5);
+    loop {
+        let snapshot = f.view.borrow().snapshot.clone();
+        if snapshot.page.as_ref().is_some_and(|page| {
+            page.all_stories().any(|story| {
+                story
+                    .thumbnail
+                    .as_ref()
+                    .is_some_and(|t| t.width > 0 && t.width * 40 == t.height * 64)
+            })
+        }) {
+            break;
+        }
+        if Instant::now() >= cover_deadline {
+            return Err("lazy official cover did not replace the embedded fallback".into());
+        }
+        f.settle(ui)?;
+    }
+    check(
+        server.artwork.load(Ordering::Acquire) == 1,
+        "lazy official cover misses were not coalesced",
+    )?;
     let after_success = server.count();
     let stamp = succeeded
         .workflows
@@ -270,7 +317,9 @@ pub fn checks(ui: &DesktopWindow) -> Result {
     check(ui.get_sync_data().hidden, "sync panel did not hide")?;
     f.restart(ui)?;
     check(
-        ui.get_sync_data().hidden && server.count() == count,
+        ui.get_sync_data().hidden
+            && server.count() == count
+            && server.artwork.load(Ordering::Acquire) == 1,
         "sync panel dismissal was not durable or restart fetched metadata",
     )?;
     ui.invoke_hide_sync(false);

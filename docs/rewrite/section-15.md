@@ -599,6 +599,39 @@ restoration and forward wrap. Pinned toolkit sources remain unchanged:
 `i-slint-compiler/widgets/cupertino/button.slint` SHA256
 `ffeb029d4b9493a6ca0a6b462c4ced443e6f1dcad954db3391448668abee62ac`.
 
+## Independent workflow review —15.13 (in progress)
+
+The full60-row source/concept review found four required composition corrections.
+Batch Broken now uses a native Mixed/All/None choice with explicit Set/Clear, scope
+and flagged/target counts in its accessible name; single-story controls remain
+Boolean. The same batch choice stays mounted through completion and Undo. Native
+keyboard Set/Undo and unchanged membership/selection assertions pass. Actual
+English/French spoken confirmation remains pending.
+
+Incomplete native language preferences take precedence over legacy adoption
+language. Opening a bound library reads its actual retained profile language.
+The real native regression selects EN before setup, introduces a closed FR legacy
+library, independently adopts/restarts it in EN and checks unchanged source/profile
+bytes.
+
+Visible registered official artwork now reaches the existing qualified lazy
+service through one scoped worker per root. The queue is bounded32 and coalesces
+pending identities; failed requests have a bounded128-entry30-second backoff.
+Each request retains library admission through fetch/cache acknowledgement and
+thumbnail decoding. Relocation cancels queued/in-flight requests before draining;
+shutdown joins the worker before cache invalidation/database closure. Uncertain
+metadata publication retains the actual store/custody and reports recovery.
+Network failure retains the embedded fallback. Successful cache publication
+refreshes visible pages without implicit catalog refresh. A real loopback PNG
+replaces the fallback, repeated demands fetch once and restart reuses the persisted
+cache. No toolkit/dependency pin changes are required.
+
+Local development evidence: full native sequence88 PNGs/all existing callbacks,
+`librairii-task15-collections-dev-v_uv88eo`, including these three corrections.
+The P03 explicit foreign-schema preservation/create route and final spoken,
+current-source sealed/native-host acceptance remain open. The final review record
+will distinguish source/callback coverage from package and scale gates16–19.
+
 ## Remaining workflow work
 
 15.13 independently reviews every complete native workflow and refreshes final

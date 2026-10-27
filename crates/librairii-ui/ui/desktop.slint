@@ -437,8 +437,12 @@ export component DesktopWindow inherits Window {
     in property <bool> detail-flag-checked;
     in property <bool> detail-flag-enabled;
     in property <bool> panel-flag-checked;
+    in property <bool> panel-flag-multiple;
+    in property <bool> panel-flag-mixed;
     in property <bool> panel-flag-enabled;
     in property <bool> bulk-flag-checked;
+    in property <bool> bulk-flag-multiple;
+    in property <bool> bulk-flag-mixed;
     in property <bool> bulk-flag-enabled;
     in property <string> panel-flag-summary;
     in property <string> panel-flag-target-label;
@@ -718,7 +722,7 @@ export component DesktopWindow inherits Window {
                         Caption { text: root.bulk-summary; accessible-live-region: polite; horizontal-stretch: 1; }
                         clear-bulk-button := Action { focus-key: 23;reveal(y,h)=>{root.reveal-controls(y,h);} available: root.bulk-summary != ""; text: root.french ? "Effacer la sélection" : "Clear selection"; clicked => { root.clear-bulk(); } }
                     }
-                    bulk-flags := FlagControl { visible: root.bulk-summary != ""; height: self.visible ? self.preferred-height : 0px; french: root.french; active: !root.modal && !root.closing && !FocusState.sidebar; available: root.bulk-flag-enabled; checked: root.bulk-flag-checked; pending: root.flag-pending; can-undo: root.flag-undo-enabled; inline-summary: true; title: root.french ? "Histoires sélectionnées" : "Selected stories"; summary: root.bulk-flag-summary; notice: root.flag-notice;
+                    bulk-flags := FlagControl { visible: root.bulk-summary != ""; height: self.visible ? self.preferred-height : 0px; french: root.french; active: !root.modal && !root.closing && !FocusState.sidebar; available: root.bulk-flag-enabled; multiple:root.bulk-flag-multiple;mixed:root.bulk-flag-mixed; checked: root.bulk-flag-checked; pending: root.flag-pending; can-undo: root.flag-undo-enabled; inline-summary: true; title: root.french ? "Histoires sélectionnées" : "Selected stories"; summary: root.bulk-flag-summary; notice: root.flag-notice;
                         change(value) => { root.bulk-flag-change(value); } undo => { root.undo-flags(); } focused(kind) => { root.bulk-flag-focus=kind;FocusState.key=24;root.reveal-controls(self.absolute-position.y,self.height); }
                     }
                     if root.shelf-active: VerticalBox { padding: 0px;spacing: 4px;
@@ -761,7 +765,7 @@ export component DesktopWindow inherits Window {
                         }
                         workspace-panel := Workspace {review-exclusions=>{root.show-shelf-exclusions();}review-refresh=>{root.review-refresh();}review-close=>{root.close-native-review();}review-apply=>{root.review-apply();}review-keep-all=>{root.review-keep-all();}review-acknowledge=>{root.review-acknowledge();}review-section(i)=>{root.review-section(i);}review-page(i)=>{root.review-page(i);}review-shelf(i)=>{root.review-shelf(i);}review-choose(i,c)=>{root.review-choose(i,c);}review-bulk(i)=>{root.review-bulk(i);}review-inspect(i)=>{root.review-inspect(i);}review-focused=>{FocusState.key=33;} approved-focused=>{FocusState.key=31;} membership: root.shelf-active;review-visible: !root.shelf-active || root.review-shown;native-review: root.review-shown;review-focus-active: FocusState.key==33 && !root.modal && root.review-shown;review-data: root.review-data; visible: root.workspace; max-width: root.workspace ? 100000px : 0px; interactive: root.workspace && !root.closing && !root.modal && !root.review-data.committing && !FocusState.sidebar; wide: root.wide; french: root.french; members: root.story-groups; count: root.story-count; sources: root.sources; proposals <=> root.proposals; pending: root.pending; decisions: root.decisions; selected-index <=> root.selected-index; select(index) => { root.select-story(index); } toggle(index) => { root.toggle-bulk(index); } decide(index,value) => { root.decide(index,value); } apply => { root.apply-decisions(); } }
                         side-inspector := Inspector { visible: root.wide && !root.workspace; width: self.visible ? 264px : 0px; interactive: !root.modal && !root.closing; french: root.french; story: root.selected-story; request-data => { root.request-details(); } focused => { FocusState.key = 32; }
-                            flag-enabled: root.panel-flag-enabled; flag-checked: root.panel-flag-checked; flag-pending: root.flag-pending; flag-can-undo: root.flag-undo-enabled; flag-summary: root.panel-flag-summary; flag-target-label: root.panel-flag-target-label; flag-notice: root.flag-notice; flag-change(value) => { root.panel-flag-change(value); } undo-flags => { root.undo-flags(); }
+                            flag-enabled: root.panel-flag-enabled; flag-multiple:root.panel-flag-multiple;flag-mixed:root.panel-flag-mixed; flag-checked: root.panel-flag-checked; flag-pending: root.flag-pending; flag-can-undo: root.flag-undo-enabled; flag-summary: root.panel-flag-summary; flag-target-label: root.panel-flag-target-label; flag-notice: root.flag-notice; flag-change(value) => { root.panel-flag-change(value); } undo-flags => { root.undo-flags(); }
                         }
                     }
                     HorizontalBox { padding: 0px; spacing: 8px;

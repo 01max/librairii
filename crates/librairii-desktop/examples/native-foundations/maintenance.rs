@@ -397,6 +397,83 @@ fn override_checks(ui: &DesktopWindow) -> Result {
     )?;
     f.finish()
 }
+fn adoption_language_checks(ui: &DesktopWindow) -> Result {
+    let mut f = setup(ui)?;
+    language(&f, ui, "en")?;
+    f.worker.borrow_mut().finish()?;
+    let source = f._roots.library().join("Legacy French library");
+    std::fs::create_dir(&source)?;
+    let corpus = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("../../preservation/corpus/libraries/schema018");
+    let manifest: serde_json::Value = serde_json::from_slice(include_bytes!(
+        "../../../../preservation/corpus/profiles/library-manifest.json"
+    ))?;
+    let mut original = Vec::new();
+    for entry in manifest.as_array().ok_or("legacy manifest")? {
+        let name = entry["path"].as_str().ok_or("legacy member")?;
+        if entry["directory"].as_bool() == Some(true) {
+            std::fs::create_dir(source.join(name))?;
+        } else {
+            let bytes = std::fs::read(corpus.join(name))?;
+            std::fs::write(source.join(name), &bytes)?;
+            original.push((name.to_owned(), bytes));
+        }
+    }
+    let legacy = f
+        .locations
+        .legacy
+        .clone()
+        .ok_or("legacy profile namespace")?;
+    std::fs::create_dir_all(&legacy)?;
+    let source_profile = serde_json::to_vec(&librairii_storage::profile::Profile {
+        version: 1,
+        language: "fr".into(),
+        root: source.to_str().ok_or("legacy root")?.into(),
+        library_id: "a0000000-0000-4000-8000-000000000001".into(),
+        complete: true,
+        recovering: false,
+    })?;
+    std::fs::write(legacy.join("settings.json"), &source_profile)?;
+    f.restart(ui)?;
+    check(
+        f.view.borrow().snapshot.phase == Phase::Adoption
+            && f.view.borrow().snapshot.language == Language::English
+            && !ui.get_french(),
+        "independent native preference lost to legacy adoption language",
+    )?;
+    let destination = f._roots.library().join("Independent adopted library");
+    choose(&f, ui, Picker::Folder, Some(destination));
+    f.settle(ui)?;
+    ui.invoke_settings_confirm();
+    let opened = f.settle(ui)?;
+    check(
+        opened.phase == Phase::Library && opened.language == Language::English && !ui.get_french(),
+        "bound native library ignored its actual saved language",
+    )?;
+    f.id = opened
+        .navigation
+        .as_ref()
+        .ok_or("adopted navigation")?
+        .library();
+    for (name, bytes) in original {
+        check(
+            std::fs::read(source.join(name))? == bytes,
+            "native adoption changed legacy source bytes",
+        )?;
+    }
+    check(
+        std::fs::read(legacy.join("settings.json"))? == source_profile,
+        "native adoption rewrote the legacy profile",
+    )?;
+    close(ui);
+    f.restart(ui)?;
+    check(
+        !ui.get_french(),
+        "native adoption restart lost the independent choice",
+    )?;
+    f.finish()
+}
+
 pub fn checks(ui: &DesktopWindow) -> Result {
     eprintln!("maintenance: setup");
     setup_checks(ui)?;
@@ -406,6 +483,8 @@ pub fn checks(ui: &DesktopWindow) -> Result {
     diagnostics_checks(ui)?;
     eprintln!("maintenance: recovery");
     recovery_checks(ui)?;
+    eprintln!("maintenance: adoption language");
+    adoption_language_checks(ui)?;
     eprintln!("maintenance: override");
     override_checks(ui)
 }

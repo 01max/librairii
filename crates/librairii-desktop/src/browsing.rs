@@ -237,7 +237,12 @@ fn page(runtime: &Runtime<'_, '_, '_>, location: &Location, stop: &AtomicBool) -
                     .parse()
                     .ok()
                     .and_then(|id| db.read_registered_artwork(id).ok())
-                    .and_then(|a| a.cached);
+                    .and_then(|a| {
+                        if a.cached.is_none() {
+                            runtime.request_artwork(a.id);
+                        }
+                        a.cached
+                    });
                 let embedded = db.read_embedded_artwork(summary.id).ok().flatten();
                 if let librairii_adapters::thumbnails::ArtworkModel::Ready { thumbnail, .. } =
                     cache.resolve(&generation, official.as_ref(), embedded.as_ref())?
@@ -368,10 +373,11 @@ pub(crate) struct Context<'a> {
 pub(crate) fn run(
     locations: &ProfileLocations,
     store: &NativeProfileStore,
-    language: Language,
     context: Context<'_>,
 ) -> Result<()> {
     let profile = store.load()?.ok_or(StorageError::InvalidProfile)?;
+    let language = Language::explicit(&profile.profile().language)
+        .map_err(|_| StorageError::InvalidProfile)?;
     let id = librairii_storage::LibraryIdentity::from_bytes(
         profile.profile().library_id.as_bytes().to_vec(),
     )?
@@ -581,7 +587,8 @@ fn run_session<'p>(
                     else {
                         let prepared=export_controller.poll(runtime);workflows.exports=export_controller.snapshot.clone();let export_changed=prepared?;
                         let observed=operation_controller.poll(runtime,false);workflows.operations=operation_controller.snapshot.clone();let (changed,effects)=observed?;
-                        if changed || export_changed {
+                        let artwork_changed=runtime.observe_artwork()?;
+                        if changed || export_changed || artwork_changed {
                             workflows.operations=operation_controller.snapshot.clone();
                             if effects {
                                 crate::workflows::refresh_details(runtime,&navigation,&mut workflows);

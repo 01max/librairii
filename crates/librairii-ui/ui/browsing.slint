@@ -98,6 +98,8 @@ export component Inspector inherits Rectangle {
     in property <bool> french;
     in property <StoryRow> story;
     in property <bool> flag-enabled;
+    in property <bool> flag-multiple;
+    in property <bool> flag-mixed;
     in property <bool> flag-checked;
     in property <bool> flag-pending;
     in property <bool> flag-can-undo;
@@ -132,7 +134,7 @@ export component Inspector inherits Rectangle {
             Text { vertical-stretch: 0; text: root.story.title != "" ? root.story.title : (root.french ? "Sélectionnez une histoire pour afficher ses détails." : "Select a story to see its details."); wrap: word-wrap; color: Palette.foreground; font-size: 18px; }
             Image { source: root.story.cover; opacity: root.story.broken ? 0.45 : 1; image-fit: contain; height: root.story.cover.width > 0 ? min(160px,max(48px,root.height / 3)) : 0px; }
             Text { vertical-stretch: 0; text: root.story.warning; wrap: word-wrap; color: Palette.foreground; font-weight: 600; }
-            flags := FlagControl { french: root.french; active: root.interactive; available: root.flag-enabled; checked: root.flag-checked; pending: root.flag-pending; can-undo: root.flag-can-undo; title: root.flag-target-label != "" ? root.flag-target-label : root.story.title; summary: root.flag-summary; notice: root.flag-notice;
+            flags := FlagControl { french: root.french; active: root.interactive; available: root.flag-enabled; multiple:root.flag-multiple; mixed:root.flag-mixed; checked: root.flag-checked; pending: root.flag-pending; can-undo: root.flag-can-undo; title: root.flag-target-label != "" ? root.flag-target-label : root.story.title; summary: root.flag-summary; notice: root.flag-notice;
                 change(value) => { root.flag-change(value); } undo => { root.undo-flags(); }
                 focused(kind) => { root.focused-control=kind;root.focused();
                     let delta=self.absolute-position.y<details.absolute-position.y ? details.absolute-position.y - self.absolute-position.y : self.absolute-position.y+self.height>details.absolute-position.y+details.visible-height ? details.absolute-position.y+details.visible-height - self.absolute-position.y - self.height : 0px;

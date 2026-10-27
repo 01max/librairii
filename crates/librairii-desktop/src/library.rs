@@ -103,6 +103,7 @@ impl<T> Action<'_, T> {
 /// Preferences live outside this context and remain usable during relocation.
 #[derive(Debug)]
 pub struct Runtime<'gate, 'db, 'library> {
+    artwork: crate::artwork::Handle,
     gate: &'gate LifecycleGate,
     database: &'db Database<'library>,
     files: &'db LibraryFiles<'library>,
@@ -128,6 +129,15 @@ pub struct JobObservation {
     pub admissions: Vec<native_jobs::Admission>,
 }
 impl<'gate> Runtime<'gate, '_, '_> {
+    pub(crate) fn request_artwork(&self, id: librairii_core::Checksum) {
+        self.artwork.request(id);
+    }
+    pub(crate) fn observe_artwork(&self) -> Result<bool> {
+        if self.artwork.recovery_required() {
+            return Err(StorageError::CustodyRecoveryRequired);
+        }
+        Ok(self.artwork.take_dirty())
+    }
     pub fn observe_jobs(&self) -> JobObservation {
         let mut admissions = Vec::new();
         while let Some(admission) = self.jobs.take_admission() {
@@ -322,6 +332,7 @@ impl<'gate> Runtime<'gate, '_, '_> {
         if self.is_override() {
             return Err(LifecycleError::Busy);
         }
+        self.artwork.cancel();
         let switch=self.gate.begin_switch(|| {
             self.jobs.idle_for_relocation() && self.database.read(|c|c.query_row("SELECT NOT EXISTS(SELECT 1 FROM file_operations WHERE status IN ('queued','running'))",[],|r|r.get::<_,bool>(0)).map_err(StorageError::from)).and_then(|reply|reply.wait()).unwrap_or(false)
         })?;
@@ -448,6 +459,20 @@ impl<'profile> LibrarySession<'profile> {
                         };
                         let logger = Logger::new(&database, &files)?;
                         let thumbnails = ThumbnailCache::default();
+                        let artwork_store =
+                            librairii_storage::metadata::MetadataStorage::new(&database);
+                        let artwork_service = self
+                            .catalog_client
+                            .clone()
+                            .map(Ok)
+                            .unwrap_or_else(librairii_adapters::lunii::CatalogClient::production)
+                            .ok()
+                            .map(|client| {
+                                librairii_adapters::lunii::ArtworkService::new(
+                                    &artwork_store,
+                                    client,
+                                )
+                            });
                         let imports = ImportExecutor::new(&database);
                         let metadata = crate::metadata_jobs::MetadataExecutor::new(
                             &database,
@@ -482,32 +507,51 @@ impl<'profile> LibrarySession<'profile> {
                                         .activated()
                                         .map_err(|_| StorageError::RuntimeFenced)?;
                                 }
-                                crate::export_preparation::with_worker(
-                                    &exports,
-                                    |export_preparations| {
-                                        let runtime = Runtime {
-                                            gate: &self.gate,
-                                            database: &database,
-                                            files: &files,
-                                            imports: &imports,
-                                            export_jobs: &export_jobs,
-                                            export_preparations,
-                                            jobs,
-                                            thumbnails: &thumbnails,
-                                            root: native.layout().root(),
-                                            exports: &exports,
-                                            move_notice: self.move_notice.as_ref(),
-                                            cleanup_paths: &self.cleanup_paths,
-                                            library: native,
-                                            locations,
-                                            diagnostics: &diagnostics,
-                                        };
-                                        run(&runtime)
+                                crate::artwork::with_worker(
+                                    &self.gate,
+                                    artwork_service.as_ref(),
+                                    &artwork_store,
+                                    &thumbnails,
+                                    |artwork| {
+                                        crate::export_preparation::with_worker(
+                                            &exports,
+                                            |export_preparations| {
+                                                let runtime = Runtime {
+                                                    artwork,
+                                                    gate: &self.gate,
+                                                    database: &database,
+                                                    files: &files,
+                                                    imports: &imports,
+                                                    export_jobs: &export_jobs,
+                                                    export_preparations,
+                                                    jobs,
+                                                    thumbnails: &thumbnails,
+                                                    root: native.layout().root(),
+                                                    exports: &exports,
+                                                    move_notice: self.move_notice.as_ref(),
+                                                    cleanup_paths: &self.cleanup_paths,
+                                                    library: native,
+                                                    locations,
+                                                    diagnostics: &diagnostics,
+                                                };
+                                                run(&runtime)
+                                            },
+                                        )?
                                     },
-                                )?
+                                )
                             },
                         )
-                        .map_err(SessionFailure::Jobs)??;
+                        .map_err(SessionFailure::Jobs)?;
+                        // A failed publication keeps the exact metadata store,
+                        // file receipts and custody live after the worker joins.
+                        while !artwork_store.retained_failures().is_empty() {
+                            unclosed(
+                                &StorageError::CustodyRecoveryRequired,
+                                native.layout().root(),
+                            );
+                            thread::sleep(Duration::from_millis(100));
+                        }
+                        let action = action?;
                         // with_runtime has positively joined its coordinator/workers.
                         thumbnails
                             .invalidate()

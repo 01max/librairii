@@ -81,6 +81,10 @@ pub fn checks(ui: &DesktopWindow) -> Result {
     }
     let selection = fixture.view.borrow().tags.selection.clone();
     let before = fixture.view.borrow().snapshot.clone();
+    check(
+        ui.get_bulk_flag_multiple() && ui.get_bulk_flag_mixed(),
+        "mixed bulk Broken state was exposed as unchecked",
+    )?;
     ui.invoke_bulk_flag_change(true);
     let bulk = fixture.settle(ui)?;
     stable(&fixture, &before, &bulk, &selection, &inspected)?;
@@ -270,7 +274,11 @@ impl Surface {
             ui.invoke_toggle_bulk(index);
         }
         ui.invoke_focus_bulk_flag();
-        super::super::key(ui, slint::platform::Key::Space.into())?;
+        check(
+            ui.get_bulk_flag_multiple() && ui.get_bulk_flag_mixed(),
+            "French batch lost its explicit Mixed state",
+        )?;
+        super::super::key(ui, slint::platform::Key::DownArrow.into())?;
         self.0.settle(ui)?;
         check(
             ui.get_bulk_flag_checked() && ui.get_flag_undo_enabled(),

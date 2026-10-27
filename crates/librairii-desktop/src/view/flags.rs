@@ -163,6 +163,10 @@ impl State {
         } else {
             single_available
         });
+        ui.set_panel_flag_multiple(panel_bulk && bulk.len() > 1);
+        ui.set_panel_flag_mixed(panel_bulk && bulk_flagged > 0 && bulk_flagged < bulk.len());
+        ui.set_bulk_flag_multiple(bulk.len() > 1);
+        ui.set_bulk_flag_mixed(bulk_flagged > 0 && bulk_flagged < bulk.len());
         ui.set_bulk_flag_checked(!bulk.is_empty() && bulk_flagged == bulk.len());
         ui.set_bulk_flag_enabled(bulk_available);
         let language = snapshot.language;
