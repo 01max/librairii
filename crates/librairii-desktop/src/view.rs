@@ -13,6 +13,8 @@ pub(crate) mod operations;
 pub(crate) mod shelf_reviews;
 #[path = "view/shelves.rs"]
 pub(crate) mod shelves;
+#[path = "view/sync.rs"]
+pub(crate) mod sync;
 #[path = "view/tags.rs"]
 pub(crate) mod tags;
 use librairii_app::localization::{Catalogs, Language, LocalizationError};
@@ -302,6 +304,7 @@ impl View {
         {
             self.snapshot = snapshot;
             self.operations.project(ui, &self.snapshot, &self.catalogs);
+            sync::project(ui, &self.snapshot);
             return true;
         }
         if let Some(n) = &snapshot.navigation {
@@ -335,6 +338,7 @@ impl View {
     }
     pub fn project(&mut self, ui: &DesktopWindow) {
         self.operations.project(ui, &self.snapshot, &self.catalogs);
+        sync::project(ui, &self.snapshot);
         self.tags.retain_visible(&self.snapshot);
         self.flags.project(
             ui,
@@ -811,6 +815,7 @@ pub fn install(
     });
     collections::install(ui, view.clone(), worker.clone());
     operations::install(ui, view.clone(), worker.clone());
+    sync::install(ui, view.clone(), worker.clone());
     shelves::install(ui, view.clone(), worker.clone());
     shelf_reviews::install(ui, view.clone(), worker.clone());
     flags::install(ui, view.clone(), worker.clone());

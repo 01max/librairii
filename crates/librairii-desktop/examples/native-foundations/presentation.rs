@@ -9,6 +9,8 @@ mod operation_checks;
 mod review_checks;
 #[path = "shelves.rs"]
 mod shelf_checks;
+#[path = "sync.rs"]
+mod sync_checks;
 use super::{Result, check, view};
 pub use collection_checks::{Surface as CollectionSurface, checks as collections};
 pub use flag_checks::{Surface as FlagSurface, checks as flags};
@@ -35,13 +37,18 @@ use std::{
     rc::Rc,
     time::{Duration, Instant},
 };
+pub use sync_checks::{Surface as SyncSurface, checks as sync};
 
 struct Environment {
+    catalog: Option<librairii_adapters::lunii::CatalogClient>,
     home: OsString,
     config: OsString,
     data: OsString,
 }
 impl StartupEnvironment for Environment {
+    fn catalog_client(&self) -> Option<librairii_adapters::lunii::CatalogClient> {
+        self.catalog.clone()
+    }
     fn variable(&self, name: &str) -> Option<OsString> {
         match name {
             "HOME" => Some(self.home.clone()),
@@ -53,6 +60,7 @@ impl StartupEnvironment for Environment {
 }
 
 struct Fixture {
+    catalog: Option<librairii_adapters::lunii::CatalogClient>,
     ui: slint::Weak<DesktopWindow>,
     worker: Rc<RefCell<Worker>>,
     view: Rc<RefCell<view::View>>,
@@ -65,6 +73,19 @@ impl Fixture {
         Self::open_with(ui, false)
     }
     fn open_with(ui: &DesktopWindow, real: bool) -> Result<Self> {
+        Self::open_configured(ui, real, None)
+    }
+    fn open_catalog(
+        ui: &DesktopWindow,
+        client: librairii_adapters::lunii::CatalogClient,
+    ) -> Result<Self> {
+        Self::open_configured(ui, true, Some(client))
+    }
+    fn open_configured(
+        ui: &DesktopWindow,
+        real: bool,
+        catalog: Option<librairii_adapters::lunii::CatalogClient>,
+    ) -> Result<Self> {
         let roots = TestRoots::new()?;
         let home = roots.profile().join("home");
         let config = roots.profile().join("config");
@@ -175,6 +196,7 @@ impl Fixture {
         native.finish().map_err(|error| error.to_string())?;
         drop(store);
         let worker = Rc::new(RefCell::new(Worker::start_with(Environment {
+            catalog: catalog.clone(),
             home: home.into_os_string(),
             config: config.into_os_string(),
             data: data.into_os_string(),
@@ -182,6 +204,7 @@ impl Fixture {
         let initial = receive(&worker.borrow())?;
         let view = view::install(ui, worker.clone(), initial)?;
         Ok(Self {
+            catalog,
             ui: ui.as_weak(),
             worker,
             view,
@@ -217,6 +240,7 @@ impl Fixture {
     fn restart(&mut self, ui: &DesktopWindow) -> Result {
         self.worker.borrow_mut().finish()?;
         *self.worker.borrow_mut() = Worker::start_with(Environment {
+            catalog: self.catalog.clone(),
             home: self._roots.profile().join("home").into_os_string(),
             config: self._roots.profile().join("config").into_os_string(),
             data: self._roots.library().join("data").into_os_string(),
@@ -240,6 +264,10 @@ impl Fixture {
 impl Drop for Fixture {
     fn drop(&mut self) {
         if let Some(ui) = self.ui.upgrade() {
+            ui.on_start_sync(|| {});
+            ui.on_cancel_sync(|| {});
+            ui.on_hide_sync(|_| {});
+            ui.on_refresh_sync(|| {});
             ui.on_pick_import(|| {});
             ui.on_retry_import(|| {});
             ui.on_select_operation(|_| {});

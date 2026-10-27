@@ -242,6 +242,7 @@ fn main() -> Result {
     callback_checks::shelves(&ui)?;
     callback_checks::shelf_reviews(&ui)?;
     callback_checks::operations(&ui)?;
+    callback_checks::sync(&ui)?;
     let initial = snapshot()?;
     let view = Rc::new(RefCell::new(view::View {
         operations: Default::default(),
@@ -366,6 +367,8 @@ fn main() -> Result {
                     surface.poll(&ui);
                 } else if let Some(surface) = surfaces.operations.borrow().as_ref() {
                     surface.poll(&ui);
+                } else if let Some(surface) = surfaces.sync.borrow().as_ref() {
+                    surface.poll(&ui);
                 } else {
                     view.borrow_mut().resize(&ui);
                 }
@@ -397,7 +400,7 @@ fn main() -> Result {
         return Err(error.into());
     }
     check(
-        server || *step.borrow() > 109,
+        server || *step.borrow() > 114,
         "native fixture ended before completing its checks",
     )?;
     Ok(())
@@ -405,6 +408,7 @@ fn main() -> Result {
 
 #[derive(Debug, Default)]
 struct Surfaces {
+    sync: RefCell<Option<callback_checks::SyncSurface>>,
     operations: RefCell<Option<callback_checks::OperationSurface>>,
     collections: RefCell<Option<callback_checks::CollectionSurface>>,
     shelves: RefCell<Option<callback_checks::ShelfSurface>>,
@@ -1101,6 +1105,49 @@ fn capture_step(
         key(ui, slint::platform::Key::Escape.into())?;
         check(!ui.get_modal(), "import Escape did not return to browsing")?;
         surfaces.operations.borrow_mut().take();
+    } else if index == 110 {
+        resize(ui, 1180., 760.)?;
+        *surfaces.sync.borrow_mut() = Some(callback_checks::SyncSurface::open(ui)?);
+    } else if index == 111 {
+        capture(ui, &destination.join("metadata-sync-prompt-wide-en.png"))?;
+        surfaces
+            .sync
+            .borrow()
+            .as_ref()
+            .ok_or("sync surface missing")?
+            .success(ui)?;
+    } else if index == 112 {
+        capture(ui, &destination.join("metadata-sync-success-wide-en.png"))?;
+        surfaces
+            .sync
+            .borrow()
+            .as_ref()
+            .ok_or("sync surface missing")?
+            .french_failure(ui)?;
+        resize(ui, 560., 400.)?;
+    } else if index == 113 {
+        ui.invoke_open_sidebar();
+        ui.invoke_focus_sync();
+    } else if index == 114 {
+        capture(
+            ui,
+            &destination.join("metadata-sync-failure-compact-fr.png"),
+        )?;
+        check(
+            ui.get_sync_start_focused(),
+            "sync Retry lost native keyboard focus",
+        )?;
+        key(ui, slint::platform::Key::Tab.into())?;
+        check(
+            ui.get_sync_refresh_focused(),
+            "native Tab did not reach local sync status refresh",
+        )?;
+        key(ui, slint::platform::Key::Escape.into())?;
+        check(
+            !ui.get_sidebar_open(),
+            "sync sidebar Escape did not return to browsing",
+        )?;
+        surfaces.sync.borrow_mut().take();
     } else {
         std::fs::write(
             destination.join("report.json"),
@@ -1120,6 +1167,7 @@ fn capture_step(
                 "shelf_callbacks": "passed",
                 "shelf_review_callbacks": "passed",
                 "operation_callbacks":"passed",
+                "sync_callbacks":"passed",
                 "scope": "shown native component/public window events and Skia capture; not physical HID or packaged workflow qualification",
             }))?,
         )?;

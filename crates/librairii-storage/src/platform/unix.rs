@@ -227,6 +227,25 @@ impl Directory {
         }
         Ok(())
     }
+    /// Validate an optional preference leaf without requiring read permission.
+    /// This grants no file access, publication, or cleanup authority.
+    pub(crate) fn regular_entry(&self, name: &OsStr) -> Result<bool> {
+        match native::statat(&self.file, name, AtFlags::SYMLINK_NOFOLLOW) {
+            Err(error) if error == rustix::io::Errno::NOENT => Ok(false),
+            Err(error) => Err(StorageError::io(
+                "inspect optional preference entry",
+                error.into(),
+            )),
+            Ok(stat) => {
+                if native::FileType::from_raw_mode(stat.st_mode) != native::FileType::RegularFile
+                    || stat.st_nlink != 1
+                {
+                    return Err(StorageError::PathEscape);
+                }
+                Ok(true)
+            }
+        }
+    }
     pub(crate) fn open_regular(&self, name: &OsStr, flags: OFlags) -> Result<File> {
         // NONBLOCK prevents an attacker-substituted FIFO from blocking before
         // fstat can reject it. NOFOLLOW applies to this final single component.

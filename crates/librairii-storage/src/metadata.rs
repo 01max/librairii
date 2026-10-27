@@ -175,7 +175,7 @@ impl CatalogRepository for MetadataStorage<'_, '_> {
             id,
             locale,
             at.into(),
-            WorkCancellation::default(),
+            self.work_cancel.clone(),
         ))
     }
     fn stage(
@@ -184,7 +184,7 @@ impl CatalogRepository for MetadataStorage<'_, '_> {
         catalog: NormalizedCatalog,
         at: &str,
     ) -> std::result::Result<CatalogSnapshotId, RepositoryFailure> {
-        match self.stage_catalog(id, catalog, at.into(), WorkCancellation::default()) {
+        match self.stage_catalog(id, catalog, at.into(), self.work_cancel.clone()) {
             Ok(TransactionOutcome::Committed(v)) => Ok(v),
             Ok(TransactionOutcome::ProvenNotCommitted(_)) => Err(RepositoryFailure::Proven),
             Err(StorageError::WorkerStopped) | Ok(TransactionOutcome::CommitUncertain(_)) => {
@@ -251,16 +251,63 @@ impl Database<'_> {
         &self,
         locale: Locale,
     ) -> Result<Pending<'_, librairii_core::metadata::CatalogStatus>> {
-        self.read(move|tx|{
-        use librairii_core::metadata::{CatalogStatus,Freshness,SyncStatus,CatalogFailure};use rusqlite::OptionalExtension;
-        let active=tx.query_row("SELECT c.fetched_at,c.activated_at,s.matched_story_count FROM catalog_snapshots c JOIN catalog_syncs s ON s.id=c.sync_id WHERE c.locale=? AND c.status='active'",[locale.as_str()],|r|Ok((r.get::<_,String>(0)?,r.get::<_,String>(1)?,r.get::<_,i64>(2)?))).optional()?;
-        let latest=tx.query_row("SELECT status,started_at,error_code FROM catalog_syncs WHERE locale=? ORDER BY started_at DESC,id DESC LIMIT 1",[locale.as_str()],|r|Ok((r.get::<_,String>(0)?,r.get::<_,String>(1)?,r.get::<_,Option<String>>(2)?))).optional()?;
-        let mut status=CatalogStatus{state:Freshness::NeverSynced,locale,matched_stories:0,fetched_at:None,activated_at:None,last_attempt_status:None,last_attempt_at:None,error_code:None};
-        if let Some((fetched,activated,count))=active{status.state=Freshness::Fresh;status.fetched_at=Some(fetched);status.activated_at=Some(activated);status.matched_stories=count;}
-        if let Some((state,at,error))=latest{if status.state==Freshness::Fresh && matches!(state.as_str(),"failed"|"cancelled"){status.state=Freshness::StaleCache;}status.last_attempt_status=Some(SyncStatus::from_stored(&state)?);status.last_attempt_at=Some(at);status.error_code=error.map(CatalogFailure::from_stored);}
-        Ok(status)
-    })
+        self.read(move |tx| catalog_status_row(tx, locale).map(|(status, _)| status))
     }
+    /// Status and the actual activated snapshot identity share one read. A clock
+    /// adjustment or repeated timestamp cannot hide a newly activated catalog.
+    pub fn native_catalog_status(
+        &self,
+        locale: Locale,
+    ) -> Result<
+        Pending<
+            '_,
+            (
+                librairii_core::metadata::CatalogStatus,
+                Option<CatalogSnapshotId>,
+            ),
+        >,
+    > {
+        self.read(move |tx| catalog_status_row(tx, locale))
+    }
+}
+fn catalog_status_row(
+    tx: &Transaction<'_>,
+    locale: Locale,
+) -> Result<(
+    librairii_core::metadata::CatalogStatus,
+    Option<CatalogSnapshotId>,
+)> {
+    use librairii_core::metadata::{CatalogFailure, CatalogStatus, Freshness, SyncStatus};
+    use rusqlite::OptionalExtension;
+    let active=tx.query_row("SELECT c.id,c.fetched_at,c.activated_at,s.matched_story_count FROM catalog_snapshots c JOIN catalog_syncs s ON s.id=c.sync_id WHERE c.locale=? AND c.status='active'",[locale.as_str()],|r|Ok((r.get::<_,i64>(0)?,r.get::<_,String>(1)?,r.get::<_,String>(2)?,r.get::<_,i64>(3)?))).optional()?;
+    let latest=tx.query_row("SELECT status,started_at,error_code FROM catalog_syncs WHERE locale=? ORDER BY started_at DESC,id DESC LIMIT 1",[locale.as_str()],|r|Ok((r.get::<_,String>(0)?,r.get::<_,String>(1)?,r.get::<_,Option<String>>(2)?))).optional()?;
+    let mut status = CatalogStatus {
+        state: Freshness::NeverSynced,
+        locale,
+        matched_stories: 0,
+        fetched_at: None,
+        activated_at: None,
+        last_attempt_status: None,
+        last_attempt_at: None,
+        error_code: None,
+    };
+    let mut snapshot = None;
+    if let Some((id, fetched, activated, count)) = active {
+        snapshot = Some(CatalogSnapshotId::new(id).map_err(|_| invalid())?);
+        status.state = Freshness::Fresh;
+        status.fetched_at = Some(fetched);
+        status.activated_at = Some(activated);
+        status.matched_stories = count;
+    }
+    if let Some((state, at, error)) = latest {
+        if status.state == Freshness::Fresh && matches!(state.as_str(), "failed" | "cancelled") {
+            status.state = Freshness::StaleCache;
+        }
+        status.last_attempt_status = Some(SyncStatus::from_stored(&state)?);
+        status.last_attempt_at = Some(at);
+        status.error_code = error.map(CatalogFailure::from_stored);
+    }
+    Ok((status, snapshot))
 }
 
 impl Database<'_> {

@@ -20,6 +20,9 @@ pub fn local(value: &str) -> Option<LocalDateTime> {
     let offset = UtcOffset::local_offset_at(instant).ok()?;
     Some(instant.to_offset(offset))
 }
+pub fn utc_now() -> Option<String> {
+    OffsetDateTime::now_utc().format(&Rfc3339).ok()
+}
 #[cfg(test)]
 mod tests {
     use super::*;

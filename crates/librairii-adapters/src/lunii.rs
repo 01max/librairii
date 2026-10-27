@@ -50,6 +50,19 @@ pub struct CatalogClient {
     permits: Arc<Semaphore>,
 }
 impl CatalogClient {
+    /// Called only by an explicitly requested native metadata job. The current
+    /// thread drives HTTP; no background scheduler or detached request escapes.
+    pub fn fetch_for_job(&self, job: &librairii_app::native_jobs::Cancellation) -> Result<Vec<u8>> {
+        let runtime = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .map_err(|_| MetadataError::InvalidConfiguration)?;
+        let cancel = Cancellation::default();
+        runtime.block_on(async {
+            let request=self.fetch_catalog(&cancel);tokio::pin!(request);
+            loop {tokio::select! {biased; result=&mut request=>return result,_=tokio::time::sleep(Duration::from_millis(10))=>{if job.is_cancelled(){cancel.cancel();}}}}
+        })
+    }
     pub fn production() -> Result<Self> {
         Self::build(
             Endpoints {

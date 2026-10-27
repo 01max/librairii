@@ -14,6 +14,11 @@ use std::{
 };
 pub trait StartupEnvironment {
     fn variable(&self, name: &str) -> Option<OsString>;
+    /// Explicitly supplied owned test clients can target only the adapter's
+    /// validated numeric-loopback route. Native production uses fixed endpoints.
+    fn catalog_client(&self) -> Option<librairii_adapters::lunii::CatalogClient> {
+        None
+    }
 }
 #[derive(Debug, Default)]
 pub struct NativeEnvironment;

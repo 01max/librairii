@@ -383,9 +383,43 @@ English/French wide/compact frames include Tab into operation selection and Esca
 back to browsing. The original24-frame matrices and every earlier workflow remain
 mandatory. Full spoken and fresh three-host acceptance remain15.13.
 
+## 15.9 — Optional official metadata sync
+
+The native sidebar and first-sync prompt offer explicit Sync, Retry, Cancel,
+local status refresh, Hide and Show actions in English/French. Only Sync/Retry
+performs HTTP. Startup, browsing, language changes, local refresh and preference
+changes remain local. Last success uses the coherent active-catalog identity and
+localized host time; failed/cancelled attempts retain the last good catalog and
+timestamp. A first failed attempt clearly reports that official metadata is
+unavailable while embedded/fallback details remain usable.
+
+Metadata uses the same two-worker job runtime as imports, the existing catalog
+client and metadata storage/activation protocol. Cancellation reaches both HTTP
+and staging; activation and durable reporting complete their protected boundary.
+The actual metadata storage owner survives uncertain effects and reporting. New
+catalog identities refresh groups, facets, unions, inspected descriptions and
+review validity, including when activation occurs during ongoing navigation.
+
+Library-bound, versioned interface.json stores panel dismissal atomically in the
+leased native profile namespace. Startup and binding allowlists both recognize
+this exact leaf. Invalid/future/unreadable regular preference files remain intact
+and use visible session defaults with a warning; namespace replacement, links,
+special files and real poisoned ownership still require recovery. No browser
+preference scraping or implicit catalog fetch is introduced.
+
+Native callbacks exercise real loopback guest/catalog responses and actual
+files/SQLite: first failure, successful matching enrichment, last-good failure,
+held-response cancellation, duplicate-active-sync refusal, persistent hide/show,
+restart, future-version preservation and unreadable preference fallback. A held
+sync completes while the actual About dialog retains Close focus; owned Details
+reloads the matching official description. Sidebar restoration chooses a visible,
+enabled control and status changes cannot focus a closed compact sidebar or steal
+modal focus. Wide English prompt/success and compact French failure frames extend
+the mandatory native baseline. Complete spoken/three-host acceptance is15.13.
+
 ## Remaining workflow work
 
-15.9–15.12 compose imports/sync/exports, durable History/notices and complete native
+15.10–15.12 compose exports, durable History/notices and complete native
 setup/settings/recovery/diagnostics. 15.13 independently reviews the complete
 native surfaces and refreshes visual/accessibility evidence. Resource budgets,
 handover, installed packages and cutover retain their later task boundaries.

@@ -28,6 +28,7 @@ struct RetainedResources<'db> {
 #[derive(Debug)]
 pub struct MetadataStorage<'db, 'library> {
     pub(crate) database: &'db Database<'library>,
+    pub(crate) work_cancel: WorkCancellation,
     retained: Mutex<Vec<RetainedResources<'db>>>,
     #[cfg(test)]
     pub(crate) creation_fault: bool,
@@ -44,9 +45,19 @@ impl<'db, 'library> MetadataStorage<'db, 'library> {
     pub fn new(database: &'db Database<'library>) -> Self {
         Self {
             database,
+            work_cancel: WorkCancellation::default(),
             retained: Mutex::new(Vec::new()),
             #[cfg(test)]
             creation_fault: false,
+        }
+    }
+    pub fn for_job(
+        database: &'db Database<'library>,
+        job: &librairii_app::native_jobs::Cancellation,
+    ) -> Self {
+        Self {
+            work_cancel: WorkCancellation::for_job(job),
+            ..Self::new(database)
         }
     }
     pub fn retained_failures(&self) -> Vec<RetainedKind> {
@@ -121,7 +132,17 @@ impl<'db, 'library> MetadataStorage<'db, 'library> {
         let name = EntryName::parse(name)?;
         let database: &'db Database<'library> = self.database;
         let mut files = database.metadata_files()?;
-        let guard = files.try_custody()?;
+        let guard = loop {
+            if cancel.is_cancelled() {
+                return Err(StorageError::Cancelled);
+            }
+            match files.try_custody() {
+                Err(StorageError::CustodyBusy) => {
+                    std::thread::sleep(std::time::Duration::from_millis(2))
+                }
+                other => break other?,
+            }
+        };
         if let Some(id) = official
             && let Err(error) = files.official_artwork(&guard, id)
         {

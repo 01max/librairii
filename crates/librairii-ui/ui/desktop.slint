@@ -1,5 +1,6 @@
 import {ShelfReviewData} from "shelf-reviews.slint";
 import {Operations} from "operations.slint";
+import {SyncPanel,SyncData} from "sync.slint";
 import { TagManager, Assignments, AssignmentRow } from "tags.slint";
 import { FlagControl } from "flags.slint";
 import { CollectionManager, CollectionChoice } from "collections.slint";
@@ -61,14 +62,20 @@ component Caption inherits Text {
 export struct NavigationRow { index:int, label:string, enabled:bool }
 export struct CollectionPreview { index:int, title:string, caption:string, available:bool, stories:[StoryRow] }
 component Navigation inherits FocusScope {
+    in property <SyncData> sync-data;
+    callback start-sync();callback cancel-sync();callback hide-sync(bool);callback refresh-sync();
     in property <[NavigationRow]> collections;
     in property <[NavigationRow]> shelves;
     callback navigate(int);
     in property <bool> french;
     in property <bool> compact;
+    in property <bool> sync-focus-active;
     callback close();
     callback open-panel(int);
     public function activate() { close-navigation.focus(); }
+    public function focus-sync(){sync-panel.focus-start();}
+    out property <bool> sync-start-focused:sync-panel.start-focused;
+    out property <bool> sync-refresh-focused:sync-panel.refresh-focused;
     public function restore(key: int) {
         FocusState.key = key;
         FocusState.restore-epoch += 1;
@@ -82,7 +89,7 @@ component Navigation inherits FocusScope {
         return reject;
     }
     Rectangle { width: parent.width; height: parent.height; background: Palette.alternate-background; }
-    ScrollView {
+    nav-scroll:=ScrollView {
         width: parent.width; height: parent.height;
         content-width: self.visible-width;
         content-height: nav-layout.preferred-height;
@@ -101,8 +108,9 @@ component Navigation inherits FocusScope {
             tags-action := Action { focus-key: 203; text: root.french ? "Étiquettes" : "Tags"; clicked => { root.open-panel(1); } }
             history-action := Action { focus-key: 204; text: root.french ? "Historique" : "History"; clicked => { root.open-panel(4); } }
             Rectangle { height: 1px; background: Palette.border; }
-            Caption { text: root.french ? "Catalogue officiel" : "Official catalog"; font-weight: 600; }
-            Caption { text: root.french ? "Métadonnées facultatives. Vos archives restent locales." : "Optional metadata. Your archives stay local."; }
+            Caption {visible:!root.sync-data.loaded;height:self.visible ? self.preferred-height : 0px;text: root.french ? "Catalogue officiel" : "Official catalog"; font-weight: 600; }
+            Caption {visible:!root.sync-data.loaded;height:self.visible ? self.preferred-height : 0px;text: root.french ? "Métadonnées facultatives. Vos archives restent locales." : "Optional metadata. Your archives stay local."; }
+            sync-panel:=SyncPanel {visible:root.sync-data.loaded;height:self.visible ? self.preferred-height : 0px;data:root.sync-data;french:root.french;active:root.sync-focus-active && FocusState.ready && !FocusState.closing && !FocusState.modal && !FocusState.mutation;focus-key:FocusState.key;epoch:FocusState.restore-epoch;start=>{root.start-sync();}cancel=>{root.cancel-sync();}hide(value)=>{root.hide-sync(value);}refresh=>{root.refresh-sync();}focused(k)=>{FocusState.key=k;}reveal(y,h)=>{let top=nav-scroll.absolute-position.y;nav-scroll.content-y=max(min(0px,nav-scroll.visible-height - nav-scroll.content-height),min(0px,nav-scroll.content-y+(y<top ? top - y : y+h>top+nav-scroll.visible-height ? top+nav-scroll.visible-height - y - h : 0px)));}}
             settings-action := Action { focus-key: 205; text: root.french ? "Réglages…" : "Settings…"; clicked => { root.open-panel(5); } }
         }
     }
@@ -119,6 +127,12 @@ export component DesktopWindow inherits Window {
     out property <brush> observed-selection-foreground: Palette.selection-foreground;
     out property <brush> observed-selection-background: Palette.selection-background;
     in property <bool> french;
+    in property <SyncData> sync-data;
+    callback start-sync();callback cancel-sync();callback hide-sync(bool);callback refresh-sync();
+    public function focus-sync(){navigation.focus-sync();}
+    out property <bool> sync-start-focused:navigation.sync-start-focused;
+    out property <bool> sync-refresh-focused:navigation.sync-refresh-focused;
+    changed sync-data=>{if !root.modal && (FocusState.key==35 || FocusState.key==36) && (root.sync-data.hidden || !root.sync-data.never || root.sync-data.active) {root.focus-browser();}}
     in property <string> status;
     in property <bool> pending;
     in property <float> progress;
@@ -582,6 +596,10 @@ export component DesktopWindow inherits Window {
             Rectangle { horizontal-stretch: 1; }
         }
         Rectangle { height: 1px; background: Palette.border; }
+        if root.startup-phase==3 && root.sync-data.loaded && root.sync-data.never && !root.sync-data.hidden && !root.workspace: HorizontalBox {vertical-stretch:0;padding:4px;spacing:8px;
+            Action {focus-key:35;available:root.sync-data.can-start;text:root.french ? "Facultatif · synchroniser" : "Optional metadata · sync now";accessible-label:root.french ? "Synchroniser les métadonnées officielles · facultatif" : "Sync optional official metadata";clicked=>{root.start-sync();}}
+            Action {focus-key:36;text:root.french ? "Plus tard" : "Later";clicked=>{root.hide-sync(true);}}
+        }
         HorizontalBox {
             visible: root.startup-phase != 3; height: self.visible ? 52px : 0px;
             padding: self.visible ? 10px : 0px;
@@ -678,7 +696,7 @@ export component DesktopWindow inherits Window {
                 width: root.compact ? 280px : 216px; height: parent.height;
                 sidebar-focus := FocusScope { x: 0px; y: 0px; width: parent.width; height: parent.height;
                     key-pressed(event) => { if event.text == Key.Escape && root.compact { root.close-sidebar(); return accept; } return reject; }
-                    navigation := Navigation { x: 0px; y: 0px; collections: root.collection-rows; shelves: root.shelf-rows; navigate(index) => { root.navigate-group(index); if root.compact { root.close-sidebar(); } } enabled: !root.modal && !root.review-data.committing; width: parent.width; height: parent.height; french: root.french; compact: root.compact; close => { root.close-sidebar(); } open-panel(kind) => { root.show-panel(kind); } }
+                    navigation := Navigation {sync-focus-active:!root.compact || root.sidebar-open;sync-data:root.sync-data;start-sync=>{root.start-sync();}cancel-sync=>{root.cancel-sync();}hide-sync(value)=>{root.hide-sync(value);}refresh-sync=>{root.refresh-sync();} x: 0px; y: 0px; collections: root.collection-rows; shelves: root.shelf-rows; navigate(index) => { root.navigate-group(index); if root.compact { root.close-sidebar(); } } enabled: !root.modal && !root.review-data.committing; width: parent.width; height: parent.height; french: root.french; compact: root.compact; close => { root.close-sidebar(); } open-panel(kind) => { root.show-panel(kind); } }
                 }
             }
         }

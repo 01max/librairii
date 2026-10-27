@@ -67,6 +67,17 @@ pub fn inspect(
     story.summary.description = librairii_ui::description::readable(&story.summary.description);
     Ok(Details { target, story })
 }
+pub fn refresh_details(
+    runtime: &Runtime<'_, '_, '_>,
+    navigation: &Navigation,
+    snapshot: &mut Snapshot,
+) {
+    if let Some(details) = &snapshot.details {
+        let refreshed = inspect(runtime, navigation, details.target.clone());
+        snapshot.detail_error = refreshed.is_err();
+        snapshot.details = refreshed.ok();
+    }
+}
 pub fn remove(
     runtime: &Runtime<'_, '_, '_>,
     navigation: &Navigation,

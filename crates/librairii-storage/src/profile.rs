@@ -4,7 +4,11 @@
 //! namespace with its marker locked for the entire store lifetime. This lock does
 //! not exclude an unmodified Go library process or authorize library adoption.
 #[cfg(any(target_os = "macos", target_os = "linux"))]
+mod interface;
+#[cfg(any(target_os = "macos", target_os = "linux"))]
 mod navigation;
+#[cfg(any(target_os = "macos", target_os = "linux"))]
+pub use interface::InterfacePreferences;
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 pub(crate) mod relocation;
 #[cfg(any(target_os = "macos", target_os = "linux"))]
@@ -760,7 +764,7 @@ impl NativeProfileStore {
         self.revalidate_namespace()?;
         let entries = self
             .namespace
-            .entries(5, &crate::database::WorkCancellation::default())
+            .entries(6, &crate::database::WorkCancellation::default())
             .map_err(|error| match error {
                 StorageError::AdoptionInputChanged => StorageError::RecoveryBindingRequired,
                 error => error,
@@ -770,6 +774,7 @@ impl NativeProfileStore {
                 && entry != SETTINGS
                 && entry != "navigation.json"
                 && entry != "shelf-warnings.json"
+                && entry != "interface.json"
                 && entry != relocation::JOURNAL
         }) {
             return Err(StorageError::RecoveryBindingRequired);
@@ -787,6 +792,8 @@ impl NativeProfileStore {
             self.namespace
                 .open_regular(std::ffi::OsStr::new(name), rustix::fs::OFlags::RDONLY)?;
         }
+        self.namespace
+            .regular_entry(std::ffi::OsStr::new("interface.json"))?;
         Ok(())
     }
 

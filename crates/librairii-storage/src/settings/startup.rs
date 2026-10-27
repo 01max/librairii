@@ -264,7 +264,7 @@ fn validate_native_namespace(
         }
         Err(e) => return Err(e),
     };
-    let entries = root.entries(4, cancel)?;
+    let entries = root.entries(5, cancel)?;
     if entries.is_empty() {
         return Ok(());
     }
@@ -273,9 +273,11 @@ fn validate_native_namespace(
             && name != "settings.json"
             && name != "navigation.json"
             && name != "shelf-warnings.json"
+            && name != "interface.json"
     }) {
         return Err(StorageError::RecoveryBindingRequired);
     }
+    root.regular_entry(std::ffi::OsStr::new("interface.json"))?;
     let mut marker = root.open_regular(
         std::ffi::OsStr::new(profile::MARKER),
         rustix::fs::OFlags::RDONLY,
@@ -415,6 +417,15 @@ mod tests {
         native.finish().map_err(|f| f.to_string())?;
         drop(store);
         let store = prepare_native_profile(&locations, &cancel)?;
+        let id = "b0000000-0000-4000-8000-000000000013".parse()?;
+        let mut preferences = profile::InterfacePreferences::new(id);
+        preferences.sync_panel_hidden = true;
+        store.save_interface(&preferences)?;
+        assert!(matches!(
+            inspect_startup(&locations, &cancel),
+            Startup::Native(_)
+        ));
+        assert_eq!(store.load_interface(id)?, Some(preferences));
         let native = crate::native::NativeLibrary::reopen(&store, &locations, &cancel)?;
         let mut db = crate::database::Database::open_native(&native)?;
         db.close()?;

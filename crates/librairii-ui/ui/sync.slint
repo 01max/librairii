@@ -1,0 +1,28 @@
+import {Button,VerticalBox,Palette} from "std-widgets.slint";
+export struct SyncData {loaded:bool,hidden:bool,never:bool,active:bool,cancellable:bool,can-start:bool,title:string,explanation:string,last-success:string,status:string,notice:string,start-label:string}
+component Label inherits Text {wrap:word-wrap;color:Palette.foreground;vertical-stretch:0;}
+component Command inherits Button {in property <int> key;callback focused(int);changed has-focus=>{if self.has-focus{root.focused(root.key);}}}
+export component SyncPanel inherits VerticalBox {
+    in property <SyncData> data;
+    in property <bool> french;
+    in property <bool> active;
+    in property <int> focus-key;
+    in property <int> epoch;
+    callback start();callback cancel();callback hide(bool);callback refresh();callback focused(int);callback reveal(length,length);
+    public function focus-start(){if root.data.hidden {show.focus();}else if start.enabled {start.focus();}else if cancel.enabled {cancel.focus();}else{refresh.focus();}}
+    out property <bool> start-focused:start.has-focus;
+    out property <bool> refresh-focused:refresh.has-focus;
+    changed data=>{if root.active && root.focus-key>=208 && root.focus-key<=212 {if root.data.hidden {show.focus();}else if root.focus-key==208 {hide.focus();}else if root.focus-key==209 && !start.enabled {if cancel.enabled {cancel.focus();}else{refresh.focus();}}else if root.focus-key==210 && !cancel.enabled {if start.enabled {start.focus();}else{refresh.focus();}}}}
+    changed epoch=>{if root.active && root.focus-key>=208 && root.focus-key<=212 {if root.data.hidden {show.focus();}else if root.focus-key==208 {hide.focus();}else if root.focus-key==210 && cancel.enabled {cancel.focus();}else if root.focus-key==212 {refresh.focus();}else{root.focus-start();}}}
+    padding:0px;spacing:8px;
+    Label {text:root.data.title;font-weight:600;}
+    Label {text:root.data.notice;visible:self.text!="";height:self.visible ? self.preferred-height : 0px;accessible-live-region:polite;}
+    show:=Command {key:208;visible:root.data.hidden;height:self.visible ? self.preferred-height : 0px;enabled:root.active;text:root.french ? "Afficher la synchronisation" : "Show metadata sync";clicked=>{root.hide(false);}focused(k)=>{root.focused(k);root.reveal(self.absolute-position.y,self.height);}}
+    Label {text:root.data.explanation;visible:!root.data.hidden;height:self.visible ? self.preferred-height : 0px;}
+    Label {text:root.data.last-success;visible:!root.data.hidden;height:self.visible ? self.preferred-height : 0px;}
+    Label {text:root.data.status;visible:!root.data.hidden;height:self.visible ? self.preferred-height : 0px;accessible-live-region:polite;}
+    start:=Command {key:209;visible:!root.data.hidden;height:self.visible ? self.preferred-height : 0px;enabled:root.active && root.data.can-start;text:root.data.start-label;clicked=>{root.start();}focused(k)=>{root.focused(k);root.reveal(self.absolute-position.y,self.height);}}
+    cancel:=Command {key:210;visible:!root.data.hidden && root.data.active;height:self.visible ? self.preferred-height : 0px;enabled:root.active && root.data.cancellable;text:root.french ? "Annuler la synchronisation" : "Cancel metadata sync";clicked=>{root.cancel();}focused(k)=>{root.focused(k);root.reveal(self.absolute-position.y,self.height);}}
+    refresh:=Command {key:212;visible:!root.data.hidden;height:self.visible ? self.preferred-height : 0px;enabled:root.active;text:root.french ? "Actualiser le statut local" : "Refresh local status";clicked=>{root.refresh();}focused(k)=>{root.focused(k);root.reveal(self.absolute-position.y,self.height);}}
+    hide:=Command {key:208;visible:!root.data.hidden;height:self.visible ? self.preferred-height : 0px;enabled:root.active;text:root.french ? "Masquer ce panneau" : "Hide this panel";clicked=>{root.hide(true);}focused(k)=>{root.focused(k);root.reveal(self.absolute-position.y,self.height);}}
+}

@@ -86,6 +86,8 @@ def main():
             raise ValueError('native Shelf review callbacks failed')
         if report.get('operation_callbacks') != 'passed':
             raise ValueError('native operation callbacks incomplete')
+        if report.get('sync_callbacks') != 'passed':
+            raise ValueError('native sync callbacks incomplete')
         if report['shelf_callbacks'] != 'passed':
             raise ValueError('Shelf callback verification did not pass')
         if report['collection_callbacks'] != 'passed':

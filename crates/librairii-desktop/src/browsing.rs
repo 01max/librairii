@@ -362,6 +362,7 @@ pub(crate) fn run(
     receiver: &Arc<Intake>,
     mailbox: &Arc<Mutex<Option<Snapshot>>>,
     stop: &AtomicBool,
+    catalog_client: Option<librairii_adapters::lunii::CatalogClient>,
 ) -> Result<()> {
     let store = NativeProfileStore::open_native(&locations.native)?;
     let profile = store.load()?.ok_or(StorageError::InvalidProfile)?;
@@ -385,7 +386,7 @@ pub(crate) fn run(
     let mut language = language;
     let mut settings = crate::settings::restore_language(&store, language)?;
     let catalogs = Catalogs::embedded().map_err(|_| StorageError::InvalidProfile)?;
-    let mut session = LibrarySession::new(native);
+    let mut session = LibrarySession::new(native).with_catalog_client(catalog_client);
     let mut revision = 0;
     let mut restore_revision = 0;
     let mut invalid_query = false;
@@ -397,6 +398,7 @@ pub(crate) fn run(
     let mut shelf_controller = crate::workflows::shelves::Controller::default();
     let mut review_controller = crate::workflows::shelf_reviews::Controller::default();
     let mut operation_controller = crate::workflows::operations::Controller::default();
+    operation_controller.restore_preferences(&store, id)?;
     let result = session.drive(locations, &WorkCancellation::default(), |runtime| {
         let active = (|| -> Result<()> {
             let generation = runtime
@@ -413,6 +415,7 @@ pub(crate) fn run(
                 let (_,effects)=operation_controller.poll(runtime,false)?;
                 workflows.operations=operation_controller.snapshot.clone();
                 if effects {
+                    crate::workflows::refresh_details(runtime,&navigation,&mut workflows);
                     group_rows=groups(runtime)?;query_facets=facets(runtime)?;
                     collection_controller.refresh_union(runtime,&group_rows)?;
                     workflows.collections=collection_controller.snapshot.clone();
@@ -483,6 +486,7 @@ pub(crate) fn run(
                         if changed {
                             workflows.operations=operation_controller.snapshot.clone();
                             if effects {
+                                crate::workflows::refresh_details(runtime,&navigation,&mut workflows);
                                 group_rows=groups(runtime)?;
                                 query_facets=facets(runtime)?;
                                 collection_controller.refresh_union(runtime,&group_rows)?;
@@ -511,10 +515,10 @@ pub(crate) fn run(
                     let mut invalidates_review=matches!(&command,Command::Refresh);
                     match command {
                         Command::Operations{generation,action}=>{
-                            invalidates_review=operation_controller.handle(runtime,generation,action,revision);
+                            invalidates_review=operation_controller.handle(runtime,&store,generation,action,revision);
                             workflows.operations=operation_controller.snapshot.clone();
                             if workflows.operations.recovery_required {workflows.recovery_required=true;receiver.fence().map_err(|_|StorageError::RuntimeFenced)?;return Err(StorageError::RuntimeFenced);}
-                            if invalidates_review {group_rows=groups(runtime)?;query_facets=facets(runtime)?;}
+                            if invalidates_review {crate::workflows::refresh_details(runtime,&next,&mut workflows);group_rows=groups(runtime)?;query_facets=facets(runtime)?;}
                         }
                         Command::ShelfReview{generation,action}=>{
                             review_controller.handle(runtime,&store,crate::workflows::shelf_reviews::Request{generation,action},revision,&mut next);

@@ -134,6 +134,7 @@ impl State {
             self.pending = None;
         }
         ui.set_operation_busy(self.pending.is_some());
+        ui.set_commit_pending(data.critical);
         let selected = data
             .details
             .as_ref()
@@ -227,11 +228,11 @@ impl State {
         ui.set_operation_status(if active > 0 {
             format!(
                 "{}: {} · {} / {} {}",
-                words(language, "Imports and operations", "Imports et opérations"),
+                words(language, "Active operations", "Opérations actives"),
                 language.number(active as i64),
                 language.number(completed),
                 language.number(total),
-                words(language, "files", "fichiers")
+                words(language, "items", "éléments")
             )
             .into()
         } else {
@@ -244,8 +245,8 @@ impl State {
                 language.number(active as i64),
                 words(
                     language,
-                    "Imports continue in the background · cancellation preserves completed results",
-                    "Les imports continuent en arrière-plan · l’annulation conserve les résultats enregistrés"
+                    "Operations continue in the background · cancellation preserves completed results",
+                    "Les opérations continuent en arrière-plan · l’annulation conserve les résultats enregistrés"
                 )
             )
             .into(),
@@ -285,7 +286,11 @@ impl State {
                 language.number(bytes.min(c.total_bytes).max(0)),
                 language.number(c.total_bytes),
                 words(language, "bytes", "octets"),
-                words(language, "Imported", "Importées"),
+                match h.kind {
+                    OperationKind::Import => words(language, "Imported", "Importées"),
+                    OperationKind::Export => words(language, "Exported", "Exportées"),
+                    OperationKind::MetadataSync => words(language, "Refreshed", "Actualisées"),
+                },
                 language.number(c.succeeded),
                 words(language, "Duplicates skipped", "Doublons ignorés"),
                 language.number(c.skipped),
@@ -310,7 +315,11 @@ impl State {
                         match item.state {
                             ItemState::Pending => "Queued",
                             ItemState::Running => "In progress",
-                            ItemState::Succeeded => "Imported",
+                            ItemState::Succeeded => match h.kind {
+                                OperationKind::Import => "Imported",
+                                OperationKind::Export => "Exported",
+                                OperationKind::MetadataSync => "Refreshed",
+                            },
                             ItemState::Skipped => "Skipped",
                             ItemState::Conflicted => "UUID conflict",
                             ItemState::Failed => "Failed",
@@ -319,7 +328,11 @@ impl State {
                         match item.state {
                             ItemState::Pending => "En attente",
                             ItemState::Running => "En cours",
-                            ItemState::Succeeded => "Importée",
+                            ItemState::Succeeded => match h.kind {
+                                OperationKind::Import => "Importée",
+                                OperationKind::Export => "Exportée",
+                                OperationKind::MetadataSync => "Actualisée",
+                            },
                             ItemState::Skipped => "Ignorée",
                             ItemState::Conflicted => "Conflit d’UUID",
                             ItemState::Failed => "Échec",
@@ -342,7 +355,7 @@ impl State {
         }
     }
 }
-fn send(
+pub(super) fn send(
     state: &Rc<RefCell<View>>,
     worker: &Rc<RefCell<Worker>>,
     ui: &DesktopWindow,

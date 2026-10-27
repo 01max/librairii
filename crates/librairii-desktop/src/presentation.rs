@@ -163,6 +163,7 @@ fn run(
     stop: Arc<AtomicBool>,
     startup_cancel: WorkCancellation,
 ) -> Result<(), String> {
+    let catalog_client = environment.catalog_client();
     let catalogs = Catalogs::embedded().map_err(|e| e.to_string())?;
     let mut selection = select_startup_with_progress(&environment, &startup_cancel, || {
         *mailbox
@@ -194,7 +195,16 @@ fn run(
     {
         let language =
             Language::explicit(&document.profile().language).map_err(|e| e.to_string())?;
-        if crate::browsing::run(locations, language, &receiver, &mailbox, &stop).is_ok() {
+        if crate::browsing::run(
+            locations,
+            language,
+            &receiver,
+            &mailbox,
+            &stop,
+            catalog_client,
+        )
+        .is_ok()
+        {
             return Ok(());
         }
         return recovery(&receiver, &mailbox, &stop, language, |requested| {

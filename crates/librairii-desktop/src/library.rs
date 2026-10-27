@@ -57,6 +57,7 @@ pub struct LibrarySession<'profile> {
     cleanup: CleanupReport,
     move_notice: Option<MoveNotice>,
     operation_generation: u64,
+    catalog_client: Option<librairii_adapters::lunii::CatalogClient>,
 }
 #[derive(Debug)]
 pub struct MoveNotice {
@@ -99,6 +100,7 @@ pub struct Runtime<'gate, 'db, 'library> {
 }
 #[derive(Debug)]
 pub struct JobObservation {
+    pub critical: bool,
     pub status: native_jobs::RuntimeStatus,
     pub dirty: bool,
     pub progress: Vec<native_jobs::ProgressUpdate>,
@@ -111,6 +113,7 @@ impl<'gate> Runtime<'gate, '_, '_> {
             admissions.push(admission);
         }
         JobObservation {
+            critical: self.jobs.has_critical_work(),
             status: self.jobs.status(),
             dirty: self.jobs.take_dirty(),
             progress: self.jobs.take_progress(),
@@ -123,6 +126,18 @@ impl<'gate> Runtime<'gate, '_, '_> {
             .enter_mutation()
             .map_err(|_| StorageError::RuntimeInUse)?;
         self.jobs.cancel(id).map_err(|_| StorageError::QueueFull)
+    }
+    pub fn offer_metadata(&self, start: native_jobs::Start) -> Result<()> {
+        let _use = self
+            .gate
+            .enter_mutation()
+            .map_err(|_| StorageError::RuntimeInUse)?;
+        if start.input().kind != librairii_core::OperationKind::MetadataSync {
+            return Err(StorageError::CompatibilityInvariant);
+        }
+        self.jobs
+            .try_start(start)
+            .map_err(|_| StorageError::QueueFull)
     }
     pub fn preview_relocation(
         &self,
@@ -204,7 +219,15 @@ impl<'profile> LibrarySession<'profile> {
             cleanup: CleanupReport::default(),
             move_notice: None,
             operation_generation: 1,
+            catalog_client: None,
         }
+    }
+    pub fn with_catalog_client(
+        mut self,
+        client: Option<librairii_adapters::lunii::CatalogClient>,
+    ) -> Self {
+        self.catalog_client = client;
+        self
     }
     pub fn cleanup(&self) -> CleanupReport {
         self.cleanup
@@ -253,11 +276,19 @@ impl<'profile> LibrarySession<'profile> {
                 let logger = Logger::new(&database, &files)?;
                 let thumbnails = ThumbnailCache::default();
                 let imports = ImportExecutor::new(&database);
+                let metadata = crate::metadata_jobs::MetadataExecutor::new(
+                    &database,
+                    self.catalog_client.clone(),
+                );
+                let executors = crate::metadata_jobs::Executors {
+                    imports: &imports,
+                    metadata: &metadata,
+                };
                 let exports = Mutex::new(librairii_storage::export::Exports::new(&database));
                 let repository = TerminalRepository::new(&database, generation);
                 let action = native_jobs::with_runtime(
                     &repository,
-                    &imports,
+                    &executors,
                     Configuration::new(2).ok_or(StorageError::CompatibilityInvariant)?,
                     |jobs| -> Result<Action<'_, T>> {
                         while jobs.status().starting {
