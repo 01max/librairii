@@ -259,8 +259,7 @@ export component DesktopWindow inherits Window {
     out property <bool> panel-flag-focused: side-inspector.flag-focused;
     out property <bool> bulk-flag-undo-focused: bulk-flags.undo-focused;
     public function focus-bulk-story(index:int) { if root.workspace { workspace-panel.focus-bulk(index); } else if index >= root.story-count { FocusState.key= -1002 - index * 3;FocusState.restore-epoch+=1; } else { browser.focus-bulk(index); } }
-    public function restore-preview-focus(expected:int) {if FocusState.key==expected && !root.modal && !FocusState.sidebar {FocusState.restore-epoch+=1;}}
-    out property <int> preview-focused-key: FocusState.preview-focused-key;
+    out property <int> preview-focused-key: !root.modal && !FocusState.sidebar && FocusState.key < 0 ? FocusState.preview-focused-key : 0;
     public function show-assignments() { root.assignment-parent=root.dialog; if root.dialog == 0 { root.invoker=FocusState.key; } root.dialog=11; dialog-scroll.content-y=0px; assignments.activate(); }
     public function show-tag-confirmation() { if root.dialog == 10 { root.dialog=12; cancel-tag.focus(); } }
     public function finish-tag-confirmation() { root.dialog=10; tag-manager.activate(); }

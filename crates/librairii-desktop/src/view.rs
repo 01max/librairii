@@ -18,8 +18,49 @@ use librairii_desktop::{
 use librairii_ui::native::{
     CollectionPreview, DesktopWindow, NavigationRow, StoryGroup, StoryRow, TagRow,
 };
-use slint::{ComponentHandle, ModelRc, VecModel};
+use slint::{ComponentHandle, Model, ModelRc, VecModel};
 use std::{cell::RefCell, rc::Rc};
+/// Keep native preview items mounted while a snapshot changes their data. A
+/// fresh ModelRc would discard the focused Button/CheckBox on every response.
+fn update_previews(ui: &DesktopWindow, mut next: Vec<CollectionPreview>) -> bool {
+    let current = ui.get_collection_previews();
+    if let Some(model) = current
+        .as_any()
+        .downcast_ref::<VecModel<CollectionPreview>>()
+    {
+        let previous = (0..model.row_count())
+            .map(|i| model.row_data(i))
+            .collect::<Option<Vec<_>>>();
+        if let Some(previous) = previous {
+            let stable = previous.len() == next.len()
+                && previous.iter().zip(&next).all(|(old, row)| {
+                    old.index == row.index
+                        && old.stories.as_any().is::<VecModel<StoryRow>>()
+                        && old.stories.row_count() == row.stories.row_count()
+                        && old
+                            .stories
+                            .iter()
+                            .zip(row.stories.iter())
+                            .all(|(a, b)| a.uuid == b.uuid)
+                });
+            if stable {
+                for (i, (row, old)) in next.iter_mut().zip(previous).enumerate() {
+                    if let Some(stories) = old.stories.as_any().downcast_ref::<VecModel<StoryRow>>()
+                    {
+                        for (j, story) in row.stories.iter().enumerate() {
+                            stories.set_row_data(j, story);
+                        }
+                        row.stories = old.stories;
+                    }
+                    model.set_row_data(i, row.clone());
+                }
+                return true;
+            }
+        }
+    }
+    ui.set_collection_previews(ModelRc::new(VecModel::from(next)));
+    false
+}
 pub struct View {
     pub collections: collections::State,
     pub flags: flags::State,
@@ -308,51 +349,51 @@ impl View {
         ui.set_story_groups(ModelRc::new(VecModel::from(groups)));
         ui.set_story_count(page.stories.len() as i32);
         let mut offset = page.stories.len();
-        ui.set_collection_previews(ModelRc::new(VecModel::from(
-            page.previews
-                .iter()
-                .map(|preview| {
-                    let stories = rows[offset..offset + preview.stories.len()].to_vec();
-                    offset += preview.stories.len();
-                    CollectionPreview {
-                        index: preview.group_index as i32,
-                        title: preview.name.clone().into(),
-                        caption: if preview.failed {
-                            if french {
-                                "L’aperçu n’a pas pu être chargé. Actualisez pour réessayer.".into()
-                            } else {
-                                "Preview could not be loaded. Refresh to retry.".into()
-                            }
-                        } else if preview.unavailable {
-                            if french {
-                                "Réparation nécessaire".into()
-                            } else {
-                                "Needs repair".into()
-                            }
+        let previews = page
+            .previews
+            .iter()
+            .map(|preview| {
+                let stories = rows[offset..offset + preview.stories.len()].to_vec();
+                offset += preview.stories.len();
+                CollectionPreview {
+                    index: preview.group_index as i32,
+                    title: preview.name.clone().into(),
+                    caption: if preview.failed {
+                        if french {
+                            "L’aperçu n’a pas pu être chargé. Actualisez pour réessayer.".into()
                         } else {
-                            format!(
-                                "{} {}",
-                                self.snapshot.language.number(preview.total),
-                                if french {
-                                    if self.snapshot.language.singular(preview.total as u64) {
-                                        "histoire"
-                                    } else {
-                                        "histoires"
-                                    }
-                                } else if self.snapshot.language.singular(preview.total as u64) {
-                                    "story"
+                            "Preview could not be loaded. Refresh to retry.".into()
+                        }
+                    } else if preview.unavailable {
+                        if french {
+                            "Réparation nécessaire".into()
+                        } else {
+                            "Needs repair".into()
+                        }
+                    } else {
+                        format!(
+                            "{} {}",
+                            self.snapshot.language.number(preview.total),
+                            if french {
+                                if self.snapshot.language.singular(preview.total as u64) {
+                                    "histoire"
                                 } else {
-                                    "stories"
+                                    "histoires"
                                 }
-                            )
-                            .into()
-                        },
-                        available: !preview.unavailable && !preview.failed,
-                        stories: ModelRc::new(VecModel::from(stories)),
-                    }
-                })
-                .collect::<Vec<_>>(),
-        )));
+                            } else if self.snapshot.language.singular(preview.total as u64) {
+                                "story"
+                            } else {
+                                "stories"
+                            }
+                        )
+                        .into()
+                    },
+                    available: !preview.unavailable && !preview.failed,
+                    stories: ModelRc::new(VecModel::from(stories)),
+                }
+            })
+            .collect::<Vec<_>>();
+        let preview_structure_retained = update_previews(ui, previews);
         ui.set_group_previous(page.preview_page > 0);
         ui.set_group_next(page.preview_page + 1 < page.preview_pages);
         let focused = ui.get_focused_key();
@@ -363,16 +404,7 @@ impl View {
                 .any(|p| focused == -1000 - p.group_index as i32 * 3)
                 || (page.stories.len()..rows.len())
                     .any(|i| focused == -1001 - i as i32 * 3 || focused == -1002 - i as i32 * 3);
-            if mounted {
-                let weak = ui.as_weak();
-                // Repeaters reconcile after this projection. Restore focus on
-                // the next event-loop turn only if the user has not moved it.
-                slint::Timer::single_shot(std::time::Duration::ZERO, move || {
-                    if let Some(ui) = weak.upgrade() {
-                        ui.invoke_restore_preview_focus(focused);
-                    }
-                });
-            } else {
+            if !mounted || !preview_structure_retained {
                 ui.invoke_focus_browser();
             }
         }

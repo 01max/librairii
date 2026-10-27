@@ -201,8 +201,9 @@ states and View all. The main ListView retains a bounded viewport and native
 virtualization at the supported100-story page maximum. Preview rows share real
 ID/UUID detail/tag/flag targets, visibly and accessibly identify the inspected
 story, and expose a separate bulk checkbox. Disjoint focus keys keep them outside
-the compact sidebar. Deferred restoration after model reconciliation preserves
-actual focus; removed previews fall back to the browser. Uncertain or fenced
+the compact sidebar. Stable models update existing native items without discarding
+their focus. Explicit outlines remain visible after inspection/bulk updates;
+changed or removed preview structures fall back to the browser. Uncertain or fenced
 preview outcomes enter retained, fenced Recovery, never a successful empty view.
 
 Evidence: actual controller/SQLite callbacks cover copied current-source unions,
