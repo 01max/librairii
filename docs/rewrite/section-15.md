@@ -637,3 +637,30 @@ will distinguish source/callback coverage from package and scale gates16–19.
 15.13 independently reviews every complete native workflow and refreshes final
 visual/accessibility evidence. Resource budgets, handover, installed packages
 and cutover retain their later task boundaries.
+
+15.13 now includes the explicit P03 recovery route. DB/WAL/SHM are independently
+copied, verified and durably receipted before original retirement. Actual child
+SIGKILL regressions cover preservation, partial retirement and a compatible
+replacement before final acknowledgement. Startup routes unfinished receipts to
+explicit recovery through retained owners; failures grant no false Closed proof.
+The native callback exercises Keep/Escape with no command, French confirmation,
+empty replacement, unchanged managed archives, compatible unfinished recovery and
+restart. Completion keeps the verified recovery locations visible.
+
+The complete local native sequence passes88 PNGs/all callbacks at
+`librairii-task15-collections-dev-sufkgdly`. All56 English/French actual workflow
+preparations and positive worker shutdowns pass at
+`librairii-workflow-preparation-...` (development log
+`librairii-task15-preparation.log`). They are preparation evidence; actual Orca
+speech acceptance is still pending. Three additive recovery test identities retain
+all616 prior identities and their exact discovery lineage; current map references
+are repinned, historical sources/checker policy are unchanged. The source-only
+preservation policy verifies. The cumulative gate now discovers604 host tests.
+
+The tracked private speech harness reuses the qualified per-utterance Orca/PCM
+method on actual production workflow surfaces, independently in EN/FR and X11/
+Wayland. It preserves normal native callback assertions and deadlines, observes
+accepted command revisions and real transitions, positively joins workers, and
+binds final reports to clean source and the retained native executable. Final
+execution/three-host receipts are required before15.13 is checked. The complete
+row/concept mapping is in `section-15-review.md`.

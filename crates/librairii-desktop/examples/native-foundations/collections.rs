@@ -417,7 +417,7 @@ fn repair_checks(ui: &DesktopWindow) -> Result {
     fixture.finish()
 }
 
-pub struct Surface(Fixture);
+pub struct Surface(pub(super) Fixture);
 impl std::fmt::Debug for Surface {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("CollectionSurface").finish_non_exhaustive()

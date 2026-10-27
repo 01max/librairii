@@ -223,7 +223,7 @@ pub fn checks(ui: &DesktopWindow) -> Result {
     fixture.finish()
 }
 
-pub struct Surface(Fixture);
+pub struct Surface(pub(super) Fixture);
 impl std::fmt::Debug for Surface {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("FlagSurface").finish_non_exhaustive()
@@ -250,7 +250,15 @@ impl Surface {
         super::super::key(ui, slint::platform::Key::Tab.into())?;
         check(
             ui.get_detail_flag_focused(),
-            "detail flag did not receive keyboard focus",
+            &format!(
+                "detail flag did not receive keyboard focus: dialog={} enabled={} pending={} close={} technical={} key={}",
+                ui.get_dialog(),
+                ui.get_detail_flag_enabled(),
+                ui.get_flag_pending(),
+                ui.get_close_focused(),
+                ui.get_inspector_technical_focused(),
+                ui.get_focused_key()
+            ),
         )?;
         super::super::key(ui, slint::platform::Key::Space.into())?;
         check(

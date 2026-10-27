@@ -627,6 +627,8 @@ mod owned {
     mod fresh;
     pub use fresh::NewInstallFailure;
     mod lifecycle;
+    mod schema;
+    pub use schema::{SchemaPreview, SchemaRecovery, SchemaRecoveryFailure};
     mod locate;
     pub use locate::LocatedLibrary;
     mod relocation;
@@ -665,6 +667,13 @@ mod owned {
             atomic::{AtomicBool, Ordering},
         },
     };
+
+    #[derive(Clone, Copy, Eq, PartialEq)]
+    enum ReopenMode {
+        Closed,
+        Interrupted,
+        Schema,
+    }
 
     #[derive(Debug)]
     enum RootOwner {
@@ -760,6 +769,14 @@ mod owned {
         library: NativeLibrary<'profile>,
     }
     impl<'profile> RecoveryLibrary<'profile> {
+        pub fn has_pending_schema_recovery(&self) -> Result<bool> {
+            SchemaRecovery::pending(&self.library)
+        }
+        /// Consume the actual interrupted owner without opening SQLite. Only
+        /// explicit schema confirmation can produce a positively closed owner.
+        pub fn into_schema_recovery(self) -> SchemaRecovery<'profile> {
+            SchemaRecovery::from_native(self.library)
+        }
         pub fn layout(&self) -> &LibraryLayout {
             self.library.layout()
         }
@@ -776,6 +793,12 @@ mod owned {
         }
     }
     impl<'profile> NativeLibrary<'profile> {
+        pub fn has_pending_schema_recovery(&self) -> Result<bool> {
+            SchemaRecovery::pending(self)
+        }
+        pub fn into_schema_recovery(self) -> SchemaRecovery<'profile> {
+            SchemaRecovery::from_native(self)
+        }
         pub fn bind_independent(
             copy: IndependentCopy,
             store: &'profile NativeProfileStore,
@@ -973,7 +996,7 @@ mod owned {
             locations: &ProfileLocations,
             cancellation: &WorkCancellation,
         ) -> Result<Self> {
-            Self::reopen_mode(store, locations, cancellation, false)
+            Self::reopen_mode(store, locations, cancellation, ReopenMode::Closed)
         }
         pub fn recover_interrupted(
             store: &'profile NativeProfileStore,
@@ -981,15 +1004,21 @@ mod owned {
             cancellation: &WorkCancellation,
         ) -> Result<RecoveryLibrary<'profile>> {
             Ok(RecoveryLibrary {
-                library: Self::reopen_mode(store, locations, cancellation, true)?,
+                library: Self::reopen_mode(
+                    store,
+                    locations,
+                    cancellation,
+                    ReopenMode::Interrupted,
+                )?,
             })
         }
         fn reopen_mode(
             store: &'profile NativeProfileStore,
             locations: &ProfileLocations,
             cancellation: &WorkCancellation,
-            recovery: bool,
+            mode: ReopenMode,
         ) -> Result<Self> {
+            let recovery = mode != ReopenMode::Closed;
             let profile = store
                 .load()?
                 .ok_or(StorageError::RecoveryBindingRequired)?
@@ -1068,9 +1097,11 @@ mod owned {
             } else {
                 require_no_sidecars(&database)?;
             }
-            let scratch = tempfile::tempdir()
-                .map_err(|e| StorageError::io("create existing native DB probe", e))?;
-            crate::backup::probe_owned(&path.join("db/librairii.sqlite3"), scratch.path())?;
+            if mode != ReopenMode::Schema {
+                let scratch = tempfile::tempdir()
+                    .map_err(|e| StorageError::io("create existing native DB probe", e))?;
+                crate::backup::probe_owned(&path.join("db/librairii.sqlite3"), scratch.path())?;
+            }
             lease.revalidate()?;
             record.revalidate(&root)?;
             let binding = admission.publish(&profile)?;
@@ -2317,7 +2348,8 @@ pub(crate) use owned::VerifiedMoveTarget;
 pub use owned::{
     CleanupReport, ClosedNativeLibrary, CommitStatus, LocatedLibrary, NativeBindingFailure,
     NativeCloseFailure, NativeLibrary, NewInstallFailure, RecoveredRoot, RecoveryLibrary,
-    RelocatedLibrary, RelocationFailure, RelocationRecovery, recover_relocation,
+    RelocatedLibrary, RelocationFailure, RelocationRecovery, SchemaPreview, SchemaRecovery,
+    SchemaRecoveryFailure, recover_relocation,
 };
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 pub use owned::{

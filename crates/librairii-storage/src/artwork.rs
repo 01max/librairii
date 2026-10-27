@@ -2,7 +2,7 @@
 use crate::metadata::MetadataStorage;
 use crate::{
     Result, StorageError,
-    database::{Database, TransactionOutcome, WorkCancellation},
+    database::{Database, TransactionOutcome},
 };
 use librairii_app::metadata::{
     ArtworkAsset, ArtworkRepository, MAX_ARTWORK_BYTES, MediaType, RegisteredArtwork, utc_time,
@@ -68,7 +68,7 @@ impl MetadataStorage<'_, '_> {
             asset.checksum,
             name.clone(),
             Some(id),
-            &WorkCancellation::default(),
+            &self.work_cancel,
         )?;
         let path = format!("catalog/official/{id}/{name}");
         let media = asset.media.as_str();

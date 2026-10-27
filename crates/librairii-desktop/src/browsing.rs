@@ -503,6 +503,10 @@ fn run_session<'p>(
             }
             operation_controller.restore_preferences(store, id)?;
             maintenance_controller.activate(runtime, activation);
+            if activation == 1 && initial_settings.notice == Some(crate::maintenance::Notice::SchemaRecovered) {
+                maintenance_controller.snapshot.notice = initial_settings.notice;
+                maintenance_controller.snapshot.retained = initial_settings.retained.clone();
+            }
             control.finish();
             workflows.settings = maintenance_controller.snapshot.clone();
             let mut group_rows = groups(runtime)?;

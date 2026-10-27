@@ -347,7 +347,7 @@ fn settled(f: &Fixture, ui: &DesktopWindow) -> Result<Snapshot> {
 }
 
 pub struct Surface {
-    fixture: Fixture,
+    pub(super) fixture: Fixture,
     destination: PathBuf,
 }
 impl std::fmt::Debug for Surface {

@@ -291,6 +291,11 @@ fn row(index: usize, story: &Story, language: Language, catalogs: &Catalogs) -> 
 }
 impl View {
     pub fn accept(&mut self, ui: &DesktopWindow, snapshot: Snapshot, revision: u64) -> bool {
+        // Setup/recovery has no library generation yet. Its observations still
+        // must not overtake an already offered language or maintenance command.
+        if snapshot.generation.is_none() && snapshot.revision < revision {
+            return false;
+        }
         if let Some(generation) = &snapshot.generation {
             if self.snapshot.generation.as_ref() != Some(generation) {
                 let activation = snapshot.workflows.settings.activation;

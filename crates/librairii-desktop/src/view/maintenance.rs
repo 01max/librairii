@@ -69,6 +69,11 @@ impl State {
             ),
         };
         let notice = match s.notice {
+            Some(Notice::SchemaRecovered) => words(
+                l,
+                "Database recovery completed. The original database files are preserved at the locations below; managed archives remain unchanged.",
+                "Récupération de la base terminée. Les fichiers d’origine sont conservés aux emplacements ci-dessous ; les archives gérées restent inchangées.",
+            ),
             Some(Notice::Busy) => words(
                 l,
                 "Library location cannot change while an import, export, metadata sync or library mutation is active. Wait for it to finish, then choose the folder again.",
@@ -129,6 +134,13 @@ impl State {
             ui.invoke_focus_settings();
         }
         ui.set_settings_data(SettingsData {
+            can_preserve:s.schema.is_some(),
+            schema_action:if s.schema==Some(librairii_storage::native::SchemaPreview::FinishReplacement) {words(l,"Finish database recovery…","Terminer la récupération de la base…")}else{words(l,"Preserve foreign database…","Conserver la base étrangère…")}.into(),
+            schema_explanation:if s.schema==Some(librairii_storage::native::SchemaPreview::FinishReplacement) {
+                words(l,"Verified original database copies are already preserved. Confirm to finish recovery while keeping the current compatible database. Managed archives remain unchanged.","Les copies vérifiées de la base d’origine sont déjà conservées. Confirmez pour terminer la récupération en gardant la base actuelle compatible. Les archives gérées restent inchangées.")
+            }else{
+                words(l,"Preserve the foreign database and its WAL/SHM files in a unique recovery folder, then create an empty database? Organization stored in the old database will not appear in the empty database. Managed archive files remain unchanged. Nothing changes until you confirm.","Conserver la base étrangère et ses fichiers WAL/SHM dans un dossier de récupération unique, puis créer une base vide ? L’organisation de l’ancienne base n’apparaîtra pas dans la base vide. Les archives gérées restent inchangées. Rien ne change avant votre confirmation.")
+            }.into(),
             mode: match mode {
                 Mode::Setup => 0,
                 Mode::Adoption => 1,
@@ -382,6 +394,7 @@ pub fn install(ui: &DesktopWindow, state: Rc<RefCell<View>>, worker: Rc<RefCell<
         (Action::Retry, 1),
         (Action::RetryMove, 2),
         (Action::KeepSource, 3),
+        (Action::PreserveSchema, 4),
     ] {
         let (s, w, weak) = (state.clone(), worker.clone(), ui.as_weak());
         let callback = move || {
@@ -393,7 +406,8 @@ pub fn install(ui: &DesktopWindow, state: Rc<RefCell<View>>, worker: Rc<RefCell<
             0 => ui.on_settings_confirm(callback),
             1 => ui.on_settings_retry(callback),
             2 => ui.on_settings_retry_move(callback),
-            _ => ui.on_settings_keep_source(callback),
+            3 => ui.on_settings_keep_source(callback),
+            _ => ui.on_settings_preserve_schema(callback),
         }
     }
     let control = worker.borrow().maintenance_control();

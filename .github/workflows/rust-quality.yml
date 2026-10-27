@@ -63,6 +63,9 @@ jobs:
       - name: Shown native foundations on Linux X11 with AT-SPI
         if: runner.os == 'Linux'
         run: dbus-run-session -- xvfb-run -a -s '-screen 0 3840x2160x24' python3 -I -B scripts/verify-native-foundations.py
+      - name: Native workflow keyboard and actual Orca speech in X11 and Wayland
+        if: runner.os == 'Linux'
+        run: python3 -I -B scripts/verify-native-speech.py
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
         with:
           go-version: '1.26.5'

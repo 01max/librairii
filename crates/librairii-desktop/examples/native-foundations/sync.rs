@@ -228,7 +228,14 @@ pub fn checks(ui: &DesktopWindow) -> Result {
         if Instant::now() >= cover_deadline {
             return Err("lazy official cover did not replace the embedded fallback".into());
         }
-        f.settle(ui)?;
+        if let Some(snapshot) = f.worker.borrow().take_snapshot() {
+            let revision = f.worker.borrow().revision();
+            check(
+                f.view.borrow_mut().accept(ui, snapshot, revision),
+                "lazy artwork response was stale",
+            )?;
+        }
+        thread::sleep(Duration::from_millis(2));
     }
     check(
         server.artwork.load(Ordering::Acquire) == 1,
@@ -363,7 +370,7 @@ pub fn checks(ui: &DesktopWindow) -> Result {
     f.finish()
 }
 pub struct Surface {
-    fixture: Fixture,
+    pub(super) fixture: Fixture,
     _server: Server,
 }
 impl std::fmt::Debug for Surface {

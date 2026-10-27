@@ -42,6 +42,12 @@ pub enum RetainedKind {
     Directory,
 }
 impl<'db, 'library> MetadataStorage<'db, 'library> {
+    pub fn for_work(database: &'db Database<'library>, work_cancel: WorkCancellation) -> Self {
+        Self {
+            work_cancel,
+            ..Self::new(database)
+        }
+    }
     pub fn new(database: &'db Database<'library>) -> Self {
         Self {
             database,
@@ -408,6 +414,48 @@ mod tests {
                     )?,
                     TransactionOutcome::Committed(_)
                 ));
+                // The actual worker token must interrupt a cache publication
+                // waiting on another native custody owner, even while its
+                // current-thread HTTP executor cannot poll an async timer.
+                let asset = ArtworkAsset::checked(
+                    include_bytes!("../../../librairii-adapters/tests/fixtures/artwork/cover.png")
+                        .to_vec(),
+                    MediaType::Png,
+                )?;
+                let flag = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
+                let cancellable =
+                    MetadataStorage::for_work(&db, WorkCancellation::for_worker(flag.clone()));
+                let files = db.metadata_files()?;
+                let guard = files.try_custody()?;
+                std::thread::scope(
+                    |scope| -> std::result::Result<(), Box<dyn std::error::Error>> {
+                        let (sent, received) = std::sync::mpsc::sync_channel(1);
+                        let cache = &cancellable;
+                        let image = &asset;
+                        let join = scope.spawn(move || {
+                            let result = cache.persist_artwork(
+                                opaque,
+                                image,
+                                "2026-10-21T12:00:02Z",
+                                None,
+                                None,
+                            );
+                            let _sent = sent.send(result);
+                        });
+                        std::thread::sleep(std::time::Duration::from_millis(20));
+                        flag.store(true, std::sync::atomic::Ordering::Release);
+                        let result = received.recv_timeout(std::time::Duration::from_secs(1));
+                        drop(guard);
+                        join.join().map_err(|_| "cache worker panicked")?;
+                        assert!(
+                            matches!(result, Ok(Err(StorageError::Cancelled))),
+                            "cache custody wait ignored its actual worker cancellation"
+                        );
+                        Ok(())
+                    },
+                )?;
+                assert!(cancellable.retained_failures().is_empty());
+                assert!(db.read_registered_artwork(opaque)?.cached.is_none());
             }
             store.creation_fault = true;
             if artwork {

@@ -236,6 +236,14 @@ fn main() -> Result {
         "isolated fixture marker missing",
     )?;
     let (ui, menus) = librairii_desktop::menus::create_window()?;
+    if let Some(case) =
+        std::env::args().find_map(|a| a.strip_prefix("--workflow-case=").map(str::to_owned))
+    {
+        let language = std::env::args()
+            .find_map(|a| a.strip_prefix("--workflow-language=").map(str::to_owned))
+            .ok_or("explicit workflow language required")?;
+        return callback_checks::speech(&ui, &menus, &output, &case, &language);
+    }
     eprintln!("native callbacks: paging");
     callback_checks::paging(&ui)?;
     eprintln!("native callbacks: history");

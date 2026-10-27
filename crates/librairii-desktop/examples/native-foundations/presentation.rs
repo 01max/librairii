@@ -276,6 +276,7 @@ impl Drop for Fixture {
     fn drop(&mut self) {
         if let Some(ui) = self.ui.upgrade() {
             ui.on_settings_choose(|| {});
+            ui.on_settings_preserve_schema(|| {});
             ui.on_settings_confirm(|| {});
             ui.on_settings_retry(|| {});
             ui.on_settings_locate(|| {});
@@ -418,6 +419,7 @@ fn receive(worker: &Worker) -> Result<Snapshot> {
     loop {
         if let Some(snapshot) = worker.take_snapshot()
             && snapshot.phase != Phase::Opening
+            && snapshot.revision >= worker.revision()
         {
             return Ok(snapshot);
         }
@@ -1530,3 +1532,7 @@ impl TagSurface {
         Ok(())
     }
 }
+
+#[path = "speech.rs"]
+mod speech_checks;
+pub use speech_checks::run as speech;

@@ -459,8 +459,7 @@ impl<'profile> LibrarySession<'profile> {
                         };
                         let logger = Logger::new(&database, &files)?;
                         let thumbnails = ThumbnailCache::default();
-                        let artwork_store =
-                            librairii_storage::metadata::MetadataStorage::new(&database);
+                        let artwork_store = crate::artwork::Repository::new(&database);
                         let artwork_service = self
                             .catalog_client
                             .clone()
@@ -540,18 +539,17 @@ impl<'profile> LibrarySession<'profile> {
                                     },
                                 )
                             },
-                        )
-                        .map_err(SessionFailure::Jobs)?;
+                        );
                         // A failed publication keeps the exact metadata store,
                         // file receipts and custody live after the worker joins.
-                        while !artwork_store.retained_failures().is_empty() {
+                        while artwork_store.recovery_required() {
                             unclosed(
                                 &StorageError::CustodyRecoveryRequired,
                                 native.layout().root(),
                             );
                             thread::sleep(Duration::from_millis(100));
                         }
-                        let action = action?;
+                        let action = action.map_err(SessionFailure::Jobs)??;
                         // with_runtime has positively joined its coordinator/workers.
                         thumbnails
                             .invalidate()

@@ -4,7 +4,11 @@
 use librairii_adapters::{lunii::ArtworkService, thumbnails::ThumbnailCache};
 use librairii_app::lifecycle::LifecycleGate;
 use librairii_core::Checksum;
-use librairii_storage::{Result, StorageError, metadata::MetadataStorage};
+use librairii_storage::{
+    Result, StorageError,
+    database::{Database, WorkCancellation},
+    metadata::MetadataStorage,
+};
 use std::{
     collections::{BTreeSet, VecDeque},
     sync::{
@@ -15,6 +19,82 @@ use std::{
 };
 const QUEUE: usize = 32;
 const BACKOFF: usize = 128;
+/// One service uses a fresh cancellation token for each sequential request.
+/// Actual uncertain publication stores stay owned here after a request fails.
+#[derive(Debug)]
+pub(crate) struct Repository<'db, 'library> {
+    database: &'db Database<'library>,
+    cancellation: Mutex<WorkCancellation>,
+    retained: Mutex<Vec<MetadataStorage<'db, 'library>>>,
+}
+impl<'db, 'library> Repository<'db, 'library> {
+    pub fn new(database: &'db Database<'library>) -> Self {
+        Self {
+            database,
+            cancellation: Mutex::default(),
+            retained: Mutex::default(),
+        }
+    }
+    fn begin(&self, cancel: Arc<AtomicBool>) {
+        *self
+            .cancellation
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner) =
+            WorkCancellation::for_worker(cancel);
+    }
+    pub fn recovery_required(&self) -> bool {
+        !self
+            .retained
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .is_empty()
+    }
+}
+fn metadata_error(error: StorageError) -> librairii_core::metadata::MetadataError {
+    match error {
+        StorageError::Metadata(error) => error,
+        StorageError::Cancelled => librairii_core::metadata::MetadataError::Cancelled,
+        _ => librairii_core::metadata::MetadataError::InvalidArtwork,
+    }
+}
+impl librairii_app::metadata::ArtworkRepository for Repository<'_, '_> {
+    fn registered_artwork(
+        &self,
+        id: Checksum,
+    ) -> std::result::Result<
+        librairii_app::metadata::RegisteredArtwork,
+        librairii_core::metadata::MetadataError,
+    > {
+        self.database
+            .read_registered_artwork(id)
+            .map_err(metadata_error)
+    }
+    fn cache_artwork(
+        &self,
+        id: Checksum,
+        asset: &librairii_app::metadata::ArtworkAsset,
+        at: &str,
+        etag: Option<String>,
+        last_modified: Option<String>,
+    ) -> std::result::Result<(), librairii_core::metadata::MetadataError> {
+        let cancellation = self
+            .cancellation
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .clone();
+        let store = MetadataStorage::for_work(self.database, cancellation);
+        let result = store
+            .persist_artwork(id, asset, at, etag, last_modified)
+            .map_err(metadata_error);
+        if !store.retained_failures().is_empty() {
+            self.retained
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner)
+                .push(store);
+        }
+        result
+    }
+}
 #[derive(Debug, Default)]
 struct State {
     queued: VecDeque<Checksum>,
@@ -93,8 +173,8 @@ impl Drop for Stop<'_> {
 }
 pub(crate) fn with_worker<T>(
     gate: &LifecycleGate,
-    service: Option<&ArtworkService<&MetadataStorage<'_, '_>>>,
-    store: &MetadataStorage<'_, '_>,
+    service: Option<&ArtworkService<&Repository<'_, '_>>>,
+    store: &Repository<'_, '_>,
     cache: &ThumbnailCache,
     run: impl FnOnce(Handle) -> Result<T>,
 ) -> Result<T> {
@@ -137,6 +217,7 @@ pub(crate) fn with_worker<T>(
                     };
                     let result = (|| {
                         let admission = gate.enter().map_err(|_| StorageError::Cancelled)?;
+                        store.begin(cancel.clone());
                         let at = librairii_adapters::datetime::utc_now()
                             .ok_or(StorageError::InvalidProfile)?;
                         let asset = service
@@ -149,7 +230,7 @@ pub(crate) fn with_worker<T>(
                         cache.resolve(&generation, Some(&asset), None)?;
                         Ok(())
                     })();
-                    if !store.retained_failures().is_empty() {
+                    if store.recovery_required() {
                         worker.0.recovery.store(true, Ordering::Release);
                     }
                     let mut state = worker

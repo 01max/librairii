@@ -287,7 +287,7 @@ pub fn checks(ui: &DesktopWindow) -> Result {
     f.finish()
 }
 pub struct Surface {
-    fixture: Fixture,
+    pub(super) fixture: Fixture,
 }
 impl std::fmt::Debug for Surface {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

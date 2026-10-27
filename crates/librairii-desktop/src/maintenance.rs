@@ -23,6 +23,7 @@ pub enum Action {
     Locate(PathBuf),
     Diagnostics(PathBuf),
     Clear,
+    PreserveSchema,
 }
 impl Action {
     pub fn bounded(&self) -> bool {
@@ -55,6 +56,7 @@ pub enum Notice {
     Cancelled,
     Retained,
     CleanupPending,
+    SchemaRecovered,
 }
 #[derive(Clone, Debug, Default)]
 pub struct Snapshot {
@@ -68,6 +70,7 @@ pub struct Snapshot {
     pub can_confirm: bool,
     pub can_retry: bool,
     pub can_locate: bool,
+    pub schema: Option<librairii_storage::native::SchemaPreview>,
     pub interrupted_move: bool,
     pub cleanup_pending: bool,
     pub error: Option<String>,
@@ -110,6 +113,12 @@ struct State {
 pub struct Control(Arc<Mutex<State>>);
 impl Control {
     pub fn begin(&self, stage: Stage) -> Result<WorkCancellation> {
+        self.begin_kind(stage, true)
+    }
+    pub(crate) fn begin_schema(&self) -> Result<()> {
+        self.begin_kind(Stage::Recovery, false).map(|_| ())
+    }
+    fn begin_kind(&self, stage: Stage, cancellable: bool) -> Result<WorkCancellation> {
         let mut state = self.0.lock().map_err(|_| StorageError::RuntimeFenced)?;
         if state.progress.busy {
             return Err(StorageError::RuntimeInUse);
@@ -121,7 +130,7 @@ impl Control {
                 .checked_add(1)
                 .ok_or(StorageError::RuntimeFenced)?,
             busy: true,
-            cancellable: true,
+            cancellable,
             stage,
             files: 0,
         };

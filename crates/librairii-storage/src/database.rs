@@ -37,6 +37,14 @@ pub struct WorkCancellation {
     job: Option<librairii_app::native_jobs::Cancellation>,
 }
 impl WorkCancellation {
+    /// Connect a scoped worker's cancellation signal. This grants no storage
+    /// admission and never resets a token retained by an earlier operation.
+    pub fn for_worker(requested: Arc<AtomicBool>) -> Self {
+        Self {
+            requested,
+            job: None,
+        }
+    }
     pub fn for_job(job: &librairii_app::native_jobs::Cancellation) -> Self {
         Self {
             requested: Arc::new(AtomicBool::new(false)),

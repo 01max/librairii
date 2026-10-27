@@ -4,17 +4,19 @@ export struct SettingsData {
     explanation:string,notice:string,error:string,retained:string,
     can-choose:bool,can-confirm:bool,can-retry:bool,can-locate:bool,can-export:bool,interrupted:bool,
     busy:bool,cancellable:bool,recovering:bool,progress:string,
+    can-preserve:bool,schema-action:string,schema-explanation:string,
 }
 component Label inherits Text {wrap:word-wrap;color:Palette.foreground;vertical-stretch:0;}
 component Command inherits Button {callback reveal(length,length);changed has-focus=>{if self.has-focus {root.reveal(self.absolute-position.y,self.height);}}}
 export component SettingsPanel inherits VerticalBox {
     in property <bool> french;in property <bool> active;in property <bool> picking;
     in property <SettingsData> data;
-    callback language(string);callback choose();callback confirm();callback retry();callback locate();callback diagnostics();callback cancel();callback retry-move();callback keep-source();callback reveal(length,length);
+    callback language(string);callback choose();callback confirm();callback retry();callback locate();callback diagnostics();callback cancel();callback retry-move();callback keep-source();callback preserve-schema();callback reveal(length,length);
     public function activate(){english.focus();}
     public function focus-choose(){if choose.enabled && choose.visible {choose.focus();}else{english.focus();}}
     public function focus-confirm(){if confirm.enabled && confirm.visible {confirm.focus();}else{english.focus();}}
     public function focus-retry(){if retry.enabled && retry.visible {retry.focus();}else{english.focus();}}
+    public function focus-schema(){if schema.enabled && schema.visible {schema.focus();}else{english.focus();}}
     public function focus-diagnostics(){if diagnostics.enabled && diagnostics.visible {diagnostics.focus();}else{english.focus();}}
     out property <bool> first-focused:english.has-focus;
     out property <bool> cancel-focused:cancel.has-focus;
@@ -31,6 +33,7 @@ export component SettingsPanel inherits VerticalBox {
     if root.data.source!="":Label {text:(root.french ? "Source conservée\n" : "Preserved source\n")+root.data.source;}
     if root.data.proposed!="":Label {text:(root.french ? "Dossier choisi\n" : "Selected folder\n")+root.data.proposed;}
     if root.data.summary!="":Label {text:root.data.summary;}
+    schema:=Command {visible:root.data.can-preserve;height:self.visible ? self.preferred-height : 0px;enabled:root.active && !root.data.busy && !root.picking;text:root.data.schema-action;clicked=>{root.preserve-schema();}reveal(y,h)=>{root.reveal(y,h);}}
     choose:=Command {visible:root.data.can-choose;height:self.visible ? self.preferred-height : 0px;enabled:root.active && !root.data.busy && !root.picking;text:root.data.mode==2 ? (root.french ? "Changer le dossier de la bibliothèque…" : "Change library folder…") : (root.french ? "Choisir un dossier…" : "Choose library folder…");clicked=>{root.choose();}reveal(y,h)=>{root.reveal(y,h);}}
     confirm:=Command {visible:root.data.can-confirm;height:self.visible ? self.preferred-height : 0px;enabled:root.active && !root.data.busy && !root.picking;text:root.data.mode==0 ? (root.french ? "Créer la bibliothèque dans ce dossier" : "Create library in this folder") : root.data.mode==1 ? (root.french ? "Créer une copie indépendante" : "Create an independent copy") : (root.french ? "Déplacer toute la bibliothèque" : "Move the complete library");clicked=>{root.confirm();}reveal(y,h)=>{root.reveal(y,h);}}
     retry:=Command {visible:root.data.can-retry;height:self.visible ? self.preferred-height : 0px;enabled:root.active && (!root.data.busy || root.data.recovering) && !root.picking;text:root.french ? "Réessayer la récupération" : "Retry recovery";clicked=>{root.retry();}reveal(y,h)=>{root.reveal(y,h);}}

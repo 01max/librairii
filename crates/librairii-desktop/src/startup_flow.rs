@@ -22,6 +22,8 @@ use std::{
 };
 
 enum Held<'p> {
+    Schema(Box<librairii_storage::native::SchemaRecovery<'p>>),
+    SchemaFailed(Box<librairii_storage::native::SchemaRecoveryFailure<'p>>),
     Active {
         native: Box<NativeLibrary<'p>>,
         error: StorageError,
@@ -38,6 +40,8 @@ enum Held<'p> {
 impl Held<'_> {
     fn detail(&self) -> String {
         match self {
+            Self::Schema(recovery) => recovery.error().unwrap_or("storage.foreign_schema").into(),
+            Self::SchemaFailed(failure) => failure.to_string(),
             Self::Active { error, .. } | Self::Recovery { error, .. } => error.to_string(),
             Self::Setup(f) => f.to_string(),
             Self::Close(f) => f.to_string(),
@@ -47,6 +51,7 @@ impl Held<'_> {
     }
     fn retryable(&self) -> bool {
         match self {
+            Self::Schema(_) | Self::SchemaFailed(_) => false,
             Self::Active { native, .. } => native.runtime_reusable(),
             Self::Close(f) => matches!(f.storage_error(), StorageError::ProfileBusy),
             Self::Recovery { .. } | Self::Adoption(_) => false,
@@ -198,6 +203,12 @@ pub(crate) fn run(
             .is_some_and(TargetPreview::has_retained_probes)
     {
         if stop.load(Ordering::Acquire) {
+            if matches!(held, Some(Held::Schema(_))) {
+                if let Some(Held::Schema(observation)) = held.take() {
+                    observation.abandon_observation();
+                }
+                continue;
+            }
             // Graceful shutdown is not a successful close of an unsettled
             // setup/copy/move/close owner. Keep every actual resource alive.
             control.retain();
@@ -247,6 +258,7 @@ pub(crate) fn run(
             snapshot.phase = Phase::Recovery;
             receiver.fence().map_err(|_| StorageError::RuntimeFenced)?;
         }
+        project_held(&held, &mut snapshot, &control);
         publish(mailbox, &snapshot)?;
         let Some(envelope) = receiver
             .receive()
@@ -276,6 +288,31 @@ pub(crate) fn run(
                 } if action.bounded() => {
                     snapshot.workflows.settings.error = None;
                     match action {
+                        Action::PreserveSchema if matches!(&held,Some(Held::Schema(s)) if s.preview().is_some()) =>
+                        {
+                            control.begin_schema()?;
+                            let Some(Held::Schema(recovery)) = held.take() else {
+                                return Err(StorageError::RecoveryBindingRequired);
+                            };
+                            let store = existing_store(&store_cell, &locations)?;
+                            let recovered = recovery.confirm(|error, root| {
+                                retain_close(error, root, store, &channels, &snapshot)
+                            });
+                            control.finish();
+                            snapshot.workflows.settings.schema = None;
+                            match recovered {
+                                Ok((native, paths)) => {
+                                    snapshot.workflows.settings.retained = paths;
+                                    snapshot.workflows.settings.notice =
+                                        Some(Notice::SchemaRecovered);
+                                    match native.finish() {
+                                        Ok(()) => open = true,
+                                        Err(failure) => held = Some(Held::Close(failure)),
+                                    }
+                                }
+                                Err(failure) => held = Some(Held::SchemaFailed(failure)),
+                            }
+                        }
                         Action::Select(path)
                             if held.is_none()
                                 && matches!(
@@ -505,34 +542,55 @@ pub(crate) fn run(
                 control.finish();
             }
         }
-        if let Some(failure) = &held {
-            match failure {
-                Held::Move(f) => {
-                    snapshot.workflows.settings.current = f.authoritative_root().map(PathBuf::from)
-                }
-                Held::Close(f) => {
-                    snapshot.workflows.settings.current =
-                        Some(f.retained_library().layout().root().into())
-                }
-                Held::Recovery { library, .. } => {
-                    snapshot.workflows.settings.current = Some(library.layout().root().into())
-                }
-                Held::Active { native, .. } => {
-                    snapshot.workflows.settings.current = Some(native.layout().root().into())
-                }
-                _ => {}
-            }
-            control.retain();
-            snapshot.workflows.settings.error = Some(failure.detail());
-            snapshot.workflows.settings.mode = Mode::Recovery;
-            snapshot.workflows.settings.can_confirm = false;
-            snapshot.workflows.settings.can_retry = failure.retryable();
-            snapshot.workflows.settings.can_locate = false;
-            snapshot.phase = Phase::Recovery;
-        }
+        project_held(&held, &mut snapshot, &control);
     }
     // `held`, target and profile stay alive through the complete interaction.
     Ok(())
+}
+fn project_held(held: &Option<Held<'_>>, snapshot: &mut Snapshot, control: &Control) {
+    if let Some(failure) = held {
+        snapshot.workflows.settings.schema = None;
+        match failure {
+            Held::Schema(recovery) => {
+                snapshot.workflows.settings.current = Some(recovery.root().into());
+                snapshot.workflows.settings.schema = recovery.preview();
+                snapshot.workflows.settings.retained = recovery.retained_paths();
+            }
+            Held::SchemaFailed(failure) => {
+                snapshot.workflows.settings.current = Some(failure.root().into());
+                snapshot.workflows.settings.retained = failure.retained_paths();
+            }
+            Held::Move(f) => {
+                snapshot.workflows.settings.current = f.authoritative_root().map(PathBuf::from)
+            }
+            Held::Close(f) => {
+                snapshot.workflows.settings.current =
+                    Some(f.retained_library().layout().root().into())
+            }
+            Held::Recovery { library, .. } => {
+                snapshot.workflows.settings.current = Some(library.layout().root().into())
+            }
+            Held::Active { native, .. } => {
+                snapshot.workflows.settings.current = Some(native.layout().root().into())
+            }
+            _ => {}
+        }
+        if matches!(failure, Held::Schema(_)) {
+            control.finish();
+        } else {
+            control.retain();
+        }
+        snapshot
+            .workflows
+            .settings
+            .error
+            .get_or_insert_with(|| failure.detail());
+        snapshot.workflows.settings.mode = Mode::Recovery;
+        snapshot.workflows.settings.can_confirm = false;
+        snapshot.workflows.settings.can_retry = failure.retryable();
+        snapshot.workflows.settings.can_locate = false;
+        snapshot.phase = Phase::Recovery;
+    }
 }
 fn preview(
     path: &Path,
@@ -613,6 +671,16 @@ fn close_native<'p>(
     channels: &Channels<'_>,
     snapshot: &Snapshot,
 ) -> std::result::Result<(), Held<'p>> {
+    match native.has_pending_schema_recovery() {
+        Ok(true) => return Err(Held::Schema(Box::new(native.into_schema_recovery()))),
+        Err(error) => {
+            return Err(Held::Active {
+                native: Box::new(native),
+                error,
+            });
+        }
+        Ok(false) => {}
+    }
     let opened = (|| -> Result<()> {
         let mut database = librairii_storage::database::Database::open_native(&native)?;
         if let Err(error) = database.close() {
@@ -657,7 +725,30 @@ fn recover_closed<'p>(
         match NativeLibrary::reopen(store, locations, &cancel) {
             Ok(native) => close_native(native, store, channels, snapshot).map_err(Failure::Held),
             Err(_) => {
-                let recovery = NativeLibrary::recover_interrupted(store, locations, &cancel)?;
+                let recovery = match NativeLibrary::recover_interrupted(store, locations, &cancel) {
+                    Ok(recovery) => recovery,
+                    Err(StorageError::ForeignSchema) => {
+                        let recovery = librairii_storage::native::SchemaRecovery::open(
+                            store, locations, &cancel,
+                        )?;
+                        return Err(Failure::Held(Held::Schema(Box::new(recovery))));
+                    }
+                    Err(error) => return Err(error.into()),
+                };
+                match recovery.has_pending_schema_recovery() {
+                    Ok(true) => {
+                        return Err(Failure::Held(Held::Schema(Box::new(
+                            recovery.into_schema_recovery(),
+                        ))));
+                    }
+                    Err(error) => {
+                        return Err(Failure::Held(Held::Recovery {
+                            library: Box::new(recovery),
+                            error,
+                        }));
+                    }
+                    Ok(false) => {}
+                }
                 let opened = (|| -> Result<()> {
                     let mut database = recovery.open()?;
                     if let Err(error) = database.close() {

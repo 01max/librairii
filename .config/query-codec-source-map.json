@@ -5467,6 +5467,45 @@
           ]
         },
         "reason": "Task15.6 observed native Shelf regression: exact stored UUID spelling, source/manual overlap, and frozen ID/UUID admission retain approved authority and reject reused IDs atomically. Every prior identity and target scope is retained."
+      },
+      {
+        "position": 616,
+        "identity": {
+          "suite": "librairii-storage",
+          "name": "native::owned::schema::tests::native_schema_confirmation_preserves_complete_family_and_archives",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Observed additive Task 15.13 explicit native foreign-schema preservation, actual process-death replay and retained-owner permission/changed-input regressions. All prior discovery identities and lineage remain unchanged."
+      },
+      {
+        "position": 617,
+        "identity": {
+          "suite": "librairii-storage",
+          "name": "native::owned::schema::tests::native_schema_changed_preview_and_permission_failure_retain_actual_owner",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Observed additive Task 15.13 explicit native foreign-schema preservation, actual process-death replay and retained-owner permission/changed-input regressions. All prior discovery identities and lineage remain unchanged."
+      },
+      {
+        "position": 618,
+        "identity": {
+          "suite": "librairii-storage",
+          "name": "native::owned::schema::tests::native_schema_replay_revalidates_durable_copies_after_process_death",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Observed additive Task 15.13 explicit native foreign-schema preservation, actual process-death replay and retained-owner permission/changed-input regressions. All prior discovery identities and lineage remain unchanged."
       }
     ],
     "python": [

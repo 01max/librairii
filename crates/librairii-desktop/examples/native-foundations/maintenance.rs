@@ -474,6 +474,144 @@ fn adoption_language_checks(ui: &DesktopWindow) -> Result {
     f.finish()
 }
 
+fn archive_payloads(
+    root: &std::path::Path,
+) -> Result<std::collections::BTreeMap<PathBuf, Vec<u8>>> {
+    let mut pending = vec![root.to_owned()];
+    let mut payloads = std::collections::BTreeMap::new();
+    while let Some(directory) = pending.pop() {
+        for entry in std::fs::read_dir(directory)? {
+            let entry = entry?;
+            if entry.file_type()?.is_dir() {
+                pending.push(entry.path());
+            } else {
+                payloads.insert(
+                    entry.path().strip_prefix(root)?.to_owned(),
+                    std::fs::read(entry.path())?,
+                );
+            }
+        }
+    }
+    Ok(payloads)
+}
+fn schema_checks(ui: &DesktopWindow) -> Result {
+    close(ui);
+    let mut f = Fixture::open_with(ui, true)?;
+    let root = selected_root(&f)?;
+    f.worker.borrow_mut().finish()?;
+    let original_archive = archive_payloads(&root.join("archives"))?;
+    for (name, bytes) in [
+        ("librairii.sqlite3", b"foreign native database".as_slice()),
+        ("librairii.sqlite3-wal", b"foreign native WAL"),
+        ("librairii.sqlite3-shm", b"foreign native SHM"),
+    ] {
+        std::fs::write(root.join("db").join(name), bytes)?;
+    }
+    f.restart(ui)?;
+    check(
+        f.view.borrow().snapshot.phase == Phase::Recovery
+            && ui.get_settings_data().can_preserve
+            && !ui.get_settings_data().busy,
+        "foreign schema recovery is unreachable or mutation was silently admitted",
+    )?;
+    let revision = f.worker.borrow().revision();
+    ui.invoke_show_schema_confirmation();
+    check(
+        ui.get_dialog() == 22 && ui.get_schema_keep_focused(),
+        "foreign schema confirmation did not focus Keep",
+    )?;
+    super::super::key(ui, slint::platform::Key::Escape.into())?;
+    check(
+        f.worker.borrow().revision() == revision
+            && ui.get_dialog() == 5
+            && std::fs::read(root.join("db/librairii.sqlite3"))? == b"foreign native database",
+        "schema cancellation mutated or submitted recovery",
+    )?;
+    language(&f, ui, "fr")?;
+    ui.invoke_show_schema_confirmation();
+    check(
+        ui.get_settings_data()
+            .schema_explanation
+            .contains("base vide")
+            && ui.get_schema_keep_focused(),
+        &format!(
+            "French schema recovery lost its consequence or safe initial focus: dialog={} keep={} french={} explanation={}",
+            ui.get_dialog(),
+            ui.get_schema_keep_focused(),
+            ui.get_french(),
+            ui.get_settings_data().schema_explanation
+        ),
+    )?;
+    super::super::key(ui, slint::platform::Key::Tab.into())?;
+    super::super::key(ui, slint::platform::Key::Space.into())?;
+    let opened = f.settle(ui)?;
+    check(
+        opened.phase == Phase::Library
+            && opened.language == Language::French
+            && opened.workflows.settings.notice == Some(Notice::SchemaRecovered)
+            && opened.page.as_ref().is_some_and(|p| p.total == 0),
+        &format!(
+            "confirmed foreign schema did not create an explicitly empty database: phase={:?} language={:?} total={:?} settings={:?}",
+            opened.phase,
+            opened.language,
+            opened.page.as_ref().map(|p| p.total),
+            opened.workflows.settings
+        ),
+    )?;
+    let path = opened
+        .workflows
+        .settings
+        .retained
+        .first()
+        .ok_or("schema preserved path missing")?;
+    for (name, bytes) in [
+        ("librairii.sqlite3", b"foreign native database".as_slice()),
+        ("librairii.sqlite3-wal", b"foreign native WAL"),
+        ("librairii.sqlite3-shm", b"foreign native SHM"),
+    ] {
+        check(
+            std::fs::read(path.join(name))? == bytes,
+            "schema recovery did not preserve the original family",
+        )?;
+    }
+    check(
+        archive_payloads(&root.join("archives"))? == original_archive,
+        "schema recovery changed managed archive bytes",
+    )?;
+    // A compatible replacement without its final receipt is still an explicit
+    // recovery, including when the preceding native close ACK was durable.
+    // The storage crash test separately kills the actual process before that ACK.
+    let preserved = path.clone();
+    close(ui);
+    f.worker.borrow_mut().finish()?;
+    std::fs::remove_file(preserved.join("replacement-created.json"))?;
+    f.restart(ui)?;
+    check(
+        f.view.borrow().snapshot.phase == Phase::Recovery
+            && ui.get_settings_data().can_preserve
+            && ui
+                .get_settings_data()
+                .schema_explanation
+                .contains("compatible"),
+        "compatible unfinished replacement bypassed explicit startup recovery",
+    )?;
+    ui.invoke_show_schema_confirmation();
+    super::super::key(ui, slint::platform::Key::Tab.into())?;
+    super::super::key(ui, slint::platform::Key::Space.into())?;
+    check(
+        f.settle(ui)?.phase == Phase::Library
+            && preserved.join("replacement-created.json").is_file(),
+        "explicit compatible replacement did not complete its durable receipt",
+    )?;
+    close(ui);
+    f.restart(ui)?;
+    check(
+        f.view.borrow().snapshot.phase == Phase::Library && ui.get_french(),
+        "recovered database or native language did not survive restart",
+    )?;
+    f.finish()
+}
+
 pub fn checks(ui: &DesktopWindow) -> Result {
     eprintln!("maintenance: setup");
     setup_checks(ui)?;
@@ -485,12 +623,14 @@ pub fn checks(ui: &DesktopWindow) -> Result {
     recovery_checks(ui)?;
     eprintln!("maintenance: adoption language");
     adoption_language_checks(ui)?;
+    eprintln!("maintenance: foreign schema");
+    schema_checks(ui)?;
     eprintln!("maintenance: override");
     override_checks(ui)
 }
 
 pub struct Surface {
-    fixture: Fixture,
+    pub(super) fixture: Fixture,
 }
 impl std::fmt::Debug for Surface {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -498,6 +638,53 @@ impl std::fmt::Debug for Surface {
     }
 }
 impl Surface {
+    pub fn speech(ui: &DesktopWindow, case: &str, code: &str) -> Result<Self> {
+        let mut surface = Self::open(ui)?;
+        language(&surface.fixture, ui, code)?;
+        match case {
+            "setup" => {
+                let root = surface
+                    .fixture
+                    ._roots
+                    .library()
+                    .join("Explicit speech fixture library");
+                choose(&surface.fixture, ui, Picker::Folder, Some(root));
+                surface.fixture.settle(ui)?;
+            }
+            "settings" | "relocation" | "recovery" => {
+                surface.confirmed(ui)?;
+                if case == "relocation" {
+                    surface.preview(ui)?;
+                }
+                if case == "recovery" {
+                    surface.recover(ui)?;
+                }
+            }
+            "schema" => {
+                surface.fixture.finish()?;
+                let mut fixture = Fixture::open_with(ui, true)?;
+                language(&fixture, ui, code)?;
+                let root = selected_root(&fixture)?;
+                fixture.worker.borrow_mut().finish()?;
+                for name in [
+                    "librairii.sqlite3",
+                    "librairii.sqlite3-wal",
+                    "librairii.sqlite3-shm",
+                ] {
+                    std::fs::write(root.join("db").join(name), name.as_bytes())?;
+                }
+                fixture.restart(ui)?;
+                check(
+                    ui.get_settings_data().can_preserve,
+                    "spoken schema recovery missing",
+                )?;
+                ui.invoke_show_schema_confirmation();
+                return Ok(Self { fixture });
+            }
+            _ => return Err("unknown maintenance speech case".into()),
+        }
+        Ok(surface)
+    }
     pub fn open(ui: &DesktopWindow) -> Result<Self> {
         Ok(Self {
             fixture: setup(ui)?,
