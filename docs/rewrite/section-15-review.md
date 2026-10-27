@@ -265,3 +265,19 @@ after the exact domain mutation. The complete matrix remains112 cases, now with
 128 actual speech/audio witnesses. All original native states, joins, per-case,
 per-utterance and aggregate session deadlines remain required. Continuous package
 journeys retain Task19; no general reader restart/Quit robustness is inferred.
+
+The compact controls viewport retains a36px outer floor, leaving32px of content
+after Cupertino’s4px frame. Its explicit height remains the sole size constraint;
+the pinned compiler rejects a simultaneous explicit minimum. All controls remain
+scrollable and the original76/80px pane assertions remain. Fresh Linux geometry
+must confirm the workspace reservation; the widget defaults alone do not establish
+the cause of the previous66/80px observation.
+
+At head8250d32, ARM again passed the604-test gate and native scale1, then reached
+the unchanged90-second scale2 deadline even with the process-only App Nap setting.
+The bounded component fixture now stores lossless RGBA8 PNGs with no scanline
+filter or deflate compression work; the provider compresses the evidence archive
+after execution. The manifest records this encoding. Every frame/pixel, native
+window check, callback, keyboard assertion and original deadline remains required.
+Larger fixture files are observer evidence, separate from Task16 product resource
+budgets. Final source-labelled execution remains mandatory.

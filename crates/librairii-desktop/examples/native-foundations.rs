@@ -210,13 +210,14 @@ fn capture(ui: &DesktopWindow, path: &Path) -> Result {
             .any(|p| p != &pixels.as_bytes()[..4]),
         "native frame is flat",
     )?;
-    // Lossless Sub filtering avoids evaluating five filters per scanline in
-    // this debug fixture. Preserve every captured pixel and the same deadline.
+    // Store the exact RGBA pixels without debug-build filtering/deflate work.
+    // The provider compresses the evidence archive after the bounded native run.
+    // Preserve every frame, assertion and the same per-scale deadline.
     let mut output = std::io::BufWriter::new(std::fs::File::create(path)?);
     image::codecs::png::PngEncoder::new_with_quality(
         &mut output,
-        image::codecs::png::CompressionType::Fast,
-        image::codecs::png::FilterType::Sub,
+        image::codecs::png::CompressionType::Uncompressed,
+        image::codecs::png::FilterType::NoFilter,
     )
     .write_image(
         pixels.as_bytes(),
