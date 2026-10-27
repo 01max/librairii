@@ -134,9 +134,46 @@ compact EN/FR manager/assignment/impact captures. One observed writer-snapshot i
 appends to the unchanged prior613 identities (614 total). Whole-workflow spoken review
 and current-source three-host acceptance remain at15.13.
 
+## Independent Broken controls and guarded Undo — 15.4
+
+Broken remains an independent manual flag. Details, the wide selected-story panel
+and bulk selection expose native keyboard controls; the panel names its actual
+single/bulk target scope. Mixed bulk state reports flagged/selected counts; setting
+it changes all available selected identities, and missing approved members explain
+why mutation is disabled. Cards carry warning text/icon and muted artwork, without
+per-card flag actions. Flag changes retain result membership/count/order/page,
+inspection, bulk selection, navigation and applicable focus.
+
+The controller retains one opaque Undo ticket with only the committed changed
+identities and their previous/expected-current flags. Duplicate targets are
+validated then deduplicated. Set and restore validate every ID/UUID in the same
+writer snapshot; restore also validates the complete changed-only identity sequence
+and every expected flag before any mutation. Stale/unavailable/reused identities
+refuse the whole batch. No-op/failed actions offer no new Undo, and successful Undo
+offers no redo. Commit uncertainty retains its observation, fences queued library
+commands and uses the existing latest-revision Recovery publication.
+
+Feedback appears after actions, translates with the selected language/plurals and
+clears when Details closes, including an action that is still pending. Dismissal
+is recorded without reentering the borrowed view during another workflow's close;
+it is applied before admitting any subsequent action. A later flag action therefore
+keeps its own notice/Undo. Native Details Tab order starts at the first enabled
+Toggle/Undo/technical control, and native Settings/About restore the exact panel or
+bulk Undo invoker. The compact bulk controls keep at least one full story row.
+
+Evidence: real controller/SQLite mixed-set, changed-only Undo, no-op, concurrent
+stale Undo, injected write rollback, duplicate-identity request/Undo, unavailable
+Shelf member and dismissal/refresh regressions. Shown EN/FR captures use actual
+Tab/Space and AppKit menus; the original paging/history/filter/details/tag checks
+remain required. One observed atomic identity-guard regression appends to the
+unchanged614-identity prefix (615 total). The cumulative native-host gate passes600
+tests with zero skipped, plus doctests, strict lint/build, preservation and dependency
+checks. Full spoken/cross-host acceptance remains
+at15.13.
+
 ## Remaining workflow work
 
-15.4–15.12 compose Broken/Undo, Collection and Shelf
+15.5–15.12 compose Collection and Shelf
 curation/review, imports/sync/exports, durable History/notices and complete native
 setup/settings/recovery/diagnostics. 15.13 independently reviews the complete
 native surfaces and refreshes visual/accessibility evidence. Resource budgets,

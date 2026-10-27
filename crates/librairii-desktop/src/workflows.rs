@@ -1,10 +1,18 @@
 //! Owned workflow observations and frozen command targets. No UI value grants
 //! authority without the actual generation/query/UUID checks on the controller.
+pub mod flags;
 pub mod tags;
 use crate::library::Runtime;
 use librairii_app::lifecycle::LibraryGeneration;
 use librairii_core::navigation::{Navigation, QueryStamp};
 use librairii_storage::{Result, StorageError, database::WorkCancellation, query::StoryDetail};
+
+/// A frozen batch is independent of subsequent query or inspection changes.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct Targets {
+    pub generation: LibraryGeneration,
+    pub stories: Vec<librairii_core::browsing::StoryIdentity>,
+}
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct StoryTarget {
@@ -25,6 +33,7 @@ pub struct Details {
 }
 #[derive(Clone, Debug, Default)]
 pub struct Snapshot {
+    pub flags: flags::Snapshot,
     pub tags: tags::Snapshot,
     pub details: Option<Details>,
     pub removal_recovery: bool,

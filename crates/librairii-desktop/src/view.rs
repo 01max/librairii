@@ -3,6 +3,8 @@
 pub(crate) mod details;
 #[path = "view/filters.rs"]
 pub(crate) mod filters;
+#[path = "view/flags.rs"]
+pub(crate) mod flags;
 #[path = "view/tags.rs"]
 pub(crate) mod tags;
 use librairii_app::localization::{Catalogs, Language, LocalizationError};
@@ -15,6 +17,7 @@ use librairii_ui::native::{DesktopWindow, NavigationRow, StoryGroup, StoryRow, T
 use slint::{ComponentHandle, ModelRc, VecModel};
 use std::{cell::RefCell, rc::Rc};
 pub struct View {
+    pub flags: flags::State,
     pub tags: tags::State,
     pub details: details::State,
     pub filters: filters::State,
@@ -31,8 +34,8 @@ fn row(index: usize, story: &Story, language: Language, catalogs: &Catalogs) -> 
         .map(|s| (s.broken, s.compatibility != "missing"))
         .unwrap_or((false, false));
     let warning = match (broken, available, language) {
-        (true, _, Language::English) => "Broken · excluded from exports",
-        (true, _, Language::French) => "Défectueuse · exclue des exports",
+        (true, _, Language::English) => "⚠ Broken · excluded from exports",
+        (true, _, Language::French) => "⚠ Défectueuse · exclue des exports",
         (_, false, Language::English) => "Unavailable · excluded from exports",
         (_, false, Language::French) => "Indisponible · exclue des exports",
         _ => "",
@@ -94,6 +97,7 @@ fn row(index: usize, story: &Story, language: Language, catalogs: &Catalogs) -> 
         })
         .unwrap_or_default();
     StoryRow {
+        broken,
         bulk: false,
         uuid: story.uuid.clone().into(),
         facts: details::facts(story, language).into(),
@@ -166,12 +170,19 @@ impl View {
         self.snapshot = snapshot;
         self.details.accept(ui, &self.snapshot);
         self.tags.accept(ui, &self.snapshot);
+        self.flags.accept(ui, &self.snapshot);
         self.resize(ui);
         self.project(ui);
         true
     }
     pub fn project(&mut self, ui: &DesktopWindow) {
         self.tags.retain_visible(&self.snapshot);
+        self.flags.project(
+            ui,
+            &self.snapshot,
+            self.selected.as_deref(),
+            &self.tags.selection,
+        );
         let french = self.snapshot.language == Language::French;
         ui.set_french(french);
         self.filters.project(ui, &self.snapshot, &self.catalogs);
@@ -291,6 +302,12 @@ impl View {
             .unwrap_or_default();
         details::project(&mut selected_row, &self.snapshot);
         ui.set_selected_story(selected_row);
+        self.flags.project(
+            ui,
+            &self.snapshot,
+            self.selected.as_deref(),
+            &self.tags.selection,
+        );
         self.tags
             .project(ui, &self.snapshot, &self.catalogs, self.selected.as_deref());
         ui.set_previous_enabled(page.page > 1);
@@ -361,6 +378,7 @@ pub fn install(
     initial: Snapshot,
 ) -> Result<Rc<RefCell<View>>, LocalizationError> {
     let view = Rc::new(RefCell::new(View {
+        flags: Default::default(),
         tags: Default::default(),
         details: Default::default(),
         filters: filters::State::new(
@@ -506,6 +524,7 @@ pub fn install(
             offer(&pending.borrow(), Command::Language(language), &ui);
         }
     });
+    flags::install(ui, view.clone(), worker.clone());
     tags::install(ui, view.clone(), worker.clone());
     details::install(ui, view.clone(), worker.clone());
     filters::install(ui, view.clone(), worker);

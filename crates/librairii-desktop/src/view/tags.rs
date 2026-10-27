@@ -8,7 +8,10 @@ use librairii_core::{
 };
 use librairii_desktop::{
     presentation::{Command, Snapshot, Worker},
-    workflows::tags::{Action, Feedback, Targets, Ticket},
+    workflows::{
+        Targets,
+        tags::{Action, Feedback, Ticket},
+    },
 };
 use librairii_storage::tagging::DeleteTarget;
 use librairii_ui::native::{AssignmentRow, DesktopWindow};

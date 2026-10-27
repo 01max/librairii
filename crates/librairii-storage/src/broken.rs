@@ -6,6 +6,39 @@ use crate::{
 use librairii_core::broken::{FlagChange, FlagError, FlagResult, FlagSummary, targets};
 use rusqlite::{OptionalExtension, Transaction, params};
 impl Database<'_> {
+    pub fn set_broken_guarded(
+        &self,
+        identities: Vec<librairii_core::browsing::StoryIdentity>,
+        broken: bool,
+        cancellation: WorkCancellation,
+    ) -> Result<Pending<'_, TransactionOutcome<FlagResult>>> {
+        self.transaction(cancellation, move |tx| {
+            crate::query::require_identities(tx, &identities)?;
+            set(
+                tx,
+                &identities.iter().map(|s| s.id).collect::<Vec<_>>(),
+                broken,
+            )
+        })
+    }
+    pub fn restore_broken_guarded(
+        &self,
+        identities: Vec<librairii_core::browsing::StoryIdentity>,
+        changes: Vec<FlagChange>,
+        cancellation: WorkCancellation,
+    ) -> Result<Pending<'_, TransactionOutcome<FlagResult>>> {
+        self.transaction(cancellation, move |tx| {
+            if !identities
+                .iter()
+                .map(|s| s.id)
+                .eq(changes.iter().map(|c| c.story_id))
+            {
+                return Err(FlagError::InvalidRequest.into());
+            }
+            crate::query::require_identities(tx, &identities)?;
+            restore(tx, &changes)
+        })
+    }
     pub fn restore_broken(
         &self,
         changes: Vec<FlagChange>,

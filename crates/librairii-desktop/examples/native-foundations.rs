@@ -224,8 +224,10 @@ fn main() -> Result {
     callback_checks::filters(&ui, None)?;
     callback_checks::details(&ui)?;
     callback_checks::tags(&ui)?;
+    callback_checks::flags(&ui)?;
     let initial = snapshot()?;
     let view = Rc::new(RefCell::new(view::View {
+        flags: Default::default(),
         tags: Default::default(),
         details: Default::default(),
         filters: view::filters::State::new(
@@ -327,6 +329,8 @@ fn main() -> Result {
                     surface.poll(&ui);
                 } else if let Some(surface) = surfaces.tags.borrow().as_ref() {
                     surface.poll(&ui);
+                } else if let Some(surface) = surfaces.flags.borrow().as_ref() {
+                    surface.poll(&ui);
                 } else {
                     view.borrow_mut().resize(&ui);
                 }
@@ -365,6 +369,7 @@ fn main() -> Result {
 
 #[derive(Debug, Default)]
 struct Surfaces {
+    flags: RefCell<Option<callback_checks::FlagSurface>>,
     filters: RefCell<Option<callback_checks::FilterSurface>>,
     details: RefCell<Option<callback_checks::DetailSurface>>,
     tags: RefCell<Option<callback_checks::TagSurface>>,
@@ -744,14 +749,66 @@ fn capture_step(
         )?;
         ui.invoke_close_dialog();
         surfaces.tags.borrow_mut().take();
-    } else if (75..=77).contains(&index) {
+    } else if index == 75 {
+        *surfaces.flags.borrow_mut() = Some(callback_checks::FlagSurface::open(ui)?);
+    } else if index == 76 {
+        surfaces
+            .flags
+            .borrow()
+            .as_ref()
+            .ok_or("flag surface missing")?
+            .toggle(ui)?;
+    } else if index == 77 {
+        capture(ui, &destination.join("broken-detail-compact-en.png"))?;
+        surfaces
+            .flags
+            .borrow()
+            .as_ref()
+            .ok_or("flag surface missing")?
+            .french_bulk(ui)?;
+    } else if index == 78 {
+        check(
+            ui.get_observed_browser_height() + 0.5 >= ui.get_observed_story_row_height(),
+            "active bulk controls hide the story viewport",
+        )?;
+        surfaces
+            .flags
+            .borrow()
+            .as_ref()
+            .ok_or("flag surface missing")?
+            .focus_undo(ui)?;
+        #[cfg(target_os = "macos")]
+        native_menu::bulk_flag_undo_focus(ui, _menus)?;
+        capture(ui, &destination.join("broken-bulk-compact-fr.png"))?;
+        surfaces
+            .flags
+            .borrow()
+            .as_ref()
+            .ok_or("flag surface missing")?
+            .undo(ui)?;
+        capture(ui, &destination.join("broken-undo-compact-fr.png"))?;
+        resize(ui, 1180., 760.)?;
+    } else if index == 79 {
+        surfaces
+            .flags
+            .borrow()
+            .as_ref()
+            .ok_or("flag surface missing")?
+            .panel(ui)?;
+    } else if index == 80 {
+        #[cfg(target_os = "macos")]
+        native_menu::flag_focus(ui, _menus)?;
+        capture(ui, &destination.join("broken-panel-wide-fr.png"))?;
+        surfaces.flags.borrow_mut().take();
+        resize(ui, 560., 400.)?;
+    } else if (81..=83).contains(&index) {
         let (phase, name, status) = match index {
-            75 => (
+            81 => (
                 Phase::Recovery,
                 "recovery",
                 "La bibliothèque attendue est indisponible ou nécessite une récupération.",
             ),
-            76 => (
+            82 => (
                 Phase::Setup,
                 "setup",
                 "Choisissez où conserver votre bibliothèque.",
@@ -784,6 +841,7 @@ fn capture_step(
                 "filter_callbacks": "passed",
                 "details_removal_callbacks": "passed",
                 "tag_callbacks": "passed",
+                "flag_callbacks": "passed",
                 "scope": "shown native component/public window events and Skia capture; not physical HID or packaged workflow qualification",
             }))?,
         )?;

@@ -1,4 +1,5 @@
 import { TagManager, Assignments, AssignmentRow } from "tags.slint";
+import { FlagControl } from "flags.slint";
 import { Workspace, ProposalRow } from "workspace.slint";
 import { Filters, FilterRow, ActiveFilterRow } from "filters.slint";
 import { ProgressState, EditAction } from "states.slint";
@@ -175,6 +176,30 @@ export component DesktopWindow inherits Window {
     out property <bool> clear-bulk-focused: clear-bulk-button.has-focus;
     callback toggle-bulk(int);
     callback clear-bulk();
+    in property <bool> detail-flag-checked;
+    in property <bool> detail-flag-enabled;
+    in property <bool> panel-flag-checked;
+    in property <bool> panel-flag-enabled;
+    in property <bool> bulk-flag-checked;
+    in property <bool> bulk-flag-enabled;
+    in property <string> panel-flag-summary;
+    in property <string> panel-flag-target-label;
+    in property <string> bulk-flag-summary;
+    in property <string> flag-notice;
+    in property <bool> flag-pending;
+    in property <bool> flag-undo-enabled;
+    callback detail-flag-change(bool);
+    callback panel-flag-change(bool);
+    callback bulk-flag-change(bool);
+    callback undo-flags();
+    callback dismiss-flag-feedback();
+    public function focus-detail-flag() { dialog-inspector.focus-flag(); }
+    public function focus-panel-flag() { side-inspector.focus-flag(); }
+    public function focus-bulk-flag() { bulk-flags.focus-control(1); }
+    private property <int> bulk-flag-focus: 1;
+    out property <bool> detail-flag-focused: dialog-inspector.flag-focused;
+    out property <bool> panel-flag-focused: side-inspector.flag-focused;
+    out property <bool> bulk-flag-undo-focused: bulk-flags.undo-focused;
     public function focus-bulk-story(index:int) { if root.workspace { workspace-panel.focus-bulk(index); } else { browser.focus-bulk(index); } }
     public function show-assignments() { root.assignment-parent=root.dialog; if root.dialog == 0 { root.invoker=FocusState.key; } root.dialog=11; dialog-scroll.content-y=0px; assignments.activate(); }
     public function show-tag-confirmation() { if root.dialog == 10 { root.dialog=12; cancel-tag.focus(); } }
@@ -209,16 +234,18 @@ export component DesktopWindow inherits Window {
         if root.dialog == 12 { root.cancel-tag-delete();root.dialog=10;tag-manager.focus-delete(root.tag-delete-value);return; }
         if root.dialog == 11 && root.assignment-parent == 3 && root.assignment-return-details { root.dialog=3;edit-tags-button.focus();root.request-details();return; }
         if root.dialog == 9 { root.dialog = 3; remove-story-button.focus(); return; }
+        if root.dialog == 3 { root.dismiss-flag-feedback(); }
         root.dialog = 0;
         FocusState.modal = false;
         FocusState.key = root.invoker;
         if root.compact && root.sidebar-open { navigation.restore(root.invoker); }
         else if root.compact && root.invoker >= 200 { navigation-button.focus(); }
         else if root.invoker == 10 && !root.compact { library-button.focus(); }
-        else if root.invoker == 32 && root.wide && !root.workspace { side-inspector.focus-technical(); }
+        else if root.invoker == 32 && root.wide && !root.workspace { side-inspector.focus-current(); }
         else if root.invoker == 32 { root.focus-browser(); }
         else if root.invoker == 31 { root.focus-browser(); }
         else if root.invoker == 23 && root.bulk-summary == "" { root.focus-browser(); }
+        else if root.invoker == 24 { if root.bulk-summary == "" || (!root.bulk-flag-enabled && !root.flag-undo-enabled) { root.focus-browser(); } else { bulk-flags.focus-control(root.bulk-flag-focus); } }
         else if root.invoker == 30 { search-entry.focus(); }
         else { FocusState.restore-epoch += 1; }
     }
@@ -362,13 +389,18 @@ export component DesktopWindow inherits Window {
                         Caption { text: root.bulk-summary; accessible-live-region: polite; horizontal-stretch: 1; }
                         clear-bulk-button := Action { focus-key: 23; available: root.bulk-summary != ""; text: root.french ? "Effacer la sélection" : "Clear selection"; clicked => { root.clear-bulk(); } }
                     }
+                    bulk-flags := FlagControl { visible: root.bulk-summary != ""; height: self.visible ? self.preferred-height : 0px; french: root.french; active: !root.modal && !root.closing && !FocusState.sidebar; available: root.bulk-flag-enabled; checked: root.bulk-flag-checked; pending: root.flag-pending; can-undo: root.flag-undo-enabled; inline-summary: true; title: root.french ? "Histoires sélectionnées" : "Selected stories"; summary: root.bulk-flag-summary; notice: root.flag-notice;
+                        change(value) => { root.bulk-flag-change(value); } undo => { root.undo-flags(); } focused(kind) => { root.bulk-flag-focus=kind;FocusState.key=24; }
+                    }
                     body := HorizontalBox { padding: 0px; spacing: 12px; vertical-stretch: 1; min-height: 0px;
                         VerticalBox { padding: 0px; spacing: root.status == "" ? 0px : 8px; max-width: root.workspace ? 0px : 100000px; visible: !root.workspace;
                             Caption { accessible-live-region: polite; text: root.status; visible: root.status != ""; height: root.status == "" ? 0px : self.preferred-height; }
                             browser := StoryBrowser { french: root.french; visible: !root.workspace; enabled: root.startup-phase == 3 && !root.closing && !root.workspace && !root.modal && !FocusState.sidebar; focus-entered => { FocusState.key = 31; } groups: root.story-groups; count: root.story-count; columns: root.columns; mode: root.mode; label: root.french ? "Histoires" : "Stories"; selected-index <=> root.selected-index; select(index) => { root.select-story(index); } toggle(index) => { root.toggle-bulk(index); } }
                         }
                         workspace-panel := Workspace { visible: root.workspace; max-width: root.workspace ? 100000px : 0px; interactive: root.workspace && !root.closing && !root.modal && !FocusState.sidebar; wide: root.wide; french: root.french; members: root.story-groups; count: root.story-count; sources: root.sources; proposals <=> root.proposals; pending: root.pending; decisions: root.decisions; selected-index <=> root.selected-index; select(index) => { root.select-story(index); } toggle(index) => { root.toggle-bulk(index); } decide(index,value) => { root.decide(index,value); } apply => { root.apply-decisions(); } }
-                        side-inspector := Inspector { visible: root.wide && !root.workspace; width: self.visible ? 264px : 0px; interactive: !root.modal && !root.closing; french: root.french; story: root.selected-story; request-data => { root.request-details(); } focused => { FocusState.key = 32; } }
+                        side-inspector := Inspector { visible: root.wide && !root.workspace; width: self.visible ? 264px : 0px; interactive: !root.modal && !root.closing; french: root.french; story: root.selected-story; request-data => { root.request-details(); } focused => { FocusState.key = 32; }
+                            flag-enabled: root.panel-flag-enabled; flag-checked: root.panel-flag-checked; flag-pending: root.flag-pending; flag-can-undo: root.flag-undo-enabled; flag-summary: root.panel-flag-summary; flag-target-label: root.panel-flag-target-label; flag-notice: root.flag-notice; flag-change(value) => { root.panel-flag-change(value); } undo-flags => { root.undo-flags(); }
+                        }
                     }
                     HorizontalBox { padding: 0px; spacing: 8px;
                         Action { visible: !root.compact; width: root.compact ? 0px : 76px; focus-key: 19; text: root.french ? "Retour" : "Back"; available: root.back-enabled; clicked => { root.history-step(-1); } }
@@ -426,8 +458,8 @@ export component DesktopWindow inherits Window {
                     if root.dialog == 11 { if event.modifiers.shift && assignments.first-focused { close-dialog-button.focus();return accept; } if !event.modifiers.shift && close-dialog-button.has-focus {assignments.activate();return accept;} return reject; }
                     if root.dialog == 9 { if keep-story.has-focus { trash-story.focus(); } else { keep-story.focus(); } return accept; }
                     if root.dialog == 3 {
-                        if event.modifiers.shift && dialog-inspector.technical-focused { close-dialog-button.focus(); return accept; }
-                        if !event.modifiers.shift && close-dialog-button.has-focus { dialog-inspector.focus-technical(); return accept; }
+                        if event.modifiers.shift && dialog-inspector.first-focused { close-dialog-button.focus(); return accept; }
+                        if !event.modifiers.shift && close-dialog-button.has-focus { dialog-inspector.focus-first(); return accept; }
                         return reject;
                     }
                     if root.dialog == 8 {
@@ -455,7 +487,9 @@ export component DesktopWindow inherits Window {
                 dialog-scroll := ScrollView { vertical-stretch: 1; content-width: self.visible-width; content-height: dialog-content.preferred-height;
                     dialog-content := VerticalBox { height: self.preferred-height; padding: 0px; spacing: 0px;
                         if root.dialog == 1: AboutSlint { }
-                        dialog-inspector := Inspector { visible: root.dialog == 3; height: root.dialog == 3 ? max(80px, dialog-scroll.visible-height) : 0px; french: root.french; story: root.selected-story; request-data => { root.request-details(); } }
+                        dialog-inspector := Inspector { visible: root.dialog == 3; height: root.dialog == 3 ? max(80px, dialog-scroll.visible-height) : 0px; french: root.french; story: root.selected-story; request-data => { root.request-details(); }
+                            flag-enabled: root.detail-flag-enabled; flag-checked: root.detail-flag-checked; flag-pending: root.flag-pending; flag-can-undo: root.flag-undo-enabled; flag-notice: root.flag-notice; flag-change(value) => { root.detail-flag-change(value); } undo-flags => { root.undo-flags(); }
+                        }
                         if root.dialog == 9: Caption { text: (root.french ? "Retirer cette histoire de la bibliothèque ?\n« " : "Remove this story from the library?\n“") + root.removal-title + (root.french ? " » sera déplacée dans la corbeille de l’application. Votre fichier d’origine restera à son emplacement." : "” will move to application trash. Your original source file will stay where it is."); }
                         if root.dialog == 9: Caption { text: root.removal-error; }
                         if root.dialog == 4: Caption { text: root.french ? "Choisissez où conserver votre bibliothèque. Votre bibliothèque n’est créée qu’après la confirmation de son emplacement. Vous pouvez d’abord choisir la langue dans les réglages." : "Choose where to keep your library. Your library is created only after you confirm its location. You can choose your language in Settings first."; }

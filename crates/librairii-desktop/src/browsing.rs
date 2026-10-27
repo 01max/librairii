@@ -247,6 +247,7 @@ pub(crate) fn run(
     let mut invalid_query = false;
     let mut workflows = crate::workflows::Snapshot::default();
     let mut tag_controller = crate::workflows::tags::Controller::default();
+    let mut flag_controller = crate::workflows::flags::Controller::default();
     let result = session.drive(locations, &WorkCancellation::default(), |runtime| {
         let active = (|| -> Result<()> {
             let generation = runtime
@@ -324,6 +325,23 @@ pub(crate) fn run(
                     let mut next = navigation.clone();
                     invalid_query = false;
                     match command {
+                        Command::Flags { generation, action } => {
+                            flag_controller.handle(runtime, generation, action, revision);
+                            workflows.flags = flag_controller.snapshot.clone();
+                            if workflows.flags.result.as_ref().is_some_and(|result| result.as_ref().is_err_and(|failure| failure.uncertain)) {
+                                workflows.recovery_required = true;
+                                receiver.fence().map_err(|_| StorageError::RuntimeFenced)?;
+                                // Publish through the recovery path at the
+                                // latest revision, including commands drained
+                                // by the fence. Retain the uncertain result.
+                                return Err(StorageError::RuntimeFenced);
+                            }
+                            if let Some(details) = &workflows.details {
+                                let detail = crate::workflows::inspect(runtime, &next, details.target.clone());
+                                workflows.detail_error = detail.is_err();
+                                workflows.details = detail.ok();
+                            }
+                        }
                         Command::Tags { generation, action } => {
                             tag_controller.handle(runtime,generation,action,revision);
                             workflows.tags=tag_controller.snapshot.clone();

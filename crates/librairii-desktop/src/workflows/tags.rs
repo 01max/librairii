@@ -1,12 +1,10 @@
 //! Typed tag commands. Opaque deletion authority stays on the controller;
 //! observations contain counts, labels and one bounded assignment workspace.
+use super::Targets;
 use crate::library::Runtime;
 use librairii_app::lifecycle::LibraryGeneration;
-use librairii_core::{
-    browsing::StoryIdentity,
-    tagging::{
-        AssignmentResult, AssignmentWorkspace, CatalogEntry, CreateDefinition, Kind, TagError,
-    },
+use librairii_core::tagging::{
+    AssignmentResult, AssignmentWorkspace, CatalogEntry, CreateDefinition, Kind, TagError,
 };
 use librairii_storage::{
     Result, StorageError,
@@ -14,11 +12,6 @@ use librairii_storage::{
     tagging::{self, DeleteTarget, DeletionPlan},
 };
 use std::sync::Arc;
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct Targets {
-    pub generation: LibraryGeneration,
-    pub stories: Vec<StoryIdentity>,
-}
 #[derive(Clone, Debug)]
 pub struct Ticket(Arc<()>);
 impl PartialEq for Ticket {

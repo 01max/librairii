@@ -939,3 +939,67 @@ fn frozen_native_tag_targets_validate_all_id_uuid_pairs_in_the_writer_snapshot()
     drop(library);
     Ok(())
 }
+
+#[test]
+fn native_flag_undo_rejects_reused_uuid_and_mismatched_restore_authority_atomically() -> TestResult
+{
+    use librairii_core::browsing::StoryIdentity;
+    let roots = TestRoots::new()?;
+    let library = IsolatedLibrary::initialize_from_override(
+        Some(roots.library().as_os_str()),
+        "a0000000-0000-4000-8000-000000000098".parse()?,
+    )?;
+    let mut db = Database::open_isolated(&library)?;
+    seed_stories(&db, 2)?;
+    let targets = (1..=2)
+        .map(|id| StoryIdentity {
+            id,
+            uuid: format!("10000000-0000-4000-8000-{id:012}"),
+        })
+        .collect::<Vec<_>>();
+    let changed = committed(
+        db.set_broken_guarded(targets.clone(), true, Default::default())?
+            .wait()?,
+    )?;
+    assert_eq!(changed.changed_stories, 2);
+    committed(
+        db.transaction(Default::default(), |tx| {
+            tx.execute(
+                "UPDATE stories SET uuid='20000000-0000-4000-8000-000000000002' WHERE id=2",
+                [],
+            )?;
+            Ok(())
+        })?
+        .wait()?,
+    )?;
+    assert!(matches!(
+        db.restore_broken_guarded(targets.clone(), changed.changes.clone(), Default::default())?
+            .wait()?,
+        TransactionOutcome::ProvenNotCommitted(StorageError::SnapshotChanged)
+    ));
+    assert!(matches!(
+        db.set_broken_guarded(targets.clone(), false, Default::default())?
+            .wait()?,
+        TransactionOutcome::ProvenNotCommitted(StorageError::SnapshotChanged)
+    ));
+    assert_eq!(db.broken_summary(vec![1, 2])?.wait()?.flagged_stories, 2);
+    let mut fresh = targets;
+    fresh[1].uuid = "20000000-0000-4000-8000-000000000002".into();
+    let mut reversed = changed.changes.clone();
+    reversed.reverse();
+    assert!(matches!(
+        db.restore_broken_guarded(fresh.clone(), reversed, Default::default())?
+            .wait()?,
+        TransactionOutcome::ProvenNotCommitted(StorageError::Flag(
+            librairii_core::broken::FlagError::InvalidRequest
+        ))
+    ));
+    assert_eq!(db.broken_summary(vec![1, 2])?.wait()?.flagged_stories, 2);
+    committed(
+        db.restore_broken_guarded(fresh, changed.changes, Default::default())?
+            .wait()?,
+    )?;
+    assert_eq!(db.broken_summary(vec![1, 2])?.wait()?.flagged_stories, 0);
+    db.close()?;
+    Ok(())
+}

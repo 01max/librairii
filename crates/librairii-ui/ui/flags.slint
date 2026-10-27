@@ -1,0 +1,28 @@
+import { Button, CheckBox, VerticalBox, HorizontalBox, Palette } from "std-widgets.slint";
+// State is explicit text as well as color; changing it never filters the view.
+export component FlagControl inherits VerticalBox {
+    in property <bool> french;
+    in property <bool> active;
+    in property <bool> available;
+    in property <bool> checked;
+    in property <bool> pending;
+    in property <bool> can-undo;
+    in property <bool> inline-summary;
+    in property <string> title;
+    in property <string> summary;
+    in property <string> notice;
+    callback change(bool);
+    callback undo();
+    callback focused(int);
+    out property <bool> toggle-focused: toggle.has-focus;
+    out property <bool> undo-focused: undo.has-focus;
+    public function focus-control(kind:int) { if (kind == 2 || !root.available) && root.can-undo && !root.pending { undo.focus(); } else if root.available && !root.pending { toggle.focus(); } }
+    padding: 0px; spacing: 6px;
+    HorizontalBox { padding: 0px; spacing: 8px; height: 32px;
+        toggle := CheckBox { width: root.french ? 116px : 88px; horizontal-stretch: 0; enabled: root.active && root.available && !root.pending; checked: root.checked; text: root.french ? "Défectueuse" : "Broken"; accessible-label: (root.french ? "Défectueuse · " : "Broken · ") + root.title; toggled => { root.change(!root.checked); } changed has-focus => { if self.has-focus { root.focused(1); } } }
+        Text { min-width: 0px; horizontal-stretch: 1; text: root.inline-summary ? root.summary : ""; overflow: elide; color: Palette.foreground; }
+        undo := Button { visible: root.can-undo; width: self.visible ? 80px : 0px; horizontal-stretch: 0; enabled: root.active && !root.pending; text: root.french ? "Annuler" : "Undo"; accessible-label: root.french ? "Annuler le changement de statut" : "Undo Broken change"; clicked => { root.undo(); } changed has-focus => { if self.has-focus { root.focused(2); } } }
+    }
+    Text { visible: root.summary != "" && !root.inline-summary; height: self.visible ? self.preferred-height : 0px; text: root.summary; wrap: word-wrap; color: Palette.foreground; }
+    Text { visible: root.notice != ""; height: self.visible ? self.preferred-height : 0px; text: root.notice; wrap: word-wrap; color: Palette.foreground; accessible-live-region: polite; }
+}

@@ -5441,6 +5441,19 @@
           ]
         },
         "reason": "Task15.3 observed native frozen-target regression: all ID/UUID pairs validate in the same writer snapshot before any tag changes. All prior identities/scopes are retained."
+      },
+      {
+        "position": 614,
+        "identity": {
+          "suite": "librairii-storage::tags",
+          "name": "native_flag_undo_rejects_reused_uuid_and_mismatched_restore_authority_atomically",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Task15.4 observed native flag regression: reused UUID and mismatched restore targets reject the whole writer batch without partial Undo. Every prior identity and target scope is retained."
       }
     ],
     "python": [

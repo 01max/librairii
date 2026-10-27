@@ -1,5 +1,8 @@
 //! Production view callbacks backed by an explicitly owned synthetic library.
+#[path = "flags.rs"]
+mod flag_checks;
 use super::{Result, check, view};
+pub use flag_checks::{Surface as FlagSurface, checks as flags};
 use librairii_app::localization::Language;
 use librairii_core::navigation::Navigation;
 use librairii_desktop::{
@@ -222,6 +225,11 @@ impl Fixture {
 impl Drop for Fixture {
     fn drop(&mut self) {
         if let Some(ui) = self.ui.upgrade() {
+            ui.on_detail_flag_change(|_| {});
+            ui.on_panel_flag_change(|_| {});
+            ui.on_bulk_flag_change(|_| {});
+            ui.on_undo_flags(|| {});
+            ui.on_dismiss_flag_feedback(|| {});
             ui.on_toggle_bulk(|_| {});
             ui.on_clear_bulk(|| {});
             ui.on_select_tag_definition(|_| {});

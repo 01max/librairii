@@ -233,6 +233,43 @@ pub fn bulk_focus(ui: &DesktopWindow, menus: &Menus) -> Result {
     )?;
     Ok(())
 }
+pub fn flag_focus(ui: &DesktopWindow, menus: &Menus) -> Result {
+    check(ui.get_panel_flag_focused(), "panel flag was not focused")?;
+    check(
+        shortcut(",", Flags::Command, 43)?,
+        "flag Settings shortcut missing",
+    )?;
+    menus.dispatch(ui);
+    key(ui, slint::platform::Key::Escape.into())?;
+    check(
+        ui.get_panel_flag_focused(),
+        "Settings lost the flag invoker",
+    )?;
+    about(ui, menus)?;
+    ui.invoke_close_dialog();
+    check(ui.get_panel_flag_focused(), "About lost the flag invoker")?;
+    Ok(())
+}
+pub fn bulk_flag_undo_focus(ui: &DesktopWindow, menus: &Menus) -> Result {
+    check(ui.get_bulk_flag_undo_focused(), "bulk Undo was not focused")?;
+    check(
+        shortcut(",", Flags::Command, 43)?,
+        "bulk Undo Settings shortcut missing",
+    )?;
+    menus.dispatch(ui);
+    key(ui, slint::platform::Key::Escape.into())?;
+    check(
+        ui.get_bulk_flag_undo_focused(),
+        "Settings lost the bulk Undo invoker",
+    )?;
+    about(ui, menus)?;
+    ui.invoke_close_dialog();
+    check(
+        ui.get_bulk_flag_undo_focused(),
+        "About lost the bulk Undo invoker",
+    )?;
+    Ok(())
+}
 /// Native edit actions must target the focused tag field, never the search.
 pub fn tag_editor(ui: &DesktopWindow, menus: &Menus) -> Result {
     let original = ui.get_tag_label();

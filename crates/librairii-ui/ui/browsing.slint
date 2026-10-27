@@ -1,7 +1,8 @@
 import { TagChip } from "states.slint";
+import { FlagControl } from "flags.slint";
 import { Button, CheckBox, ListView, Palette, ScrollView, VerticalBox } from "std-widgets.slint";
 export struct TagRow { label:string, color:color }
-export struct StoryRow { bulk:bool, uuid:string, technical:string, facts:string, display-sources:string, tags:[TagRow], metadata:string, index: int, title: string, author: string, description: string, warning: string, provenance: string, cover: image }
+export struct StoryRow { broken:bool, bulk:bool, uuid:string, technical:string, facts:string, display-sources:string, tags:[TagRow], metadata:string, index: int, title: string, author: string, description: string, warning: string, provenance: string, cover: image }
 export struct StoryGroup { cards: [StoryRow] }
 export component StoryBrowser inherits FocusScope {
     in property <bool> french;
@@ -66,6 +67,7 @@ export component StoryBrowser inherits FocusScope {
                 accessible-enabled: root.enabled;
                 accessible-action-default => { root.move(card.index,true); root.focus(); }
                 Image { x: 8px; y: 8px; width: root.mode == 0 ? 64px : parent.width - 16px; height: root.mode == 0 ? parent.height - 16px : parent.height - 82px;
+                    opacity: card.broken ? 0.45 : 1;
                     source: card.cover.width > 0 ? card.cover : @image-url("../assets/library.svg"); image-fit: contain;
                 }
                 Text { x: root.mode == 0 ? 84px : 8px; y: root.mode == 0 ? 7px : parent.height - 72px;
@@ -89,6 +91,21 @@ export component Inspector inherits Rectangle {
     callback focused();
     in property <bool> french;
     in property <StoryRow> story;
+    in property <bool> flag-enabled;
+    in property <bool> flag-checked;
+    in property <bool> flag-pending;
+    in property <bool> flag-can-undo;
+    in property <string> flag-summary;
+    in property <string> flag-notice;
+    in property <string> flag-target-label;
+    callback flag-change(bool);
+    callback undo-flags();
+    private property <int> focused-control;
+    public function focus-current() { if root.focused-control == 0 || (!root.flag-enabled && !root.flag-can-undo) || root.flag-pending { technical.focus(); } else { flags.focus-control(root.focused-control); } }
+    public function focus-flag() { flags.focus-control(1); }
+    out property <bool> flag-focused: flags.toggle-focused;
+    out property <bool> first-focused: root.flag-enabled && !root.flag-pending ? flags.toggle-focused : root.flag-can-undo && !root.flag-pending ? flags.undo-focused : technical.has-focus;
+    public function focus-first() { if root.flag-enabled && !root.flag-pending { flags.focus-control(1); } else if root.flag-can-undo && !root.flag-pending { flags.focus-control(2); } else { technical.focus(); } }
     background: Palette.alternate-background;
     private property <bool> technical-open;
     out property <length> scroll-position: details.content-y;
@@ -106,8 +123,15 @@ export component Inspector inherits Rectangle {
         inspector-layout := VerticalBox { height: self.preferred-height; padding: 14px; spacing: 12px;
             Text { vertical-stretch: 0; text: root.french ? "Détails de l’histoire" : "Story details"; color: Palette.foreground; font-weight: 600; }
             Text { vertical-stretch: 0; text: root.story.title != "" ? root.story.title : (root.french ? "Sélectionnez une histoire pour afficher ses détails." : "Select a story to see its details."); wrap: word-wrap; color: Palette.foreground; font-size: 18px; }
-            Image { source: root.story.cover; image-fit: contain; height: root.story.cover.width > 0 ? min(160px,max(48px,root.height / 3)) : 0px; }
+            Image { source: root.story.cover; opacity: root.story.broken ? 0.45 : 1; image-fit: contain; height: root.story.cover.width > 0 ? min(160px,max(48px,root.height / 3)) : 0px; }
             Text { vertical-stretch: 0; text: root.story.warning; wrap: word-wrap; color: Palette.foreground; font-weight: 600; }
+            flags := FlagControl { french: root.french; active: root.interactive; available: root.flag-enabled; checked: root.flag-checked; pending: root.flag-pending; can-undo: root.flag-can-undo; title: root.flag-target-label != "" ? root.flag-target-label : root.story.title; summary: root.flag-summary; notice: root.flag-notice;
+                change(value) => { root.flag-change(value); } undo => { root.undo-flags(); }
+                focused(kind) => { root.focused-control=kind;root.focused();
+                    let delta=self.absolute-position.y<details.absolute-position.y ? details.absolute-position.y - self.absolute-position.y : self.absolute-position.y+self.height>details.absolute-position.y+details.visible-height ? details.absolute-position.y+details.visible-height - self.absolute-position.y - self.height : 0px;
+                    details.content-y=max(min(0px,details.visible-height - details.content-height),min(0px,details.content-y+delta));
+                }
+            }
             Text { vertical-stretch: 0; text: root.story.metadata; wrap: word-wrap; color: Palette.foreground; }
             Text { vertical-stretch: 0; text: root.french ? "Étiquettes" : "Tags"; color: Palette.foreground; font-weight: 600; }
             if root.story.tags.length == 0: Text { vertical-stretch: 0; text: root.french ? "Aucune étiquette." : "No tags yet."; color: Palette.foreground; }
@@ -117,7 +141,7 @@ export component Inspector inherits Rectangle {
             Text { vertical-stretch: 0; text: root.story.provenance; wrap: word-wrap; color: Palette.foreground; }
             Text { vertical-stretch: 0; text: root.story.facts; wrap: word-wrap; color: Palette.foreground; }
             Text { vertical-stretch: 0; text: root.story.display-sources; wrap: word-wrap; color: Palette.foreground; }
-            technical := Button { enabled: root.interactive && root.story.uuid != ""; text: root.technical-open ? (root.french ? "Masquer les détails techniques" : "Hide technical details") : (root.french ? "Afficher les détails techniques" : "Show technical details"); clicked => { root.technical-open = !root.technical-open; if root.technical-open { root.request-data(); } } changed has-focus => { if self.has-focus { root.focused(); details.content-y = min(0px, details.visible-height - details.content-height); } } }
+            technical := Button { enabled: root.interactive && root.story.uuid != ""; text: root.technical-open ? (root.french ? "Masquer les détails techniques" : "Hide technical details") : (root.french ? "Afficher les détails techniques" : "Show technical details"); clicked => { root.technical-open = !root.technical-open; if root.technical-open { root.request-data(); } } changed has-focus => { if self.has-focus { root.focused-control=0;root.focused(); details.content-y = min(0px, details.visible-height - details.content-height); } } }
             if root.technical-open: Text { vertical-stretch: 0; text: root.story.technical; wrap: word-wrap; color: Palette.foreground; }
         }
     }
