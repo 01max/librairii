@@ -57,6 +57,14 @@ loads the durable operation card. The live callback retains its original Details
 assertion and now additionally requires a successful metadata result. Twenty-four
 scale-2 sync/artwork/cancellation runs pass after both corrections.
 
+The final fixture uses a16ms inter-step timer while retaining actual worker and
+geometry waits, reentrancy protection, every assertion/capture and the90-second
+per-scale deadline. Fixed historical feed data is seeded in one transaction
+before real History reads. These reduce fixture idle/setup overhead; neither
+change supplies evidence in place of the real workflow actions. X11 configures
+and verifies its private French keymap after Openbox registration so a server
+reset cannot replace it before application launch.
+
 ## Approved concept source and omissions
 
 Both canonical saved concepts and their tracked copies were independently checked:

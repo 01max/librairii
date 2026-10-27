@@ -11,6 +11,9 @@ samples and 8,000 trailing silent samples. The 15-second announcement deadline i
 unchanged. PCM/WAV, debug offsets, native screenshots, semantic trees, real
 accepted/offered command revisions and actual worker-join receipts are retained.
 X11 reader action-key echo is disabled in its owned profile; Wayland keeps it.
+The private X11 French keymap is set after Openbox registers its persistent
+connection, recorded and checked as `fr`. Native dead-key composition must still
+produce the exact expected UTF-8 text in the actual application.
 Only Orca gets an isolated XKB compatibility display on Wayland; the application
 has no DISPLAY and Sway disables Xwayland. No host audio device is exposed.
 

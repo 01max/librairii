@@ -28,10 +28,14 @@ fn insert(c: &rusqlite::Connection, f: &Fixture, n: usize) -> Result {
     Ok(())
 }
 fn seed(f: &Fixture, ui: &DesktopWindow) -> Result {
-    let c = connection(f)?;
+    let mut c = connection(f)?;
+    // This is fixed historical input, prepared before the real History reads.
+    // Publish it together instead of flushing ninety separate fixture writes.
+    let tx = c.transaction()?;
     for n in 1..=45 {
-        insert(&c, f, n)?;
+        insert(&tx, f, n)?;
     }
+    tx.commit()?;
     drop(c);
     ui.invoke_refresh_operations();
     f.settle(ui)?;

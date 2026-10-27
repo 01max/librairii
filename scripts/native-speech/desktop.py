@@ -56,12 +56,14 @@ class Desktop:
             # A published X socket can precede successful client handshakes.
             # Do not lose the one WM process by launching into that interval.
             connection = wait_for(self.x11_server_ready)
-            # Stable French keysyms avoid XTest reusing one temporary keycode
-            # for both the dead key and eacute before the client reads its map.
-            self.run(['setxkbmap', '-layout', 'fr'])
-            (self.root / 'x11-keyboard-map.txt').write_text(self.run(['setxkbmap', '-query']))
             manager = self.start('openbox', ['openbox'])
             registered = wait_for(lambda: self.x11_manager_ready(manager))
+            # Keep the WM's X connection before setting the map: last-client
+            # disconnect would otherwise let Xvfb reset it before app launch.
+            self.run(['setxkbmap', '-layout', 'fr'])
+            keymap = self.run(['setxkbmap', '-query'])
+            assert re.search(r'^layout:\s+fr\s*$', keymap, re.MULTILINE), keymap
+            (self.root / 'x11-keyboard-map.txt').write_text(keymap)
             (self.root / 'x11-readiness.json').write_text(json.dumps({
                 'server_root_read': connection, 'manager_pid': manager.pid, **registered}, indent=2) + '\n')
         else:

@@ -392,7 +392,9 @@ fn main() -> Result {
     let geometry_wait = std::cell::Cell::new(None);
     timer.start(
         slint::TimerMode::Repeated,
-        Duration::from_millis(100),
+        // Steps already await actual worker responses and requested geometry.
+        // Avoid adding a tenth of a second of idle time to every fixture step.
+        Duration::from_millis(16),
         move || {
             let Some(ui) = weak.upgrade() else {
                 return;
