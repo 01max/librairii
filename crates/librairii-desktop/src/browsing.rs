@@ -44,6 +44,21 @@ pub struct Group {
     pub count: i64,
     pub available: bool,
 }
+#[derive(Clone, Debug, Default)]
+pub struct Facets {
+    pub tags: Vec<librairii_core::tagging::CatalogEntry>,
+    pub languages: Vec<String>,
+}
+fn facets(runtime: &Runtime<'_, '_, '_>) -> Result<Facets> {
+    runtime.command(|db, _, _| Ok(Facets {
+        tags: db.tag_catalog()?.wait()?,
+        languages: db.read(|tx| {
+            let mut statement=tx.prepare("SELECT DISTINCT m.language FROM official_story_metadata m JOIN catalog_snapshots c ON c.id=m.snapshot_id WHERE c.status='active' AND m.language<>'' ORDER BY m.language")?;
+            let rows=statement.query_map([],|row|row.get::<_,String>(0))?.collect::<std::result::Result<Vec<_>,_>>()?;
+            Ok(rows)
+        })?.wait()?,
+    }))
+}
 fn groups(runtime: &Runtime<'_, '_, '_>) -> Result<Vec<Group>> {
     runtime.command(|db, _, _| {
         let summaries = match db
@@ -221,6 +236,7 @@ pub(crate) fn run(
                 .generation()
                 .map_err(|_| StorageError::RuntimeFenced)?;
             let mut group_rows = groups(runtime)?;
+            let mut query_facets = facets(runtime)?;
             while !stop.load(Ordering::Acquire) {
                 let loaded = if invalid_query {
                     Err(StorageError::InvalidNavigation)
@@ -245,6 +261,7 @@ pub(crate) fn run(
                 }
                 let current_page = page.as_ref().map_or(1, |page| page.page);
                 *mailbox.lock().map_err(|_| StorageError::RuntimeFenced)? = Some(Snapshot {
+                    facets: query_facets.clone(),
                     groups: group_rows.clone(),
                     revision,
                     restore_revision,
@@ -278,6 +295,7 @@ pub(crate) fn run(
                     match command {
                         Command::Refresh => {
                             group_rows = groups(runtime)?;
+                            query_facets = facets(runtime)?;
                         }
                         Command::Back => {
                             next.back().map_err(|_| StorageError::InvalidNavigation)?;

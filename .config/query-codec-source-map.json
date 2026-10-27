@@ -5388,6 +5388,22 @@
           ]
         },
         "reason": "Section 14 independent review: manual Shelf navigation retains the saved sort without reordering approved membership"
+      },
+      {
+        "position": 608,
+        "identity": {
+          "suite": "librairii-ui",
+          "name": "filters::tests::choice_values_are_or_within_definition_and_boolean_removal_preserves_other_groups"
+        },
+        "reason": "Task15.1 observed additive query-editor regressions; every prior identity, position and target scope is retained."
+      },
+      {
+        "position": 609,
+        "identity": {
+          "suite": "librairii-ui",
+          "name": "filters::tests::facet_edits_preserve_literal_draft_nested_union_and_sort_until_explicit_clear"
+        },
+        "reason": "Task15.1 observed additive query-editor regressions; every prior identity, position and target scope is retained."
       }
     ],
     "python": [

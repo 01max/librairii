@@ -38,6 +38,7 @@ pub enum Phase {
 }
 #[derive(Clone, Debug)]
 pub struct Snapshot {
+    pub facets: crate::browsing::Facets,
     pub groups: Vec<crate::browsing::Group>,
     pub revision: u64,
     /// Last scope/history command revision, retained across superseding snapshots.
@@ -131,6 +132,7 @@ fn run(
         *mailbox
             .lock()
             .map_err(|_| librairii_storage::StorageError::RuntimeFenced)? = Some(Snapshot {
+            facets: Default::default(),
             revision: 0,
             restore_revision: 0,
             generation: None,
@@ -214,6 +216,7 @@ fn run(
         },
     };
     let mut snapshot = Snapshot {
+        facets: Default::default(),
         groups: Vec::new(),
         revision: 0,
         restore_revision: 0,
@@ -303,6 +306,7 @@ pub(crate) fn recovery(
         *mailbox
             .lock()
             .map_err(|_| librairii_storage::StorageError::RuntimeFenced)? = Some(Snapshot {
+            facets: Default::default(),
             revision: intake.latest(),
             restore_revision: 0,
             generation: None,

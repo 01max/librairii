@@ -102,6 +102,8 @@ def main():
                 raise ValueError('fixture approved a review decision implicitly')
         if report['keyboard_checks'] != 'passed':
             raise ValueError('native keyboard checks incomplete')
+        if report['filter_callbacks'] != 'passed':
+            raise ValueError('native filter callbacks incomplete')
         reports.append({'scale': scale, 'report': str((output / 'report.json').relative_to(DESTINATION))})
     if sys.platform.startswith('linux'):
         run(['/usr/bin/python3', '-I', '-B', 'scripts/check-native-accessibility.py', str(binary), str(DESTINATION / 'accessibility')], timeout=90)

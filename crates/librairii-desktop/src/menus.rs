@@ -291,7 +291,7 @@ impl Menus {
             let state = State {
                 french: _ui.get_french(),
                 modal: _ui.get_modal() || _ui.get_closing(),
-                editing: _ui.get_query_focused(),
+                editing: _ui.get_text_edit_focused(),
                 back: _ui.get_back_enabled(),
                 forward: _ui.get_forward_enabled(),
             };
@@ -345,7 +345,7 @@ impl Menus {
                     2 => true,
                     9 => !state.modal && state.back,
                     10 => !state.modal && state.forward,
-                    _ => !state.modal && state.editing,
+                    _ => state.editing,
                 });
             }
         }

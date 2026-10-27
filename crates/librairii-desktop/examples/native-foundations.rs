@@ -82,6 +82,7 @@ fn snapshot() -> Result<Snapshot> {
     let gate = LifecycleGate::new();
     let generation = gate.enter()?.generation().clone();
     Ok(Snapshot {
+        facets: Default::default(),
         revision: 0,
         restore_revision: 0,
         generation: Some(generation),
@@ -219,14 +220,23 @@ fn main() -> Result {
     callback_checks::paging(&ui)?;
     callback_checks::history(&ui)?;
     callback_checks::failed_query(&ui)?;
+    callback_checks::filters(&ui, None)?;
     let initial = snapshot()?;
     let view = Rc::new(RefCell::new(view::View {
+        filters: view::filters::State::new(
+            initial
+                .navigation
+                .as_ref()
+                .map(|n| n.current().location.request.clone())
+                .unwrap_or_default(),
+        ),
         catalogs: librairii_app::localization::Catalogs::embedded()?,
         snapshot: initial,
         selected: Some("f0000000-0000-4000-8000-000000000000".into()),
         columns: 1,
         guard: Default::default(),
     }));
+    let filter_surface = Rc::new(RefCell::new(None::<callback_checks::FilterSurface>));
     view.borrow_mut().project(&ui);
     ui.set_sources(ModelRc::new(VecModel::from(vec![
         "Weekend favorites".into(),
@@ -306,7 +316,11 @@ fn main() -> Result {
                     menus.owns_native_menu(),
                     "native application menu owner changed",
                 )?;
-                view.borrow_mut().resize(&ui);
+                if let Some(surface) = filter_surface.borrow().as_ref() {
+                    surface.poll(&ui)?;
+                } else {
+                    view.borrow_mut().resize(&ui);
+                }
                 if server {
                     return Ok(());
                 }
@@ -317,6 +331,7 @@ fn main() -> Result {
                     &destination,
                     &captured_report,
                     &menus,
+                    &filter_surface,
                 )?;
                 *fixture_step.borrow_mut() += 1;
                 Ok(())
@@ -346,6 +361,7 @@ fn capture_step(
     destination: &Path,
     report: &RefCell<Vec<serde_json::Value>>,
     _menus: &librairii_desktop::menus::Menus,
+    filter_surface: &RefCell<Option<callback_checks::FilterSurface>>,
 ) -> Result {
     if index < 48 {
         let workspace = index >= 36;
@@ -557,14 +573,41 @@ fn capture_step(
         )?;
         capture(ui, &destination.join("about-slint-fr.png"))?;
         key(ui, slint::platform::Key::Escape.into())?;
-    } else if (54..=56).contains(&index) {
+    } else if index == 54 {
+        *filter_surface.borrow_mut() = Some(callback_checks::FilterSurface::open(ui)?);
+    } else if index == 55 {
+        capture(ui, &destination.join("filters-compact-en.png"))?;
+        filter_surface
+            .borrow()
+            .as_ref()
+            .ok_or("filter surface missing")?
+            .bottom(ui)?;
+    } else if index == 56 {
+        capture(ui, &destination.join("filters-actions-compact-en.png"))?;
+        filter_surface
+            .borrow()
+            .as_ref()
+            .ok_or("filter surface missing")?
+            .french(ui)?;
+    } else if index == 57 {
+        capture(ui, &destination.join("filters-compact-fr.png"))?;
+        filter_surface
+            .borrow()
+            .as_ref()
+            .ok_or("filter surface missing")?
+            .bottom(ui)?;
+    } else if index == 58 {
+        capture(ui, &destination.join("filters-actions-compact-fr.png"))?;
+        ui.invoke_close_dialog();
+        filter_surface.borrow_mut().take();
+    } else if (59..=61).contains(&index) {
         let (phase, name, status) = match index {
-            54 => (
+            59 => (
                 Phase::Recovery,
                 "recovery",
                 "La bibliothèque attendue est indisponible ou nécessite une récupération.",
             ),
-            55 => (
+            60 => (
                 Phase::Setup,
                 "setup",
                 "Choisissez où conserver votre bibliothèque.",
@@ -594,6 +637,7 @@ fn capture_step(
                 "search_paging_callbacks": "passed",
                 "history_restoration_callbacks": "passed",
                 "failed_query_history_callbacks": "passed",
+                "filter_callbacks": "passed",
                 "scope": "shown native component/public window events and Skia capture; not physical HID or packaged workflow qualification",
             }))?,
         )?;

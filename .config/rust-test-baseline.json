@@ -3869,6 +3869,14 @@
         "x86_64-apple-darwin",
         "x86_64-unknown-linux-gnu"
       ]
+    },
+    {
+      "suite": "librairii-ui",
+      "name": "filters::tests::choice_values_are_or_within_definition_and_boolean_removal_preserves_other_groups"
+    },
+    {
+      "suite": "librairii-ui",
+      "name": "filters::tests::facet_edits_preserve_literal_draft_nested_union_and_sort_until_explicit_clear"
     }
   ]
 }

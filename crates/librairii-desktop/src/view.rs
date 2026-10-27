@@ -1,4 +1,6 @@
 //! Main-thread projection of owned bounded worker values into native models.
+#[path = "view/filters.rs"]
+pub(crate) mod filters;
 use librairii_app::localization::{Catalogs, Language, LocalizationError};
 use librairii_core::navigation::Presentation;
 use librairii_desktop::{
@@ -9,6 +11,7 @@ use librairii_ui::native::{DesktopWindow, NavigationRow, StoryGroup, StoryRow, T
 use slint::{ComponentHandle, ModelRc, VecModel};
 use std::{cell::RefCell, rc::Rc};
 pub struct View {
+    pub filters: filters::State,
     pub catalogs: Catalogs,
     pub snapshot: Snapshot,
     pub selected: Option<String>,
@@ -140,6 +143,7 @@ impl View {
                 || snapshot.restore_revision != self.snapshot.restore_revision
             {
                 ui.set_query(n.current().location.request.criteria.name.clone().into());
+                self.filters.request = n.current().location.request.clone();
                 self.selected = None;
             }
         }
@@ -151,6 +155,7 @@ impl View {
     pub fn project(&mut self, ui: &DesktopWindow) {
         let french = self.snapshot.language == Language::French;
         ui.set_french(french);
+        self.filters.project(ui, &self.snapshot, &self.catalogs);
         ui.set_startup_phase(match self.snapshot.phase {
             librairii_desktop::presentation::Phase::Opening => 4,
             librairii_desktop::presentation::Phase::Setup => 0,
@@ -308,7 +313,7 @@ impl View {
         }
     }
 }
-fn offer(worker: &Worker, command: Command, ui: &DesktopWindow) {
+fn offer(worker: &Worker, command: Command, ui: &DesktopWindow) -> bool {
     if worker.offer(command).is_err() {
         ui.set_status(
             if ui.get_french() {
@@ -318,6 +323,9 @@ fn offer(worker: &Worker, command: Command, ui: &DesktopWindow) {
             }
             .into(),
         );
+        false
+    } else {
+        true
     }
 }
 pub fn install(
@@ -326,6 +334,13 @@ pub fn install(
     initial: Snapshot,
 ) -> Result<Rc<RefCell<View>>, LocalizationError> {
     let view = Rc::new(RefCell::new(View {
+        filters: filters::State::new(
+            initial
+                .navigation
+                .as_ref()
+                .map(|n| n.current().location.request.clone())
+                .unwrap_or_default(),
+        ),
         catalogs: Catalogs::embedded()?,
         snapshot: initial,
         selected: None,
@@ -449,16 +464,6 @@ pub fn install(
             offer(&pending.borrow(), Command::Language(language), &ui);
         }
     });
-    let (state, weak, pending) = (view.clone(), ui.as_weak(), worker);
-    ui.on_search(move |text| {
-        if let Some(ui) = weak.upgrade()
-            && let Some(n) = &state.borrow().snapshot.navigation
-        {
-            let mut request = n.current().location.request.clone();
-            request.criteria.name = text.into();
-            request.page = 1;
-            offer(&pending.borrow(), Command::Request(request), &ui);
-        }
-    });
+    filters::install(ui, view.clone(), worker);
     Ok(view)
 }

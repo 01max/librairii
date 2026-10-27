@@ -158,6 +158,44 @@ pub fn verify(ui: &DesktopWindow, menus: &Menus) -> Result {
     )?;
     check(ui.get_query() == "After", "native Redo event was lost")?;
     ui.set_query("".into());
+    ui.invoke_open_dialog(8);
+    ui.invoke_focus_filters();
+    key(ui, "Before".into())?;
+    menus.dispatch(ui);
+    check(
+        shortcut("a", Flags::Command, 0)?,
+        "modal editor Select All missing",
+    )?;
+    key(ui, "After".into())?;
+    check(
+        ui.get_filter_search_query() == "After" && ui.get_query().is_empty(),
+        "native editing targeted the background search",
+    )?;
+    check(shortcut("z", Flags::Command, 6)?, "modal Undo missing")?;
+    check(
+        ui.get_filter_search_query().is_empty(),
+        "modal Undo did not remove insertion",
+    )?;
+    check(
+        shortcut("z", Flags::Command, 6)?,
+        "second modal Undo missing",
+    )?;
+    check(
+        ui.get_filter_search_query() == "Before",
+        "modal Undo did not restore removal",
+    )?;
+    for _ in 0..2 {
+        check(
+            shortcut("z", Flags::Command | Flags::Shift, 6)?,
+            "modal Redo missing",
+        )?;
+    }
+    check(
+        ui.get_filter_search_query() == "After",
+        "modal Redo lost the focused editor",
+    )?;
+    key(ui, slint::platform::Key::Escape.into())?;
+    ui.set_filter_search_query("".into());
     check(
         menus.owns_native_menu(),
         "native ownership changed after edit actions",

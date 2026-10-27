@@ -2797,6 +2797,7 @@ version = "0.0.0"
 dependencies = [
  "librairii-app",
  "librairii-core",
+ "serde_json",
  "slint",
  "slint-build",
 ]

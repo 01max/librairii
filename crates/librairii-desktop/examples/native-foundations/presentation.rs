@@ -73,6 +73,7 @@ impl Fixture {
                     tx.execute("INSERT INTO stories(id,uuid,embedded_title,display_name_normalized) VALUES(?1,printf('10000000-0000-4000-8000-%012d',?1),?2,lower(?2))", (id, title))?;
                     tx.execute("INSERT INTO story_archives(story_id,original_filename,detected_format,sha256,byte_size,managed_path,validation_state) VALUES(?1,'story.zip','zip',printf('%064d',?1),1,'archives/'||?1,'valid')", [id])?;
                 }
+                tx.execute_batch("INSERT INTO tag_definitions(id,key,normalized_key,label,color,kind,source,presentation,position,is_protected) VALUES(101,'bedtime','bedtime','Bedtime','#334455','boolean','user','default',0,0),(102,'theme','theme','Theme','#334455','choice','user','default',1,0); INSERT INTO tag_values(id,definition_id,key,normalized_key,label,position) VALUES(201,102,'forest','forest','Forest',0),(202,102,'ocean','ocean','Ocean',1); INSERT INTO story_tag_assignments(story_id,definition_id,value_id,source) SELECT id,101,NULL,'manual' FROM stories WHERE id<=30; INSERT INTO story_tag_assignments(story_id,definition_id,value_id,source) SELECT id,102,CASE WHEN id<=30 THEN 201 ELSE 202 END,'manual' FROM stories;")?;
                 Ok(())
             })?
             .wait()?;
@@ -81,7 +82,7 @@ impl Fixture {
                 seeded,
                 librairii_storage::database::TransactionOutcome::Committed(())
             ),
-            "native callback fixture seeding did not commit",
+            &format!("native callback fixture seeding did not commit: {seeded:?}"),
         )?;
         database.close()?;
         drop(database);
@@ -147,6 +148,12 @@ impl Drop for Fixture {
             ui.on_request_panel(|_| {});
             ui.on_change_language(|_| {});
             ui.on_search(|_| {});
+            ui.on_filter_search(|_| {});
+            ui.on_filter_edit(|_, _| {});
+            ui.on_filter_remove(|_| {});
+            ui.on_filter_clear(|| {});
+            ui.on_filter_clear_tags(|| {});
+            ui.on_sort_selected(|_| {});
             ui.set_mode(0);
             ui.set_query("".into());
             ui.set_back_enabled(false);
@@ -167,6 +174,168 @@ fn receive(worker: &Worker) -> Result<Snapshot> {
             return Err("native callback fixture did not receive a response".into());
         }
         std::thread::sleep(Duration::from_millis(2));
+    }
+}
+
+/// Actual production filter callbacks, SQL results and durable navigation.
+pub fn filters(ui: &DesktopWindow, output: Option<&std::path::Path>) -> Result {
+    use slint::Model;
+    let fixture = Fixture::open(ui)?;
+    fixture.search(ui, "Alpha ")?;
+    ui.invoke_open_dialog(8);
+    ui.invoke_sort_selected(1);
+    fixture.settle(ui)?;
+    let option = |label: &str| -> Result<i32> {
+        let rows = ui.get_filter_rows();
+        (0..rows.row_count())
+            .filter_map(|i| rows.row_data(i))
+            .find(|r| r.label.contains(label))
+            .map(|r| r.index)
+            .ok_or_else(|| format!("missing native filter {label}").into())
+    };
+    ui.invoke_filter_edit(option("Bedtime")?, 1);
+    let tagged = fixture.settle(ui)?;
+    check(
+        tagged.page.as_ref().is_some_and(|p| p.total == 30),
+        "boolean filter lost its full SQL scope",
+    )?;
+    ui.invoke_filter_edit(option("Forest")?, 1);
+    fixture.settle(ui)?;
+    ui.invoke_filter_edit(option("Ocean")?, 1);
+    let combined = fixture.settle(ui)?;
+    check(
+        combined.page.as_ref().is_some_and(|p| p.total == 30),
+        "choice values did not retain OR within AND groups",
+    )?;
+    check(
+        ui.get_query() == "Alpha ",
+        "filter edit trimmed the literal search editor",
+    )?;
+    if let Some(output) = output {
+        super::capture(ui, &output.join("filters-compact-en.png"))?;
+    }
+    ui.invoke_close_dialog();
+    let before = fixture.saved_navigation()?;
+    check(
+        before.current().location.request.sort == "name_asc",
+        "filter editing changed explicit sort",
+    )?;
+    ui.invoke_open_dialog(8);
+    check(
+        fixture.saved_navigation()?.current() == before.current(),
+        "collapsing filters changed criteria",
+    )?;
+    ui.invoke_filter_clear_tags();
+    let cleared = fixture.settle(ui)?;
+    check(
+        cleared.navigation.as_ref().is_some_and(|n| {
+            n.current()
+                .location
+                .request
+                .criteria
+                .boolean_filters
+                .is_empty()
+                && n.current()
+                    .location
+                    .request
+                    .criteria
+                    .choice_filters
+                    .is_empty()
+        }),
+        "clear tag filters retained a predicate",
+    )?;
+    ui.invoke_filter_clear();
+    let all = fixture.settle(ui)?;
+    check(
+        !ui.get_modal() && ui.get_query().is_empty() && ui.get_query_focused(),
+        "clear all did not restore search focus",
+    )?;
+    check(
+        all.page.as_ref().is_some_and(|p| p.total == 60)
+            && all
+                .navigation
+                .as_ref()
+                .is_some_and(|n| n.current().location.request.sort == "name_asc"),
+        "clear all lost sort or broadened a partial result",
+    )?;
+    ui.invoke_change_language("fr".into());
+    fixture.settle(ui)?;
+    ui.invoke_open_dialog(8);
+    check(
+        ui.get_filter_label().starts_with("Filtres") && option("Bedtime").is_ok(),
+        "French changed an authored label or left filters untranslated",
+    )?;
+    if let Some(output) = output {
+        super::capture(ui, &output.join("filters-compact-fr.png"))?;
+    }
+    ui.invoke_close_dialog();
+    fixture.finish()
+}
+
+/// Keep production bindings and the controller alive across rendered frames.
+pub struct FilterSurface(Fixture);
+impl std::fmt::Debug for FilterSurface {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("FilterSurface").finish_non_exhaustive()
+    }
+}
+impl FilterSurface {
+    pub fn open(ui: &DesktopWindow) -> Result<Self> {
+        use slint::Model;
+        let fixture = Fixture::open(ui)?;
+        fixture.search(ui, "Alpha")?;
+        ui.invoke_sort_selected(1);
+        fixture.settle(ui)?;
+        let rows = ui.get_filter_rows();
+        let index = (0..rows.row_count())
+            .filter_map(|i| rows.row_data(i))
+            .find(|r| r.label == "Bedtime")
+            .ok_or("filter surface tag missing")?
+            .index;
+        ui.invoke_filter_edit(index, 1);
+        fixture.settle(ui)?;
+        ui.invoke_open_dialog(8);
+        Ok(Self(fixture))
+    }
+    pub fn poll(&self, ui: &DesktopWindow) -> Result {
+        if let Some(snapshot) = self.0.worker.borrow().take_snapshot() {
+            self.0
+                .view
+                .borrow_mut()
+                .accept(ui, snapshot, self.0.worker.borrow().revision());
+        }
+        self.0.view.borrow_mut().resize(ui);
+        check(
+            ui.get_displayed_sort_index() == 1,
+            "displayed native sort lost its selected value",
+        )?;
+        Ok(())
+    }
+    pub fn bottom(&self, ui: &DesktopWindow) -> Result {
+        for _ in 0..40 {
+            if ui.get_filter_clear_focused() {
+                break;
+            }
+            super::key(ui, slint::platform::Key::Tab.into())?;
+        }
+        check(
+            ui.get_filter_clear_focused(),
+            "filter clear action is not keyboard reachable",
+        )?;
+        let y = ui.get_filter_clear_window_y();
+        let height = ui.get_filter_clear_height();
+        let top = ui.get_dialog_viewport_y();
+        let viewport = ui.get_dialog_viewport_height();
+        check(
+            y + 0.5 >= top && y + height <= top + viewport + 0.5,
+            "focused filter action remains clipped",
+        )
+    }
+    pub fn french(&self, ui: &DesktopWindow) -> Result {
+        ui.invoke_change_language("fr".into());
+        self.0.settle(ui)?;
+        ui.invoke_focus_filters();
+        Ok(())
     }
 }
 

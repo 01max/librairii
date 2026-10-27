@@ -1,5 +1,6 @@
 import { Workspace, ProposalRow } from "workspace.slint";
-import { ProgressState } from "states.slint";
+import { Filters, FilterRow, ActiveFilterRow } from "filters.slint";
+import { ProgressState, EditAction } from "states.slint";
 import { StoryRow, StoryGroup, StoryBrowser, Inspector } from "browsing.slint";
 import { Button, LineEdit, VerticalBox, HorizontalBox, AboutSlint, Palette, ScrollView, ComboBox, ListView } from "std-widgets.slint";
 
@@ -84,7 +85,6 @@ component Navigation inherits FocusScope {
         }
     }
 }
-export enum EditAction { undo, redo, cut, copy, paste, select-all }
 export component DesktopWindow inherits Window {
     title: "Librairii";
     preferred-width: 1180px; preferred-height: 760px;
@@ -110,6 +110,7 @@ export component DesktopWindow inherits Window {
     out property <bool> close-focused: close-dialog-button.has-focus;
     out property <bool> attribution-focused: attribution-button.has-focus;
     out property <bool> query-focused: search-entry.has-focus;
+    out property <bool> text-edit-focused: !root.closing && ((!root.modal && search-entry.has-focus) || (root.dialog == 8 && filters.first-focused));
     public function focus-search() { search-entry.focus(); }
     public function edit-search(action: EditAction) {
         if !FocusState.modal && !FocusState.closing && search-entry.has-focus {
@@ -120,6 +121,7 @@ export component DesktopWindow inherits Window {
             else if action == EditAction.paste { search-entry.paste(); }
             else { search-entry.select-all(); }
         }
+        else if !root.closing && root.dialog == 8 { filters.edit(action); }
     }
     in-out property <int> dialog;
     out property <bool> modal: root.dialog != 0;
@@ -140,8 +142,9 @@ export component DesktopWindow inherits Window {
         if root.dialog == 0 {
             root.invoker = FocusState.key;
             root.dialog = kind;
+            dialog-scroll.content-y = 0px;
             FocusState.modal = true;
-            if kind == 2 { english-button.focus(); } else { close-dialog-button.focus(); }
+            if kind == 2 { english-button.focus(); } else if kind == 8 { filters.activate(); } else { close-dialog-button.focus(); }
         }
     }
     public function close-dialog() {
@@ -191,6 +194,30 @@ export component DesktopWindow inherits Window {
     callback quit();
     callback request-panel(int);
     callback search(string);
+    in property <[FilterRow]> filter-rows;
+    in property <[ActiveFilterRow]> active-filter-rows;
+    in property <string> active-filter-summary;
+    in property <string> filter-label;
+    in-out property <int> sort-index;
+    out property <int> displayed-sort-index: filters.displayed-sort-index;
+    out property <bool> filter-clear-focused: filters.clear-focused;
+    out property <length> filter-clear-window-y: filters.clear-window-y;
+    out property <length> filter-clear-height: filters.clear-height;
+    out property <length> dialog-viewport-y: dialog-scroll.absolute-position.y;
+    out property <length> dialog-viewport-height: dialog-scroll.visible-height;
+    callback filter-search(string);
+    in-out property <string> filter-search-query;
+    callback filter-edit(int,int);
+    callback filter-remove(int);
+    callback filter-clear();
+    callback filter-clear-tags();
+    callback sort-selected(int);
+    public function focus-filters() { filters.activate(); }
+    function reveal-dialog(y:length, height:length) {
+        let top=dialog-scroll.absolute-position.y;
+        let delta=y<top ? top - y : y+height>top+dialog-scroll.visible-height ? top+dialog-scroll.visible-height - y - height : 0px;
+        dialog-scroll.content-y=max(min(0px,dialog-scroll.visible-height - dialog-scroll.content-height),min(0px,dialog-scroll.content-y+delta));
+    }
     public function open-sidebar() { if !root.modal { root.sidebar-open = true; navigation.activate(); } }
     public function close-sidebar() { root.sidebar-open = false; navigation-button.focus(); }
     public function show-panel(kind: int) {
@@ -246,7 +273,9 @@ export component DesktopWindow inherits Window {
                     HorizontalBox { padding: 0px; spacing: 8px;
                         search-entry := SearchField { horizontal-stretch: 1; text <=> root.query; accessible-label: root.french ? "Rechercher des histoires" : "Search stories"; placeholder-text: root.french ? "Rechercher des histoires" : "Search stories"; edited => { root.search(self.text); } }
                         ModeChoice { horizontal-stretch: 0; width: root.compact ? 180px : 230px; accessible-label: root.french ? "Présentation" : "Presentation"; model: root.french ? ["Liste", "Petites couvertures", "Grandes couvertures"] : ["List", "Small covers", "Large covers"]; current-index <=> root.mode; selected(_) => { root.mode-selected(self.current-index); } }
+                        Action { focus-key: 22; available: root.startup-phase == 3; text: root.filter-label != "" ? root.filter-label : (root.french ? "Filtres…" : "Filters…"); clicked => { root.open-dialog(8); } }
                     }
+                    if root.active-filter-summary != "": Text { vertical-stretch: 0; height: 24px; text: root.active-filter-summary; accessible-label: (root.french ? "Filtres actifs · " : "Active filters · ") + self.text; overflow: elide; color: Palette.foreground; }
                     body := HorizontalBox { padding: 0px; spacing: 12px; vertical-stretch: 1; min-height: 0px;
                         VerticalBox { padding: 0px; spacing: root.status == "" ? 0px : 8px; max-width: root.workspace ? 0px : 100000px; visible: !root.workspace;
                             Caption { accessible-live-region: polite; text: root.status; visible: root.status != ""; height: root.status == "" ? 0px : self.preferred-height; }
@@ -291,7 +320,7 @@ export component DesktopWindow inherits Window {
         width: min(600px,parent.width - 32px); height: parent.height - 48px;
         background: Palette.background; border-width: 2px; border-color: Palette.foreground; border-radius: 6px;
         accessible-role: groupbox;
-        accessible-label: root.dialog == 1 ? (root.french ? "À propos de Slint" : "About Slint") : root.dialog == 2 ? (root.french ? "Réglages" : "Settings") : root.dialog == 3 ? (root.french ? "Détails" : "Details") : root.dialog == 4 ? (root.french ? "Configurer la bibliothèque" : "Set up your library") : root.dialog == 5 ? (root.french ? "Récupération de la bibliothèque" : "Library recovery") : root.dialog == 7 ? (root.french ? "Opération en cours" : "Operation in progress") : (root.french ? "Bibliothèque" : "Library");
+        accessible-label: root.dialog == 1 ? (root.french ? "À propos de Slint" : "About Slint") : root.dialog == 2 ? (root.french ? "Réglages" : "Settings") : root.dialog == 3 ? (root.french ? "Détails" : "Details") : root.dialog == 4 ? (root.french ? "Configurer la bibliothèque" : "Set up your library") : root.dialog == 5 ? (root.french ? "Récupération de la bibliothèque" : "Library recovery") : root.dialog == 7 ? (root.french ? "Opération en cours" : "Operation in progress") : root.dialog == 8 ? (root.french ? "Filtres et tri" : "Filters and sort") : (root.french ? "Bibliothèque" : "Library");
         FocusScope {
             width: parent.width; height: parent.height;
             key-pressed(event) => {
@@ -306,6 +335,11 @@ export component DesktopWindow inherits Window {
                     return accept;
                 }
                 if event.text == Key.Tab {
+                    if root.dialog == 8 {
+                        if event.modifiers.shift && filters.first-focused { close-dialog-button.focus(); return accept; }
+                        if !event.modifiers.shift && close-dialog-button.has-focus { filters.activate(); return accept; }
+                        return reject;
+                    }
                     if root.dialog == 1 {
                         if close-dialog-button.has-focus { attribution-button.focus(); } else { close-dialog-button.focus(); }
                         return accept;
@@ -322,22 +356,31 @@ export component DesktopWindow inherits Window {
             }
             VerticalBox { padding: 18px; spacing: 12px;
                 Caption { text: dialog-panel.accessible-label; font-size: 22px; font-weight: 600; }
-                dialog-scroll := ScrollView { vertical-stretch: 1; content-width: self.visible-width;
-                    VerticalBox { padding: 0px;
+                dialog-scroll := ScrollView { vertical-stretch: 1; content-width: self.visible-width; content-height: dialog-content.preferred-height;
+                    dialog-content := VerticalBox { height: self.preferred-height; padding: 0px;
                         if root.dialog == 1: AboutSlint { }
                         dialog-inspector := Inspector { visible: root.dialog == 3; height: root.dialog == 3 ? max(240px, dialog-scroll.visible-height) : 0px; french: root.french; story: root.selected-story; }
                         if root.dialog == 4: Caption { text: root.french ? "Choisissez où conserver votre bibliothèque. Votre bibliothèque n’est créée qu’après la confirmation de son emplacement. Vous pouvez d’abord choisir la langue dans les réglages." : "Choose where to keep your library. Your library is created only after you confirm its location. You can choose your language in Settings first."; }
                         if root.dialog == 5: Caption { text: root.french ? "La bibliothèque attendue est indisponible ou nécessite une récupération. Ses fichiers sont conservés. Reconnectez son volume puis réessayez ; ne remplacez pas votre bibliothèque." : "The expected library is unavailable or needs recovery. Its files are preserved. Reconnect its volume and retry; keep your existing library."; }
                         if root.dialog == 6: Caption { text: root.status != "" ? root.status : (root.french ? "Vos histoires et leurs archives restent dans votre bibliothèque locale." : "Your stories and archives stay in your local library."); }
+                        filters := Filters { visible: root.dialog == 8; height: root.dialog == 8 ? max(480px,dialog-scroll.visible-height) : 0px; french: root.french; options: root.filter-rows; active: root.active-filter-rows; sort-index <=> root.sort-index; search <=> root.filter-search-query;
+                            search-edited(text) => { root.filter-search(text); }
+                            option-edited(index,value) => { root.filter-edit(index,value); }
+                            remove(index) => { root.filter-remove(index); }
+                            clear-all => { root.filter-clear(); }
+                            clear-tags => { root.filter-clear-tags(); }
+                            sort-selected(index) => { root.sort-selected(index); }
+                            reveal(y,height) => { root.reveal-dialog(y,height); }
+                        }
                         if root.dialog == 7: Caption { text: root.commit-pending ? (root.french ? "Enregistrement en cours. Attendez la fin de cette étape avant de fermer." : "Saving changes. Wait for this step to finish before closing.") : (root.french ? "Vous pouvez continuer ou demander l’arrêt. Les effets déjà enregistrés sont conservés." : "Keep working or request a safe stop. Already committed changes are preserved."); }
                     }
                 }
-                attribution-button := Button { visible: root.dialog == 1; enabled: !root.closing && root.dialog == 1; text: root.french ? "Site web de Slint" : "Slint website"; clicked => { Platform.open-url("https://slint.dev"); } }
-                HorizontalBox { visible: root.dialog == 2;
+                attribution-button := Button { visible: root.dialog == 1; height: root.dialog == 1 ? 32px : 0px; enabled: !root.closing && root.dialog == 1; text: root.french ? "Site web de Slint" : "Slint website"; clicked => { Platform.open-url("https://slint.dev"); } }
+                HorizontalBox { visible: root.dialog == 2; height: root.dialog == 2 ? 32px : 0px;
                     english-button := Button { text: "English"; enabled: !root.closing && root.dialog == 2; clicked => { root.change-language("en"); } }
                     Button { text: "Français"; enabled: !root.closing && root.dialog == 2; clicked => { root.change-language("fr"); } }
                 }
-                stop-close-button := Button { visible: root.dialog == 7; enabled: !root.closing && !root.commit-pending; text: root.french ? "Arrêter et fermer" : "Stop and close"; clicked => { root.quit(); } }
+                stop-close-button := Button { visible: root.dialog == 7; height: root.dialog == 7 ? 32px : 0px; enabled: !root.closing && !root.commit-pending; text: root.french ? "Arrêter et fermer" : "Stop and close"; clicked => { root.quit(); } }
                 close-dialog-button := Button { enabled: !root.closing; text: root.dialog == 7 ? (root.french ? "Continuer" : "Keep working") : (root.french ? "Fermer" : "Close"); clicked => { root.close-dialog(); } }
             }
         }
