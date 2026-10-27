@@ -664,3 +664,27 @@ accepted command revisions and real transitions, positively joins workers, and
 binds final reports to clean source and the retained native executable. Final
 execution/three-host receipts are required before15.13 is checked. The complete
 row/concept mapping is in `section-15-review.md`.
+
+Final review follow-up: artwork completion carries an explicit render revision,
+so a simultaneous operations-only observation cannot suppress browser repaint.
+The real callback checks both the accepted thumbnail and displayed Slint cover
+model. Each sync completion is correlated with its newly requested operation ID;
+a real intake-busy notice is followed only by explicit bounded callback retry.
+Darwin's accepted socket inherited O_NONBLOCK (observed directly on the host);
+the private HTTP fixture now explicitly clears it before its unchanged1-second
+read timeout. Twelve repeated sync/artwork/cancellation callbacks pass with the
+stronger checks. No production debug output remains.
+
+The native fixture waits for actual requested OS geometry before advancing its
+next existing step, within the unchanged90-second parent deadline. Compact
+workspace chrome shares the existing Shelf toolbar scroll cap, preserving the
+original76px approved-row and80px review interaction bounds on Linux. Inspector
+initial disclosure now also asserts actual focus and closed initial state.
+The full88-PNG/all-callback development run passes at
+`librairii-task15-collections-dev-_ens51li`. The preparation receipt root is
+`librairii-workflow-preparation-r8tx2qc0` (56/56 positive shutdowns).
+
+Linux speech diagnostics also execute after a visual failure, bound to the exact
+retained Cargo executable. Such a report explicitly has native_visual_passed=false
+and complete=false; the earlier visual step still fails. Final acceptance requires
+the sealed visual manifest and all spoken evidence together.

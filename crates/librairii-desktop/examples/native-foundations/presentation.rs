@@ -1000,6 +1000,19 @@ impl DetailSurface {
     }
     pub fn first_disclosure(&self, ui: &DesktopWindow) -> Result {
         ui.invoke_focus_inspector_technical();
+        check(
+            !ui.get_inspector_technical_open(),
+            "fresh library inherited an already open technical disclosure",
+        )?;
+        check(
+            ui.get_inspector_technical_focused(),
+            &format!(
+                "wide technical disclosure did not take native focus: dialog={} startup={} width={:?}",
+                ui.get_dialog(),
+                ui.get_startup_phase(),
+                ui.window().size()
+            ),
+        )?;
         ui.window()
             .dispatch_event(slint::platform::WindowEvent::KeyPressed { text: " ".into() });
         ui.window()

@@ -28,6 +28,9 @@ use std::{
     sync::Arc,
     time::Duration,
 };
+std::thread_local! {
+    static REQUESTED_SIZE: std::cell::Cell<Option<(u32,u32)>> = const {std::cell::Cell::new(None)};
+}
 type Result<T = ()> = std::result::Result<T, Box<dyn std::error::Error>>;
 fn check(ok: bool, message: &str) -> Result {
     if ok {
@@ -236,6 +239,9 @@ fn main() -> Result {
         "isolated fixture marker missing",
     )?;
     let (ui, menus) = librairii_desktop::menus::create_window()?;
+    if std::env::args().any(|arg| arg == "--sync-callback-checks") {
+        return callback_checks::sync(&ui);
+    }
     if let Some(case) =
         std::env::args().find_map(|a| a.strip_prefix("--workflow-case=").map(str::to_owned))
     {
@@ -394,6 +400,16 @@ fn main() -> Result {
             // Keep the same fixture step until that observable lifecycle event;
             // the parent driver's deadline still bounds a missing window.
             if !ui.window().has_winit_window() {
+                return;
+            }
+            // A native resize is asynchronous. Keep the next existing step
+            // pending until its actual render-space geometry is observed;
+            // the unchanged parent deadline still bounds missing OS delivery.
+            if REQUESTED_SIZE.with(|size| {
+                size.get().is_some_and(|(w, h)| {
+                    ui.window().size().width != w || ui.window().size().height != h
+                })
+            }) {
                 return;
             }
             if captured_errors.borrow().is_some() || ticking.replace(true) {
@@ -556,7 +572,12 @@ fn capture_step(
                 check(
                     ui.get_observed_approved_height() >= 76.0
                         && ui.get_observed_review_height() >= 80.0,
-                    "workspace panes cannot display a full interaction target",
+                    &format!(
+                        "workspace panes cannot display a full interaction target: approved={} review={} window={:?}",
+                        ui.get_observed_approved_height(),
+                        ui.get_observed_review_height(),
+                        ui.window().size()
+                    ),
                 )?;
             } else {
                 check(
@@ -1564,9 +1585,11 @@ fn resize(ui: &DesktopWindow, width: f32, height: f32) -> Result {
     // SLINT_SCALE_FACTOR changes rendering. Set the observed physical size so
     // the fixture's intended render-space dimensions are truthful on both.
     let scale = ui.window().scale_factor();
-    ui.window().set_size(slint::PhysicalSize::new(
+    let requested = slint::PhysicalSize::new(
         (width * scale).round() as u32,
         (height * scale).round() as u32,
-    ));
+    );
+    REQUESTED_SIZE.with(|size| size.set(Some((requested.width, requested.height))));
+    ui.window().set_size(requested);
     Ok(())
 }

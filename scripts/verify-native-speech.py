@@ -21,15 +21,26 @@ def main():
     assert sys.platform=='linux','spoken release evidence requires the native Linux CI host'
     assert not subprocess.check_output(['git','status','--porcelain','--untracked-files=normal'],cwd=ROOT,text=True).strip(),'clean committed source required'
     commit=subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip()
-    sealed=ROOT/'target/quality/native-ui';manifest=json.loads((sealed/'manifest.json').read_text())
-    assert manifest['source_commit']==commit
-    assert manifest['target']=='x86_64-unknown-linux-gnu' and platform.machine()=='x86_64'
-    binary=sealed/'native-foundations';binary_digest=sha(binary);assert binary_digest==manifest['executable']['sha256']
+    sealed=ROOT/'target/quality/native-ui';manifest_path=sealed/'manifest.json'
+    assert os.environ.get('RUST_TARGET')=='x86_64-unknown-linux-gnu' and platform.machine()=='x86_64'
+    binary=sealed/'native-foundations';binary_digest=sha(binary)
+    visual_passed=manifest_path.is_file()
+    if visual_passed:
+        manifest=json.loads(manifest_path.read_text());assert manifest['source_commit']==commit
+        assert manifest['target']=='x86_64-unknown-linux-gnu' and binary_digest==manifest['executable']['sha256']
+    else:
+        # Retain spoken diagnostics after a visual failure. That earlier CI step
+        # still fails, and complete remains false without its sealed manifest.
+        events=[json.loads(line) for line in (sealed/'compiler-artifacts.jsonl').read_text().splitlines()]
+        artifacts=[e for e in events if e.get('reason')=='compiler-artifact' and e.get('target',{}).get('name')=='native-foundations' and e.get('target',{}).get('kind')==['example'] and e.get('executable')]
+        assert len(artifacts)==1
+        compiled=Path(artifacts[0]['executable']).resolve(strict=True)
+        assert compiled.is_relative_to(ROOT/'target') and sha(compiled)==binary_digest
     evidence=ROOT/'target/quality/workflow-speech';evidence.mkdir(exist_ok=False)
     uid,gid=str(os.getuid()),str(os.getgid());image='librairii-workflow-speech:'+commit
     run(['docker','build','--build-arg','QUALIFICATION_UID='+uid,'--build-arg','QUALIFICATION_GID='+gid,'-t',image,'scripts/native-speech'])
     image_id=subprocess.check_output(['docker','image','inspect','--format','{{.Id}}',image],text=True).strip()
-    binding={'source_commit':commit,'binary_sha256':binary_digest,'host':platform.platform(),'machine':platform.machine(),'image_id':image_id,'observer_files':{str(p.relative_to(ROOT)):sha(p) for p in sorted((ROOT/'scripts/native-speech').glob('*')) if p.is_file()},'sessions':{}}
+    binding={'source_commit':commit,'binary_sha256':binary_digest,'native_visual_passed':visual_passed,'host':platform.platform(),'machine':platform.machine(),'image_id':image_id,'observer_files':{str(p.relative_to(ROOT)):sha(p) for p in sorted((ROOT/'scripts/native-speech').glob('*')) if p.is_file()},'sessions':{}}
     verified=False
     try:
         for session in ('x11','wayland'):
@@ -53,6 +64,7 @@ def main():
         assert sha(binary)==binding['binary_sha256'],'retained executable changed'
         verified=True
     finally:
-        binding['complete']=verified and args.case is None
+        binding['spoken_complete']=verified and args.case is None
+        binding['complete']=binding['spoken_complete'] and visual_passed
         (evidence/'binding.json').write_text(json.dumps(binding,indent=2)+'\n')
 if __name__=='__main__':main()

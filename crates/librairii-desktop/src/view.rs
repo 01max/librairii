@@ -314,6 +314,7 @@ impl View {
             && snapshot.revision == self.snapshot.revision
             && snapshot.phase == self.snapshot.phase
             && snapshot.language == self.snapshot.language
+            && snapshot.workflows.artwork_revision == self.snapshot.workflows.artwork_revision
             && snapshot.workflows.exports.observation == self.snapshot.workflows.exports.observation
             && snapshot.workflows.operations.observation
                 != self.snapshot.workflows.operations.observation

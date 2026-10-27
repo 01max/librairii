@@ -592,6 +592,7 @@ fn run_session<'p>(
                         let prepared=export_controller.poll(runtime);workflows.exports=export_controller.snapshot.clone();let export_changed=prepared?;
                         let observed=operation_controller.poll(runtime,false);workflows.operations=operation_controller.snapshot.clone();let (changed,effects)=observed?;
                         let artwork_changed=runtime.observe_artwork()?;
+                        if artwork_changed {workflows.artwork_revision=workflows.artwork_revision.checked_add(1).ok_or(StorageError::RuntimeFenced)?;}
                         if changed || export_changed || artwork_changed {
                             workflows.operations=operation_controller.snapshot.clone();
                             if effects {

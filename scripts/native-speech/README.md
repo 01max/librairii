@@ -28,3 +28,8 @@ AT-SPI fixtures remain mandatory. Hardware input, the owner-waived VoiceOver/IME
 executions, large-library numerical budgets, installed packages and final cutover
 retain their distinct qualification boundaries. Saved concept source is reviewed
 without bypassing the blocked preview URL.
+
+After a visual-step failure, CI still records spoken diagnostics when the retained
+binary matches Cargo's compiler-artifact receipt. Those diagnostics explicitly
+record native_visual_passed=false and complete=false. The visual failure remains
+a failing CI step. Final complete acceptance requires its sealed visual manifest.

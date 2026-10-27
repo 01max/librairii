@@ -3,6 +3,7 @@ use super::{Fixture, Result, check};
 use librairii_core::{OperationKind, operations::is_terminal};
 use librairii_desktop::presentation::Snapshot;
 use librairii_ui::native::DesktopWindow;
+use slint::Model;
 use std::{
     io::{Read, Write},
     net::TcpListener,
@@ -62,6 +63,12 @@ impl Server {
                     }
                     Err(_) => return,
                 };
+                // Darwin accepts inherit O_NONBLOCK from the listening socket.
+                // This owned HTTP exchange uses its bounded read timeout; an
+                // empty WouldBlock must never be treated as a guest request.
+                if stream.set_nonblocking(false).is_err() {
+                    continue;
+                }
                 let _timeout = stream.set_read_timeout(Some(Duration::from_secs(1)));
                 let mut request = Vec::new();
                 let mut buffer = [0u8; 1024];
@@ -136,10 +143,52 @@ impl Drop for Server {
         }
     }
 }
-fn complete(f: &Fixture, ui: &DesktopWindow) -> Result<Snapshot> {
+fn start(f: &Fixture, ui: &DesktopWindow) -> Result<String> {
+    let previous = f
+        .view
+        .borrow()
+        .snapshot
+        .workflows
+        .operations
+        .cards
+        .iter()
+        .map(|c| c.operation.identity.id.clone())
+        .collect::<std::collections::BTreeSet<_>>();
+    let deadline = Instant::now() + Duration::from_secs(5);
+    loop {
+        let revision = f.worker.borrow().revision();
+        ui.invoke_start_sync();
+        if f.worker.borrow().revision() > revision {
+            break;
+        }
+        check(
+            !ui.get_operation_notice().is_empty(),
+            "unoffered sync lost its explicit busy notice",
+        )?;
+        if Instant::now() >= deadline {
+            return Err("explicit sync retry remained busy".into());
+        }
+        thread::sleep(Duration::from_millis(2));
+    }
+    let snapshot = f.settle(ui)?;
+    let data = &snapshot.workflows.operations;
+    data.preparing
+        .clone()
+        .or_else(|| {
+            data.cards
+                .iter()
+                .find(|c| {
+                    c.operation.kind == OperationKind::MetadataSync
+                        && !previous.contains(&c.operation.identity.id)
+                })
+                .map(|c| c.operation.identity.id.clone())
+        })
+        .ok_or_else(|| format!("explicit sync admitted no new operation: {:?}", data.error).into())
+}
+fn complete(f: &Fixture, ui: &DesktopWindow, expected: &str) -> Result<Snapshot> {
     let deadline = Instant::now() + Duration::from_secs(15);
     loop {
-        let snapshot = f.settle(ui)?;
+        let snapshot = f.view.borrow().snapshot.clone();
         let data = &snapshot.workflows.operations;
         if data.preparing.is_none()
             && data
@@ -147,6 +196,7 @@ fn complete(f: &Fixture, ui: &DesktopWindow) -> Result<Snapshot> {
                 .is_some_and(|status| !status.starting && status.running == 0 && status.queued == 0)
             && data.details.as_ref().is_some_and(|d| {
                 d.card.operation.kind == OperationKind::MetadataSync
+                    && d.card.operation.identity.id == expected
                     && is_terminal(d.card.operation.state)
             })
         {
@@ -155,6 +205,7 @@ fn complete(f: &Fixture, ui: &DesktopWindow) -> Result<Snapshot> {
         if Instant::now() > deadline {
             return Err("native metadata job did not finish".into());
         }
+        f.settle(ui)?;
     }
 }
 pub fn checks(ui: &DesktopWindow) -> Result {
@@ -181,8 +232,8 @@ pub fn checks(ui: &DesktopWindow) -> Result {
         "local status or show/hide fetched the catalog",
     )?;
     server.mode.store(1, Ordering::Release);
-    ui.invoke_start_sync();
-    complete(&f, ui)?;
+    let id = start(&f, ui)?;
+    complete(&f, ui, &id)?;
     check(
         ui.get_sync_data().status.contains("unavailable")
             && !ui.get_sync_data().status.contains("previous working"),
@@ -190,15 +241,14 @@ pub fn checks(ui: &DesktopWindow) -> Result {
     )?;
     server.mode.store(0, Ordering::Release);
     server.hold.store(true, Ordering::Release);
-    ui.invoke_start_sync();
-    f.settle(ui)?;
+    let id = start(&f, ui)?;
     f.search(ui, "Clockwork")?;
     f.select(ui, 0)?;
     ui.invoke_focus_sync();
     ui.invoke_open_dialog(1);
     check(ui.get_close_focused(), "About did not own native focus")?;
     server.hold.store(false, Ordering::Release);
-    let succeeded = complete(&f, ui)?;
+    let succeeded = complete(&f, ui, &id)?;
     check(
         ui.get_close_focused(),
         "metadata completion stole About focus",
@@ -215,18 +265,40 @@ pub fn checks(ui: &DesktopWindow) -> Result {
     let cover_deadline = Instant::now() + Duration::from_secs(5);
     loop {
         let snapshot = f.view.borrow().snapshot.clone();
-        if snapshot.page.as_ref().is_some_and(|page| {
-            page.all_stories().any(|story| {
-                story
-                    .thumbnail
-                    .as_ref()
-                    .is_some_and(|t| t.width > 0 && t.width * 40 == t.height * 64)
+        let displayed = ui.get_story_groups().iter().any(|g| {
+            g.cards.iter().any(|row| {
+                let size = row.cover.size();
+                size.width > 0 && size.width * 40 == size.height * 64
             })
-        }) {
+        });
+        if displayed
+            && snapshot.page.as_ref().is_some_and(|page| {
+                page.all_stories().any(|story| {
+                    story
+                        .thumbnail
+                        .as_ref()
+                        .is_some_and(|t| t.width > 0 && t.width * 40 == t.height * 64)
+                })
+            })
+        {
             break;
         }
         if Instant::now() >= cover_deadline {
-            return Err("lazy official cover did not replace the embedded fallback".into());
+            let snapshot = f.view.borrow().snapshot.clone();
+            let rows = snapshot.page.as_ref().map(|p| {
+                p.all_stories()
+                    .map(|s| {
+                        (
+                            &s.title,
+                            s.summary
+                                .as_ref()
+                                .map(|s| (&s.artwork_id, &s.sources.artwork)),
+                            s.thumbnail.as_ref().map(|t| (t.width, t.height)),
+                        )
+                    })
+                    .collect::<Vec<_>>()
+            });
+            return Err(format!("lazy official cover did not replace the embedded fallback: artwork_requests={} phase={:?} rows={rows:?}",server.artwork.load(Ordering::Acquire),snapshot.phase).into());
         }
         if let Some(snapshot) = f.worker.borrow().take_snapshot() {
             let revision = f.worker.borrow().revision();
@@ -269,8 +341,8 @@ pub fn checks(ui: &DesktopWindow) -> Result {
         "language/status refresh fetched metadata or lost localization",
     )?;
     server.mode.store(1, Ordering::Release);
-    ui.invoke_start_sync();
-    let failed = complete(&f, ui)?;
+    let id = start(&f, ui)?;
+    let failed = complete(&f, ui, &id)?;
     check(
         failed
             .workflows
@@ -287,14 +359,13 @@ pub fn checks(ui: &DesktopWindow) -> Result {
     server.mode.store(0, Ordering::Release);
     server.hold.store(true, Ordering::Release);
     let before = server.count();
-    ui.invoke_start_sync();
-    f.settle(ui)?;
+    let held_id = start(&f, ui)?;
     let deadline = Instant::now() + Duration::from_secs(5);
     while server.count() < before + 2 || !ui.get_sync_data().cancellable {
         ui.invoke_refresh_sync();
         f.settle(ui)?;
         if Instant::now() > deadline {
-            return Err("metadata request did not reach its cancellable response".into());
+            return Err(format!("metadata request did not reach its cancellable response: before={before} now={} ui={:?} workflows={:?}", server.count(),ui.get_sync_data(),f.view.borrow().snapshot.workflows.operations).into());
         }
     }
     ui.invoke_start_sync();
@@ -304,7 +375,7 @@ pub fn checks(ui: &DesktopWindow) -> Result {
         "second active sync was admitted or fetched again",
     )?;
     ui.invoke_cancel_sync();
-    let cancelled = complete(&f, ui)?;
+    let cancelled = complete(&f, ui, &held_id)?;
     server.hold.store(false, Ordering::Release);
     check(
         cancelled
@@ -388,16 +459,16 @@ impl Surface {
         })
     }
     pub fn success(&self, ui: &DesktopWindow) -> Result {
-        ui.invoke_start_sync();
-        complete(&self.fixture, ui)?;
+        let id = start(&self.fixture, ui)?;
+        complete(&self.fixture, ui, &id)?;
         Ok(())
     }
     pub fn french_failure(&self, ui: &DesktopWindow) -> Result {
         ui.invoke_change_language("fr".into());
         self.fixture.settle(ui)?;
         self._server.mode.store(1, Ordering::Release);
-        ui.invoke_start_sync();
-        complete(&self.fixture, ui)?;
+        let id = start(&self.fixture, ui)?;
+        complete(&self.fixture, ui, &id)?;
         Ok(())
     }
     pub fn poll(&self, ui: &DesktopWindow) {

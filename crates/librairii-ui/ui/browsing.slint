@@ -116,7 +116,7 @@ export component Inspector inherits Rectangle {
     out property <bool> first-focused: root.flag-enabled && !root.flag-pending ? flags.toggle-focused : root.flag-can-undo && !root.flag-pending ? flags.undo-focused : technical.has-focus;
     public function focus-first() { if root.flag-enabled && !root.flag-pending { flags.focus-control(1); } else if root.flag-can-undo && !root.flag-pending { flags.focus-control(2); } else { technical.focus(); } }
     background: Palette.alternate-background;
-    private property <bool> technical-open;
+    out property <bool> technical-open;
     out property <length> scroll-position: details.content-y;
     public function reset() { details.content-y = 0px; root.technical-open = false; }
     private property <string> identity: root.story.uuid;
