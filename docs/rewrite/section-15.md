@@ -581,7 +581,7 @@ foundation assertions/deadlines remain intact.
 
 The complete local Rust gate passes601 tests with zero skips, plus formatting,
 strict lint/build, doctests, preservation and dependency checks. The full normal
-shown-window sequence passes90 PNGs and all production callbacks at
+shown-window sequence passes88 PNGs and all production callbacks at
 `librairii-task15-collections-dev-fymy8ov6`; compact French setup/location/recovery
 and wide settings were visually inspected. These are local development receipts;
 current-source sealed three-host and spoken workflow acceptance remains15.13.
