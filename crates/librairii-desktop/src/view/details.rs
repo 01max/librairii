@@ -163,8 +163,7 @@ fn target(view: &View) -> Option<StoryTarget> {
         .snapshot
         .page
         .as_ref()?
-        .stories
-        .iter()
+        .all_stories()
         .find(|s| &s.uuid == selected)?
         .summary
         .as_ref()?;

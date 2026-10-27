@@ -117,6 +117,9 @@ fn snapshot() -> Result<Snapshot> {
         )?),
         page: Some(Page {
             stories,
+            previews: Vec::new(),
+            preview_page: 0,
+            preview_pages: 0,
             page: 1,
             pages: 56,
             total: 1324,
@@ -225,8 +228,10 @@ fn main() -> Result {
     callback_checks::details(&ui)?;
     callback_checks::tags(&ui)?;
     callback_checks::flags(&ui)?;
+    callback_checks::collections(&ui)?;
     let initial = snapshot()?;
     let view = Rc::new(RefCell::new(view::View {
+        collections: Default::default(),
         flags: Default::default(),
         tags: Default::default(),
         details: Default::default(),
@@ -303,6 +308,9 @@ fn main() -> Result {
     let captured_report = report.clone();
     let destination = output.clone();
     let fixture_step = step.clone();
+    // Native menu dispatch can run a nested event loop. A fixture step owns
+    // its command/response pair until it returns; do not execute it twice.
+    let ticking = std::cell::Cell::new(false);
     timer.start(
         slint::TimerMode::Repeated,
         Duration::from_millis(100),
@@ -314,6 +322,9 @@ fn main() -> Result {
             // Keep the same fixture step until that observable lifecycle event;
             // the parent driver's deadline still bounds a missing window.
             if !ui.window().has_winit_window() {
+                return;
+            }
+            if ticking.replace(true) {
                 return;
             }
             let result = (|| -> Result {
@@ -330,6 +341,8 @@ fn main() -> Result {
                 } else if let Some(surface) = surfaces.tags.borrow().as_ref() {
                     surface.poll(&ui);
                 } else if let Some(surface) = surfaces.flags.borrow().as_ref() {
+                    surface.poll(&ui);
+                } else if let Some(surface) = surfaces.collections.borrow().as_ref() {
                     surface.poll(&ui);
                 } else {
                     view.borrow_mut().resize(&ui);
@@ -349,6 +362,7 @@ fn main() -> Result {
                 *fixture_step.borrow_mut() += 1;
                 Ok(())
             })();
+            ticking.set(false);
             if let Err(error) = result {
                 *captured_errors.borrow_mut() = Some(error.to_string());
                 let _quit = slint::quit_event_loop();
@@ -361,7 +375,7 @@ fn main() -> Result {
         return Err(error.into());
     }
     check(
-        server || *step.borrow() > 57,
+        server || *step.borrow() > 94,
         "native fixture ended before completing its checks",
     )?;
     Ok(())
@@ -369,6 +383,7 @@ fn main() -> Result {
 
 #[derive(Debug, Default)]
 struct Surfaces {
+    collections: RefCell<Option<callback_checks::CollectionSurface>>,
     flags: RefCell<Option<callback_checks::FlagSurface>>,
     filters: RefCell<Option<callback_checks::FilterSurface>>,
     details: RefCell<Option<callback_checks::DetailSurface>>,
@@ -801,14 +816,98 @@ fn capture_step(
         capture(ui, &destination.join("broken-panel-wide-fr.png"))?;
         surfaces.flags.borrow_mut().take();
         resize(ui, 560., 400.)?;
-    } else if (81..=83).contains(&index) {
+    } else if index == 81 {
+        *surfaces.collections.borrow_mut() = Some(callback_checks::CollectionSurface::open(ui)?);
+    } else if index == 82 {
+        #[cfg(target_os = "macos")]
+        native_menu::collection_editor(ui, _menus)?;
+        capture(ui, &destination.join("collections-compact-en.png"))?;
+        surfaces
+            .collections
+            .borrow()
+            .as_ref()
+            .ok_or("Collection surface missing")?
+            .french(ui)?;
+    } else if index == 83 {
+        capture(ui, &destination.join("collections-compact-fr.png"))?;
+        surfaces
+            .collections
+            .borrow()
+            .as_ref()
+            .ok_or("Collection surface missing")?
+            .union(ui)?;
+    } else if index == 84 {
+        check(
+            ui.get_collection_union_focused()
+                && ui.get_collection_union_window_y() >= ui.get_dialog_viewport_y() - 0.5
+                && ui.get_collection_union_window_y() + ui.get_collection_union_height()
+                    <= ui.get_dialog_viewport_y() + ui.get_dialog_viewport_height() + 0.5,
+            "focused union action was clipped",
+        )?;
+        capture(ui, &destination.join("collections-union-fr.png"))?;
+        surfaces
+            .collections
+            .borrow()
+            .as_ref()
+            .ok_or("Collection surface missing")?
+            .impact(ui)?;
+    } else if index == 85 {
+        capture(ui, &destination.join("collection-replacement-fr.png"))?;
+        surfaces
+            .collections
+            .borrow()
+            .as_ref()
+            .ok_or("Collection surface missing")?
+            .overview(ui)?;
+    } else if index == 86 {
+        surfaces
+            .collections
+            .borrow()
+            .as_ref()
+            .ok_or("Collection surface missing")?
+            .bounded(ui)?;
+    } else if index == 87 {
+        surfaces
+            .collections
+            .borrow()
+            .as_ref()
+            .ok_or("Collection surface missing")?
+            .focus_preview(ui)?;
+    } else if index == 88 {
+        capture(ui, &destination.join("collection-preview-focus-fr.png"))?;
+        surfaces
+            .collections
+            .borrow()
+            .as_ref()
+            .ok_or("Collection surface missing")?
+            .preview(ui)?;
+    } else if index == 89 {
+        check(
+            ui.get_preview_focused_key() == ui.get_focused_key()
+                && ui.get_preview_focused_key() < 0,
+            "preview inspection lost actual native focus after model refresh",
+        )?;
+        capture(ui, &destination.join("collection-previews-fr.png"))?;
+        #[cfg(target_os = "macos")]
+        native_menu::preview_focus(ui, _menus)?;
+    } else if index == 90 {
+        surfaces
+            .collections
+            .borrow()
+            .as_ref()
+            .ok_or("Collection surface missing")?
+            .bulk(ui)?;
+    } else if index == 91 {
+        capture(ui, &destination.join("collection-preview-bulk-fr.png"))?;
+        surfaces.collections.borrow_mut().take();
+    } else if (92..=94).contains(&index) {
         let (phase, name, status) = match index {
-            81 => (
+            92 => (
                 Phase::Recovery,
                 "recovery",
                 "La bibliothèque attendue est indisponible ou nécessite une récupération.",
             ),
-            82 => (
+            93 => (
                 Phase::Setup,
                 "setup",
                 "Choisissez où conserver votre bibliothèque.",
@@ -842,6 +941,7 @@ fn capture_step(
                 "details_removal_callbacks": "passed",
                 "tag_callbacks": "passed",
                 "flag_callbacks": "passed",
+                "collection_callbacks": "passed",
                 "scope": "shown native component/public window events and Skia capture; not physical HID or packaged workflow qualification",
             }))?,
         )?;

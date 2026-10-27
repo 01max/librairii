@@ -341,3 +341,65 @@ pub fn inspector_focus(ui: &DesktopWindow, menus: &Menus) -> Result {
     )?;
     Ok(())
 }
+
+pub fn collection_editor(ui: &DesktopWindow, menus: &Menus) -> Result {
+    let original = ui.get_collection_name();
+    let query = ui.get_query();
+    ui.invoke_focus_collection_name();
+    menus.dispatch(ui);
+    check(
+        shortcut("a", Flags::Command, 0)?,
+        "Collection Select All missing",
+    )?;
+    key(ui, "Edited Collection label".into())?;
+    check(
+        ui.get_collection_name() == "Edited Collection label" && ui.get_query() == query,
+        "native Collection editing targeted the background query",
+    )?;
+    check(shortcut("z", Flags::Command, 6)?, "Collection Undo missing")?;
+    check(
+        ui.get_collection_name().is_empty(),
+        "Collection Undo did not remove insertion",
+    )?;
+    check(
+        shortcut("z", Flags::Command, 6)?,
+        "second Collection Undo missing",
+    )?;
+    check(
+        ui.get_collection_name() == original,
+        "Collection Undo did not restore the label",
+    )?;
+    for _ in 0..2 {
+        check(
+            shortcut("z", Flags::Command | Flags::Shift, 6)?,
+            "Collection Redo missing",
+        )?;
+    }
+    check(
+        ui.get_collection_name() == "Edited Collection label" && ui.get_query() == query,
+        "Collection Redo lost the focused editor",
+    )?;
+    ui.set_collection_name(original);
+    Ok(())
+}
+
+pub fn preview_focus(ui: &DesktopWindow, menus: &Menus) -> Result {
+    let invoker = ui.get_focused_key();
+    check(invoker < 0, "preview was not focused")?;
+    check(
+        shortcut(",", Flags::Command, 43)?,
+        "preview Settings missing",
+    )?;
+    menus.dispatch(ui);
+    key(ui, slint::platform::Key::Escape.into())?;
+    check(
+        ui.get_focused_key() == invoker,
+        "Settings lost preview invoker",
+    )?;
+    about(ui, menus)?;
+    ui.invoke_close_dialog();
+    check(
+        ui.get_focused_key() == invoker,
+        "About lost preview invoker",
+    )
+}

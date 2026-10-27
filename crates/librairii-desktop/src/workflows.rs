@@ -1,5 +1,6 @@
 //! Owned workflow observations and frozen command targets. No UI value grants
 //! authority without the actual generation/query/UUID checks on the controller.
+pub mod collections;
 pub mod flags;
 pub mod tags;
 use crate::library::Runtime;
@@ -33,6 +34,7 @@ pub struct Details {
 }
 #[derive(Clone, Debug, Default)]
 pub struct Snapshot {
+    pub collections: collections::Snapshot,
     pub flags: flags::Snapshot,
     pub tags: tags::Snapshot,
     pub details: Option<Details>,

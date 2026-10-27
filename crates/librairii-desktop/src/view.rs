@@ -1,4 +1,6 @@
 //! Main-thread projection of owned bounded worker values into native models.
+#[path = "view/collections.rs"]
+pub(crate) mod collections;
 #[path = "view/details.rs"]
 pub(crate) mod details;
 #[path = "view/filters.rs"]
@@ -13,10 +15,13 @@ use librairii_desktop::{
     browsing::Story,
     presentation::{Command, Snapshot, Worker},
 };
-use librairii_ui::native::{DesktopWindow, NavigationRow, StoryGroup, StoryRow, TagRow};
+use librairii_ui::native::{
+    CollectionPreview, DesktopWindow, NavigationRow, StoryGroup, StoryRow, TagRow,
+};
 use slint::{ComponentHandle, ModelRc, VecModel};
 use std::{cell::RefCell, rc::Rc};
 pub struct View {
+    pub collections: collections::State,
     pub flags: flags::State,
     pub tags: tags::State,
     pub details: details::State,
@@ -171,6 +176,7 @@ impl View {
         self.details.accept(ui, &self.snapshot);
         self.tags.accept(ui, &self.snapshot);
         self.flags.accept(ui, &self.snapshot);
+        self.collections.accept(ui, &self.snapshot);
         self.resize(ui);
         self.project(ui);
         true
@@ -194,6 +200,12 @@ impl View {
             librairii_desktop::presentation::Phase::Library => 3,
         });
         ui.set_status(self.snapshot.status.clone().into());
+        self.collections.project(
+            ui,
+            &self.snapshot,
+            &self.catalogs,
+            &self.filters.request.criteria,
+        );
         ui.set_back_enabled(
             self.snapshot
                 .navigation
@@ -252,6 +264,7 @@ impl View {
         let Some(page) = &self.snapshot.page else {
             ui.set_story_groups(ModelRc::new(VecModel::from(Vec::<StoryGroup>::new())));
             ui.set_story_count(0);
+            ui.set_collection_previews(ModelRc::default());
             ui.set_selected_index(-1);
             ui.set_selected_story(StoryRow::default());
             ui.set_counts("".into());
@@ -264,10 +277,10 @@ impl View {
         let selected = self
             .selected
             .as_ref()
-            .and_then(|uuid| page.stories.iter().position(|s| &s.uuid == uuid))
+            .and_then(|uuid| page.all_stories().position(|s| &s.uuid == uuid))
             .or_else(|| {
                 self.snapshot.navigation.as_ref().and_then(|n| {
-                    page.stories.iter().position(|s| {
+                    page.all_stories().position(|s| {
                         s.summary
                             .as_ref()
                             .is_some_and(|s| n.current().selection.contains(&s.id))
@@ -275,10 +288,10 @@ impl View {
                 })
             })
             .or_else(|| (!page.stories.is_empty()).then_some(0));
-        self.selected = selected.map(|index| page.stories[index].uuid.clone());
+        self.selected =
+            selected.and_then(|index| page.all_stories().nth(index).map(|s| s.uuid.clone()));
         let rows = page
-            .stories
-            .iter()
+            .all_stories()
             .enumerate()
             .map(|(i, s)| {
                 let mut row = row(i, s, self.snapshot.language, &self.catalogs);
@@ -286,14 +299,83 @@ impl View {
                 row
             })
             .collect::<Vec<_>>();
-        let groups = rows
+        let groups = rows[..page.stories.len()]
             .chunks(self.columns.max(1))
             .map(|cards| StoryGroup {
                 cards: ModelRc::new(VecModel::from(cards.to_vec())),
             })
             .collect::<Vec<_>>();
         ui.set_story_groups(ModelRc::new(VecModel::from(groups)));
-        ui.set_story_count(rows.len() as i32);
+        ui.set_story_count(page.stories.len() as i32);
+        let mut offset = page.stories.len();
+        ui.set_collection_previews(ModelRc::new(VecModel::from(
+            page.previews
+                .iter()
+                .map(|preview| {
+                    let stories = rows[offset..offset + preview.stories.len()].to_vec();
+                    offset += preview.stories.len();
+                    CollectionPreview {
+                        index: preview.group_index as i32,
+                        title: preview.name.clone().into(),
+                        caption: if preview.failed {
+                            if french {
+                                "L’aperçu n’a pas pu être chargé. Actualisez pour réessayer.".into()
+                            } else {
+                                "Preview could not be loaded. Refresh to retry.".into()
+                            }
+                        } else if preview.unavailable {
+                            if french {
+                                "Réparation nécessaire".into()
+                            } else {
+                                "Needs repair".into()
+                            }
+                        } else {
+                            format!(
+                                "{} {}",
+                                self.snapshot.language.number(preview.total),
+                                if french {
+                                    if self.snapshot.language.singular(preview.total as u64) {
+                                        "histoire"
+                                    } else {
+                                        "histoires"
+                                    }
+                                } else if self.snapshot.language.singular(preview.total as u64) {
+                                    "story"
+                                } else {
+                                    "stories"
+                                }
+                            )
+                            .into()
+                        },
+                        available: !preview.unavailable && !preview.failed,
+                        stories: ModelRc::new(VecModel::from(stories)),
+                    }
+                })
+                .collect::<Vec<_>>(),
+        )));
+        ui.set_group_previous(page.preview_page > 0);
+        ui.set_group_next(page.preview_page + 1 < page.preview_pages);
+        let focused = ui.get_focused_key();
+        if focused < 0 && !ui.get_modal() {
+            let mounted = page
+                .previews
+                .iter()
+                .any(|p| focused == -1000 - p.group_index as i32 * 3)
+                || (page.stories.len()..rows.len())
+                    .any(|i| focused == -1001 - i as i32 * 3 || focused == -1002 - i as i32 * 3);
+            if mounted {
+                let weak = ui.as_weak();
+                // Repeaters reconcile after this projection. Restore focus on
+                // the next event-loop turn only if the user has not moved it.
+                slint::Timer::single_shot(std::time::Duration::ZERO, move || {
+                    if let Some(ui) = weak.upgrade() {
+                        ui.invoke_restore_preview_focus(focused);
+                    }
+                });
+            } else {
+                ui.invoke_focus_browser();
+            }
+        }
         ui.set_columns(self.columns as i32);
         ui.set_selected_index(selected.map(|i| i as i32).unwrap_or(-1));
         let mut selected_row = selected
@@ -378,6 +460,7 @@ pub fn install(
     initial: Snapshot,
 ) -> Result<Rc<RefCell<View>>, LocalizationError> {
     let view = Rc::new(RefCell::new(View {
+        collections: Default::default(),
         flags: Default::default(),
         tags: Default::default(),
         details: Default::default(),
@@ -436,7 +519,7 @@ pub fn install(
                 .snapshot
                 .page
                 .as_ref()
-                .and_then(|p| p.stories.get(index as usize))
+                .and_then(|p| p.all_stories().nth(index as usize))
                 .cloned();
             if let Some(story) = story {
                 state.borrow_mut().selected = Some(story.uuid.clone());
@@ -462,6 +545,12 @@ pub fn install(
         }
     });
     let (weak, pending) = (ui.as_weak(), worker.clone());
+    ui.on_change_group_page(move |delta| {
+        if let Some(ui) = weak.upgrade() {
+            offer(&pending.borrow(), Command::GroupPage(delta), &ui);
+        }
+    });
+    let (weak, pending) = (ui.as_weak(), worker.clone());
     ui.on_change_page(move |delta| {
         if let Some(ui) = weak.upgrade() {
             offer(&pending.borrow(), Command::ChangePage(delta), &ui);
@@ -469,14 +558,25 @@ pub fn install(
     });
     let (state, weak, pending) = (view.clone(), ui.as_weak(), worker.clone());
     ui.on_navigate_group(move |index| {
-        if let Some(ui) = weak.upgrade()
-            && let Some(group) = state.borrow().snapshot.groups.get(index as usize)
-        {
-            offer(
-                &pending.borrow(),
-                Command::Navigate(group.scope.clone()),
-                &ui,
-            );
+        if let Some(ui) = weak.upgrade() {
+            let scope = usize::try_from(index).ok().and_then(|index| {
+                state
+                    .borrow()
+                    .snapshot
+                    .groups
+                    .get(index)
+                    .map(|g| g.scope.clone())
+            });
+            if let Some(scope) = scope {
+                match scope {
+                    librairii_core::collection_codec::url::Scope::Collection(id) => {
+                        collections::open_group(&state, &pending, &ui, id.get())
+                    }
+                    scope => {
+                        offer(&pending.borrow(), Command::Navigate(scope), &ui);
+                    }
+                }
+            }
         }
     });
     let (weak, pending) = (ui.as_weak(), worker.clone());
@@ -495,6 +595,14 @@ pub fn install(
     });
     let (state, weak, pending) = (view.clone(), ui.as_weak(), worker.clone());
     ui.on_request_panel(move |panel| {
+        if panel == 9
+            && let Some(ui) = weak.upgrade()
+        {
+            let mut state = state.borrow_mut();
+            let state = &mut *state;
+            state.collections.open(&ui, &state.snapshot);
+            state.project(&ui);
+        }
         if panel == 1
             && let Some(ui) = weak.upgrade()
         {
@@ -524,6 +632,7 @@ pub fn install(
             offer(&pending.borrow(), Command::Language(language), &ui);
         }
     });
+    collections::install(ui, view.clone(), worker.clone());
     flags::install(ui, view.clone(), worker.clone());
     tags::install(ui, view.clone(), worker.clone());
     details::install(ui, view.clone(), worker.clone());

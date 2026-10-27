@@ -209,7 +209,7 @@ impl State {
             snapshot
                 .page
                 .as_ref()
-                .is_some_and(|p| p.stories.iter().any(|s| &s.uuid == uuid))
+                .is_some_and(|p| p.all_stories().any(|s| &s.uuid == uuid))
         });
     }
     pub fn accept(&mut self, ui: &DesktopWindow, snapshot: &Snapshot) {
@@ -415,8 +415,7 @@ impl State {
             !target_uuids.is_empty()
                 && target_uuids.iter().all(|uuid| {
                     snapshot.page.as_ref().is_some_and(|p| {
-                        p.stories
-                            .iter()
+                        p.all_stories()
                             .any(|s| s.uuid == *uuid && s.summary.is_some())
                     })
                 }),
@@ -438,7 +437,7 @@ impl State {
             snapshot
                 .page
                 .as_ref()
-                .is_some_and(|p| p.stories.iter().any(|s| &s.uuid == uuid))
+                .is_some_and(|p| p.all_stories().any(|s| &s.uuid == uuid))
         }));
         self.rows.clear();
         let mut rows = Vec::new();
@@ -580,7 +579,11 @@ pub fn install(ui: &DesktopWindow, view: Rc<RefCell<View>>, worker: Rc<RefCell<W
                 .snapshot
                 .page
                 .as_ref()
-                .and_then(|p| usize::try_from(index).ok().and_then(|i| p.stories.get(i)))
+                .and_then(|p| {
+                    usize::try_from(index)
+                        .ok()
+                        .and_then(|i| p.all_stories().nth(i))
+                })
                 .map(|s| s.uuid.clone());
             if let Some(uuid) = uuid {
                 if state.tags.selection.contains(&uuid) {
@@ -819,8 +822,7 @@ pub fn install(ui: &DesktopWindow, view: Rc<RefCell<View>>, worker: Rc<RefCell<W
                             s.snapshot
                                 .page
                                 .as_ref()?
-                                .stories
-                                .iter()
+                                .all_stories()
                                 .find(|story| &story.uuid == uuid)?
                                 .summary
                                 .as_ref()

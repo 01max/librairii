@@ -82,6 +82,8 @@ def main():
             raise ValueError('production detail/removal callback checks incomplete')
         if report['tag_callbacks'] != 'passed':
             raise ValueError('production tag CRUD/assignment callback checks incomplete')
+        if report['collection_callbacks'] != 'passed':
+            raise ValueError('native Collection callbacks did not pass')
         if report['flag_callbacks'] != 'passed':
             raise ValueError('production Broken/Undo callback checks incomplete')
         frames = report['frames']

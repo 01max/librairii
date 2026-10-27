@@ -1,7 +1,10 @@
 //! Production view callbacks backed by an explicitly owned synthetic library.
+#[path = "collections.rs"]
+mod collection_checks;
 #[path = "flags.rs"]
 mod flag_checks;
 use super::{Result, check, view};
+pub use collection_checks::{Surface as CollectionSurface, checks as collections};
 pub use flag_checks::{Surface as FlagSurface, checks as flags};
 use librairii_app::localization::Language;
 use librairii_core::navigation::Navigation;
@@ -225,6 +228,23 @@ impl Fixture {
 impl Drop for Fixture {
     fn drop(&mut self) {
         if let Some(ui) = self.ui.upgrade() {
+            ui.on_select_collection(|_| {});
+            ui.on_save_collection(|| {});
+            ui.on_duplicate_collection(|| {});
+            ui.on_move_collection(|_| {});
+            ui.on_open_collection(|| {});
+            ui.on_replace_collection(|| {});
+            ui.on_delete_collection(|| {});
+            ui.on_edit_current_collection_query(|| {});
+            ui.on_edit_saved_collection_query(|| {});
+            ui.on_toggle_collection_union(|_| {});
+            ui.on_toggle_selected_collection_union(|| {});
+            ui.on_open_collection_union(|| {});
+            ui.on_save_collection_union(|| {});
+            ui.on_confirm_collection_change(|| {});
+            ui.on_cancel_collection_change(|| {});
+            ui.on_collection_impact_page(|_| {});
+            ui.on_change_group_page(|_| {});
             ui.on_detail_flag_change(|_| {});
             ui.on_panel_flag_change(|_| {});
             ui.on_bulk_flag_change(|_| {});
@@ -280,7 +300,12 @@ fn receive(worker: &Worker) -> Result<Snapshot> {
             return Ok(snapshot);
         }
         if worker.finished() || Instant::now() >= deadline {
-            return Err("native callback fixture did not receive a response".into());
+            return Err(format!(
+                "native callback fixture did not receive a response (finished={}, revision={})",
+                worker.finished(),
+                worker.revision()
+            )
+            .into());
         }
         std::thread::sleep(Duration::from_millis(2));
     }

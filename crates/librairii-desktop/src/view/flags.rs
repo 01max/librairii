@@ -65,8 +65,7 @@ pub fn targets(view: &View, bulk: bool) -> Option<Targets> {
     let stories = uuids
         .into_iter()
         .map(|uuid| {
-            page.stories
-                .iter()
+            page.all_stories()
                 .find(|s| s.uuid == uuid)?
                 .summary
                 .as_ref()
@@ -132,7 +131,7 @@ impl State {
                 .iter()
                 .filter(|id| {
                     page.is_some_and(|p| {
-                        p.stories.iter().any(|s| {
+                        p.all_stories().any(|s| {
                             s.uuid.as_str() == **id && s.summary.as_ref().is_some_and(|s| s.broken)
                         })
                     })
@@ -141,8 +140,7 @@ impl State {
             let available = !ids.is_empty()
                 && ids.iter().all(|id| {
                     page.is_some_and(|p| {
-                        p.stories
-                            .iter()
+                        p.all_stories()
                             .any(|s| s.uuid.as_str() == *id && s.summary.is_some())
                     })
                 });

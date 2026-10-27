@@ -171,9 +171,57 @@ tests with zero skipped, plus doctests, strict lint/build, preservation and depe
 checks. Full spoken/cross-host acceptance remains
 at15.13.
 
+## Collections and Library previews — 15.5
+
+Collections and approved Shelves retain separate native navigation and typed
+identities, including shared numeric IDs and independent names. The Collection
+manager creates, renames, duplicates and reorders live saved queries. Current
+filters remain explicit; replacing saved criteria requires a fresh controller-owned
+plan and confirmation. Cancel restores the exact invoker. Missing references and
+invalid saved structures remain visible and retain their bytes. A repair draft
+keeps unavailable predicates until the user explicitly removes or replaces them;
+healthy status updates immediately after the replacement commits. Opening,
+duplicating and opening a union retain explicit sort/page size and reset page one.
+
+Multi-selection explains that matching any selected Collection is sufficient.
+Its coherent preview shows each source count, unique matches and collapsed
+overlap. Primary creation copies the selected OR union when sources are selected,
+even while an unrelated query is displayed. Storage copies the current source
+definitions in one writer transaction; it never saves cached preview criteria or
+live source IDs. Changes/deletion of originals cannot change the copy. An invalid
+source disables a misleading preview/save and remains removable from selection.
+Linked deletion shows one affected Shelf per page with an explicit total. Its
+Keep-all confirmation retains approved UUID membership/order and archives; deleting
+an active Collection converts its retained effective view to Custom. Per-member
+reviewed removal/source changes remain15.7.
+
+Plain Library browsing includes All stories and at most ten Collection previews
+per group page, with six real stories each, complete counts, empty/repair/read-error
+states and View all. The main ListView retains a bounded viewport and native
+virtualization at the supported100-story page maximum. Preview rows share real
+ID/UUID detail/tag/flag targets, visibly and accessibly identify the inspected
+story, and expose a separate bulk checkbox. Disjoint focus keys keep them outside
+the compact sidebar. Deferred restoration after model reconciliation preserves
+actual focus; removed previews fall back to the browser. Uncertain or fenced
+preview outcomes enter retained, fenced Recovery, never a successful empty view.
+
+Evidence: actual controller/SQLite callbacks cover copied current-source unions,
+sort/history, stale replacement refusal, retained invalid bytes, missing-reference
+repair, empty Collections/restart, duplicate-name drafts, one-Shelf deletion pages
+and retained approved order. Shown compact EN/FR manager, union, confirmation and
+preview captures retain the original foundation matrices and previous workflows.
+Native Tab/Space reaches the last Collection and outside-page preview, max-page
+PageDown remains bounded, and preview bulk selection leaves inspection unchanged.
+Actual AppKit Select All/Undo/Redo target the Collection name; Settings/About return
+to the preview invoker. Both source review axes have zero remaining findings.
+The cumulative native-host quality gate passes600 tests with zero skipped plus
+doctests, lint/build, preservation and source/dependency policy. No Rust identity
+was removed or added; the615-entry target union retains its historical prefix.
+Full spoken and three-host acceptance remains15.13.
+
 ## Remaining workflow work
 
-15.5–15.12 compose Collection and Shelf
+15.6–15.12 compose Shelf
 curation/review, imports/sync/exports, durable History/notices and complete native
 setup/settings/recovery/diagnostics. 15.13 independently reviews the complete
 native surfaces and refreshes visual/accessibility evidence. Resource budgets,

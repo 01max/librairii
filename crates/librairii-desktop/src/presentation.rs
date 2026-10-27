@@ -16,6 +16,10 @@ pub const COMMAND_CAPACITY: usize = 16;
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum Command {
     Refresh,
+    Collections {
+        generation: librairii_app::lifecycle::LibraryGeneration,
+        action: crate::workflows::collections::Action,
+    },
     Flags {
         generation: librairii_app::lifecycle::LibraryGeneration,
         action: crate::workflows::flags::Action,
@@ -36,6 +40,7 @@ pub enum Command {
         manual_order: bool,
     },
     ChangePage(i32),
+    GroupPage(i32),
     Select {
         id: i64,
         query: librairii_core::navigation::QueryStamp,

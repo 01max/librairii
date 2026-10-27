@@ -1,18 +1,6 @@
-import { Button, ComboBox, LineEdit, ListView, Palette, VerticalBox, HorizontalBox } from "std-widgets.slint";
+import { Button, ComboBox, ListView, Palette, VerticalBox, HorizontalBox } from "std-widgets.slint";
 import { EditAction } from "states.slint";
-component Field inherits LineEdit {
-    callback reveal(length,length);
-    changed has-focus => { if self.has-focus { root.reveal(self.absolute-position.y,self.height); } }
-    public function edit(action:EditAction) {
-        if !root.has-focus { return; }
-        if action == EditAction.undo { root.undo(); }
-        else if action == EditAction.redo { root.redo(); }
-        else if action == EditAction.cut { root.cut(); }
-        else if action == EditAction.copy { root.copy(); }
-        else if action == EditAction.paste { root.paste(); }
-        else { root.select-all(); }
-    }
-}
+import { FormField } from "form-field.slint";
 component Label inherits Text { vertical-stretch: 0; color: Palette.foreground; wrap: word-wrap; }
 export struct AssignmentRow { index:int, label:string, state:int, read-only:bool }
 export component TagManager inherits VerticalBox {
@@ -58,9 +46,9 @@ export component TagManager inherits VerticalBox {
     Label { text: root.notice; accessible-live-region: polite; }
     definitions-choice := ComboBox { enabled: root.active; accessible-label: root.french ? "Étiquette à modifier" : "Tag to edit"; model: root.definitions; current-index <=> root.definition-index; selected(_) => { root.select-definition(self.current-index); } changed has-focus => { if self.has-focus { root.reveal(self.absolute-position.y,self.height); } } }
     Label { text: root.source; }
-    key-field := Field { enabled: root.active; read-only: !root.creating; text <=> root.key; accessible-label: root.french ? "Clé immuable de l’étiquette" : "Immutable tag key"; placeholder-text: self.accessible-label; reveal(y,h) => { root.reveal(y,h); } }
-    label-field := Field { enabled: root.active; read-only: !root.creating && !root.editable; text <=> root.label; accessible-label: root.french ? "Nom de l’étiquette" : "Tag label"; placeholder-text: self.accessible-label; reveal(y,h) => { root.reveal(y,h); } }
-    color-field := Field { enabled: root.active; text <=> root.color; accessible-label: root.french ? "Couleur · #RRGGBB" : "Color · #RRGGBB"; placeholder-text: self.accessible-label; reveal(y,h) => { root.reveal(y,h); } }
+    key-field := FormField { enabled: root.active; read-only: !root.creating; text <=> root.key; accessible-label: root.french ? "Clé immuable de l’étiquette" : "Immutable tag key"; placeholder-text: self.accessible-label; reveal(y,h) => { root.reveal(y,h); } }
+    label-field := FormField { enabled: root.active; read-only: !root.creating && !root.editable; text <=> root.label; accessible-label: root.french ? "Nom de l’étiquette" : "Tag label"; placeholder-text: self.accessible-label; reveal(y,h) => { root.reveal(y,h); } }
+    color-field := FormField { enabled: root.active; text <=> root.color; accessible-label: root.french ? "Couleur · #RRGGBB" : "Color · #RRGGBB"; placeholder-text: self.accessible-label; reveal(y,h) => { root.reveal(y,h); } }
     kind-choice := ComboBox { enabled: root.active && root.creating; accessible-label: root.french ? "Type d’étiquette" : "Tag kind"; model: root.french ? ["Booléenne", "Choix"] : ["Boolean", "Choice"]; current-index <=> root.kind; selected(_) => { } changed has-focus => { if self.has-focus { root.reveal(self.absolute-position.y,self.height); } } }
     Button { enabled: root.active; text: root.creating ? (root.french ? "Créer l’étiquette" : "Create tag") : (root.french ? "Enregistrer l’étiquette" : "Save tag"); clicked => { root.save-definition(); } changed has-focus => { if self.has-focus { root.reveal(self.absolute-position.y,self.height); } } }
     HorizontalBox { height: root.creating ? 0px : 32px; visible: !root.creating; padding: 0px;
@@ -70,8 +58,8 @@ export component TagManager inherits VerticalBox {
     }
     Label { visible: root.choice && !root.creating; height: self.visible ? 24px : 0px; text: root.french ? "Valeurs de choix" : "Choice values"; font-weight: 600; }
     values-choice := ComboBox { visible: root.choice && !root.creating; height: self.visible ? 32px : 0px; enabled: root.active; accessible-label: root.french ? "Valeur à modifier" : "Value to edit"; model: root.values; current-index <=> root.value-index; selected(_) => { root.select-value(self.current-index); } changed has-focus => { if self.has-focus { root.reveal(self.absolute-position.y,self.height); } } }
-    value-key-field := Field { visible: root.choice && !root.creating; height: self.visible ? 32px : 0px; enabled: root.active; read-only: !root.editable || root.value-index != 0; text <=> root.value-key; accessible-label: root.french ? "Clé immuable de la valeur" : "Immutable value key"; placeholder-text: self.accessible-label; reveal(y,h) => { root.reveal(y,h); } }
-    value-label-field := Field { visible: root.choice && !root.creating; height: self.visible ? 32px : 0px; enabled: root.active; read-only: !root.editable; text <=> root.value-label; accessible-label: root.french ? "Nom de la valeur" : "Value label"; placeholder-text: self.accessible-label; reveal(y,h) => { root.reveal(y,h); } }
+    value-key-field := FormField { visible: root.choice && !root.creating; height: self.visible ? 32px : 0px; enabled: root.active; read-only: !root.editable || root.value-index != 0; text <=> root.value-key; accessible-label: root.french ? "Clé immuable de la valeur" : "Immutable value key"; placeholder-text: self.accessible-label; reveal(y,h) => { root.reveal(y,h); } }
+    value-label-field := FormField { visible: root.choice && !root.creating; height: self.visible ? 32px : 0px; enabled: root.active; read-only: !root.editable; text <=> root.value-label; accessible-label: root.french ? "Nom de la valeur" : "Value label"; placeholder-text: self.accessible-label; reveal(y,h) => { root.reveal(y,h); } }
     Button { visible: root.choice && !root.creating; height: self.visible ? 32px : 0px; enabled: root.active && root.editable; text: root.value-index == 0 ? (root.french ? "Créer la valeur" : "Create value") : (root.french ? "Enregistrer la valeur" : "Save value"); clicked => { root.save-value(); } changed has-focus => { if self.has-focus { root.reveal(self.absolute-position.y,self.height); } } }
     HorizontalBox { visible: root.choice && !root.creating; height: self.visible ? 32px : 0px; padding: 0px;
         Button { enabled: root.active && root.editable && root.value-move-up; text: root.french ? "Monter la valeur" : "Move value up"; clicked => { root.move-value(-1); } changed has-focus => { if self.has-focus { root.reveal(self.absolute-position.y,self.height); } } }

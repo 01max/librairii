@@ -34,9 +34,28 @@ pub struct Story {
 #[derive(Clone, Debug)]
 pub struct Page {
     pub stories: Vec<Story>,
+    pub previews: Vec<GroupPreview>,
+    pub preview_page: usize,
+    pub preview_pages: usize,
     pub page: i64,
     pub pages: i64,
     pub total: i64,
+}
+#[derive(Clone, Debug)]
+pub struct GroupPreview {
+    pub group_index: usize,
+    pub name: String,
+    pub total: i64,
+    pub stories: Vec<Story>,
+    pub unavailable: bool,
+    pub failed: bool,
+}
+impl Page {
+    pub fn all_stories(&self) -> impl Iterator<Item = &Story> {
+        self.stories
+            .iter()
+            .chain(self.previews.iter().flat_map(|p| p.stories.iter()))
+    }
 }
 #[derive(Clone, Debug)]
 pub struct Group {
@@ -195,11 +214,101 @@ fn page(runtime: &Runtime<'_, '_, '_>, location: &Location, stop: &AtomicBool) -
         }
         Ok(Page {
             stories: result,
+            previews: Vec::new(),
+            preview_page: 0,
+            preview_pages: 0,
             page,
             pages,
             total,
         })
     })
+}
+fn overview(
+    runtime: &Runtime<'_, '_, '_>,
+    location: &Location,
+    groups: &[Group],
+    index: usize,
+    stop: &AtomicBool,
+) -> Result<Page> {
+    let mut loaded = page(runtime, location, stop)?;
+    if !matches!(location.scope, Scope::Library) || location.request.criteria != Default::default()
+    {
+        return Ok(loaded);
+    }
+    let collections = groups
+        .iter()
+        .enumerate()
+        .filter(|(_, g)| matches!(g.scope, Scope::Collection(_)))
+        .collect::<Vec<_>>();
+    loaded.preview_pages = collections.len().div_ceil(10);
+    loaded.preview_page = index.min(loaded.preview_pages.saturating_sub(1));
+    for (group_index, group) in collections
+        .into_iter()
+        .skip(loaded.preview_page * 10)
+        .take(10)
+    {
+        let mut preview = GroupPreview {
+            group_index,
+            name: group.name.clone(),
+            total: group.count,
+            stories: Vec::new(),
+            unavailable: true,
+            failed: false,
+        };
+        if let Scope::Collection(id) = group.scope {
+            let evaluated = runtime.command(|db, _, _| {
+                db.evaluate_collection(
+                    id.get(),
+                    location.request.clone(),
+                    "en-GB".into(),
+                    Default::default(),
+                )?
+                .wait()
+            })?;
+            use librairii_storage::{collections::Observation, database::TransactionOutcome};
+            match evaluated {
+                TransactionOutcome::Committed(Observation::Ready(evaluation)) => {
+                    let mut request = location.request.clone();
+                    request.criteria = evaluation.criteria;
+                    request.page = 1;
+                    request.page_size = 6;
+                    match page(
+                        runtime,
+                        &Location {
+                            scope: group.scope.clone(),
+                            request,
+                        },
+                        stop,
+                    ) {
+                        Ok(page) => {
+                            preview.total = page.total;
+                            preview.stories = page.stories;
+                            preview.unavailable = false;
+                        }
+                        Err(StorageError::Cancelled) => return Err(StorageError::Cancelled),
+                        Err(StorageError::RuntimeFenced) => {
+                            return Err(StorageError::RuntimeFenced);
+                        }
+                        Err(_) => {
+                            preview.unavailable = false;
+                            preview.failed = true;
+                        }
+                    }
+                }
+                TransactionOutcome::Committed(Observation::NeedsAttention(_)) => {}
+                TransactionOutcome::ProvenNotCommitted(StorageError::RuntimeFenced) => {
+                    return Err(StorageError::RuntimeFenced);
+                }
+                TransactionOutcome::ProvenNotCommitted(_) => {
+                    preview.unavailable = false;
+                    preview.failed = true;
+                }
+                TransactionOutcome::CommitUncertain(_) => return Err(StorageError::RuntimeFenced),
+            }
+        }
+        loaded.previews.push(preview);
+    }
+    Ok(loaded)
 }
 fn push_query(navigation: &mut Navigation, request: QueryRequest) -> Result<()> {
     navigation
@@ -245,9 +354,11 @@ pub(crate) fn run(
     let mut revision = 0;
     let mut restore_revision = 0;
     let mut invalid_query = false;
+    let mut preview_page = 0usize;
     let mut workflows = crate::workflows::Snapshot::default();
     let mut tag_controller = crate::workflows::tags::Controller::default();
     let mut flag_controller = crate::workflows::flags::Controller::default();
+    let mut collection_controller = crate::workflows::collections::Controller::default();
     let result = session.drive(locations, &WorkCancellation::default(), |runtime| {
         let active = (|| -> Result<()> {
             let generation = runtime
@@ -259,10 +370,11 @@ pub(crate) fn run(
                 let loaded = if invalid_query || workflows.recovery_required {
                     Err(StorageError::InvalidNavigation)
                 } else {
-                    page(runtime, &navigation.current().location, stop)
+                    overview(runtime, &navigation.current().location, &group_rows, preview_page, stop)
                 };
                 let (page, status) = match loaded {
                     Ok(page) => (Some(page), String::new()),
+                    Err(StorageError::RuntimeFenced) => return Err(StorageError::RuntimeFenced),
                     Err(StorageError::Cancelled) if stop.load(Ordering::Acquire) => {
                         return Ok(());
                     }
@@ -281,8 +393,7 @@ pub(crate) fn run(
                 let visible_targets = page
                     .as_ref()
                     .map(|p| {
-                        p.stories
-                            .iter()
+                        p.all_stories()
                             .filter_map(|s| {
                                 s.summary
                                     .as_ref()
@@ -316,6 +427,8 @@ pub(crate) fn run(
                     };
                     revision = envelope.revision;
                     let command = envelope.command;
+                    let refresh_union=matches!(&command,Command::Tags{..}|Command::Remove(_)|Command::Refresh)
+                        || matches!(&command,Command::Collections{action,..} if !matches!(action,crate::workflows::collections::Action::PreviewUnion(_)|crate::workflows::collections::Action::OpenUnion(_)));
                     if matches!(
                         command,
                         Command::Back | Command::Forward | Command::Navigate(_)
@@ -325,6 +438,15 @@ pub(crate) fn run(
                     let mut next = navigation.clone();
                     invalid_query = false;
                     match command {
+                        Command::GroupPage(delta) => {
+                            preview_page = preview_page.saturating_add_signed(delta as isize);
+                        }
+                        Command::Collections { generation, action } => {
+                            collection_controller.handle(runtime,generation,action,revision,&mut next);
+                            workflows.collections=collection_controller.snapshot.clone();
+                            if next.current().location != navigation.current().location { restore_revision=revision; }
+                            group_rows=groups(runtime)?;
+                        }
                         Command::Flags { generation, action } => {
                             flag_controller.handle(runtime, generation, action, revision);
                             workflows.flags = flag_controller.snapshot.clone();
@@ -471,6 +593,11 @@ pub(crate) fn run(
                                     .map_err(|_| StorageError::InvalidNavigation)?;
                             }
                         }
+                    }
+                    if refresh_union && !workflows.recovery_required {
+                        let refreshed=collection_controller.refresh_union(runtime,&group_rows);
+                        workflows.collections=collection_controller.snapshot.clone();
+                        refreshed?;
                     }
                     if !invalid_query {
                         if next != navigation { store.save_navigation(&next)?; }

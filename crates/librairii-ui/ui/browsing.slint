@@ -17,6 +17,7 @@ export component StoryBrowser inherits FocusScope {
     out property <length> mounted-row-height: root.row-height;
     callback select(int);
     callback toggle(int);
+    callback reveal(length,length);
     public function focus-bulk(index:int) { root.focus();root.move(index,false); }
     callback focus-entered();
     accessible-role: list;
@@ -28,6 +29,7 @@ export component StoryBrowser inherits FocusScope {
         let row = floor(root.focused-index / root.columns);
         if row * root.row-height + view.content-y < 0px { view.content-y = -row * root.row-height; }
         else if (row + 1) * root.row-height + view.content-y > view.visible-height { view.content-y = view.visible-height - (row + 1) * root.row-height; }
+        root.reveal(root.absolute-position.y + row * root.row-height + view.content-y,root.row-height);
         if select && root.count > 0 { root.selected-index = root.focused-index; root.select(root.selected-index); }
     }
     focus-changed-event => { if self.has-focus { root.focus-entered(); root.move(max(0,root.selected-index),false); } }
