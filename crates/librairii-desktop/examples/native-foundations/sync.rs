@@ -259,7 +259,14 @@ pub fn checks(ui: &DesktopWindow) -> Result {
             .details
             .as_ref()
             .is_some_and(|d| d.story.summary.description == "A sanitized catalog fixture."),
-        "metadata activation left owned Details stale",
+        &format!(
+            "metadata activation left owned Details stale: details={:?}, error={}, navigation={:?}, revision={}, operations={:?}",
+            succeeded.workflows.details,
+            succeeded.workflows.detail_error,
+            succeeded.navigation,
+            succeeded.revision,
+            succeeded.workflows.operations,
+        ),
     )?;
     ui.invoke_close_dialog();
     let cover_deadline = Instant::now() + Duration::from_secs(5);

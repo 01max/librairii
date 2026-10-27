@@ -91,7 +91,10 @@ def run_case(desktop, binary, case, language, mark, announced, pcm, report):
         key('shift+Tab');quiet(); marker=mark();key('Tab')
         current=native.wait_for(lambda: (f:=speech.focused(tree())) and len(f)==1 and f[0]['name'].startswith(label) and f[0])
         assert current['role']==target['role'],name+' role changed during focus round trip'
-        announced(name+'-focus',{'contains':[label.rstrip(' ·…')]},marker)
+        expected_focus=[label.rstrip(' ·…')]
+        if case in ('tag-assignment','flag-bulk'):
+            expected_focus.append('Mixte' if language=='fr' else 'Mixed')
+        announced(name+'-focus',{'contains':expected_focus},marker)
         snapshot('focused')
         before=state()
         if case=='browse':
@@ -111,7 +114,7 @@ def run_case(desktop, binary, case, language, mark, announced, pcm, report):
             key('Down');native.wait_for(lambda:(s:=alive()) and s['broken'] and s['undo'] and not s['flag_pending'])
             # Fresh focus must speak All, then actual Undo restores Mixed.
             key('shift+Tab');quiet();marker=mark();key('Tab')
-            announced(name+'-all',{'contains':[label.rstrip(' ·…'), 'défectueuses' if language=='fr' else 'Broken']},marker)
+            announced(name+'-all',{'contains':[label.rstrip(' ·…'), 'Toutes défectueuses' if language=='fr' else 'All Broken']},marker)
             focus('Annuler le changement de statut' if language=='fr' else 'Undo Broken change')
             quiet();marker=mark();key('space')
             native.wait_for(lambda:(s:=alive()) and s['mixed'] and not s['flag_pending'])
