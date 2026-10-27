@@ -371,6 +371,10 @@ impl Controller {
             || self.snapshot.status != Some(observed.status);
         self.snapshot.status = Some(observed.status);
         self.snapshot.critical = observed.critical;
+        // Admission acknowledgement changes preparing/error immediately. Load
+        // its durable card in this same observation, even inside the ordinary
+        // progress throttle, so accepted work cannot disappear between states.
+        let admission_changed = !observed.admissions.is_empty();
         for receipt in observed.admissions {
             if self.snapshot.preparing.as_ref() == Some(&receipt.id) {
                 self.snapshot.preparing = None;
@@ -386,6 +390,7 @@ impl Controller {
             self.snapshot.progress.push(update);
         }
         if !force
+            && !admission_changed
             && (!self.dirty
                 || self
                     .last
@@ -397,19 +402,7 @@ impl Controller {
             db.native_operation_cards(self.recent.iter().cloned().collect())?
                 .wait()
         })?;
-        let (catalog, catalog_revision) = runtime.command(|db, _, _| {
-            db.native_catalog_status(librairii_core::metadata::Locale::parse("en-GB")?)?
-                .wait()
-        })?;
-        let mut effects = self.initialized
-            && catalog_revision.is_some()
-            && self.snapshot.catalog_revision != catalog_revision;
-        self.snapshot.catalog_revision = catalog_revision;
-        self.snapshot.last_success_local = catalog
-            .activated_at
-            .as_ref()
-            .and_then(|at| librairii_adapters::datetime::local(at));
-        self.snapshot.catalog = Some(catalog);
+        let mut effects = false;
         let mut succeeded = BTreeMap::new();
         for card in &cards {
             if card.operation.kind == OperationKind::Import {
@@ -429,13 +422,6 @@ impl Controller {
             .observation
             .checked_add(1)
             .ok_or(StorageError::RuntimeFenced)?;
-        if effects {
-            self.snapshot.effects_revision = self
-                .snapshot
-                .effects_revision
-                .checked_add(1)
-                .ok_or(StorageError::RuntimeFenced)?;
-        }
         self.snapshot.progress.retain(|p| {
             cards.iter().any(|c| {
                 c.operation.state == OperationState::Running
@@ -499,6 +485,29 @@ impl Controller {
                 self.snapshot.details = None;
                 self.selected = None;
             }
+        }
+        // Read activation after reports: a job can finish between these reads.
+        // An observed terminal metadata report must never be published with a
+        // catalog observation from before that job activated its metadata.
+        let (catalog, catalog_revision) = runtime.command(|db, _, _| {
+            db.native_catalog_status(librairii_core::metadata::Locale::parse("en-GB")?)?
+                .wait()
+        })?;
+        effects |= self.initialized
+            && catalog_revision.is_some()
+            && self.snapshot.catalog_revision != catalog_revision;
+        self.snapshot.catalog_revision = catalog_revision;
+        self.snapshot.last_success_local = catalog
+            .activated_at
+            .as_ref()
+            .and_then(|at| librairii_adapters::datetime::local(at));
+        self.snapshot.catalog = Some(catalog);
+        if effects {
+            self.snapshot.effects_revision = self
+                .snapshot
+                .effects_revision
+                .checked_add(1)
+                .ok_or(StorageError::RuntimeFenced)?;
         }
         self.last = Some(Instant::now());
         self.dirty = false;

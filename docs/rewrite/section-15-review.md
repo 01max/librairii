@@ -49,6 +49,14 @@ actual expected focus target; an unchanged command revision cannot stand in for
 these outcomes. Fresh batch/tag focus must speak Mixed/Mixte, and Set must speak
 the full All Broken/Toutes défectueuses state.
 
+Repeated execution also corrected two asynchronous observation gaps. Catalog
+activation is now read after operation reports, preventing an old catalog/new
+terminal-report combination from suppressing Details refresh. Actual admission
+receipts bypass the ordinary progress throttle so clearing Preparing immediately
+loads the durable operation card. The live callback retains its original Details
+assertion and now additionally requires a successful metadata result. Twenty-four
+scale-2 sync/artwork/cancellation runs pass after both corrections.
+
 ## Approved concept source and omissions
 
 Both canonical saved concepts and their tracked copies were independently checked:

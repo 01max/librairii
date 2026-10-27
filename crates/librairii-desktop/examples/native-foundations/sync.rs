@@ -183,7 +183,7 @@ fn start(f: &Fixture, ui: &DesktopWindow) -> Result<String> {
                 })
                 .map(|c| c.operation.identity.id.clone())
         })
-        .ok_or_else(|| format!("explicit sync admitted no new operation: {:?}", data.error).into())
+        .ok_or_else(|| format!("explicit sync admitted no new operation: {data:?}").into())
 }
 fn complete(f: &Fixture, ui: &DesktopWindow, expected: &str) -> Result<Snapshot> {
     let deadline = Instant::now() + Duration::from_secs(15);
@@ -249,6 +249,18 @@ pub fn checks(ui: &DesktopWindow) -> Result {
     check(ui.get_close_focused(), "About did not own native focus")?;
     server.hold.store(false, Ordering::Release);
     let succeeded = complete(&f, ui, &id)?;
+    check(
+        succeeded
+            .workflows
+            .operations
+            .details
+            .as_ref()
+            .is_some_and(|d| d.card.operation.state == librairii_core::OperationState::Succeeded),
+        &format!(
+            "metadata job failed before activation: {:?}",
+            succeeded.workflows.operations
+        ),
+    )?;
     check(
         ui.get_close_focused(),
         "metadata completion stole About focus",
