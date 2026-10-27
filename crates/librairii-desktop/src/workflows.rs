@@ -1,6 +1,7 @@
 //! Owned workflow observations and frozen command targets. No UI value grants
 //! authority without the actual generation/query/UUID checks on the controller.
 pub mod collections;
+pub mod exports;
 pub mod flags;
 pub mod operations;
 pub mod shelf_reviews;
@@ -37,6 +38,7 @@ pub struct Details {
 }
 #[derive(Clone, Debug, Default)]
 pub struct Snapshot {
+    pub exports: exports::Snapshot,
     pub operations: operations::Snapshot,
     pub shelf_reviews: shelf_reviews::Snapshot,
     pub shelves: shelves::Snapshot,

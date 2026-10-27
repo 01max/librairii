@@ -1,6 +1,8 @@
 //! Production view callbacks backed by an explicitly owned synthetic library.
 #[path = "collections.rs"]
 mod collection_checks;
+#[path = "exports.rs"]
+mod export_checks;
 #[path = "flags.rs"]
 mod flag_checks;
 #[path = "operations.rs"]
@@ -9,6 +11,7 @@ mod operation_checks;
 mod review_checks;
 #[path = "shelves.rs"]
 mod shelf_checks;
+pub use export_checks::{Surface as ExportSurface, checks as exports};
 #[path = "sync.rs"]
 mod sync_checks;
 use super::{Result, check, view};
@@ -354,6 +357,16 @@ impl Drop for Fixture {
             ui.on_remove_story(|| {});
             ui.on_mode_selected(|_| {});
             ui.on_select_story(|_| {});
+            ui.on_open_export(|| {});
+            ui.on_close_export(|| {});
+            ui.on_export_scope(|_| {});
+            ui.on_export_toggle(|_| {});
+            ui.on_export_group_page(|_| {});
+            ui.on_pick_export_destination(|| {});
+            ui.on_refresh_export(|| {});
+            ui.on_start_export(|| {});
+            ui.on_export_page(|_| {});
+            ui.on_reveal_export(|| {});
             ui.on_change_page(|_| {});
             ui.on_navigate_group(|_| {});
             ui.on_history_step(|_| {});

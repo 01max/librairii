@@ -72,6 +72,16 @@ pub struct Controller {
     initialized: bool,
 }
 impl Controller {
+    pub fn watch(&mut self, id: String, revision: u64) {
+        self.recent.retain(|prior| prior != &id);
+        self.recent.push_front(id.clone());
+        self.recent.truncate(8);
+        self.snapshot.revision = revision;
+        self.snapshot.preparing = Some(id.clone());
+        self.snapshot.details = None;
+        self.selected = Some((id, 0));
+        self.dirty = true;
+    }
     pub fn restore_preferences(
         &mut self,
         store: &librairii_storage::profile::NativeProfileStore,

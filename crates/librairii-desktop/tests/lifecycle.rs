@@ -129,6 +129,86 @@ fn desktop_move_reconstructs_real_services_and_invalidates_old_results() -> Test
                     }
                     std::thread::sleep(std::time::Duration::from_millis(2));
                 }
+                let admitted = runtime.observe_jobs();
+                assert!(admitted.admissions.iter().any(|a| a.accepted));
+                let shared_output = roots.library().join("shared scheduler export");
+                fs::create_dir(&shared_output).map_err(|source| StorageError::Io {
+                    operation: "create test export directory",
+                    source,
+                })?;
+                let abandoned = runtime.prepare_export(
+                    librairii_core::export::Scope::CurrentQuery(Default::default()),
+                    shared_output.clone(),
+                )?;
+                runtime.cancel_export_preparation();
+                // Cancellation never queues behind the preparation's hash reads.
+                runtime.command(|db, _, _| {
+                    db.read(|c| {
+                        c.query_row("SELECT count(*) FROM stories", [], |r| r.get::<_, i64>(0))
+                            .map_err(StorageError::from)
+                    })?
+                    .wait()
+                })?;
+                let current = runtime.prepare_export(
+                    librairii_core::export::Scope::CurrentQuery(Default::default()),
+                    shared_output.clone(),
+                )?;
+                assert_ne!(abandoned, current);
+                let prepared_export = loop {
+                    if let Some((serial, preview)) = runtime.take_export_preparation()? {
+                        assert_eq!(serial, current);
+                        break preview?;
+                    }
+                    if std::time::Instant::now() > deadline {
+                        return Err(StorageError::RuntimeFenced);
+                    }
+                    std::thread::sleep(std::time::Duration::from_millis(2));
+                };
+                runtime.offer_export(
+                    prepared_export
+                        .preparation
+                        .as_ref()
+                        .ok_or(StorageError::RuntimeFenced)?,
+                    "a0000000-0000-4000-8000-000000000014".into(),
+                )?;
+                loop {
+                    let observed = runtime.observe_jobs();
+                    assert!(!observed.status.failed);
+                    let done = runtime.command(|db, _, _| {
+                        Ok(db
+                            .operation_snapshot("a0000000-0000-4000-8000-000000000014".into())?
+                            .wait()?
+                            .is_some_and(|s| {
+                                s.operation.state == librairii_core::OperationState::Succeeded
+                            }))
+                    })?;
+                    if done
+                        && !observed.critical
+                        && observed.status.queued + observed.status.running == 0
+                    {
+                        break;
+                    }
+                    if std::time::Instant::now() > deadline {
+                        return Err(StorageError::RuntimeFenced);
+                    }
+                    std::thread::sleep(std::time::Duration::from_millis(2));
+                }
+                assert_eq!(
+                    fs::read(shared_output.join("clockwork-forest-studio.zip")).map_err(
+                        |source| StorageError::Io {
+                            operation: "read shared native export",
+                            source
+                        }
+                    )?,
+                    fs::read(
+                        std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+                            .join("../../preservation/corpus/archives/clockwork-forest-studio.zip")
+                    )
+                    .map_err(|source| StorageError::Io {
+                        operation: "read original fixture",
+                        source
+                    })?
+                );
                 exported = runtime
                     .export_command(|exports| {
                         exports.prepare(
@@ -150,6 +230,11 @@ fn desktop_move_reconstructs_real_services_and_invalidates_old_results() -> Test
                     )?
                     .wait()
                 })?);
+                // A final preparation is cancelled/joined before resources move.
+                runtime.prepare_export(
+                    librairii_core::export::Scope::CurrentQuery(Default::default()),
+                    output.clone(),
+                )?;
                 iteration += 1;
                 runtime
                     .move_library(
@@ -159,6 +244,7 @@ fn desktop_move_reconstructs_real_services_and_invalidates_old_results() -> Test
                     .map_err(|_| StorageError::RuntimeInUse)
             } else {
                 assert_eq!(runtime.root(), target);
+                assert!(runtime.take_export_preparation()?.is_none());
                 assert!(!runtime.accepts(before.as_ref().ok_or(StorageError::RuntimeFenced)?));
                 runtime.command(|db, files, _| {
                     let _custody = files.try_custody()?;

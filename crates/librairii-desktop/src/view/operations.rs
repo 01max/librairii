@@ -13,7 +13,7 @@ use librairii_desktop::{
     presentation::{Command, Snapshot, Worker},
     workflows::operations::Action,
 };
-use librairii_ui::native::DesktopWindow;
+use librairii_ui::native::{DesktopWindow, ReportGroup};
 use slint::{ComponentHandle, Model, ModelRc, VecModel, winit_030::WinitWindowAccessor};
 use std::{cell::RefCell, path::PathBuf, rc::Rc};
 #[derive(Debug, Default)]
@@ -134,7 +134,7 @@ impl State {
             self.pending = None;
         }
         ui.set_operation_busy(self.pending.is_some());
-        ui.set_commit_pending(data.critical);
+        ui.set_commit_pending(data.critical || snapshot.workflows.exports.recovery_required);
         let selected = data
             .details
             .as_ref()
@@ -210,7 +210,11 @@ impl State {
                 + usize::from(data.preparing.as_ref().is_some_and(|id| {
                     !active_cards.iter().any(|c| c.operation.identity.id == *id)
                 }));
-        ui.set_pending(active > 0 || data.status.is_some_and(|s| s.queued + s.running > 0));
+        ui.set_pending(
+            active > 0
+                || data.status.is_some_and(|s| s.queued + s.running > 0)
+                || snapshot.workflows.exports.recovery_required,
+        );
         let completed = active_cards
             .iter()
             .map(|c| c.operation.counts.completed)
@@ -251,10 +255,12 @@ impl State {
             )
             .into(),
         );
+        ui.set_operation_revealable(false);
         ui.set_operation_cancellable(false);
         ui.set_operation_retryable(false);
         ui.set_operation_previous(false);
         ui.set_operation_next(false);
+        ui.set_operation_groups(ModelRc::default());
         ui.set_operation_items(ModelRc::default());
         ui.set_operation_summary("".into());
         if let Some(details) = &data.details {
@@ -263,6 +269,9 @@ impl State {
             if h.cancel_requested && !is_terminal(h.state) && self.local_error.is_none() {
                 ui.set_operation_notice(words(language,"Cancellation requested. Waiting for owned work to settle; committed results are preserved.","Annulation demandée. En attente de la fin des traitements détenus ; les résultats enregistrés sont conservés.").into());
             }
+            ui.set_operation_revealable(
+                h.kind == OperationKind::Export && is_terminal(h.state) && h.destination.is_some(),
+            );
             ui.set_operation_cancellable(!is_terminal(h.state) && !h.cancel_requested);
             ui.set_operation_retryable(
                 h.kind == OperationKind::Import
@@ -292,7 +301,11 @@ impl State {
                     OperationKind::MetadataSync => words(language, "Refreshed", "Actualisées"),
                 },
                 language.number(c.succeeded),
-                words(language, "Duplicates skipped", "Doublons ignorés"),
+                if h.kind == OperationKind::Import {
+                    words(language, "Duplicates skipped", "Doublons ignorés")
+                } else {
+                    words(language, "Skipped", "Ignorées")
+                },
                 language.number(c.skipped),
                 words(language, "Conflicts", "Conflits"),
                 language.number(c.conflicted),
@@ -305,7 +318,39 @@ impl State {
                 language.number(details.pages as i64),
                 reason(catalogs, language, &h.outcome, h.state.into())
             );
-            ui.set_operation_summary(summary.into());
+            let source = h
+                .export_scope
+                .source_type()
+                .ok()
+                .flatten()
+                .map(|source_type| {
+                    use librairii_core::operations::ExportSourceType as T;
+                    let name = match source_type {
+                        T::Selection => {
+                            words(language, "Selected stories", "Histoires sélectionnées")
+                        }
+                        T::CurrentQuery => words(language, "Current results", "Résultats actuels"),
+                        T::Shelf | T::Shelves | T::Collection | T::Collections => {
+                            words(language, "Collections", "Collections")
+                        }
+                        T::CuratedShelf | T::CuratedShelves => {
+                            words(language, "Approved Shelves", "Étagères approuvées")
+                        }
+                    };
+                    let names = h
+                        .export_scope
+                        .group_names
+                        .as_deref()
+                        .map(|raw| {
+                            serde_json::from_str::<Vec<String>>(raw)
+                                .map(|names| names.join(" · "))
+                                .unwrap_or_else(|_| raw.into())
+                        })
+                        .unwrap_or_default();
+                    format!("{}: {name} {names}\n", words(language, "Source", "Source"))
+                })
+                .unwrap_or_default();
+            ui.set_operation_summary(format!("{source}{summary}").into());
             let items = details
                 .items
                 .iter()
@@ -321,7 +366,13 @@ impl State {
                                 OperationKind::MetadataSync => "Refreshed",
                             },
                             ItemState::Skipped => "Skipped",
-                            ItemState::Conflicted => "UUID conflict",
+                            ItemState::Conflicted => {
+                                if h.kind == OperationKind::Export {
+                                    "Filename conflict"
+                                } else {
+                                    "UUID conflict"
+                                }
+                            }
                             ItemState::Failed => "Failed",
                             ItemState::Cancelled => "Cancelled",
                         },
@@ -334,23 +385,105 @@ impl State {
                                 OperationKind::MetadataSync => "Actualisée",
                             },
                             ItemState::Skipped => "Ignorée",
-                            ItemState::Conflicted => "Conflit d’UUID",
+                            ItemState::Conflicted => {
+                                if h.kind == OperationKind::Export {
+                                    "Conflit de nom de fichier"
+                                } else {
+                                    "Conflit d’UUID"
+                                }
+                            }
                             ItemState::Failed => "Échec",
                             ItemState::Cancelled => "Annulée",
                         },
                     );
+                    let identity = if h.kind == OperationKind::Export {
+                        let mut completed = item.progress.completed;
+                        if item.state == ItemState::Running
+                            && c.running.iter().any(|(id, _)| *id == item.identity.id)
+                            && let Some(progress) =
+                                data.progress.iter().find(|p| p.item == item.identity.id)
+                        {
+                            completed = completed.max(progress.completed).min(item.progress.total);
+                        }
+                        format!(
+                            "\n{} · {}\n{} / {} {}",
+                            item.identity.story_uuid.as_deref().unwrap_or(""),
+                            item.output_name
+                                .as_ref()
+                                .map(|p| p.display_name())
+                                .unwrap_or_default(),
+                            language.number(completed.max(0)),
+                            language.number(item.progress.total),
+                            words(language, "bytes", "octets")
+                        )
+                    } else {
+                        String::new()
+                    };
                     format!(
-                        "{} · {}\n{}",
+                        "{} · {}{}\n{}",
                         item.story_title
                             .as_deref()
                             .filter(|s| !s.is_empty())
                             .unwrap_or(&item.source_name),
                         label,
+                        identity,
                         reason(catalogs, language, &item.outcome, item.state.into())
                     )
                     .into()
                 })
                 .collect::<Vec<slint::SharedString>>();
+            if h.kind == OperationKind::Export {
+                let categories = [
+                    (ItemState::Succeeded, "Exported", "Exportées", c.succeeded),
+                    (ItemState::Skipped, "Skipped", "Ignorées", c.skipped),
+                    (
+                        ItemState::Conflicted,
+                        "Conflicted",
+                        "En conflit",
+                        c.conflicted,
+                    ),
+                    (ItemState::Failed, "Failed", "Échecs", c.failed),
+                    (ItemState::Cancelled, "Cancelled", "Annulées", c.cancelled),
+                    (
+                        ItemState::Running,
+                        "In progress",
+                        "En cours",
+                        c.running.len() as i64,
+                    ),
+                    (
+                        ItemState::Pending,
+                        "Queued",
+                        "En attente",
+                        h.counts.total - h.counts.completed - c.running.len() as i64,
+                    ),
+                ];
+                let groups = categories
+                    .into_iter()
+                    .filter_map(|(state, en, fr, count)| {
+                        let rows = details
+                            .items
+                            .iter()
+                            .zip(&items)
+                            .filter(|(i, _)| i.state == state)
+                            .map(|(_, text)| text.clone())
+                            .collect::<Vec<_>>();
+                        if rows.is_empty() {
+                            return None;
+                        }
+                        Some(ReportGroup {
+                            heading: format!(
+                                "{} · {} {}",
+                                words(language, en, fr),
+                                language.number(count),
+                                words(language, "total", "au total")
+                            )
+                            .into(),
+                            entries: ModelRc::new(VecModel::from(rows)),
+                        })
+                    })
+                    .collect::<Vec<_>>();
+                ui.set_operation_groups(ModelRc::new(VecModel::from(groups)));
+            }
             ui.set_operation_items(ModelRc::new(VecModel::from(items)));
         }
     }

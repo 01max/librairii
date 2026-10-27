@@ -8,7 +8,7 @@ use librairii_app::ports::{
     creation::InputError,
     operations::{OperationHeader, OperationItem},
 };
-use rusqlite::Transaction;
+use rusqlite::{OptionalExtension, Transaction};
 use std::collections::BTreeSet;
 
 #[derive(Clone, Debug)]
@@ -80,6 +80,8 @@ impl Database<'_> {
             for id in recent {if seen.insert(id.clone()) && rows::header(tx,&id)?.is_some(){ids.push(id);}}
             let mut latest=tx.prepare("SELECT id FROM file_operations WHERE kind='import' AND status NOT IN ('queued','running') ORDER BY COALESCE(finished_at,created_at) DESC,id DESC LIMIT 1")?;
             for id in latest.query_map([],|r|rows::bounded_id(r,0))? {let id=id?;if seen.insert(id.clone()){ids.push(id);}}
+            let latest_export:Option<String>=tx.query_row("SELECT id FROM file_operations WHERE kind='export' AND status NOT IN ('queued','running') ORDER BY COALESCE(finished_at,created_at) DESC,id DESC LIMIT 1",[],|r|rows::bounded_id(r,0)).optional()?;
+            if let Some(id)=latest_export && seen.insert(id.clone()){ids.push(id);}
             let mut used=0usize;
             let mut result=Vec::with_capacity(ids.len());
             for id in ids {

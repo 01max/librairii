@@ -45,6 +45,9 @@ impl Intake {
         if matches!(&command,Command::Operations{action,..} if !action.bounded()) {
             return Err(OfferError::Busy);
         }
+        if matches!(&command,Command::Exports{action,..} if !action.bounded()) {
+            return Err(OfferError::Busy);
+        }
         let mut pending = self.pending.lock().map_err(|_| OfferError::Closed)?;
         if self.fenced.load(Ordering::Acquire)
             && !matches!(command, Command::Language(_) | Command::Refresh)

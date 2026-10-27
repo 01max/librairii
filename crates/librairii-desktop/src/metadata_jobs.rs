@@ -158,10 +158,12 @@ impl<'db, 'library> Executor for MetadataExecutor<'db, 'library> {
 pub struct Executors<'a, 'db, 'library> {
     pub imports: &'a ImportExecutor<'db, 'library>,
     pub metadata: &'a MetadataExecutor<'db, 'library>,
+    pub exports: &'a librairii_storage::export::ExportExecutor<'db, 'library>,
 }
 #[derive(Debug)]
 pub enum Resources<'db, 'library> {
     Import(Box<ImportResources<'db>>),
+    Export(Box<librairii_storage::export::ExportResources<'db, 'library>>),
     Metadata(Box<MetadataResources<'db, 'library>>),
 }
 impl<'db, 'library> Executor for Executors<'_, 'db, 'library> {
@@ -189,24 +191,20 @@ impl<'db, 'library> Executor for Executors<'_, 'db, 'library> {
                     resources: e.resources.map(Resources::Metadata),
                 }
             }
-            OperationKind::Export => Execution {
-                boundary: Boundary::BeforeCommit,
-                report: Report {
-                    state: ItemState::Failed,
-                    story_id: 0,
-                    completed_bytes: 0,
-                    outcome: RawOutcome {
-                        code: Some("export_unavailable".into()),
-                        message: Some("The action could not be completed".into()),
-                    },
-                },
-                resources: None,
-            },
+            OperationKind::Export => {
+                let e = self.exports.execute(work, cancel, progress);
+                Execution {
+                    boundary: e.boundary,
+                    report: e.report,
+                    resources: e.resources.map(|r| Resources::Export(Box::new(r))),
+                }
+            }
         }
     }
     fn compensate(&self, resources: &mut Self::Resources) -> bool {
         match resources {
             Resources::Import(r) => self.imports.compensate(r),
+            Resources::Export(r) => self.exports.compensate(r),
             Resources::Metadata(r) => self.metadata.compensate(r),
         }
     }
@@ -217,6 +215,10 @@ impl<'db, 'library> Executor for Executors<'_, 'db, 'library> {
     ) -> std::result::Result<(), Self::Resources> {
         match resources {
             Resources::Import(r) => self.imports.settle(r, durable).map_err(Resources::Import),
+            Resources::Export(r) => self
+                .exports
+                .settle(*r, durable)
+                .map_err(|r| Resources::Export(Box::new(r))),
             Resources::Metadata(r) => self
                 .metadata
                 .settle(r, durable)

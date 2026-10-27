@@ -16,6 +16,10 @@ pub const COMMAND_CAPACITY: usize = 16;
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum Command {
     Refresh,
+    Exports {
+        generation: librairii_app::lifecycle::LibraryGeneration,
+        action: crate::workflows::exports::Action,
+    },
     Operations {
         generation: librairii_app::lifecycle::LibraryGeneration,
         action: crate::workflows::operations::Action,

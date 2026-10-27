@@ -1,5 +1,5 @@
 //! Prepared native export composition over the admitted Task 6 job session.
-use super::{preparation::Running, *};
+use super::{preparation::Prepared, *};
 use crate::{
     StorageError,
     database::WorkCancellation,
@@ -41,7 +41,7 @@ impl Exports<'_, '_> {
     ) -> std::result::Result<T, DurableExportError> {
         self.database.native_file_owner()?;
         let running = self.start(id, &WorkCancellation::default())?;
-        let input = running.operation_input(operation)?;
+        let input = operation_input(&running.plan, operation)?;
         let operation = input.id.clone();
         let start =
             Start::new(input).map_err(|_| StorageError::Export(ExportError::ResourceLimit))?;
@@ -49,7 +49,8 @@ impl Exports<'_, '_> {
         let files = LibraryFiles::open_native(database)?;
         let store = TerminalRepository::new(database, 1);
         let executor = CopyExecutor {
-            running: &running,
+            plan: &running.plan,
+            database,
             files: &files,
             operation,
         };
@@ -58,146 +59,143 @@ impl Exports<'_, '_> {
         })?)
     }
 }
-impl Running<'_, '_, '_> {
-    fn operation_input(&self, id: String) -> Result<NewOperation> {
-        let source = &self.plan.scope.source;
-        let source_type = match source.kind {
-            ExportScopeKind::CurrentQuery => ExportSourceType::CurrentQuery,
-            ExportScopeKind::Selection => ExportSourceType::Selection,
-            ExportScopeKind::CollectionUnion => {
-                if source.ids.len() == 1 {
-                    ExportSourceType::Collection
-                } else {
-                    ExportSourceType::Collections
-                }
+pub(super) fn operation_input(plan: &Prepared, id: String) -> Result<NewOperation> {
+    let source = &plan.scope.source;
+    let source_type = match source.kind {
+        ExportScopeKind::CurrentQuery => ExportSourceType::CurrentQuery,
+        ExportScopeKind::Selection => ExportSourceType::Selection,
+        ExportScopeKind::CollectionUnion => {
+            if source.ids.len() == 1 {
+                ExportSourceType::Collection
+            } else {
+                ExportSourceType::Collections
             }
-            ExportScopeKind::ShelfUnion | ExportScopeKind::RefinedShelf => {
-                if source.ids.len() == 1 {
-                    ExportSourceType::CuratedShelf
-                } else {
-                    ExportSourceType::CuratedShelves
-                }
+        }
+        ExportScopeKind::ShelfUnion | ExportScopeKind::RefinedShelf => {
+            if source.ids.len() == 1 {
+                ExportSourceType::CuratedShelf
+            } else {
+                ExportSourceType::CuratedShelves
             }
-        };
-        // Go's JSON encoder replaces invalid UTF-8 in display names. Raw
-        // names remain in the retained plan; numeric IDs remain identity.
-        let names = source
-            .names
+        }
+    };
+    // Go's JSON encoder replaces invalid UTF-8 in display names. Raw
+    // names remain in the retained plan; numeric IDs remain identity.
+    let names = source
+        .names
+        .iter()
+        .map(|n| go_display_name(n))
+        .collect::<Vec<_>>();
+    let collections =
+        source_type.group_kind() == Some(librairii_core::operations::ExportGroupKind::Collection);
+    let grouped = source_type.group_kind().is_some();
+    let input = NewOperation {
+        id,
+        kind: OperationKind::Export,
+        source: Some(ExportSource {
+            source_type,
+            collection_ids: if collections {
+                source.ids.clone()
+            } else {
+                Vec::new()
+            },
+            collection_names: if collections {
+                names.clone()
+            } else {
+                Vec::new()
+            },
+            shelf_ids: if grouped && !collections {
+                source.ids.clone()
+            } else {
+                Vec::new()
+            },
+            shelf_names: if grouped && !collections {
+                names
+            } else {
+                Vec::new()
+            },
+        }),
+        destination: Some(plan.destination.path().to_owned().into()),
+        items: plan
+            .scope
+            .stories
             .iter()
-            .map(|n| go_display_name(n))
-            .collect::<Vec<_>>();
-        let collections = source_type.group_kind()
-            == Some(librairii_core::operations::ExportGroupKind::Collection);
-        let grouped = source_type.group_kind().is_some();
-        let input = NewOperation {
-            id,
-            kind: OperationKind::Export,
-            source: Some(ExportSource {
-                source_type,
-                collection_ids: if collections {
-                    source.ids.clone()
-                } else {
-                    Vec::new()
-                },
-                collection_names: if collections {
-                    names.clone()
-                } else {
-                    Vec::new()
-                },
-                shelf_ids: if grouped && !collections {
-                    source.ids.clone()
-                } else {
-                    Vec::new()
-                },
-                shelf_names: if grouped && !collections {
-                    names
-                } else {
-                    Vec::new()
-                },
-            }),
-            destination: Some(self.plan.destination.path().to_owned().into()),
-            items: self
-                .plan
-                .scope
-                .stories
-                .iter()
-                .zip(self.plan.preview.items.iter())
-                .map(|(s, p)| -> Result<NewItem> {
-                    let skip = match p.disposition {
-                        librairii_core::export::Disposition::Skipped(
-                            librairii_core::export::Issue::StoryMarkedBroken,
-                        ) => "story_marked_broken",
-                        librairii_core::export::Disposition::Skipped(
-                            librairii_core::export::Issue::StoryUnavailable,
-                        ) => "story_unavailable",
-                        _ => "",
-                    };
-                    Ok(NewItem {
-                        story_id: s.id,
-                        story_uuid: s.uuid.clone(),
-                        story_title: s.title.clone(),
-                        source_name: if s.original_filename_bytes.is_empty() {
-                            s.title.clone()
-                        } else {
-                            original_name(s)?.display_name()
-                        },
-                        output_name: original_name(s)?,
-                        archive_relative_path: managed_path(s)?,
-                        archive_sha256: s.sha256.clone(),
-                        export_skip_code: skip.into(),
-                        total_bytes: if p.disposition == librairii_core::export::Disposition::Ready
-                        {
-                            s.byte_size
-                        } else {
-                            0
-                        },
-                        planned: match p.disposition {
-                            librairii_core::export::Disposition::Ready => None,
-                            librairii_core::export::Disposition::Skipped(issue) => {
-                                Some(PlannedItem {
-                                    state: ItemState::Skipped,
-                                    outcome: RawOutcome {
-                                        code: Some(issue.code().into()),
-                                        message: Some(issue_message(issue).into()),
-                                    },
-                                })
-                            }
-                            librairii_core::export::Disposition::Conflicted => Some(PlannedItem {
-                                state: ItemState::Conflicted,
-                                outcome: RawOutcome {
-                                    code: Some("filename_conflict".into()),
-                                    message: Some(
-                                        "A file with this name already exists in the destination."
-                                            .into(),
-                                    ),
-                                },
-                            }),
-                        },
-                    })
+            .zip(plan.preview.items.iter())
+            .map(|(s, p)| -> Result<NewItem> {
+                let skip = match p.disposition {
+                    librairii_core::export::Disposition::Skipped(
+                        librairii_core::export::Issue::StoryMarkedBroken,
+                    ) => "story_marked_broken",
+                    librairii_core::export::Disposition::Skipped(
+                        librairii_core::export::Issue::StoryUnavailable,
+                    ) => "story_unavailable",
+                    _ => "",
+                };
+                Ok(NewItem {
+                    story_id: s.id,
+                    story_uuid: s.uuid.clone(),
+                    story_title: s.title.clone(),
+                    source_name: if s.original_filename_bytes.is_empty() {
+                        s.title.clone()
+                    } else {
+                        original_name(s)?.display_name()
+                    },
+                    output_name: original_name(s)?,
+                    archive_relative_path: managed_path(s)?,
+                    archive_sha256: s.sha256.clone(),
+                    export_skip_code: skip.into(),
+                    total_bytes: if p.disposition == librairii_core::export::Disposition::Ready {
+                        s.byte_size
+                    } else {
+                        0
+                    },
+                    planned: match p.disposition {
+                        librairii_core::export::Disposition::Ready => None,
+                        librairii_core::export::Disposition::Skipped(issue) => Some(PlannedItem {
+                            state: ItemState::Skipped,
+                            outcome: RawOutcome {
+                                code: Some(issue.code().into()),
+                                message: Some(issue_message(issue).into()),
+                            },
+                        }),
+                        librairii_core::export::Disposition::Conflicted => Some(PlannedItem {
+                            state: ItemState::Conflicted,
+                            outcome: RawOutcome {
+                                code: Some("filename_conflict".into()),
+                                message: Some(
+                                    "A file with this name already exists in the destination."
+                                        .into(),
+                                ),
+                            },
+                        }),
+                    },
                 })
-                .collect::<Result<Vec<_>>>()?,
-        };
-        input.validate()?;
-        Ok(input)
-    }
+            })
+            .collect::<Result<Vec<_>>>()?,
+    };
+    input.validate()?;
+    Ok(input)
 }
-struct CopyExecutor<'a, 'run, 'db, 'library> {
-    running: &'a Running<'run, 'db, 'library>,
-    files: &'a LibraryFiles<'db>,
-    operation: String,
+pub(super) struct CopyExecutor<'plan, 'files, 'library> {
+    pub(super) database: &'files Database<'library>,
+    pub(super) plan: &'plan Prepared,
+    pub(super) files: &'files LibraryFiles<'library>,
+    pub(super) operation: String,
 }
+#[derive(Debug)]
 enum Temporary<'a, 'library> {
     Ready(Box<OwnedExportTemporary<'a, 'library>>),
     Acquisition(Box<ExportTemporaryFailure<'a, 'library>>),
 }
-struct Resources<'a, 'library> {
+#[derive(Debug)]
+pub struct ExportResources<'a, 'library> {
     temporary: Temporary<'a, 'library>,
     _source: Option<ArchiveSource<'a, 'library>>,
     custody: Custody<'library>,
     retired: bool,
 }
-impl Resources<'_, '_> {
-    fn retire(&mut self) -> bool {
+impl ExportResources<'_, '_> {
+    pub(super) fn retire(&mut self) -> bool {
         if self.retired {
             return true;
         }
@@ -261,7 +259,7 @@ fn failed(work: &WorkItem, error: &StorageError) -> Report {
         ),
     }
 }
-impl CopyExecutor<'_, '_, '_, '_> {
+impl CopyExecutor<'_, '_, '_> {
     fn eligibility(
         &self,
         index: usize,
@@ -272,7 +270,7 @@ impl CopyExecutor<'_, '_, '_, '_> {
             if cancel.is_cancelled() {
                 return Err(failed(work, &StorageError::Cancelled));
             }
-            match self.running.check_item(index) {
+            match super::preparation::check_item(self.database, self.plan, index) {
                 Ok(d) => break d,
                 Err(e) if transient(&e) => pause(),
                 Err(e) => return Err(failed(work, &e)),
@@ -293,8 +291,8 @@ impl CopyExecutor<'_, '_, '_, '_> {
         }
     }
 }
-impl<'a, 'run, 'db, 'library> Executor for CopyExecutor<'a, 'run, 'db, 'library> {
-    type Resources = Resources<'a, 'db>;
+impl<'files, 'library> Executor for CopyExecutor<'_, 'files, 'library> {
+    type Resources = ExportResources<'files, 'library>;
     fn execute(
         &self,
         work: &WorkItem,
@@ -312,7 +310,6 @@ impl<'a, 'run, 'db, 'library> Executor for CopyExecutor<'a, 'run, 'db, 'library>
             return before(failed(work, &StorageError::SnapshotChanged));
         }
         let Some(index) = self
-            .running
             .plan
             .scope
             .stories
@@ -324,7 +321,7 @@ impl<'a, 'run, 'db, 'library> Executor for CopyExecutor<'a, 'run, 'db, 'library>
         if let Err(report) = self.eligibility(index, work, cancel) {
             return before(report);
         }
-        let story = &self.running.plan.scope.stories[index];
+        let story = &self.plan.scope.stories[index];
         let path = match managed_path(story) {
             Ok(path) => path,
             Err(e) => return before(failed(work, &e)),
@@ -369,7 +366,7 @@ impl<'a, 'run, 'db, 'library> Executor for CopyExecutor<'a, 'run, 'db, 'library>
                     return Execution {
                         boundary: Boundary::Compensating,
                         report: result,
-                        resources: Some(Resources {
+                        resources: Some(ExportResources {
                             temporary: Temporary::Acquisition(failure),
                             _source: Some(source),
                             custody,
@@ -385,7 +382,7 @@ impl<'a, 'run, 'db, 'library> Executor for CopyExecutor<'a, 'run, 'db, 'library>
             return Execution {
                 boundary: Boundary::Compensating,
                 report,
-                resources: Some(Resources {
+                resources: Some(ExportResources {
                     temporary: Temporary::Ready(Box::new(output)),
                     _source: Some(source),
                     custody,
@@ -394,7 +391,7 @@ impl<'a, 'run, 'db, 'library> Executor for CopyExecutor<'a, 'run, 'db, 'library>
             };
         }
         let copied = (|| {
-            output.matches_destination(&self.running.plan.destination)?;
+            output.matches_destination(&self.plan.destination)?;
             let hash = story
                 .sha256
                 .parse()
@@ -450,7 +447,7 @@ impl<'a, 'run, 'db, 'library> Executor for CopyExecutor<'a, 'run, 'db, 'library>
         Execution {
             boundary,
             report: result,
-            resources: Some(Resources {
+            resources: Some(ExportResources {
                 temporary: Temporary::Ready(Box::new(output)),
                 _source: Some(source),
                 custody,

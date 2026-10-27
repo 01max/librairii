@@ -3,6 +3,8 @@
 pub(crate) mod collections;
 #[path = "view/details.rs"]
 pub(crate) mod details;
+#[path = "view/exports.rs"]
+pub(crate) mod exports;
 #[path = "view/filters.rs"]
 pub(crate) mod filters;
 #[path = "view/flags.rs"]
@@ -71,6 +73,7 @@ fn update_previews(ui: &DesktopWindow, mut next: Vec<CollectionPreview>) -> bool
 }
 pub struct View {
     pub operations: operations::State,
+    pub exports: exports::State,
     pub shelf_reviews: shelf_reviews::State,
     pub shelves: shelves::State,
     pub collections: collections::State,
@@ -297,6 +300,7 @@ impl View {
             && snapshot.revision == self.snapshot.revision
             && snapshot.phase == self.snapshot.phase
             && snapshot.language == self.snapshot.language
+            && snapshot.workflows.exports.observation == self.snapshot.workflows.exports.observation
             && snapshot.workflows.operations.observation
                 != self.snapshot.workflows.operations.observation
             && snapshot.workflows.operations.effects_revision
@@ -322,6 +326,7 @@ impl View {
             }
         }
         self.snapshot = snapshot;
+        self.exports.accept(ui, &self.snapshot);
         self.details.accept(ui, &self.snapshot);
         self.tags.accept(ui, &self.snapshot);
         self.flags.accept(ui, &self.snapshot);
@@ -337,6 +342,7 @@ impl View {
         true
     }
     pub fn project(&mut self, ui: &DesktopWindow) {
+        self.exports.project(ui, &self.snapshot);
         self.operations.project(ui, &self.snapshot, &self.catalogs);
         sync::project(ui, &self.snapshot);
         self.tags.retain_visible(&self.snapshot);
@@ -631,6 +637,7 @@ pub fn install(
 ) -> Result<Rc<RefCell<View>>, LocalizationError> {
     let view = Rc::new(RefCell::new(View {
         operations: Default::default(),
+        exports: Default::default(),
         shelf_reviews: Default::default(),
         shelves: Default::default(),
         collections: Default::default(),
@@ -816,6 +823,7 @@ pub fn install(
     collections::install(ui, view.clone(), worker.clone());
     operations::install(ui, view.clone(), worker.clone());
     sync::install(ui, view.clone(), worker.clone());
+    exports::install(ui, view.clone(), worker.clone());
     shelves::install(ui, view.clone(), worker.clone());
     shelf_reviews::install(ui, view.clone(), worker.clone());
     flags::install(ui, view.clone(), worker.clone());

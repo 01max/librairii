@@ -417,9 +417,50 @@ enabled control and status changes cannot focus a closed compact sidebar or stea
 modal focus. Wide English prompt/success and compact French failure frames extend
 the mandatory native baseline. Complete spoken/three-host acceptance is15.13.
 
+## Export previews and durable reports — 15.10
+
+The export dialog freezes current results across all pages, explicit story
+selection, a reevaluated union of Collections, or complete approved Shelf
+membership. Whole Shelves retain approved order/UUIDs independently of temporary
+refinements and pending proposals. Missing, Broken, conflicting and invalid
+members retain their reasons; invalid Collections cannot broaden an export.
+The preview shows intended/ready/byte/overlap totals, formats, destination,
+original output names and bounded 25-member pages. Zero-ready previews disable
+Start. Native destination reselection performs fresh validation and never
+overwrites an existing file.
+
+One scoped preparation worker performs cancellable scope resolution and archive
+verification away from the controller and UI. Close, replacement and library
+move cancel/join this actual worker. Serial fencing discards abandoned plans;
+uncertain native custody remains sticky regardless of cancellation and retains
+its actual file/directory owners. A ready result is published only after the
+preparation registry unlocks. Prepared destination authority remains private to
+storage, and exact selection ID/UUID validation rejects reused identities.
+
+Exports use the same two-worker job runtime as imports and metadata sync. The
+existing copy, single-use start, destination witness, compensation and durable
+outcome rules remain in force. Saved outcomes override transient progress.
+Reports show source identity, original output filenames, UUIDs, per-item bytes
+and grouped success/skipped/conflicted/failed/cancelled outcomes with explicit
+totals. Legacy dynamic-Shelf sources are labeled Collections, while approved
+Shelves retain their separate discriminator. Reveal revalidates the saved
+terminal export and actual directory immediately before a separate-argument
+native file-manager handoff. Linux uses GIO's launch acknowledgement, rather
+than waiting for the external window's lifetime.
+
+Actual callbacks cover all scopes, multi-page previews, frozen browsing scope,
+invalid groups, overlap, missing approved UUIDs, picker cancellation,
+destination conflicts/reselection, changed flags, Undo followed by fresh
+preflight, partial reports, unchanged archive bytes, French labels and restart.
+The existing lifecycle regression now also executes a real shared-runtime
+export, cancels/replaces preparation and moves the library with preparation
+outstanding. English preview/report and compact French zero-ready captures
+extend the mandatory native matrix. Whole-workflow spoken/three-host
+acceptance remains15.13.
+
 ## Remaining workflow work
 
-15.10–15.12 compose exports, durable History/notices and complete native
+15.11–15.12 compose durable History/notices and complete native
 setup/settings/recovery/diagnostics. 15.13 independently reviews the complete
 native surfaces and refreshes visual/accessibility evidence. Resource budgets,
 handover, installed packages and cutover retain their later task boundaries.

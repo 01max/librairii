@@ -90,6 +90,8 @@ pub struct Runtime<'gate, 'db, 'library> {
     database: &'db Database<'library>,
     files: &'db LibraryFiles<'library>,
     imports: &'db ImportExecutor<'db, 'library>,
+    export_jobs: &'db librairii_storage::export::ExportExecutor<'db, 'library>,
+    export_preparations: crate::export_preparation::Handle,
     jobs: Handle,
     thumbnails: &'db ThumbnailCache,
     root: &'db Path,
@@ -110,10 +112,13 @@ impl<'gate> Runtime<'gate, '_, '_> {
     pub fn observe_jobs(&self) -> JobObservation {
         let mut admissions = Vec::new();
         while let Some(admission) = self.jobs.take_admission() {
+            if !admission.accepted {
+                self.export_jobs.reject_admission(&admission.id);
+            }
             admissions.push(admission);
         }
         JobObservation {
-            critical: self.jobs.has_critical_work(),
+            critical: self.jobs.has_critical_work() || self.export_preparations.recovery_required(),
             status: self.jobs.status(),
             dirty: self.jobs.take_dirty(),
             progress: self.jobs.take_progress(),
@@ -138,6 +143,38 @@ impl<'gate> Runtime<'gate, '_, '_> {
         self.jobs
             .try_start(start)
             .map_err(|_| StorageError::QueueFull)
+    }
+    pub fn prepare_export(
+        &self,
+        scope: librairii_core::export::Scope,
+        path: std::path::PathBuf,
+    ) -> Result<u64> {
+        let _use = self
+            .gate
+            .enter_mutation()
+            .map_err(|_| StorageError::RuntimeInUse)?;
+        self.export_preparations.prepare(scope, path)
+    }
+    pub fn cancel_export_preparation(&self) {
+        self.export_preparations.cancel();
+    }
+    pub fn discard_export_preparation(
+        &self,
+        id: librairii_core::export::PreparationId,
+    ) -> Result<()> {
+        self.export_preparations.discard(id)
+    }
+    pub fn take_export_preparation(
+        &self,
+    ) -> Result<Option<(u64, Result<librairii_core::export::Preview>)>> {
+        self.export_preparations.take_result()
+    }
+    pub fn offer_export(
+        &self,
+        preparation: &librairii_core::export::PreparationId,
+        id: String,
+    ) -> Result<()> {
+        self.export_command(|exports| self.export_jobs.offer(&self.jobs, exports, preparation, id))
     }
     pub fn preview_relocation(
         &self,
@@ -190,10 +227,10 @@ impl<'gate> Runtime<'gate, '_, '_> {
             .gate
             .enter_mutation()
             .map_err(|_| StorageError::RuntimeInUse)?;
-        let mut exports = self
-            .exports
-            .lock()
-            .map_err(|_| StorageError::RuntimeFenced)?;
+        let mut exports = self.exports.try_lock().map_err(|e| match e {
+            std::sync::TryLockError::WouldBlock => StorageError::QueueFull,
+            std::sync::TryLockError::Poisoned(_) => StorageError::RuntimeFenced,
+        })?;
         work(&mut exports)
     }
     pub fn move_library<T>(
@@ -280,9 +317,11 @@ impl<'profile> LibrarySession<'profile> {
                     &database,
                     self.catalog_client.clone(),
                 );
+                let export_jobs = librairii_storage::export::ExportExecutor::new(&database, &files);
                 let executors = crate::metadata_jobs::Executors {
                     imports: &imports,
                     metadata: &metadata,
+                    exports: &export_jobs,
                 };
                 let exports = Mutex::new(librairii_storage::export::Exports::new(&database));
                 let repository = TerminalRepository::new(&database, generation);
@@ -302,20 +341,24 @@ impl<'profile> LibrarySession<'profile> {
                                 .activated()
                                 .map_err(|_| StorageError::RuntimeFenced)?;
                         }
-                        let runtime = Runtime {
-                            gate: &self.gate,
-                            database: &database,
-                            files: &files,
-                            imports: &imports,
-                            jobs,
-                            thumbnails: &thumbnails,
-                            root: native.layout().root(),
-                            exports: &exports,
-                            move_notice: self.move_notice.as_ref(),
-                            library: native,
-                            locations,
-                        };
-                        run(&runtime)
+                        crate::export_preparation::with_worker(&exports, |export_preparations| {
+                            let runtime = Runtime {
+                                gate: &self.gate,
+                                database: &database,
+                                files: &files,
+                                imports: &imports,
+                                export_jobs: &export_jobs,
+                                export_preparations,
+                                jobs,
+                                thumbnails: &thumbnails,
+                                root: native.layout().root(),
+                                exports: &exports,
+                                move_notice: self.move_notice.as_ref(),
+                                library: native,
+                                locations,
+                            };
+                            run(&runtime)
+                        })?
                     },
                 )
                 .map_err(SessionFailure::Jobs)??;

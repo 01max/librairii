@@ -1,4 +1,5 @@
 import {Button,ComboBox,VerticalBox,HorizontalBox,Palette} from "std-widgets.slint";
+export struct ReportGroup {heading:string,entries:[string]}
 component Label inherits Text {wrap: word-wrap;color: Palette.foreground;vertical-stretch:0;}
 component Command inherits Button {
     callback reveal(length,length);
@@ -15,10 +16,14 @@ export component Operations inherits VerticalBox {
     in property <string> notice;
     in property <string> runtime;
     in property <[string]> items;
+    in property <[ReportGroup]> groups;
     in property <bool> cancellable;
     in property <bool> retryable;
     in property <bool> previous;
     in property <bool> next;
+    in property <bool> revealable;
+    in property <string> reveal-notice;
+    callback reveal-destination();
     callback pick();callback cancel();callback retry();callback select(int);callback refresh();callback page(int);callback reveal(length,length);
     public function activate(){choose.focus();}
     out property <bool> first-focused: choose.has-focus;
@@ -36,8 +41,11 @@ export component Operations inherits VerticalBox {
         Command {enabled:root.active && !root.picking && root.cancellable;text:root.french ? "Annuler l’opération" : "Cancel operation";clicked=>{root.cancel();}reveal(y,h)=>{root.reveal(y,h);}}
     }
     Command {enabled:root.active && !root.picking && root.retryable;text:root.french ? "Réessayer · sélectionner les fichiers…" : "Retry · select files again…";clicked=>{root.retry();}reveal(y,h)=>{root.reveal(y,h);}}
+    Command {visible:root.revealable;height:self.visible ? self.preferred-height : 0px;enabled:root.active && !root.picking && root.revealable;text:root.french ? "Afficher la destination" : "Reveal destination";clicked=>{root.reveal-destination();}reveal(y,h)=>{root.reveal(y,h);}}
+    Label {text:root.reveal-notice;accessible-live-region:polite;}
     Label {text:root.summary;}
-    for item in root.items: Label {text:item;}
+    for group in root.groups: VerticalBox {padding:0px;spacing:6px;Label {text:group.heading;font-weight:600;}for item in group.entries: Label {text:item;}}
+    for item in root.items: Label {visible:root.groups.length==0;height:self.visible ? self.preferred-height : 0px;text:item;}
     HorizontalBox {padding:0px;spacing:8px;
         Command {enabled:root.active && !root.picking && root.previous;text:root.french ? "Résultats précédents" : "Previous results";clicked=>{root.page(-1);}reveal(y,h)=>{root.reveal(y,h);}}
         Command {enabled:root.active && !root.picking && root.next;text:root.french ? "Résultats suivants" : "Next results";clicked=>{root.page(1);}reveal(y,h)=>{root.reveal(y,h);}}

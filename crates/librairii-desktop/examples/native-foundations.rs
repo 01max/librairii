@@ -243,9 +243,11 @@ fn main() -> Result {
     callback_checks::shelf_reviews(&ui)?;
     callback_checks::operations(&ui)?;
     callback_checks::sync(&ui)?;
+    callback_checks::exports(&ui)?;
     let initial = snapshot()?;
     let view = Rc::new(RefCell::new(view::View {
         operations: Default::default(),
+        exports: Default::default(),
         shelf_reviews: Default::default(),
         shelves: Default::default(),
         collections: Default::default(),
@@ -369,6 +371,8 @@ fn main() -> Result {
                     surface.poll(&ui);
                 } else if let Some(surface) = surfaces.sync.borrow().as_ref() {
                     surface.poll(&ui);
+                } else if let Some(surface) = surfaces.exports.borrow().as_ref() {
+                    surface.poll(&ui);
                 } else {
                     view.borrow_mut().resize(&ui);
                 }
@@ -400,7 +404,7 @@ fn main() -> Result {
         return Err(error.into());
     }
     check(
-        server || *step.borrow() > 114,
+        server || *step.borrow() > 119,
         "native fixture ended before completing its checks",
     )?;
     Ok(())
@@ -409,6 +413,7 @@ fn main() -> Result {
 #[derive(Debug, Default)]
 struct Surfaces {
     sync: RefCell<Option<callback_checks::SyncSurface>>,
+    exports: RefCell<Option<callback_checks::ExportSurface>>,
     operations: RefCell<Option<callback_checks::OperationSurface>>,
     collections: RefCell<Option<callback_checks::CollectionSurface>>,
     shelves: RefCell<Option<callback_checks::ShelfSurface>>,
@@ -1148,6 +1153,46 @@ fn capture_step(
             "sync sidebar Escape did not return to browsing",
         )?;
         surfaces.sync.borrow_mut().take();
+    } else if index == 115 {
+        resize(ui, 1180., 760.)?;
+        *surfaces.exports.borrow_mut() = Some(callback_checks::ExportSurface::open(ui)?);
+    } else if index == 116 {
+        check(
+            ui.get_export_first_focused(),
+            "export scope lost native focus",
+        )?;
+        key(ui, slint::platform::Key::Tab.into())?;
+        check(
+            ui.get_export_picker_focused(),
+            "native Tab did not reach export destination picker",
+        )?;
+        capture(ui, &destination.join("export-preview-wide-en.png"))?;
+        surfaces
+            .exports
+            .borrow()
+            .as_ref()
+            .ok_or("export surface missing")?
+            .finish_export(ui)?;
+    } else if index == 117 {
+        capture(ui, &destination.join("export-report-wide-en.png"))?;
+        surfaces
+            .exports
+            .borrow()
+            .as_ref()
+            .ok_or("export surface missing")?
+            .french_zero(ui)?;
+        resize(ui, 560., 400.)?;
+    } else if index == 118 {
+        ui.invoke_focus_export_start();
+    } else if index == 119 {
+        capture(ui, &destination.join("export-zero-ready-compact-fr.png"))?;
+        check(
+            ui.get_export_picker_focused(),
+            "zero-ready Start did not offer enabled destination reselection",
+        )?;
+        key(ui, slint::platform::Key::Escape.into())?;
+        check(!ui.get_modal(), "export Escape did not return to browsing")?;
+        surfaces.exports.borrow_mut().take();
     } else {
         std::fs::write(
             destination.join("report.json"),
@@ -1168,6 +1213,7 @@ fn capture_step(
                 "shelf_review_callbacks": "passed",
                 "operation_callbacks":"passed",
                 "sync_callbacks":"passed",
+                "export_callbacks":"passed",
                 "scope": "shown native component/public window events and Skia capture; not physical HID or packaged workflow qualification",
             }))?,
         )?;

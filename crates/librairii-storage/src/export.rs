@@ -15,6 +15,12 @@ use std::collections::{BTreeMap, BTreeSet};
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 mod durable;
 #[cfg(any(target_os = "macos", target_os = "linux"))]
+mod native;
+#[cfg(any(target_os = "macos", target_os = "linux"))]
+pub use durable::ExportResources;
+#[cfg(any(target_os = "macos", target_os = "linux"))]
+pub use native::ExportExecutor;
+#[cfg(any(target_os = "macos", target_os = "linux"))]
 mod preparation;
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 pub use durable::DurableExportError;
@@ -28,7 +34,15 @@ pub const MAX_RESOLVED_BYTES: usize = 64 * 1024 * 1024;
 
 impl Database<'_> {
     pub fn resolve_export(&self, scope: Scope, locale: String) -> Result<Pending<'_, Resolved>> {
-        self.read(move |tx| resolve(tx, scope, &locale))
+        self.resolve_export_cancellable(scope, locale, crate::database::WorkCancellation::default())
+    }
+    pub fn resolve_export_cancellable(
+        &self,
+        scope: Scope,
+        locale: String,
+        cancel: crate::database::WorkCancellation,
+    ) -> Result<Pending<'_, Resolved>> {
+        self.read(move |tx| resolve_with_cancel(tx, scope, &locale, cancel))
     }
 }
 fn invalid<T>() -> Result<T> {
@@ -74,9 +88,13 @@ struct Rows {
     seen: BTreeSet<String>,
     bytes: usize,
     overlap: usize,
+    cancel: crate::database::WorkCancellation,
 }
 impl Rows {
     fn append(&mut self, story: ExportStory) -> Result<()> {
+        if self.cancel.is_cancelled() {
+            return Err(crate::StorageError::Cancelled);
+        }
         if self.seen.contains(&story.uuid) {
             self.overlap += 1;
             return Ok(());
@@ -139,6 +157,9 @@ fn curated(
         librairii_core::query::normalize_request(request.clone())?.criteria != Query::default();
     let mut bytes = 0usize;
     crate::query::visit_scope(tx, request, locale, |s| {
+        if out.cancel.is_cancelled() {
+            return Err(crate::StorageError::Cancelled);
+        }
         if approved.contains(s.uuid.as_str()) {
             bytes = bytes
                 .checked_add(row_bytes(&s))
@@ -151,6 +172,9 @@ fn curated(
         Ok(())
     })?;
     for member in members {
+        if out.cancel.is_cancelled() {
+            return Err(crate::StorageError::Cancelled);
+        }
         if let Some(wanted) = &mut wanted
             && !wanted.remove(&member.uuid)
         {
@@ -168,11 +192,28 @@ fn curated(
     Ok(shelf.name)
 }
 pub fn resolve(tx: &Transaction<'_>, scope: Scope, locale: &str) -> Result<Resolved> {
+    resolve_with_cancel(
+        tx,
+        scope,
+        locale,
+        crate::database::WorkCancellation::default(),
+    )
+}
+fn resolve_with_cancel(
+    tx: &Transaction<'_>,
+    scope: Scope,
+    locale: &str,
+    cancel: crate::database::WorkCancellation,
+) -> Result<Resolved> {
+    if cancel.is_cancelled() {
+        return Err(crate::StorageError::Cancelled);
+    }
     let mut out = Rows {
         stories: Vec::new(),
         seen: BTreeSet::new(),
         bytes: 0,
         overlap: 0,
+        cancel,
     };
     let mut source = Source {
         kind: ExportScopeKind::CurrentQuery,

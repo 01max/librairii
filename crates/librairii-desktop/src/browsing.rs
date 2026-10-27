@@ -397,6 +397,7 @@ pub(crate) fn run(
     let mut collection_controller = crate::workflows::collections::Controller::default();
     let mut shelf_controller = crate::workflows::shelves::Controller::default();
     let mut review_controller = crate::workflows::shelf_reviews::Controller::default();
+    let mut export_controller = crate::workflows::exports::Controller::default();
     let mut operation_controller = crate::workflows::operations::Controller::default();
     operation_controller.restore_preferences(&store, id)?;
     let result = session.drive(locations, &WorkCancellation::default(), |runtime| {
@@ -412,8 +413,9 @@ pub(crate) fn run(
             while !stop.load(Ordering::Acquire) {
                 // Job progress does not depend on the UI command FIFO becoming
                 // empty while a user types or navigates continuously.
-                let (_,effects)=operation_controller.poll(runtime,false)?;
-                workflows.operations=operation_controller.snapshot.clone();
+                let prepared=export_controller.poll(runtime);workflows.exports=export_controller.snapshot.clone();prepared?;
+                let observation=operation_controller.poll(runtime,false);
+                workflows.operations=operation_controller.snapshot.clone();let (_,effects)=observation?;
                 if effects {
                     crate::workflows::refresh_details(runtime,&navigation,&mut workflows);
                     group_rows=groups(runtime)?;query_facets=facets(runtime)?;
@@ -482,8 +484,9 @@ pub(crate) fn run(
                         .receive()
                         .map_err(|_| StorageError::RuntimeFenced)?
                     else {
-                        let (changed,effects)=operation_controller.poll(runtime,false)?;
-                        if changed {
+                        let prepared=export_controller.poll(runtime);workflows.exports=export_controller.snapshot.clone();let export_changed=prepared?;
+                        let observed=operation_controller.poll(runtime,false);workflows.operations=operation_controller.snapshot.clone();let (changed,effects)=observed?;
+                        if changed || export_changed {
                             workflows.operations=operation_controller.snapshot.clone();
                             if effects {
                                 crate::workflows::refresh_details(runtime,&navigation,&mut workflows);
@@ -514,6 +517,13 @@ pub(crate) fn run(
                     invalid_query = false;
                     let mut invalidates_review=matches!(&command,Command::Refresh);
                     match command {
+                        Command::Exports{generation,action}=>{
+                            operation_controller.poll(runtime,true)?;workflows.operations=operation_controller.snapshot.clone();
+                            if let Some(id)=export_controller.handle(runtime,&next,generation,action,revision) {operation_controller.watch(id,revision);operation_controller.poll(runtime,true)?;workflows.operations=operation_controller.snapshot.clone();}
+                            workflows.exports=export_controller.snapshot.clone();
+                            if workflows.exports.recovery_required {workflows.recovery_required=true;receiver.fence().map_err(|_|StorageError::RuntimeFenced)?;return Err(StorageError::RuntimeFenced);}
+                        }
+
                         Command::Operations{generation,action}=>{
                             invalidates_review=operation_controller.handle(runtime,&store,generation,action,revision);
                             workflows.operations=operation_controller.snapshot.clone();
