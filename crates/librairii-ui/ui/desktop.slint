@@ -157,6 +157,8 @@ export component DesktopWindow inherits Window {
         if root.compact && root.sidebar-open { navigation.restore(root.invoker); }
         else if root.compact && root.invoker >= 200 { navigation-button.focus(); }
         else if root.invoker == 10 && !root.compact { library-button.focus(); }
+        else if root.invoker == 32 && root.wide && !root.workspace { side-inspector.focus-technical(); }
+        else if root.invoker == 32 { browser.focus(); }
         else if root.invoker == 31 { browser.focus(); }
         else if root.invoker == 30 { search-entry.focus(); }
         else { FocusState.restore-epoch += 1; }
@@ -164,6 +166,7 @@ export component DesktopWindow inherits Window {
     public function request-quit() { if root.detail-pending { return; } if root.closing { return; } if root.pending { root.open-dialog(7); } else { root.quit(); } }
     in-out property <bool> compact;
     in-out property <bool> wide: true;
+    changed wide => { if !root.wide && !root.modal && FocusState.key == 32 { browser.focus(); } }
     in-out property <bool> sidebar-open;
     in-out property <int> panel;
     in-out property <string> query;
@@ -191,6 +194,7 @@ export component DesktopWindow inherits Window {
     in property <string> removal-title;
     in property <string> removal-error;
     public function scroll-details(key:string) { dialog-inspector.scroll(key); }
+    out property <bool> inspector-technical-focused: side-inspector.technical-focused;
     public function focus-inspector-technical() { side-inspector.focus-technical(); }
     public function focus-details-technical() { dialog-inspector.focus-technical(); }
     out property <length> details-scroll-position: dialog-inspector.scroll-position;
@@ -300,7 +304,7 @@ export component DesktopWindow inherits Window {
                             browser := StoryBrowser { visible: !root.workspace; enabled: root.startup-phase == 3 && !root.closing && !root.workspace && !root.modal && !FocusState.sidebar; focus-entered => { FocusState.key = 31; } groups: root.story-groups; count: root.story-count; columns: root.columns; mode: root.mode; label: root.french ? "Histoires" : "Stories"; selected-index <=> root.selected-index; select(index) => { root.select-story(index); } }
                         }
                         workspace-panel := Workspace { visible: root.workspace; max-width: root.workspace ? 100000px : 0px; interactive: root.workspace && !root.closing && !root.modal && !FocusState.sidebar; wide: root.wide; french: root.french; members: root.story-groups; count: root.story-count; sources: root.sources; proposals <=> root.proposals; pending: root.pending; decisions: root.decisions; selected-index <=> root.selected-index; select(index) => { root.select-story(index); } decide(index,value) => { root.decide(index,value); } apply => { root.apply-decisions(); } }
-                        side-inspector := Inspector { visible: root.wide && !root.workspace; width: self.visible ? 264px : 0px; interactive: !root.modal && !root.closing; french: root.french; story: root.selected-story; request-data => { root.request-details(); } }
+                        side-inspector := Inspector { visible: root.wide && !root.workspace; width: self.visible ? 264px : 0px; interactive: !root.modal && !root.closing; french: root.french; story: root.selected-story; request-data => { root.request-details(); } focused => { FocusState.key = 32; } }
                     }
                     HorizontalBox { padding: 0px; spacing: 8px;
                         Action { visible: !root.compact; width: root.compact ? 0px : 76px; focus-key: 19; text: root.french ? "Retour" : "Back"; available: root.back-enabled; clicked => { root.history-step(-1); } }

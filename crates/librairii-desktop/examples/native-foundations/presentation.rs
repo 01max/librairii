@@ -826,6 +826,21 @@ impl DetailSurface {
             ui.get_selected_story().technical.contains("story.zip"),
             "shown wide disclosure never loaded automatic selection",
         )?;
+        ui.invoke_show_panel(5);
+        ui.window()
+            .dispatch_event(slint::platform::WindowEvent::KeyPressed {
+                text: slint::platform::Key::Escape.into(),
+            });
+        check(
+            ui.get_inspector_technical_focused(),
+            "Settings did not return focus to the exact inspector invoker",
+        )?;
+        ui.invoke_open_dialog(1);
+        ui.invoke_close_dialog();
+        check(
+            ui.get_inspector_technical_focused(),
+            "About did not return focus to the inspector invoker",
+        )?;
         Ok(())
     }
     pub fn begin_details(&self, ui: &DesktopWindow) -> Result {
@@ -855,6 +870,10 @@ impl DetailSurface {
     }
     pub fn french_reopen(&self, ui: &DesktopWindow) -> Result {
         ui.invoke_close_dialog();
+        check(
+            ui.get_focused_key() == 31,
+            "hidden wide inspector did not restore focus to the browser",
+        )?;
         ui.invoke_change_language("fr".into());
         self.0.settle(ui)?;
         ui.invoke_open_dialog(3);

@@ -624,6 +624,8 @@ fn capture_step(
             .as_ref()
             .ok_or("detail surface missing")?
             .first_disclosure(ui)?;
+        #[cfg(target_os = "macos")]
+        native_menu::inspector_focus(ui, _menus)?;
     } else if index == 61 {
         capture(ui, &destination.join("details-initial-wide-en.png"))?;
         surfaces

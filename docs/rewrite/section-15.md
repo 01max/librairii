@@ -93,6 +93,13 @@ The current desktop/UI/adapter suite passes70 tests with zero skipped; the new
 timestamp identity brings the preserved baseline to613. The three exact phf
 exceptions have matching owner/rationale/tracking/expiry ledger records.
 
+The final focus review registers the wide inspector as an exact modal invoker.
+Actual AppKit Settings/About plus Escape return to its technical disclosure;
+resizing hides that control with a browser-focus fallback. The shown fixture
+checks both paths. The cumulative native-host quality gate passes598 tests with
+zero skipped, plus doctests, strict build/lint, preservation and supply-chain
+checks. Other target scopes retain their required baseline identities.
+
 ## Remaining workflow work
 
 15.3–15.12 compose tags, Broken/Undo, Collection and Shelf

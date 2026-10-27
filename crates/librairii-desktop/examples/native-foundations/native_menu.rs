@@ -221,3 +221,29 @@ pub fn about(ui: &DesktopWindow, menus: &Menus) -> Result {
     menus.dispatch(ui);
     check(ui.get_dialog() == 1, "native About Slint event was lost")
 }
+
+/// The actual native menus return focus to an inspector control, including when
+/// the previous browser/action key differs from the current invoker.
+pub fn inspector_focus(ui: &DesktopWindow, menus: &Menus) -> Result {
+    check(
+        shortcut(",", Flags::Command, 43)?,
+        "native Settings shortcut missing",
+    )?;
+    menus.dispatch(ui);
+    check(
+        ui.get_dialog() == 2,
+        "native Settings did not open from inspector",
+    )?;
+    key(ui, slint::platform::Key::Escape.into())?;
+    check(
+        ui.get_inspector_technical_focused(),
+        "native Settings lost the inspector invoker",
+    )?;
+    about(ui, menus)?;
+    ui.invoke_close_dialog();
+    check(
+        ui.get_inspector_technical_focused(),
+        "native About lost the inspector invoker",
+    )?;
+    Ok(())
+}
