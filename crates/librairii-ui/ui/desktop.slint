@@ -143,12 +143,14 @@ export component DesktopWindow inherits Window {
             root.invoker = FocusState.key;
             root.dialog = kind;
             dialog-scroll.content-y = 0px;
+            if kind == 3 { dialog-inspector.reset(); root.request-details(); }
             FocusState.modal = true;
             if kind == 2 { english-button.focus(); } else if kind == 8 { filters.activate(); } else { close-dialog-button.focus(); }
         }
     }
     public function close-dialog() {
-        if root.closing { return; }
+        if root.closing || root.detail-pending { return; }
+        if root.dialog == 9 { root.dialog = 3; remove-story-button.focus(); return; }
         root.dialog = 0;
         FocusState.modal = false;
         FocusState.key = root.invoker;
@@ -159,7 +161,7 @@ export component DesktopWindow inherits Window {
         else if root.invoker == 30 { search-entry.focus(); }
         else { FocusState.restore-epoch += 1; }
     }
-    public function request-quit() { if root.closing { return; } if root.pending { root.open-dialog(7); } else { root.quit(); } }
+    public function request-quit() { if root.detail-pending { return; } if root.closing { return; } if root.pending { root.open-dialog(7); } else { root.quit(); } }
     in-out property <bool> compact;
     in-out property <bool> wide: true;
     in-out property <bool> sidebar-open;
@@ -182,6 +184,19 @@ export component DesktopWindow inherits Window {
     in-out property <int> mode;
     in-out property <int> selected-index: -1;
     in property <StoryRow> selected-story;
+    callback request-details();
+    callback begin-removal();
+    callback remove-story();
+    in-out property <bool> detail-pending;
+    in property <string> removal-title;
+    in property <string> removal-error;
+    public function scroll-details(key:string) { dialog-inspector.scroll(key); }
+    public function focus-details-technical() { dialog-inspector.focus-technical(); }
+    out property <length> details-scroll-position: dialog-inspector.scroll-position;
+    out property <bool> removal-keep-focused: keep-story.has-focus;
+    public function confirm-removal() { if root.dialog == 3 { root.dialog = 9; keep-story.focus(); } }
+    public function complete-removal() { root.detail-pending = false; root.dialog = 3; root.close-dialog(); }
+
     in property <string> counts;
     in property <bool> previous-enabled;
     in property <bool> next-enabled;
@@ -322,7 +337,7 @@ export component DesktopWindow inherits Window {
         width: min(600px,parent.width - 32px); height: parent.height - 48px;
         background: Palette.background; border-width: 2px; border-color: Palette.foreground; border-radius: 6px;
         accessible-role: groupbox;
-        accessible-label: root.dialog == 1 ? (root.french ? "À propos de Slint" : "About Slint") : root.dialog == 2 ? (root.french ? "Réglages" : "Settings") : root.dialog == 3 ? (root.french ? "Détails" : "Details") : root.dialog == 4 ? (root.french ? "Configurer la bibliothèque" : "Set up your library") : root.dialog == 5 ? (root.french ? "Récupération de la bibliothèque" : "Library recovery") : root.dialog == 7 ? (root.french ? "Opération en cours" : "Operation in progress") : root.dialog == 8 ? (root.french ? "Filtres et tri" : "Filters and sort") : (root.french ? "Bibliothèque" : "Library");
+        accessible-label: root.dialog == 9 ? (root.french ? "Confirmer le retrait" : "Confirm removal") : root.dialog == 1 ? (root.french ? "À propos de Slint" : "About Slint") : root.dialog == 2 ? (root.french ? "Réglages" : "Settings") : root.dialog == 3 ? (root.french ? "Détails" : "Details") : root.dialog == 4 ? (root.french ? "Configurer la bibliothèque" : "Set up your library") : root.dialog == 5 ? (root.french ? "Récupération de la bibliothèque" : "Library recovery") : root.dialog == 7 ? (root.french ? "Opération en cours" : "Operation in progress") : root.dialog == 8 ? (root.french ? "Filtres et tri" : "Filters and sort") : (root.french ? "Bibliothèque" : "Library");
         FocusScope {
             width: parent.width; height: parent.height;
             key-pressed(event) => {
@@ -337,6 +352,12 @@ export component DesktopWindow inherits Window {
                     return accept;
                 }
                 if event.text == Key.Tab {
+                    if root.dialog == 9 { if keep-story.has-focus { trash-story.focus(); } else { keep-story.focus(); } return accept; }
+                    if root.dialog == 3 {
+                        if event.modifiers.shift && dialog-inspector.technical-focused { close-dialog-button.focus(); return accept; }
+                        if !event.modifiers.shift && close-dialog-button.has-focus { dialog-inspector.focus-technical(); return accept; }
+                        return reject;
+                    }
                     if root.dialog == 8 {
                         if event.modifiers.shift && filters.first-focused { close-dialog-button.focus(); return accept; }
                         if !event.modifiers.shift && close-dialog-button.has-focus { filters.activate(); return accept; }
@@ -359,9 +380,11 @@ export component DesktopWindow inherits Window {
             VerticalBox { padding: 18px; spacing: 12px;
                 Caption { text: dialog-panel.accessible-label; font-size: 22px; font-weight: 600; }
                 dialog-scroll := ScrollView { vertical-stretch: 1; content-width: self.visible-width; content-height: dialog-content.preferred-height;
-                    dialog-content := VerticalBox { height: self.preferred-height; padding: 0px;
+                    dialog-content := VerticalBox { height: self.preferred-height; padding: 0px; spacing: 0px;
                         if root.dialog == 1: AboutSlint { }
-                        dialog-inspector := Inspector { visible: root.dialog == 3; height: root.dialog == 3 ? max(240px, dialog-scroll.visible-height) : 0px; french: root.french; story: root.selected-story; }
+                        dialog-inspector := Inspector { visible: root.dialog == 3; height: root.dialog == 3 ? max(80px, dialog-scroll.visible-height) : 0px; french: root.french; story: root.selected-story; }
+                        if root.dialog == 9: Caption { text: (root.french ? "Retirer cette histoire de la bibliothèque ?\n« " : "Remove this story from the library?\n“") + root.removal-title + (root.french ? " » sera déplacée dans la corbeille de l’application. Votre fichier d’origine restera à son emplacement." : "” will move to application trash. Your original source file will stay where it is."); }
+                        if root.dialog == 9: Caption { text: root.removal-error; }
                         if root.dialog == 4: Caption { text: root.french ? "Choisissez où conserver votre bibliothèque. Votre bibliothèque n’est créée qu’après la confirmation de son emplacement. Vous pouvez d’abord choisir la langue dans les réglages." : "Choose where to keep your library. Your library is created only after you confirm its location. You can choose your language in Settings first."; }
                         if root.dialog == 5: Caption { text: root.french ? "La bibliothèque attendue est indisponible ou nécessite une récupération. Ses fichiers sont conservés. Reconnectez son volume puis réessayez ; ne remplacez pas votre bibliothèque." : "The expected library is unavailable or needs recovery. Its files are preserved. Reconnect its volume and retry; keep your existing library."; }
                         if root.dialog == 6: Caption { text: root.status != "" ? root.status : (root.french ? "Vos histoires et leurs archives restent dans votre bibliothèque locale." : "Your stories and archives stay in your local library."); }
@@ -384,7 +407,12 @@ export component DesktopWindow inherits Window {
                     Button { text: "Français"; enabled: !root.closing && root.dialog == 2; clicked => { root.change-language("fr"); } }
                 }
                 stop-close-button := Button { visible: root.dialog == 7; height: root.dialog == 7 ? 32px : 0px; enabled: !root.closing && !root.commit-pending; text: root.french ? "Arrêter et fermer" : "Stop and close"; clicked => { root.quit(); } }
-                close-dialog-button := Button { enabled: !root.closing; text: root.dialog == 7 ? (root.french ? "Continuer" : "Keep working") : (root.french ? "Fermer" : "Close"); clicked => { root.close-dialog(); } }
+                remove-story-button := Button { visible: root.dialog == 3; height: root.dialog == 3 ? 32px : 0px; enabled: !root.detail-pending && root.selected-story.uuid != ""; text: root.french ? "Retirer de la bibliothèque…" : "Remove from library…"; clicked => { root.begin-removal(); } }
+                HorizontalBox { height: root.dialog == 9 ? 32px : 0px; visible: root.dialog == 9;
+                    keep-story := Button { enabled: !root.detail-pending; text: root.french ? "Conserver l’histoire" : "Keep story"; clicked => { root.close-dialog(); } }
+                    trash-story := Button { enabled: !root.detail-pending; text: root.detail-pending ? (root.french ? "Déplacement…" : "Moving to trash…") : (root.french ? "Déplacer dans la corbeille" : "Move to trash"); clicked => { root.remove-story(); } }
+                }
+                close-dialog-button := Button { visible: root.dialog != 9; height: root.dialog != 9 ? 32px : 0px; enabled: !root.closing && !root.detail-pending; text: root.dialog == 7 ? (root.french ? "Continuer" : "Keep working") : (root.french ? "Fermer" : "Close"); clicked => { root.close-dialog(); } }
             }
         }
     }

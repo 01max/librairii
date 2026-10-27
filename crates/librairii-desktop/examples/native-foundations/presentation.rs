@@ -47,6 +47,9 @@ struct Fixture {
 }
 impl Fixture {
     fn open(ui: &DesktopWindow) -> Result<Self> {
+        Self::open_with(ui, false)
+    }
+    fn open_with(ui: &DesktopWindow, real: bool) -> Result<Self> {
         let roots = TestRoots::new()?;
         let home = roots.profile().join("home");
         let config = roots.profile().join("config");
@@ -85,6 +88,73 @@ impl Fixture {
             ),
             &format!("native callback fixture seeding did not commit: {seeded:?}"),
         )?;
+        if real {
+            let source = roots.profile().join("Bibliothèque originale.plain.pk");
+            std::fs::copy(
+                std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+                    .join("../../preservation/corpus/archives/clockwork-forest.plain.pk"),
+                &source,
+            )?;
+            let executor = librairii_desktop::imports::ImportExecutor::new(&database);
+            let repository =
+                librairii_storage::operations_repository::TerminalRepository::new(&database, 1);
+            librairii_app::native_jobs::with_runtime(
+                &repository,
+                &executor,
+                Default::default(),
+                |handle| -> Result {
+                    let deadline = Instant::now() + Duration::from_secs(15);
+                    let mut prepared = librairii_desktop::imports::PreparedImport::new(
+                        "e0000000-0000-4000-8000-000000000015".parse()?,
+                        vec![source],
+                    )?;
+                    loop {
+                        match executor.offer(&handle, prepared) {
+                            Ok(()) => break,
+                            Err((librairii_desktop::imports::PrepareError::Busy, original))
+                                if Instant::now() < deadline =>
+                            {
+                                prepared = original;
+                                std::thread::sleep(Duration::from_millis(2));
+                            }
+                            Err((error, _)) => return Err(error.into()),
+                        }
+                    }
+                    loop {
+                        let operation = database
+                            .operation_snapshot("e0000000-0000-4000-8000-000000000015".into())?
+                            .wait()?;
+                        if operation.is_some_and(|s| {
+                            !matches!(
+                                s.operation.state,
+                                librairii_app::importing::OperationState::Running
+                                    | librairii_app::importing::OperationState::Queued
+                            )
+                        }) {
+                            break;
+                        }
+                        if Instant::now() >= deadline {
+                            return Err("native workflow seed did not finish".into());
+                        }
+                        std::thread::sleep(Duration::from_millis(2));
+                    }
+                    Ok(())
+                },
+            )??;
+            let seeded = database.transaction(Default::default(), |tx| {
+                let description = format!("<p>A <b>clockwork</b> forest &amp; friends.</p><script>hidden()</script><ul><li>Listen</li><li>Imagine</li></ul>{}", "<p>A long readable paragraph for native scrolling.</p>".repeat(20));
+                tx.execute("UPDATE stories SET embedded_description=? WHERE embedded_title='The Clockwork Forest'",[description])?;
+                tx.execute("INSERT INTO story_tag_assignments(story_id,definition_id,value_id,source) SELECT id,101,NULL,'manual' FROM stories WHERE embedded_title='The Clockwork Forest'",[])?;
+                Ok(())
+            })?.wait()?;
+            check(
+                matches!(
+                    seeded,
+                    librairii_storage::database::TransactionOutcome::Committed(())
+                ),
+                "native workflow metadata seed failed",
+            )?;
+        }
         database.close()?;
         drop(database);
         native.finish().map_err(|error| error.to_string())?;
@@ -141,6 +211,9 @@ impl Fixture {
 impl Drop for Fixture {
     fn drop(&mut self) {
         if let Some(ui) = self.ui.upgrade() {
+            ui.on_request_details(|| {});
+            ui.on_begin_removal(|| {});
+            ui.on_remove_story(|| {});
             ui.on_mode_selected(|_| {});
             ui.on_select_story(|_| {});
             ui.on_change_page(|_| {});
@@ -562,4 +635,130 @@ pub fn failed_query(ui: &DesktopWindow) -> Result {
         "recovery without navigation retained stale history controls",
     )?;
     fixture.finish()
+}
+
+/// Frozen confirmation uses real immutable managed bytes and production callbacks.
+pub fn details(ui: &DesktopWindow) -> Result {
+    let fixture = Fixture::open_with(ui, true)?;
+    fixture.search(ui, "Clockwork")?;
+    fixture.select(ui, 0)?;
+    ui.invoke_open_dialog(3);
+    fixture.settle(ui)?;
+    let row = ui.get_selected_story();
+    check(
+        row.description
+            .starts_with("A clockwork forest & friends.\n\n• Listen")
+            && !row.description.contains("hidden"),
+        "details exposed markup or lost readable structure",
+    )?;
+    check(
+        row.technical.contains("Bibliothèque originale.plain.pk")
+            && row.technical.contains("SHA-256:")
+            && row.display_sources.contains("Archive metadata"),
+        "technical facts or independent provenance missing",
+    )?;
+    let source = fixture
+        ._roots
+        .profile()
+        .join("Bibliothèque originale.plain.pk");
+    let original = std::fs::read(&source)?;
+    ui.invoke_begin_removal();
+    check(
+        ui.get_dialog() == 9 && ui.get_removal_keep_focused(),
+        "removal did not default to Keep",
+    )?;
+    ui.invoke_close_dialog();
+    check(
+        ui.get_dialog() == 3,
+        "Keep closed details instead of returning to removal invoker",
+    )?;
+    ui.invoke_begin_removal();
+    let mut stale = librairii_core::query::QueryRequest::default();
+    stale.criteria.name = "Beta".into();
+    fixture.worker.borrow().offer(Command::Request(stale))?;
+    fixture.settle(ui)?;
+    ui.invoke_remove_story();
+    fixture.settle(ui)?;
+    check(
+        ui.get_dialog() == 9 && !ui.get_removal_error().is_empty() && !ui.get_detail_pending(),
+        "stale removal silently retargeted or lacked failure feedback",
+    )?;
+    ui.invoke_close_dialog();
+    ui.invoke_close_dialog();
+    fixture.worker.borrow().offer(Command::Back)?;
+    fixture.settle(ui)?;
+    fixture.select(ui, 0)?;
+    ui.invoke_open_dialog(3);
+    fixture.settle(ui)?;
+    ui.invoke_begin_removal();
+    ui.invoke_remove_story();
+    check(
+        ui.get_detail_pending(),
+        "removal did not fence dismissal before worker response",
+    )?;
+    ui.invoke_close_dialog();
+    check(ui.get_dialog() == 9, "pending removal allowed dismissal")?;
+    let removed = fixture.settle(ui)?;
+    check(
+        ui.get_dialog() == 0 && removed.page.as_ref().is_some_and(|p| p.total == 0),
+        "successful removal did not close and refresh details",
+    )?;
+    check(
+        std::fs::read(&source)? == original,
+        "removal changed the original source",
+    )?;
+    let mut retained = false;
+    for entry in std::fs::read_dir(fixture._roots.library().join("native/trash/removals"))? {
+        for file in std::fs::read_dir(entry?.path())? {
+            if std::fs::read(file?.path())? == original {
+                retained = true;
+            }
+        }
+    }
+    check(
+        retained,
+        "removal lost the managed archive instead of moving it to application trash",
+    )?;
+    fixture.finish()
+}
+
+pub struct DetailSurface(Fixture);
+impl std::fmt::Debug for DetailSurface {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("DetailSurface").finish_non_exhaustive()
+    }
+}
+impl DetailSurface {
+    pub fn open(ui: &DesktopWindow) -> Result<Self> {
+        let fixture = Fixture::open_with(ui, true)?;
+        fixture.search(ui, "Clockwork")?;
+        fixture.select(ui, 0)?;
+        ui.invoke_open_dialog(3);
+        fixture.settle(ui)?;
+        Ok(Self(fixture))
+    }
+    pub fn poll(&self, ui: &DesktopWindow) {
+        self.0.view.borrow_mut().resize(ui);
+    }
+    pub fn technical(&self, ui: &DesktopWindow) -> Result {
+        ui.invoke_focus_details_technical();
+        ui.window()
+            .dispatch_event(slint::platform::WindowEvent::KeyPressed { text: " ".into() });
+        ui.window()
+            .dispatch_event(slint::platform::WindowEvent::KeyReleased { text: " ".into() });
+        ui.invoke_scroll_details(slint::platform::Key::End.into());
+        Ok(())
+    }
+    pub fn french_reopen(&self, ui: &DesktopWindow) -> Result {
+        ui.invoke_close_dialog();
+        ui.invoke_change_language("fr".into());
+        self.0.settle(ui)?;
+        ui.invoke_open_dialog(3);
+        self.0.settle(ui)?;
+        check(
+            ui.get_details_scroll_position() == 0.0,
+            "reopening details retained an old scroll offset",
+        )?;
+        Ok(())
+    }
 }

@@ -1,4 +1,6 @@
 //! Main-thread projection of owned bounded worker values into native models.
+#[path = "view/details.rs"]
+pub(crate) mod details;
 #[path = "view/filters.rs"]
 pub(crate) mod filters;
 use librairii_app::localization::{Catalogs, Language, LocalizationError};
@@ -11,6 +13,7 @@ use librairii_ui::native::{DesktopWindow, NavigationRow, StoryGroup, StoryRow, T
 use slint::{ComponentHandle, ModelRc, VecModel};
 use std::{cell::RefCell, rc::Rc};
 pub struct View {
+    pub details: details::State,
     pub filters: filters::State,
     pub catalogs: Catalogs,
     pub snapshot: Snapshot,
@@ -88,6 +91,15 @@ fn row(index: usize, story: &Story, language: Language, catalogs: &Catalogs) -> 
         })
         .unwrap_or_default();
     StoryRow {
+        uuid: story.uuid.clone().into(),
+        facts: details::facts(story, language).into(),
+        display_sources: details::sources(story, language).into(),
+        technical: if language == Language::French {
+            "Chargement des détails techniques…"
+        } else {
+            "Loading technical details…"
+        }
+        .into(),
         tags: ModelRc::new(VecModel::from(tags)),
         metadata: metadata.into(),
         index: index as i32,
@@ -148,6 +160,7 @@ impl View {
             }
         }
         self.snapshot = snapshot;
+        self.details.accept(ui, &self.snapshot);
         self.resize(ui);
         self.project(ui);
         true
@@ -260,12 +273,12 @@ impl View {
         ui.set_story_count(rows.len() as i32);
         ui.set_columns(self.columns as i32);
         ui.set_selected_index(selected.map(|i| i as i32).unwrap_or(-1));
-        ui.set_selected_story(
-            selected
-                .and_then(|i| rows.get(i))
-                .cloned()
-                .unwrap_or_default(),
-        );
+        let mut selected_row = selected
+            .and_then(|i| rows.get(i))
+            .cloned()
+            .unwrap_or_default();
+        details::project(&mut selected_row, &self.snapshot);
+        ui.set_selected_story(selected_row);
         ui.set_previous_enabled(page.page > 1);
         ui.set_next_enabled(page.page < page.pages);
         ui.set_counts(
@@ -334,6 +347,7 @@ pub fn install(
     initial: Snapshot,
 ) -> Result<Rc<RefCell<View>>, LocalizationError> {
     let view = Rc::new(RefCell::new(View {
+        details: Default::default(),
         filters: filters::State::new(
             initial
                 .navigation
@@ -464,6 +478,7 @@ pub fn install(
             offer(&pending.borrow(), Command::Language(language), &ui);
         }
     });
+    details::install(ui, view.clone(), worker.clone());
     filters::install(ui, view.clone(), worker);
     Ok(view)
 }

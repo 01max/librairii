@@ -4,3 +4,5 @@ pub mod filters;
 pub mod native;
 pub mod responses;
 pub mod settings;
+
+pub mod description;

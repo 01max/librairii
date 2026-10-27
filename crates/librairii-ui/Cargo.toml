@@ -10,6 +10,7 @@ librairii-app.workspace = true
 librairii-core.workspace = true
 slint.workspace = true
 serde_json.workspace = true
+html5ever.workspace = true
 
 [build-dependencies]
 slint-build.workspace = true

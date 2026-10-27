@@ -16,6 +16,8 @@ pub const COMMAND_CAPACITY: usize = 16;
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum Command {
     Refresh,
+    Details(crate::workflows::StoryTarget),
+    Remove(crate::workflows::StoryTarget),
     Back,
     Forward,
     Navigate(librairii_core::collection_codec::url::Scope),
@@ -42,6 +44,7 @@ pub enum Phase {
 }
 #[derive(Clone, Debug)]
 pub struct Snapshot {
+    pub workflows: crate::workflows::Snapshot,
     pub facets: crate::browsing::Facets,
     pub groups: Vec<crate::browsing::Group>,
     pub revision: u64,
@@ -136,6 +139,7 @@ fn run(
         *mailbox
             .lock()
             .map_err(|_| librairii_storage::StorageError::RuntimeFenced)? = Some(Snapshot {
+            workflows: Default::default(),
             facets: Default::default(),
             revision: 0,
             restore_revision: 0,
@@ -220,6 +224,7 @@ fn run(
         },
     };
     let mut snapshot = Snapshot {
+        workflows: Default::default(),
         facets: Default::default(),
         groups: Vec::new(),
         revision: 0,
@@ -310,6 +315,7 @@ pub(crate) fn recovery(
         *mailbox
             .lock()
             .map_err(|_| librairii_storage::StorageError::RuntimeFenced)? = Some(Snapshot {
+            workflows: Default::default(),
             facets: Default::default(),
             revision: intake.latest(),
             restore_revision: 0,

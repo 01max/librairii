@@ -26,8 +26,47 @@ fn invalid() -> StorageError {
 fn text(value: &str) -> Value {
     Value::Text(value.to_owned())
 }
+#[derive(Clone, Debug)]
+pub struct StoryDetail {
+    pub summary: StorySummary,
+    pub archive: ExportStory,
+}
 
 impl Database<'_> {
+    /// One coherent observation, with lossless native filename bytes retained.
+    pub fn story_detail(
+        &self,
+        id: i64,
+        locale: String,
+    ) -> Result<Pending<'_, Option<StoryDetail>>> {
+        self.read(move |tx| {
+            let record = tx
+                .query_row(&format!("{RECORD}{FROM} WHERE s.id=?"), [id], Record::read)
+                .optional()?;
+            record
+                .map(|record| {
+                    let summary = summary(tx, &record, &locale)?;
+                    let archive = ExportStory {
+                        broken: record.broken,
+                        id: record.id,
+                        uuid: record.uuid,
+                        title: summary.title.clone(),
+                        original_filename: String::from_utf8(record.filename.clone())
+                            .unwrap_or_default(),
+                        original_filename_bytes: record.filename,
+                        detected_format: record.format,
+                        sha256: record.checksum,
+                        byte_size: record.bytes,
+                        managed_relative_path: String::from_utf8(record.path.clone())
+                            .unwrap_or_default(),
+                        managed_relative_path_bytes: record.path,
+                        verification: summary.compatibility.clone(),
+                    };
+                    Ok(StoryDetail { summary, archive })
+                })
+                .transpose()
+        })
+    }
     /// Facet choices observe active metadata independently of the display locale.
     pub fn available_languages(&self) -> Result<Pending<'_, Vec<String>>> {
         self.read(|tx| {

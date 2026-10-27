@@ -3877,6 +3877,14 @@
     {
       "suite": "librairii-ui",
       "name": "filters::tests::facet_edits_preserve_literal_draft_nested_union_and_sort_until_explicit_clear"
+    },
+    {
+      "suite": "librairii-ui",
+      "name": "description::tests::omits_active_hidden_and_nested_markup_and_keeps_anchor_text"
+    },
+    {
+      "suite": "librairii-ui",
+      "name": "description::tests::retains_frozen_paragraph_list_plain_text_and_html5_entities"
     }
   ]
 }

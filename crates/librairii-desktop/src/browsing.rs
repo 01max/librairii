@@ -103,7 +103,11 @@ fn page(runtime: &Runtime<'_, '_, '_>, location: &Location, stop: &AtomicBool) -
                         .map(|s| Story {
                             uuid: s.uuid.clone(),
                             title: s.title.clone(),
-                            summary: Some(s),
+                            summary: Some({
+                                let mut s = s;
+                                s.description = librairii_ui::description::readable(&s.description);
+                                s
+                            }),
                             thumbnail: None,
                             provenance: String::new(),
                             tags: Vec::new(),
@@ -160,7 +164,8 @@ fn page(runtime: &Runtime<'_, '_, '_>, location: &Location, stop: &AtomicBool) -
             if stop.load(Ordering::Acquire) {
                 return Err(StorageError::Cancelled);
             }
-            if let Some(summary) = &story.summary {
+            if let Some(summary) = &mut story.summary {
+                summary.description = librairii_ui::description::readable(&summary.description);
                 story.tags = labels.remove(&summary.id).unwrap_or_default();
                 let official = summary
                     .artwork_id
@@ -235,8 +240,9 @@ pub(crate) fn run(
                 .map_err(|_| StorageError::RuntimeFenced)?;
             let mut group_rows = groups(runtime)?;
             let mut query_facets = facets(runtime)?;
+            let mut workflows = crate::workflows::Snapshot::default();
             while !stop.load(Ordering::Acquire) {
-                let loaded = if invalid_query {
+                let loaded = if invalid_query || workflows.recovery_required {
                     Err(StorageError::InvalidNavigation)
                 } else {
                     page(runtime, &navigation.current().location, stop)
@@ -258,15 +264,29 @@ pub(crate) fn run(
                     return Err(StorageError::RuntimeFenced);
                 }
                 let current_page = page.as_ref().map_or(1, |page| page.page);
+                let visible_targets = page
+                    .as_ref()
+                    .map(|p| {
+                        p.stories
+                            .iter()
+                            .filter_map(|s| {
+                                s.summary
+                                    .as_ref()
+                                    .map(|summary| (summary.id, s.uuid.clone()))
+                            })
+                            .collect::<Vec<_>>()
+                    })
+                    .unwrap_or_default();
                 *mailbox.lock().map_err(|_| StorageError::RuntimeFenced)? = Some(Snapshot {
+                    workflows: workflows.clone(),
                     facets: query_facets.clone(),
                     groups: group_rows.clone(),
                     revision,
                     restore_revision,
                     generation: Some(generation.clone()),
-                    phase: Phase::Library,
+                    phase: if workflows.recovery_required { Phase::Recovery } else { Phase::Library },
                     language,
-                    status,
+                    status: if workflows.recovery_required { if language == Language::French { "La bibliothèque attend une récupération. Reconnectez son volume puis redémarrez Librairii. Les effets confirmés sont conservés." } else { "The library needs recovery. Reconnect its volume, then restart Librairii. Confirmed effects are preserved." }.into() } else if workflows.group_error { if language == Language::French { "L’histoire a été retirée. Les groupes n’ont pas pu être actualisés ; réessayez l’actualisation." } else { "The story was removed. Groups could not be refreshed; retry refresh." }.into() } else { status },
                     navigation: Some(navigation.clone()),
                     page,
                 });
@@ -291,9 +311,36 @@ pub(crate) fn run(
                     let mut next = navigation.clone();
                     invalid_query = false;
                     match command {
+                        Command::Details(target) => {
+                            let detail = crate::workflows::inspect(runtime, &next, target);
+                            workflows.detail_error = detail.is_err();
+                            workflows.details = detail.ok();
+                            workflows.removal = None;
+                        }
+                        Command::Remove(target) => {
+                            workflows.removal_recovery = false;
+                            let mut recovery_required = false;
+                            workflows.removal = Some(crate::workflows::remove(runtime, &next, &target, &WorkCancellation::default(), || {
+                                recovery_required = true;
+                                let _fenced = receiver.fence();
+                                let mut recovery = workflows.clone();
+                                recovery.removal_recovery = true;
+                                if let Ok(mut mailbox) = mailbox.lock() {
+                                    *mailbox = Some(Snapshot { workflows: recovery, facets: query_facets.clone(), groups: group_rows.clone(), revision, restore_revision, generation: Some(generation.clone()), phase: Phase::Recovery, language, status: if language == Language::French { "Le retrait attend la restauration de la bibliothèque. Reconnectez son volume ; les opérations restent suspendues." } else { "Removal is waiting for library recovery. Reconnect its volume; library commands remain suspended." }.into(), navigation: Some(next.clone()), page: None });
+                                }
+                            }).map_err(|e| e.to_string()));
+                            workflows.recovery_required = recovery_required;
+                            if workflows.removal.as_ref().is_some_and(|r| r.is_ok()) {
+                                workflows.details = None;
+                                group_rows = if recovery_required { Vec::new() } else { match groups(runtime) { Ok(groups) => groups, Err(_) => { workflows.group_error = true; Vec::new() } } };
+                            }
+                        }
                         Command::Refresh => {
-                            group_rows = groups(runtime)?;
-                            query_facets = facets(runtime)?;
+                            if !workflows.recovery_required {
+                                group_rows = groups(runtime)?;
+                                workflows.group_error = false;
+                                query_facets = facets(runtime)?;
+                            }
                         }
                         Command::Back => {
                             next.back().map_err(|_| StorageError::InvalidNavigation)?;
@@ -362,6 +409,21 @@ pub(crate) fn run(
                         }
                         Command::Select { id, query } => {
                             if next.accepts(&query) {
+                                if let Some((_, uuid)) =
+                                    visible_targets.iter().find(|(story_id, _)| *story_id == id)
+                                {
+                                    workflows.details = crate::workflows::inspect(
+                                        runtime,
+                                        &next,
+                                        crate::workflows::StoryTarget {
+                                            generation: generation.clone(),
+                                            query: query.clone(),
+                                            id,
+                                            uuid: uuid.clone(),
+                                        },
+                                    )
+                                    .ok();
+                                }
                                 next.select(vec![id])
                                     .map_err(|_| StorageError::InvalidNavigation)?;
                             }

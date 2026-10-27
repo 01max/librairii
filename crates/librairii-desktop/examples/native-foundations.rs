@@ -82,6 +82,7 @@ fn snapshot() -> Result<Snapshot> {
     let gate = LifecycleGate::new();
     let generation = gate.enter()?.generation().clone();
     Ok(Snapshot {
+        workflows: Default::default(),
         facets: Default::default(),
         revision: 0,
         restore_revision: 0,
@@ -221,8 +222,10 @@ fn main() -> Result {
     callback_checks::history(&ui)?;
     callback_checks::failed_query(&ui)?;
     callback_checks::filters(&ui, None)?;
+    callback_checks::details(&ui)?;
     let initial = snapshot()?;
     let view = Rc::new(RefCell::new(view::View {
+        details: Default::default(),
         filters: view::filters::State::new(
             initial
                 .navigation
@@ -236,7 +239,7 @@ fn main() -> Result {
         columns: 1,
         guard: Default::default(),
     }));
-    let filter_surface = Rc::new(RefCell::new(None::<callback_checks::FilterSurface>));
+    let surfaces = Rc::new(Surfaces::default());
     view.borrow_mut().project(&ui);
     ui.set_sources(ModelRc::new(VecModel::from(vec![
         "Weekend favorites".into(),
@@ -316,8 +319,10 @@ fn main() -> Result {
                     menus.owns_native_menu(),
                     "native application menu owner changed",
                 )?;
-                if let Some(surface) = filter_surface.borrow().as_ref() {
+                if let Some(surface) = surfaces.filters.borrow().as_ref() {
                     surface.poll(&ui)?;
+                } else if let Some(surface) = surfaces.details.borrow().as_ref() {
+                    surface.poll(&ui);
                 } else {
                     view.borrow_mut().resize(&ui);
                 }
@@ -331,7 +336,7 @@ fn main() -> Result {
                     &destination,
                     &captured_report,
                     &menus,
-                    &filter_surface,
+                    &surfaces,
                 )?;
                 *fixture_step.borrow_mut() += 1;
                 Ok(())
@@ -354,6 +359,12 @@ fn main() -> Result {
     Ok(())
 }
 
+#[derive(Debug, Default)]
+struct Surfaces {
+    filters: RefCell<Option<callback_checks::FilterSurface>>,
+    details: RefCell<Option<callback_checks::DetailSurface>>,
+}
+
 fn capture_step(
     ui: &DesktopWindow,
     view: &Rc<RefCell<view::View>>,
@@ -361,7 +372,7 @@ fn capture_step(
     destination: &Path,
     report: &RefCell<Vec<serde_json::Value>>,
     _menus: &librairii_desktop::menus::Menus,
-    filter_surface: &RefCell<Option<callback_checks::FilterSurface>>,
+    surfaces: &Surfaces,
 ) -> Result {
     if index < 48 {
         let workspace = index >= 36;
@@ -574,24 +585,27 @@ fn capture_step(
         capture(ui, &destination.join("about-slint-fr.png"))?;
         key(ui, slint::platform::Key::Escape.into())?;
     } else if index == 54 {
-        *filter_surface.borrow_mut() = Some(callback_checks::FilterSurface::open(ui)?);
+        *surfaces.filters.borrow_mut() = Some(callback_checks::FilterSurface::open(ui)?);
     } else if index == 55 {
         capture(ui, &destination.join("filters-compact-en.png"))?;
-        filter_surface
+        surfaces
+            .filters
             .borrow()
             .as_ref()
             .ok_or("filter surface missing")?
             .bottom(ui)?;
     } else if index == 56 {
         capture(ui, &destination.join("filters-actions-compact-en.png"))?;
-        filter_surface
+        surfaces
+            .filters
             .borrow()
             .as_ref()
             .ok_or("filter surface missing")?
             .french(ui)?;
     } else if index == 57 {
         capture(ui, &destination.join("filters-compact-fr.png"))?;
-        filter_surface
+        surfaces
+            .filters
             .borrow()
             .as_ref()
             .ok_or("filter surface missing")?
@@ -599,15 +613,60 @@ fn capture_step(
     } else if index == 58 {
         capture(ui, &destination.join("filters-actions-compact-fr.png"))?;
         ui.invoke_close_dialog();
-        filter_surface.borrow_mut().take();
-    } else if (59..=61).contains(&index) {
+        surfaces.filters.borrow_mut().take();
+    } else if index == 59 {
+        *surfaces.details.borrow_mut() = Some(callback_checks::DetailSurface::open(ui)?);
+    } else if index == 60 {
+        capture(ui, &destination.join("details-compact-en.png"))?;
+        surfaces
+            .details
+            .borrow()
+            .as_ref()
+            .ok_or("detail surface missing")?
+            .technical(ui)?;
+    } else if index == 61 {
+        capture(ui, &destination.join("details-technical-compact-en.png"))?;
+        surfaces
+            .details
+            .borrow()
+            .as_ref()
+            .ok_or("detail surface missing")?
+            .french_reopen(ui)?;
+    } else if index == 62 {
+        capture(ui, &destination.join("details-compact-fr.png"))?;
+        surfaces
+            .details
+            .borrow()
+            .as_ref()
+            .ok_or("detail surface missing")?
+            .technical(ui)?;
+    } else if index == 63 {
+        capture(ui, &destination.join("details-technical-compact-fr.png"))?;
+        ui.invoke_begin_removal();
+    } else if index == 64 {
+        capture(ui, &destination.join("removal-confirmation-compact-fr.png"))?;
+        check(
+            ui.get_removal_keep_focused(),
+            "confirmation did not retain Keep focus",
+        )?;
+        ui.window()
+            .dispatch_event(slint::platform::WindowEvent::KeyPressed {
+                text: slint::platform::Key::Escape.into(),
+            });
+        check(
+            ui.get_dialog() == 3,
+            "Escape dismissed story details along with removal confirmation",
+        )?;
+        ui.invoke_close_dialog();
+        surfaces.details.borrow_mut().take();
+    } else if (65..=67).contains(&index) {
         let (phase, name, status) = match index {
-            59 => (
+            65 => (
                 Phase::Recovery,
                 "recovery",
                 "La bibliothèque attendue est indisponible ou nécessite une récupération.",
             ),
-            60 => (
+            66 => (
                 Phase::Setup,
                 "setup",
                 "Choisissez où conserver votre bibliothèque.",
@@ -638,6 +697,7 @@ fn capture_step(
                 "history_restoration_callbacks": "passed",
                 "failed_query_history_callbacks": "passed",
                 "filter_callbacks": "passed",
+                "details_removal_callbacks": "passed",
                 "scope": "shown native component/public window events and Skia capture; not physical HID or packaged workflow qualification",
             }))?,
         )?;

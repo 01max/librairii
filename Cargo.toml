@@ -47,6 +47,7 @@ rawzip = "=0.5.2"
 flate2 = { version = "=1.1.10", default-features = false, features = ["rust_backend"] }
 sevenz-turbo = { version = "=0.29.2", default-features = false, features = ["bzip2", "ppmd", "deflate", "zstd", "lz4", "brotli"] }
 slint = { version = "=1.18.1", default-features = false, features = ["std", "compat-1-18", "accessibility", "backend-winit-x11", "backend-winit-wayland", "renderer-skia", "raw-window-handle-06", "unstable-winit-030"] }
+html5ever = "=0.40.1"
 slint-build = { version = "=1.18.1", default-features = false, features = ["compat-1-18"] }
 
 [workspace.lints.rust]

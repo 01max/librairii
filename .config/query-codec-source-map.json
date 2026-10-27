@@ -5404,6 +5404,22 @@
           "name": "filters::tests::facet_edits_preserve_literal_draft_nested_union_and_sort_until_explicit_clear"
         },
         "reason": "Task15.1 observed additive query-editor regressions; every prior identity, position and target scope is retained."
+      },
+      {
+        "position": 610,
+        "identity": {
+          "suite": "librairii-ui",
+          "name": "description::tests::omits_active_hidden_and_nested_markup_and_keeps_anchor_text"
+        },
+        "reason": "Task15.2 observed inert description conversion; frozen paragraph/list/entity/plain text behavior and hidden active markup omission. Prior identities and target scopes remain unchanged."
+      },
+      {
+        "position": 611,
+        "identity": {
+          "suite": "librairii-ui",
+          "name": "description::tests::retains_frozen_paragraph_list_plain_text_and_html5_entities"
+        },
+        "reason": "Task15.2 observed inert description conversion; frozen paragraph/list/entity/plain text behavior and hidden active markup omission. Prior identities and target scopes remain unchanged."
       }
     ],
     "python": [

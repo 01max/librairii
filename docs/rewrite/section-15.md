@@ -43,9 +43,46 @@ two identities to its unchanged 608-entry prefix; historical source identities
 are preserved. Final current-source three-host and screen-reader acceptance is
 the 15.13 gate; these local checks do not claim that later work has passed.
 
+## Story details and removal — 15.2
+
+The storage-owned single-story observation returns display provenance and complete
+archive facts from one SQLite snapshot, retaining original native filename bytes.
+The controller converts descriptions with pinned html5ever0.40.1's HTML5 tokenizer
+([upstream interface](https://docs.rs/html5ever/0.40.1/html5ever/tokenizer/index.html)).
+Only inert text crosses the UI boundary: paragraphs, lists, plain less-than signs
+and all named/numeric entities survive; script/style/iframe/object/template/noscript
+content is omitted. No DOM, link, image request or script execution is created.
+The tokenizer's phf0.14 atom tables coexist through three exact duplicate-version
+exceptions with the unchanged qualified AccessKit phf0.13 graph. The complete
+license and bans audit passes; historical toolkit pins are unchanged.
+
+The inspector shows tags, independent per-field sources, official metadata locale,
+publisher/author, duration/ages and freshness. A separate technical disclosure
+contains UUID, original filename, verification and full SHA-256. Story changes and
+reopening reset inner scrolling and disclosure state. Compact details keep the
+story title above bounded artwork; lower content remains keyboard-scrollable.
+
+Removal is a separate confirmation with a frozen library generation, query stamp,
+story ID and UUID. Keep is initially focused; Escape/Keep returns to details and
+the Remove invoker. Admission immediately disables dismissal while the controller
+uses the existing durable trash/intent/rollback service. Required rollback keeps
+its actual owners and reports recovery; ordinary intake stays fenced after a
+recovery event. Confirmed outcomes survive refresh failures. Originals remain
+untouched, and no trash-restore capability is introduced.
+
+Evidence: the cumulative 31-test desktop/UI run passes with zero skipped tests;
+two new observed description identities append to the unchanged baseline prefix
+(612 total). Actual production callbacks import a preserved archive into a fresh
+owned library, verify text/facts/provenance, Keep focus, stale-target refusal,
+pending-dismissal refusal, committed refresh, original-byte preservation and
+retained managed trash bytes. Shown English/French compact captures exercise the
+technical button with native Space and confirmation Escape; reopening asserts a
+zero inner scroll offset. The wrapper requires these callbacks in every native
+receipt. Full section/cross-host/accessibility acceptance remains at15.13.
+
 ## Remaining workflow work
 
-15.2–15.12 compose details/removal, tags, Broken/Undo, Collection and Shelf
+15.3–15.12 compose tags, Broken/Undo, Collection and Shelf
 curation/review, imports/sync/exports, durable History/notices and complete native
 setup/settings/recovery/diagnostics. 15.13 independently reviews the complete
 native surfaces and refreshes visual/accessibility evidence. Resource budgets,
