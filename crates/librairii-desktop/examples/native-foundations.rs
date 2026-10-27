@@ -586,9 +586,14 @@ fn capture_step(
                     ui.get_observed_approved_height() >= 76.0
                         && ui.get_observed_review_height() >= 80.0,
                     &format!(
-                        "workspace panes cannot display a full interaction target: approved={} review={} window={:?}",
+                        "workspace panes cannot display a full interaction target: approved={} review={} controls_y={} controls_height={} compact={} pending={} startup={} window={:?}",
                         ui.get_observed_approved_height(),
                         ui.get_observed_review_height(),
+                        ui.get_controls_viewport_y(),
+                        ui.get_controls_viewport_height(),
+                        ui.get_compact(),
+                        ui.get_pending(),
+                        ui.get_startup_phase(),
                         ui.window().size()
                     ),
                 )?;
@@ -612,6 +617,7 @@ fn capture_step(
                 "compact": ui.get_compact(), "wide": ui.get_wide(), "decisions": ui.get_decisions(),
                 "story_viewport_height": ui.get_observed_browser_height(), "story_row_height": ui.get_observed_story_row_height(),
                 "approved_viewport_height": ui.get_observed_approved_height(), "review_viewport_height": ui.get_observed_review_height(),
+                "controls_viewport_y": ui.get_controls_viewport_y(), "controls_viewport_height": ui.get_controls_viewport_height(),
                 "native_window": native_window,
             }));
         }
