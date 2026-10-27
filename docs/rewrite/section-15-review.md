@@ -79,6 +79,14 @@ fatal. Dispatcher warning/error logging uses level2 within the unchanged4MiB
 diagnostic cap; mandatory Orca INFO utterances, raw PCM and all speech predicates
 are unchanged.
 
+The macOS component driver passes `-NSAppSleepDisabled YES` in the owned process's
+argument domain. It writes no user/system defaults and retains the90-second
+deadline. The native manifest records these arguments per scale. An otherwise
+identical scale-2 development run passed all88 captures/callbacks in49.44 seconds
+with that process-only preference (`librairii-task15-collections-dev-liv39mch`),
+after a background run reached its deadline. This observer policy is separate
+from Task16 product startup/idle/load/resource measurements and installed use.
+
 ## Approved concept source and omissions
 
 Both canonical saved concepts and their tracked copies were independently checked:

@@ -65,8 +65,14 @@ def main():
         output.mkdir(exist_ok=True)
         (output / '.librairii-native-fixture').write_text('native-foundations-14\n')
         environment = dict(os.environ, SLINT_BACKEND='winit-skia-software', SLINT_SCALE_FACTOR=scale)
+        arguments = [str(binary), str(output)]
+        if sys.platform == 'darwin':
+            # This bounded component observer may sit behind the user's app.
+            # Override App Nap in this process's argument domain only; never
+            # write user/system defaults or change the product resource gates.
+            arguments += ['-NSAppSleepDisabled', 'YES']
         with (output / 'execution.log').open('w') as log:
-            run([str(binary), str(output)], env=environment, stdout=log, stderr=subprocess.STDOUT, timeout=90)
+            run(arguments, env=environment, stdout=log, stderr=subprocess.STDOUT, timeout=90)
         report = json.loads((output / 'report.json').read_text())
         if report['macos_programmatic_fixed_window'] != (sys.platform == 'darwin'):
             raise ValueError('native fixture window policy differs from the host')
@@ -126,7 +132,8 @@ def main():
             raise ValueError('native keyboard checks incomplete')
         if report['filter_callbacks'] != 'passed':
             raise ValueError('native filter callbacks incomplete')
-        reports.append({'scale': scale, 'report': str((output / 'report.json').relative_to(DESTINATION))})
+        reports.append({'scale': scale, 'report': str((output / 'report.json').relative_to(DESTINATION)),
+            'component_process_arguments': arguments[2:]})
     if sys.platform.startswith('linux'):
         run(['/usr/bin/python3', '-I', '-B', 'scripts/check-native-accessibility.py', str(binary), str(DESTINATION / 'accessibility')], timeout=90)
     if subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip() != source_commit or subprocess.check_output(['git', 'status', '--porcelain', '--untracked-files=normal'], cwd=ROOT, text=True).strip():
