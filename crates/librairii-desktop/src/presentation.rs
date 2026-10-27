@@ -302,6 +302,23 @@ pub(crate) fn recovery(
     mailbox: &Mutex<Option<Snapshot>>,
     stop: &AtomicBool,
     initial_language: Language,
+    change_language: impl FnMut(Language) -> librairii_storage::Result<()>,
+) -> librairii_storage::Result<()> {
+    recovery_with_workflows(
+        intake,
+        mailbox,
+        stop,
+        initial_language,
+        Default::default(),
+        change_language,
+    )
+}
+pub(crate) fn recovery_with_workflows(
+    intake: &Intake,
+    mailbox: &Mutex<Option<Snapshot>>,
+    stop: &AtomicBool,
+    initial_language: Language,
+    workflows: crate::workflows::Snapshot,
     mut change_language: impl FnMut(Language) -> librairii_storage::Result<()>,
 ) -> librairii_storage::Result<()> {
     intake
@@ -315,17 +332,30 @@ pub(crate) fn recovery(
         *mailbox
             .lock()
             .map_err(|_| librairii_storage::StorageError::RuntimeFenced)? = Some(Snapshot {
-            workflows: Default::default(),
+            workflows: workflows.clone(),
             facets: Default::default(),
             revision: intake.latest(),
             restore_revision: 0,
             generation: None,
             phase: Phase::Recovery,
             language,
-            status: catalogs
-                .text(language, key)
-                .map_err(|_| librairii_storage::StorageError::InvalidProfile)?
-                .into(),
+            status: {
+                let status = catalogs
+                    .text(language, key)
+                    .map_err(|_| librairii_storage::StorageError::InvalidProfile)?;
+                if workflows.removal.as_ref().is_some_and(|r| r.is_ok()) {
+                    format!(
+                        "{} {status}",
+                        if language == Language::French {
+                            "L’histoire a été retirée."
+                        } else {
+                            "The story was removed."
+                        }
+                    )
+                } else {
+                    status.into()
+                }
+            },
             groups: Vec::new(),
             navigation: None,
             page: None,

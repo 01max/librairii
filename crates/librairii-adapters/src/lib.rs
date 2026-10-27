@@ -4,3 +4,5 @@ pub mod archives;
 pub mod lunii;
 
 pub mod thumbnails;
+
+pub mod datetime;

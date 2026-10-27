@@ -5420,6 +5420,14 @@
           "name": "description::tests::retains_frozen_paragraph_list_plain_text_and_html5_entities"
         },
         "reason": "Task15.2 observed inert description conversion; frozen paragraph/list/entity/plain text behavior and hidden active markup omission. Prior identities and target scopes remain unchanged."
+      },
+      {
+        "position": 612,
+        "identity": {
+          "suite": "librairii-adapters",
+          "name": "datetime::tests::sqlite_and_provider_instants_keep_their_identity_in_observed_offsets"
+        },
+        "reason": "Task15.2 independent review: SQL and provider timestamp identity and actual local-offset observation; retains the complete prior baseline."
       }
     ],
     "python": [

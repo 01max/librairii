@@ -191,6 +191,7 @@ export component DesktopWindow inherits Window {
     in property <string> removal-title;
     in property <string> removal-error;
     public function scroll-details(key:string) { dialog-inspector.scroll(key); }
+    public function focus-inspector-technical() { side-inspector.focus-technical(); }
     public function focus-details-technical() { dialog-inspector.focus-technical(); }
     out property <length> details-scroll-position: dialog-inspector.scroll-position;
     out property <bool> removal-keep-focused: keep-story.has-focus;
@@ -299,7 +300,7 @@ export component DesktopWindow inherits Window {
                             browser := StoryBrowser { visible: !root.workspace; enabled: root.startup-phase == 3 && !root.closing && !root.workspace && !root.modal && !FocusState.sidebar; focus-entered => { FocusState.key = 31; } groups: root.story-groups; count: root.story-count; columns: root.columns; mode: root.mode; label: root.french ? "Histoires" : "Stories"; selected-index <=> root.selected-index; select(index) => { root.select-story(index); } }
                         }
                         workspace-panel := Workspace { visible: root.workspace; max-width: root.workspace ? 100000px : 0px; interactive: root.workspace && !root.closing && !root.modal && !FocusState.sidebar; wide: root.wide; french: root.french; members: root.story-groups; count: root.story-count; sources: root.sources; proposals <=> root.proposals; pending: root.pending; decisions: root.decisions; selected-index <=> root.selected-index; select(index) => { root.select-story(index); } decide(index,value) => { root.decide(index,value); } apply => { root.apply-decisions(); } }
-                        if root.wide && !root.workspace: Inspector { width: 264px; french: root.french; story: root.selected-story; }
+                        side-inspector := Inspector { visible: root.wide && !root.workspace; width: self.visible ? 264px : 0px; interactive: !root.modal && !root.closing; french: root.french; story: root.selected-story; request-data => { root.request-details(); } }
                     }
                     HorizontalBox { padding: 0px; spacing: 8px;
                         Action { visible: !root.compact; width: root.compact ? 0px : 76px; focus-key: 19; text: root.french ? "Retour" : "Back"; available: root.back-enabled; clicked => { root.history-step(-1); } }
@@ -382,7 +383,7 @@ export component DesktopWindow inherits Window {
                 dialog-scroll := ScrollView { vertical-stretch: 1; content-width: self.visible-width; content-height: dialog-content.preferred-height;
                     dialog-content := VerticalBox { height: self.preferred-height; padding: 0px; spacing: 0px;
                         if root.dialog == 1: AboutSlint { }
-                        dialog-inspector := Inspector { visible: root.dialog == 3; height: root.dialog == 3 ? max(80px, dialog-scroll.visible-height) : 0px; french: root.french; story: root.selected-story; }
+                        dialog-inspector := Inspector { visible: root.dialog == 3; height: root.dialog == 3 ? max(80px, dialog-scroll.visible-height) : 0px; french: root.french; story: root.selected-story; request-data => { root.request-details(); } }
                         if root.dialog == 9: Caption { text: (root.french ? "Retirer cette histoire de la bibliothèque ?\n« " : "Remove this story from the library?\n“") + root.removal-title + (root.french ? " » sera déplacée dans la corbeille de l’application. Votre fichier d’origine restera à son emplacement." : "” will move to application trash. Your original source file will stay where it is."); }
                         if root.dialog == 9: Caption { text: root.removal-error; }
                         if root.dialog == 4: Caption { text: root.french ? "Choisissez où conserver votre bibliothèque. Votre bibliothèque n’est créée qu’après la confirmation de son emplacement. Vous pouvez d’abord choisir la langue dans les réglages." : "Choose where to keep your library. Your library is created only after you confirm its location. You can choose your language in Settings first."; }

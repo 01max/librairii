@@ -72,13 +72,26 @@ untouched, and no trash-restore capability is introduced.
 
 Evidence: the cumulative 31-test desktop/UI run passes with zero skipped tests;
 two new observed description identities append to the unchanged baseline prefix
-(612 total). Actual production callbacks import a preserved archive into a fresh
+(613 total). Actual production callbacks import a preserved archive into a fresh
 owned library, verify text/facts/provenance, Keep focus, stale-target refusal,
 pending-dismissal refusal, committed refresh, original-byte preservation and
 retained managed trash bytes. Shown English/French compact captures exercise the
 technical button with native Space and confirmation Escape; reopening asserts a
 zero inner scroll offset. The wrapper requires these callbacks in every native
 receipt. Full section/cross-host/accessibility acceptance remains at15.13.
+
+Independent review corrections: one common controller conversion prevents entity
+text from being decoded twice. A guarded request from the inspector disclosure
+loads the initially inspected story without requiring a selection change; the
+shown fixture tests native Space after a real wide window frame. Refresh obtains
+new archive/description facts for the same inspected identity. Valid SQL/provider
+timestamps use the observed OS offset at their actual instant and selected-language
+formatting, off the UI thread. Unchanged navigation does not rewrite preferences;
+recovery retains confirmed removal outcomes, including a later preference failure.
+An actual writable-library/read-only-profile regression covers this distinction.
+The current desktop/UI/adapter suite passes70 tests with zero skipped; the new
+timestamp identity brings the preserved baseline to613. The three exact phf
+exceptions have matching owner/rationale/tracking/expiry ledger records.
 
 ## Remaining workflow work
 

@@ -342,3 +342,27 @@ owner = "01max"
 reason = "Informational unmaintained notice for bincode 2.0.1, locked by typed-index-collections 3.5.0 optional support. Cargo tree --target all -i bincode confirms that feature is not selected. Retain the qualified toolkit and reassess upstream before expiry; no vulnerability advisory is suppressed."
 tracking = "https://rustsec.org/advisories/RUSTSEC-2025-0141"
 expires = "2027-01-24"
+
+[[exceptions]]
+kind = "duplicate"
+selector = "phf@0.14.0"
+owner = "01max"
+reason = "Task15.2 HTML5 tokenizer html5ever0.40.1 requires web_atoms phf0.14 tables; the independently qualified AccessKit graph remains pinned to incompatible phf0.13. Reassess with either upstream update; no subtree or advisory suppression."
+tracking = "https://github.com/01max/librairii/pull/66"
+expires = "2027-01-25"
+
+[[exceptions]]
+kind = "duplicate"
+selector = "phf_generator@0.14.0"
+owner = "01max"
+reason = "Task15.2 HTML5 tokenizer html5ever0.40.1 requires web_atoms phf0.14 tables; the independently qualified AccessKit graph remains pinned to incompatible phf0.13. Reassess with either upstream update; no subtree or advisory suppression."
+tracking = "https://github.com/01max/librairii/pull/66"
+expires = "2027-01-25"
+
+[[exceptions]]
+kind = "duplicate"
+selector = "phf_shared@0.14.0"
+owner = "01max"
+reason = "Task15.2 HTML5 tokenizer html5ever0.40.1 requires web_atoms phf0.14 tables; the independently qualified AccessKit graph remains pinned to incompatible phf0.13. Reassess with either upstream update; no subtree or advisory suppression."
+tracking = "https://github.com/01max/librairii/pull/66"
+expires = "2027-01-25"

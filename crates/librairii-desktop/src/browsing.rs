@@ -23,6 +23,7 @@ use std::sync::{
 };
 #[derive(Clone, Debug)]
 pub struct Story {
+    pub dates: [Option<librairii_adapters::datetime::LocalDateTime>; 4],
     pub uuid: String,
     pub title: String,
     pub summary: Option<StorySummary>,
@@ -103,11 +104,8 @@ fn page(runtime: &Runtime<'_, '_, '_>, location: &Location, stop: &AtomicBool) -
                         .map(|s| Story {
                             uuid: s.uuid.clone(),
                             title: s.title.clone(),
-                            summary: Some({
-                                let mut s = s;
-                                s.description = librairii_ui::description::readable(&s.description);
-                                s
-                            }),
+                            dates: Default::default(),
+                            summary: Some(s),
                             thumbnail: None,
                             provenance: String::new(),
                             tags: Vec::new(),
@@ -133,6 +131,7 @@ fn page(runtime: &Runtime<'_, '_, '_>, location: &Location, stop: &AtomicBool) -
                                 .as_ref()
                                 .map(|s| s.title.clone())
                                 .unwrap_or(m.member.cached_title),
+                            dates: Default::default(),
                             summary: m.story,
                             thumbnail: None,
                             tags: Vec::new(),
@@ -166,6 +165,19 @@ fn page(runtime: &Runtime<'_, '_, '_>, location: &Location, stop: &AtomicBool) -
             }
             if let Some(summary) = &mut story.summary {
                 summary.description = librairii_ui::description::readable(&summary.description);
+                story.dates[0] = librairii_adapters::datetime::local(&summary.imported_at);
+                if let Some(info) = &summary.official {
+                    for (index, value) in [
+                        &info.fetched_at,
+                        &info.activated_at,
+                        &info.source_updated_at,
+                    ]
+                    .into_iter()
+                    .enumerate()
+                    {
+                        story.dates[index + 1] = librairii_adapters::datetime::local(value);
+                    }
+                }
                 story.tags = labels.remove(&summary.id).unwrap_or_default();
                 let official = summary
                     .artwork_id
@@ -233,6 +245,7 @@ pub(crate) fn run(
     let mut revision = 0;
     let mut restore_revision = 0;
     let mut invalid_query = false;
+    let mut workflows = crate::workflows::Snapshot::default();
     let result = session.drive(locations, &WorkCancellation::default(), |runtime| {
         let active = (|| -> Result<()> {
             let generation = runtime
@@ -240,7 +253,6 @@ pub(crate) fn run(
                 .map_err(|_| StorageError::RuntimeFenced)?;
             let mut group_rows = groups(runtime)?;
             let mut query_facets = facets(runtime)?;
-            let mut workflows = crate::workflows::Snapshot::default();
             while !stop.load(Ordering::Acquire) {
                 let loaded = if invalid_query || workflows.recovery_required {
                     Err(StorageError::InvalidNavigation)
@@ -340,6 +352,12 @@ pub(crate) fn run(
                                 group_rows = groups(runtime)?;
                                 workflows.group_error = false;
                                 query_facets = facets(runtime)?;
+                                if let Some(details) = &workflows.details {
+                                    let target = details.target.clone();
+                                    let detail = crate::workflows::inspect(runtime, &next, target);
+                                    workflows.detail_error = detail.is_err();
+                                    workflows.details = detail.ok();
+                                }
                             }
                         }
                         Command::Back => {
@@ -430,7 +448,7 @@ pub(crate) fn run(
                         }
                     }
                     if !invalid_query {
-                        store.save_navigation(&next)?;
+                        if next != navigation { store.save_navigation(&next)?; }
                         navigation = next;
                     }
                     break;
@@ -439,7 +457,7 @@ pub(crate) fn run(
             Ok(())
         })();
         if active.is_err() {
-            crate::presentation::recovery(receiver, mailbox, stop, language, |requested| {
+            crate::presentation::recovery_with_workflows(receiver, mailbox, stop, language, workflows.clone(), |requested| {
                 crate::settings::change_language(&store, &mut settings, requested.code())
             })?;
         }
@@ -447,9 +465,14 @@ pub(crate) fn run(
     });
     let closed = session.finish();
     if let Err(retained) = closed {
-        crate::presentation::recovery(receiver, mailbox, stop, language, |requested| {
-            crate::settings::change_language(&store, &mut settings, requested.code())
-        })?;
+        crate::presentation::recovery_with_workflows(
+            receiver,
+            mailbox,
+            stop,
+            language,
+            workflows.clone(),
+            |requested| crate::settings::change_language(&store, &mut settings, requested.code()),
+        )?;
         drop(retained);
         return Err(StorageError::RuntimeFenced);
     }

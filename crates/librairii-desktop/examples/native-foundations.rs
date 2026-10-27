@@ -74,7 +74,7 @@ fn snapshot() -> Result<Snapshot> {
             compatibility_reason: String::new(), byte_size: 12000,
             imported_at: "2026-10-20T12:00:00Z".into(), official: None,
         };
-        Story { uuid: summary.uuid.clone(), title, summary: Some(summary), thumbnail: Some(thumbnail(i as usize)), provenance: "Weekend favorites".into(), tags: vec![
+        Story { dates: Default::default(), uuid: summary.uuid.clone(), title, summary: Some(summary), thumbnail: Some(thumbnail(i as usize)), provenance: "Weekend favorites".into(), tags: vec![
             librairii_core::tagging::DisplayTag { source: "user".into(), definition: "Adventure".into(), value: None, color: "#405cf5".into() },
             librairii_core::tagging::DisplayTag { source: "derived".into(), definition: "Age".into(), value: Some("3–5 years".into()), color: "#286350".into() },
         ] }
@@ -615,8 +615,25 @@ fn capture_step(
         ui.invoke_close_dialog();
         surfaces.filters.borrow_mut().take();
     } else if index == 59 {
+        resize(ui, 1180.0, 760.0)?;
         *surfaces.details.borrow_mut() = Some(callback_checks::DetailSurface::open(ui)?);
     } else if index == 60 {
+        surfaces
+            .details
+            .borrow()
+            .as_ref()
+            .ok_or("detail surface missing")?
+            .first_disclosure(ui)?;
+    } else if index == 61 {
+        capture(ui, &destination.join("details-initial-wide-en.png"))?;
+        surfaces
+            .details
+            .borrow()
+            .as_ref()
+            .ok_or("detail surface missing")?
+            .begin_details(ui)?;
+        resize(ui, 560.0, 400.0)?;
+    } else if index == 62 {
         capture(ui, &destination.join("details-compact-en.png"))?;
         surfaces
             .details
@@ -624,7 +641,7 @@ fn capture_step(
             .as_ref()
             .ok_or("detail surface missing")?
             .technical(ui)?;
-    } else if index == 61 {
+    } else if index == 63 {
         capture(ui, &destination.join("details-technical-compact-en.png"))?;
         surfaces
             .details
@@ -632,7 +649,7 @@ fn capture_step(
             .as_ref()
             .ok_or("detail surface missing")?
             .french_reopen(ui)?;
-    } else if index == 62 {
+    } else if index == 64 {
         capture(ui, &destination.join("details-compact-fr.png"))?;
         surfaces
             .details
@@ -640,10 +657,10 @@ fn capture_step(
             .as_ref()
             .ok_or("detail surface missing")?
             .technical(ui)?;
-    } else if index == 63 {
+    } else if index == 65 {
         capture(ui, &destination.join("details-technical-compact-fr.png"))?;
         ui.invoke_begin_removal();
-    } else if index == 64 {
+    } else if index == 66 {
         capture(ui, &destination.join("removal-confirmation-compact-fr.png"))?;
         check(
             ui.get_removal_keep_focused(),
@@ -659,14 +676,14 @@ fn capture_step(
         )?;
         ui.invoke_close_dialog();
         surfaces.details.borrow_mut().take();
-    } else if (65..=67).contains(&index) {
+    } else if (67..=69).contains(&index) {
         let (phase, name, status) = match index {
-            65 => (
+            67 => (
                 Phase::Recovery,
                 "recovery",
                 "La bibliothèque attendue est indisponible ou nécessite une récupération.",
             ),
-            66 => (
+            68 => (
                 Phase::Setup,
                 "setup",
                 "Choisissez où conserver votre bibliothèque.",

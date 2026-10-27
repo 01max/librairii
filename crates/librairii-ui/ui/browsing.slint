@@ -79,6 +79,8 @@ export component StoryBrowser inherits FocusScope {
     }
 }
 export component Inspector inherits Rectangle {
+    in property <bool> interactive: true;
+    callback request-data();
     in property <bool> french;
     in property <StoryRow> story;
     background: Palette.alternate-background;
@@ -109,7 +111,7 @@ export component Inspector inherits Rectangle {
             Text { vertical-stretch: 0; text: root.story.provenance; wrap: word-wrap; color: Palette.foreground; }
             Text { vertical-stretch: 0; text: root.story.facts; wrap: word-wrap; color: Palette.foreground; }
             Text { vertical-stretch: 0; text: root.story.display-sources; wrap: word-wrap; color: Palette.foreground; }
-            technical := Button { text: root.technical-open ? (root.french ? "Masquer les détails techniques" : "Hide technical details") : (root.french ? "Afficher les détails techniques" : "Show technical details"); clicked => { root.technical-open = !root.technical-open; } changed has-focus => { if self.has-focus { details.content-y = min(0px, details.visible-height - details.content-height); } } }
+            technical := Button { enabled: root.interactive; text: root.technical-open ? (root.french ? "Masquer les détails techniques" : "Hide technical details") : (root.french ? "Afficher les détails techniques" : "Show technical details"); clicked => { root.technical-open = !root.technical-open; if root.technical-open { root.request-data(); } } changed has-focus => { if self.has-focus { details.content-y = min(0px, details.visible-height - details.content-height); } } }
             if root.technical-open: Text { vertical-stretch: 0; text: root.story.technical; wrap: word-wrap; color: Palette.foreground; }
         }
     }

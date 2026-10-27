@@ -3885,6 +3885,10 @@
     {
       "suite": "librairii-ui",
       "name": "description::tests::retains_frozen_paragraph_list_plain_text_and_html5_entities"
+    },
+    {
+      "suite": "librairii-adapters",
+      "name": "datetime::tests::sqlite_and_provider_instants_keep_their_identity_in_observed_offsets"
     }
   ]
 }

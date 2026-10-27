@@ -29,7 +29,9 @@ pub fn facts(story: &Story, language: Language) -> String {
     let mut lines = vec![format!(
         "{}: {}",
         words(language, "Imported", "Importée"),
-        summary.imported_at
+        story.dates[0]
+            .map(|date| language.date(date))
+            .unwrap_or_else(|| words(language, "Unknown date", "Date inconnue"))
     )];
     if let Some(info) = &summary.official {
         for (en, fr, value) in [
@@ -45,21 +47,6 @@ pub fn facts(story: &Story, language: Language) -> String {
                 info.language.as_str(),
             ),
             (
-                "Catalog fetched",
-                "Catalogue récupéré",
-                info.fetched_at.as_str(),
-            ),
-            (
-                "Catalog activated",
-                "Catalogue activé",
-                info.activated_at.as_str(),
-            ),
-            (
-                "Source updated",
-                "Source actualisée",
-                info.source_updated_at.as_str(),
-            ),
-            (
                 "Metadata source",
                 "Source des métadonnées",
                 info.provenance.as_str(),
@@ -67,6 +54,19 @@ pub fn facts(story: &Story, language: Language) -> String {
         ] {
             if !value.is_empty() {
                 lines.push(format!("{}: {value}", words(language, en, fr)));
+            }
+        }
+        for (index, en, fr) in [
+            (1, "Catalog fetched", "Catalogue récupéré"),
+            (2, "Catalog activated", "Catalogue activé"),
+            (3, "Source updated", "Source actualisée"),
+        ] {
+            if let Some(date) = story.dates[index] {
+                lines.push(format!(
+                    "{}: {}",
+                    words(language, en, fr),
+                    language.date(date)
+                ));
             }
         }
         if let Some(seconds) = info.duration_seconds {
@@ -189,7 +189,8 @@ impl State {
             ui.set_detail_pending(false);
             match &snapshot.workflows.removal {
                 Some(Ok(_)) => { self.frozen = None; ui.invoke_complete_removal(); }
-                _ => ui.set_removal_error(words(snapshot.language,"The story could not be removed. Its original source file is unchanged. Retry or keep the story.","L’histoire n’a pas pu être retirée. Le fichier d’origine est conservé. Réessayez ou conservez l’histoire.").into()),
+                None => ui.set_removal_error(words(snapshot.language,"The removal outcome could not be confirmed. Recover the library before retrying.","Le résultat du retrait n’a pas pu être confirmé. Récupérez la bibliothèque avant de réessayer.").into()),
+                Some(Err(_)) => ui.set_removal_error(words(snapshot.language,"The story could not be removed. Its original source file is unchanged. Retry or keep the story.","L’histoire n’a pas pu être retirée. Le fichier d’origine est conservé. Réessayez ou conservez l’histoire.").into()),
             }
         }
     }

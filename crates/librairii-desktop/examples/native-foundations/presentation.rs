@@ -142,7 +142,7 @@ impl Fixture {
                 },
             )??;
             let seeded = database.transaction(Default::default(), |tx| {
-                let description = format!("<p>A <b>clockwork</b> forest &amp; friends.</p><script>hidden()</script><ul><li>Listen</li><li>Imagine</li></ul>{}", "<p>A long readable paragraph for native scrolling.</p>".repeat(20));
+                let description = format!("<p>A <b>clockwork</b> forest &amp; friends.</p><script>hidden()</script><ul><li>Listen</li><li>Imagine</li></ul><p>&lt;b&gt;literal&lt;/b&gt; &amp;lt;</p>{}", "<p>A long readable paragraph for native scrolling.</p>".repeat(20));
                 tx.execute("UPDATE stories SET embedded_description=? WHERE embedded_title='The Clockwork Forest'",[description])?;
                 tx.execute("INSERT INTO story_tag_assignments(story_id,definition_id,value_id,source) SELECT id,101,NULL,'manual' FROM stories WHERE embedded_title='The Clockwork Forest'",[])?;
                 Ok(())
@@ -640,7 +640,22 @@ pub fn failed_query(ui: &DesktopWindow) -> Result {
 /// Frozen confirmation uses real immutable managed bytes and production callbacks.
 pub fn details(ui: &DesktopWindow) -> Result {
     let fixture = Fixture::open_with(ui, true)?;
-    fixture.search(ui, "Clockwork")?;
+    ui.invoke_request_details();
+    fixture.settle(ui)?;
+    check(
+        ui.get_selected_story().technical.contains("story.zip"),
+        "automatic selection detail callback did not resolve archive facts",
+    )?;
+    let page = fixture.search(ui, "Clockwork")?;
+    check(
+        page.page.as_ref().is_some_and(|p| {
+            p.stories[0]
+                .summary
+                .as_ref()
+                .is_some_and(|s| s.description.contains("<b>literal</b> &lt;"))
+        }),
+        "page decoded entity-escaped markup more than once",
+    )?;
     fixture.select(ui, 0)?;
     ui.invoke_open_dialog(3);
     fixture.settle(ui)?;
@@ -657,11 +672,37 @@ pub fn details(ui: &DesktopWindow) -> Result {
             && row.display_sources.contains("Archive metadata"),
         "technical facts or independent provenance missing",
     )?;
+    check(
+        row.description.contains("<b>literal</b> &lt;"),
+        "detail and page disagree on escaped literal text",
+    )?;
     let source = fixture
         ._roots
         .profile()
         .join("Bibliothèque originale.plain.pk");
     let original = std::fs::read(&source)?;
+    let path = fixture._roots.library().join("native/db/librairii.sqlite3");
+    let connection = rusqlite::Connection::open(&path)?;
+    let checksum:String=connection.query_row("SELECT sha256 FROM story_archives WHERE story_id=(SELECT id FROM stories WHERE embedded_title='The Clockwork Forest')",[],|r|r.get(0))?;
+    connection.execute("UPDATE story_archives SET original_filename='Refreshed archive.plain.pk',sha256=? WHERE story_id=(SELECT id FROM stories WHERE embedded_title='The Clockwork Forest')",["a".repeat(64)])?;
+    connection.execute("UPDATE stories SET embedded_description='<p>Fresh &amp; readable.</p>' WHERE embedded_title='The Clockwork Forest'",[])?;
+    fixture.worker.borrow().offer(Command::Refresh)?;
+    fixture.settle(ui)?;
+    check(
+        ui.get_selected_story()
+            .technical
+            .contains("Refreshed archive.plain.pk")
+            && ui.get_selected_story().technical.contains(&"a".repeat(64))
+            && ui.get_selected_story().description == "Fresh & readable.",
+        "Refresh retained cached detail/archive facts",
+    )?;
+    check(
+        !ui.get_selected_story().facts.contains("2026-")
+            && ui.get_selected_story().facts.contains("Imported:"),
+        "detail date remains an unformatted storage timestamp",
+    )?;
+    connection.execute("UPDATE story_archives SET sha256=? WHERE story_id=(SELECT id FROM stories WHERE embedded_title='The Clockwork Forest')",[checksum])?;
+    drop(connection);
     ui.invoke_begin_removal();
     check(
         ui.get_dialog() == 9 && ui.get_removal_keep_focused(),
@@ -719,6 +760,48 @@ pub fn details(ui: &DesktopWindow) -> Result {
         retained,
         "removal lost the managed archive instead of moving it to application trash",
     )?;
+    fixture.finish()?;
+    details_recovery(ui)
+}
+fn details_recovery(ui: &DesktopWindow) -> Result {
+    let fixture = Fixture::open_with(ui, true)?;
+    fixture.search(ui, "Clockwork")?;
+    fixture.select(ui, 0)?;
+    ui.invoke_open_dialog(3);
+    fixture.settle(ui)?;
+    ui.invoke_begin_removal();
+    use std::os::unix::fs::PermissionsExt;
+    let permissions = std::fs::metadata(&fixture.locations.native)?.permissions();
+    std::fs::set_permissions(
+        &fixture.locations.native,
+        std::fs::Permissions::from_mode(0o500),
+    )?;
+    ui.invoke_remove_story();
+    fixture.worker.borrow().offer(Command::Presentation(
+        librairii_core::navigation::Presentation::SmallCovers,
+    ))?;
+    let recovered = fixture.settle(ui);
+    std::fs::set_permissions(&fixture.locations.native, permissions)?;
+    let recovered = recovered?;
+    check(
+        recovered.phase == Phase::Recovery
+            && recovered
+                .workflows
+                .removal
+                .as_ref()
+                .is_some_and(|r| r.is_ok()),
+        &format!(
+            "postcommit preference failure lost confirmed removal outcome: phase={:?}, removal={:?}, status={:?}",
+            recovered.phase, recovered.workflows.removal, recovered.status
+        ),
+    )?;
+    check(
+        !ui.get_detail_pending()
+            && ui.get_dialog() == 0
+            && ui.get_status().contains("removed")
+            && ui.get_removal_error().is_empty(),
+        "confirmed removal was falsely reported as failure during recovery",
+    )?;
     fixture.finish()
 }
 
@@ -730,14 +813,35 @@ impl std::fmt::Debug for DetailSurface {
 }
 impl DetailSurface {
     pub fn open(ui: &DesktopWindow) -> Result<Self> {
-        let fixture = Fixture::open_with(ui, true)?;
-        fixture.search(ui, "Clockwork")?;
-        fixture.select(ui, 0)?;
+        Ok(Self(Fixture::open_with(ui, true)?))
+    }
+    pub fn first_disclosure(&self, ui: &DesktopWindow) -> Result {
+        ui.invoke_focus_inspector_technical();
+        ui.window()
+            .dispatch_event(slint::platform::WindowEvent::KeyPressed { text: " ".into() });
+        ui.window()
+            .dispatch_event(slint::platform::WindowEvent::KeyReleased { text: " ".into() });
+        self.0.settle(ui)?;
+        check(
+            ui.get_selected_story().technical.contains("story.zip"),
+            "shown wide disclosure never loaded automatic selection",
+        )?;
+        Ok(())
+    }
+    pub fn begin_details(&self, ui: &DesktopWindow) -> Result {
+        self.0.search(ui, "Clockwork")?;
+        self.0.select(ui, 0)?;
         ui.invoke_open_dialog(3);
-        fixture.settle(ui)?;
-        Ok(Self(fixture))
+        self.0.settle(ui)?;
+        Ok(())
     }
     pub fn poll(&self, ui: &DesktopWindow) {
+        if let Some(snapshot) = self.0.worker.borrow().take_snapshot() {
+            self.0
+                .view
+                .borrow_mut()
+                .accept(ui, snapshot, self.0.worker.borrow().revision());
+        }
         self.0.view.borrow_mut().resize(ui);
     }
     pub fn technical(&self, ui: &DesktopWindow) -> Result {
