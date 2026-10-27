@@ -134,6 +134,13 @@ The one latest snapshot remains bounded. Native tests exercise persisted history
 mode independence, overlapping group IDs, a burst of searches, shutdown/reopen,
 queue ordering/backpressure and obsolete activation/query rejection.
 
+Paging sends an ordered delta that the controller applies to its current query
+and actual SQL page, so a delayed view cannot reinstate an earlier search.
+History/scope restoration retains its command revision across newer snapshots;
+the view applies it once when that revision is observed. A failed page retains
+Back/Forward availability from its navigation; recovery without navigation
+clears those controls.
+
 ## Source and notice promotion
 
 The production/tooling dependency inventory retains the exact vendored AccessKit
@@ -191,6 +198,13 @@ X11 keyboard input. This is native component evidence, not physical HID, VoiceOv
 full domain workflow transactions, installed packages or the section-16 budgets.
 The required matrix executes it on Apple silicon, Intel macOS and Linux x86-64;
 Task 2's existing Wayland qualification remains separate from these X11 fixtures.
+
+The same fixture also installs the production view callbacks against a fresh
+60-story synthetic library. It checks search followed by paging before projection,
+Back/Forward followed by mode/language changes, restored selection, unsaved input,
+newer searches and recovery through history after a missing-tag query failure.
+Each controller joins before its owned profile/library roots are removed, and
+its callbacks are detached before the visual reference fixtures begin.
 
 The hosted ARM Mac display clamps a resizable titled window to about 656 pixels
 high. The fixture therefore disables pointer resizing on its macOS window before

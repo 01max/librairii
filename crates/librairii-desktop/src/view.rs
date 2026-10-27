@@ -142,8 +142,6 @@ impl View {
                 ui.set_query(n.current().location.request.criteria.name.clone().into());
                 self.selected = None;
             }
-            ui.set_back_enabled(n.can_back());
-            ui.set_forward_enabled(n.can_forward());
         }
         self.snapshot = snapshot;
         self.resize(ui);
@@ -161,6 +159,18 @@ impl View {
             librairii_desktop::presentation::Phase::Library => 3,
         });
         ui.set_status(self.snapshot.status.clone().into());
+        ui.set_back_enabled(
+            self.snapshot
+                .navigation
+                .as_ref()
+                .is_some_and(|navigation| navigation.can_back()),
+        );
+        ui.set_forward_enabled(
+            self.snapshot
+                .navigation
+                .as_ref()
+                .is_some_and(|navigation| navigation.can_forward()),
+        );
         let nav_rows = |shelves: bool| {
             self.snapshot
                 .groups
@@ -212,8 +222,6 @@ impl View {
             ui.set_counts("".into());
             ui.set_previous_enabled(false);
             ui.set_next_enabled(false);
-            ui.set_back_enabled(false);
-            ui.set_forward_enabled(false);
             return;
         };
         let selected = self

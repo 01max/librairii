@@ -76,6 +76,8 @@ def main():
             raise ValueError('production search/paging callback checks incomplete')
         if report['history_restoration_callbacks'] != 'passed':
             raise ValueError('production history restoration callback checks incomplete')
+        if report['failed_query_history_callbacks'] != 'passed':
+            raise ValueError('production failed-query history callback checks incomplete')
         frames = report['frames']
         expected = {(concept, density, mode, french) for concept in ['Story shelves', 'Desktop workspace'] for density in range(3) for mode in (range(3) if concept == 'Story shelves' else [0]) for french in [False, True]}
         if {(f['concept'], f['density'], f['mode'], f['french']) for f in frames} != expected or len(frames) != len(expected):

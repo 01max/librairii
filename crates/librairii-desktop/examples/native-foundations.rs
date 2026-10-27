@@ -218,6 +218,7 @@ fn main() -> Result {
     let (ui, menus) = librairii_desktop::menus::create_window()?;
     callback_checks::paging(&ui)?;
     callback_checks::history(&ui)?;
+    callback_checks::failed_query(&ui)?;
     let initial = snapshot()?;
     let view = Rc::new(RefCell::new(view::View {
         catalogs: librairii_app::localization::Catalogs::embedded()?,
@@ -592,6 +593,7 @@ fn capture_step(
                 "native_menu_composition": if cfg!(target_os = "macos") { "passed" } else { "not-applicable" },
                 "search_paging_callbacks": "passed",
                 "history_restoration_callbacks": "passed",
+                "failed_query_history_callbacks": "passed",
                 "scope": "shown native component/public window events and Skia capture; not physical HID or packaged workflow qualification",
             }))?,
         )?;

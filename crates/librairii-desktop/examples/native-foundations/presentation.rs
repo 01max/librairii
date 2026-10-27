@@ -3,7 +3,7 @@ use super::{Result, check, view};
 use librairii_app::localization::Language;
 use librairii_core::navigation::Navigation;
 use librairii_desktop::{
-    presentation::{Phase, Snapshot, Worker},
+    presentation::{Command, Phase, Snapshot, Worker},
     startup::StartupEnvironment,
 };
 use librairii_storage::{
@@ -251,6 +251,70 @@ pub fn history(ui: &DesktopWindow) -> Result {
                 navigation.current().location.request.criteria.name == "Alp"
             }),
         "history restoration overwrote a newer search",
+    )?;
+    fixture.finish()
+}
+
+pub fn failed_query(ui: &DesktopWindow) -> Result {
+    let fixture = Fixture::open(ui)?;
+    let alpha = fixture.search(ui, "Alpha")?;
+    fixture.select(ui, 2)?;
+    let mut request = alpha
+        .navigation
+        .ok_or("query fixture navigation missing")?
+        .current()
+        .location
+        .request
+        .clone();
+    // A restored/handover filter can reference a tag removed from the library.
+    request
+        .criteria
+        .boolean_filters
+        .push(librairii_core::collection_codec::BooleanFilter {
+            definition_id: 999,
+            state: "true".into(),
+        });
+    fixture.worker.borrow().offer(Command::Request(request))?;
+    let failed = fixture.settle(ui)?;
+    check(
+        failed.page.is_none() && ui.get_back_enabled() && !ui.get_forward_enabled(),
+        "query failure hid valid Back history",
+    )?;
+    ui.invoke_history_step(-1);
+    let restored = fixture.settle(ui)?;
+    check(
+        restored.page.is_some() && ui.get_query() == "Alpha" && ui.get_selected_index() == 2,
+        "Back did not recover the previous query and selection",
+    )?;
+    ui.invoke_history_step(1);
+    check(
+        fixture.settle(ui)?.page.is_none() && ui.get_back_enabled(),
+        "revisiting a failed query disabled Back",
+    )?;
+    ui.invoke_request_panel(0);
+    check(
+        fixture.settle(ui)?.page.is_some(),
+        "Library did not recover from the failed query",
+    )?;
+    ui.invoke_history_step(-1);
+    check(
+        fixture.settle(ui)?.page.is_none() && ui.get_back_enabled() && ui.get_forward_enabled(),
+        "failed middle frame hid Back or Forward history",
+    )?;
+    ui.invoke_history_step(1);
+    check(
+        fixture.settle(ui)?.page.is_some(),
+        "Forward did not recover the next valid page",
+    )?;
+    std::fs::write(
+        fixture.locations.native.join("navigation.json"),
+        b"unconfirmed external preferences",
+    )?;
+    ui.invoke_mode_selected(1);
+    let recovery = fixture.settle(ui)?;
+    check(
+        recovery.phase == Phase::Recovery && !ui.get_back_enabled() && !ui.get_forward_enabled(),
+        "recovery without navigation retained stale history controls",
     )?;
     fixture.finish()
 }
