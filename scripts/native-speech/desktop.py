@@ -60,10 +60,14 @@ class Desktop:
             registered = wait_for(lambda: self.x11_manager_ready(manager))
             # Keep the WM's X connection before setting the map: last-client
             # disconnect would otherwise let Xvfb reset it before app launch.
-            self.run(['setxkbmap', '-layout', 'fr'])
+            self.run(['setxkbmap', '-layout', 'fr', '-variant', 'oss'])
             keymap = self.run(['setxkbmap', '-query'])
             assert re.search(r'^layout:\s+fr\s*$', keymap, re.MULTILINE), keymap
+            assert re.search(r'^variant:\s+oss\s*$', keymap, re.MULTILINE), keymap
             (self.root / 'x11-keyboard-map.txt').write_text(keymap)
+            symbols = self.run(['xkbcomp', '-xkb', os.environ['DISPLAY'], '-'])
+            assert 'Eacute' in symbols, 'native uppercase accented key is unmapped'
+            (self.root / 'x11-keyboard-symbols.txt').write_text(symbols)
             (self.root / 'x11-readiness.json').write_text(json.dumps({
                 'server_root_read': connection, 'manager_pid': manager.pid, **registered}, indent=2) + '\n')
         else:

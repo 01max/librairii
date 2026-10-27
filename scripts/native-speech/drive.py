@@ -84,17 +84,33 @@ def run_case(desktop, binary, case, language, mark, announced, pcm, report):
                 if len(current)==1 and current[0]['name'].startswith(label):return current[0]
                 key('Tab')
             raise AssertionError(name+' keyboard target unreachable: '+label)
+        def announce_focus(step, label, expected):
+            target=focus(label)
+            assert target['states']['enabled'] and target['states']['sensitive'],name+' target disabled'
+            for leave,back in [('shift+Tab','Tab'),('Tab','shift+Tab')]:
+                key(leave)
+                def neighbor_ready():
+                    observed=speech.focused(tree())
+                    if len(observed)>1:
+                        result['ambiguous_focus']=observed
+                        raise AssertionError(name+' multiple native focused controls')
+                    return observed if len(observed)==1 else None
+                neighbor=native.wait_for(neighbor_ready)
+                result.setdefault('focus_round_trips',[]).append({'leave':leave,'return':back,'neighbor':neighbor})
+                if (neighbor[0]['name'],neighbor[0]['role'])==(target['name'],target['role']):
+                    continue
+                quiet();marker=mark();key(back)
+                current=native.wait_for(lambda:(f:=speech.focused(tree())) and len(f)==1
+                    and f[0]['name'].startswith(label) and f[0])
+                assert current['role']==target['role'],name+' role changed during focus round trip'
+                announced(step,{'contains':expected},marker)
+                return
+            raise AssertionError(name+' native focus never left target: '+label)
         label=CASES[case][language=='fr']
-        target=focus(label)
-        assert target['states']['enabled'] and target['states']['sensitive'],name+' target disabled'
-        # Arrive at the target by native Tab, then record a fresh focus event.
-        key('shift+Tab');quiet(); marker=mark();key('Tab')
-        current=native.wait_for(lambda: (f:=speech.focused(tree())) and len(f)==1 and f[0]['name'].startswith(label) and f[0])
-        assert current['role']==target['role'],name+' role changed during focus round trip'
         expected_focus=[label.rstrip(' ·…')]
         if case in ('tag-assignment','flag-bulk'):
             expected_focus.append('Mixte' if language=='fr' else 'Mixed')
-        announced(name+'-focus',{'contains':expected_focus},marker)
+        announce_focus(name+'-focus',label,expected_focus)
         snapshot('focused')
         before=state()
         if case=='browse':
@@ -104,7 +120,9 @@ def run_case(desktop, binary, case, language, mark, announced, pcm, report):
             native.wait_for(lambda: (s:=alive()) and s['query']=='êé az' and s)
             result['utf8_native_keys']=True
         elif case=='details':
-            key('space');native.wait_for(lambda:(s:=alive()) and 'story.zip' in s['technical'])
+            assert not before['technical_open'],'technical disclosure was already open'
+            key('space');native.wait_for(lambda:(s:=alive()) and s['technical_open']
+                and 'Bibliothèque originale.plain.pk' in s['technical'])
         elif case in ('tag-manager','collections'):
             key('ctrl+a');desktop.text('Été à garder')
             native.wait_for(lambda:any(n.get('text')=='Été à garder' and n['states']['focused'] for n in tree()))
@@ -114,17 +132,16 @@ def run_case(desktop, binary, case, language, mark, announced, pcm, report):
             native.wait_for(lambda:(s:=alive()) and s['revision']>before['revision'] and s['bedtime_assigned']==2
                 and s['assignment_result']=={'requested':2,'changed':1,'added':1,'removed':0})
             assert state()['selected_uuid']==before['selected_uuid'],'assignment changed inspection'
+            announce_focus(name+'-assigned',label,['Bedtime','Attribuée' if language=='fr' else 'Assigned'])
         elif case=='flag-bulk':
             assert before['mixed'] and not before['broken'],'batch initial mixed state is false'
             key('Down');native.wait_for(lambda:(s:=alive()) and s['broken'] and s['undo'] and not s['flag_pending'])
             # Fresh focus must speak All, then actual Undo restores Mixed.
-            key('shift+Tab');quiet();marker=mark();key('Tab')
-            announced(name+'-all',{'contains':[label.rstrip(' ·…'), 'Toutes défectueuses' if language=='fr' else 'All Broken']},marker)
+            announce_focus(name+'-all',label,[label.rstrip(' ·…'), 'Toutes défectueuses' if language=='fr' else 'All Broken'])
             focus('Annuler le changement de statut' if language=='fr' else 'Undo Broken change')
             quiet();marker=mark();key('space')
             native.wait_for(lambda:(s:=alive()) and s['mixed'] and not s['flag_pending'])
-            focus(label);key('shift+Tab');quiet();marker=mark();key('Tab')
-            announced(name+'-mixed-restored',{'contains':['Mixte' if language=='fr' else 'Mixed']},marker)
+            announce_focus(name+'-mixed-restored',label,['Mixte' if language=='fr' else 'Mixed'])
             result['set_and_actual_undo']=True
         elif case=='shelf-members':
             order=before['member_order'];assert len(order)>1 and before['selected_uuid']==order[1]
@@ -133,6 +150,9 @@ def run_case(desktop, binary, case, language, mark, announced, pcm, report):
             expected=[order[1],order[0],*order[2:]]
             native.wait_for(lambda:(s:=alive()) and s['revision']>before['revision'] and s['member_order']==expected
                 and s['selected_uuid']==before['selected_uuid'])
+            # Moving to the first position correctly disables Run/Move up.
+            # The mounted action chooser remains an enabled focus target.
+            announce_focus(name+'-after-reorder',label,[label])
         elif case=='export':
             assert before['export_start'];key('space')
             native.wait_for(lambda:(s:=alive()) and s['dialog']==19)
@@ -183,7 +203,8 @@ def run_case(desktop, binary, case, language, mark, announced, pcm, report):
 def main():
     parser=argparse.ArgumentParser();parser.add_argument('--session',choices=['x11','wayland'],required=True)
     parser.add_argument('--binary',type=Path,required=True);parser.add_argument('--output',type=Path,required=True)
-    parser.add_argument('--case',choices=list(CASES));args=parser.parse_args()
+    parser.add_argument('--case',choices=list(CASES),required=True)
+    parser.add_argument('--language',choices=['en','fr'],required=True);args=parser.parse_args()
     root=args.output;root.mkdir(exist_ok=True,parents=True)
     assert (root/'.workflow-speech-fixture').read_text()=='workflow-speech-v1\n'
     assert args.binary.is_absolute() and args.binary.is_file()
@@ -193,25 +214,10 @@ def main():
         desktop=native.Desktop(args.session,root)
         report['application_environment']={k:os.environ.get(k) for k in ('DISPLAY','WAYLAND_DISPLAY','GDK_BACKEND','SLINT_BACKEND')}
         mark,announced,pcm,audio=speech.start(desktop,report)
-        failures=[]
-        for case in ([args.case] if args.case else CASES):
-            for language in ('en','fr'):
-                print(case,language,flush=True)
-                try:
-                    run_case(desktop,args.binary,case,language,mark,announced,pcm,report)
-                except Exception:
-                    failures.append({'name':case+'-'+language,'error':traceback.format_exc()})
-                    report['case_failures']=failures
-                    print(failures[-1]['error'],flush=True)
-                    # Independent cases may continue only after actual native
-                    # shutdown and while the same real speech pipeline lives.
-                    if (not report['cases'] or report['cases'][-1]['name']!=case+'-'+language
-                        or report['cases'][-1].get('closed')!={'actual_worker_joined':True}
-                        or desktop.reader.poll() is not None or desktop.dispatcher.poll() is not None
-                        or audio.poll() is not None):raise
-                assert not desktop.overflow,desktop.overflow
-                assert (root/'orca-debug.txt').stat().st_size<speech.evidence_limit(root/'orca-debug.txt')
-        assert not failures,'native workflow cases failed: '+', '.join(f['name'] for f in failures)
+        print(args.case,args.language,flush=True)
+        run_case(desktop,args.binary,args.case,args.language,mark,announced,pcm,report)
+        assert not desktop.overflow,desktop.overflow
+        assert (root/'orca-debug.txt').stat().st_size<speech.evidence_limit(root/'orca-debug.txt')
         report['passed']=True
     except Exception:
         report['error']=traceback.format_exc();raise

@@ -88,7 +88,7 @@ export component Assignments inherits VerticalBox {
             height: 68px; padding: 0px; spacing: 3px;
             property <int> state: entry.state;
             Label { text: entry.label + (entry.read-only ? (root.french ? " · Automatique, lecture seule" : " · System-derived, read-only") : ""); }
-            ComboBox { enabled: root.active && !entry.read-only; accessible-label: entry.label; model: entry.state == 2 ? (root.french ? ["Non attribuée", "Attribuée", "Mixte · ne pas modifier"] : ["Not assigned", "Assigned", "Mixed · leave unchanged"]) : (root.french ? ["Non attribuée", "Attribuée"] : ["Not assigned", "Assigned"]); current-index <=> parent.state; selected(_) => { root.assign(entry.index,self.current-index); } changed has-focus => { if self.has-focus {
+            ComboBox { enabled: root.active && !entry.read-only; accessible-label: entry.label+" · "+self.model[self.current-index]; model: entry.state == 2 ? (root.french ? ["Non attribuée", "Attribuée", "Mixte · ne pas modifier"] : ["Not assigned", "Assigned", "Mixed · leave unchanged"]) : (root.french ? ["Non attribuée", "Attribuée"] : ["Not assigned", "Assigned"]); current-index <=> parent.state; selected(_) => { root.assign(entry.index,self.current-index); } changed has-focus => { if self.has-focus {
                 let top=list.absolute-position.y;
                 let delta=self.absolute-position.y<top ? top - self.absolute-position.y : self.absolute-position.y+self.height>top+list.visible-height ? top+list.visible-height - self.absolute-position.y - self.height : 0px;
                 list.content-y=max(min(0px,list.visible-height - list.content-height),min(0px,list.content-y+delta));

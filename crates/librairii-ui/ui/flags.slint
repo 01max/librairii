@@ -28,7 +28,7 @@ export component FlagControl inherits VerticalBox {
             enabled:root.multiple && root.active && root.available && !root.pending;
             model:root.french ? [root.mixed ? "Mixte · ne pas modifier" : root.checked ? "Toutes défectueuses" : "Aucune défectueuse", "Définir Défectueuse", "Effacer Défectueuse"] : [root.mixed ? "Mixed · leave unchanged" : root.checked ? "All Broken" : "None Broken", "Set Broken", "Clear Broken"];
             current-index:0;
-            accessible-label:(root.french ? "Statut Défectueuse · " : "Broken state · ")+root.title+" · "+root.summary;
+            accessible-label:(root.french ? "Statut Défectueuse · " : "Broken state · ")+root.title+" · "+root.summary+" · "+self.model[self.current-index];
             selected(value)=>{let index=self.current-index;if index==1 || index==2 {root.change(index==1);}}
             changed has-focus=>{if self.has-focus {root.focused(1);}}
         }

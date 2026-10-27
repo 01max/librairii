@@ -109,7 +109,11 @@ def start(desktop, report):
     root, runtime = desktop.root, desktop.runtime
     os.environ['HOME'] = str(runtime / 'outside')
     report['versions'] = desktop.run(['dpkg-query', '-W', '-f=${Package} ${Version}\n',
-        'orca', 'at-spi2-core', 'speech-dispatcher', 'speech-dispatcher-espeak-ng', 'pulseaudio'])
+        'orca', 'at-spi2-core', 'speech-dispatcher', 'speech-dispatcher-espeak-ng', 'pulseaudio', 'ca-certificates'])
+    certificates = pathlib.Path('/etc/ssl/certs/ca-certificates.crt')
+    assert certificates.is_file() and certificates.stat().st_size > 0
+    report['platform_certificate_bundle'] = {'path': str(certificates), 'bytes': certificates.stat().st_size,
+        'sha256': hashlib.sha256(certificates.read_bytes()).hexdigest()}
     pulse = runtime / 'pulse'
     pulse.mkdir(mode=0o700)
     os.environ['PULSE_SERVER'] = 'unix:' + str(pulse / 'native')

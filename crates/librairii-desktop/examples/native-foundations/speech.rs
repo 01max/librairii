@@ -202,7 +202,7 @@ fn receipt(ui: &DesktopWindow, surface: &Surface) -> serde_json::Value {
         "mixed":ui.get_bulk_flag_mixed(), "broken":ui.get_bulk_flag_checked(),
         "flag_pending":ui.get_flag_pending(), "undo":ui.get_flag_undo_enabled(),
         "flag_summary":ui.get_bulk_flag_summary().as_str(),
-        "technical":ui.get_selected_story().technical.as_str(),
+        "technical":ui.get_selected_story().technical.as_str(),"technical_open":ui.get_details_technical_open(),
         "history_error":ui.get_history_error().as_str(),
         "export_start":ui.get_export_data().can_start,
         "settings_busy":ui.get_settings_data().busy,

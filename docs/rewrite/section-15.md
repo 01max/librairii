@@ -2,7 +2,9 @@
 
 Integration base: `f62bab08e9f7db70c5b7b6cce8dbf69cbd121921`, after PR65 and its
 query paging/history corrections. Branch: `codex/rewrite-15-native-workflows`;
-the task PR targets `rewrite-in-rust-native-desktop`. Task15 is in progress.
+the task PR targets `rewrite-in-rust-native-desktop`. Final section admission is
+bound to the source-labelled required checks and retained artifacts on PR66 and
+the verified provider receipts in the canonical handover.
 The frozen Go source, approved visual references and qualified toolkit graph
 remain the contract. This section does not authorize runtime retirement.
 
@@ -599,7 +601,7 @@ restoration and forward wrap. Pinned toolkit sources remain unchanged:
 `i-slint-compiler/widgets/cupertino/button.slint` SHA256
 `ffeb029d4b9493a6ca0a6b462c4ced443e6f1dcad954db3391448668abee62ac`.
 
-## Independent workflow review —15.13 (in progress)
+## Independent workflow review —15.13
 
 The full60-row source/concept review found four required composition corrections.
 Batch Broken now uses a native Mixed/All/None choice with explicit Set/Clear, scope
@@ -688,3 +690,22 @@ Linux speech diagnostics also execute after a visual failure, bound to the exact
 retained Cargo executable. Such a report explicitly has native_visual_passed=false
 and complete=false; the earlier visual step still fails. Final acceptance requires
 the sealed visual manifest and all spoken evidence together.
+
+## Final review and admission record
+
+The complete row/concept matrix, independent reviews and exact local checkpoint
+are recorded in [section-15-review.md](section-15-review.md). Local source
+`56fa9a125563a042ff5addeeb8808906dbaedd4b` passed the 604-test cumulative gate and
+176 sealed native captures across both scales. Later Linux diagnostics remain
+failed evidence and led to spoken current-value labels, a larger compact
+workspace reservation, actual disclosure-transition checks and independent
+private reader cases. Same-reader speech after Shelf reordering and tag
+assignment remains mandatory, alongside the complete 112-case/128-witness matrix.
+
+Final section acceptance requires fresh three-host visual/accessibility,
+cumulative Rust, actual X11/Wayland Orca/PCM, unchanged legacy handover and native
+relocation receipts. Their immutable run/source/artifact digests are recorded on
+[PR66](https://github.com/01max/librairii/pull/66) and in the canonical handover
+after verification. No historical/local receipt is relabelled as final-head
+execution. Numerical resource gates, complete adoption/rollback, installed
+packages and cutover retain Tasks16–19.

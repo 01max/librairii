@@ -5,7 +5,7 @@ RUN if ! getent group "$QUALIFICATION_GID" >/dev/null; then groupadd --gid "$QUA
     && if ! getent passwd "$QUALIFICATION_UID" >/dev/null; then \
         useradd --uid "$QUALIFICATION_UID" --gid "$QUALIFICATION_GID" --create-home --no-log-init qualification; fi
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    libfontconfig1 libfreetype6 libxkbcommon-x11-0 libxcursor1 libxi6 libxrandr2 \
+    ca-certificates libfontconfig1 libfreetype6 libxkbcommon-x11-0 libxcursor1 libxi6 libxrandr2 \
     libegl1 libgl1 libvulkan1 mesa-vulkan-drivers fonts-noto-cjk \
     python3 python3-pyatspi python3-dbus python3-gi dbus-x11 at-spi2-core \
     xvfb openbox xdotool x11-utils scrot sway wtype grim procps \
