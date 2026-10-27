@@ -1,9 +1,10 @@
 import { TagChip } from "states.slint";
-import { Button, ListView, Palette, ScrollView, VerticalBox } from "std-widgets.slint";
+import { Button, CheckBox, ListView, Palette, ScrollView, VerticalBox } from "std-widgets.slint";
 export struct TagRow { label:string, color:color }
-export struct StoryRow { uuid:string, technical:string, facts:string, display-sources:string, tags:[TagRow], metadata:string, index: int, title: string, author: string, description: string, warning: string, provenance: string, cover: image }
+export struct StoryRow { bulk:bool, uuid:string, technical:string, facts:string, display-sources:string, tags:[TagRow], metadata:string, index: int, title: string, author: string, description: string, warning: string, provenance: string, cover: image }
 export struct StoryGroup { cards: [StoryRow] }
 export component StoryBrowser inherits FocusScope {
+    in property <bool> french;
     in property <[StoryGroup]> groups;
     in property <int> count;
     in property <int> mode;
@@ -14,6 +15,8 @@ export component StoryBrowser inherits FocusScope {
     private property <length> row-height: root.mode == 0 ? min(82px,max(76px,root.height)) : min(root.mode == 1 ? 230px : 310px,max(148px,root.height));
     out property <length> mounted-row-height: root.row-height;
     callback select(int);
+    callback toggle(int);
+    public function focus-bulk(index:int) { root.focus();root.move(index,false); }
     callback focus-entered();
     accessible-role: list;
     accessible-label: root.label;
@@ -36,7 +39,8 @@ export component StoryBrowser inherits FocusScope {
         else if event.text == Key.LeftArrow { root.move(root.focused-index - 1,!event.modifiers.control); }
         else if event.text == Key.PageDown { root.move(root.focused-index + max(1,floor(view.visible-height / root.row-height)) * root.columns,!event.modifiers.control); }
         else if event.text == Key.PageUp { root.move(root.focused-index - max(1,floor(view.visible-height / root.row-height)) * root.columns,!event.modifiers.control); }
-        else if event.text == Key.Space || event.text == Key.Return { root.move(root.focused-index,true); }
+        else if event.text == Key.Space { root.toggle(root.focused-index); }
+        else if event.text == Key.Return { root.move(root.focused-index,true); }
         else { return reject; }
         return accept;
     }
@@ -65,7 +69,7 @@ export component StoryBrowser inherits FocusScope {
                     source: card.cover.width > 0 ? card.cover : @image-url("../assets/library.svg"); image-fit: contain;
                 }
                 Text { x: root.mode == 0 ? 84px : 8px; y: root.mode == 0 ? 7px : parent.height - 72px;
-                    width: parent.width - self.x - 8px; height: 38px;
+                    width: parent.width - self.x - 36px; height: 38px;
                     text: card.title; wrap: word-wrap; overflow: elide; font-weight: 600;
                     color: card.index == root.selected-index ? Palette.selection-foreground : Palette.foreground;
                 }
@@ -74,6 +78,7 @@ export component StoryBrowser inherits FocusScope {
                     color: card.index == root.selected-index ? Palette.selection-foreground : Palette.foreground;
                 }
                 TouchArea { enabled: root.enabled; clicked => { root.move(card.index,true); root.focus(); } }
+                CheckBox { x: parent.width - 30px; y: 4px; width: 26px; text: ""; accessible-label: (card.bulk ? (root.french ? "Désélectionner · " : "Deselect · ") : (root.french ? "Sélectionner · " : "Select · ")) + card.title; checked: card.bulk; enabled: root.enabled; toggled => { root.toggle(card.index); } }
             }
         }
     }

@@ -3,6 +3,8 @@
 pub(crate) mod details;
 #[path = "view/filters.rs"]
 pub(crate) mod filters;
+#[path = "view/tags.rs"]
+pub(crate) mod tags;
 use librairii_app::localization::{Catalogs, Language, LocalizationError};
 use librairii_core::navigation::Presentation;
 use librairii_desktop::{
@@ -13,6 +15,7 @@ use librairii_ui::native::{DesktopWindow, NavigationRow, StoryGroup, StoryRow, T
 use slint::{ComponentHandle, ModelRc, VecModel};
 use std::{cell::RefCell, rc::Rc};
 pub struct View {
+    pub tags: tags::State,
     pub details: details::State,
     pub filters: filters::State,
     pub catalogs: Catalogs,
@@ -91,6 +94,7 @@ fn row(index: usize, story: &Story, language: Language, catalogs: &Catalogs) -> 
         })
         .unwrap_or_default();
     StoryRow {
+        bulk: false,
         uuid: story.uuid.clone().into(),
         facts: details::facts(story, language).into(),
         display_sources: details::sources(story, language).into(),
@@ -161,11 +165,13 @@ impl View {
         }
         self.snapshot = snapshot;
         self.details.accept(ui, &self.snapshot);
+        self.tags.accept(ui, &self.snapshot);
         self.resize(ui);
         self.project(ui);
         true
     }
     pub fn project(&mut self, ui: &DesktopWindow) {
+        self.tags.retain_visible(&self.snapshot);
         let french = self.snapshot.language == Language::French;
         ui.set_french(french);
         self.filters.project(ui, &self.snapshot, &self.catalogs);
@@ -240,6 +246,8 @@ impl View {
             ui.set_counts("".into());
             ui.set_previous_enabled(false);
             ui.set_next_enabled(false);
+            self.tags
+                .project(ui, &self.snapshot, &self.catalogs, self.selected.as_deref());
             return;
         };
         let selected = self
@@ -261,7 +269,11 @@ impl View {
             .stories
             .iter()
             .enumerate()
-            .map(|(i, s)| row(i, s, self.snapshot.language, &self.catalogs))
+            .map(|(i, s)| {
+                let mut row = row(i, s, self.snapshot.language, &self.catalogs);
+                row.bulk = self.tags.selection.contains(&s.uuid);
+                row
+            })
             .collect::<Vec<_>>();
         let groups = rows
             .chunks(self.columns.max(1))
@@ -279,6 +291,8 @@ impl View {
             .unwrap_or_default();
         details::project(&mut selected_row, &self.snapshot);
         ui.set_selected_story(selected_row);
+        self.tags
+            .project(ui, &self.snapshot, &self.catalogs, self.selected.as_deref());
         ui.set_previous_enabled(page.page > 1);
         ui.set_next_enabled(page.page < page.pages);
         ui.set_counts(
@@ -347,6 +361,7 @@ pub fn install(
     initial: Snapshot,
 ) -> Result<Rc<RefCell<View>>, LocalizationError> {
     let view = Rc::new(RefCell::new(View {
+        tags: Default::default(),
         details: Default::default(),
         filters: filters::State::new(
             initial
@@ -460,8 +475,21 @@ pub fn install(
             );
         }
     });
-    let (weak, pending) = (ui.as_weak(), worker.clone());
+    let (state, weak, pending) = (view.clone(), ui.as_weak(), worker.clone());
     ui.on_request_panel(move |panel| {
+        if panel == 1
+            && let Some(ui) = weak.upgrade()
+        {
+            let mut state = state.borrow_mut();
+            let state = &mut *state;
+            state.tags.open(&ui, &state.snapshot);
+            state.tags.project(
+                &ui,
+                &state.snapshot,
+                &state.catalogs,
+                state.selected.as_deref(),
+            );
+        }
         if panel == 0
             && let Some(ui) = weak.upgrade()
         {
@@ -478,6 +506,7 @@ pub fn install(
             offer(&pending.borrow(), Command::Language(language), &ui);
         }
     });
+    tags::install(ui, view.clone(), worker.clone());
     details::install(ui, view.clone(), worker.clone());
     filters::install(ui, view.clone(), worker);
     Ok(view)

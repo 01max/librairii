@@ -1,5 +1,6 @@
 //! Owned workflow observations and frozen command targets. No UI value grants
 //! authority without the actual generation/query/UUID checks on the controller.
+pub mod tags;
 use crate::library::Runtime;
 use librairii_app::lifecycle::LibraryGeneration;
 use librairii_core::navigation::{Navigation, QueryStamp};
@@ -24,6 +25,7 @@ pub struct Details {
 }
 #[derive(Clone, Debug, Default)]
 pub struct Snapshot {
+    pub tags: tags::Snapshot,
     pub details: Option<Details>,
     pub removal_recovery: bool,
     pub recovery_required: bool,

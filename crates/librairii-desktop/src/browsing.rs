@@ -246,6 +246,7 @@ pub(crate) fn run(
     let mut restore_revision = 0;
     let mut invalid_query = false;
     let mut workflows = crate::workflows::Snapshot::default();
+    let mut tag_controller = crate::workflows::tags::Controller::default();
     let result = session.drive(locations, &WorkCancellation::default(), |runtime| {
         let active = (|| -> Result<()> {
             let generation = runtime
@@ -323,6 +324,12 @@ pub(crate) fn run(
                     let mut next = navigation.clone();
                     invalid_query = false;
                     match command {
+                        Command::Tags { generation, action } => {
+                            tag_controller.handle(runtime,generation,action,revision);
+                            workflows.tags=tag_controller.snapshot.clone();
+                            query_facets=facets(runtime)?;
+                            group_rows=groups(runtime)?;
+                        }
                         Command::Details(target) => {
                             let detail = crate::workflows::inspect(runtime, &next, target);
                             workflows.detail_error = detail.is_err();

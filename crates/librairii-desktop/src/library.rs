@@ -209,6 +209,19 @@ impl<'profile> LibrarySession<'profile> {
                 .ok_or(StorageError::RuntimeFenced)?;
             let native = self.library.as_ref().ok_or(StorageError::RuntimeFenced)?;
             let mut database = Database::open_native(native)?;
+            match database
+                .seed_age_facets(Default::default(), cancel.clone())?
+                .wait()?
+            {
+                librairii_storage::database::TransactionOutcome::Committed(_) => {}
+                librairii_storage::database::TransactionOutcome::ProvenNotCommitted(error) => {
+                    return Err(error.into());
+                }
+                librairii_storage::database::TransactionOutcome::CommitUncertain(_) => {
+                    return Err(StorageError::RuntimeFenced.into());
+                }
+            }
+
             let action = {
                 let files = LibraryFiles::open_native(&database)?;
                 let logger = Logger::new(&database, &files)?;

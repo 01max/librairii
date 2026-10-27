@@ -223,8 +223,10 @@ fn main() -> Result {
     callback_checks::failed_query(&ui)?;
     callback_checks::filters(&ui, None)?;
     callback_checks::details(&ui)?;
+    callback_checks::tags(&ui)?;
     let initial = snapshot()?;
     let view = Rc::new(RefCell::new(view::View {
+        tags: Default::default(),
         details: Default::default(),
         filters: view::filters::State::new(
             initial
@@ -323,6 +325,8 @@ fn main() -> Result {
                     surface.poll(&ui)?;
                 } else if let Some(surface) = surfaces.details.borrow().as_ref() {
                     surface.poll(&ui);
+                } else if let Some(surface) = surfaces.tags.borrow().as_ref() {
+                    surface.poll(&ui);
                 } else {
                     view.borrow_mut().resize(&ui);
                 }
@@ -363,6 +367,7 @@ fn main() -> Result {
 struct Surfaces {
     filters: RefCell<Option<callback_checks::FilterSurface>>,
     details: RefCell<Option<callback_checks::DetailSurface>>,
+    tags: RefCell<Option<callback_checks::TagSurface>>,
 }
 
 fn capture_step(
@@ -678,14 +683,75 @@ fn capture_step(
         )?;
         ui.invoke_close_dialog();
         surfaces.details.borrow_mut().take();
-    } else if (67..=69).contains(&index) {
+    } else if index == 67 {
+        *surfaces.tags.borrow_mut() = Some(callback_checks::TagSurface::open(ui, _menus)?);
+    } else if index == 68 {
+        #[cfg(target_os = "macos")]
+        native_menu::tag_editor(ui, _menus)?;
+        capture(ui, &destination.join("tag-manager-compact-en.png"))?;
+        surfaces
+            .tags
+            .borrow()
+            .as_ref()
+            .ok_or("tag surface missing")?
+            .bottom(ui)?;
+    } else if index == 69 {
+        capture(ui, &destination.join("tag-manager-actions-compact-en.png"))?;
+        surfaces
+            .tags
+            .borrow()
+            .as_ref()
+            .ok_or("tag surface missing")?
+            .french(ui)?;
+    } else if index == 70 {
+        capture(ui, &destination.join("tag-manager-compact-fr.png"))?;
+        surfaces
+            .tags
+            .borrow()
+            .as_ref()
+            .ok_or("tag surface missing")?
+            .bottom(ui)?;
+    } else if index == 71 {
+        capture(ui, &destination.join("tag-manager-actions-compact-fr.png"))?;
+        surfaces
+            .tags
+            .borrow()
+            .as_ref()
+            .ok_or("tag surface missing")?
+            .assignment(ui, "en")?;
+    } else if index == 72 {
+        capture(ui, &destination.join("tag-assignment-mixed-compact-en.png"))?;
+        surfaces
+            .tags
+            .borrow()
+            .as_ref()
+            .ok_or("tag surface missing")?
+            .assignment(ui, "fr")?;
+    } else if index == 73 {
+        capture(ui, &destination.join("tag-assignment-mixed-compact-fr.png"))?;
+        surfaces
+            .tags
+            .borrow()
+            .as_ref()
+            .ok_or("tag surface missing")?
+            .confirm(ui)?;
+    } else if index == 74 {
+        capture(ui, &destination.join("tag-impact-compact-fr.png"))?;
+        ui.invoke_close_dialog();
+        check(
+            ui.get_tag_delete_invoker_focused(),
+            "tag confirmation Escape lost its invoker",
+        )?;
+        ui.invoke_close_dialog();
+        surfaces.tags.borrow_mut().take();
+    } else if (75..=77).contains(&index) {
         let (phase, name, status) = match index {
-            67 => (
+            75 => (
                 Phase::Recovery,
                 "recovery",
                 "La bibliothèque attendue est indisponible ou nécessite une récupération.",
             ),
-            68 => (
+            76 => (
                 Phase::Setup,
                 "setup",
                 "Choisissez où conserver votre bibliothèque.",
@@ -717,6 +783,7 @@ fn capture_step(
                 "failed_query_history_callbacks": "passed",
                 "filter_callbacks": "passed",
                 "details_removal_callbacks": "passed",
+                "tag_callbacks": "passed",
                 "scope": "shown native component/public window events and Skia capture; not physical HID or packaged workflow qualification",
             }))?,
         )?;

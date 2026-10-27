@@ -853,3 +853,89 @@ fn native_display_labels_preserve_boolean_choice_color_and_assignment_independen
     db.close()?;
     Ok(())
 }
+
+#[test]
+fn frozen_native_tag_targets_validate_all_id_uuid_pairs_in_the_writer_snapshot() -> TestResult {
+    use librairii_core::browsing::StoryIdentity;
+    let roots = TestRoots::new()?;
+    let library = IsolatedLibrary::initialize_from_override(
+        Some(roots.library().as_os_str()),
+        "a0000000-0000-4000-8000-000000000099".parse()?,
+    )?;
+    let mut db = Database::open_isolated(&library)?;
+    seed_stories(&db, 2)?;
+    let definition = create(&db, "Frozen targets", Kind::Boolean)?;
+    let targets = vec![
+        StoryIdentity {
+            id: 1,
+            uuid: "10000000-0000-4000-8000-000000000001".into(),
+        },
+        StoryIdentity {
+            id: 2,
+            uuid: "10000000-0000-4000-8000-000000000002".into(),
+        },
+    ];
+    assert_eq!(
+        db.assignment_workspace_guarded(targets.clone())?
+            .wait()?
+            .requested_stories,
+        2
+    );
+    committed(
+        db.transaction(Default::default(), |tx| {
+            tx.execute(
+                "UPDATE stories SET uuid='20000000-0000-4000-8000-000000000002' WHERE id=2",
+                [],
+            )?;
+            Ok(())
+        })?
+        .wait()?,
+    )?;
+    let outcome = db
+        .edit_tags_guarded(
+            targets.clone(),
+            librairii_storage::tagging::AssignmentEdit::Boolean {
+                definition_id: definition,
+                assigned: true,
+            },
+            Default::default(),
+        )?
+        .wait()?;
+    assert!(matches!(
+        outcome,
+        TransactionOutcome::ProvenNotCommitted(StorageError::SnapshotChanged)
+    ));
+    assert!(
+        db.assignment_workspace_guarded(targets.clone())?
+            .wait()
+            .is_err()
+    );
+    let workspace = db.assignment_workspace(vec![1, 2])?.wait()?;
+    assert_eq!(
+        workspace
+            .states
+            .iter()
+            .find(|s| s.definition_id == definition)
+            .map(|s| s.assigned_stories),
+        Some(0),
+        "a later invalid UUID must not partially mutate the first target"
+    );
+    let mut fresh = targets;
+    fresh[1].uuid = "20000000-0000-4000-8000-000000000002".into();
+    let response = committed(
+        db.edit_tags_guarded(
+            fresh,
+            librairii_storage::tagging::AssignmentEdit::Boolean {
+                definition_id: definition,
+                assigned: true,
+            },
+            Default::default(),
+        )?
+        .wait()?,
+    )?;
+    assert!(matches!(response,Response::Assignment(result) if result.changed_stories==2));
+    db.close()?;
+    drop(db);
+    drop(library);
+    Ok(())
+}

@@ -3889,6 +3889,15 @@
     {
       "suite": "librairii-adapters",
       "name": "datetime::tests::sqlite_and_provider_instants_keep_their_identity_in_observed_offsets"
+    },
+    {
+      "suite": "librairii-storage::tags",
+      "name": "frozen_native_tag_targets_validate_all_id_uuid_pairs_in_the_writer_snapshot",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
     }
   ]
 }

@@ -1,0 +1,111 @@
+import { Button, ComboBox, LineEdit, ListView, Palette, VerticalBox, HorizontalBox } from "std-widgets.slint";
+import { EditAction } from "states.slint";
+component Field inherits LineEdit {
+    callback reveal(length,length);
+    changed has-focus => { if self.has-focus { root.reveal(self.absolute-position.y,self.height); } }
+    public function edit(action:EditAction) {
+        if !root.has-focus { return; }
+        if action == EditAction.undo { root.undo(); }
+        else if action == EditAction.redo { root.redo(); }
+        else if action == EditAction.cut { root.cut(); }
+        else if action == EditAction.copy { root.copy(); }
+        else if action == EditAction.paste { root.paste(); }
+        else { root.select-all(); }
+    }
+}
+component Label inherits Text { vertical-stretch: 0; color: Palette.foreground; wrap: word-wrap; }
+export struct AssignmentRow { index:int, label:string, state:int, read-only:bool }
+export component TagManager inherits VerticalBox {
+    in property <bool> french;
+    in property <bool> active;
+    in property <bool> editable;
+    in property <bool> move-up;
+    in property <bool> move-down;
+    in property <bool> value-move-up;
+    in property <bool> value-move-down;
+    in property <bool> choice;
+    in property <bool> creating;
+    in property <[string]> definitions;
+    in property <[string]> values;
+    in property <string> source;
+    in property <string> notice;
+    in-out property <int> definition-index;
+    in-out property <int> value-index;
+    in-out property <string> key;
+    in-out property <string> label;
+    in-out property <string> color;
+    in-out property <int> kind;
+    in-out property <string> value-key;
+    in-out property <string> value-label;
+    out property <bool> first-focused: definitions-choice.has-focus;
+    out property <bool> delete-value-focused: delete-value.has-focus;
+    out property <bool> delete-definition-focused: delete-definition.has-focus;
+    public function focus-label() { label-field.focus(); }
+    out property <bool> editing: key-field.has-focus || label-field.has-focus || color-field.has-focus || value-key-field.has-focus || value-label-field.has-focus;
+    public function activate() { definitions-choice.focus(); }
+    public function focus-delete(value:bool) { if value { delete-value.focus(); } else { delete-definition.focus(); } }
+    public function edit(action:EditAction) { key-field.edit(action);label-field.edit(action);color-field.edit(action);value-key-field.edit(action);value-label-field.edit(action); }
+    callback select-definition(int);
+    callback select-value(int);
+    callback save-definition();
+    callback save-value();
+    callback move-definition(int);
+    callback move-value(int);
+    callback delete-definition();
+    callback delete-value();
+    callback reveal(length,length);
+    padding: 0px; spacing: 8px;
+    Label { text: root.notice; accessible-live-region: polite; }
+    definitions-choice := ComboBox { enabled: root.active; accessible-label: root.french ? "Étiquette à modifier" : "Tag to edit"; model: root.definitions; current-index <=> root.definition-index; selected(_) => { root.select-definition(self.current-index); } changed has-focus => { if self.has-focus { root.reveal(self.absolute-position.y,self.height); } } }
+    Label { text: root.source; }
+    key-field := Field { enabled: root.active; read-only: !root.creating; text <=> root.key; accessible-label: root.french ? "Clé immuable de l’étiquette" : "Immutable tag key"; placeholder-text: self.accessible-label; reveal(y,h) => { root.reveal(y,h); } }
+    label-field := Field { enabled: root.active; read-only: !root.creating && !root.editable; text <=> root.label; accessible-label: root.french ? "Nom de l’étiquette" : "Tag label"; placeholder-text: self.accessible-label; reveal(y,h) => { root.reveal(y,h); } }
+    color-field := Field { enabled: root.active; text <=> root.color; accessible-label: root.french ? "Couleur · #RRGGBB" : "Color · #RRGGBB"; placeholder-text: self.accessible-label; reveal(y,h) => { root.reveal(y,h); } }
+    kind-choice := ComboBox { enabled: root.active && root.creating; accessible-label: root.french ? "Type d’étiquette" : "Tag kind"; model: root.french ? ["Booléenne", "Choix"] : ["Boolean", "Choice"]; current-index <=> root.kind; selected(_) => { } changed has-focus => { if self.has-focus { root.reveal(self.absolute-position.y,self.height); } } }
+    Button { enabled: root.active; text: root.creating ? (root.french ? "Créer l’étiquette" : "Create tag") : (root.french ? "Enregistrer l’étiquette" : "Save tag"); clicked => { root.save-definition(); } changed has-focus => { if self.has-focus { root.reveal(self.absolute-position.y,self.height); } } }
+    HorizontalBox { height: root.creating ? 0px : 32px; visible: !root.creating; padding: 0px;
+        Button { enabled: root.active && root.editable && root.move-up; text: root.french ? "Monter l’étiquette" : "Move tag up"; clicked => { root.move-definition(-1); } changed has-focus => { if self.has-focus { root.reveal(self.absolute-position.y,self.height); } } }
+        Button { enabled: root.active && root.editable && root.move-down; text: root.french ? "Descendre l’étiquette" : "Move tag down"; clicked => { root.move-definition(1); } changed has-focus => { if self.has-focus { root.reveal(self.absolute-position.y,self.height); } } }
+        delete-definition := Button { enabled: root.active && root.editable; text: root.french ? "Supprimer l’étiquette…" : "Delete tag…"; clicked => { root.delete-definition(); } changed has-focus => { if self.has-focus { root.reveal(self.absolute-position.y,self.height); } } }
+    }
+    Label { visible: root.choice && !root.creating; height: self.visible ? 24px : 0px; text: root.french ? "Valeurs de choix" : "Choice values"; font-weight: 600; }
+    values-choice := ComboBox { visible: root.choice && !root.creating; height: self.visible ? 32px : 0px; enabled: root.active; accessible-label: root.french ? "Valeur à modifier" : "Value to edit"; model: root.values; current-index <=> root.value-index; selected(_) => { root.select-value(self.current-index); } changed has-focus => { if self.has-focus { root.reveal(self.absolute-position.y,self.height); } } }
+    value-key-field := Field { visible: root.choice && !root.creating; height: self.visible ? 32px : 0px; enabled: root.active; read-only: !root.editable || root.value-index != 0; text <=> root.value-key; accessible-label: root.french ? "Clé immuable de la valeur" : "Immutable value key"; placeholder-text: self.accessible-label; reveal(y,h) => { root.reveal(y,h); } }
+    value-label-field := Field { visible: root.choice && !root.creating; height: self.visible ? 32px : 0px; enabled: root.active; read-only: !root.editable; text <=> root.value-label; accessible-label: root.french ? "Nom de la valeur" : "Value label"; placeholder-text: self.accessible-label; reveal(y,h) => { root.reveal(y,h); } }
+    Button { visible: root.choice && !root.creating; height: self.visible ? 32px : 0px; enabled: root.active && root.editable; text: root.value-index == 0 ? (root.french ? "Créer la valeur" : "Create value") : (root.french ? "Enregistrer la valeur" : "Save value"); clicked => { root.save-value(); } changed has-focus => { if self.has-focus { root.reveal(self.absolute-position.y,self.height); } } }
+    HorizontalBox { visible: root.choice && !root.creating; height: self.visible ? 32px : 0px; padding: 0px;
+        Button { enabled: root.active && root.editable && root.value-move-up; text: root.french ? "Monter la valeur" : "Move value up"; clicked => { root.move-value(-1); } changed has-focus => { if self.has-focus { root.reveal(self.absolute-position.y,self.height); } } }
+        Button { enabled: root.active && root.editable && root.value-move-down; text: root.french ? "Descendre la valeur" : "Move value down"; clicked => { root.move-value(1); } changed has-focus => { if self.has-focus { root.reveal(self.absolute-position.y,self.height); } } }
+        delete-value := Button { enabled: root.active && root.editable && root.value-index > 0; text: root.french ? "Supprimer la valeur…" : "Delete value…"; clicked => { root.delete-value(); } changed has-focus => { if self.has-focus { root.reveal(self.absolute-position.y,self.height); } } }
+    }
+}
+export component Assignments inherits VerticalBox {
+    in property <bool> french;
+    in property <bool> active;
+    in property <string> summary;
+    in property <string> notice;
+    in property <[AssignmentRow]> rows;
+    out property <bool> first-focused: refresh-button.has-focus;
+    public function activate() { refresh-button.focus(); }
+    callback refresh();
+    callback assign(int,int);
+    callback reveal(length,length);
+    padding: 0px; spacing: 8px;
+    Label { text: root.summary; }
+    Label { text: root.french ? "Mixte signifie attribuée à une partie de cette sélection. Les valeurs sont ajoutées indépendamment." : "Mixed means assigned to part of this selection. Values are added independently."; }
+    Label { text: root.notice; accessible-live-region: polite; }
+    refresh-button := Button { enabled: root.active; text: root.french ? "Actualiser les étiquettes" : "Refresh tags"; clicked => { root.refresh(); } changed has-focus => { if self.has-focus { root.reveal(self.absolute-position.y,self.height); } } }
+    list := ListView { min-height: 180px; vertical-stretch: 1;
+        for entry in root.rows: VerticalBox {
+            height: 68px; padding: 0px; spacing: 3px;
+            property <int> state: entry.state;
+            Label { text: entry.label + (entry.read-only ? (root.french ? " · Automatique, lecture seule" : " · System-derived, read-only") : ""); }
+            ComboBox { enabled: root.active && !entry.read-only; accessible-label: entry.label; model: entry.state == 2 ? (root.french ? ["Non attribuée", "Attribuée", "Mixte · ne pas modifier"] : ["Not assigned", "Assigned", "Mixed · leave unchanged"]) : (root.french ? ["Non attribuée", "Attribuée"] : ["Not assigned", "Assigned"]); current-index <=> parent.state; selected(_) => { root.assign(entry.index,self.current-index); } changed has-focus => { if self.has-focus {
+                let top=list.absolute-position.y;
+                let delta=self.absolute-position.y<top ? top - self.absolute-position.y : self.absolute-position.y+self.height>top+list.visible-height ? top+list.visible-height - self.absolute-position.y - self.height : 0px;
+                list.content-y=max(min(0px,list.visible-height - list.content-height),min(0px,list.content-y+delta));
+                root.reveal(max(top,min(self.absolute-position.y,top+list.visible-height - self.height)),self.height);
+            } } }
+        }
+    }
+}

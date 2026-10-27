@@ -196,6 +196,17 @@ impl Fixture {
         self.settle(ui)?;
         Ok(())
     }
+    fn restart(&mut self, ui: &DesktopWindow) -> Result {
+        self.worker.borrow_mut().finish()?;
+        *self.worker.borrow_mut() = Worker::start_with(Environment {
+            home: self._roots.profile().join("home").into_os_string(),
+            config: self._roots.profile().join("config").into_os_string(),
+            data: self._roots.library().join("data").into_os_string(),
+        })?;
+        let initial = receive(&self.worker.borrow())?;
+        self.view = view::install(ui, self.worker.clone(), initial)?;
+        Ok(())
+    }
     fn saved_navigation(&self) -> Result<Navigation> {
         Ok(Navigation::decode(
             &std::fs::read(self.locations.native.join("navigation.json"))?,
@@ -211,6 +222,21 @@ impl Fixture {
 impl Drop for Fixture {
     fn drop(&mut self) {
         if let Some(ui) = self.ui.upgrade() {
+            ui.on_toggle_bulk(|_| {});
+            ui.on_clear_bulk(|| {});
+            ui.on_select_tag_definition(|_| {});
+            ui.on_select_tag_value(|_| {});
+            ui.on_save_tag_definition(|| {});
+            ui.on_save_tag_value(|| {});
+            ui.on_move_tag_definition(|_| {});
+            ui.on_move_tag_value(|_| {});
+            ui.on_delete_tag_definition(|| {});
+            ui.on_delete_tag_value(|| {});
+            ui.on_confirm_tag_delete(|| {});
+            ui.on_cancel_tag_delete(|| {});
+            ui.on_edit_tags(|| {});
+            ui.on_refresh_assignments(|| {});
+            ui.on_assignment_edit(|_, _| {});
             ui.on_request_details(|| {});
             ui.on_begin_removal(|| {});
             ui.on_remove_story(|| {});
@@ -881,6 +907,470 @@ impl DetailSurface {
         check(
             ui.get_details_scroll_position() == 0.0,
             "reopening details retained an old scroll offset",
+        )?;
+        Ok(())
+    }
+}
+
+fn choose_tag(fixture: &Fixture, ui: &DesktopWindow, id: i64) -> Result {
+    let position = fixture
+        .view
+        .borrow()
+        .snapshot
+        .facets
+        .tags
+        .iter()
+        .filter(|e| e.definition.source != "builtin" || e.definition.key != "broken")
+        .position(|e| e.definition.id == id)
+        .ok_or("tag definition missing")?;
+    ui.invoke_select_tag_definition((position + 1) as i32);
+    Ok(())
+}
+fn assignment_index(ui: &DesktopWindow, text: &str) -> Result<i32> {
+    use slint::Model;
+    let rows = ui.get_assignment_rows();
+    (0..rows.row_count())
+        .filter_map(|i| rows.row_data(i))
+        .find(|r| r.label.contains(text))
+        .map(|r| r.index)
+        .ok_or_else(|| format!("assignment row missing: {text}").into())
+}
+pub fn tags(ui: &DesktopWindow) -> Result {
+    let mut fixture = Fixture::open(ui)?;
+    ui.invoke_show_panel(1);
+    ui.set_tag_key("listen-later".into());
+    ui.set_tag_label("Listen later".into());
+    ui.set_tag_color("#224466".into());
+    ui.set_tag_kind(1);
+    ui.invoke_save_tag_definition();
+    check(ui.get_tag_busy(), "tag mutation did not fence dismissal")?;
+    fixture.settle(ui)?;
+    let entry = fixture
+        .view
+        .borrow()
+        .snapshot
+        .facets
+        .tags
+        .iter()
+        .find(|e| e.definition.key == "listen-later")
+        .cloned()
+        .ok_or("new choice tag missing")?;
+    choose_tag(&fixture, ui, entry.definition.id)?;
+    for (key, label) in [("first", "First value"), ("second", "Second value")] {
+        ui.invoke_select_tag_value(0);
+        ui.set_tag_value_key(key.into());
+        ui.set_tag_value_label(label.into());
+        ui.invoke_save_tag_value();
+        fixture.settle(ui)?;
+    }
+    ui.invoke_select_tag_value(1);
+    ui.set_tag_value_label("Renamed value".into());
+    ui.invoke_save_tag_value();
+    fixture.settle(ui)?;
+    ui.invoke_move_tag_value(1);
+    fixture.settle(ui)?;
+    let entry = fixture
+        .view
+        .borrow()
+        .snapshot
+        .facets
+        .tags
+        .iter()
+        .find(|e| e.definition.id == entry.definition.id)
+        .cloned()
+        .ok_or("choice tag disappeared")?;
+    check(
+        entry.values[1].key == "first" && entry.values[1].label == "Renamed value",
+        "value rename/order changed an immutable key",
+    )?;
+    ui.invoke_move_tag_definition(-1);
+    fixture.settle(ui)?;
+    let path = fixture._roots.library().join("native/db/librairii.sqlite3");
+    let mut connection = rusqlite::Connection::open(&path)?;
+    ui.invoke_delete_tag_value();
+    fixture.settle(ui)?;
+    check(
+        ui.get_dialog() == 12 && ui.get_tag_delete_cancel_focused(),
+        "tag deletion did not initially focus Cancel",
+    )?;
+    ui.invoke_close_dialog();
+    check(
+        ui.get_dialog() == 10 && ui.get_tag_delete_invoker_focused(),
+        "tag cancellation lost its exact delete invoker",
+    )?;
+    ui.invoke_delete_tag_value();
+    fixture.settle(ui)?;
+    let value_id = entry.values[1].id;
+    connection.execute("INSERT INTO story_tag_assignments(story_id,definition_id,value_id,source) VALUES(1,?1,?2,'manual')",rusqlite::params![entry.definition.id,value_id])?;
+    let transaction = connection.transaction()?;
+    let mut query = librairii_core::collection_codec::Query::default();
+    query
+        .choice_filters
+        .push(librairii_core::collection_codec::ChoiceFilter {
+            definition_id: entry.definition.id,
+            value_ids: vec![value_id],
+        });
+    librairii_storage::collections::execute(
+        &transaction,
+        librairii_storage::collections::Command::Create {
+            name: "Tag-dependent".into(),
+            criteria: query,
+        },
+    )?;
+    transaction.commit()?;
+    ui.invoke_confirm_tag_delete();
+    fixture.settle(ui)?;
+    check(
+        ui.get_dialog() == 12 && ui.get_tag_notice().contains("impact changed"),
+        "stale destructive impact was silently applied",
+    )?;
+    ui.invoke_close_dialog();
+    ui.invoke_delete_tag_value();
+    let preview = fixture.settle(ui)?;
+    check(
+        preview
+            .workflows
+            .tags
+            .preview
+            .as_ref()
+            .is_some_and(|p| p.assignments == 1 && p.collections == 1),
+        "destructive impact counts are incomplete",
+    )?;
+    let ticket = preview
+        .workflows
+        .tags
+        .preview
+        .as_ref()
+        .ok_or("preview missing")?
+        .ticket
+        .clone();
+    check(
+        ui.get_tag_impact().contains("1 assignment")
+            && ui.get_tag_impact().contains("1 affected Collection"),
+        "singular impact was not localized",
+    )?;
+    ui.invoke_change_language("fr".into());
+    let french = fixture.settle(ui)?;
+    check(
+        ui.get_dialog() == 12
+            && ui.get_tag_impact().contains("1 attribution")
+            && ui.get_tag_impact().contains("1 Collection concernée")
+            && french
+                .workflows
+                .tags
+                .preview
+                .as_ref()
+                .is_some_and(|p| p.ticket == ticket),
+        "language change replaced confirmation authority or retained English impact",
+    )?;
+    ui.invoke_change_language("en".into());
+    fixture.settle(ui)?;
+    ui.invoke_confirm_tag_delete();
+    let deleted = fixture.settle(ui)?;
+    check(
+        ui.get_dialog() == 10
+            && deleted
+                .groups
+                .iter()
+                .any(|g| g.name == "Tag-dependent" && !g.available),
+        "tag deletion silently dropped unavailable Collection criteria",
+    )?;
+    ui.invoke_delete_tag_definition();
+    fixture.settle(ui)?;
+    ui.invoke_confirm_tag_delete();
+    fixture.settle(ui)?;
+    let protected = fixture
+        .view
+        .borrow()
+        .snapshot
+        .facets
+        .tags
+        .iter()
+        .find(|e| e.definition.source == "derived")
+        .cloned()
+        .ok_or("protected age facet was not seeded")?;
+    choose_tag(&fixture, ui, protected.definition.id)?;
+    check(
+        !ui.get_tag_editable(),
+        "protected identity exposed user editing",
+    )?;
+    ui.set_tag_label("Should remain protected".into());
+    ui.set_tag_color("#1B5E20".into());
+    ui.invoke_save_tag_definition();
+    let colored = fixture.settle(ui)?;
+    check(
+        colored.facets.tags.iter().any(|e| {
+            e.definition.id == protected.definition.id
+                && e.definition.label == protected.definition.label
+                && e.definition.color == "#1B5E20"
+        }),
+        "protected color editing changed identity or was refused",
+    )?;
+    choose_tag(&fixture, ui, 102)?;
+    ui.set_tag_label("Would roll back".into());
+    ui.set_tag_color("#FFFFFF".into());
+    ui.invoke_save_tag_definition();
+    let failed = fixture.settle(ui)?;
+    check(
+        failed
+            .facets
+            .tags
+            .iter()
+            .any(|e| e.definition.id == 102 && e.definition.label == "Theme")
+            && !ui.get_tag_notice().is_empty(),
+        "invalid color partially committed a rename",
+    )?;
+    ui.invoke_change_language("fr".into());
+    fixture.settle(ui)?;
+    check(
+        ui.get_tag_label() == "Would roll back" && ui.get_tag_color() == "#FFFFFF",
+        "language switch overwrote unsaved tag input",
+    )?;
+    ui.invoke_close_dialog();
+    ui.invoke_change_language("en".into());
+    fixture.settle(ui)?;
+    fixture
+        .worker
+        .borrow()
+        .offer(Command::Request(librairii_core::query::QueryRequest {
+            page_size: 100,
+            ..Default::default()
+        }))?;
+    fixture.settle(ui)?;
+    let inspected = ui.get_selected_story().uuid;
+    ui.invoke_toggle_bulk(0);
+    ui.invoke_toggle_bulk(30);
+    check(
+        ui.get_selected_story().uuid == inspected && ui.get_bulk_summary().starts_with("2"),
+        "bulk selection changed single inspection",
+    )?;
+    ui.invoke_open_dialog(3);
+    fixture.settle(ui)?;
+    ui.invoke_edit_tags();
+    let mixed = fixture.settle(ui)?;
+    check(
+        mixed
+            .workflows
+            .tags
+            .workspace
+            .as_ref()
+            .is_some_and(|w| w.requested_stories == 2),
+        "bulk editor did not freeze both original targets",
+    )?;
+    let bedtime = assignment_index(ui, "Bedtime")?;
+    let forest = assignment_index(ui, "Forest")?;
+    use slint::Model;
+    check(
+        (0..ui.get_assignment_rows().row_count())
+            .filter_map(|i| ui.get_assignment_rows().row_data(i))
+            .any(|r| r.index == bedtime && r.state == 2),
+        "mixed assignment was announced as unchecked",
+    )?;
+    ui.invoke_assignment_edit(forest, 1);
+    let assigned = fixture.settle(ui)?;
+    let workspace = assigned
+        .workflows
+        .tags
+        .workspace
+        .as_ref()
+        .ok_or("assigned workspace missing")?;
+    let theme = workspace
+        .states
+        .iter()
+        .find(|s| s.definition_id == 102)
+        .ok_or("choice states missing")?;
+    check(
+        theme
+            .values
+            .iter()
+            .any(|v| v.value_id == 201 && v.assigned_stories == 2)
+            && theme
+                .values
+                .iter()
+                .any(|v| v.value_id == 202 && v.assigned_stories == 1),
+        "additive choice toggle replaced unrelated values",
+    )?;
+    ui.invoke_assignment_edit(assignment_index(ui, "Forest")?, 1);
+    fixture.settle(ui)?;
+    check(
+        ui.get_tag_notice().contains("No stories changed"),
+        "idempotent assignment omitted no-op feedback",
+    )?;
+    fixture.search(ui, "Beta")?;
+    ui.invoke_assignment_edit(assignment_index(ui, "Bedtime")?, 1);
+    let frozen = fixture.settle(ui)?;
+    check(
+        frozen
+            .workflows
+            .tags
+            .targets
+            .as_ref()
+            .is_some_and(|t| t.stories.iter().map(|s| s.id).collect::<Vec<_>>() == vec![1, 31])
+            && frozen.workflows.tags.workspace.as_ref().is_some_and(|w| {
+                w.states
+                    .iter()
+                    .any(|s| s.definition_id == 101 && s.assigned_stories == 2)
+            }),
+        "filter change retargeted the assignment batch",
+    )?;
+    ui.invoke_close_dialog();
+    check(
+        ui.get_dialog() == 0,
+        "tag editor returned to details for a story no longer in the result",
+    )?;
+    drop(connection);
+    fixture.restart(ui)?;
+    check(
+        fixture
+            .view
+            .borrow()
+            .snapshot
+            .facets
+            .tags
+            .iter()
+            .any(|e| e.definition.id == protected.definition.id && e.definition.color == "#1B5E20"),
+        "startup reseeding erased a protected custom color",
+    )?;
+    fixture.finish()
+}
+
+pub struct TagSurface(Fixture);
+impl std::fmt::Debug for TagSurface {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("TagSurface").finish_non_exhaustive()
+    }
+}
+impl TagSurface {
+    pub fn open(ui: &DesktopWindow, _menus: &librairii_desktop::menus::Menus) -> Result<Self> {
+        let fixture = Fixture::open(ui)?;
+        let inspected = fixture.view.borrow().selected.clone();
+        ui.invoke_focus_bulk_story(0);
+        super::key(ui, slint::platform::Key::Space.into())?;
+        check(
+            fixture.view.borrow().tags.selection.len() == 1 && !ui.get_bulk_summary().is_empty(),
+            "actual story Space did not create a visible bulk selection",
+        )?;
+        check(
+            fixture.view.borrow().selected == inspected,
+            "bulk Space changed inspection",
+        )?;
+        #[cfg(target_os = "macos")]
+        super::native_menu::bulk_focus(ui, _menus)?;
+        ui.invoke_focus_bulk_story(0);
+        super::key(ui, slint::platform::Key::Space.into())?;
+        check(
+            fixture.view.borrow().tags.selection.is_empty() && ui.get_bulk_summary().is_empty(),
+            "actual story Space did not clear the bulk selection",
+        )?;
+        let scope = fixture
+            .view
+            .borrow()
+            .snapshot
+            .groups
+            .iter()
+            .find(|g| g.name == "Reverse")
+            .ok_or("Shelf missing")?
+            .scope
+            .clone();
+        fixture.worker.borrow().offer(Command::Navigate(scope))?;
+        fixture.settle(ui)?;
+        // Section15.6 composes workspace navigation; exercise the shared
+        // approved-row input path here with the real Shelf page already loaded.
+        ui.set_workspace(true);
+        ui.invoke_focus_bulk_story(0);
+        super::key(ui, slint::platform::Key::Space.into())?;
+        check(
+            fixture.view.borrow().tags.selection.len() == 1 && !ui.get_bulk_summary().is_empty(),
+            "approved-member Space did not create a visible selection",
+        )?;
+        super::key(ui, slint::platform::Key::Space.into())?;
+        check(
+            fixture.view.borrow().tags.selection.is_empty(),
+            "approved-member Space lost focus or the toggle binding",
+        )?;
+        ui.set_workspace(false);
+        ui.invoke_show_panel(0);
+        fixture.settle(ui)?;
+        ui.invoke_show_panel(1);
+        choose_tag(&fixture, ui, 102)?;
+        ui.invoke_select_tag_value(1);
+        Ok(Self(fixture))
+    }
+    pub fn poll(&self, ui: &DesktopWindow) {
+        if let Some(snapshot) = self.0.worker.borrow().take_snapshot() {
+            self.0
+                .view
+                .borrow_mut()
+                .accept(ui, snapshot, self.0.worker.borrow().revision());
+        }
+        self.0.view.borrow_mut().resize(ui);
+    }
+    pub fn bottom(&self, ui: &DesktopWindow) -> Result {
+        for _ in 0..50 {
+            if ui.get_close_focused() {
+                break;
+            }
+            ui.window()
+                .dispatch_event(slint::platform::WindowEvent::KeyPressed {
+                    text: slint::platform::Key::Tab.into(),
+                });
+            ui.window()
+                .dispatch_event(slint::platform::WindowEvent::KeyReleased {
+                    text: slint::platform::Key::Tab.into(),
+                });
+        }
+        check(
+            ui.get_close_focused(),
+            "tag manager Close is not keyboard reachable",
+        )?;
+        Ok(())
+    }
+    pub fn french(&self, ui: &DesktopWindow) -> Result {
+        ui.invoke_change_language("fr".into());
+        self.0.settle(ui)?;
+        ui.invoke_close_dialog();
+        ui.invoke_show_panel(1);
+        choose_tag(&self.0, ui, 102)?;
+        ui.invoke_select_tag_value(1);
+        Ok(())
+    }
+    pub fn assignment(&self, ui: &DesktopWindow, language: &str) -> Result {
+        ui.invoke_close_dialog();
+        if ui.get_dialog() == 3 {
+            ui.invoke_close_dialog();
+        }
+        ui.invoke_change_language(language.into());
+        self.0.settle(ui)?;
+        self.0
+            .worker
+            .borrow()
+            .offer(Command::Request(librairii_core::query::QueryRequest {
+                page_size: 100,
+                ..Default::default()
+            }))?;
+        self.0.settle(ui)?;
+        ui.invoke_clear_bulk();
+        ui.invoke_toggle_bulk(0);
+        ui.invoke_toggle_bulk(30);
+        ui.invoke_open_dialog(3);
+        self.0.settle(ui)?;
+        ui.invoke_edit_tags();
+        self.0.settle(ui)?;
+        Ok(())
+    }
+    pub fn confirm(&self, ui: &DesktopWindow) -> Result {
+        ui.invoke_close_dialog();
+        if ui.get_dialog() == 3 {
+            self.0.settle(ui)?;
+            ui.invoke_close_dialog();
+        }
+        ui.invoke_show_panel(1);
+        choose_tag(&self.0, ui, 102)?;
+        ui.invoke_delete_tag_definition();
+        self.0.settle(ui)?;
+        check(
+            ui.get_tag_delete_cancel_focused(),
+            "impact confirmation did not focus Cancel",
         )?;
         Ok(())
     }

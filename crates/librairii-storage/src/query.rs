@@ -26,6 +26,20 @@ fn invalid() -> StorageError {
 fn text(value: &str) -> Value {
     Value::Text(value.to_owned())
 }
+pub(crate) fn require_identities(
+    tx: &Transaction<'_>,
+    identities: &[librairii_core::browsing::StoryIdentity],
+) -> Result<()> {
+    if identities.is_empty() || identities.len() > 1000 {
+        return Err(StorageError::SnapshotChanged);
+    }
+    for story in identities {
+        if story.id <= 0 || !tx.query_row("SELECT EXISTS(SELECT 1 FROM stories WHERE id=? AND uuid=? AND NOT EXISTS(SELECT 1 FROM removal_intents WHERE story_id=?))", params![story.id, story.uuid, story.id], |row| row.get::<_, bool>(0))? {
+            return Err(StorageError::SnapshotChanged);
+        }
+    }
+    Ok(())
+}
 #[derive(Clone, Debug)]
 pub struct StoryDetail {
     pub summary: StorySummary,

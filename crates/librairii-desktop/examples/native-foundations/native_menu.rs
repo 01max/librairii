@@ -211,6 +211,63 @@ pub fn request_quit(ui: &DesktopWindow, menus: &Menus) -> Result {
     menus.dispatch(ui);
     Ok(())
 }
+/// Native edit actions must target the focused tag field, never the search.
+pub fn bulk_focus(ui: &DesktopWindow, menus: &Menus) -> Result {
+    ui.invoke_focus_clear_bulk();
+    check(ui.get_clear_bulk_focused(), "Clear selection did not focus")?;
+    check(
+        shortcut(",", Flags::Command, 43)?,
+        "bulk Settings shortcut missing",
+    )?;
+    menus.dispatch(ui);
+    key(ui, slint::platform::Key::Escape.into())?;
+    check(
+        ui.get_clear_bulk_focused(),
+        "Settings lost the Clear selection invoker",
+    )?;
+    about(ui, menus)?;
+    ui.invoke_close_dialog();
+    check(
+        ui.get_clear_bulk_focused(),
+        "About lost the Clear selection invoker",
+    )?;
+    Ok(())
+}
+/// Native edit actions must target the focused tag field, never the search.
+pub fn tag_editor(ui: &DesktopWindow, menus: &Menus) -> Result {
+    let original = ui.get_tag_label();
+    let query = ui.get_query();
+    ui.invoke_focus_tag_label();
+    menus.dispatch(ui);
+    check(shortcut("a", Flags::Command, 0)?, "tag Select All missing")?;
+    key(ui, "Edited tag label".into())?;
+    check(
+        ui.get_tag_label() == "Edited tag label" && ui.get_query() == query,
+        "native tag editing targeted the background query",
+    )?;
+    check(shortcut("z", Flags::Command, 6)?, "tag Undo missing")?;
+    check(
+        ui.get_tag_label().is_empty(),
+        "tag Undo did not remove insertion",
+    )?;
+    check(shortcut("z", Flags::Command, 6)?, "second tag Undo missing")?;
+    check(
+        ui.get_tag_label() == original,
+        "tag Undo did not restore the label",
+    )?;
+    for _ in 0..2 {
+        check(
+            shortcut("z", Flags::Command | Flags::Shift, 6)?,
+            "tag Redo missing",
+        )?;
+    }
+    check(
+        ui.get_tag_label() == "Edited tag label" && ui.get_query() == query,
+        "tag Redo lost the focused editor",
+    )?;
+    ui.set_tag_label(original);
+    Ok(())
+}
 pub fn about(ui: &DesktopWindow, menus: &Menus) -> Result {
     menus.dispatch(ui);
     let app = main_menu()?

@@ -1,6 +1,12 @@
 //! Owned query results. These values grant no mutation or export authority.
 use serde::Serialize;
 
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct StoryIdentity {
+    pub id: i64,
+    pub uuid: String,
+}
+
 #[derive(Clone, Debug, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct DisplaySources {

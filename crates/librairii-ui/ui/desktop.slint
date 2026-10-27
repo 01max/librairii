@@ -1,3 +1,4 @@
+import { TagManager, Assignments, AssignmentRow } from "tags.slint";
 import { Workspace, ProposalRow } from "workspace.slint";
 import { Filters, FilterRow, ActiveFilterRow } from "filters.slint";
 import { ProgressState, EditAction } from "states.slint";
@@ -106,11 +107,11 @@ export component DesktopWindow inherits Window {
     out property <length> observed-approved-height: workspace-panel.approved-height;
     out property <length> observed-review-height: workspace-panel.review-height;
     public function focus-review() { workspace-panel.focus-review(); }
-    public function focus-browser() { browser.focus(); }
+    public function focus-browser() { if root.workspace { workspace-panel.focus-approved(); } else { browser.focus(); } }
     out property <bool> close-focused: close-dialog-button.has-focus;
     out property <bool> attribution-focused: attribution-button.has-focus;
     out property <bool> query-focused: search-entry.has-focus;
-    out property <bool> text-edit-focused: !root.closing && ((!root.modal && search-entry.has-focus) || (root.dialog == 8 && filters.first-focused));
+    out property <bool> text-edit-focused: !root.closing && ((!root.modal && search-entry.has-focus) || (root.dialog == 8 && filters.first-focused) || (root.dialog == 10 && tag-manager.editing));
     public function focus-search() { search-entry.focus(); }
     public function edit-search(action: EditAction) {
         if !FocusState.modal && !FocusState.closing && search-entry.has-focus {
@@ -122,8 +123,63 @@ export component DesktopWindow inherits Window {
             else { search-entry.select-all(); }
         }
         else if !root.closing && root.dialog == 8 { filters.edit(action); }
+        else if !root.closing && root.dialog == 10 { tag-manager.edit(action); }
     }
     in-out property <int> dialog;
+    private property <int> assignment-parent;
+    in-out property <bool> tag-busy;
+    in property <bool> assignment-return-details;
+    callback edit-tags();
+    callback refresh-assignments();
+    callback assignment-edit(int,int);
+    callback select-tag-definition(int);
+    callback select-tag-value(int);
+    callback save-tag-definition();
+    callback save-tag-value();
+    callback move-tag-definition(int);
+    callback move-tag-value(int);
+    callback delete-tag-definition();
+    callback delete-tag-value();
+    callback confirm-tag-delete();
+    callback cancel-tag-delete();
+    in property <[string]> tag-definitions;
+    in property <[string]> tag-values;
+    in property <[AssignmentRow]> assignment-rows;
+    in property <string> assignment-summary;
+    in property <string> tag-notice;
+    in property <string> tag-source;
+    in property <bool> tag-editable;
+    in property <bool> tag-move-up;
+    in property <bool> tag-move-down;
+    in property <bool> tag-value-move-up;
+    in property <bool> tag-value-move-down;
+    in property <bool> tag-choice;
+    in property <bool> tag-creating;
+    in-out property <int> tag-definition-index;
+    in-out property <int> tag-value-index;
+    in-out property <string> tag-key;
+    in-out property <string> tag-label;
+    in-out property <string> tag-color;
+    in-out property <int> tag-kind;
+    in-out property <string> tag-value-key;
+    in-out property <string> tag-value-label;
+    in property <string> tag-impact;
+    in property <bool> tag-delete-value;
+    out property <bool> tag-delete-cancel-focused: cancel-tag.has-focus;
+    out property <bool> tag-delete-invoker-focused: root.tag-delete-value ? tag-manager.delete-value-focused : tag-manager.delete-definition-focused;
+    public function focus-tag-label() { tag-manager.focus-label(); }
+    in property <string> edit-tags-label;
+    in property <bool> edit-tags-enabled;
+    in property <string> bulk-summary;
+    public function focus-clear-bulk() { clear-bulk-button.focus(); }
+    out property <bool> clear-bulk-focused: clear-bulk-button.has-focus;
+    callback toggle-bulk(int);
+    callback clear-bulk();
+    public function focus-bulk-story(index:int) { if root.workspace { workspace-panel.focus-bulk(index); } else { browser.focus-bulk(index); } }
+    public function show-assignments() { root.assignment-parent=root.dialog; if root.dialog == 0 { root.invoker=FocusState.key; } root.dialog=11; dialog-scroll.content-y=0px; assignments.activate(); }
+    public function show-tag-confirmation() { if root.dialog == 10 { root.dialog=12; cancel-tag.focus(); } }
+    public function finish-tag-confirmation() { root.dialog=10; tag-manager.activate(); }
+
     out property <bool> modal: root.dialog != 0;
     private property <int> invoker;
     in property <int> startup-phase: 3;
@@ -145,11 +201,13 @@ export component DesktopWindow inherits Window {
             dialog-scroll.content-y = 0px;
             if kind == 3 { dialog-inspector.reset(); root.request-details(); }
             FocusState.modal = true;
-            if kind == 2 { english-button.focus(); } else if kind == 8 { filters.activate(); } else { close-dialog-button.focus(); }
+            if kind == 2 { english-button.focus(); } else if kind == 8 { filters.activate(); } else if kind == 10 { tag-manager.activate(); } else { close-dialog-button.focus(); }
         }
     }
     public function close-dialog() {
-        if root.closing || root.detail-pending { return; }
+        if root.closing || root.detail-pending || root.tag-busy { return; }
+        if root.dialog == 12 { root.cancel-tag-delete();root.dialog=10;tag-manager.focus-delete(root.tag-delete-value);return; }
+        if root.dialog == 11 && root.assignment-parent == 3 && root.assignment-return-details { root.dialog=3;edit-tags-button.focus();root.request-details();return; }
         if root.dialog == 9 { root.dialog = 3; remove-story-button.focus(); return; }
         root.dialog = 0;
         FocusState.modal = false;
@@ -158,12 +216,13 @@ export component DesktopWindow inherits Window {
         else if root.compact && root.invoker >= 200 { navigation-button.focus(); }
         else if root.invoker == 10 && !root.compact { library-button.focus(); }
         else if root.invoker == 32 && root.wide && !root.workspace { side-inspector.focus-technical(); }
-        else if root.invoker == 32 { browser.focus(); }
-        else if root.invoker == 31 { browser.focus(); }
+        else if root.invoker == 32 { root.focus-browser(); }
+        else if root.invoker == 31 { root.focus-browser(); }
+        else if root.invoker == 23 && root.bulk-summary == "" { root.focus-browser(); }
         else if root.invoker == 30 { search-entry.focus(); }
         else { FocusState.restore-epoch += 1; }
     }
-    public function request-quit() { if root.detail-pending { return; } if root.closing { return; } if root.pending { root.open-dialog(7); } else { root.quit(); } }
+    public function request-quit() { if root.detail-pending || root.tag-busy { return; } if root.closing { return; } if root.pending { root.open-dialog(7); } else { root.quit(); } }
     in-out property <bool> compact;
     in-out property <bool> wide: true;
     changed wide => { if !root.wide && !root.modal && FocusState.key == 32 { browser.focus(); } }
@@ -246,6 +305,7 @@ export component DesktopWindow inherits Window {
         if kind == 0 { root.panel = 0; root.request-panel(kind); if root.compact { root.close-sidebar(); } }
         else if kind == 5 { root.open-dialog(2); }
         else if kind == 8 { root.open-dialog(3); }
+        else if kind == 1 { root.open-dialog(10);root.request-panel(kind); }
         else { root.panel = kind; root.open-dialog(6); root.request-panel(kind); }
     }
     in property <bool> platform-menu: false;
@@ -298,12 +358,16 @@ export component DesktopWindow inherits Window {
                         Action { focus-key: 22; available: root.startup-phase == 3; text: root.filter-label != "" ? root.filter-label : (root.french ? "Filtres…" : "Filters…"); clicked => { root.open-dialog(8); } }
                     }
                     if root.active-filter-summary != "": Text { vertical-stretch: 0; height: 24px; text: root.active-filter-summary; accessible-label: (root.french ? "Filtres actifs · " : "Active filters · ") + self.text; overflow: elide; color: Palette.foreground; }
+                    HorizontalBox { visible: root.bulk-summary != ""; height: self.visible ? 32px : 0px; padding: 0px; spacing: 8px;
+                        Caption { text: root.bulk-summary; accessible-live-region: polite; horizontal-stretch: 1; }
+                        clear-bulk-button := Action { focus-key: 23; available: root.bulk-summary != ""; text: root.french ? "Effacer la sélection" : "Clear selection"; clicked => { root.clear-bulk(); } }
+                    }
                     body := HorizontalBox { padding: 0px; spacing: 12px; vertical-stretch: 1; min-height: 0px;
                         VerticalBox { padding: 0px; spacing: root.status == "" ? 0px : 8px; max-width: root.workspace ? 0px : 100000px; visible: !root.workspace;
                             Caption { accessible-live-region: polite; text: root.status; visible: root.status != ""; height: root.status == "" ? 0px : self.preferred-height; }
-                            browser := StoryBrowser { visible: !root.workspace; enabled: root.startup-phase == 3 && !root.closing && !root.workspace && !root.modal && !FocusState.sidebar; focus-entered => { FocusState.key = 31; } groups: root.story-groups; count: root.story-count; columns: root.columns; mode: root.mode; label: root.french ? "Histoires" : "Stories"; selected-index <=> root.selected-index; select(index) => { root.select-story(index); } }
+                            browser := StoryBrowser { french: root.french; visible: !root.workspace; enabled: root.startup-phase == 3 && !root.closing && !root.workspace && !root.modal && !FocusState.sidebar; focus-entered => { FocusState.key = 31; } groups: root.story-groups; count: root.story-count; columns: root.columns; mode: root.mode; label: root.french ? "Histoires" : "Stories"; selected-index <=> root.selected-index; select(index) => { root.select-story(index); } toggle(index) => { root.toggle-bulk(index); } }
                         }
-                        workspace-panel := Workspace { visible: root.workspace; max-width: root.workspace ? 100000px : 0px; interactive: root.workspace && !root.closing && !root.modal && !FocusState.sidebar; wide: root.wide; french: root.french; members: root.story-groups; count: root.story-count; sources: root.sources; proposals <=> root.proposals; pending: root.pending; decisions: root.decisions; selected-index <=> root.selected-index; select(index) => { root.select-story(index); } decide(index,value) => { root.decide(index,value); } apply => { root.apply-decisions(); } }
+                        workspace-panel := Workspace { visible: root.workspace; max-width: root.workspace ? 100000px : 0px; interactive: root.workspace && !root.closing && !root.modal && !FocusState.sidebar; wide: root.wide; french: root.french; members: root.story-groups; count: root.story-count; sources: root.sources; proposals <=> root.proposals; pending: root.pending; decisions: root.decisions; selected-index <=> root.selected-index; select(index) => { root.select-story(index); } toggle(index) => { root.toggle-bulk(index); } decide(index,value) => { root.decide(index,value); } apply => { root.apply-decisions(); } }
                         side-inspector := Inspector { visible: root.wide && !root.workspace; width: self.visible ? 264px : 0px; interactive: !root.modal && !root.closing; french: root.french; story: root.selected-story; request-data => { root.request-details(); } focused => { FocusState.key = 32; } }
                     }
                     HorizontalBox { padding: 0px; spacing: 8px;
@@ -342,7 +406,7 @@ export component DesktopWindow inherits Window {
         width: min(600px,parent.width - 32px); height: parent.height - 48px;
         background: Palette.background; border-width: 2px; border-color: Palette.foreground; border-radius: 6px;
         accessible-role: groupbox;
-        accessible-label: root.dialog == 9 ? (root.french ? "Confirmer le retrait" : "Confirm removal") : root.dialog == 1 ? (root.french ? "À propos de Slint" : "About Slint") : root.dialog == 2 ? (root.french ? "Réglages" : "Settings") : root.dialog == 3 ? (root.french ? "Détails" : "Details") : root.dialog == 4 ? (root.french ? "Configurer la bibliothèque" : "Set up your library") : root.dialog == 5 ? (root.french ? "Récupération de la bibliothèque" : "Library recovery") : root.dialog == 7 ? (root.french ? "Opération en cours" : "Operation in progress") : root.dialog == 8 ? (root.french ? "Filtres et tri" : "Filters and sort") : (root.french ? "Bibliothèque" : "Library");
+        accessible-label: root.dialog == 10 ? (root.french ? "Gérer les étiquettes" : "Manage tags") : root.dialog == 11 ? (root.french ? "Attribuer les étiquettes" : "Assign tags") : root.dialog == 12 ? (root.french ? "Confirmer l’impact" : "Confirm impact") : root.dialog == 9 ? (root.french ? "Confirmer le retrait" : "Confirm removal") : root.dialog == 1 ? (root.french ? "À propos de Slint" : "About Slint") : root.dialog == 2 ? (root.french ? "Réglages" : "Settings") : root.dialog == 3 ? (root.french ? "Détails" : "Details") : root.dialog == 4 ? (root.french ? "Configurer la bibliothèque" : "Set up your library") : root.dialog == 5 ? (root.french ? "Récupération de la bibliothèque" : "Library recovery") : root.dialog == 7 ? (root.french ? "Opération en cours" : "Operation in progress") : root.dialog == 8 ? (root.french ? "Filtres et tri" : "Filters and sort") : (root.french ? "Bibliothèque" : "Library");
         FocusScope {
             width: parent.width; height: parent.height;
             key-pressed(event) => {
@@ -357,6 +421,9 @@ export component DesktopWindow inherits Window {
                     return accept;
                 }
                 if event.text == Key.Tab {
+                    if root.dialog == 12 { if cancel-tag.has-focus { confirm-tag.focus(); } else { cancel-tag.focus(); } return accept; }
+                    if root.dialog == 10 { if event.modifiers.shift && tag-manager.first-focused { close-dialog-button.focus();return accept; } if !event.modifiers.shift && close-dialog-button.has-focus {tag-manager.activate();return accept;} return reject; }
+                    if root.dialog == 11 { if event.modifiers.shift && assignments.first-focused { close-dialog-button.focus();return accept; } if !event.modifiers.shift && close-dialog-button.has-focus {assignments.activate();return accept;} return reject; }
                     if root.dialog == 9 { if keep-story.has-focus { trash-story.focus(); } else { keep-story.focus(); } return accept; }
                     if root.dialog == 3 {
                         if event.modifiers.shift && dialog-inspector.technical-focused { close-dialog-button.focus(); return accept; }
@@ -382,8 +449,9 @@ export component DesktopWindow inherits Window {
                 }
                 return reject;
             }
-            VerticalBox { padding: 18px; spacing: 12px;
+            VerticalBox { padding: 18px; spacing: 0px;
                 Caption { text: dialog-panel.accessible-label; font-size: 22px; font-weight: 600; }
+                Rectangle { height: 12px; }
                 dialog-scroll := ScrollView { vertical-stretch: 1; content-width: self.visible-width; content-height: dialog-content.preferred-height;
                     dialog-content := VerticalBox { height: self.preferred-height; padding: 0px; spacing: 0px;
                         if root.dialog == 1: AboutSlint { }
@@ -403,21 +471,39 @@ export component DesktopWindow inherits Window {
                             sort-selected(index) => { root.sort-selected(index); }
                             reveal(y,height) => { root.reveal-dialog(y,height); }
                         }
+                        tag-manager := TagManager { visible: root.dialog == 10; height: self.visible ? self.preferred-height : 0px; french: root.french; active: root.startup-phase == 3 && root.dialog == 10 && !root.tag-busy; editable: root.tag-editable; choice: root.tag-choice; creating: root.tag-creating; definitions: root.tag-definitions; values: root.tag-values; source: root.tag-source; notice: root.tag-notice;
+                            move-up: root.tag-move-up; move-down: root.tag-move-down; value-move-up: root.tag-value-move-up; value-move-down: root.tag-value-move-down;
+                            definition-index <=> root.tag-definition-index; value-index <=> root.tag-value-index; key <=> root.tag-key; label <=> root.tag-label; color <=> root.tag-color; kind <=> root.tag-kind; value-key <=> root.tag-value-key; value-label <=> root.tag-value-label;
+                            select-definition(index) => { root.select-tag-definition(index); } select-value(index) => { root.select-tag-value(index); }
+                            save-definition => { root.save-tag-definition(); } save-value => { root.save-tag-value(); }
+                            move-definition(offset) => { root.move-tag-definition(offset); } move-value(offset) => { root.move-tag-value(offset); }
+                            delete-definition => { root.delete-tag-definition(); } delete-value => { root.delete-tag-value(); } reveal(y,h) => { root.reveal-dialog(y,h); }
+                        }
+                        assignments := Assignments { visible: root.dialog == 11; height: self.visible ? max(400px,dialog-scroll.visible-height) : 0px; french: root.french; active: root.startup-phase == 3 && root.dialog == 11 && !root.tag-busy; summary: root.assignment-summary; notice: root.tag-notice; rows: root.assignment-rows;
+                            refresh => { root.refresh-assignments(); } assign(index,value) => { root.assignment-edit(index,value); } reveal(y,h) => { root.reveal-dialog(y,h); }
+                        }
+                        if root.dialog == 12: Caption { text: root.tag-impact; }
+                        if root.dialog == 12: Caption { text: root.tag-notice; accessible-live-region: polite; }
                         if root.dialog == 7: Caption { text: root.commit-pending ? (root.french ? "Enregistrement en cours. Attendez la fin de cette étape avant de fermer." : "Saving changes. Wait for this step to finish before closing.") : (root.french ? "Vous pouvez continuer ou demander l’arrêt. Les effets déjà enregistrés sont conservés." : "Keep working or request a safe stop. Already committed changes are preserved."); }
                     }
                 }
-                attribution-button := Button { visible: root.dialog == 1; height: root.dialog == 1 ? 32px : 0px; enabled: !root.closing && root.dialog == 1; text: root.french ? "Site web de Slint" : "Slint website"; clicked => { Platform.open-url("https://slint.dev"); } }
-                HorizontalBox { visible: root.dialog == 2; height: root.dialog == 2 ? 32px : 0px;
+                attribution-button := Button { visible: root.dialog == 1; height: root.dialog == 1 ? 40px : 0px; enabled: !root.closing && root.dialog == 1; text: root.french ? "Site web de Slint" : "Slint website"; clicked => { Platform.open-url("https://slint.dev"); } }
+                HorizontalBox { visible: root.dialog == 2; height: root.dialog == 2 ? 40px : 0px;
                     english-button := Button { text: "English"; enabled: !root.closing && root.dialog == 2; clicked => { root.change-language("en"); } }
                     Button { text: "Français"; enabled: !root.closing && root.dialog == 2; clicked => { root.change-language("fr"); } }
                 }
-                stop-close-button := Button { visible: root.dialog == 7; height: root.dialog == 7 ? 32px : 0px; enabled: !root.closing && !root.commit-pending; text: root.french ? "Arrêter et fermer" : "Stop and close"; clicked => { root.quit(); } }
-                remove-story-button := Button { visible: root.dialog == 3; height: root.dialog == 3 ? 32px : 0px; enabled: !root.detail-pending && root.selected-story.uuid != ""; text: root.french ? "Retirer de la bibliothèque…" : "Remove from library…"; clicked => { root.begin-removal(); } }
-                HorizontalBox { height: root.dialog == 9 ? 32px : 0px; visible: root.dialog == 9;
+                stop-close-button := Button { visible: root.dialog == 7; height: root.dialog == 7 ? 40px : 0px; enabled: !root.closing && !root.commit-pending; text: root.french ? "Arrêter et fermer" : "Stop and close"; clicked => { root.quit(); } }
+                edit-tags-button := Button { visible: root.dialog == 3; height: self.visible ? 40px : 0px; enabled: !root.detail-pending && root.edit-tags-enabled; text: root.edit-tags-label != "" ? root.edit-tags-label : (root.french ? "Modifier les étiquettes" : "Edit tags"); clicked => { root.edit-tags(); } }
+                HorizontalBox { visible: root.dialog == 12; height: self.visible ? 40px : 0px; padding: 0px;
+                    cancel-tag := Button { enabled: !root.tag-busy; text: root.french ? "Annuler" : "Cancel"; clicked => {root.close-dialog();} }
+                    confirm-tag := Button { enabled: !root.tag-busy; text: root.french ? "Supprimer définitivement" : "Delete permanently"; clicked => {root.confirm-tag-delete();} }
+                }
+                remove-story-button := Button { visible: root.dialog == 3; height: root.dialog == 3 ? 40px : 0px; enabled: !root.detail-pending && root.selected-story.uuid != ""; text: root.french ? "Retirer de la bibliothèque…" : "Remove from library…"; clicked => { root.begin-removal(); } }
+                HorizontalBox { height: root.dialog == 9 ? 40px : 0px; visible: root.dialog == 9;
                     keep-story := Button { enabled: !root.detail-pending; text: root.french ? "Conserver l’histoire" : "Keep story"; clicked => { root.close-dialog(); } }
                     trash-story := Button { enabled: !root.detail-pending; text: root.detail-pending ? (root.french ? "Déplacement…" : "Moving to trash…") : (root.french ? "Déplacer dans la corbeille" : "Move to trash"); clicked => { root.remove-story(); } }
                 }
-                close-dialog-button := Button { visible: root.dialog != 9; height: root.dialog != 9 ? 32px : 0px; enabled: !root.closing && !root.detail-pending; text: root.dialog == 7 ? (root.french ? "Continuer" : "Keep working") : (root.french ? "Fermer" : "Close"); clicked => { root.close-dialog(); } }
+                close-dialog-button := Button { visible: root.dialog != 9 && root.dialog != 12; height: self.visible ? 40px : 0px; enabled: !root.closing && !root.detail-pending && !root.tag-busy; text: root.dialog == 7 ? (root.french ? "Continuer" : "Keep working") : (root.french ? "Fermer" : "Close"); clicked => { root.close-dialog(); } }
             }
         }
     }

@@ -94,15 +94,49 @@ timestamp identity brings the preserved baseline to613. The three exact phf
 exceptions have matching owner/rationale/tracking/expiry ledger records.
 
 The final focus review registers the wide inspector as an exact modal invoker.
-Actual AppKit Settings/About plus Escape return to its technical disclosure;
+Actual AppKit Settings/Escape and About/Close return to its technical disclosure;
 resizing hides that control with a browser-focus fallback. The shown fixture
 checks both paths. The cumulative native-host quality gate passes598 tests with
 zero skipped, plus doctests, strict build/lint, preservation and supply-chain
 checks. Other target scopes retain their required baseline identities.
 
+## Tag management and assignment — 15.3
+
+The native manager creates Boolean/Choice definitions and choice values, preserves
+immutable keys, renames/recolors custom metadata and offers keyboard ordering with
+edge actions disabled. Protected identity/value/assignment controls remain read-only;
+protected colors remain editable and survive real worker restart/startup reseeding.
+The atomic definition form save lives in storage, including protected-label policy
+and rollback when a color is invalid. Application chrome and count plurals switch
+between English/French while authored labels and unsaved field values survive.
+
+Destruction first obtains an opaque controller-owned ticket and a coherent impact
+preview (assignments, values, affected Collections). Cancel starts focused and returns
+to the exact delete invoker. Confirm revalidates the original storage plan; a changed
+assignment or Collection reference refuses it. Deleted criteria remain saved for
+explicit Collection repair. Changing language reprojects the same preview/ticket.
+
+Bulk selection is independent of inspection. Visible row checkboxes and native Space
+reach the production callback in both Library and approved Shelf rows; a count and
+tracked Clear action are visible. Settings/About restore Clear's exact focus, with a
+browser fallback if its selection disappears. The nested assignment editor freezes
+library generation and every ID/UUID, displays explicit mixed state and toggles each
+choice value additively. The entire identity batch is checked in the writer snapshot
+before any mutation. Search changes cannot retarget the open editor. Derived rows
+remain read-only. No-op, failed and uncertain outcomes are distinct; a committed save
+is retained and explained if its display refresh fails. Closing returns to refreshed
+details when the original story remains in the result, or the browser otherwise.
+
+Evidence includes real SQLite/controller CRUD, protected-color/restart, mixed/additive
+and no-op callbacks, a concurrent actor invalidating a deletion preview, retained
+Collection repair state, native keyboard selection, native AppKit field editing and
+compact EN/FR manager/assignment/impact captures. One observed writer-snapshot identity
+appends to the unchanged prior613 identities (614 total). Whole-workflow spoken review
+and current-source three-host acceptance remain at15.13.
+
 ## Remaining workflow work
 
-15.3–15.12 compose tags, Broken/Undo, Collection and Shelf
+15.4–15.12 compose Broken/Undo, Collection and Shelf
 curation/review, imports/sync/exports, durable History/notices and complete native
 setup/settings/recovery/diagnostics. 15.13 independently reviews the complete
 native surfaces and refreshes visual/accessibility evidence. Resource budgets,
