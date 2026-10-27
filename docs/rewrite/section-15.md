@@ -78,7 +78,7 @@ pending-dismissal refusal, committed refresh, original-byte preservation and
 retained managed trash bytes. Shown English/French compact captures exercise the
 technical button with native Space and confirmation Escape; reopening asserts a
 zero inner scroll offset. The wrapper requires these callbacks in every native
-receipt. Full section/cross-host/accessibility acceptance remains at15.13.
+receipt. Full section/cross-host/accessibility acceptance remains at 15.13.
 
 Independent review corrections: one common controller conversion prevents entity
 text from being decoded twice. A guarded request from the inspector disclosure
@@ -132,7 +132,7 @@ and no-op callbacks, a concurrent actor invalidating a deletion preview, retaine
 Collection repair state, native keyboard selection, native AppKit field editing and
 compact EN/FR manager/assignment/impact captures. One observed writer-snapshot identity
 appends to the unchanged prior613 identities (614 total). Whole-workflow spoken review
-and current-source three-host acceptance remain at15.13.
+and current-source three-host acceptance remain at 15.13.
 
 ## Independent Broken controls and guarded Undo — 15.4
 
@@ -166,10 +166,10 @@ stale Undo, injected write rollback, duplicate-identity request/Undo, unavailabl
 Shelf member and dismissal/refresh regressions. Shown EN/FR captures use actual
 Tab/Space and AppKit menus; the original paging/history/filter/details/tag checks
 remain required. One observed atomic identity-guard regression appends to the
-unchanged614-identity prefix (615 total). The cumulative native-host gate passes600
+unchanged 614-identity prefix (615 total). The cumulative native-host gate passes 600
 tests with zero skipped, plus doctests, strict lint/build, preservation and dependency
 checks. Full spoken/cross-host acceptance remains
-at15.13.
+at 15.13.
 
 ## Collections and Library previews — 15.5
 
@@ -198,7 +198,7 @@ reviewed removal/source changes remain15.7.
 Plain Library browsing includes All stories and at most ten Collection previews
 per group page, with six real stories each, complete counts, empty/repair/read-error
 states and View all. The main ListView retains a bounded viewport and native
-virtualization at the supported100-story page maximum. Preview rows share real
+virtualization at the supported 100-story page maximum. Preview rows share real
 ID/UUID detail/tag/flag targets, visibly and accessibly identify the inspected
 story, and expose a separate bulk checkbox. Disjoint focus keys keep them outside
 the compact sidebar. Stable models update existing native items without discarding
@@ -215,14 +215,70 @@ Native Tab/Space reaches the last Collection and outside-page preview, max-page
 PageDown remains bounded, and preview bulk selection leaves inspection unchanged.
 Actual AppKit Select All/Undo/Redo target the Collection name; Settings/About return
 to the preview invoker. Both source review axes have zero remaining findings.
-The cumulative native-host quality gate passes600 tests with zero skipped plus
+The cumulative native-host quality gate passes 600 tests with zero skipped plus
 doctests, lint/build, preservation and source/dependency policy. No Rust identity
-was removed or added; the615-entry target union retains its historical prefix.
-Full spoken and three-host acceptance remains15.13.
+was removed or added; the 615-entry target union retains its historical prefix.
+Full spoken and three-host acceptance remains 15.13.
+
+## Approved Shelf curation — 15.6
+
+The native workspace opens approved Shelf membership as a bounded one-column
+list, including when the saved Library presentation uses covers. Every row
+separates manual/kept or source-derived status, historical acceptance origins,
+current matching sources and explicit Broken/unavailable state. Approved counts
+include unavailable UUIDs; cached titles and exact UUID spelling survive absence,
+and importing the same UUID under another numeric row reconnects it. Temporary
+search/filter/sort affects only the view. Restoring approved order clears those
+refinements explicitly; moves use the complete approved ordinal order across
+page boundaries and rank gaps, then follow the moved UUID.
+
+The Shelf manager creates, renames, reorders and duplicates independent definitions.
+Creation merges frozen available ID/UUID selections and Collection sources into a
+deduplicated candidate pool, initially with zero approvals. Sources use ANY matching
+semantics and add no members alone. Explicit choices persist across 25-row pages;
+refresh renews the plan and clears approvals. Confirmation revalidates source
+results and frozen targets before committing. Names and draft input survive errors
+and language changes. Duplication copies complete approved order, manual state,
+origins, sources, exclusions and unavailable references without accepting new
+matches. One-use storage-owned lifetime plans bind duplication, member removal and
+ordering to the observed database/Shelf lifetime and version; deletion invalidates
+these plans even when SQLite reuses an ID and revision.
+
+Manual add accepts frozen single/bulk identities atomically, is idempotent, records
+manual retention and clears exclusions. Ordinary member removal and explicit
+Remove and exclude have separate previews; archives remain independent. Exclusion
+management renders at most 25 rows, includes totals, clamps after the last row on a
+page is cleared, and clears only the selected exclusion without approving a story.
+Bulk member actions always use the independent bulk selection when present.
+
+All dialogs block background controls and retain predictable Cancel/Close focus.
+Approved-list focus is recorded for native Settings/About return. The compact
+header uses a bounded scroll area; Tab reveals its offscreen actions while a
+complete approved-member row remains visible. Native Broken checkbox state is
+reasserted from the owned projection, including unchanged scalar values after
+selection changes or refused writes. Opening or clearing an
+exclusion returns focus to the stable Refresh control. Counts use selected-language
+plural rules. A committed Shelf save remains visible alongside any retained
+confirmed removal when later navigation persistence enters Recovery; no confirmed
+write becomes a retryable failure.
+
+Evidence uses the real native controller/SQLite fixture for empty/manual/source
+creation, overlap, explicit choices, stale refresh, names, duplicate state,
+independent ordering, ordinary removal/exclusion, 25-row exclusion paging,
+unavailable placeholders, UUID reconnection, restart and writable-library/read-only
+profile recovery. The additive storage identity retains every prior 615 entry and
+checks exact spelling, atomic frozen-target refusal and deleted/reused-ID plan
+refusal (616 target-union identities). Shown EN/FR captures retain the original
+foundation matrices and previous workflow callbacks, with actual native menus,
+Tab/Space, Cancel focus and compact approved-member/bulk layouts. Both source
+review axes have zero remaining findings. The cumulative native-host quality gate
+passes 601 tests with zero skipped, plus doctests, strict lint/build, preservation
+and source/dependency policy. Full spoken and three-host acceptance
+remains 15.13.
 
 ## Remaining workflow work
 
-15.6–15.12 compose Shelf
+15.7–15.12 compose Shelf
 curation/review, imports/sync/exports, durable History/notices and complete native
 setup/settings/recovery/diagnostics. 15.13 independently reviews the complete
 native surfaces and refreshes visual/accessibility evidence. Resource budgets,

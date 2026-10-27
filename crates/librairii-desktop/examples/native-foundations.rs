@@ -74,7 +74,7 @@ fn snapshot() -> Result<Snapshot> {
             compatibility_reason: String::new(), byte_size: 12000,
             imported_at: "2026-10-20T12:00:00Z".into(), official: None,
         };
-        Story { dates: Default::default(), uuid: summary.uuid.clone(), title, summary: Some(summary), thumbnail: Some(thumbnail(i as usize)), provenance: "Weekend favorites".into(), tags: vec![
+        Story { membership:None,current_sources:Vec::new(),coverage_incomplete:false,dates: Default::default(), uuid: summary.uuid.clone(), title, summary: Some(summary), thumbnail: Some(thumbnail(i as usize)), provenance: "Weekend favorites".into(), tags: vec![
             librairii_core::tagging::DisplayTag { source: "user".into(), definition: "Adventure".into(), value: None, color: "#405cf5".into() },
             librairii_core::tagging::DisplayTag { source: "derived".into(), definition: "Age".into(), value: Some("3–5 years".into()), color: "#286350".into() },
         ] }
@@ -116,6 +116,7 @@ fn snapshot() -> Result<Snapshot> {
             },
         )?),
         page: Some(Page {
+            shelf: None,
             stories,
             previews: Vec::new(),
             preview_page: 0,
@@ -229,8 +230,10 @@ fn main() -> Result {
     callback_checks::tags(&ui)?;
     callback_checks::flags(&ui)?;
     callback_checks::collections(&ui)?;
+    callback_checks::shelves(&ui)?;
     let initial = snapshot()?;
     let view = Rc::new(RefCell::new(view::View {
+        shelves: Default::default(),
         collections: Default::default(),
         flags: Default::default(),
         tags: Default::default(),
@@ -342,6 +345,8 @@ fn main() -> Result {
                     surface.poll(&ui);
                 } else if let Some(surface) = surfaces.flags.borrow().as_ref() {
                     surface.poll(&ui);
+                } else if let Some(surface) = surfaces.shelves.borrow().as_ref() {
+                    surface.poll(&ui);
                 } else if let Some(surface) = surfaces.collections.borrow().as_ref() {
                     surface.poll(&ui);
                 } else {
@@ -375,7 +380,7 @@ fn main() -> Result {
         return Err(error.into());
     }
     check(
-        server || *step.borrow() > 94,
+        server || *step.borrow() > 101,
         "native fixture ended before completing its checks",
     )?;
     Ok(())
@@ -384,6 +389,7 @@ fn main() -> Result {
 #[derive(Debug, Default)]
 struct Surfaces {
     collections: RefCell<Option<callback_checks::CollectionSurface>>,
+    shelves: RefCell<Option<callback_checks::ShelfSurface>>,
     flags: RefCell<Option<callback_checks::FlagSurface>>,
     filters: RefCell<Option<callback_checks::FilterSurface>>,
     details: RefCell<Option<callback_checks::DetailSurface>>,
@@ -444,6 +450,8 @@ fn capture_step(
             };
             state.resize(ui);
             state.project(ui);
+            ui.set_shelf_active(false);
+            ui.set_workspace(workspace);
             proposals(ui, french);
         } else {
             let name = if workspace {
@@ -926,6 +934,73 @@ fn capture_step(
             "first-run/recovery retained library content",
         )?;
         capture(ui, &destination.join(format!("{name}-compact-fr.png")))?;
+    } else if index == 95 {
+        resize(ui, 1180., 760.)?;
+        *surfaces.shelves.borrow_mut() = Some(callback_checks::ShelfSurface::open(ui)?);
+    } else if index == 96 {
+        capture(ui, &destination.join("shelf-approved-wide-en.png"))?;
+        #[cfg(target_os = "macos")]
+        native_menu::shelf_focus(ui, _menus)?;
+        surfaces
+            .shelves
+            .borrow()
+            .as_ref()
+            .ok_or("Shelf surface missing")?
+            .french(ui)?;
+        resize(ui, 560., 400.)?;
+    } else if index == 97 {
+        capture(ui, &destination.join("shelf-approved-compact-fr.png"))?;
+        surfaces
+            .shelves
+            .borrow()
+            .as_ref()
+            .ok_or("Shelf surface missing")?
+            .bulk(ui)?;
+        capture(ui, &destination.join("shelf-approved-bulk-compact-fr.png"))?;
+        surfaces
+            .shelves
+            .borrow()
+            .as_ref()
+            .ok_or("Shelf surface missing")?
+            .clear_bulk(ui);
+        surfaces
+            .shelves
+            .borrow()
+            .as_ref()
+            .ok_or("Shelf surface missing")?
+            .creation(ui)?;
+    } else if index == 98 {
+        capture(ui, &destination.join("shelf-creation-compact-fr.png"))?;
+        surfaces
+            .shelves
+            .borrow()
+            .as_ref()
+            .ok_or("Shelf surface missing")?
+            .name(ui)?;
+    } else if index == 99 {
+        #[cfg(target_os = "macos")]
+        native_menu::shelf_editor(ui, _menus)?;
+        capture(ui, &destination.join("shelf-manager-edit-compact-fr.png"))?;
+        surfaces
+            .shelves
+            .borrow()
+            .as_ref()
+            .ok_or("Shelf surface missing")?
+            .exclusions(ui)?;
+    } else if index == 100 {
+        check(
+            ui.get_shelf_exclusion_refresh_focused(),
+            "exclusion opening lost initial Refresh focus",
+        )?;
+        capture(ui, &destination.join("shelf-exclusions-compact-fr.png"))?;
+        key(ui, slint::platform::Key::Tab.into())?;
+    } else if index == 101 {
+        check(
+            !ui.get_shelf_exclusion_focused_uuid().is_empty(),
+            "native Tab did not reach Allow suggestions",
+        )?;
+        capture(ui, &destination.join("shelf-exclusions-keyboard-fr.png"))?;
+        surfaces.shelves.borrow_mut().take();
     } else {
         std::fs::write(
             destination.join("report.json"),
@@ -942,6 +1017,7 @@ fn capture_step(
                 "tag_callbacks": "passed",
                 "flag_callbacks": "passed",
                 "collection_callbacks": "passed",
+                "shelf_callbacks": "passed",
                 "scope": "shown native component/public window events and Skia capture; not physical HID or packaged workflow qualification",
             }))?,
         )?;

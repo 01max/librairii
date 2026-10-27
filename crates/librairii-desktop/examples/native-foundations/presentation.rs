@@ -3,6 +3,8 @@
 mod collection_checks;
 #[path = "flags.rs"]
 mod flag_checks;
+#[path = "shelves.rs"]
+mod shelf_checks;
 use super::{Result, check, view};
 pub use collection_checks::{Surface as CollectionSurface, checks as collections};
 pub use flag_checks::{Surface as FlagSurface, checks as flags};
@@ -19,6 +21,7 @@ use librairii_storage::{
 };
 use librairii_testkit::TestRoots;
 use librairii_ui::native::DesktopWindow;
+pub use shelf_checks::{Surface as ShelfSurface, checks as shelves};
 use slint::ComponentHandle;
 use std::{
     cell::RefCell,
@@ -228,6 +231,29 @@ impl Fixture {
 impl Drop for Fixture {
     fn drop(&mut self) {
         if let Some(ui) = self.ui.upgrade() {
+            ui.on_select_shelf(|_| {});
+            ui.on_select_shelf_source(|_| {});
+            ui.on_toggle_shelf_source(|| {});
+            ui.on_rename_shelf(|| {});
+            ui.on_duplicate_shelf(|| {});
+            ui.on_move_shelf(|_| {});
+            ui.on_preview_shelf_creation(|| {});
+            ui.on_add_manual_shelf(|| {});
+            ui.on_shelf_remove_members(|_| {});
+            ui.on_shelf_move_member(|_| {});
+            ui.on_clear_shelf_refinement(|| {});
+            ui.on_show_shelf_exclusions(|| {});
+            ui.on_shelf_exclusion_page(|_| {});
+            ui.on_refresh_shelf_exclusions(|| {});
+            ui.on_allow_shelf_suggestions(|_| {});
+            ui.on_refresh_shelf_preview(|| {});
+            ui.on_shelf_preview_toggle(|_| {});
+            ui.on_shelf_preview_all(|_| {});
+            ui.on_shelf_preview_show_warnings(|_| {});
+            ui.on_shelf_preview_page(|_| {});
+            ui.on_confirm_shelf_preview(|| {});
+            ui.on_cancel_shelf_preview(|| {});
+            ui.on_dismiss_shelf_feedback(|| {});
             ui.on_select_collection(|_| {});
             ui.on_save_collection(|| {});
             ui.on_duplicate_collection(|| {});

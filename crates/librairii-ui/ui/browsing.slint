@@ -2,7 +2,7 @@ import { TagChip } from "states.slint";
 import { FlagControl } from "flags.slint";
 import { Button, CheckBox, ListView, Palette, ScrollView, VerticalBox } from "std-widgets.slint";
 export struct TagRow { label:string, color:color }
-export struct StoryRow { broken:bool, bulk:bool, uuid:string, technical:string, facts:string, display-sources:string, tags:[TagRow], metadata:string, index: int, title: string, author: string, description: string, warning: string, provenance: string, cover: image }
+export struct StoryRow { member-status:string, acceptance:string, matches:string, broken:bool, bulk:bool, uuid:string, technical:string, facts:string, display-sources:string, tags:[TagRow], metadata:string, index: int, title: string, author: string, description: string, warning: string, provenance: string, cover: image }
 export struct StoryGroup { cards: [StoryRow] }
 export component StoryBrowser inherits FocusScope {
     in property <bool> french;
@@ -10,10 +10,11 @@ export component StoryBrowser inherits FocusScope {
     in property <int> count;
     in property <int> mode;
     in property <int> columns: 1;
+    in property <bool> membership;
     in property <string> label;
     in-out property <int> selected-index: -1;
     private property <int> focused-index: 0;
-    private property <length> row-height: root.mode == 0 ? min(82px,max(76px,root.height)) : min(root.mode == 1 ? 230px : 310px,max(148px,root.height));
+    private property <length> row-height: root.membership ? min(96px,max(86px,root.height)) : root.mode == 0 ? min(82px,max(76px,root.height)) : min(root.mode == 1 ? 230px : 310px,max(148px,root.height));
     out property <length> mounted-row-height: root.row-height;
     callback select(int);
     callback toggle(int);
@@ -62,7 +63,7 @@ export component StoryBrowser inherits FocusScope {
                 border-width: root.has-focus && card.index == root.focused-index ? 2px : 1px;
                 border-color: root.has-focus && card.index == root.focused-index ? Palette.foreground : Palette.border;
                 accessible-role: list-item;
-                accessible-label: card.title + (card.warning == "" ? "" : ", " + card.warning) + (card.provenance == "" ? "" : ", " + card.provenance);
+                accessible-label: card.title + (card.warning == "" ? "" : ", " + card.warning) + (card.provenance == "" ? "" : ", " + card.provenance) + (root.membership ? ", " + card.member-status + ", " + card.acceptance + ", " + card.matches : "");
                 accessible-item-index: card.index;
                 accessible-item-selectable: true;
                 accessible-item-selected: card.index == root.selected-index;
@@ -72,15 +73,18 @@ export component StoryBrowser inherits FocusScope {
                     opacity: card.broken ? 0.45 : 1;
                     source: card.cover.width > 0 ? card.cover : @image-url("../assets/library.svg"); image-fit: contain;
                 }
-                Text { x: root.mode == 0 ? 84px : 8px; y: root.mode == 0 ? 7px : parent.height - 72px;
-                    width: parent.width - self.x - 36px; height: 38px;
+                Text { x: root.mode == 0 ? 84px : 8px; y: root.mode == 0 ? (root.membership ? 3px : 7px) : parent.height - 72px;
+                    width: parent.width - self.x - 36px; height: root.membership ? 20px : 38px;
                     text: card.title; wrap: word-wrap; overflow: elide; font-weight: 600;
                     color: card.index == root.selected-index ? Palette.selection-foreground : Palette.foreground;
                 }
-                Text { x: root.mode == 0 ? 84px : 8px; y: parent.height - 28px; width: parent.width - self.x - 8px; height: 22px;
+                Text { visible: !root.membership; x: root.mode == 0 ? 84px : 8px; y: parent.height - 28px; width: parent.width - self.x - 8px; height: 22px;
                     text: (card.warning != "" ? card.warning : card.author) + (card.provenance != "" ? " · " + card.provenance : ""); overflow: elide;
                     color: card.index == root.selected-index ? Palette.selection-foreground : Palette.foreground;
                 }
+                if root.membership: Text { x: 84px; y: 24px; width: parent.width - 92px; height: 18px; text: card.member-status; overflow: elide; color: card.index == root.selected-index ? Palette.selection-foreground : Palette.foreground; }
+                if root.membership: Text { x: 84px; y: 42px; width: parent.width - 92px; height: 18px; text: card.acceptance; overflow: elide; color: card.index == root.selected-index ? Palette.selection-foreground : Palette.foreground; }
+                if root.membership: Text { x: 84px; y: 60px; width: parent.width - 92px; height: 18px; text: card.matches; overflow: elide; color: card.index == root.selected-index ? Palette.selection-foreground : Palette.foreground; }
                 TouchArea { enabled: root.enabled; clicked => { root.move(card.index,true); root.focus(); } }
                 CheckBox { x: parent.width - 30px; y: 4px; width: 26px; text: ""; accessible-label: (card.bulk ? (root.french ? "Désélectionner · " : "Deselect · ") : (root.french ? "Sélectionner · " : "Select · ")) + card.title; checked: card.bulk; enabled: root.enabled; toggled => { root.toggle(card.index); } }
             }
@@ -104,6 +108,7 @@ export component Inspector inherits Rectangle {
     callback undo-flags();
     private property <int> focused-control;
     public function focus-current() { if root.focused-control == 0 || (!root.flag-enabled && !root.flag-can-undo) || root.flag-pending { technical.focus(); } else { flags.focus-control(root.focused-control); } }
+    public function sync-flags() {flags.sync-checked();}
     public function focus-flag() { flags.focus-control(1); }
     out property <bool> flag-focused: flags.toggle-focused;
     out property <bool> first-focused: root.flag-enabled && !root.flag-pending ? flags.toggle-focused : root.flag-can-undo && !root.flag-pending ? flags.undo-focused : technical.has-focus;
@@ -141,6 +146,7 @@ export component Inspector inherits Rectangle {
             Text { vertical-stretch: 0; text: root.story.author; wrap: word-wrap; color: Palette.foreground; }
             Text { vertical-stretch: 0; text: root.story.description != "" ? root.story.description : (root.french ? "Aucune description n’est encore disponible." : "No story description is available yet."); wrap: word-wrap; color: Palette.foreground; }
             Text { vertical-stretch: 0; text: root.story.provenance; wrap: word-wrap; color: Palette.foreground; }
+            if root.story.member-status != "": Text { vertical-stretch: 0; text: root.story.member-status + "\n" + root.story.acceptance + "\n" + root.story.matches; wrap: word-wrap; color: Palette.foreground; }
             Text { vertical-stretch: 0; text: root.story.facts; wrap: word-wrap; color: Palette.foreground; }
             Text { vertical-stretch: 0; text: root.story.display-sources; wrap: word-wrap; color: Palette.foreground; }
             technical := Button { enabled: root.interactive && root.story.uuid != ""; text: root.technical-open ? (root.french ? "Masquer les détails techniques" : "Hide technical details") : (root.french ? "Afficher les détails techniques" : "Show technical details"); clicked => { root.technical-open = !root.technical-open; if root.technical-open { root.request-data(); } } changed has-focus => { if self.has-focus { root.focused-control=0;root.focused(); details.content-y = min(0px, details.visible-height - details.content-height); } } }

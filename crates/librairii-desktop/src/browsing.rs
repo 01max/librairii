@@ -23,6 +23,9 @@ use std::sync::{
 };
 #[derive(Clone, Debug)]
 pub struct Story {
+    pub membership: Option<librairii_core::shelves::Member>,
+    pub current_sources: Vec<librairii_core::shelves::Source>,
+    pub coverage_incomplete: bool,
     pub dates: [Option<librairii_adapters::datetime::LocalDateTime>; 4],
     pub uuid: String,
     pub title: String,
@@ -33,6 +36,7 @@ pub struct Story {
 }
 #[derive(Clone, Debug)]
 pub struct Page {
+    pub shelf: Option<ShelfContext>,
     pub stories: Vec<Story>,
     pub previews: Vec<GroupPreview>,
     pub preview_page: usize,
@@ -40,6 +44,13 @@ pub struct Page {
     pub page: i64,
     pub pages: i64,
     pub total: i64,
+}
+#[derive(Clone, Debug)]
+pub struct ShelfContext {
+    pub shelf: librairii_core::shelves::Shelf,
+    pub sources: Vec<(librairii_core::shelves::Source, bool)>,
+    pub exclusion_count: usize,
+    pub incomplete: bool,
 }
 #[derive(Clone, Debug)]
 pub struct GroupPreview {
@@ -112,6 +123,7 @@ fn groups(runtime: &Runtime<'_, '_, '_>) -> Result<Vec<Group>> {
 }
 fn page(runtime: &Runtime<'_, '_, '_>, location: &Location, stop: &AtomicBool) -> Result<Page> {
     runtime.command(|db, _, cache| {
+        let mut shelf_context = None;
         let mut request = location.request.clone();
         let locale = "en-GB".to_owned();
         let (mut result, page, pages, total) = match location.scope {
@@ -121,6 +133,9 @@ fn page(runtime: &Runtime<'_, '_, '_>, location: &Location, stop: &AtomicBool) -
                     p.stories
                         .into_iter()
                         .map(|s| Story {
+                            membership: None,
+                            current_sources: Vec::new(),
+                            coverage_incomplete: false,
                             uuid: s.uuid.clone(),
                             title: s.title.clone(),
                             dates: Default::default(),
@@ -140,10 +155,29 @@ fn page(runtime: &Runtime<'_, '_, '_>, location: &Location, stop: &AtomicBool) -
                     request.sort.clear();
                 }
                 let p = db.shelf_page(id, request, locale)?.wait()?;
+                let evaluated = db.shelf_source_evaluation(id, "en-GB".into())?.wait()?;
+                let exclusions = db.shelf_exclusions_page(id, 0)?.wait()?;
+                shelf_context = Some(ShelfContext {
+                    shelf: p.shelf.clone(),
+                    sources: evaluated
+                        .sources
+                        .iter()
+                        .map(|s| (s.source.clone(), s.warning.is_some()))
+                        .collect(),
+                    exclusion_count: exclusions.total,
+                    incomplete: evaluated.incomplete,
+                });
                 (
                     p.members
                         .into_iter()
                         .map(|m| Story {
+                            membership: Some(m.member.clone()),
+                            current_sources: evaluated
+                                .matching
+                                .get(&m.member.uuid)
+                                .cloned()
+                                .unwrap_or_default(),
+                            coverage_incomplete: evaluated.incomplete,
                             uuid: m.member.uuid,
                             title: m
                                 .story
@@ -213,6 +247,7 @@ fn page(runtime: &Runtime<'_, '_, '_>, location: &Location, stop: &AtomicBool) -
             }
         }
         Ok(Page {
+            shelf: shelf_context,
             stories: result,
             previews: Vec::new(),
             preview_page: 0,
@@ -359,6 +394,7 @@ pub(crate) fn run(
     let mut tag_controller = crate::workflows::tags::Controller::default();
     let mut flag_controller = crate::workflows::flags::Controller::default();
     let mut collection_controller = crate::workflows::collections::Controller::default();
+    let mut shelf_controller = crate::workflows::shelves::Controller::default();
     let result = session.drive(locations, &WorkCancellation::default(), |runtime| {
         let active = (|| -> Result<()> {
             let generation = runtime
@@ -402,6 +438,7 @@ pub(crate) fn run(
                             .collect::<Vec<_>>()
                     })
                     .unwrap_or_default();
+                let unavailable=page.as_ref().map(|p|p.all_stories().filter(|s|s.summary.is_none()).map(|s|s.uuid.clone()).collect::<Vec<_>>()).unwrap_or_default();
                 *mailbox.lock().map_err(|_| StorageError::RuntimeFenced)? = Some(Snapshot {
                     workflows: workflows.clone(),
                     facets: query_facets.clone(),
@@ -438,6 +475,21 @@ pub(crate) fn run(
                     let mut next = navigation.clone();
                     invalid_query = false;
                     match command {
+                        Command::SelectUnavailable{uuid,query}=>{
+                            if next.accepts(&query) && unavailable.contains(&uuid) {
+                                workflows.details=None;
+                                next.select(Vec::new()).map_err(|_|StorageError::InvalidNavigation)?;
+                            }
+                        }
+                        Command::Shelves{generation,action}=>{
+                            shelf_controller.handle(runtime,generation,action,revision,&mut next);
+                            workflows.shelves=shelf_controller.snapshot.clone();
+                            if matches!(&workflows.shelves.feedback,Some(crate::workflows::shelves::Feedback::Error{uncertain:true,..})) {
+                                workflows.recovery_required=true;receiver.fence().map_err(|_|StorageError::RuntimeFenced)?;return Err(StorageError::RuntimeFenced);
+                            }
+                            if next.current().location!=navigation.current().location {restore_revision=revision;}
+                            group_rows=groups(runtime)?;
+                        }
                         Command::GroupPage(delta) => {
                             preview_page = preview_page.saturating_add_signed(delta as isize);
                         }

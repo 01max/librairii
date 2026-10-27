@@ -1,0 +1,117 @@
+import { Button, CheckBox, ComboBox, VerticalBox, HorizontalBox, Palette } from "std-widgets.slint";
+import { FormField } from "form-field.slint";
+import { EditAction } from "states.slint";
+export struct ShelfPreviewRow { index:int,uuid:string,label:string,detail:string,selected:bool,selectable:bool }
+component Label inherits Text { vertical-stretch: 0; color: Palette.foreground; wrap: word-wrap; }
+export component ShelfManager inherits VerticalBox {
+    in property <bool> french;
+    in property <bool> active;
+    in property <bool> creating;
+    in property <bool> move-up;
+    in property <bool> move-down;
+    in property <bool> manual-available;
+    in property <bool> source-selected;
+    in property <[string]> definitions;
+    in property <[string]> sources;
+    in-out property <int> selected;
+    in-out property <int> source-index;
+    in-out property <string> name;
+    in-out property <bool> include-manual;
+    in property <string> notice;
+    in property <string> summary;
+    in property <string> manual-summary;
+    in property <string> source-summary;
+    out property <bool> first-focused: selector.has-focus;
+    out property <bool> editing: name-field.has-focus;
+    public function activate() { selector.focus(); }
+    public function focus-name() { name-field.focus(); }
+    public function focus-invoker(kind:int) { if kind==0 { preview.focus(); }else if kind==1 {duplicate.focus();}else if kind==4 {excluded.focus();}else{selector.focus();} }
+    public function edit(action:EditAction) {name-field.edit(action);}
+    callback select(int);
+    callback rename();
+    callback duplicate();
+    callback move(int);
+    callback preview();
+    callback toggle-source();
+    callback choose-source(int);
+    callback add-manual();
+    callback exclusions();
+    callback reveal(length,length);
+    padding: 0px; spacing: 8px;
+    Label {text: root.notice;accessible-live-region: polite;}
+    selector := ComboBox {enabled: root.active;model: root.definitions;current-index <=> root.selected;accessible-label: root.french ? "Étagère à gérer" : "Shelf to manage";selected(_) => {root.select(self.current-index);}changed has-focus=>{if self.has-focus {root.reveal(self.absolute-position.y,self.height);}}}
+    Label {text: root.summary;}
+    name-field := FormField {enabled: root.active;text <=> root.name;accessible-label: root.french ? "Nom de l’Étagère" : "Shelf name";placeholder-text: self.accessible-label;reveal(y,h)=>{root.reveal(y,h);}}
+    Button {visible: !root.creating;height: self.visible ? 32px : 0px;enabled: root.active && !root.creating;text: root.french ? "Renommer l’Étagère" : "Rename Shelf";clicked=>{root.rename();}changed has-focus=>{if self.has-focus {root.reveal(self.absolute-position.y,self.height);}}}
+    duplicate := Button {visible: !root.creating;height: self.visible ? 32px : 0px;enabled: root.active && !root.creating;text: root.french ? "Dupliquer l’état approuvé avec ce nom…" : "Duplicate approved state with this name…";clicked=>{root.duplicate();}changed has-focus=>{if self.has-focus {root.reveal(self.absolute-position.y,self.height);}}}
+    HorizontalBox {visible: !root.creating;height: self.visible ? 32px : 0px;padding: 0px;
+        Button {enabled: root.active && root.move-up;text: root.french ? "Monter l’Étagère" : "Move Shelf up";clicked=>{root.move(-1);}changed has-focus=>{if self.has-focus {root.reveal(self.absolute-position.y,self.height);}}}
+        Button {enabled: root.active && root.move-down;text: root.french ? "Descendre l’Étagère" : "Move Shelf down";clicked=>{root.move(1);}changed has-focus=>{if self.has-focus {root.reveal(self.absolute-position.y,self.height);}}}
+    }
+    Label {text: root.manual-summary;}
+    Button {visible: !root.creating;height: self.visible ? 32px : 0px;enabled: root.active && !root.creating && root.manual-available;text: root.french ? "Ajouter ces histoires manuellement à l’Étagère" : "Add these stories manually to the Shelf";clicked=>{root.add-manual();}changed has-focus=>{if self.has-focus {root.reveal(self.absolute-position.y,self.height);}}}
+    excluded := Button {visible: !root.creating;height: self.visible ? 32px : 0px;enabled: root.active && !root.creating;text: root.french ? "Gérer les exclusions…" : "Manage exclusions…";clicked=>{root.exclusions();}changed has-focus=>{if self.has-focus {root.reveal(self.absolute-position.y,self.height);}}}
+    if root.creating: CheckBox {enabled: root.active && root.manual-available;checked <=> root.include-manual;text: root.french ? "Inclure ces histoires comme candidates initiales" : "Include these stories as initial candidates";changed has-focus=>{if self.has-focus {root.reveal(self.absolute-position.y,self.height);}}}
+    if root.creating: Label {text: root.french ? "Sources · une correspondance avec n’importe quelle Collection suffit. Lier une source n’approuve aucune histoire." : "Sources · matching any Collection is sufficient. Linking a source approves no stories.";}
+    if root.creating: ComboBox {enabled: root.active;model: root.sources;current-index <=> root.source-index;accessible-label: root.french ? "Collection source" : "Source Collection";selected(_)=>{root.choose-source(self.current-index);}changed has-focus=>{if self.has-focus {root.reveal(self.absolute-position.y,self.height);}}}
+    if root.creating: Button {enabled: root.active && root.sources.length>0;text: root.source-selected ? (root.french ? "Retirer cette source" : "Remove this source") : (root.french ? "Inclure cette source" : "Include this source");clicked=>{root.toggle-source();}changed has-focus=>{if self.has-focus {root.reveal(self.absolute-position.y,self.height);}}}
+    if root.creating: Label {text: root.source-summary;}
+    preview := Button {visible: root.creating;height: self.visible ? 32px : 0px;enabled: root.active && root.creating;text: root.french ? "Examiner les membres initiaux…" : "Preview initial members…";clicked=>{root.preview();}changed has-focus=>{if self.has-focus {root.reveal(self.absolute-position.y,self.height);}}}
+}
+export component ShelfPreview inherits VerticalBox {
+    in property <bool> french;
+    in property <bool> active;
+    in property <bool> creating;
+    in property <bool> warnings;
+    in property <bool> has-warnings;
+    in property <[ShelfPreviewRow]> rows;
+    in property <string> summary;
+    in property <string> notice;
+    out property <bool> first-focused: refresh.has-focus;
+    public function activate() {refresh.focus();}
+    callback refresh();
+    callback toggle(int);
+    callback all(bool);
+    callback show-warnings(bool);
+    callback reveal(length,length);
+    padding: 0px;spacing: 8px;
+    Label {text: root.summary;}
+    Label {text: root.notice;accessible-live-region: polite;}
+    refresh := Button {enabled: root.active;text: root.french ? "Actualiser l’aperçu et renouveler les choix" : "Refresh preview and renew choices";clicked=>{root.refresh();}changed has-focus=>{if self.has-focus {root.reveal(self.absolute-position.y,self.height);}}}
+    if root.creating: HorizontalBox {padding: 0px;
+        Button {enabled: root.active && !root.warnings;text: root.french ? "Tout sélectionner" : "Select all candidates";clicked=>{root.all(true);}changed has-focus=>{if self.has-focus {root.reveal(self.absolute-position.y,self.height);}}}
+        Button {enabled: root.active && !root.warnings;text: root.french ? "Ne rien sélectionner" : "Select none";clicked=>{root.all(false);}changed has-focus=>{if self.has-focus {root.reveal(self.absolute-position.y,self.height);}}}
+    }
+    if root.creating && root.has-warnings: Button {enabled: root.active;text: root.warnings ? (root.french ? "Afficher les candidates" : "Show candidates") : (root.french ? "Afficher les avertissements" : "Show warnings");clicked=>{root.show-warnings(!root.warnings);}changed has-focus=>{if self.has-focus {root.reveal(self.absolute-position.y,self.height);}}}
+    for row in root.rows: HorizontalBox {padding: 0px;spacing: 8px;
+        if row.selectable: CheckBox {width: 30px;enabled: root.active;checked: row.selected;text: "";accessible-label: row.label + " · " + row.uuid + " · " + row.detail;toggled=>{root.toggle(row.index);}changed has-focus=>{if self.has-focus {root.reveal(self.absolute-position.y,self.height);}}}
+        VerticalBox {padding: 0px;spacing: 4px;
+            Label {text: row.label;font-weight: 600;}
+            Label {text: row.uuid;}
+            Text {height: 36px;text: row.detail;wrap: word-wrap;overflow: elide;color: Palette.foreground;}
+        }
+    }
+}
+export component ShelfExclusions inherits VerticalBox {
+    in property <bool> french;
+    in property <bool> active;
+    in property <[ShelfPreviewRow]> rows;
+    in property <string> summary;
+    in property <string> notice;
+    out property <string> focused-uuid;
+    out property <bool> first-focused: refresh.has-focus;
+    public function activate() {refresh.focus();}
+    callback refresh();
+    callback allow(int);
+    callback reveal(length,length);
+    padding: 0px;spacing: 8px;
+    Label {text: root.summary;}
+    Label {text: root.notice;accessible-live-region: polite;}
+    Label {text: root.french ? "Autoriser les suggestions retire seulement l’exclusion. Aucune histoire n’est ajoutée à l’Étagère." : "Allow suggestions clears only the exclusion. It adds no Shelf members.";}
+    refresh := Button {enabled: root.active;text: root.french ? "Actualiser les exclusions" : "Refresh exclusions";clicked=>{root.refresh();}changed has-focus=>{if self.has-focus {root.reveal(self.absolute-position.y,self.height);}}}
+    for row in root.rows: VerticalBox {padding: 0px;spacing: 4px;
+        Label {text: row.label;}
+        Label {text: row.uuid;}
+        Button {enabled: root.active;text: root.french ? "Autoriser les suggestions" : "Allow suggestions";accessible-label: self.text + " · " + row.label + " · " + row.uuid;clicked=>{root.allow(row.index);}changed has-focus=>{if self.has-focus {root.focused-uuid=row.uuid;root.reveal(self.absolute-position.y,self.height);}else if root.focused-uuid==row.uuid {root.focused-uuid="";}}}
+    }
+}

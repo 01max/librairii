@@ -54,10 +54,14 @@ component ReviewPane inherits FocusScope {
 // section-15 controller supplies/revalidates domain authority at commitment.
 export component Workspace inherits Rectangle {
     callback toggle(int);
+    callback approved-focused();
+    out property <bool> approved-has-focus: approved-list.has-focus;
     min-width: 0px; min-height: 0px;
     in property <bool> french;
     in property <bool> interactive: true;
     in property <bool> wide;
+    in property <bool> membership;
+    in property <bool> review-visible: true;
     in property <[StoryGroup]> members;
     in property <int> count;
     in property <[string]> sources;
@@ -74,13 +78,14 @@ export component Workspace inherits Rectangle {
     public function focus-approved() { approved-list.focus(); }
     public function focus-bulk(index:int) { approved-list.focus-bulk(index); }
     approved := Rectangle {
-        x: 0px; y: 0px; width: root.wide ? parent.width * 0.54 : parent.width; height: root.wide ? parent.height : min(parent.height - 88px,max(110px,parent.height * 0.46));
-        VerticalBox { padding: 0px;
-            Text { text: root.french ? "Histoires approuvées" : "Approved stories"; color: Palette.foreground; font-weight: 600; }
-            approved-list := StoryBrowser { french: root.french; enabled: root.interactive; groups: root.members; count: root.count; columns: 1; mode: 0; label: root.french ? "Membres approuvés" : "Approved members"; selected-index <=> root.selected-index; select(index) => { root.select(index); } toggle(index) => { root.toggle(index); } }
+        x: 0px; y: 0px; width: root.wide && root.review-visible ? parent.width * 0.54 : parent.width; height: root.wide || !root.review-visible ? parent.height : min(parent.height - 88px,max(118px,parent.height * 0.54));
+        VerticalBox { padding: 0px;spacing: 4px;
+            Text { height: 18px;text: root.french ? "Histoires approuvées" : "Approved stories"; color: Palette.foreground; font-weight: 600; }
+            approved-list := StoryBrowser { focus-entered=>{root.approved-focused();} membership: root.membership; french: root.french; enabled: root.interactive; groups: root.members; count: root.count; columns: 1; mode: 0; label: root.french ? "Membres approuvés" : "Approved members"; selected-index <=> root.selected-index; select(index) => { root.select(index); } toggle(index) => { root.toggle(index); } }
         }
     }
     Rectangle {
+        visible: root.review-visible;
         x: root.wide ? approved.width + 12px : 0px; y: root.wide ? 0px : approved.height + 8px;
         width: parent.width - self.x; height: parent.height - self.y;
         background: Palette.alternate-background;

@@ -260,6 +260,10 @@ impl State {
             String::new()
         };
         ui.set_flag_notice(notice.into());
+        // A native CheckBox mutates its local checked property on activation.
+        // Reassert every owned projection, including unchanged scalar values
+        // after a pending/refused action or a changed selection.
+        ui.invoke_sync_broken_controls();
     }
 }
 fn send(

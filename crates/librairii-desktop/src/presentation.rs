@@ -16,6 +16,14 @@ pub const COMMAND_CAPACITY: usize = 16;
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum Command {
     Refresh,
+    Shelves {
+        generation: librairii_app::lifecycle::LibraryGeneration,
+        action: crate::workflows::shelves::Action,
+    },
+    SelectUnavailable {
+        uuid: String,
+        query: librairii_core::navigation::QueryStamp,
+    },
     Collections {
         generation: librairii_app::lifecycle::LibraryGeneration,
         action: crate::workflows::collections::Action,
@@ -356,18 +364,25 @@ pub(crate) fn recovery_with_workflows(
                 let status = catalogs
                     .text(language, key)
                     .map_err(|_| librairii_storage::StorageError::InvalidProfile)?;
+                let mut confirmed = String::new();
                 if workflows.removal.as_ref().is_some_and(|r| r.is_ok()) {
-                    format!(
-                        "{} {status}",
-                        if language == Language::French {
-                            "L’histoire a été retirée."
-                        } else {
-                            "The story was removed."
-                        }
-                    )
-                } else {
-                    status.into()
+                    confirmed.push_str(if language == Language::French {
+                        "L’histoire a été retirée. "
+                    } else {
+                        "The story was removed. "
+                    });
                 }
+                if matches!(
+                    workflows.shelves.feedback,
+                    Some(crate::workflows::shelves::Feedback::Saved(_))
+                ) {
+                    confirmed.push_str(if language == Language::French {
+                        "L’Étagère a été enregistrée. "
+                    } else {
+                        "The Shelf was saved. "
+                    });
+                }
+                format!("{confirmed}{status}")
             },
             groups: Vec::new(),
             navigation: None,

@@ -2,6 +2,7 @@
 //! authority without the actual generation/query/UUID checks on the controller.
 pub mod collections;
 pub mod flags;
+pub mod shelves;
 pub mod tags;
 use crate::library::Runtime;
 use librairii_app::lifecycle::LibraryGeneration;
@@ -34,6 +35,7 @@ pub struct Details {
 }
 #[derive(Clone, Debug, Default)]
 pub struct Snapshot {
+    pub shelves: shelves::Snapshot,
     pub collections: collections::Snapshot,
     pub flags: flags::Snapshot,
     pub tags: tags::Snapshot,

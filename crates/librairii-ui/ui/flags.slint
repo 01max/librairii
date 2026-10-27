@@ -14,6 +14,8 @@ export component FlagControl inherits VerticalBox {
     callback change(bool);
     callback undo();
     callback focused(int);
+    out property <bool> observed-checked: toggle.checked;
+    public function sync-checked() {toggle.checked=root.checked;}
     out property <bool> toggle-focused: toggle.has-focus;
     out property <bool> undo-focused: undo.has-focus;
     public function focus-control(kind:int) { if (kind == 2 || !root.available) && root.can-undo && !root.pending { undo.focus(); } else if root.available && !root.pending { toggle.focus(); } }

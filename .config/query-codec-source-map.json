@@ -471,7 +471,7 @@
         "bytes": 19643,
         "sha256": "ab4b1c10137332c5cdbe4430edead212054e38219fb025daef2ba753d6b0502f",
         "kind": "translated",
-        "recipe": "Hand translation of frozen full-fold\u2192Go stream-safe NFKD\u2192Mn-only removal\u2192Go whitespace folding; original-character leading/trailing partition precedes stable CCC insertion. Safe checked UTF8 trie and fixed32-rune segment, Hangul decomposition; no modern composition or runtime Go.",
+        "recipe": "Hand translation of frozen full-fold→Go stream-safe NFKD→Mn-only removal→Go whitespace folding; original-character leading/trailing partition precedes stable CCC insertion. Safe checked UTF8 trie and fixed32-rune segment, Hangul decomposition; no modern composition or runtime Go.",
         "sources": [
           {
             "path": "golang.org/x/text@v0.43.0/unicode/norm/tables15.0.0.go",
@@ -5454,6 +5454,19 @@
           ]
         },
         "reason": "Task15.4 observed native flag regression: reused UUID and mismatched restore targets reject the whole writer batch without partial Undo. Every prior identity and target scope is retained."
+      },
+      {
+        "position": 615,
+        "identity": {
+          "suite": "librairii-storage::shelves",
+          "name": "native_shelf_manual_targets_keep_exact_uuid_spelling_and_refuse_reused_ids",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Task15.6 observed native Shelf regression: exact stored UUID spelling, source/manual overlap, and frozen ID/UUID admission retain approved authority and reject reused IDs atomically. Every prior identity and target scope is retained."
       }
     ],
     "python": [

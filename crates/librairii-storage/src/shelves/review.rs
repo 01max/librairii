@@ -43,6 +43,7 @@ pub struct CreationPreview {
 #[derive(Clone, Debug)]
 pub struct CreationPlan {
     request: CreationRequest,
+    manual_exact: Vec<String>,
     preview: CreationPreview,
     fingerprint: [u8; 32],
     identity: SnapshotIdentity,
@@ -97,10 +98,10 @@ fn stories(tx: &Transaction<'_>, ids: &[String], locale: &str) -> Result<Vec<Sto
 fn creation(
     tx: &Transaction<'_>,
     request: &CreationRequest,
+    manual: &[String],
     locale: &str,
 ) -> Result<(CreationPreview, [u8; 32])> {
     let (name, normalized) = normalize_name(&request.name)?;
-    let manual = uuid_strings(&request.manual_uuids);
     let evaluated =
         sources::evaluate(tx, sources::potential(tx, &request.collection_ids)?, locale)?;
     let ids: Vec<_> = manual
@@ -117,7 +118,7 @@ fn creation(
         return Err(ShelfError::NotFound.into());
     }
     let mut candidates = Vec::new();
-    for uuid in &manual {
+    for uuid in manual {
         if let Some(story) = by_uuid.remove(uuid) {
             candidates.push(Candidate {
                 uuid: uuid.clone(),
@@ -170,12 +171,50 @@ impl Database<'_> {
         request: CreationRequest,
         locale: String,
     ) -> Result<Pending<'_, CreationPlan>> {
+        let manual = uuid_strings(&request.manual_uuids);
+        self.creation_preview(request, manual, None, locale)
+    }
+    /// Native selections retain the exact stored UUID spelling. The numeric
+    /// row and UUID are checked together in the same preview observation.
+    pub fn shelf_creation_preview_for_stories(
+        &self,
+        name: String,
+        collection_ids: Vec<CollectionId>,
+        targets: Vec<librairii_core::browsing::StoryIdentity>,
+        locale: String,
+    ) -> Result<Pending<'_, CreationPlan>> {
+        let manual = targets.iter().map(|s| s.uuid.clone()).collect();
+        self.creation_preview(
+            CreationRequest {
+                name,
+                collection_ids,
+                ..Default::default()
+            },
+            manual,
+            Some(targets),
+            locale,
+        )
+    }
+    fn creation_preview(
+        &self,
+        request: CreationRequest,
+        manual_exact: Vec<String>,
+        targets: Option<Vec<librairii_core::browsing::StoryIdentity>>,
+        locale: String,
+    ) -> Result<Pending<'_, CreationPlan>> {
         let identity = self.snapshot_identity();
         let registry = self.shelf_tickets.clone();
         self.read(move |tx| {
-            let (preview, fingerprint) = creation(tx, &request, &locale)?;
+            if let Some(targets) = targets.filter(|targets| !targets.is_empty()) {
+                crate::query::require_identities(tx, &targets)?;
+            }
+            for uuid in &manual_exact {
+                StoryReference::from_stored(uuid)?;
+            }
+            let (preview, fingerprint) = creation(tx, &request, &manual_exact, &locale)?;
             Ok(CreationPlan {
                 request,
+                manual_exact,
                 preview,
                 fingerprint,
                 identity,
@@ -195,7 +234,8 @@ impl Database<'_> {
         }
         self.transaction(cancellation, move |tx| {
             plan.ticket.claim(super::tickets::Kind::Create, 0)?;
-            let (fresh, fingerprint) = creation(tx, &plan.request, &plan.locale)?;
+            let (fresh, fingerprint) =
+                creation(tx, &plan.request, &plan.manual_exact, &plan.locale)?;
             if fingerprint != plan.fingerprint {
                 return Err(ShelfError::StaleReview.into());
             }

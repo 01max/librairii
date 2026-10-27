@@ -7,6 +7,8 @@ pub(crate) mod details;
 pub(crate) mod filters;
 #[path = "view/flags.rs"]
 pub(crate) mod flags;
+#[path = "view/shelves.rs"]
+pub(crate) mod shelves;
 #[path = "view/tags.rs"]
 pub(crate) mod tags;
 use librairii_app::localization::{Catalogs, Language, LocalizationError};
@@ -62,6 +64,7 @@ fn update_previews(ui: &DesktopWindow, mut next: Vec<CollectionPreview>) -> bool
     false
 }
 pub struct View {
+    pub shelves: shelves::State,
     pub collections: collections::State,
     pub flags: flags::State,
     pub tags: tags::State,
@@ -142,7 +145,88 @@ fn row(index: usize, story: &Story, language: Language, catalogs: &Catalogs) -> 
             )
         })
         .unwrap_or_default();
+    let words = |en: &str, fr: &str| {
+        if language == Language::French {
+            fr.to_owned()
+        } else {
+            en.to_owned()
+        }
+    };
+    let (member_status, acceptance, matches) = story
+        .membership
+        .as_ref()
+        .map(|member| {
+            let mut status = if !available {
+                format!(
+                    "{} · {}",
+                    words(
+                        "Unavailable · approved UUID retained",
+                        "Indisponible · UUID approuvé conservé"
+                    ),
+                    member.uuid
+                )
+            } else if member.manually_retained {
+                words("Manual / kept", "Manuelle / conservée")
+            } else {
+                words("From Collections", "Issue des Collections")
+            };
+            if broken {
+                status.push_str(&format!(" · {warning}"));
+            }
+            let origins = member
+                .origins
+                .iter()
+                .map(|s| {
+                    format!(
+                        "{}{}",
+                        s.name,
+                        if s.active {
+                            String::new()
+                        } else {
+                            words(" (detached)", " (détachée)")
+                        }
+                    )
+                })
+                .collect::<Vec<_>>()
+                .join(", ");
+            let acceptance = format!(
+                "{}: {}",
+                words("Added from", "Ajoutée depuis"),
+                if origins.is_empty() {
+                    words("manual selection", "sélection manuelle")
+                } else {
+                    origins
+                }
+            );
+            let current = story
+                .current_sources
+                .iter()
+                .map(|s| s.name.as_str())
+                .collect::<Vec<_>>()
+                .join(", ");
+            let matches = format!(
+                "{}: {}{}",
+                words("Current matches", "Correspondances actuelles"),
+                if !available {
+                    words("unavailable; unknown", "indisponibles ; inconnues")
+                } else if current.is_empty() {
+                    words("none", "aucune")
+                } else {
+                    current
+                },
+                if story.coverage_incomplete {
+                    words(" · incomplete coverage", " · couverture incomplète")
+                } else {
+                    String::new()
+                }
+            );
+            (status, acceptance, matches)
+        })
+        .unwrap_or_default();
     StoryRow {
+        member_status: member_status.into(),
+        acceptance: acceptance.into(),
+        matches: matches.into(),
         broken,
         bulk: false,
         uuid: story.uuid.clone().into(),
@@ -218,8 +302,12 @@ impl View {
         self.tags.accept(ui, &self.snapshot);
         self.flags.accept(ui, &self.snapshot);
         self.collections.accept(ui, &self.snapshot);
+        if let Some(uuid) = self.shelves.accept(ui, &self.snapshot) {
+            self.selected = Some(uuid);
+        }
         self.resize(ui);
         self.project(ui);
+        self.shelves.restore_focus(ui);
         true
     }
     pub fn project(&mut self, ui: &DesktopWindow) {
@@ -246,6 +334,13 @@ impl View {
             &self.snapshot,
             &self.catalogs,
             &self.filters.request.criteria,
+        );
+        self.shelves.project(
+            ui,
+            &self.snapshot,
+            &self.filters.request,
+            self.selected.as_deref(),
+            &self.tags.selection,
         );
         ui.set_back_enabled(
             self.snapshot
@@ -424,6 +519,13 @@ impl View {
         );
         self.tags
             .project(ui, &self.snapshot, &self.catalogs, self.selected.as_deref());
+        self.shelves.project(
+            ui,
+            &self.snapshot,
+            &self.filters.request,
+            self.selected.as_deref(),
+            &self.tags.selection,
+        );
         ui.set_previous_enabled(page.page > 1);
         ui.set_next_enabled(page.page < page.pages);
         ui.set_counts(
@@ -459,7 +561,13 @@ impl View {
                 0.0
             }
             - 40.0;
-        let columns = if ui.get_mode() == 0 {
+        let columns = if ui.get_mode() == 0
+            || self.snapshot.navigation.as_ref().is_some_and(|n| {
+                matches!(
+                    n.current().location.scope,
+                    librairii_core::collection_codec::url::Scope::Shelf { .. }
+                )
+            }) {
             1
         } else {
             ((content / if ui.get_mode() == 1 { 170.0 } else { 240.0 }).floor() as usize)
@@ -492,6 +600,7 @@ pub fn install(
     initial: Snapshot,
 ) -> Result<Rc<RefCell<View>>, LocalizationError> {
     let view = Rc::new(RefCell::new(View {
+        shelves: Default::default(),
         collections: Default::default(),
         flags: Default::default(),
         tags: Default::default(),
@@ -555,23 +664,20 @@ pub fn install(
                 .cloned();
             if let Some(story) = story {
                 state.borrow_mut().selected = Some(story.uuid.clone());
-                ui.set_selected_story(row(
-                    index as usize,
-                    &story,
-                    state.borrow().snapshot.language,
-                    &state.borrow().catalogs,
-                ));
-                if let Some(summary) = story.summary
-                    && let Some(n) = state.borrow().snapshot.navigation.as_ref()
-                {
-                    offer(
-                        &pending.borrow(),
+                state.borrow_mut().project(&ui);
+                if let Some(n) = state.borrow().snapshot.navigation.as_ref() {
+                    let command = if let Some(summary) = story.summary {
                         Command::Select {
                             id: summary.id,
                             query: n.stamp(),
-                        },
-                        &ui,
-                    );
+                        }
+                    } else {
+                        Command::SelectUnavailable {
+                            uuid: story.uuid,
+                            query: n.stamp(),
+                        }
+                    };
+                    offer(&pending.borrow(), command, &ui);
                 }
             }
         }
@@ -627,6 +733,16 @@ pub fn install(
     });
     let (state, weak, pending) = (view.clone(), ui.as_weak(), worker.clone());
     ui.on_request_panel(move |panel| {
+        if panel == 10
+            && let Some(ui) = weak.upgrade()
+        {
+            let mut state = state.borrow_mut();
+            let manual = flags::targets(&state, !state.tags.selection.is_empty());
+            let bulk = !state.tags.selection.is_empty();
+            let state = &mut *state;
+            state.shelves.open(&ui, &state.snapshot, manual, bulk);
+            state.project(&ui);
+        }
         if panel == 9
             && let Some(ui) = weak.upgrade()
         {
@@ -665,6 +781,7 @@ pub fn install(
         }
     });
     collections::install(ui, view.clone(), worker.clone());
+    shelves::install(ui, view.clone(), worker.clone());
     flags::install(ui, view.clone(), worker.clone());
     tags::install(ui, view.clone(), worker.clone());
     details::install(ui, view.clone(), worker.clone());

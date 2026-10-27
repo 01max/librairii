@@ -11,6 +11,38 @@ pub enum Curation {
     Reorder(Vec<StoryReference>),
 }
 impl Database<'_> {
+    /// Add selected available stories with transaction-local ID/UUID checks.
+    /// Existing legacy spellings remain distinct from canonical aliases.
+    pub fn add_shelf_stories_guarded(
+        &self,
+        id: ShelfId,
+        targets: Vec<librairii_core::browsing::StoryIdentity>,
+        locale: String,
+        cancellation: WorkCancellation,
+    ) -> Result<Pending<'_, TransactionOutcome<Shelf>>> {
+        self.transaction(cancellation, move |tx| {
+            crate::query::require_identities(tx, &targets)?;
+            read(tx, id)?;
+            let mut seen = std::collections::BTreeSet::new();
+            let ids = targets
+                .into_iter()
+                .map(|s| s.uuid)
+                .filter(|uuid| seen.insert(uuid.clone()))
+                .collect::<Vec<_>>();
+            for uuid in &ids {
+                StoryReference::from_stored(uuid)?;
+            }
+            let available = titles(tx, &ids, &locale)?;
+            if available.len() != ids.len() {
+                return Err(ShelfError::NotFound.into());
+            }
+            let mut changed = false;
+            for uuid in ids {
+                changed |= add(tx, id, &uuid, &available[&uuid], true)?;
+            }
+            bump(tx, id, changed)
+        })
+    }
     pub fn curate_shelf(
         &self,
         id: ShelfId,
@@ -19,6 +51,27 @@ impl Database<'_> {
         cancellation: WorkCancellation,
     ) -> Result<Pending<'_, TransactionOutcome<Shelf>>> {
         self.transaction(cancellation, move |tx| curate(tx, id, action, &locale))
+    }
+    /// Explicit member actions recheck the Shelf version observed by their
+    /// confirmation/order view. Broken flags do not change that version.
+    pub fn curate_shelf_reviewed(
+        &self,
+        plan: CurationPlan,
+        action: Curation,
+        locale: String,
+        cancellation: WorkCancellation,
+    ) -> Result<Pending<'_, TransactionOutcome<Shelf>>> {
+        if self.snapshot_identity() != plan.identity {
+            return Err(ShelfError::StaleReview.into());
+        }
+        self.transaction(cancellation, move |tx| {
+            let id = plan.shelf.id;
+            plan.ticket.claim(tickets::Kind::Curation, id.get())?;
+            if read(tx, id)?.revision != plan.shelf.revision {
+                return Err(ShelfError::StaleReview.into());
+            }
+            curate(tx, id, action, &locale)
+        })
     }
 }
 pub fn exclusions(tx: &Transaction<'_>, id: ShelfId) -> Result<Vec<String>> {

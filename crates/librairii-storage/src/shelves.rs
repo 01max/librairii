@@ -27,6 +27,23 @@ pub enum Response {
     Shelves(Vec<Shelf>),
     Deleted,
 }
+/// One-use authority for an observed Shelf lifetime and version. Deletion
+/// invalidates it even if SQLite later reuses the same numeric ID/revision.
+#[derive(Debug)]
+pub struct CurationPlan {
+    shelf: Shelf,
+    members: Vec<Member>,
+    identity: crate::database::SnapshotIdentity,
+    ticket: std::sync::Arc<tickets::Ticket>,
+}
+impl CurationPlan {
+    pub fn shelf(&self) -> &Shelf {
+        &self.shelf
+    }
+    pub fn members(&self) -> &[Member] {
+        &self.members
+    }
+}
 impl Database<'_> {
     pub fn edit_shelves(
         &self,
@@ -38,6 +55,40 @@ impl Database<'_> {
     }
     pub fn shelves(&self) -> Result<Pending<'_, Vec<Shelf>>> {
         self.read(list)
+    }
+    pub fn shelf(&self, id: ShelfId) -> Result<Pending<'_, Shelf>> {
+        self.read(move |tx| read(tx, id))
+    }
+    pub fn shelf_curation_snapshot(&self, id: ShelfId) -> Result<Pending<'_, CurationPlan>> {
+        let identity = self.snapshot_identity();
+        let registry = self.shelf_tickets.clone();
+        self.writer_read(move |tx| {
+            Ok(CurationPlan {
+                shelf: read(tx, id)?,
+                members: members(tx, id)?,
+                identity,
+                ticket: tickets::issue(&registry, tickets::Kind::Curation, id.get(), vec![id])?,
+            })
+        })
+    }
+    pub fn duplicate_shelf_reviewed(
+        &self,
+        plan: CurationPlan,
+        name: String,
+        cancellation: WorkCancellation,
+    ) -> Result<Pending<'_, TransactionOutcome<Response>>> {
+        if self.snapshot_identity() != plan.identity {
+            return Err(ShelfError::StaleReview.into());
+        }
+        let registry = self.shelf_tickets.clone();
+        self.transaction(cancellation, move |tx| {
+            let id = plan.shelf.id;
+            plan.ticket.claim(tickets::Kind::Curation, id.get())?;
+            if read(tx, id)?.revision != plan.shelf.revision {
+                return Err(ShelfError::StaleReview.into());
+            }
+            execute(tx, Command::Duplicate { id, name }, &registry)
+        })
     }
     pub fn shelf_members(&self, id: ShelfId) -> Result<Pending<'_, Vec<Member>>> {
         self.read(move |tx| members(tx, id))

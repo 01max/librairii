@@ -403,3 +403,75 @@ pub fn preview_focus(ui: &DesktopWindow, menus: &Menus) -> Result {
         "About lost preview invoker",
     )
 }
+
+pub fn shelf_editor(ui: &DesktopWindow, menus: &Menus) -> Result {
+    let original = ui.get_shelf_name();
+    let query = ui.get_query();
+    ui.invoke_focus_shelf_name();
+    menus.dispatch(ui);
+    check(
+        shortcut("a", Flags::Command, 0)?,
+        "Shelf Select All missing",
+    )?;
+    key(ui, "Edited Shelf label".into())?;
+    check(
+        ui.get_shelf_name() == "Edited Shelf label" && ui.get_query() == query,
+        &format!(
+            "native Shelf editing targeted the background query: dialog={}, editing={}, name={:?}, query={:?}, old_query={:?}",
+            ui.get_dialog(),
+            ui.get_text_edit_focused(),
+            ui.get_shelf_name(),
+            ui.get_query(),
+            query
+        ),
+    )?;
+    check(shortcut("z", Flags::Command, 6)?, "Shelf Undo missing")?;
+    check(
+        ui.get_shelf_name().is_empty(),
+        "Shelf Undo did not remove insertion",
+    )?;
+    check(
+        shortcut("z", Flags::Command, 6)?,
+        "second Shelf Undo missing",
+    )?;
+    check(
+        ui.get_shelf_name() == original,
+        "Shelf Undo did not restore the label",
+    )?;
+    for _ in 0..2 {
+        check(
+            shortcut("z", Flags::Command | Flags::Shift, 6)?,
+            "Shelf Redo missing",
+        )?;
+    }
+    check(
+        ui.get_shelf_name() == "Edited Shelf label" && ui.get_query() == query,
+        "Shelf Redo lost the focused editor",
+    )?;
+    ui.set_shelf_name(original);
+    Ok(())
+}
+
+pub fn shelf_focus(ui: &DesktopWindow, menus: &Menus) -> Result {
+    ui.invoke_focus_browser();
+    check(
+        ui.get_approved_has_focus() && ui.get_focused_key() == 31,
+        "approved member focus was not recorded",
+    )?;
+    check(
+        shortcut(",", Flags::Command, 43)?,
+        "Shelf Settings shortcut missing",
+    )?;
+    menus.dispatch(ui);
+    key(ui, slint::platform::Key::Escape.into())?;
+    check(
+        !ui.get_modal() && ui.get_approved_has_focus(),
+        "Settings lost approved-list focus",
+    )?;
+    about(ui, menus)?;
+    ui.invoke_close_dialog();
+    check(
+        !ui.get_modal() && ui.get_approved_has_focus(),
+        "About lost approved-list focus",
+    )
+}

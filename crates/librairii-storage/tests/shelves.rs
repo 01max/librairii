@@ -1494,3 +1494,172 @@ fn deleted_shelf_reviews_cannot_target_reused_ids_and_unrelated_plans_survive() 
     db.close()?;
     Ok(())
 }
+
+#[test]
+fn native_shelf_manual_targets_keep_exact_uuid_spelling_and_refuse_reused_ids() -> TestResult {
+    use librairii_core::{browsing::StoryIdentity, shelves::StoryReference};
+    let roots = TestRoots::new()?;
+    let lib = library(&roots)?;
+    let mut db = Database::open_isolated(&lib)?;
+    let uppercase = "10000000-0000-4000-8000-00000000000A";
+    let lowercase = "10000000-0000-4000-8000-00000000000a";
+    committed(db.transaction(Default::default(),move|tx| {
+        for (id,uuid) in [(100,uppercase),(101,lowercase)] {
+            tx.execute("INSERT INTO stories(id,uuid,embedded_title,display_name_normalized) VALUES(?,?,'Case story','case story')",(id,uuid))?;
+            tx.execute("INSERT INTO story_archives(story_id,original_filename,detected_format,sha256,byte_size,managed_path,validation_state) VALUES(?1,'case.zip','zip',printf('%064d',?1),1,'archives/'||?1,'valid')",[id])?;
+        }
+        Ok(())
+    })?.wait()?)?;
+    let all = collection(&db, "All cases", Query::default())?;
+    let manual = create(&db, "Manual")?;
+    committed(
+        db.curate_shelf(
+            manual.id,
+            shelves::Curation::Exclude(vec![StoryReference::from_stored(uppercase)?]),
+            "en-GB".into(),
+            Default::default(),
+        )?
+        .wait()?,
+    )?;
+    let target = StoryIdentity {
+        id: 100,
+        uuid: uppercase.into(),
+    };
+    committed(
+        db.add_shelf_stories_guarded(
+            manual.id,
+            vec![target.clone(), target.clone()],
+            "en-GB".into(),
+            Default::default(),
+        )?
+        .wait()?,
+    )?;
+    let members = db.shelf_members(manual.id)?.wait()?;
+    assert_eq!(members.len(), 1);
+    assert_eq!(members[0].uuid, uppercase);
+    assert!(members[0].manually_retained);
+    assert_eq!(db.shelf_exclusions_page(manual.id, 0)?.wait()?.total, 0);
+    let plan = db
+        .shelf_creation_preview_for_stories(
+            "Native exact".into(),
+            vec![all],
+            vec![target.clone()],
+            "en-GB".into(),
+        )?
+        .wait()?;
+    assert_eq!(plan.preview().candidate_count(), 2);
+    let chosen = plan
+        .preview()
+        .candidates_page(0)
+        .iter()
+        .find(|c| c.uuid == uppercase)
+        .ok_or("manual candidate")?;
+    assert!(chosen.manual);
+    assert_eq!(chosen.sources.len(), 1);
+    let selected = vec![chosen.reference()?];
+    let seeded = committed(
+        db.create_shelf_reviewed(plan, selected, Default::default())?
+            .wait()?,
+    )?;
+    let members = db.shelf_members(seeded.id)?.wait()?;
+    assert_eq!(members.len(), 1);
+    assert_eq!(members[0].uuid, uppercase);
+    assert!(members[0].manually_retained);
+    assert_eq!(members[0].origins.len(), 1);
+    let empty = db
+        .shelf_creation_preview_for_stories(
+            "Empty native".into(),
+            Vec::new(),
+            Vec::new(),
+            "en-GB".into(),
+        )?
+        .wait()?;
+    assert_eq!(empty.preview().candidate_count(), 0);
+    committed(
+        db.create_shelf_reviewed(empty, Vec::new(), Default::default())?
+            .wait()?,
+    )?;
+    committed(
+        db.transaction(Default::default(), |tx| {
+            tx.execute(
+                "UPDATE stories SET uuid='10000000-0000-4000-8000-000000000099' WHERE id=100",
+                [],
+            )?;
+            Ok(())
+        })?
+        .wait()?,
+    )?;
+    let batch = vec![
+        StoryIdentity {
+            id: 101,
+            uuid: lowercase.into(),
+        },
+        target.clone(),
+    ];
+    assert!(matches!(
+        db.add_shelf_stories_guarded(manual.id, batch, "en-GB".into(), Default::default())?
+            .wait()?,
+        TransactionOutcome::ProvenNotCommitted(StorageError::SnapshotChanged)
+    ));
+    assert_eq!(db.shelf_members(manual.id)?.wait()?.len(), 1);
+    let before = db.shelves()?.wait()?.len();
+    assert!(matches!(
+        db.shelf_creation_preview_for_stories(
+            "Stale native".into(),
+            Vec::new(),
+            vec![target],
+            "en-GB".into()
+        )?
+        .wait(),
+        Err(StorageError::SnapshotChanged)
+    ));
+    assert_eq!(db.shelves()?.wait()?.len(), before);
+    let lifetime = create(&db, "Lifetime native")?;
+    committed(
+        db.curate_shelf(
+            lifetime.id,
+            shelves::Curation::Add(vec![lowercase.parse()?]),
+            "en-GB".into(),
+            Default::default(),
+        )?
+        .wait()?,
+    )?;
+    let duplicate = db.shelf_curation_snapshot(lifetime.id)?.wait()?;
+    let removal = db.shelf_curation_snapshot(lifetime.id)?.wait()?;
+    edit(&db, Command::Delete { id: lifetime.id })?;
+    let replacement = create(&db, "Lifetime native")?;
+    assert_eq!(replacement.id, lifetime.id);
+    committed(
+        db.curate_shelf(
+            replacement.id,
+            shelves::Curation::Add(vec![lowercase.parse()?]),
+            "en-GB".into(),
+            Default::default(),
+        )?
+        .wait()?,
+    )?;
+    assert_eq!(
+        db.shelf(replacement.id)?.wait()?.revision,
+        duplicate.shelf().revision
+    );
+    assert!(matches!(
+        db.duplicate_shelf_reviewed(duplicate, "Unauthorized copy".into(), Default::default())?
+            .wait()?,
+        TransactionOutcome::ProvenNotCommitted(StorageError::Shelf(ShelfError::StaleReview))
+    ));
+    assert!(matches!(
+        db.curate_shelf_reviewed(
+            removal,
+            shelves::Curation::Remove(vec![librairii_core::shelves::StoryReference::from_stored(
+                lowercase
+            )?]),
+            "en-GB".into(),
+            Default::default()
+        )?
+        .wait()?,
+        TransactionOutcome::ProvenNotCommitted(StorageError::Shelf(ShelfError::StaleReview))
+    ));
+    assert_eq!(db.shelf_members(replacement.id)?.wait()?.len(), 1);
+    db.close()?;
+    Ok(())
+}
