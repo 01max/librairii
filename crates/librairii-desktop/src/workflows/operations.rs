@@ -11,7 +11,7 @@ use librairii_storage::{
     operations_repository::{OperationCard, OperationItems},
 };
 use std::{
-    collections::{BTreeMap, VecDeque},
+    collections::{BTreeMap, BTreeSet, VecDeque},
     path::PathBuf,
     time::{Duration, Instant},
 };
@@ -23,7 +23,16 @@ pub enum Action {
     Import(Vec<PathBuf>),
     Cancel(String),
     Inspect { id: String, page: usize },
+    Dismiss(String),
+    History(HistoryAction),
     Refresh,
+}
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum HistoryAction {
+    Open,
+    Older,
+    Refresh,
+    Retry,
 }
 impl Action {
     pub fn bounded(&self) -> bool {
@@ -35,13 +44,18 @@ impl Action {
                         .try_fold(0usize, |bytes, p| bytes.checked_add(p.as_os_str().len()))
                         .is_some_and(|bytes| bytes <= 1024 * 1024)
             }
-            Self::Cancel(id) | Self::Inspect { id, .. } => !id.is_empty() && id.len() <= 256,
-            Self::Refresh | Self::Sync | Self::HideSync(_) => true,
+            Self::Cancel(id) | Self::Dismiss(id) | Self::Inspect { id, .. } => {
+                !id.is_empty() && id.len() <= 256
+            }
+            Self::Refresh | Self::Sync | Self::HideSync(_) | Self::History(_) => true,
         }
     }
 }
 #[derive(Clone, Debug, Default)]
 pub struct Snapshot {
+    pub dismissed_operations: BTreeSet<String>,
+    pub history: History,
+    pub notice_error: Option<String>,
     pub critical: bool,
     pub catalog_revision: Option<librairii_core::CatalogSnapshotId>,
     pub sync_hidden: bool,
@@ -60,6 +74,14 @@ pub struct Snapshot {
     pub status: Option<RuntimeStatus>,
     pub progress: Vec<ProgressUpdate>,
 }
+#[derive(Clone, Debug, Default)]
+pub struct History {
+    pub cards: Vec<OperationCard>,
+    pub dates: Vec<Option<librairii_adapters::datetime::LocalDateTime>>,
+    pub page: usize,
+    pub next_before: Option<String>,
+    pub error: Option<String>,
+}
 #[derive(Debug, Default)]
 pub struct Controller {
     preferences: Option<librairii_storage::profile::InterfacePreferences>,
@@ -70,6 +92,8 @@ pub struct Controller {
     last: Option<Instant>,
     dirty: bool,
     initialized: bool,
+    history_before: String,
+    history_attempt: Option<(String, usize)>,
 }
 impl Controller {
     pub fn watch(&mut self, id: String, revision: u64) {
@@ -93,6 +117,7 @@ impl Controller {
                     librairii_storage::profile::InterfacePreferences::new(library)
                 });
                 self.snapshot.sync_hidden = value.sync_panel_hidden;
+                self.snapshot.dismissed_operations = value.dismissed_operations.clone();
                 self.preferences = Some(value);
             }
             Err(StorageError::InvalidNavigation | StorageError::InvalidProfile) => {
@@ -113,115 +138,214 @@ impl Controller {
     ) -> bool {
         self.snapshot.revision = revision;
         self.snapshot.error = None;
+        // An Inspect receipt certifies only its newly read report. A failure,
+        // including a same-ID page/refresh, must never reuse the prior details.
+        if matches!(&action, Action::Inspect { .. }) {
+            self.snapshot.details = None;
+            self.selected = None;
+        }
+        let dismissing = matches!(&action, Action::Dismiss(_));
         let mut effects = false;
-        let result = (|| -> Result<()> {
-            if !runtime.accepts(&generation) || !action.bounded() {
-                return Err(StorageError::SnapshotChanged);
-            }
-            // Drain the previous admission receipt before offering another job.
-            effects |= self.poll(runtime, true)?.1;
-            match action {
-                Action::Sync => {
-                    if self.snapshot.sync_preparing
-                        || self.snapshot.cards.iter().any(|c| {
-                            c.operation.kind == OperationKind::MetadataSync
-                                && !is_terminal(c.operation.state)
-                        })
-                    {
-                        return Err(StorageError::QueueFull);
-                    }
-                    let id = librairii_adapters::identities::job_id()
-                        .map_err(|source| StorageError::Io {
-                            operation: "create metadata job identity",
-                            source,
-                        })?
-                        .to_string();
-                    let start = librairii_app::native_jobs::Start::new(
-                        librairii_app::ports::creation::NewOperation {
-                            id: id.clone(),
-                            kind: OperationKind::MetadataSync,
-                            source: None,
-                            destination: None,
-                            items: vec![librairii_app::ports::creation::NewItem {
-                                source_name: "en-GB".into(),
-                                ..Default::default()
-                            }],
-                        },
-                    )
-                    .map_err(|_| StorageError::CompatibilityInvariant)?;
-                    runtime.offer_metadata(start)?;
-                    self.recent.push_front(id.clone());
-                    self.recent.truncate(8);
-                    self.snapshot.preparing = Some(id.clone());
-                    self.snapshot.sync_preparing = true;
-                    self.snapshot.details = None;
-                    self.selected = Some((id, 0));
+        let result =
+            (|| -> Result<()> {
+                if !runtime.accepts(&generation) || !action.bounded() {
+                    return Err(StorageError::SnapshotChanged);
                 }
-                Action::HideSync(hidden) => {
-                    if let Some(preferences) = &self.preferences {
-                        let mut next = preferences.clone();
-                        next.sync_panel_hidden = hidden;
-                        if let Err(error) = store.save_interface(&next) {
+                // Drain the previous admission receipt before offering another job.
+                effects |= self.poll(runtime, true)?.1;
+                match action {
+                    Action::Sync => {
+                        if self.snapshot.sync_preparing
+                            || self.snapshot.cards.iter().any(|c| {
+                                c.operation.kind == OperationKind::MetadataSync
+                                    && !is_terminal(c.operation.state)
+                            })
+                        {
+                            return Err(StorageError::QueueFull);
+                        }
+                        let id = librairii_adapters::identities::job_id()
+                            .map_err(|source| StorageError::Io {
+                                operation: "create metadata job identity",
+                                source,
+                            })?
+                            .to_string();
+                        let start = librairii_app::native_jobs::Start::new(
+                            librairii_app::ports::creation::NewOperation {
+                                id: id.clone(),
+                                kind: OperationKind::MetadataSync,
+                                source: None,
+                                destination: None,
+                                items: vec![librairii_app::ports::creation::NewItem {
+                                    source_name: "en-GB".into(),
+                                    ..Default::default()
+                                }],
+                            },
+                        )
+                        .map_err(|_| StorageError::CompatibilityInvariant)?;
+                        runtime.offer_metadata(start)?;
+                        self.recent.push_front(id.clone());
+                        self.recent.truncate(8);
+                        self.snapshot.preparing = Some(id.clone());
+                        self.snapshot.sync_preparing = true;
+                        self.snapshot.details = None;
+                        self.selected = Some((id, 0));
+                    }
+                    Action::HideSync(hidden) => {
+                        if let Some(preferences) = &self.preferences {
+                            let mut next = preferences.clone();
+                            next.sync_panel_hidden = hidden;
+                            next.dismissed_operations = self.snapshot.dismissed_operations.clone();
+                            if let Err(error) = store.save_interface(&next) {
+                                self.snapshot.preference_error = true;
+                                self.snapshot.recovery_required |= matches!(
+                                    store.load(),
+                                    Err(StorageError::ProfileRestartRequired)
+                                );
+                                return Err(error);
+                            }
+                            self.preferences = Some(next);
+                            self.snapshot.preference_error = false;
+                            self.snapshot.notice_error = None;
+                        }
+                        self.snapshot.sync_hidden = hidden;
+                    }
+                    Action::Import(paths) => {
+                        let id = librairii_adapters::identities::job_id().map_err(|error| {
+                            StorageError::Io {
+                                operation: "generate operation identity",
+                                source: error,
+                            }
+                        })?;
+                        let prepared = PreparedImport::new(id, paths)
+                            .map_err(|_| StorageError::CompatibilityInvariant)?;
+                        let id = prepared.operation_id().to_owned();
+                        runtime
+                            .offer_import(prepared)
+                            .map_err(|_| StorageError::QueueFull)?;
+                        self.recent.retain(|old| old != &id);
+                        self.recent.push_front(id.clone());
+                        self.recent.truncate(8);
+                        self.snapshot.preparing = Some(id.clone());
+                        self.snapshot.details = None;
+                        self.selected = Some((id, 0));
+                    }
+                    Action::Cancel(id) => {
+                        if !self.snapshot.cards.iter().any(|c| {
+                            c.operation.identity.id == id && !is_terminal(c.operation.state)
+                        }) {
+                            return Err(StorageError::SnapshotChanged);
+                        }
+                        runtime.cancel_operation(id)?;
+                    }
+                    Action::Inspect { id, page } => {
+                        // Only an observed operation can be selected from the feed.
+                        if !self
+                            .snapshot
+                            .cards
+                            .iter()
+                            .any(|c| c.operation.identity.id == id)
+                            && !self
+                                .snapshot
+                                .history
+                                .cards
+                                .iter()
+                                .any(|c| c.operation.identity.id == id)
+                        {
+                            return Err(StorageError::SnapshotChanged);
+                        }
+                        self.selected = Some((id, page));
+                    }
+                    Action::Dismiss(id) => {
+                        if !self.snapshot.cards.iter().any(|c| {
+                            c.operation.identity.id == id && is_terminal(c.operation.state)
+                        }) {
+                            return Err(StorageError::SnapshotChanged);
+                        }
+                        if self.snapshot.dismissed_operations.len() >= 4096
+                            && !self.snapshot.dismissed_operations.contains(&id)
+                        {
+                            return Err(
+                                librairii_app::ports::creation::InputError::ResourceLimit.into()
+                            );
+                        }
+                        self.snapshot.dismissed_operations.insert(id);
+                        let Some(mut preferences) = self.preferences.clone() else {
+                            self.snapshot.preference_error = true;
+                            self.snapshot.notice_error =
+                                Some(StorageError::InvalidNavigation.to_string());
+                            return Ok(());
+                        };
+                        preferences.dismissed_operations =
+                            self.snapshot.dismissed_operations.clone();
+                        if let Err(error) = store.save_interface(&preferences) {
                             self.snapshot.preference_error = true;
                             self.snapshot.recovery_required |=
                                 matches!(store.load(), Err(StorageError::ProfileRestartRequired));
                             return Err(error);
                         }
-                        self.preferences = Some(next);
+                        self.preferences = Some(preferences);
                         self.snapshot.preference_error = false;
+                        self.snapshot.notice_error = None;
                     }
-                    self.snapshot.sync_hidden = hidden;
-                }
-                Action::Import(paths) => {
-                    let id = librairii_adapters::identities::job_id().map_err(|error| {
-                        StorageError::Io {
-                            operation: "generate operation identity",
-                            source: error,
+                    Action::History(action) => {
+                        let (before, page) = match action {
+                            HistoryAction::Open | HistoryAction::Refresh => (String::new(), 0),
+                            HistoryAction::Older => (
+                                self.snapshot
+                                    .history
+                                    .next_before
+                                    .clone()
+                                    .ok_or(StorageError::SnapshotChanged)?,
+                                self.snapshot.history.page.checked_add(1).ok_or(
+                                    librairii_app::ports::creation::InputError::ResourceLimit,
+                                )?,
+                            ),
+                            HistoryAction::Retry => self.history_attempt.clone().unwrap_or((
+                                self.history_before.clone(),
+                                self.snapshot.history.page,
+                            )),
+                        };
+                        self.history_attempt = Some((before.clone(), page));
+                        let result = runtime.command(|db, _, _| {
+                            db.native_operation_history(before.clone())?.wait()
+                        });
+                        match result {
+                            Ok(history) => {
+                                let dates = history
+                                    .cards
+                                    .iter()
+                                    .map(|c| {
+                                        librairii_adapters::datetime::local(
+                                            &c.operation.identity.created_at,
+                                        )
+                                    })
+                                    .collect();
+                                self.snapshot.history = History {
+                                    cards: history.cards,
+                                    dates,
+                                    page,
+                                    next_before: history.next_before,
+                                    error: None,
+                                };
+                                self.history_before = before;
+                                self.history_attempt = None;
+                            }
+                            Err(error) => {
+                                self.snapshot.history.error = Some(error.to_string());
+                                return Err(error);
+                            }
                         }
-                    })?;
-                    let prepared = PreparedImport::new(id, paths)
-                        .map_err(|_| StorageError::CompatibilityInvariant)?;
-                    let id = prepared.operation_id().to_owned();
-                    runtime
-                        .offer_import(prepared)
-                        .map_err(|_| StorageError::QueueFull)?;
-                    self.recent.retain(|old| old != &id);
-                    self.recent.push_front(id.clone());
-                    self.recent.truncate(8);
-                    self.snapshot.preparing = Some(id.clone());
-                    self.snapshot.details = None;
-                    self.selected = Some((id, 0));
-                }
-                Action::Cancel(id) => {
-                    if !self
-                        .snapshot
-                        .cards
-                        .iter()
-                        .any(|c| c.operation.identity.id == id && !is_terminal(c.operation.state))
-                    {
-                        return Err(StorageError::SnapshotChanged);
                     }
-                    runtime.cancel_operation(id)?;
+                    Action::Refresh => {}
                 }
-                Action::Inspect { id, page } => {
-                    // Only an observed operation can be selected from the feed.
-                    if !self
-                        .snapshot
-                        .cards
-                        .iter()
-                        .any(|c| c.operation.identity.id == id)
-                    {
-                        return Err(StorageError::SnapshotChanged);
-                    }
-                    self.selected = Some((id, page));
-                }
-                Action::Refresh => {}
-            }
-            self.dirty = true;
-            effects |= self.poll(runtime, true)?.1;
-            Ok(())
-        })();
+                self.dirty = true;
+                effects |= self.poll(runtime, true)?.1;
+                Ok(())
+            })();
         if let Err(error) = result {
+            if dismissing {
+                self.snapshot.notice_error = Some(error.to_string());
+            }
             self.snapshot.recovery_required |= matches!(
                 error,
                 StorageError::RuntimeFenced
@@ -318,12 +442,52 @@ impl Controller {
         });
         self.snapshot.progress.truncate(8);
         self.snapshot.cards = cards;
+        let active_history = self
+            .snapshot
+            .history
+            .cards
+            .iter()
+            .filter(|c| !is_terminal(c.operation.state))
+            .map(|c| c.operation.identity.id.clone())
+            .collect::<Vec<_>>();
+        if !active_history.is_empty() {
+            match runtime.command(|db, _, _| db.native_history_cards(active_history)?.wait()) {
+                Ok(current) => {
+                    for saved in &mut self.snapshot.history.cards {
+                        if !is_terminal(saved.operation.state)
+                            && let Some(now) = current
+                                .iter()
+                                .find(|c| c.operation.identity.id == saved.operation.identity.id)
+                        {
+                            *saved = now.clone();
+                        }
+                    }
+                }
+                Err(error) => {
+                    self.snapshot.history.error = Some(error.to_string());
+                    if matches!(
+                        error,
+                        StorageError::RuntimeFenced
+                            | StorageError::CustodyRecoveryRequired
+                            | StorageError::ProfileRestartRequired
+                    ) {
+                        return Err(error);
+                    }
+                }
+            }
+        }
         if let Some((id, page)) = &self.selected {
             let exists = self
                 .snapshot
                 .cards
                 .iter()
-                .any(|c| c.operation.identity.id == *id);
+                .any(|c| c.operation.identity.id == *id)
+                || self
+                    .snapshot
+                    .history
+                    .cards
+                    .iter()
+                    .any(|c| c.operation.identity.id == *id);
             if exists {
                 self.snapshot.details =
                     Some(runtime.command(|db, _, _| {

@@ -326,7 +326,9 @@ impl View {
             }
         }
         self.snapshot = snapshot;
-        self.exports.accept(ui, &self.snapshot);
+        if self.exports.accept(ui, &self.snapshot) {
+            self.operations.follow_started_export();
+        }
         self.details.accept(ui, &self.snapshot);
         self.tags.accept(ui, &self.snapshot);
         self.flags.accept(ui, &self.snapshot);

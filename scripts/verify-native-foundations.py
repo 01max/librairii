@@ -88,6 +88,8 @@ def main():
             raise ValueError('native operation callbacks incomplete')
         if report.get('export_callbacks') != 'passed':
             raise ValueError('native export callbacks incomplete')
+        if report.get('activity_history_callbacks') != 'passed':
+            raise ValueError('native History and persistent notice callbacks incomplete')
         if report.get('sync_callbacks') != 'passed':
             raise ValueError('native sync callbacks incomplete')
         if report['shelf_callbacks'] != 'passed':

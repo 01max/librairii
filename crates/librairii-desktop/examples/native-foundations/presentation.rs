@@ -5,6 +5,9 @@ mod collection_checks;
 mod export_checks;
 #[path = "flags.rs"]
 mod flag_checks;
+#[path = "history.rs"]
+mod history_checks;
+pub use history_checks::{Surface as HistorySurface, checks as activity_history};
 #[path = "operations.rs"]
 mod operation_checks;
 #[path = "shelf_reviews.rs"]
@@ -277,6 +280,15 @@ impl Drop for Fixture {
             ui.on_cancel_operation(|| {});
             ui.on_operation_page(|_| {});
             ui.on_refresh_operations(|| {});
+            ui.on_open_operations(|| {});
+            ui.on_open_history(|| {});
+            ui.on_inspect_history(|_| {});
+            ui.on_history_refresh(|| {});
+            ui.on_history_load_older(|| {});
+            ui.on_history_retry(|| {});
+            ui.on_notice_step(|_| {});
+            ui.on_show_notice(|| {});
+            ui.on_dismiss_notice(|| {});
             ui.on_review_updates(|| {});
             ui.on_preview_shelf_sources(|| {});
             ui.on_review_delete_shelf(|| {});

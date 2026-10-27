@@ -11,7 +11,7 @@ use librairii_core::{
 };
 use librairii_desktop::{
     presentation::{Command, Snapshot, Worker},
-    workflows::operations::Action,
+    workflows::operations::{Action, HistoryAction},
 };
 use librairii_ui::native::{DesktopWindow, ReportGroup};
 use slint::{ComponentHandle, Model, ModelRc, VecModel, winit_030::WinitWindowAccessor};
@@ -21,6 +21,10 @@ pub struct State {
     pending: Option<u64>,
     keys: Vec<String>,
     local_error: Option<LocalError>,
+    history_keys: Vec<String>,
+    notice_ids: Vec<String>,
+    notice_index: usize,
+    requested_report: Option<(String, Option<u64>)>,
 }
 #[derive(Debug)]
 enum LocalError {
@@ -126,7 +130,116 @@ fn reason(
     }
     text
 }
+fn replace_strings(
+    current: ModelRc<slint::SharedString>,
+    rows: Vec<slint::SharedString>,
+) -> ModelRc<slint::SharedString> {
+    if let Some(model) = current
+        .as_any()
+        .downcast_ref::<VecModel<slint::SharedString>>()
+        .filter(|m| m.row_count() == rows.len())
+    {
+        for (i, row) in rows.into_iter().enumerate() {
+            if model.row_data(i).as_ref() != Some(&row) {
+                model.set_row_data(i, row);
+            }
+        }
+        current
+    } else {
+        ModelRc::new(VecModel::from(rows))
+    }
+}
 impl State {
+    pub fn follow_started_export(&mut self) {
+        self.requested_report = None;
+    }
+    fn project_activity(&mut self, ui: &DesktopWindow, snapshot: &Snapshot) {
+        let data = &snapshot.workflows.operations;
+        let l = snapshot.language;
+        let history = &data.history;
+        // Hand native focus to a surviving control before Retry becomes hidden.
+        // A deferred Slint `changed error` alone leaves a gap where Escape has
+        // no visible focused ancestor after the successful worker response.
+        if history.error.is_none()
+            && !ui.get_history_error().is_empty()
+            && ui.get_history_retry_focused()
+        {
+            ui.invoke_focus_history_refresh();
+        }
+        self.history_keys = history
+            .cards
+            .iter()
+            .map(|c| c.operation.identity.id.clone())
+            .collect();
+        let entries = history
+            .cards
+            .iter()
+            .enumerate()
+            .map(|(i, c)| {
+                let h = &c.operation;
+                let date = history
+                    .dates
+                    .get(i)
+                    .copied()
+                    .flatten()
+                    .map(|at| l.date(at))
+                    .unwrap_or_else(|| format!("{} UTC", h.identity.created_at));
+                format!(
+                    "{} · {} · {date}\n{} / {} · {}",
+                    kind(h.kind, l),
+                    status(h.state, l),
+                    l.number(h.counts.completed),
+                    l.number(h.counts.total),
+                    h.identity.id
+                )
+                .into()
+            })
+            .collect();
+        ui.set_history_entries(replace_strings(ui.get_history_entries(), entries));
+        ui.set_history_summary(if history.cards.is_empty(){words(l,"No activity yet. Import stories or request a sync to get started.","Aucune activité pour le moment. Importez des histoires ou lancez une synchronisation.")}else{format!("{} {} · {} {}",words(l,"History page","Page de l’historique"),l.number(history.page as i64+1),l.number(history.cards.len() as i64),words(l,"operations","opérations"))}.into());
+        ui.set_history_older(history.next_before.is_some() && history.error.is_none());
+        ui.set_history_error(history.error.as_ref().map(|e|format!("{} [{e}]",words(l,"History could not be loaded. Try again or refresh; the previous page is retained.","Impossible de charger l’historique. Réessayez ou actualisez ; la page précédente est conservée."))).unwrap_or_default().into());
+        let mut notices = data
+            .cards
+            .iter()
+            .filter(|c| {
+                is_terminal(c.operation.state)
+                    && !data.dismissed_operations.contains(&c.operation.identity.id)
+            })
+            .collect::<Vec<_>>();
+        notices.sort_by(|a, b| {
+            b.operation
+                .identity
+                .created_at
+                .cmp(&a.operation.identity.created_at)
+                .then_with(|| b.operation.identity.id.cmp(&a.operation.identity.id))
+        });
+        self.notice_ids = notices
+            .iter()
+            .map(|c| c.operation.identity.id.clone())
+            .collect();
+        self.notice_index = self.notice_index.min(notices.len().saturating_sub(1));
+        ui.set_notice_index(self.notice_index as i32);
+        ui.set_notice_count(notices.len() as i32);
+        ui.set_terminal_notice_error(data.notice_error.as_ref().map(|e|format!("{} [{e}]",if e.contains("resource_limit"){words(l,"The dismissal limit is reached. Earlier dismissals and operation records are retained.","La limite des notifications fermées est atteinte. Les choix précédents et les opérations sont conservés.")}else{words(l,"Notice dismissed for this session. Preferences could not be saved; the prior file is preserved.","Notification fermée pour cette session. Les préférences n’ont pas pu être enregistrées ; le fichier précédent est conservé.")})).unwrap_or_default().into());
+        ui.set_terminal_notice(
+            notices
+                .get(self.notice_index)
+                .map(|c| {
+                    format!(
+                        "{} · {} · {} / {} · {} / {}",
+                        kind(c.operation.kind, l),
+                        status(c.operation.state, l),
+                        l.number(c.operation.counts.completed),
+                        l.number(c.operation.counts.total),
+                        l.number(self.notice_index as i64 + 1),
+                        l.number(notices.len() as i64)
+                    )
+                })
+                .unwrap_or_default()
+                .into(),
+        );
+    }
     pub fn project(&mut self, ui: &DesktopWindow, snapshot: &Snapshot, catalogs: &Catalogs) {
         let data = &snapshot.workflows.operations;
         let language = snapshot.language;
@@ -134,18 +247,40 @@ impl State {
             self.pending = None;
         }
         ui.set_operation_busy(self.pending.is_some());
+        if self
+            .requested_report
+            .as_ref()
+            .is_some_and(|(id, revision)| {
+                revision.is_some_and(|r| data.revision >= r)
+                    && data
+                        .details
+                        .as_ref()
+                        .is_some_and(|d| d.card.operation.identity.id == *id)
+            })
+        {
+            self.requested_report = None;
+        }
+        let loading = self.pending.is_some() || self.requested_report.is_some();
+        ui.set_operation_loading(loading);
+        self.project_activity(ui, snapshot);
         ui.set_commit_pending(data.critical || snapshot.workflows.exports.recovery_required);
         let selected = data
             .details
             .as_ref()
             .map(|d| d.card.operation.identity.id.as_str());
-        self.keys = data
-            .cards
+        let mut cards = data.cards.iter().collect::<Vec<_>>();
+        if let Some(details) = &data.details
+            && !cards
+                .iter()
+                .any(|c| c.operation.identity.id == details.card.operation.identity.id)
+        {
+            cards.push(&details.card);
+        }
+        self.keys = cards
             .iter()
             .map(|c| c.operation.identity.id.clone())
             .collect();
-        let choices = data
-            .cards
+        let choices = cards
             .iter()
             .map(|c| {
                 format!(
@@ -159,20 +294,7 @@ impl State {
                 .into()
             })
             .collect::<Vec<slint::SharedString>>();
-        let current = ui.get_operation_choices();
-        if let Some(model) = current
-            .as_any()
-            .downcast_ref::<VecModel<slint::SharedString>>()
-            .filter(|m| m.row_count() == choices.len())
-        {
-            for (i, row) in choices.into_iter().enumerate() {
-                if model.row_data(i).as_ref() != Some(&row) {
-                    model.set_row_data(i, row);
-                }
-            }
-        } else {
-            ui.set_operation_choices(ModelRc::new(VecModel::from(choices)));
-        }
+        ui.set_operation_choices(replace_strings(ui.get_operation_choices(), choices));
         ui.set_operation_index(
             selected
                 .and_then(|id| self.keys.iter().position(|key| key == id))
@@ -189,8 +311,8 @@ impl State {
         if data.preparing.is_some() {
             notice = words(
                 language,
-                "Preparing the selected files…",
-                "Préparation des fichiers sélectionnés…",
+                "Preparing the operation…",
+                "Préparation de l’opération…",
             );
         }
         ui.set_operation_notice(
@@ -258,11 +380,38 @@ impl State {
         ui.set_operation_revealable(false);
         ui.set_operation_cancellable(false);
         ui.set_operation_retryable(false);
+        ui.set_operation_retry_label(
+            words(
+                language,
+                "Retry · select files again…",
+                "Réessayer · sélectionner les fichiers…",
+            )
+            .into(),
+        );
         ui.set_operation_previous(false);
         ui.set_operation_next(false);
         ui.set_operation_groups(ModelRc::default());
         ui.set_operation_items(ModelRc::default());
         ui.set_operation_summary("".into());
+        if loading {
+            ui.set_operation_summary(
+                words(
+                    language,
+                    if self.pending.is_some() {
+                        "Loading the requested operation…"
+                    } else {
+                        "The requested report is unavailable. Return to History and refresh."
+                    },
+                    if self.pending.is_some() {
+                        "Chargement de l’opération demandée…"
+                    } else {
+                        "Le rapport demandé est indisponible. Revenez à l’historique et actualisez."
+                    },
+                )
+                .into(),
+            );
+            return;
+        }
         if let Some(details) = &data.details {
             let c = &details.card;
             let h = &c.operation;
@@ -274,9 +423,27 @@ impl State {
             );
             ui.set_operation_cancellable(!is_terminal(h.state) && !h.cancel_requested);
             ui.set_operation_retryable(
-                h.kind == OperationKind::Import
-                    && is_terminal(h.state)
-                    && h.state != OperationState::Succeeded,
+                is_terminal(h.state) && h.state != OperationState::Succeeded,
+            );
+            ui.set_operation_retry_label(
+                match h.kind {
+                    OperationKind::Import => words(
+                        language,
+                        "Retry · select files again…",
+                        "Réessayer · sélectionner les fichiers…",
+                    ),
+                    OperationKind::MetadataSync => words(
+                        language,
+                        "Retry official metadata sync",
+                        "Réessayer la synchronisation officielle",
+                    ),
+                    OperationKind::Export => words(
+                        language,
+                        "Prepare a new export · choose scope and destination…",
+                        "Préparer un nouvel export · choisir la portée et la destination…",
+                    ),
+                }
+                .into(),
             );
             ui.set_operation_previous(details.page > 0);
             ui.set_operation_next(details.page + 1 < details.pages);
@@ -499,6 +666,33 @@ pub(super) fn send(
         local_error(state, ui, LocalError::Selection);
         return;
     }
+    let inspecting = if let Action::Inspect { id, .. } = &action {
+        Some(id.clone())
+    } else {
+        None
+    };
+    if let Some(id) = &inspecting {
+        state.borrow_mut().operations.requested_report = Some((id.clone(), None));
+    } else if matches!(&action, Action::Import(_) | Action::Sync) {
+        state.borrow_mut().operations.requested_report = None;
+    }
+    if inspecting.is_some() {
+        ui.set_operation_loading(true);
+        ui.set_operation_summary(
+            words(
+                if ui.get_french() {
+                    Language::French
+                } else {
+                    Language::English
+                },
+                "Loading the requested operation…",
+                "Chargement de l’opération demandée…",
+            )
+            .into(),
+        );
+        ui.set_operation_items(ModelRc::default());
+        ui.set_operation_groups(ModelRc::default());
+    }
     let generation = state.borrow().snapshot.generation.clone();
     if let Some(generation) = generation {
         match worker
@@ -507,6 +701,9 @@ pub(super) fn send(
         {
             Ok(revision) => {
                 state.borrow_mut().operations.pending = Some(revision);
+                if let Some(id) = inspecting {
+                    state.borrow_mut().operations.requested_report = Some((id, Some(revision)));
+                }
                 ui.set_operation_busy(true);
             }
             Err(error) => local_error(state, ui, LocalError::Busy(error.to_string())),
@@ -598,8 +795,22 @@ pub fn install(ui: &DesktopWindow, state: Rc<RefCell<View>>, worker: Rc<RefCell<
     ui.on_retry_import(move || {
         if let Some(ui) = weak.upgrade()
             && ui.get_operation_retryable()
+            && !ui.get_operation_loading()
         {
-            pick(s.clone(), w.clone(), &ui);
+            let kind = s
+                .borrow()
+                .snapshot
+                .workflows
+                .operations
+                .details
+                .as_ref()
+                .map(|d| d.card.operation.kind);
+            match kind {
+                Some(OperationKind::Import) => pick(s.clone(), w.clone(), &ui),
+                Some(OperationKind::MetadataSync) => send(&s, &w, &ui, Action::Sync),
+                Some(OperationKind::Export) => ui.invoke_prepare_new_export(),
+                None => {}
+            }
         }
     });
     let (s, w, weak) = (state.clone(), worker.clone(), ui.as_weak());
@@ -615,7 +826,9 @@ pub fn install(ui: &DesktopWindow, state: Rc<RefCell<View>>, worker: Rc<RefCell<
     });
     let (s, w, weak) = (state.clone(), worker.clone(), ui.as_weak());
     ui.on_cancel_operation(move || {
-        if let Some(ui) = weak.upgrade() {
+        if let Some(ui) = weak.upgrade()
+            && !ui.get_operation_loading()
+        {
             let id = s
                 .borrow()
                 .snapshot
@@ -631,7 +844,9 @@ pub fn install(ui: &DesktopWindow, state: Rc<RefCell<View>>, worker: Rc<RefCell<
     });
     let (s, w, weak) = (state.clone(), worker.clone(), ui.as_weak());
     ui.on_operation_page(move |delta| {
-        if let Some(ui) = weak.upgrade() {
+        if let Some(ui) = weak.upgrade()
+            && !ui.get_operation_loading()
+        {
             let target = s
                 .borrow()
                 .snapshot
@@ -650,10 +865,102 @@ pub fn install(ui: &DesktopWindow, state: Rc<RefCell<View>>, worker: Rc<RefCell<
             }
         }
     });
+    for (action, install) in [
+        (HistoryAction::Open, 0),
+        (HistoryAction::Refresh, 1),
+        (HistoryAction::Older, 2),
+        (HistoryAction::Retry, 3),
+    ] {
+        let (s, w, weak) = (state.clone(), worker.clone(), ui.as_weak());
+        let callback = move || {
+            if let Some(ui) = weak.upgrade() {
+                send(&s, &w, &ui, Action::History(action));
+            }
+        };
+        match install {
+            0 => ui.on_open_history(callback),
+            1 => ui.on_history_refresh(callback),
+            2 => ui.on_history_load_older(callback),
+            _ => ui.on_history_retry(callback),
+        }
+    }
+    let (s, w, weak) = (state.clone(), worker.clone(), ui.as_weak());
+    ui.on_inspect_history(move |i| {
+        let id = usize::try_from(i)
+            .ok()
+            .and_then(|i| s.borrow().operations.history_keys.get(i).cloned());
+        if let (Some(id), Some(ui)) = (id, weak.upgrade()) {
+            ui.invoke_show_history_report(i);
+            send(&s, &w, &ui, Action::Inspect { id, page: 0 });
+        }
+    });
+    let (s, weak) = (state.clone(), ui.as_weak());
+    ui.on_notice_step(move |delta| {
+        if let Some(ui) = weak.upgrade() {
+            let mut v = s.borrow_mut();
+            v.operations.notice_index = v
+                .operations
+                .notice_index
+                .saturating_add_signed(delta as isize);
+            let snapshot = v.snapshot.clone();
+            v.operations.project_activity(&ui, &snapshot);
+        }
+    });
+    let (s, w, weak) = (state.clone(), worker.clone(), ui.as_weak());
+    ui.on_show_notice(move || {
+        let id = {
+            let v = s.borrow();
+            v.operations
+                .notice_ids
+                .get(v.operations.notice_index)
+                .cloned()
+        };
+        if let (Some(id), Some(ui)) = (id, weak.upgrade()) {
+            send(&s, &w, &ui, Action::Inspect { id, page: 0 });
+        }
+    });
+    let (s, w, weak) = (state.clone(), worker.clone(), ui.as_weak());
+    ui.on_dismiss_notice(move || {
+        let id = {
+            let v = s.borrow();
+            v.operations
+                .notice_ids
+                .get(v.operations.notice_index)
+                .cloned()
+        };
+        if let (Some(id), Some(ui)) = (id, weak.upgrade()) {
+            send(&s, &w, &ui, Action::Dismiss(id));
+        }
+    });
+    let (s, w, weak) = (state.clone(), worker.clone(), ui.as_weak());
+    ui.on_open_operations(move || {
+        if let Some(ui) = weak.upgrade() {
+            s.borrow_mut().operations.requested_report = None;
+            send(&s, &w, &ui, Action::Refresh);
+        }
+    });
     let weak = ui.as_weak();
     ui.on_refresh_operations(move || {
         if let Some(ui) = weak.upgrade() {
-            send(&state, &worker, &ui, Action::Refresh);
+            let target = if ui.get_dialog() == 19 {
+                let v = state.borrow();
+                v.operations
+                    .requested_report
+                    .as_ref()
+                    .map(|(id, _)| (id.clone(), 0))
+                    .or_else(|| {
+                        v.snapshot
+                            .workflows
+                            .operations
+                            .details
+                            .as_ref()
+                            .map(|d| (d.card.operation.identity.id.clone(), d.page))
+                    })
+            } else {
+                None
+            };
+            let action = target.map_or(Action::Refresh, |(id, page)| Action::Inspect { id, page });
+            send(&state, &worker, &ui, action);
         }
     });
 }

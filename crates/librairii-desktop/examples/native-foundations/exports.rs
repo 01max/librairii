@@ -176,6 +176,7 @@ pub fn checks(ui: &DesktopWindow) -> Result {
         "missing reveal destination did not report its validation failure",
     )?;
     std::fs::rename(&moved, &first)?;
+    super::history_checks::leave_failed_report(&f, ui, &d.card.operation.identity.id)?;
     close(&f, ui)?;
     f.select(ui, 0)?;
     open(&f, ui)?;

@@ -1,5 +1,6 @@
 import {ShelfReviewData} from "shelf-reviews.slint";
 import {Operations,ReportGroup} from "operations.slint";
+import {HistoryPanel} from "history.slint";
 import {ExportPanel,ExportData} from "exports.slint";
 import {SyncPanel,SyncData} from "sync.slint";
 import { TagManager, Assignments, AssignmentRow } from "tags.slint";
@@ -173,6 +174,7 @@ export component DesktopWindow inherits Window {
     in-out property <int> dialog;
     in-out property <bool> picker-open;
     in property <bool> operation-busy;
+    in property <bool> operation-loading;
     in property <[string]> operation-choices;
     in-out property <int> operation-index;
     in property <string> operation-choice;
@@ -185,9 +187,35 @@ export component DesktopWindow inherits Window {
     in property <[ReportGroup]> operation-groups;
     in property <bool> operation-cancellable;
     in property <bool> operation-retryable;
+    in property <string> operation-retry-label;
     in property <bool> operation-previous;
     in property <bool> operation-next;
+    in property <string> terminal-notice;
+    in property <string> terminal-notice-error;
+    in property <int> notice-index;
+    in property <int> notice-count;
+    callback notice-step(int);callback show-notice();callback dismiss-notice();
+    public function focus-notice(){if root.terminal-notice!="" {FocusState.key=61;FocusState.restore-epoch+=1;}}
+    out property <bool> notice-report-focused;
+    changed terminal-notice=>{if root.terminal-notice=="" {root.notice-report-focused=false;if !root.modal && FocusState.key>=60 && FocusState.key<=63 {root.focus-browser();}}}
+    in property <[string]> history-entries;
+    in property <string> history-summary;
+    in property <string> history-error;
+    in property <bool> history-older;
+    callback open-history();callback inspect-history(int);callback history-refresh();callback history-load-older();callback history-retry();
+    private property <bool> operation-from-history;
+    private property <int> history-invoker;
+    public function focus-history-refresh(){if root.dialog==21 {history.activate();}}
+    public function focus-history-older(){history.focus-older();}
+    public function focus-history-retry(){history.focus-retry();}
+    out property <bool> history-first-focused:history.first-focused;
+    out property <int> history-entry-focused:history.focused-entry;
+    out property <bool> history-retry-focused:history.retry-focused;
+    public function show-history-report(index:int){if root.dialog==21 {root.history-invoker=index;root.operation-from-history=true;root.dialog=19;dialog-scroll.content-y=0px;operations.activate();}}
+    public function return-to-history(){root.operation-from-history=false;root.dialog=21;dialog-scroll.content-y=0px;history.restore(root.history-invoker);}
+    public function prepare-new-export(){root.operation-from-history=false;root.dialog=20;dialog-scroll.content-y=0px;exports.activate();root.open-export();}
     callback pick-import();callback retry-import();callback select-operation(int);callback cancel-operation();callback operation-page(int);callback refresh-operations();
+    callback open-operations();
     public function focus-operations(){if root.dialog==19 {operations.activate();}}
     out property <bool> operation-first-focused:operations.first-focused;
     out property <bool> operation-selector-focused:operations.selector-focused;
@@ -455,13 +483,14 @@ export component DesktopWindow inherits Window {
             dialog-scroll.content-y = 0px;
             if kind == 3 { dialog-inspector.reset(); root.request-details(); }
             FocusState.modal = true;
-            if kind == 2 { english-button.focus(); } else if kind == 8 { filters.activate(); } else if kind == 10 { tag-manager.activate(); } else if kind == 13 { collection-manager.activate(); } else if kind == 15 {shelf-manager.activate();} else if kind==19 {operations.activate();} else if kind==20 {exports.activate();} else { close-dialog-button.focus(); }
+            if kind == 2 { english-button.focus(); } else if kind == 8 { filters.activate(); } else if kind == 10 { tag-manager.activate(); } else if kind == 13 { collection-manager.activate(); } else if kind == 15 {shelf-manager.activate();} else if kind==19 {operations.activate();} else if kind==20 {exports.activate();} else if kind==21 {history.activate();} else { close-dialog-button.focus(); }
         }
     }
     public function close-dialog() {
         if (root.dialog==14 || root.dialog==15) && root.review-data.busy && !root.review-data.open && !root.review-data.committing {root.review-close();}
         if root.closing || root.picker-open || root.detail-pending || root.tag-busy || root.collection-busy || root.shelf-busy { return; }
         if root.dialog==20 {root.close-export();}
+        if root.dialog==19 && root.operation-from-history {root.return-to-history();return;}
         if root.dialog==16 || root.dialog==17 {root.cancel-shelf-preview();if root.shelf-parent==15 {root.dialog=15;shelf-manager.focus-invoker(root.shelf-preview-kind);return;}root.dialog=0;FocusState.modal=false;FocusState.key=root.invoker;FocusState.restore-epoch+=1;return;}
         if root.dialog==18 && root.shelf-parent==15 {root.dismiss-shelf-feedback();root.dialog=15;shelf-manager.focus-invoker(4);return;}
         if root.dialog==15 || root.dialog==18 {root.dismiss-shelf-feedback();}
@@ -481,6 +510,7 @@ export component DesktopWindow inherits Window {
         else if root.invoker == 31 { root.focus-browser(); }
         else if root.invoker == 33 && root.review-shown {root.focus-native-review();}
         else if root.invoker==34 && (!root.pending || root.operation-status=="") {root.focus-browser();}
+        else if root.invoker>=60 && root.invoker<=63 && root.terminal-notice=="" {root.focus-browser();}
         else if root.invoker == 23 && root.bulk-summary == "" { root.focus-browser(); }
         else if root.invoker == 24 { if root.bulk-summary == "" || (!root.bulk-flag-enabled && !root.flag-undo-enabled) { root.focus-browser(); } else { bulk-flags.focus-control(root.bulk-flag-focus); } }
         else if root.invoker == 30 { search-entry.focus(); }
@@ -586,8 +616,9 @@ export component DesktopWindow inherits Window {
         else if kind == 1 { root.open-dialog(10);root.request-panel(kind); }
         else if kind == 9 { root.open-dialog(13);root.request-panel(kind); }
         else if kind == 10 { root.open-dialog(15);root.request-panel(kind); }
-        else if kind == 2 {root.open-dialog(19);root.refresh-operations();}
+        else if kind == 2 {root.open-dialog(19);root.open-operations();}
         else if kind == 3 {root.open-dialog(20);root.open-export();}
+        else if kind == 4 {root.open-dialog(21);root.open-history();}
         else { root.panel = kind; root.open-dialog(6); root.request-panel(kind); }
     }
     in property <bool> platform-menu: false;
@@ -637,7 +668,7 @@ export component DesktopWindow inherits Window {
                     padding: root.compact ? (root.shelf-active ? 4px : 8px) : 20px; spacing: root.compact && root.shelf-active ? 0px : 8px;
                     controls-scroll := ScrollView {
                         vertical-stretch: 0;content-width: self.visible-width;content-height: controls-layout.preferred-height;
-                        height: root.compact && root.shelf-active ? min(controls-layout.preferred-height,max(32px,main.height - 240px)) : controls-layout.preferred-height;
+                        height: root.compact && (root.shelf-active || root.terminal-notice!="" || root.terminal-notice-error!="") ? min(controls-layout.preferred-height,max(32px,main.height - 240px)) : controls-layout.preferred-height;
                         controls-layout := VerticalBox {height: self.preferred-height;padding: 0px;spacing: root.compact && root.shelf-active ? 0px : 8px;
                     HorizontalBox { padding: 0px; spacing: 8px;
                         Caption { text: root.scope-title != "" ? root.scope-title : root.panel == 0 ? (root.french ? "Bibliothèque" : "Library") : root.panel == 4 ? (root.french ? "Historique" : "History") : root.panel == 5 ? (root.french ? "Réglages" : "Settings") : (root.french ? "Bibliothèque" : "Library"); horizontal-stretch: 1; font-size: root.compact ? 20px : 24px; font-weight: 600; }
@@ -649,6 +680,16 @@ export component DesktopWindow inherits Window {
                         Action { focus-key: 22;reveal(y,h)=>{root.reveal-controls(y,h);} available: root.startup-phase == 3; text: root.filter-label != "" ? root.filter-label : (root.french ? "Filtres…" : "Filters…"); clicked => { root.open-dialog(8); } }
                     }
                     if root.active-filter-summary != "": Text { vertical-stretch: 0; height: 24px; text: root.active-filter-summary; accessible-label: (root.french ? "Filtres actifs · " : "Active filters · ") + self.text; overflow: elide; color: Palette.foreground; }
+                    if root.terminal-notice!="": VerticalBox {padding:0px;spacing:4px;
+                        Text {height:24px;text:root.terminal-notice;overflow:elide;color:Palette.foreground;accessible-live-region:polite;}
+                        HorizontalBox {padding:0px;spacing:6px;
+                            Action {focus-key:60;available:root.notice-index>0;reveal(y,h)=>{root.reveal-controls(y,h);}text:root.french ? "Précédente" : "Previous";clicked=>{root.notice-step(-1);}}
+                            Action {focus-key:61;changed has-focus=>{root.notice-report-focused=self.has-focus;if self.has-focus {FocusState.key=61;root.reveal-controls(self.absolute-position.y,self.height);}}reveal(y,h)=>{root.reveal-controls(y,h);}text:root.french ? "Voir le rapport" : "View report";clicked=>{root.show-panel(2);root.show-notice();}}
+                            Action {focus-key:62;reveal(y,h)=>{root.reveal-controls(y,h);}text:root.french ? "Fermer la notification" : "Dismiss notice";clicked=>{root.dismiss-notice();}}
+                            Action {focus-key:63;available:root.notice-index+1<root.notice-count;reveal(y,h)=>{root.reveal-controls(y,h);}text:root.french ? "Suivante" : "Next";clicked=>{root.notice-step(1);}}
+                        }
+                    }
+                    if root.terminal-notice-error!="": Text {height:24px;text:root.terminal-notice-error;overflow:elide;color:Palette.foreground;accessible-live-region:polite;}
                     HorizontalBox { visible: root.bulk-summary != ""; height: self.visible ? 32px : 0px; padding: 0px; spacing: 8px;
                         Caption { text: root.bulk-summary; accessible-live-region: polite; horizontal-stretch: 1; }
                         clear-bulk-button := Action { focus-key: 23;reveal(y,h)=>{root.reveal-controls(y,h);} available: root.bulk-summary != ""; text: root.french ? "Effacer la sélection" : "Clear selection"; clicked => { root.clear-bulk(); } }
@@ -739,7 +780,7 @@ export component DesktopWindow inherits Window {
         width: min(600px,parent.width - 32px); height: parent.height - 48px;
         background: Palette.background; border-width: 2px; border-color: Palette.foreground; border-radius: 6px;
         accessible-role: groupbox;
-        accessible-label: root.dialog==20 ? (root.french ? "Préparer l’export" : "Prepare export") : root.dialog==19 ? (root.french ? "Imports et opérations" : "Imports and operations") : root.dialog==15 ? (root.french ? "Gérer les Étagères" : "Manage Shelves") : root.dialog==16 || root.dialog==17 ? (root.french ? "Confirmer les membres approuvés" : "Confirm approved membership") : root.dialog==18 ? (root.french ? "Exclusions de l’Étagère" : "Shelf exclusions") : root.dialog == 13 ? (root.french ? "Gérer les Collections" : "Manage Collections") : root.dialog == 14 ? (root.french ? "Confirmer la modification de la Collection" : "Confirm Collection change") : root.dialog == 10 ? (root.french ? "Gérer les étiquettes" : "Manage tags") : root.dialog == 11 ? (root.french ? "Attribuer les étiquettes" : "Assign tags") : root.dialog == 12 ? (root.french ? "Confirmer l’impact" : "Confirm impact") : root.dialog == 9 ? (root.french ? "Confirmer le retrait" : "Confirm removal") : root.dialog == 1 ? (root.french ? "À propos de Slint" : "About Slint") : root.dialog == 2 ? (root.french ? "Réglages" : "Settings") : root.dialog == 3 ? (root.french ? "Détails" : "Details") : root.dialog == 4 ? (root.french ? "Configurer la bibliothèque" : "Set up your library") : root.dialog == 5 ? (root.french ? "Récupération de la bibliothèque" : "Library recovery") : root.dialog == 7 ? (root.french ? "Opération en cours" : "Operation in progress") : root.dialog == 8 ? (root.french ? "Filtres et tri" : "Filters and sort") : (root.french ? "Bibliothèque" : "Library");
+        accessible-label: root.dialog==21 ? (root.french ? "Historique" : "History") : root.dialog==20 ? (root.french ? "Préparer l’export" : "Prepare export") : root.dialog==19 ? (root.french ? "Imports et opérations" : "Imports and operations") : root.dialog==15 ? (root.french ? "Gérer les Étagères" : "Manage Shelves") : root.dialog==16 || root.dialog==17 ? (root.french ? "Confirmer les membres approuvés" : "Confirm approved membership") : root.dialog==18 ? (root.french ? "Exclusions de l’Étagère" : "Shelf exclusions") : root.dialog == 13 ? (root.french ? "Gérer les Collections" : "Manage Collections") : root.dialog == 14 ? (root.french ? "Confirmer la modification de la Collection" : "Confirm Collection change") : root.dialog == 10 ? (root.french ? "Gérer les étiquettes" : "Manage tags") : root.dialog == 11 ? (root.french ? "Attribuer les étiquettes" : "Assign tags") : root.dialog == 12 ? (root.french ? "Confirmer l’impact" : "Confirm impact") : root.dialog == 9 ? (root.french ? "Confirmer le retrait" : "Confirm removal") : root.dialog == 1 ? (root.french ? "À propos de Slint" : "About Slint") : root.dialog == 2 ? (root.french ? "Réglages" : "Settings") : root.dialog == 3 ? (root.french ? "Détails" : "Details") : root.dialog == 4 ? (root.french ? "Configurer la bibliothèque" : "Set up your library") : root.dialog == 5 ? (root.french ? "Récupération de la bibliothèque" : "Library recovery") : root.dialog == 7 ? (root.french ? "Opération en cours" : "Operation in progress") : root.dialog == 8 ? (root.french ? "Filtres et tri" : "Filters and sort") : (root.french ? "Bibliothèque" : "Library");
         FocusScope {
             width: parent.width; height: parent.height;
             key-pressed(event) => {
@@ -755,6 +796,7 @@ export component DesktopWindow inherits Window {
                 }
                 if event.text == Key.Tab {
                     if root.dialog==20 {if event.modifiers.shift && exports.first-focused {close-dialog-button.focus();return accept;}if !event.modifiers.shift && close-dialog-button.has-focus {exports.activate();return accept;}return reject;}
+                    if root.dialog==21 {if event.modifiers.shift && history.first-focused {close-dialog-button.focus();return accept;}if !event.modifiers.shift && close-dialog-button.has-focus {history.activate();return accept;}return reject;}
                     if root.dialog==19 {if event.modifiers.shift && operations.first-focused {close-dialog-button.focus();return accept;}if !event.modifiers.shift && close-dialog-button.has-focus {operations.activate();return accept;}return reject;}
                     if root.dialog==15 {if event.modifiers.shift && shelf-manager.first-focused {close-dialog-button.focus();return accept;}if !event.modifiers.shift && close-dialog-button.has-focus {shelf-manager.activate();return accept;}return reject;}
                     if root.dialog==16 || root.dialog==17 {if event.modifiers.shift && shelf-preview.first-focused {if root.shelf-confirm-enabled {confirm-shelf.focus();}else{cancel-shelf.focus();}return accept;}if !event.modifiers.shift && (confirm-shelf.has-focus || (!root.shelf-confirm-enabled && cancel-shelf.has-focus)) {shelf-preview.activate();return accept;}return reject;}
@@ -800,7 +842,8 @@ export component DesktopWindow inherits Window {
                 dialog-scroll := ScrollView { vertical-stretch: 1; content-width: self.visible-width; content-height: dialog-content.preferred-height;
                     dialog-content := VerticalBox { height: self.preferred-height; padding: 0px; spacing: 0px;
                         exports:=ExportPanel {visible:root.dialog==20;height:self.visible ? self.preferred-height : 0px;french:root.french;active:root.dialog==20 && root.startup-phase==3 && !root.closing;picking:root.picker-open;data:root.export-data;modes:root.export-modes;mode <=> root.export-mode;groups:root.export-groups;selection-epoch:root.export-selection-epoch;items:root.export-items;select(i)=>{root.export-scope(i);}toggle(i)=>{root.export-toggle(i);}group-page(i)=>{root.export-group-page(i);}pick=>{root.pick-export-destination();}refresh=>{root.refresh-export();}start=>{root.start-export();}page(i)=>{root.export-page(i);}reveal(y,h)=>{root.reveal-dialog(y,h);}}
-                        operations:=Operations {visible:root.dialog==19;height:self.visible ? self.preferred-height : 0px;french:root.french;active:root.startup-phase==3 && !root.closing;picking:root.picker-open;revealable:root.operation-revealable;reveal-notice:root.operation-reveal-notice;reveal-destination=>{root.reveal-export();}choices:root.operation-choices;selected <=> root.operation-index;choice:root.operation-choice;summary:root.operation-summary;notice:root.operation-notice;runtime:root.operation-runtime;items:root.operation-items;groups:root.operation-groups;cancellable:root.operation-cancellable;retryable:root.operation-retryable;previous:root.operation-previous;next:root.operation-next;pick=>{root.pick-import();}retry=>{root.retry-import();}cancel=>{root.cancel-operation();}select(i)=>{root.select-operation(i);}refresh=>{root.refresh-operations();}page(i)=>{root.operation-page(i);}reveal(y,h)=>{root.reveal-dialog(y,h);}}
+                        history:=HistoryPanel {visible:root.dialog==21;height:self.visible ? self.preferred-height : 0px;french:root.french;active:root.dialog==21 && !root.picker-open && !root.closing;entries:root.history-entries;summary:root.history-summary;error:root.history-error;older:root.history-older;inspect(i)=>{root.show-history-report(i);root.inspect-history(i);}refresh=>{root.history-refresh();}load-older=>{root.history-load-older();}retry=>{root.history-retry();}reveal(y,h)=>{root.reveal-dialog(y,h);}}
+                        operations:=Operations {visible:root.dialog==19;height:self.visible ? self.preferred-height : 0px;french:root.french;active:root.dialog==19 && root.startup-phase==3 && !root.closing;loading:root.operation-loading;history-report:root.operation-from-history;back-history=>{root.return-to-history();}picking:root.picker-open;revealable:root.operation-revealable;reveal-notice:root.operation-reveal-notice;reveal-destination=>{root.reveal-export();}choices:root.operation-choices;selected <=> root.operation-index;choice:root.operation-choice;summary:root.operation-summary;notice:root.operation-notice;runtime:root.operation-runtime;items:root.operation-items;groups:root.operation-groups;cancellable:root.operation-cancellable;retryable:root.operation-retryable;retry-label:root.operation-retry-label;previous:root.operation-previous;next:root.operation-next;pick=>{root.pick-import();}retry=>{root.retry-import();}cancel=>{root.cancel-operation();}select(i)=>{root.select-operation(i);}refresh=>{root.refresh-operations();}page(i)=>{root.operation-page(i);}reveal(y,h)=>{root.reveal-dialog(y,h);}}
                         if root.dialog == 1: AboutSlint { }
                         dialog-inspector := Inspector { visible: root.dialog == 3; height: root.dialog == 3 ? max(80px, dialog-scroll.visible-height) : 0px; french: root.french; story: root.selected-story; request-data => { root.request-details(); }
                             flag-enabled: root.detail-flag-enabled; flag-checked: root.detail-flag-checked; flag-pending: root.flag-pending; flag-can-undo: root.flag-undo-enabled; flag-notice: root.flag-notice; flag-change(value) => { root.detail-flag-change(value); } undo-flags => { root.undo-flags(); }

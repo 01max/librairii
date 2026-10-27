@@ -12,6 +12,35 @@ const MAX_VIEW_BYTES: usize = 64 * 1024 * 1024;
 fn invalid() -> StorageError {
     InputError::Invalid.into()
 }
+pub(super) fn page_ids(
+    tx: &Transaction<'_>,
+    before: &str,
+) -> Result<(Vec<String>, Option<String>)> {
+    let mut ids = Vec::with_capacity(21);
+    if before.is_empty() {
+        let mut q =
+            tx.prepare("SELECT id FROM file_operations ORDER BY created_at DESC,id DESC LIMIT 21")?;
+        for id in q.query_map([], |r| rows::bounded_id(r, 0))? {
+            ids.push(id?);
+        }
+    } else {
+        let at = rows::header(tx, before)?
+            .ok_or_else(invalid)?
+            .identity
+            .created_at;
+        let mut q=tx.prepare("SELECT id FROM file_operations WHERE (created_at,id)<(?,?) ORDER BY created_at DESC,id DESC LIMIT 21")?;
+        for id in q.query_map(rusqlite::params![at, before], |r| rows::bounded_id(r, 0))? {
+            ids.push(id?);
+        }
+    }
+    let next_before = if ids.len() > 20 {
+        ids.truncate(20);
+        ids.last().cloned()
+    } else {
+        None
+    };
+    Ok((ids, next_before))
+}
 fn append(
     tx: &Transaction<'_>,
     id: &str,
@@ -38,20 +67,17 @@ impl Database<'_> {
         if before.capacity() > 256 {
             return Err(invalid());
         }
-        self.barrier_read(move|tx| {
-            let mut operations=Vec::new();let mut used=0;
-            let mut ids=Vec::with_capacity(21);
-            if before.is_empty() {
-                let mut q=tx.prepare("SELECT id FROM file_operations ORDER BY created_at DESC,id DESC LIMIT 21")?;
-                for id in q.query_map([],|r|rows::bounded_id(r,0))? {ids.push(id?);}
-            }else{
-                let at=rows::header(tx,&before)?.ok_or_else(invalid)?.identity.created_at;
-                let mut q=tx.prepare("SELECT id FROM file_operations WHERE (created_at,id)<(?,?) ORDER BY created_at DESC,id DESC LIMIT 21")?;
-                for id in q.query_map(rusqlite::params![at,before],|r|rows::bounded_id(r,0))?{ids.push(id?);}
+        self.barrier_read(move |tx| {
+            let mut operations = Vec::new();
+            let mut used = 0;
+            let (ids, next_before) = page_ids(tx, &before)?;
+            for id in ids {
+                append(tx, &id, &mut operations, &mut used)?;
             }
-            let next_before=if ids.len()>20{ids.truncate(20);ids.last().cloned()}else{None};
-            for id in ids {append(tx,&id,&mut operations,&mut used)?;}
-            Ok(HistoryPage{operations,next_before})
+            Ok(HistoryPage {
+                operations,
+                next_before,
+            })
         })
     }
     /// All active rows in creation order, followed by exactly one latest saved

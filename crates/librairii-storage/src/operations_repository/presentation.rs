@@ -31,6 +31,11 @@ pub struct OperationItems {
     pub pages: usize,
     pub items: Vec<OperationItem>,
 }
+#[derive(Clone, Debug)]
+pub struct OperationHistory {
+    pub cards: Vec<OperationCard>,
+    pub next_before: Option<String>,
+}
 fn invalid() -> StorageError {
     InputError::Invalid.into()
 }
@@ -62,7 +67,53 @@ pub(super) fn card(tx: &Transaction<'_>, id: &str) -> Result<OperationCard> {
         running,
     })
 }
+fn read_cards(tx: &Transaction<'_>, ids: Vec<String>) -> Result<Vec<OperationCard>> {
+    let mut result = Vec::with_capacity(ids.len());
+    let mut used = 0usize;
+    for id in ids {
+        let value = card(tx, &id)?;
+        used = used
+            .checked_add(super::snapshot_bytes(
+                &librairii_app::ports::operations::OperationSnapshot {
+                    operation: value.operation.clone(),
+                    items: Vec::new(),
+                },
+            ))
+            .ok_or(InputError::ResourceLimit)?;
+        if used > 64 * 1024 * 1024 {
+            return Err(InputError::ResourceLimit.into());
+        }
+        result.push(value);
+    }
+    Ok(result)
+}
 impl Database<'_> {
+    /// Reobserve exactly the displayed History identities without moving its
+    /// creation cursor, inserting new rows or retaining item payloads.
+    pub fn native_history_cards(
+        &self,
+        ids: Vec<String>,
+    ) -> Result<Pending<'_, Vec<OperationCard>>> {
+        if ids.len() > 20 || ids.iter().any(|id| id.is_empty() || id.len() > 256) {
+            return Err(invalid());
+        }
+        self.barrier_read(move |tx| read_cards(tx, ids))
+    }
+    /// The same raw creation-time/ID cursor as History, with bounded card
+    /// observations instead of materializing every historical item's payload.
+    pub fn native_operation_history(
+        &self,
+        before: String,
+    ) -> Result<Pending<'_, OperationHistory>> {
+        if before.capacity() > 256 {
+            return Err(invalid());
+        }
+        self.barrier_read(move |tx| {
+            let (ids, next_before) = super::history::page_ids(tx, &before)?;
+            let cards = read_cards(tx, ids)?;
+            Ok(OperationHistory { cards, next_before })
+        })
+    }
     /// Active work plus at most eight explicitly retained recent IDs and the
     /// latest import. This does not change the historical export-feed contract.
     pub fn native_operation_cards(
@@ -82,15 +133,7 @@ impl Database<'_> {
             for id in latest.query_map([],|r|rows::bounded_id(r,0))? {let id=id?;if seen.insert(id.clone()){ids.push(id);}}
             let latest_export:Option<String>=tx.query_row("SELECT id FROM file_operations WHERE kind='export' AND status NOT IN ('queued','running') ORDER BY COALESCE(finished_at,created_at) DESC,id DESC LIMIT 1",[],|r|rows::bounded_id(r,0)).optional()?;
             if let Some(id)=latest_export && seen.insert(id.clone()){ids.push(id);}
-            let mut used=0usize;
-            let mut result=Vec::with_capacity(ids.len());
-            for id in ids {
-                let value=card(tx,&id)?;
-                used=used.checked_add(super::snapshot_bytes(&librairii_app::ports::operations::OperationSnapshot{operation:value.operation.clone(),items:Vec::new()})).ok_or(InputError::ResourceLimit)?;
-                if used>64*1024*1024 {return Err(InputError::ResourceLimit.into());}
-                result.push(value);
-            }
-            Ok(result)
+            read_cards(tx,ids)
         })
     }
     pub fn native_operation_items(

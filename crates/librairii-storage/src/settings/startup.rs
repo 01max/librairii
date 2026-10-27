@@ -420,12 +420,25 @@ mod tests {
         let id = "b0000000-0000-4000-8000-000000000013".parse()?;
         let mut preferences = profile::InterfacePreferences::new(id);
         preferences.sync_panel_hidden = true;
+        preferences
+            .dismissed_operations
+            .insert("notice-identity-with-original-CASE".into());
+        preferences
+            .dismissed_operations
+            .insert("another-notice".into());
         store.save_interface(&preferences)?;
         assert!(matches!(
             inspect_startup(&locations, &cancel),
             Startup::Native(_)
         ));
         assert_eq!(store.load_interface(id)?, Some(preferences));
+        let saved = fs::read(locations.native.join("interface.json"))?;
+        let mut too_many = store.load_interface(id)?.ok_or("interface preferences")?;
+        too_many
+            .dismissed_operations
+            .extend((0..4097).map(|i| format!("notice-{i}")));
+        assert!(store.save_interface(&too_many).is_err());
+        assert_eq!(fs::read(locations.native.join("interface.json"))?, saved);
         let native = crate::native::NativeLibrary::reopen(&store, &locations, &cancel)?;
         let mut db = crate::database::Database::open_native(&native)?;
         db.close()?;

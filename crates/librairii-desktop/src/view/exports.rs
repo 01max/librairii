@@ -118,7 +118,7 @@ fn replace<T: Clone + PartialEq + 'static>(current: ModelRc<T>, rows: Vec<T>) ->
     }
 }
 impl State {
-    pub fn accept(&mut self, ui: &DesktopWindow, snapshot: &Snapshot) {
+    pub fn accept(&mut self, ui: &DesktopWindow, snapshot: &Snapshot) -> bool {
         let s = &snapshot.workflows.exports;
         if self.pending.is_some_and(|r| s.revision >= r) {
             self.pending = None;
@@ -127,8 +127,10 @@ impl State {
             self.handled = s.revision;
             if s.started.is_some() {
                 ui.invoke_show_export_report();
+                return true;
             }
         }
+        false
     }
     pub fn project(&mut self, ui: &DesktopWindow, snapshot: &Snapshot) {
         let s = &snapshot.workflows.exports;
@@ -504,7 +506,9 @@ pub fn install(ui: &DesktopWindow, state: Rc<RefCell<View>>, worker: Rc<RefCell<
     });
     let weak = ui.as_weak();
     ui.on_reveal_export(move || {
-        if let Some(ui) = weak.upgrade() {
+        if let Some(ui) = weak.upgrade()
+            && !ui.get_operation_loading()
+        {
             let id = state
                 .borrow()
                 .snapshot

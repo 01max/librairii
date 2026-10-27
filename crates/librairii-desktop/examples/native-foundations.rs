@@ -244,6 +244,7 @@ fn main() -> Result {
     callback_checks::operations(&ui)?;
     callback_checks::sync(&ui)?;
     callback_checks::exports(&ui)?;
+    callback_checks::activity_history(&ui)?;
     let initial = snapshot()?;
     let view = Rc::new(RefCell::new(view::View {
         operations: Default::default(),
@@ -343,7 +344,7 @@ fn main() -> Result {
             if !ui.window().has_winit_window() {
                 return;
             }
-            if ticking.replace(true) {
+            if captured_errors.borrow().is_some() || ticking.replace(true) {
                 return;
             }
             let result = (|| -> Result {
@@ -372,6 +373,8 @@ fn main() -> Result {
                 } else if let Some(surface) = surfaces.sync.borrow().as_ref() {
                     surface.poll(&ui);
                 } else if let Some(surface) = surfaces.exports.borrow().as_ref() {
+                    surface.poll(&ui);
+                } else if let Some(surface) = surfaces.history.borrow().as_ref() {
                     surface.poll(&ui);
                 } else {
                     view.borrow_mut().resize(&ui);
@@ -404,7 +407,7 @@ fn main() -> Result {
         return Err(error.into());
     }
     check(
-        server || *step.borrow() > 119,
+        server || *step.borrow() > 126,
         "native fixture ended before completing its checks",
     )?;
     Ok(())
@@ -414,6 +417,7 @@ fn main() -> Result {
 struct Surfaces {
     sync: RefCell<Option<callback_checks::SyncSurface>>,
     exports: RefCell<Option<callback_checks::ExportSurface>>,
+    history: RefCell<Option<callback_checks::HistorySurface>>,
     operations: RefCell<Option<callback_checks::OperationSurface>>,
     collections: RefCell<Option<callback_checks::CollectionSurface>>,
     shelves: RefCell<Option<callback_checks::ShelfSurface>>,
@@ -820,7 +824,13 @@ fn capture_step(
     } else if index == 78 {
         check(
             ui.get_observed_browser_height() + 0.5 >= ui.get_observed_story_row_height(),
-            "active bulk controls hide the story viewport",
+            &format!(
+                "active bulk controls hide the story viewport: viewport={} row={} notice={:?} error={:?}",
+                ui.get_observed_browser_height(),
+                ui.get_observed_story_row_height(),
+                ui.get_terminal_notice(),
+                ui.get_terminal_notice_error()
+            ),
         )?;
         surfaces
             .flags
@@ -1193,6 +1203,113 @@ fn capture_step(
         key(ui, slint::platform::Key::Escape.into())?;
         check(!ui.get_modal(), "export Escape did not return to browsing")?;
         surfaces.exports.borrow_mut().take();
+    } else if index == 120 {
+        resize(ui, 1180., 760.)?;
+        *surfaces.history.borrow_mut() = Some(callback_checks::HistorySurface::open(ui)?);
+    } else if index == 121 {
+        check(
+            ui.get_history_first_focused(),
+            "History initial focus was lost",
+        )?;
+        capture(ui, &destination.join("history-wide-en.png"))?;
+        surfaces
+            .history
+            .borrow()
+            .as_ref()
+            .ok_or("History surface")?
+            .report(ui)?;
+    } else if index == 122 {
+        capture(ui, &destination.join("history-export-report-en.png"))?;
+        key(ui, slint::platform::Key::Escape.into())?;
+        check(
+            ui.get_dialog() == 21 && ui.get_history_entry_focused() == 1,
+            "History report Escape did not restore the exact entry",
+        )?;
+        surfaces
+            .history
+            .borrow()
+            .as_ref()
+            .ok_or("History surface")?
+            .report(ui)?;
+        surfaces
+            .history
+            .borrow()
+            .as_ref()
+            .ok_or("History surface")?
+            .french_error(ui)?;
+        resize(ui, 560., 400.)?;
+    } else if index == 123 {
+        check(
+            ui.get_dialog() == 21 && ui.get_history_retry_focused(),
+            &format!(
+                "History Retry changed during compact resize: dialog={} retry={} entry={}",
+                ui.get_dialog(),
+                ui.get_history_retry_focused(),
+                ui.get_history_entry_focused()
+            ),
+        )?;
+    } else if index == 124 {
+        check(
+            ui.get_dialog() == 21 && ui.get_history_retry_focused(),
+            &format!(
+                "History Retry changed after the settled frame: dialog={} retry={} entry={}",
+                ui.get_dialog(),
+                ui.get_history_retry_focused(),
+                ui.get_history_entry_focused()
+            ),
+        )?;
+        capture(ui, &destination.join("history-retry-compact-fr.png"))?;
+        key(ui, " ".into())?;
+        check(
+            ui.get_dialog() == 21,
+            "History Retry Space activated a different dialog action",
+        )?;
+        surfaces
+            .history
+            .borrow()
+            .as_ref()
+            .ok_or("History surface")?
+            .settled(ui)?;
+        check(
+            ui.get_history_error().is_empty() && ui.get_history_first_focused(),
+            "successful native History Retry lost its visible focus anchor",
+        )?;
+        key(ui, slint::platform::Key::Escape.into())?;
+        check(!ui.get_modal(), "History Escape did not restore browsing")?;
+    } else if index == 125 {
+        surfaces
+            .history
+            .borrow()
+            .as_ref()
+            .ok_or("History surface")?
+            .another_error(ui)?;
+    } else if index == 126 {
+        check(
+            ui.get_history_retry_focused(),
+            "History repeated Retry lost focus",
+        )?;
+        key(ui, " ".into())?;
+        key(ui, slint::platform::Key::Tab.into())?;
+        check(
+            ui.get_close_focused(),
+            "History Tab did not move from Retry to Close",
+        )?;
+        surfaces
+            .history
+            .borrow()
+            .as_ref()
+            .ok_or("History surface")?
+            .settled(ui)?;
+        check(
+            ui.get_history_error().is_empty() && ui.get_close_focused(),
+            "History Retry completion stole the user's later Close focus",
+        )?;
+        key(ui, slint::platform::Key::Escape.into())?;
+        check(
+            !ui.get_modal(),
+            "History late-focus Escape did not restore browsing",
+        )?;
+        surfaces.history.borrow_mut().take();
     } else {
         std::fs::write(
             destination.join("report.json"),
@@ -1214,6 +1331,7 @@ fn capture_step(
                 "operation_callbacks":"passed",
                 "sync_callbacks":"passed",
                 "export_callbacks":"passed",
+                "activity_history_callbacks":"passed",
                 "scope": "shown native component/public window events and Skia capture; not physical HID or packaged workflow qualification",
             }))?,
         )?;

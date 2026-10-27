@@ -46,6 +46,16 @@ fn history_twenty_raw_key_pages_remain_stable_with_concurrent_new_inserts() -> T
     assert_eq!(first.operations.len(), 20);
     assert_eq!(first.operations[0].operation.identity.id, id(45));
     assert_eq!(first.next_before, Some(id(26)));
+    let cards = db.native_operation_history(String::new())?.wait()?;
+    assert_eq!(cards.next_before, first.next_before);
+    assert_eq!(
+        cards.cards.iter().map(|c| &c.operation).collect::<Vec<_>>(),
+        first
+            .operations
+            .iter()
+            .map(|s| &s.operation)
+            .collect::<Vec<_>>()
+    );
     let second = thread::scope(|scope| -> TestResult<_> {
         let writer = scope.spawn(|| -> librairii_storage::Result<()> {
             match db
@@ -76,6 +86,20 @@ fn history_twenty_raw_key_pages_remain_stable_with_concurrent_new_inserts() -> T
         (6..=25).rev().map(id).collect::<Vec<_>>()
     );
     assert_eq!(second.next_before, Some(id(6)));
+    let native_second = db.native_operation_history(id(26))?.wait()?;
+    assert_eq!(native_second.next_before, second.next_before);
+    assert_eq!(
+        native_second
+            .cards
+            .iter()
+            .map(|c| &c.operation)
+            .collect::<Vec<_>>(),
+        second
+            .operations
+            .iter()
+            .map(|s| &s.operation)
+            .collect::<Vec<_>>()
+    );
     let third = db.operation_history(id(6))?.wait()?;
     assert_eq!(third.operations.len(), 6);
     assert!(third.next_before.is_none());
@@ -87,6 +111,11 @@ fn history_twenty_raw_key_pages_remain_stable_with_concurrent_new_inserts() -> T
     );
     assert_eq!(json["nextBefore"], id(6));
     assert!(db.operation_history("missing".into())?.wait().is_err());
+    assert!(
+        db.native_operation_history("missing".into())?
+            .wait()
+            .is_err()
+    );
     let empty = db.operation_history(id(0))?.wait()?.presentation()?;
     assert_eq!(empty["operations"], serde_json::json!([]));
     assert!(empty.get("nextBefore").is_none());

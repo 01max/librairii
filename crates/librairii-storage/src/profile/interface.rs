@@ -4,6 +4,7 @@ use super::NativeProfileStore;
 use crate::{Result, StorageError};
 use librairii_core::{LibraryId, navigation::MAX_STATE_BYTES};
 use serde::{Deserialize, Serialize};
+use std::collections::BTreeSet;
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct InterfacePreferences {
@@ -11,6 +12,8 @@ pub struct InterfacePreferences {
     version: u64,
     library: String,
     pub sync_panel_hidden: bool,
+    #[serde(default)]
+    pub dismissed_operations: BTreeSet<String>,
 }
 impl InterfacePreferences {
     pub fn new(library: LibraryId) -> Self {
@@ -19,6 +22,7 @@ impl InterfacePreferences {
             version: 1,
             library: library.to_string(),
             sync_panel_hidden: false,
+            dismissed_operations: BTreeSet::new(),
         }
     }
     fn decode(bytes: &[u8], library: LibraryId) -> Result<Self> {
@@ -28,6 +32,11 @@ impl InterfacePreferences {
             || value.format != "librairii.native-interface"
             || value.version != 1
             || value.library != library.to_string()
+            || value.dismissed_operations.len() > 4096
+            || value
+                .dismissed_operations
+                .iter()
+                .any(|id| id.is_empty() || id.len() > 256)
         {
             return Err(StorageError::InvalidNavigation);
         }

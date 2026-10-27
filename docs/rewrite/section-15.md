@@ -458,9 +458,70 @@ outstanding. English preview/report and compact French zero-ready captures
 extend the mandatory native matrix. Whole-workflow spoken/three-host
 acceptance remains15.13.
 
+## Terminal notices and History — 15.11
+
+Terminal notices retain exact operation IDs in the library-bound interface
+preferences. Dismissal never cancels work, deletes a record or marks another
+operation dismissed. The bounded set refuses further additions at its explicit
+limit instead of evicting old choices. Invalid/future/unreadable preferences
+preserve their bytes and keep session dismissal usable with an unsaved warning.
+Ordinary persistence failure also retains the session choice; a later successful
+save merges every session dismissal. Real profile uncertainty still fences the
+runtime. Sync visibility and notice dismissal cannot overwrite each other.
+
+History uses the original creation-time/raw-ID cursor and 21-row lookahead,
+materializing at most20 cards per page. It shares the frozen cursor implementation
+with the original full reader; item details retain their25-row pages and outcome
+budgets. New inserts cannot shift an older cursor page. Displayed nonterminal
+identities are refreshed without changing page order/cursor, while saved terminal
+states cannot regress to transient progress. UI rows show localized dates,
+counts and kind/status; opaque historical outcomes retain their raw identity and
+technical text. Older-page failure retains the current page and exact retry cursor.
+
+Report expansion freezes the requested ID/receipt and immediately removes the
+prior rows/actions. Every admitted Inspect clears its old details before any
+validation or read can fail, including same-ID refresh/paging. Only a newly read
+matching report can enable Cancel/Retry/Reveal. Report Refresh retries the current
+identity; opening the general Operations panel resets a failed History request.
+Return/Escape restores the exact History entry. Retry and final-page controls
+hand focus to a visible anchor when they disappear. Retry hands off before its
+button hides, and only while it still owns focus; a later Tab to Close or an
+entry is preserved. New exports clear a previous failed History report intent
+before projecting their own durable report. Notice focus identities are
+disjoint from the first-sync banner. Conditional notice layout retains the
+existing compact minimum-story-viewport assertion.
+
+Import retry selects sources again and creates a new ID. Sync retry is explicit.
+Export retry clearly starts a new scope/destination preparation; historical paths
+and labels never become copy authority. Historical Reveal uses the unchanged
+actual terminal-header/directory validation. Opening, refreshing, inspecting,
+changing language or restarting History cannot restore dismissed notices.
+
+Owned regressions cover identical original/native raw cursor pages under
+concurrent insertion, old/new notice IDs, restart, future preference preservation,
+bounded read refusal/repair/retry, same-ID detail refusal and live terminal
+reconciliation. The strict quality gate retains601 test identities with zero
+skips. Full native keyboard/capture acceptance is completed with the following
+workflow evidence; whole-section spoken/three-host acceptance remains15.13.
+
+The complete shown software-Skia fixture passed all82 captures at scale1,
+including the unchanged24-frame concept matrix and every existing workflow
+callback, then native History Space/Tab/Escape. History includes wide English,
+an old export report with its opaque saved outcome, and compact French Retry.
+The final run is retained at
+`/var/folders/y8/fp6_b47914d8lq3wb7p43ysh0000gn/T/librairii-task15-collections-dev-_b7i8k_w`.
+Its timer preserves the first observed failure instead of overwriting it on a
+later tick while quit is pending. Metadata callback sequencing waits for the
+real worker's running/queued counts to settle before requesting the next sync;
+a terminal database report alone can precede release of the actual resources.
+Both independent source reviewers reported zero remaining required findings.
+These captures are development evidence;15.13 reseals final source/binary and
+runs both scales and fresh host/spoken acceptance.
+
+
 ## Remaining workflow work
 
-15.11–15.12 compose durable History/notices and complete native
+15.12 composes complete native
 setup/settings/recovery/diagnostics. 15.13 independently reviews the complete
 native surfaces and refreshes visual/accessibility evidence. Resource budgets,
 handover, installed packages and cutover retain their later task boundaries.

@@ -117,6 +117,9 @@ fn complete(f: &Fixture, ui: &DesktopWindow) -> Result<Snapshot> {
         let snapshot = f.settle(ui)?;
         let data = &snapshot.workflows.operations;
         if data.preparing.is_none()
+            && data
+                .status
+                .is_some_and(|status| !status.starting && status.running == 0 && status.queued == 0)
             && data.details.as_ref().is_some_and(|d| {
                 d.card.operation.kind == OperationKind::MetadataSync
                     && is_terminal(d.card.operation.state)
