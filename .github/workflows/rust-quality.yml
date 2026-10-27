@@ -63,6 +63,20 @@ jobs:
       - name: Shown native foundations on Linux X11 with AT-SPI
         if: runner.os == 'Linux'
         run: dbus-run-session -- xvfb-run -a -s '-screen 0 3840x2160x24' python3 -I -B scripts/verify-native-foundations.py
+      - name: Retain early native component diagnostics
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: rust-native-ui-${{ matrix.target }}-${{ github.sha }}
+          path: |
+            target/quality/source.txt
+            target/quality/rustc.txt
+            target/quality/cargo.txt
+            target/quality/host.txt
+            target/quality/native-ui/
+          if-no-files-found: error
+          retention-days: 30
+          include-hidden-files: true
       - name: Native workflow keyboard and actual Orca speech in X11 and Wayland
         if: always() && runner.os == 'Linux'
         run: python3 -I -B scripts/verify-native-speech.py
