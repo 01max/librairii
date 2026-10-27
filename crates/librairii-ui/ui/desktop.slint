@@ -1,3 +1,4 @@
+import {ShelfReviewData} from "shelf-reviews.slint";
 import { TagManager, Assignments, AssignmentRow } from "tags.slint";
 import { FlagControl } from "flags.slint";
 import { CollectionManager, CollectionChoice } from "collections.slint";
@@ -13,6 +14,7 @@ global FocusState {
     in-out property <bool> sidebar: false;
     in-out property <bool> ready: true;
     in-out property <bool> closing: false;
+    in-out property <bool> mutation: false;
     in-out property <int> key: 11;
     in-out property <int> restore-epoch;
     in-out property <int> preview-focused-key;
@@ -23,14 +25,14 @@ component Action inherits Button {
     in property <int> focus-key;
     callback reveal(length,length);
     in property <bool> available: true;
-    enabled: root.available && !FocusState.closing && !FocusState.modal && (!FocusState.sidebar || root.focus-key >= 200);
+    enabled: root.available && !FocusState.closing && !FocusState.mutation && !FocusState.modal && (!FocusState.sidebar || root.focus-key >= 200);
     private property <int> epoch: FocusState.restore-epoch;
     changed has-focus => { if self.has-focus { FocusState.key = root.focus-key; root.reveal(self.absolute-position.y,self.height); } }
     changed epoch => { if !FocusState.modal && FocusState.key == root.focus-key { self.focus(); } }
 }
 component SearchField inherits LineEdit {
     callback reveal(length,length);
-    enabled: FocusState.ready && !FocusState.closing && !FocusState.modal && !FocusState.sidebar;
+    enabled: FocusState.ready && !FocusState.closing && !FocusState.mutation && !FocusState.modal && !FocusState.sidebar;
     private property <int> epoch: FocusState.restore-epoch;
     changed has-focus => { if self.has-focus { FocusState.key = 30; root.reveal(self.absolute-position.y,self.height); } }
     changed epoch => { if !FocusState.modal && FocusState.key == 30 { self.focus(); } }
@@ -38,14 +40,14 @@ component SearchField inherits LineEdit {
 component PreviewBulk inherits CheckBox {
     in property <int> focus-key;
     callback reveal(length,length);
-    enabled: FocusState.ready && !FocusState.closing && !FocusState.modal && !FocusState.sidebar;
+    enabled: FocusState.ready && !FocusState.closing && !FocusState.mutation && !FocusState.modal && !FocusState.sidebar;
     private property <int> epoch: FocusState.restore-epoch;
     changed has-focus => {if self.has-focus {FocusState.key=root.focus-key;root.reveal(self.absolute-position.y,self.height);}}
     changed epoch => {if !FocusState.modal && !FocusState.sidebar && FocusState.key==root.focus-key {self.focus();}}
 }
 component ModeChoice inherits ComboBox {
     callback reveal(length,length);
-    enabled: FocusState.ready && !FocusState.closing && !FocusState.modal && !FocusState.sidebar;
+    enabled: FocusState.ready && !FocusState.closing && !FocusState.mutation && !FocusState.modal && !FocusState.sidebar;
     private property <int> epoch: FocusState.restore-epoch;
     changed has-focus => { if self.has-focus { FocusState.key = 15; root.reveal(self.absolute-position.y,self.height); } }
     changed epoch => { if !FocusState.modal && FocusState.key == 15 { self.focus(); } }
@@ -125,8 +127,14 @@ export component DesktopWindow inherits Window {
     out property <bool> approved-has-focus: workspace-panel.approved-has-focus;
     out property <length> observed-approved-height: workspace-panel.approved-height;
     out property <length> observed-review-height: workspace-panel.review-height;
+    out property <string> review-focused-uuid: workspace-panel.review-focused-uuid;
+    out property <length> review-focused-y: workspace-panel.review-focused-y;
+    out property <length> review-focused-height: workspace-panel.review-focused-height;
+    out property <length> review-viewport-y: workspace-panel.review-viewport-y;
+    out property <length> review-viewport-height: workspace-panel.review-viewport-height;
+    out property <bool> review-refresh-focused: workspace-panel.review-refresh-focused;
     public function focus-review() { workspace-panel.focus-review(); }
-    public function focus-browser() { if root.workspace { workspace-panel.focus-approved(); } else { browser.focus(); } }
+    public function focus-browser() { if root.startup-phase!=3 {if root.startup-phase!=4 {startup-action.focus();}return;}if root.workspace { workspace-panel.focus-approved(); } else { browser.focus(); } }
     out property <bool> close-focused: close-dialog-button.has-focus;
     out property <bool> attribution-focused: attribution-button.has-focus;
     out property <bool> query-focused: search-entry.has-focus;
@@ -147,6 +155,24 @@ export component DesktopWindow inherits Window {
         else if !root.closing && root.dialog == 15 { shelf-manager.edit(action); }
     }
     in-out property <int> dialog;
+    in property <ShelfReviewData> review-data;
+    private property <bool> review-hidden: true;
+    private property <int> review-origin;
+    out property <bool> review-shown: root.review-data.open && !root.review-hidden;
+    changed review-data=>{FocusState.mutation=root.review-data.committing;}
+    callback review-updates();callback preview-shelf-sources();callback review-delete-shelf();callback review-delete-collection();
+    callback review-refresh();callback review-close();callback review-apply();callback review-keep-all();callback review-acknowledge();callback review-section(int);callback review-page(int);callback review-shelf(int);callback review-choose(string,int);callback review-bulk(int);callback review-inspect(string);
+    public function show-native-review() {if !root.review-shown {root.review-origin=root.dialog;}root.finish-shelf-preview();root.review-hidden=false;}
+    public function activate-native-review() {if root.review-shown {FocusState.key=33;workspace-panel.activate-review();}else{root.focus-browser();}}
+    public function focus-native-review() {if root.review-shown {FocusState.key=33;workspace-panel.focus-review();}else{root.focus-browser();}}
+    public function finish-native-review() {root.review-hidden=true;root.review-origin=0;FocusState.mutation=false;}
+    public function close-native-review() {
+        if root.review-data.committing {return;}
+        root.review-hidden=true;root.review-close();
+        if root.review-origin==15 {root.open-dialog(15);shelf-manager.focus-invoker(root.review-data.kind==3 ? 6 : 5);}
+        else if root.review-origin==14 {root.dialog=14;FocusState.modal=true;review-affected.focus();}
+        else {root.focus-browser();}
+    }
     in-out property <bool> shelf-busy;
     in property <bool> shelf-active;
     in property <[string]> shelf-definitions;
@@ -160,6 +186,7 @@ export component DesktopWindow inherits Window {
     in property <bool> shelf-move-down;
     in property <bool> shelf-manual-available;
     in property <bool> shelf-source-selected;
+    in property <bool> shelf-source-editable;
     in property <bool> shelf-member-up;
     in property <bool> shelf-member-down;
     in property <bool> shelf-member-removable;
@@ -245,6 +272,7 @@ export component DesktopWindow inherits Window {
     in property <bool> collection-union-selected;
     in property <bool> collection-impact-previous;
     in property <bool> collection-impact-next;
+    in property <int> collection-impact-count;
     callback select-collection(int);
     callback save-collection();
     callback duplicate-collection();
@@ -268,6 +296,7 @@ export component DesktopWindow inherits Window {
     out property <length> collection-union-height: collection-manager.union-height;
     public function show-collection-confirmation() { if root.dialog == 13 { root.dialog=14;dialog-scroll.content-y=0px;cancel-collection.focus(); } }
     public function finish-collection-confirmation() { root.dialog=13;collection-manager.activate(); }
+    out property <bool> collection-review-focused: review-affected.has-focus;
     out property <bool> collection-cancel-focused: cancel-collection.has-focus;
     out property <bool> collection-invoker-focused: root.collection-replacing ? collection-manager.replace-focused : collection-manager.delete-focused;
     private property <int> assignment-parent;
@@ -364,6 +393,7 @@ export component DesktopWindow inherits Window {
         if root.compact && !root.sidebar-open && !root.modal && FocusState.key >= 200 { navigation-button.focus(); }
     }
     public function open-dialog(kind: int) {
+        if root.review-data.committing {return;}
         if root.dialog == 0 {
             root.invoker = FocusState.key;
             root.dialog = kind;
@@ -374,6 +404,7 @@ export component DesktopWindow inherits Window {
         }
     }
     public function close-dialog() {
+        if (root.dialog==14 || root.dialog==15) && root.review-data.busy && !root.review-data.open && !root.review-data.committing {root.review-close();}
         if root.closing || root.detail-pending || root.tag-busy || root.collection-busy || root.shelf-busy { return; }
         if root.dialog==16 || root.dialog==17 {root.cancel-shelf-preview();if root.shelf-parent==15 {root.dialog=15;shelf-manager.focus-invoker(root.shelf-preview-kind);return;}root.dialog=0;FocusState.modal=false;FocusState.key=root.invoker;FocusState.restore-epoch+=1;return;}
         if root.dialog==18 && root.shelf-parent==15 {root.dismiss-shelf-feedback();root.dialog=15;shelf-manager.focus-invoker(4);return;}
@@ -392,12 +423,13 @@ export component DesktopWindow inherits Window {
         else if root.invoker == 32 && root.wide && !root.workspace { side-inspector.focus-current(); }
         else if root.invoker == 32 { root.focus-browser(); }
         else if root.invoker == 31 { root.focus-browser(); }
+        else if root.invoker == 33 && root.review-shown {root.focus-native-review();}
         else if root.invoker == 23 && root.bulk-summary == "" { root.focus-browser(); }
         else if root.invoker == 24 { if root.bulk-summary == "" || (!root.bulk-flag-enabled && !root.flag-undo-enabled) { root.focus-browser(); } else { bulk-flags.focus-control(root.bulk-flag-focus); } }
         else if root.invoker == 30 { search-entry.focus(); }
         else { FocusState.restore-epoch += 1; }
     }
-    public function request-quit() { if root.detail-pending || root.tag-busy || root.collection-busy || root.shelf-busy { return; } if root.closing { return; } if root.pending { root.open-dialog(7); } else { root.quit(); } }
+    public function request-quit() { if root.detail-pending || root.tag-busy || root.collection-busy || root.shelf-busy || root.review-data.busy { return; } if root.closing { return; } if root.pending { root.open-dialog(7); } else { root.quit(); } }
     in-out property <bool> compact;
     in-out property <bool> wide: true;
     changed wide => { if !root.wide && !root.modal && FocusState.key == 32 { browser.focus(); } }
@@ -490,6 +522,7 @@ export component DesktopWindow inherits Window {
     public function open-sidebar() { if !root.modal { root.sidebar-open = true; navigation.activate(); } }
     public function close-sidebar() { root.sidebar-open = false; navigation-button.focus(); }
     public function show-panel(kind: int) {
+        if root.review-data.committing {return;}
         if kind == 0 { root.panel = 0; root.request-panel(kind); if root.compact { root.close-sidebar(); } }
         else if kind == 5 { root.open-dialog(2); }
         else if kind == 8 { root.open-dialog(3); }
@@ -525,10 +558,11 @@ export component DesktopWindow inherits Window {
             Rectangle { horizontal-stretch: 1; }
         }
         Rectangle { height: 1px; background: Palette.border; }
-        if root.startup-phase != 3: HorizontalBox {
-            padding: 10px;
+        HorizontalBox {
+            visible: root.startup-phase != 3; height: self.visible ? 52px : 0px;
+            padding: self.visible ? 10px : 0px;
             Caption { text: root.status; horizontal-stretch: 1; accessible-live-region: polite; }
-            Action { focus-key: 18; visible: root.startup-phase != 4; width: root.startup-phase == 4 ? 0px : 110px; text: root.startup-phase == 2 ? (root.french ? "Récupération…" : "Recovery…") : (root.french ? "Configurer…" : "Set up…"); clicked => { root.open-dialog(root.startup-phase == 2 ? 5 : 4); } }
+            startup-action := Action { focus-key: 18; visible: root.startup-phase != 4; width: root.startup-phase == 4 ? 0px : 110px; text: root.startup-phase == 2 ? (root.french ? "Récupération…" : "Recovery…") : (root.french ? "Configurer…" : "Set up…"); clicked => { root.open-dialog(root.startup-phase == 2 ? 5 : 4); } }
         }
         Rectangle {
             vertical-stretch: 1;
@@ -562,8 +596,8 @@ export component DesktopWindow inherits Window {
                     if root.shelf-active: VerticalBox { padding: 0px;spacing: 4px;
                         Text {height: 20px;text: root.shelf-view-summary;overflow: elide;color: Palette.foreground;accessible-live-region: polite;}
                         HorizontalBox {padding: 0px;spacing: 8px;height: 32px;
-                            shelf-action-choice := ComboBox {width: root.compact ? 270px : 360px;enabled: !root.modal && !root.shelf-busy && !FocusState.sidebar;model: root.french ? ["Gérer les Étagères…", "Monter le membre", "Descendre le membre", "Retirer les membres…", "Retirer et exclure…", "Gérer les exclusions…", "Rétablir la vue et l’ordre approuvé"] : ["Manage Shelves…", "Move member up", "Move member down", "Remove members…", "Remove and exclude…", "Manage exclusions…", "Restore approved view and order"];current-index <=> root.shelf-action;accessible-label: root.french ? "Action sur l’Étagère" : "Shelf action";changed has-focus=>{root.shelf-action-focused=self.has-focus;if self.has-focus {FocusState.key=28;root.reveal-controls(self.absolute-position.y,self.height);root.shelf-action-y=self.absolute-position.y;root.shelf-action-height=self.height;}}private property <int> epoch: FocusState.restore-epoch;changed epoch=>{if !FocusState.modal && FocusState.key==28 {self.focus();}}}
-                            shelf-run := Action {changed has-focus=>{root.shelf-run-focused=self.has-focus;if self.has-focus {FocusState.key=29;root.reveal-controls(self.absolute-position.y,self.height);}}focus-key: 29;reveal(y,h)=>{root.reveal-controls(y,h);}text: root.french ? "Exécuter" : "Run";available: !root.shelf-busy && (root.shelf-action==0 || (root.shelf-action==1 && root.shelf-member-up) || (root.shelf-action==2 && root.shelf-member-down) || ((root.shelf-action==3 || root.shelf-action==4) && root.shelf-member-removable) || root.shelf-action==5 || (root.shelf-action==6 && root.shelf-refined));clicked=>{if root.shelf-action==0 {root.show-panel(10);}else if root.shelf-action==1 {root.shelf-move-member(-1);}else if root.shelf-action==2 {root.shelf-move-member(1);}else if root.shelf-action==3 || root.shelf-action==4 {root.shelf-remove-members(root.shelf-action==4);}else if root.shelf-action==5 {root.show-shelf-exclusions();}else{root.clear-shelf-refinement();}}}
+                            shelf-action-choice := ComboBox {width: root.compact ? 270px : 360px;enabled: !root.modal && !root.shelf-busy && !FocusState.sidebar;model: root.french ? ["Gérer les Étagères…", "Monter le membre", "Descendre le membre", "Retirer les membres…", "Retirer et exclure…", "Gérer les exclusions…", "Rétablir la vue et l’ordre approuvé", "Examiner les mises à jour…", "Supprimer cette Étagère…"] : ["Manage Shelves…", "Move member up", "Move member down", "Remove members…", "Remove and exclude…", "Manage exclusions…", "Restore approved view and order", "Review updates…", "Delete this Shelf…"];current-index <=> root.shelf-action;accessible-label: root.french ? "Action sur l’Étagère" : "Shelf action";changed has-focus=>{root.shelf-action-focused=self.has-focus;if self.has-focus {FocusState.key=28;root.reveal-controls(self.absolute-position.y,self.height);root.shelf-action-y=self.absolute-position.y;root.shelf-action-height=self.height;}}private property <int> epoch: FocusState.restore-epoch;changed epoch=>{if !FocusState.modal && FocusState.key==28 {self.focus();}}}
+                            shelf-run := Action {changed has-focus=>{root.shelf-run-focused=self.has-focus;if self.has-focus {FocusState.key=29;root.reveal-controls(self.absolute-position.y,self.height);}}focus-key: 29;reveal(y,h)=>{root.reveal-controls(y,h);}text: root.french ? "Exécuter" : "Run";available: !root.shelf-busy && ((root.shelf-action==0 || root.shelf-action==7 || root.shelf-action==8) || (root.shelf-action==1 && root.shelf-member-up) || (root.shelf-action==2 && root.shelf-member-down) || ((root.shelf-action==3 || root.shelf-action==4) && root.shelf-member-removable) || root.shelf-action==5 || (root.shelf-action==6 && root.shelf-refined));clicked=>{if root.shelf-action==0 {root.show-panel(10);}else if root.shelf-action==1 {root.shelf-move-member(-1);}else if root.shelf-action==2 {root.shelf-move-member(1);}else if root.shelf-action==3 || root.shelf-action==4 {root.shelf-remove-members(root.shelf-action==4);}else if root.shelf-action==5 {root.show-shelf-exclusions();}else if root.shelf-action==6 {root.clear-shelf-refinement();}else if root.shelf-action==7 {root.review-updates();}else{root.review-delete-shelf();}}}
                         }
                         Text {visible: root.shelf-notice!="";height: self.visible ? 20px : 0px;text: root.shelf-notice;overflow: elide;color: Palette.foreground;accessible-live-region: polite;}
                         Text {visible: root.status!="";height: self.visible ? 20px : 0px;text: root.status;overflow: elide;color: Palette.foreground;accessible-live-region: polite;}
@@ -597,7 +631,7 @@ export component DesktopWindow inherits Window {
                                 }
                             }
                         }
-                        workspace-panel := Workspace { approved-focused=>{FocusState.key=31;} membership: root.shelf-active;review-visible: !root.shelf-active; visible: root.workspace; max-width: root.workspace ? 100000px : 0px; interactive: root.workspace && !root.closing && !root.modal && !FocusState.sidebar; wide: root.wide; french: root.french; members: root.story-groups; count: root.story-count; sources: root.sources; proposals <=> root.proposals; pending: root.pending; decisions: root.decisions; selected-index <=> root.selected-index; select(index) => { root.select-story(index); } toggle(index) => { root.toggle-bulk(index); } decide(index,value) => { root.decide(index,value); } apply => { root.apply-decisions(); } }
+                        workspace-panel := Workspace {review-exclusions=>{root.show-shelf-exclusions();}review-refresh=>{root.review-refresh();}review-close=>{root.close-native-review();}review-apply=>{root.review-apply();}review-keep-all=>{root.review-keep-all();}review-acknowledge=>{root.review-acknowledge();}review-section(i)=>{root.review-section(i);}review-page(i)=>{root.review-page(i);}review-shelf(i)=>{root.review-shelf(i);}review-choose(i,c)=>{root.review-choose(i,c);}review-bulk(i)=>{root.review-bulk(i);}review-inspect(i)=>{root.review-inspect(i);}review-focused=>{FocusState.key=33;} approved-focused=>{FocusState.key=31;} membership: root.shelf-active;review-visible: !root.shelf-active || root.review-shown;native-review: root.review-shown;review-focus-active: FocusState.key==33 && !root.modal && root.review-shown;review-data: root.review-data; visible: root.workspace; max-width: root.workspace ? 100000px : 0px; interactive: root.workspace && !root.closing && !root.modal && !root.review-data.committing && !FocusState.sidebar; wide: root.wide; french: root.french; members: root.story-groups; count: root.story-count; sources: root.sources; proposals <=> root.proposals; pending: root.pending; decisions: root.decisions; selected-index <=> root.selected-index; select(index) => { root.select-story(index); } toggle(index) => { root.toggle-bulk(index); } decide(index,value) => { root.decide(index,value); } apply => { root.apply-decisions(); } }
                         side-inspector := Inspector { visible: root.wide && !root.workspace; width: self.visible ? 264px : 0px; interactive: !root.modal && !root.closing; french: root.french; story: root.selected-story; request-data => { root.request-details(); } focused => { FocusState.key = 32; }
                             flag-enabled: root.panel-flag-enabled; flag-checked: root.panel-flag-checked; flag-pending: root.flag-pending; flag-can-undo: root.flag-undo-enabled; flag-summary: root.panel-flag-summary; flag-target-label: root.panel-flag-target-label; flag-notice: root.flag-notice; flag-change(value) => { root.panel-flag-change(value); } undo-flags => { root.undo-flags(); }
                         }
@@ -620,7 +654,7 @@ export component DesktopWindow inherits Window {
                 width: root.compact ? 280px : 216px; height: parent.height;
                 sidebar-focus := FocusScope { x: 0px; y: 0px; width: parent.width; height: parent.height;
                     key-pressed(event) => { if event.text == Key.Escape && root.compact { root.close-sidebar(); return accept; } return reject; }
-                    navigation := Navigation { x: 0px; y: 0px; collections: root.collection-rows; shelves: root.shelf-rows; navigate(index) => { root.navigate-group(index); if root.compact { root.close-sidebar(); } } enabled: !root.modal; width: parent.width; height: parent.height; french: root.french; compact: root.compact; close => { root.close-sidebar(); } open-panel(kind) => { root.show-panel(kind); } }
+                    navigation := Navigation { x: 0px; y: 0px; collections: root.collection-rows; shelves: root.shelf-rows; navigate(index) => { root.navigate-group(index); if root.compact { root.close-sidebar(); } } enabled: !root.modal && !root.review-data.committing; width: parent.width; height: parent.height; french: root.french; compact: root.compact; close => { root.close-sidebar(); } open-panel(kind) => { root.show-panel(kind); } }
                 }
             }
         }
@@ -658,8 +692,9 @@ export component DesktopWindow inherits Window {
                     if root.dialog==18 {if event.modifiers.shift && shelf-exclusions.first-focused {close-dialog-button.focus();return accept;}if !event.modifiers.shift && close-dialog-button.has-focus {shelf-exclusions.activate();return accept;}return reject;}
                     if root.dialog == 13 { if event.modifiers.shift && collection-manager.first-focused {close-dialog-button.focus();return accept;} if !event.modifiers.shift && close-dialog-button.has-focus {collection-manager.activate();return accept;}return reject; }
                     if root.dialog == 14 {
-                        if !event.modifiers.shift && confirm-collection.has-focus {if root.collection-impact-previous {collection-prev.focus();}else if root.collection-impact-next {collection-next.focus();}else {cancel-collection.focus();}return accept;}
-                        if event.modifiers.shift && (collection-prev.has-focus || (collection-next.has-focus && !root.collection-impact-previous) || (cancel-collection.has-focus && !root.collection-impact-previous && !root.collection-impact-next)) {confirm-collection.focus();return accept;}
+                        if !event.modifiers.shift && confirm-collection.has-focus && !review-affected.enabled {if root.collection-impact-previous {collection-prev.focus();}else if root.collection-impact-next {collection-next.focus();}else {cancel-collection.focus();}return accept;}
+                        if !event.modifiers.shift && review-affected.has-focus {if root.collection-impact-previous {collection-prev.focus();}else if root.collection-impact-next {collection-next.focus();}else {cancel-collection.focus();}return accept;}
+                        if event.modifiers.shift && (collection-prev.has-focus || (collection-next.has-focus && !root.collection-impact-previous) || (cancel-collection.has-focus && !root.collection-impact-previous && !root.collection-impact-next)) {if review-affected.enabled {review-affected.focus();}else{confirm-collection.focus();}return accept;}
                         return reject;
                     }
                     if root.dialog == 12 { if cancel-tag.has-focus { confirm-tag.focus(); } else { cancel-tag.focus(); } return accept; }
@@ -731,8 +766,8 @@ export component DesktopWindow inherits Window {
                             creating: root.collection-creating; openable: root.collection-openable; move-up: root.collection-move-up; move-down: root.collection-move-down; definitions: root.collection-definitions; choices: root.collection-choices; selected <=> root.collection-index; name <=> root.collection-name; notice: root.collection-notice; status: root.collection-status; criteria: root.collection-criteria; union-summary: root.collection-union-summary; union-available: root.collection-union-available; union-active: root.collection-union-active; union-selected: root.collection-union-selected;
                             select(index) => {root.select-collection(index);}save=>{root.save-collection();}duplicate=>{root.duplicate-collection();}move(offset)=>{root.move-collection(offset);}open=>{root.open-collection();}replace=>{root.replace-collection();}delete=>{root.delete-collection();}edit-query=>{root.edit-current-collection-query();}edit-saved-query=>{root.edit-saved-collection-query();}toggle(index)=>{root.toggle-collection-union(index);}toggle-selected=>{root.toggle-selected-collection-union();}open-union=>{root.open-collection-union();}save-union=>{root.save-collection-union();}reveal(y,h)=>{root.reveal-dialog(y,h);}
                         }
-                        shelf-manager := ShelfManager {visible: root.dialog==15;height: self.visible ? self.preferred-height : 0px;french: root.french;active: root.dialog==15 && root.startup-phase==3 && !root.shelf-busy;definitions: root.shelf-definitions;sources: root.shelf-sources;selected <=> root.shelf-index;source-index <=> root.shelf-source-index;name <=> root.shelf-name;include-manual <=> root.shelf-include-manual;creating: root.shelf-creating;move-up: root.shelf-move-up;move-down: root.shelf-move-down;manual-available: root.shelf-manual-available;source-selected: root.shelf-source-selected;notice: root.shelf-notice;summary: root.shelf-summary;manual-summary: root.shelf-manual-summary;source-summary: root.shelf-source-summary;
-                            select(i)=>{root.select-shelf(i);}choose-source(i)=>{root.select-shelf-source(i);}toggle-source=>{root.toggle-shelf-source();}rename=>{root.rename-shelf();}duplicate=>{root.duplicate-shelf();}move(offset)=>{root.move-shelf(offset);}preview=>{root.preview-shelf-creation();}add-manual=>{root.add-manual-shelf();}exclusions=>{root.show-shelf-exclusions();}reveal(y,h)=>{root.reveal-dialog(y,h);}
+                        shelf-manager := ShelfManager {visible: root.dialog==15;height: self.visible ? self.preferred-height : 0px;french: root.french;active: root.dialog==15 && root.startup-phase==3 && !root.shelf-busy && !root.review-data.busy;definitions: root.shelf-definitions;sources: root.shelf-sources;selected <=> root.shelf-index;source-index <=> root.shelf-source-index;name <=> root.shelf-name;include-manual <=> root.shelf-include-manual;creating: root.shelf-creating;move-up: root.shelf-move-up;move-down: root.shelf-move-down;manual-available: root.shelf-manual-available;source-selected: root.shelf-source-selected;source-editable: root.shelf-source-editable;notice: root.shelf-notice;summary: root.shelf-summary;manual-summary: root.shelf-manual-summary;source-summary: root.shelf-source-summary;
+                            preview-sources=>{root.preview-shelf-sources();}delete-shelf=>{root.review-delete-shelf();}select(i)=>{root.select-shelf(i);}choose-source(i)=>{root.select-shelf-source(i);}toggle-source=>{root.toggle-shelf-source();}rename=>{root.rename-shelf();}duplicate=>{root.duplicate-shelf();}move(offset)=>{root.move-shelf(offset);}preview=>{root.preview-shelf-creation();}add-manual=>{root.add-manual-shelf();}exclusions=>{root.show-shelf-exclusions();}reveal(y,h)=>{root.reveal-dialog(y,h);}
                         }
                         shelf-preview := ShelfPreview {visible: root.dialog==16 || root.dialog==17;height: self.visible ? self.preferred-height : 0px;french: root.french;active: !root.shelf-busy && root.startup-phase==3;creating: root.shelf-preview-kind==0;warnings: root.shelf-preview-warnings;has-warnings: root.shelf-preview-has-warnings;rows: root.shelf-preview-rows;summary: root.shelf-preview-summary;notice: root.shelf-notice;refresh=>{root.refresh-shelf-preview();}toggle(i)=>{root.shelf-preview-toggle(i);}all(value)=>{root.shelf-preview-all(value);}show-warnings(value)=>{root.shelf-preview-show-warnings(value);}reveal(y,h)=>{root.reveal-dialog(y,h);}}
                         shelf-exclusions := ShelfExclusions {visible: root.dialog==18;height: self.visible ? self.preferred-height : 0px;french: root.french;active: !root.shelf-busy && root.startup-phase==3;rows: root.shelf-exclusion-rows;summary: root.shelf-exclusion-summary;notice: root.shelf-notice;refresh=>{root.refresh-shelf-exclusions();}allow(i)=>{root.allow-shelf-suggestions(i);}reveal(y,h)=>{root.reveal-dialog(y,h);}}
@@ -777,6 +812,7 @@ export component DesktopWindow inherits Window {
                     keep-story := Button { enabled: !root.detail-pending; text: root.french ? "Conserver l’histoire" : "Keep story"; clicked => { root.close-dialog(); } }
                     trash-story := Button { enabled: !root.detail-pending; text: root.detail-pending ? (root.french ? "Déplacement…" : "Moving to trash…") : (root.french ? "Déplacer dans la corbeille" : "Move to trash"); clicked => { root.remove-story(); } }
                 }
+                review-affected := Button {visible: root.dialog==14 && !root.collection-replacing;height: self.visible ? 40px : 0px;enabled: !root.collection-busy && root.collection-impact-count>0;text: root.french ? "Examiner les histoires concernées…" : "Review affected stories…";clicked=>{root.review-delete-collection();}}
                 close-dialog-button := Button { visible: root.dialog != 9 && root.dialog != 12 && root.dialog != 14 && root.dialog!=16 && root.dialog!=17; height: self.visible ? 40px : 0px; enabled: !root.closing && !root.detail-pending && !root.tag-busy && !root.collection-busy && !root.shelf-busy; text: root.dialog == 7 ? (root.french ? "Continuer" : "Keep working") : (root.french ? "Fermer" : "Close"); clicked => { root.close-dialog(); } }
             }
         }

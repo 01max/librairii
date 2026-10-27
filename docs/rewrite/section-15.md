@@ -276,10 +276,68 @@ passes 601 tests with zero skipped, plus doctests, strict lint/build, preservati
 and source/dependency policy. Full spoken and three-host acceptance
 remains 15.13.
 
+## Explicit Shelf reviews and source changes — 15.7
+
+The workspace opens a separate native review pane with additions, removals/Keep
+and warnings. Its controller owns the complete frozen plan and explicit decisions;
+only25 rows and one expanded, inert story preview reach the UI. UUID callbacks
+cannot retarget rows after paging. Full candidate and approved-member totals remain
+separate, and the final summary names approved Add, Exclude, Keep and Remove/exclude
+totals across every affected Shelf. Every decision starts as Not now. Bulk actions
+cover the complete selected group; linked deletion shows one affected Shelf at a
+time, and Keep all covers all affected Shelves. Empty/deferred Apply is a no-op.
+
+Source edits preview desired and detached Collection names, including missing or
+invalid links. Linking sources alone approves no members. Detaching/deleting a
+linked Collection requires every affected decision; uncertain coverage disables
+removal while Keep remains available. The last-source confirmation makes surviving
+members manual/kept. Linked Collection deletion and all approved Shelf effects commit
+atomically. Shelf deletion has separate, one-use lifetime/revision authority and
+retains Library stories, archives, Collections and other Shelves. Storage owns the
+coherent Shelf/source inspection API. Exclusions are reachable from both the review
+and Shelf actions; changing them invalidates the open review without silently
+renewing decisions.
+
+Opening or restoring a sourced Shelf evaluates mismatch removals on the worker and
+prompts with a fresh, unapproved removal review. Explicit Review updates retains
+healthy additions and all other groups. Dismissal writes only profile preferences;
+optional member sets read existing version1 acknowledgement documents and track new
+removal UUIDs separately from the full commit fingerprint. Unrelated names, order,
+additions or Broken flags do not repeat dismissed removals. Complete healed coverage
+renews future novelty; incomplete coverage never claims healing. Closing/Escape
+persists dismissal, reports failed admission/write, and immediately gates Quit until
+an admitted acknowledgement completes. Its failure survives a superseding request
+and coalesced publication. A poisoned profile enters retained Recovery with a visible
+explanation; a recoverable invalid preference can be refreshed and retried. Neither
+failure approves or removes members.
+
+Apply revalidates all storage inputs atomically. Relevant changes mark a plan stale;
+refresh renews its authority and clears decisions. Broken-only edits retain the
+review/choices and update visible warnings, including after paging. Confirmed
+outcomes survive subsequent group/navigation/preference failures and remain in
+Recovery alongside earlier confirmed removal/curation outcomes. Switching from an
+open review to another mismatching Shelf closes the previous scope before adopting
+the new entry ticket. Mutation admission disables other view actions until Apply
+returns. Compact panes retain their title, bounded scrolling and the focused action
+across resize; Settings/About retain the review's exact focus key.
+
+Evidence: the cumulative native-host gate passes601 tests, zero skipped, plus
+doctests, strict build/lint, preservation and dependency/source policy. No Rust test
+identity is removed or added (616 target-union identities); the existing warning
+identity adds member-preference, novelty and unrelated-name/revision checks. Actual
+SQLite/controller regressions cover mixed/full-page decisions, stale metadata,
+Broken-only changes, incomplete/unavailable warnings, conservative/last-source
+detachment, mismatch restart, linked deletion, independent Shelf deletion, A-to-B
+entry, read-only-profile Recovery and recoverable preference retry. Shown EN/FR
+frames exercise actual native ComboBox Keep, Tab/Space into linked deletion and
+Escape back to the exact invoker. The original24-frame matrices and all earlier
+workflow callbacks remain mandatory. Both independent source review axes have zero
+remaining required findings; full spoken/current-source three-host acceptance
+remains15.13.
+
 ## Remaining workflow work
 
-15.7–15.12 compose Shelf
-curation/review, imports/sync/exports, durable History/notices and complete native
+15.8–15.12 compose imports/sync/exports, durable History/notices and complete native
 setup/settings/recovery/diagnostics. 15.13 independently reviews the complete
 native surfaces and refreshes visual/accessibility evidence. Resource budgets,
 handover, installed packages and cutover retain their later task boundaries.

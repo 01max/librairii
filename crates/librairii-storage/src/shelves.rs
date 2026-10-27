@@ -27,12 +27,19 @@ pub enum Response {
     Shelves(Vec<Shelf>),
     Deleted,
 }
+/// One coherent repository observation for the native source editor.
+#[derive(Clone, Debug)]
+pub struct Inspection {
+    pub shelf: Shelf,
+    pub sources: Vec<Source>,
+}
 /// One-use authority for an observed Shelf lifetime and version. Deletion
 /// invalidates it even if SQLite later reuses the same numeric ID/revision.
 #[derive(Debug)]
 pub struct CurationPlan {
     shelf: Shelf,
     members: Vec<Member>,
+    exclusion_count: usize,
     identity: crate::database::SnapshotIdentity,
     ticket: std::sync::Arc<tickets::Ticket>,
 }
@@ -40,11 +47,22 @@ impl CurationPlan {
     pub fn shelf(&self) -> &Shelf {
         &self.shelf
     }
+    pub fn exclusion_count(&self) -> usize {
+        self.exclusion_count
+    }
     pub fn members(&self) -> &[Member] {
         &self.members
     }
 }
 impl Database<'_> {
+    pub fn inspect_shelf(&self, id: ShelfId) -> Result<Pending<'_, Inspection>> {
+        self.read(move |tx| {
+            Ok(Inspection {
+                shelf: read(tx, id)?,
+                sources: sources(tx, id, true)?,
+            })
+        })
+    }
     pub fn edit_shelves(
         &self,
         command: Command,
@@ -66,6 +84,7 @@ impl Database<'_> {
             Ok(CurationPlan {
                 shelf: read(tx, id)?,
                 members: members(tx, id)?,
+                exclusion_count: curation::exclusions(tx, id)?.len(),
                 identity,
                 ticket: tickets::issue(&registry, tickets::Kind::Curation, id.get(), vec![id])?,
             })
@@ -92,6 +111,26 @@ impl Database<'_> {
     }
     pub fn shelf_members(&self, id: ShelfId) -> Result<Pending<'_, Vec<Member>>> {
         self.read(move |tx| members(tx, id))
+    }
+    /// Confirm deletion of the observed lifetime without touching archives or
+    /// any other Shelf. The plan also expires and is invalidated by deletion.
+    pub fn delete_shelf_reviewed(
+        &self,
+        plan: CurationPlan,
+        cancellation: WorkCancellation,
+    ) -> Result<Pending<'_, TransactionOutcome<Response>>> {
+        if self.snapshot_identity() != plan.identity {
+            return Err(ShelfError::StaleReview.into());
+        }
+        let registry = self.shelf_tickets.clone();
+        self.transaction(cancellation, move |tx| {
+            let id = plan.shelf.id;
+            plan.ticket.claim(tickets::Kind::Curation, id.get())?;
+            if read(tx, id)?.revision != plan.shelf.revision {
+                return Err(ShelfError::StaleReview.into());
+            }
+            execute(tx, Command::Delete { id }, &registry)
+        })
     }
 }
 const SELECT: &str = "SELECT s.id,s.name,s.position,s.revision,(SELECT COUNT(*) FROM shelf_stories m WHERE m.shelf_id=s.id),(SELECT COUNT(*) FROM shelf_stories m JOIN stories st ON st.uuid=m.story_uuid WHERE m.shelf_id=s.id AND st.is_broken=1),(SELECT COUNT(*) FROM shelf_stories m WHERE m.shelf_id=s.id AND NOT EXISTS(SELECT 1 FROM stories st JOIN story_archives a ON a.story_id=st.id WHERE st.uuid=m.story_uuid)),(SELECT COUNT(*) FROM shelf_sources src WHERE src.shelf_id=s.id AND src.active=1) FROM shelves s";

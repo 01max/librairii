@@ -3,6 +3,8 @@
 mod collection_checks;
 #[path = "flags.rs"]
 mod flag_checks;
+#[path = "shelf_reviews.rs"]
+mod review_checks;
 #[path = "shelves.rs"]
 mod shelf_checks;
 use super::{Result, check, view};
@@ -21,6 +23,7 @@ use librairii_storage::{
 };
 use librairii_testkit::TestRoots;
 use librairii_ui::native::DesktopWindow;
+pub use review_checks::{Surface as ReviewSurface, checks as shelf_reviews};
 pub use shelf_checks::{Surface as ShelfSurface, checks as shelves};
 use slint::ComponentHandle;
 use std::{
@@ -184,8 +187,11 @@ impl Fixture {
             _roots: roots,
         })
     }
+    #[track_caller]
     fn settle(&self, ui: &DesktopWindow) -> Result<Snapshot> {
-        let snapshot = receive(&self.worker.borrow())?;
+        let caller = std::panic::Location::caller();
+        let snapshot =
+            receive(&self.worker.borrow()).map_err(|error| format!("{error} at {caller}"))?;
         check(
             self.view
                 .borrow_mut()
@@ -231,6 +237,21 @@ impl Fixture {
 impl Drop for Fixture {
     fn drop(&mut self) {
         if let Some(ui) = self.ui.upgrade() {
+            ui.on_review_updates(|| {});
+            ui.on_preview_shelf_sources(|| {});
+            ui.on_review_delete_shelf(|| {});
+            ui.on_review_delete_collection(|| {});
+            ui.on_review_refresh(|| {});
+            ui.on_review_close(|| {});
+            ui.on_review_apply(|| {});
+            ui.on_review_keep_all(|| {});
+            ui.on_review_acknowledge(|| {});
+            ui.on_review_section(|_| {});
+            ui.on_review_page(|_| {});
+            ui.on_review_shelf(|_| {});
+            ui.on_review_choose(|_, _| {});
+            ui.on_review_bulk(|_| {});
+            ui.on_review_inspect(|_| {});
             ui.on_select_shelf(|_| {});
             ui.on_select_shelf_source(|_| {});
             ui.on_toggle_shelf_source(|| {});

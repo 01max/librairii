@@ -132,6 +132,9 @@ fn notice(feedback: Option<&Feedback>, language: Language) -> String {
     }
 }
 impl State {
+    pub(super) fn selected(&self) -> Option<i64> {
+        self.selected
+    }
     pub fn open(&mut self, ui: &DesktopWindow, snapshot: &Snapshot) {
         self.feedback = None;
         self.ticket = None;
@@ -410,6 +413,7 @@ impl State {
                 ));
             }
             ui.set_collection_impact(text.into());
+            ui.set_collection_impact_count(preview.shelf_count as i32);
             ui.set_collection_impact_previous(preview.page > 0);
             ui.set_collection_impact_next(preview.page + 1 < preview.shelf_count);
         }

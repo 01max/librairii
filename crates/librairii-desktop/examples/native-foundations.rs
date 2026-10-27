@@ -231,8 +231,10 @@ fn main() -> Result {
     callback_checks::flags(&ui)?;
     callback_checks::collections(&ui)?;
     callback_checks::shelves(&ui)?;
+    callback_checks::shelf_reviews(&ui)?;
     let initial = snapshot()?;
     let view = Rc::new(RefCell::new(view::View {
+        shelf_reviews: Default::default(),
         shelves: Default::default(),
         collections: Default::default(),
         flags: Default::default(),
@@ -347,6 +349,8 @@ fn main() -> Result {
                     surface.poll(&ui);
                 } else if let Some(surface) = surfaces.shelves.borrow().as_ref() {
                     surface.poll(&ui);
+                } else if let Some(surface) = surfaces.reviews.borrow().as_ref() {
+                    surface.poll(&ui);
                 } else if let Some(surface) = surfaces.collections.borrow().as_ref() {
                     surface.poll(&ui);
                 } else {
@@ -380,7 +384,7 @@ fn main() -> Result {
         return Err(error.into());
     }
     check(
-        server || *step.borrow() > 101,
+        server || *step.borrow() > 106,
         "native fixture ended before completing its checks",
     )?;
     Ok(())
@@ -390,6 +394,7 @@ fn main() -> Result {
 struct Surfaces {
     collections: RefCell<Option<callback_checks::CollectionSurface>>,
     shelves: RefCell<Option<callback_checks::ShelfSurface>>,
+    reviews: RefCell<Option<callback_checks::ReviewSurface>>,
     flags: RefCell<Option<callback_checks::FlagSurface>>,
     filters: RefCell<Option<callback_checks::FilterSurface>>,
     details: RefCell<Option<callback_checks::DetailSurface>>,
@@ -1001,6 +1006,56 @@ fn capture_step(
         )?;
         capture(ui, &destination.join("shelf-exclusions-keyboard-fr.png"))?;
         surfaces.shelves.borrow_mut().take();
+    } else if index == 102 {
+        resize(ui, 1180., 760.)?;
+        *surfaces.reviews.borrow_mut() = Some(callback_checks::ReviewSurface::open(ui)?);
+    } else if index == 103 {
+        capture(ui, &destination.join("shelf-review-additions-wide-en.png"))?;
+        surfaces
+            .reviews
+            .borrow()
+            .as_ref()
+            .ok_or("review surface missing")?
+            .french_removals(ui)?;
+        resize(ui, 560., 400.)?;
+    } else if index == 104 {
+        capture(
+            ui,
+            &destination.join("shelf-review-removals-compact-fr.png"),
+        )?;
+        check(
+            ui.get_review_refresh_focused(),
+            "review section lost stable Refresh focus",
+        )?;
+        surfaces
+            .reviews
+            .borrow()
+            .as_ref()
+            .ok_or("review surface missing")?
+            .native_choice(ui)?;
+    } else if index == 105 {
+        capture(ui, &destination.join("shelf-review-keep-keyboard-fr.png"))?;
+        check(
+            !ui.get_modal() && !ui.get_review_focused_uuid().is_empty(),
+            "review decision lost exact native focus",
+        )?;
+        key(ui, slint::platform::Key::Escape.into())?;
+    } else if index == 106 {
+        check(
+            !ui.get_review_shown(),
+            "native Escape did not defer the review",
+        )?;
+        surfaces
+            .reviews
+            .borrow()
+            .as_ref()
+            .ok_or("review surface missing")?
+            .collection_deletion(ui)?;
+        capture(
+            ui,
+            &destination.join("shelf-linked-deletion-keyboard-fr.png"),
+        )?;
+        surfaces.reviews.borrow_mut().take();
     } else {
         std::fs::write(
             destination.join("report.json"),
@@ -1018,6 +1073,7 @@ fn capture_step(
                 "flag_callbacks": "passed",
                 "collection_callbacks": "passed",
                 "shelf_callbacks": "passed",
+                "shelf_review_callbacks": "passed",
                 "scope": "shown native component/public window events and Skia capture; not physical HID or packaged workflow qualification",
             }))?,
         )?;

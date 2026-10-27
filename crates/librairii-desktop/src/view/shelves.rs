@@ -35,6 +35,8 @@ pub struct State {
     selected: Option<ShelfId>,
     sources: Vec<CollectionId>,
     source_choices: Vec<CollectionId>,
+    source_loaded: bool,
+    linked_sources: Vec<librairii_core::shelves::Source>,
     manual: Option<Targets>,
     pending: Option<(u64, Pending)>,
     feedback: Option<Feedback>,
@@ -47,10 +49,17 @@ pub struct State {
     navigation_error: bool,
     dismiss: Rc<Cell<bool>>,
 }
-fn words(language: Language, en: &str, fr: &str) -> String {
+pub(super) fn words(language: Language, en: &str, fr: &str) -> String {
     if language == Language::French { fr } else { en }.into()
 }
-fn plural(language: Language, n: i64, en: &str, ens: &str, fr: &str, frs: &str) -> String {
+pub(super) fn plural(
+    language: Language,
+    n: i64,
+    en: &str,
+    ens: &str,
+    fr: &str,
+    frs: &str,
+) -> String {
     let singular = language.singular(n.max(0) as u64);
     words(
         language,
@@ -125,6 +134,14 @@ fn notice(feedback: Option<&Feedback>, language: Language) -> String {
     }
 }
 impl State {
+    pub(super) fn source_draft(&self) -> Option<(ShelfId, Vec<CollectionId>)> {
+        self.selected
+            .filter(|_| self.source_loaded)
+            .map(|id| (id, self.sources.clone()))
+    }
+    pub(super) fn selected(&self) -> Option<ShelfId> {
+        self.selected
+    }
     pub fn open(
         &mut self,
         ui: &DesktopWindow,
@@ -139,7 +156,31 @@ impl State {
         self.selected = current(snapshot);
         self.reset = true;
         self.manual = manual;
-        self.sources.clear();
+        self.sources = snapshot
+            .page
+            .as_ref()
+            .and_then(|p| p.shelf.as_ref())
+            .filter(|c| Some(c.shelf.id) == self.selected)
+            .map(|c| {
+                c.sources
+                    .iter()
+                    .filter_map(|(s, _)| s.collection_id)
+                    .collect()
+            })
+            .unwrap_or_default();
+        self.linked_sources = snapshot
+            .page
+            .as_ref()
+            .and_then(|p| p.shelf.as_ref())
+            .filter(|c| Some(c.shelf.id) == self.selected)
+            .map(|c| c.sources.iter().map(|(source, _)| source.clone()).collect())
+            .unwrap_or_default();
+        self.source_loaded = self.selected.is_none()
+            || snapshot
+                .page
+                .as_ref()
+                .and_then(|p| p.shelf.as_ref())
+                .is_some_and(|c| Some(c.shelf.id) == self.selected);
         ui.set_shelf_source_index(0);
         ui.set_shelf_include_manual(bulk && self.manual.is_some());
         self.refresh_failed = false;
@@ -169,6 +210,22 @@ impl State {
         }
         self.refresh_failed = result.refresh_failed;
         self.navigation_error = result.navigation_error;
+        if matches!(kind, Pending::Read)
+            && matches!(self.feedback, Some(Feedback::Ready))
+            && result
+                .inspection
+                .as_ref()
+                .is_some_and(|s| Some(s.id) == self.selected)
+            && ui.get_dialog() == 15
+        {
+            self.linked_sources = result.sources.clone();
+            self.sources = result
+                .sources
+                .iter()
+                .filter_map(|s| s.collection_id)
+                .collect();
+            self.source_loaded = true;
+        }
         match (&self.feedback, kind) {
             (Some(Feedback::Saved(id)), _) => {
                 self.selected = Some(*id);
@@ -300,11 +357,12 @@ impl State {
                 .is_some_and(|id| self.sources.contains(id)),
         );
         ui.set_shelf_manual_available(self.manual.is_some());
+        ui.set_shelf_source_editable(self.source_loaded);
         let n = self.manual.as_ref().map_or(0, |t| t.stories.len());
         ui.set_shelf_manual_summary(format!("{} {}",language.number(n as i64),plural(language,n as i64,"frozen available story selected · mixed unavailable selections cannot be added","frozen available stories selected · mixed unavailable selections cannot be added","histoire disponible sélectionnée et figée · une sélection contenant des histoires indisponibles ne peut pas être ajoutée","histoires disponibles sélectionnées et figées · une sélection contenant des histoires indisponibles ne peut pas être ajoutée")).into());
         ui.set_shelf_source_summary(
             format!(
-                "{} {}: {}",
+                "{} {}: {}\n{}: {}",
                 language.number(self.sources.len() as i64),
                 plural(
                     language,
@@ -319,6 +377,20 @@ impl State {
                     .filter(|s| self.sources.contains(&s.0))
                     .map(|s| s.1.as_str())
                     .collect::<Vec<_>>()
+                    .join(", "),
+                words(language, "Currently linked", "Actuellement liées"),
+                self.linked_sources
+                    .iter()
+                    .map(|s| format!(
+                        "{}{}",
+                        s.name,
+                        if s.collection_id.is_none() {
+                            words(language, " · needs attention", " · à réparer")
+                        } else {
+                            String::new()
+                        }
+                    ))
+                    .collect::<Vec<_>>()
                     .join(", ")
             )
             .into(),
@@ -328,7 +400,15 @@ impl State {
             .shelves
             .inspection
             .as_ref()
-            .filter(|s| Some(s.id) == self.selected);
+            .filter(|s| Some(s.id) == self.selected)
+            .or_else(|| {
+                snapshot
+                    .page
+                    .as_ref()
+                    .and_then(|p| p.shelf.as_ref())
+                    .map(|c| &c.shelf)
+                    .filter(|s| Some(s.id) == self.selected)
+            });
         ui.set_shelf_summary(inspection.map(|s|format!("{} · {} {} · {} {}",s.name,language.number(s.count),plural(language,s.count,"approved","approved","approuvée","approuvées"),language.number(s.unavailable_count),plural(language,s.unavailable_count,"unavailable","unavailable","indisponible","indisponibles"))).unwrap_or_else(||words(language,"Create a named Shelf with copied approved membership and a stored order. No candidate is approved by default.","Créez une Étagère nommée avec des membres approuvés et un ordre enregistré. Aucune candidate n’est approuvée par défaut.")).into());
         let active = current(snapshot).is_some();
         ui.set_shelf_active(active);
@@ -699,6 +779,9 @@ pub fn install(ui: &DesktopWindow, view: Rc<RefCell<View>>, worker: Rc<RefCell<W
                     .ok()
                     .and_then(|i| definitions(&s.snapshot).get(i).map(|x| x.0));
                 s.shelves.reset = true;
+                s.shelves.sources.clear();
+                s.shelves.linked_sources.clear();
+                s.shelves.source_loaded = s.shelves.selected.is_none();
                 s.shelves.ticket = None;
                 s.shelves.feedback = None;
                 s.project(&ui);

@@ -395,6 +395,7 @@ pub(crate) fn run(
     let mut flag_controller = crate::workflows::flags::Controller::default();
     let mut collection_controller = crate::workflows::collections::Controller::default();
     let mut shelf_controller = crate::workflows::shelves::Controller::default();
+    let mut review_controller = crate::workflows::shelf_reviews::Controller::default();
     let result = session.drive(locations, &WorkCancellation::default(), |runtime| {
         let active = (|| -> Result<()> {
             let generation = runtime
@@ -402,7 +403,12 @@ pub(crate) fn run(
                 .map_err(|_| StorageError::RuntimeFenced)?;
             let mut group_rows = groups(runtime)?;
             let mut query_facets = facets(runtime)?;
+            let mut check_entry = true;
             while !stop.load(Ordering::Acquire) {
+                if check_entry {
+                    review_controller.enter(runtime, &store, &navigation)?;
+                    workflows.shelf_reviews = review_controller.snapshot.clone();
+                }
                 let loaded = if invalid_query || workflows.recovery_required {
                     Err(StorageError::InvalidNavigation)
                 } else {
@@ -464,7 +470,8 @@ pub(crate) fn run(
                     };
                     revision = envelope.revision;
                     let command = envelope.command;
-                    let refresh_union=matches!(&command,Command::Tags{..}|Command::Remove(_)|Command::Refresh)
+                    check_entry = matches!(&command, Command::Navigate(_) | Command::Back | Command::Forward);
+                    let refresh_union=matches!(&command,Command::Tags{..}|Command::Remove(_)|Command::Refresh|Command::ShelfReview{action:crate::workflows::shelf_reviews::Action::Apply(_),..})
                         || matches!(&command,Command::Collections{action,..} if !matches!(action,crate::workflows::collections::Action::PreviewUnion(_)|crate::workflows::collections::Action::OpenUnion(_)));
                     if matches!(
                         command,
@@ -474,7 +481,17 @@ pub(crate) fn run(
                     }
                     let mut next = navigation.clone();
                     invalid_query = false;
+                    let mut invalidates_review=matches!(&command,Command::Refresh);
                     match command {
+                        Command::ShelfReview{generation,action}=>{
+                            review_controller.handle(runtime,&store,crate::workflows::shelf_reviews::Request{generation,action},revision,&mut next);
+                            workflows.shelf_reviews=review_controller.snapshot.clone();
+                            if matches!(&workflows.shelf_reviews.feedback,Some(crate::workflows::shelf_reviews::Feedback::Error{uncertain:true,..})) {
+                                workflows.recovery_required=true;receiver.fence().map_err(|_|StorageError::RuntimeFenced)?;return Err(StorageError::RuntimeFenced);
+                            }
+                            if next.current().location!=navigation.current().location {restore_revision=revision;}
+                            group_rows=groups(runtime)?;
+                        }
                         Command::SelectUnavailable{uuid,query}=>{
                             if next.accepts(&query) && unavailable.contains(&uuid) {
                                 workflows.details=None;
@@ -484,6 +501,7 @@ pub(crate) fn run(
                         Command::Shelves{generation,action}=>{
                             shelf_controller.handle(runtime,generation,action,revision,&mut next);
                             workflows.shelves=shelf_controller.snapshot.clone();
+                            invalidates_review=matches!(workflows.shelves.feedback,Some(crate::workflows::shelves::Feedback::Saved(_)));
                             if matches!(&workflows.shelves.feedback,Some(crate::workflows::shelves::Feedback::Error{uncertain:true,..})) {
                                 workflows.recovery_required=true;receiver.fence().map_err(|_|StorageError::RuntimeFenced)?;return Err(StorageError::RuntimeFenced);
                             }
@@ -496,6 +514,7 @@ pub(crate) fn run(
                         Command::Collections { generation, action } => {
                             collection_controller.handle(runtime,generation,action,revision,&mut next);
                             workflows.collections=collection_controller.snapshot.clone();
+                            invalidates_review=matches!(workflows.collections.feedback,Some(crate::workflows::collections::Feedback::Saved(_)|crate::workflows::collections::Feedback::Deleted));
                             if next.current().location != navigation.current().location { restore_revision=revision; }
                             group_rows=groups(runtime)?;
                         }
@@ -510,6 +529,7 @@ pub(crate) fn run(
                                 // by the fence. Retain the uncertain result.
                                 return Err(StorageError::RuntimeFenced);
                             }
+                            review_controller.observe_flags(&workflows.flags.display);workflows.shelf_reviews=review_controller.snapshot.clone();
                             if let Some(details) = &workflows.details {
                                 let detail = crate::workflows::inspect(runtime, &next, details.target.clone());
                                 workflows.detail_error = detail.is_err();
@@ -519,6 +539,7 @@ pub(crate) fn run(
                         Command::Tags { generation, action } => {
                             tag_controller.handle(runtime,generation,action,revision);
                             workflows.tags=tag_controller.snapshot.clone();
+                            invalidates_review=matches!(workflows.tags.feedback,Some(crate::workflows::tags::Feedback::Saved|crate::workflows::tags::Feedback::Deleted|crate::workflows::tags::Feedback::Assignment(_)));
                             query_facets=facets(runtime)?;
                             group_rows=groups(runtime)?;
                         }
@@ -541,6 +562,7 @@ pub(crate) fn run(
                                 }
                             }).map_err(|e| e.to_string()));
                             workflows.recovery_required = recovery_required;
+                            invalidates_review=workflows.removal.as_ref().is_some_and(|r|r.is_ok());
                             if workflows.removal.as_ref().is_some_and(|r| r.is_ok()) {
                                 workflows.details = None;
                                 group_rows = if recovery_required { Vec::new() } else { match groups(runtime) { Ok(groups) => groups, Err(_) => { workflows.group_error = true; Vec::new() } } };
@@ -646,6 +668,7 @@ pub(crate) fn run(
                             }
                         }
                     }
+                    if invalidates_review {review_controller.invalidate();workflows.shelf_reviews=review_controller.snapshot.clone();}
                     if refresh_union && !workflows.recovery_required {
                         let refreshed=collection_controller.refresh_union(runtime,&group_rows);
                         workflows.collections=collection_controller.snapshot.clone();

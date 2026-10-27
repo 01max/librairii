@@ -7,6 +7,8 @@ pub(crate) mod details;
 pub(crate) mod filters;
 #[path = "view/flags.rs"]
 pub(crate) mod flags;
+#[path = "view/shelf_reviews.rs"]
+pub(crate) mod shelf_reviews;
 #[path = "view/shelves.rs"]
 pub(crate) mod shelves;
 #[path = "view/tags.rs"]
@@ -64,6 +66,7 @@ fn update_previews(ui: &DesktopWindow, mut next: Vec<CollectionPreview>) -> bool
     false
 }
 pub struct View {
+    pub shelf_reviews: shelf_reviews::State,
     pub shelves: shelves::State,
     pub collections: collections::State,
     pub flags: flags::State,
@@ -209,6 +212,8 @@ fn row(index: usize, story: &Story, language: Language, catalogs: &Catalogs) -> 
                 words("Current matches", "Correspondances actuelles"),
                 if !available {
                     words("unavailable; unknown", "indisponibles ; inconnues")
+                } else if current.is_empty() && story.coverage_incomplete {
+                    words("unknown", "inconnues")
                 } else if current.is_empty() {
                     words("none", "aucune")
                 } else {
@@ -305,9 +310,11 @@ impl View {
         if let Some(uuid) = self.shelves.accept(ui, &self.snapshot) {
             self.selected = Some(uuid);
         }
+        self.shelf_reviews.accept(ui, &self.snapshot);
         self.resize(ui);
         self.project(ui);
         self.shelves.restore_focus(ui);
+        self.shelf_reviews.restore_focus(ui);
         true
     }
     pub fn project(&mut self, ui: &DesktopWindow) {
@@ -342,6 +349,7 @@ impl View {
             self.selected.as_deref(),
             &self.tags.selection,
         );
+        self.shelf_reviews.project(ui, &self.snapshot);
         ui.set_back_enabled(
             self.snapshot
                 .navigation
@@ -526,6 +534,7 @@ impl View {
             self.selected.as_deref(),
             &self.tags.selection,
         );
+        self.shelf_reviews.project(ui, &self.snapshot);
         ui.set_previous_enabled(page.page > 1);
         ui.set_next_enabled(page.page < page.pages);
         ui.set_counts(
@@ -600,6 +609,7 @@ pub fn install(
     initial: Snapshot,
 ) -> Result<Rc<RefCell<View>>, LocalizationError> {
     let view = Rc::new(RefCell::new(View {
+        shelf_reviews: Default::default(),
         shelves: Default::default(),
         collections: Default::default(),
         flags: Default::default(),
@@ -640,6 +650,7 @@ pub fn install(
         view.borrow_mut().guard.activate(generation);
     }
     view.borrow_mut().project(ui);
+    view.borrow_mut().shelf_reviews.restore_focus(ui);
     let (state, weak, pending) = (view.clone(), ui.as_weak(), worker.clone());
     ui.on_mode_selected(move |mode| {
         if let Some(ui) = weak.upgrade() {
@@ -782,6 +793,7 @@ pub fn install(
     });
     collections::install(ui, view.clone(), worker.clone());
     shelves::install(ui, view.clone(), worker.clone());
+    shelf_reviews::install(ui, view.clone(), worker.clone());
     flags::install(ui, view.clone(), worker.clone());
     tags::install(ui, view.clone(), worker.clone());
     details::install(ui, view.clone(), worker.clone());

@@ -139,6 +139,7 @@ pub struct Snapshot {
     pub revision: u64,
     pub feedback: Option<Feedback>,
     pub inspection: Option<Shelf>,
+    pub sources: Vec<librairii_core::shelves::Source>,
     pub preview: Option<Preview>,
     pub exclusions: Option<Exclusions>,
     pub refresh_failed: bool,
@@ -175,9 +176,6 @@ fn committed<T>(value: TransactionOutcome<T>) -> Result<T> {
         TransactionOutcome::ProvenNotCommitted(e) => Err(e),
         TransactionOutcome::CommitUncertain(_) => Err(StorageError::RuntimeFenced),
     }
-}
-fn shelf(runtime: &Runtime<'_, '_, '_>, id: ShelfId) -> Result<Shelf> {
-    runtime.command(|db, _, _| db.shelf(id)?.wait())
 }
 fn changed(response: shelves::Response) -> Result<Shelf> {
     match response {
@@ -371,7 +369,10 @@ impl Controller {
     ) -> Result<Feedback> {
         match action {
             Action::Inspect(id) => {
-                self.snapshot.inspection = Some(shelf(runtime, id)?);
+                let loaded = runtime.command(|db, _, _| db.inspect_shelf(id)?.wait())?;
+                let (inspection, sources) = (loaded.shelf, loaded.sources);
+                self.snapshot.inspection = Some(inspection);
+                self.snapshot.sources = sources;
                 Ok(Feedback::Ready)
             }
             Action::Rename { id, name } => {

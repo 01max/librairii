@@ -11,6 +11,7 @@ export component ShelfManager inherits VerticalBox {
     in property <bool> move-down;
     in property <bool> manual-available;
     in property <bool> source-selected;
+    in property <bool> source-editable;
     in property <[string]> definitions;
     in property <[string]> sources;
     in-out property <int> selected;
@@ -25,7 +26,7 @@ export component ShelfManager inherits VerticalBox {
     out property <bool> editing: name-field.has-focus;
     public function activate() { selector.focus(); }
     public function focus-name() { name-field.focus(); }
-    public function focus-invoker(kind:int) { if kind==0 { preview.focus(); }else if kind==1 {duplicate.focus();}else if kind==4 {excluded.focus();}else{selector.focus();} }
+    public function focus-invoker(kind:int) { if kind==0 { preview.focus(); }else if kind==1 {duplicate.focus();}else if kind==4 {excluded.focus();}else if kind==5 {source-preview.focus();}else if kind==6 {delete-shelf.focus();}else{selector.focus();} }
     public function edit(action:EditAction) {name-field.edit(action);}
     callback select(int);
     callback rename();
@@ -36,6 +37,8 @@ export component ShelfManager inherits VerticalBox {
     callback choose-source(int);
     callback add-manual();
     callback exclusions();
+    callback preview-sources();
+    callback delete-shelf();
     callback reveal(length,length);
     padding: 0px; spacing: 8px;
     Label {text: root.notice;accessible-live-region: polite;}
@@ -52,10 +55,12 @@ export component ShelfManager inherits VerticalBox {
     Button {visible: !root.creating;height: self.visible ? 32px : 0px;enabled: root.active && !root.creating && root.manual-available;text: root.french ? "Ajouter ces histoires manuellement à l’Étagère" : "Add these stories manually to the Shelf";clicked=>{root.add-manual();}changed has-focus=>{if self.has-focus {root.reveal(self.absolute-position.y,self.height);}}}
     excluded := Button {visible: !root.creating;height: self.visible ? 32px : 0px;enabled: root.active && !root.creating;text: root.french ? "Gérer les exclusions…" : "Manage exclusions…";clicked=>{root.exclusions();}changed has-focus=>{if self.has-focus {root.reveal(self.absolute-position.y,self.height);}}}
     if root.creating: CheckBox {enabled: root.active && root.manual-available;checked <=> root.include-manual;text: root.french ? "Inclure ces histoires comme candidates initiales" : "Include these stories as initial candidates";changed has-focus=>{if self.has-focus {root.reveal(self.absolute-position.y,self.height);}}}
-    if root.creating: Label {text: root.french ? "Sources · une correspondance avec n’importe quelle Collection suffit. Lier une source n’approuve aucune histoire." : "Sources · matching any Collection is sufficient. Linking a source approves no stories.";}
-    if root.creating: ComboBox {enabled: root.active;model: root.sources;current-index <=> root.source-index;accessible-label: root.french ? "Collection source" : "Source Collection";selected(_)=>{root.choose-source(self.current-index);}changed has-focus=>{if self.has-focus {root.reveal(self.absolute-position.y,self.height);}}}
-    if root.creating: Button {enabled: root.active && root.sources.length>0;text: root.source-selected ? (root.french ? "Retirer cette source" : "Remove this source") : (root.french ? "Inclure cette source" : "Include this source");clicked=>{root.toggle-source();}changed has-focus=>{if self.has-focus {root.reveal(self.absolute-position.y,self.height);}}}
-    if root.creating: Label {text: root.source-summary;}
+    Label {text: root.french ? "Sources · une correspondance avec n’importe quelle Collection suffit. Lier une source n’approuve aucune histoire." : "Sources · matching any Collection is sufficient. Linking a source approves no stories.";}
+    ComboBox {enabled: root.active && (root.creating || root.source-editable);model: root.sources;current-index <=> root.source-index;accessible-label: root.french ? "Collection source" : "Source Collection";selected(_)=>{root.choose-source(self.current-index);}changed has-focus=>{if self.has-focus {root.reveal(self.absolute-position.y,self.height);}}}
+    Button {enabled: root.active && (root.creating || root.source-editable) && root.sources.length>0;text: root.source-selected ? (root.french ? "Retirer cette source" : "Remove this source") : (root.french ? "Inclure cette source" : "Include this source");clicked=>{root.toggle-source();}changed has-focus=>{if self.has-focus {root.reveal(self.absolute-position.y,self.height);}}}
+    Label {text: root.source-summary;}
+    source-preview := Button {visible: !root.creating;height: self.visible ? 32px : 0px;enabled: root.active && root.source-editable;text: root.french ? "Examiner les changements de sources…" : "Review source changes…";clicked=>{root.preview-sources();}changed has-focus=>{if self.has-focus {root.reveal(self.absolute-position.y,self.height);}}}
+    delete-shelf := Button {visible: !root.creating;height: self.visible ? 32px : 0px;enabled: root.active && !root.creating;text: root.french ? "Supprimer cette Étagère…" : "Delete this Shelf…";clicked=>{root.delete-shelf();}changed has-focus=>{if self.has-focus {root.reveal(self.absolute-position.y,self.height);}}}
     preview := Button {visible: root.creating;height: self.visible ? 32px : 0px;enabled: root.active && root.creating;text: root.french ? "Examiner les membres initiaux…" : "Preview initial members…";clicked=>{root.preview();}changed has-focus=>{if self.has-focus {root.reveal(self.absolute-position.y,self.height);}}}
 }
 export component ShelfPreview inherits VerticalBox {

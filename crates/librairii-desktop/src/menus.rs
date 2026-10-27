@@ -290,7 +290,7 @@ impl Menus {
         {
             let state = State {
                 french: _ui.get_french(),
-                modal: _ui.get_modal() || _ui.get_closing(),
+                modal: _ui.get_modal() || _ui.get_closing() || _ui.get_review_data().committing,
                 editing: _ui.get_text_edit_focused(),
                 back: _ui.get_back_enabled(),
                 forward: _ui.get_forward_enabled(),

@@ -16,6 +16,10 @@ pub const COMMAND_CAPACITY: usize = 16;
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum Command {
     Refresh,
+    ShelfReview {
+        generation: librairii_app::lifecycle::LibraryGeneration,
+        action: crate::workflows::shelf_reviews::Action,
+    },
     Shelves {
         generation: librairii_app::lifecycle::LibraryGeneration,
         action: crate::workflows::shelves::Action,
@@ -381,6 +385,23 @@ pub(crate) fn recovery_with_workflows(
                     } else {
                         "The Shelf was saved. "
                     });
+                }
+                if let Some(crate::workflows::shelf_reviews::Feedback::Committed(outcome)) =
+                    &workflows.shelf_reviews.feedback
+                {
+                    use crate::workflows::shelf_reviews::Outcome;
+                    confirmed.push_str(match (outcome, language == Language::French) {
+                        (Outcome::ShelfSaved { changed: true, .. }, true) => "Les décisions approuvées ont été enregistrées. ",
+                        (Outcome::ShelfSaved { changed: true, .. }, false) => "Approved decisions were saved. ",
+                        (Outcome::ShelfSaved { changed: false, .. }, _) => "",
+                        (Outcome::ShelfDeleted(_), true) => "L’Étagère a été supprimée ; les histoires ont été conservées. ",
+                        (Outcome::ShelfDeleted(_), false) => "The Shelf was deleted; stories were retained. ",
+                        (Outcome::CollectionDeleted(_), true) => "La Collection a été supprimée et les décisions approuvées ont été enregistrées. ",
+                        (Outcome::CollectionDeleted(_), false) => "The Collection was deleted and approved decisions were saved. ",
+                    });
+                }
+                if workflows.shelf_reviews.warning_preference_error {
+                    confirmed.push_str(if language == Language::French {"L’avertissement de correspondance n’a pas pu être masqué durablement. Les membres approuvés sont conservés. "} else {"The mismatch warning could not be saved as dismissed. Approved membership is retained. "});
                 }
                 format!("{confirmed}{status}")
             },

@@ -27,6 +27,7 @@ pub struct Failure {
 #[derive(Clone, Debug, Default)]
 pub struct Snapshot {
     pub revision: u64,
+    pub display: Vec<(librairii_core::browsing::StoryIdentity, bool)>,
     pub result: Option<std::result::Result<FlagResult, Failure>>,
     pub restored: bool,
     pub undo: Option<Ticket>,
@@ -58,6 +59,7 @@ impl Controller {
         revision: u64,
     ) {
         self.snapshot.revision = revision;
+        self.snapshot.display.clear();
         self.snapshot.restored = matches!(action, Action::Undo(_));
         let result = if runtime.accepts(&generation) {
             self.apply(runtime, action)
@@ -89,6 +91,12 @@ impl Controller {
                             .wait()?,
                     )
                 })?;
+                self.snapshot.display = targets
+                    .stories
+                    .iter()
+                    .cloned()
+                    .map(|identity| (identity, broken))
+                    .collect();
                 if !result.changes.is_empty() {
                     let mut seen = std::collections::BTreeSet::new();
                     targets.stories.retain(|s| {
@@ -123,6 +131,17 @@ impl Controller {
                         .wait()?,
                     )
                 })?;
+                self.snapshot.display = result
+                    .changes
+                    .iter()
+                    .filter_map(|change| {
+                        undo.targets
+                            .stories
+                            .iter()
+                            .find(|s| s.id == change.story_id)
+                            .map(|s| (s.clone(), change.current))
+                    })
+                    .collect();
                 self.undo = None;
                 Ok(result)
             }

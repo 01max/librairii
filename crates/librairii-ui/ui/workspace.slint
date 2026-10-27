@@ -1,3 +1,4 @@
+import {ShelfReviewPane,ShelfReviewData} from "shelf-reviews.slint";
 import { Button, ComboBox, VerticalBox, HorizontalBox, ScrollView, ListView, Palette } from "std-widgets.slint";
 import { StoryBrowser, StoryGroup } from "browsing.slint";
 import { MixedChoice, TagChip } from "states.slint";
@@ -74,7 +75,19 @@ export component Workspace inherits Rectangle {
     callback apply();
     out property <length> approved-height: approved-list.height;
     out property <length> review-height: review.height;
-    public function focus-review() { review.focus-first(); }
+    in property <ShelfReviewData> review-data;
+    in property <bool> native-review;
+    in property <bool> review-focus-active;
+    callback review-exclusions();callback review-refresh();callback review-close();callback review-apply();callback review-keep-all();callback review-acknowledge();callback review-section(int);callback review-page(int);callback review-shelf(int);callback review-choose(string,int);callback review-bulk(int);callback review-inspect(string);callback review-focused();
+    out property <string> review-focused-uuid: native-review-pane.focused-uuid;
+    out property <length> review-focused-y: native-review-pane.focused-y;
+    out property <length> review-focused-height: native-review-pane.focused-height;
+    out property <length> review-viewport-y: native-review-pane.viewport-y;
+    out property <length> review-viewport-height: native-review-pane.viewport-height;
+    out property <bool> review-refresh-focused: native-review-pane.refresh-focused;
+    public function activate-review() {native-review-pane.activate();}
+    public function focus-review() { if root.native-review {native-review-pane.focus-current();}else{review.focus-first();} }
+
     public function focus-approved() { approved-list.focus(); }
     public function focus-bulk(index:int) { approved-list.focus-bulk(index); }
     approved := Rectangle {
@@ -89,6 +102,9 @@ export component Workspace inherits Rectangle {
         x: root.wide ? approved.width + 12px : 0px; y: root.wide ? 0px : approved.height + 8px;
         width: parent.width - self.x; height: parent.height - self.y;
         background: Palette.alternate-background;
-        review := ReviewPane { interactive: root.interactive; x: 0px; y: 0px; width: parent.width; height: parent.height; french: root.french; sources: root.sources; proposals <=> root.proposals; pending: root.pending; decisions: root.decisions; decide(index,value) => { root.decide(index,value); } apply => { root.apply(); } }
+        review := ReviewPane {visible: !root.native-review; interactive: root.interactive; x: 0px; y: 0px; width: parent.width; height: parent.height; french: root.french; sources: root.sources; proposals <=> root.proposals; pending: root.pending; decisions: root.decisions; decide(index,value) => { root.decide(index,value); } apply => { root.apply(); } }
+        native-review-pane := ShelfReviewPane {visible: root.native-review;x:0px;y:0px;width:parent.width;height:parent.height;interactive: root.interactive;focus-active: root.review-focus-active;data:root.review-data;french:root.french;
+            exclusions=>{root.review-exclusions();}refresh=>{root.review-refresh();}close=>{root.review-close();}apply=>{root.review-apply();}keep-all=>{root.review-keep-all();}acknowledge=>{root.review-acknowledge();}section(i)=>{root.review-section(i);}page(i)=>{root.review-page(i);}shelf(i)=>{root.review-shelf(i);}choose(i,c)=>{root.review-choose(i,c);}bulk(i)=>{root.review-bulk(i);}inspect(i)=>{root.review-inspect(i);}focused=>{root.review-focused();}
+        }
     }
 }

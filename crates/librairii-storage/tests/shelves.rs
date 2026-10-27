@@ -717,6 +717,28 @@ fn warning_acknowledgements_persist_without_decisions_and_renew_on_coverage_chan
         .wait()?,
     )?;
     assert_eq!(preview(&db, s.id)?.mismatch_key(), Some(key));
+    let mut member_ack = restored.clone();
+    let pending_members = p.mismatch_members();
+    member_ack.acknowledge_members(s.id, key, &pending_members)?;
+    store.save_shelf_warnings(&member_ack)?;
+    let member_ack = store
+        .load_shelf_warnings(lib.identity().typed())?
+        .ok_or("member preferences")?;
+    assert!(!member_ack.needs_prompt_for_members(s.id, key, &pending_members));
+    assert!(!member_ack.needs_prompt_for_members(s.id, key, &pending_members[..1]));
+    assert!(member_ack.needs_prompt_for_members(s.id, key, &[uuid(3)]));
+    committed(
+        db.transaction(WorkCancellation::default(), move |tx| {
+            tx.execute("UPDATE stories SET embedded_title='Renamed'", [])?;
+            tx.execute(
+                "UPDATE shelves SET revision=revision+1 WHERE id=?",
+                [s.id.get()],
+            )?;
+            Ok(())
+        })?
+        .wait()?,
+    )?;
+    assert_eq!(preview(&db, s.id)?.mismatch_key(), Some(key));
     committed(
         db.transaction(WorkCancellation::default(), |tx| {
             tx.execute("DELETE FROM stories WHERE id=2", [])?;
