@@ -135,6 +135,12 @@ prepared supervisor-owned profile. Public native AX/AT-SPI observation of its
 first loaded story establishes readiness, including process launch, loader,
 profile/database opening, controller/view construction and observer delivery.
 No product probe flag or old spike executable supplies that measurement.
+The external AX/AT-SPI observer initializes before the product launch clock and
+waits for the owned PID over a pipe. The clock still starts before spawning the
+production executable and stops only after its actual first-story observation.
+Observer preparation, launch-to-PID and attach-to-story phases are retained
+separately. The first Intel receipt's4.635s observation remains failed; fresh
+phase measurements must distinguish observer startup from product startup.
 One warmup and three fresh measured runs on each actual rendering route retain
 all startup/idle data:≤1,000ms readiness and≤5% of one core over a fixed15-second
 quiet phase (two settling seconds excluded by the retained method).

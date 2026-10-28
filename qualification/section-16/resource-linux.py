@@ -5,10 +5,16 @@ import sys
 import time
 import dbus
 import pyatspi as a
-pid = int(sys.argv[1])
+watching = sys.argv[1] == '--watch'
+pid = None if watching else int(sys.argv[1])
 bus = dbus.SessionBus()
 status = dbus.Interface(bus.get_object('org.a11y.Bus', '/org/a11y/bus'), 'org.freedesktop.DBus.Properties')
 status.Set('org.a11y.Status', 'IsEnabled', dbus.Boolean(True))
+# Initialize the external observer before the product launch clock starts.
+a.Registry.getDesktop(0)
+if watching:
+    print(json.dumps({'observer_ready': True}), flush=True)
+    pid = int(input())
 start = time.monotonic()
 first_title_role = None
 while time.monotonic() - start < 10:
@@ -34,7 +40,9 @@ while time.monotonic() - start < 10:
                                       'name': node.name, 'role': node.getRoleName(), 'first_title_role': first_title_role,
                                       'bounds': {'x': bounds.x, 'y': bounds.y, 'width': bounds.width, 'height': bounds.height}}))
                     sys.exit(0)
-                print(json.dumps({'pid': pid, 'actual_story': {'role': node.getRoleName(), 'name': node.name}, 'method': 'actual product first loaded story in public AT-SPI tree'}))
+                print(json.dumps({'pid': pid, 'actual_story': {'role': node.getRoleName(), 'name': node.name},
+                                  'observer_attach_to_story_ms': (time.monotonic()-start)*1000,
+                                  'method': 'actual product first loaded story in public AT-SPI tree'}))
                 sys.exit(0)
             queue.extend(node.getChildAtIndex(i) for i in range(min(node.childCount, 200)))
         except (dbus.DBusException, RuntimeError):

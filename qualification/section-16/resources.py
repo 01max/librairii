@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 import platform
 import re
+import select
 import subprocess
 import time
 
@@ -38,19 +39,31 @@ def product_run(binary, observer, destination, backend, helper, native):
     clock = ['/usr/bin/time', '-o', str(metrics)]
     clock += ['-l', '-p'] if platform.system() == 'Darwin' else ['-f', 'qualification_time; wall=%e; user=%U; system=%S; maxrss_kib=%M']
     process = None
+    readiness = None
     joined = False
     report = {'backend_request': backend, 'complete': False, 'samples': [], 'fixture_owner': prepared['owner']}
     try:
+        preparing = time.monotonic()
+        command = [str(helper), 'watch'] if platform.system() == 'Darwin' else ['/usr/bin/python3', str(HERE / 'resource-linux.py'), '--watch']
+        readiness = subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                                     stderr=(destination / 'readiness.log').open('w'), text=True)
+        if not select.select([readiness.stdout], [], [], 12)[0] or json.loads(readiness.stdout.readline()) != {'observer_ready': True}:
+            raise ValueError('external native observer initialization failed')
+        report['observer_prepare_ms'] = (time.monotonic()-preparing)*1000
         started = time.monotonic()
         process = subprocess.Popen(clock + [str(binary)], env=environment, stdout=log, stderr=subprocess.STDOUT, start_new_session=True)
         pid = native.wait(lambda: child_pid(process.pid), 5)
         if os.getpgid(pid) != process.pid:
             raise ValueError('actual production PID escaped the owned group')
-        command = [str(helper), 'ready', str(pid)] if platform.system() == 'Darwin' else ['/usr/bin/python3', str(HERE / 'resource-linux.py'), str(pid)]
-        ready = subprocess.run(command, capture_output=True, text=True, timeout=12)
-        ready.check_returncode()
+        report['launch_to_pid_ms'] = (time.monotonic()-started)*1000
+        readiness.stdin.write(str(pid)+'\n')
+        readiness.stdin.close()
+        readiness.stdin = None
+        observed, _ = readiness.communicate(timeout=12)
+        if readiness.returncode != 0:
+            raise ValueError('actual product readiness failed; see retained readiness.log')
         report['launch_to_ready_ms'] = (time.monotonic() - started) * 1000
-        report['ready'] = json.loads(ready.stdout)
+        report['ready'] = json.loads(observed)
         if report['ready']['pid'] != pid:
             raise ValueError('actual product readiness PID differs')
         idle_start = time.monotonic()
@@ -88,6 +101,13 @@ def product_run(binary, observer, destination, backend, helper, native):
         report['active_surface'] = sorted(surface)
         report['complete'] = True
     finally:
+        if readiness is not None and readiness.poll() is None:
+            readiness.terminate()
+            try:
+                readiness.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                readiness.kill()
+                readiness.wait(timeout=5)
         if process is not None and process.poll() is None:
             # Failure diagnostics survive; this group contains only our product.
             import signal
