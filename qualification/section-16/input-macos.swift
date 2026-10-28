@@ -20,15 +20,31 @@ func wait(_ predicate: ([String: Any]) -> Bool, seconds: Double = 10) throws -> 
 }
 func key(_ code: CGKeyCode, flags: CGEventFlags = []) throws {
     guard NSWorkspace.shared.frontmostApplication?.processIdentifier == pid else { throw Refusal(message: "lost owned foreground PID") }
+    if flags.contains(.maskShift) {
+        let shift = CGEvent(keyboardEventSource: nil, virtualKey: 56, keyDown: true)!
+        shift.type = .flagsChanged; shift.flags = .maskShift; shift.post(tap: .cghidEventTap)
+    }
     for down in [true, false] {
         guard let event = CGEvent(keyboardEventSource: nil, virtualKey: code, keyDown: down) else { throw Refusal(message: "CGEvent allocation") }
         event.flags = flags
         event.post(tap: .cghidEventTap)
     }
+    if flags.contains(.maskShift) {
+        let shift = CGEvent(keyboardEventSource: nil, virtualKey: 56, keyDown: false)!
+        shift.type = .flagsChanged; shift.flags = []; shift.post(tap: .cghidEventTap)
+    }
 }
 func elapsed(_ start: UInt64) -> Double { Double(DispatchTime.now().uptimeNanoseconds - start) / 1e6 }
 func active(_ value: [String: Any]) -> Bool { value["running_import"] as? Bool == true }
-func focusSearch() throws { try key(3, flags: .maskCommand); _ = try wait { $0["query_focused"] as? Bool == true } }
+func focusSearch() throws {
+    for _ in 0..<64 {
+        let before = try state()
+        if before["query_focused"] as? Bool == true { return }
+        try key(48, flags: .maskShift)
+        _ = try wait { $0["query_focused"] as? Bool == true || $0["focus_key"] as? Int != before["focus_key"] as? Int }
+    }
+    throw Refusal(message: "native reverse Tab did not reach Search")
+}
 func firstStoryPoint() throws -> CGPoint {
     let app = AXUIElementCreateApplication(pid)
     let start = DispatchTime.now().uptimeNanoseconds

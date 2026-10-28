@@ -38,8 +38,13 @@ def linux_input(pid, output):
     def key(value):
         subprocess.run(['xdotool', 'key', '--clearmodifiers', value], check=True, timeout=10)
     def search():
-        key('ctrl+f')
-        wait(lambda: state(output)['query_focused'])
+        for _ in range(64):
+            before = state(output)
+            if before['query_focused']:
+                return
+            key('shift+Tab')
+            wait(lambda: (s := state(output)) and (s['query_focused'] or s['focus_key'] != before['focus_key']))
+        raise ValueError('native reverse Tab did not reach Search')
     search()
     samples, input_states = [], []
     for n in range(64):
