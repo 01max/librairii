@@ -1,0 +1,137 @@
+#!/usr/bin/env python3
+"""Source-bound retained workload measurements on each matching native host."""
+import hashlib
+import json
+import math
+import os
+from pathlib import Path
+import platform
+import shutil
+import subprocess
+import tomllib
+
+ROOT = Path(__file__).resolve().parents[1]
+DESTINATION = ROOT / 'target/quality/native-scale'
+TARGETS = {'aarch64-apple-darwin': ('Darwin', 'arm64'),
+           'x86_64-apple-darwin': ('Darwin', 'x86_64'),
+           'x86_64-unknown-linux-gnu': ('Linux', 'x86_64')}
+BUDGETS = {'collectionQuery': 100, 'substringSearch': 120, 'combinedFilters': 150,
+           'collectionCounts': 250, 'deepPagination': 120, 'artworkLoad': 50}
+
+
+def output(argv):
+    return subprocess.check_output(argv, cwd=ROOT, text=True).strip()
+
+
+def digest(path):
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def hardware():
+    if platform.system() == 'Darwin':
+        def sysctl(key):
+            return output(['/usr/sbin/sysctl', '-n', key])
+        return {'cpu': sysctl('machdep.cpu.brand_string'), 'model': sysctl('hw.model'),
+                'memory_bytes': int(sysctl('hw.memsize')), 'logical_cpus': int(sysctl('hw.logicalcpu'))}
+    cpu = next(line.split(':', 1)[1].strip() for line in Path('/proc/cpuinfo').read_text().splitlines()
+               if line.startswith('model name'))
+    memory = next(line.split()[1] for line in Path('/proc/meminfo').read_text().splitlines()
+                  if line.startswith('MemTotal:'))
+    return {'cpu': cpu, 'memory_bytes': int(memory) * 1024, 'logical_cpus': os.cpu_count()}
+
+
+def verify_queries(report):
+    if (report['format'] != 'librairii.scale-backend' or report['version'] != 1
+            or report['stories'] != 5000 or not report['fixture_retired'] or not report['database_closed']):
+        raise ValueError('incomplete retained fixture or positive shutdown')
+    queries = report['queries']
+    if set(queries['metrics']) != set(BUDGETS):
+        raise ValueError('all six retained performance gates are required')
+    for name, budget in BUDGETS.items():
+        metric = queries['metrics'][name]
+        samples = metric['wall_ms']
+        count = 100 if name == 'artworkLoad' else 20
+        if len(samples) != count or any(type(n) not in (int, float) or not math.isfinite(n) or n < 0 for n in samples):
+            raise ValueError('invalid complete warmed samples: ' + name)
+        p95 = sorted(samples)[math.ceil(count * 0.95) - 1]
+        if (metric['budget_ms'] != budget or metric['p95_ms'] != p95
+                or metric['passed'] != (p95 <= budget) or not metric['passed']):
+            raise ValueError('retained wall p95 gate failed: ' + name)
+    rows = [json.loads(line) for line in (ROOT / 'preservation/corpus/performance/stories.jsonl').read_text().splitlines()]
+    ordered = sorted(rows, key=lambda r: (r['display_name_normalized'], r['uuid'], r['id']))
+    expected = {'collectionQuery': (ordered, 0), 'substringSearch': ([r for r in ordered if 'moon' in r['display_name_normalized']], 0),
+                'combinedFilters': ([r for r in ordered if 'forest' in r['display_name_normalized'] and r['language'] == 'en-GB'
+                                     and r['validation_state'] == 'valid' and r['id'] % 3 == 0], 0),
+                'deepPagination': (ordered, 4776)}
+    for name, (matching, offset) in expected.items():
+        result = queries['metrics'][name]['result']
+        if result != {'total': len(matching), 'ids': [row['id'] for row in matching[offset:offset + 24]]}:
+            raise ValueError('retained query outcome differs: ' + name)
+    if queries['metrics']['collectionCounts']['result'] != [624, 2500, 4000, 5000, 1666, 85]:
+        raise ValueError('six frozen Collection counts differ')
+    if queries['metrics']['artworkLoad']['result'] != {'files': 24, 'pixel_sum': 1173893696} or not queries['passed']:
+        raise ValueError('complete local artwork workload missing')
+
+
+def main():
+    if output(['git', 'status', '--porcelain', '--untracked-files=normal']):
+        raise ValueError('final scale evidence requires a clean committed source tree')
+    compiler = output(['rustc', '-vV'])
+    pin = tomllib.loads((ROOT / 'rust-toolchain.toml').read_text())['toolchain']['channel']
+    if 'release: ' + pin + '\n' not in compiler + '\n':
+        raise ValueError('scale evidence requires the workspace compiler pin')
+    host = compiler.split('host: ')[1].splitlines()[0]
+    target = os.environ.get('RUST_TARGET', host)
+    if host != target or TARGETS.get(target) != (platform.system(), platform.machine()):
+        raise ValueError('scale evidence requires the matching native host')
+    machine = hardware()
+    if target == 'x86_64-apple-darwin':
+        translated = subprocess.run(['/usr/sbin/sysctl', '-n', 'sysctl.proc_translated'], capture_output=True, text=True)
+        if 'Intel' not in machine['cpu'] or translated.stdout.strip() == '1':
+            raise ValueError('Intel evidence requires actual Intel hardware')
+    if DESTINATION.exists():
+        marker = DESTINATION / '.scale-fixture-root'
+        if DESTINATION.is_symlink() or not marker.is_file() or marker.read_bytes() != b'native-scale-16\n':
+            raise ValueError('refuse to replace unowned scale evidence')
+        shutil.rmtree(DESTINATION)
+    DESTINATION.mkdir(parents=True)
+    (DESTINATION / '.scale-fixture-root').write_text('native-scale-16\n')
+    manifest = {'format': 'librairii.native-scale', 'version': 1, 'complete': False,
+                'source_commit': output(['git', 'rev-parse', 'HEAD']), 'target': target,
+                'rustc': compiler, 'hardware': machine, 'platform': platform.platform(),
+                'cargo_lock_sha256': digest(ROOT / 'Cargo.lock'), 'scope': 'Task16.1 retained backend gates only'}
+    fixture = ROOT / 'preservation/corpus/performance'
+    manifest['fixtures'] = {str(path.relative_to(ROOT)): digest(path) for path in
+                            [fixture / 'stories.jsonl', fixture / 'distribution.json',
+                             *sorted((fixture / 'catalog/embedded').glob('*.png'))]}
+    with (DESTINATION / 'compiler-artifacts.jsonl').open('w') as events, (DESTINATION / 'build.log').open('w') as log:
+        subprocess.run(['cargo', 'build', '--locked', '--profile', 'native-observer', '--target', target,
+                        '-p', 'librairii-desktop', '--example', 'scale-backend', '--message-format=json'],
+                       cwd=ROOT, stdout=events, stderr=log, check=True)
+    events = [json.loads(line) for line in (DESTINATION / 'compiler-artifacts.jsonl').read_text().splitlines()]
+    artifacts = [e for e in events if e.get('reason') == 'compiler-artifact' and e.get('target', {}).get('name') == 'scale-backend'
+                 and e['target']['kind'] == ['example'] and e.get('executable')]
+    if len(artifacts) != 1:
+        raise ValueError('Cargo must report the exact scale observer executable')
+    artifact = artifacts[0]
+    if artifact['profile']['opt_level'] != '1' or not artifact['profile']['debug_assertions'] or not artifact['profile']['overflow_checks']:
+        raise ValueError('scale observer must retain the qualified development checks')
+    binary = DESTINATION / 'scale-backend'
+    shutil.copy2(artifact['executable'], binary)
+    manifest['executable'] = {'path': binary.name, 'sha256': digest(binary), 'bytes': binary.stat().st_size,
+                              'cargo_path': artifact['executable'], 'profile': artifact['profile']}
+    (DESTINATION / 'manifest.json').write_text(json.dumps(manifest, indent=2) + '\n')
+    with (DESTINATION / 'backend.json').open('w') as result, (DESTINATION / 'backend.log').open('w') as log:
+        subprocess.run([str(binary)], cwd=ROOT, stdout=result, stderr=log, check=True, timeout=180)
+    verify_queries(json.loads((DESTINATION / 'backend.json').read_text()))
+    if output(['git', 'status', '--porcelain', '--untracked-files=normal']) or output(['git', 'rev-parse', 'HEAD']) != manifest['source_commit']:
+        raise ValueError('source changed during measurement')
+    manifest['complete'] = True
+    manifest['files'] = {p.name: digest(p) for p in DESTINATION.iterdir() if p.is_file() and p.name != 'manifest.json'}
+    (DESTINATION / 'manifest.json').write_text(json.dumps(manifest, indent=2) + '\n')
+    print(json.dumps({'complete': True, 'source': manifest['source_commit'], 'target': target,
+                      'hardware': machine, 'six_retained_backend_budgets': 'passed'}))
+
+
+if __name__ == '__main__':
+    main()

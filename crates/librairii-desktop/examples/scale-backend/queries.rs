@@ -1,0 +1,198 @@
+use super::{
+    Result,
+    fixture::{self, Story},
+};
+use image::ImageDecoder;
+use librairii_core::{browsing::Page, collection_codec::Query, query::QueryRequest};
+use librairii_storage::{
+    database::{Database, WorkCancellation},
+    query,
+};
+use serde_json::{Value, json};
+use std::{collections::BTreeSet, fs, io::Cursor, path::Path, time::Instant};
+
+fn measured(
+    mut action: impl FnMut() -> Result<Value>,
+    expected: Value,
+    budget_ms: f64,
+    sample_count: usize,
+) -> Result<Value> {
+    assert_eq!(action()?, expected, "complete warmup result");
+    let mut samples = Vec::new();
+    for _ in 0..sample_count {
+        let started = Instant::now();
+        let actual = action()?;
+        samples.push(started.elapsed().as_secs_f64() * 1000.);
+        assert_eq!(actual, expected, "result changed during measurement");
+    }
+    let mut sorted = samples.clone();
+    sorted.sort_by(f64::total_cmp);
+    let p95 = sorted[(sample_count * 95).div_ceil(100) - 1];
+    Ok(
+        json!({"wall_ms":samples,"p95_ms":p95,"budget_ms":budget_ms,"passed":p95<=budget_ms,"result":expected}),
+    )
+}
+
+fn page_result(page: Page) -> Value {
+    json!({"total":page.total_items,"ids":page.stories.iter().map(|s|s.id).collect::<Vec<_>>()})
+}
+
+fn expected(rows: &[Story], predicate: impl Fn(&Story) -> bool, page: usize) -> Value {
+    let mut matching = rows.iter().filter(|row| predicate(row)).collect::<Vec<_>>();
+    matching.sort_by(|a, b| {
+        (&a.display_name_normalized, &a.uuid, a.id).cmp(&(
+            &b.display_name_normalized,
+            &b.uuid,
+            b.id,
+        ))
+    });
+    json!({"total":matching.len(),"ids":matching.iter().skip((page-1)*24).take(24).map(|s|s.id).collect::<Vec<_>>()})
+}
+
+pub fn run(db: &Database<'_>, rows: &[Story], root: &Path) -> Result<Value> {
+    let queries = fixture::criteria()?;
+    let mut metrics = serde_json::Map::new();
+    let mut plans = serde_json::Map::new();
+    let mut requests = Vec::new();
+    requests.push((
+        "collectionQuery",
+        Query::default(),
+        1,
+        100.,
+        expected(rows, |_| true, 1),
+    ));
+    requests.push((
+        "substringSearch",
+        queries[0].clone(),
+        1,
+        120.,
+        expected(rows, |r| r.display_name_normalized.contains("moon"), 1),
+    ));
+    requests.push((
+        "combinedFilters",
+        queries[5].clone(),
+        1,
+        150.,
+        expected(
+            rows,
+            |r| {
+                r.display_name_normalized.contains("forest")
+                    && r.language == "en-GB"
+                    && r.validation_state == "valid"
+                    && r.id % 3 == 0
+            },
+            1,
+        ),
+    ));
+    requests.push((
+        "deepPagination",
+        Query::default(),
+        200,
+        120.,
+        expected(rows, |_| true, 200),
+    ));
+    for (name, criteria, page, budget, wanted) in requests {
+        let request = QueryRequest {
+            criteria,
+            page,
+            ..Default::default()
+        };
+        let explained = request.clone();
+        let plan = db
+            .read(move |tx| query::explain_search(tx, explained, "en-GB"))?
+            .wait()?;
+        eprintln!(
+            "actual_query_plan; {name}; {}",
+            serde_json::to_string(&plan)?
+        );
+        assert!(
+            plan.iter().any(|line| line.contains("INDEX")),
+            "actual indexed {name} plan"
+        );
+        if name == "combinedFilters" {
+            assert!(
+                plan.iter().any(|line| line.starts_with("SEARCH t")
+                    && line.contains("INDEX")
+                    && line.contains("story_id=?")
+                    && line.contains("definition_id=?")
+                    && line.contains("value_id=?")),
+                "indexed lookup on all three assignment keys"
+            );
+            assert!(plan.iter().any(|line| line.contains("official_metadata")
+                || line.contains("official_story_metadata")));
+        }
+        plans.insert(name.into(), json!(plan));
+        metrics.insert(
+            name.into(),
+            measured(
+                || {
+                    Ok(page_result(
+                        db.search(request.clone(), "en-GB".into())?.wait()?,
+                    ))
+                },
+                wanted,
+                budget,
+                20,
+            )?,
+        );
+    }
+    metrics.insert(
+        "collectionCounts".into(),
+        measured(
+            || {
+                let summaries = fixture::committed(
+                    db.collection_summaries("en-GB".into(), WorkCancellation::default())?
+                        .wait()?,
+                )?;
+                Ok(json!(
+                    summaries.into_iter().map(|s| s.count).collect::<Vec<_>>()
+                ))
+            },
+            json!([624, 2500, 4000, 5000, 1666, 85]),
+            250.,
+            20,
+        )?,
+    );
+    let first = db.search(QueryRequest::default(), "en-GB".into())?.wait()?;
+    assert_eq!(first.stories.len(), 24);
+    let paths = db
+        .read(move |tx| {
+            first
+                .stories
+                .iter()
+                .map(|story| {
+                    Ok(tx.query_row(
+                        "SELECT embedded_artwork_path FROM stories WHERE id=?",
+                        [story.id],
+                        |r| r.get::<_, String>(0),
+                    )?)
+                })
+                .collect::<librairii_storage::Result<Vec<_>>>()
+        })?
+        .wait()?;
+    assert_eq!(
+        paths.iter().collect::<BTreeSet<_>>().len(),
+        24,
+        "all first-page artwork must be distinct"
+    );
+    let mut compressed = Vec::new();
+    let mut pixels = vec![0; 320 * 400 * 3];
+    let load = || -> Result<Value> {
+        let mut witness = 0_u64;
+        for path in &paths {
+            compressed.clear();
+            std::io::Read::read_to_end(&mut fs::File::open(root.join(path))?, &mut compressed)?;
+            let decoder = image::codecs::png::PngDecoder::new(Cursor::new(&compressed))?;
+            assert_eq!(decoder.dimensions(), (320, 400));
+            assert_eq!(decoder.total_bytes(), pixels.len() as u64);
+            decoder.read_image(&mut pixels)?;
+            witness += pixels.iter().map(|byte| u64::from(*byte)).sum::<u64>();
+        }
+        Ok(json!({"files":24,"pixel_sum":witness}))
+    };
+    // Independent frozen generator RGB sum, not another decoder warmup.
+    let wanted = json!({"files":24,"pixel_sum":1_173_893_696_u64});
+    metrics.insert("artworkLoad".into(), measured(load, wanted, 50., 100)?);
+    let passed = metrics.values().all(|metric| metric["passed"] == true);
+    Ok(json!({"passed":passed,"metrics":metrics,"actual_search_plans":plans}))
+}

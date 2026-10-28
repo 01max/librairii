@@ -2776,6 +2776,7 @@ dependencies = [
  "objc2-foundation 0.3.2",
  "rfd",
  "rusqlite",
+ "serde",
  "serde_json",
  "slint",
 ]
