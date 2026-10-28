@@ -35,6 +35,10 @@ Process CPU accompanies every wall sample; artwork also records actual lookup,
 read and full-decode wall/CPU phases. These explain CPU work versus scheduling or
 worker wait and never replace the unchanged wall gate. Failed measurements stay
 in the diagnostic record.
+The workflow uploads an early backend snapshot before starting native workloads,
+including on failure. Its completeness flag and raw measurements remain decisive;
+the upload itself never establishes a pass. A second complete artifact follows
+all native/resource/display lanes.
 
 `scripts/verify-native-scale.py` requires clean committed source and matching
 native hardware/compiler. It retains the Cargo-reported executable/profile,
