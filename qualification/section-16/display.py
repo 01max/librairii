@@ -3,6 +3,7 @@ import json
 import os
 from pathlib import Path
 import platform
+import re
 import struct
 import subprocess
 import tempfile
@@ -33,6 +34,10 @@ def inspect(binary, destination, backend, native, scale=None, environment=None, 
             if data[:8] != b'\x89PNG\r\n\x1a\n':
                 raise ValueError('current rendered PNG required')
             width, height = struct.unpack('>II', data[16:24])
+            if (scale is not None and state['slint_scale'] != scale
+                    or abs(width-state['logical_width']*state['slint_scale']) > 1
+                    or abs(height-state['logical_height']*state['slint_scale']) > 1):
+                raise ValueError('actual render density or physical/logical frame dimensions differ')
             if width != state['native']['width'] or height != state['native']['height']:
                 raise ValueError('capture does not match observed native surface')
             if (state['rows'] != 24 or state['total'] != 1000 or not state['french']
@@ -51,13 +56,18 @@ def inspect(binary, destination, backend, native, scale=None, environment=None, 
                 if not all(v.get('success') for v in result):
                     raise ValueError('owned compositor refused actual monitor move')
                 state = native.wait(lambda: (s := native.state(destination)) and s['native']['scale'] == expected
-                                    and s['slint_scale'] == expected and s['native']['monitor']['scale'] == expected and s)
+                                    and s['slint_scale'] == expected and s['native']['monitor']['scale'] == expected
+                                    and abs(s['logical_width']-1180) <= 1 and abs(s['logical_height']-760) <= 1 and s)
                 report['scale_transitions'].append(state)
                 capture('actual-virtual-monitor-' + str(sequence), sequence)
         (destination / 'finish').touch()
         joined = app.wait(timeout=20) == 0 and 'scale_complete; workers_joined=true' in (destination / 'execution.log').read_text()
         if not joined:
             raise ValueError('display worker join required')
+        surfaces = set(re.findall(r'Skia renderer \(skia backend ([^;]+);', (destination / 'execution.log').read_text()))
+        if len(surfaces) != 1 or ('software' in surfaces) != (backend == 'winit-skia-software'):
+            raise ValueError('display renderer surface differs from its requested path')
+        report['active_surface'] = sorted(surfaces)
         report['complete'] = True
     finally:
         if app.poll() is None:

@@ -2,6 +2,7 @@
 import json
 import math
 import re
+import signal
 import os
 from pathlib import Path
 import platform
@@ -194,8 +195,8 @@ def inspect(binary, destination, backend, helper=None):
             try:
                 process.wait(timeout=20)
             except subprocess.TimeoutExpired:
-                process.kill()
-                process.wait()
+                os.killpg(process.pid, signal.SIGKILL)
+                process.wait(timeout=10)
         if not joined and process is not None and process.returncode == 0:
             joined = 'scale_complete; workers_joined=true' in (destination / 'execution.log').read_text()
         if owner.poll() is None:

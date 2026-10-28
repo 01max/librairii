@@ -92,7 +92,11 @@ def product_run(binary, observer, destination, backend, helper, native):
             # Failure diagnostics survive; this group contains only our product.
             import signal
             os.killpg(process.pid, signal.SIGTERM)
-            process.wait(timeout=10)
+            try:
+                process.wait(timeout=10)
+            except subprocess.TimeoutExpired:
+                os.killpg(process.pid, signal.SIGKILL)
+                process.wait(timeout=10)
         owner.stdin.write('workers_joined\n' if joined else '')
         owner.stdin.close()
         owner.wait(timeout=15)
