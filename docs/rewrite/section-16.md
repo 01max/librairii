@@ -91,7 +91,9 @@ composition against a supervisor-owned profile with exactly1,000 stories and
 1,000 distinct locally decoded320×400 covers. Preparation is outside the child
 launch; the supervisor remains alive until positive worker shutdown. The fixture
 contains a genuinely imported archive, then exercises real1,000-input duplicate
-import batches while navigating. It never uses a public catalog client.
+import batches while navigating. It keeps a second real batch queued so a completed
+batch does not create an unloaded gap inside a timed sample; the active/queued
+count is retained. It never uses a public catalog client.
 
 Every one of42 repository pages is displayed and observed; models retain at most
 24 stories (16 on the last page). A retained Arc from the first cover differs
