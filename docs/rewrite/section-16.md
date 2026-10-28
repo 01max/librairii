@@ -83,3 +83,32 @@ The wrapper independently checks the complete outcomes, ranges and raw timings
 and seals both subprocesses to one unchanged executable/source. This is backend
 and bounded-range evidence; native loading/input and resource gates remain
 separate. Three-host final-source runs are required for section acceptance.
+
+## Current native loading/input and cache observation —16.3
+
+`scale-native` starts the current production controller, view callbacks and menu
+composition against a supervisor-owned profile with exactly1,000 stories and
+1,000 distinct locally decoded320×400 covers. Preparation is outside the child
+launch; the supervisor remains alive until positive worker shutdown. The fixture
+contains a genuinely imported archive, then exercises real1,000-input duplicate
+import batches while navigating. It never uses a public catalog client.
+
+Every one of42 repository pages is displayed and observed; models retain at most
+24 stories (16 on the last page). A retained Arc from the first cover differs
+after visiting all1,000 covers and returning, proving actual production LRU
+eviction rather than merely reporting cache constants. The bounded16-command
+intake/coalescing regressions remain part of the cumulative gate.
+
+Actual CGEvents on disposable macOS CI and X11 key events on a private Linux
+session measure64 input acknowledgements and20 completion samples after one
+warmup. Input p95 stays≤100ms. Clearing a zero-result search expands the actual
+1,000-story query into the production24-row page; native Tab/End then selects the
+last visible story, with completion p95≤3,000ms. Every endpoint requires real
+import activity and bounded models. This is the equivalent paged product
+interaction, not a1,000-row artificial component model. Raw samples and endpoints
+are retained; no frame/timer statistic substitutes for either wall gate.
+
+Both default Skia GPU API and explicit software routes must identify their
+actually selected surface. A Linux Mesa GPU API route does not claim physical
+GPU hardware. Three-host clean-source sealing and independent review remain
+pending; local development page/cache runs alone do not qualify native input.
