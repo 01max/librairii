@@ -344,3 +344,15 @@ mode. All semantic checks and15/90-second bounds remain. The AT-SPI driver's own
 stdout/stderr is retained as `accessibility/driver.log`, including failure details.
 The independent source reviewers have zero required findings for this correction;
 fresh actual Linux and final source-bound matrix results remain mandatory.
+
+The Linux History-error round trip also exposed stale toolkit focus flags after
+opening a report. The native regression reproduced reverse Tab from Retry landing
+on Close while Refresh still reported focus (`entry=1 refresh=true retry=false
+close=true`). History now hands focus to the surviving Close control before its
+controls become disabled for the report, then activates the report. Original
+History focus getters remain actual observations. The added native check requires
+reverse Tab to reach the last retained entry and Tab to return exclusively to
+Retry; exact entry restoration, successful Retry, Escape and late-Close ownership
+checks remain. The complete local scale1 probe passes after this handoff. Both
+independent source reviewers report zero required findings; fresh final-source
+native and actual reader execution remain required.

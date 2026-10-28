@@ -214,7 +214,9 @@ export component DesktopWindow inherits Window {
     out property <bool> history-first-focused:history.first-focused;
     out property <int> history-entry-focused:history.focused-entry;
     out property <bool> history-retry-focused:history.retry-focused;
-    public function show-history-report(index:int){if root.dialog==21 {root.history-invoker=index;root.operation-from-history=true;root.dialog=19;dialog-scroll.content-y=0px;operations.activate();}}
+    // Release History focus while its controls are enabled; disabled FocusScopes
+    // ignore FocusOut in the pinned toolkit. Close survives the report transition.
+    public function show-history-report(index:int){if root.dialog==21 {close-dialog-button.focus();root.history-invoker=index;root.operation-from-history=true;root.dialog=19;dialog-scroll.content-y=0px;operations.activate();}}
     public function return-to-history(){root.operation-from-history=false;root.dialog=21;dialog-scroll.content-y=0px;history.restore(root.history-invoker);}
     public function prepare-new-export(){root.operation-from-history=false;root.dialog=20;dialog-scroll.content-y=0px;exports.activate();root.open-export();}
     callback pick-import();callback retry-import();callback select-operation(int);callback cancel-operation();callback operation-page(int);callback refresh-operations();

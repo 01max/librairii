@@ -20,7 +20,7 @@ use librairii_desktop::{
     presentation::{Phase, Snapshot},
 };
 use librairii_ui::native::{DesktopWindow, ProposalRow};
-use slint::{ComponentHandle, ModelRc, VecModel, winit_030::WinitWindowAccessor};
+use slint::{ComponentHandle, Model, ModelRc, VecModel, winit_030::WinitWindowAccessor};
 use std::{
     cell::RefCell,
     path::{Path, PathBuf},
@@ -1390,6 +1390,35 @@ fn capture_step(
             ),
         )?;
         capture(ui, &destination.join("history-retry-compact-fr.png"))?;
+        ui.window()
+            .dispatch_event_with_result(slint::platform::WindowEvent::KeyPressed {
+                text: slint::platform::Key::Shift.into(),
+            })?;
+        key(ui, slint::platform::Key::Tab.into())?;
+        ui.window()
+            .dispatch_event_with_result(slint::platform::WindowEvent::KeyReleased {
+                text: slint::platform::Key::Shift.into(),
+            })?;
+        check(
+            ui.get_history_entry_focused() == ui.get_history_entries().row_count() as i32 - 1
+                && !ui.get_close_focused()
+                && !ui.get_history_first_focused()
+                && !ui.get_history_retry_focused(),
+            &format!(
+                "History reverse Tab from Retry missed the preceding entry: entry={} refresh={} retry={} close={}",
+                ui.get_history_entry_focused(),
+                ui.get_history_first_focused(),
+                ui.get_history_retry_focused(),
+                ui.get_close_focused(),
+            ),
+        )?;
+        key(ui, slint::platform::Key::Tab.into())?;
+        check(
+            ui.get_history_retry_focused()
+                && !ui.get_history_first_focused()
+                && !ui.get_close_focused(),
+            "History Tab did not return from the preceding entry to Retry",
+        )?;
         key(ui, " ".into())?;
         check(
             ui.get_dialog() == 21,
