@@ -707,7 +707,7 @@ export component DesktopWindow inherits Window {
                     padding: root.compact ? (root.shelf-active ? 4px : 8px) : 20px; spacing: root.compact && root.shelf-active ? 0px : 8px;
                     controls-scroll := ScrollView {
                         vertical-stretch: 0;content-width: self.visible-width;content-height: controls-layout.preferred-height;
-                        height: root.compact && (root.workspace || root.shelf-active || root.bulk-summary!="" || root.terminal-notice!="" || root.terminal-notice-error!="") ? min(controls-layout.preferred-height,max(36px,main.height - (root.workspace ? 256px : 240px))) : controls-layout.preferred-height;
+                        height: (main.height < 440px || (root.compact && (root.workspace || root.shelf-active || root.bulk-summary!="" || root.terminal-notice!="" || root.terminal-notice-error!=""))) ? min(controls-layout.preferred-height,max(36px,main.height - (root.workspace ? 256px : 240px))) : controls-layout.preferred-height;
                         controls-layout := VerticalBox {height: self.preferred-height;padding: 0px;spacing: root.compact && root.shelf-active ? 0px : 8px;
                     HorizontalBox { padding: 0px; spacing: 8px;
                         Caption { text: root.scope-title != "" ? root.scope-title : root.panel == 0 ? (root.french ? "Bibliothèque" : "Library") : root.panel == 4 ? (root.french ? "Historique" : "History") : root.panel == 5 ? (root.french ? "Réglages" : "Settings") : (root.french ? "Bibliothèque" : "Library"); horizontal-stretch: 1; font-size: root.compact ? 20px : 24px; font-weight: 600; }
