@@ -191,6 +191,10 @@ fn complete(f: &Fixture, ui: &DesktopWindow, expected: &str) -> Result<Snapshot>
         let snapshot = f.view.borrow().snapshot.clone();
         let data = &snapshot.workflows.operations;
         if data.preparing.is_none()
+            && !data.sync_preparing
+            && data.cards.iter().any(|card| {
+                card.operation.identity.id == expected && is_terminal(card.operation.state)
+            })
             && data
                 .status
                 .is_some_and(|status| !status.starting && status.running == 0 && status.queued == 0)
@@ -373,7 +377,11 @@ pub fn checks(ui: &DesktopWindow) -> Result {
             && failed.workflows.operations.catalog_revision == revision
             && ui.get_sync_data().status.contains("échoué")
             && ui.get_sync_data().start_label.contains("Réessayer"),
-        "failed sync lost the last-good catalog/stamp or retry status",
+        &format!(
+            "failed sync lost the last-good catalog/stamp or retry status: stamp={stamp:?} revision={revision:?} operations={:?} sync={:?}",
+            failed.workflows.operations,
+            ui.get_sync_data()
+        ),
     )?;
     server.mode.store(0, Ordering::Release);
     server.hold.store(true, Ordering::Release);

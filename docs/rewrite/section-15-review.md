@@ -495,3 +495,13 @@ assertion remains; all temporary scheduling/diagnostic hooks are removed. Both
 independent source review axes report zero remaining required implementation
 findings. Fresh committed-source three-host and complete spoken qualification
 must still accept this correction.
+
+
+The wider native timing probe also observes an intermediate snapshot with a
+Running summary card, terminal Failed details and the correctly retained
+last-good catalog/stamp. Sync completion now additionally waits for the exact
+operation's summary card to become terminal and sync preparation to clear, within
+the original15-second budget. Existing details, runtime, stamp, retry, cancellation,
+focus and artwork assertions remain required. Failure output retains the actual
+catalog/card/UI fields. This strengthens the completion observation rather than
+accepting a transient presentation as the final sync result.
