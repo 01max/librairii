@@ -369,6 +369,42 @@ fn push_query(navigation: &mut Navigation, request: QueryRequest) -> Result<()> 
         })
         .map_err(|_| StorageError::InvalidNavigation)
 }
+fn export_command(
+    runtime: &Runtime<'_, '_, '_>,
+    navigation: &Navigation,
+    operations: &mut crate::workflows::operations::Controller,
+    exports: &mut crate::workflows::exports::Controller,
+    generation: librairii_app::lifecycle::LibraryGeneration,
+    action: crate::workflows::exports::Action,
+    revision: u64,
+) -> Result<bool> {
+    // Polling advances the operation baselines, so these effects cannot be
+    // recovered by a later ordinary poll if this command discards them.
+    let mut effects = operations.poll(runtime, true)?.1;
+    if let Some(id) = exports.handle(runtime, navigation, generation, action, revision) {
+        operations.watch(id, revision);
+        effects |= operations.poll(runtime, true)?.1;
+    }
+    Ok(effects)
+}
+fn refresh_after_operations(
+    runtime: &Runtime<'_, '_, '_>,
+    navigation: &Navigation,
+    workflows: &mut crate::workflows::Snapshot,
+    group_rows: &mut Vec<Group>,
+    query_facets: &mut Facets,
+    collections: &mut crate::workflows::collections::Controller,
+    reviews: &mut crate::workflows::shelf_reviews::Controller,
+) -> Result<()> {
+    crate::workflows::refresh_details(runtime, navigation, workflows);
+    *group_rows = groups(runtime)?;
+    *query_facets = facets(runtime)?;
+    collections.refresh_union(runtime, group_rows)?;
+    workflows.collections = collections.snapshot.clone();
+    reviews.invalidate();
+    workflows.shelf_reviews = reviews.snapshot.clone();
+    Ok(())
+}
 pub(crate) struct Context<'a> {
     pub receiver: &'a Arc<Intake>,
     pub mailbox: &'a Arc<Mutex<Option<Snapshot>>>,
@@ -530,11 +566,7 @@ fn run_session<'p>(
                 let observation=operation_controller.poll(runtime,false);
                 workflows.operations=operation_controller.snapshot.clone();let (_,effects)=observation?;
                 if effects {
-                    crate::workflows::refresh_details(runtime,&navigation,&mut workflows);
-                    group_rows=groups(runtime)?;query_facets=facets(runtime)?;
-                    collection_controller.refresh_union(runtime,&group_rows)?;
-                    workflows.collections=collection_controller.snapshot.clone();
-                    review_controller.invalidate();workflows.shelf_reviews=review_controller.snapshot.clone();
+                    refresh_after_operations(runtime,&navigation,&mut workflows,&mut group_rows,&mut query_facets,&mut collection_controller,&mut review_controller)?;
                 }
                 if check_entry {
                     review_controller.enter(runtime, store, &navigation)?;
@@ -604,13 +636,7 @@ fn run_session<'p>(
                         if changed || export_changed || artwork_changed {
                             workflows.operations=operation_controller.snapshot.clone();
                             if effects {
-                                crate::workflows::refresh_details(runtime,&navigation,&mut workflows);
-                                group_rows=groups(runtime)?;
-                                query_facets=facets(runtime)?;
-                                collection_controller.refresh_union(runtime,&group_rows)?;
-                                workflows.collections=collection_controller.snapshot.clone();
-                                review_controller.invalidate();
-                                workflows.shelf_reviews=review_controller.snapshot.clone();
+                                refresh_after_operations(runtime,&navigation,&mut workflows,&mut group_rows,&mut query_facets,&mut collection_controller,&mut review_controller)?;
                             }
                             check_entry=false;
                             break;
@@ -631,6 +657,7 @@ fn run_session<'p>(
                     let mut next = navigation.clone();
                     invalid_query = false;
                     let mut invalidates_review=matches!(&command,Command::Refresh);
+                    let mut operation_effects=false;
                     match command {
                         Command::Maintenance{generation,action} => {
                             let action = maintenance_controller.handle(runtime,&control,generation,action,revision)?;
@@ -639,17 +666,16 @@ fn run_session<'p>(
                             if let Some(action) = action { return Ok(Some(action)); }
                         }
                         Command::Exports{generation,action}=>{
-                            operation_controller.poll(runtime,true)?;workflows.operations=operation_controller.snapshot.clone();
-                            if let Some(id)=export_controller.handle(runtime,&next,generation,action,revision) {operation_controller.watch(id,revision);operation_controller.poll(runtime,true)?;workflows.operations=operation_controller.snapshot.clone();}
+                            operation_effects=export_command(runtime,&next,&mut operation_controller,&mut export_controller,generation,action,revision)?;
+                            workflows.operations=operation_controller.snapshot.clone();
                             workflows.exports=export_controller.snapshot.clone();
                             if workflows.exports.recovery_required {workflows.recovery_required=true;receiver.fence().map_err(|_|StorageError::RuntimeFenced)?;return Err(StorageError::RuntimeFenced);}
                         }
 
                         Command::Operations{generation,action}=>{
-                            invalidates_review=operation_controller.handle(runtime,store,generation,action,revision);
+                            operation_effects=operation_controller.handle(runtime,store,generation,action,revision);
                             workflows.operations=operation_controller.snapshot.clone();
                             if workflows.operations.recovery_required {workflows.recovery_required=true;receiver.fence().map_err(|_|StorageError::RuntimeFenced)?;return Err(StorageError::RuntimeFenced);}
-                            if invalidates_review {crate::workflows::refresh_details(runtime,&next,&mut workflows);group_rows=groups(runtime)?;query_facets=facets(runtime)?;}
                         }
                         Command::ShelfReview{generation,action}=>{
                             review_controller.handle(runtime,store,crate::workflows::shelf_reviews::Request{generation,action},revision,&mut next);
@@ -832,8 +858,11 @@ fn run_session<'p>(
                             }
                         }
                     }
+                    if operation_effects {
+                        refresh_after_operations(runtime,&next,&mut workflows,&mut group_rows,&mut query_facets,&mut collection_controller,&mut review_controller)?;
+                    }
                     if invalidates_review {review_controller.invalidate();workflows.shelf_reviews=review_controller.snapshot.clone();}
-                    if (refresh_union || invalidates_review) && !workflows.recovery_required {
+                    if !operation_effects && (refresh_union || invalidates_review) && !workflows.recovery_required {
                         let refreshed=collection_controller.refresh_union(runtime,&group_rows);
                         workflows.collections=collection_controller.snapshot.clone();
                         refreshed?;
@@ -885,3 +914,6 @@ fn run_session<'p>(
         }
     }
 }
+
+#[cfg(test)]
+mod tests;
