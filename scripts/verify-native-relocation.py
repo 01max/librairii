@@ -6,11 +6,14 @@ source fixtures and privileged operations stay under one fresh temp directory.
 No production home/profile discovery is used by the Rust rehearsal.
 """
 import hashlib
+from contextlib import contextmanager
 import json
 import os
 from pathlib import Path
 import platform
+import shutil
 import subprocess
+import sys
 import tempfile
 import time
 
@@ -18,6 +21,31 @@ ROOT = Path(__file__).resolve().parents[1]
 
 def run(argv, **kwargs):
     return subprocess.run(argv, check=True, text=True, **kwargs)
+
+
+@contextmanager
+def owned_workspace():
+    work = Path(tempfile.mkdtemp(prefix="librairii-native-relocation-")).resolve()
+    # Failed or uncertain disposal retains the image and fixtures for diagnosis.
+    # Automatic TemporaryDirectory cleanup could traverse a still-mounted image.
+    yield work
+    shutil.rmtree(work)
+
+
+def rehearse(binary, source, mount, work):
+    result = None
+    try:
+        result = run([str(binary), str(source), str(mount)], cwd=ROOT,
+                     stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=600)
+        return result
+    except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as error:
+        result = error
+        raise
+    finally:
+        if result is not None:
+            for name in ("stdout", "stderr"):
+                value = getattr(result, name, None) or ""
+                (work / ("rehearsal." + name)).write_bytes(value if isinstance(value, bytes) else value.encode())
 
 
 def detach_owned_image(mount):
@@ -50,33 +78,38 @@ def main():
     system = platform.system()
     if system not in ("Darwin", "Linux"):
         raise RuntimeError("native macOS/Linux host required")
-    with tempfile.TemporaryDirectory(prefix="librairii-native-relocation-") as temporary:
-        work = Path(temporary).resolve()
+    with owned_workspace() as work:
         mount = work / "mounted"
         mount.mkdir()
         source = work / "fixtures"
         source.mkdir()
         mounted = False
+        detached = False
+        primary = None
+        cleanup = None
+        mount_device = None
+        image = None
         try:
             if system == "Darwin":
                 image = work / "owned.sparseimage"
                 run(["hdiutil", "create", "-size", "128m", "-fs", "APFS", "-volname", "LibrairiiTask13", "-type", "SPARSE", "-o", str(image)], stdout=subprocess.PIPE)
-                run(["hdiutil", "attach", "-nobrowse", "-owners", "on", "-mountpoint", str(mount), str(image)], stdout=subprocess.PIPE)
+                # Attach may have effects even if its acknowledgement fails.
                 mounted = True
+                run(["hdiutil", "attach", "-nobrowse", "-owners", "on", "-mountpoint", str(mount), str(image)], stdout=subprocess.PIPE)
             else:
                 image = work / "owned.ext4"
                 with image.open("xb") as stream:
                     stream.truncate(128 * 1024 * 1024)
                 run(["mkfs.ext4", "-q", "-F", "-m", "0", str(image)])
-                run(["sudo", "-n", "mount", "-t", "ext4", "-o", "loop,nosuid,nodev", str(image), str(mount)])
                 mounted = True
+                run(["sudo", "-n", "mount", "-t", "ext4", "-o", "loop,nosuid,nodev", str(image), str(mount)])
                 run(["sudo", "-n", "chown", f"{os.getuid()}:{os.getgid()}", str(mount)])
                 # This is mkfs's empty directory on our newly created image.
                 run(["sudo", "-n", "rmdir", str(mount / "lost+found")])
-            mounted = True
-            if source.stat().st_dev == mount.stat().st_dev:
+            mount_device = mount.stat().st_dev
+            if source.stat().st_dev == mount_device:
                 raise RuntimeError("mounted target is not a separate filesystem")
-            result = run([str(binary), str(source), str(mount)], cwd=ROOT, stdout=subprocess.PIPE, timeout=600)
+            result = rehearse(binary, source, mount, work)
             evidence = json.loads(result.stdout)
             if hashlib.sha256(binary.read_bytes()).hexdigest() != binary_digest:
                 raise RuntimeError("Cargo executable changed during rehearsal")
@@ -95,13 +128,40 @@ def main():
                 raise RuntimeError("incomplete mandatory native rehearsal")
             if evidence["volume_root"]["volume_root"] != "exact_root_verified":
                 raise RuntimeError("mandatory exact mount-root qualification did not execute")
+        except Exception as error:
+            primary = error
         finally:
             if mounted:
-                if system == "Darwin":
-                    forced = detach_owned_image(mount)
-                else:
-                    run(["sudo", "-n", "umount", str(mount)])
-                    forced = False
+                try:
+                    if system == "Darwin":
+                        forced = detach_owned_image(mount)
+                    else:
+                        run(["sudo", "-n", "umount", str(mount)])
+                        forced = False
+                    detached = True
+                except Exception as error:
+                    cleanup = error
+            if primary is not None or cleanup is not None:
+                try:
+                    current_device = mount.stat().st_dev
+                except OSError:
+                    current_device = None
+                failure = {"complete": False, "work": str(work), "image": str(image) if image else None,
+                           "mount": str(mount), "source": str(source), "mount_attempted": mounted,
+                           "mounted_device": mount_device, "current_mount_device": current_device,
+                           "owned_volume_detached": detached, "primary_error": repr(primary) if primary else None,
+                           "cleanup_error": repr(cleanup) if cleanup else None}
+                output = ROOT / "target/quality/native-relocation-failure.json"
+                output.parent.mkdir(parents=True, exist_ok=True)
+                # These files are outside the mounted tree. Retain them in the
+                # CI artifact even though the disposable runner will disappear.
+                for name in ("stdout", "stderr"):
+                    stream = work / ("rehearsal." + name)
+                    if stream.is_file():
+                        shutil.copy2(stream, output.with_suffix("." + name))
+                output.write_text(json.dumps(failure, indent=2) + "\n")
+                (work / "failure.json").write_text(json.dumps(failure, indent=2) + "\n")
+                raise RuntimeError(f"Native relocation failed; owned evidence retained at {work}; primary={primary!r}; cleanup={cleanup!r}") from (primary if primary is not None else cleanup)
         evidence["owned_volume_detached"] = True
         evidence["owned_volume_detach_forced"] = forced
         output = ROOT / "target/quality/native-relocation.json"
@@ -111,4 +171,5 @@ def main():
 
 
 if __name__ == "__main__":
+    run([sys.executable, "-I", "-B", str(ROOT / "qualification/section-16/test_relocation.py")])
     main()

@@ -207,6 +207,16 @@ still required.
 
 ## Focused generative/fuzz and coverage gaps —16.5
 
+A fresh APFS disk-full rehearsal returned an unexpected SQLite I/O error and
+then failed to confirm image detachment. That run remains failed; its generic
+SQLite error does not establish ENOSPC. The wrapper now retains its owned work
+directory on every failure, records initiating and cleanup errors together, and
+copies child stdout/stderr into the CI failure artifact. Only positive disposal
+and a successful rehearsal permit fixture deletion. The synthetic Rust driver
+records actual injection/errno and SQLite primary/extended codes, then checks
+source bytes, reopening and saved authority before preserving any unexpected
+error as a failed verdict. Six focused wrapper tests include a real failed child.
+
 The retained full-workspace coverage artifact for source a0a4ba3 (run40738553488,
 artifact12837679986, SHA256
 `921a5e52828848f6a0a34392d9e0d77af16fb7f948fa6b2730ce58fc8801dac9`)

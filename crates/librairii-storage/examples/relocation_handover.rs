@@ -277,11 +277,6 @@ mod rehearsal {
             &Default::default(),
             &observer,
         );
-        if kind == "permissions" {
-            fs::set_permissions(&workspace, fs::Permissions::from_mode(0o700))?;
-        } else {
-            fs::remove_file(volume.join("owned-enospc-fill"))?;
-        }
         let failure = result
             .err()
             .ok_or("filesystem fault did not refuse relocation")?;
@@ -292,12 +287,36 @@ mod rehearsal {
             librairii_storage::StorageError::Io { source, .. } => source.raw_os_error(),
             _ => None,
         };
-        if (kind == "permissions" && actual != Some(13))
-            || (kind == "disk-full" && actual != Some(28))
-        {
-            return Err(
-                format!("unexpected real {kind} failure: {failure}; errno={actual:?}").into(),
+        let filler_errno = *observer.cause.lock().map_err(|_| "fault lock")?;
+        let injected = observer.observed.load(Ordering::Acquire);
+        let sqlite = match failure.storage_error() {
+            librairii_storage::StorageError::Sqlite(rusqlite::Error::SqliteFailure(code, _)) => {
+                Some(json!({"primary":format!("{:?}", code.code),"extended":code.extended_code}))
+            }
+            _ => None,
+        };
+        let original_failure = failure.to_string();
+        eprintln!(
+            "relocation_filesystem_failure; {}",
+            json!({"kind":kind,"injection_observed":injected,"filler_errno":filler_errno,
+                "observed_errno":actual,"sqlite":sqlite,"error":original_failure,
+                "before_commit":true})
+        );
+        let cleanup = if kind == "permissions" {
+            fs::set_permissions(&workspace, fs::Permissions::from_mode(0o700))
+        } else {
+            fs::remove_file(volume.join("owned-enospc-fill"))
+        };
+        if let Err(error) = cleanup {
+            eprintln!(
+                "relocation_fault_cleanup_failed; {}",
+                json!({"kind":kind,"original_error":original_failure,"cleanup_error":error.to_string(),
+                    "cleanup_errno":error.raw_os_error(),"injection_observed":injected,"filler_errno":filler_errno})
             );
+            return Err(format!(
+                "real {kind} failure: {original_failure}; fault cleanup failed: {error}"
+            )
+            .into());
         }
         if checksum(&source.join("archives").join(PAYLOAD))? != before {
             return Err("fault changed source".into());
@@ -310,8 +329,20 @@ mod rehearsal {
         if Path::new(&store.load()?.ok_or("profile")?.profile().root) != source {
             return Err("fault retargeted settings".into());
         }
+        eprintln!(
+            "relocation_source_recovered; {}",
+            json!({"kind":kind,"source_unchanged":true,"database_reopened":true,"profile_unchanged":true})
+        );
+        if !injected
+            || (kind == "permissions" && actual != Some(13))
+            || (kind == "disk-full" && (filler_errno != Some(28) || actual != Some(28)))
+        {
+            return Err(format!(
+                "unexpected real {kind} failure: {original_failure}; errno={actual:?}; filler_errno={filler_errno:?}; injection_observed={injected}"
+            ).into());
+        }
         Ok(
-            json!({"failure":kind,"observed_errno":actual,"source_unchanged":true,"source_reopened":true,"before_commit":true,"filler_errno":*observer.cause.lock().map_err(|_|"fault lock")?}),
+            json!({"failure":kind,"observed_errno":actual,"source_unchanged":true,"source_reopened":true,"before_commit":true,"filler_errno":filler_errno}),
         )
     }
     fn volume_root(case: &Path, volume: &Path) -> Result<Value> {
