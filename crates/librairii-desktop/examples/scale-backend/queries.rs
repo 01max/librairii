@@ -22,11 +22,11 @@ fn measured(
     let mut samples = Vec::new();
     let mut cpu_ms = Vec::new();
     for _ in 0..sample_count {
-        let process_start = cpu::milliseconds()?;
+        let process_start = cpu::milliseconds();
         let started = Instant::now();
         let actual = action()?;
         samples.push(started.elapsed().as_secs_f64() * 1000.);
-        cpu_ms.push(cpu::milliseconds()? - process_start);
+        cpu_ms.push(cpu::milliseconds() - process_start);
         assert_eq!(actual, expected, "result changed during measurement");
     }
     let mut sorted = samples.clone();
@@ -228,18 +228,18 @@ pub fn run(db: &Database<'_>, rows: &[Story], root: &Path) -> Result<Value> {
         let mut phase_cpu = [0.; 3];
         for id in &ids {
             // Include the real record lookup for every local asset load.
-            let cpu_start = cpu::milliseconds()?;
+            let cpu_start = cpu::milliseconds();
             let start = Instant::now();
             let path = lookup(*id)?;
             phase_wall[0] += start.elapsed().as_secs_f64() * 1000.;
-            phase_cpu[0] += cpu::milliseconds()? - cpu_start;
-            let cpu_start = cpu::milliseconds()?;
+            phase_cpu[0] += cpu::milliseconds() - cpu_start;
+            let cpu_start = cpu::milliseconds();
             let start = Instant::now();
             compressed.clear();
             std::io::Read::read_to_end(&mut fs::File::open(root.join(path))?, &mut compressed)?;
             phase_wall[1] += start.elapsed().as_secs_f64() * 1000.;
-            phase_cpu[1] += cpu::milliseconds()? - cpu_start;
-            let cpu_start = cpu::milliseconds()?;
+            phase_cpu[1] += cpu::milliseconds() - cpu_start;
+            let cpu_start = cpu::milliseconds();
             let start = Instant::now();
             let decoder = image::codecs::png::PngDecoder::new(Cursor::new(&compressed))?;
             assert_eq!(decoder.dimensions(), (320, 400));
@@ -247,7 +247,7 @@ pub fn run(db: &Database<'_>, rows: &[Story], root: &Path) -> Result<Value> {
             decoder.read_image(&mut pixels)?;
             witness += pixels.iter().map(|byte| u64::from(*byte)).sum::<u64>();
             phase_wall[2] += start.elapsed().as_secs_f64() * 1000.;
-            phase_cpu[2] += cpu::milliseconds()? - cpu_start;
+            phase_cpu[2] += cpu::milliseconds() - cpu_start;
         }
         phases.push(json!({"lookup_wall_ms":phase_wall[0],"lookup_cpu_ms":phase_cpu[0],
             "read_wall_ms":phase_wall[1],"read_cpu_ms":phase_cpu[1],"decode_wall_ms":phase_wall[2],"decode_cpu_ms":phase_cpu[2]}));
