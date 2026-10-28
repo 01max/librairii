@@ -243,6 +243,9 @@ fn main() -> Result {
     if std::env::args().any(|arg| arg == "--sync-callback-checks") {
         return callback_checks::sync(&ui);
     }
+    if std::env::args().any(|arg| arg == "--operation-callback-checks") {
+        return callback_checks::operations(&ui);
+    }
     if let Some(case) =
         std::env::args().find_map(|a| a.strip_prefix("--workflow-case=").map(str::to_owned))
     {

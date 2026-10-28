@@ -19,17 +19,151 @@ fn select(f: &Fixture, ui: &DesktopWindow, paths: Option<Vec<PathBuf>>) {
         view::operations::selected(&f.view, &f.worker, ui, generation, paths);
     }
 }
+// A scheduler Busy is a refused offer, not an admitted operation. Follow the
+// production notice explicitly; never repeat an accepted import or whole check.
+fn start_import(f: &Fixture, ui: &DesktopWindow, paths: Vec<PathBuf>) -> Result<Snapshot> {
+    let previous = f
+        .view
+        .borrow()
+        .snapshot
+        .workflows
+        .operations
+        .cards
+        .iter()
+        .map(|c| c.operation.identity.id.clone())
+        .collect::<std::collections::BTreeSet<_>>();
+    let deadline = Instant::now() + Duration::from_secs(5);
+    loop {
+        let revision = f.worker.borrow().revision();
+        select(f, ui, Some(paths.clone()));
+        if f.worker.borrow().revision() > revision {
+            let snapshot = f.settle(ui)?;
+            let data = &snapshot.workflows.operations;
+            if data.error.as_deref() != Some("storage.queue_full") {
+                check(
+                    data.error.is_none(),
+                    &format!("native import offer failed: {data:?}"),
+                )?;
+                check(
+                    data.preparing
+                        .as_ref()
+                        .is_some_and(|id| !previous.contains(id))
+                        || data
+                            .cards
+                            .iter()
+                            .any(|c| !previous.contains(&c.operation.identity.id)),
+                    "native import offer admitted no new operation",
+                )?;
+                return Ok(snapshot);
+            }
+            check(
+                data.import_refused
+                    && data.revision == snapshot.revision
+                    && data.preparing.is_none()
+                    && data
+                        .cards
+                        .iter()
+                        .all(|c| previous.contains(&c.operation.identity.id))
+                    && !data.recovery_required,
+                "refused import unexpectedly admitted work; cannot repeat selection",
+            )?;
+        } else {
+            check(
+                ui.get_operation_notice().contains("[settings.busy]"),
+                "unoffered import was not an explicit intake Busy",
+            )?;
+        }
+        check(
+            !ui.get_operation_notice().is_empty(),
+            "refused import lost its corrective notice",
+        )?;
+        if Instant::now() >= deadline {
+            return Err("explicit import retry remained busy".into());
+        }
+        std::thread::sleep(Duration::from_millis(2));
+    }
+}
+fn cancel(f: &Fixture, ui: &DesktopWindow) -> Result<Snapshot> {
+    let id = f
+        .view
+        .borrow()
+        .snapshot
+        .workflows
+        .operations
+        .details
+        .as_ref()
+        .map(|d| d.card.operation.identity.id.clone())
+        .ok_or("cancel target missing")?;
+    let deadline = Instant::now() + Duration::from_secs(5);
+    loop {
+        let revision = f.worker.borrow().revision();
+        ui.invoke_cancel_operation();
+        check(
+            f.worker.borrow().revision() > revision,
+            "native Cancel callback was not offered",
+        )?;
+        let snapshot = f.settle(ui)?;
+        let data = &snapshot.workflows.operations;
+        if data.error.as_deref() != Some("storage.queue_full") {
+            check(
+                data.error.is_none(),
+                &format!("native Cancel failed: {data:?}"),
+            )?;
+            return Ok(snapshot);
+        }
+        // Cancellation is idempotent for this exact operation. A busy receipt
+        // may be retried only while that same report still offers Cancel.
+        check(
+            data.details
+                .as_ref()
+                .is_some_and(|d| d.card.operation.identity.id == id)
+                && ui.get_operation_cancellable()
+                && !data.recovery_required
+                && !ui.get_operation_notice().is_empty(),
+            "busy Cancel lost its target or corrective notice",
+        )?;
+        if Instant::now() >= deadline {
+            return Err("explicit Cancel retry remained busy".into());
+        }
+        std::thread::sleep(Duration::from_millis(2));
+    }
+}
 fn complete(f: &Fixture, ui: &DesktopWindow) -> Result<Snapshot> {
     let deadline = Instant::now() + Duration::from_secs(15);
+    let mut snapshot = f.view.borrow().snapshot.clone();
+    if snapshot.revision != f.worker.borrow().revision() {
+        snapshot = f.settle(ui)?;
+    }
+    let target = snapshot
+        .workflows
+        .operations
+        .preparing
+        .clone()
+        .or_else(|| {
+            snapshot
+                .workflows
+                .operations
+                .details
+                .as_ref()
+                .map(|d| d.card.operation.identity.id.clone())
+        })
+        .ok_or("native import completion target missing")?;
     loop {
-        let snapshot = f.settle(ui)?;
         if snapshot.workflows.operations.preparing.is_none()
             && snapshot
                 .workflows
                 .operations
                 .details
                 .as_ref()
-                .is_some_and(|d| is_terminal(d.card.operation.state))
+                .is_some_and(|d| {
+                    d.card.operation.identity.id == target && is_terminal(d.card.operation.state)
+                })
+            && snapshot
+                .workflows
+                .operations
+                .cards
+                .iter()
+                .any(|c| c.operation.identity.id == target && is_terminal(c.operation.state))
         {
             return Ok(snapshot);
         }
@@ -40,6 +174,7 @@ fn complete(f: &Fixture, ui: &DesktopWindow) -> Result<Snapshot> {
             )
             .into());
         }
+        snapshot = f.settle(ui)?;
     }
 }
 pub fn checks(ui: &DesktopWindow) -> Result {
@@ -64,16 +199,16 @@ pub fn checks(ui: &DesktopWindow) -> Result {
         .iter()
         .map(std::fs::read)
         .collect::<std::io::Result<Vec<_>>>()?;
-    select(
+    start_import(
         &f,
         ui,
-        Some(vec![
+        vec![
             originals[0].clone(),
             originals[0].clone(),
             originals[1].clone(),
             source("unsupported.txt"),
-        ]),
-    );
+        ],
+    )?;
     let snapshot = complete(&f, ui)?;
     let details = snapshot
         .workflows
@@ -128,7 +263,7 @@ pub fn checks(ui: &DesktopWindow) -> Result {
     )?;
     ui.invoke_close_dialog();
     f.search(ui, "Alpha")?;
-    select(&f, ui, Some(vec![originals[0].clone()]));
+    start_import(&f, ui, vec![originals[0].clone()])?;
     let retried = complete(&f, ui)?;
     check(
         retried
@@ -147,8 +282,7 @@ pub fn checks(ui: &DesktopWindow) -> Result {
         "retry did not create a separate idempotent operation",
     )?;
     // Cancel is admitted through the real scheduler while a full batch owns work.
-    select(&f, ui, Some(vec![source("clockwork-forest.plain.pk"); 32]));
-    f.settle(ui)?;
+    start_import(&f, ui, vec![source("clockwork-forest.plain.pk"); 32])?;
     let deadline = Instant::now() + Duration::from_secs(10);
     loop {
         if ui.get_operation_cancellable() {
@@ -180,9 +314,8 @@ pub fn checks(ui: &DesktopWindow) -> Result {
         .as_ref()
         .map(|d| d.card.operation.identity.id.clone())
         .ok_or("first active import missing")?;
-    select(&f, ui, Some(vec![source("clockwork-forest.plain.pk"); 32]));
+    let mut snapshot = start_import(&f, ui, vec![source("clockwork-forest.plain.pk"); 32])?;
     loop {
-        let snapshot = f.settle(ui)?;
         if snapshot.workflows.operations.preparing.is_none()
             && snapshot
                 .workflows
@@ -209,6 +342,7 @@ pub fn checks(ui: &DesktopWindow) -> Result {
         if Instant::now() > deadline {
             return Err("two concurrent imports were not observed".into());
         }
+        snapshot = f.settle(ui)?;
     }
     check(
         ui.get_operation_items().row_count() == 25 && ui.get_operation_next(),
@@ -262,8 +396,7 @@ pub fn checks(ui: &DesktopWindow) -> Result {
     ui.invoke_select_operation(first_index as i32);
     f.settle(ui)?;
     if ui.get_operation_cancellable() {
-        ui.invoke_cancel_operation();
-        f.settle(ui)?;
+        cancel(&f, ui)?;
     }
     let second_index = f
         .view
@@ -277,7 +410,7 @@ pub fn checks(ui: &DesktopWindow) -> Result {
         .ok_or("second active import missing")?;
     ui.invoke_select_operation(second_index as i32);
     f.settle(ui)?;
-    ui.invoke_cancel_operation();
+    cancel(&f, ui)?;
     let cancelled = complete(&f, ui)?;
     check(
         cancelled
@@ -286,7 +419,10 @@ pub fn checks(ui: &DesktopWindow) -> Result {
             .details
             .as_ref()
             .is_some_and(|d| d.card.cancelled > 0),
-        "Cancel did not retain cancelled item reports",
+        &format!(
+            "Cancel did not retain cancelled item reports: {:?}",
+            cancelled.workflows.operations
+        ),
     )?;
     let index = f
         .view
@@ -301,7 +437,7 @@ pub fn checks(ui: &DesktopWindow) -> Result {
     ui.invoke_select_operation(index as i32);
     f.settle(ui)?;
     if ui.get_operation_cancellable() {
-        ui.invoke_cancel_operation();
+        cancel(&f, ui)?;
         complete(&f, ui)?;
     }
     ui.invoke_close_dialog();
@@ -341,15 +477,15 @@ impl Surface {
         let fixture = Fixture::open(ui)?;
         ui.invoke_show_panel(2);
         fixture.settle(ui)?;
-        select(
+        start_import(
             &fixture,
             ui,
-            Some(vec![
+            vec![
                 source("clockwork-forest.plain.pk"),
                 source("00112233445546778899aabbccddeeff.v1.pk"),
                 source("unsupported.txt"),
-            ]),
-        );
+            ],
+        )?;
         complete(&fixture, ui)?;
         Ok(Self { fixture })
     }

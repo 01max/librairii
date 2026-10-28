@@ -71,6 +71,9 @@ pub struct Snapshot {
     pub details: Option<OperationItems>,
     pub preparing: Option<String>,
     pub error: Option<String>,
+    /// This revision's import offer returned its owned input before admission.
+    /// A later observation failure must never be interpreted as this receipt.
+    pub import_refused: bool,
     pub status: Option<RuntimeStatus>,
     pub progress: Vec<ProgressUpdate>,
 }
@@ -101,6 +104,7 @@ impl Controller {
         self.recent.push_front(id.clone());
         self.recent.truncate(8);
         self.snapshot.revision = revision;
+        self.snapshot.import_refused = false;
         self.snapshot.preparing = Some(id.clone());
         self.snapshot.details = None;
         self.selected = Some((id, 0));
@@ -138,6 +142,7 @@ impl Controller {
     ) -> bool {
         self.snapshot.revision = revision;
         self.snapshot.error = None;
+        self.snapshot.import_refused = false;
         // An Inspect receipt certifies only its newly read report. A failure,
         // including a same-ID page/refresh, must never reuse the prior details.
         if matches!(&action, Action::Inspect { .. }) {
@@ -219,9 +224,10 @@ impl Controller {
                         let prepared = PreparedImport::new(id, paths)
                             .map_err(|_| StorageError::CompatibilityInvariant)?;
                         let id = prepared.operation_id().to_owned();
-                        runtime
-                            .offer_import(prepared)
-                            .map_err(|_| StorageError::QueueFull)?;
+                        runtime.offer_import(prepared).map_err(|_| {
+                            self.snapshot.import_refused = true;
+                            StorageError::QueueFull
+                        })?;
                         self.recent.retain(|old| old != &id);
                         self.recent.push_front(id.clone());
                         self.recent.truncate(8);

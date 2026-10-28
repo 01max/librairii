@@ -226,8 +226,12 @@ impl Fixture {
     #[track_caller]
     fn settle(&self, ui: &DesktopWindow) -> Result<Snapshot> {
         let caller = std::panic::Location::caller();
-        let snapshot =
-            receive(&self.worker.borrow()).map_err(|error| format!("{error} at {caller}"))?;
+        let snapshot = receive(&self.worker.borrow()).map_err(|error| {
+            format!(
+                "{error} at {caller}; displayed operations={:?}",
+                self.view.borrow().snapshot.workflows.operations
+            )
+        })?;
 
         check(
             self.view
@@ -415,17 +419,18 @@ impl Drop for Fixture {
     }
 }
 fn receive(worker: &Worker) -> Result<Snapshot> {
+    let mut last = None;
     let deadline = Instant::now() + Duration::from_secs(10);
     loop {
-        if let Some(snapshot) = worker.take_snapshot()
-            && snapshot.phase != Phase::Opening
-            && snapshot.revision >= worker.revision()
-        {
-            return Ok(snapshot);
+        if let Some(snapshot) = worker.take_snapshot() {
+            if snapshot.phase != Phase::Opening && snapshot.revision >= worker.revision() {
+                return Ok(snapshot);
+            }
+            last = Some(snapshot);
         }
         if worker.finished() || Instant::now() >= deadline {
             return Err(format!(
-                "native callback fixture did not receive a response (finished={}, revision={})",
+                "native callback fixture did not receive a response (finished={}, revision={}, last={last:?})",
                 worker.finished(),
                 worker.revision()
             )

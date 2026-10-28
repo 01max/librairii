@@ -505,3 +505,50 @@ the original15-second budget. Existing details, runtime, stamp, retry, cancellat
 focus and artwork assertions remain required. Failure output retains the actual
 catalog/card/UI fields. This strengthens the completion observation rather than
 accepting a transient presentation as the final sync result.
+
+
+Run40672849011 atb030f56 passes607 ARM tests, but the native operation observer
+waits for revision6 after the second concurrent import selection. Its retained
+artifact12809950655 has SHA256
+`616d8be81da4391aca5ba7596952925092fa0dbaf2b61bfa6801f9916a3187c8`.
+This source remains failed qualification. Thirty narrow local observations pass;
+200 observations under four-process contention reproduce four cancellation-report
+failures, each with an explicit storage.queue_full receipt and an uncancelled
+operation that subsequently completes. A temporary hold of the real scheduler
+mutex at the second import offer reproduces the exact original revision6/10-second
+wait, with no new admitted identity. The observer had treated refusal as acceptance.
+
+Native import observation now follows the production corrective notice only for
+an explicit, revision-bound pre-admission refusal receipt. This receipt is set
+only when the scheduler returns the owned import input; post-admission polling
+errors cannot produce it. A selection is also never repeated if preparation or
+any new operation identity appeared. Cancellation retries are idempotent for the same
+selected operation and require the retained busy notice and Cancel control.
+Other failures remain failures. Both explicit refusal loops are bounded5seconds;
+there is no retry of the whole check and the existing10/15/90-second waits remain.
+Completion considers an already displayed current response and additionally
+requires the same exact operation's summary card and details to be terminal.
+The original two concurrent32-file batches, worker limit, item paging, actual
+cancelled-item count, invalid selection, original bytes and restart assertions
+remain mandatory. A narrow native callback switch supports repeatable diagnosis,
+and failure output retains the last displayed operation state.
+
+Three targeted real-mutex refusal replays pass after the correction (start,
+Cancel, both). With the positive refusal receipt,60 controlled native observations
+pass: ten at each of the four import offers and two Cancel offers. Both independent
+review axes report zero remaining required findings. Temporary scheduler holds
+and diagnostic logging are removed before commit; none become product
+configuration or evidence acceptance paths. Fresh committed-source three-host
+and complete spoken qualification remain required.
+
+The sameb030f56 run completes all physical Intel and Linux steps. Downloaded,
+provider-digest-verified archives independently pass607 Intel/609 Linux tests,
+176 native captures each, frozen Go handover, all relocation/fault/disposal cases,
+and the full Linux112-case/128-witness raw Orca/PCM matrix with112 actual worker
+joins and owned container retirements. Intel artifact12810832980 has SHA256
+`6ace9b4e516de3693b7acf15c4d67d90683b34f80bcd7c21d537053ed2a63a55`;
+Linux artifact12810234013 has SHA256
+`8137d77359a8edaa1787e7921f14ab3285ca68b6a01007cd571b6cd1e33e7305`.
+Both bind only to provider mergefe295be5434bfa82d1dd6c3a30457cb2256e75af.
+The ARM failure still prevents admission; these receipts do not qualify the
+operation-refusal correction.
