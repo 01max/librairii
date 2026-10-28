@@ -327,6 +327,19 @@ positive shutdown and original samples remain required. Earlier AX-ceiling
 failures retain their original method and outcomes; they are not recomputed as
 passes. Fresh complete version2 cohorts and independent review are required.
 
+The514 Intel native interaction cohorts passed both rendering routes, but its
+separate idle product did not exit within20 seconds after a posted CG quit
+shortcut. That failed sample and unretired fixture remain retained; the receipt
+does not identify whether event delivery or controller shutdown was responsible.
+Resource shutdown now invokes the owned application's enabled native Quit menu
+item through AXPress and retains its PID, actual menu item, supported action and
+result. Deadline checks occur during traversal and before activation. Ordinary
+production diagnostics distinguish a shutdown request, event-loop return and
+controller join. The20-second positive-exit requirement is unchanged.
+Bounded helper stdout/stderr and status survive nonzero exits and timeouts;
+two additional real-process checks verify that retention. All eight resource
+preflight tests pass locally; fresh actual native menu execution is required.
+
 At a5ec473 a fresh query-codec fuzz run retained a75-byte malformed-UTF8 seed
 that violated the harness's Unicode idempotence assertion. Its15-byte Cherokee
 reduction also reproduces locally. Actual frozen Go1.26.5 Decode/Migrate/Encode

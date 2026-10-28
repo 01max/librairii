@@ -51,6 +51,7 @@ fn launch() -> Result<(), Box<dyn std::error::Error>> {
     let pending = worker.clone();
     let closing_ui = ui.as_weak();
     ui.on_quit(move || {
+        eprintln!("native_shutdown; stage=requested");
         if let Some(ui) = closing_ui.upgrade() {
             ui.set_closing(true);
             ui.set_pending(true);
@@ -109,9 +110,17 @@ fn launch() -> Result<(), Box<dyn std::error::Error>> {
         },
     );
     let result = ui.run();
+    eprintln!(
+        "native_shutdown; stage=window_loop_returned; ok={}",
+        result.is_ok()
+    );
     timer.stop();
     worker.borrow().request_shutdown();
     let closed = worker.borrow_mut().finish();
+    eprintln!(
+        "native_shutdown; stage=controller_joined; ok={}",
+        closed.is_ok()
+    );
     result?;
     closed.map_err(Into::into)
 }

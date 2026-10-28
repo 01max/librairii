@@ -17,6 +17,69 @@ func attribute(_ element: AXUIElement, _ name: String) -> CFTypeRef? {
     return AXUIElementCopyAttributeValue(element, name as CFString, &value) == .success ? value : nil
 }
 func text(_ element: AXUIElement, _ name: String) -> String { attribute(element, name) as? String ?? "" }
+func quitFromOwnedMenu(_ app: AXUIElement) throws -> [String: Any] {
+    let started = DispatchTime.now().uptimeNanoseconds
+    func checkDeadline() throws {
+        if DispatchTime.now().uptimeNanoseconds-started >= 2_000_000_000 {
+            throw Refusal(message: "owned native Quit menu item deadline")
+        }
+    }
+    var trace: [[String: Any]] = []
+    var emitted = false
+    defer {
+        if !emitted, let data = try? JSONSerialization.data(withJSONObject: ["native_menu_quit_trace": trace], options: [.sortedKeys]),
+           let encoded = String(data: data, encoding: .utf8) { fputs(encoded+"\n", stderr) }
+    }
+    guard let rawBar = attribute(app, kAXMenuBarAttribute), CFGetTypeID(rawBar) == AXUIElementGetTypeID() else {
+        throw Refusal(message: "owned native menu bar missing")
+    }
+    let bar = rawBar as! AXUIElement
+    AXUIElementSetMessagingTimeout(bar, 0.1)
+    try checkDeadline()
+    let entries = attribute(bar, kAXChildrenAttribute) as? [AXUIElement] ?? []
+    guard let applicationMenu = try entries.prefix(16).first(where: { item in
+        try checkDeadline()
+        AXUIElementSetMessagingTimeout(item, 0.1)
+        let title = text(item, kAXTitleAttribute)
+        if trace.count < 64 { trace.append(["stage": "application-menu", "title": String(title.prefix(160))]) }
+        return title == "Librairii"
+    }) else {
+        throw Refusal(message: "owned Librairii application menu missing")
+    }
+    try checkDeadline()
+    let opened = AXUIElementPerformAction(applicationMenu, kAXPressAction as CFString)
+    guard opened == .success else { throw Refusal(message: "owned native application menu action failed: \(opened.rawValue)") }
+    while DispatchTime.now().uptimeNanoseconds-started < 2_000_000_000 {
+        var stack = [applicationMenu]
+        var visited = 0
+        while let item = stack.popLast(), visited < 256 {
+            try checkDeadline()
+            visited += 1
+            AXUIElementSetMessagingTimeout(item, 0.1)
+            let role = text(item, kAXRoleAttribute)
+            let title = text(item, kAXTitleAttribute)
+            let enabled = attribute(item, kAXEnabledAttribute) as? Bool ?? false
+            if trace.count < 64 { trace.append(["role": role, "title": String(title.prefix(160)), "enabled": enabled]) }
+            if role == kAXMenuItemRole as String && ["Quit Librairii", "Quitter Librairii"].contains(title) {
+                var rawActions: CFArray?
+                AXUIElementCopyActionNames(item, &rawActions)
+                let actions = rawActions as? [String] ?? []
+                guard enabled && actions.contains(kAXPressAction as String) else { throw Refusal(message: "owned native Quit action unavailable") }
+                try checkDeadline()
+                let result = AXUIElementPerformAction(item, kAXPressAction as CFString)
+                guard result == .success else { throw Refusal(message: "owned native Quit action failed: \(result.rawValue)") }
+                emitted = true
+                return ["native_quit_posted": true, "pid": pid,
+                    "method": "owned native application menu AXPress", "application_menu": "Librairii",
+                    "role": role, "title": title, "actions": actions, "result": result.rawValue]
+            }
+            let children = attribute(item, kAXChildrenAttribute) as? [AXUIElement] ?? []
+            stack.append(contentsOf: children.prefix(max(0, 256-visited-stack.count)).reversed())
+        }
+        Thread.sleep(forTimeInterval: 0.001)
+    }
+    throw Refusal(message: "owned native Quit menu item deadline")
+}
 do {
     guard ProcessInfo.processInfo.environment["GITHUB_ACTIONS"] == "true", AXIsProcessTrusted(), CGPreflightPostEventAccess() else { throw Refusal(message: "disposable native CI observer access required") }
     if watching {
@@ -37,11 +100,9 @@ do {
     running.activate(options: [])
     if CommandLine.arguments[1] == "quit" {
         guard NSWorkspace.shared.frontmostApplication?.processIdentifier == pid else { throw Refusal(message: "product quit lost foreground PID") }
-        for down in [true, false] {
-            let event = CGEvent(keyboardEventSource: nil, virtualKey: 12, keyDown: down)!
-            event.flags = .maskCommand; event.post(tap: .cghidEventTap)
-        }
-        print("{\"native_quit_posted\":true}")
+        let app = AXUIElementCreateApplication(pid)
+        AXUIElementSetMessagingTimeout(app, 0.1)
+        print(String(data: try JSONSerialization.data(withJSONObject: quitFromOwnedMenu(app), options: [.sortedKeys]), encoding: .utf8)!)
     } else {
         // AX requests made while AppKit is still creating its first window can
         // block behind initialization. Observe the owned window through public

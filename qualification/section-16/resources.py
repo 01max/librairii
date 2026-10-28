@@ -90,6 +90,31 @@ def child_pid(parent):
     return int(values[0]) if len(values) == 1 else None
 
 
+def native_quit(command, destination, timeout=12):
+    """Retain helper evidence before propagating any exit/timeout failure."""
+    def retain(stdout, stderr, code, timed_out):
+        stdout = stdout or b''
+        stderr = stderr or b''
+        limit = 65_536
+        (destination / 'quit-helper.stdout').write_bytes(stdout[:limit])
+        (destination / 'quit-helper.stderr').write_bytes(stderr[:limit])
+        receipt = {'returncode': code, 'timed_out': timed_out, 'limit_bytes_per_stream': limit,
+                   'stdout_bytes': len(stdout), 'stderr_bytes': len(stderr),
+                   'truncated': len(stdout) > limit or len(stderr) > limit}
+        (destination / 'quit-helper.json').write_text(json.dumps(receipt, indent=2)+'\n')
+        return receipt
+    try:
+        result = subprocess.run(command, capture_output=True, timeout=timeout)
+    except subprocess.TimeoutExpired as error:
+        retain(error.stdout, error.stderr, None, True)
+        raise
+    receipt = retain(result.stdout, result.stderr, result.returncode, False)
+    result.check_returncode()
+    if receipt['truncated']:
+        raise ValueError('native Quit helper output exceeded bound')
+    return json.loads(result.stdout)
+
+
 def product_run(binary, observer, destination, backend, helper, native):
     destination.mkdir()
     configuration = destination / 'fixture.json'
@@ -161,9 +186,7 @@ def product_run(binary, observer, destination, backend, helper, native):
             raise ValueError('process CPU clock moved backwards')
         report['idle_cpu_percent_one_core'] = 100 * (samples[-1]['cpu_seconds']-samples[0]['cpu_seconds']) / (samples[-1]['monotonic_seconds']-samples[0]['monotonic_seconds'])
         if platform.system() == 'Darwin':
-            quit_result = subprocess.run([str(helper), 'quit', str(pid)], capture_output=True, text=True, timeout=12)
-            quit_result.check_returncode()
-            report['quit'] = json.loads(quit_result.stdout)
+            report['quit'] = native_quit([str(helper), 'quit', str(pid)], destination)
         else:
             xid = subprocess.check_output(['xdotool', 'search', '--sync', '--onlyvisible', '--pid', str(pid)], text=True, timeout=10).splitlines()[-1]
             subprocess.run(['xdotool', 'windowfocus', '--sync', xid, 'key', '--clearmodifiers', 'ctrl+q'], check=True, timeout=10)

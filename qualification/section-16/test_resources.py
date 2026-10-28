@@ -82,6 +82,24 @@ class StartupCaptureTests(unittest.TestCase):
             capture.finish(process.pid)
         self.assertLessEqual(log.stat().st_size, 1_048_576)
 
+    def test_quit_failure_keeps_its_original_trace(self):
+        with tempfile.TemporaryDirectory(prefix='librairii-quit-helper-') as directory:
+            destination = Path(directory)
+            command = [sys.executable, '-I', '-B', '-c', "import sys;print('original AX failure trace',file=sys.stderr,flush=True);sys.exit(3)"]
+            with self.assertRaises(subprocess.CalledProcessError):
+                resources.native_quit(command, destination)
+            self.assertEqual((destination / 'quit-helper.stderr').read_text(), 'original AX failure trace\n')
+            self.assertIn('"returncode": 3', (destination / 'quit-helper.json').read_text())
+
+    def test_quit_timeout_keeps_partial_output(self):
+        with tempfile.TemporaryDirectory(prefix='librairii-quit-helper-') as directory:
+            destination = Path(directory)
+            command = [sys.executable, '-I', '-B', '-c', "import sys,time;print('AX wait trace',file=sys.stderr,flush=True);time.sleep(10)"]
+            with self.assertRaises(subprocess.TimeoutExpired):
+                resources.native_quit(command, destination, timeout=2)
+            self.assertEqual((destination / 'quit-helper.stderr').read_text(), 'AX wait trace\n')
+            self.assertIn('"timed_out": true', (destination / 'quit-helper.json').read_text())
+
 
 if __name__ == '__main__':
     unittest.main()
