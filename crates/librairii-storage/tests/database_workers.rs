@@ -596,9 +596,9 @@ fn engine_rollback_loss_never_turns_body_or_cancel_failure_into_retry_permission
         let attempted = database
             .transaction(cancellation, move |tx| {
                 tx.execute("INSERT INTO rollback_probe VALUES(1)", [])?;
-                let error = tx
-                    .execute("INSERT INTO rollback_probe VALUES(2)", [])
-                    .expect_err("real SQLite trigger must abort the transaction");
+                let Err(error) = tx.execute("INSERT INTO rollback_probe VALUES(2)", []) else {
+                    return Err(StorageError::CompatibilityInvariant);
+                };
                 if cancel_after_engine_rollback {
                     signal.cancel();
                     Ok(())
