@@ -45,7 +45,7 @@ func focusSearch() throws {
     }
     throw Refusal(message: "native reverse Tab did not reach Search")
 }
-struct PointerTarget { let point: CGPoint; let role: String; let name: String; let firstTitleRole: String }
+struct PointerTarget { let point: CGPoint; let role: String; let name: String; let firstTitleRole: String; let parentRole: String; let parentName: String; let actions: [String] }
 func firstStoryPoint() throws -> PointerTarget {
     let app = AXUIElementCreateApplication(pid)
     let start = DispatchTime.now().uptimeNanoseconds
@@ -54,22 +54,31 @@ func firstStoryPoint() throws -> PointerTarget {
         var queue = [app]; var next = 0
         while next < queue.count && next < 4096 {
             let item = queue[next]; next += 1
-            func attribute(_ name: String) -> CFTypeRef? {
+            func attribute(_ name: String, of element: AXUIElement? = nil) -> CFTypeRef? {
                 var value: CFTypeRef?
-                return AXUIElementCopyAttributeValue(item, name as CFString, &value) == .success ? value : nil
+                return AXUIElementCopyAttributeValue(element ?? item, name as CFString, &value) == .success ? value : nil
             }
             let title = attribute(kAXTitleAttribute) as? String ?? ""
             let description = attribute(kAXDescriptionAttribute) as? String ?? ""
             if title.hasPrefix("Histoire 0001") || description.hasPrefix("Histoire 0001") {
                 let role = attribute(kAXRoleAttribute) as? String ?? ""
                 if firstTitleRole == nil { firstTitleRole = role }
-                // AccessKit exposes the browser ListItem as AXGroup; the
-                // inspector's duplicate title is AXStaticText.
-                if role != kAXGroupRole as String { continue }
+                // Slint ListItem becomes AccessKit ListBoxOption/AXStaticText.
+                // The browser-list parent and default action distinguish the
+                // row from the inspector's duplicate static-text title.
+                guard role == kAXStaticTextRole as String,
+                    let rawParent = attribute(kAXParentAttribute), CFGetTypeID(rawParent) == AXUIElementGetTypeID() else { continue }
+                let parent = rawParent as! AXUIElement
+                let parentRole = attribute(kAXRoleAttribute, of: parent) as? String ?? ""
+                let parentName = attribute(kAXTitleAttribute, of: parent) as? String ?? ""
+                var rawActions: CFArray?
+                AXUIElementCopyActionNames(item, &rawActions)
+                let actions = rawActions as? [String] ?? []
+                guard parentRole == kAXListRole as String, ["Toutes les histoires", "All stories"].contains(parentName), actions.contains(kAXPressAction as String) else { continue }
                 if let rawPosition = attribute(kAXPositionAttribute), let rawSize = attribute(kAXSizeAttribute), CFGetTypeID(rawPosition) == AXValueGetTypeID(), CFGetTypeID(rawSize) == AXValueGetTypeID() {
                     var position = CGPoint.zero; var size = CGSize.zero
                     if AXValueGetValue(rawPosition as! AXValue, .cgPoint, &position) && AXValueGetValue(rawSize as! AXValue, .cgSize, &size) && size.width > 8 && size.height > 8 {
-                        return PointerTarget(point: CGPoint(x: position.x + size.width / 2, y: position.y + size.height / 2), role: role, name: title.isEmpty ? description : title, firstTitleRole: firstTitleRole!)
+                        return PointerTarget(point: CGPoint(x: position.x + size.width / 2, y: position.y + size.height / 2), role: role, name: title.isEmpty ? description : title, firstTitleRole: firstTitleRole!, parentRole: parentRole, parentName: parentName, actions: actions)
                     }
                 }
             }
@@ -104,7 +113,7 @@ do {
     }
     let target = try firstStoryPoint()
     let point = target.point
-    let pointerReceipt: [String: Any] = ["x": point.x, "y": point.y, "role": target.role, "name": target.name, "first_title_role": target.firstTitleRole]
+    let pointerReceipt: [String: Any] = ["x": point.x, "y": point.y, "role": target.role, "name": target.name, "first_title_role": target.firstTitleRole, "parent_role": target.parentRole, "parent_name": target.parentName, "actions": target.actions]
     try JSONSerialization.data(withJSONObject: pointerReceipt, options: [.sortedKeys]).write(to: directory.appendingPathComponent("pointer-target.json"), options: .atomic)
     var pointers: [Double] = []; var pointerStates: [[String: Any]] = []
     for _ in 0..<64 {

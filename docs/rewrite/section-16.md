@@ -124,9 +124,12 @@ The first full Linux run passed native typing but timed out on pointer focus in
 both development and release workloads. Its retained public-tree readiness
 witness is a plain label: the inspector repeats the same story title. The old
 pointer picker also accepted that label. Pointer targeting now requires the
-actual browser ListItem (AXGroup on macOS), records its role/position before
+actual browser ListItem, records its role/position before
 delivery and retains the first matching title's role for diagnosis. Fresh native
 cohorts must establish the correction; the earlier failures remain retained.
+On macOS the selected Slint mapping converts ListItem to AccessKit ListBoxOption,
+then AXStaticText. The row is distinguished by its named browser-list parent and
+press action, both retained with the target; filtering for AXGroup was incorrect.
 
 ## Current release resources, archive and native display —16.4
 
