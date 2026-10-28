@@ -552,3 +552,30 @@ Linux artifact12810234013 has SHA256
 Both bind only to provider mergefe295be5434bfa82d1dd6c3a30457cb2256e75af.
 The ARM failure still prevents admission; these receipts do not qualify the
 operation-refusal correction.
+
+
+Run40677806476 at5c45f66 completes the ARM job but physical Intel reaches the
+unchanged90-second native limit after all15 callback groups and84 of88 scale1
+captures. Retained artifact12812786916 has SHA256
+`fbe4a7b4f4591b655027692d61c886d48bd07cf1d98b93654d8559bf572b11d1`.
+Its607 cumulative tests pass. The source remains failed qualification. Historical
+b030f56 Intel scale1 capture timestamps also reach90seconds, leaving little margin.
+
+Actual native line-event timing identifies the import capture constructor as the
+largest capture interval: it reruns the complete operation regression suite,
+already mandatory in the normal prelude at both scales. The constructor now
+performs its original dialog cleanup and independent real three-file import
+without repeating that suite. All unique backend assertions,88 captures per
+scale, native focus/keyboard checks, expected geometry and original10/15/90-second
+waits remain. Spoken acceptance still requires the matching normal native
+manifest and retained executable. No product code, compiler profile, toolkit pin,
+feature, test identity or resource requirement changes.
+
+Two paired local observations retain all15 callback groups and88 captures each.
+The import capture interval changes from1.908/1.973seconds to0.585/0.552seconds;
+whole runs change from29.941/30.376seconds to28.991/28.331seconds. The mandatory
+operation prelude remains measured and passing. Its original leading modal
+cleanup remains necessary after the preceding linked-Collection review; the
+unchanged Tab assertion checks that transition. Both independent source reviews
+report zero required findings. Fresh committed-source three-host and complete
+spoken acceptance remain required.

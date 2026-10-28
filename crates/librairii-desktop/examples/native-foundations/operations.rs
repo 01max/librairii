@@ -473,7 +473,12 @@ impl std::fmt::Debug for Surface {
 }
 impl Surface {
     pub fn open(ui: &DesktopWindow) -> Result<Self> {
-        checks(ui)?;
+        // The normal observer runs the complete callback suite at both scales.
+        // This constructor creates the independent shown workflow; spoken
+        // acceptance additionally requires that normal native manifest.
+        while ui.get_dialog() != 0 {
+            ui.invoke_close_dialog();
+        }
         let fixture = Fixture::open(ui)?;
         ui.invoke_show_panel(2);
         fixture.settle(ui)?;
