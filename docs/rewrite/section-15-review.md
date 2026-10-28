@@ -356,3 +356,27 @@ Retry; exact entry restoration, successful Retry, Escape and late-Close ownershi
 checks remain. The complete local scale1 probe passes after this handoff. Both
 independent source reviewers report zero required findings; fresh final-source
 native and actual reader execution remain required.
+
+The same dc91484 run retains102/112 passing spoken cases and109/128 target
+witnesses. It remains failed diagnostic evidence. Orca ignores malformed cache
+signals: the AddAccessible wire signature lacks its single outer struct and
+RemoveAccessible is flattened to `so`. The separately promoted accesskit_unix
+0.22.1 correction wraps each payload as one D-Bus argument. Two regression tests
+inspect serialized header field8 and round-trip actual payloads; reverting only
+the wrapper makes both fail with the signatures observed by Orca. The seven Unix
+tests (five original plus two regressions) and strict Clippy pass in an isolated
+manifest; all102 enabled registry dependencies exactly match workspace versions,
+sources and checksums. CI repeats these checks against the production Linux graph.
+The archive hash/source commit, unchanged licenses and local correction identity
+are retained in UPSTREAM.json and the exact native inventory. The dependency
+inventory includes the companion's upstream/tree digest, features and edges and
+copies its licenses/notice. No dependency version or feature was changed.
+
+History names in the same raw reader logs contain physical newlines. The reader
+acknowledgement parser now splits Orca records at timestamps, preserving complete
+multiline identities and final-current-locus invalidation. All five parser tests
+pass, including rejection of truncated names, superseded acknowledgements and
+pending unrelated requests. Replays of actual failed History log records now
+acknowledge their complete identities. Original utterance, PCM and deadline
+predicates remain unchanged. Fresh complete112/128 spoken and three-host native
+execution must qualify these corrections before15.13 closes.
