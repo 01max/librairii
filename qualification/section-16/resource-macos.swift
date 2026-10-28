@@ -37,12 +37,17 @@ func quitFromOwnedMenu(_ app: AXUIElement) throws -> [String: Any] {
     AXUIElementSetMessagingTimeout(bar, 0.1)
     try checkDeadline()
     let entries = attribute(bar, kAXChildrenAttribute) as? [AXUIElement] ?? []
+    var applicationMenuTitle = ""
     guard let applicationMenu = try entries.prefix(16).first(where: { item in
         try checkDeadline()
         AXUIElementSetMessagingTimeout(item, 0.1)
         let title = text(item, kAXTitleAttribute)
         if trace.count < 64 { trace.append(["stage": "application-menu", "title": String(title.prefix(160))]) }
-        return title == "Librairii"
+        // AppKit uses the process name for a directly launched executable;
+        // the internal .app size witness supplies CFBundleName=Librairii.
+        let matches = ["Librairii", "librairii-desktop"].contains(title)
+        if matches { applicationMenuTitle = title }
+        return matches
     }) else {
         throw Refusal(message: "owned Librairii application menu missing")
     }
@@ -70,7 +75,7 @@ func quitFromOwnedMenu(_ app: AXUIElement) throws -> [String: Any] {
                 guard result == .success else { throw Refusal(message: "owned native Quit action failed: \(result.rawValue)") }
                 emitted = true
                 return ["native_quit_posted": true, "pid": pid,
-                    "method": "owned native application menu AXPress", "application_menu": "Librairii",
+                    "method": "owned native application menu AXPress", "application_menu": applicationMenuTitle,
                     "role": role, "title": title, "actions": actions, "result": result.rawValue]
             }
             let children = attribute(item, kAXChildrenAttribute) as? [AXUIElement] ?? []

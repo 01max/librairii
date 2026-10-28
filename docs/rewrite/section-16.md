@@ -174,6 +174,14 @@ method excludes two settling seconds. Every warmup also meets all startup,
 idle CPU and peak RSS ceilings; its label only separates it from the three
 measured samples, matching the spike.
 
+The native Quit driver records the owned application menu's actual title.
+AppKit names it `librairii-desktop` for the directly launched production binary;
+the `.app` size witness supplies `CFBundleName=Librairii`. Both exact titles are
+recognized. Quit still requires the exact enabled native Quit item and AXPress,
+followed by positive application/controller shutdown. The earlier title-mismatch
+failure remains failed. Linux traversal skips absent accessibility children
+within the same bounds and still requires the actual showing story or ListItem.
+
 Native time records peak RSS across each real product process and a paired
 release-built current-view/controller workload containing the full1,000-cover
 traversal, real imports and native input. Their larger peak must stay≤512MiB.
