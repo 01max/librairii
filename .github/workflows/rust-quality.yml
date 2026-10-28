@@ -57,6 +57,12 @@ jobs:
           printf '%s\n' "$RUNNER_OS $RUNNER_ARCH $RUST_TARGET features=empty/default" > target/quality/host.txt
       - name: Cumulative workspace check
         run: cargo xtask check
+      - name: Qualified AT-SPI adapter lifetime regressions
+        if: runner.os == 'Linux'
+        run: |
+          set -o pipefail
+          cargo test --locked -p accesskit_atspi_common 2>&1 | tee target/quality/atspi-lifetime-tests.log
+          cargo clippy --locked -p accesskit_atspi_common --all-targets -- -D warnings 2>&1 | tee -a target/quality/atspi-lifetime-tests.log
       - name: Shown native foundations on macOS
         if: runner.os == 'macOS'
         run: python3 -I -B scripts/verify-native-foundations.py
@@ -73,6 +79,7 @@ jobs:
             target/quality/rustc.txt
             target/quality/cargo.txt
             target/quality/host.txt
+            target/quality/atspi-lifetime-tests.log
             target/quality/native-ui/
           if-no-files-found: error
           retention-days: 30

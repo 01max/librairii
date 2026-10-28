@@ -28,3 +28,15 @@ its regression tests must be requalified when the Slint/AccessKit pins change.
 
 Upstream correction:
 https://github.com/AccessKit/accesskit/commit/6ee0558b6315b3ef1594db24ce45a030ecac7cb5
+
+Local Librairii Task 15 correction (not an upstream backport): src/adapter.rs
+retains logical AT-SPI objects when the consumer temporarily filters clipped or
+hidden controls, reconciles parent/state/interface changes and unregisters only
+actual removals. Three adapter regressions cover repeated filtering, hidden
+subtree deletion and hidden role/interface changes. src/node.rs exposes two
+internal notification helpers and moves child-change notification to the adapter.
+The original disabled/Sensitive correction and its regressions are retained.
+No dependency version, feature, original source hash or license text is changed.
+UPSTREAM.json identifies this local correction separately. The promoted source
+inventory is resealed; fresh source-bound Linux Orca and three-target native
+qualification is required in Task 15. Historical section-2 sources are preserved.

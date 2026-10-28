@@ -281,3 +281,47 @@ after execution. The manifest records this encoding. Every frame/pixel, native
 window check, callback, keyboard assertion and original deadline remains required.
 Larger fixture files are observer evidence, separate from Task16 product resource
 budgets. Final source-labelled execution remains mandatory.
+
+Run40599944235 at head8250d329ddd8b9c70cf6ac00dd6b5e070302f705
+(provider mergefaedd6b6a933e1008374c889de8621bf24289bb3) is also failed evidence.
+Linux passed606/606 tests and the compact workspace assertions, then failed the
+active bulk viewport (50px for a76px row). Its retained artifact12780960278 ZIP
+SHA256 is `be85dac3ab7a21d5842cb5217db00df7d21d1cb8ec349478e06820717d4d9817`.
+Of112 independent spoken cases,85 passed with94 target witnesses. These totals
+cannot establish complete acceptance. Compact bulk controls now use the same
+bounded reservation as the active workspace. Recovery focus changes only when an
+enabled action becomes disabled; repeated projection no longer steals native Tab.
+The schema fixture closes its prior Setup dialog before independently preparing
+Recovery and the explicit preserve confirmation. The clean-source local ARM
+checkpoint4dabf0e passes176 captures and all callbacks, including two actual
+Recovery Tab events; it does not establish Linux spoken success.
+
+The actual X11 Details log showed a retained checkbox still marked defunct after
+temporary clipping, followed by ignored focus events. Slint1.18.1 reports clipped
+items as Hidden; AccessKit's consumer filters them. The promoted0.19.1 adapter had
+emitted Defunct/CacheRemove and unregistered these still-existing logical objects.
+GNOME libatspi disposes cached objects on CacheRemove, so later CacheAdd cannot
+repair Orca's retained references. The local adapter correction retains logical
+objects across filtering, updates exposure/state/interface deltas and reserves
+Defunct/CacheRemove/unregister for actual removal. Three regressions cover repeated
+hide/reveal, hidden-subtree real deletion, hidden role changes and never-exported
+deletion. All12 adapter tests and strict lint pass using the exact qualified
+dependency versions/checksums in an isolated local manifest. Linux CI must repeat
+them against the production graph and retain its log.
+
+This is a new local correction to the promoted runtime, not an upstream backport
+or dependency upgrade. UPSTREAM.json/NOTICE identify it separately and the exact
+promoted-file inventory is resealed. Original source hashes, license texts,
+Sensitive correction/tests, historical section-2 tree and graph/features remain.
+Fresh source-bound three-target native and actual X11/Wayland Orca execution is
+required to qualify this correction; earlier receipts cannot be reused for it.
+
+Native focus departure now requires an actual Orca new/current-neighbor locus
+acknowledgement. Only then does fixed `spd-say --cancel` discard navigation queued
+in that case's private dispatcher, followed by observed PCM silence, a fresh
+target marker and the unchanged target utterance/audio predicate. Complete name
+and role match the current locus; old-locus-only text is rejected. Parser tests
+cover stale/unrelated logs, partial names, role mismatches, Notify:false and labels
+with direction words, apostrophes and wrapped text. This observer policy does not
+qualify uninterrupted reading. All original application, container, session and
+per-utterance deadlines remain required.

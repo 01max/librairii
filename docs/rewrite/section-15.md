@@ -626,7 +626,9 @@ metadata publication retains the actual store/custody and reports recovery.
 Network failure retains the embedded fallback. Successful cache publication
 refreshes visible pages without implicit catalog refresh. A real loopback PNG
 replaces the fallback, repeated demands fetch once and restart reuses the persisted
-cache. No toolkit/dependency pin changes are required.
+cache. This artwork correction does not change toolkit/dependency pins. The later
+Task15.13 promoted AT-SPI lifetime correction is recorded separately below and in
+the independent review record.
 
 Local development evidence: full native sequence88 PNGs/all existing callbacks,
 `librairii-task15-collections-dev-v_uv88eo`, including these three corrections.
@@ -709,3 +711,11 @@ relocation receipts. Their immutable run/source/artifact digests are recorded on
 after verification. No historical/local receipt is relabelled as final-head
 execution. Numerical resource gates, complete adoption/rollback, installed
 packages and cutover retain Tasks16–19.
+
+The later15.13 Linux diagnosis requires a local correction in the promoted
+AT-SPI adapter: temporary clipping retains logical object identity; actual
+deletion alone disposes it. The exact promoted inventory and provenance are
+updated separately from the preserved historical qualification sources and
+Sensitive backport. The review record describes its12 regression tests and
+the reader-neighbor handshake. Fresh source-bound native and actual Orca/PCM
+receipts must qualify this correction before the section closes.

@@ -548,10 +548,9 @@ impl NodeWrapper<'_> {
         self.notify_state_changes(adapter, old);
         self.notify_property_changes(adapter, old);
         self.notify_bounds_changes(window_bounds, adapter, old);
-        self.notify_children_changes(adapter, old);
     }
 
-    fn notify_state_changes(&self, adapter: &Adapter, old: &NodeWrapper<'_>) {
+    pub(crate) fn notify_state_changes(&self, adapter: &Adapter, old: &NodeWrapper<'_>) {
         let old_state = old.state(true);
         let new_state = self.state(true);
         let changed_states = old_state ^ new_state;
@@ -631,7 +630,7 @@ impl NodeWrapper<'_> {
         }
     }
 
-    fn notify_children_changes(&self, adapter: &Adapter, old: &NodeWrapper<'_>) {
+    pub(crate) fn notify_children_changes(&self, adapter: &Adapter, old: &NodeWrapper<'_>) {
         let old_filtered_children = old.filtered_child_ids().collect::<Vec<NodeId>>();
         let new_filtered_children = self.filtered_child_ids().collect::<Vec<NodeId>>();
         for (index, child) in new_filtered_children.iter().enumerate() {
