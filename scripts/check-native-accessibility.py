@@ -78,7 +78,7 @@ def main():
                 xid = subprocess.check_output(['xdotool', 'search', '--sync', '--onlyvisible', '--pid', str(process.pid)], text=True, timeout=15).splitlines()[-1]
                 subprocess.run(['xdotool', 'windowfocus', '--sync', xid], check=True, timeout=10)
                 if concept == 'stories':
-                    listing = named(root, 'Stories')
+                    listing = named(root, 'All stories')
                     if not listing.queryComponent().grabFocus():
                         raise RuntimeError('native list refused accessible keyboard focus')
                     key('End')

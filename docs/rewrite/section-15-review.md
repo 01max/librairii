@@ -396,3 +396,12 @@ the executable receipt. The90-second bound, both scales, all callbacks, captures
 keyboard/modal/menu assertions and actual Linux reader suite remain unchanged.
 Production/resource/package profiles and earlier qualification receipts are not
 changed. Fresh physical Intel execution remains mandatory.
+
+The fresh539d761 run passes the complete Linux quality/adapter checks and both
+88-capture runs, then fails semantic inspection at a stale expected list name.
+The retained actual tree contains the production `All stories` list box; no
+`Stories` list exists. AX registration now succeeds within the unchanged window.
+The observer expectation is updated to the current production label, retaining
+list focus, Home/End selection, warning, modal, French and compact-workspace
+assertions. Run40644775812 remains failed diagnostic evidence; its complete
+spoken run is retained before fresh source-bound qualification of this correction.
