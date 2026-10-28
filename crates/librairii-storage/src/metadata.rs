@@ -35,6 +35,25 @@ pub enum SnapshotStatus {
 fn invalid() -> StorageError {
     MetadataError::InvalidTransition.into()
 }
+// ProfileBusy is a refusal before queue admission or file acquisition. The
+// closure must not include pending.wait() or any filesystem mutation: an
+// admitted, failed or uncertain effect must never be replayed here.
+fn profile_admission<T>(
+    cancel: &WorkCancellation,
+    mut attempt: impl FnMut() -> Result<T>,
+) -> Result<T> {
+    loop {
+        if cancel.is_cancelled() {
+            return Err(StorageError::Cancelled);
+        }
+        match attempt() {
+            Err(StorageError::ProfileBusy) => {
+                std::thread::sleep(std::time::Duration::from_millis(2));
+            }
+            result => return result,
+        }
+    }
+}
 impl Database<'_> {
     pub fn begin_catalog_sync(
         &self,
@@ -105,12 +124,16 @@ impl MetadataStorage<'_, '_> {
             &cancel,
         )?;
         let path = format!("catalog/{name}");
-        let result = self
-            .database
-            .transaction(cancel, move |tx| {
+        let catalog = std::sync::Arc::new(catalog);
+        let result = profile_admission(&cancel, || {
+            let catalog = catalog.clone();
+            let path = path.clone();
+            let fetched_at = fetched_at.clone();
+            self.database.transaction(cancel.clone(), move |tx| {
                 stage_rows(tx, id, &catalog, &path, &fetched_at)
             })
-            .and_then(|pending| pending.wait());
+        })
+        .and_then(|pending| pending.wait());
         // Receipt, custody and Database loan stay live through acknowledgement.
         self.acknowledge_files(publication, result)
     }
@@ -171,12 +194,14 @@ impl CatalogRepository for MetadataStorage<'_, '_> {
         locale: Locale,
         at: &str,
     ) -> std::result::Result<(), RepositoryFailure> {
-        acknowledge(self.database.begin_catalog_sync(
-            id,
-            locale,
-            at.into(),
-            self.work_cancel.clone(),
-        ))
+        acknowledge(profile_admission(&self.work_cancel, || {
+            self.database.begin_catalog_sync(
+                id,
+                locale.clone(),
+                at.into(),
+                self.work_cancel.clone(),
+            )
+        }))
     }
     fn stage(
         &self,

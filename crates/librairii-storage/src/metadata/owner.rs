@@ -137,7 +137,7 @@ impl<'db, 'library> MetadataStorage<'db, 'library> {
         }
         let name = EntryName::parse(name)?;
         let database: &'db Database<'library> = self.database;
-        let mut files = database.metadata_files()?;
+        let mut files = profile_admission(cancel, || database.metadata_files())?;
         let guard = loop {
             if cancel.is_cancelled() {
                 return Err(StorageError::Cancelled);

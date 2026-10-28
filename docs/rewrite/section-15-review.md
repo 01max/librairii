@@ -454,3 +454,44 @@ Historical qualification sources and receipts retain their original attribution.
 An isolated comparison using the production-pinned registry dependency identities
 reproduces 327,676 wikilink events from the advisory's112-byte input on0.13.4 and
 65 on0.13.5. Slint's selected strikethrough-only option produces97 in both cases.
+
+
+Run40663637963 at0b0aff8 passes the complete ARM and Linux jobs, including all112
+independent spoken cases,128 Orca/PCM witnesses,2688 hashed raw files and112
+positive worker joins/owned container retirements. Physical Intel passes604 tests
+but its native sync callback reports catalog_persist_failed before capture. The
+retained artifact12806154709 has SHA256
+`d989ff19db092280aa4b033b6666ee401d9ae7d97809e3ecd50601219bc73f6b`.
+This run remains failed qualification; its successful rows retain that source.
+
+A controlled2ms scheduling shift reproduces the exact pre-admission ProfileBusy
+cause locally. Read-only binding validation had taken the profile state out,
+advertising a publication to concurrent readers; its regression observes256
+false busy reads. Validation now keeps state present under the mutex during
+bounded namespace/document checks, including the existing64MiB journal bound.
+Actual publication still transfers state out and releases the mutex before caller
+callbacks or filesystem publication. Original ownership, namespace, poison,
+uncertainty, relocation exclusion and authority checks remain required.
+
+Metadata begin, initial file acquisition and staging SQL admission now wait only
+for proven pre-admission ProfileBusy, with work cancellation observed. SQL
+acknowledgement stays outside the wait. Staging retains the same publication,
+custody guard and actual Database borrow; cheap Arc captures avoid copying a
+catalog or replaying executed SQL. Guarded native file verification waits for the
+same owner's read-only profile validation; file effects are not replayed and
+other ownership/fence errors propagate. The job owner distinguishes cancellation
+of a proven admission wait from an uncertain result.
+
+Three additive required regressions cover concurrent read validation, real
+profile publication before/after sync admission with cancellation, and an already
+owned file guard through stage creation/retirement. All reproduce failures before
+their fixes and pass afterward. All608 integration-base and619 prior test
+identities remain the exact prefix of the622-entry baseline. The source-lineage
+registry records only these three exact positions/identities and their reasons;
+only its current map digest is resealed. Historical digests and lineage remain.
+A final60-run native
+sync probe passes20 cases each at2/20/100ms scheduling shifts. Every sync callback
+assertion remains; all temporary scheduling/diagnostic hooks are removed. Both
+independent source review axes report zero remaining required implementation
+findings. Fresh committed-source three-host and complete spoken qualification
+must still accept this correction.

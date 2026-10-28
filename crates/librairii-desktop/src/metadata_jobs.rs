@@ -48,7 +48,13 @@ impl<'db, 'library> MetadataExecutor<'db, 'library> {
             .parse()
             .map_err(|_| RefreshCode::InvalidCatalog)?;
         let at = librairii_adapters::datetime::utc_now().ok_or(RefreshCode::PersistenceFailed)?;
-        let session = RefreshSession::begin(store, id, "en-GB", &at)?;
+        let session = RefreshSession::begin(store, id, "en-GB", &at).map_err(|code| {
+            if code == RefreshCode::PersistenceFailed && cancel.is_cancelled() {
+                RefreshCode::Cancelled
+            } else {
+                code
+            }
+        })?;
         let client = self
             .client
             .clone()

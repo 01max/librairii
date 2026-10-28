@@ -471,7 +471,7 @@
         "bytes": 19643,
         "sha256": "ab4b1c10137332c5cdbe4430edead212054e38219fb025daef2ba753d6b0502f",
         "kind": "translated",
-        "recipe": "Hand translation of frozen full-fold→Go stream-safe NFKD→Mn-only removal→Go whitespace folding; original-character leading/trailing partition precedes stable CCC insertion. Safe checked UTF8 trie and fixed32-rune segment, Hangul decomposition; no modern composition or runtime Go.",
+        "recipe": "Hand translation of frozen full-fold\u2192Go stream-safe NFKD\u2192Mn-only removal\u2192Go whitespace folding; original-character leading/trailing partition precedes stable CCC insertion. Safe checked UTF8 trie and fixed32-rune segment, Hangul decomposition; no modern composition or runtime Go.",
         "sources": [
           {
             "path": "golang.org/x/text@v0.43.0/unicode/norm/tables15.0.0.go",
@@ -5506,6 +5506,45 @@
           ]
         },
         "reason": "Observed additive Task 15.13 explicit native foreign-schema preservation, actual process-death replay and retained-owner permission/changed-input regressions. All prior discovery identities and lineage remain unchanged."
+      },
+      {
+        "position": 619,
+        "identity": {
+          "suite": "librairii-storage",
+          "name": "profile::tests::binding_revalidation_does_not_publish_busy_state_to_profile_readers",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Observed additive Task15.13 profile validation concurrency regression; readonly checks must not advertise publication Busy to independent readers. All prior identities and target scopes remain unchanged."
+      },
+      {
+        "position": 620,
+        "identity": {
+          "suite": "librairii-storage::native_library",
+          "name": "native_metadata_admission_waits_for_profile_publication_and_observes_cancellation",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Observed additive Task15.13 real native profile publication before/after metadata admission, preserving running sync and cancellation with the actual owner. All prior identities and target scopes remain unchanged."
+      },
+      {
+        "position": 621,
+        "identity": {
+          "suite": "librairii-storage::native_library",
+          "name": "native_guarded_file_validation_waits_for_profile_publication_without_losing_custody",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Observed additive Task15.13 retained native file-guard validation across profile publication, real stage creation/retirement and positive owned cleanup. All prior identities and target scopes remain unchanged."
       }
     ],
     "python": [

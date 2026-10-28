@@ -826,7 +826,17 @@ impl<'library> FilesAuthority<'library> {
             Self::Isolated(library) => library.revalidate_ownership(),
             Self::Native { library, database } => {
                 database.native_file_owner()?;
-                library.revalidate(&WorkCancellation::default())
+                // Revalidate the SAME retained owner; no file effect is
+                // replayed. A bounded profile publication is not authority
+                // loss, including when a receipt already owns real effects.
+                loop {
+                    match library.revalidate(&WorkCancellation::default()) {
+                        Err(StorageError::ProfileBusy) => {
+                            std::thread::sleep(std::time::Duration::from_millis(2));
+                        }
+                        result => break result,
+                    }
+                }
             }
         }
     }
