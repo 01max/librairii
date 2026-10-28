@@ -49,6 +49,8 @@ class StartupCapture:
                                 self.markers.append({'pid': int(match[1]), 'phase': match[2].decode(),
                                     'width': int(match[3]), 'height': int(match[4]),
                                     'child_elapsed_ms': float(match[5]),
+                                    'parent_launch_monotonic': self.launched,
+                                    'parent_delivery_monotonic': delivered,
                                     'parent_launch_to_delivery_ms': (delivered-self.launched)*1000,
                                     'line': line.decode().rstrip('\n')})
                             elif not match and len(self.errors) < 8:
@@ -106,7 +108,10 @@ def product_run(binary, observer, destination, backend, helper, native):
     process = None
     readiness = None
     joined = False
-    report = {'backend_request': backend, 'complete': False, 'samples': [], 'fixture_owner': prepared['owner']}
+    report = {'backend_request': backend, 'complete': False, 'samples': [], 'fixture_owner': prepared['owner'],
+              'startup_method_version': 2,
+              'startup_method': 'parent launch to first ordinary UI timer delivery after show; Opening is not loaded Library',
+              'ax_story_method': 'separate mandatory actual loaded-story observation before idle sampling'}
     try:
         preparing = time.monotonic()
         command = [str(helper), 'watch'] if platform.system() == 'Darwin' else ['/usr/bin/python3', str(HERE / 'resource-linux.py'), '--watch']
@@ -116,6 +121,7 @@ def product_run(binary, observer, destination, backend, helper, native):
             raise ValueError('external native observer initialization failed')
         report['observer_prepare_ms'] = (time.monotonic()-preparing)*1000
         started = time.monotonic()
+        report['parent_launch_monotonic'] = started
         process = subprocess.Popen(clock + [str(binary)], env=environment, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, start_new_session=True)
         capture = StartupCapture(process.stdout, destination / 'execution.log', started)
         pid = native.wait(lambda: child_pid(process.pid), 5)
@@ -128,12 +134,16 @@ def product_run(binary, observer, destination, backend, helper, native):
         observed, _ = readiness.communicate(timeout=12)
         if readiness.returncode != 0:
             raise ValueError('actual product readiness failed; see retained readiness.log')
-        report['launch_to_ready_ms'] = (time.monotonic() - started) * 1000
-        report['ready'] = json.loads(observed)
-        if report['ready']['pid'] != pid:
+        report['ax_story_observed_monotonic'] = time.monotonic()
+        report['launch_to_ax_story_ms'] = (report['ax_story_observed_monotonic'] - started) * 1000
+        report['ax_story'] = json.loads(observed)
+        (destination / 'ax-story.json').write_text(observed)
+        if report['ax_story']['pid'] != pid:
             raise ValueError('actual product readiness PID differs')
         report['first_ui_timer'] = capture.receipt(pid)
+        report['launch_to_first_ui_timer_ms'] = report['first_ui_timer']['parent_launch_to_delivery_ms']
         idle_start = time.monotonic()
+        report['idle_start_monotonic'] = idle_start
         # Fixed15-second quiet phase, excluding two settling seconds. Every raw
         # sample stays retained; no slow run is retried or substituted.
         while time.monotonic() - idle_start < 15:
@@ -218,7 +228,7 @@ def inspect(binary, observer, destination, helper, native):
                 raise ValueError('native product and workload peak RSS receipts required')
             report = {'warmup': trial == 0, 'backend': backend, 'quiet': quiet, 'loaded': loaded,
                       'loaded_native_time': load_time, 'peak_rss_bytes': max(peaks)}
-            if (quiet['launch_to_ready_ms'] > 1000 or quiet['idle_cpu_percent_one_core'] > 5
+            if (quiet['launch_to_first_ui_timer_ms'] > 1000 or quiet['idle_cpu_percent_one_core'] > 5
                     or report['peak_rss_bytes'] > 512 * 1024 * 1024):
                 reports.append(report)
                 (destination / 'report.json').write_text(json.dumps(reports, indent=2) + '\n')

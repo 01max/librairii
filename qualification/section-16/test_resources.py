@@ -37,6 +37,8 @@ class StartupCaptureTests(unittest.TestCase):
         receipt = capture.finish(process.pid)
         self.assertGreaterEqual(receipt['parent_launch_to_delivery_ms'], 40)
         self.assertEqual(receipt['child_elapsed_ms'], 0)
+        self.assertEqual(receipt['parent_launch_to_delivery_ms'],
+                         (receipt['parent_delivery_monotonic']-receipt['parent_launch_monotonic'])*1000)
         self.assertEqual(receipt['phase'], 'Opening')
         self.assertIn('Étape ordinaire\n', log.read_text())
         self.assertIn(receipt['line']+'\n', log.read_text())

@@ -143,35 +143,36 @@ press action, both retained with the target; filtering for AXGroup was incorrect
 ## Current release resources, archive and native display —16.4
 
 The actual production release executable is launched against a separately
-prepared supervisor-owned profile. Public native AX/AT-SPI observation of its
-first loaded story establishes readiness, including process launch, loader,
-profile/database opening, controller/view construction and observer delivery.
-No product probe flag or old spike executable supplies that measurement.
-The external AX/AT-SPI observer initializes before the product launch clock and
-waits for the owned PID over a pipe. The clock still starts before spawning the
-production executable and stops only after its actual first-story observation.
-Observer preparation, launch-to-PID and attach-to-story phases are retained
-separately. The first Intel receipt's4.635s observation remains failed; fresh
-phase measurements must distinguish observer startup from product startup.
-Mac readiness reads title/description/children/role in a single public AX request
-per node, retaining request count and time. This removes redundant observer IPC
-while preserving the full production launch-to-loaded-story interval. The later
-ARM1268ms receipt remains failed until a fresh complete cohort meets the ceiling.
-The subsequent ARM2030ms receipt also failed:202 public AX requests accumulated
-1245ms of wall time inside a1979ms attach phase. That time may include product
-startup waiting and is never subtracted. The observer now starts at the owned
-application's public AXWindows and visits each window in preorder, avoiding
-native menu branches while preserving the exact first-loaded-story predicate.
-A bounded in-memory trace retains AX results, durations, traversal depth and
-visited counts; serialization follows observation (or appears in retained failure
-logs). Fresh complete cohorts must establish the effect; old failures remain.
-Resource and display lanes retain independent failures in one incomplete manifest;
-a failed input/resource cohort does not suppress the remaining display scenarios.
-One warmup and three fresh measured runs on each actual rendering route retain
-all startup/idle data:≤1,000ms readiness and≤5% of one core over a fixed15-second
-quiet phase (two settling seconds excluded by the retained method).
-Every warmup also meets all startup, idle CPU and peak RSS ceilings; its label
-only separates it from the three measured samples, matching the retained spike.
+prepared supervisor-owned profile. Current resource method version2 retains the
+spike's startup endpoint: parent launch through delivery of the first ordinary
+UI timer after show, including loader/exec and observer delivery, with the
+original1000ms ceiling. Its Opening/Library phase is explicit; an Opening tick
+establishes event-loop startup, not a loaded Library. Positive owned AX/CG or
+AT-SPI observation of the actual first loaded story remains mandatory before
+idle sampling and has its own separately named elapsed time. No product probe
+flag or old spike executable supplies either observation.
+
+Historical method1 applied the1000ms ceiling to parent launch through actual
+first-story AX/AT-SPI observation. That was a different, stronger endpoint.
+Its external observer initialized before launch and waited for the owned PID;
+observer preparation, launch-to-PID and attach-to-story phases remain retained.
+The Intel4.635s and ARM1268/2030ms receipts retain their failed method1 verdicts.
+The ARM2030ms run included202 AX requests accumulating1245ms within a1979ms
+attach phase. Such time may include product startup waiting and is never
+subtracted. Current AX observation starts at the application's public AXWindows,
+visits each window in preorder and retains the same first-loaded-story predicate.
+Its bounded trace retains results, durations, traversal depth and visited counts;
+serialization follows observation or appears in retained failure logs. No
+historical AX-ceiling failure is retrospectively accepted by version2.
+
+Resource and display lanes retain independent failures in one incomplete
+manifest; a failed input/resource cohort does not suppress display scenarios.
+One warmup and three fresh measured runs per actual rendering route retain all
+raw data: first-UI-timer startup≤1000ms and idle CPU≤5% of one core over the
+fixed15-second quiet phase after actual loaded-story observation. The retained
+method excludes two settling seconds. Every warmup also meets all startup,
+idle CPU and peak RSS ceilings; its label only separates it from the three
+measured samples, matching the spike.
 
 Native time records peak RSS across each real product process and a paired
 release-built current-view/controller workload containing the full1,000-cover
@@ -310,6 +311,21 @@ child88.597ms/parent96.629ms. They were terminated diagnostically without joined
 shutdown; both supervisor roots remain retained. They establish neither native
 qualification nor fully loaded startup performance. These observations also
 demonstrate why the child-relative elapsed time cannot replace parent delivery.
+
+Resource method version2 restores the spike's defined startup endpoint:
+parent launch through delivery of the first owned UI timer after show, with
+the original1000ms ceiling. The spike explicitly did not measure first
+presentation (`qualification/section-2/performance.md`, lines28–30;
+`measure-resources.py` startup method). The first ordinary production timer
+retains its actual Opening/Library phase; an Opening tick does not establish
+loaded-Library readiness. Child-relative stage time is diagnostic only.
+`launch_to_first_ui_timer_ms` is the gate and `launch_to_ax_story_ms` separately
+retains actual loaded-story observation. Positive owned AX/CG or AT-SPI story
+observation is still mandatory before the unchanged15-second idle phase.
+All warmups and three measured cohorts per renderer, CPU/RSS/archive limits,
+positive shutdown and original samples remain required. Earlier AX-ceiling
+failures retain their original method and outcomes; they are not recomputed as
+passes. Fresh complete version2 cohorts and independent review are required.
 
 At a5ec473 a fresh query-codec fuzz run retained a75-byte malformed-UTF8 seed
 that violated the harness's Unicode idempotence assertion. Its15-byte Cherokee
