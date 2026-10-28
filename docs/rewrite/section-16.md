@@ -196,6 +196,12 @@ and corrected an earlier harness that could only reach history rejection; its
 1,841,529-input diagnostic is retained without a successful-history coverage claim.
 Final clean-source focused coverage/fuzz evidence remains required.
 
+The successful-history harness exposed ASan quarantine pressure under the fixed
+512MiB process ceiling. Its failed run is retained. With the same11 retained
+seeds and seed1, explicitly bounding delayed-free quarantine to64MiB completed
+2,857,091 executions in31s at390MiB RSS. The lane records that setting; address
+checking/leak detection and all input/time/process bounds remain enabled.
+
 Six observed test identities append to the prior622-entry baseline (628 total);
 all old identities, target scopes and historical source-map digests remain exact.
 The source map records the additions and its current upstream digest changes

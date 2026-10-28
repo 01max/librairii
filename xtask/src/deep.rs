@@ -129,6 +129,9 @@ pub fn fuzz() -> Result {
             ])
             .arg(format!("-artifact_prefix={}/", artifacts.display()))
             .env("CARGO_NET_OFFLINE", "true")
+            // Bound ASan's delayed-free quarantine within the unchanged512MiB
+            // process ceiling; retain address checking and leak detection.
+            .env("ASAN_OPTIONS", "quarantine_size_mb=64")
             .env("CARGO_TARGET_DIR", root().join("fuzz/target"))
             .current_dir(root().join("fuzz"))
             .status()?;
