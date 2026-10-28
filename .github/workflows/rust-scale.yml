@@ -50,5 +50,6 @@ jobs:
         with:
           name: rust-scale-${{ matrix.target }}-${{ github.sha }}
           path: target/quality/native-scale/
+          include-hidden-files: true
           if-no-files-found: error
           retention-days: 30

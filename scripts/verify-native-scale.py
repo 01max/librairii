@@ -71,6 +71,28 @@ def verify_queries(report):
         raise ValueError('six frozen Collection counts differ')
     if queries['metrics']['artworkLoad']['result'] != {'files': 24, 'pixel_sum': 1173893696} or not queries['passed']:
         raise ValueError('complete local artwork workload missing')
+    plans = queries['query_plans']
+    if set(plans) != set(BUDGETS):
+        raise ValueError('all measured query/count/artwork plans required')
+    for name in expected:
+        plan = plans[name]
+        page, count = plan['page'], plan['count']
+        offset = 4776 if name == 'deepPagination' else 0
+        if (plan['page_size'] != 24 or plan['page_number'] != offset // 24 + 1
+                or not page['statement'].endswith('LIMIT ? OFFSET ?')
+                or page['parameters'][-3:] != [{'type': 'text', 'value': 'en-GB'},
+                    {'type': 'integer', 'value': 24}, {'type': 'integer', 'value': offset}]
+                or not count['statement'].startswith('SELECT COUNT(*)')
+                or count['parameters'] != page['parameters'][:-3]
+                or not page['steps'] or not count['steps']):
+            raise ValueError('plan/bound values do not describe measured page and count: ' + name)
+    if len(plans['collectionCounts']) != 6 or any(not p['steps'] or not p['statement'].startswith('SELECT COUNT(*)') for p in plans['collectionCounts']):
+        raise ValueError('six saved-Collection count plans required')
+    artwork = plans['artworkLoad']
+    if (artwork['statement'] != 'SELECT embedded_artwork_path FROM stories WHERE id=?'
+            or artwork['parameter_type'] != 'integer' or not artwork['steps']
+            or artwork['ids'] != queries['metrics']['collectionQuery']['result']['ids']):
+        raise ValueError('actual per-asset record lookup evidence required')
 
 
 def main():
@@ -126,6 +148,8 @@ def main():
     verify_queries(json.loads((DESTINATION / 'backend.json').read_text()))
     if output(['git', 'status', '--porcelain', '--untracked-files=normal']) or output(['git', 'rev-parse', 'HEAD']) != manifest['source_commit']:
         raise ValueError('source changed during measurement')
+    if digest(binary) != manifest['executable']['sha256'] or binary.stat().st_size != manifest['executable']['bytes']:
+        raise ValueError('retained executable changed during measurement')
     manifest['complete'] = True
     manifest['files'] = {p.name: digest(p) for p in DESTINATION.iterdir() if p.is_file() and p.name != 'manifest.json'}
     (DESTINATION / 'manifest.json').write_text(json.dumps(manifest, indent=2) + '\n')

@@ -10,6 +10,7 @@ use librairii_storage::{
 };
 use serde_json::{Value, json};
 use std::{collections::BTreeSet, fs, io::Cursor, path::Path, time::Instant};
+const ARTWORK_LOOKUP: &str = "SELECT embedded_artwork_path FROM stories WHERE id=?";
 
 fn measured(
     mut action: impl FnMut() -> Result<Value>,
@@ -95,33 +96,47 @@ pub fn run(db: &Database<'_>, rows: &[Story], root: &Path) -> Result<Value> {
         let request = QueryRequest {
             criteria,
             page,
+            page_size: 24,
             ..Default::default()
         };
         let explained = request.clone();
-        let plan = db
-            .read(move |tx| query::explain_search(tx, explained, "en-GB"))?
+        let (plan, count_plan) = db
+            .read(move |tx| {
+                Ok((
+                    query::explain_page(tx, explained.clone(), "en-GB")?
+                        .ok_or(librairii_storage::StorageError::CompatibilityInvariant)?,
+                    query::explain_count(tx, explained, "en-GB")?,
+                ))
+            })?
             .wait()?;
         eprintln!(
             "actual_query_plan; {name}; {}",
             serde_json::to_string(&plan)?
         );
         assert!(
-            plan.iter().any(|line| line.contains("INDEX")),
+            plan.steps.iter().any(|line| line.contains("INDEX")),
             "actual indexed {name} plan"
         );
         if name == "combinedFilters" {
             assert!(
-                plan.iter().any(|line| line.starts_with("SEARCH t")
+                plan.steps.iter().any(|line| line.starts_with("SEARCH t")
                     && line.contains("INDEX")
                     && line.contains("story_id=?")
                     && line.contains("definition_id=?")
-                    && line.contains("value_id=?")),
-                "indexed lookup on all three assignment keys"
+                    && line.contains("value_id")),
+                "indexed assignment identity prefix and value lookup/range"
             );
-            assert!(plan.iter().any(|line| line.contains("official_metadata")
-                || line.contains("official_story_metadata")));
+            assert!(
+                plan.steps
+                    .iter()
+                    .any(|line| line.contains("official_metadata")
+                        || line.contains("official_story_metadata"))
+            );
         }
-        plans.insert(name.into(), json!(plan));
+        plans.insert(
+            name.into(),
+            json!({"page":plan,"count":count_plan,"page_number":page,"page_size":24}),
+        );
         metrics.insert(
             name.into(),
             measured(
@@ -136,6 +151,24 @@ pub fn run(db: &Database<'_>, rows: &[Story], root: &Path) -> Result<Value> {
             )?,
         );
     }
+    let count_plans = queries
+        .into_iter()
+        .map(|criteria| {
+            Ok(db
+                .read(move |tx| {
+                    query::explain_count(
+                        tx,
+                        QueryRequest {
+                            criteria,
+                            ..Default::default()
+                        },
+                        "en-GB",
+                    )
+                })?
+                .wait()?)
+        })
+        .collect::<Result<Vec<_>>>()?;
+    plans.insert("collectionCounts".into(), json!(count_plans));
     metrics.insert(
         "collectionCounts".into(),
         measured(
@@ -155,21 +188,29 @@ pub fn run(db: &Database<'_>, rows: &[Story], root: &Path) -> Result<Value> {
     );
     let first = db.search(QueryRequest::default(), "en-GB".into())?.wait()?;
     assert_eq!(first.stories.len(), 24);
-    let paths = db
+    let ids = first.stories.iter().map(|s| s.id).collect::<Vec<_>>();
+    let lookup = |id| -> Result<String> {
+        Ok(db
+            .read(move |tx| Ok(tx.query_row(ARTWORK_LOOKUP, [id], |r| r.get::<_, String>(0))?))?
+            .wait()?)
+    };
+    let paths = ids
+        .iter()
+        .map(|id| lookup(*id))
+        .collect::<Result<Vec<_>>>()?;
+    let first_id = ids[0];
+    let artwork_plan = db
         .read(move |tx| {
-            first
-                .stories
-                .iter()
-                .map(|story| {
-                    Ok(tx.query_row(
-                        "SELECT embedded_artwork_path FROM stories WHERE id=?",
-                        [story.id],
-                        |r| r.get::<_, String>(0),
-                    )?)
-                })
-                .collect::<librairii_storage::Result<Vec<_>>>()
+            Ok(tx
+                .prepare(&format!("EXPLAIN QUERY PLAN {ARTWORK_LOOKUP}"))?
+                .query_map([first_id], |r| r.get::<_, String>(3))?
+                .collect::<rusqlite::Result<Vec<_>>>()?)
         })?
         .wait()?;
+    plans.insert(
+        "artworkLoad".into(),
+        json!({"statement":ARTWORK_LOOKUP,"parameter_type":"integer","steps":artwork_plan,"ids":ids}),
+    );
     assert_eq!(
         paths.iter().collect::<BTreeSet<_>>().len(),
         24,
@@ -179,7 +220,9 @@ pub fn run(db: &Database<'_>, rows: &[Story], root: &Path) -> Result<Value> {
     let mut pixels = vec![0; 320 * 400 * 3];
     let load = || -> Result<Value> {
         let mut witness = 0_u64;
-        for path in &paths {
+        for id in &ids {
+            // Include the real record lookup for every local asset load.
+            let path = lookup(*id)?;
             compressed.clear();
             std::io::Read::read_to_end(&mut fs::File::open(root.join(path))?, &mut compressed)?;
             let decoder = image::codecs::png::PngDecoder::new(Cursor::new(&compressed))?;
@@ -194,5 +237,5 @@ pub fn run(db: &Database<'_>, rows: &[Story], root: &Path) -> Result<Value> {
     let wanted = json!({"files":24,"pixel_sum":1_173_893_696_u64});
     metrics.insert("artworkLoad".into(), measured(load, wanted, 50., 100)?);
     let passed = metrics.values().all(|metric| metric["passed"] == true);
-    Ok(json!({"passed":passed,"metrics":metrics,"actual_search_plans":plans}))
+    Ok(json!({"passed":passed,"metrics":metrics,"query_plans":plans}))
 }

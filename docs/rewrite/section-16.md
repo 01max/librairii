@@ -18,14 +18,16 @@ Record-only archive rows never imply usable export payloads.
 The observer invokes production database-worker search and Collection-summary
 APIs, including snapshot validation, count, ordering and24-row enrichment.
 Every measured result must match independently derived frozen identities/order
-and exact counts. Deep page200 retains offset4,776. Plans come from the actual
-validated search builder; metadata/archive/tag index obligations are inspected,
+and exact counts. Deep page200 retains offset4,776. Plans share the exact page SQL/binds with execution, including LIMIT24/OFFSET4,776;
+separate COUNT plans cover each measured query and all six saved Collections.
+Metadata/archive/tag index obligations are inspected,
 without comparing engine-specific plan strings byte for byte.
 
 Each query/count gate warms once then retains all20 wall samples. Nearest-rank
 p95 must meet query100/search120/combined150/six-counts250/deep-page120ms.
 Artwork follows the qualified fixed100 scratch method: one warmup, then100
-batches reopening and reading all24 files, fresh CRC-checked full RGB decodes
+batches performing the record lookup, reopening and reading all24 files, fresh
+CRC-checked full RGB decodes
 and consumption of every pixel. Compressed/output scratch is reused; decoded
 results are not cached. Its independent procedural RGB sum is1,173,893,696 per
 batch and wall p95 remains≤50ms. No failure is replaced by a retry/sample.

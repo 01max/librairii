@@ -227,6 +227,18 @@ pub fn count(tx: &Transaction<'_>, request: QueryRequest, locale: &str) -> Resul
     )?)
 }
 
+// Shared by execution and diagnostics so LIMIT/OFFSET and bound values cannot
+// drift between the observed page and its query plan. Call only for a page
+// inside the observed result count, as search does below.
+fn page_sql(request: &QueryRequest, from: &str, args: &mut Vec<Value>, locale: &str) -> String {
+    let order = ordering(request, locale, args);
+    args.extend([
+        Value::Integer(request.page_size),
+        Value::Integer((request.page - 1) * request.page_size),
+    ]);
+    format!("{RECORD}{from}{order} LIMIT ? OFFSET ?")
+}
+
 pub fn search(tx: &Transaction<'_>, request: QueryRequest, locale: &str) -> Result<Page> {
     let (request, from, mut args) = matching(tx, request, locale)?;
     let total: i64 = tx.query_row(
@@ -238,12 +250,7 @@ pub fn search(tx: &Transaction<'_>, request: QueryRequest, locale: &str) -> Resu
     let mut stories = Vec::new();
     // Huge valid page numbers are empty pages, not integer-wrap offsets.
     if request.page <= total_pages {
-        let order = ordering(&request, locale, &mut args);
-        args.extend([
-            Value::Integer(request.page_size),
-            Value::Integer((request.page - 1) * request.page_size),
-        ]);
-        let mut statement = tx.prepare(&format!("{RECORD}{from}{order} LIMIT ? OFFSET ?"))?;
+        let mut statement = tx.prepare(&page_sql(&request, &from, &mut args, locale))?;
         let mut rows = statement.query(params_from_iter(args))?;
         while let Some(row) = rows.next()? {
             stories.push(summary(tx, &Record::read(row)?, locale)?);
@@ -364,20 +371,85 @@ fn summary(tx: &Transaction<'_>, r: &Record, locale: &str) -> Result<StorySummar
     })
 }
 
-/// Query-plan diagnostics for the same validated predicate and order as search.
+/// Query-plan diagnostics for the exact validated page executed by search.
+/// Out-of-range pages have no page SELECT, just as in search.
 pub fn explain_search(
     tx: &Transaction<'_>,
     request: QueryRequest,
     locale: &str,
 ) -> Result<Vec<String>> {
-    let (request, from, mut args) = matching(tx, request, locale)?;
-    let order = ordering(&request, locale, &mut args);
-    let mut statement = tx.prepare(&format!(
-        "EXPLAIN QUERY PLAN {RECORD}{from}{order} LIMIT 100"
-    ))?;
-    Ok(statement
+    Ok(explain_page(tx, request, locale)?.map_or_else(Vec::new, |plan| plan.steps))
+}
+
+#[derive(Clone, Debug, serde::Serialize)]
+#[serde(tag = "type", content = "value", rename_all = "snake_case")]
+pub enum QueryParameter {
+    Integer(i64),
+    Text(String),
+}
+
+#[derive(Clone, Debug, serde::Serialize)]
+pub struct StatementPlan {
+    pub statement: String,
+    pub parameters: Vec<QueryParameter>,
+    pub steps: Vec<String>,
+}
+fn explain_statement(
+    tx: &Transaction<'_>,
+    statement: String,
+    args: Vec<Value>,
+) -> Result<StatementPlan> {
+    let parameters = args
+        .iter()
+        .map(|v| match v {
+            Value::Integer(v) => Ok(QueryParameter::Integer(*v)),
+            Value::Text(v) => Ok(QueryParameter::Text(v.clone())),
+            // The fixed query builder binds only text/integer query values. A new
+            // kind needs deliberate diagnostic support rather than lossy coercion.
+            _ => Err(StorageError::CompatibilityInvariant),
+        })
+        .collect::<Result<Vec<_>>>()?;
+    let steps = tx
+        .prepare(&format!("EXPLAIN QUERY PLAN {statement}"))?
         .query_map(params_from_iter(args), |r| r.get(3))?
-        .collect::<rusqlite::Result<Vec<_>>>()?)
+        .collect::<rusqlite::Result<Vec<_>>>()?;
+    Ok(StatementPlan {
+        statement,
+        parameters,
+        steps,
+    })
+}
+
+/// Exact SQL, typed bound values and engine plan for an executed result page.
+/// None means the result is out of range and search executes no page statement.
+pub fn explain_page(
+    tx: &Transaction<'_>,
+    request: QueryRequest,
+    locale: &str,
+) -> Result<Option<StatementPlan>> {
+    let (request, from, mut args) = matching(tx, request, locale)?;
+    let total: i64 = tx.query_row(
+        &format!("SELECT COUNT(*){from}"),
+        params_from_iter(args.iter()),
+        |r| r.get(0),
+    )?;
+    let pages = total / request.page_size + i64::from(total % request.page_size != 0);
+    if request.page > pages {
+        return Ok(None);
+    }
+    let sql = page_sql(&request, &from, &mut args, locale);
+    explain_statement(tx, sql, args).map(Some)
+}
+
+/// Explain the same validated COUNT statement used by count/search. Diagnostic
+/// data grants no authority and performs no writes or query normalization reuse.
+pub fn explain_count(
+    tx: &Transaction<'_>,
+    request: QueryRequest,
+    locale: &str,
+) -> Result<StatementPlan> {
+    let (_, from, args) = matching(tx, request, locale)?;
+    explain_statement(tx, format!("SELECT COUNT(*){from}"), args)
 }
 
 /// Current canonical membership after version migration and same-snapshot live
