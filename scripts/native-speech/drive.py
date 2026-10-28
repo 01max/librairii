@@ -88,6 +88,9 @@ def run_case(desktop, binary, case, language, mark, announced, pcm, report):
             target=focus(label)
             assert target['states']['enabled'] and target['states']['sensitive'],name+' target disabled'
             for leave,back in [('shift+Tab','Tab'),('Tab','shift+Tab')]:
+                departure=mark()
+                trip={'stage':step,'leave':leave,'return':back,'departure_marker':departure}
+                result.setdefault('focus_round_trips',[]).append(trip)
                 key(leave)
                 def neighbor_ready():
                     observed=speech.focused(tree())
@@ -96,10 +99,21 @@ def run_case(desktop, binary, case, language, mark, announced, pcm, report):
                         raise AssertionError(name+' multiple native focused controls')
                     return observed if len(observed)==1 else None
                 neighbor=native.wait_for(neighbor_ready)
-                result.setdefault('focus_round_trips',[]).append({'leave':leave,'return':back,'neighbor':neighbor})
+                trip['neighbor']=neighbor
                 if (neighbor[0]['name'],neighbor[0]['role'])==(target['name'],target['role']):
                     continue
-                quiet();marker=mark();key(back)
+                trip['reader_neighbor']=speech.await_reader_locus(desktop,neighbor[0],departure)
+                observed=speech.focused(tree())
+                assert len(observed)==1 and (observed[0]['name'],observed[0]['role'])==(neighbor[0]['name'],neighbor[0]['role']),name+' neighbor changed before reader acknowledgement'
+                # Discard only navigation speech in this private dispatcher.
+                # Never interrupt or synthesize the following target witness.
+                cancellation={'argv':['spd-say','--cancel'],'private_endpoint':os.environ['SPEECHD_ADDRESS'],**mark()}
+                trip['navigation_speech_cancellation']=cancellation
+                desktop.run(cancellation['argv'])
+                cancellation['command_completed']=True
+                quiet()
+                cancellation['silent_audio_end_offset']=pcm.stat().st_size
+                marker=mark();trip['target_marker']=marker;key(back)
                 current=native.wait_for(lambda:(f:=speech.focused(tree())) and len(f)==1
                     and f[0]['name'].startswith(label) and f[0])
                 assert current['role']==target['role'],name+' role changed during focus round trip'

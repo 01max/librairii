@@ -61,3 +61,21 @@ late reader stacks in `AXObject.get_application` through debug/event handling.
 That trace does not establish whether mutation or exit caused the stall. The new
 same-reader post-reorder witness must pass; isolation makes no general claim about
 continuous installed-package or reader behavior across application restarts.
+
+Run40599944235 at head8250d32 is failed diagnostic evidence. Its X11 reader
+retained controls marked defunct after they temporarily scrolled out of view.
+The promoted adapter now distinguishes filtering from actual logical deletion;
+the historical qualified sources and the disabled/Sensitive backport remain.
+Fresh source-bound Linux reader and all three native target receipts are required.
+
+Before each target utterance, native keyboard input leaves that control. The
+observer requires Orca's debug log to acknowledge the actual new/current neighbor
+locus, with its complete name and role; an old-locus name alone cannot satisfy
+this handshake. It then runs fixed `spd-say --cancel` against only the case's
+private `SPEECHD_ADDRESS` to discard queued navigation speech, records completion
+and offsets, and observes actual PCM silence before marking and returning to the
+target. Cancellation occurs before the target marker and never during its spoken
+witness. This measures focused announcements, not uninterrupted document reading.
+The retained round-trip records preserve handshake and cancellation failures.
+Parser regressions run when the owned image is built. All original target-word,
+audio, focus, worker-join and time bounds remain unchanged.

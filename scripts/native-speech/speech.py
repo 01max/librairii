@@ -105,6 +105,40 @@ def utterance_observed(log, expected):
             for word in expected.get('words', []))
         and not any(part.casefold() in text.casefold() for part in expected.get('excludes', [])))
 
+def reader_locus_acknowledgement(log, target):
+    """Observe Orca processing this current locus, never a name in the old locus."""
+    compact = lambda value: ' '.join(value.replace('\\n', '\n').split())
+    identity = compact('[' + target['role'] + ": '" + target['name'] + "']")
+    requested = False
+    acknowledgement = None
+    for raw in log.splitlines():
+        line = compact(raw)
+        request = 'FOCUS MANAGER: Request to set locus of focus to '
+        if request in line:
+            current = line.split(request, 1)[1]
+            requested = current == identity or current.startswith(identity + ' ')
+            acknowledgement = None
+        changing = 'FOCUS MANAGER: Changing locus of focus from '
+        if changing in line:
+            # Match the complete current object suffix; either label can contain ' to '.
+            acknowledgement = raw if line.endswith(' to ' + identity + '. Notify: True') else None
+            requested = False
+        if requested and 'FOCUS MANAGER: Setting locus of focus to existing locus of focus' in line:
+            acknowledgement = raw
+    return acknowledgement
+
+def await_reader_locus(desktop, target, marker):
+    path = desktop.root / 'orca-debug.txt'
+    def observed():
+        data = path.read_bytes()
+        acknowledgement = reader_locus_acknowledgement(
+            data[marker['debug_offset']:].decode('utf-8', errors='replace'), target)
+        if acknowledgement:
+            return {'debug_offset': marker['debug_offset'], 'debug_end_offset': len(data),
+                'name': target['name'], 'role': target['role'], 'acknowledgement': acknowledgement}
+        return None
+    return native.wait_for(observed)
+
 def start(desktop, report):
     root, runtime = desktop.root, desktop.runtime
     os.environ['HOME'] = str(runtime / 'outside')
