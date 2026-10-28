@@ -168,6 +168,9 @@ def inspect(binary, destination, backend, helper=None):
                 or any(not s['running_import'] or s['max_rows'] > 24 for s in measured['input_states'] + measured['pointer_states'] + measured['endpoints'])
                 or any(s['total'] != 1000 or s['rows'] != 24 or s['selected_index'] != 23 or not s['settled'] for s in measured['endpoints'])):
             raise ValueError('actual current controller/model endpoints under import required')
+        generations = [s['first_cover_reloads'] for s in measured['endpoints']]
+        if generations[0] <= evicted['first_cover_reloads'] + 1 or any(b <= a for a, b in zip(generations, generations[1:])):
+            raise ValueError('each retained completion must observe a new cold first-cover generation')
         if (len(measured['input_ms']) != 64 or len(measured['navigation_ms']) != 20
                 or measured['input_p95_ms'] != sorted(measured['input_ms'])[60]
                 or measured['navigation_p95_ms'] != sorted(measured['navigation_ms'])[18]

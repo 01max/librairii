@@ -120,7 +120,9 @@ fn run(configuration: &Path, output: PathBuf) -> Result {
         }
         let sequence=fs::read_to_string(output.join("capture")).ok().and_then(|s|s.trim().parse::<u32>().ok()).unwrap_or(0);
         if sequence>last_capture {
-            let pixels=ui.window().take_snapshot()?;use image::ImageEncoder;
+            let pixels=ui.window().take_snapshot()?;
+            if pixels.as_bytes().as_chunks::<4>().0.iter().all(|p|p==&pixels.as_bytes()[..4]) {return Err("current native frame is flat".into())}
+            use image::ImageEncoder;
             image::codecs::png::PngEncoder::new(fs::File::create(output.join(format!("capture-{sequence}.png")))?).write_image(pixels.as_bytes(),pixels.width(),pixels.height(),image::ExtendedColorType::Rgba8)?;last_capture=sequence;
         }
         let native=ui.window().with_winit_window(|w|json!({"scale":w.scale_factor(),"width":w.inner_size().width,"height":w.inner_size().height,"monitor":w.current_monitor().map(|m|json!({"name":m.name(),"scale":m.scale_factor(),"width":m.size().width,"height":m.size().height}))})).ok_or("native Winit window missing")?;
