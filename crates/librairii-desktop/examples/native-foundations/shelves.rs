@@ -163,6 +163,53 @@ pub fn checks(ui: &DesktopWindow) -> Result {
         "created Shelf did not open bounded approved workspace",
     )?;
     let original = order(&c, approved)?;
+    // Match the reader's in-page reorder: retain mounted list/card objects as
+    // UUID order and the selected member change, then restore the original order.
+    f.select(ui, 1)?;
+    let mounted = ui.get_story_groups();
+    let mounted_cards = mounted.iter().map(|group| group.cards).collect::<Vec<_>>();
+    let selected_uuid = ui.get_selected_story().uuid;
+    ui.invoke_shelf_move_member(-1);
+    f.settle(ui)?;
+    check(
+        ui.get_story_groups() == mounted
+            && ui
+                .get_story_groups()
+                .iter()
+                .zip(&mounted_cards)
+                .all(|(group, cards)| group.cards == *cards),
+        "Shelf reorder discarded mounted native story rows",
+    )?;
+    let swapped = order(&c, approved)?;
+    let rendered = ui
+        .get_story_groups()
+        .iter()
+        .flat_map(|group| {
+            group
+                .cards
+                .iter()
+                .map(|card| card.uuid.to_string())
+                .collect::<Vec<_>>()
+        })
+        .collect::<Vec<_>>();
+    check(
+        rendered == swapped[..rendered.len()],
+        "mounted Shelf rows did not project the new UUID order",
+    )?;
+    check(
+        swapped[0] == original[1]
+            && swapped[1] == original[0]
+            && swapped[2..] == original[2..]
+            && ui.get_selected_story().uuid == selected_uuid
+            && ui.get_selected_index() == 0,
+        "in-page reorder lost exact UUID order or selected member",
+    )?;
+    ui.invoke_shelf_move_member(1);
+    f.settle(ui)?;
+    check(
+        order(&c, approved)? == original,
+        "reverse reorder did not restore original order",
+    )?;
     // Temporary view changes never rewrite stored order. Moves use the complete
     // membership, including gaps and members across a visible page boundary.
     c.execute(

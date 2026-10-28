@@ -73,6 +73,38 @@ fn update_previews(ui: &DesktopWindow, mut next: Vec<CollectionPreview>) -> bool
     ui.set_collection_previews(ModelRc::new(VecModel::from(next)));
     false
 }
+/// Preserve mounted list/card objects when a response only changes their data.
+/// Replacing the nested models disposes every accessible row during a reorder.
+fn update_story_groups(ui: &DesktopWindow, mut next: Vec<StoryGroup>) {
+    let current = ui.get_story_groups();
+    if let Some(model) = current.as_any().downcast_ref::<VecModel<StoryGroup>>() {
+        let previous = current.iter().collect::<Vec<_>>();
+        if previous.len() == next.len()
+            && previous.iter().zip(&next).all(|(old, group)| {
+                old.cards.as_any().is::<VecModel<StoryRow>>()
+                    && old.cards.row_count() == group.cards.row_count()
+            })
+        {
+            for (i, (group, old)) in next.iter_mut().zip(previous).enumerate() {
+                if let Some(cards) = old.cards.as_any().downcast_ref::<VecModel<StoryRow>>() {
+                    for (j, mut card) in group.cards.iter().enumerate() {
+                        if let Some(previous) = cards.row_data(j)
+                            && previous.tags.iter().collect::<Vec<_>>()
+                                == card.tags.iter().collect::<Vec<_>>()
+                        {
+                            card.tags = previous.tags;
+                        }
+                        cards.set_row_data(j, card);
+                    }
+                    group.cards = old.cards;
+                }
+                model.set_row_data(i, group.clone());
+            }
+            return;
+        }
+    }
+    ui.set_story_groups(ModelRc::new(VecModel::from(next)));
+}
 pub struct View {
     pub maintenance: maintenance::State,
     pub activation: u64,
@@ -500,7 +532,7 @@ impl View {
                 cards: ModelRc::new(VecModel::from(cards.to_vec())),
             })
             .collect::<Vec<_>>();
-        ui.set_story_groups(ModelRc::new(VecModel::from(groups)));
+        update_story_groups(ui, groups);
         ui.set_story_count(page.stories.len() as i32);
         let mut offset = page.stories.len();
         let previews = page
