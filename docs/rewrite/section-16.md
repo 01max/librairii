@@ -144,6 +144,12 @@ production executable and stops only after its actual first-story observation.
 Observer preparation, launch-to-PID and attach-to-story phases are retained
 separately. The first Intel receipt's4.635s observation remains failed; fresh
 phase measurements must distinguish observer startup from product startup.
+Mac readiness reads title/description/children/role in a single public AX request
+per node, retaining request count and time. This removes redundant observer IPC
+while preserving the full production launch-to-loaded-story interval. The later
+ARM1268ms receipt remains failed until a fresh complete cohort meets the ceiling.
+Resource and display lanes retain independent failures in one incomplete manifest;
+a failed input/resource cohort does not suppress the remaining display scenarios.
 One warmup and three fresh measured runs on each actual rendering route retain
 all startup/idle data:≤1,000ms readiness and≤5% of one core over a fixed15-second
 quiet phase (two settling seconds excluded by the retained method).

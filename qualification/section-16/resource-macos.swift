@@ -46,22 +46,32 @@ do {
         let app = AXUIElementCreateApplication(pid)
         AXUIElementSetMessagingTimeout(app, 0.1)
         var witness: [String: String] = [:]
+        var queries = 0
+        var queryNanoseconds: UInt64 = 0
+        let attributes = [kAXTitleAttribute, kAXDescriptionAttribute, kAXChildrenAttribute, kAXRoleAttribute] as CFArray
         while witness.isEmpty {
             var queue: [AXUIElement] = [app]; var next = 0
             while next < queue.count && next < 4096 {
                 let item = queue[next]; next += 1
-                let title = text(item, kAXTitleAttribute)
-                let description = text(item, kAXDescriptionAttribute)
+                let queryStarted = DispatchTime.now().uptimeNanoseconds
+                var rawValues: CFArray?
+                let result = AXUIElementCopyMultipleAttributeValues(item, attributes, [], &rawValues)
+                queryNanoseconds += DispatchTime.now().uptimeNanoseconds-queryStarted
+                queries += 1
+                guard result == .success, let values = rawValues as? [Any], values.count == 4 else { continue }
+                let title = values[0] as? String ?? ""
+                let description = values[1] as? String ?? ""
                 if title.hasPrefix("Histoire 0001") || description.hasPrefix("Histoire 0001") {
-                    witness = ["role": text(item, kAXRoleAttribute), "title": title, "description": description]; break
+                    witness = ["role": values[3] as? String ?? "", "title": title, "description": description]; break
                 }
-                queue.append(contentsOf: (attribute(item, kAXChildrenAttribute) as? [AXUIElement] ?? []).prefix(max(0, 4096 - queue.count)))
+                queue.append(contentsOf: (values[2] as? [AXUIElement] ?? []).prefix(max(0, 4096 - queue.count)))
             }
             if DispatchTime.now().uptimeNanoseconds - start > 10_000_000_000 { throw Refusal(message: "actual product first story accessibility readiness deadline") }
             if witness.isEmpty { Thread.sleep(forTimeInterval: 0.001) }
         }
         print(String(data: try JSONSerialization.data(withJSONObject: ["pid": pid, "actual_story": witness,
             "observer_attach_to_story_ms": Double(DispatchTime.now().uptimeNanoseconds-start)/1e6,
+            "observer_queries": queries, "observer_query_ms": Double(queryNanoseconds)/1e6,
             "method": "actual product first loaded story in public native AX tree"]), encoding: .utf8)!)
     }
 } catch { fputs("\(error)\n", stderr); exit(1) }
