@@ -9,6 +9,12 @@ import subprocess
 import time
 
 
+def publish(path, text):
+    temporary = path.with_suffix('.command-tmp')
+    temporary.write_text(text)
+    temporary.replace(path)
+
+
 def state(output):
     try:
         return json.loads((output / 'state.json').read_text())
@@ -46,15 +52,32 @@ def linux_input(pid, output):
         input_states.append(end)
         if not end['running_import']:
             raise ValueError('real import ended during input sample')
+    point = json.loads(subprocess.check_output(['/usr/bin/python3', str(Path(__file__).with_name('resource-linux.py')), str(pid), '--point'], text=True, timeout=15))
+    pointers, pointer_states = [], []
+    for _ in range(64):
+        search()
+        wait(lambda: state(output)['running_import'])
+        start = time.monotonic()
+        subprocess.run(['xdotool', 'mousemove', str(point['x']), str(point['y']), 'click', '1'], check=True, timeout=10)
+        end = wait(lambda: (s := state(output)) and s['focus_key'] == 31 and s, 1)
+        pointers.append((time.monotonic() - start) * 1000)
+        pointer_states.append(end)
+        if not end['running_import']:
+            raise ValueError('real import ended during pointer sample')
     navigation, endpoints = [], []
     for n in range(21):
+        # Evict the first page using144 other real covers before each trial.
+        for page in range(2, 8):
+            publish(output / 'page', str(page))
+            wait(lambda: (s := state(output)) and s['page'] == page and s['settled'])
+        cold_generation = state(output)['first_cover_reloads']
         search()
         wait(lambda: state(output)['running_import'])
         key('x')
         wait(lambda: (s := state(output)) and s['query'] == 'x' and s['total'] == 0 and s['settled'])
         start = time.monotonic()
         key('BackSpace')
-        wait(lambda: (s := state(output)) and s['total'] == 1000 and s['rows'] == 24 and s['settled'])
+        wait(lambda: (s := state(output)) and s['total'] == 1000 and s['rows'] == 24 and s['first_cover_reloads'] > cold_generation and s['settled'])
         for _ in range(32):
             previous = state(output)['focus_key']
             if previous == 31:
@@ -74,6 +97,7 @@ def linux_input(pid, output):
         key('Home')
         wait(lambda: (s := state(output)) and s['selected_index'] == 0 and s['settled'])
     return {'input_ms': samples, 'input_states': input_states, 'input_p95_ms': sorted(samples)[60],
+            'pointer_ms': pointers, 'pointer_states': pointer_states, 'pointer_p95_ms': sorted(pointers)[60], 'pointer_target': point,
             'navigation_ms': navigation, 'navigation_p95_ms': sorted(navigation)[18], 'endpoints': endpoints,
             'method': 'pre-xdotool native post through actual production UI/controller acknowledgement; bounded24-row page of1000, native Tab/End'}
 
@@ -101,12 +125,12 @@ def inspect(binary, destination, backend, helper=None):
         wait(lambda: (s := state(destination)) and s['running_import'])
         pages = []
         for page in range(1, 43):
-            (destination / 'page').write_text(str(page))
+            publish(destination / 'page', str(page))
             observed = wait(lambda: (s := state(destination)) and s['page'] == page and s['settled'] and s)
             if observed['rows'] != (16 if page == 42 else 24) or observed['total'] != 1000:
                 raise ValueError('bounded actual page/outcome differs')
             pages.append(observed)
-        (destination / 'page').write_text('1')
+        publish(destination / 'page', '1')
         evicted = wait(lambda: (s := state(destination)) and s['page'] == 1 and s['first_cover_evicted'] and s['settled'] and s)
         if evicted['loaded_covers'] != 1000 or evicted['max_rows'] != 24:
             raise ValueError('all1000 real covers, eviction and bounded model observations required')
@@ -114,23 +138,24 @@ def inspect(binary, destination, backend, helper=None):
         if platform.system() == 'Darwin':
             if helper is None:
                 raise ValueError('native macOS helper required')
-            raw = subprocess.run([str(helper), str(process.pid), str(destination)], capture_output=True, text=True, timeout=120)
+            raw = subprocess.run([str(helper), str(process.pid), str(destination)], capture_output=True, text=True, timeout=240)
             (destination / 'input.log').write_text(raw.stdout + raw.stderr)
             raw.check_returncode()
             measured = json.loads(raw.stdout)
         else:
             measured = linux_input(process.pid, destination)
         report['input'] = measured
-        for key, count in [('input_ms', 64), ('navigation_ms', 20)]:
+        for key, count in [('input_ms', 64), ('pointer_ms', 64), ('navigation_ms', 20)]:
             if len(measured[key]) != count or any(type(x) not in (int, float) or not math.isfinite(x) or x < 0 for x in measured[key]):
                 raise ValueError('complete finite native wall samples required')
-        if (len(measured['input_states']) != 64 or len(measured['endpoints']) != 20
-                or any(not s['running_import'] or s['max_rows'] > 24 for s in measured['input_states'] + measured['endpoints'])
+        if (len(measured['input_states']) != 64 or len(measured['pointer_states']) != 64 or len(measured['endpoints']) != 20
+                or any(not s['running_import'] or s['max_rows'] > 24 for s in measured['input_states'] + measured['pointer_states'] + measured['endpoints'])
                 or any(s['total'] != 1000 or s['rows'] != 24 or s['selected_index'] != 23 or not s['settled'] for s in measured['endpoints'])):
             raise ValueError('actual current controller/model endpoints under import required')
         if (len(measured['input_ms']) != 64 or len(measured['navigation_ms']) != 20
                 or measured['input_p95_ms'] != sorted(measured['input_ms'])[60]
                 or measured['navigation_p95_ms'] != sorted(measured['navigation_ms'])[18]
+                or measured['pointer_p95_ms'] != sorted(measured['pointer_ms'])[60] or measured['pointer_p95_ms'] > 100
                 or measured['input_p95_ms'] > 100 or measured['navigation_p95_ms'] > 3000):
             raise ValueError('retained native input/completion wall gate failed')
         (destination / 'finish').touch()

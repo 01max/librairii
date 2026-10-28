@@ -100,10 +100,15 @@ eviction rather than merely reporting cache constants. The bounded16-command
 intake/coalescing regressions remain part of the cumulative gate.
 
 Actual CGEvents on disposable macOS CI and X11 key events on a private Linux
-session measure64 input acknowledgements and20 completion samples after one
+session measure64 key and64 pointer acknowledgements and20 completion samples after one
 warmup. Input p95 stays≤100ms. Clearing a zero-result search expands the actual
 1,000-story query into the production24-row page; native Tab/End then selects the
-last visible story, with completion p95≤3,000ms. Every endpoint requires real
+last visible story, with completion p95≤3,000ms. Before every completion
+trial144 different covers evict the first page; the timed clear-search response
+must advance its observed decoded-Arc generation. Thus the measured response
+includes actual fresh thumbnail work, alongside the real import. Pointer samples
+click the actual first-story bounds obtained from the native accessibility tree
+and acknowledge the resulting browser focus. Both key and pointer p95 stay≤100ms. Every endpoint requires real
 import activity and bounded models. This is the equivalent paged product
 interaction, not a1,000-row artificial component model. Raw samples and endpoints
 are retained; no frame/timer statistic substitutes for either wall gate.

@@ -37,16 +37,33 @@ impl librairii_desktop::startup::StartupEnvironment for Configuration {
 }
 pub fn read(path: &Path) -> Result<Configuration> {
     let config: Configuration = serde_json::from_slice(&fs::read(path)?)?;
-    if !config.owner.is_absolute()
-        || fs::canonicalize(&config.owner)? != config.owner
-        || fs::read(config.owner.join(".native-scale-owner"))? != b"native-scale-16\n"
-        || [&config.home, &config.config, &config.data]
+    let owner = &config.owner;
+    let exact = owner.is_absolute()
+        && fs::canonicalize(owner)? == *owner
+        && !fs::symlink_metadata(owner)?.file_type().is_symlink()
+        && fs::read(owner.join(".native-scale-owner"))? == b"native-scale-16\n"
+        && config.home == owner.join("profile/home")
+        && config.config == owner.join("profile/config")
+        && config.data == owner.join("library/data")
+        && config.imports.len() == 1000
+        && config
+            .imports
             .iter()
-            .any(|p| !p.starts_with(&config.owner))
-        || config.imports.len() != 1000
-        || config.imports.iter().any(|p| !p.starts_with(&config.owner))
+            .enumerate()
+            .all(|(n, p)| *p == owner.join(format!("profile/input-{n:04}.plain.pk")));
+    if !exact {
+        return Err("supervisor configuration identity differs".into());
+    }
+    for path in [&config.home, &config.config, &config.data]
+        .into_iter()
+        .chain(config.imports.iter())
     {
-        return Err("measured child requires the supervisor's exact owned configuration".into());
+        // Canonical identity rejects parent traversal and every intermediate or
+        // final symlink escape; exact derived names reject unrelated profiles.
+        if fs::canonicalize(path)? != *path || fs::symlink_metadata(path)?.file_type().is_symlink()
+        {
+            return Err("supervisor path escaped physical ownership".into());
+        }
     }
     Ok(config)
 }
@@ -61,6 +78,9 @@ pub fn prepare(destination: &Path) -> Result {
     let home = roots.profile().join("home");
     let config = roots.profile().join("config");
     let data = roots.library().join("data");
+    for path in [&home, &config, &data] {
+        fs::create_dir_all(path)?;
+    }
     let locations = ProfileLocations::for_host(&home, Some(&config), Some(&data))?;
     fs::create_dir_all(locations.native.parent().ok_or("profile parent")?)?;
     fs::create_dir_all(&locations.data)?;
@@ -176,9 +196,16 @@ pub fn prepare(destination: &Path) -> Result {
     // EOF is sent only after the child has positively joined; retain custody on
     // an active child rather than automatically retiring underneath its workers.
     let mut confirmation = String::new();
-    std::io::stdin().read_to_string(&mut confirmation)?;
-    if confirmation != "workers_joined\n" {
-        return Err("supervisor requires child shutdown confirmation".into());
+    let read = std::io::stdin().read_to_string(&mut confirmation);
+    if read.is_err() || confirmation != "workers_joined\n" {
+        // Deliberately retain the owner on uncertain child lifetime. Dropping it
+        // would recursively delete beneath a child that may still own workers.
+        eprintln!(
+            "supervisor retained fixture without shutdown proof: {}",
+            owner.display()
+        );
+        std::mem::forget(roots);
+        return Err("supervisor requires child shutdown confirmation; fixture retained".into());
     }
     drop(roots);
     if owner.exists() {

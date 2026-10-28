@@ -64,6 +64,7 @@ fn run(configuration: &Path, output: PathBuf) -> Result {
     let mut observed_covers = std::collections::BTreeSet::new();
     let mut first_cover = None;
     let mut evicted = false;
+    let mut first_cover_reloads = 0usize;
     let started = Instant::now();
     let mut last_capture = 0;
     let mut previous_state = Vec::new();
@@ -86,7 +87,7 @@ fn run(configuration: &Path, output: PathBuf) -> Result {
             for story in &p.stories {if let Some(t)=&story.thumbnail {
                 observed_covers.insert(story.uuid.clone());
                 if story.summary.as_ref().is_some_and(|s|s.id==1) {
-                    if let Some(old)=&first_cover {if observed_covers.len()>128 && !std::sync::Arc::ptr_eq(old,&t.rgba){evicted=true}}
+                    if let Some(old)=&first_cover {if observed_covers.len()>128 && !std::sync::Arc::ptr_eq(old,&t.rgba){evicted=true;first_cover_reloads+=1;first_cover=Some(t.rgba.clone());}}
                     else {first_cover=Some(t.rgba.clone());}
                 }
             }}
@@ -109,7 +110,7 @@ fn run(configuration: &Path, output: PathBuf) -> Result {
             image::codecs::png::PngEncoder::new(fs::File::create(output.join(format!("capture-{sequence}.png")))?).write_image(pixels.as_bytes(),pixels.width(),pixels.height(),image::ExtendedColorType::Rgba8)?;last_capture=sequence;
         }
         let native=ui.window().with_winit_window(|w|json!({"scale":w.scale_factor(),"width":w.inner_size().width,"height":w.inner_size().height,"monitor":w.current_monitor().map(|m|json!({"name":m.name(),"scale":m.scale_factor(),"width":m.size().width,"height":m.size().height}))})).ok_or("native Winit window missing")?;
-        let state=json!({"query":ui.get_query().as_str(),"query_focused":ui.get_query_focused(),"focus_key":ui.get_focused_key(),"rows":rows,"max_rows":max_rows,"total":page.map(|p|p.total),"page":page.map(|p|p.page),"pages":page.map(|p|p.pages),"selected":ui.get_selected_story().uuid.as_str(),"selected_index":ui.get_selected_index(),"revision":snapshot.revision,"settled":snapshot.revision==pending.borrow().revision(),"running_import":running,"import_batches":imports,"loaded_covers":observed_covers.len(),"first_cover_evicted":evicted,"native":native,"capture":last_capture,"browser_height":ui.get_observed_browser_height(),"row_height":ui.get_observed_story_row_height(),"french":ui.get_french()});
+        let state=json!({"query":ui.get_query().as_str(),"query_focused":ui.get_query_focused(),"focus_key":ui.get_focused_key(),"rows":rows,"max_rows":max_rows,"total":page.map(|p|p.total),"page":page.map(|p|p.page),"pages":page.map(|p|p.pages),"selected":ui.get_selected_story().uuid.as_str(),"selected_index":ui.get_selected_index(),"revision":snapshot.revision,"settled":snapshot.revision==pending.borrow().revision(),"running_import":running,"import_batches":imports,"loaded_covers":observed_covers.len(),"first_cover_evicted":evicted,"first_cover_reloads":first_cover_reloads,"native":native,"capture":last_capture,"browser_height":ui.get_observed_browser_height(),"row_height":ui.get_observed_story_row_height(),"french":ui.get_french()});
         let encoded=serde_json::to_vec(&state)?;if encoded!=previous_state {atomic(&output.join("state.json"),&encoded)?;previous_state=encoded;}
         if output.join("finish").exists(){pending.borrow().request_shutdown();}
         if started.elapsed()>Duration::from_secs(240){return Err("native scale observer deadline".into())}
