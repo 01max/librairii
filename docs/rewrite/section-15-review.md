@@ -413,3 +413,30 @@ action and exact compiler/manifest/lock identity, partitioned by runner OS and
 architecture. Cargo still validates source fingerprints; the sealer still checks
 compiler profile fields and the retained executable. No result, runtime deadline
 or qualification receipt is cached or substituted for execution.
+
+Run40644775812's complete spoken diagnostics pass108/112 cases and120/128
+witnesses in passing cases (124 completed raw stages, including four initial
+Shelf stages). All112 real workers join and112 unique owned containers retire.
+Only Shelf membership reorder fails, in both languages/sessions: native focus
+reaches Filters after the real UUID swap, but Orca stops processing events amid
+removal notifications for the replaced story rows. Cache signature warnings are
+absent from the retained Shelf reader logs. This remains failed evidence.
+
+The native projection now retains existing story group/card models when their
+shape is unchanged, updating row data and reusing unchanged tag models. Actual
+reorders still update UUID order and the selected member; structural/page-shape
+changes retain the existing replacement route. A controlled native regression
+on the exact in-page first-two-member swap fails with the previous projection
+and tests model lifetime, exact UUID swap, selected member and reverse restore.
+The exact in-page regression now passes, along with all15 callback groups and
+88 captures in the complete native scale1 probe. The original cross-page order
+checks remain separate and unchanged. This is a candidate repair for the reader
+freeze; fresh actual Orca execution must prove it.
+
+A focused four-case Shelf mutation observer now runs and uploads its own artifact
+before the complete112-case matrix. Its evidence uses a separate case-qualified
+directory and remains explicitly incomplete diagnostic evidence; full matrix
+coverage, executable/source binding, budgets and admission requirements remain.
+Reader-locus timeout now retains the same bounded, failure-only owned-reader
+stack already used for utterance timeout. It does not retry the failed observation,
+change focus, alter speech/audio predicates or extend a passing-stage deadline.

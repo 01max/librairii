@@ -57,7 +57,7 @@ def main():
         assert len(artifacts)==1
         compiled=Path(artifacts[0]['executable']).resolve(strict=True)
         assert compiled.is_relative_to(ROOT/'target') and sha(compiled)==binary_digest
-    evidence=ROOT/'target/quality/workflow-speech';evidence.mkdir(exist_ok=False)
+    evidence=ROOT/'target/quality'/('workflow-speech' if args.case is None else 'workflow-speech-'+args.case);evidence.mkdir(exist_ok=False)
     uid,gid=str(os.getuid()),str(os.getgid());image='librairii-workflow-speech:'+commit
     run(['docker','build','--build-arg','QUALIFICATION_UID='+uid,'--build-arg','QUALIFICATION_GID='+gid,'-t',image,'scripts/native-speech'])
     image_id=subprocess.check_output(['docker','image','inspect','--format','{{.Id}}',image],text=True).strip()

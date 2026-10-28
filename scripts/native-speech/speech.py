@@ -131,6 +131,25 @@ def reader_locus_acknowledgement(log, target):
             acknowledgement = raw
     return acknowledgement
 
+def reader_failure_stack(desktop, diagnostic):
+    """Retain a failure-only stack from this owned reader, without a new retry."""
+    ready = desktop.root / 'orca-stack-handler-ready.txt'
+    diagnostic.update(handler_ready=ready.is_file(), stack_observed=False)
+    try:
+        reader = desktop.reader
+        if diagnostic['handler_ready'] and reader.poll() is None:
+            log = desktop.root / 'orca.log'
+            offset = log.stat().st_size if log.exists() else 0
+            reader.send_signal(signal.SIGUSR1)
+            deadline = time.monotonic() + 1
+            while time.monotonic() < deadline:
+                if log.exists() and b'Current thread' in log.read_bytes()[offset:]:
+                    diagnostic['stack_observed'] = True
+                    break
+                time.sleep(0.01)
+    except Exception as error:
+        diagnostic['diagnostic_error'] = type(error).__name__ + ': ' + str(error)
+
 def await_reader_locus(desktop, target, marker):
     path = desktop.root / 'orca-debug.txt'
     def observed():
@@ -141,7 +160,13 @@ def await_reader_locus(desktop, target, marker):
             return {'debug_offset': marker['debug_offset'], 'debug_end_offset': len(data),
                 'name': target['name'], 'role': target['role'], 'acknowledgement': acknowledgement}
         return None
-    return native.wait_for(observed)
+    try:
+        return native.wait_for(observed)
+    except Exception:
+        diagnostic = {'target': target, 'departure_marker': marker}
+        reader_failure_stack(desktop, diagnostic)
+        (desktop.root / 'reader-locus-failure.json').write_text(json.dumps(diagnostic, ensure_ascii=False, indent=2) + '\n')
+        raise
 
 def start(desktop, report):
     root, runtime = desktop.root, desktop.runtime
@@ -236,22 +261,9 @@ def start(desktop, report):
         except Exception:
             # Failure-only diagnostics in this owned reader. They never replace
             # an utterance, change focus or extend the announcement deadline.
-            diagnostic = {'stage': name, 'expected_utterance': text,
-                          'handler_ready': trace_ready.is_file(), 'stack_observed': False}
+            diagnostic = {'stage': name, 'expected_utterance': text}
             report['announcement_failure'] = diagnostic
-            try:
-                if diagnostic['handler_ready'] and orca.poll() is None:
-                    log = root / 'orca.log'
-                    offset = log.stat().st_size if log.exists() else 0
-                    orca.send_signal(signal.SIGUSR1)
-                    deadline = time.monotonic() + 1
-                    while time.monotonic() < deadline:
-                        if log.exists() and b'Current thread' in log.read_bytes()[offset:]:
-                            diagnostic['stack_observed'] = True
-                            break
-                        time.sleep(0.01)
-            except Exception as error:
-                diagnostic['diagnostic_error'] = type(error).__name__ + ': ' + str(error)
+            reader_failure_stack(desktop, diagnostic)
             raise
         def completed():
             data = pcm.read_bytes()[marker['audio_offset']:]
