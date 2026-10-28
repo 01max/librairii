@@ -55,7 +55,19 @@ class ReaderLocusTests(unittest.TestCase):
             with self.subTest(log=later):
                 self.assertIsNone(speech.reader_locus_acknowledgement(accepted + '\n' + later, self.target))
         self.assertEqual(speech.reader_locus_acknowledgement(
-            accepted + '\n' + 'unrelated speech debug', self.target), accepted)
+            accepted + '\n' + self.prefix + 'unrelated speech debug', self.target), accepted)
+
+    def test_actual_multiline_name_is_one_complete_log_record(self):
+        target = {'role': 'push button', 'name': 'Export · Completed · Oct 27, 2026\n1 / 1 · f0000000'}
+        identity = "[push button: '" + target['name'] + "']"
+        accepted = self.change(self.other, identity)
+        self.assertEqual(speech.reader_locus_acknowledgement(accepted, target), accepted)
+        self.assertIsNone(speech.reader_locus_acknowledgement(accepted.split('\n')[0], target))
+        self.assertIsNone(speech.reader_locus_acknowledgement(
+            accepted + '\n' + self.change(identity, self.other), target))
+        existing = self.prefix + 'Setting locus of focus to existing locus of focus'
+        self.assertEqual(speech.reader_locus_acknowledgement(
+            self.request(identity) + '\n' + existing, target), existing)
 
 
 if __name__ == '__main__':

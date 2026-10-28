@@ -111,7 +111,11 @@ def reader_locus_acknowledgement(log, target):
     identity = compact('[' + target['role'] + ": '" + target['name'] + "']")
     requested = False
     acknowledgement = None
-    for raw in log.splitlines():
+    # Object names can contain physical newlines. Orca timestamps delimit log
+    # records; splitting at every newline truncates otherwise valid identities.
+    records = re.split(r'(?m)(?=^\d{2}:\d{2}:\d{2}\.\d+ - )', log)
+    for raw in records:
+        raw = raw.rstrip('\r\n')
         line = compact(raw)
         request = 'FOCUS MANAGER: Request to set locus of focus to '
         if request in line:
