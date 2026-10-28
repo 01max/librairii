@@ -661,6 +661,7 @@ impl Surface {
                 }
             }
             "schema" => {
+                close(ui);
                 surface.fixture.finish()?;
                 let mut fixture = Fixture::open_with(ui, true)?;
                 language(&fixture, ui, code)?;
@@ -675,10 +676,11 @@ impl Surface {
                 }
                 fixture.restart(ui)?;
                 check(
-                    ui.get_settings_data().can_preserve,
+                    ui.get_dialog() == 5 && ui.get_settings_data().can_preserve,
                     "spoken schema recovery missing",
                 )?;
                 ui.invoke_show_schema_confirmation();
+                check(ui.get_dialog() == 22, "spoken schema confirmation missing")?;
                 return Ok(Self { fixture });
             }
             _ => return Err("unknown maintenance speech case".into()),

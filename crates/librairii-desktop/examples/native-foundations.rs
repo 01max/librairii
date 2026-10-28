@@ -1497,10 +1497,15 @@ fn capture_step(
         resize(ui, 1180., 760.)?;
     } else if index == 133 {
         capture(ui, &destination.join("recovery-wide-fr.png"))?;
-        ui.invoke_focus_settings_retry();
+        check(
+            ui.get_settings_first_focused(),
+            "Recovery did not begin on its first setting",
+        )?;
+        key(ui, slint::platform::Key::Tab.into())?;
+        key(ui, slint::platform::Key::Tab.into())?;
         check(
             ui.get_settings_retry_focused(),
-            "Recovery Retry could not receive focus",
+            "native Tab did not reach Recovery Retry from the language controls",
         )?;
         key(ui, " ".into())?;
     } else if index == 134 {

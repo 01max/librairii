@@ -128,8 +128,9 @@ impl State {
                 .into()
         };
         let error=self.error.as_ref().or(s.error.as_ref()).map(|e|format!("{} [{e}]",words(l,"The request could not complete. The existing library and retained files are preserved.","La demande n’a pas abouti. La bibliothèque existante et les fichiers conservés sont préservés."))).unwrap_or_default();
-        if (!s.can_confirm && ui.get_settings_confirm_focused())
-            || (!s.can_retry && ui.get_settings_retry_focused())
+        let previous = ui.get_settings_data();
+        if (previous.can_confirm && !s.can_confirm && ui.get_settings_confirm_focused())
+            || (previous.can_retry && !s.can_retry && ui.get_settings_retry_focused())
         {
             ui.invoke_focus_settings();
         }

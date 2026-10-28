@@ -158,6 +158,12 @@ impl Surface {
         };
         ui.invoke_change_language(code.into());
         surface.fixture().settle(ui)?;
+        if case == "schema" {
+            check(
+                ui.get_dialog() == 22,
+                "spoken schema confirmation changed during language setup",
+            )?;
+        }
         // Give dismissible workflow dialogs one explicit, enabled invoker.
         // The external reader must prove Escape returns to that same control.
         if matches!(case, "filters" | "collection-union" | "settings") {
@@ -206,6 +212,10 @@ fn receipt(ui: &DesktopWindow, surface: &Surface) -> serde_json::Value {
         "history_error":ui.get_history_error().as_str(),
         "export_start":ui.get_export_data().can_start,
         "settings_busy":ui.get_settings_data().busy,
+        "settings_first_focused":ui.get_settings_first_focused(),
+        "settings_confirm_focused":ui.get_settings_confirm_focused(),
+        "settings_retry_focused":ui.get_settings_retry_focused(),
+        "close_focused":ui.get_close_focused(),
         "settings_notice":ui.get_settings_data().notice.as_str(),
         "settings_current":settings.current,"settings_proposed":settings.proposed,
         "settings_activation":settings.activation,"settings_result":settings.notice.map(|n|format!("{n:?}")),"settings_error":settings.error,
