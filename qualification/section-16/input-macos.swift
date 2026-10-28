@@ -45,9 +45,11 @@ func focusSearch() throws {
     }
     throw Refusal(message: "native reverse Tab did not reach Search")
 }
-func firstStoryPoint() throws -> CGPoint {
+struct PointerTarget { let point: CGPoint; let role: String; let name: String; let firstTitleRole: String }
+func firstStoryPoint() throws -> PointerTarget {
     let app = AXUIElementCreateApplication(pid)
     let start = DispatchTime.now().uptimeNanoseconds
+    var firstTitleRole: String? = nil
     while DispatchTime.now().uptimeNanoseconds - start < 5_000_000_000 {
         var queue = [app]; var next = 0
         while next < queue.count && next < 4096 {
@@ -59,10 +61,15 @@ func firstStoryPoint() throws -> CGPoint {
             let title = attribute(kAXTitleAttribute) as? String ?? ""
             let description = attribute(kAXDescriptionAttribute) as? String ?? ""
             if title.hasPrefix("Histoire 0001") || description.hasPrefix("Histoire 0001") {
+                let role = attribute(kAXRoleAttribute) as? String ?? ""
+                if firstTitleRole == nil { firstTitleRole = role }
+                // AccessKit exposes the browser ListItem as AXGroup; the
+                // inspector's duplicate title is AXStaticText.
+                if role != kAXGroupRole as String { continue }
                 if let rawPosition = attribute(kAXPositionAttribute), let rawSize = attribute(kAXSizeAttribute), CFGetTypeID(rawPosition) == AXValueGetTypeID(), CFGetTypeID(rawSize) == AXValueGetTypeID() {
                     var position = CGPoint.zero; var size = CGSize.zero
                     if AXValueGetValue(rawPosition as! AXValue, .cgPoint, &position) && AXValueGetValue(rawSize as! AXValue, .cgSize, &size) && size.width > 8 && size.height > 8 {
-                        return CGPoint(x: position.x + size.width / 2, y: position.y + size.height / 2)
+                        return PointerTarget(point: CGPoint(x: position.x + size.width / 2, y: position.y + size.height / 2), role: role, name: title.isEmpty ? description : title, firstTitleRole: firstTitleRole!)
                     }
                 }
             }
@@ -95,7 +102,10 @@ do {
         input.append(elapsed(start)); inputStates.append(end)
         guard active(end) else { throw Refusal(message: "import ended during native input sample") }
     }
-    let point = try firstStoryPoint()
+    let target = try firstStoryPoint()
+    let point = target.point
+    let pointerReceipt: [String: Any] = ["x": point.x, "y": point.y, "role": target.role, "name": target.name, "first_title_role": target.firstTitleRole]
+    try JSONSerialization.data(withJSONObject: pointerReceipt, options: [.sortedKeys]).write(to: directory.appendingPathComponent("pointer-target.json"), options: .atomic)
     var pointers: [Double] = []; var pointerStates: [[String: Any]] = []
     for _ in 0..<64 {
         try focusSearch(); _ = try wait { active($0) }
@@ -133,7 +143,7 @@ do {
         _ = try wait { $0["selected_index"] as? Int == 0 && $0["settled"] as? Bool == true }
     }
     let result: [String: Any] = ["input_ms": input, "input_states": inputStates, "input_p95_ms": input.sorted()[60],
-        "pointer_ms": pointers, "pointer_states": pointerStates, "pointer_p95_ms": pointers.sorted()[60], "pointer_target": ["x": point.x, "y": point.y],
+        "pointer_ms": pointers, "pointer_states": pointerStates, "pointer_p95_ms": pointers.sorted()[60], "pointer_target": pointerReceipt,
         "navigation_ms": navigation, "endpoints": endpoints, "navigation_p95_ms": navigation.sorted()[18],
         "method": "pre-CGEvent post to observed actual production UI/controller acknowledgement; bounded24-row page of1000, native Tab/End selects last visible story"]
     print(String(data: try JSONSerialization.data(withJSONObject: result, options: [.sortedKeys]), encoding: .utf8)!)

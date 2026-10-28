@@ -59,6 +59,7 @@ def linux_input(pid, output):
         if not end['running_import']:
             raise ValueError('real import ended during input sample')
     point = json.loads(subprocess.check_output(['/usr/bin/python3', str(Path(__file__).with_name('resource-linux.py')), str(pid), '--point'], text=True, timeout=15))
+    publish(output / 'pointer-target.json', json.dumps(point))
     pointers, pointer_states = [], []
     for _ in range(64):
         search()

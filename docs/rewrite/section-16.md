@@ -118,6 +118,14 @@ actually selected surface. A Linux Mesa GPU API route does not claim physical
 GPU hardware. Three-host clean-source sealing and independent review remain
 pending; local development page/cache runs alone do not qualify native input.
 
+The first full Linux run passed native typing but timed out on pointer focus in
+both development and release workloads. Its retained public-tree readiness
+witness is a plain label: the inspector repeats the same story title. The old
+pointer picker also accepted that label. Pointer targeting now requires the
+actual browser ListItem (AXGroup on macOS), records its role/position before
+delivery and retains the first matching title's role for diagnosis. Fresh native
+cohorts must establish the correction; the earlier failures remain retained.
+
 ## Current release resources, archive and native display —16.4
 
 The actual production release executable is launched against a separately

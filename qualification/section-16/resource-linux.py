@@ -10,6 +10,7 @@ bus = dbus.SessionBus()
 status = dbus.Interface(bus.get_object('org.a11y.Bus', '/org/a11y/bus'), 'org.freedesktop.DBus.Properties')
 status.Set('org.a11y.Status', 'IsEnabled', dbus.Boolean(True))
 start = time.monotonic()
+first_title_role = None
 while time.monotonic() - start < 10:
     queue = collections.deque([a.Registry.getDesktop(0)])
     count = 0
@@ -20,8 +21,18 @@ while time.monotonic() - start < 10:
             node.clear_cache()
             if node.get_process_id() == pid and node.name.startswith('Histoire 0001') and node.getState().contains(a.STATE_SHOWING):
                 if '--point' in sys.argv:
+                    if first_title_role is None:
+                        first_title_role = node.getRoleName()
+                    # The inspector repeats this title in a plain label. Only
+                    # the actual browser list-item is a pointer focus target.
+                    if node.getRole() != a.ROLE_LIST_ITEM:
+                        continue
                     bounds = node.queryComponent().getExtents(0)
-                    print(json.dumps({'pid': pid, 'x': bounds.x + bounds.width // 2, 'y': bounds.y + bounds.height // 2, 'name': node.name}))
+                    if bounds.width <= 8 or bounds.height <= 8:
+                        continue
+                    print(json.dumps({'pid': pid, 'x': bounds.x + bounds.width // 2, 'y': bounds.y + bounds.height // 2,
+                                      'name': node.name, 'role': node.getRoleName(), 'first_title_role': first_title_role,
+                                      'bounds': {'x': bounds.x, 'y': bounds.y, 'width': bounds.width, 'height': bounds.height}}))
                     sys.exit(0)
                 print(json.dumps({'pid': pid, 'actual_story': {'role': node.getRoleName(), 'name': node.name}, 'method': 'actual product first loaded story in public AT-SPI tree'}))
                 sys.exit(0)
