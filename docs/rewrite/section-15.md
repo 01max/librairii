@@ -716,6 +716,6 @@ The later15.13 Linux diagnosis requires a local correction in the promoted
 AT-SPI adapter: temporary clipping retains logical object identity; actual
 deletion alone disposes it. The exact promoted inventory and provenance are
 updated separately from the preserved historical qualification sources and
-Sensitive backport. The review record describes its12 regression tests and
+Sensitive backport. The review record describes its13 regression tests and
 the reader-neighbor handshake. Fresh source-bound native and actual Orca/PCM
 receipts must qualify this correction before the section closes.

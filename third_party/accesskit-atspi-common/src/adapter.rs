@@ -344,18 +344,20 @@ impl TreeChangeHandler for AdapterChangeHandler<'_> {
         let filter_old = filter(old_node);
         let filter_new = filter(new_node);
         if filter_new != filter_old {
-            if filter_new == FilterResult::Include {
-                if filter_old == FilterResult::ExcludeSubtree {
+            if filter_old == FilterResult::ExcludeSubtree {
+                if filter_new == FilterResult::Include {
                     self.add_subtree(new_node);
                 } else {
-                    self.add_node(new_node);
+                    // Transparent containers are excluded themselves, but their
+                    // newly exposed descendants still need interfaces/cache.
+                    for child in new_node.filtered_children(&filter) {
+                        self.add_subtree(&child);
+                    }
                 }
-            } else if filter_old == FilterResult::Include {
-                if filter_new == FilterResult::ExcludeSubtree {
-                    self.hide_subtree(old_node, new_node.tree_state);
-                } else {
-                    self.notify_node(old_node, new_node);
-                }
+            } else if filter_new == FilterResult::ExcludeSubtree {
+                self.hide_subtree(old_node, new_node.tree_state);
+            } else if filter_new == FilterResult::Include {
+                self.add_node(new_node);
             }
         }
         self.notify_node(old_node, new_node);
@@ -1025,6 +1027,84 @@ mod tests {
                 .iter()
                 .any(|(_, state, _)| *state == State::Defunct)
         );
+    }
+
+    #[test]
+    fn transparent_ancestor_filtering_registers_and_retains_its_descendants() {
+        for initially_hidden in [false, true] {
+            let container = |hidden| {
+                let mut node = with_children(Role::GenericContainer, &[LocalNodeId(2)]);
+                if hidden {
+                    node.set_hidden();
+                }
+                node
+            };
+            let (mut adapter, ops, trace) = build_with_trace(TreeUpdate {
+                nodes: vec![
+                    (
+                        LocalNodeId(0),
+                        with_children(Role::Window, &[LocalNodeId(1)]),
+                    ),
+                    (LocalNodeId(1), container(initially_hidden)),
+                    (LocalNodeId(2), Node::new(Role::Button)),
+                ],
+                tree: Some(Tree::new(LocalNodeId(0))),
+                tree_id: TreeId::ROOT,
+                focus: LocalNodeId(0),
+            });
+            let root_id = adapter.root_id();
+            let root = adapter.platform_node(root_id);
+            trace.lock().unwrap().clear_observations();
+            if initially_hidden {
+                assert_eq!(root.child_count().unwrap(), 0);
+                assert_eq!(trace.lock().unwrap().live.len(), 1);
+                adapter.update(update(vec![(LocalNodeId(1), container(false))]));
+                let trace = trace.lock().unwrap();
+                assert_eq!(trace.live.len(), 2);
+                assert_eq!(trace.registered.len(), 1);
+                assert!(trace.unregistered.is_empty());
+            }
+            let child_id = root.child_at_index(0).unwrap().unwrap();
+            let child = adapter.platform_node(child_id);
+            assert_eq!(child.role().unwrap(), AtspiRole::Button);
+            assert!(child.state().contains(State::Showing | State::Visible));
+            if initially_hidden {
+                assert_eq!(*ops.lock().unwrap(), vec![CacheOp::Added(child_id)]);
+                assert_eq!(
+                    trace.lock().unwrap().children,
+                    vec![(root_id, true, child_id)]
+                );
+            }
+            trace.lock().unwrap().clear_observations();
+            ops.lock().unwrap().clear();
+            adapter.update(update(vec![(LocalNodeId(1), container(true))]));
+            assert_eq!(root.child_count().unwrap(), 0);
+            assert!(!child.state().contains(State::Defunct));
+            assert!(!child.state().contains(State::Showing));
+            assert!(!child.state().contains(State::Visible));
+            assert!(ops.lock().unwrap().is_empty());
+            {
+                let trace = trace.lock().unwrap();
+                assert!(trace.states.contains(&(child_id, State::Showing, false)));
+                assert!(trace.states.contains(&(child_id, State::Visible, false)));
+                assert_eq!(trace.children, vec![(root_id, false, child_id)]);
+            }
+            adapter.update(update(vec![(LocalNodeId(1), container(false))]));
+            assert_eq!(root.child_at_index(0).unwrap(), Some(child_id));
+            assert!(child.state().contains(State::Showing | State::Visible));
+            assert_eq!(*ops.lock().unwrap(), vec![CacheOp::Added(child_id)]);
+            let trace = trace.lock().unwrap();
+            assert!(trace.states.contains(&(child_id, State::Showing, true)));
+            assert!(trace.states.contains(&(child_id, State::Visible, true)));
+            assert_eq!(trace.children.last(), Some(&(root_id, true, child_id)));
+            assert!(trace.registered.is_empty() && trace.unregistered.is_empty());
+            assert!(
+                !trace
+                    .states
+                    .iter()
+                    .any(|(_, state, _)| *state == State::Defunct)
+            );
+        }
     }
 
     #[test]

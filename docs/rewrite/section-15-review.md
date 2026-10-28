@@ -303,9 +303,10 @@ emitted Defunct/CacheRemove and unregistered these still-existing logical object
 GNOME libatspi disposes cached objects on CacheRemove, so later CacheAdd cannot
 repair Orca's retained references. The local adapter correction retains logical
 objects across filtering, updates exposure/state/interface deltas and reserves
-Defunct/CacheRemove/unregister for actual removal. Three regressions cover repeated
+Defunct/CacheRemove/unregister for actual removal. Four regressions cover repeated
 hide/reveal, hidden-subtree real deletion, hidden role changes and never-exported
-deletion. All12 adapter tests and strict lint pass using the exact qualified
+deletion, plus transparent-ancestor transitions and initially hidden children.
+All13 adapter tests and strict lint pass using the exact qualified
 dependency versions/checksums in an isolated local manifest. Linux CI must repeat
 them against the production graph and retain its log.
 

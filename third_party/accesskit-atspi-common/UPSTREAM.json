@@ -40,7 +40,8 @@
       "regressions": [
         "repeated filtering and restoration without duplicate interfaces",
         "hidden subtree restoration and actual hidden deletion",
-        "hidden role/interface changes and silent removal of never-exported nodes"
+        "hidden role/interface changes and silent removal of never-exported nodes",
+        "transparent ancestor hide/reveal, including initially hidden descendants"
       ],
       "qualification": "Task15 source-bound Linux X11/Wayland Orca and three-target native receipts on PR66 and in the canonical handover; historical section2 sources remain unchanged.",
       "references": [
