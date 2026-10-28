@@ -9,12 +9,12 @@ let directory = URL(fileURLWithPath: CommandLine.arguments[2])
 func state() throws -> [String: Any] {
     try JSONSerialization.jsonObject(with: Data(contentsOf: directory.appendingPathComponent("state.json"))) as! [String: Any]
 }
-func wait(_ predicate: ([String: Any]) -> Bool, seconds: Double = 10) throws -> [String: Any] {
+func wait(_ predicate: ([String: Any]) -> Bool, seconds: Double = 10, line: Int = #line) throws -> [String: Any] {
     let start = DispatchTime.now().uptimeNanoseconds
     while true {
         let observed = try state()
         if predicate(observed) { return observed }
-        if Double(DispatchTime.now().uptimeNanoseconds - start) / 1e9 > seconds { throw Refusal(message: "native state deadline: \(observed)") }
+        if Double(DispatchTime.now().uptimeNanoseconds - start) / 1e9 > seconds { throw Refusal(message: "native state deadline at line \(line): \(observed)") }
         Thread.sleep(forTimeInterval: 0.001)
     }
 }
