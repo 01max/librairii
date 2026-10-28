@@ -128,6 +128,8 @@ No product probe flag or old spike executable supplies that measurement.
 One warmup and three fresh measured runs on each actual rendering route retain
 all startup/idle data:≤1,000ms readiness and≤5% of one core over a fixed15-second
 quiet phase (two settling seconds excluded by the retained method).
+Every warmup also meets all startup, idle CPU and peak RSS ceilings; its label
+only separates it from the three measured samples, matching the retained spike.
 
 Native time records peak RSS across each real product process and a paired
 release-built current-view/controller workload containing the full1,000-cover

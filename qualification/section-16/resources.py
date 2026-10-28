@@ -122,8 +122,8 @@ def inspect(binary, observer, destination, helper, native):
                 raise ValueError('native product and workload peak RSS receipts required')
             report = {'warmup': trial == 0, 'backend': backend, 'quiet': quiet, 'loaded': loaded,
                       'loaded_native_time': load_time, 'peak_rss_bytes': max(peaks)}
-            if trial and (quiet['launch_to_ready_ms'] > 1000 or quiet['idle_cpu_percent_one_core'] > 5
-                          or report['peak_rss_bytes'] > 512 * 1024 * 1024):
+            if (quiet['launch_to_ready_ms'] > 1000 or quiet['idle_cpu_percent_one_core'] > 5
+                    or report['peak_rss_bytes'] > 512 * 1024 * 1024):
                 reports.append(report)
                 (destination / 'report.json').write_text(json.dumps(reports, indent=2) + '\n')
                 raise ValueError('actual release startup/idle/loaded RSS gate failed; failed raw sample retained')
