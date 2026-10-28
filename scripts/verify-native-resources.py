@@ -33,6 +33,7 @@ def main():
     if scale.TARGETS[target] != (platform.system(), platform.machine()):
         raise ValueError('matching native resource host required')
     subprocess.run([sys.executable, '-I', '-B', str(ROOT / 'qualification/section-16/test_resources.py')], check=True)
+    subprocess.run([sys.executable, '-I', '-B', str(ROOT / 'qualification/section-16/test_resource_linux.py')], check=True)
     destination = ROOT / 'target/quality/native-scale/resources'
     if destination.exists():
         raise ValueError('fresh resource evidence destination required')

@@ -23,6 +23,8 @@ while time.monotonic() - start < 10:
     while queue and count < 4096:
         node = queue.popleft()
         count += 1
+        if node is None:
+            continue
         try:
             node.clear_cache()
             if node.get_process_id() == pid and node.name.startswith('Histoire 0001') and node.getState().contains(a.STATE_SHOWING):
