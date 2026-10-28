@@ -440,3 +440,17 @@ coverage, executable/source binding, budgets and admission requirements remain.
 Reader-locus timeout now retains the same bounded, failure-only owned-reader
 stack already used for utterance timeout. It does not retry the failed observation,
 change focus, alter speech/audio predicates or extend a passing-stage deadline.
+
+The next cumulative rerun newly reports
+[RUSTSEC-2026-0414](https://github.com/RustSec/advisory-db/blob/main/crates/pulldown-cmark/RUSTSEC-2026-0414.md)
+for pulldown-cmark0.13.4. Upstream's compatible0.13.5 release fixes exponential
+wikilink event growth. The lock updates only that package's version/archive
+checksum; every other package record and all dependency edges are identical.
+Slint1.18.1/Winit0.30.13/Skia0.153.3 and the eight selected features remain pinned.
+No advisory is suppressed and security policy is unchanged. The failing check is
+retained; cargo-deny passes with the patch. Fresh complete three-host/native/reader
+qualification is required for the updated graph, alongside the Shelf correction.
+Historical qualification sources and receipts retain their original attribution.
+An isolated comparison using the production-pinned registry dependency identities
+reproduces 327,676 wikilink events from the advisory's112-byte input on0.13.4 and
+65 on0.13.5. Slint's selected strikethrough-only option produces97 in both cases.
