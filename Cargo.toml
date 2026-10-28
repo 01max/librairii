@@ -78,3 +78,11 @@ debug = 0
 
 [profile.test]
 debug = 0
+
+# Native UI observers exercise the full callback/capture suite within a fixed
+# deadline on all three hosts. Retain development assertions and overflow checks.
+[profile.native-observer]
+inherits = "dev"
+opt-level = 1
+debug-assertions = true
+overflow-checks = true

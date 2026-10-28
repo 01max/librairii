@@ -8,6 +8,7 @@ import platform
 import subprocess
 import shutil
 import sys
+import tomllib
 ROOT = Path(__file__).resolve().parents[1]
 DESTINATION = ROOT / 'target/quality/native-ui'
 def run(arguments, **kwargs):
@@ -25,6 +26,9 @@ def main():
     for entry in original['files']:
         if hashlib.sha256((source / entry['path']).read_bytes()).hexdigest() != entry['sha256']:
             raise ValueError('approved native editable/export source changed')
+    profile = tomllib.loads((ROOT / 'Cargo.toml').read_text())['profile']['native-observer']
+    if profile != {'inherits': 'dev', 'opt-level': 1, 'debug-assertions': True, 'overflow-checks': True}:
+        raise ValueError('native observer must retain qualified development checks')
     source_commit = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip()
     target = os.environ.get('RUST_TARGET')
     if not target:
@@ -47,18 +51,21 @@ def main():
     DESTINATION.mkdir(parents=True)
     (DESTINATION / '.native-fixture-root').write_text('native-foundations-14\n')
     with (DESTINATION / 'build.log').open('w') as log, (DESTINATION / 'compiler-artifacts.jsonl').open('w') as events:
-        run(['cargo', 'build', '--locked', '--target', target, '-p', 'librairii-desktop', '--example', 'native-foundations', '--message-format=json'], stdout=events, stderr=log)
+        run(['cargo', 'build', '--locked', '--profile', 'native-observer', '--target', target, '-p', 'librairii-desktop', '--example', 'native-foundations', '--message-format=json'], stdout=events, stderr=log)
     artifacts = [json.loads(line) for line in (DESTINATION / 'compiler-artifacts.jsonl').read_text().splitlines()]
     artifacts = [event for event in artifacts if event.get('reason') == 'compiler-artifact' and event.get('target', {}).get('name') == 'native-foundations' and event['target']['kind'] == ['example'] and event.get('executable')]
     if len(artifacts) != 1:
         raise ValueError('Cargo must report exactly one native fixture executable')
+    if (artifacts[0]['profile']['opt_level'] != '1' or not artifacts[0]['profile']['debug_assertions']
+            or not artifacts[0]['profile']['overflow_checks']):
+        raise ValueError('Cargo observer profile must retain assertions/overflow checks at opt-level1')
     cargo_binary = Path(artifacts[0]['executable']).resolve(strict=True)
     binary = DESTINATION / 'native-foundations'
     shutil.copy2(cargo_binary, binary)
     if not binary.is_file():
         raise ValueError('Cargo native fixture executable is not a regular file')
     binary_digest = hashlib.sha256(binary.read_bytes()).hexdigest()
-    executable = {'path': str(binary), 'cargo_path': str(cargo_binary), 'retained_path': 'native-foundations', 'sha256': binary_digest, 'bytes': binary.stat().st_size, 'compiler_fresh': artifacts[0]['fresh']}
+    executable = {'path': str(binary), 'cargo_path': str(cargo_binary), 'retained_path': 'native-foundations', 'sha256': binary_digest, 'bytes': binary.stat().st_size, 'compiler_fresh': artifacts[0]['fresh'], 'build_profile': {'name': 'native-observer', 'cargo': artifacts[0]['profile'], 'configured': profile}}
     reports = []
     for scale in ['1', '2']:
         output = DESTINATION / ('scale-' + scale)

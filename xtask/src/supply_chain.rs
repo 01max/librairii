@@ -349,9 +349,12 @@ fn inventory_graph(
                 .ok_or("missing resolved package")?;
             let patch = if package["name"] == native["name"] {
                 native
-            } else if let Some(companion) = native["companion_patches"]
-                .as_array()
-                .and_then(|patches| patches.iter().find(|patch| patch["name"] == package["name"]))
+            } else if let Some(companion) =
+                native["companion_patches"].as_array().and_then(|patches| {
+                    patches
+                        .iter()
+                        .find(|patch| patch["name"] == package["name"])
+                })
             {
                 companion
             } else {

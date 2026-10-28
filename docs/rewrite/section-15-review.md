@@ -380,3 +380,19 @@ pending unrelated requests. Replays of actual failed History log records now
 acknowledge their complete identities. Original utterance, PCM and deadline
 predicates remain unchanged. Fresh complete112/128 spoken and three-host native
 execution must qualify these corrections before15.13 closes.
+
+The dc91484 Intel observer timed out at90 seconds after33 of88 captures. ZIP
+capture timestamps show about76 seconds elapsed before its first frame, locating
+the dominant delay before capture. Temporary per-callback timing was removed
+after a sequential local comparison: the unchanged development build completed
+all15 callback groups/88 captures in41.799 seconds (callbacks24.448 seconds);
+the `native-observer` profile completed the same checks in32.489 seconds
+(callbacks20.667 seconds). Both runs passed. This is local evidence of a22 percent
+runtime reduction, not Intel acceptance or an attribution of every startup delay.
+The observer profile inherits development settings with optimization1 and
+explicitly retained debug assertions and overflow checks. The sealer verifies the
+configuration and actual Cargo assertion/optimization fields and records both in
+the executable receipt. The90-second bound, both scales, all callbacks, captures,
+keyboard/modal/menu assertions and actual Linux reader suite remain unchanged.
+Production/resource/package profiles and earlier qualification receipts are not
+changed. Fresh physical Intel execution remains mandatory.
