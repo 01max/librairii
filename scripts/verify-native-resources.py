@@ -88,20 +88,33 @@ def main():
     if archive.stat().st_size > 32 * 1024 * 1024:
         (destination / 'manifest.json').write_text(json.dumps(report, indent=2) + '\n')
         raise ValueError('current production archive exceeds retained32MiB ceiling')
-    report['resource_runs'] = resources.inspect(product, observer, destination / 'measurements', helper, native)
+    failures = []
+    try:
+        report['resource_runs'] = resources.inspect(product, observer, destination / 'measurements', helper, native)
+    except Exception as error:
+        failures.append({'lane': 'resources', 'error': str(error)})
     report['display_runs'] = []
     for name, backend in [('gpu-api', 'winit-skia'), ('software', 'winit-skia-software')]:
         for factor in (1, 2):
-            report['display_runs'].append(display.inspect(observer, destination / f'display-{name}-{factor}', backend, native, scale=factor))
+            try:
+                report['display_runs'].append(display.inspect(observer, destination / f'display-{name}-{factor}', backend, native, scale=factor))
+            except Exception as error:
+                failures.append({'lane': f'display-{name}-{factor}', 'error': str(error)})
     if platform.system() == 'Linux':
-        report['mixed_monitors'] = display.mixed_monitors(observer, destination / 'mixed-monitors', native)
+        try:
+            report['mixed_monitors'] = display.mixed_monitors(observer, destination / 'mixed-monitors', native)
+        except Exception as error:
+            failures.append({'lane': 'mixed-monitors', 'error': str(error)})
     if (scale.output(['git', 'rev-parse', 'HEAD']) != source or scale.output(['git', 'status', '--porcelain', '--untracked-files=normal'])
             or scale.digest(ROOT / 'Cargo.lock') != report['cargo_lock_sha256']
             or any(scale.digest(Path(e['path'])) != e['sha256'] for e in executables.values())):
         raise ValueError('source/lock/executable changed during resource measurement')
-    report['complete'] = True
+    report['failures'] = failures
+    report['complete'] = not failures
     report['files'] = {str(p.relative_to(destination)): scale.digest(p) for p in destination.rglob('*') if p.is_file() and p.name != 'manifest.json'}
     (destination / 'manifest.json').write_text(json.dumps(report, indent=2) + '\n')
+    if failures:
+        raise ValueError('resource/display qualification failed: ' + json.dumps(failures))
     print(json.dumps({'source': source, 'current_release_resources_and_display': 'passed', 'archive_bytes': archive.stat().st_size}))
 
 
