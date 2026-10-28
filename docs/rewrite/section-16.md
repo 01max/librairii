@@ -45,3 +45,28 @@ their actual hardware; the old M4 Go observation is not a cross-machine timing
 comparison. Final-source three-host qualification and independent review remain
 required before Task16 is checked complete. This record does not qualify
 installed packages, signing, upgrade/rollback or cutover.
+
+## Large Shelf review and bounded surfaces —16.2
+
+The same retained executable accepts `--shelves` in a separate fresh isolated
+library. It consumes `review5000.json` directly: all5,000 exact UUIDs, titles,
+Broken flags and overlapping-source identities must match. One complete warmup
+precedes four full preview samples; every sample and the recomputation+50-Add
+commit retain the independent5,000ms ceiling. Approved revision/count/Broken
+count/source count and4,950 deferred proposals equal the frozen Go outcome.
+
+Additional actual repository workflows visit every bounded range:200 review,
+creation and5,000-member detachment pages,198 exclusion pages and each affected
+Shelf in linked Collection deletion. Every page holds at most25 rows; next/huge
+pages are empty. Exclusion UUIDs and all final5,000 member UUIDs/order are checked
+against the frozen source. Keep-all detachment retains5,000 manual members and
+historical inactive origins. Linked deletion exposes one affected Shelf at a
+time, with exact25/2,500 affected rows. A real SQLite trigger forces the final
+delete to fail after intermediate detachment writes; transaction rollback must
+preserve every member, position and4,950 exclusions. A fresh explicit plan then
+successfully deletes the Collection while preserving those memberships.
+
+The wrapper independently checks the complete outcomes, ranges and raw timings
+and seals both subprocesses to one unchanged executable/source. This is backend
+and bounded-range evidence; native loading/input and resource gates remain
+separate. Three-host final-source runs are required for section acceptance.

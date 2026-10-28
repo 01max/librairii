@@ -95,6 +95,39 @@ def verify_queries(report):
         raise ValueError('actual per-asset record lookup evidence required')
 
 
+def verify_shelves(report):
+    if (report['format'] != 'librairii.scale-backend' or report['version'] != 1 or report['stories'] != 5000
+            or not report['fixture_retired'] or not report['database_closed']):
+        raise ValueError('complete owned Shelf fixture and positive shutdown required')
+    result = report['shelves']
+    oracle = json.loads((ROOT / 'preservation/corpus/performance/review5000.json').read_text())
+    if (result['initial_additions'] != oracle['initialAdditions'] or result['approved'] != oracle['approved']
+            or result['remaining_additions'] != oracle['remainingAdditions']
+            or result['exclusion_uuids'] != [r['uuid'] for r in oracle['initialAdditions'][50:]]
+            or result['large_member_uuids'] != [r['uuid'] for r in oracle['initialAdditions']]):
+        raise ValueError('frozen Shelf identity/order/provenance/outcome differs')
+    samples = result['preview_ms']
+    if (len(samples) != 4 or any(type(n) not in (int, float) or not math.isfinite(n) or n < 0 or n > 5000 for n in samples)
+            or result['ceiling_ms'] != 5000 or not math.isfinite(result['apply50_ms']) or not 0 <= result['apply50_ms'] <= 5000):
+        raise ValueError('retained four-preview/50-add five-second gate failed')
+    for name, count in [('review_ranges', 5000), ('creation_ranges', 5000), ('detachment_ranges', 5000), ('exclusion_ranges', 4950)]:
+        ranges = result[name]
+        if ranges['total'] != count or ranges['page_lengths'] != [25] * (count // 25):
+            raise ValueError('complete bounded 25-row surface required: ' + name)
+        if not ranges.get('next_and_huge_empty', ranges.get('huge_page_empty', False)):
+            raise ValueError('out-of-range pages must be empty')
+    if [r['total'] for r in result['deletion_ranges']] != [25, 2500]:
+        raise ValueError('one affected Shelf at a time, with exact detachment impact')
+    for ranges in result['deletion_ranges']:
+        if ranges['page_lengths'] != [25] * (ranges['total'] // 25) or not ranges['next_and_huge_empty']:
+            raise ValueError('unbounded or incomplete deletion rows')
+    if (not result['passed'] or not result['one_shelf_at_a_time']
+            or not result['failed_deletion_preserved_all_members']
+            or not result['successful_deletion_preserved_members_order_exclusions']
+            or result['detached_manual_members'] != 5000 or result['retained_large_members'] != 5000):
+        raise ValueError('large atomic rollback/detachment/preservation proof missing')
+
+
 def main():
     if output(['git', 'status', '--porcelain', '--untracked-files=normal']):
         raise ValueError('final scale evidence requires a clean committed source tree')
@@ -121,10 +154,10 @@ def main():
     manifest = {'format': 'librairii.native-scale', 'version': 1, 'complete': False,
                 'source_commit': output(['git', 'rev-parse', 'HEAD']), 'target': target,
                 'rustc': compiler, 'hardware': machine, 'platform': platform.platform(),
-                'cargo_lock_sha256': digest(ROOT / 'Cargo.lock'), 'scope': 'Task16.1 retained backend gates only'}
+                'cargo_lock_sha256': digest(ROOT / 'Cargo.lock'), 'scope': 'Task16.1-16.2 backend and Shelf gates; remaining Task16 gates separate'}
     fixture = ROOT / 'preservation/corpus/performance'
     manifest['fixtures'] = {str(path.relative_to(ROOT)): digest(path) for path in
-                            [fixture / 'stories.jsonl', fixture / 'distribution.json',
+                            [fixture / 'stories.jsonl', fixture / 'distribution.json', fixture / 'review5000.json',
                              *sorted((fixture / 'catalog/embedded').glob('*.png'))]}
     with (DESTINATION / 'compiler-artifacts.jsonl').open('w') as events, (DESTINATION / 'build.log').open('w') as log:
         subprocess.run(['cargo', 'build', '--locked', '--profile', 'native-observer', '--target', target,
@@ -146,6 +179,9 @@ def main():
     with (DESTINATION / 'backend.json').open('w') as result, (DESTINATION / 'backend.log').open('w') as log:
         subprocess.run([str(binary)], cwd=ROOT, stdout=result, stderr=log, check=True, timeout=180)
     verify_queries(json.loads((DESTINATION / 'backend.json').read_text()))
+    with (DESTINATION / 'shelves.json').open('w') as result, (DESTINATION / 'shelves.log').open('w') as log:
+        subprocess.run([str(binary), '--shelves'], cwd=ROOT, stdout=result, stderr=log, check=True, timeout=180)
+    verify_shelves(json.loads((DESTINATION / 'shelves.json').read_text()))
     if output(['git', 'status', '--porcelain', '--untracked-files=normal']) or output(['git', 'rev-parse', 'HEAD']) != manifest['source_commit']:
         raise ValueError('source changed during measurement')
     if digest(binary) != manifest['executable']['sha256'] or binary.stat().st_size != manifest['executable']['bytes']:
@@ -154,7 +190,7 @@ def main():
     manifest['files'] = {p.name: digest(p) for p in DESTINATION.iterdir() if p.is_file() and p.name != 'manifest.json'}
     (DESTINATION / 'manifest.json').write_text(json.dumps(manifest, indent=2) + '\n')
     print(json.dumps({'complete': True, 'source': manifest['source_commit'], 'target': target,
-                      'hardware': machine, 'six_retained_backend_budgets': 'passed'}))
+                      'hardware': machine, 'six_retained_backend_budgets': 'passed', 'retained_shelf_gates': 'passed'}))
 
 
 if __name__ == '__main__':
