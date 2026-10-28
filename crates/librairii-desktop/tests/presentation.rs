@@ -46,6 +46,82 @@ fn receive(worker: &Worker) -> Result<Snapshot, Box<dyn std::error::Error>> {
         std::thread::sleep(Duration::from_millis(2));
     }
 }
+#[test]
+fn isolated_export_preparation_retains_usable_library_after_empty_and_refused_previews()
+-> TestResult {
+    use librairii_desktop::{presentation::Phase, workflows::exports::Action};
+    struct OverrideEnvironment(OsString);
+    impl StartupEnvironment for OverrideEnvironment {
+        fn variable(&self, name: &str) -> Option<OsString> {
+            assert_eq!(name, "LIBRAIRII_DATA_ROOT");
+            Some(self.0.clone())
+        }
+    }
+    let roots = TestRoots::new()?;
+    let destination = roots.library().join("export destination");
+    fs::create_dir(&destination)?;
+    let mut worker = Worker::start_with(OverrideEnvironment(
+        roots.library().join("isolated library").into_os_string(),
+    ))?;
+    let initial = receive(&worker)?;
+    assert_eq!(initial.phase, Phase::Library);
+    let generation = initial.generation.ok_or("generation")?;
+    worker.offer(Command::Exports {
+        generation: generation.clone(),
+        action: Action::Open(Vec::new()),
+    })?;
+    receive(&worker)?;
+    for path in [
+        destination.clone(),
+        roots.library().join("missing destination"),
+        destination,
+    ] {
+        let valid = path.is_dir();
+        worker.offer(Command::Exports {
+            generation: generation.clone(),
+            action: Action::Destination(path),
+        })?;
+        let deadline = Instant::now() + Duration::from_secs(10);
+        let settled = loop {
+            let snapshot = receive(&worker)?;
+            if snapshot.phase == Phase::Recovery || !snapshot.workflows.exports.preparing {
+                break snapshot;
+            }
+            if Instant::now() >= deadline {
+                return Err("export preparation did not settle".into());
+            }
+        };
+        if settled.phase != Phase::Library {
+            worker.finish()?;
+            return Err(format!(
+                "healthy isolated export forced recovery: {:?}",
+                settled.workflows.exports.error
+            )
+            .into());
+        }
+        let exports = &settled.workflows.exports;
+        assert!(!exports.recovery_required);
+        if valid {
+            assert!(exports.error.is_none());
+            let preview = exports.preview.as_ref().ok_or("empty preview missing")?;
+            assert_eq!(preview.ready, 0);
+            assert_eq!(
+                preview.issue,
+                Some(librairii_core::export::Issue::EmptyScope)
+            );
+        } else {
+            assert!(exports.error.is_some());
+            assert!(exports.preview.is_none());
+        }
+    }
+    worker.offer(Command::Language(Language::French))?;
+    let after = receive(&worker)?;
+    worker.finish()?;
+    assert_eq!(after.phase, Phase::Library);
+    assert_eq!(after.language, Language::French);
+    assert_eq!(fs::read_dir(roots.profile())?.count(), 0);
+    Ok(())
+}
 fn library_worker() -> Result<
     (
         TestRoots,

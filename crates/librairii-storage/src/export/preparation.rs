@@ -66,7 +66,7 @@ impl<'db, 'library> Exports<'db, 'library> {
     }
     /// Native composition must preserve uncertainty independently of a preview's serial.
     pub fn native_recovery_required(&self) -> bool {
-        !self.retained.is_empty() || self.database.native_file_owner().is_err()
+        !self.retained.is_empty() || self.database.file_recovery_required()
     }
     pub fn retained_outputs(&self) -> usize {
         self.retained.len()
@@ -504,6 +504,7 @@ mod tests {
             let directory = tempfile::tempdir()?;
             let destination = Destination::open(directory.path())?;
             let mut exports = Exports::new(&db);
+            assert!(!exports.native_recovery_required());
             let out = if acquisition {
                 let failure = destination
                     .create_with_failed_acquisition()
@@ -518,6 +519,8 @@ mod tests {
             assert!(out.retention_required());
             exports.retain_output(out);
             assert_eq!(exports.retained_outputs(), 1);
+            assert!(exports.native_recovery_required());
+            assert!(Exports::new(&db).native_recovery_required());
             assert!(db.read(|_| Ok(())).is_err());
             drop(exports);
             assert!(db.close().is_err());
@@ -540,6 +543,7 @@ mod tests {
         let mut db = Database::open_isolated(&library)?;
         let directory = tempfile::tempdir()?;
         let destination = Destination::open(directory.path())?;
+        assert!(!Exports::new(&db).native_recovery_required());
         let mut output = destination.create_output().map_err(|f| f.cause)?;
         let bytes = b"published";
         output.stream(
@@ -555,6 +559,7 @@ mod tests {
         exports.retain_output(output);
         assert_eq!(exports.retained_outputs(), 1);
         let mut replacement = Exports::new(&db);
+        assert!(replacement.native_recovery_required());
         assert!(
             replacement
                 .prepare(

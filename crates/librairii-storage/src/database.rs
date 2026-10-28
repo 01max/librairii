@@ -409,6 +409,15 @@ impl Database<'_> {
     pub(crate) fn library_layout(&self) -> &crate::LibraryLayout {
         self.authority.layout()
     }
+    /// Observe actual close/fence state for either real file authority. An
+    /// isolated development owner is not a failed native-owner acquisition.
+    #[cfg(any(target_os = "macos", target_os = "linux"))]
+    pub(crate) fn file_recovery_required(&self) -> bool {
+        self.closed
+            || self.close_failed
+            || self.fenced.load(Ordering::Acquire)
+            || self.authority.effect_fence().load(Ordering::Acquire)
+    }
     pub(crate) fn library_id(&self) -> librairii_core::LibraryId {
         match self.authority {
             Authority::Isolated(library) => library.identity().typed(),
