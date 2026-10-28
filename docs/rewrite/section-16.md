@@ -35,6 +35,11 @@ Process CPU accompanies every wall sample; artwork also records actual lookup,
 read and full-decode wall/CPU phases. These explain CPU work versus scheduling or
 worker wait and never replace the unchanged wall gate. Failed measurements stay
 in the diagnostic record.
+The pixel witness uses the original qualified probe's `black_box` and wrapping
+fold over every decoded byte. At most24×320×400×3×255 fits in `u64`, so this
+retains the exact independently checked sum while avoiding an extra checked
+addition for each byte. Local phase isolation found that witness overhead was
+only part of decode time; this correction alone does not establish an Intel pass.
 The workflow uploads an early backend snapshot before starting native workloads,
 including on failure. Its completeness flag and raw measurements remain decisive;
 the upload itself never establishes a pass. A second complete artifact follows

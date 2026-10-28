@@ -245,7 +245,12 @@ pub fn run(db: &Database<'_>, rows: &[Story], root: &Path) -> Result<Value> {
             assert_eq!(decoder.dimensions(), (320, 400));
             assert_eq!(decoder.total_bytes(), pixels.len() as u64);
             decoder.read_image(&mut pixels)?;
-            witness += pixels.iter().map(|byte| u64::from(*byte)).sum::<u64>();
+            // Match the qualified scratch probe's full-byte witness. This
+            // batch has at most 24 * 320 * 400 * 3 * 255 < u64::MAX, so
+            // wrapping addition is exact and avoids per-byte overflow checks.
+            witness = std::hint::black_box(&pixels)
+                .iter()
+                .fold(witness, |sum, byte| sum.wrapping_add(u64::from(*byte)));
             phase_wall[2] += start.elapsed().as_secs_f64() * 1000.;
             phase_cpu[2] += cpu::milliseconds() - cpu_start;
         }
