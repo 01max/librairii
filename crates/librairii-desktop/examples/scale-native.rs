@@ -68,6 +68,7 @@ fn run(configuration: &Path, output: PathBuf) -> Result {
     let started = Instant::now();
     let mut last_capture = 0;
     let mut previous_state = Vec::new();
+    let mut geometry_sequence = 0u64;
     timer.start(slint::TimerMode::Repeated,Duration::from_millis(16),move||{
       let result=(||->Result{
         let Some(ui)=weak.upgrade() else{return Err("window disappeared".into())};
@@ -104,13 +105,26 @@ fn run(configuration: &Path, output: PathBuf) -> Result {
                 pending.borrow().offer(Command::Request(request))?;last_page_command=Some(requested);
             }
         }
+        if let Ok(bytes)=fs::read(output.join("geometry")) {
+            let request:serde_json::Value=serde_json::from_slice(&bytes)?;
+            let sequence=request["sequence"].as_u64().ok_or("geometry sequence")?;
+            if sequence>geometry_sequence {
+                let width=request["width"].as_u64().filter(|v|(560..=1920).contains(v)).ok_or("geometry width")? as u32;
+                let height=request["height"].as_u64().filter(|v|(400..=1080).contains(v)).ok_or("geometry height")? as u32;
+                #[cfg(target_os="macos")]
+                ui.window().with_winit_window(|w|w.set_resizable(false));
+                let scale=ui.window().scale_factor();
+                ui.window().set_size(slint::PhysicalSize::new((width as f32*scale).round() as u32,(height as f32*scale).round() as u32));
+                geometry_sequence=sequence;
+            }
+        }
         let sequence=fs::read_to_string(output.join("capture")).ok().and_then(|s|s.trim().parse::<u32>().ok()).unwrap_or(0);
         if sequence>last_capture {
             let pixels=ui.window().take_snapshot()?;use image::ImageEncoder;
             image::codecs::png::PngEncoder::new(fs::File::create(output.join(format!("capture-{sequence}.png")))?).write_image(pixels.as_bytes(),pixels.width(),pixels.height(),image::ExtendedColorType::Rgba8)?;last_capture=sequence;
         }
         let native=ui.window().with_winit_window(|w|json!({"scale":w.scale_factor(),"width":w.inner_size().width,"height":w.inner_size().height,"monitor":w.current_monitor().map(|m|json!({"name":m.name(),"scale":m.scale_factor(),"width":m.size().width,"height":m.size().height}))})).ok_or("native Winit window missing")?;
-        let state=json!({"pid":std::process::id(),"query":ui.get_query().as_str(),"query_focused":ui.get_query_focused(),"focus_key":ui.get_focused_key(),"rows":rows,"max_rows":max_rows,"total":page.map(|p|p.total),"page":page.map(|p|p.page),"pages":page.map(|p|p.pages),"selected":ui.get_selected_story().uuid.as_str(),"selected_index":ui.get_selected_index(),"revision":snapshot.revision,"settled":snapshot.revision==pending.borrow().revision(),"running_import":running,"import_batches":imports,"loaded_covers":observed_covers.len(),"first_cover_evicted":evicted,"first_cover_reloads":first_cover_reloads,"native":native,"capture":last_capture,"browser_height":ui.get_observed_browser_height(),"row_height":ui.get_observed_story_row_height(),"french":ui.get_french()});
+        let state=json!({"pid":std::process::id(),"slint_scale":ui.window().scale_factor(),"logical_width":ui.window().size().to_logical(ui.window().scale_factor()).width,"logical_height":ui.window().size().to_logical(ui.window().scale_factor()).height,"geometry_sequence":geometry_sequence,"query":ui.get_query().as_str(),"query_focused":ui.get_query_focused(),"focus_key":ui.get_focused_key(),"rows":rows,"max_rows":max_rows,"total":page.map(|p|p.total),"page":page.map(|p|p.page),"pages":page.map(|p|p.pages),"selected":ui.get_selected_story().uuid.as_str(),"selected_index":ui.get_selected_index(),"revision":snapshot.revision,"settled":snapshot.revision==pending.borrow().revision(),"running_import":running,"import_batches":imports,"loaded_covers":observed_covers.len(),"first_cover_evicted":evicted,"first_cover_reloads":first_cover_reloads,"native":native,"capture":last_capture,"browser_height":ui.get_observed_browser_height(),"row_height":ui.get_observed_story_row_height(),"french":ui.get_french()});
         let encoded=serde_json::to_vec(&state)?;if encoded!=previous_state {atomic(&output.join("state.json"),&encoded)?;previous_state=encoded;}
         if output.join("finish").exists(){pending.borrow().request_shutdown();}
         if started.elapsed()>Duration::from_secs(240){return Err("native scale observer deadline".into())}

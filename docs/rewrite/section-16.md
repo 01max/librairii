@@ -117,3 +117,45 @@ Both default Skia GPU API and explicit software routes must identify their
 actually selected surface. A Linux Mesa GPU API route does not claim physical
 GPU hardware. Three-host clean-source sealing and independent review remain
 pending; local development page/cache runs alone do not qualify native input.
+
+## Current release resources, archive and native display —16.4
+
+The actual production release executable is launched against a separately
+prepared supervisor-owned profile. Public native AX/AT-SPI observation of its
+first loaded story establishes readiness, including process launch, loader,
+profile/database opening, controller/view construction and observer delivery.
+No product probe flag or old spike executable supplies that measurement.
+One warmup and three fresh measured runs on each actual rendering route retain
+all startup/idle data:≤1,000ms readiness and≤5% of one core over a fixed15-second
+quiet phase (two settling seconds excluded by the retained method).
+
+Native time records peak RSS across each real product process and a paired
+release-built current-view/controller workload containing the full1,000-cover
+traversal, real imports and native input. Their larger peak must stay≤512MiB.
+The paired workload includes additional observer allocations; both exact release
+profiles and executables are retained. Failed runs stay in the cohort.
+
+A measured unsigned internal archive contains the current production binary,
+compiled UI/translations and current upstream notices/inventory; it must stay
+≤32MiB. The observer executable and synthetic corpus do not enter this archive.
+This size witness does not qualify installed distributions, signing or release
+licensing; those remain Task18.
+
+Current native frames exercise wide1180×760, short1180×400, narrow560×400 and
+intermediate980×600 content with long French titles at both1×/2× requested
+render densities on each renderer. Actual Winit monitor/surface and Slint scale,
+logical dimensions, viewport/row geometry and capture bytes are retained. Linux
+also moves the current window four times between two private headless Wayland
+outputs at actual native1×/2× scales; these are virtual monitor transitions,
+not a claim about physical monitor hardware. Every window/controller and owned
+compositor is joined before positive fixture retirement. The workflow's larger
+120-minute job envelope accommodates builds and the full repeated cohorts; no
+individual numerical ceiling changes.
+
+The short-window fixture initially exposed a real layout failure with a restored
+import notice: the wide400px window left71px for a76px story row. Short main
+content now caps the existing scrollable control area, preserving a full row
+while keeping Search/notice actions reachable through their existing focus
+reveal behavior. Actual1× release captures pass all five wide/short/narrow/
+intermediate/restore cases after that fix; full current-source host sealing is
+still required.
