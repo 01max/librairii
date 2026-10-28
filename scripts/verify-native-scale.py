@@ -138,7 +138,7 @@ def verify_shelves(report):
         ranges = result[name]
         if ranges['total'] != count or ranges['page_lengths'] != [25] * (count // 25):
             raise ValueError('complete bounded 25-row surface required: ' + name)
-        if not ranges.get('next_and_huge_empty', ranges.get('huge_page_empty', False)):
+        if not ranges['next_and_huge_empty']:
             raise ValueError('out-of-range pages must be empty')
     if [r['total'] for r in result['deletion_ranges']] != [25, 2500]:
         raise ValueError('one affected Shelf at a time, with exact detachment impact')
