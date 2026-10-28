@@ -276,6 +276,15 @@ while the UI continues to show localized recovery guidance. Once
 finish is requested it stops admitting further import/page work and still waits
 for positive worker shutdown. No failed interaction becomes an accepted sample.
 
+The a5 ARM startup trace retained1783.055ms, including1095.169ms in AX calls,
+with repeated blocking window requests before a window was available. The
+external observer now waits on public WindowServer metadata for its owned PID's
+visible normal window before querying AX. Both waits remain inside the original
+launch clock; only the actual loaded-story AX witness establishes readiness.
+Window poll count and elapsed time survive success and failure. Avoiding early
+AX interference is a hypothesis for the fresh run, not an established cause or
+permission to discard the failed startup cohort.
+
 At a5ec473 a fresh query-codec fuzz run retained a75-byte malformed-UTF8 seed
 that violated the harness's Unicode idempotence assertion. Its15-byte Cherokee
 reduction also reproduces locally. Actual frozen Go1.26.5 Decode/Migrate/Encode

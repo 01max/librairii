@@ -43,6 +43,31 @@ do {
         }
         print("{\"native_quit_posted\":true}")
     } else {
+        // AX requests made while AppKit is still creating its first window can
+        // block behind initialization. Observe the owned window through public
+        // WindowServer metadata first; the clock already includes this wait.
+        // This is only permission to query AX, never the readiness endpoint.
+        var windowPolls = 0
+        while true {
+            windowPolls += 1
+            let windows = CGWindowListCopyWindowInfo([.optionOnScreenOnly, .excludeDesktopElements], kCGNullWindowID) as? [[String: Any]] ?? []
+            let ownedWindow = windows.contains { window in
+                (window[kCGWindowOwnerPID as String] as? NSNumber)?.int32Value == pid
+                    && (window[kCGWindowLayer as String] as? NSNumber)?.intValue == 0
+                    && ((window[kCGWindowAlpha as String] as? NSNumber)?.doubleValue ?? 0) > 0
+            }
+            if ownedWindow { break }
+            if DispatchTime.now().uptimeNanoseconds - start > 10_000_000_000 {
+                let diagnostics: [String: Any] = ["stage": "owned-window", "pid": pid,
+                    "observer_window_polls": windowPolls,
+                    "observer_window_elapsed_ms": Double(DispatchTime.now().uptimeNanoseconds-start)/1e6]
+                if let data = try? JSONSerialization.data(withJSONObject: diagnostics, options: [.sortedKeys]),
+                   let encoded = String(data: data, encoding: .utf8) { fputs(encoded+"\n", stderr) }
+                throw Refusal(message: "actual product owned window deadline")
+            }
+            Thread.sleep(forTimeInterval: 0.001)
+        }
+        let windowReadyMilliseconds = Double(DispatchTime.now().uptimeNanoseconds-start)/1e6
         let app = AXUIElementCreateApplication(pid)
         AXUIElementSetMessagingTimeout(app, 0.1)
         var witness: [String: String] = [:]
@@ -57,6 +82,7 @@ do {
             if !emitted, let data = try? JSONSerialization.data(withJSONObject: [
                 "observer_traversal": "owned-AXWindows-preorder", "observer_passes": passes,
                 "observer_queries": queries, "observer_query_ms": Double(queryNanoseconds)/1e6,
+                "observer_window_ready_ms": windowReadyMilliseconds, "observer_window_polls": windowPolls,
                 "observer_trace": trace, "observer_trace_dropped": traceDropped
             ], options: [.sortedKeys]), let encoded = String(data: data, encoding: .utf8) {
                 fputs(encoded+"\n", stderr)
@@ -112,6 +138,7 @@ do {
         print(String(data: try JSONSerialization.data(withJSONObject: ["pid": pid, "actual_story": witness,
             "observer_attach_to_story_ms": Double(DispatchTime.now().uptimeNanoseconds-start)/1e6,
             "observer_queries": queries, "observer_query_ms": Double(queryNanoseconds)/1e6,
+            "observer_window_ready_ms": windowReadyMilliseconds, "observer_window_polls": windowPolls,
             "observer_traversal": "owned-AXWindows-preorder", "observer_passes": passes,
             "observer_trace": trace, "observer_trace_dropped": traceDropped,
             "method": "actual product first loaded story in public native AX tree"]), encoding: .utf8)!)
