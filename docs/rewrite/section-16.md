@@ -294,6 +294,23 @@ active imports at every timed endpoint. An isolated real-controller run visits
 all42 pages/1,000 covers, observes two imports, joins workers and retires its
 fixture. Native input and resource timings still require fresh three-host runs.
 
+The514 ARM cohort retained1369.537ms to the actual AX story. Its owned window
+appeared at1286.488ms, while AX calls themselves consumed47.106ms. That result
+does not establish first-timer timing or the cause of the window delay. The
+production main now emits five ordinary startup-stage diagnostics, including
+exactly one first UI-timer line with PID, phase and physical size. There is no
+alternate qualification startup path. The parent drains bounded output, records
+actual delivery against its pre-launch clock, and joins its reader even when PID
+discovery fails. Six real child-pipe tests cover delivery, identity, duplicate
+markers, malformed markers and output limits before qualification begins.
+
+The initial local release diagnostics retained Opening rather than claiming a
+loaded Library: software child178.810ms/parent626.103ms and GPU API
+child88.597ms/parent96.629ms. They were terminated diagnostically without joined
+shutdown; both supervisor roots remain retained. They establish neither native
+qualification nor fully loaded startup performance. These observations also
+demonstrate why the child-relative elapsed time cannot replace parent delivery.
+
 At a5ec473 a fresh query-codec fuzz run retained a75-byte malformed-UTF8 seed
 that violated the harness's Unicode idempotence assertion. Its15-byte Cherokee
 reduction also reproduces locally. Actual frozen Go1.26.5 Decode/Migrate/Encode
