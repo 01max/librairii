@@ -5545,6 +5545,59 @@
           ]
         },
         "reason": "Observed additive Task15.13 retained native file-guard validation across profile publication, real stage creation/retirement and positive owned cleanup. All prior identities and target scopes remain unchanged."
+      },
+      {
+        "position": 622,
+        "identity": {
+          "suite": "librairii-core::scale_properties",
+          "name": "ascii_saved_query_encoding_is_stable"
+        },
+        "reason": "Observed additive Task16.5 generated query/navigation/explicit-UUID and retained Unicode contracts, real engine rollback acknowledgement loss and forged schema-preservation custody regressions. Preserves every prior identity and target scope."
+      },
+      {
+        "position": 623,
+        "identity": {
+          "suite": "librairii-core::scale_properties",
+          "name": "paged_navigation_preserves_unicode_and_exact_bounds"
+        },
+        "reason": "Observed additive Task16.5 generated query/navigation/explicit-UUID and retained Unicode contracts, real engine rollback acknowledgement loss and forged schema-preservation custody regressions. Preserves every prior identity and target scope."
+      },
+      {
+        "position": 624,
+        "identity": {
+          "suite": "librairii-core::scale_properties",
+          "name": "explicit_uuid_decisions_deduplicate_in_first_selected_order"
+        },
+        "reason": "Observed additive Task16.5 generated query/navigation/explicit-UUID and retained Unicode contracts, real engine rollback acknowledgement loss and forged schema-preservation custody regressions. Preserves every prior identity and target scope."
+      },
+      {
+        "position": 625,
+        "identity": {
+          "suite": "librairii-core::scale_properties",
+          "name": "retained_unicode_seed_preserves_observable_frozen_canonical_passes"
+        },
+        "reason": "Observed additive Task16.5 generated query/navigation/explicit-UUID and retained Unicode contracts, real engine rollback acknowledgement loss and forged schema-preservation custody regressions. Preserves every prior identity and target scope."
+      },
+      {
+        "position": 626,
+        "identity": {
+          "suite": "librairii-storage::database_workers",
+          "name": "engine_rollback_loss_never_turns_body_or_cancel_failure_into_retry_permission"
+        },
+        "reason": "Observed additive Task16.5 generated query/navigation/explicit-UUID and retained Unicode contracts, real engine rollback acknowledgement loss and forged schema-preservation custody regressions. Preserves every prior identity and target scope."
+      },
+      {
+        "position": 627,
+        "identity": {
+          "suite": "librairii-storage",
+          "name": "native::owned::schema::tests::forged_schema_preservation_receipts_never_authorize_replacement_or_release_custody",
+          "targets": [
+            "aarch64-apple-darwin",
+            "x86_64-apple-darwin",
+            "x86_64-unknown-linux-gnu"
+          ]
+        },
+        "reason": "Observed additive Task16.5 generated query/navigation/explicit-UUID and retained Unicode contracts, real engine rollback acknowledgement loss and forged schema-preservation custody regressions. Preserves every prior identity and target scope."
       }
     ],
     "python": [

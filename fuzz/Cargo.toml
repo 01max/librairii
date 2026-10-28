@@ -32,5 +32,12 @@ test = false
 doc = false
 bench = false
 
+[[bin]]
+name = "query_codec"
+path = "fuzz_targets/query_codec.rs"
+test = false
+doc = false
+bench = false
+
 [patch.crates-io]
 sevenz-turbo = { path = "../third_party/sevenz-turbo" }

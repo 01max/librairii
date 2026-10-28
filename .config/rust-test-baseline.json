@@ -3970,6 +3970,35 @@
         "x86_64-apple-darwin",
         "x86_64-unknown-linux-gnu"
       ]
+    },
+    {
+      "suite": "librairii-core::scale_properties",
+      "name": "ascii_saved_query_encoding_is_stable"
+    },
+    {
+      "suite": "librairii-core::scale_properties",
+      "name": "paged_navigation_preserves_unicode_and_exact_bounds"
+    },
+    {
+      "suite": "librairii-core::scale_properties",
+      "name": "explicit_uuid_decisions_deduplicate_in_first_selected_order"
+    },
+    {
+      "suite": "librairii-core::scale_properties",
+      "name": "retained_unicode_seed_preserves_observable_frozen_canonical_passes"
+    },
+    {
+      "suite": "librairii-storage::database_workers",
+      "name": "engine_rollback_loss_never_turns_body_or_cancel_failure_into_retry_permission"
+    },
+    {
+      "suite": "librairii-storage",
+      "name": "native::owned::schema::tests::forged_schema_preservation_receipts_never_authorize_replacement_or_release_custody",
+      "targets": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu"
+      ]
     }
   ]
 }

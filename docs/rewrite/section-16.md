@@ -159,3 +159,42 @@ while keeping Search/notice actions reachable through their existing focus
 reveal behavior. Actual1× release captures pass all five wide/short/narrow/
 intermediate/restore cases after that fix; full current-source host sealing is
 still required.
+
+## Focused generative/fuzz and coverage gaps —16.5
+
+The retained full-workspace coverage artifact for source a0a4ba3 (run40738553488,
+artifact12837679986, SHA256
+`921a5e52828848f6a0a34392d9e0d77af16fb7f948fa6b2730ce58fc8801dac9`)
+identified uncovered explicit rollback-acknowledgement failure and schema-receipt
+validation branches. Coverage is used to choose scenarios, without a percentage
+claim replacing custody/recovery assertions.
+
+New real SQLite RAISE(ROLLBACK) cases cover both body-error and late-cancellation
+paths whose subsequent rollback acknowledgement fails. They require an uncertain
+outcome, fenced ordinary intake, fresh writer-barrier truth with no partial rows,
+uncancelled explicit repair and successful owned reopen. Eight adversarial schema
+receipts/copies cover wrong version/library identity, empty/duplicate/escaping
+members, invalid checksum, wrong byte count and substituted preserved bytes.
+Reinspection retains the exact native owner; confirmation must refuse without
+changing any original database/WAL/SHM, archive or evidence byte or releasing
+custody. Existing crash/upgrade/commit/cancel scenarios remain required.
+
+Three256-case properties exercise ASCII saved-query stability, lossless Unicode
+paged navigation and first-selected UUID decision order. A minimized Unicode
+seed (`𝕬`) disproved an overstrong idempotence test assumption: frozen Go1.26.5
+independently confirms Decode produces `A` and Migrate produces `a`. That exact
+observable pass count is retained as a fourth regression, alongside its original
+proptest seed and a fuzz input; the codec is unchanged.
+
+The separately pinned nightly fuzz lane now also drives saved-query/reference/
+migration and native URL/history/request codecs, with retained JSON, overflow,
+Unicode and URL seeds. Its30-second,16KiB-input,2-second-case and512MiB bounds
+match the archive/JSON lane; active corpora and crash outputs live in owned copied
+working directories. A local diagnostic completed1,841,529 codec inputs in31s
+with no crash. Final clean-source focused coverage/fuzz evidence remains required.
+
+Six observed test identities append to the prior622-entry baseline (628 total);
+all old identities, target scopes and historical source-map digests remain exact.
+The source map records the additions and its current upstream digest changes
+accordingly. A current-source cumulative gate and independent review still gate
+section acceptance.
