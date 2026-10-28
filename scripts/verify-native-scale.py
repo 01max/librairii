@@ -106,6 +106,22 @@ def verify_shelves(report):
             or result['exclusion_uuids'] != [r['uuid'] for r in oracle['initialAdditions'][50:]]
             or result['large_member_uuids'] != [r['uuid'] for r in oracle['initialAdditions']]):
         raise ValueError('frozen Shelf identity/order/provenance/outcome differs')
+    expected_exclusions = [r['uuid'] for r in oracle['initialAdditions'][50:]]
+    if (result['rollback_exclusion_uuids'] != expected_exclusions
+            or result['final_exclusion_uuids'] != expected_exclusions
+            or result['small_member_uuids'] != [r['uuid'] for r in oracle['initialAdditions'][:50]]
+            or result['rollback'] != {'outcome': 'proven_not_committed',
+                'error': 'controlled scale rollback', 'intermediate_manual_members': 2525}):
+        raise ValueError('exact post-rollback/success membership and exclusion proof required')
+    warnings = result['warnings']
+    if (len(warnings['warnings']) != 32 or len(set(warnings['warnings'])) != 32
+            or not warnings['incomplete'] or warnings['removal_count'] != 0
+            or warnings['healthy_additions'] != 2500 or not warnings['approved_forest_retained']
+            or not warnings['explicit_healthy_add_committed']):
+        raise ValueError('incomplete sources must retain members and allow explicit healthy additions')
+    for name in ['review_ranges', 'creation_ranges']:
+        if warnings[name] != {'total': 32, 'page_lengths': [25, 7], 'next_and_huge_empty': True}:
+            raise ValueError('complete bounded warning ranges required')
     samples = result['preview_ms']
     if (len(samples) != 4 or any(type(n) not in (int, float) or not math.isfinite(n) or n < 0 or n > 5000 for n in samples)
             or result['ceiling_ms'] != 5000 or not math.isfinite(result['apply50_ms']) or not 0 <= result['apply50_ms'] <= 5000):

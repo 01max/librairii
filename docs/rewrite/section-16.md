@@ -64,7 +64,16 @@ historical inactive origins. Linked deletion exposes one affected Shelf at a
 time, with exact25/2,500 affected rows. A real SQLite trigger forces the final
 delete to fail after intermediate detachment writes; transaction rollback must
 preserve every member, position and4,950 exclusions. A fresh explicit plan then
-successfully deletes the Collection while preserving those memberships.
+successfully deletes the Collection while preserving those memberships. Exact
+UUID/order reads of both Shelves and all exclusions follow each outcome. The
+trigger accepts only the intended final-delete stage, after2,525 manual-retention
+writes and source detachment; only a proven-not-committed SQLite constraint
+receipt qualifies the rollback.
+
+A further32-source needs-attention fixture visits both warning pages (25+7)
+in update and creation previews, including next/huge empty ranges. Incomplete
+coverage retains a previously approved forest member, suppresses inferred removals
+and still permits an explicitly selected healthy Moon addition.
 
 The wrapper independently checks the complete outcomes, ranges and raw timings
 and seals both subprocesses to one unchanged executable/source. This is backend
