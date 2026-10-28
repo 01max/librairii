@@ -9,6 +9,7 @@ import subprocess
 import shutil
 import sys
 import tomllib
+import time
 ROOT = Path(__file__).resolve().parents[1]
 DESTINATION = ROOT / 'target/quality/native-ui'
 def run(arguments, **kwargs):
@@ -78,8 +79,24 @@ def main():
             # Override App Nap in this process's argument domain only; never
             # write user/system defaults or change the product resource gates.
             arguments += ['-NSAppSleepDisabled', 'YES']
-        with (output / 'execution.log').open('w') as log:
-            run(arguments, env=environment, stdout=log, stderr=subprocess.STDOUT, timeout=90)
+        # This watchdog encloses callback fixtures and88 PNG captures per
+        # scale, not a product latency gate. Retain its actual wall duration
+        # even on failure; Task16's separate numerical ceilings stay unchanged.
+        process_receipt = {'complete': False, 'watchdog_seconds': 180}
+        started = time.monotonic()
+        try:
+            with (output / 'execution.log').open('w') as log:
+                completed = run(arguments, env=environment, stdout=log, stderr=subprocess.STDOUT, timeout=180)
+            process_receipt.update(complete=True, returncode=completed.returncode)
+        except subprocess.CalledProcessError as error:
+            process_receipt['returncode'] = error.returncode
+            raise
+        except subprocess.TimeoutExpired:
+            process_receipt['timed_out'] = True
+            raise
+        finally:
+            process_receipt['wall_seconds'] = time.monotonic()-started
+            (output / 'component-process.json').write_text(json.dumps(process_receipt, indent=2)+'\n')
         report = json.loads((output / 'report.json').read_text())
         if report['macos_programmatic_fixed_window'] != (sys.platform == 'darwin'):
             raise ValueError('native fixture window policy differs from the host')

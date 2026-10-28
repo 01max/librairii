@@ -246,3 +246,14 @@ all old identities, target scopes and historical source-map digests remain exact
 The source map records the additions and its current upstream digest changes
 accordingly. A current-source cumulative gate and independent review still gate
 section acceptance.
+
+## Component batch watchdog
+
+At286199d the Intel component fixture completed its callback checks and advanced
+through frame step117, retaining78 PNGs, before the old90-second process watchdog
+killed scale1. That run remains failed; scale2 did not execute. This envelope
+covers all callback fixtures and88 image captures per scale. It is distinct from
+product startup, interaction, query and Shelf timing gates. The envelope is now
+180seconds, with a raw wall-time/completion receipt on success or failure. All
+176 capture, geometry, focus and callback obligations remain required. A fresh
+complete run must qualify the change; no scheduler cause is inferred.
